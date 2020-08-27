@@ -4932,7 +4932,7 @@ HCIMPLEND
 
 
 
-HCIMPL0(INT32, JIT_GetCurrentManagedThreadId)
+FCIMPL0(INT32, JIT_GetCurrentManagedThreadId)
 {
     FCALL_CONTRACT;
 
@@ -4941,7 +4941,7 @@ HCIMPL0(INT32, JIT_GetCurrentManagedThreadId)
     Thread * pThread = GetThread();
     return pThread->GetThreadId();
 }
-HCIMPLEND
+FCIMPLEND
 
 
 /*********************************************************************/

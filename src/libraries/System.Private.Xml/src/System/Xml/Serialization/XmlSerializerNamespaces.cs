@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
 namespace System.Xml.Serialization
 {
     using System.Reflection;
@@ -11,13 +12,14 @@ namespace System.Xml.Serialization
     using System.Collections.Generic;
     using System.Xml.Extensions;
     using System.Xml;
+    using System.Diagnostics.CodeAnalysis;
 
     /// <devdoc>
     ///    <para>[To be supplied.]</para>
     /// </devdoc>
     public class XmlSerializerNamespaces
     {
-        private Dictionary<string, string> _namespaces;
+        private Dictionary<string, string?>? _namespaces;
 
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
@@ -33,7 +35,7 @@ namespace System.Xml.Serialization
         /// </devdoc>
         public XmlSerializerNamespaces(XmlSerializerNamespaces namespaces)
         {
-            _namespaces = new Dictionary<string, string>(namespaces.Namespaces);
+            _namespaces = new Dictionary<string, string?>(namespaces.Namespaces);
         }
 
         /// <devdoc>
@@ -51,7 +53,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public void Add(string prefix, string ns)
+        public void Add(string prefix, string? ns)
         {
             // parameter value check
             if (prefix != null && prefix.Length > 0)
@@ -59,10 +61,10 @@ namespace System.Xml.Serialization
 
             if (ns != null && ns.Length > 0)
                 ExtensionMethods.ToUri(ns);
-            AddInternal(prefix, ns);
+            AddInternal(prefix!, ns);
         }
 
-        internal void AddInternal(string prefix, string ns)
+        internal void AddInternal(string prefix, string? ns)
         {
             Namespaces[prefix] = ns;
         }
@@ -85,7 +87,7 @@ namespace System.Xml.Serialization
             get { return Namespaces.Count; }
         }
 
-        internal ArrayList NamespaceList
+        internal ArrayList? NamespaceList
         {
             get
             {
@@ -94,24 +96,25 @@ namespace System.Xml.Serialization
                 ArrayList namespaceList = new ArrayList();
                 foreach (string key in Namespaces.Keys)
                 {
-                    namespaceList.Add(new XmlQualifiedName(key, (string)Namespaces[key]));
+                    namespaceList.Add(new XmlQualifiedName(key, (string?)Namespaces[key]));
                 }
                 return namespaceList;
             }
         }
 
-        internal Dictionary<string, string> Namespaces
+        [AllowNull]
+        internal Dictionary<string, string?> Namespaces
         {
             get
             {
                 if (_namespaces == null)
-                    _namespaces = new Dictionary<string, string>();
+                    _namespaces = new Dictionary<string, string?>();
                 return _namespaces;
             }
             set { _namespaces = value; }
         }
 
-        internal string LookupPrefix(string ns)
+        internal string? LookupPrefix(string? ns)
         {
             if (string.IsNullOrEmpty(ns))
                 return null;

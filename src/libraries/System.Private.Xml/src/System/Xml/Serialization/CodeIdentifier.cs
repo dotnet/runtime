@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
 using System;
 using System.Text;
 using System.Collections;
@@ -9,6 +10,7 @@ using System.Globalization;
 using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml.Serialization
 {
@@ -162,10 +164,12 @@ namespace System.Xml.Serialization
             return true;
         }
 
-        internal static void CheckValidIdentifier(string ident)
+        internal static void CheckValidIdentifier([NotNull] string? ident)
         {
             if (!CSharpHelpers.IsValidLanguageIndependentIdentifier(ident))
                 throw new ArgumentException(SR.Format(SR.XmlInvalidIdentifier, ident), nameof(ident));
+
+            Debug.Assert(ident != null);
         }
 
         internal static string GetCSharpName(string name)
@@ -213,12 +217,13 @@ namespace System.Xml.Serialization
             int rank = 0;
             while (t.IsArray)
             {
-                t = t.GetElementType();
+                t = t.GetElementType()!;
                 rank++;
             }
+
             StringBuilder sb = new StringBuilder();
             sb.Append("global::");
-            string ns = t.Namespace;
+            string? ns = t.Namespace;
             if (ns != null && ns.Length > 0)
             {
                 string[] parts = ns.Split('.');
@@ -266,7 +271,8 @@ namespace System.Xml.Serialization
             }
         }
 
-        private static string EscapeKeywords(string identifier)
+        [return: NotNullIfNotNull("identifier")]
+        private static string? EscapeKeywords(string? identifier)
         {
             if (identifier == null || identifier.Length == 0) return identifier;
             string originalIdentifier = identifier;

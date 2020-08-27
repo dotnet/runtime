@@ -28,6 +28,10 @@ public class WasmAppBuilder : Task
     [Required]
     public string? MainJS { get; set; }
 
+    // If true, continue when a referenced assembly cannot be found.
+    // If false, throw an exception.
+    public bool SkipMissingAssemblies { get; set; } 
+
     // full list of ICU data files we produce can be found here:
     // https://github.com/dotnet/icu/tree/maint/maint-67/icu-filters
     public string? IcuDataFileName { get; set; } = "icudt.dat";
@@ -114,8 +118,18 @@ public class WasmAppBuilder : Task
         {
             foreach (var item in ExtraAssemblies)
             {
-                var refAssembly = mlc.LoadFromAssemblyPath(item.ItemSpec);
-                Add(mlc, refAssembly);
+		try
+	        {
+                	var refAssembly = mlc.LoadFromAssemblyPath(item.ItemSpec);
+                	Add(mlc, refAssembly);
+		}
+		catch (System.IO.FileLoadException)
+		{
+			if (!SkipMissingAssemblies)
+			{
+				throw;
+			}
+		}
             }
         }
 

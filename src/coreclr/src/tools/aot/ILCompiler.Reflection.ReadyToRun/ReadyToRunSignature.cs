@@ -66,7 +66,7 @@ namespace ILCompiler.Reflection.ReadyToRun
 
         public static string FormatSignature(IAssemblyResolver assemblyResolver, ReadyToRunReader r2rReader, int imageOffset, out ReadyToRunSignature result)
         {
-            SignatureDecoder decoder = new SignatureDecoder(assemblyResolver, r2rReader.GetGlobalMetadataReader(), r2rReader, imageOffset);
+            SignatureDecoder decoder = new SignatureDecoder(assemblyResolver, r2rReader.GetGlobalMetadata()?.MetadataReader, r2rReader, imageOffset);
             string answer = decoder.ReadR2RSignature(out result);
             return answer;
         }
@@ -697,8 +697,8 @@ namespace ILCompiler.Reflection.ReadyToRun
                 case CorElementType.ELEMENT_TYPE_MODULE_ZAPSIG:
                     {
                         int moduleIndex = (int)ReadUInt();
-                        MetadataReader refAsmReader = _contextReader.OpenReferenceAssembly(moduleIndex);
-                        var refAsmDecoder = new R2RSignatureDecoder<TType, TMethod, TGenericContext>(_provider, Context, refAsmReader, _image, _offset, _outerReader, _contextReader);
+                        IAssemblyMetadata refAsmReader = _contextReader.OpenReferenceAssembly(moduleIndex);
+                        var refAsmDecoder = new R2RSignatureDecoder<TType, TMethod, TGenericContext>(_provider, Context, refAsmReader.MetadataReader, _image, _offset, _outerReader, _contextReader);
                         var result = refAsmDecoder.ParseType();
                         _offset = refAsmDecoder.Offset;
                         return result;
@@ -1065,8 +1065,8 @@ namespace ILCompiler.Reflection.ReadyToRun
             {
                 fixupType &= ~(uint)ReadyToRunFixupKind.ModuleOverride;
                 int moduleIndex = (int)ReadUIntAndEmitInlineSignatureBinary(builder);
-                MetadataReader refAsmEcmaReader = _contextReader.OpenReferenceAssembly(moduleIndex);
-                moduleDecoder = new SignatureDecoder(Context.Options, refAsmEcmaReader, _image, Offset, refAsmEcmaReader, _contextReader);
+                IAssemblyMetadata refAsmEcmaReader = _contextReader.OpenReferenceAssembly(moduleIndex);
+                moduleDecoder = new SignatureDecoder(Context.Options, refAsmEcmaReader.MetadataReader, _image, Offset, refAsmEcmaReader.MetadataReader, _contextReader);
             }
 
             ReadyToRunSignature result = moduleDecoder.ParseSignature((ReadyToRunFixupKind)fixupType, builder);
@@ -1356,7 +1356,7 @@ namespace ILCompiler.Reflection.ReadyToRun
             builder.Append(base.ParseType());
         }
 
-        public MetadataReader GetMetadataReaderFromModuleOverride()
+        public IAssemblyMetadata GetMetadataReaderFromModuleOverride()
         {
             if (PeekElementType() == CorElementType.ELEMENT_TYPE_MODULE_ZAPSIG)
             {
@@ -1364,7 +1364,7 @@ namespace ILCompiler.Reflection.ReadyToRun
 
                 ReadElementType();
                 int moduleIndex = (int)ReadUInt();
-                MetadataReader refAsmReader = _contextReader.OpenReferenceAssembly(moduleIndex);
+                IAssemblyMetadata refAsmReader = _contextReader.OpenReferenceAssembly(moduleIndex);
 
                 UpdateOffset(currentOffset);
 

@@ -1955,4 +1955,14 @@ namespace System.Text.Json.Serialization.Tests
             yield return typeof(SortedList); // IDictionaryConverter
         }
     }
+
+    public class PocoDictionary
+    {
+        public Dictionary<string, string> key { get; set; }
+    }
+
+    public class Poco
+    {
+        public int Id { get; set; }
+    }
 }

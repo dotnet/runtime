@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
 namespace System.Xml.Serialization
 {
     using System;
@@ -20,11 +21,11 @@ namespace System.Xml.Serialization
     public class SoapAttributes
     {
         private bool _soapIgnore;
-        private SoapTypeAttribute _soapType;
-        private SoapElementAttribute _soapElement;
-        private SoapAttributeAttribute _soapAttribute;
-        private SoapEnumAttribute _soapEnum;
-        private object _soapDefaultValue;
+        private SoapTypeAttribute? _soapType;
+        private SoapElementAttribute? _soapElement;
+        private SoapAttributeAttribute? _soapAttribute;
+        private SoapEnumAttribute? _soapEnum;
+        private object? _soapDefaultValue;
 
         public SoapAttributes()
         {
@@ -89,13 +90,13 @@ namespace System.Xml.Serialization
             return SoapFlags;
         }
 
-        public SoapTypeAttribute SoapType
+        public SoapTypeAttribute? SoapType
         {
             get { return _soapType; }
             set { _soapType = value; }
         }
 
-        public SoapEnumAttribute SoapEnum
+        public SoapEnumAttribute? SoapEnum
         {
             get { return _soapEnum; }
             set { _soapEnum = value; }
@@ -107,19 +108,19 @@ namespace System.Xml.Serialization
             set { _soapIgnore = value; }
         }
 
-        public SoapElementAttribute SoapElement
+        public SoapElementAttribute? SoapElement
         {
             get { return _soapElement; }
             set { _soapElement = value; }
         }
 
-        public SoapAttributeAttribute SoapAttribute
+        public SoapAttributeAttribute? SoapAttribute
         {
             get { return _soapAttribute; }
             set { _soapAttribute = value; }
         }
 
-        public object SoapDefaultValue
+        public object? SoapDefaultValue
         {
             get { return _soapDefaultValue; }
             set { _soapDefaultValue = value; }

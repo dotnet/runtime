@@ -6,13 +6,47 @@ using Xunit;
 
 namespace AppHost.Bundle.Tests
 {
-    public class BundleEnvironmentGetCommandLineArgs : IClassFixture<BundleEnvironmentGetCommandLineArgs.SharedTestState>
+    public class SingleFileApiTests : IClassFixture<SingleFileApiTests.SharedTestState>
     {
         private SharedTestState sharedTestState;
 
-        public BundleEnvironmentGetCommandLineArgs(SharedTestState fixture)
+        public SingleFileApiTests(SharedTestState fixture)
         {
             sharedTestState = fixture;
+        }
+
+        [Fact]
+        public void FullyQualifiedName()
+        {
+            var fixture = sharedTestState.TestFixture.Copy();
+            var singleFile = BundleHelper.BundleApp(fixture);
+
+            Command.Create(singleFile, "fullyqualifiedname")
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .Execute()
+                .Should()
+                .Pass()
+                .And
+                .HaveStdOutContaining("FullyQualifiedName: <Unknown>" +
+                    Environment.NewLine +
+                    "Name: <Unknown>");
+        }
+
+        [Fact]
+        public void CodeBaseThrows()
+        {
+            var fixture = sharedTestState.TestFixture.Copy();
+            var singleFile = BundleHelper.BundleApp(fixture);
+
+            Command.Create(singleFile, "codebase")
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .Execute()
+                .Should()
+                .Pass()
+                .And
+                .HaveStdOutContaining("CodeBase NotSupported");
         }
 
         [Fact]
@@ -23,7 +57,7 @@ namespace AppHost.Bundle.Tests
 
             // For single-file, Environment.GetCommandLineArgs[0]
             // should return the file path of the host.
-            Command.Create(singleFile)
+            Command.Create(singleFile, "cmdlineargs")
                 .CaptureStdErr()
                 .CaptureStdOut()
                 .Execute()
@@ -42,7 +76,7 @@ namespace AppHost.Bundle.Tests
 
             // For non single-file apps, Environment.GetCommandLineArgs[0]
             // should return the file path of the managed entrypoint.
-            dotnet.Exec(appPath)
+            dotnet.Exec(appPath, "cmdlineargs")
                 .CaptureStdErr()
                 .CaptureStdOut()
                 .Execute()
@@ -60,7 +94,7 @@ namespace AppHost.Bundle.Tests
             public SharedTestState()
             {
                 RepoDirectories = new RepoDirectoriesProvider();
-                TestFixture = new TestProjectFixture("EnvironmentGetCommandLineArgs", RepoDirectories);
+                TestFixture = new TestProjectFixture("SingleFileApiTests", RepoDirectories);
                 TestFixture
                     .EnsureRestoredForRid(TestFixture.CurrentRid, RepoDirectories.CorehostPackages)
                     .PublishProject(runtime: TestFixture.CurrentRid, outputDirectory: BundleHelper.GetPublishPath(TestFixture));
