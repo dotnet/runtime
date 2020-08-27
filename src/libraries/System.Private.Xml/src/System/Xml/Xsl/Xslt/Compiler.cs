@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
@@ -140,7 +139,7 @@ namespace System.Xml.Xsl.Xslt
         {
             for (int idx = 0; idx <= 2; idx++)
             {
-                sheet.WhitespaceRules[idx].Reverse();
+                sheet.WhitespaceRules![idx].Reverse();
                 this.WhitespaceRules.AddRange(sheet.WhitespaceRules[idx]);
             }
             sheet.WhitespaceRules = null;
@@ -148,7 +147,7 @@ namespace System.Xml.Xsl.Xslt
 
         private void MergeAttributeSets(Stylesheet sheet)
         {
-            foreach (QilName attSetName in sheet.AttributeSets.Keys)
+            foreach (QilName attSetName in sheet.AttributeSets!.Keys)
             {
                 AttributeSet? attSet;
                 if (!this.AttributeSets.TryGetValue(attSetName, out attSet))
@@ -166,7 +165,7 @@ namespace System.Xml.Xsl.Xslt
 
         private void MergeGlobalVarPars(Stylesheet sheet)
         {
-            foreach (VarPar var in sheet.GlobalVarPars)
+            foreach (VarPar var in sheet.GlobalVarPars!)
             {
                 Debug.Assert(var.NodeType == XslNodeType.Variable || var.NodeType == XslNodeType.Param);
                 if (!AllGlobalVarPars.ContainsKey(var.Name!))
