@@ -658,6 +658,8 @@ namespace System.Runtime.Serialization
 
         private bool ResolveType(Type objectType, Type declaredType, [NotNullWhen(true)] out XmlDictionaryString? typeName, [NotNullWhen(true)] out XmlDictionaryString? typeNamespace)
         {
+            Debug.Assert(DataContractResolver != null);
+
             if (!DataContractResolver.TryResolveType(objectType, declaredType, KnownTypeResolver, out typeName, out typeNamespace))
             {
                 throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.ResolveTypeReturnedFalse, DataContract.GetClrTypeFullName(DataContractResolver.GetType()), DataContract.GetClrTypeFullName(objectType))));
