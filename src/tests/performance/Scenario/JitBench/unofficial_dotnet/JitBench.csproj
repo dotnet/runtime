@@ -7,7 +7,7 @@
     <Configuration Condition="'$(Configuration)' == ''">Release</Configuration>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp2.0</TargetFramework>
-    
+    <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' == 'wasm'">true</CLRTestTargetUnsupported>    
     <!-- The common test dirs props pushes all tests to use a more recent NTM unless we explictly opt-out -->
     <NuGetTargetMoniker>.NETCoreApp,Version=v2.0</NuGetTargetMoniker>
     <NuGetTargetMonikerShort>netcoreapp2.0</NuGetTargetMonikerShort>

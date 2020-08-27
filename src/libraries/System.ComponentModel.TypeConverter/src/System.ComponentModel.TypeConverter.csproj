@@ -127,7 +127,6 @@
     <Compile Include="System\ComponentModel\Design\CommandID.cs" />
     <Compile Include="System\ComponentModel\Design\CheckoutException.cs" />
     <Compile Include="System\ComponentModel\Design\StandardCommands.cs" />
-    <Compile Include="System\ComponentModel\EditorAttribute.cs" />
     <Compile Include="System\ComponentModel\ExpandableObjectConverter.cs" />
     <Compile Include="System\ComponentModel\IBindingListView.cs" />
     <Compile Include="System\ComponentModel\ListSortDescriptionCollection.cs" />

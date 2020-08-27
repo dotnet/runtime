@@ -330,9 +330,10 @@ namespace System.Text.Json.Serialization
                     return true;
                 }
 
-                if (type != TypeToConvert)
+                if (type != TypeToConvert && IsInternalConverter)
                 {
-                    // Handle polymorphic case and get the new converter.
+                    // For internal converter only: Handle polymorphic case and get the new converter.
+                    // Custom converter, even though polymorphic converter, get called for reading AND writing.
                     JsonConverter jsonConverter = state.Current.InitializeReEntry(type, options);
                     if (jsonConverter != this)
                     {

@@ -112,6 +112,7 @@ namespace System.Xml.Schema
         }
 
         [XmlAttribute("ref")]
+        [AllowNull]
         public XmlQualifiedName RefName
         {
             get { return _refName; }
@@ -119,6 +120,7 @@ namespace System.Xml.Schema
         }
 
         [XmlAttribute("substitutionGroup")]
+        [AllowNull]
         public XmlQualifiedName SubstitutionGroup
         {
             get { return _substitutionGroup; }
@@ -126,6 +128,7 @@ namespace System.Xml.Schema
         }
 
         [XmlAttribute("type")]
+        [AllowNull]
         public XmlQualifiedName SchemaTypeName
         {
             get { return _typeName; }

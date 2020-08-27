@@ -6,6 +6,8 @@ using System.Data.Common;
 
 namespace System.Data.Odbc
 {
+    [Editor("Microsoft.VSDesigner.Data.Design.DBParametersEditor, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
+            "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public sealed partial class OdbcParameterCollection : DbParameterCollection
     {
         private bool _rebindCollection;   // The collection needs to be (re)bound

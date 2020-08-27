@@ -213,6 +213,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         internal static async Task<JObject> CompileAndRunTheExpression(string expression, MemberReferenceResolver resolver, CancellationToken token)
         {
+            expression = expression.Trim();
             SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(@"
                 using System;
                 public class CompileAndRunTheExpression
@@ -245,10 +246,10 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             var memberAccessValues = await ResolveMemberAccessExpressions(findVarNMethodCall.memberAccesses, resolver, token);
 
-            // this.dateTime
+            // eg. "this.dateTime", "  dateTime.TimeOfDay"
             if (expressionTree.Kind() == SyntaxKind.SimpleMemberAccessExpression && findVarNMethodCall.memberAccesses.Count == 1)
             {
-                return memberAccessValues[0]?["value"]?.Value<JObject>();
+                return memberAccessValues[0];
             }
 
             var identifierValues = await ResolveIdentifiers(findVarNMethodCall.identifiers, resolver, token);

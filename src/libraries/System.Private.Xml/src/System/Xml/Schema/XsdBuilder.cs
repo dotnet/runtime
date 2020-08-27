@@ -795,7 +795,7 @@ namespace System.Xml.Schema
             {
                 if (_namespaces != null && _namespaces.Count > 0)
                 {
-                    _xso.Namespaces.Namespaces = _namespaces;
+                    _xso.Namespaces.Namespaces = _namespaces!;
                     _namespaces = null;
                 }
                 if (_unhandledAttributes.Count != 0)
