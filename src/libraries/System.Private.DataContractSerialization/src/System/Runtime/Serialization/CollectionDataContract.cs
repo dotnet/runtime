@@ -1003,7 +1003,7 @@ namespace System.Runtime.Serialization
         internal static bool TryCreate(Type type, [NotNullWhen(true)] out DataContract? dataContract)
         {
             Type itemType;
-            return IsCollectionOrTryCreate(type, true /*tryCreate*/, out dataContract, out itemType, true /*constructorRequired*/);
+            return IsCollectionOrTryCreate(type, true /*tryCreate*/, out dataContract!, out itemType, true /*constructorRequired*/);
         }
 
         internal static bool CreateGetOnlyCollectionDataContract(Type type, [NotNullWhen(true)] out DataContract? dataContract)
@@ -1016,7 +1016,7 @@ namespace System.Runtime.Serialization
             }
             else
             {
-                return IsCollectionOrTryCreate(type, true /*tryCreate*/, out dataContract, out itemType, false /*constructorRequired*/);
+                return IsCollectionOrTryCreate(type, true /*tryCreate*/, out dataContract!, out itemType, false /*constructorRequired*/);
             }
         }
 
@@ -1033,7 +1033,7 @@ namespace System.Runtime.Serialization
                 }
                 else
                 {
-                    return IsCollectionOrTryCreate(type, true /*tryCreate*/, out dataContract, out itemType, false /*constructorRequired*/);
+                    return IsCollectionOrTryCreate(type, true /*tryCreate*/, out dataContract!, out itemType, false /*constructorRequired*/);
                 }
             }
             else
@@ -1061,7 +1061,7 @@ namespace System.Runtime.Serialization
             return t.IsGenericType && (t.GetGenericTypeDefinition() == typeof(ArraySegment<>));
         }
 
-        private static bool IsCollectionOrTryCreate(Type type, bool tryCreate, [NotNullWhen(true)] out DataContract? dataContract, out Type itemType, bool constructorRequired)
+        private static bool IsCollectionOrTryCreate(Type type, bool tryCreate, out DataContract? dataContract, out Type itemType, bool constructorRequired)
         {
             dataContract = null;
             itemType = Globals.TypeOfObject;
