@@ -22,6 +22,8 @@ namespace System.Net.Sockets
     {
         internal const int DefaultCloseTimeout = -1; // NOTE: changing this default is a breaking change.
 
+        private static readonly IPAddress s_IPAddressAnyMapToIPv6 = IPAddress.Any.MapToIPv6();
+
         private SafeSocketHandle _handle;
 
         // _rightEndPoint is null if the socket has not been bound.  Otherwise, it is any EndPoint of the
@@ -219,7 +221,6 @@ namespace System.Net.Sockets
                                 }
 
                                 _isConnected = true;
-                                UpdateLocalEndPointOnConnect();
                                 break;
 
                             case SocketError.InvalidArgument:
@@ -229,7 +230,6 @@ namespace System.Net.Sockets
                                 // whether we're actually connected or not, err on the side of saying
                                 // we're connected.
                                 _isConnected = true;
-                                UpdateLocalEndPointOnConnect();
                                 break;
                         }
                     }
@@ -4938,7 +4938,7 @@ namespace System.Net.Sockets
             if (endPoint is IPEndPoint ipEndpoint)
             {
                 IPAddress address = ipEndpoint.Address;
-                return IPAddress.Any.Equals(address) || IPAddress.IPv6Any.Equals(address) || IPAddress.Any.MapToIPv6().Equals(address);
+                return IPAddress.Any.Equals(address) || IPAddress.IPv6Any.Equals(address) || s_IPAddressAnyMapToIPv6.Equals(address);
             }
 
             return false;
