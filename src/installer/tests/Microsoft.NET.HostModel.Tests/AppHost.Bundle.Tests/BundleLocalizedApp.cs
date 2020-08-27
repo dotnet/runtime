@@ -6,6 +6,7 @@ using Microsoft.DotNet.Cli.Build.Framework;
 using Microsoft.NET.HostModel.Bundle;
 using Microsoft.DotNet.CoreSetup.Test;
 using System;
+using System.IO;
 using System.Runtime.InteropServices;
 using Xunit;
 
@@ -23,7 +24,7 @@ namespace AppHost.Bundle.Tests
         [Fact]
         public void Bundled_Localized_App_Run_Succeeds()
         {
-            var fixture = sharedTestState.TestFixture.Copy();
+            var fixture = sharedTestState.TestFixtureBundlerAPI.Copy();
             var singleFile = BundleHelper.BundleApp(fixture);
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -42,25 +43,54 @@ namespace AppHost.Bundle.Tests
                 .HaveStdOutContaining("ನಮಸ್ಕಾರ! வணக்கம்! Hello!");
         }
 
+        [Fact]
+        public void Bundled_Localized_App_Using_SDK_Run_Succeeds()
+        {
+            var fixture = sharedTestState.TestFixtureSDK.Copy();
+            var appExe = fixture.TestProject.AppExe;
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                // Set code page to output unicode characters.
+                Command.Create("chcp 65001").Execute();
+            }
+
+            Command.Create(appExe)
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .Execute()
+                .Should()
+                .Pass()
+                .And.HaveStdOutContaining("ನಮಸ್ಕಾರ! வணக்கம்! Hello!");
+        }
+
         public class SharedTestState : IDisposable
         {
-            public TestProjectFixture TestFixture { get; set; }
+            public TestProjectFixture TestFixtureBundlerAPI { get; set; }
+            public TestProjectFixture TestFixtureSDK { get; set; }
             public RepoDirectoriesProvider RepoDirectories { get; set; }
 
             public SharedTestState()
             {
                 RepoDirectories = new RepoDirectoriesProvider();
 
-                TestFixture = new TestProjectFixture("LocalizedApp", RepoDirectories);
-                TestFixture
-                    .EnsureRestoredForRid(TestFixture.CurrentRid, RepoDirectories.CorehostPackages)
-                    .PublishProject(runtime: TestFixture.CurrentRid,
-                                    outputDirectory: BundleHelper.GetPublishPath(TestFixture));
+                TestFixtureBundlerAPI = new TestProjectFixture("LocalizedApp", RepoDirectories);
+                TestFixtureBundlerAPI
+                    .EnsureRestoredForRid(TestFixtureBundlerAPI.CurrentRid, RepoDirectories.CorehostPackages)
+                    .PublishProject(runtime: TestFixtureBundlerAPI.CurrentRid,
+                                    outputDirectory: BundleHelper.GetPublishPath(TestFixtureBundlerAPI));
+
+                TestFixtureSDK = new TestProjectFixture("LocalizedApp", RepoDirectories);
+                TestFixtureSDK
+                    .EnsureRestoredForRid(TestFixtureSDK.CurrentRid, RepoDirectories.CorehostPackages)
+                    .PublishProject(runtime: TestFixtureSDK.CurrentRid,
+                                    singleFile: true);
             }
 
             public void Dispose()
             {
-                TestFixture.Dispose();
+                TestFixtureBundlerAPI.Dispose();
+                TestFixtureSDK.Dispose();
             }
         }
     }
