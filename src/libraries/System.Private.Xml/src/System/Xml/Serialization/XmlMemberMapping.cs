@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
 using System.Reflection;
 using System;
-
 
 namespace System.Xml.Serialization
 {
@@ -22,14 +22,14 @@ namespace System.Xml.Serialization
             get { return _mapping; }
         }
 
-        internal Accessor Accessor
+        internal Accessor? Accessor
         {
             get { return _mapping.Accessor; }
         }
 
         public bool Any
         {
-            get { return Accessor.Any; }
+            get { return Accessor!.Any; }
         }
 
         /// <devdoc>
@@ -37,7 +37,7 @@ namespace System.Xml.Serialization
         /// </devdoc>
         public string ElementName
         {
-            get { return Accessor.UnescapeName(Accessor.Name); }
+            get { return Accessor.UnescapeName(Accessor!.Name); }
         }
 
         /// <devdoc>
@@ -45,15 +45,15 @@ namespace System.Xml.Serialization
         /// </devdoc>
         public string XsdElementName
         {
-            get { return Accessor.Name; }
+            get { return Accessor!.Name; }
         }
 
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public string Namespace
+        public string? Namespace
         {
-            get { return Accessor.Namespace; }
+            get { return Accessor!.Namespace; }
         }
 
         /// <devdoc>
@@ -67,17 +67,17 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public string TypeName
+        public string? TypeName
         {
-            get { return Accessor.Mapping != null ? Accessor.Mapping.TypeName : string.Empty; }
+            get { return Accessor!.Mapping != null ? Accessor.Mapping.TypeName : string.Empty; }
         }
 
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public string TypeNamespace
+        public string? TypeNamespace
         {
-            get { return Accessor.Mapping != null ? Accessor.Mapping.Namespace : null; }
+            get { return Accessor!.Mapping != null ? Accessor.Mapping.Namespace : null; }
         }
 
         /// <devdoc>
@@ -85,7 +85,7 @@ namespace System.Xml.Serialization
         /// </devdoc>
         public string TypeFullName
         {
-            get { return _mapping.TypeDesc.FullName; }
+            get { return _mapping.TypeDesc!.FullName; }
         }
 
         /// <devdoc>

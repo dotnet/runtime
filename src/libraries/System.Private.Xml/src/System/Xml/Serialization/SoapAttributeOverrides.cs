@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
 namespace System.Xml.Serialization
 {
     using System.Reflection;
@@ -14,14 +15,14 @@ namespace System.Xml.Serialization
     {
         private readonly Hashtable _types = new Hashtable();
 
-        public void Add(Type type, SoapAttributes attributes)
+        public void Add(Type type, SoapAttributes? attributes)
         {
             Add(type, string.Empty, attributes);
         }
 
-        public void Add(Type type, string member, SoapAttributes attributes)
+        public void Add(Type type, string member, SoapAttributes? attributes)
         {
-            Hashtable members = (Hashtable)_types[type];
+            Hashtable? members = (Hashtable?)_types[type];
             if (members == null)
             {
                 members = new Hashtable();
@@ -34,7 +35,7 @@ namespace System.Xml.Serialization
             members.Add(member, attributes);
         }
 
-        public SoapAttributes this[Type type]
+        public SoapAttributes? this[Type type]
         {
             get
             {
@@ -42,13 +43,13 @@ namespace System.Xml.Serialization
             }
         }
 
-        public SoapAttributes this[Type type, string member]
+        public SoapAttributes? this[Type type, string member]
         {
             get
             {
-                Hashtable members = (Hashtable)_types[type];
+                Hashtable? members = (Hashtable?)_types[type];
                 if (members == null) return null;
-                return (SoapAttributes)members[member];
+                return (SoapAttributes?)members[member];
             }
         }
     }
