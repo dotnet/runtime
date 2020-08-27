@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.FileProviders.Internal;
 using Microsoft.Extensions.FileProviders.Physical;
@@ -93,35 +94,32 @@ namespace Microsoft.Extensions.FileProviders
         public async void PollingFileProviderShouldntConsumeINotifyInstances()
         {
             List<IDisposable> disposables = new List<IDisposable>();
-            string dir = Path.Combine(Directory.GetCurrentDirectory(), nameof(PollingFileProviderShouldntConsumeINotifyInstances));
-            string file = Path.Combine(dir, "test.txt");
+            using var root = new DisposableFileSystem();
 
             int callbacks = 0;
-            Directory.CreateDirectory(dir);
-
             int maxInstances = int.Parse(File.ReadAllText("/proc/sys/fs/inotify/max_user_instances"));
-
+            int instances = maxInstances + 16;
             try
             {
                 // right now this will fail since we still use FSW
-                for (int i = 0; i < maxInstances + 2; i++)
+                for (int i = 0; i < instances; i++)
                 {
-                    PhysicalFileProvider pfp = new PhysicalFileProvider(dir)
+                    PhysicalFileProvider pfp = new PhysicalFileProvider(root.RootPath)
                     {
                         UsePollingFileWatcher = true,
                         UseActivePolling = true
                     };
                     disposables.Add(pfp);
                     disposables.Add(pfp.Watch("*").RegisterChangeCallback(
-                        o => callbacks++,
+                        o => Interlocked.Increment(ref callbacks),
                         i));
                 }
 
                 // trigger an event
-                File.WriteAllText(file, "");
+                root.CreateFile("test.txt");
 
                 // let some events fire
-                await Task.Delay(WaitTimeForTokenToFire);
+                await Task.Delay(WaitTimeForTokenToFire * 16);
 
                 Assert.NotEqual(0, callbacks);
             }
@@ -130,7 +128,6 @@ namespace Microsoft.Extensions.FileProviders
                 foreach (var disposable in disposables)
                 {
                     disposable.Dispose();
-                    Directory.Delete(dir, true);
                 }
             }
         }
