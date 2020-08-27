@@ -613,7 +613,7 @@ namespace DebuggerTests
                     {
                         // For getter, `actual_val` is not `.value`, instead it's the container object
                         // which has a `.get` instead of a `.value`
-                        var get = actual_val["get"];
+                        var get = actual_val?["get"];
                         Assert.True(get != null, $"[{label}] No `get` found. {(actual_val != null ? "Make sure to pass the container object for testing getters, and not the ['value']" : String.Empty)}");
 
                         AssertEqual("Function", get["className"]?.Value<string>(), $"{label}-className");
@@ -732,17 +732,13 @@ namespace DebuggerTests
                 var exp_val_str = jp.Value.Value<string>();
                 bool null_or_empty_exp_val = String.IsNullOrEmpty(exp_val_str);
 
-                var actual_field_val = actual_val.Values<JProperty>().FirstOrDefault(a_jp => a_jp.Name == jp.Name);
+                var actual_field_val = actual_val?.Values<JProperty>()?.FirstOrDefault(a_jp => a_jp.Name == jp.Name);
                 var actual_field_val_str = actual_field_val?.Value?.Value<string>();
                 if (null_or_empty_exp_val && String.IsNullOrEmpty(actual_field_val_str))
                     continue;
 
                 Assert.True(actual_field_val != null, $"[{label}] Could not find value field named {jp.Name}");
-
-                Assert.True(exp_val_str == actual_field_val_str,
-                    $"[{label}] Value for json property named {jp.Name} didn't match.\n" +
-                    $"Expected: {jp.Value.Value<string>()}\n" +
-                    $"Actual:   {actual_field_val.Value.Value<string>()}");
+                AssertEqual(exp_val_str, actual_field_val_str, $"[{label}] Value for json property named {jp.Name} didn't match.");
             }
         }
 
@@ -788,7 +784,7 @@ namespace DebuggerTests
         }
 
         /* @fn_args is for use with `Runtime.callFunctionOn` only */
-        internal async Task<JToken> GetProperties(string id, JToken fn_args = null, bool expect_ok = true)
+        internal async Task<JToken> GetProperties(string id, JToken fn_args = null, bool? own_properties = null, bool? accessors_only = null, bool expect_ok = true)
         {
             if (ctx.UseCallFunctionOnBeforeGetProperties && !id.StartsWith("dotnet:scope:"))
             {
@@ -812,6 +808,14 @@ namespace DebuggerTests
             {
                 objectId = id
             });
+            if (own_properties.HasValue)
+            {
+                get_prop_req["ownProperties"] = own_properties.Value;
+            }
+            if (accessors_only.HasValue)
+            {
+                get_prop_req["accessorPropertiesOnly"] = accessors_only.Value;
+            }
 
             var frame_props = await ctx.cli.SendCommand("Runtime.getProperties", get_prop_req, ctx.token);
             AssertEqual(expect_ok, frame_props.IsOk, $"Runtime.getProperties returned {frame_props.IsOk} instead of {expect_ok}, for {get_prop_req}, with Result: {frame_props}");

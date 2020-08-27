@@ -697,6 +697,38 @@ namespace DebuggerTests
                }
            });
 
+        [Fact]
+        public async Task InvokeInheritedAndPrivateGetters() => await CheckInspectLocalsAtBreakpointSite(
+            $"DebuggerTests.GetPropertiesTests.DerivedClass", "InstanceMethod", 1, "InstanceMethod",
+            $"window.setTimeout(function() {{ invoke_static_method_async ('[debugger-test] DebuggerTests.GetPropertiesTests.DerivedClass:run'); }})",
+            wait_for_event_fn: async (pause_location) =>
+            {
+                var frame_id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+                var frame_locals = await GetProperties(frame_id);
+                var this_obj = GetAndAssertObjectWithName(frame_locals, "this");
+
+                var args = new[]
+                {
+                    // private
+                    ("_DTProp", TDateTime(new DateTime(2200, 5, 6, 7, 8, 9))),
+
+                    // overridden
+                    ("DateTimeForOverride", TDateTime(new DateTime(2190, 9, 7, 5, 3, 2))),
+                    ("FirstName", TString("DerivedClass#FirstName")),
+                    ("StringPropertyForOverrideWithAutoProperty", TString("DerivedClass#StringPropertyForOverrideWithAutoProperty")),
+
+                    // inherited
+                    ("_base_dateTime", TDateTime(new DateTime(2134, 5, 7, 1, 9, 2)))
+                };
+
+                foreach (var (name, expected) in args)
+                {
+                    var res = await InvokeGetter(this_obj, name);
+                    await CheckValue(res.Value["result"], expected, name);
+                }
+            });
+
+
         [Theory]
         [InlineData("invoke_static_method_async ('[debugger-test] DebuggerTests.CallFunctionOnTest:PropertyGettersTestAsync');", "dotnet://debugger-test.dll/debugger-cfo-test.cs", 38, 12, true)]
         [InlineData("invoke_static_method_async ('[debugger-test] DebuggerTests.CallFunctionOnTest:PropertyGettersTestAsync');", "dotnet://debugger-test.dll/debugger-cfo-test.cs", 38, 12, false)]
