@@ -305,8 +305,16 @@ public:
         m_code.Encode((BYTE*)m_pUMThunkMarshInfo->GetExecStubEntryPoint(), this);
 
 #ifdef _DEBUG
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+    bool jitWriteEnabled = PAL_JITWriteEnable(true);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
+
         m_state = kRunTimeInited;
-#endif
+
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+    PAL_JITWriteEnable(jitWriteEnabled);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
+#endif // _DEBUG
     }
 
     // asm entrypoint
