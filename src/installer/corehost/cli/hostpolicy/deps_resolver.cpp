@@ -739,8 +739,9 @@ void deps_resolver_t::get_app_context_deps_files_range(fx_definition_vector_t::i
     if ((m_host_mode == host_mode_t::libhost || bundle::info_t::is_single_file_bundle())
         && begin_iter != end_iter)
     {
-        // In a libhost scenario the app definition shouldn't be
-        // included in the creation of the application.
+        // Neither in a libhost scenario nor in a bundled app
+        // the deps files should be exposed in the app context
+        // properties.
         assert(begin_iter->get() == &get_app(m_fx_definitions));
         ++begin_iter;
     }
