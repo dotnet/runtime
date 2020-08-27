@@ -1,7 +1,6 @@
 // These attributes should be excluded from reference assemblies.
 
 T:System.ComponentModel.Design.Serialization.RootDesignerSerializerAttribute
-T:System.ComponentModel.EditorAttribute
 T:System.Configuration.ConfigurationPropertyAttribute
 T:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute
 T:System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverageAttribute

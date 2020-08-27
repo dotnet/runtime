@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
 namespace System.Xml.Serialization
 {
     using System;
@@ -16,16 +17,16 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public XmlArrayItemAttribute this[int index]
+        public XmlArrayItemAttribute? this[int index]
         {
-            get { return (XmlArrayItemAttribute)List[index]; }
+            get { return (XmlArrayItemAttribute?)List[index]; }
             set { List[index] = value; }
         }
 
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public int Add(XmlArrayItemAttribute attribute)
+        public int Add(XmlArrayItemAttribute? attribute)
         {
             return List.Add(attribute);
         }
@@ -33,7 +34,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public void Insert(int index, XmlArrayItemAttribute attribute)
+        public void Insert(int index, XmlArrayItemAttribute? attribute)
         {
             List.Insert(index, attribute);
         }
@@ -41,7 +42,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public int IndexOf(XmlArrayItemAttribute attribute)
+        public int IndexOf(XmlArrayItemAttribute? attribute)
         {
             return List.IndexOf(attribute);
         }
@@ -49,7 +50,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public bool Contains(XmlArrayItemAttribute attribute)
+        public bool Contains(XmlArrayItemAttribute? attribute)
         {
             return List.Contains(attribute);
         }
@@ -57,7 +58,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public void Remove(XmlArrayItemAttribute attribute)
+        public void Remove(XmlArrayItemAttribute? attribute)
         {
             List.Remove(attribute);
         }

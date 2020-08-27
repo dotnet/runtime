@@ -44,7 +44,9 @@ using System.Runtime.InteropServices;
 
 namespace System.Drawing
 {
-    [System.ComponentModel.TypeConverter(typeof(IconConverter))]
+    [Editor("System.Drawing.Design.IconEditor, System.Drawing.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
+            "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
+    [TypeConverter(typeof(IconConverter))]
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public sealed partial class Icon : MarshalByRefObject, ISerializable, ICloneable, IDisposable
