@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -87,6 +88,54 @@ namespace Microsoft.Extensions.FileProviders
             GetFileInfoReturnsNotFoundFileInfoForIllegalPathWithLeadingSlashes(path);
         }
 
+        [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public async void PollingFileProviderShouldntConsumeINotifyInstances()
+        {
+            List<IDisposable> disposables = new List<IDisposable>();
+            string dir = Path.Combine(Directory.GetCurrentDirectory(), nameof(PollingFileProviderShouldntConsumeINotifyInstances));
+            string file = Path.Combine(dir, "test.txt");
+
+            int callbacks = 0;
+            Directory.CreateDirectory(dir);
+
+            int maxInstances = int.Parse(File.ReadAllText("/proc/sys/fs/inotify/max_user_instances"));
+
+            try
+            {
+                // right now this will fail since we still use FSW
+                for (int i = 0; i < maxInstances + 2; i++)
+                {
+                    PhysicalFileProvider pfp = new PhysicalFileProvider(dir)
+                    {
+                        UsePollingFileWatcher = true,
+                        UseActivePolling = true
+                    };
+                    disposables.Add(pfp);
+                    disposables.Add(pfp.Watch("*").RegisterChangeCallback(
+                        o => callbacks++,
+                        i));
+                }
+
+                // trigger an event
+                File.WriteAllText(file, "");
+
+                // let some events fire
+                await Task.Delay(WaitTimeForTokenToFire);
+
+                Assert.NotEqual(0, callbacks);
+            }
+            finally
+            {
+                foreach (var disposable in disposables)
+                {
+                    disposable.Dispose();
+                    Directory.Delete(dir, true);
+                }
+            }
+        }
+
+            
         private void GetFileInfoReturnsNotFoundFileInfoForIllegalPathWithLeadingSlashes(string path)
         {
             using (var provider = new PhysicalFileProvider(Path.GetTempPath()))
