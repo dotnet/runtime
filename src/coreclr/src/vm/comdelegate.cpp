@@ -969,12 +969,20 @@ FCIMPL5(FC_BOOL_RET, COMDelegate::BindToMethodInfo, Object* refThisUNSAFE, Objec
                                             flags,
                                             &fIsOpenDelegate))
     {
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+        bool jitWriteEnabled = PAL_JITWriteEnable(true);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
+
         // Initialize the delegate to point to the target method.
         BindToMethod(&gc.refThis,
                      &gc.refFirstArg,
                      method,
                      pMethMT,
                      fIsOpenDelegate);
+
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+        PAL_JITWriteEnable(jitWriteEnabled);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
     }
     else
         result = FALSE;
@@ -1588,6 +1596,10 @@ FCIMPL3(void, COMDelegate::DelegateConstruct, Object* refThisUNSAFE, Object* tar
     // try to catch the easy garbage.
     _ASSERTE(isMemoryReadable(method, 1));
 
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+    bool jitWriteEnabled = PAL_JITWriteEnable(true);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
+
     MethodTable *pMTTarg = NULL;
 
     if (gc.target != NULL)
@@ -1717,6 +1729,11 @@ FCIMPL3(void, COMDelegate::DelegateConstruct, Object* refThisUNSAFE, Object* tar
         gc.refThis->SetTarget(gc.target);
         gc.refThis->SetMethodPtr((PCODE)(void *)method);
     }
+
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+    PAL_JITWriteEnable(jitWriteEnabled);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
+
     HELPER_METHOD_FRAME_END();
 }
 FCIMPLEND

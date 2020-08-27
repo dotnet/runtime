@@ -569,6 +569,10 @@ void StubPrecode::Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocator)
 {
     WRAPPER_NO_CONTRACT;
 
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+    bool jitWriteEnabled = PAL_JITWriteEnable(true);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
+
     int n = 0;
 
     m_rgCode[n++] = 0x10000089; // adr x9, #16
@@ -579,6 +583,10 @@ void StubPrecode::Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocator)
 
     m_pTarget = GetPreStubEntryPoint();
     m_pMethodDesc = (TADDR)pMD;
+
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+    PAL_JITWriteEnable(jitWriteEnabled);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
 }
 
 #ifdef FEATURE_NATIVE_IMAGE_GENERATION
@@ -602,6 +610,10 @@ void NDirectImportPrecode::Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocat
 {
     WRAPPER_NO_CONTRACT;
 
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+    bool jitWriteEnabled = PAL_JITWriteEnable(true);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
+
     int n = 0;
 
     m_rgCode[n++] = 0x1000008B; // adr x11, #16
@@ -612,6 +624,10 @@ void NDirectImportPrecode::Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocat
 
     m_pTarget = GetEEFuncEntryPoint(NDirectImportThunk);
     m_pMethodDesc = (TADDR)pMD;
+
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+    PAL_JITWriteEnable(jitWriteEnabled);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
 }
 
 #ifdef FEATURE_NATIVE_IMAGE_GENERATION

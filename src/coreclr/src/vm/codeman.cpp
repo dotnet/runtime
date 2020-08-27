@@ -1917,6 +1917,10 @@ void CodeFragmentHeap::RealBackoutMem(void *pMem
 
     _ASSERTE(dwSize >= sizeof(FreeBlock));
 
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+    bool jitWriteEnabled = PAL_JITWriteEnable(true);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
+
     ZeroMemory((BYTE *)pMem, dwSize);
 
     //
@@ -1947,6 +1951,10 @@ void CodeFragmentHeap::RealBackoutMem(void *pMem
     }
 
     AddBlock(pMem, dwSize);
+
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+    PAL_JITWriteEnable(jitWriteEnabled);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
 }
 #endif // !CROSSGEN_COMPILE
 
@@ -4831,6 +4839,10 @@ void ExecutionManager::Unload(LoaderAllocator *pLoaderAllocator)
         GC_NOTRIGGER;
     } CONTRACTL_END;
 
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+    bool jitWriteEnabled = PAL_JITWriteEnable(true);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
+
     // a size of 0 is a signal to Nirvana to flush the entire cache
     FlushInstructionCache(GetCurrentProcess(),0,0);
 
@@ -4850,6 +4862,10 @@ void ExecutionManager::Unload(LoaderAllocator *pLoaderAllocator)
     }
 
     GetEEJitManager()->Unload(pLoaderAllocator);
+
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+    PAL_JITWriteEnable(jitWriteEnabled);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
 }
 
 // This method is used by the JIT and the runtime for PreStubs. It will return
