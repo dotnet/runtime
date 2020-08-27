@@ -8,10 +8,13 @@ include(CheckFunctionExists)
 include(TestBigEndian)
 include(FindPkgConfig)
 
+include("cmake/QuietOSXRanlib.cmake")
+
 set(CMAKE_MODULE_PATH
   ${CMAKE_MODULE_PATH}
   "${CMAKE_CURRENT_SOURCE_DIR}/cmake"
   )
+set(CMAKE_INSTALL_MESSAGE LAZY)
 
 find_program(CCACHE_PROGRAM ccache)
 if(CCACHE_PROGRAM)
