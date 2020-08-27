@@ -26,6 +26,8 @@ namespace System
 
             _string = uri ?? string.Empty;
 
+            Debug.Assert(_originalUnicodeString is null && _info is null && _syntax is null && _flags == Flags.Zero);
+
             if (dontEscape)
                 _flags |= Flags.UserEscaped;
 
