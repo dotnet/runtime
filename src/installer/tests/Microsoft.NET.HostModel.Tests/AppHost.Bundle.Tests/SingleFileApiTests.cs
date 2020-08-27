@@ -9,7 +9,6 @@ namespace AppHost.Bundle.Tests
     public class SingleFileApiTests : IClassFixture<SingleFileApiTests.SharedTestState>
     {
         private SharedTestState sharedTestState;
-        private const string fixtureProjectName = "SingleFileApiTests";
 
         public SingleFileApiTests(SharedTestState fixture)
         {
@@ -51,7 +50,7 @@ namespace AppHost.Bundle.Tests
         }
 
         [Fact]
-        public void AppContext_Deps_Files_Bundled_Non_Framework_Dependent()
+        public void AppContext_Deps_Files_Bundled_Self_Contained()
         {
             var fixture = sharedTestState.TestFixture.Copy();
             var singleFile = BundleHelper.BundleApp(fixture);
@@ -63,27 +62,9 @@ namespace AppHost.Bundle.Tests
                 .Should()
                 .Pass()
                 .And
-                .NotHaveStdOutContaining($"{fixtureProjectName}.deps.json")
+                .NotHaveStdOutContaining("SingleFileApiTests.deps.json")
                 .And
                 .NotHaveStdOutContaining("Microsoft.NETCore.App.deps.json");
-        }
-
-        [Fact]
-        public void AppContext_Deps_Files_Bundled_Framework_Dependent()
-        {
-            var fixture = sharedTestState.TestFrameworkDependentFixture.Copy();
-            var singleFile = BundleHelper.BundleApp(fixture);
-
-            Command.Create(singleFile, "appcontext")
-                .CaptureStdErr()
-                .CaptureStdOut()
-                .Execute()
-                .Should()
-                .Pass()
-                .And
-                .NotHaveStdOutContaining($"{fixtureProjectName}.deps.json")
-                .And
-                .HaveStdOutContaining("Microsoft.NETCore.App.deps.json");
         }
 
         [Fact]
@@ -132,23 +113,15 @@ namespace AppHost.Bundle.Tests
             public SharedTestState()
             {
                 RepoDirectories = new RepoDirectoriesProvider();
-                TestFixture = new TestProjectFixture(fixtureProjectName, RepoDirectories);
+                TestFixture = new TestProjectFixture("SingleFileApiTests", RepoDirectories);
                 TestFixture
                     .EnsureRestoredForRid(TestFixture.CurrentRid, RepoDirectories.CorehostPackages)
                     .PublishProject(runtime: TestFixture.CurrentRid, outputDirectory: BundleHelper.GetPublishPath(TestFixture));
-
-                TestFrameworkDependentFixture = new TestProjectFixture(fixtureProjectName, RepoDirectories);
-                TestFrameworkDependentFixture
-                    .EnsureRestoredForRid(TestFrameworkDependentFixture.CurrentRid, RepoDirectories.CorehostPackages)
-                    .PublishProject(runtime: TestFrameworkDependentFixture.CurrentRid,
-                                    selfContained: false,
-                                    outputDirectory: BundleHelper.GetPublishPath(TestFrameworkDependentFixture));
             }
 
             public void Dispose()
             {
                 TestFixture.Dispose();
-                TestFrameworkDependentFixture.Dispose();
             }
         }
     }
