@@ -887,7 +887,7 @@ namespace System.Net.Security
         --*/
         internal SecurityStatusPal Encrypt(ReadOnlyMemory<byte> buffer, ref byte[] output, out int resultSize)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.DumpBuffer(this, buffer, "Encrypt");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.DumpBuffer(this, buffer);
 
             byte[] writeBuffer = output;
 
