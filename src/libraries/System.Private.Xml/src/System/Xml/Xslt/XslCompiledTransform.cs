@@ -4,7 +4,6 @@
 // <spec>http://webdata/xml/specs/XslCompiledTransform.xml</spec>
 //------------------------------------------------------------------------------
 
-#nullable enable
 using System.CodeDom.Compiler;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
