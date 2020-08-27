@@ -130,7 +130,10 @@ namespace Microsoft.Extensions.FileProviders.Physical
             }
 
             IChangeToken changeToken = GetOrAddChangeToken(filter);
-            TryEnableFileSystemWatcher();
+            if (!PollForChanges)
+            {
+                TryEnableFileSystemWatcher();
+            }
 
             return changeToken;
         }
