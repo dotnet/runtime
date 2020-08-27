@@ -203,6 +203,8 @@ namespace System.Net.Http
             return Interlocked.Exchange(ref _sendStatus, MessageAlreadySent) == MessageNotYetSent;
         }
 
+        internal bool WasSentByHttpClient() => _sendStatus == MessageAlreadySent;
+
         #region IDisposable Members
 
         protected virtual void Dispose(bool disposing)

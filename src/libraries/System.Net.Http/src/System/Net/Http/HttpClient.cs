@@ -423,15 +423,6 @@ namespace System.Net.Http
             }
         }
 
-        private static bool LogRequestAborted(bool telemetryStarted)
-        {
-            if (HttpTelemetry.Log.IsEnabled() && telemetryStarted)
-            {
-                HttpTelemetry.Log.RequestAborted();
-            }
-            return false;
-        }
-
         #endregion Simple Get Overloads
 
         #region REST Send Overloads
@@ -684,7 +675,6 @@ namespace System.Net.Http
                     if (async)
                     {
                         await response.Content.LoadIntoBufferAsync(_maxResponseContentBufferSize, cts.Token).ConfigureAwait(false);
-
                     }
                     else
                     {

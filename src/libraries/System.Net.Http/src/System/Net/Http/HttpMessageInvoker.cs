@@ -41,7 +41,26 @@ namespace System.Net.Http
             }
             CheckDisposed();
 
-            return _handler.Send(request, cancellationToken);
+            if (HttpTelemetry.Log.IsEnabled() && !request.WasSentByHttpClient())
+            {
+                try
+                {
+                    return _handler.Send(request, cancellationToken);
+                }
+                catch when (LogRequestAborted(telemetryStarted: true))
+                {
+                    // Unreachable as LogRequestAborted will return false
+                    throw;
+                }
+                finally
+                {
+                    HttpTelemetry.Log.RequestStop();
+                }
+            }
+            else
+            {
+                return _handler.Send(request, cancellationToken);
+            }
         }
 
         public virtual Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
@@ -53,7 +72,40 @@ namespace System.Net.Http
             }
             CheckDisposed();
 
+            if (HttpTelemetry.Log.IsEnabled() && !request.WasSentByHttpClient())
+            {
+                return SendAsyncWithTelemetry(_handler, request, cancellationToken);
+            }
+
             return _handler.SendAsync(request, cancellationToken);
+
+            static async Task<HttpResponseMessage> SendAsyncWithTelemetry(HttpMessageHandler handler, HttpRequestMessage request, CancellationToken cancellationToken)
+            {
+                HttpTelemetry.Log.RequestStart(request);
+
+                try
+                {
+                    return await handler.SendAsync(request, cancellationToken).ConfigureAwait(false);
+                }
+                catch when (LogRequestAborted(telemetryStarted: true))
+                {
+                    // Unreachable as LogRequestAborted will return false
+                    throw;
+                }
+                finally
+                {
+                    HttpTelemetry.Log.RequestStop();
+                }
+            }
+        }
+
+        internal static bool LogRequestAborted(bool telemetryStarted)
+        {
+            if (HttpTelemetry.Log.IsEnabled() && telemetryStarted)
+            {
+                HttpTelemetry.Log.RequestAborted();
+            }
+            return false;
         }
 
         public void Dispose()

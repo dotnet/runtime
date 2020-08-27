@@ -30,12 +30,18 @@ namespace System.Net.Http.Functional.Tests
             Assert.NotEmpty(EventSource.GenerateManifest(esType, esType.Assembly.Location));
         }
 
+        public static IEnumerable<object[]> TestMethods_MemberData()
+        {
+            yield return new object[] { "Get" };
+            yield return new object[] { "String" };
+            yield return new object[] { "ByteArray" };
+            yield return new object[] { "Stream" };
+            yield return new object[] { "Invoker" };
+        }
+
         [OuterLoop]
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [InlineData("Get")]
-        [InlineData("String")]
-        [InlineData("ByteArray")]
-        [InlineData("Stream")]
+        [MemberData(nameof(TestMethods_MemberData))]
         public void EventSource_SuccessfulRequest_LogsStartStop(string testMethod)
         {
             RemoteExecutor.Invoke(async (useVersionString, testMethod) =>
@@ -49,7 +55,8 @@ namespace System.Net.Http.Functional.Tests
                     await GetFactoryForVersion(version).CreateClientAndServerAsync(
                         async uri =>
                         {
-                            using HttpClient client = CreateHttpClient(useVersionString);
+                            using HttpClientHandler handler = CreateHttpClientHandler(useVersionString);
+                            using HttpClient client = CreateHttpClient(handler, useVersionString);
 
                             switch (testMethod)
                             {
@@ -67,6 +74,17 @@ namespace System.Net.Http.Functional.Tests
 
                                 case "Stream":
                                     await client.GetStreamAsync(uri);
+                                    break;
+
+                                case "Invoker":
+                                    using (var invoker = new HttpMessageInvoker(handler))
+                                    {
+                                        var request = new HttpRequestMessage(HttpMethod.Get, uri)
+                                        {
+                                            Version = version
+                                        };
+                                        await invoker.SendAsync(request, cancellationToken: default);
+                                    }
                                     break;
                             }
                         },
@@ -105,7 +123,10 @@ namespace System.Net.Http.Functional.Tests
 
                 Assert.Single(events, e => e.EventName == "ResponseHeadersBegin");
 
-                Assert.Single(events, e => e.EventName == "ResponseContentBegin");
+                if (testMethod != "Invoker")
+                {
+                    Assert.Single(events, e => e.EventName == "ResponseContentBegin");
+                }
 
                 VerifyEventCounters(events, requestCount: 1, shouldHaveFailures: false);
             }, UseVersion.ToString(), testMethod).Dispose();
@@ -113,14 +134,12 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop]
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [InlineData("Get")]
-        [InlineData("String")]
-        [InlineData("ByteArray")]
-        [InlineData("Stream")]
+        [MemberData(nameof(TestMethods_MemberData))]
         public void EventSource_UnsuccessfulRequest_LogsStartAbortedStop(string testMethod)
         {
             RemoteExecutor.Invoke(async (useVersionString, testMethod) =>
             {
+                Version version = Version.Parse(useVersionString);
                 using var listener = new TestEventListener("System.Net.Http", EventLevel.Verbose, eventCounterInterval: 0.1d);
 
                 var events = new ConcurrentQueue<EventWrittenEventArgs>();
@@ -129,10 +148,11 @@ namespace System.Net.Http.Functional.Tests
                     var semaphore = new SemaphoreSlim(0, 1);
                     var cts = new CancellationTokenSource();
 
-                    await GetFactoryForVersion(Version.Parse(useVersionString)).CreateClientAndServerAsync(
+                    await GetFactoryForVersion(version).CreateClientAndServerAsync(
                         async uri =>
                         {
-                            using HttpClient client = CreateHttpClient(useVersionString);
+                            using HttpClientHandler handler = CreateHttpClientHandler(useVersionString);
+                            using HttpClient client = CreateHttpClient(handler, useVersionString);
 
                             switch (testMethod)
                             {
@@ -150,6 +170,17 @@ namespace System.Net.Http.Functional.Tests
 
                                 case "Stream":
                                     await Assert.ThrowsAsync<TaskCanceledException>(async () => await client.GetStreamAsync(uri, cts.Token));
+                                    break;
+
+                                case "Invoker":
+                                    using (var invoker = new HttpMessageInvoker(handler))
+                                    {
+                                        var request = new HttpRequestMessage(HttpMethod.Get, uri)
+                                        {
+                                            Version = version
+                                        };
+                                        await Assert.ThrowsAsync<TaskCanceledException>(async () => await invoker.SendAsync(request, cts.Token));
+                                    }
                                     break;
                             }
 
