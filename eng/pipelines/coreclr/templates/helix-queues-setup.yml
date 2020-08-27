@@ -128,4 +128,8 @@ jobs:
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
         - Windows.10.Arm64
 
+    # WebAssembly
+    - ${{ if eq(parameters.platform, 'Browser_wasm') }}:
+      - Ubuntu.1804.Amd64.Open
+
     ${{ insert }}: ${{ parameters.jobParameters }}

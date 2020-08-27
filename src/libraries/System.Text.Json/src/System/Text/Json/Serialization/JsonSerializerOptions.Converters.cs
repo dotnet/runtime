@@ -18,8 +18,6 @@ namespace System.Text.Json
         // The global list of built-in simple converters.
         private static readonly Dictionary<Type, JsonConverter> s_defaultSimpleConverters = GetDefaultSimpleConverters();
 
-        private static readonly Type s_nullableOfTType = typeof(Nullable<>);
-
         // The global list of built-in converters that override CanConvert().
         private static readonly JsonConverter[] s_defaultFactoryConverters = new JsonConverter[]
         {
@@ -186,7 +184,7 @@ namespace System.Text.Json
             // We also throw to avoid passing an invalid argument to setters for nullable struct properties,
             // which would cause an InvalidProgramException when the generated IL is invoked.
             // This is not an issue of the converter is wrapped in NullableConverter<T>.
-            if (IsNullableType(runtimePropertyType) && !IsNullableType(converter.TypeToConvert))
+            if (runtimePropertyType.IsNullableType() && !converter.TypeToConvert.IsNullableType())
             {
                 ThrowHelper.ThrowInvalidOperationException_ConverterCanConvertNullableRedundant(runtimePropertyType, converter);
             }
@@ -274,8 +272,8 @@ namespace System.Text.Json
 
             Type converterTypeToConvert = converter.TypeToConvert;
 
-            if (!converterTypeToConvert.IsAssignableFrom(typeToConvert) &&
-                !typeToConvert.IsAssignableFrom(converterTypeToConvert))
+            if (!converterTypeToConvert.IsAssignableFromInternal(typeToConvert)
+                && !typeToConvert.IsAssignableFromInternal(converterTypeToConvert))
             {
                 ThrowHelper.ThrowInvalidOperationException_SerializationConverterNotCompatible(converter.GetType(), typeToConvert);
             }
@@ -366,9 +364,5 @@ namespace System.Text.Json
             return default;
         }
 
-        private static bool IsNullableType(Type type)
-        {
-            return type.IsGenericType && type.GetGenericTypeDefinition() == s_nullableOfTType;
-        }
     }
 }
