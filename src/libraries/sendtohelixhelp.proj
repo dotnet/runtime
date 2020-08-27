@@ -99,8 +99,8 @@
       </PropertyGroup>
       <!-- Tell VSTest where to put dump files. -->
       <ItemGroup>
-        <HelixPreCommand Condition="'$(TargetsWindows)' == 'true'" Include="set VSTEST_DUMP_PATH='%HELIX_DUMP_FOLDER%'" />
-        <HelixPreCommand Condition="'$(TargetsWindows)' != 'true'" Include="export VSTEST_DUMP_PATH='$HELIX_DUMP_FOLDER'" />
+        <HelixPreCommand Condition="'$(TargetsWindows)' == 'true'" Include="set VSTEST_DUMP_PATH='%HELIX_WORKITEM_UPLOAD_ROOT%'" />
+        <HelixPreCommand Condition="'$(TargetsWindows)' != 'true'" Include="export VSTEST_DUMP_PATH='$HELIX_WORKITEM_UPLOAD_ROOT'" />
       </ItemGroup>
     </When>
     <Otherwise>
