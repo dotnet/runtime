@@ -950,6 +950,9 @@
       <MonoCMakeArgs Condition="'$(MonoBuildTool)' == 'ninja'" Include="-G Ninja"/>
       <MonoCMakeArgs Include="-DCMAKE_INSTALL_PREFIX=$(MonoObjDir)out"/>
     </ItemGroup>
+    <ItemGroup Condition="'$(TargetsOSX)' == 'true'">
+      <MonoCMakeArgs Include="-DCMAKE_C_FLAGS=-mmacosx-version-min=10.12"/>
+    </ItemGroup>
     <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
       <MonoCMakeArgs Include="-DENABLE_MINIMAL=ssa,com,jit,reflection_emit_save,portability,assembly_remapping,attach,verifier,full_messages,appdomains,shadowcopy,security,sgen_marksweep_conc,sgen_split_nursery,sgen_gc_bridge,sgen_toggleref,logging,remoting,shared_perfcounters,sgen_debug_helpers,sgen_binary_protocol,soft_debug,interpreter,assert_messages,cleanup,mdb,gac,threads,eventpipe,aot,interpreter"/>
       <MonoCMakeArgs Include="-DENABLE_INTERP_LIB=1"/>
