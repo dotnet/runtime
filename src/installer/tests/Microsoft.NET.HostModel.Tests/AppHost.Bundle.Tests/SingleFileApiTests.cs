@@ -71,7 +71,7 @@ namespace AppHost.Bundle.Tests
         [Fact]
         public void AppContext_Deps_Files_Bundled_Framework_Dependent()
         {
-            var fixture = sharedTestState.FrameworkDependentTestFixture.Copy();
+            var fixture = sharedTestState.TestFrameworkDependentFixture.Copy();
             var singleFile = BundleHelper.BundleApp(fixture);
 
             Command.Create(singleFile, "appcontext")
@@ -126,7 +126,7 @@ namespace AppHost.Bundle.Tests
         public class SharedTestState : IDisposable
         {
             public TestProjectFixture TestFixture { get; set; }
-            public TestProjectFixture FrameworkDependentTestFixture { get; set; }
+            public TestProjectFixture TestFrameworkDependentFixture { get; set; }
             public RepoDirectoriesProvider RepoDirectories { get; set; }
 
             public SharedTestState()
@@ -137,18 +137,18 @@ namespace AppHost.Bundle.Tests
                     .EnsureRestoredForRid(TestFixture.CurrentRid, RepoDirectories.CorehostPackages)
                     .PublishProject(runtime: TestFixture.CurrentRid, outputDirectory: BundleHelper.GetPublishPath(TestFixture));
 
-                FrameworkDependentTestFixture = new TestProjectFixture(fixtureProjectName, RepoDirectories);
-                FrameworkDependentTestFixture
-                    .EnsureRestoredForRid(FrameworkDependentTestFixture.CurrentRid, RepoDirectories.CorehostPackages)
-                    .PublishProject(runtime: FrameworkDependentTestFixture.CurrentRid,
+                TestFrameworkDependentFixture = new TestProjectFixture(fixtureProjectName, RepoDirectories);
+                TestFrameworkDependentFixture
+                    .EnsureRestoredForRid(TestFrameworkDependentFixture.CurrentRid, RepoDirectories.CorehostPackages)
+                    .PublishProject(runtime: TestFrameworkDependentFixture.CurrentRid,
                                     selfContained: false,
-                                    outputDirectory: BundleHelper.GetPublishPath(FrameworkDependentTestFixture));
+                                    outputDirectory: BundleHelper.GetPublishPath(TestFrameworkDependentFixture));
             }
 
             public void Dispose()
             {
                 TestFixture.Dispose();
-                FrameworkDependentTestFixture.Dispose();
+                TestFrameworkDependentFixture.Dispose();
             }
         }
     }
