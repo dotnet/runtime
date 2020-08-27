@@ -693,6 +693,11 @@
       <_MonoCXXFLAGS Include="-Wl,--build-id=sha1" />
     </ItemGroup>
 
+    <!-- CI-specific build options -->
+    <ItemGroup Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(TargetsOSX)' == 'true'">
+      <_MonoConfigureParams Include="--enable-werror" />
+    </ItemGroup>
+
     <ItemGroup Condition="'$(MonoCrossDir)' != '' and ('$(TargetArchitecture)' == 'arm' Or '$(TargetArchitecture)' == 'arm64')">
       <_MonoConfigureParams Include="--host=$(_MonoTuple)" />
       <_MonoConfigureParams Include="--target=$(_MonoTuple)" />

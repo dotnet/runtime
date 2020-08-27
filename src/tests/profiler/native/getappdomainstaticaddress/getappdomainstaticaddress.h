@@ -88,6 +88,8 @@ private:
     std::atomic<int> refCount;
     std::atomic<ULONG32> failures;
     std::atomic<ULONG32> successes;
+    std::atomic<ULONG32> collectibleCount;
+    std::atomic<ULONG32> nonCollectibleCount;
 
     std::atomic<int> jitEventCount;
     std::thread gcTriggerThread;

@@ -68,7 +68,6 @@
     <Compile Include="DateTimeOffsetConverterTests.cs" />
     <Compile Include="DecimalConverterTests.cs" />
     <Compile Include="DefaultEventAttributeTests.cs" />
-    <Compile Include="EditorAttributeTests.cs" />
     <Compile Include="DesignTimeVisibleAttributeTests.cs" />
     <Compile Include="DefaultPropertyAttributeTests.cs" />
     <Compile Include="Design\DesignerTransactionCloseEventArgsTests.cs" />

@@ -9,7 +9,7 @@ namespace System.ComponentModel
     [AttributeUsage(AttributeTargets.All, AllowMultiple = true, Inherited = true)]
     public sealed class EditorAttribute : Attribute
     {
-        private string _typeId;
+        private string? _typeId;
 
         /// <summary>
         /// Initializes a new instance of the <see cref='System.ComponentModel.EditorAttribute'/> class
@@ -25,7 +25,7 @@ namespace System.ComponentModel
         /// Initializes a new instance of the <see cref='System.ComponentModel.EditorAttribute'/> class with the type name and base type
         /// name of the editor.
         /// </summary>
-        public EditorAttribute(string typeName, string baseTypeName)
+        public EditorAttribute(string typeName, string? baseTypeName)
         {
             EditorTypeName = typeName ?? throw new ArgumentNullException(nameof(typeName));
             EditorBaseTypeName = baseTypeName;
@@ -63,14 +63,14 @@ namespace System.ComponentModel
                 throw new ArgumentNullException(nameof(baseType));
             }
 
-            EditorTypeName = type.AssemblyQualifiedName;
+            EditorTypeName = type.AssemblyQualifiedName!;
             EditorBaseTypeName = baseType.AssemblyQualifiedName;
         }
 
         /// <summary>
         /// Gets the name of the base class or interface serving as a lookup key for this editor.
         /// </summary>
-        public string EditorBaseTypeName { get; }
+        public string? EditorBaseTypeName { get; }
 
         /// <summary>
         /// Gets the name of the editor class.
@@ -102,7 +102,7 @@ namespace System.ComponentModel
             }
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             if (obj == this)
             {

@@ -10,6 +10,36 @@
  * @property {object} o - value parsed as JSON
  */
 
+/**
+ * @typedef WasmRoot - a single address in the managed heap, visible to the GC
+ * @type {object}
+ * @property {ManagedPointer} value - pointer into the managed heap, stored in the root
+ * @property {function} get_address - retrieves address of the root in wasm memory
+ * @property {function} get - retrieves pointer value
+ * @property {function} set - updates the pointer
+ * @property {function} release - releases the root storage for future use
+ */
+
+/**
+ * @typedef WasmRootBuffer - a collection of addresses in the managed heap, visible to the GC
+ * @type {object}
+ * @property {number} length - number of elements the root buffer can hold
+ * @property {function} get_address - retrieves address of an element in wasm memory, by index
+ * @property {function} get - retrieves an element by index
+ * @property {function} set - sets an element's value by index
+ * @property {function} release - releases the root storage for future use
+ */
+
+/**
+ * @typedef ManagedPointer
+ * @type {number} - address in the managed heap
+ */
+
+/**
+ * @typedef NativePointer
+ * @type {number} - address in wasm memory
+ */
+
 var MonoSupportLib = {
 	$MONO__postset: 'MONO.export_functions (Module);',
 	$MONO: {
@@ -50,19 +80,35 @@ var MonoSupportLib = {
 		},
 
 		_mono_wasm_root_buffer_prototype: {
+			_check_in_range: function (index) {
+				if ((index >= this.__count) || (index < 0))
+					throw new Error ("index out of range");
+			},
+			/** @returns {NativePointer} */
+			get_address: function (index) {
+				this._check_in_range (index);
+				return this.__offset + (index * 4);
+			},
+			/** @returns {number} */
+			get_address_32: function (index) {
+				this._check_in_range (index);
+				return this.__offset32 + index;
+			},
+			/** @returns {ManagedPointer} */
 			get: function (index) {
-				return Module.HEAP32[this.__offset32 + index];
+				this._check_in_range (index);				
+				return Module.HEAP32[this.get_address_32 (index)];
 			},
 			set: function (index, value) {
-				var absoluteOffset = this.__offset32 + index;
-				Module.HEAP32[absoluteOffset] = value;
+				this._check_in_range (index);
+				Module.HEAP32[this.get_address_32 (index)] = value;
 				return value;
 			},
 			release: function () {
 				if (this.__offset) {
 					MONO.mono_wasm_deregister_root (this.__offset);
-					MONO._fill_region (this.__offset, this.__count * 4, 0);
-					Module.free (this.__offset);
+					MONO._zero_region (this.__offset, this.__count * 4);
+					Module._free (this.__offset);
 				}
 
 				this.__handle = this.__offset = this.__count = this.__offset32 = undefined;
@@ -73,6 +119,15 @@ var MonoSupportLib = {
 		_scratch_root_free_indices: null,
 
 		_mono_wasm_root_prototype: {
+			/** @returns {NativePointer} */
+			get_address: function () {
+				return this.__buffer.get_address (this.__index);
+			},
+			/** @returns {number} */
+			get_address_32: function () {
+				return this.__buffer.get_address_32 (this.__index);
+			},
+			/** @returns {ManagedPointer} */
 			get: function () {
 				var result = this.__buffer.get (this.__index);
 				return result;
@@ -81,6 +136,7 @@ var MonoSupportLib = {
 				this.__buffer.set (this.__index, value);
 				return value;
 			},
+			/** @returns {ManagedPointer} */
 			valueOf: function () {
 				return this.get ();
 			},
@@ -109,9 +165,9 @@ var MonoSupportLib = {
 					this._scratch_root_free_indices[i] = i;
 				this._scratch_root_free_indices.reverse ();
 
-				Object.defineProperty (MONO._mono_wasm_root_prototype, "value", {
-					get: MONO._mono_wasm_root_prototype.get,
-					set: MONO._mono_wasm_root_prototype.set,
+				Object.defineProperty (this._mono_wasm_root_prototype, "value", {
+					get: this._mono_wasm_root_prototype.get,
+					set: this._mono_wasm_root_prototype.set,
 					configurable: false
 				});
 			}
@@ -123,49 +179,61 @@ var MonoSupportLib = {
 			return result;
 		},
 
-		_zero_region: function (byteOffset, sizeBytes, value) {
+		_zero_region: function (byteOffset, sizeBytes) {
 			(new Uint8Array (Module.HEAPU8.buffer, byteOffset, sizeBytes)).fill (0);
 		},
 
-		// Allocates a block of memory that can safely contain pointers into the managed heap.
-		// The result object has get(index) and set(index, value) methods that can be used to retrieve and store managed pointers.
-		// Once you are done using the root buffer, you must call its release() method.
-		// For small numbers of roots, it is preferable to use the mono_wasm_new_root and mono_wasm_new_roots APIs instead.
+		/**
+		 * Allocates a block of memory that can safely contain pointers into the managed heap.
+		 * The result object has get(index) and set(index, value) methods that can be used to retrieve and store managed pointers.
+		 * Once you are done using the root buffer, you must call its release() method.
+		 * For small numbers of roots, it is preferable to use the mono_wasm_new_root and mono_wasm_new_roots APIs instead.
+		 * @param {number} capacity - the maximum number of elements the buffer can hold.
+		 * @param {string} [msg] - a description of the root buffer (for debugging)
+		 * @returns {WasmRootBuffer}
+		 */
 		mono_wasm_new_root_buffer: function (capacity, msg) {
-			if (!MONO.mono_wasm_register_root || !MONO.mono_wasm_deregister_root) {
-				MONO.mono_wasm_register_root = Module.cwrap ("mono_wasm_register_root", "number", ["number", "number", "string"]);
-				MONO.mono_wasm_deregister_root = Module.cwrap ("mono_wasm_deregister_root", null, ["number"]);
+			if (!this.mono_wasm_register_root || !this.mono_wasm_deregister_root) {
+				this.mono_wasm_register_root = Module.cwrap ("mono_wasm_register_root", "number", ["number", "number", "string"]);
+				this.mono_wasm_deregister_root = Module.cwrap ("mono_wasm_deregister_root", null, ["number"]);
 			}
 
 			if (capacity <= 0)
 				throw new Error ("capacity >= 1");
+
+			capacity = capacity | 0;
 				
 			var capacityBytes = capacity * 4;
 			var offset = Module._malloc (capacityBytes);
 			if ((offset % 4) !== 0)
 				throw new Error ("Malloc returned an unaligned offset");
 
-			this._zero_region (offset, capacityBytes, 0);
+			this._zero_region (offset, capacityBytes);
 
-			var result = Object.create (MONO._mono_wasm_root_buffer_prototype);
+			var result = Object.create (this._mono_wasm_root_buffer_prototype);
 			result.__offset = offset;
-			result.__offset32 = offset / 4;
+			result.__offset32 = (offset / 4) | 0;
 			result.__count = capacity;	
-			result.__handle = MONO.mono_wasm_register_root (offset, capacityBytes, msg || 0);
+			result.length = capacity;
+			result.__handle = this.mono_wasm_register_root (offset, capacityBytes, msg || 0);
 
 			return result;
 		},
 
-		// Allocates temporary storage for a pointer into the managed heap.
-		// Pointers stored here will be visible to the GC, ensuring that the object they point to aren't moved or collected.
-		// If you already have a managed pointer you can pass it as an argument to initialize the temporary storage.
-		// The result object has get() and set(value) methods, along with a .value property.
-		// When you are done using the root you must call its .release() method.
+		/**
+		 * Allocates temporary storage for a pointer into the managed heap.
+		 * Pointers stored here will be visible to the GC, ensuring that the object they point to aren't moved or collected.
+		 * If you already have a managed pointer you can pass it as an argument to initialize the temporary storage.
+		 * The result object has get() and set(value) methods, along with a .value property.
+		 * When you are done using the root you must call its .release() method.
+		 * @param {ManagedPointer} [value] - an address in the managed heap to initialize the root with (or 0)
+		 * @returns {WasmRoot}
+		 */
 		mono_wasm_new_root: function (value) {
 			var index = this._mono_wasm_claim_scratch_index ();
 			var buffer = this._scratch_root_buffer;
 				
-			var result = Object.create (MONO._mono_wasm_root_prototype);
+			var result = Object.create (this._mono_wasm_root_prototype);
 			result.__buffer = buffer;
 			result.__index = index;
 
@@ -181,10 +249,14 @@ var MonoSupportLib = {
 			return result;
 		},
 
-		// Allocates 1 or more temporary roots, accepting either a number of roots or an array of pointers.
-		// mono_wasm_new_roots(n): returns an array of N zero-initialized roots.
-		// mono_wasm_new_roots([a, b, ...]) returns an array of new roots initialized with each element.
-		// Each root must be released with its release method, or using the mono_wasm_release_roots API.
+		/**
+		 * Allocates 1 or more temporary roots, accepting either a number of roots or an array of pointers.
+		 * mono_wasm_new_roots(n): returns an array of N zero-initialized roots.
+		 * mono_wasm_new_roots([a, b, ...]) returns an array of new roots initialized with each element.
+		 * Each root must be released with its release method, or using the mono_wasm_release_roots API.
+		 * @param {(number | ManagedPointer[])} count_or_values - either a number of roots or an array of pointers
+		 * @returns {WasmRoot[]}
+		 */
 		mono_wasm_new_roots: function (count_or_values) {
 			var result;
 
@@ -203,10 +275,13 @@ var MonoSupportLib = {
 			return result;
 		},
 
-		// Releases 1 or more root or root buffer objects.
-		// Multiple objects may be passed on the argument list.
-		// 'undefined' may be passed as an argument so it is safe to call this method from finally blocks
-		//  even if you are not sure all of your roots have been created yet.
+		/**
+		 * Releases 1 or more root or root buffer objects.
+		 * Multiple objects may be passed on the argument list.
+		 * 'undefined' may be passed as an argument so it is safe to call this method from finally blocks
+		 *  even if you are not sure all of your roots have been created yet.
+		 * @param {... WasmRoot} roots 
+		 */
 		mono_wasm_release_roots: function () {
 			for (var i = 0; i < arguments.length; i++) {
 				if (!arguments[i])

@@ -29,8 +29,8 @@ namespace System.Threading.Threads.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void ConstructorTest()
         {
-            const int SmallStackSizeBytes = 64 << 10; // 64 KB, currently accepted in all supported platforms, and is the PAL minimum
-            const int LargeStackSizeBytes = 16 << 20; // 16 MB
+            const int SmallStackSizeBytes = 128 << 10; // 128 KB
+            const int LargeStackSizeBytes = 16 << 20;  // 16 MB
 
             int pageSizeBytes = Environment.SystemPageSize;
 

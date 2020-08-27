@@ -3847,6 +3847,7 @@ main_loop:
 			frame->state.ip = ip + 6;
 			ves_pinvoke_method (csignature, (MonoFuncV)code, context, frame, &retval, save_last_error, cache, sp);
 
+			EXCEPTION_CHECKPOINT_GC_UNSAFE;
 			CHECK_RESUME_STATE (context);
 
 			if (csignature->ret->type != MONO_TYPE_VOID) {
