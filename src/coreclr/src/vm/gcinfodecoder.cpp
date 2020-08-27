@@ -1686,7 +1686,17 @@ OBJECTREF* GcInfoDecoder::GetCapturedRegister(
     PREGDISPLAY     pRD
     )
 {
-    _ASSERTE(regNum >= 0 && regNum <= 28);
+    _ASSERTE(regNum >= 0 && regNum <= 30);
+    _ASSERTE(regNum != 18);
+
+    if(regNum == 29)
+    {
+        return (OBJECTREF*) &pRD->pCurrentContext->Fp;
+    }
+    else if(regNum == 30)
+    {
+        return (OBJECTREF*) &pRD->pCurrentContext->Lr;
+    }
 
     // The fields of CONTEXT are in the same order as
     // the processor encoding numbers.
