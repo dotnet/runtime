@@ -375,9 +375,7 @@ mono_assemblies_unlock ()
 /* If defined, points to the bundled assembly information */
 static const MonoBundledAssembly **bundles;
 
-#ifdef ENABLE_NETCORE
 static const MonoBundledSatelliteAssembly **satellite_bundles;
-#endif
 
 static mono_mutex_t assembly_binding_mutex;
 
@@ -1773,48 +1771,24 @@ leave:
 	return reference;
 }
 
-MonoImage *
-netcore_open_from_bundle (MonoAssemblyLoadContext *alc, const char *filename, MonoImageOpenStatus *status, gboolean refonly, const char* culture)
+static MonoImage *
+netcore_open_from_satellite_bundle (MonoAssemblyLoadContext *alc, const char *filename, MonoImageOpenStatus *status, gboolean refonly, const char *culture)
 {
+	if (!satellite_bundles)
+		return NULL;
+
 	int i;
-	char *name;
 	MonoImage *image = NULL;
-	gboolean is_satellite = culture && culture[0] != 0;
-
-	if (!is_satellite)
-	{
-		if (!bundles)
-			return NULL;
-
-		name = g_path_get_basename (filename);
-		for (i = 0; !image && bundles [i]; ++i) {
-			if (strcmp (bundles [i]->name, name) == 0) {
-				image = mono_image_open_from_data_internal (alc, (char*)bundles [i]->data, bundles [i]->size, FALSE, status, refonly, FALSE, name, NULL);
-				break;
-			}
+	char *name = g_strdup (filename);
+	for (i = 0; !image && satellite_bundles [i]; ++i) {
+		if (strcmp (satellite_bundles [i]->name, name) == 0 && strcmp (satellite_bundles [i]->culture, culture) == 0) {
+			image = mono_image_open_from_data_internal (alc, (char *)satellite_bundles [i]->data, satellite_bundles [i]->size, FALSE, status, refonly, FALSE, name, NULL);
+			break;
 		}
 	}
-	else
-	{
-		if (!satellite_bundles)
-			return NULL;
-		
-		name = strdup(filename);
-		for (i = 0; !image && satellite_bundles [i]; ++i) {
-			if (strcmp (satellite_bundles [i]->culture, culture) == 0 && strcmp (satellite_bundles [i]->name, name) == 0) {
-				image = mono_image_open_from_data_internal (alc, (char*)satellite_bundles [i]->data, satellite_bundles [i]->size, FALSE, status, refonly, FALSE, name, NULL);
-				break;
-			}
-		}
-	}
-	if (image) {
-		mono_image_addref (image);
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Assembly Loader loaded assembly from bundle: '%s'.", name);
-		g_free (name);
-		return image;
-	}
+
 	g_free (name);
-	return NULL;
+	return image;
 }
 
 #endif /* ENABLE_NETCORE */
@@ -2562,6 +2536,31 @@ absolute_dir (const gchar *filename)
 	return res;
 }
 
+static MonoImage *
+open_from_bundle_internal (MonoAssemblyLoadContext *alc, const char *filename, MonoImageOpenStatus *status, gboolean refonly, gboolean is_satellite)
+{
+	if (!bundles)
+		return NULL;
+
+	int i;
+	MonoImage *image = NULL;
+	char *name = is_satellite ? g_strdup(filename) : g_path_get_basename (filename);
+	for (i = 0; !image && bundles [i]; ++i) {
+		if (strcmp (bundles [i]->name, name) == 0) {
+#ifdef ENABLE_NETCORE
+			// Since bundled images don't exist on disk, don't give them a legit filename
+			image = mono_image_open_from_data_internal (alc, (char*)bundles [i]->data, bundles [i]->size, FALSE, status, refonly, FALSE, name, NULL);
+#else
+			image = mono_image_open_from_data_internal (alc, (char*)bundles [i]->data, bundles [i]->size, FALSE, status, refonly, FALSE, name, name);
+#endif
+			break;
+		}
+	}
+
+	g_free (name);
+	return image;
+}
+
 /** 
  * mono_assembly_open_from_bundle:
  * \param filename Filename requested
@@ -2572,44 +2571,36 @@ absolute_dir (const gchar *filename)
  * returns NULL
  */
 MonoImage *
-mono_assembly_open_from_bundle (MonoAssemblyLoadContext *alc, const char *filename, MonoImageOpenStatus *status, gboolean refonly, const char* culture)
+mono_assembly_open_from_bundle (MonoAssemblyLoadContext *alc, const char *filename, MonoImageOpenStatus *status, gboolean refonly, const char *culture)
 {
-#ifdef ENABLE_NETCORE
-	return netcore_open_from_bundle (alc, filename, status, refonly, culture);
-#else
 	/*
 	 * we do a very simple search for bundled assemblies: it's not a general 
 	 * purpose assembly loading mechanism.
 	 */
-	int i;
-	char *name;
 	MonoImage *image = NULL;
-	gchar *lowercase_filename;
-	gboolean is_satellite = FALSE;
-
+#ifndef ENABLE_NETCORE
 	if (!bundles)
 		return NULL;
 
-	lowercase_filename = g_utf8_strdown (filename, -1);
-	is_satellite = g_str_has_suffix (lowercase_filename, ".resources.dll");
+	gchar *lowercase_filename = g_utf8_strdown (filename, -1);
+	gboolean is_satellite = g_str_has_suffix (lowercase_filename, ".resources.dll");
 	g_free (lowercase_filename);
-	name = g_path_get_basename (filename);
-	for (i = 0; !image && bundles [i]; ++i) {
-		if (strcmp (bundles [i]->name, is_satellite ? filename : name) == 0) {
-			image = mono_image_open_from_data_internal (alc, (char*)bundles [i]->data, bundles [i]->size, FALSE, status, refonly, FALSE, name, name);
-			break;
-		}
+	image = open_from_bundle_internal (alc, filename, status, refonly, is_satellite);
+#else
+	gboolean is_satellite = culture && culture [0] != 0;;
+	if (is_satellite)
+	{
+		image = netcore_open_from_satellite_bundle (alc, filename, status, refonly, culture);
+	} else {
+		image = open_from_bundle_internal (alc, filename, status, refonly, FALSE);
 	}
+#endif
+
 	if (image) {
 		mono_image_addref (image);
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Assembly Loader loaded assembly from bundle: '%s'.", is_satellite ? filename : name);
-		g_free (name);
-		return image;
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Assembly Loader loaded assembly from bundle: '%s'.", filename);
 	}
-	g_free (name);
-	return NULL;
-
-#endif /* ENABLE_NETCORE */
+	return image;
 }
 
 /**
@@ -2763,11 +2754,7 @@ mono_assembly_request_open (const char *filename, const MonoAssemblyOpenRequest 
 
 	// If VM built with mkbundle
 	loaded_from_bundle = FALSE;
-#ifdef ENABLE_NETCORE
 	if (bundles != NULL || satellite_bundles != NULL) {
-#else
-	if (bundles != NULL) {
-#endif
 		image = mono_assembly_open_from_bundle (load_req.alc, fname, status, refonly, NULL);
 		loaded_from_bundle = image != NULL;
 	}
@@ -5352,17 +5339,15 @@ mono_register_bundled_assemblies (const MonoBundledAssembly **assemblies)
 	bundles = assemblies;
 }
 
-#ifdef ENABLE_NETCORE
-
 /**
  * mono_create_new_bundled_satellite_assembly:
  */
-MONO_API MonoBundledSatelliteAssembly *
+MonoBundledSatelliteAssembly *
 mono_create_new_bundled_satellite_assembly (const char *name, const char *culture, const unsigned char *data, unsigned int size)
 {
 	MonoBundledSatelliteAssembly *satellite_assembly = g_new0 (MonoBundledSatelliteAssembly, 1);
-	satellite_assembly->name = strdup(name);
-	satellite_assembly->culture = strdup(culture);
+	satellite_assembly->name = strdup (name);
+	satellite_assembly->culture = strdup (culture);
 	satellite_assembly->data = data;
 	satellite_assembly->size = size;
 	return satellite_assembly;
@@ -5374,10 +5359,10 @@ mono_create_new_bundled_satellite_assembly (const char *name, const char *cultur
 void
 mono_register_bundled_satellite_assemblies (const MonoBundledSatelliteAssembly **assemblies)
 {
+#ifdef ENABLE_NETCORE
 	satellite_bundles = assemblies;
+#endif
 }
-
-#endif /* ENABLE_NETCORE */
 
 #define MONO_DECLSEC_FORMAT_10		0x3C
 #define MONO_DECLSEC_FORMAT_20		0x2E

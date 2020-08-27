@@ -1279,8 +1279,7 @@ var MonoSupportLib = {
 				else
 					console.error ("Error loading ICU asset", asset.name);
 			}
-			else if(asset.behavior === "resource")
-			{
+			else if (asset.behavior === "resource") {
 				ctx.mono_wasm_add_satellite_assembly (virtualName, asset.culture, offset, bytes.length);
 			}
 		},
@@ -1530,8 +1529,7 @@ var MonoSupportLib = {
 					if (sourcePrefix.trim() === "") {
 						if (asset.behavior === "assembly")
 							attemptUrl = locateFile (args.assembly_root + "/" + asset.name);
-						else if (asset.behavior === "resource")
-						{
+						else if (asset.behavior === "resource") {
 							var path = asset.culture !== '' ? `${asset.culture}/${asset.name}` : asset.name;
 							attemptUrl = locateFile (args.assembly_root + "/" + path);
 						}

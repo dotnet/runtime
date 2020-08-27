@@ -1846,9 +1846,8 @@ mono_image_loaded_by_guid (const char *guid)
 	return mono_image_loaded_by_guid_internal (guid, FALSE);
 }
 
-#ifdef ENABLE_NETCORE
 static const char *
-mono_get_image_culture (MonoImage *image)
+get_image_culture (MonoImage *image)
 {
 	MonoTableInfo *t = &image->tables [MONO_TABLE_ASSEMBLY];
 	if (!t->rows)
@@ -1858,58 +1857,63 @@ mono_get_image_culture (MonoImage *image)
 	mono_metadata_decode_row (t, 0, cols, MONO_ASSEMBLY_SIZE);
 	return mono_metadata_string_heap (image, cols [MONO_ASSEMBLY_CULTURE]);
 }
-#endif
 
 char *
 mono_image_get_name_with_culture_if_needed (MonoImage *image)
 {
-#ifndef ENABLE_NETCORE
-	return NULL;
-#else
 	if (!g_str_has_prefix (image->name, "data-") &&
 		!g_path_is_absolute (image->name))
 	{
-		const char *culture = mono_get_image_culture (image);
+		const char *culture = get_image_culture (image);
 
-		if (culture && culture[0] != 0)
-			return g_strdup_printf ("(%s)%s", culture, image->name);
+		if (culture && culture [0] != 0)
+			return g_strdup_printf ("%s/%s", culture, image->name);
 	}
 
 	return NULL;
-#endif
 }
 
 static MonoImage *
 register_image (MonoLoadedImages *li, MonoImage *image, gboolean *problematic)
 {
 	MonoImage *image2;
+	char *name = image->name;
+#ifdef ENABLE_NETCORE
 	char *name_with_culture = mono_image_get_name_with_culture_if_needed (image);
+	if (name_with_culture) {
+		name = name_with_culture;
+	}
+#endif
 	GHashTable *loaded_images = mono_loaded_images_get_hash (li, image->ref_only);
 
 	mono_images_lock ();
-	image2 = (MonoImage *)g_hash_table_lookup (loaded_images, name_with_culture != NULL ? name_with_culture : image->name);
+	image2 = (MonoImage *)g_hash_table_lookup (loaded_images, name);
 
 	if (image2) {
 		/* Somebody else beat us to it */
 		mono_image_addref (image2);
 		mono_images_unlock ();
 		mono_image_close (image);
+#ifdef ENABLE_NETCORE
 		g_free (name_with_culture);
+#endif
 		return image2;
 	}
 
 	GHashTable *loaded_images_by_name = mono_loaded_images_get_by_name_hash (li, image->ref_only);
-	g_hash_table_insert (loaded_images, name_with_culture != NULL ? name_with_culture : image->name, image);
+	g_hash_table_insert (loaded_images, name, image);
 	if (image->assembly_name && (g_hash_table_lookup (loaded_images_by_name, image->assembly_name) == NULL))
 		g_hash_table_insert (loaded_images_by_name, (char *) image->assembly_name, image);
 	mono_images_unlock ();
 
 	if (mono_is_problematic_image (image)) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Registering %s, problematic image '%s'", image->ref_only ? "REFONLY" : "default", name_with_culture != NULL ? name_with_culture : image->name);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Registering %s, problematic image '%s'", image->ref_only ? "REFONLY" : "default", name);
 		if (problematic)
 			*problematic = TRUE;
 	}
+#ifdef ENABLE_NETCORE
 	g_free (name_with_culture);
+#endif
 	return image;
 }
 
