@@ -100,7 +100,7 @@ namespace System.Xml
         public abstract void WriteFullEndElement();
 
         // Writes out the attribute with the specified LocalName, value, and NamespaceURI.
-        public void WriteAttributeString(string localName, string? ns, string value)
+        public void WriteAttributeString(string localName, string? ns, string? value)
         {
             WriteStartAttribute(null, localName, ns);
             WriteString(value);
@@ -108,7 +108,7 @@ namespace System.Xml
         }
 
         // Writes out the attribute with the specified LocalName and value.
-        public void WriteAttributeString(string localName, string value)
+        public void WriteAttributeString(string localName, string? value)
         {
             WriteStartAttribute(null, localName, (string?)null);
             WriteString(value);

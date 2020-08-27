@@ -1071,8 +1071,8 @@ namespace System.Xml
         public override void ResolveEntity() { }
         public override void Skip() { }
         System.Collections.Generic.IDictionary<string, string> System.Xml.IXmlNamespaceResolver.GetNamespacesInScope(System.Xml.XmlNamespaceScope scope) { throw null; }
-        string System.Xml.IXmlNamespaceResolver.LookupNamespace(string prefix) { throw null; }
-        string System.Xml.IXmlNamespaceResolver.LookupPrefix(string namespaceName) { throw null; }
+        string? System.Xml.IXmlNamespaceResolver.LookupNamespace(string prefix) { throw null; }
+        string? System.Xml.IXmlNamespaceResolver.LookupPrefix(string namespaceName) { throw null; }
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public partial class XmlTextWriter : System.Xml.XmlWriter
@@ -1245,10 +1245,10 @@ namespace System.Xml
         public virtual void WriteAttributes(System.Xml.XmlReader reader, bool defattr) { }
         [System.Diagnostics.DebuggerStepThroughAttribute]
         public virtual System.Threading.Tasks.Task WriteAttributesAsync(System.Xml.XmlReader reader, bool defattr) { throw null; }
-        public void WriteAttributeString(string localName, string value) { }
-        public void WriteAttributeString(string localName, string? ns, string value) { }
+        public void WriteAttributeString(string localName, string? value) { }
+        public void WriteAttributeString(string localName, string? ns, string? value) { }
         public void WriteAttributeString(string? prefix, string localName, string? ns, string? value) { }
-        public System.Threading.Tasks.Task WriteAttributeStringAsync(string? prefix, string localName, string? ns, string value) { throw null; }
+        public System.Threading.Tasks.Task WriteAttributeStringAsync(string? prefix, string localName, string? ns, string? value) { throw null; }
         public abstract void WriteBase64(byte[] buffer, int index, int count);
         public virtual System.Threading.Tasks.Task WriteBase64Async(byte[] buffer, int index, int count) { throw null; }
         public virtual void WriteBinHex(byte[] buffer, int index, int count) { }
