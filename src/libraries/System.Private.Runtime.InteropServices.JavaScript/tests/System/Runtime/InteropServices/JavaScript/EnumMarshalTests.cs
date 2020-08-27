@@ -11,15 +11,15 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
     {
         public enum RequestCache
         {
-            [Export(EnumValue = ConvertEnum.Default)]
+            [EnumExport(EnumValue = ConvertEnum.Default)]
             Default = -1,
-            [Export("no-store")]
+            [EnumExport("no-store")]
             NoStore,
-            [Export(EnumValue = ConvertEnum.ToUpper)]
+            [EnumExport(EnumValue = ConvertEnum.ToUpper)]
             Reload,
-            [Export(EnumValue = ConvertEnum.ToLower)]
+            [EnumExport(EnumValue = ConvertEnum.ToLower)]
             NoCache,
-            [Export("force-cache")]
+            [EnumExport("force-cache")]
             ForceCache,
             OnlyIfCached = -3636,
         }
@@ -27,15 +27,15 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public enum StyleColor : uint
         {
             RedNoExport,
-            [Export(EnumValue = ConvertEnum.Default)]
+            [EnumExport(EnumValue = ConvertEnum.Default)]
             Red = 0xff0000ff,
-            [Export(EnumValue = ConvertEnum.Numeric)]
+            [EnumExport(EnumValue = ConvertEnum.Numeric)]
             GreenNumeric = 0x00ff00ff,
-            [Export("red", EnumValue = ConvertEnum.ToUpper)]
+            [EnumExport("red", EnumValue = ConvertEnum.ToUpper)]
             RedUpperCase,
-            [Export("RED", EnumValue = ConvertEnum.ToLower)]
+            [EnumExport("RED", EnumValue = ConvertEnum.ToLower)]
             RedLowerCase,
-            [Export("#ff0000")]
+            [EnumExport("#ff0000")]
             RedHex
         }
 

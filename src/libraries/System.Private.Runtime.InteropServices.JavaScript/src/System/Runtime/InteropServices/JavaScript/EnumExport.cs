@@ -15,21 +15,21 @@ namespace System.Runtime.InteropServices.JavaScript
 
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Property | AttributeTargets.Method | AttributeTargets.Field,
             AllowMultiple = true, Inherited = false)]
-    public class ExportAttribute : Attribute
+    public class EnumExportAttribute : Attribute
     {
-        public ExportAttribute() : this(null, null)
+        public EnumExportAttribute() : this(null, null)
         {
         }
 
-        public ExportAttribute(Type contractType) : this(null, contractType)
+        public EnumExportAttribute(Type contractType) : this(null, contractType)
         {
         }
 
-        public ExportAttribute(string contractName) : this(contractName, null)
+        public EnumExportAttribute(string contractName) : this(contractName, null)
         {
         }
 
-        public ExportAttribute(string? contractName, Type? contractType)
+        public EnumExportAttribute(string? contractName, Type? contractType)
         {
             ContractName = contractName;
             ContractType = contractType;

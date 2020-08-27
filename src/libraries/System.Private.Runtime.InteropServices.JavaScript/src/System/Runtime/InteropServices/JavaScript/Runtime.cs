@@ -439,8 +439,8 @@ namespace System.Runtime.InteropServices.JavaScript
                     if (fi.IsSpecialName)
                         continue;
 
-                    ExportAttribute[] attributes =
-                        (ExportAttribute[])fi.GetCustomAttributes(typeof(ExportAttribute), false);
+                    EnumExportAttribute[] attributes =
+                        (EnumExportAttribute[])fi.GetCustomAttributes(typeof(EnumExportAttribute), false);
 
                     ConvertEnum enumConversionType = ConvertEnum.Default;
 
@@ -495,8 +495,8 @@ namespace System.Runtime.InteropServices.JavaScript
             if (fi == null)
                 return string.Empty;
 
-            ExportAttribute[] attributes =
-                (ExportAttribute[])fi.GetCustomAttributes(typeof(ExportAttribute), false);
+            EnumExportAttribute[] attributes =
+                (EnumExportAttribute[])fi.GetCustomAttributes(typeof(EnumExportAttribute), false);
 
             ConvertEnum enumConversionType = ConvertEnum.Default;
 
