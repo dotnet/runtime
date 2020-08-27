@@ -432,7 +432,7 @@ namespace System.Xml
             return task;
         }
 
-        public override Task WriteProcessingInstructionAsync(string name, string text)
+        public override Task WriteProcessingInstructionAsync(string name, string? text)
         {
             CheckAsync();
             var task = _coreWriter.WriteProcessingInstructionAsync(name, text);
