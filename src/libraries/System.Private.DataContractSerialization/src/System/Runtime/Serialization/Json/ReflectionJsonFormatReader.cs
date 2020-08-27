@@ -142,7 +142,7 @@ namespace System.Runtime.Serialization.Json
             }
 
             ClassDataContract keyValueDataContract = (ClassDataContract)collectionContract.ItemContract;
-            DataContract keyDataContract = keyValueDataContract.Members![0].MemberTypeContract!;
+            DataContract keyDataContract = keyValueDataContract.Members![0].MemberTypeContract;
 
             KeyParseMode keyParseMode = KeyParseMode.Fail;
 

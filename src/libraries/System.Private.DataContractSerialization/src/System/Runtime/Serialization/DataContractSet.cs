@@ -241,13 +241,11 @@ namespace System.Runtime.Serialization
             return dataContract;
         }
 
-        internal DataContract? GetMemberTypeDataContract(DataMember dataMember)
+        internal DataContract GetMemberTypeDataContract(DataMember dataMember)
         {
-            if (dataMember.MemberInfo != null)
+            Type dataMemberType = dataMember.MemberType;
+            if (dataMember.IsGetOnlyCollection)
             {
-                Type dataMemberType = dataMember.MemberType;
-                if (dataMember.IsGetOnlyCollection)
-                {
 #if SUPPORT_SURROGATE
                     if (_dataContractSurrogate != null)
                     {
@@ -259,14 +257,12 @@ namespace System.Runtime.Serialization
                         }
                     }
 #endif
-                    return DataContract.GetGetOnlyCollectionDataContract(DataContract.GetId(dataMemberType.TypeHandle), dataMemberType.TypeHandle, dataMemberType, SerializationMode.SharedContract);
-                }
-                else
-                {
-                    return GetDataContract(dataMemberType);
-                }
+                return DataContract.GetGetOnlyCollectionDataContract(DataContract.GetId(dataMemberType.TypeHandle), dataMemberType.TypeHandle, dataMemberType, SerializationMode.SharedContract);
             }
-            return dataMember.MemberTypeContract;
+            else
+            {
+                return GetDataContract(dataMemberType);
+            }
         }
 
         internal DataContract GetItemTypeDataContract(CollectionDataContract collectionContract)

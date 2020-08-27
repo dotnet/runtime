@@ -73,7 +73,7 @@ namespace System.Runtime.Serialization
                 if (member.MemberInfo.Name == memberNode.Name && member.MemberInfo.DeclaringType!.IsAssignableFrom(memberNode.DeclaringType))
                 {
                     context.WriteChildToContext(member, prefix);
-                    return member.MemberTypeContract!;
+                    return member.MemberTypeContract;
                 }
             }
             throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.QueryGeneratorPathToMemberNotFound));

@@ -87,7 +87,7 @@ namespace System.Runtime.Serialization
             { return _helper.MemberType; }
         }
 
-        internal DataContract? MemberTypeContract
+        internal DataContract MemberTypeContract
         {
             get
             { return _helper.MemberTypeContract; }
@@ -219,29 +219,26 @@ namespace System.Runtime.Serialization
                         if (field != null)
                             _memberType = field.FieldType;
                         else
-                            _memberType = ((PropertyInfo)MemberInfo!).PropertyType;
+                            _memberType = ((PropertyInfo)MemberInfo).PropertyType;
                     }
 
                     return _memberType;
                 }
             }
 
-            internal DataContract? MemberTypeContract
+            internal DataContract MemberTypeContract
             {
                 get
                 {
                     if (_memberTypeContract == null)
                     {
-                        if (MemberInfo != null)
+                        if (this.IsGetOnlyCollection)
                         {
-                            if (this.IsGetOnlyCollection)
-                            {
-                                _memberTypeContract = DataContract.GetGetOnlyCollectionDataContract(DataContract.GetId(MemberType.TypeHandle), MemberType.TypeHandle, MemberType, SerializationMode.SharedContract);
-                            }
-                            else
-                            {
-                                _memberTypeContract = DataContract.GetDataContract(MemberType);
-                            }
+                            _memberTypeContract = DataContract.GetGetOnlyCollectionDataContract(DataContract.GetId(MemberType.TypeHandle), MemberType.TypeHandle, MemberType, SerializationMode.SharedContract);
+                        }
+                        else
+                        {
+                            _memberTypeContract = DataContract.GetDataContract(MemberType);
                         }
                     }
                     return _memberTypeContract;
