@@ -88,4 +88,80 @@ namespace System.Text.Json.Serialization.Tests
             _list.RemoveAt(index);
         }
     }
+
+    public struct StructWrapperForIDictionary : IDictionary
+    {
+        private Dictionary<string, object> _dictionary;
+
+        private void InitializeIfNull()
+        {
+            if (_dictionary == null)
+            {
+                _dictionary = new Dictionary<string, object>();
+            }
+        }
+
+        public object this[object key]
+        {
+            get
+            {
+                InitializeIfNull();
+                return ((IDictionary)_dictionary)[key];
+            }
+            set
+            {
+                InitializeIfNull();
+                ((IDictionary)_dictionary)[key] = value;
+            }
+        }
+
+        public bool IsFixedSize => ((IDictionary)_dictionary).IsFixedSize;
+
+        public bool IsReadOnly => false;
+
+        public ICollection Keys => ((IDictionary)_dictionary).Keys;
+
+        public ICollection Values => ((IDictionary)_dictionary).Values;
+
+        public int Count => _dictionary.Count;
+
+        public bool IsSynchronized => ((IDictionary)_dictionary).IsSynchronized;
+
+        public object SyncRoot => ((IDictionary)_dictionary).SyncRoot;
+
+        public void Add(object key, object value)
+        {
+            ((IDictionary)_dictionary).Add(key, value);
+        }
+
+        public void Clear()
+        {
+            _dictionary.Clear();
+        }
+
+        public bool Contains(object key)
+        {
+            return ((IDictionary)_dictionary).Contains(key);
+        }
+
+        public void CopyTo(Array array, int index)
+        {
+            ((IDictionary)_dictionary).CopyTo(array, index);
+        }
+
+        public IDictionaryEnumerator GetEnumerator()
+        {
+            return ((IDictionary)_dictionary).GetEnumerator();
+        }
+
+        public void Remove(object key)
+        {
+            ((IDictionary)_dictionary).Remove(key);
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return ((IDictionary)_dictionary).GetEnumerator();
+        }
+    }
 }

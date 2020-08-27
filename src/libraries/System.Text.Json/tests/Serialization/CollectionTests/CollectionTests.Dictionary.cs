@@ -249,6 +249,18 @@ namespace System.Text.Json.Serialization.Tests
                 json = JsonSerializer.Serialize<object>(obj);
                 Assert.Equal(JsonString, json);
             }
+
+            {
+                GenericStructIDictionaryWrapper<string, string> obj = JsonSerializer.Deserialize<GenericStructIDictionaryWrapper<string, string>>(JsonString);
+                Assert.Equal("World", obj["Hello"]);
+                Assert.Equal("World2", obj["Hello2"]);
+
+                string json = JsonSerializer.Serialize(obj);
+                Assert.Equal(JsonString, json);
+
+                json = JsonSerializer.Serialize<object>(obj);
+                Assert.Equal(JsonString, json);
+            }
         }
 
         [Fact]

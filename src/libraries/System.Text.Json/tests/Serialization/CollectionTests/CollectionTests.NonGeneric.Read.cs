@@ -146,6 +146,14 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public static void ReadStructIDictionary()
+        {
+            string json = @"{""Key"":""Value""}";
+            var wrapper = JsonSerializer.Deserialize<StructWrapperForIDictionary>(json);
+            Assert.Equal("Value", wrapper["Key"].ToString());
+        }
+
+        [Fact]
         public static void ReadPrimitiveIList()
         {
             IList result = JsonSerializer.Deserialize<IList>(Encoding.UTF8.GetBytes(@"[1,2]"));

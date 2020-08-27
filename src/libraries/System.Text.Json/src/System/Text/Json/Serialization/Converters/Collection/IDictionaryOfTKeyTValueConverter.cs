@@ -16,7 +16,7 @@ namespace System.Text.Json.Serialization.Converters
     {
         protected override void Add(TKey key, in TValue value, JsonSerializerOptions options, ref ReadStack state)
         {
-            ((TCollection)state.Current.ReturnValue!)[key] = value;
+            ((IDictionary<TKey, TValue>)state.Current.ReturnValue!)[key] = value;
         }
 
         protected override void CreateCollection(ref Utf8JsonReader reader, ref ReadStack state)
