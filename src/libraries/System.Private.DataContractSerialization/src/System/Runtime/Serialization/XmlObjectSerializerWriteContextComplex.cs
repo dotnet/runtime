@@ -47,7 +47,7 @@ namespace System.Runtime.Serialization
             return false;
         }
 
-        internal override bool WriteClrTypeInfo(XmlWriterDelegator xmlWriter, Type dataContractType, string clrTypeName, string clrAssemblyName)
+        internal override bool WriteClrTypeInfo(XmlWriterDelegator xmlWriter, Type dataContractType, string? clrTypeName, string? clrAssemblyName)
         {
             return false;
         }

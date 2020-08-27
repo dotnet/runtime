@@ -298,7 +298,7 @@ namespace System.Runtime.Serialization
                     if (writeXsiType || !TryWritePrimitive(memberType, memberValue, member.MemberInfo, arrayItemIndex: null, ns: namespaceLocal, name: null, nameIndex: i + _childElementIndex))
                     {
                         WriteStartElement(memberType, classContract.Namespace, namespaceLocal, nameLocal: null, nameIndex: i + _childElementIndex);
-                        if (classContract.ChildElementNamespaces[i + _childElementIndex] != null)
+                        if (classContract.ChildElementNamespaces![i + _childElementIndex] != null)
                         {
                             _ilg.Load(_xmlWriterArg);
                             _ilg.LoadArrayElement(_childElementNamespacesLocal!, i + _childElementIndex);
@@ -473,8 +473,8 @@ namespace System.Runtime.Serialization
                     }
                     else if (isGenericDictionary)
                     {
-                        Type ctorParam = Globals.TypeOfIEnumeratorGeneric.MakeGenericType(Globals.TypeOfKeyValuePair.MakeGenericType(keyValueTypes));
-                        ConstructorInfo dictEnumCtor = enumeratorType.GetConstructor(Globals.ScanAllMembers, new Type[] { ctorParam });
+                        Type ctorParam = Globals.TypeOfIEnumeratorGeneric.MakeGenericType(Globals.TypeOfKeyValuePair.MakeGenericType(keyValueTypes!));
+                        ConstructorInfo dictEnumCtor = enumeratorType.GetConstructor(Globals.ScanAllMembers, new Type[] { ctorParam })!;
                         _ilg.ConvertValue(collectionContract.GetEnumeratorMethod.ReturnType, ctorParam);
                         _ilg.New(dictEnumCtor);
                     }
