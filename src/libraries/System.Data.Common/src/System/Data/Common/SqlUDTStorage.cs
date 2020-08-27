@@ -170,10 +170,10 @@ namespace System.Data.Common
         {
             if (null == xmlAttrib)
             {
-                string typeName = xmlReader.GetAttribute(Keywords.MSD_INSTANCETYPE, Keywords.MSDNS);
+                string? typeName = xmlReader.GetAttribute(Keywords.MSD_INSTANCETYPE, Keywords.MSDNS);
                 if (typeName == null)
                 {
-                    string xsdTypeName = xmlReader.GetAttribute(Keywords.MSD_INSTANCETYPE, Keywords.XSINS); // this xsd type
+                    string? xsdTypeName = xmlReader.GetAttribute(Keywords.MSD_INSTANCETYPE, Keywords.XSINS); // this xsd type
                     if (null != xsdTypeName)
                     {
                         typeName = XSDSchema.XsdtoClr(xsdTypeName).FullName!;
