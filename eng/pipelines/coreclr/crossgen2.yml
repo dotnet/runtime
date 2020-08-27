@@ -57,3 +57,40 @@ jobs:
       crossgen2: true
       displayNameArgs: R2R_CG2
       liveLibrariesBuildConfig: Release
+
+
+# Tests for cross compile correctness, these use a release build
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
+    buildConfig: release
+    platforms:
+    - Windows_NT_arm64
+    - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
+    jobParameters:
+      testGroup: innerloop
+
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
+    buildConfig: release
+    platforms:
+    - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
+    jobParameters:
+      testGroup: innerloop
+      liveLibrariesBuildConfig: Release
+
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
+    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+    buildConfig: release
+    platforms:
+    - Windows_NT_arm64
+    jobParameters:
+      testGroup: innerloop
+      readyToRun: true
+      crossgen2: true
+      crossgen_crosscomp_verification: true
+      displayNameArgs: R2R_CG2_CROSSCOMP
+      liveLibrariesBuildConfig: Release

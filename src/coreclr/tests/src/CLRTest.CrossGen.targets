@@ -21,6 +21,10 @@ WARNING:   When setting properties based on their current state (for example:
   <PropertyGroup>
     <BashScriptSnippetGen>$(BashScriptSnippetGen);GetCrossgenBashScript</BashScriptSnippetGen>
     <BatchScriptSnippetGen>$(BatchScriptSnippetGen);GetCrossgenBatchScript</BatchScriptSnippetGen>
+    <CrossGen2TargetOS Condition="'$(__TargetOS)' == 'Windows_NT'">windows</CrossGen2TargetOS>
+    <CrossGen2TargetOS Condition="'$(__TargetOS)' == 'Linux'">linux</CrossGen2TargetOS>
+    <CrossGen2TargetOS Condition="'$(__TargetOS)' == 'Linux_musl'">linux</CrossGen2TargetOS>
+    <CrossGen2TargetOS Condition="'$(__TargetOS)' == 'OSX'">osx</CrossGen2TargetOS>
   </PropertyGroup>
   
   <!--
@@ -205,6 +209,10 @@ if defined RunCrossGen (
 REM CrossGen2 Script
 if defined RunCrossGen2 (
     set ExtraCrossGen2Args=!ExtraCrossGen2Args! $(CrossGen2TestExtraArguments)
+    if defined GenerateSha1Hashes (
+        mkdir !GenerateSha1Hashes!\$(BuildProjectRelativeDir)
+        del !GenerateSha1Hashes!\$(BuildProjectRelativeDir)\sha1hashes.txt
+    )
 
     if defined LargeVersionBubble ( set ExtraCrossGen2Args=!ExtraCrossGen2Args! --inputbubble)
     call :TakeLock
@@ -259,12 +267,18 @@ if defined RunCrossGen2 (
     ) else (
         set __Command=!__Command! "dotnet"
     )
+    if defined __TestCrossGen2Dll (
+        set __Command=!__Command! "!__TestCrossGen2Dll!"
+    ) else (
+        set __Command=!__Command! "!CORE_ROOT!\crossgen2\crossgen2.dll"
+    )
     set __Command=!__Command! "!CORE_ROOT!\crossgen2\crossgen2.dll"
     set __Command=!__Command! @"!__ResponseFile!"
     set __Command=!__Command! !ExtraCrossGen2Args!
     echo !__InputFile!>>!__ResponseFile!
     echo -o:!__OutputFile!>>!__ResponseFile!
     echo --targetarch:$(TargetArchitecture)>>!__ResponseFile!
+    echo --targetos:$(CrossGen2TargetOS)>>!__ResponseFile!
     echo --verify-type-and-field-layout>>!__ResponseFile!
     echo -O>>!__ResponseFile!
     echo -r:!CORE_ROOT!\System.*.dll>>!__ResponseFile!
@@ -282,6 +296,10 @@ if defined RunCrossGen2 (
     set COMPlus_HeapVerify=!__heapVerifyModeToRestore!
     set COMPlus_ReadyToRun=!__readyToRunModeToRestore!
 
+    if defined GenerateSha1Hashes (
+       call :Sha1Sum !__OutputFile! >> !GenerateSha1Hashes!\$(BuildProjectRelativeDir)\sha1hashes.txt
+    )
+
     Exit /b 0
 
 :DoneCrossgen2Operations
@@ -290,7 +308,43 @@ if defined RunCrossGen2 (
         ECHO Crossgen2 failed with exitcode - !CrossGen2Status!
         Exit /b 1
     )
+
+    if defined CheckSha1Hashes (
+        fc !CheckSha1Hashes!\$(BuildProjectRelativeDir)\sha1hashes.txt !GenerateSha1Hashes!\$(BuildProjectRelativeDir)\sha1hashes.txt 
+        if ERRORLEVEL 1 (
+          ECHO END CROSSGEN HASHCOMPARE - FAILED
+          ECHO FAILED
+          popd
+          Exit /b 1
+        )
+        ECHO END CROSSGEN HASHCOMPARE - PASSED
+        ECHO PASSED
+        popd
+        Exit /b 0
+    )
+
+    ECHO CROSSGEN HASHGENERATE - !GenerateSha1Hashes!
+    if defined GenerateSha1Hashes (
+        ECHO END CROSSGEN HASHGENERATE - PASSED
+        ECHO PASSED
+        popd
+        Exit /b 0
+    )
 )
+
+goto :AfterSha1Sum
+:Sha1Sum
+@SETLOCAL ENABLEDELAYEDEXPANSION
+@echo off
+
+for %%F in (%1) do (
+    for /f "tokens=* USEBACKQ" %%A in (`certutil -hashfile "%%F" ^| find /v "hashfile" ^| find /v "SHA1"`) DO (
+      SET var=%%A
+    )
+    echo !var!  %%~nxF
+)
+Exit /b 0
+:AfterSha1Sum
         ]]>
       </CrossgenBatchScript>
 

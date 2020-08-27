@@ -60,6 +60,9 @@ jobs:
     - name: binTestsPath
       value: '$(Build.SourcesDirectory)/artifacts/tests/coreclr'
 
+    - name: targetFlavor
+      value: '$(osGroup).$(archType).$(buildConfigUpper)'
+
     # Build product defines what we are trying to build, either coreclr or mono
     - name: buildProductArtifactName
       value: 'CoreCLRProduct_${{ parameters.runtimeVariant }}_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'

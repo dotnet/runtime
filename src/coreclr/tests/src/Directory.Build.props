@@ -24,7 +24,7 @@
 
   <!-- Setup the default output and intermediate paths -->
   <PropertyGroup>
-    <BaseOutputPath>$(RepoRoot)\artifacts\tests\coreclr</BaseOutputPath>
+    <BaseOutputPath>$(RepoRoot)artifacts\tests\coreclr</BaseOutputPath>
     <BaseOutputPath Condition="'$(__TestRootDir)' != ''">$(__TestRootDir)</BaseOutputPath>
     <BaseOutputPathWithConfig>$(BaseOutputPath)\$(OSPlatformConfig)\</BaseOutputPathWithConfig>
     <BinDir>$(BaseOutputPathWithConfig)</BinDir>

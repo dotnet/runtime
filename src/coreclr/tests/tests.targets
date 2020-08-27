@@ -55,6 +55,7 @@
       <CorerunExecutable Condition="'$(RunningOnUnix)' == 'true'"  >$(CORE_ROOT)\corerun</CorerunExecutable>
       <CorerunExecutable Condition="'$(RunningOnUnix)' != 'true'">$(CORE_ROOT)\corerun.exe</CorerunExecutable>
       <CorerunExecutable Condition="'$(TargetArchitecture)' == 'wasm'"> $(DotnetRoot)/dotnet</CorerunExecutable>
+      <CorerunExecutable Condition="'$(__TestDotNetCmd)' != ''">$(__TestDotNetCmd)</CorerunExecutable>
     </PropertyGroup>
 
     <!-- Work around cmd command length limit by using relative paths
@@ -69,7 +70,9 @@
     <PropertyGroup>
       <XunitCommandLine>$(CorerunExecutable) $(XunitConsoleRunner) @(TestAssemblies->'%(Identity)', ' ') $(XunitArgs)</XunitCommandLine>
     </PropertyGroup>
-
+    <Message Text="$(BaseOutputPath)" Importance="high"/>
+    <Message Text="$(BaseOutputPathWithConfig)" Importance="high"/>
+    <Message Text="@(_TestAssembliesRelative)" Importance="high"/>
     <Exec Command="$(XunitCommandLine)"
           WorkingDirectory="$(BaseOutputPathWithConfig)"/>
 

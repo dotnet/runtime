@@ -17,6 +17,7 @@ parameters:
   timeoutPerTestInMinutes: ''
   runCrossGen: ''
   runCrossGen2: ''
+  compareAgainstSha1Hashes: ''
   compositeBuildMode: false
   helixProjectArguments: ''
   runInUnloadableContext: ''
@@ -43,6 +44,7 @@ steps:
       _HelixType: ${{ parameters.helixType }}
       _RunCrossGen: ${{ parameters.runCrossGen }}
       _RunCrossGen2: ${{ parameters.runCrossGen2 }}
+      _CompareAgainstSha1Hashes: ${{ parameters.compareAgainstSha1Hashes }}
       _CompositeBuildMode: ${{ parameters.compositeBuildMode }}
       _RunInUnloadableContext: ${{ parameters.runInUnloadableContext }}
       _LongRunningGcTests: ${{ parameters.longRunningGcTests }}

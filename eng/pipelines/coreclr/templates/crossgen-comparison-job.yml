@@ -47,8 +47,6 @@ jobs:
       - group: DotNet-HelixApi-Access
     - name: hostArchType
       value: x64
-    - name: targetFlavor
-      value: $(osGroup).$(archType).$(buildConfigUpper)
     - name: crossFlavor
       value: $(osGroup).$(hostArchType)_$(archType).$(buildConfigUpper)
     - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
