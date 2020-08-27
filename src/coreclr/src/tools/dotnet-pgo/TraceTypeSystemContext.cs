@@ -360,14 +360,16 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             return _metadataStringDecoder;
         }
 
-        MetadataReader IAssemblyResolver.FindAssembly(MetadataReader metadataReader, AssemblyReferenceHandle assemblyReferenceHandle, string parentFile)
+        IAssemblyMetadata IAssemblyResolver.FindAssembly(MetadataReader metadataReader, AssemblyReferenceHandle assemblyReferenceHandle, string parentFile)
         {
-            return ((EcmaAssembly)this.GetModuleForSimpleName(metadataReader.GetString(metadataReader.GetAssemblyReference(assemblyReferenceHandle).Name), false)).MetadataReader;
+            EcmaAssembly ecmaAssembly = (EcmaAssembly)this.GetModuleForSimpleName(metadataReader.GetString(metadataReader.GetAssemblyReference(assemblyReferenceHandle).Name), false);
+            return new StandaloneAssemblyMetadata(ecmaAssembly.PEReader);
         }
 
-        MetadataReader IAssemblyResolver.FindAssembly(string simpleName, string parentFile)
+        IAssemblyMetadata IAssemblyResolver.FindAssembly(string simpleName, string parentFile)
         {
-            return ((EcmaAssembly)this.GetModuleForSimpleName(simpleName, false)).MetadataReader;
+            EcmaAssembly ecmaAssembly = (EcmaAssembly)this.GetModuleForSimpleName(simpleName, false);
+            return new StandaloneAssemblyMetadata(ecmaAssembly.PEReader);
         }
         bool IAssemblyResolver.Naked => false;
 

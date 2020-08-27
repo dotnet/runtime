@@ -4,6 +4,7 @@
 // WARNING: This file is generated and should not be modified directly.
 // Instead, modify XmlRawTextWriterGeneratorAsync.ttinclude
 
+#nullable disable
 using System;
 using System.IO;
 using System.Xml;
@@ -659,7 +660,6 @@ namespace System.Xml
             {
                 // Move last buffer character to the beginning of the buffer (so that previous character can always be determined)
                 _bufChars[0] = _bufChars[_bufPos - 1];
-
 
                 // Reset buffer position
                 _textPos = (_textPos == _bufPos) ? 1 : 0;

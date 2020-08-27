@@ -743,6 +743,11 @@ namespace System.Net.Http
 
                 _recvBuffer.Discard(bytesRead);
 
+                if (NetEventSource.IsEnabled)
+                {
+                    Trace($"Received frame {frameType} of length {payloadLength}.");
+                }
+
                 switch ((Http3FrameType)frameType)
                 {
                     case Http3FrameType.Headers:

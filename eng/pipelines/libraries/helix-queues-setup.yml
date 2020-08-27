@@ -64,7 +64,7 @@ jobs:
         - ${{ if eq(parameters.jobParameters.isFullMatrix, false) }}:
           - Centos.7.Amd64.Open
           - RedHat.7.Amd64.Open
-          - Debian.9.Amd64.Open
+          - (Debian.10.Amd64.Open)ubuntu.1604.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-10-helix-amd64-bfcd90a-20200121150006
           - Ubuntu.1604.Amd64.Open
           - Ubuntu.1804.Amd64.Open
           - SLES.15.Amd64.Open
@@ -78,12 +78,10 @@ jobs:
       - ${{ if eq(parameters.jobParameters.isFullMatrix, true) }}:
         - OSX.1013.Amd64.Open
         - OSX.1014.Amd64.Open
-        # The 10.15 machines aren't in the same configuration, see
-        # https://github.com/dotnet/runtime/issues/24736
-        #- OSX.1015.Amd64.Open
+        - OSX.1015.Amd64.Open
       - ${{ if eq(parameters.jobParameters.isFullMatrix, false) }}:
-        - OSX.1013.Amd64.Open
         - OSX.1014.Amd64.Open
+        - OSX.1015.Amd64.Open
 
     # Windows_NT x64
     - ${{ if eq(parameters.platform, 'Windows_NT_x64') }}:

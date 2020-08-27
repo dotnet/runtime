@@ -101,7 +101,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                 }
                 else
                 {
-                    ClassName = MetadataNameFormatter.FormatHandle(reader.GetGlobalMetadataReader(), MetadataTokens.Handle((int)ClassTokenOrFilterOffset));
+                    ClassName = MetadataNameFormatter.FormatHandle(reader.GetGlobalMetadata()?.MetadataReader, MetadataTokens.Handle((int)ClassTokenOrFilterOffset));
                 }
             }
         }

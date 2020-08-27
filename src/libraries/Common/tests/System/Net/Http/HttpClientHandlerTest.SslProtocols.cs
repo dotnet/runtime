@@ -142,9 +142,20 @@ namespace System.Net.Http.Functional.Tests
                 yield return new object[] { SslProtocols.Ssl3, Configuration.Http.SSLv3RemoteServer };
             }
 #pragma warning restore 0618
-            yield return new object[] { SslProtocols.Tls, Configuration.Http.TLSv10RemoteServer };
-            yield return new object[] { SslProtocols.Tls11, Configuration.Http.TLSv11RemoteServer };
-            yield return new object[] { SslProtocols.Tls12, Configuration.Http.TLSv12RemoteServer };
+            if (PlatformDetection.SupportsTls10)
+            {
+                yield return new object[] { SslProtocols.Tls, Configuration.Http.TLSv10RemoteServer };
+            }
+
+            if (PlatformDetection.SupportsTls11)
+            {
+                yield return new object[] { SslProtocols.Tls11, Configuration.Http.TLSv11RemoteServer };
+            }
+
+            if (PlatformDetection.SupportsTls12)
+            {
+                yield return new object[] { SslProtocols.Tls12, Configuration.Http.TLSv12RemoteServer };
+            }
         }
 
         // We have tests that validate with SslStream, but that's limited by what the current OS supports.
