@@ -1288,7 +1288,7 @@ namespace System.Xml
         [System.Diagnostics.DebuggerStepThroughAttribute]
         public virtual System.Threading.Tasks.Task WriteNodeAsync(System.Xml.XPath.XPathNavigator navigator, bool defattr) { throw null; }
         public abstract void WriteProcessingInstruction(string name, string? text);
-        public virtual System.Threading.Tasks.Task WriteProcessingInstructionAsync(string name, string text) { throw null; }
+        public virtual System.Threading.Tasks.Task WriteProcessingInstructionAsync(string name, string? text) { throw null; }
         public virtual void WriteQualifiedName(string localName, string? ns) { }
         [System.Diagnostics.DebuggerStepThroughAttribute]
         public virtual System.Threading.Tasks.Task WriteQualifiedNameAsync(string localName, string? ns) { throw null; }
