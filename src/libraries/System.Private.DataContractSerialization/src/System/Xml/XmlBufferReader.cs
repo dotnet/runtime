@@ -18,20 +18,20 @@ namespace System.Xml
     internal class XmlBufferReader
     {
         private readonly XmlDictionaryReader _reader;
-        private Stream _stream;
-        private byte[] _streamBuffer;
-        private byte[] _buffer;
+        private Stream? _stream;
+        private byte[]? _streamBuffer;
+        private byte[] _buffer = null!; // initialized by SetBuffer
         private int _offsetMin;
         private int _offsetMax;
-        private IXmlDictionary _dictionary;
-        private XmlBinaryReaderSession _session;
-        private byte[] _guid;
+        private IXmlDictionary? _dictionary;
+        private XmlBinaryReaderSession? _session;
+        private byte[]? _guid;
         private int _offset;
         private const int maxBytesPerChar = 3;
-        private char[] _chars;
+        private char[]? _chars;
         private int _windowOffset;
         private int _windowOffsetMax;
-        private ValueHandle _listValue;
+        private ValueHandle? _listValue;
         private static readonly XmlBufferReader s_empty = new XmlBufferReader(Array.Empty<byte>());
 
         public XmlBufferReader(XmlDictionaryReader reader)
@@ -41,7 +41,7 @@ namespace System.Xml
 
         public XmlBufferReader(byte[] buffer)
         {
-            _reader = null;
+            _reader = null!; // this ctor is only used in 2 places internally, which will never touch _reader
             _buffer = buffer;
         }
 
@@ -70,7 +70,7 @@ namespace System.Xml
         }
 
 
-        public void SetBuffer(Stream stream, IXmlDictionary dictionary, XmlBinaryReaderSession session)
+        public void SetBuffer(Stream stream, IXmlDictionary? dictionary, XmlBinaryReaderSession? session)
         {
             if (_streamBuffer == null)
             {
@@ -81,12 +81,12 @@ namespace System.Xml
             _windowOffsetMax = _streamBuffer.Length;
         }
 
-        public void SetBuffer(byte[] buffer, int offset, int count, IXmlDictionary dictionary, XmlBinaryReaderSession session)
+        public void SetBuffer(byte[] buffer, int offset, int count, IXmlDictionary? dictionary, XmlBinaryReaderSession? session)
         {
             SetBuffer(null, buffer, offset, count, dictionary, session);
         }
 
-        private void SetBuffer(Stream stream, byte[] buffer, int offset, int count, IXmlDictionary dictionary, XmlBinaryReaderSession session)
+        private void SetBuffer(Stream? stream, byte[] buffer, int offset, int count, IXmlDictionary? dictionary, XmlBinaryReaderSession? session)
         {
             _stream = stream;
             _buffer = buffer;
@@ -1114,8 +1114,8 @@ namespace System.Xml
                     XmlBinaryNodeType nodeType = GetNodeType();
                     SkipNodeType();
                     DiagnosticUtility.DebugAssert(nodeType != XmlBinaryNodeType.StartListText, "");
-                    ReadValue(nodeType, _listValue);
-                    objects[i] = _listValue.ToObject();
+                    ReadValue(nodeType, _listValue!);
+                    objects[i] = _listValue!.ToObject();
                 }
                 return objects;
             }
@@ -1131,13 +1131,13 @@ namespace System.Xml
             IXmlDictionary keyDictionary;
             if ((key & 1) != 0)
             {
-                keyDictionary = _session;
+                keyDictionary = _session!;
             }
             else
             {
-                keyDictionary = _dictionary;
+                keyDictionary = _dictionary!;
             }
-            XmlDictionaryString s;
+            XmlDictionaryString? s;
             if (!keyDictionary.TryLookup(key >> 1, out s))
                 XmlExceptionHelper.ThrowInvalidBinaryFormat(_reader);
             return s;
@@ -1151,7 +1151,7 @@ namespace System.Xml
                 if (_session == null)
                     XmlExceptionHelper.ThrowInvalidBinaryFormat(_reader);
                 int sessionKey = (key >> 1);
-                XmlDictionaryString xmlString;
+                XmlDictionaryString? xmlString;
                 if (!_session.TryLookup(sessionKey, out xmlString))
                 {
                     if (sessionKey < XmlDictionaryString.MinKey || sessionKey > XmlDictionaryString.MaxKey)
@@ -1164,7 +1164,7 @@ namespace System.Xml
                 if (_dictionary == null)
                     XmlExceptionHelper.ThrowInvalidBinaryFormat(_reader);
                 int staticKey = (key >> 1);
-                XmlDictionaryString xmlString;
+                XmlDictionaryString? xmlString;
                 if (!_dictionary.TryLookup(staticKey, out xmlString))
                 {
                     if (staticKey < XmlDictionaryString.MinKey || staticKey > XmlDictionaryString.MaxKey)
