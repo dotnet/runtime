@@ -11509,9 +11509,12 @@ BOOL gc_heap::grow_heap_segment (heap_segment* seg, uint8_t* high_address, bool*
         assert (high_address <= heap_segment_committed (seg));
 
 #ifdef MULTIPLE_HEAPS
+        // we should never increase committed beyond decommit target when gradual
+        // decommit is in progress - if we do, this means commit and decommit are
+        // going on at the same time.
         assert (!gradual_decommit_in_progress_p ||
-                 heap_segment_decommit_target (seg) == nullptr ||
-                 heap_segment_committed (seg) <= heap_segment_decommit_target (seg));
+                (seg != ephemeral_heap_segment) ||
+                (heap_segment_committed (seg) <= heap_segment_decommit_target (seg)));
 #endif // MULTIPLE_HEAPS
     }
 
@@ -32465,7 +32468,7 @@ void gc_heap::trim_youngest_desired_low_memory()
 
 void gc_heap::decommit_ephemeral_segment_pages()
 {
-    if (settings.concurrent || use_large_pages_p || settings.pause_mode == pause_no_gc)
+    if (settings.concurrent || use_large_pages_p || (settings.pause_mode == pause_no_gc))
     {
         return;
     }
