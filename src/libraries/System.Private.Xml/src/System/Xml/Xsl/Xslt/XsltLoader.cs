@@ -3,7 +3,6 @@
 
 //#define XSLT2
 
-#nullable enable
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Specialized;
@@ -1058,7 +1057,7 @@ namespace System.Xml.Xsl.Xslt
             Debug.Assert(setName != null, "Required attribute always != null");
 
             AttributeSet? set;
-            if (!_curStylesheet!.AttributeSets.TryGetValue(setName, out set))
+            if (!_curStylesheet!.AttributeSets!.TryGetValue(setName, out set))
             {
                 set = f.AttributeSet(setName);
                 // First definition for setName within this stylesheet

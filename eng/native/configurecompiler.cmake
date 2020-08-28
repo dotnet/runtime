@@ -367,7 +367,7 @@ if (CLR_CMAKE_HOST_UNIX)
 
   # Specify the minimum supported version of macOS
   if(CLR_CMAKE_HOST_OSX)
-    set(MACOS_VERSION_MIN_FLAGS -mmacosx-version-min=10.12)
+    set(MACOS_VERSION_MIN_FLAGS -mmacosx-version-min=10.13)
     add_compile_options(${MACOS_VERSION_MIN_FLAGS})
     add_linker_flag(${MACOS_VERSION_MIN_FLAGS})
   endif(CLR_CMAKE_HOST_OSX)
