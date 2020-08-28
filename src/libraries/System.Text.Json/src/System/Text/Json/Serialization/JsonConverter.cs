@@ -52,7 +52,7 @@ namespace System.Text.Json.Serialization
         /// <summary>
         /// Whether the converter is built-in and handles a number type.
         /// </summary>
-        internal bool IsInternalConverterForNumberType;
+        internal virtual bool IsInternalConverterForNumberType { get; }
 
         /// <summary>
         /// Loosely-typed ReadCore() that forwards to strongly-typed ReadCore().

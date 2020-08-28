@@ -1102,24 +1102,44 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void NestedCollectionElementTypeHandling_Overrides_ParentPropertyHandling()
+        public static void NestedCollectionElementTypeHandling_Overrides_GlobalOption()
         {
             // Strict policy on the collection element type overrides read-as-string on the collection property
             string json = @"{""MyList"":[{""Float"":""1""}]}";
-            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<ClassWithComplexListProperty>(json));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<ClassWithComplexListProperty>(json, s_optionReadAndWriteFromStr));
 
             // Strict policy on the collection element type overrides write-as-string on the collection property
             var obj = new ClassWithComplexListProperty
             {
                 MyList = new List<ClassWith_StrictAttribute> { new ClassWith_StrictAttribute { Float = 1 } }
             };
-            Assert.Equal(@"{""MyList"":[{""Float"":1}]}", JsonSerializer.Serialize(obj));
+            Assert.Equal(@"{""MyList"":[{""Float"":1}]}", JsonSerializer.Serialize(obj, s_optionReadAndWriteFromStr));
         }
 
         public class ClassWithComplexListProperty
         {
+            public List<ClassWith_StrictAttribute> MyList { get; set; }
+        }
+
+        [Fact]
+        public static void NumberHandlingAttribute_NotAllowedOn_CollectionOfNonNumbers()
+        {
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<ClassWith_AttributeOnComplexListProperty>(""));
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(new ClassWith_AttributeOnComplexListProperty()));
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<ClassWith_AttributeOnComplexDictionaryProperty>(""));
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(new ClassWith_AttributeOnComplexDictionaryProperty()));
+        }
+
+        public class ClassWith_AttributeOnComplexListProperty
+        {
             [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString | JsonNumberHandling.WriteAsString)]
             public List<ClassWith_StrictAttribute> MyList { get; set; }
+        }
+
+        public class ClassWith_AttributeOnComplexDictionaryProperty
+        {
+            [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)]
+            public Dictionary<string, ClassWith_StrictAttribute> MyDictionary { get; set; }
         }
 
         [Fact]
@@ -1136,23 +1156,22 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void NestedDictionaryElementTypeHandling_Overrides_ParentPropertyHandling()
+        public static void NestedDictionaryElementTypeHandling_Overrides_GlobalOption()
         {
             // Strict policy on the dictionary element type overrides read-as-string on the collection property.
             string json = @"{""MyDictionary"":{""Key"":{""Float"":""1""}}}";
-            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<ClassWithComplexDictionaryProperty>(json));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<ClassWithComplexDictionaryProperty>(json, s_optionReadFromStr));
 
             // Strict policy on the collection element type overrides write-as-string on the collection property
             var obj = new ClassWithComplexDictionaryProperty
             {
                 MyDictionary = new Dictionary<string, ClassWith_StrictAttribute> { ["Key"] = new ClassWith_StrictAttribute { Float = 1 } }
             };
-            Assert.Equal(@"{""MyDictionary"":{""Key"":{""Float"":1}}}", JsonSerializer.Serialize(obj));
+            Assert.Equal(@"{""MyDictionary"":{""Key"":{""Float"":1}}}", JsonSerializer.Serialize(obj, s_optionReadFromStr));
         }
 
         public class ClassWithComplexDictionaryProperty
         {
-            [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)]
             public Dictionary<string, ClassWith_StrictAttribute> MyDictionary { get; set; }
         }
 

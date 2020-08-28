@@ -37,5 +37,13 @@ namespace System.Text.Json.Serialization.Converters
 
             return runtimeConverter;
         }
+
+        internal override object ReadNumberWithCustomHandling(ref Utf8JsonReader reader, JsonNumberHandling handling)
+        {
+            using (JsonDocument document = JsonDocument.ParseValue(ref reader))
+            {
+                return document.RootElement.Clone();
+            }
+        }
     }
 }

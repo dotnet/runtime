@@ -5,10 +5,7 @@ namespace System.Text.Json.Serialization.Converters
 {
     internal sealed class UInt32Converter : JsonConverter<uint>
     {
-        public UInt32Converter()
-        {
-            IsInternalConverterForNumberType = true;
-        }
+        internal override bool IsInternalConverterForNumberType => true;
 
         public override uint Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {

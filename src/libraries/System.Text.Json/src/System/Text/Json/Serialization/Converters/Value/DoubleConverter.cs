@@ -5,10 +5,7 @@ namespace System.Text.Json.Serialization.Converters
 {
     internal sealed class DoubleConverter : JsonConverter<double>
     {
-        public DoubleConverter()
-        {
-            IsInternalConverterForNumberType = true;
-        }
+        internal override bool IsInternalConverterForNumberType => true;
 
         public override double Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {

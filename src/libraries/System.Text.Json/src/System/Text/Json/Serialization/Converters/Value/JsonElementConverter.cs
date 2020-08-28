@@ -17,5 +17,10 @@ namespace System.Text.Json.Serialization.Converters
         {
             value.WriteTo(writer);
         }
+
+        internal override void WriteNumberWithCustomHandling(Utf8JsonWriter writer, JsonElement value, JsonNumberHandling handling)
+        {
+            value.WriteTo(writer);
+        }
     }
 }
