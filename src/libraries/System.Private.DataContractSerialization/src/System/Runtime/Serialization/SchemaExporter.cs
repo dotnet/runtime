@@ -801,7 +801,7 @@ namespace System.Runtime.Serialization
             XmlSchemaAnnotation annotation = new XmlSchemaAnnotation();
             XmlSchemaAppInfo appInfo = new XmlSchemaAppInfo();
             annotation.Items.Add(appInfo);
-            appInfo.Markup = nodes!; // TODO-NULLABLE - '!' should be removed once XmlSchemaAppInfo is annotated correctly
+            appInfo.Markup = nodes;
             return annotation;
         }
 
