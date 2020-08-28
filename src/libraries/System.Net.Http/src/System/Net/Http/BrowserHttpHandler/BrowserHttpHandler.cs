@@ -37,7 +37,6 @@ namespace System.Net.Http
         private bool _allowAutoRedirect = HttpHandlerDefaults.DefaultAutomaticRedirection;
         // flag to determine if the _allowAutoRedirect was explicitly set or not.
         private bool _isAllowAutoRedirectTouched;
-        private int _maxAutomaticRedirections = HttpHandlerDefaults.DefaultMaxAutomaticRedirections;
 
         /// <summary>
         /// Gets whether the current Browser supports streaming responses
@@ -109,16 +108,8 @@ namespace System.Net.Http
 
         public int MaxAutomaticRedirections
         {
-            get => _maxAutomaticRedirections;
-            set
-            {
-                if (value < 1)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value), value, SR.Format(SR.net_http_value_must_be_greater_than, 0));
-                }
-
-                _maxAutomaticRedirections = value;
-            }
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
         }
 
         public int MaxConnectionsPerServer
