@@ -565,6 +565,7 @@ void RangeCheck::MergeEdgeAssertions(ValueNum normalLclVN, ASSERT_VALARG_TP asse
 
         Limit      limit(Limit::keUndef);
         genTreeOps cmpOper = GT_NONE;
+        bool isConstantAssertion = false;
 
         // Current assertion is of the form (i < len - cns) != 0
         if (curAssertion->IsCheckedBoundArithBound())
@@ -644,8 +645,21 @@ void RangeCheck::MergeEdgeAssertions(ValueNum normalLclVN, ASSERT_VALARG_TP asse
                 continue;
             }
 
-            limit   = Limit(Limit::keConstant, m_pCompiler->vnStore->ConstantValue<int>(curAssertion->op2.vn));
-            cmpOper = GT_EQ;
+            int cnstLimit = m_pCompiler->vnStore->ConstantValue<int>(curAssertion->op2.vn);
+            
+            if ((cnstLimit == 0) && (curAssertion->assertionKind == Compiler::OAK_NOT_EQUAL) && m_pCompiler->vnStore->IsVNCheckedBound(curAssertion->op1.vn))
+            {
+                // we have arr.Len != 0, so the length must be atleast one
+                limit = Limit(Limit::keConstant, 1);
+                cmpOper = GT_GE;
+            }
+            else
+            {
+                limit   = Limit(Limit::keConstant, cnstLimit);
+                cmpOper = GT_EQ;
+            }
+
+            isConstantAssertion = true;
         }
         // Current assertion is not supported, ignore it
         else
@@ -656,7 +670,7 @@ void RangeCheck::MergeEdgeAssertions(ValueNum normalLclVN, ASSERT_VALARG_TP asse
         assert(limit.IsBinOpArray() || limit.IsConstant());
 
         // Make sure the assertion is of the form != 0 or == 0.
-        if ((curAssertion->op2.vn != m_pCompiler->vnStore->VNZeroForType(TYP_INT)) && (cmpOper != GT_EQ))
+        if ((curAssertion->op2.vn != m_pCompiler->vnStore->VNZeroForType(TYP_INT)) && !isConstantAssertion)
         {
             continue;
         }
@@ -705,7 +719,7 @@ void RangeCheck::MergeEdgeAssertions(ValueNum normalLclVN, ASSERT_VALARG_TP asse
         // If we have an assertion of the form == 0 (i.e., equals false), then reverse relop.
         // The relop has to be reversed because we have: (i < length) is false which is the same
         // as (i >= length).
-        if ((curAssertion->assertionKind == Compiler::OAK_EQUAL) && (cmpOper != GT_EQ))
+        if ((curAssertion->assertionKind == Compiler::OAK_EQUAL) && !isConstantAssertion)
         {
             cmpOper = GenTree::ReverseRelop(cmpOper);
         }

@@ -1970,13 +1970,22 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
     else if (vnStore->IsVNCheckedBound(op1VN) && vnStore->IsVNInt32Constant(op2VN))
     {
         int con = vnStore->ConstantValue<int>(op2VN);
-        if (con > 0)
+        if (con >= 0)
         {
             AssertionDsc dsc;
-            dsc.assertionKind    = OAK_EQUAL;
-            dsc.op1.vn           = vnStore->VNConservativeNormalValue(relop->gtVNPair);
+            if (con == 0)
+            {
+                dsc.assertionKind = OAK_NOT_EQUAL;
+                dsc.op1.bnd.vnIdx    = vnStore->VNForIntCon(0);
+            }
+            else 
+            {
+                dsc.assertionKind = OAK_EQUAL;
+                dsc.op1.bnd.vnIdx    = vnStore->VNForIntCon(con - 1);
+            }
+
+            dsc.op1.vn           = op1VN;
             dsc.op1.kind         = O1K_ARR_BND;
-            dsc.op1.bnd.vnIdx    = vnStore->VNForIntCon(con - 1);
             dsc.op1.bnd.vnLen    = op1VN;
             dsc.op2.vn           = vnStore->VNConservativeNormalValue(op2->gtVNPair);
             dsc.op2.kind         = O2K_CONST_INT;
@@ -1984,7 +1993,7 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
             dsc.op2.u1.iconVal   = 0;
 
             AssertionIndex index = optAddAssertion(&dsc);
-            if (relop->OperIs(GT_NE))
+            if (relop->OperIs(GT_NE) != (con == 0))
             {
                 return AssertionInfo::ForNextEdge(index);
             }

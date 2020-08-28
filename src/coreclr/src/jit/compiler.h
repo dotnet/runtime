@@ -6788,7 +6788,7 @@ public:
 
         bool IsConstantInt32Assertion()
         {
-            return (assertionKind == OAK_EQUAL) && (op2.kind == O2K_CONST_INT);
+            return ((assertionKind == OAK_EQUAL) || (assertionKind == OAK_NOT_EQUAL)) && (op2.kind == O2K_CONST_INT);
         }
 
         static bool SameKind(AssertionDsc* a1, AssertionDsc* a2)

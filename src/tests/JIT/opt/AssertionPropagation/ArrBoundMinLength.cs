@@ -189,6 +189,24 @@ public static class Tests
         }
     }
 
+    public static void ZeroInBounds(int[] arr)
+    {
+        if (arr.Length != 0)
+        {
+            arr[0] = 0;
+        }
+    }
+
+    public static void ZeroOutOfBounds(int[] arr)
+    {
+        if (arr.Length != 0)
+        {
+            arr[1] = 0;
+        }
+
+        return;
+    }
+
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static void ModInBounds(int[] arr, uint i)
     {
@@ -328,5 +346,45 @@ public static class TestsEarlyReturn
         }
 
         arr[6] = 1;
+    }
+
+    public static void ZeroInBounds(int[] arr)
+    {
+        if (arr.Length == 0)
+        {
+            return;
+        }
+
+        arr[0] = 0;
+    }
+
+    public static void ZeroOutOfBounds(int[] arr)
+    {
+        if (arr.Length == 0)
+        {
+            arr[0] = 0;
+        }
+
+        return;
+    }
+
+    public static void ZeroInBounds(int[] arr)
+    {
+        if (arr.Length == 0)
+        {
+            return;
+        }
+
+        arr[0] = 0;
+    }
+
+    public static void ZeroOutOfBounds(int[] arr)
+    {
+        if (arr.Length != 0)
+        {
+            return;
+        }
+
+        arr[1] = 0;
     }
 }
