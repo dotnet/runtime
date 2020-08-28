@@ -115,9 +115,15 @@ namespace System.Net.Http
         }
 
         [Event(10, Level = EventLevel.Informational)]
-        public void ResponseContentBegin()
+        public void ResponseContentStart()
         {
             WriteEvent(eventId: 10);
+        }
+
+        [Event(11, Level = EventLevel.Informational)]
+        public void ResponseContentStop()
+        {
+            WriteEvent(eventId: 11);
         }
 
         protected override void OnEventCommand(EventCommandEventArgs command)

@@ -125,7 +125,8 @@ namespace System.Net.Http.Functional.Tests
 
                 if (testMethod != "Invoker")
                 {
-                    Assert.Single(events, e => e.EventName == "ResponseContentBegin");
+                    Assert.Single(events, e => e.EventName == "ResponseContentStart");
+                    Assert.Single(events, e => e.EventName == "ResponseContentStop");
                 }
 
                 VerifyEventCounters(events, requestCount: 1, shouldHaveFailures: false);

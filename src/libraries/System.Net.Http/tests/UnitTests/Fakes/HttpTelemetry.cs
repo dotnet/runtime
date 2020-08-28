@@ -15,6 +15,8 @@ namespace System.Net.Http
 
         public void RequestFailed() { }
 
-        public void ResponseContentBegin() { }
+        public void ResponseContentStart() { }
+
+        public void ResponseContentStop() { }
     }
 }

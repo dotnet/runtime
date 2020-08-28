@@ -175,7 +175,7 @@ namespace System.Net.Http
 
         private async Task<string> GetStringAsyncCore(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            bool telemetryStarted = false;
+            bool telemetryStarted = false, responseContentTelemetryStarted = false;
             if (HttpTelemetry.Log.IsEnabled() && request.RequestUri != null)
             {
                 HttpTelemetry.Log.RequestStart(request);
@@ -196,7 +196,8 @@ namespace System.Net.Http
                     {
                         if (HttpTelemetry.Log.IsEnabled())
                         {
-                            HttpTelemetry.Log.ResponseContentBegin();
+                            HttpTelemetry.Log.ResponseContentStart();
+                            responseContentTelemetryStarted = true;
                         }
     #if NET46
                         return await c.ReadAsStringAsync().ConfigureAwait(false);
@@ -239,6 +240,11 @@ namespace System.Net.Http
             {
                 if (HttpTelemetry.Log.IsEnabled() && telemetryStarted)
                 {
+                    if (responseContentTelemetryStarted)
+                    {
+                        HttpTelemetry.Log.ResponseContentStop();
+                    }
+
                     HttpTelemetry.Log.RequestStop();
                 }
             }
@@ -265,7 +271,7 @@ namespace System.Net.Http
 
         private async Task<byte[]> GetByteArrayAsyncCore(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            bool telemetryStarted = false;
+            bool telemetryStarted = false, responseContentTelemetryStarted = false;
             if (HttpTelemetry.Log.IsEnabled() && request.RequestUri != null)
             {
                 HttpTelemetry.Log.RequestStart(request);
@@ -286,7 +292,8 @@ namespace System.Net.Http
                     {
                         if (HttpTelemetry.Log.IsEnabled())
                         {
-                            HttpTelemetry.Log.ResponseContentBegin();
+                            HttpTelemetry.Log.ResponseContentStart();
+                            responseContentTelemetryStarted = true;
                         }
     #if NET46
                         return await c.ReadAsByteArrayAsync().ConfigureAwait(false);
@@ -360,6 +367,11 @@ namespace System.Net.Http
             {
                 if (HttpTelemetry.Log.IsEnabled() && telemetryStarted)
                 {
+                    if (responseContentTelemetryStarted)
+                    {
+                        HttpTelemetry.Log.ResponseContentStop();
+                    }
+
                     HttpTelemetry.Log.RequestStop();
                 }
             }
@@ -386,7 +398,7 @@ namespace System.Net.Http
 
         private async Task<Stream> GetStreamAsyncCore(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            bool telemetryStarted = false;
+            bool telemetryStarted = false, responseContentTelemetryStarted = false;
             if (HttpTelemetry.Log.IsEnabled() && request.RequestUri != null)
             {
                 HttpTelemetry.Log.RequestStart(request);
@@ -402,7 +414,8 @@ namespace System.Net.Http
                 {
                     if (HttpTelemetry.Log.IsEnabled())
                     {
-                        HttpTelemetry.Log.ResponseContentBegin();
+                        HttpTelemetry.Log.ResponseContentStart();
+                        responseContentTelemetryStarted = true;
                     }
 
                     return c.TryReadAsStream() ?? await c.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
@@ -418,6 +431,11 @@ namespace System.Net.Http
             {
                 if (HttpTelemetry.Log.IsEnabled() && telemetryStarted)
                 {
+                    if (responseContentTelemetryStarted)
+                    {
+                        HttpTelemetry.Log.ResponseContentStop();
+                    }
+
                     HttpTelemetry.Log.RequestStop();
                 }
             }
@@ -641,7 +659,7 @@ namespace System.Net.Http
             bool buffered = completionOption == HttpCompletionOption.ResponseContentRead &&
                             !string.Equals(request.Method.Method, "HEAD", StringComparison.OrdinalIgnoreCase);
 
-            bool telemetryStarted = false;
+            bool telemetryStarted = false, responseContentTelemetryStarted = false;
             if (HttpTelemetry.Log.IsEnabled())
             {
                 if (emitTelemetryStartStop && request.RequestUri != null)
@@ -669,7 +687,8 @@ namespace System.Net.Http
                 {
                     if (HttpTelemetry.Log.IsEnabled())
                     {
-                        HttpTelemetry.Log.ResponseContentBegin();
+                        HttpTelemetry.Log.ResponseContentStart();
+                        responseContentTelemetryStarted = true;
                     }
 
                     if (async)
@@ -704,6 +723,11 @@ namespace System.Net.Http
             {
                 if (HttpTelemetry.Log.IsEnabled() && telemetryStarted)
                 {
+                    if (responseContentTelemetryStarted)
+                    {
+                        HttpTelemetry.Log.ResponseContentStop();
+                    }
+
                     HttpTelemetry.Log.RequestStop();
                 }
 
