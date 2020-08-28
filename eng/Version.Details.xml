@@ -114,6 +114,10 @@
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
       <Sha>3697381858b21a189224431a11850e2a4733a131</Sha>
     </Dependency>
+    <Dependency Name="System.Runtime.TimeZoneData" Version="5.0.0-beta.20426.1">
+      <Uri>https://github.com/dotnet/runtime-assets</Uri>
+      <Sha>0349b47d49bcdd411692b23464f3ad5707df8bea</Sha>
+    </Dependency>
     <Dependency Name="System.Security.Cryptography.X509Certificates.TestData" Version="5.0.0-beta.20420.1">
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
       <Sha>3697381858b21a189224431a11850e2a4733a131</Sha>

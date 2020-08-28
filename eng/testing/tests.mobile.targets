@@ -154,13 +154,9 @@
   <UsingTask TaskName="DownloadTimeZoneData"
              AssemblyFile="$(CreateCreateWasmBundlesAssemblyPath)" />
   <Target Condition="'$(TargetOS)' == 'Browser'" Name="LoadTimeZone" >
-    <PropertyGroup>
-      <TimeZoneDataVersion>2020a</TimeZoneDataVersion>
-    </PropertyGroup>
-    <DownloadTimeZoneData
-      InputDirectory="$(BundleDir)obj/data/input"
-      OutputDirectory="$(BundleDir)obj/data/output"
-      Version="$(TimeZoneDataVersion)"/>
+    <DownloadTimeZoneData 
+      InputDirectory="$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'CreateWasmBundle', 'Debug', '$(NetCoreAppCurrent)', 'data'))"
+      OutputDirectory="$(BundleDir)obj/data/output"/>
   </Target>
 
   <UsingTask TaskName="CreateWasmBundle"

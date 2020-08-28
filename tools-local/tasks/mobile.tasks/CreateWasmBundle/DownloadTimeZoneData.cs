@@ -16,26 +16,13 @@ public class DownloadTimeZoneData : Task
 {
     [Required]
     public string? InputDirectory { get; set; }
-
+    
     [Required]
     public string? OutputDirectory { get; set; }
 
-    [Required]
-    public string? Version { get; set; }
-
-    private void DownloadTimeZoneDataSource() 
+    private void CompileTimeZoneDataSource() 
     {
-        List<string> files = new List<string>() {"africa", "antarctica", "asia", "australasia", "etcetera", "europe", "northamerica", "southamerica", "zone1970.tab"};
-        using (var client = new WebClient())
-        {
-            Console.WriteLine("Downloading TimeZone data files");
-            foreach (var file in files) 
-            {
-                client.DownloadFile($"https://data.iana.org/time-zones/tzdb-{Version}/{file}", $"{Path.Combine(InputDirectory!, file)}");
-            }
-        }
-
-        files.Remove("zone1970.tab");        
+        List<string> files = new List<string>() {"africa", "antarctica", "asia", "australasia", "etcetera", "europe", "northamerica", "southamerica"};    
 
         using (Process process = new Process()) 
         {
@@ -48,7 +35,7 @@ public class DownloadTimeZoneData : Task
                 process.WaitForExit();
             }
         }
-        File.Copy(Path.Combine(InputDirectory!,"zone1970.tab"), Path.Combine(OutputDirectory!,"zone1970.tab"));
+        File.Copy(Path.Combine(InputDirectory!, "zone1970.tab"), Path.Combine(OutputDirectory!,"zone1970.tab"));
     }
 
     private void FilterTimeZoneData() 
@@ -81,14 +68,10 @@ public class DownloadTimeZoneData : Task
 
     public override bool Execute() 
     {
-
-        if (!Directory.Exists(InputDirectory))
-            Directory.CreateDirectory(InputDirectory!);
-        
         if (!Directory.Exists(OutputDirectory))
             Directory.CreateDirectory(OutputDirectory!);
 
-        DownloadTimeZoneDataSource();
+        CompileTimeZoneDataSource();
         
         string[] filtered = new string[] { "America/Los_Angeles", "Australia/Sydney", "Europe/London", "Pacific/Tongatapu", 
                                 "America/Sao_Paulo", "Australia/Perth", "Africa/Nairobi", "Europe/Berlin",

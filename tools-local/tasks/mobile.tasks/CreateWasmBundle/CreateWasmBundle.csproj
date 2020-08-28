@@ -10,7 +10,39 @@
     <PackageReference Include="Microsoft.Build.Tasks.Core" Version="$(RefOnlyMicrosoftBuildTasksCoreVersion)" />
     <PackageReference Include="Microsoft.Build.Utilities.Core" Version="$(RefOnlyMicrosoftBuildUtilitiesCoreVersion)" />
   </ItemGroup>
-
+  <ItemGroup>
+    <PackageReference Include="Moq" Version="$(MoqVersion)" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="System.Runtime.TimeZoneData" Version="$(SystemRuntimeTimeZoneDataVersion)" GeneratePathProperty="true" />
+    <EmbeddedResource Include="$(PkgSystem_Runtime_TimeZoneData)\contentFiles\any\any\data\africa">
+      <LogicalName>africa</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(PkgSystem_Runtime_TimeZoneData)\contentFiles\any\any\data\antarctica">
+      <LogicalName>antarctica</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(PkgSystem_Runtime_TimeZoneData)\contentFiles\any\any\data\asia">
+      <LogicalName>asia</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(PkgSystem_Runtime_TimeZoneData)\contentFiles\any\any\data\australasia">
+      <LogicalName>australasia</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(PkgSystem_Runtime_TimeZoneData)\contentFiles\any\any\data\etcetera">
+      <LogicalName>etcetera</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(PkgSystem_Runtime_TimeZoneData)\contentFiles\any\any\data\europe">
+      <LogicalName>europe</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(PkgSystem_Runtime_TimeZoneData)\contentFiles\any\any\data\northamerica">
+      <LogicalName>northamerica</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(PkgSystem_Runtime_TimeZoneData)\contentFiles\any\any\data\southamerica">
+      <LogicalName>southamerica</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(PkgSystem_Runtime_TimeZoneData)\contentFiles\any\any\data\zone1970.tab">
+      <LogicalName>zone1970.tab</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
   <Target Name="PublishBuilder"
           AfterTargets="Build"
           DependsOnTargets="Publish" />
