@@ -165,6 +165,7 @@ static GSList *tramp_infos;
 GSList *mono_interp_only_classes;
 
 static void register_icalls (void);
+static void runtime_cleanup (MonoDomain *domain, gpointer user_data);
 
 gboolean
 mono_running_on_valgrind (void)
@@ -4619,7 +4620,7 @@ mini_init (const char *filename, const char *runtime_version)
 
 #define JIT_RUNTIME_WORKS
 #ifdef JIT_RUNTIME_WORKS
-	mono_install_runtime_cleanup ((MonoDomainFunc)mini_cleanup);
+	mono_install_runtime_cleanup (runtime_cleanup);
 	mono_runtime_init_checked (domain, (MonoThreadStartCB)mono_thread_start_cb, mono_thread_attach_cb, error);
 	mono_error_assert_ok (error);
 	mono_thread_attach (domain);
@@ -4991,6 +4992,12 @@ jit_stats_cleanup (void)
 	mono_jit_stats.max_ratio_method = NULL;
 	g_free (mono_jit_stats.biggest_method);
 	mono_jit_stats.biggest_method = NULL;
+}
+
+static void
+runtime_cleanup (MonoDomain *domain, gpointer user_data)
+{
+	mini_cleanup (domain);
 }
 
 #ifdef DISABLE_CLEANUP
