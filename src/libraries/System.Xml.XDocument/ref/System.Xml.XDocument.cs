@@ -96,7 +96,7 @@ namespace System.Xml.Linq
         public static explicit operator System.Guid? (System.Xml.Linq.XAttribute? attribute) { throw null; }
         [System.CLSCompliantAttribute(false)]
         [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("attribute")]
-        public static explicit operator int? (System.Xml.Linq.XAttribute attribute) { throw null; }
+        public static explicit operator int? (System.Xml.Linq.XAttribute? attribute) { throw null; }
         [System.CLSCompliantAttribute(false)]
         [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("attribute")]
         public static explicit operator long? (System.Xml.Linq.XAttribute? attribute) { throw null; }
