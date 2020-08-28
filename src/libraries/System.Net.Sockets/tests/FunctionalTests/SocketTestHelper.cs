@@ -207,7 +207,7 @@ namespace System.Net.Sockets.Tests
         public override Task<int> SendAsync(Socket s, IList<ArraySegment<byte>> bufferList) =>
             s.SendAsync(bufferList, SocketFlags.None);
         public override Task<int> SendToAsync(Socket s, ArraySegment<byte> buffer, EndPoint endPoint) =>
-            s.SendToAsync(buffer, SocketFlags.None, endPoint);
+            s.SendToAsync(buffer, SocketFlags.None, endPoint, _cts.Token).AsTask() ;
     }
 
     public sealed class SocketHelperEap : SocketHelperBase
