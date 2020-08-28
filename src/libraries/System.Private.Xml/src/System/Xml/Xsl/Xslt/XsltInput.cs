@@ -3,7 +3,6 @@
 
 //#define XSLT2
 
-#nullable enable
 using System.Collections.Generic;
 using System.Diagnostics;
 

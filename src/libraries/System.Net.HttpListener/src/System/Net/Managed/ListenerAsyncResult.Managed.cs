@@ -37,20 +37,20 @@ namespace System.Net
 {
     internal class ListenerAsyncResult : IAsyncResult
     {
-        private ManualResetEvent _handle;
+        private ManualResetEvent? _handle;
         private bool _synch;
         private bool _completed;
-        private AsyncCallback _cb;
-        private object _state;
-        private Exception _exception;
-        private HttpListenerContext _context;
+        private AsyncCallback? _cb;
+        private object? _state;
+        private Exception? _exception;
+        private HttpListenerContext? _context;
         private object _locker = new object();
-        private ListenerAsyncResult _forward;
+        private ListenerAsyncResult? _forward;
         internal readonly HttpListener _parent;
         internal bool _endCalled;
         internal bool _inGet;
 
-        public ListenerAsyncResult(HttpListener parent, AsyncCallback cb, object state)
+        public ListenerAsyncResult(HttpListener parent, AsyncCallback? cb, object? state)
         {
             _parent = parent;
             _cb = cb;
@@ -78,10 +78,10 @@ namespace System.Net
             }
         }
 
-        private static WaitCallback s_invokeCB = new WaitCallback(InvokeCallback);
+        private static WaitCallback s_invokeCB = new WaitCallback(InvokeCallback!);
         private static void InvokeCallback(object o)
         {
-            ListenerAsyncResult ares = (ListenerAsyncResult)o;
+            ListenerAsyncResult ares = (ListenerAsyncResult)o!;
             if (ares._forward != null)
             {
                 InvokeCallback(ares._forward);
@@ -89,7 +89,7 @@ namespace System.Net
             }
             try
             {
-                ares._cb(ares);
+                ares._cb!(ares);
             }
             catch
             {
@@ -115,7 +115,7 @@ namespace System.Net
                 bool authFailure = false;
                 try
                 {
-                    context.AuthenticationSchemes = context._listener.SelectAuthenticationScheme(context);
+                    context.AuthenticationSchemes = context._listener!.SelectAuthenticationScheme(context);
                 }
                 catch (OutOfMemoryException oom)
                 {
@@ -138,17 +138,17 @@ namespace System.Net
                 else if (context.AuthenticationSchemes == AuthenticationSchemes.Basic)
                 {
                     HttpStatusCode errorCode = HttpStatusCode.Unauthorized;
-                    string authHeader = context.Request.Headers["Authorization"];
+                    string? authHeader = context.Request.Headers["Authorization"];
                     if (authHeader == null ||
                         !HttpListenerContext.IsBasicHeader(authHeader) ||
                         authHeader.Length < AuthenticationTypes.Basic.Length + 2 ||
-                        !HttpListenerContext.TryParseBasicAuth(authHeader.Substring(AuthenticationTypes.Basic.Length + 1), out errorCode, out string _, out string __))
+                        !HttpListenerContext.TryParseBasicAuth(authHeader.Substring(AuthenticationTypes.Basic.Length + 1), out errorCode, out _, out _))
                     {
                         authFailure = true;
                         context.Response.StatusCode = (int)errorCode;
                         if (errorCode == HttpStatusCode.Unauthorized)
                         {
-                            context.Response.Headers["WWW-Authenticate"] = context.AuthenticationSchemes + " realm=\"" + context._listener.Realm + "\"";
+                            context.Response.Headers["WWW-Authenticate"] = context.AuthenticationSchemes + " realm=\"" + context._listener!.Realm + "\"";
                         }
                     }
                 }
@@ -156,7 +156,7 @@ namespace System.Net
                 if (authFailure)
                 {
                     context.Response.OutputStream.Close();
-                    IAsyncResult ares = context._listener.BeginGetContext(_cb, _state);
+                    IAsyncResult ares = context._listener!.BeginGetContext(_cb, _state);
                     _forward = (ListenerAsyncResult)ares;
                     lock (_forward._locker)
                     {
@@ -185,7 +185,7 @@ namespace System.Net
             }
         }
 
-        internal HttpListenerContext GetContext()
+        internal HttpListenerContext? GetContext()
         {
             if (_forward != null)
             {
@@ -200,7 +200,7 @@ namespace System.Net
             return _context;
         }
 
-        public object AsyncState
+        public object? AsyncState
         {
             get
             {

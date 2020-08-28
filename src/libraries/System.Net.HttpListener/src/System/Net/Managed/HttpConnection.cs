@@ -29,6 +29,7 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Net.Security;
 using System.Net.Sockets;
@@ -43,16 +44,16 @@ namespace System.Net
     {
         private static AsyncCallback s_onreadCallback = new AsyncCallback(OnRead);
         private const int BufferSize = 8192;
-        private Socket _socket;
+        private Socket? _socket;
         private Stream _stream;
         private HttpEndPointListener _epl;
-        private MemoryStream _memoryStream;
-        private byte[] _buffer;
+        private MemoryStream? _memoryStream;
+        private byte[]? _buffer;
         private HttpListenerContext _context;
-        private StringBuilder _currentLine;
-        private ListenerPrefix _prefix;
-        private HttpRequestStream _requestStream;
-        private HttpResponseStream _responseStream;
+        private StringBuilder? _currentLine;
+        private ListenerPrefix? _prefix;
+        private HttpRequestStream? _requestStream;
+        private HttpResponseStream? _responseStream;
         private bool _chunked;
         private int _reuses;
         private bool _contextBound;
@@ -60,11 +61,11 @@ namespace System.Net
         private X509Certificate _cert;
         private int _timeout = 90000; // 90k ms for first request, 15k ms from then on
         private Timer _timer;
-        private IPEndPoint _localEndPoint;
-        private HttpListener _lastListener;
-        private int[] _clientCertErrors;
-        private X509Certificate2 _clientCert;
-        private SslStream _sslStream;
+        private IPEndPoint? _localEndPoint;
+        private HttpListener? _lastListener;
+        private int[]? _clientCertErrors;
+        private X509Certificate2? _clientCert;
+        private SslStream? _sslStream;
         private InputState _inputState = InputState.RequestLine;
         private LineState _lineState = LineState.None;
         private int _position;
@@ -111,21 +112,23 @@ namespace System.Net
             Init();
         }
 
-        internal int[] ClientCertificateErrors
+        internal int[]? ClientCertificateErrors
         {
             get { return _clientCertErrors; }
         }
 
-        internal X509Certificate2 ClientCertificate
+        internal X509Certificate2? ClientCertificate
         {
             get { return _clientCert; }
         }
 
-        internal SslStream SslStream
+        internal SslStream? SslStream
         {
             get { return _sslStream; }
         }
 
+        [MemberNotNull(nameof(_memoryStream))]
+        [MemberNotNull(nameof(_context))]
         private void Init()
         {
             _contextBound = false;
@@ -152,21 +155,21 @@ namespace System.Net
             get { return _reuses; }
         }
 
-        public IPEndPoint LocalEndPoint
+        public IPEndPoint? LocalEndPoint
         {
             get
             {
                 if (_localEndPoint != null)
                     return _localEndPoint;
 
-                _localEndPoint = (IPEndPoint)_socket.LocalEndPoint;
+                _localEndPoint = (IPEndPoint?)_socket!.LocalEndPoint;
                 return _localEndPoint;
             }
         }
 
-        public IPEndPoint RemoteEndPoint
+        public IPEndPoint? RemoteEndPoint
         {
-            get { return (IPEndPoint)_socket.RemoteEndPoint; }
+            get { return (IPEndPoint?)_socket!.RemoteEndPoint; }
         }
 
         public bool IsSecure
@@ -174,13 +177,13 @@ namespace System.Net
             get { return _secure; }
         }
 
-        public ListenerPrefix Prefix
+        public ListenerPrefix? Prefix
         {
             get { return _prefix; }
             set { _prefix = value; }
         }
 
-        private void OnTimeout(object unused)
+        private void OnTimeout(object? unused)
         {
             CloseSocket();
             Unbind();
@@ -209,8 +212,8 @@ namespace System.Net
         {
             if (_requestStream == null)
             {
-                byte[] buffer = _memoryStream.GetBuffer();
-                int length = (int)_memoryStream.Length;
+                byte[] buffer = _memoryStream!.GetBuffer();
+                int length = (int)_memoryStream!.Length;
                 _memoryStream = null;
                 if (chunked)
                 {
@@ -230,7 +233,7 @@ namespace System.Net
         {
             if (_responseStream == null)
             {
-                HttpListener listener = _context._listener;
+                HttpListener? listener = _context._listener;
 
                 if (listener == null)
                     return new HttpResponseStream(_stream, _context.Response, true);
@@ -242,7 +245,7 @@ namespace System.Net
 
         private static void OnRead(IAsyncResult ares)
         {
-            HttpConnection cnc = (HttpConnection)ares.AsyncState;
+            HttpConnection cnc = (HttpConnection)ares.AsyncState!;
             cnc.OnReadInternal(ares);
         }
 
@@ -253,7 +256,7 @@ namespace System.Net
             try
             {
                 nread = _stream.EndRead(ares);
-                _memoryStream.Write(_buffer, 0, nread);
+                _memoryStream!.Write(_buffer!, 0, nread);
                 if (_memoryStream.Length > 32768)
                 {
                     SendError(HttpStatusDescription.Get(400), 400);
@@ -299,7 +302,7 @@ namespace System.Net
                     Close(true);
                     return;
                 }
-                HttpListener listener = _context._listener;
+                HttpListener listener = _context._listener!;
                 if (_lastListener != listener)
                 {
                     RemoveConnection();
@@ -311,7 +314,7 @@ namespace System.Net
                 listener.RegisterContext(_context);
                 return;
             }
-            _stream.BeginRead(_buffer, 0, BufferSize, s_onreadCallback, this);
+            _stream.BeginRead(_buffer!, 0, BufferSize, s_onreadCallback, this);
         }
 
         private void RemoveConnection()
@@ -342,7 +345,7 @@ namespace System.Net
             byte[] buffer = ms.GetBuffer();
             int len = (int)ms.Length;
             int used = 0;
-            string line;
+            string? line;
 
             while (true)
             {
@@ -359,7 +362,7 @@ namespace System.Net
                 }
                 catch
                 {
-                    _context.ErrorMessage = HttpStatusDescription.Get(400);
+                    _context.ErrorMessage = HttpStatusDescription.Get(400)!;
                     _context.ErrorStatus = 400;
                     return true;
                 }
@@ -372,7 +375,7 @@ namespace System.Net
                     if (_inputState == InputState.RequestLine)
                         continue;
                     _currentLine = null;
-                    ms = null;
+                    ms = null!;
                     return true;
                 }
 
@@ -404,7 +407,7 @@ namespace System.Net
             return false;
         }
 
-        private string ReadLine(byte[] buffer, int offset, int len, ref int used)
+        private string? ReadLine(byte[] buffer, int offset, int len, ref int used)
         {
             if (_currentLine == null)
                 _currentLine = new StringBuilder(128);
@@ -428,7 +431,7 @@ namespace System.Net
                 }
             }
 
-            string result = null;
+            string? result = null;
             if (_lineState == LineState.LF)
             {
                 _lineState = LineState.None;
@@ -439,14 +442,14 @@ namespace System.Net
             return result;
         }
 
-        public void SendError(string msg, int status)
+        public void SendError(string? msg, int status)
         {
             try
             {
                 HttpListenerResponse response = _context.Response;
                 response.StatusCode = status;
                 response.ContentType = "text/html";
-                string description = HttpStatusDescription.Get(status);
+                string? description = HttpStatusDescription.Get(status);
                 string str;
                 if (msg != null)
                     str = string.Format("<h1>{0} ({1})</h1>", description, msg);

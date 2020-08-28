@@ -2128,9 +2128,8 @@ const SString &PEAssembly::GetEffectivePath()
 // Codebase is the fusion codebase or path for the assembly.  It is in URL format.
 // Note this may be obtained from the parent PEFile if we don't have a path or fusion
 // assembly.
-//
-// fCopiedName means to get the "shadow copied" path rather than the original path, if applicable
-void PEAssembly::GetCodeBase(SString &result, BOOL fCopiedName/*=FALSE*/)
+// Returns false if the assembly was loaded from a bundle, true otherwise
+BOOL PEAssembly::GetCodeBase(SString &result)
 {
     CONTRACTL
     {
@@ -2142,10 +2141,20 @@ void PEAssembly::GetCodeBase(SString &result, BOOL fCopiedName/*=FALSE*/)
     }
     CONTRACTL_END;
 
-    // All other cases use the file path.
-    result.Set(GetEffectivePath());
-    if (!result.IsEmpty())
-        PathToUrl(result);
+    auto ilImage = GetILimage();
+    if (ilImage == nullptr || !ilImage->IsInBundle())
+    {
+        // All other cases use the file path.
+        result.Set(GetEffectivePath());
+        if (!result.IsEmpty())
+            PathToUrl(result);
+        return TRUE;
+    }
+    else
+    {
+        result.Set(SString::Empty());
+        return FALSE;
+    }
 }
 
 /* static */

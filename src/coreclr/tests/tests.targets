@@ -52,8 +52,9 @@
       <!-- Color output doesn't work well when capturing the output in the CI system -->
       <XunitArgs>$(XunitArgs) -nocolor</XunitArgs>
 
-      <CorerunExecutable Condition="'$(RunningOnUnix)' == 'true'">$(CORE_ROOT)\corerun</CorerunExecutable>
+      <CorerunExecutable Condition="'$(RunningOnUnix)' == 'true'"  >$(CORE_ROOT)\corerun</CorerunExecutable>
       <CorerunExecutable Condition="'$(RunningOnUnix)' != 'true'">$(CORE_ROOT)\corerun.exe</CorerunExecutable>
+      <CorerunExecutable Condition="'$(TargetArchitecture)' == 'wasm'"> $(DotnetRoot)/dotnet</CorerunExecutable>
     </PropertyGroup>
 
     <!-- Work around cmd command length limit by using relative paths

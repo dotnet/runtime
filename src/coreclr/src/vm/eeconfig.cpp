@@ -38,7 +38,7 @@ Volatile<DWORD> GCStressPolicy::InhibitHolder::s_nGcStressDisabled = 0;
 
 /**************************************************************/
 // Poor mans narrow
-LPUTF8 NarrowWideChar(__inout_z LPWSTR str)
+LPUTF8 NarrowWideChar(__inout_z LPCWSTR str)
 {
     CONTRACT (LPUTF8)
     {
@@ -50,7 +50,7 @@ LPUTF8 NarrowWideChar(__inout_z LPWSTR str)
     } CONTRACT_END;
 
     if (str != 0) {
-        LPWSTR fromPtr = str;
+        LPCWSTR fromPtr = str;
         LPUTF8 toPtr = (LPUTF8) str;
         LPUTF8 result = toPtr;
         while(*fromPtr != 0)

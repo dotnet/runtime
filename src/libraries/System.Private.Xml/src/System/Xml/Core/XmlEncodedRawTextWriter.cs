@@ -4,6 +4,7 @@
 // WARNING: This file is generated and should not be modified directly.
 // Instead, modify XmlRawTextWriterGenerator.ttinclude
 
+#nullable disable
 using System;
 using System.IO;
 using System.Xml;
@@ -49,7 +50,6 @@ namespace System.Xml
         protected bool _writeToNull;
         protected bool _hadDoubleBracket;
         protected bool _inAttributeValue;
-
         protected int _bufBytesUsed;
         protected char[] _bufChars;
 
@@ -1686,7 +1686,6 @@ namespace System.Xml
                 pSrc++;
             }
         }
-
 
         protected void ChangeTextContentMark(bool value)
         {
