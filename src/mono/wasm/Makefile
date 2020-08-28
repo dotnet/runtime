@@ -25,7 +25,7 @@ all: build-native icu-data
 #  If EMSDK_PATH is not set by the caller, download and setup a local emsdk install.
 #
 
-EMSCRIPTEN_VERSION=1.39.16
+EMSCRIPTEN_VERSION=2.0.1
 EMSDK_LOCAL_PATH=emsdk
 EMCC=source $(EMSDK_PATH)/emsdk_env.sh && emcc
 
