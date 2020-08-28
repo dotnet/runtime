@@ -764,11 +764,17 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public void SocketWithDanglingReferenceDoesntHangFinalizerThread()
         {
+            CreateSocketWithDanglingReference();
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void CreateSocketWithDanglingReference()
+        {
             Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
             bool dummy = false;
             socket.SafeHandle.DangerousAddRef(ref dummy);
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
