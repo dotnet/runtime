@@ -96,7 +96,7 @@ namespace System.Runtime.Serialization
     {
         public static void AddDefaultSchema(System.Xml.Schema.XmlSchemaSet schemas, System.Xml.XmlQualifiedName typeQName) { }
         public static System.Xml.XmlNode[] ReadNodes(System.Xml.XmlReader xmlReader) { throw null; }
-        public static void WriteNodes(System.Xml.XmlWriter xmlWriter, System.Xml.XmlNode[]? nodes) { }
+        public static void WriteNodes(System.Xml.XmlWriter xmlWriter, System.Xml.XmlNode?[]? nodes) { }
     }
     public static partial class XPathQueryGenerator
     {
@@ -404,8 +404,8 @@ namespace System.Xml
         public void WriteAttributeString(string? prefix, System.Xml.XmlDictionaryString localName, System.Xml.XmlDictionaryString? namespaceUri, string? value) { }
         public void WriteAttributeString(System.Xml.XmlDictionaryString localName, System.Xml.XmlDictionaryString? namespaceUri, string? value) { }
         public override System.Threading.Tasks.Task WriteBase64Async(byte[] buffer, int index, int count) { throw null; }
-        public void WriteElementString(string? prefix, System.Xml.XmlDictionaryString localName, System.Xml.XmlDictionaryString? namespaceUri, string value) { }
-        public void WriteElementString(System.Xml.XmlDictionaryString localName, System.Xml.XmlDictionaryString? namespaceUri, string value) { }
+        public void WriteElementString(string? prefix, System.Xml.XmlDictionaryString localName, System.Xml.XmlDictionaryString? namespaceUri, string? value) { }
+        public void WriteElementString(System.Xml.XmlDictionaryString localName, System.Xml.XmlDictionaryString? namespaceUri, string? value) { }
         public virtual void WriteNode(System.Xml.XmlDictionaryReader reader, bool defattr) { }
         public override void WriteNode(System.Xml.XmlReader reader, bool defattr) { }
         public virtual void WriteQualifiedName(System.Xml.XmlDictionaryString localName, System.Xml.XmlDictionaryString? namespaceUri) { }

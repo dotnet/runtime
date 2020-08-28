@@ -52,14 +52,14 @@ namespace System.Runtime.Serialization
                                    xmlReader.LocalName != "xmlns";
         }
 
-        public static void WriteNodes(XmlWriter xmlWriter, XmlNode[]? nodes)
+        public static void WriteNodes(XmlWriter xmlWriter, XmlNode?[]? nodes)
         {
             if (xmlWriter == null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(xmlWriter));
             if (nodes != null)
                 for (int i = 0; i < nodes.Length; i++)
                     if (nodes[i] != null)
-                        nodes[i].WriteTo(xmlWriter);
+                        nodes[i]!.WriteTo(xmlWriter);
         }
 
         internal static string AddDefaultSchemaMethodName = "AddDefaultSchema";

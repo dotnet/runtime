@@ -150,12 +150,12 @@ namespace System.Xml
             WriteEndAttribute();
         }
 
-        public void WriteElementString(XmlDictionaryString localName, XmlDictionaryString? namespaceUri, string value)
+        public void WriteElementString(XmlDictionaryString localName, XmlDictionaryString? namespaceUri, string? value)
         {
             WriteElementString((string?)null, localName, namespaceUri, value);
         }
 
-        public void WriteElementString(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri, string value)
+        public void WriteElementString(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri, string? value)
         {
             WriteStartElement(prefix, localName, namespaceUri);
             WriteString(value);
