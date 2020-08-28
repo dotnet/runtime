@@ -85,14 +85,15 @@ namespace System.Runtime.Serialization
                     }
                     else
                     {
-                        if (memberType == Globals.TypeOfObject
-                            || (originValueIsNullableOfT && memberType.IsValueType))
+                        if (memberValue == null &&
+                            (memberType == Globals.TypeOfObject
+                            || (originValueIsNullableOfT && memberType.IsValueType)))
                         {
                             context.WriteNull(xmlWriter, memberType, DataContract.IsTypeSerializable(memberType));
                         }
                         else
                         {
-                            ReflectionInternalSerialize(xmlWriter, context, memberValue, memberValue.GetType().TypeHandle.Equals(memberType.TypeHandle), writeXsiType, memberType, originValueIsNullableOfT);
+                            ReflectionInternalSerialize(xmlWriter, context, memberValue!, memberValue!.GetType().TypeHandle.Equals(memberType.TypeHandle), writeXsiType, memberType, originValueIsNullableOfT);
                         }
                     }
                 }

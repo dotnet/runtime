@@ -85,7 +85,7 @@ namespace System.Runtime.Serialization
         public override int AttributeCount { get { return InnerReader.AttributeCount; } }
         public override string this[int i] { get { return InnerReader[i]; } }
         public override string? this[string name] { get { return InnerReader[name]; } }
-        // TODO-NULLABLE - I think this is a compiler bug
+        // TODO-NULLABLE - unnecessary namespaceURI! - https://github.com/dotnet/roslyn/issues/47221
         public override string? this[string name, string? namespaceURI] { get { return InnerReader[name, namespaceURI!]; } }
         public override bool EOF { get { return InnerReader.EOF; } }
         public override ReadState ReadState { get { return InnerReader.ReadState; } }

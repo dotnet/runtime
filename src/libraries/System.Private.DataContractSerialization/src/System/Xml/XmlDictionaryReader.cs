@@ -1586,7 +1586,7 @@ namespace System.Xml
             {
                 get
                 {
-                    // TODO-NULLABLE - I think this is a compiler bug
+                    // TODO-NULLABLE - unnecessary namespaceUri! - https://github.com/dotnet/roslyn/issues/47221
                     return _reader[name, namespaceUri!];
                 }
             }
