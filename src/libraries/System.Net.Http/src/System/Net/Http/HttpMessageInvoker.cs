@@ -41,8 +41,10 @@ namespace System.Net.Http
             }
             CheckDisposed();
 
-            if (HttpTelemetry.Log.IsEnabled() && !request.WasSentByHttpClient())
+            if (HttpTelemetry.Log.IsEnabled() && !request.WasSentByHttpClient() && request.RequestUri != null)
             {
+                HttpTelemetry.Log.RequestStart(request);
+
                 try
                 {
                     return _handler.Send(request, cancellationToken);
@@ -72,7 +74,7 @@ namespace System.Net.Http
             }
             CheckDisposed();
 
-            if (HttpTelemetry.Log.IsEnabled() && !request.WasSentByHttpClient())
+            if (HttpTelemetry.Log.IsEnabled() && !request.WasSentByHttpClient() && request.RequestUri != null)
             {
                 return SendAsyncWithTelemetry(_handler, request, cancellationToken);
             }
