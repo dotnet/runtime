@@ -249,6 +249,9 @@ namespace System.Net.Http.Functional.Tests
                             var socketsHttpHandler = GetUnderlyingSocketsHttpHandler(handler) as SocketsHttpHandler;
                             socketsHttpHandler.MaxConnectionsPerServer = 1;
 
+                            // Dummy request to ensure that the MaxConcurrentStreams setting has been acknowledged
+                            await client.GetStringAsync(uri);
+
                             Task firstRequest = client.GetStringAsync(uri);
                             Assert.True(await firstRequestReceived.WaitAsync(TimeSpan.FromSeconds(10)));
 
@@ -273,6 +276,10 @@ namespace System.Net.Http.Functional.Tests
 
                             using (connection)
                             {
+                                // Dummy request to ensure that the MaxConcurrentStreams setting has been acknowledged
+                                await connection.ReadRequestDataAsync(readBody: false);
+                                await connection.SendResponseAsync();
+
                                 // First request
                                 await connection.ReadRequestDataAsync(readBody: false);
                                 firstRequestReceived.Release();
@@ -291,11 +298,11 @@ namespace System.Net.Http.Functional.Tests
                 Assert.DoesNotContain(events, ev => ev.EventId == 0); // errors from the EventSource itself
 
                 EventWrittenEventArgs[] starts = events.Where(e => e.EventName == "RequestStart").ToArray();
-                Assert.Equal(2, starts.Length);
+                Assert.Equal(3, starts.Length);
                 Assert.All(starts, s => ValidateStartEventPayload(s));
 
                 EventWrittenEventArgs[] stops = events.Where(e => e.EventName == "RequestStop").ToArray();
-                Assert.Equal(2, stops.Length);
+                Assert.Equal(3, stops.Length);
                 Assert.All(stops, s => Assert.Empty(s.Payload));
 
                 Assert.DoesNotContain(events, e => e.EventName == "RequestAborted");
@@ -309,10 +316,10 @@ namespace System.Net.Http.Functional.Tests
                 Assert.Equal(version.Minor, (byte)requestLeftQueue.Payload[2]);
 
                 EventWrittenEventArgs[] responseHeadersBegin = events.Where(e => e.EventName == "ResponseHeadersBegin").ToArray();
-                Assert.Equal(2, responseHeadersBegin.Length);
+                Assert.Equal(3, responseHeadersBegin.Length);
                 Assert.All(responseHeadersBegin, r => Assert.Empty(r.Payload));
 
-                VerifyEventCounters(events, requestCount: 2, shouldHaveFailures: false, requestsLeftQueueVersion: version.Major);
+                VerifyEventCounters(events, requestCount: 3, shouldHaveFailures: false, requestsLeftQueueVersion: version.Major);
             }, UseVersion.ToString()).Dispose();
         }
     }
