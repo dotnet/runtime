@@ -101,8 +101,8 @@ namespace System.Net.Http
             get => _allowAutoRedirect;
             set
             {
-                _isAllowAutoRedirectTouched = true;
                 _allowAutoRedirect = value;
+                _isAllowAutoRedirectTouched = true;
             }
         }
 
