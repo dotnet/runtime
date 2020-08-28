@@ -254,7 +254,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
             DotNetCli dotnet = null,
             string runtime = null,
             string framework = null,
-            string selfContained = null,
+            bool? selfContained = null,
             string outputDirectory = null,
             bool singleFile = false,
             bool restore = false)
@@ -291,7 +291,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
             if (selfContained != null)
             {
                 publishArgs.Add("--self-contained");
-                publishArgs.Add(selfContained);
+                publishArgs.Add(selfContained.Value ? "true" : "false");
             }
 
             if (outputDirectory != null)
