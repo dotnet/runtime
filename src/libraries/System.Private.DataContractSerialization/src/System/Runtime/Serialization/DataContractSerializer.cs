@@ -276,7 +276,7 @@ namespace System.Runtime.Serialization
             WriteEndObjectHandleExceptions(new XmlWriterDelegator(writer));
         }
 
-        public void WriteObject(XmlDictionaryWriter writer, object? graph, DataContractResolver dataContractResolver)
+        public void WriteObject(XmlDictionaryWriter writer, object? graph, DataContractResolver? dataContractResolver)
         {
             WriteObjectHandleExceptions(new XmlWriterDelegator(writer), graph, dataContractResolver);
         }

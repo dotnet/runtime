@@ -232,16 +232,21 @@ namespace System.Runtime.Serialization
                 {
                     if (_memberTypeContract == null)
                     {
-                        if (this.IsGetOnlyCollection)
+                        if (MemberInfo != null)
                         {
-                            _memberTypeContract = DataContract.GetGetOnlyCollectionDataContract(DataContract.GetId(MemberType.TypeHandle), MemberType.TypeHandle, MemberType, SerializationMode.SharedContract);
-                        }
-                        else
-                        {
-                            _memberTypeContract = DataContract.GetDataContract(MemberType);
+                            if (this.IsGetOnlyCollection)
+                            {
+                                _memberTypeContract = DataContract.GetGetOnlyCollectionDataContract(DataContract.GetId(MemberType.TypeHandle), MemberType.TypeHandle, MemberType, SerializationMode.SharedContract);
+                            }
+                            else
+                            {
+                                _memberTypeContract = DataContract.GetDataContract(MemberType);
+                            }
                         }
                     }
-                    return _memberTypeContract;
+
+                    // TODO-NULLABLE - MemberInfo is never null, so this can never return null
+                    return _memberTypeContract!;
                 }
                 set
                 {

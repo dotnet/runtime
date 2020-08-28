@@ -207,7 +207,7 @@ namespace System.Runtime.Serialization.Json
             return _serializer.ReadObject(reader);
         }
 
-        private List<Type> GetKnownTypesFromContext(XmlObjectSerializerContext context, IList<Type> serializerKnownTypeList)
+        private List<Type> GetKnownTypesFromContext(XmlObjectSerializerContext context, IList<Type>? serializerKnownTypeList)
         {
             List<Type> knownTypesList = new List<Type>();
             if (context != null)
@@ -727,7 +727,7 @@ namespace System.Runtime.Serialization.Json
             WriteStartObjectHandleExceptions(new JsonWriterDelegator(writer), graph);
         }
 
-        internal static bool CheckIfJsonNameRequiresMapping(string jsonName)
+        internal static bool CheckIfJsonNameRequiresMapping(string? jsonName)
         {
             if (jsonName != null)
             {

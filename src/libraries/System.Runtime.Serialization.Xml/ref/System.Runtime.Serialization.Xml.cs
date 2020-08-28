@@ -35,7 +35,7 @@ namespace System.Runtime.Serialization
         public override object? ReadObject(System.Xml.XmlReader reader, bool verifyObjectName) { throw null; }
         public override void WriteEndObject(System.Xml.XmlDictionaryWriter writer) { }
         public override void WriteEndObject(System.Xml.XmlWriter writer) { }
-        public void WriteObject(System.Xml.XmlDictionaryWriter writer, object? graph, System.Runtime.Serialization.DataContractResolver dataContractResolver) { }
+        public void WriteObject(System.Xml.XmlDictionaryWriter writer, object? graph, System.Runtime.Serialization.DataContractResolver? dataContractResolver) { }
         public override void WriteObject(System.Xml.XmlWriter writer, object? graph) { }
         public override void WriteObjectContent(System.Xml.XmlDictionaryWriter writer, object? graph) { }
         public override void WriteObjectContent(System.Xml.XmlWriter writer, object? graph) { }

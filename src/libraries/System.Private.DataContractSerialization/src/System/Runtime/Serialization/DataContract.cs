@@ -1629,7 +1629,7 @@ namespace System.Runtime.Serialization
             return new Uri(Globals.DataContractXsdBaseNamespaceUri, clrNs).AbsoluteUri;
         }
 
-        internal static void GetDefaultStableName(string? fullTypeName, out string localName, out string ns)
+        internal static void GetDefaultStableName(string fullTypeName, out string localName, out string ns)
         {
             CodeTypeReference typeReference = new CodeTypeReference(fullTypeName);
             GetDefaultStableName(typeReference, out localName, out ns);

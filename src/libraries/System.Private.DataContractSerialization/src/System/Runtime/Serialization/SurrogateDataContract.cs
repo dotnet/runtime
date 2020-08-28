@@ -33,13 +33,13 @@ namespace System.Runtime.Serialization
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private object SerializationSurrogateSetObjectData(object obj, SerializationInfo serInfo, StreamingContext context)
+        private object? SerializationSurrogateSetObjectData(object obj, SerializationInfo serInfo, StreamingContext context)
         {
             return SerializationSurrogate.SetObjectData(obj, serInfo, context, null);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        internal static object GetRealObject(IObjectReference obj, StreamingContext context)
+        internal static object? GetRealObject(IObjectReference obj, StreamingContext context)
         {
             return obj.GetRealObject(context);
         }
@@ -66,7 +66,7 @@ namespace System.Runtime.Serialization
             context.AddNewObject(obj);
             string objectId = context.GetObjectId();
             SerializationInfo serInfo = context.ReadSerializationInfo(xmlReader, objType);
-            object newObj = SerializationSurrogateSetObjectData(obj, serInfo, context.GetStreamingContext());
+            object? newObj = SerializationSurrogateSetObjectData(obj, serInfo, context.GetStreamingContext());
             if (newObj == null)
                 newObj = obj;
             if (newObj is IDeserializationCallback)

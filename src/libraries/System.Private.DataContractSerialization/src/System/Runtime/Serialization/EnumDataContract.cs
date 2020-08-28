@@ -360,7 +360,7 @@ namespace System.Runtime.Serialization
             WriteEnumValue(xmlWriter, obj);
         }
 
-        public override object? ReadXmlValue(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext? context)
+        public override object ReadXmlValue(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext? context)
         {
             object obj = ReadEnumValue(xmlReader);
             if (context != null)

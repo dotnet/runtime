@@ -391,7 +391,7 @@ namespace System.Runtime.Serialization
         }
 
 #if USE_REFEMIT
-        public void AddNewObject(object obj)
+        public void AddNewObject(object? obj)
 #else
         internal void AddNewObject(object? obj)
 #endif
@@ -402,7 +402,7 @@ namespace System.Runtime.Serialization
         }
 
 #if USE_REFEMIT
-        public void AddNewObjectWithId(string id, object obj)
+        public void AddNewObjectWithId(string id, object? obj)
 #else
         internal void AddNewObjectWithId(string id, object? obj)
 #endif
@@ -461,7 +461,7 @@ namespace System.Runtime.Serialization
 
         public object GetRealObject(IObjectReference obj, string id)
         {
-            object realObj = SurrogateDataContract.GetRealObject(obj, this.GetStreamingContext());
+            object? realObj = SurrogateDataContract.GetRealObject(obj, this.GetStreamingContext());
             // If GetRealObject returns null, it indicates that the object could not resolve itself because
             // it is missing information. This may occur in a case where multiple IObjectReference instances
             // depend on each other. BinaryFormatter supports this by fixing up the references later. These
