@@ -34,7 +34,7 @@ EMCC=source $(EMSDK_PATH)/emsdk_env.sh && emcc
 	git clone https://github.com/emscripten-core/emsdk.git $(EMSDK_LOCAL_PATH)
 	cd $(EMSDK_LOCAL_PATH) && git checkout $(EMSCRIPTEN_VERSION)
 	cd $(EMSDK_LOCAL_PATH) && ./emsdk install $(EMSCRIPTEN_VERSION)
-	cd $(EMSDK_LOCAL_PATH) && ./emsdk activate --embedded $(EMSCRIPTEN_VERSION)
+	cd $(EMSDK_LOCAL_PATH) && ./emsdk activate $(EMSCRIPTEN_VERSION)
 	touch $@
 
 ifeq ($(EMSDK_PATH),emsdk)
