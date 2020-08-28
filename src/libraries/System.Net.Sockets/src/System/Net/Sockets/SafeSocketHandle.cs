@@ -84,7 +84,7 @@ namespace System.Net.Sockets
             return true;
         }
 
-        internal void CloseAsIs(bool abortive)
+        internal void CloseAsIs(bool abortive, bool disposing)
         {
 #if DEBUG
             // If this throws it could be very bad.
@@ -101,16 +101,23 @@ namespace System.Net.Sockets
                 {
                     bool canceledOperations = false;
 
-                    // Wait until it's safe.
-                    SpinWait sw = default;
-                    while (!_released)
+                    // When the handle was not released due it being used, we try to make those on-going calls return.
+                    // TryUnblockSocket will unblock current operations but it doesn't prevent
+                    // a new one from starting. So we must call TryUnblockSocket multiple times.
+                    //
+                    // When the Socket is disposed from the finalizer thread (disposing=false)
+                    // it is longer used for operations and we can skip TryUnblockSocket.
+                    // This avoids blocking the finalizer thread when TryUnblockSocket is unable to get the reference count to zero.
+                    Debug.Assert(disposing || _released);
+                    if (disposing)
                     {
-                        // The socket was not released due to the SafeHandle being used.
-                        // Try to make those on-going calls return.
-                        // On Linux, TryUnblockSocket will unblock current operations but it doesn't prevent
-                        // a new one from starting. So we must call TryUnblockSocket multiple times.
-                        canceledOperations |= TryUnblockSocket(abortive);
-                        sw.SpinOnce();
+                        // Wait until it's safe.
+                        SpinWait sw = default;
+                        while (!_released)
+                        {
+                            canceledOperations |= TryUnblockSocket(abortive);
+                            sw.SpinOnce();
+                        }
                     }
 
                     CloseHandle(abortive, canceledOperations);
