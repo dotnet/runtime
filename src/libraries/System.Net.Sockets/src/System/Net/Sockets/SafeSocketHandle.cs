@@ -8,19 +8,6 @@ using System.Threading;
 
 namespace System.Net.Sockets
 {
-    // This class implements a safe socket handle.
-    // It uses an inner and outer SafeHandle to do so.  The inner
-    // SafeHandle holds the actual socket, but only ever has one
-    // reference to it.  The outer SafeHandle guards the inner
-    // SafeHandle with real ref counting.  When the outer SafeHandle
-    // is cleaned up, it releases the inner SafeHandle - since
-    // its ref is the only ref to the inner SafeHandle, it deterministically
-    // gets closed at that point - no races with concurrent IO calls.
-    // This allows Close() on the outer SafeHandle to deterministically
-    // close the inner SafeHandle, in turn allowing the inner SafeHandle
-    // to block the user thread in case a graceful close has been
-    // requested.  (It's not legal to block any other thread - such closes
-    // are always abortive.)
     public sealed partial class SafeSocketHandle : SafeHandleMinusOneIsInvalid
     {
 #if DEBUG
@@ -84,7 +71,7 @@ namespace System.Net.Sockets
             return true;
         }
 
-        internal void CloseAsIs(bool abortive, bool disposing)
+        internal void CloseAsIs(bool abortive, bool finalizing)
         {
 #if DEBUG
             // If this throws it could be very bad.
@@ -95,14 +82,13 @@ namespace System.Net.Sockets
                 // TryUnblockSocket will unblock current operations but it doesn't prevent
                 // a new one from starting. So we must call TryUnblockSocket multiple times.
                 //
-                // When the Socket is disposed from the finalizer thread (disposing=false)
-                // it is longer used for operations and we can skip TryUnblockSocket fall back to ReleaseHandle.
+                // When the Socket is disposed from the finalizer thread
+                // it is no longer used for operations and we can skip TryUnblockSocket fall back to ReleaseHandle.
                 // This avoids blocking the finalizer thread when TryUnblockSocket is unable to get the reference count to zero.
-                if (!disposing)
+                if (finalizing)
                 {
-                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"dispose");
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"finalizing");
 
-                    Debug.Assert(abortive);
                     Dispose();
                     return;
                 }
