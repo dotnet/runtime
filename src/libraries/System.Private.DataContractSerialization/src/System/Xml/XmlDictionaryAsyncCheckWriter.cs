@@ -290,7 +290,7 @@ namespace System.Xml
             CoreWriter.WriteProcessingInstruction(name, text);
         }
 
-        public override Task WriteProcessingInstructionAsync(string name, string text)
+        public override Task WriteProcessingInstructionAsync(string name, string? text)
         {
             CheckAsync();
             return SetLastTask(CoreWriter.WriteProcessingInstructionAsync(name, text));

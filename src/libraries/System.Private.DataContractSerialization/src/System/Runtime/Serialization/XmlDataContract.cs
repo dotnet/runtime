@@ -352,7 +352,7 @@ namespace System.Runtime.Serialization
                 object? o = null;
                 if (type == typeof(System.Xml.Linq.XElement))
                 {
-                    o = new System.Xml.Linq.XElement("default");
+                    o = new System.Xml.Linq.XElement("default"!); // TODO-NULLABLE - https://github.com/dotnet/roslyn/issues/39802
                 }
                 else
                 {
