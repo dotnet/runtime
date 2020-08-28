@@ -161,7 +161,7 @@ namespace System.Data.Common
 
             StringReader strreader = new StringReader(s);
             XmlSerializer deserializerWithOutRootAttribute = ObjectStorage.GetXmlSerializer(_dataType);
-            return (deserializerWithOutRootAttribute.Deserialize(strreader));
+            return (deserializerWithOutRootAttribute.Deserialize(strreader))!;
         }
 
         // Prevent inlining so that reflection calls are not moved to caller that may be in a different assembly that may have a different grant set.
@@ -188,7 +188,7 @@ namespace System.Data.Common
             else
             {
                 XmlSerializer deserializerWithRootAttribute = ObjectStorage.GetXmlSerializer(_dataType, xmlAttrib);
-                return (deserializerWithRootAttribute.Deserialize(xmlReader));
+                return (deserializerWithRootAttribute.Deserialize(xmlReader))!;
             }
         }
 

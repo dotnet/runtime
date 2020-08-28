@@ -17,7 +17,7 @@ namespace System.Xml.Serialization
         {
         }
 
-        public SoapElementAttribute(string elementName)
+        public SoapElementAttribute(string? elementName)
         {
             _elementName = elementName;
         }

@@ -45,5 +45,8 @@ namespace System
 
         internal const string EscapeUriStringMessage = "Uri.EscapeUriString can corrupt the Uri string in some cases. Consider using Uri.EscapeDataString instead.";
         internal const string EscapeUriStringDiagId = "SYSLIB0013";
+
+        internal const string WebRequestMessage = "Use HttpClient instead.";
+        internal const string WebRequestDiagId = "SYSLIB0014";
     }
 }
