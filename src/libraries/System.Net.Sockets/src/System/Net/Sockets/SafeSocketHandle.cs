@@ -91,6 +91,22 @@ namespace System.Net.Sockets
             try
             {
 #endif
+                // When the handle was not released due it being used, we try to make those on-going calls return.
+                // TryUnblockSocket will unblock current operations but it doesn't prevent
+                // a new one from starting. So we must call TryUnblockSocket multiple times.
+                //
+                // When the Socket is disposed from the finalizer thread (disposing=false)
+                // it is longer used for operations and we can skip TryUnblockSocket fall back to ReleaseHandle.
+                // This avoids blocking the finalizer thread when TryUnblockSocket is unable to get the reference count to zero.
+                if (!disposing)
+                {
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"dispose");
+
+                    Debug.Assert(abortive);
+                    Dispose();
+                    return;
+                }
+
                 bool shouldClose = TryOwnClose();
 
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"shouldClose={shouldClose}");
@@ -101,23 +117,12 @@ namespace System.Net.Sockets
                 {
                     bool canceledOperations = false;
 
-                    // When the handle was not released due it being used, we try to make those on-going calls return.
-                    // TryUnblockSocket will unblock current operations but it doesn't prevent
-                    // a new one from starting. So we must call TryUnblockSocket multiple times.
-                    //
-                    // When the Socket is disposed from the finalizer thread (disposing=false)
-                    // it is longer used for operations and we can skip TryUnblockSocket.
-                    // This avoids blocking the finalizer thread when TryUnblockSocket is unable to get the reference count to zero.
-                    Debug.Assert(disposing || _released);
-                    if (disposing)
+                    // Wait until it's safe.
+                    SpinWait sw = default;
+                    while (!_released)
                     {
-                        // Wait until it's safe.
-                        SpinWait sw = default;
-                        while (!_released)
-                        {
-                            canceledOperations |= TryUnblockSocket(abortive);
-                            sw.SpinOnce();
-                        }
+                        canceledOperations |= TryUnblockSocket(abortive);
+                        sw.SpinOnce();
                     }
 
                     CloseHandle(abortive, canceledOperations);
