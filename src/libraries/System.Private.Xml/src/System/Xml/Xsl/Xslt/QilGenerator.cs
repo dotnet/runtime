@@ -5,7 +5,6 @@
 // <spec>http://www.w3.org/TR/xslt20/</spec>
 //------------------------------------------------------------------------------
 
-#nullable enable
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Specialized;
@@ -157,7 +156,7 @@ namespace System.Xml.Xsl.Xslt
             try
             {
                 CompileKeys();
-                CompileAndSortMatches(compiler.Root!.Imports[0]);
+                CompileAndSortMatches(compiler.Root!.Imports![0]);
                 PrecompileProtoTemplatesHeaders();
                 CompileGlobalVariables();
 
@@ -2164,7 +2163,7 @@ namespace System.Xml.Xsl.Xslt
 
             sheet.SortTemplateMatches();
 
-            foreach (Stylesheet import in sheet.Imports)
+            foreach (Stylesheet import in sheet.Imports!)
             {
                 CompileAndSortMatches(import);
             }

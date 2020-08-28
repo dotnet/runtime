@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -358,7 +357,7 @@ namespace System.Xml.Xsl.Xslt
         private void CollectPatternsInternal(Stylesheet sheet, QilName mode)
         {
             // Process imported stylesheets in the straight order, since their order will be reverted in the result tree
-            foreach (Stylesheet import in sheet.Imports)
+            foreach (Stylesheet import in sheet.Imports!)
             {
                 CollectPatternsInternal(import, mode);
             }
@@ -374,7 +373,7 @@ namespace System.Xml.Xsl.Xslt
         public void CollectPatterns(StylesheetLevel sheet, QilName mode)
         {
             Clear();
-            foreach (Stylesheet import in sheet.Imports)
+            foreach (Stylesheet import in sheet.Imports!)
             {
                 CollectPatternsInternal(import, mode);
             }

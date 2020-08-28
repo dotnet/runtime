@@ -12,6 +12,21 @@ namespace Microsoft.Extensions.Configuration.Json.Test
     public class IntegrationTest
     {
         [Fact]
+        public void MinimalJson_GetChildrenFromConfiguration_NoConfigurationSection()
+        {
+            var json = @"{
+            }";
+
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddJsonStream(TestStreamHelpers.StringToStream(json));
+            var configuration = configurationBuilder.Build();
+
+            Assert.Collection(configuration.GetChildren(),
+                new Action<IConfigurationSection>[] {
+            });
+        }
+
+        [Fact]
         public void LoadJsonConfiguration()
         {
             var json = @"{
