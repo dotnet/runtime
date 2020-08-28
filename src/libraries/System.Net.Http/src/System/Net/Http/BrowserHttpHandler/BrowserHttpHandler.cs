@@ -35,6 +35,8 @@ namespace System.Net.Http
         private static readonly HttpRequestOptionsKey<bool> EnableStreamingResponse = new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingResponse");
         private static readonly HttpRequestOptionsKey<IDictionary<string, object>> FetchOptions = new HttpRequestOptionsKey<IDictionary<string, object>>("WebAssemblyFetchOptions");
         private bool _allowAutoRedirect = HttpHandlerDefaults.DefaultAutomaticRedirection;
+        // flag to determine if the _allowAutoRedirect was explicitly set or not.
+        private bool _isAllowAutoRedirectTouched;
         private int _maxAutomaticRedirections = HttpHandlerDefaults.DefaultMaxAutomaticRedirections;
         private bool _disposed;
         private bool _handlerStarted;
@@ -120,6 +122,7 @@ namespace System.Net.Http
             set
             {
                 CheckDisposedOrStarted();
+                _isAllowAutoRedirectTouched = true;
                 _allowAutoRedirect = value;
             }
         }
@@ -192,14 +195,12 @@ namespace System.Net.Http
 
                 requestObject.SetObjectProperty("method", request.Method.Method);
 
-                // Allowing or Disallowing redirects.
-                if (AllowAutoRedirect)
+                // Only set if property was specifically modified and is not default value
+                if (_isAllowAutoRedirectTouched)
                 {
-                    requestObject.SetObjectProperty("redirect", "follow");
-                }
-                else
-                {
-                    // Here we will set redirect to `manual` so that we do not crash with an exception
+                    // Allowing or Disallowing redirects.
+                    // Here we will set redirect to `manual` instead of error if AllowAutoRedirect is
+                    // false so there is no exception thrown
                     //
                     // https://developer.mozilla.org/en-US/docs/Web/API/Response/type
                     //
@@ -207,7 +208,7 @@ namespace System.Net.Http
                     //
                     // https://github.com/whatwg/fetch/issues/763
                     // https://github.com/whatwg/fetch/issues/601
-                    requestObject.SetObjectProperty("redirect", "manual");
+                    requestObject.SetObjectProperty("redirect", AllowAutoRedirect ? "follow" : "manual");
                 }
 
                 // We need to check for body content
