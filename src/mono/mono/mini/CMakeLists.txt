@@ -672,6 +672,57 @@ set(sgen_sources_base
 addprefix(sgen_sources ../sgen/ "${sgen_sources_base}")
 set_source_files_properties(${sgen_sources} PROPERTIES COMPILE_DEFINITIONS "HAVE_SGEN_GC")
 
+# EVENTPIPE
+
+set(eventpipe_sources_base
+	ep.c
+	ep.h
+	ep-block.c
+	ep-block.h
+	ep-buffer.c
+	ep-buffer.h
+	ep-buffer-manager.c
+	ep-buffer-manager.h
+	ep-config.c
+	ep-config.h
+	ep-config-internals.h
+	ep-event.c
+	ep-event.h
+	ep-event-instance.h
+	ep-event-instance.c
+	ep-event-payload.c
+	ep-event-payload.h
+	ep-event-source.c
+	ep-event-source.h
+	ep-file.c
+	ep-file.h
+	ep-getter-setter.h
+	ep-metadata-generator.c
+	ep-metadata-generator.h
+	ep-provider.c
+	ep-provider.h
+	ep-provider-internals.h
+	ep-rt.h
+	ep-rt-config.h
+	ep-rt-config-mono.h
+	ep-rt-mono.c
+	ep-rt-mono.h
+	ep-rt-types.h
+	ep-rt-types-mono.h
+	ep-thread.c
+	ep-thread.h
+	ep-types.h
+	ep-session.c
+	ep-session.h
+	ep-session-provider.c
+	ep-stack-contents.c
+	ep-stack-contents.h
+	ep-stream.c
+	ep-stream.h)
+if(ENABLE_PERFTRACING)
+  addprefix(eventpipe_sources ../eventpipe  "${eventpipe_sources_base}")
+endif()
+
 # ICU
 if(HAVE_SYS_ICU)
 if(STATIC_ICU)
@@ -879,7 +930,7 @@ addprefix(mini_public_headers ../mini "${mini_public_headers_base}")
 
 set(mini_sources "${CMAKE_CURRENT_BINARY_DIR}/buildver-sgen.h;main-core.c;${mini_common_sources};${arch_sources};${os_sources};${mini_interp_sources};${llvm_sources};${debugger_sources};${llvm_runtime_sources}")
 
-add_library(monosgen-objects OBJECT "${eglib_sources};${metadata_sources};${utils_sources};${sgen_sources};${icu_shim_sources};${mini_sources}")
+add_library(monosgen-objects OBJECT "${eglib_sources};${metadata_sources};${utils_sources};${sgen_sources};${icu_shim_sources};${eventpipe_sources};${mini_sources}")
 add_library(monosgen-static STATIC $<TARGET_OBJECTS:monosgen-objects>)
 set_target_properties(monosgen-static PROPERTIES OUTPUT_NAME monosgen-2.0)
 install(TARGETS monosgen-static LIBRARY)
@@ -891,6 +942,7 @@ install(FILES ${mini_public_headers}
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/mono-2.0/mono/jit)
 if(NOT DISABLE_SHARED_LIBS)
    add_library(monosgen SHARED $<TARGET_OBJECTS:monosgen-objects>)
+   install(TARGETS monosgen LIBRARY)
 endif()
 
 if(NOT DISABLE_EXECUTABLES)

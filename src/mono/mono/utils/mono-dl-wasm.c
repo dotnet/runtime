@@ -1,4 +1,5 @@
 #include <config.h>
+#include <mono/utils/mono-compiler.h>
 
 #if defined (HOST_WASM)
 
@@ -90,5 +91,9 @@ void
 mono_dl_close_handle (MonoDl *module)
 {
 }
+
+#else
+
+MONO_EMPTY_SOURCE_FILE (mono_dl_wasm);
 
 #endif

@@ -52,7 +52,7 @@ namespace System.Net.Connections
         protected ConnectionListener() { }
         public abstract System.Net.Connections.IConnectionProperties ListenerProperties { get; }
         public abstract System.Net.EndPoint? LocalEndPoint { get; }
-        public abstract System.Threading.Tasks.ValueTask<System.Net.Connections.Connection> AcceptAsync(System.Net.Connections.IConnectionProperties? options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+        public abstract System.Threading.Tasks.ValueTask<System.Net.Connections.Connection?> AcceptAsync(System.Net.Connections.IConnectionProperties? options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
         public System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }

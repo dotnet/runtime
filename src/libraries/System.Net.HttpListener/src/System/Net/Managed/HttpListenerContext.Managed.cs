@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Net.WebSockets;
 using System.Security.Principal;
 using System.Text;
@@ -23,7 +24,7 @@ namespace System.Net
 
         internal int ErrorStatus { get; set; }
 
-        internal string ErrorMessage { get; set; }
+        internal string? ErrorMessage { get; set; }
 
         internal bool HaveError => ErrorMessage != null;
 
@@ -34,7 +35,7 @@ namespace System.Net
             if (expectedSchemes == AuthenticationSchemes.Anonymous)
                 return;
 
-            string header = Request.Headers[HttpKnownHeaderNames.Authorization];
+            string? header = Request.Headers[HttpKnownHeaderNames.Authorization];
             if (string.IsNullOrEmpty(header))
                 return;
 
@@ -44,8 +45,8 @@ namespace System.Net
             }
         }
 
-        internal IPrincipal ParseBasicAuthentication(string authData) =>
-            TryParseBasicAuth(authData, out HttpStatusCode errorCode, out string username, out string password) ?
+        internal IPrincipal? ParseBasicAuthentication(string authData) =>
+            TryParseBasicAuth(authData, out HttpStatusCode errorCode, out string? username, out string? password) ?
                 new GenericPrincipal(new HttpListenerBasicIdentity(username, password), Array.Empty<string>()) :
                 null;
 
@@ -54,7 +55,7 @@ namespace System.Net
             header[5] == ' ' &&
             string.Compare(header, 0, AuthenticationTypes.Basic, 0, 5, StringComparison.OrdinalIgnoreCase) == 0;
 
-        internal static bool TryParseBasicAuth(string headerValue, out HttpStatusCode errorCode, out string username, out string password)
+        internal static bool TryParseBasicAuth(string headerValue, out HttpStatusCode errorCode, [NotNullWhen(true)] out string? username, [NotNullWhen(true)] out string? password)
         {
             errorCode = HttpStatusCode.OK;
             username = password = null;

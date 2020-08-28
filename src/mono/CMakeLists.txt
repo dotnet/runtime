@@ -8,10 +8,13 @@ include(CheckFunctionExists)
 include(TestBigEndian)
 include(FindPkgConfig)
 
+include("cmake/QuietOSXRanlib.cmake")
+
 set(CMAKE_MODULE_PATH
   ${CMAKE_MODULE_PATH}
   "${CMAKE_CURRENT_SOURCE_DIR}/cmake"
   )
+set(CMAKE_INSTALL_MESSAGE LAZY)
 
 find_program(CCACHE_PROGRAM ccache)
 if(CCACHE_PROGRAM)
@@ -46,7 +49,11 @@ if(ENABLE_INTERP_LIB)
 endif()
 
 if(NOT DISABLE_INTERPRETER AND NOT DISABLE_JIT)
-set(ENABLE_ILGEN 1)
+  set(ENABLE_ILGEN 1)
+endif()
+
+if(NOT DISABLE_EVENTPIPE)
+  set(ENABLE_PERFTRACING 1)
 endif()
 
 # FIXME:
