@@ -216,14 +216,15 @@ namespace System.Net.Http.Functional.Tests
         protected static void ValidateStartEventPayload(EventWrittenEventArgs startEvent)
         {
             Assert.Equal("RequestStart", startEvent.EventName);
-            Assert.Equal(6, startEvent.Payload.Count);
+            Assert.Equal(7, startEvent.Payload.Count);
 
             Assert.StartsWith("http", (string)startEvent.Payload[0]);
             Assert.NotEmpty((string)startEvent.Payload[1]); // host
             Assert.True(startEvent.Payload[2] is int port && port >= 0 && port <= 65535);
             Assert.NotEmpty((string)startEvent.Payload[3]); // pathAndQuery
-            Assert.True(startEvent.Payload[4] is int versionMajor && (versionMajor == 1 || versionMajor == 2));
-            Assert.True(startEvent.Payload[5] is int versionMinor && (versionMinor == 1 || versionMinor == 0));
+            Assert.True(startEvent.Payload[4] is byte versionMajor && (versionMajor == 1 || versionMajor == 2));
+            Assert.True(startEvent.Payload[5] is byte versionMinor && (versionMinor == 1 || versionMinor == 0));
+            Assert.InRange((HttpVersionPolicy)startEvent.Payload[6], HttpVersionPolicy.RequestVersionOrLower, HttpVersionPolicy.RequestVersionExact);
         }
 
         protected static void VerifyEventCounters(ConcurrentQueue<EventWrittenEventArgs> events, int requestCount, bool shouldHaveFailures, bool shouldHaveQueuedRequests = false)

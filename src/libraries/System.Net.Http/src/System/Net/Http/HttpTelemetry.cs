@@ -36,10 +36,10 @@ namespace System.Net.Http
         // - A stop event's event id must be next one after its start event.
 
         [Event(1, Level = EventLevel.Informational)]
-        private void RequestStart(string scheme, string host, int port, string pathAndQuery, int versionMajor, int versionMinor)
+        private void RequestStart(string scheme, string host, int port, string pathAndQuery, byte versionMajor, byte versionMinor, HttpVersionPolicy versionPolicy)
         {
             Interlocked.Increment(ref _startedRequests);
-            WriteEvent(eventId: 1, scheme, host, port, pathAndQuery, versionMajor, versionMinor);
+            WriteEvent(eventId: 1, scheme, host, port, pathAndQuery, versionMajor, versionMinor, versionPolicy);
         }
 
         [NonEvent]
@@ -52,8 +52,9 @@ namespace System.Net.Http
                 request.RequestUri.IdnHost,
                 request.RequestUri.Port,
                 request.RequestUri.PathAndQuery,
-                request.Version.Major,
-                request.Version.Minor);
+                (byte)request.Version.Major,
+                (byte)request.Version.Minor,
+                request.VersionPolicy);
         }
 
         [Event(2, Level = EventLevel.Informational)]
@@ -181,7 +182,7 @@ namespace System.Net.Http
         }
 
         [NonEvent]
-        private unsafe void WriteEvent(int eventId, string? arg1, string? arg2, int arg3, string? arg4, int arg5, int arg6)
+        private unsafe void WriteEvent(int eventId, string? arg1, string? arg2, int arg3, string? arg4, byte arg5, byte arg6, HttpVersionPolicy arg7)
         {
             if (IsEnabled())
             {
@@ -193,7 +194,7 @@ namespace System.Net.Http
                 fixed (char* arg2Ptr = arg2)
                 fixed (char* arg4Ptr = arg4)
                 {
-                    const int NumEventDatas = 6;
+                    const int NumEventDatas = 7;
                     var descrs = stackalloc EventData[NumEventDatas];
 
                     descrs[0] = new EventData
@@ -219,12 +220,17 @@ namespace System.Net.Http
                     descrs[4] = new EventData
                     {
                         DataPointer = (IntPtr)(&arg5),
-                        Size = sizeof(int)
+                        Size = sizeof(byte)
                     };
                     descrs[5] = new EventData
                     {
                         DataPointer = (IntPtr)(&arg6),
-                        Size = sizeof(int)
+                        Size = sizeof(byte)
+                    };
+                    descrs[6] = new EventData
+                    {
+                        DataPointer = (IntPtr)(&arg7),
+                        Size = sizeof(HttpVersionPolicy)
                     };
 
                     WriteEventCore(eventId, NumEventDatas, descrs);
