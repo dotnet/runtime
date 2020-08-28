@@ -761,6 +761,16 @@ namespace System.Net.Sockets.Tests
             });
         }
 
+        [Fact]
+        public void SocketWithDanglingReferenceDoesntHangFinalizerThread()
+        {
+            Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
+            bool dummy = false;
+            socket.SafeHandle.DangerousAddRef(ref dummy);
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+        }
+
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static async Task<List<WeakReference>> CreateHandlesAsync(bool clientAsync)
         {
