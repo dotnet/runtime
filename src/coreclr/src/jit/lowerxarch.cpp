@@ -592,7 +592,7 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
  *
  * TODO-XArch-CQ: (Low-pri): Jit64 generates in-line code of 8 instructions for (i) above.
  * There are hardly any occurrences of this conversion operation in platform
- * assemblies or in CQ perf benchmarks (1 occurrence in mscorlib, microsoft.jscript,
+ * assemblies or in CQ perf benchmarks (1 occurrence in corelib, microsoft.jscript,
  * 1 occurence in Roslyn and no occurrences in system, system.core, system.numerics
  * system.windows.forms, scimark, fractals, bio mums). If we ever find evidence that
  * doing this optimization is a win, should consider generating in-lined code.
@@ -3439,8 +3439,7 @@ bool Lowering::IsRMWMemOpRootedAtStoreInd(GenTree* tree, GenTree** outIndirCandi
     assert(storeInd->IsRMWStatusUnknown());
 
     // Early out if indirDst is not one of the supported memory operands.
-    if (indirDst->OperGet() != GT_LEA && indirDst->OperGet() != GT_LCL_VAR && indirDst->OperGet() != GT_LCL_VAR_ADDR &&
-        indirDst->OperGet() != GT_CLS_VAR_ADDR && indirDst->OperGet() != GT_CNS_INT)
+    if (!indirDst->OperIs(GT_LEA, GT_LCL_VAR, GT_LCL_VAR_ADDR, GT_CLS_VAR_ADDR, GT_CNS_INT))
     {
         storeInd->SetRMWStatus(STOREIND_RMW_UNSUPPORTED_ADDR);
         return false;
@@ -4452,14 +4451,13 @@ bool Lowering::LowerRMWMemOp(GenTreeIndir* storeInd)
     }
     else
     {
-        assert(indirCandidateChild->OperGet() == GT_LCL_VAR || indirCandidateChild->OperGet() == GT_LCL_VAR_ADDR ||
-               indirCandidateChild->OperGet() == GT_CLS_VAR_ADDR || indirCandidateChild->OperGet() == GT_CNS_INT);
+        assert(indirCandidateChild->OperIs(GT_LCL_VAR, GT_LCL_VAR_ADDR, GT_CLS_VAR_ADDR, GT_CNS_INT));
 
         // If it is a GT_LCL_VAR, it still needs the reg to hold the address.
         // We would still need a reg for GT_CNS_INT if it doesn't fit within addressing mode base.
         // For GT_CLS_VAR_ADDR, we don't need a reg to hold the address, because field address value is known at jit
         // time. Also, we don't need a reg for GT_CLS_VAR_ADDR.
-        if (indirCandidateChild->OperGet() == GT_LCL_VAR_ADDR || indirCandidateChild->OperGet() == GT_CLS_VAR_ADDR)
+        if (indirCandidateChild->OperIs(GT_LCL_VAR_ADDR, GT_CLS_VAR_ADDR))
         {
             indirDst->SetContained();
         }
@@ -4616,10 +4614,10 @@ void Lowering::ContainCheckIntrinsic(GenTreeOp* node)
 {
     assert(node->OperIs(GT_INTRINSIC));
 
-    CorInfoIntrinsics intrinsicId = node->AsIntrinsic()->gtIntrinsicId;
+    NamedIntrinsic intrinsicName = node->AsIntrinsic()->gtIntrinsicName;
 
-    if (intrinsicId == CORINFO_INTRINSIC_Sqrt || intrinsicId == CORINFO_INTRINSIC_Round ||
-        intrinsicId == CORINFO_INTRINSIC_Ceiling || intrinsicId == CORINFO_INTRINSIC_Floor)
+    if (intrinsicName == NI_System_Math_Sqrt || intrinsicName == NI_System_Math_Round ||
+        intrinsicName == NI_System_Math_Ceiling || intrinsicName == NI_System_Math_Floor)
     {
         GenTree* op1 = node->gtGetOp1();
         if (IsContainableMemoryOp(op1) || op1->IsCnsNonZeroFltOrDbl())
@@ -5138,7 +5136,7 @@ void Lowering::ContainCheckHWIntrinsicAddr(GenTreeHWIntrinsic* node, GenTree* ad
 {
     assert((addr->TypeGet() == TYP_I_IMPL) || (addr->TypeGet() == TYP_BYREF));
     TryCreateAddrMode(addr, true);
-    if ((addr->OperIs(GT_CLS_VAR_ADDR, GT_LCL_VAR_ADDR, GT_LEA) ||
+    if ((addr->OperIs(GT_CLS_VAR_ADDR, GT_LCL_VAR_ADDR, GT_LCL_FLD_ADDR, GT_LEA) ||
          (addr->IsCnsIntOrI() && addr->AsIntConCommon()->FitsInAddrBase(comp))) &&
         IsSafeToContainMem(node, addr))
     {
@@ -5354,7 +5352,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         op2->SetRegOptional();
 
                         // TODO-XArch-CQ: For commutative nodes, either operand can be reg-optional.
-                        //                https://github.com/dotnet/coreclr/issues/6361
+                        //                https://github.com/dotnet/runtime/issues/6358
                     }
                     break;
                 }
@@ -5540,7 +5538,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                             // TODO-XArch-CQ: Technically any one of the three operands can
                             //                be reg-optional. With a limitation on op1 where
                             //                it can only be so if CopyUpperBits is off.
-                            //                https://github.com/dotnet/coreclr/issues/6361
+                            //                https://github.com/dotnet/runtime/issues/6358
 
                             // 213 form: op1 = (op2 * op1) + op3
                             op3->SetRegOptional();

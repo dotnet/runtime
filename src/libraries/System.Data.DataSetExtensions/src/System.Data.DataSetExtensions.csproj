@@ -2,6 +2,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
   <PropertyGroup>
   </PropertyGroup>

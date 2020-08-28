@@ -15,6 +15,7 @@ namespace System.Data.Common
         private TestProviderFactory() { }
     }
 
+    [PlatformSpecific(~TestPlatforms.Browser)]
     public class DbProviderFactoriesTests
     {
         [Fact]

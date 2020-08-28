@@ -110,5 +110,7 @@ namespace System
             // Otherwise, fail.
             throw new IOException(errorInfo.GetErrorMessage(), errorInfo.RawErrno);
         }
+
+        private static int GetCurrentProcessId() => Interop.Sys.GetPid();
     }
 }

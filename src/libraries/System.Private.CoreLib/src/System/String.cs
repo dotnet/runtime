@@ -611,6 +611,7 @@ namespace System
         internal static unsafe int wcslen(char* ptr)
         {
             // IndexOf processes memory in aligned chunks, and thus it won't crash even if it accesses memory beyond the null terminator.
+            // This IndexOf behavior is an implementation detail of the runtime and callers outside System.Private.CoreLib must not depend on it.
             int length = SpanHelpers.IndexOf(ref *ptr, '\0', int.MaxValue);
             if (length < 0)
             {
@@ -624,6 +625,7 @@ namespace System
         internal static unsafe int strlen(byte* ptr)
         {
             // IndexOf processes memory in aligned chunks, and thus it won't crash even if it accesses memory beyond the null terminator.
+            // This IndexOf behavior is an implementation detail of the runtime and callers outside System.Private.CoreLib must not depend on it.
             int length = SpanHelpers.IndexOf(ref *ptr, (byte)'\0', int.MaxValue);
             if (length < 0)
             {

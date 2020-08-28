@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>$(BuildTargetFramework)</TargetFramework>
+    <TargetFramework Condition="'$(TargetFramework)' == ''">$(NetCoreAppCurrent)</TargetFramework>
     <!-- Set to true to build this project -->
     <BaselineApiCompat Condition="'$(BaselineApiCompat)' == ''">false</BaselineApiCompat>
     <PreviousNetCoreApp>netcoreapp3.1</PreviousNetCoreApp>

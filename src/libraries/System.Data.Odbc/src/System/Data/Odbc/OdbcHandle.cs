@@ -12,9 +12,9 @@ namespace System.Data.Odbc
     internal abstract class OdbcHandle : SafeHandle
     {
         private readonly ODBC32.SQL_HANDLE _handleType;
-        private OdbcHandle _parentHandle;
+        private OdbcHandle? _parentHandle;
 
-        protected OdbcHandle(ODBC32.SQL_HANDLE handleType, OdbcHandle parentHandle) : base(IntPtr.Zero, true)
+        protected OdbcHandle(ODBC32.SQL_HANDLE handleType, OdbcHandle? parentHandle) : base(IntPtr.Zero, true)
         {
             _handleType = handleType;
 
@@ -61,7 +61,7 @@ namespace System.Data.Odbc
                             else
                             {
                                 // without a handle, ReleaseHandle may not be called
-                                parentHandle.DangerousRelease();
+                                parentHandle!.DangerousRelease();
                             }
                             break;
                     }
@@ -164,7 +164,7 @@ namespace System.Data.Odbc
 
             // If we ended up getting released, then we have to release
             // our reference on our parent.
-            OdbcHandle parentHandle = _parentHandle;
+            OdbcHandle? parentHandle = _parentHandle;
             _parentHandle = null;
             if (null != parentHandle)
             {

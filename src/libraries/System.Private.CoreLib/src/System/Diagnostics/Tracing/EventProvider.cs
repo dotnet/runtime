@@ -1,22 +1,20 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#if ES_BUILD_STANDALONE
-using Microsoft.Win32;
 using System;
 using System.Diagnostics;
-using System.Security.Permissions;
-using BitOperations = Microsoft.Diagnostics.Tracing.Internal.BitOperations;
-#endif
 using System.Collections.Generic;
 using System.Globalization;
 using System.Numerics;
 using System.Runtime.InteropServices;
-#if (CORECLR || MONO) && TARGET_WINDOWS
-using Internal.Win32;
+
+#if ES_BUILD_STANDALONE
+using Microsoft.Win32;
+using System.Security.Permissions;
 #endif
-#if ES_BUILD_AGAINST_DOTNET_V35
-using Microsoft.Internal;       // for Tuple (can't define alias for open generic types so we "use" the whole namespace)
+
+#if !ES_BUILD_STANDALONE && TARGET_WINDOWS
+using Internal.Win32;
 #endif
 
 #if ES_BUILD_STANDALONE
@@ -521,7 +519,7 @@ namespace System.Diagnostics.Tracing
                 }
             }
 #else
-#if !ES_BUILD_PCL && TARGET_WINDOWS  // TODO command arguments don't work on PCL builds...
+#if TARGET_WINDOWS
             // This code is only used in the Nuget Package Version of EventSource.  because
             // the code above is using APIs baned from UWP apps.
             //
@@ -609,7 +607,7 @@ namespace System.Diagnostics.Tracing
             dataStart = 0;
             if (filterData == null)
             {
-#if (!ES_BUILD_PCL && TARGET_WINDOWS)
+#if TARGET_WINDOWS
                 string regKey = @"\Microsoft\Windows\CurrentVersion\Winevt\Publishers\{" + m_providerId + "}";
                 if (IntPtr.Size == 8)
                     regKey = @"Software\Wow6432Node" + regKey;

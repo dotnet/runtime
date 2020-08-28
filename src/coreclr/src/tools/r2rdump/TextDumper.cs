@@ -215,18 +215,15 @@ namespace R2RDump
                 string instr;
                 int instrSize = _disassembler.GetInstruction(rtf, imageOffset, rtfOffset, out instr);
 
-                if (_r2r.Machine == Machine.Amd64 && ((ILCompiler.Reflection.ReadyToRun.Amd64.UnwindInfo)rtf.UnwindInfo).UnwindCodes.ContainsKey(codeOffset))
+                if (_r2r.Machine == Machine.Amd64 && ((ILCompiler.Reflection.ReadyToRun.Amd64.UnwindInfo)rtf.UnwindInfo).CodeOffsetToUnwindCodeIndex.TryGetValue(codeOffset, out int unwindCodeIndex))
                 {
-                    List<ILCompiler.Reflection.ReadyToRun.Amd64.UnwindCode> codes = ((ILCompiler.Reflection.ReadyToRun.Amd64.UnwindInfo)rtf.UnwindInfo).UnwindCodes[codeOffset];
-                    foreach (ILCompiler.Reflection.ReadyToRun.Amd64.UnwindCode code in codes)
+                    ILCompiler.Reflection.ReadyToRun.Amd64.UnwindCode code = ((ILCompiler.Reflection.ReadyToRun.Amd64.UnwindInfo)rtf.UnwindInfo).UnwindCodes[unwindCodeIndex];
+                    _writer.Write($"{indentString}{code.UnwindOp} {code.OpInfoStr}");
+                    if (code.NextFrameOffset != -1)
                     {
-                        _writer.Write($"{indentString}{code.UnwindOp} {code.OpInfoStr}");
-                        if (code.NextFrameOffset != -1)
-                        {
-                            _writer.WriteLine($"{indentString}{code.NextFrameOffset}");
-                        }
-                        _writer.WriteLine();
+                        _writer.WriteLine($"{indentString}{code.NextFrameOffset}");
                     }
+                    _writer.WriteLine();
                 }
 
                 if (!_options.HideTransitions && rtf.Method.GcInfo?.Transitions != null && rtf.Method.GcInfo.Transitions.TryGetValue(codeOffset, out List<BaseGcTransition> transitionsForOffset))
@@ -348,6 +345,8 @@ namespace R2RDump
                     int rtfOffset = _r2r.GetOffset(section.RelativeVirtualAddress);
                     int rtfEndOffset = rtfOffset + section.Size;
                     int rtfIndex = 0;
+                    _writer.WriteLine("  Index | StartRVA |  EndRVA  | UnwindRVA");
+                    _writer.WriteLine("-----------------------------------------");
                     while (rtfOffset < rtfEndOffset)
                     {
                         int startRva = NativeReader.ReadInt32(_r2r.Image, ref rtfOffset);
@@ -357,11 +356,8 @@ namespace R2RDump
                             endRva = NativeReader.ReadInt32(_r2r.Image, ref rtfOffset);
                         }
                         int unwindRva = NativeReader.ReadInt32(_r2r.Image, ref rtfOffset);
-                        _writer.WriteLine($"Index: {rtfIndex}");
-                        _writer.WriteLine($"        StartRva: 0x{startRva:X8}");
-                        if (endRva != -1)
-                            _writer.WriteLine($"        EndRva: 0x{endRva:X8}");
-                        _writer.WriteLine($"        UnwindRva: 0x{unwindRva:X8}");
+                        string endRvaText = (endRva != -1 ? endRva.ToString("x8") : "        ");
+                        _writer.WriteLine($"{rtfIndex,7} | {startRva:X8} | {endRvaText} | {unwindRva:X8}");
                         rtfIndex++;
                     }
                     break;
@@ -409,7 +405,7 @@ namespace R2RDump
                     int assemblyRefCount = 0;
                     if (!_r2r.Composite)
                     {
-                        MetadataReader globalReader = _r2r.GetGlobalMetadataReader();
+                        MetadataReader globalReader = _r2r.GetGlobalMetadata().MetadataReader;
                         assemblyRefCount = globalReader.GetTableRowCount(TableIndex.AssemblyRef) + 1;
                         _writer.WriteLine($"MSIL AssemblyRef's ({assemblyRefCount} entries):");
                         for (int assemblyRefIndex = 1; assemblyRefIndex < assemblyRefCount; assemblyRefIndex++)

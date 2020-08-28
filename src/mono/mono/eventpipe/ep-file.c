@@ -340,6 +340,8 @@ ep_file_alloc (
 	// Start at 0 - The value is always incremented prior to use, so the first ID will be 1.
 	instance->stack_id_counter = 0;
 
+	ep_rt_volatile_store_uint32_t (&instance->initialized, 0);
+
 #ifdef EP_CHECKED_BUILD
 	instance->last_sorted_timestamp = ep_perf_counter_query ();
 #endif
@@ -368,9 +370,9 @@ ep_file_free (EventPipeFile *file)
 	ep_rt_metadata_labels_free (&file->metadata_ids);
 	ep_rt_stack_hash_free (&file->stack_hash);
 
-	// If there's no fast_serializer, stream_writer ownership
+	// If file has not been initialized, stream_writer ownership
 	// have not been passed along and needs to be freed by file.
-	if (!file->fast_serializer)
+	if (ep_rt_volatile_load_uint32_t (&file->initialized) == 0)
 		ep_stream_writer_free_vcall (file->stream_writer);
 
 	ep_fast_serializable_object_fini (&file->fast_serializable_object);
@@ -393,6 +395,7 @@ ep_file_initialize_file (EventPipeFile *file)
 	}
 
 	if (success) {
+		ep_rt_volatile_store_uint32_t (&file->initialized, 1);
 		// Create the file stream and write the FastSerialization header.
 		file->fast_serializer = ep_fast_serializer_alloc (file->stream_writer);
 

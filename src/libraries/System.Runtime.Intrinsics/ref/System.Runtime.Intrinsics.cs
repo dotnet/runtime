@@ -3367,10 +3367,10 @@ namespace System.Runtime.Intrinsics.X86
         }
     }
     [System.CLSCompliantAttribute(false)]
-    public abstract partial class Bmi1
+    public abstract partial class Bmi1 : System.Runtime.Intrinsics.X86.X86Base
     {
         internal Bmi1() { }
-        public static bool IsSupported { get { throw null; } }
+        public static new bool IsSupported { get { throw null; } }
         public static uint AndNot(uint left, uint right) { throw null; }
         public static uint BitFieldExtract(uint value, byte start, byte length) { throw null; }
         public static uint BitFieldExtract(uint value, ushort control) { throw null; }
@@ -3378,10 +3378,10 @@ namespace System.Runtime.Intrinsics.X86
         public static uint GetMaskUpToLowestSetBit(uint value) { throw null; }
         public static uint ResetLowestSetBit(uint value) { throw null; }
         public static uint TrailingZeroCount(uint value) { throw null; }
-        public abstract partial class X64
+        public new abstract partial class X64 : System.Runtime.Intrinsics.X86.X86Base.X64
         {
             internal X64() { }
-            public static bool IsSupported { get { throw null; } }
+            public static new bool IsSupported { get { throw null; } }
             public static ulong AndNot(ulong left, ulong right) { throw null; }
             public static ulong BitFieldExtract(ulong value, byte start, byte length) { throw null; }
             public static ulong BitFieldExtract(ulong value, ushort control) { throw null; }
@@ -3392,19 +3392,19 @@ namespace System.Runtime.Intrinsics.X86
         }
     }
     [System.CLSCompliantAttribute(false)]
-    public abstract partial class Bmi2
+    public abstract partial class Bmi2 : System.Runtime.Intrinsics.X86.X86Base
     {
         internal Bmi2() { }
-        public static bool IsSupported { get { throw null; } }
+        public static new bool IsSupported { get { throw null; } }
         public static uint MultiplyNoFlags(uint left, uint right) { throw null; }
         public unsafe static uint MultiplyNoFlags(uint left, uint right, uint* low) { throw null; }
         public static uint ParallelBitDeposit(uint value, uint mask) { throw null; }
         public static uint ParallelBitExtract(uint value, uint mask) { throw null; }
         public static uint ZeroHighBits(uint value, uint index) { throw null; }
-        public abstract partial class X64
+        public new abstract partial class X64 : System.Runtime.Intrinsics.X86.X86Base.X64
         {
             internal X64() { }
-            public static bool IsSupported { get { throw null; } }
+            public static new bool IsSupported { get { throw null; } }
             public static ulong MultiplyNoFlags(ulong left, ulong right) { throw null; }
             public unsafe static ulong MultiplyNoFlags(ulong left, ulong right, ulong* low) { throw null; }
             public static ulong ParallelBitDeposit(ulong value, ulong mask) { throw null; }
@@ -3491,15 +3491,15 @@ namespace System.Runtime.Intrinsics.X86
         }
     }
     [System.CLSCompliantAttribute(false)]
-    public abstract partial class Lzcnt
+    public abstract partial class Lzcnt : System.Runtime.Intrinsics.X86.X86Base
     {
         internal Lzcnt() { }
-        public static bool IsSupported { get { throw null; } }
+        public static new bool IsSupported { get { throw null; } }
         public static uint LeadingZeroCount(uint value) { throw null; }
-        public abstract partial class X64
+        public new abstract partial class X64 : System.Runtime.Intrinsics.X86.X86Base.X64
         {
             internal X64() { }
-            public static bool IsSupported { get { throw null; } }
+            public static new bool IsSupported { get { throw null; } }
             public static ulong LeadingZeroCount(ulong value) { throw null; }
         }
     }
@@ -3530,10 +3530,10 @@ namespace System.Runtime.Intrinsics.X86
         }
     }
     [System.CLSCompliantAttribute(false)]
-    public abstract partial class Sse
+    public abstract partial class Sse : System.Runtime.Intrinsics.X86.X86Base
     {
         internal Sse() { }
-        public static bool IsSupported { get { throw null; } }
+        public static new bool IsSupported { get { throw null; } }
         public static System.Runtime.Intrinsics.Vector128<float> Add(System.Runtime.Intrinsics.Vector128<float> left, System.Runtime.Intrinsics.Vector128<float> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<float> AddScalar(System.Runtime.Intrinsics.Vector128<float> left, System.Runtime.Intrinsics.Vector128<float> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<float> And(System.Runtime.Intrinsics.Vector128<float> left, System.Runtime.Intrinsics.Vector128<float> right) { throw null; }
@@ -3621,10 +3621,10 @@ namespace System.Runtime.Intrinsics.X86
         public static System.Runtime.Intrinsics.Vector128<float> UnpackHigh(System.Runtime.Intrinsics.Vector128<float> left, System.Runtime.Intrinsics.Vector128<float> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<float> UnpackLow(System.Runtime.Intrinsics.Vector128<float> left, System.Runtime.Intrinsics.Vector128<float> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<float> Xor(System.Runtime.Intrinsics.Vector128<float> left, System.Runtime.Intrinsics.Vector128<float> right) { throw null; }
-        public abstract partial class X64
+        public new abstract partial class X64 : System.Runtime.Intrinsics.X86.X86Base.X64
         {
             internal X64() { }
-            public static bool IsSupported { get { throw null; } }
+            public static new bool IsSupported { get { throw null; } }
             public static System.Runtime.Intrinsics.Vector128<float> ConvertScalarToVector128Single(System.Runtime.Intrinsics.Vector128<float> upper, long value) { throw null; }
             public static long ConvertToInt64(System.Runtime.Intrinsics.Vector128<float> value) { throw null; }
             public static long ConvertToInt64WithTruncation(System.Runtime.Intrinsics.Vector128<float> value) { throw null; }
@@ -4181,6 +4181,18 @@ namespace System.Runtime.Intrinsics.X86
         {
             internal X64() { }
             public static new bool IsSupported { get { throw null; } }
+        }
+    }
+    [System.CLSCompliantAttribute(false)]
+    public abstract partial class X86Base
+    {
+        internal X86Base() { }
+        public static bool IsSupported { get { throw null; } }
+        public static (int Eax, int Ebx, int Ecx, int Edx) CpuId(int functionId, int subFunctionId) { throw null; }
+        public abstract partial class X64
+        {
+            internal X64() { }
+            public static bool IsSupported { get { throw null; } }
         }
     }
 }

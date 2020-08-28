@@ -10,35 +10,26 @@ extern "C"
         PORTABILITY_ASSERT("Implement for PAL");
     }
 
-    DWORD getcpuid(DWORD arg, unsigned char result[16])
+    void __cpuid(int cpuInfo[4], int function_id)
     {
-        DWORD eax;
-        __asm("  xor %%ecx, %%ecx\n" \
-              "  cpuid\n" \
-              "  mov %%eax, 0(%[result])\n" \
-              "  mov %%ebx, 4(%[result])\n" \
-              "  mov %%ecx, 8(%[result])\n" \
-              "  mov %%edx, 12(%[result])\n" \
-            : "=a"(eax) /*output in eax*/\
-            : "a"(arg), [result]"r"(result) /*inputs - arg in eax, result in any register*/\
-            : "rbx", "ecx", "edx", "memory" /* registers that are clobbered, *result is clobbered */
-          );
-        return eax;
+        // Based on the Clang implementation provided in cpuid.h:
+        // https://github.com/llvm/llvm-project/blob/master/clang/lib/Headers/cpuid.h
+
+        __asm("  cpuid\n" \
+            : "=a"(cpuInfo[0]), "=b"(cpuInfo[1]), "=c"(cpuInfo[2]), "=d"(cpuInfo[3]) \
+            : "0"(function_id)
+        );
     }
 
-    DWORD getextcpuid(DWORD arg1, DWORD arg2, unsigned char result[16])
+    void __cpuidex(int cpuInfo[4], int function_id, int subFunction_id)
     {
-        DWORD eax;
+        // Based on the Clang implementation provided in cpuid.h:
+        // https://github.com/llvm/llvm-project/blob/master/clang/lib/Headers/cpuid.h
+
         __asm("  cpuid\n" \
-              "  mov %%eax, 0(%[result])\n" \
-              "  mov %%ebx, 4(%[result])\n" \
-              "  mov %%ecx, 8(%[result])\n" \
-              "  mov %%edx, 12(%[result])\n" \
-            : "=a"(eax) /*output in eax*/\
-            : "c"(arg1), "a"(arg2), [result]"r"(result) /*inputs - arg1 in ecx, arg2 in eax, result in any register*/\
-            : "rbx", "edx", "memory" /* registers that are clobbered, *result is clobbered */
-          );
-        return eax;
+            : "=a"(cpuInfo[0]), "=b"(cpuInfo[1]), "=c"(cpuInfo[2]), "=d"(cpuInfo[3]) \
+            : "0"(function_id), "2"(subFunction_id)
+        );
     }
 
     DWORD xmmYmmStateSupport()

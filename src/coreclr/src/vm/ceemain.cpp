@@ -220,6 +220,8 @@
 #include "gdbjit.h"
 #endif // FEATURE_GDBJIT
 
+#include "genanalysis.h"
+
 #ifndef CROSSGEN_COMPILE
 static int GetThreadUICultureId(__out LocaleIDValue* pLocale);  // TODO: This shouldn't use the LCID.  We should rely on name instead
 
@@ -240,10 +242,14 @@ extern "C" HRESULT __cdecl CorDBGetInterface(DebugInterface** rcInterface);
 #endif // !CROSSGEN_COMPILE
 
 // g_coreclr_embedded indicates that coreclr is linked directly into the program
+// g_hostpolicy_embedded indicates that the hostpolicy library is linked directly into the executable
+// Note: that it can happen that the hostpolicy is embedded but coreclr isn't (on Windows singlefilehost is built that way)
 #ifdef CORECLR_EMBEDDED
 bool g_coreclr_embedded = true;
+bool g_hostpolicy_embedded = true; // We always embed hostpolicy if coreclr is also embedded
 #else
 bool g_coreclr_embedded = false;
+bool g_hostpolicy_embedded = false; // In this case the value may come from a runtime property and may change
 #endif
 
 // Remember how the last startup of EE went.
@@ -283,8 +289,8 @@ HRESULT EnsureEEStarted()
 
     HRESULT hr = E_FAIL;
 
-    // On non x86 platforms, when we load mscorlib.dll during EEStartup, we will
-    // re-enter _CorDllMain with a DLL_PROCESS_ATTACH for mscorlib.dll. We are
+    // On non x86 platforms, when we load CoreLib during EEStartup, we will
+    // re-enter _CorDllMain with a DLL_PROCESS_ATTACH for CoreLib. We are
     // far enough in startup that this is allowed, however we don't want to
     // re-start the startup code so we need to check to see if startup has
     // been initiated or completed before we call EEStartup.
@@ -395,7 +401,7 @@ static BOOL WINAPI DbgCtrlCHandler(DWORD dwCtrlType)
     else
 #endif // DEBUGGING_SUPPORTED
     {
-        if (dwCtrlType == CTRL_CLOSE_EVENT)
+        if (dwCtrlType == CTRL_CLOSE_EVENT || dwCtrlType == CTRL_SHUTDOWN_EVENT)
         {
             // Initiate shutdown so the ProcessExit handlers run
             ForceEEShutdown(SCA_ReturnWhenShutdownComplete);
@@ -672,6 +678,7 @@ void EEStartupHelper()
         // Initialize the event pipe.
         EventPipe::Initialize();
 #endif // FEATURE_PERFTRACING
+        GenAnalysis::Initialize();
 
 #ifdef TARGET_UNIX
         PAL_SetShutdownCallback(EESocketCleanupHelper);
@@ -824,7 +831,7 @@ void EEStartupHelper()
 
         AccessCheckOptions::Startup();
 
-        MscorlibBinder::Startup();
+        CoreLibBinder::Startup();
 
         Stub::Init();
         StubLinkerCPU::Init();
@@ -1030,8 +1037,8 @@ void EEStartupHelper()
             SystemDomain::SystemModule()->ExpandAll();
         }
 
-        // Perform mscorlib consistency check if requested
-        g_Mscorlib.CheckExtended();
+        // Perform CoreLib consistency check if requested
+        g_CoreLib.CheckExtended();
 
 #endif // _DEBUG
 
@@ -1107,7 +1114,7 @@ LONG FilterStartupException(PEXCEPTION_POINTERS p, PVOID pv)
 // EEStartup is responsible for all the one time intialization of the runtime.  Some of the highlights of
 // what it does include
 //     * Creates the default and shared, appdomains.
-//     * Loads mscorlib.dll and loads up the fundamental types (System.Object ...)
+//     * Loads System.Private.CoreLib and loads up the fundamental types (System.Object ...)
 //
 // see code:EEStartup#TableOfContents for more on the runtime in general.
 // see code:#EEShutdown for a analagous routine run during shutdown.
@@ -1368,7 +1375,7 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
 
         // NOTE: We haven't stopped other threads at this point and nothing is stopping
         // callbacks from coming into the profiler even after Shutdown() has been called.
-        // See https://github.com/dotnet/coreclr/issues/22176 for an example of how that
+        // See https://github.com/dotnet/runtime/issues/11885 for an example of how that
         // happens.
         //
         // To prevent issues when profilers are attached we intentionally skip freeing the

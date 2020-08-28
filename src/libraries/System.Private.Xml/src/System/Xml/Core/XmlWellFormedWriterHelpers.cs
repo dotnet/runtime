@@ -5,6 +5,7 @@ using System;
 using System.Text;
 using System.Diagnostics;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml
 {
@@ -26,12 +27,12 @@ namespace System.Xml
             {
                 throw new NotImplementedException();
             }
-            string IXmlNamespaceResolver.LookupNamespace(string prefix)
+            string? IXmlNamespaceResolver.LookupNamespace(string prefix)
             {
                 return _wfWriter.LookupNamespace(prefix);
             }
 
-            string IXmlNamespaceResolver.LookupPrefix(string namespaceName)
+            string? IXmlNamespaceResolver.LookupPrefix(string namespaceName)
             {
                 return _wfWriter.LookupPrefix(namespaceName);
             }
@@ -44,7 +45,7 @@ namespace System.Xml
             internal string localName;
             internal string namespaceUri;
             internal XmlSpace xmlSpace;
-            internal string xmlLang;
+            internal string? xmlLang;
 
             internal void Set(string prefix, string localName, string namespaceUri, int prevNSTop)
             {
@@ -90,7 +91,7 @@ namespace System.Xml
                 this.prevNsIndex = -1;
             }
 
-            internal void WriteDecl(XmlWriter writer, XmlRawWriter rawWriter)
+            internal void WriteDecl(XmlWriter writer, XmlRawWriter? rawWriter)
             {
                 Debug.Assert(kind == NamespaceKind.NeedToWrite);
                 if (null != rawWriter)
@@ -107,6 +108,7 @@ namespace System.Xml
                     {
                         writer.WriteStartAttribute("xmlns", prefix, XmlReservedNs.NsXmlNs);
                     }
+
                     writer.WriteString(namespaceUri);
                     writer.WriteEndAttribute();
                 }
@@ -164,8 +166,13 @@ namespace System.Xml
                 internal ItemType type;
                 internal object data;
 
-                internal Item() { }
+                internal Item(ItemType type, object data)
+                {
+                    Set(type, data);
+                }
 
+                [MemberNotNull(nameof(type))]
+                [MemberNotNull(nameof(data))]
                 internal void Set(ItemType type, object data)
                 {
                     this.type = type;
@@ -188,8 +195,8 @@ namespace System.Xml
             }
 
             private StringBuilder _stringValue = new StringBuilder();
-            private string _singleStringValue; // special-case for a single WriteString call
-            private Item[] _items;
+            private string? _singleStringValue; // special-case for a single WriteString call
+            private Item[]? _items;
             private int _firstItem;
             private int _lastItem = -1;
 
@@ -344,7 +351,7 @@ namespace System.Xml
                 BufferChunk bufChunk;
                 for (int i = _firstItem; i <= _lastItem; i++)
                 {
-                    Item item = _items[i];
+                    Item item = _items![i];
                     switch (item.type)
                     {
                         case ItemType.EntityRef:
@@ -408,7 +415,7 @@ namespace System.Xml
                 int i = _firstItem;
                 while (i == _firstItem && i <= _lastItem)
                 {
-                    Item item = _items[i];
+                    Item item = _items![i];
                     switch (item.type)
                     {
                         case ItemType.Whitespace:
@@ -433,11 +440,13 @@ namespace System.Xml
                                 bufChunk.index++;
                                 bufChunk.count--;
                             }
+
                             if (bufChunk.index == endIndex)
                             {
                                 // no characters left -> move the firstItem index to exclude it from the Replay
                                 _firstItem++;
                             }
+
                             break;
                     }
                     i++;
@@ -447,7 +456,7 @@ namespace System.Xml
                 i = _lastItem;
                 while (i == _lastItem && i >= _firstItem)
                 {
-                    Item item = _items[i];
+                    Item item = _items![i];
                     switch (item.type)
                     {
                         case ItemType.Whitespace:
@@ -470,13 +479,16 @@ namespace System.Xml
                             {
                                 bufChunk.count--;
                             }
+
                             if (bufChunk.count == 0)
                             {
                                 // no characters left -> move the lastItem index to exclude it from the Replay
                                 _lastItem--;
                             }
+
                             break;
                     }
+
                     i--;
                 }
             }
@@ -513,11 +525,16 @@ namespace System.Xml
                     Array.Copy(_items, newItems, newItemIndex);
                     _items = newItems;
                 }
+
                 if (_items[newItemIndex] == null)
                 {
-                    _items[newItemIndex] = new Item();
+                    _items[newItemIndex] = new Item(type, data);
                 }
-                _items[newItemIndex].Set(type, data);
+                else
+                {
+                    _items[newItemIndex].Set(type, data);
+                }
+
                 _lastItem = newItemIndex;
             }
         }

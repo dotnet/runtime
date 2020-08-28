@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.InteropServices;
 using Xunit;
 using Microsoft.DotNet.XUnitExtensions;
 
@@ -9,7 +8,7 @@ namespace System.IO.Tests
 {
     public class File_Delete : FileSystemTest
     {
-        static bool IsBindMountSupported => RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && !PlatformDetection.IsInContainer;
+        static bool IsBindMountSupported => OperatingSystem.IsLinux() && !PlatformDetection.IsInContainer;
 
         protected virtual void Delete(string path)
         {

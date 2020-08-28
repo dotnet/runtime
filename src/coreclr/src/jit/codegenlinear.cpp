@@ -344,7 +344,6 @@ void CodeGen::genCodeForBBlist()
             needLabel = true;
         }
 
-#if defined(DEBUG) || defined(LATE_DISASM)
         // We also want to start a new Instruction group by calling emitAddLabel below,
         // when we need accurate bbWeights for this block in the emitter.  We force this
         // whenever our previous block was a BBJ_COND and it has a different weight than us.
@@ -356,7 +355,6 @@ void CodeGen::genCodeForBBlist()
         {
             needLabel = true;
         }
-#endif // DEBUG || LATE_DISASM
 
         if (needLabel)
         {

@@ -202,7 +202,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleForHWSIMD(var_types simdType, va
 {
     int numArgs = HWIntrinsicInfo::lookupNumArgs(hwIntrinsicID);
 
-    // HW Instrinsic's with -1 for numArgs have a varying number of args, so we currently
+    // HW Intrinsic's with -1 for numArgs have a varying number of args, so we currently
     // give themm a unique value number them, and don't add an extra argument.
     //
     if (numArgs == -1)
@@ -210,7 +210,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleForHWSIMD(var_types simdType, va
         return false;
     }
 
-    // We iterate over all of the different baseType's for this instrinsic in the HWIntrinsicInfo table
+    // We iterate over all of the different baseType's for this intrinsic in the HWIntrinsicInfo table
     // We set  diffInsCount to the number of instructions that can execute differently.
     //
     unsigned diffInsCount = 0;

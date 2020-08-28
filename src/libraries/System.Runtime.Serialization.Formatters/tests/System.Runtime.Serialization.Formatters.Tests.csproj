@@ -16,7 +16,6 @@
     <Compile Include="FormatterTests.cs" />
     <Compile Include="PlatformExtensions.cs" />
     <Compile Include="SerializationBinderTests.cs" />
-    <Compile Include="SerializationGuardTests.cs" Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'" />
     <Compile Include="SerializationInfoTests.cs" />
     <Compile Include="SerializationTypes.cs" />
     <Compile Include="SurrogateSelectorTests.cs" />
@@ -32,6 +31,10 @@
   <ItemGroup Condition="'$(TargetFramework)' == 'net48'">
     <Compile Include="$(CommonPath)System\Collections\Generic\ReferenceEqualityComparer.cs"
              Link="Common\System\Collections\Generic\ReferenceEqualityComparer.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="$(TargetFramework.StartsWith('$(NetCoreAppCurrent)'))">
+    <Compile Include="BinaryFormatterEventSourceTests.cs" />
+    <Compile Include="SerializationGuardTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="System.Data.SqlClient" Version="$(SystemDataSqlClientVersion)" />

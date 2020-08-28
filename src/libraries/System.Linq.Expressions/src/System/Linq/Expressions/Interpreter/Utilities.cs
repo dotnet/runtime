@@ -192,7 +192,7 @@ namespace System.Linq.Expressions.Interpreter
                     }
                 }
             }
-            value = default(TValue)!;
+            value = default;
             return false;
         }
 

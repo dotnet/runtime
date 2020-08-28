@@ -1174,7 +1174,7 @@ OBJECTREF TypeHandle::GetManagedClassObject() const
 
             case ELEMENT_TYPE_FNPTR:
                 // A function pointer is mapped into typeof(IntPtr). It results in a loss of information.
-                return MscorlibBinder::GetElementType(ELEMENT_TYPE_I)->GetManagedClassObject();
+                return CoreLibBinder::GetElementType(ELEMENT_TYPE_I)->GetManagedClassObject();
 
             default:
                 _ASSERTE(!"Bad Element Type");

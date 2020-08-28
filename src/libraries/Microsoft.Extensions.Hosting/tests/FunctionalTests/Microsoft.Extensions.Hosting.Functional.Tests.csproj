@@ -8,8 +8,6 @@
   <ItemGroup>
     <Content Include="testroot\**\*" />
     <Compile Include="$(LibrariesProjectRoot)Microsoft.Extensions.Logging\tests\Common\TestLoggerBuilder.cs" />
-    <Compile Include="$(LibrariesProjectRoot)Common\tests\Extensions\TestingUtils\Microsoft.AspNetCore.Testing\src\TaskExtensions.cs"
-             Link="TestingUtils\Microsoft.AspNetCore.Testing\src\TaskExtensions.cs" />
     <Compile Include="$(LibrariesProjectRoot)Microsoft.Extensions.Logging\tests\DI.Common\Common\src\LogLevelAttribute.cs"
              Link="tests\DI.Common\Common\src\LogLevelAttribute.cs" />
     <Compile Include="$(LibrariesProjectRoot)Microsoft.Extensions.Logging\tests\DI.Common\Common\src\LogValuesAssert.cs"
@@ -18,6 +16,11 @@
              Link="tests\DI.Common\Common\src\XunitLoggerFactoryExtensions.cs" />
     <Compile Include="$(LibrariesProjectRoot)Microsoft.Extensions.Logging\tests\DI.Common\Common\src\XunitLoggerProvider.cs"
              Link="tests\DI.Common\Common\src\XunitLoggerProvider.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="$(CommonTestPath)System\Threading\Tasks\TaskTimeoutExtensions.cs"
+             Link="Common\System\Threading\Tasks\TaskTimeoutExtensions.cs" />
   </ItemGroup>
 
   <ItemGroup>

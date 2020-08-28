@@ -641,6 +641,8 @@ def call_msbuild(args):
                 "/p:Configuration=%s" % args.build_type,
                 "/p:__LogsDir=%s" % args.logs_dir]
 
+    command += ["/bl:%s.binlog" % (log_path)]
+
     print(" ".join(command))
 
     sys.stdout.flush() # flush output before creating sub-process
@@ -967,8 +969,8 @@ def run_tests(args,
     # Ideally, this code should be removed when we find a more robust way of running Xunit tests.
     #
     # References:
-    #  * https://github.com/dotnet/coreclr/issues/20392
-    #  * https://github.com/dotnet/coreclr/issues/20594
+    #  * https://github.com/dotnet/runtime/issues/11232
+    #  * https://github.com/dotnet/runtime/issues/11320
     #  * https://github.com/xunit/xunit/issues/1842
     #  * https://github.com/xunit/xunit/pull/1846
     #
@@ -1000,9 +1002,10 @@ def setup_args(args):
         location using the build type and the arch.
     """
 
+    requires_coreroot = args.arch.lower() != "wasm"
     coreclr_setup_args = CoreclrArguments(args, 
                                           require_built_test_dir=True,
-                                          require_built_core_root=True, 
+                                          require_built_core_root=requires_coreroot, 
                                           require_built_product_dir=False)
 
     normal_location = os.path.join(coreclr_setup_args.artifacts_location, "tests", "coreclr", "%s.%s.%s" % (coreclr_setup_args.host_os, coreclr_setup_args.arch, coreclr_setup_args.build_type))

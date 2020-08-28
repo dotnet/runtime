@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project>
+
+  <!-- Packaging projects (.pkgproj) are non-SDK-style, so they need to directly import Directory.Build.props -->
+  <Import Project="../../Directory.Build.props" />
+
+  <Import Project="$(NuGetPackageRoot)\microsoft.dotnet.build.tasks.packaging\$(MicrosoftDotNetBuildTasksPackagingVersion)\build\Microsoft.DotNet.Build.Tasks.Packaging.props" />
+
+  <PropertyGroup>
+    <PackageDescriptionFile>$(MSBuildThisFileDirectory)/descriptions.json</PackageDescriptionFile>
+    <PackageLicenseFile>$(CoreclrDir)/LICENSE.TXT</PackageLicenseFile>
+
+    <ReleaseNotes>https://go.microsoft.com/fwlink/?LinkID=799421</ReleaseNotes>
+
+    <ProjectUrl>https://dot.net</ProjectUrl>
+
+    <PackageIndexFile>$(MSBuildThisFileDirectory)/packageIndex.json</PackageIndexFile>
+    <PackagePlatform>AnyCPU</PackagePlatform>
+
+    <!-- mono doesn't currently use the index so don't force it to be in sync -->
+    <SkipIndexCheck>true</SkipIndexCheck>
+
+    <VersionTxtFile Condition="'$(VersionTxtFile)' == ''">$(ArtifactsObjDir)version.txt</VersionTxtFile>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(MSBuildProjectExtension)' == '.pkgproj'">
+    <!-- Add required legal files to packages -->
+    <File Condition="Exists('$(PackageLicenseFile)')"
+          Include="$(PackageLicenseFile)" >
+      <SkipPackageFileCheck>true</SkipPackageFileCheck>
+    </File>
+    <PackageIndex Include="$(PackageIndexFile)" />
+
+    <!-- Add version file to packages -->
+    <File Include="$(VersionTxtFile)"
+          Condition="Exists('$(VersionTxtFile)')">
+          <SkipPackageFileCheck>true</SkipPackageFileCheck>
+    </File>
+  </ItemGroup>
+
+</Project>

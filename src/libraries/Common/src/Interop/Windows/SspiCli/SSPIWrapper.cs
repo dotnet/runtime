@@ -108,12 +108,12 @@ namespace System.Net
             return credentialsHandle;
         }
 
-        public static SafeFreeCredentials AcquireCredentialsHandle(ISSPIInterface secModule, string package, Interop.SspiCli.CredentialUse intent, Interop.SspiCli.SCHANNEL_CRED scc)
+        public static unsafe SafeFreeCredentials AcquireCredentialsHandle(ISSPIInterface secModule, string package, Interop.SspiCli.CredentialUse intent, Interop.SspiCli.SCHANNEL_CRED* scc)
         {
             int errorCode = secModule.AcquireCredentialsHandle(
                                             package,
                                             intent,
-                                            ref scc,
+                                            scc,
                                             out SafeFreeCredentials outCredential);
 
             if (errorCode != 0)

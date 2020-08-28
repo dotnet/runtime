@@ -132,8 +132,11 @@ namespace HttpStress
 
             // Handle command-line arguments.
             _eventListener =
-                configuration.LogPath == null ? null :
-                new HttpEventListener(configuration.LogPath != "console" ? new StreamWriter(configuration.LogPath) { AutoFlush = true } : null);
+                configuration.LogPath == null ?
+                null :
+                (configuration.LogPath == "console" ? 
+                    (EventListener)new ConsoleHttpEventListener() :
+                    (EventListener)new LogHttpEventListener(configuration.LogPath));
 
             SetUpJustInTimeLogging();
 
@@ -198,8 +201,7 @@ namespace HttpStress
             });
             endpoints.MapGet("/variables", async context =>
             {
-                string queryString = context.Request.QueryString.Value;
-                NameValueCollection nameValueCollection = HttpUtility.ParseQueryString(queryString);
+                NameValueCollection nameValueCollection = HttpUtility.ParseQueryString(context.Request.QueryString.Value!);
 
                 StringBuilder sb = new StringBuilder();
                 for (int i = 0; i < nameValueCollection.Count; i++)
@@ -296,7 +298,8 @@ namespace HttpStress
 
         public void Dispose()
         {
-            _webHost.Dispose(); _eventListener?.Dispose();
+            _webHost.Dispose();
+            _eventListener?.Dispose();
         }
 
         private void SetUpJustInTimeLogging()
@@ -312,7 +315,7 @@ namespace HttpStress
                         if (Console.ReadKey(intercept: true).Key == ConsoleKey.L)
                         {
                             Console.WriteLine("Enabling console event logger");
-                            _eventListener = new HttpEventListener();
+                            _eventListener = new ConsoleHttpEventListener();
                             break;
                         }
                     }
@@ -340,54 +343,6 @@ namespace HttpStress
                 string hostname = m.Groups["host"].Value;
                 int port = m.Groups["port"].Success ? int.Parse(m.Groups["port"].Value) : (scheme == "https" ? 443 : 80);
                 return (scheme, hostname, port);
-            }
-        }
-
-        /// <summary>EventListener that dumps HTTP events out to either the console or a stream writer.</summary>
-        private sealed class HttpEventListener : EventListener
-        {
-            private readonly StreamWriter? _writer;
-
-            public HttpEventListener(StreamWriter? writer = null) => _writer = writer;
-
-            protected override void OnEventSourceCreated(EventSource eventSource)
-            {
-                if (eventSource.Name == "Microsoft-System-Net-Http")
-                    EnableEvents(eventSource, EventLevel.LogAlways);
-            }
-
-            protected override void OnEventWritten(EventWrittenEventArgs eventData)
-            {
-                lock (Console.Out)
-                {
-                    if (_writer != null)
-                    {
-                        var sb = new StringBuilder().Append($"[{eventData.EventName}] ");
-                        for (int i = 0; i < eventData.Payload?.Count; i++)
-                        {
-                            if (i > 0)
-                                sb.Append(", ");
-                            sb.Append(eventData.PayloadNames?[i]).Append(": ").Append(eventData.Payload[i]);
-                        }
-                        _writer.WriteLine(sb);
-                    }
-                    else
-                    {
-                        Console.ForegroundColor = ConsoleColor.DarkYellow;
-                        Console.Write($"[{eventData.EventName}] ");
-                        Console.ResetColor();
-                        for (int i = 0; i < eventData.Payload?.Count; i++)
-                        {
-                            if (i > 0)
-                                Console.Write(", ");
-                            Console.ForegroundColor = ConsoleColor.DarkGray;
-                            Console.Write(eventData.PayloadNames?[i] + ": ");
-                            Console.ResetColor();
-                            Console.Write(eventData.Payload[i]);
-                        }
-                        Console.WriteLine();
-                    }
-                }
             }
         }
 

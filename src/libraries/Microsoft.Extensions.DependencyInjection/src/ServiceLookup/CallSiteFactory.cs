@@ -5,6 +5,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 using Microsoft.Extensions.Internal;
@@ -118,7 +119,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             if (serviceType.IsConstructedGenericType
                 && _descriptorLookup.TryGetValue(serviceType.GetGenericTypeDefinition(), out ServiceDescriptorCacheItem descriptor))
             {
-                return TryCreateOpenGeneric(descriptor.Last, serviceType, callSiteChain, DefaultSlot);
+                return TryCreateOpenGeneric(descriptor.Last, serviceType, callSiteChain, DefaultSlot, true);
             }
 
             return null;
@@ -164,7 +165,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                         {
                             ServiceDescriptor descriptor = _descriptors[i];
                             ServiceCallSite callSite = TryCreateExact(descriptor, itemType, callSiteChain, slot) ??
-                                           TryCreateOpenGeneric(descriptor, itemType, callSiteChain, slot);
+                                           TryCreateOpenGeneric(descriptor, itemType, callSiteChain, slot, false);
 
                             if (callSite != null)
                             {
@@ -230,30 +231,44 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             return null;
         }
 
-        private ServiceCallSite TryCreateOpenGeneric(ServiceDescriptor descriptor, Type serviceType, CallSiteChain callSiteChain, int slot)
+        private ServiceCallSite TryCreateOpenGeneric(ServiceDescriptor descriptor, Type serviceType, CallSiteChain callSiteChain, int slot, bool throwOnConstraintViolation)
         {
             if (serviceType.IsConstructedGenericType &&
                 serviceType.GetGenericTypeDefinition() == descriptor.ServiceType)
             {
                 Debug.Assert(descriptor.ImplementationType != null, "descriptor.ImplementationType != null");
                 var lifetime = new ResultCache(descriptor.Lifetime, serviceType, slot);
-                Type closedType = descriptor.ImplementationType.MakeGenericType(serviceType.GenericTypeArguments);
+                Type closedType;
+                try
+                {
+                    closedType = descriptor.ImplementationType.MakeGenericType(serviceType.GenericTypeArguments);
+                }
+                catch (ArgumentException)
+                {
+                    if (throwOnConstraintViolation)
+                    {
+                        throw;
+                    }
+
+                    return null;
+                }
+
                 return CreateConstructorCallSite(lifetime, serviceType, closedType, callSiteChain);
             }
 
             return null;
         }
 
-        private ServiceCallSite CreateConstructorCallSite(ResultCache lifetime, Type serviceType, Type implementationType,
+        private ServiceCallSite CreateConstructorCallSite(
+            ResultCache lifetime,
+            Type serviceType,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type implementationType,
             CallSiteChain callSiteChain)
         {
             try
             {
                 callSiteChain.Add(serviceType, implementationType);
-                ConstructorInfo[] constructors = implementationType.GetTypeInfo()
-                    .DeclaredConstructors
-                    .Where(constructor => constructor.IsPublic)
-                    .ToArray();
+                ConstructorInfo[] constructors = implementationType.GetConstructors();
 
                 ServiceCallSite[] parameterCallSites = null;
 

@@ -3,6 +3,7 @@
 
 using System.Collections;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml
 {
@@ -32,7 +33,7 @@ namespace System.Xml
 
         // Gets the attribute with the specified name.
         [System.Runtime.CompilerServices.IndexerName("ItemOf")]
-        public XmlAttribute this[string name]
+        public XmlAttribute? this[string name]
         {
             get
             {
@@ -55,7 +56,7 @@ namespace System.Xml
 
         // Gets the attribute with the specified LocalName and NamespaceUri.
         [System.Runtime.CompilerServices.IndexerName("ItemOf")]
-        public XmlAttribute this[string localName, string namespaceURI]
+        public XmlAttribute? this[string localName, string? namespaceURI]
         {
             get
             {
@@ -90,6 +91,7 @@ namespace System.Xml
                     return i;
                 }
             }
+
             return -1;
         }
 
@@ -109,7 +111,8 @@ namespace System.Xml
         }
 
         // Adds a XmlNode using its Name property
-        public override XmlNode SetNamedItem(XmlNode node)
+        [return: NotNullIfNotNull("node")]
+        public override XmlNode? SetNamedItem(XmlNode? node)
         {
             if (node == null)
                 return null;
@@ -170,7 +173,7 @@ namespace System.Xml
         }
 
         // Inserts the specified attribute immediately before the specified reference attribute.
-        public XmlAttribute InsertBefore(XmlAttribute newNode, XmlAttribute refNode)
+        public XmlAttribute InsertBefore(XmlAttribute newNode, XmlAttribute? refNode)
         {
             if (newNode == refNode)
                 return newNode;
@@ -199,7 +202,7 @@ namespace System.Xml
         }
 
         // Inserts the specified attribute immediately after the specified reference attribute.
-        public XmlAttribute InsertAfter(XmlAttribute newNode, XmlAttribute refNode)
+        public XmlAttribute InsertAfter(XmlAttribute newNode, XmlAttribute? refNode)
         {
             if (newNode == refNode)
                 return newNode;
@@ -228,7 +231,7 @@ namespace System.Xml
         }
 
         // Removes the specified attribute node from the map.
-        public XmlAttribute Remove(XmlAttribute node)
+        public XmlAttribute? Remove(XmlAttribute? node)
         {
             int cNodes = nodes.Count;
             for (int offset = 0; offset < cNodes; offset++)
@@ -239,11 +242,12 @@ namespace System.Xml
                     return node;
                 }
             }
+
             return null;
         }
 
         // Removes the attribute node with the specified index from the map.
-        public XmlAttribute RemoveAt(int i)
+        public XmlAttribute? RemoveAt(int i)
         {
             if (i < 0 || i >= Count)
                 return null;
@@ -315,26 +319,28 @@ namespace System.Xml
             Debug.Assert(retNode is XmlAttribute);
             RemoveParentFromElementIdAttrMap((XmlAttribute)retNode);
             // after remove the attribute, we need to check if a default attribute node should be created and inserted into the tree
-            XmlAttribute defattr = parent.OwnerDocument.GetDefaultAttribute((XmlElement)parent, retNode.Prefix, retNode.LocalName, retNode.NamespaceURI);
+            XmlAttribute? defattr = parent.OwnerDocument!.GetDefaultAttribute((XmlElement)parent, retNode.Prefix, retNode.LocalName, retNode.NamespaceURI);
             if (defattr != null)
                 InsertNodeAt(i, defattr);
+
             return retNode;
         }
 
         internal void Detach(XmlAttribute attr)
         {
-            attr.OwnerElement.Attributes.Remove(attr);
+            attr.OwnerElement!.Attributes.Remove(attr);
         }
 
         //insert the parent element node into the map
         internal void InsertParentIntoElementIdAttrMap(XmlAttribute attr)
         {
-            XmlElement parentElem = parent as XmlElement;
+            XmlElement? parentElem = parent as XmlElement;
             if (parentElem != null)
             {
                 if (parent.OwnerDocument == null)
                     return;
-                XmlName attrname = parent.OwnerDocument.GetIDInfoByElement(parentElem.XmlName);
+
+                XmlName? attrname = parent.OwnerDocument.GetIDInfoByElement(parentElem.XmlName);
                 if (attrname != null && attrname.Prefix == attr.XmlName.Prefix && attrname.LocalName == attr.XmlName.LocalName)
                 {
                     parent.OwnerDocument.AddElementWithId(attr.Value, parentElem); //add the element into the hashtable
@@ -345,12 +351,13 @@ namespace System.Xml
         //remove the parent element node from the map when the ID attribute is removed
         internal void RemoveParentFromElementIdAttrMap(XmlAttribute attr)
         {
-            XmlElement parentElem = parent as XmlElement;
+            XmlElement? parentElem = parent as XmlElement;
             if (parentElem != null)
             {
                 if (parent.OwnerDocument == null)
                     return;
-                XmlName attrname = parent.OwnerDocument.GetIDInfoByElement(parentElem.XmlName);
+
+                XmlName? attrname = parent.OwnerDocument.GetIDInfoByElement(parentElem.XmlName);
                 if (attrname != null && attrname.Prefix == attr.XmlName.Prefix && attrname.LocalName == attr.XmlName.LocalName)
                 {
                     parent.OwnerDocument.RemoveElementWithId(attr.Value, parentElem); //remove the element from the hashtable
@@ -375,25 +382,26 @@ namespace System.Xml
 
         internal bool PrepareParentInElementIdAttrMap(string attrPrefix, string attrLocalName)
         {
-            XmlElement parentElem = parent as XmlElement;
+            XmlElement? parentElem = parent as XmlElement;
             Debug.Assert(parentElem != null);
-            XmlDocument doc = parent.OwnerDocument;
+            XmlDocument? doc = parent.OwnerDocument;
             Debug.Assert(doc != null);
             //The returned attrname if not null is the name with namespaceURI being set to string.Empty
             //Because DTD doesn't support namespaceURI so all comparisons are based on no namespaceURI (string.Empty);
-            XmlName attrname = doc.GetIDInfoByElement(parentElem.XmlName);
+            XmlName? attrname = doc.GetIDInfoByElement(parentElem.XmlName);
             if (attrname != null && attrname.Prefix == attrPrefix && attrname.LocalName == attrLocalName)
             {
                 return true;
             }
+
             return false;
         }
 
         internal void ResetParentInElementIdAttrMap(string oldVal, string newVal)
         {
-            XmlElement parentElem = parent as XmlElement;
+            XmlElement? parentElem = parent as XmlElement;
             Debug.Assert(parentElem != null);
-            XmlDocument doc = parent.OwnerDocument;
+            XmlDocument? doc = parent.OwnerDocument;
             Debug.Assert(doc != null);
             doc.RemoveElementWithId(oldVal, parentElem); //add the element into the hashtable
             doc.AddElementWithId(newVal, parentElem);

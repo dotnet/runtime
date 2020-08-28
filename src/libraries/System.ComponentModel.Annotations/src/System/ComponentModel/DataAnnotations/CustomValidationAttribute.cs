@@ -58,12 +58,12 @@ namespace System.ComponentModel.DataAnnotations
     {
         #region Member Fields
 
-        private readonly Lazy<string> _malformedErrorMessage;
+        private readonly Lazy<string?> _malformedErrorMessage;
         private bool _isSingleArgumentMethod;
-        private string _lastMessage;
-        private MethodInfo _methodInfo;
-        private Type _firstParameterType;
-        private Tuple<string, Type> _typeId;
+        private string? _lastMessage;
+        private MethodInfo? _methodInfo;
+        private Type? _firstParameterType;
+        private Tuple<string, Type>? _typeId;
 
         #endregion
 
@@ -88,7 +88,7 @@ namespace System.ComponentModel.DataAnnotations
         {
             ValidatorType = validatorType;
             Method = method;
-            _malformedErrorMessage = new Lazy<string>(CheckAttributeWellFormed);
+            _malformedErrorMessage = new Lazy<string?>(CheckAttributeWellFormed);
         }
 
         #endregion
@@ -143,7 +143,7 @@ namespace System.ComponentModel.DataAnnotations
         /// </param>
         /// <returns>Whatever the <see cref="Method" /> in <see cref="ValidatorType" /> returns.</returns>
         /// <exception cref="InvalidOperationException"> is thrown if the current attribute is malformed.</exception>
-        protected override ValidationResult IsValid(object value, ValidationContext validationContext)
+        protected override ValidationResult? IsValid(object? value, ValidationContext validationContext)
         {
             // If attribute is not valid, throw an exception right away to inform the developer
             ThrowIfAttributeNotWellFormed();
@@ -153,7 +153,7 @@ namespace System.ComponentModel.DataAnnotations
             // If the value is not of the correct type and cannot be converted, fail
             // to indicate it is not acceptable.  The convention is that IsValid is merely a probe,
             // and clients are not expecting exceptions.
-            object convertedValue;
+            object? convertedValue;
             if (!TryConvertValue(value, out convertedValue))
             {
                 return new ValidationResult(SR.Format(SR.CustomValidationAttribute_Type_Conversion_Failed,
@@ -171,10 +171,10 @@ namespace System.ComponentModel.DataAnnotations
                 // 1-parameter form is ValidationResult Method(object value)
                 // 2-parameter form is ValidationResult Method(object value, ValidationContext context),
                 var methodParams = _isSingleArgumentMethod
-                    ? new object[] { convertedValue }
+                    ? new object?[] { convertedValue }
                     : new[] { convertedValue, validationContext };
 
-                var result = (ValidationResult)methodInfo.Invoke(null, methodParams);
+                var result = (ValidationResult?)methodInfo!.Invoke(null, methodParams);
 
                 // We capture the message they provide us only in the event of failure,
                 // otherwise we use the normal message supplied via the ctor
@@ -189,7 +189,7 @@ namespace System.ComponentModel.DataAnnotations
             }
             catch (TargetInvocationException tie)
             {
-                throw tie.InnerException;
+                throw tie.InnerException!;
             }
         }
 
@@ -217,13 +217,13 @@ namespace System.ComponentModel.DataAnnotations
         ///     Checks whether the current attribute instance itself is valid for use.
         /// </summary>
         /// <returns>The error message why it is not well-formed, null if it is well-formed.</returns>
-        private string CheckAttributeWellFormed() => ValidateValidatorTypeParameter() ?? ValidateMethodParameter();
+        private string? CheckAttributeWellFormed() => ValidateValidatorTypeParameter() ?? ValidateMethodParameter();
 
         /// <summary>
         ///     Internal helper to determine whether <see cref="ValidatorType" /> is legal for use.
         /// </summary>
         /// <returns><c>null</c> or the appropriate error message.</returns>
-        private string ValidateValidatorTypeParameter()
+        private string? ValidateValidatorTypeParameter()
         {
             if (ValidatorType == null)
             {
@@ -242,7 +242,7 @@ namespace System.ComponentModel.DataAnnotations
         ///     Internal helper to determine whether <see cref="Method" /> is legal for use.
         /// </summary>
         /// <returns><c>null</c> or the appropriate error message.</returns>
-        private string ValidateMethodParameter()
+        private string? ValidateMethodParameter()
         {
             if (string.IsNullOrEmpty(Method))
             {
@@ -295,7 +295,7 @@ namespace System.ComponentModel.DataAnnotations
         /// </summary>
         private void ThrowIfAttributeNotWellFormed()
         {
-            string errorMessage = _malformedErrorMessage.Value;
+            string? errorMessage = _malformedErrorMessage.Value;
             if (errorMessage != null)
             {
                 throw new InvalidOperationException(errorMessage);
@@ -309,10 +309,10 @@ namespace System.ComponentModel.DataAnnotations
         /// <param name="value">The value to check/convert.</param>
         /// <param name="convertedValue">If successful, the converted (or copied) value.</param>
         /// <returns><c>true</c> if type value was already correct or was successfully converted.</returns>
-        private bool TryConvertValue(object value, out object convertedValue)
+        private bool TryConvertValue(object? value, out object? convertedValue)
         {
             convertedValue = null;
-            var expectedValueType = _firstParameterType;
+            var expectedValueType = _firstParameterType!;
 
             // Null is permitted for reference types or for Nullable<>'s only
             if (value == null)

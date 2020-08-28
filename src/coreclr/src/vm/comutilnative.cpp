@@ -1750,7 +1750,7 @@ static BOOL HasOverriddenMethod(MethodTable* mt, MethodTable* classMT, WORD meth
 
     if (!classMT->IsZapped())
     {
-        // If mscorlib is JITed, the slots can be patched and thus we need to compare the actual MethodDescs
+        // If CoreLib is JITed, the slots can be patched and thus we need to compare the actual MethodDescs
         // to detect match reliably
         if (MethodTable::GetMethodDescForSlotAddress(actual) == MethodTable::GetMethodDescForSlotAddress(base))
         {
@@ -1784,9 +1784,9 @@ static BOOL CanCompareBitsOrUseFastGetHashCode(MethodTable* mt)
         return FALSE;
     }
 
-    MethodTable* valueTypeMT = MscorlibBinder::GetClass(CLASS__VALUE_TYPE);
-    WORD slotEquals = MscorlibBinder::GetMethod(METHOD__VALUE_TYPE__EQUALS)->GetSlot();
-    WORD slotGetHashCode = MscorlibBinder::GetMethod(METHOD__VALUE_TYPE__GET_HASH_CODE)->GetSlot();
+    MethodTable* valueTypeMT = CoreLibBinder::GetClass(CLASS__VALUE_TYPE);
+    WORD slotEquals = CoreLibBinder::GetMethod(METHOD__VALUE_TYPE__EQUALS)->GetSlot();
+    WORD slotGetHashCode = CoreLibBinder::GetMethod(METHOD__VALUE_TYPE__GET_HASH_CODE)->GetSlot();
 
     // Check the input type.
     if (HasOverriddenMethod(mt, valueTypeMT, slotEquals)
@@ -2116,7 +2116,7 @@ static bool HasOverriddenStreamMethod(MethodTable * pMT, WORD slot)
 
     if (!g_pStreamMT->IsZapped())
     {
-        // If mscorlib is JITed, the slots can be patched and thus we need to compare the actual MethodDescs
+        // If CoreLib is JITed, the slots can be patched and thus we need to compare the actual MethodDescs
         // to detect match reliably
         if (MethodTable::GetMethodDescForSlotAddress(actual) == MethodTable::GetMethodDescForSlotAddress(base))
             return false;
@@ -2135,9 +2135,9 @@ FCIMPL1(FC_BOOL_RET, StreamNative::HasOverriddenBeginEndRead, Object *stream)
     if (g_pStreamMT == NULL || g_slotBeginRead == 0 || g_slotEndRead == 0)
     {
         HELPER_METHOD_FRAME_BEGIN_RET_1(stream);
-        g_pStreamMT = MscorlibBinder::GetClass(CLASS__STREAM);
-        g_slotBeginRead = MscorlibBinder::GetMethod(METHOD__STREAM__BEGIN_READ)->GetSlot();
-        g_slotEndRead = MscorlibBinder::GetMethod(METHOD__STREAM__END_READ)->GetSlot();
+        g_pStreamMT = CoreLibBinder::GetClass(CLASS__STREAM);
+        g_slotBeginRead = CoreLibBinder::GetMethod(METHOD__STREAM__BEGIN_READ)->GetSlot();
+        g_slotEndRead = CoreLibBinder::GetMethod(METHOD__STREAM__END_READ)->GetSlot();
         HELPER_METHOD_FRAME_END();
     }
 
@@ -2157,9 +2157,9 @@ FCIMPL1(FC_BOOL_RET, StreamNative::HasOverriddenBeginEndWrite, Object *stream)
     if (g_pStreamMT == NULL || g_slotBeginWrite == 0 || g_slotEndWrite == 0)
     {
         HELPER_METHOD_FRAME_BEGIN_RET_1(stream);
-        g_pStreamMT = MscorlibBinder::GetClass(CLASS__STREAM);
-        g_slotBeginWrite = MscorlibBinder::GetMethod(METHOD__STREAM__BEGIN_WRITE)->GetSlot();
-        g_slotEndWrite = MscorlibBinder::GetMethod(METHOD__STREAM__END_WRITE)->GetSlot();
+        g_pStreamMT = CoreLibBinder::GetClass(CLASS__STREAM);
+        g_slotBeginWrite = CoreLibBinder::GetMethod(METHOD__STREAM__BEGIN_WRITE)->GetSlot();
+        g_slotEndWrite = CoreLibBinder::GetMethod(METHOD__STREAM__END_WRITE)->GetSlot();
         HELPER_METHOD_FRAME_END();
     }
 

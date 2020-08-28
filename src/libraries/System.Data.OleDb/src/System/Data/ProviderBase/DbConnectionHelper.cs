@@ -14,8 +14,8 @@ namespace System.Data.OleDb
     {
         private static readonly DbConnectionFactory _connectionFactory = OleDbConnectionFactory.SingletonInstance;
 
-        private DbConnectionOptions _userConnectionOptions;
-        private DbConnectionPoolGroup _poolGroup;
+        private DbConnectionOptions? _userConnectionOptions;
+        private DbConnectionPoolGroup? _poolGroup;
         private DbConnectionInternal _innerConnection;
         private int _closeCount;          // used to distinguish between different uses of this object, so we don't have to maintain a list of it's children
 
@@ -52,11 +52,11 @@ namespace System.Data.OleDb
             }
         }
 
-        internal DbConnectionOptions ConnectionOptions
+        internal DbConnectionOptions? ConnectionOptions
         {
             get
             {
-                System.Data.ProviderBase.DbConnectionPoolGroup poolGroup = PoolGroup;
+                System.Data.ProviderBase.DbConnectionPoolGroup? poolGroup = PoolGroup;
                 return ((null != poolGroup) ? poolGroup.ConnectionOptions : null);
             }
         }
@@ -64,11 +64,11 @@ namespace System.Data.OleDb
         private string ConnectionString_Get()
         {
             bool hidePassword = InnerConnection.ShouldHidePassword;
-            DbConnectionOptions connectionOptions = UserConnectionOptions;
+            DbConnectionOptions? connectionOptions = UserConnectionOptions;
             return ((null != connectionOptions) ? connectionOptions.UsersConnectionString(hidePassword) : "");
         }
 
-        private void ConnectionString_Set(string value)
+        private void ConnectionString_Set(string? value)
         {
             DbConnectionPoolKey key = new DbConnectionPoolKey(value);
 
@@ -77,8 +77,8 @@ namespace System.Data.OleDb
 
         private void ConnectionString_Set(DbConnectionPoolKey key)
         {
-            DbConnectionOptions connectionOptions = null;
-            System.Data.ProviderBase.DbConnectionPoolGroup poolGroup = ConnectionFactory.GetConnectionPoolGroup(key, null, ref connectionOptions);
+            DbConnectionOptions? connectionOptions = null;
+            System.Data.ProviderBase.DbConnectionPoolGroup? poolGroup = ConnectionFactory.GetConnectionPoolGroup(key, null, ref connectionOptions);
             DbConnectionInternal connectionInternal = InnerConnection;
             bool flag = connectionInternal.AllowSetConnectionString;
             if (flag)
@@ -115,7 +115,7 @@ namespace System.Data.OleDb
             }
         }
 
-        internal System.Data.ProviderBase.DbConnectionPoolGroup PoolGroup
+        internal System.Data.ProviderBase.DbConnectionPoolGroup? PoolGroup
         {
             get
             {
@@ -129,7 +129,7 @@ namespace System.Data.OleDb
             }
         }
 
-        internal DbConnectionOptions UserConnectionOptions
+        internal DbConnectionOptions? UserConnectionOptions
         {
             get
             {
@@ -144,10 +144,10 @@ namespace System.Data.OleDb
 
         protected override DbCommand CreateDbCommand()
         {
-            DbCommand command = null;
+            DbCommand? command = null;
 
             DbProviderFactory providerFactory = ConnectionFactory.ProviderFactory;
-            command = providerFactory.CreateCommand();
+            command = providerFactory.CreateCommand()!;
             command.Connection = this;
             return command;
         }
@@ -189,7 +189,7 @@ namespace System.Data.OleDb
         //    GC.KeepAlive(this);
         //}
 
-        public override void EnlistTransaction(SysTx.Transaction transaction)
+        public override void EnlistTransaction(SysTx.Transaction? transaction)
         {
             // If we're currently enlisted in a transaction and we were called
             // on the EnlistTransaction method (Whidbey) we're not allowed to
@@ -200,7 +200,7 @@ namespace System.Data.OleDb
             // NOTE: since transaction enlistment involves round trips to the
             // server, we don't want to lock here, we'll handle the race conditions
             // elsewhere.
-            SysTx.Transaction enlistedTransaction = innerConnection.EnlistedTransaction;
+            SysTx.Transaction? enlistedTransaction = innerConnection.EnlistedTransaction;
             if (enlistedTransaction != null)
             {
                 // Allow calling enlist if already enlisted (no-op)
@@ -235,11 +235,11 @@ namespace System.Data.OleDb
             return this.GetSchema(collectionName, null);
         }
 
-        public override DataTable GetSchema(string collectionName, string[] restrictionValues)
+        public override DataTable GetSchema(string collectionName, string?[]? restrictionValues)
         {
             // NOTE: This is virtual because not all providers may choose to support
             //       returning schema data
-            return InnerConnection.GetSchema(ConnectionFactory, PoolGroup, this, collectionName, restrictionValues);
+            return InnerConnection.GetSchema(ConnectionFactory, PoolGroup!, this, collectionName, restrictionValues);
         }
 
         internal void NotifyWeakReference(int message)
@@ -251,14 +251,14 @@ namespace System.Data.OleDb
         {
             Debug.Assert(DbConnectionClosedConnecting.SingletonInstance == _innerConnection, "not connecting");
 
-            System.Data.ProviderBase.DbConnectionPoolGroup poolGroup = PoolGroup;
-            DbConnectionOptions connectionOptions = ((null != poolGroup) ? poolGroup.ConnectionOptions : null);
+            System.Data.ProviderBase.DbConnectionPoolGroup? poolGroup = PoolGroup;
+            DbConnectionOptions? connectionOptions = ((null != poolGroup) ? poolGroup.ConnectionOptions : null);
             if ((null == connectionOptions) || connectionOptions.IsEmpty)
             {
                 throw ADP.NoConnectionString();
             }
 
-            DbConnectionOptions userConnectionOptions = UserConnectionOptions;
+            DbConnectionOptions? userConnectionOptions = UserConnectionOptions;
             Debug.Assert(null != userConnectionOptions, "null UserConnectionOptions");
         }
 

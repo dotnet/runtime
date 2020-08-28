@@ -48,9 +48,9 @@ namespace System.Net.Http
             base.Dispose(disposing);
         }
 
-        public virtual bool SupportsAutomaticDecompression => true;
-        public virtual bool SupportsProxy => true;
-        public virtual bool SupportsRedirectConfiguration => true;
+        public virtual bool SupportsAutomaticDecompression => _underlyingHandler.SupportsAutomaticDecompression;
+        public virtual bool SupportsProxy => _underlyingHandler.SupportsProxy;
+        public virtual bool SupportsRedirectConfiguration => _underlyingHandler.SupportsRedirectConfiguration;
 
         public bool UseCookies
         {

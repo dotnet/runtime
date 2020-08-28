@@ -33,8 +33,8 @@ namespace System.Collections.Concurrent
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
         public T Take() { throw null; }
         public T Take(System.Threading.CancellationToken cancellationToken) { throw null; }
-        public static int TakeFromAny(System.Collections.Concurrent.BlockingCollection<T>[] collections, [System.Diagnostics.CodeAnalysis.MaybeNullAttribute] out T item) { throw null; }
-        public static int TakeFromAny(System.Collections.Concurrent.BlockingCollection<T>[] collections, [System.Diagnostics.CodeAnalysis.MaybeNullAttribute] out T item, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public static int TakeFromAny(System.Collections.Concurrent.BlockingCollection<T>[] collections, out T? item) { throw null; }
+        public static int TakeFromAny(System.Collections.Concurrent.BlockingCollection<T>[] collections, out T? item, System.Threading.CancellationToken cancellationToken) { throw null; }
         public T[] ToArray() { throw null; }
         public bool TryAdd(T item) { throw null; }
         public bool TryAdd(T item, int millisecondsTimeout) { throw null; }
@@ -48,10 +48,10 @@ namespace System.Collections.Concurrent
         public bool TryTake([System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out T item, int millisecondsTimeout) { throw null; }
         public bool TryTake([System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out T item, int millisecondsTimeout, System.Threading.CancellationToken cancellationToken) { throw null; }
         public bool TryTake([System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out T item, System.TimeSpan timeout) { throw null; }
-        public static int TryTakeFromAny(System.Collections.Concurrent.BlockingCollection<T>[] collections, [System.Diagnostics.CodeAnalysis.MaybeNullAttribute] out T item) { throw null; }
-        public static int TryTakeFromAny(System.Collections.Concurrent.BlockingCollection<T>[] collections, [System.Diagnostics.CodeAnalysis.MaybeNullAttribute] out T item, int millisecondsTimeout) { throw null; }
-        public static int TryTakeFromAny(System.Collections.Concurrent.BlockingCollection<T>[] collections, [System.Diagnostics.CodeAnalysis.MaybeNullAttribute] out T item, int millisecondsTimeout, System.Threading.CancellationToken cancellationToken) { throw null; }
-        public static int TryTakeFromAny(System.Collections.Concurrent.BlockingCollection<T>[] collections, [System.Diagnostics.CodeAnalysis.MaybeNullAttribute] out T item, System.TimeSpan timeout) { throw null; }
+        public static int TryTakeFromAny(System.Collections.Concurrent.BlockingCollection<T>[] collections, out T? item) { throw null; }
+        public static int TryTakeFromAny(System.Collections.Concurrent.BlockingCollection<T>[] collections, out T? item, int millisecondsTimeout) { throw null; }
+        public static int TryTakeFromAny(System.Collections.Concurrent.BlockingCollection<T>[] collections, out T? item, int millisecondsTimeout, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public static int TryTakeFromAny(System.Collections.Concurrent.BlockingCollection<T>[] collections, out T? item, System.TimeSpan timeout) { throw null; }
     }
     public partial class ConcurrentBag<T> : System.Collections.Concurrent.IProducerConsumerCollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.ICollection, System.Collections.IEnumerable
     {

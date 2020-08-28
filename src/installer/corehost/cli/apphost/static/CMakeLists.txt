@@ -30,6 +30,8 @@ set(HEADERS
     ../../../hostfxr_resolver.h
 )
 
+list(APPEND SOURCES $<TARGET_OBJECTS:libhostfxr_static> $<TARGET_OBJECTS:libhostpolicy_static>)
+
 if(CLR_CMAKE_TARGET_WIN32)
     list(APPEND SOURCES
         ../apphost.windows.cpp)
@@ -199,8 +201,6 @@ endif(NOT CLR_CMAKE_TARGET_LINUX)
 set_property(TARGET singlefilehost PROPERTY ENABLE_EXPORTS 1)
 
 target_link_libraries(singlefilehost
-    libhostfxr_static
-    libhostpolicy_static
     libhostcommon
     ${CORECLR_LIBRARIES}
 

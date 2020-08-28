@@ -15,7 +15,7 @@
 class CompatibilitySwitch
 {
 public:
-    static FCDECL2(StringObject*, GetValue, StringObject *switchNameUNSAFE, CLR_BOOL onlyDB);
+    static FCDECL1(StringObject*, GetValue, StringObject *switchNameUNSAFE);
 };
 
 

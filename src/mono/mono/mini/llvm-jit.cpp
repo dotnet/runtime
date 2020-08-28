@@ -247,7 +247,7 @@ struct MonoLLVMJIT {
 			void *sym = nullptr;
 			auto err = mono_dl_symbol (current, name, &sym);
 			if (!sym) {
-				outs () << "R: " << namestr << "\n";
+				outs () << "R: " << namestr << " " << err << "\n";
 			}
 			assert (sym);
 			return JITSymbol{(uint64_t)(gssize)sym, flags};

@@ -41,7 +41,13 @@ namespace System.Reflection.TypeLoading
 
         // Location and codebase
         public abstract override string Location { get; }
+#if NET50_OBSOLETIONS
+        [Obsolete(Obsoletions.CodeBaseMessage, DiagnosticId = Obsoletions.CodeBaseDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+#endif
         public sealed override string CodeBase => throw new NotSupportedException(SR.NotSupported_AssemblyCodeBase);
+#if NET50_OBSOLETIONS
+        [Obsolete(Obsoletions.CodeBaseMessage, DiagnosticId = Obsoletions.CodeBaseDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+#endif
         public sealed override string EscapedCodeBase => throw new NotSupportedException(SR.NotSupported_AssemblyCodeBase);
 
         // Custom Attributes

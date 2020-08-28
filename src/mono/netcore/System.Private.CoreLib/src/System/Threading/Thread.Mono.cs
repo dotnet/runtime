@@ -321,9 +321,8 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static Thread InitializeCurrentThread()
         {
-            Thread? thread = null;
-            InitializeCurrentThread_icall(ref thread);
-            return thread;
+            InitializeCurrentThread_icall(ref t_currentThread);
+            return t_currentThread;
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]

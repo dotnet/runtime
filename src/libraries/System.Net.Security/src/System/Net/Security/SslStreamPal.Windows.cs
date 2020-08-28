@@ -110,17 +110,17 @@ namespace System.Net.Security
             return SecurityStatusAdapterPal.GetSecurityStatusPalFromNativeInt(errorCode);
         }
 
-        public static SafeFreeCredentials AcquireCredentialsHandle(X509Certificate? certificate, SslProtocols protocols, EncryptionPolicy policy, bool isServer)
+        public static SafeFreeCredentials AcquireCredentialsHandle(SslStreamCertificateContext? certificateContext, SslProtocols protocols, EncryptionPolicy policy, bool isServer)
         {
             // New crypto API supports TLS1.3 but it does not allow to force NULL encryption.
             return !UseNewCryptoApi || policy == EncryptionPolicy.NoEncryption ?
-                        AcquireCredentialsHandleSchannelCred(certificate, protocols, policy, isServer) :
-                        AcquireCredentialsHandleSchCredentials(certificate, protocols, policy, isServer);
+                        AcquireCredentialsHandleSchannelCred(certificateContext?.Certificate, protocols, policy, isServer) :
+                        AcquireCredentialsHandleSchCredentials(certificateContext?.Certificate, protocols, policy, isServer);
         }
 
         // This is legacy crypto API used on .NET Framework and older Windows versions.
         // It only supports TLS up to 1.2
-        public static SafeFreeCredentials AcquireCredentialsHandleSchannelCred(X509Certificate? certificate, SslProtocols protocols, EncryptionPolicy policy, bool isServer)
+        public static unsafe SafeFreeCredentials AcquireCredentialsHandleSchannelCred(X509Certificate? certificate, SslProtocols protocols, EncryptionPolicy policy, bool isServer)
         {
             int protocolFlags = GetProtocolFlagsFromSslProtocols(protocols, isServer);
             Interop.SspiCli.SCHANNEL_CRED.Flags flags;
@@ -150,13 +150,19 @@ namespace System.Net.Security
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info($"flags=({flags}), ProtocolFlags=({protocolFlags}), EncryptionPolicy={policy}");
             Interop.SspiCli.SCHANNEL_CRED secureCredential = CreateSecureCredential(
-                Interop.SspiCli.SCHANNEL_CRED.CurrentVersion,
-                certificate,
                 flags,
                 protocolFlags,
                 policy);
 
-            return AcquireCredentialsHandle(direction, secureCredential);
+            Interop.Crypt32.CERT_CONTEXT* certificateHandle = null;
+            if (certificate != null)
+            {
+                secureCredential.cCreds = 1;
+                certificateHandle = (Interop.Crypt32.CERT_CONTEXT*)certificate.Handle;
+                secureCredential.paCred = &certificateHandle;
+            }
+
+            return AcquireCredentialsHandle(direction, &secureCredential);
         }
 
         // This function uses new crypto API to support TLS 1.3 and beyond.
@@ -202,11 +208,11 @@ namespace System.Net.Security
             credential.dwVersion = Interop.SspiCli.SCH_CREDENTIALS.CurrentVersion;
             credential.dwFlags = flags;
 
-            IntPtr certificateHandle = IntPtr.Zero;
+            Interop.Crypt32.CERT_CONTEXT *certificateHandle = null;
             if (certificate != null)
             {
                 credential.cCreds = 1;
-                certificateHandle = certificate.Handle;
+                certificateHandle = (Interop.Crypt32.CERT_CONTEXT *)certificate.Handle;
                 credential.paCred = &certificateHandle;
             }
 
@@ -442,8 +448,6 @@ namespace System.Net.Security
         }
 
         private static Interop.SspiCli.SCHANNEL_CRED CreateSecureCredential(
-            int version,
-            X509Certificate? certificate,
             Interop.SspiCli.SCHANNEL_CRED.Flags flags,
             int protocols, EncryptionPolicy policy)
         {
@@ -452,12 +456,13 @@ namespace System.Net.Security
                 hRootStore = IntPtr.Zero,
                 aphMappers = IntPtr.Zero,
                 palgSupportedAlgs = IntPtr.Zero,
-                paCred = IntPtr.Zero,
+                paCred = null,
                 cCreds = 0,
                 cMappers = 0,
                 cSupportedAlgs = 0,
                 dwSessionLifespan = 0,
-                reserved = 0
+                reserved = 0,
+                dwVersion = Interop.SspiCli.SCHANNEL_CRED.CurrentVersion
             };
 
             if (policy == EncryptionPolicy.RequireEncryption)
@@ -483,14 +488,8 @@ namespace System.Net.Security
                 throw new ArgumentException(SR.Format(SR.net_invalid_enum, "EncryptionPolicy"), nameof(policy));
             }
 
-            credential.dwVersion = version;
             credential.dwFlags = flags;
             credential.grbitEnabledProtocols = protocols;
-            if (certificate != null)
-            {
-                credential.paCred = certificate.Handle;
-                credential.cCreds = 1;
-            }
 
             return credential;
         }
@@ -498,7 +497,7 @@ namespace System.Net.Security
         //
         // Security: we temporarily reset thread token to open the handle under process account.
         //
-        private static SafeFreeCredentials AcquireCredentialsHandle(Interop.SspiCli.CredentialUse credUsage, Interop.SspiCli.SCHANNEL_CRED secureCredential)
+        private static unsafe SafeFreeCredentials AcquireCredentialsHandle(Interop.SspiCli.CredentialUse credUsage, Interop.SspiCli.SCHANNEL_CRED* secureCredential)
         {
             // First try without impersonation, if it fails, then try the process account.
             // I.E. We don't know which account the certificate context was created under.

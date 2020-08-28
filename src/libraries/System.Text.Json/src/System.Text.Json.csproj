@@ -125,6 +125,7 @@
     <Compile Include="System\Text\Json\Serialization\Converters\Value\UInt32Converter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Value\UInt64Converter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Value\UriConverter.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\Value\VersionConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonCamelCaseNamingPolicy.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonClassInfo.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonClassInfo.Cache.cs" />
@@ -180,6 +181,7 @@
     <Compile Include="System\Text\Json\Serialization\WriteStackFrame.cs" />
     <Compile Include="System\Text\Json\ThrowHelper.cs" />
     <Compile Include="System\Text\Json\ThrowHelper.Serialization.cs" />
+    <Compile Include="System\Text\Json\TypeExtensions.cs" />
     <Compile Include="System\Text\Json\Writer\JsonWriterHelper.cs" />
     <Compile Include="System\Text\Json\Writer\JsonWriterHelper.Date.cs" />
     <Compile Include="System\Text\Json\Writer\JsonWriterHelper.Escaping.cs" />
@@ -250,7 +252,7 @@
     <Reference Include="System.Threading.Tasks.Extensions" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' or $(TargetFramework.StartsWith('net4'))">
-    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="$(MicrosoftBclAsyncInterfacesVersion)" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Bcl.AsyncInterfaces\src\Microsoft.Bcl.AsyncInterfaces.csproj" />
     <PackageReference Include="System.Buffers" Version="$(SystemBuffersVersion)" />
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
     <PackageReference Include="System.Numerics.Vectors" Version="$(SystemNumericsVectorsVersion)" />

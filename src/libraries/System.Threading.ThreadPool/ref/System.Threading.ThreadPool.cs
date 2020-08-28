@@ -37,7 +37,7 @@ namespace System.Threading
         public static bool SetMaxThreads(int workerThreads, int completionPortThreads) { throw null; }
         public static bool SetMinThreads(int workerThreads, int completionPortThreads) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static unsafe bool UnsafeQueueNativeOverlapped(System.Threading.NativeOverlapped* overlapped) { throw null; }
+        public unsafe static bool UnsafeQueueNativeOverlapped(System.Threading.NativeOverlapped* overlapped) { throw null; }
         public static bool UnsafeQueueUserWorkItem(System.Threading.IThreadPoolWorkItem callBack, bool preferLocal) { throw null; }
         public static bool UnsafeQueueUserWorkItem(System.Threading.WaitCallback callBack, object? state) { throw null; }
         public static bool UnsafeQueueUserWorkItem<TState>(System.Action<TState> callBack, TState state, bool preferLocal) { throw null; }

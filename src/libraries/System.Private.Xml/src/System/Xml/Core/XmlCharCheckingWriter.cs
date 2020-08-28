@@ -7,6 +7,7 @@ using System.Text;
 using System.Xml.Schema;
 using System.Collections;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml
 {
@@ -50,30 +51,33 @@ namespace System.Xml
         {
             get
             {
-                XmlWriterSettings s = base.writer.Settings;
+                XmlWriterSettings? s = base.writer.Settings;
                 s = (s != null) ? (XmlWriterSettings)s.Clone() : new XmlWriterSettings();
 
                 if (_checkValues)
                 {
                     s.CheckCharacters = true;
                 }
+
                 if (_replaceNewLines)
                 {
                     s.NewLineHandling = NewLineHandling.Replace;
                     s.NewLineChars = _newLineChars;
                 }
+
                 s.ReadOnly = true;
                 return s;
             }
         }
 
 
-        public override void WriteDocType(string name, string pubid, string sysid, string subset)
+        public override void WriteDocType(string name, string? pubid, string? sysid, string? subset)
         {
             if (_checkNames)
             {
                 ValidateQName(name);
             }
+
             if (_checkValues)
             {
                 if (pubid != null)
@@ -84,25 +88,29 @@ namespace System.Xml
                         throw XmlConvert.CreateInvalidCharException(pubid, i);
                     }
                 }
+
                 if (sysid != null)
                 {
                     CheckCharacters(sysid);
                 }
+
                 if (subset != null)
                 {
                     CheckCharacters(subset);
                 }
             }
+
             if (_replaceNewLines)
             {
                 sysid = ReplaceNewLines(sysid);
                 pubid = ReplaceNewLines(pubid);
                 subset = ReplaceNewLines(subset);
             }
+
             writer.WriteDocType(name, pubid, sysid, subset);
         }
 
-        public override void WriteStartElement(string prefix, string localName, string ns)
+        public override void WriteStartElement(string? prefix, string localName, string? ns)
         {
             if (_checkNames)
             {
@@ -110,6 +118,7 @@ namespace System.Xml
                 {
                     throw new ArgumentException(SR.Xml_EmptyLocalName);
                 }
+
                 ValidateNCName(localName);
 
                 if (prefix != null && prefix.Length > 0)
@@ -117,10 +126,11 @@ namespace System.Xml
                     ValidateNCName(prefix);
                 }
             }
+
             writer.WriteStartElement(prefix, localName, ns);
         }
 
-        public override void WriteStartAttribute(string prefix, string localName, string ns)
+        public override void WriteStartAttribute(string? prefix, string localName, string? ns)
         {
             if (_checkNames)
             {
@@ -128,6 +138,7 @@ namespace System.Xml
                 {
                     throw new ArgumentException(SR.Xml_EmptyLocalName);
                 }
+
                 ValidateNCName(localName);
 
                 if (prefix != null && prefix.Length > 0)
@@ -135,10 +146,11 @@ namespace System.Xml
                     ValidateNCName(prefix);
                 }
             }
+
             writer.WriteStartAttribute(prefix, localName, ns);
         }
 
-        public override void WriteCData(string text)
+        public override void WriteCData(string? text)
         {
             if (text != null)
             {
@@ -146,10 +158,12 @@ namespace System.Xml
                 {
                     CheckCharacters(text);
                 }
+
                 if (_replaceNewLines)
                 {
                     text = ReplaceNewLines(text);
                 }
+
                 int i;
                 while ((i = text.IndexOf("]]>", StringComparison.Ordinal)) >= 0)
                 {
@@ -160,7 +174,7 @@ namespace System.Xml
             writer.WriteCData(text);
         }
 
-        public override void WriteComment(string text)
+        public override void WriteComment(string? text)
         {
             if (text != null)
             {
@@ -169,20 +183,23 @@ namespace System.Xml
                     CheckCharacters(text);
                     text = InterleaveInvalidChars(text, '-', '-');
                 }
+
                 if (_replaceNewLines)
                 {
                     text = ReplaceNewLines(text);
                 }
             }
+
             writer.WriteComment(text);
         }
 
-        public override void WriteProcessingInstruction(string name, string text)
+        public override void WriteProcessingInstruction(string name, string? text)
         {
             if (_checkNames)
             {
                 ValidateNCName(name);
             }
+
             if (text != null)
             {
                 if (_checkValues)
@@ -190,11 +207,13 @@ namespace System.Xml
                     CheckCharacters(text);
                     text = InterleaveInvalidChars(text, '?', '>');
                 }
+
                 if (_replaceNewLines)
                 {
                     text = ReplaceNewLines(text);
                 }
             }
+
             writer.WriteProcessingInstruction(name, text);
         }
 
@@ -204,15 +223,17 @@ namespace System.Xml
             {
                 ValidateQName(name);
             }
+
             writer.WriteEntityRef(name);
         }
 
-        public override void WriteWhitespace(string ws)
+        public override void WriteWhitespace(string? ws)
         {
             if (ws == null)
             {
                 ws = string.Empty;
             }
+
             // "checkNames" is intentional here; if false, the whitespace is checked in XmlWellformedWriter
             if (_checkNames)
             {
@@ -222,14 +243,16 @@ namespace System.Xml
                     throw new ArgumentException(SR.Format(SR.Xml_InvalidWhitespaceCharacter, XmlException.BuildCharExceptionArgs(ws, i)));
                 }
             }
+
             if (_replaceNewLines)
             {
                 ws = ReplaceNewLines(ws);
             }
+
             writer.WriteWhitespace(ws);
         }
 
-        public override void WriteString(string text)
+        public override void WriteString(string? text)
         {
             if (text != null)
             {
@@ -242,6 +265,7 @@ namespace System.Xml
                     text = ReplaceNewLines(text);
                 }
             }
+
             writer.WriteString(text);
         }
 
@@ -273,15 +297,17 @@ namespace System.Xml
             {
                 CheckCharacters(buffer, index, count);
             }
+
             if (_replaceNewLines && WriteState != WriteState.Attribute)
             {
-                string text = ReplaceNewLines(buffer, index, count);
+                string? text = ReplaceNewLines(buffer, index, count);
                 if (text != null)
                 {
                     WriteString(text);
                     return;
                 }
             }
+
             writer.WriteChars(buffer, index, count);
         }
 
@@ -293,8 +319,10 @@ namespace System.Xml
                 {
                     throw new ArgumentException(SR.Xml_EmptyName);
                 }
+
                 XmlConvert.VerifyNMTOKEN(name);
             }
+
             writer.WriteNmToken(name);
         }
 
@@ -304,15 +332,17 @@ namespace System.Xml
             {
                 XmlConvert.VerifyQName(name, ExceptionType.XmlException);
             }
+
             writer.WriteName(name);
         }
 
-        public override void WriteQualifiedName(string localName, string ns)
+        public override void WriteQualifiedName(string localName, string? ns)
         {
             if (_checkNames)
             {
                 ValidateNCName(localName);
             }
+
             writer.WriteQualifiedName(localName, ns);
         }
 
@@ -349,6 +379,7 @@ namespace System.Xml
             {
                 throw new ArgumentException(SR.Xml_EmptyName);
             }
+
             int colonPos;
             int len = ValidateNames.ParseQName(name, 0, out colonPos);
             if (len != name.Length)
@@ -358,14 +389,15 @@ namespace System.Xml
             }
         }
 
-        private string ReplaceNewLines(string str)
+        [return: NotNullIfNotNull("str")]
+        private string? ReplaceNewLines(string? str)
         {
             if (str == null)
             {
                 return null;
             }
 
-            StringBuilder sb = null;
+            StringBuilder? sb = null;
             int start = 0;
             int i;
             for (i = 0; i < str.Length; i++)
@@ -396,10 +428,12 @@ namespace System.Xml
                             i++;
                             continue;
                         }
+
                         if (sb == null)
                         {
                             sb = new StringBuilder(str.Length + 5);
                         }
+
                         sb.Append(str, start, i - start);
                         i++;
                     }
@@ -409,10 +443,12 @@ namespace System.Xml
                         {
                             continue;
                         }
+
                         if (sb == null)
                         {
                             sb = new StringBuilder(str.Length + 5);
                         }
+
                         sb.Append(str, start, i - start);
                     }
                 }
@@ -435,14 +471,14 @@ namespace System.Xml
             }
         }
 
-        private string ReplaceNewLines(char[] data, int offset, int len)
+        private string? ReplaceNewLines(char[]? data, int offset, int len)
         {
             if (data == null)
             {
                 return null;
             }
 
-            StringBuilder sb = null;
+            StringBuilder? sb = null;
             int start = offset;
             int endPos = offset + len;
             int i;
@@ -453,16 +489,19 @@ namespace System.Xml
                 {
                     continue;
                 }
+
                 if (ch == '\n')
                 {
                     if (_newLineChars == "\n")
                     {
                         continue;
                     }
+
                     if (sb == null)
                     {
                         sb = new StringBuilder(len + 5);
                     }
+
                     sb.Append(data, start, i - start);
                 }
                 else if (ch == '\r')
@@ -474,10 +513,12 @@ namespace System.Xml
                             i++;
                             continue;
                         }
+
                         if (sb == null)
                         {
                             sb = new StringBuilder(len + 5);
                         }
+
                         sb.Append(data, start, i - start);
                         i++;
                     }
@@ -487,10 +528,12 @@ namespace System.Xml
                         {
                             continue;
                         }
+
                         if (sb == null)
                         {
                             sb = new StringBuilder(len + 5);
                         }
+
                         sb.Append(data, start, i - start);
                     }
                 }
@@ -498,6 +541,7 @@ namespace System.Xml
                 {
                     continue;
                 }
+
                 sb.Append(_newLineChars);
                 start = i + 1;
             }
@@ -518,7 +562,7 @@ namespace System.Xml
         // Any "?>" in PI value must be replaced with "? >".
         private string InterleaveInvalidChars(string text, char invChar1, char invChar2)
         {
-            StringBuilder sb = null;
+            StringBuilder? sb = null;
             int start = 0;
             int i;
             for (i = 0; i < text.Length; i++)
@@ -533,6 +577,7 @@ namespace System.Xml
                     {
                         sb = new StringBuilder(text.Length + 5);
                     }
+
                     sb.Append(text, start, i - start);
                     sb.Append(' ');
                     start = i;
@@ -551,6 +596,7 @@ namespace System.Xml
                 {
                     sb.Append(' ');
                 }
+
                 return sb.ToString();
             }
         }

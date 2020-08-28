@@ -1085,18 +1085,18 @@ finish_agent_init (gboolean on_startup)
 		// FIXME: Generated address
 		// FIXME: Races with transport_connect ()
 
-		char *argv [ ] = {
-			agent_config.launch,
-			agent_config.transport,
-			agent_config.address,
-			NULL
-		};
 #ifdef G_OS_WIN32
 		// Nothing. FIXME? g_spawn_async_with_pipes is easy enough to provide for Windows if needed.
 #elif !HAVE_G_SPAWN
 		g_printerr ("g_spawn_async_with_pipes not supported on this platform\n");
 		exit (1);
 #else
+		char *argv [ ] = {
+			agent_config.launch,
+			agent_config.transport,
+			agent_config.address,
+			NULL
+		};
 		int res = g_spawn_async_with_pipes (NULL, argv, NULL, (GSpawnFlags)0, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 		if (!res) {
 			g_printerr ("Failed to execute '%s'.\n", agent_config.launch);
@@ -3598,9 +3598,9 @@ dbg_path_get_basename (const char *filename)
 	return g_strdup (&r[1]);
 }
 
-GENERATE_TRY_GET_CLASS_WITH_CACHE(hidden_klass, "System.Diagnostics", "DebuggerHiddenAttribute")
-GENERATE_TRY_GET_CLASS_WITH_CACHE(step_through_klass, "System.Diagnostics", "DebuggerStepThroughAttribute")
-GENERATE_TRY_GET_CLASS_WITH_CACHE(non_user_klass, "System.Diagnostics", "DebuggerNonUserCodeAttribute")
+static GENERATE_TRY_GET_CLASS_WITH_CACHE(hidden_klass, "System.Diagnostics", "DebuggerHiddenAttribute")
+static GENERATE_TRY_GET_CLASS_WITH_CACHE(step_through_klass, "System.Diagnostics", "DebuggerStepThroughAttribute")
+static GENERATE_TRY_GET_CLASS_WITH_CACHE(non_user_klass, "System.Diagnostics", "DebuggerNonUserCodeAttribute")
 
 static void
 init_jit_info_dbg_attrs (MonoJitInfo *ji)
@@ -4027,6 +4027,9 @@ process_event (EventKind event, gpointer arg, gint32 il_offset, MonoContext *ctx
 			DebuggerTlsData *tls;
 			tls = (DebuggerTlsData *)mono_native_tls_get_value (debugger_tls_id);
 			g_assert (tls);
+			// We are already processing a breakpoint event
+			if (tls->disable_breakpoints)
+				return;
 			mono_stopwatch_stop (&tls->step_time);
 			break;
 		}

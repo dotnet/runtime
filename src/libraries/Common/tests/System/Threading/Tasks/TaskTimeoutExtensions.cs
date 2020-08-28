@@ -60,6 +60,20 @@ namespace System.Threading.Tasks
             }
         }
 
+#if !NETFRAMEWORK
+        public static Task TimeoutAfter(this ValueTask task, int millisecondsTimeout)
+            => task.AsTask().TimeoutAfter(TimeSpan.FromMilliseconds(millisecondsTimeout));
+
+        public static Task TimeoutAfter(this ValueTask task, TimeSpan timeout)
+            => task.AsTask().TimeoutAfter(timeout);
+
+        public static Task<TResult> TimeoutAfter<TResult>(this ValueTask<TResult> task, int millisecondsTimeout)
+            => task.AsTask().TimeoutAfter(TimeSpan.FromMilliseconds(millisecondsTimeout));
+
+        public static Task<TResult> TimeoutAfter<TResult>(this ValueTask<TResult> task, TimeSpan timeout)
+            => task.AsTask().TimeoutAfter(timeout);
+#endif
+
         public static async Task WhenAllOrAnyFailed(this Task[] tasks, int millisecondsTimeout)
         {
             var cts = new CancellationTokenSource();

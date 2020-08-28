@@ -29,7 +29,6 @@
     <NETCoreAppFramework>$(NetCoreAppCurrent)</NETCoreAppFramework>
     <SharedFrameworkName>Microsoft.NETCore.App</SharedFrameworkName>
     <NetCoreAppCurrentBrandName>.NET $(NetCoreAppCurrentVersion)</NetCoreAppCurrentBrandName>
-    <MinimiumSupportedWindowsPlatform>WINDOWS7.0</MinimiumSupportedWindowsPlatform>
   </PropertyGroup>
 
   <!-- Honor the generic RuntimeConfiguration property. -->

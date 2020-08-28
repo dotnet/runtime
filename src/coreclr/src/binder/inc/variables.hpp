@@ -31,7 +31,7 @@ namespace BINDER_SPACE
 
         // AssemblyName string constants
         SString cultureNeutral;
-        SString mscorlib;
+        SString corelib;
     };
 
     extern Variables *g_BinderVariables;

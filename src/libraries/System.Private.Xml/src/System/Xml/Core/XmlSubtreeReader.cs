@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System;
 using System.Xml;
 using System.Diagnostics;
@@ -265,7 +264,7 @@ namespace System.Xml
             return null;
         }
 
-        public override string? GetAttribute(string name, string namespaceURI)
+        public override string? GetAttribute(string name, string? namespaceURI)
         {
             if (!InAttributeActiveState)
             {
@@ -334,7 +333,7 @@ namespace System.Xml
             return false;
         }
 
-        public override bool MoveToAttribute(string name, string ns)
+        public override bool MoveToAttribute(string name, string? ns)
         {
             if (!InAttributeActiveState)
             {
@@ -799,7 +798,7 @@ namespace System.Xml
             }
         }
 
-        public override object ReadContentAs(Type returnType, IXmlNamespaceResolver namespaceResolver)
+        public override object ReadContentAs(Type returnType, IXmlNamespaceResolver? namespaceResolver)
         {
             try
             {

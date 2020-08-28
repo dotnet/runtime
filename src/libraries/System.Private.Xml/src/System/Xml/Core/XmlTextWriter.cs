@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -293,7 +292,7 @@ namespace System.Xml
         }
 
         // Creates an instance of the XmlTextWriter class using the specified file.
-        public XmlTextWriter(string filename, Encoding encoding)
+        public XmlTextWriter(string filename, Encoding? encoding)
         : this(new FileStream(filename, FileMode.Create,
                               FileAccess.Write, FileShare.Read), encoding)
         {

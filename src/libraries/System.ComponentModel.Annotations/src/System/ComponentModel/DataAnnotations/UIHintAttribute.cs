@@ -42,7 +42,7 @@ namespace System.ComponentModel.DataAnnotations
         /// <param name="uiHint">The name of the control</param>
         /// <param name="presentationLayer">The presentation layer</param>
         /// <param name="controlParameters">The list of parameters for the control</param>
-        public UIHintAttribute(string uiHint, string presentationLayer, params object[] controlParameters)
+        public UIHintAttribute(string uiHint, string? presentationLayer, params object?[]? controlParameters)
         {
             _implementation = new UIHintImplementation(uiHint, presentationLayer, controlParameters);
         }
@@ -55,25 +55,25 @@ namespace System.ComponentModel.DataAnnotations
         /// <summary>
         ///     Gets the name of the presentation layer that supports the control type in <see cref="UIHint" />
         /// </summary>
-        public string PresentationLayer => _implementation.PresentationLayer;
+        public string? PresentationLayer => _implementation.PresentationLayer;
 
         /// <summary>
         ///     Gets the name-value pairs used as parameters to the control's constructor
         /// </summary>
         /// <exception cref="InvalidOperationException"> is thrown if the current attribute is ill-formed.</exception>
-        public IDictionary<string, object> ControlParameters => _implementation.ControlParameters;
+        public IDictionary<string, object?> ControlParameters => _implementation.ControlParameters;
 
         public override int GetHashCode() => _implementation.GetHashCode();
 
-        public override bool Equals(object obj) =>
+        public override bool Equals(object? obj) =>
             obj is UIHintAttribute otherAttribute && _implementation.Equals(otherAttribute._implementation);
 
         internal class UIHintImplementation
         {
-            private readonly object[] _inputControlParameters;
-            private IDictionary<string, object> _controlParameters;
+            private readonly object?[]? _inputControlParameters;
+            private IDictionary<string, object?>? _controlParameters;
 
-            public UIHintImplementation(string uiHint, string presentationLayer, params object[] controlParameters)
+            public UIHintImplementation(string uiHint, string? presentationLayer, params object?[]? controlParameters)
             {
                 UIHint = uiHint;
                 PresentationLayer = presentationLayer;
@@ -92,12 +92,12 @@ namespace System.ComponentModel.DataAnnotations
             /// <summary>
             ///     Gets the name of the presentation layer that supports the control type in <see cref="UIHint" />
             /// </summary>
-            public string PresentationLayer { get; }
+            public string? PresentationLayer { get; }
 
             // Lazy load the dictionary. It's fine if this method executes multiple times in stress scenarios.
             // If the method throws (indicating that the input params are invalid) this property will throw
             // every time it's accessed.
-            public IDictionary<string, object> ControlParameters =>
+            public IDictionary<string, object?> ControlParameters =>
                 _controlParameters ?? (_controlParameters = BuildControlParametersDictionary());
 
             /// <summary>
@@ -118,18 +118,19 @@ namespace System.ComponentModel.DataAnnotations
             /// </summary>
             /// <param name="obj">An System.Object.</param>
             /// <returns>true if obj is a UIHintAttribute and its value is the same as this instance; otherwise, false.</returns>
-            public override bool Equals(object obj)
+            public override bool Equals(object? obj)
             {
-                // don't need to perform a type check on obj since this is an internal class
-                var otherImplementation = (UIHintImplementation)obj;
+                var otherImplementation = obj as UIHintImplementation;
 
-                if (UIHint != otherImplementation.UIHint || PresentationLayer != otherImplementation.PresentationLayer)
+                if (otherImplementation is null ||
+                    UIHint != otherImplementation.UIHint ||
+                    PresentationLayer != otherImplementation.PresentationLayer)
                 {
                     return false;
                 }
 
-                IDictionary<string, object> leftParams;
-                IDictionary<string, object> rightParams;
+                IDictionary<string, object?> leftParams;
+                IDictionary<string, object?> rightParams;
 
                 try
                 {
@@ -157,11 +158,11 @@ namespace System.ComponentModel.DataAnnotations
             /// <returns>
             ///     Dictionary of control parameters.
             /// </returns>
-            private IDictionary<string, object> BuildControlParametersDictionary()
+            private IDictionary<string, object?> BuildControlParametersDictionary()
             {
-                IDictionary<string, object> controlParameters = new Dictionary<string, object>();
+                IDictionary<string, object?> controlParameters = new Dictionary<string, object?>();
 
-                object[] inputControlParameters = _inputControlParameters;
+                object?[]? inputControlParameters = _inputControlParameters;
 
                 if (inputControlParameters == null || inputControlParameters.Length == 0)
                 {
@@ -174,8 +175,8 @@ namespace System.ComponentModel.DataAnnotations
 
                 for (int i = 0; i < inputControlParameters.Length; i += 2)
                 {
-                    object key = inputControlParameters[i];
-                    object value = inputControlParameters[i + 1];
+                    object? key = inputControlParameters[i];
+                    object? value = inputControlParameters[i + 1];
                     if (key == null)
                     {
                         throw new InvalidOperationException(SR.Format(SR.UIHintImplementation_ControlParameterKeyIsNull, i));
@@ -185,7 +186,7 @@ namespace System.ComponentModel.DataAnnotations
                     {
                         throw new InvalidOperationException(SR.Format(SR.UIHintImplementation_ControlParameterKeyIsNotAString,
                                                             i,
-                                                            inputControlParameters[i].ToString()));
+                                                            inputControlParameters[i]!.ToString()));
                     }
 
                     if (controlParameters.ContainsKey(keyString))

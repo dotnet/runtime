@@ -25,16 +25,16 @@ namespace System.Xml.Serialization
                 return typeof(IList).GetMethod(
                     "get_Item",
                     new Type[] { typeof(int) }
-                );
+                )!;
             });
 
         public string Source;
         public readonly string Arg;
-        public readonly MemberInfo MemberInfo;
-        public readonly Type Type;
+        public readonly MemberInfo? MemberInfo;
+        public readonly Type? Type;
         public readonly CodeGenerator ILG;
 
-        public SourceInfo(string source, string arg, MemberInfo memberInfo, Type type, CodeGenerator ilg)
+        public SourceInfo(string source, string? arg, MemberInfo? memberInfo, Type? type, CodeGenerator ilg)
         {
             this.Source = source;
             this.Arg = arg ?? source;
@@ -45,20 +45,20 @@ namespace System.Xml.Serialization
 
         public SourceInfo CastTo(TypeDesc td)
         {
-            return new SourceInfo("((" + td.CSharpName + ")" + Source + ")", Arg, MemberInfo, td.Type, ILG);
+            return new SourceInfo("((" + td.CSharpName + ")" + Source + ")", Arg, MemberInfo, td.Type!, ILG);
         }
 
-        public void LoadAddress(Type elementType)
+        public void LoadAddress(Type? elementType)
         {
             InternalLoad(elementType, asAddress: true);
         }
 
-        public void Load(Type elementType)
+        public void Load(Type? elementType)
         {
             InternalLoad(elementType);
         }
 
-        private void InternalLoad(Type elementType, bool asAddress = false)
+        private void InternalLoad(Type? elementType, bool asAddress = false)
         {
             Match match = s_regex.Match(Arg);
             if (match.Success)
@@ -70,11 +70,11 @@ namespace System.Xml.Serialization
                 {
                     ILG.Load(varA);
                     ILG.Load(varIA);
-                    Type eType = varType.GetElementType();
+                    Type eType = varType.GetElementType()!;
                     if (CodeGenerator.IsNullableGenericType(eType))
                     {
                         ILG.Ldelema(eType);
-                        ConvertNullableValue(eType, elementType);
+                        ConvertNullableValue(eType, elementType!);
                     }
                     else
                     {
@@ -100,7 +100,7 @@ namespace System.Xml.Serialization
                         "get_Item",
                         CodeGenerator.InstanceBindingFlags,
                         new Type[] { typeof(int) }
-                        );
+                        )!;
 
                     if (get_Item == null && typeof(IList).IsAssignableFrom(varType))
                     {
@@ -115,7 +115,7 @@ namespace System.Xml.Serialization
                         LocalBuilder localTmp = ILG.GetTempLocal(eType);
                         ILG.Stloc(localTmp);
                         ILG.Ldloca(localTmp);
-                        ConvertNullableValue(eType, elementType);
+                        ConvertNullableValue(eType, elementType!);
                     }
                     else if ((elementType != null) && !(eType.IsAssignableFrom(elementType) || elementType.IsAssignableFrom(eType)))
                     {
@@ -171,7 +171,7 @@ namespace System.Xml.Serialization
                     if (CodeGenerator.IsNullableGenericType(memberType))
                     {
                         ILG.LoadMemberAddress(MemberInfo);
-                        ConvertNullableValue(memberType, elementType);
+                        ConvertNullableValue(memberType, elementType!);
                     }
                     else
                     {
@@ -185,19 +185,19 @@ namespace System.Xml.Serialization
                     if (match.Success)
                     {
                         Debug.Assert(match.Groups["arg"].Value == Arg);
-                        Debug.Assert(match.Groups["cast"].Value == CodeIdentifier.GetCSharpName(Type));
+                        Debug.Assert(match.Groups["cast"].Value == CodeIdentifier.GetCSharpName(Type!));
                         if (asAddress)
-                            ILG.ConvertAddress(varType, Type);
+                            ILG.ConvertAddress(varType, Type!);
                         else
-                            ILG.ConvertValue(varType, Type);
-                        varType = Type;
+                            ILG.ConvertValue(varType, Type!);
+                        varType = Type!;
                     }
-                    Convert(varType, elementType, asAddress);
+                    Convert(varType!, elementType, asAddress);
                 }
             }
         }
 
-        private void Convert(Type sourceType, Type targetType, bool asAddress)
+        private void Convert(Type sourceType, Type? targetType, bool asAddress)
         {
             if (targetType != null)
             {
@@ -217,7 +217,7 @@ namespace System.Xml.Serialization
                     "get_Value",
                     CodeGenerator.InstanceBindingFlags,
                     Array.Empty<Type>()
-                    );
+                    )!;
                 ILG.Call(Nullable_get_Value);
                 if (targetType != null)
                 {
@@ -231,25 +231,25 @@ namespace System.Xml.Serialization
             return source.Source;
         }
 
-        public static bool operator !=(SourceInfo a, SourceInfo b)
+        public static bool operator !=(SourceInfo? a, SourceInfo? b)
         {
-            if ((object)a != null)
+            if ((object?)a != null)
                 return !a.Equals(b);
-            return (object)b != null;
+            return (object?)b != null;
         }
 
-        public static bool operator ==(SourceInfo a, SourceInfo b)
+        public static bool operator ==(SourceInfo? a, SourceInfo? b)
         {
-            if ((object)a != null)
+            if ((object?)a != null)
                 return a.Equals(b);
-            return (object)b == null;
+            return (object?)b == null;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             if (obj == null)
                 return Source == null;
-            SourceInfo info = obj as SourceInfo;
+            SourceInfo? info = obj as SourceInfo;
             if (info != null)
                 return Source == info.Source;
             return false;

@@ -41,7 +41,7 @@ namespace System.Diagnostics
         /// two, etc.  For example, the value 1 means run on processor one, 2 means run on
         /// processor two, 3 means run on processor one or two.
         /// </summary>
-        [MinimumOSPlatform("windows7.0")]
+        [SupportedOSPlatform("windows")]
         public IntPtr ProcessorAffinity
         {
             set { throw new PlatformNotSupportedException(); } // No ability to change the affinity of a thread in an arbitrary process

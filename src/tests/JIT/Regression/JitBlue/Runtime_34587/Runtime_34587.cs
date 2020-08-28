@@ -30,6 +30,7 @@ class Runtime_34587
         TestLibrary.TestFramework.LogInformation($"  SSE4.1:        {Sse41.IsSupported}");
         TestLibrary.TestFramework.LogInformation($"  SSE4.2:        {Sse42.IsSupported}");
         TestLibrary.TestFramework.LogInformation($"  SSSE3:         {Ssse3.IsSupported}");
+        TestLibrary.TestFramework.LogInformation($"  X86Base:       {X86Base.IsSupported}");
 
         TestLibrary.TestFramework.LogInformation("Supported x64 ISAs:");
         TestLibrary.TestFramework.LogInformation($"  AES.X64:       {X86Aes.X64.IsSupported}");
@@ -47,6 +48,7 @@ class Runtime_34587
         TestLibrary.TestFramework.LogInformation($"  SSE4.1.X64:    {Sse41.X64.IsSupported}");
         TestLibrary.TestFramework.LogInformation($"  SSE4.2.X64:    {Sse42.X64.IsSupported}");
         TestLibrary.TestFramework.LogInformation($"  SSSE3.X64:     {Ssse3.X64.IsSupported}");
+        TestLibrary.TestFramework.LogInformation($"  X86Base.X64:   {X86Base.X64.IsSupported}");
 
         TestLibrary.TestFramework.LogInformation("Supported Arm ISAs:");
         TestLibrary.TestFramework.LogInformation($"  AdvSimd:       {AdvSimd.IsSupported}");
@@ -240,6 +242,7 @@ class Runtime_34587
     {
         bool succeeded = true;
 
+        succeeded &= ValidateX86Base();
         succeeded &= ValidateSse();
         succeeded &= ValidateSse2();
         succeeded &= ValidateSse3();
@@ -258,19 +261,37 @@ class Runtime_34587
 
         return succeeded;
 
+        static bool ValidateX86Base()
+        {
+            bool succeeded = true;
+
+            if (X86Base.IsSupported)
+            {
+                succeeded &= (RuntimeInformation.OSArchitecture == Architecture.X86) || (RuntimeInformation.OSArchitecture == Architecture.X64);
+            }
+
+            if (X86Base.X64.IsSupported)
+            {
+                succeeded &= X86Base.IsSupported;
+                succeeded &= (RuntimeInformation.OSArchitecture == Architecture.X64);
+            }
+
+            return succeeded;
+        }
+
         static bool ValidateSse()
         {
             bool succeeded = true;
 
             if (Sse.IsSupported)
             {
-                succeeded &= (RuntimeInformation.OSArchitecture == Architecture.X86) || (RuntimeInformation.OSArchitecture == Architecture.X64);
+                succeeded &= X86Base.IsSupported;
             }
 
             if (Sse.X64.IsSupported)
             {
                 succeeded &= Sse.IsSupported;
-                succeeded &= (RuntimeInformation.OSArchitecture == Architecture.X64);
+                succeeded &= X86Base.X64.IsSupported;
             }
 
             return succeeded;

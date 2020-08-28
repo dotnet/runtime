@@ -1235,6 +1235,15 @@
     ]
   },
   {
+    "Name": "Microsoft.Bcl.AsyncInterfaces",
+    "Description": "Provides the IAsyncEnumerable<T> and IAsyncDisposable interfaces and helper types for .NET Standard 2.0. This package is not required starting with .NET Standard 2.1 and .NET Core 3.0.",
+    "CommonTypes": [
+      "System.IAsyncDisposable",
+      "System.Collections.Generic.IAsyncEnumerable",
+      "System.Collections.Generic.IAsyncEnumerator"
+    ]
+  },
+  {
     "Name": "System.Net.Http",
     "Description": "Provides a programming interface for modern HTTP applications, including HTTP client components that allow applications to consume web services over HTTP and HTTP components that can be used by both clients and servers for parsing HTTP headers.",
     "CommonTypes": [

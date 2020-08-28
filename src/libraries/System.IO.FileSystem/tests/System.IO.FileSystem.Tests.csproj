@@ -46,12 +46,15 @@
     <Compile Include="Enumeration\ExampleTests.cs" />
     <Compile Include="Enumeration\RemovedDirectoryTests.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true'">
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Compile Include="FileSystemTest.Unix.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="FileSystemTest.Windows.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
+    <Compile Include="FileSystemTest.Browser.cs" />
+  </ItemGroup>  
   <ItemGroup>
     <!-- Rewritten -->
     <Compile Include="DirectoryInfo\GetSetAttributes.cs" />

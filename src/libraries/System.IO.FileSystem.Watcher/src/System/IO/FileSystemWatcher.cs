@@ -238,6 +238,8 @@ namespace System.IO
         /// <devdoc>
         ///    Gets or sets the path of the directory to watch.
         /// </devdoc>
+        [Editor("System.Diagnostics.Design.FSWPathEditor, System.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
+                "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
         public string Path
         {
             get

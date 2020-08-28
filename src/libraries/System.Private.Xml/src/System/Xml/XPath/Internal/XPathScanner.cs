@@ -15,9 +15,9 @@ namespace MS.Internal.Xml.XPath
         private int _xpathExprIndex;
         private LexKind _kind;
         private char _currentChar;
-        private string _name;
-        private string _prefix;
-        private string _stringValue;
+        private string? _name;
+        private string? _prefix;
+        private string? _stringValue;
         private double _numberValue = double.NaN;
         private bool _canBeFunction;
         private XmlCharType _xmlCharType = XmlCharType.Instance;

@@ -19,7 +19,7 @@
 #include "pal_icushim.h"
 
 // Define pointers to all the used ICU functions
-#define PER_FUNCTION_BLOCK(fn, lib) __typeof(fn)* fn##_ptr;
+#define PER_FUNCTION_BLOCK(fn, lib) TYPEOF(fn)* fn##_ptr;
 FOR_ALL_ICU_FUNCTIONS
 #undef PER_FUNCTION_BLOCK
 
@@ -43,7 +43,7 @@ static void* libicui18n = NULL;
 #define PER_FUNCTION_BLOCK(fn, lib) \
     c_static_assert_msg((sizeof(#fn) + MaxICUVersionStringWithSuffixLength + 1) <= sizeof(symbolName), "The symbolName is too small for symbol " #fn); \
     sprintf(symbolName, #fn "%s", symbolVersion); \
-    fn##_ptr = (__typeof(fn)*)dlsym(lib, symbolName); \
+    fn##_ptr = (TYPEOF(fn)*)dlsym(lib, symbolName); \
     if (fn##_ptr == NULL) { fprintf(stderr, "Cannot get symbol %s from " #lib "\nError: %s\n", symbolName, dlerror()); abort(); }
 
 static int FindSymbolVersion(int majorVer, int minorVer, int subVer, char* symbolName, char* symbolVersion, char* suffix)
@@ -90,7 +90,7 @@ static int FindSymbolVersion(int majorVer, int minorVer, int subVer, char* symbo
 
 #define PER_FUNCTION_BLOCK(fn, lib) \
     sprintf_s(symbolName, SYMBOL_NAME_SIZE, #fn "%s", symbolVersion); \
-    fn##_ptr = (__typeof(fn)*)GetProcAddress((HMODULE)lib, symbolName); \
+    fn##_ptr = (TYPEOF(fn)*)GetProcAddress((HMODULE)lib, symbolName); \
     if (fn##_ptr == NULL) { fprintf(stderr, "Cannot get symbol %s from " #lib "\nError: %u\n", symbolName, GetLastError()); abort(); }
 
 static int FindICULibs()

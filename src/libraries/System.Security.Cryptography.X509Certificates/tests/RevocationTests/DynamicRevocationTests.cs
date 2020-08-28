@@ -4,7 +4,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates.Tests.Common;
 using Xunit;
 
@@ -526,7 +525,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
                         // [ActiveIssue("https://github.com/dotnet/runtime/issues/31246")]
                         // Linux reports this code at more levels than Windows does.
-                        if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                        if (OperatingSystem.IsLinux())
                         {
                             issuerExtraProblems |= X509ChainStatusFlags.NotValidForUsage;
                         }
@@ -610,7 +609,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
                         // [ActiveIssue("https://github.com/dotnet/runtime/issues/31246")]
                         // Linux reports this code at more levels than Windows does.
-                        if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                        if (OperatingSystem.IsLinux())
                         {
                             issuerExtraProblems |= X509ChainStatusFlags.NotValidForUsage;
                         }
@@ -938,6 +937,56 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                     root.RevocationExpiration = endEntity.NotBefore;
 
                     RunWithInconclusiveIntermediateRevocation(holder, endEntity);
+                });
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", TestPlatforms.OSX)]
+        public static void TestRevocationWithNoNextUpdate_NotRevoked()
+        {
+            SimpleTest(
+                PkiOptions.CrlEverywhere,
+                (root, intermediate, endEntity, holder) =>
+                {
+                    intermediate.OmitNextUpdateInCrl = true;
+
+                    // Build a chain once to get the no NextUpdate in the CRL
+                    // cache. We don't care about the build result.
+                    holder.Chain.Build(endEntity);
+
+                    SimpleRevocationBody(
+                        holder,
+                        endEntity,
+                        rootRevoked: false,
+                        issrRevoked: false,
+                        leafRevoked: false);
+                });
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", TestPlatforms.OSX)]
+        public static void TestRevocationWithNoNextUpdate_Revoked()
+        {
+            SimpleTest(
+                PkiOptions.CrlEverywhere,
+                (root, intermediate, endEntity, holder) =>
+                {
+                    intermediate.OmitNextUpdateInCrl = true;
+
+                    DateTimeOffset now = DateTimeOffset.UtcNow;
+                    intermediate.Revoke(endEntity, now);
+                    holder.Chain.ChainPolicy.VerificationTime = now.AddSeconds(1).UtcDateTime;
+
+                    // Build a chain once to get the no NextUpdate in the CRL
+                    // cache. We don't care about the build result.
+                    holder.Chain.Build(endEntity);
+
+                    SimpleRevocationBody(
+                        holder,
+                        endEntity,
+                        rootRevoked: false,
+                        issrRevoked: false,
+                        leafRevoked: true);
                 });
         }
 

@@ -175,6 +175,8 @@ void Compiler::fgInit()
 #ifdef FEATURE_SIMD
     fgPreviousCandidateSIMDFieldAsgStmt = nullptr;
 #endif
+
+    fgHasSwitch = false;
 }
 
 bool Compiler::fgHaveProfileData()
@@ -476,7 +478,8 @@ void Compiler::fgEnsureFirstBBisScratch()
 
     noway_assert(fgLastBB != nullptr);
 
-    block->bbFlags |= (BBF_INTERNAL | BBF_IMPORTED);
+    // Set the expected flags
+    block->bbFlags |= (BBF_INTERNAL | BBF_IMPORTED | BBF_JMP_TARGET | BBF_HAS_LABEL);
 
     // This new first BB has an implicit ref, and no others.
     block->bbRefs = 1;
@@ -1865,7 +1868,7 @@ bool Compiler::fgReachable(BasicBlock* b1, BasicBlock* b2)
  *  it again.
  */
 
-void Compiler::fgUpdateChangedFlowGraph()
+void Compiler::fgUpdateChangedFlowGraph(bool computeDoms)
 {
     // We need to clear this so we don't hit an assert calling fgRenumberBlocks().
     fgDomsComputed = false;
@@ -1876,7 +1879,10 @@ void Compiler::fgUpdateChangedFlowGraph()
     fgComputePreds();
     fgComputeEnterBlocksSet();
     fgComputeReachabilitySets();
-    fgComputeDoms();
+    if (computeDoms)
+    {
+        fgComputeDoms();
+    }
 }
 
 /*****************************************************************************
@@ -3699,6 +3705,18 @@ PhaseStatus Compiler::fgInsertGCPolls()
             // We don't want to deal with all the outgoing edges of a switch block.
             pollType = GCPOLL_CALL;
         }
+        else if ((block->bbFlags & BBF_COLD) != 0)
+        {
+#ifdef DEBUG
+            if (verbose)
+            {
+                printf("Selecting CALL poll in block " FMT_BB " because it is a cold block\n", block->bbNum);
+            }
+#endif // DEBUG
+
+            // We don't want to split a cold block.
+            pollType = GCPOLL_CALL;
+        }
 
         BasicBlock* curBasicBlock = fgCreateGCPoll(pollType, block);
         createdPollBlocks |= (block != curBasicBlock);
@@ -3711,7 +3729,8 @@ PhaseStatus Compiler::fgInsertGCPolls()
     {
         noway_assert(opts.OptimizationEnabled());
         fgReorderBlocks();
-        fgUpdateChangedFlowGraph();
+        constexpr bool computeDoms = false;
+        fgUpdateChangedFlowGraph(computeDoms);
     }
 #ifdef DEBUG
     if (verbose)
@@ -4141,9 +4160,12 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
 
         // We are allowed to split loops and we need to keep a few other flags...
         //
-        noway_assert((originalFlags & (BBF_SPLIT_NONEXIST & ~(BBF_LOOP_HEAD | BBF_LOOP_CALL0 | BBF_LOOP_CALL1))) == 0);
-        top->bbFlags = originalFlags & (~BBF_SPLIT_LOST | BBF_GC_SAFE_POINT);
-        bottom->bbFlags |= originalFlags & (BBF_SPLIT_GAINED | BBF_IMPORTED | BBF_GC_SAFE_POINT);
+        noway_assert((originalFlags & (BBF_SPLIT_NONEXIST &
+                                       ~(BBF_LOOP_HEAD | BBF_LOOP_CALL0 | BBF_LOOP_CALL1 | BBF_LOOP_PREHEADER |
+                                         BBF_RETLESS_CALL))) == 0);
+        top->bbFlags = originalFlags & (~(BBF_SPLIT_LOST | BBF_LOOP_PREHEADER | BBF_RETLESS_CALL) | BBF_GC_SAFE_POINT);
+        bottom->bbFlags |= originalFlags & (BBF_SPLIT_GAINED | BBF_IMPORTED | BBF_GC_SAFE_POINT | BBF_LOOP_PREHEADER |
+                                            BBF_RETLESS_CALL);
         bottom->inheritWeight(top);
         poll->bbFlags |= originalFlags & (BBF_SPLIT_GAINED | BBF_IMPORTED | BBF_GC_SAFE_POINT);
 
@@ -7236,7 +7258,7 @@ bool Compiler::fgIsThrow(GenTree* tree)
         return true;
     }
 
-    // TODO-CQ: there are a bunch of managed methods in [mscorlib]System.ThrowHelper
+    // TODO-CQ: there are a bunch of managed methods in System.ThrowHelper
     // that would be nice to recognize.
 
     return false;
@@ -7379,6 +7401,7 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
         case CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE_DYNAMICCLASS:
         case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE:
         case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_DYNAMICCLASS:
+        case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_DYNAMICCLASS:
             // type = TYP_BYREF;
             break;
 
@@ -7392,7 +7415,6 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
 
         case CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE:
         case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE:
-        case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_DYNAMICCLASS:
         case CORINFO_HELP_CLASSINIT_SHARED_DYNAMICCLASS:
             type = TYP_I_IMPL;
             break;
@@ -14682,9 +14704,9 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
             LIR::ReadOnlyRange range(zeroConstNode, switchTree);
             m_pLowering->LowerRange(block, range);
         }
-        else
+        else if (fgStmtListThreaded)
         {
-            // Re-link the nodes for this statement.
+            gtSetStmtInfo(switchStmt);
             fgSetStmtSeq(switchStmt);
         }
 

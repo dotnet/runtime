@@ -13,6 +13,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration\src\Microsoft.Extensions.Configuration.csproj" SkipUseReferenceAssembly="true" />
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.FileProviders.Abstractions\src\Microsoft.Extensions.FileProviders.Abstractions.csproj" SkipUseReferenceAssembly="true" />
     <ProjectReference Include="..\src\Microsoft.Extensions.Configuration.Binder.csproj" SkipUseReferenceAssembly="true" />
   </ItemGroup>

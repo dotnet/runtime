@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.Text;
 using System.Globalization;
 using System.Xml.Schema;
@@ -1093,7 +1092,7 @@ namespace System.Xml
             return null;
         }
 
-        internal static double ToXPathDouble(object o)
+        internal static double ToXPathDouble(object? o)
         {
             if (o is string str)
             {
@@ -1474,12 +1473,12 @@ namespace System.Xml
             return *((long*)&value);
         }
 
-        internal static void VerifyCharData(string data, ExceptionType exceptionType)
+        internal static void VerifyCharData(string? data, ExceptionType exceptionType)
         {
             VerifyCharData(data, exceptionType, exceptionType);
         }
 
-        internal static void VerifyCharData(string data, ExceptionType invCharExceptionType, ExceptionType invSurrogateExceptionType)
+        internal static void VerifyCharData(string? data, ExceptionType invCharExceptionType, ExceptionType invSurrogateExceptionType)
         {
             if (data == null || data.Length == 0)
             {

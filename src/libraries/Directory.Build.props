@@ -45,6 +45,7 @@
     <AdditionalBuildTargetFrameworks Condition="'$(BuildTargetFramework)' == 'net48'">net45;net451;net452;net46;net461;net462;net47;net471;net472</AdditionalBuildTargetFrameworks>
     <AdditionalBuildTargetFrameworks Condition="'$(DotNetBuildFromSource)' == 'true' and '$(BuildAllProjects)' == 'true'">$(AdditionalBuildTargetFrameworks);netstandard2.0</AdditionalBuildTargetFrameworks>
     <BuildSettings>$(BuildTargetFramework)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)</BuildSettings>
+    <BuildSettings Condition="'$(BuildTargetFramework)' == ''">$(NetCoreAppCurrent)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)</BuildSettings>
   </PropertyGroup>
 
   <!-- Define test projects and companions -->
@@ -70,7 +71,9 @@
   <!-- Common repo directories -->
   <PropertyGroup>
     <!-- Need to try and keep the same logic as the native builds as we need this for packaging -->
-    <NativeBinDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'native', '$(BuildTargetFramework)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)'))</NativeBinDir>
+    <_targetFrameworkValue>$([MSBuild]::ValueOrDefault('$(BuildTargetFramework)', '$(TargetFramework)'))</_targetFrameworkValue>
+    <_targetFrameworkValue>$([MSBuild]::ValueOrDefault('$(_targetFrameworkValue)', '$(NetCoreAppCurrent)'))</_targetFrameworkValue>
+    <NativeBinDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'native', '$(_targetFrameworkValue)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)'))</NativeBinDir>
     <PkgDir>$([MSBuild]::NormalizeDirectory('$(LibrariesProjectRoot)', 'pkg'))</PkgDir>
   </PropertyGroup>
 
@@ -224,7 +227,6 @@
   <!-- Language configuration -->
   <PropertyGroup>
     <Features>strict;nullablePublicOnly</Features>
-    <WarningLevel>4</WarningLevel>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <!-- We decided to keep this disabled by default: https://github.com/dotnet/runtime/issues/15152 -->
     <CheckForOverflowUnderflow>false</CheckForOverflowUnderflow>
@@ -328,4 +330,5 @@
     <CLSCompliant Condition="'$(CLSCompliant)' == '' and ('$(IsTestProject)' == 'true' or '$(IsTestSupportProject)' == 'true')">false</CLSCompliant>
     <CLSCompliant Condition="'$(CLSCompliant)' == ''">true</CLSCompliant>
   </PropertyGroup>
+
 </Project>

@@ -9,7 +9,8 @@ namespace System.Security.Cryptography
     public abstract partial class AsymmetricAlgorithm : System.IDisposable
     {
         protected int KeySizeValue;
-        [System.Diagnostics.CodeAnalysis.MaybeNullAttribute] protected System.Security.Cryptography.KeySizes[] LegalKeySizesValue;
+        [System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
+        protected System.Security.Cryptography.KeySizes[] LegalKeySizesValue;
         protected AsymmetricAlgorithm() { }
         public virtual string? KeyExchangeAlgorithm { get { throw null; } }
         public virtual int KeySize { get { throw null; } set { } }
@@ -220,8 +221,10 @@ namespace System.Security.Cryptography
         protected byte[]? IVValue;
         protected int KeySizeValue;
         protected byte[]? KeyValue;
-        [System.Diagnostics.CodeAnalysis.MaybeNullAttribute] protected System.Security.Cryptography.KeySizes[] LegalBlockSizesValue;
-        [System.Diagnostics.CodeAnalysis.MaybeNullAttribute] protected System.Security.Cryptography.KeySizes[] LegalKeySizesValue;
+        [System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
+        protected System.Security.Cryptography.KeySizes[] LegalBlockSizesValue;
+        [System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
+        protected System.Security.Cryptography.KeySizes[] LegalKeySizesValue;
         protected System.Security.Cryptography.CipherMode ModeValue;
         protected System.Security.Cryptography.PaddingMode PaddingValue;
         protected SymmetricAlgorithm() { }

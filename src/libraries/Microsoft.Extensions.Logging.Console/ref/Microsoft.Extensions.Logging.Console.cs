@@ -10,8 +10,8 @@ namespace Microsoft.Extensions.Logging
     {
         public static Microsoft.Extensions.Logging.ILoggingBuilder AddConsole(this Microsoft.Extensions.Logging.ILoggingBuilder builder) { throw null; }
         public static Microsoft.Extensions.Logging.ILoggingBuilder AddConsole(this Microsoft.Extensions.Logging.ILoggingBuilder builder, System.Action<Microsoft.Extensions.Logging.Console.ConsoleLoggerOptions> configure) { throw null; }
-        public static Microsoft.Extensions.Logging.ILoggingBuilder AddConsoleFormatter<TFormatter, TOptions>(this Microsoft.Extensions.Logging.ILoggingBuilder builder) where TFormatter : Microsoft.Extensions.Logging.Console.ConsoleFormatter where TOptions : Microsoft.Extensions.Logging.Console.ConsoleFormatterOptions { throw null; }
-        public static Microsoft.Extensions.Logging.ILoggingBuilder AddConsoleFormatter<TFormatter, TOptions>(this Microsoft.Extensions.Logging.ILoggingBuilder builder, System.Action<TOptions> configure) where TFormatter : Microsoft.Extensions.Logging.Console.ConsoleFormatter where TOptions : Microsoft.Extensions.Logging.Console.ConsoleFormatterOptions { throw null; }
+        public static Microsoft.Extensions.Logging.ILoggingBuilder AddConsoleFormatter<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] TFormatter, TOptions>(this Microsoft.Extensions.Logging.ILoggingBuilder builder) where TFormatter : Microsoft.Extensions.Logging.Console.ConsoleFormatter where TOptions : Microsoft.Extensions.Logging.Console.ConsoleFormatterOptions { throw null; }
+        public static Microsoft.Extensions.Logging.ILoggingBuilder AddConsoleFormatter<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] TFormatter, TOptions>(this Microsoft.Extensions.Logging.ILoggingBuilder builder, System.Action<TOptions> configure) where TFormatter : Microsoft.Extensions.Logging.Console.ConsoleFormatter where TOptions : Microsoft.Extensions.Logging.Console.ConsoleFormatterOptions { throw null; }
         public static Microsoft.Extensions.Logging.ILoggingBuilder AddJsonConsole(this Microsoft.Extensions.Logging.ILoggingBuilder builder) { throw null; }
         public static Microsoft.Extensions.Logging.ILoggingBuilder AddJsonConsole(this Microsoft.Extensions.Logging.ILoggingBuilder builder, System.Action<Microsoft.Extensions.Logging.Console.JsonConsoleFormatterOptions> configure) { throw null; }
         public static Microsoft.Extensions.Logging.ILoggingBuilder AddSimpleConsole(this Microsoft.Extensions.Logging.ILoggingBuilder builder) { throw null; }
@@ -50,7 +50,7 @@ namespace Microsoft.Extensions.Logging.Console
     public partial class ConsoleLoggerOptions
     {
         public ConsoleLoggerOptions() { }
-        [System.ObsoleteAttribute("ConsoleLoggerOptions.DisableColors has been deprecated. Please use SimpleConsoleFormatterOptions.DisableColors instead.", false)]
+        [System.ObsoleteAttribute("ConsoleLoggerOptions.DisableColors has been deprecated. Please use SimpleConsoleFormatterOptions.ColorBehavior instead.", false)]
         public bool DisableColors { get { throw null; } set { } }
         [System.ObsoleteAttribute("ConsoleLoggerOptions.Format has been deprecated. Please use ConsoleLoggerOptions.FormatterName instead.", false)]
         public Microsoft.Extensions.Logging.Console.ConsoleLoggerFormat Format { get { throw null; } set { } }
@@ -77,10 +77,16 @@ namespace Microsoft.Extensions.Logging.Console
         public JsonConsoleFormatterOptions() { }
         public System.Text.Json.JsonWriterOptions JsonWriterOptions { get { throw null; } set { } }
     }
+    public enum LoggerColorBehavior
+    {
+        Default = 0,
+        Enabled = 1,
+        Disabled = 2,
+    }
     public partial class SimpleConsoleFormatterOptions : Microsoft.Extensions.Logging.Console.ConsoleFormatterOptions
     {
         public SimpleConsoleFormatterOptions() { }
-        public bool DisableColors { get { throw null; } set { } }
+        public Microsoft.Extensions.Logging.Console.LoggerColorBehavior ColorBehavior { get { throw null; } set { } }
         public bool SingleLine { get { throw null; } set { } }
     }
 }

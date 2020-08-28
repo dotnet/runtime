@@ -5,6 +5,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Text;
 using System.Xml;
@@ -89,9 +90,9 @@ namespace System.Xml.Xsl.Qil
         ///     3. IList{object} -- recursively call WriteAnnotations for each object in list
         ///     4. otherwise, do not write the annotation
         /// </summary>
-        protected virtual void WriteAnnotations(object ann)
+        protected virtual void WriteAnnotations(object? ann)
         {
-            string s = null, name = null;
+            string? s = null, name = null;
 
             if (ann == null)
             {
@@ -101,17 +102,13 @@ namespace System.Xml.Xsl.Qil
             {
                 s = ann as string;
             }
-            else if (ann is IQilAnnotation)
+            else if (ann is IQilAnnotation qilann)
             {
-                // Get annotation's name and string value
-                IQilAnnotation qilann = ann as IQilAnnotation;
                 name = qilann.Name;
                 s = ann.ToString();
             }
-            else if (ann is IList<object>)
+            else if (ann is IList<object> list)
             {
-                IList<object> list = (IList<object>)ann;
-
                 foreach (object annItem in list)
                     WriteAnnotations(annItem);
                 return;
@@ -127,7 +124,7 @@ namespace System.Xml.Xsl.Qil
         protected virtual void WriteLineInfo(QilNode node)
         {
             this.writer.WriteAttributeString("lineInfo", string.Format(CultureInfo.InvariantCulture, "[{0},{1} -- {2},{3}]",
-                node.SourceLine.Start.Line, node.SourceLine.Start.Pos,
+                node.SourceLine!.Start.Line, node.SourceLine.Start.Pos,
                 node.SourceLine.End.Line, node.SourceLine.End.Pos
                 ));
         }
@@ -137,7 +134,7 @@ namespace System.Xml.Xsl.Qil
         /// </summary>
         protected virtual void WriteXmlType(QilNode node)
         {
-            this.writer.WriteAttributeString("xmlType", node.XmlType.ToString((this.options & Options.RoundTripTypeInfo) != 0 ? "S" : "G"));
+            this.writer.WriteAttributeString("xmlType", node.XmlType!.ToString((this.options & Options.RoundTripTypeInfo) != 0 ? "S" : "G"));
         }
 
 
@@ -213,7 +210,7 @@ namespace System.Xml.Xsl.Qil
                 foreach (QilNode n in fdecls)
                 {
                     // i.e. <Function id="$a"/>
-                    this.writer.WriteStartElement(Enum.GetName(typeof(QilNodeType), n.NodeType));
+                    this.writer.WriteStartElement(Enum.GetName(typeof(QilNodeType), n.NodeType)!);
                     this.writer.WriteAttributeString("id", _ngen.NameOf(n));
                     WriteXmlType(n);
 
@@ -284,7 +281,7 @@ namespace System.Xml.Xsl.Qil
                 WriteAnnotations(node.Annotation);
 
             // Call WriteStartElement
-            this.writer.WriteStartElement("", Enum.GetName(typeof(QilNodeType), node.NodeType), "");
+            this.writer.WriteStartElement("", Enum.GetName(typeof(QilNodeType), node.NodeType)!, "");
 
             // Write common attributes
 #if QIL_TRACE_NODE_CREATION
@@ -413,10 +410,10 @@ namespace System.Xml.Xsl.Qil
             /// <returns>the node name (unique across nodes)</returns>
             public string NameOf(QilNode n)
             {
-                string name = null;
+                string? name = null;
 
-                object old = n.Annotation;
-                NameAnnotation a = old as NameAnnotation;
+                object? old = n.Annotation;
+                NameAnnotation? a = old as NameAnnotation;
                 if (a == null)
                 {
                     name = NextName();
@@ -442,12 +439,12 @@ namespace System.Xml.Xsl.Qil
             /// <summary>
             /// Class used to hold our annotations on the graph
             /// </summary>
-            private class NameAnnotation : ListBase<object>
+            private class NameAnnotation : ListBase<object?>
             {
                 public string Name;
-                public object PriorAnnotation;
+                public object? PriorAnnotation;
 
-                public NameAnnotation(string s, object a)
+                public NameAnnotation(string s, object? a)
                 {
                     Name = s;
                     PriorAnnotation = a;
@@ -458,7 +455,7 @@ namespace System.Xml.Xsl.Qil
                     get { return 1; }
                 }
 
-                public override object this[int index]
+                public override object? this[int index]
                 {
                     get
                     {

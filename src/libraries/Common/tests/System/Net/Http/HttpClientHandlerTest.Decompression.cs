@@ -64,9 +64,6 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        private HttpRequestMessage CreateRequest(HttpMethod method, Uri uri, Version version) =>
-            new HttpRequestMessage(method, uri) { Version = version };
-
         [Theory]
         [MemberData(nameof(DecompressedResponse_MethodSpecified_DecompressedContentReturned_MemberData))]
         public async Task DecompressedResponse_MethodSpecified_DecompressedContentReturned(

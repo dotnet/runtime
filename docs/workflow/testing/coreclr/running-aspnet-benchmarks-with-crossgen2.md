@@ -84,10 +84,10 @@ profiles:
       cores: 12
     jobs:
       application:
-        endpoints: 
+        endpoints:
           - http://asp-perf-win:5001
       load:
-        endpoints: 
+        endpoints:
           - http://asp-perf-load:5001
 
   aspnet-physical-lin:
@@ -96,18 +96,18 @@ profiles:
       cores: 12
     jobs:
       application:
-        endpoints: 
+        endpoints:
           - http://asp-perf-lin:5001
       load:
-        endpoints: 
+        endpoints:
           - http://asp-perf-load:5001
 ```
 
 Now, what does this configuration mean and how is it applied? Let's go over
 the most important fields to understand its main functionality.
 
-* **Imports**: These are external tools hosted in the Benchmarks repo. 
-In this case, we only need `wrk`, which is a tool that loads and tests 
+* **Imports**: These are external tools hosted in the Benchmarks repo.
+In this case, we only need `wrk`, which is a tool that loads and tests
 performance in Web applications.
 
 * **Jobs**: Here go the job descriptions. A job in this context is the set of

@@ -45,7 +45,7 @@ namespace System.Runtime.CompilerServices
         /// <typeparam name="TResult">Specifies the result type.</typeparam>
         /// <param name="result">The result for the task.</param>
         /// <returns>The cacheable task.</returns>
-        internal static Task<TResult> CreateCacheableTask<TResult>([AllowNull] TResult result) =>
+        internal static Task<TResult> CreateCacheableTask<TResult>(TResult? result) =>
             new Task<TResult>(false, result, (TaskCreationOptions)InternalTaskOptions.DoNotDispose, default);
 
         /// <summary>Creates an array of cached tasks for the values in the range [INCLUSIVE_MIN,EXCLUSIVE_MAX).</summary>

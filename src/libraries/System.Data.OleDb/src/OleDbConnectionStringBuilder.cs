@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data.Common;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Text;
 
@@ -41,8 +42,8 @@ namespace System.Data.OleDb
             { DbConnectionStringKeywords.OleDbServices, Keywords.OleDbServices },
         };
 
-        private string[] _knownKeywords;
-        private Dictionary<string, OleDbPropertyInfo> _propertyInfo;
+        private string[]? _knownKeywords;
+        private Dictionary<string, OleDbPropertyInfo>? _propertyInfo;
 
         private string _fileName = DbConnectionStringDefaults.FileName;
 
@@ -58,7 +59,7 @@ namespace System.Data.OleDb
             _knownKeywords = s_validKeywords;
         }
 
-        public OleDbConnectionStringBuilder(string connectionString) : base()
+        public OleDbConnectionStringBuilder(string? connectionString) : base()
         {
             if (!ADP.IsEmpty(connectionString))
             {
@@ -66,12 +67,13 @@ namespace System.Data.OleDb
             }
         }
 
+        [AllowNull]
         public override object this[string keyword]
         {
             get
             {
                 ADP.CheckArgumentNull(keyword, "keyword");
-                object value;
+                object? value;
                 Keywords index;
                 if (s_keywords.TryGetValue(keyword, out index))
                 {
@@ -81,7 +83,7 @@ namespace System.Data.OleDb
                 {
                     Dictionary<string, OleDbPropertyInfo> dynamic = GetProviderInfo(Provider);
                     OleDbPropertyInfo info = dynamic[keyword];
-                    value = info._defaultValue;
+                    value = info._defaultValue!;
                 }
                 return value;
             }
@@ -144,6 +146,8 @@ namespace System.Data.OleDb
         }
 
         [DisplayName(DbConnectionStringKeywords.FileName)]
+        [Editor("System.Windows.Forms.Design.FileNameEditor, System.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
+                "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
         [RefreshProperties(RefreshProperties.All)]
         // TODO: hand off to VS, they derive from FileNameEditor and set the OpenDialogFilter to *.UDL
         public string FileName
@@ -199,7 +203,7 @@ namespace System.Data.OleDb
         {
             get
             {
-                string[] knownKeywords = _knownKeywords;
+                string[]? knownKeywords = _knownKeywords;
                 if (null == knownKeywords)
                 {
                     Dictionary<string, OleDbPropertyInfo> dynamic = GetProviderInfo(Provider);
@@ -369,11 +373,11 @@ namespace System.Data.OleDb
 
         private void SetValue(string keyword, bool value)
         {
-            base[keyword] = value.ToString((System.IFormatProvider)null);
+            base[keyword] = value.ToString(null);
         }
         private void SetValue(string keyword, int value)
         {
-            base[keyword] = value.ToString((System.IFormatProvider)null);
+            base[keyword] = value.ToString((System.IFormatProvider?)null);
         }
         private void SetValue(string keyword, string value)
         {
@@ -381,7 +385,7 @@ namespace System.Data.OleDb
             base[keyword] = value;
         }
 
-        public override bool TryGetValue(string keyword, out object value)
+        public override bool TryGetValue(string keyword, [NotNullWhen(true)] out object? value)
         {
             ADP.CheckArgumentNull(keyword, "keyword");
             Keywords index;
@@ -393,10 +397,10 @@ namespace System.Data.OleDb
             else if (!base.TryGetValue(keyword, out value))
             {
                 Dictionary<string, OleDbPropertyInfo> dynamic = GetProviderInfo(Provider);
-                OleDbPropertyInfo info;
+                OleDbPropertyInfo? info;
                 if (dynamic.TryGetValue(keyword, out info))
                 {
-                    value = info._defaultValue;
+                    value = info._defaultValue!;
                     return true;
                 }
                 return false;
@@ -406,13 +410,13 @@ namespace System.Data.OleDb
 
         private Dictionary<string, OleDbPropertyInfo> GetProviderInfo(string provider)
         {
-            Dictionary<string, OleDbPropertyInfo> providerInfo = _propertyInfo;
+            Dictionary<string, OleDbPropertyInfo>? providerInfo = _propertyInfo;
             if (null == providerInfo)
             {
                 providerInfo = new Dictionary<string, OleDbPropertyInfo>(StringComparer.OrdinalIgnoreCase);
                 if (!ADP.IsEmpty(provider))
                 {
-                    Dictionary<string, OleDbPropertyInfo> hash = null;
+                    Dictionary<string, OleDbPropertyInfo>? hash = null;
                     try
                     {
                         StringBuilder builder = new StringBuilder();
@@ -420,15 +424,15 @@ namespace System.Data.OleDb
                         OleDbConnectionString constr = new OleDbConnectionString(builder.ToString(), true);
 
                         // load provider without calling Initialize or CreateDataSource
-                        using (OleDbConnectionInternal connection = new OleDbConnectionInternal(constr, (OleDbConnection)null))
+                        using (OleDbConnectionInternal connection = new OleDbConnectionInternal(constr, null))
                         {
                             // get all the init property information for the provider
-                            hash = connection.GetPropertyInfo(new Guid[] { OleDbPropertySetGuid.DBInitAll });
+                            hash = connection.GetPropertyInfo(new Guid[] { OleDbPropertySetGuid.DBInitAll })!;
                             foreach (KeyValuePair<string, OleDbPropertyInfo> entry in hash)
                             {
                                 Keywords index;
                                 OleDbPropertyInfo info = entry.Value;
-                                if (!s_keywords.TryGetValue(info._description, out index))
+                                if (!s_keywords.TryGetValue(info._description!, out index))
                                 {
                                     if ((OleDbPropertySetGuid.DBInit == info._propertySet) &&
                                             ((ODB.DBPROP_INIT_ASYNCH == info._propertyID) ||
@@ -437,7 +441,7 @@ namespace System.Data.OleDb
                                     {
                                         continue; // skip this keyword
                                     }
-                                    providerInfo[info._description] = info;
+                                    providerInfo[info._description!] = info;
                                 }
                             }
 
@@ -529,7 +533,7 @@ namespace System.Data.OleDb
             private const int DBSOURCETYPE_DATASOURCE_TDP = 1;
             private const int DBSOURCETYPE_DATASOURCE_MDP = 3;
 
-            private StandardValuesCollection _standardValues;
+            private StandardValuesCollection? _standardValues;
 
             // converter classes should have public ctor
             public OleDbProviderConverter()
@@ -546,16 +550,16 @@ namespace System.Data.OleDb
                 return false;
             }
 
-            public override StandardValuesCollection GetStandardValues(ITypeDescriptorContext context)
+            public override StandardValuesCollection? GetStandardValues(ITypeDescriptorContext context)
             {
-                StandardValuesCollection dataSourceNames = _standardValues;
+                StandardValuesCollection? dataSourceNames = _standardValues;
                 if (null == _standardValues)
                 {
                     // Get the sources rowset for the SQLOLEDB enumerator
                     DataTable table = (new OleDbEnumerator()).GetElements();
 
-                    DataColumn column2 = table.Columns["SOURCES_NAME"];
-                    DataColumn column5 = table.Columns["SOURCES_TYPE"];
+                    DataColumn column2 = table.Columns["SOURCES_NAME"]!;
+                    DataColumn column5 = table.Columns["SOURCES_TYPE"]!;
                     //DataColumn column4 = table.Columns["SOURCES_DESCRIPTION"];
 
                     System.Collections.Generic.List<string> providerNames = new System.Collections.Generic.List<string>(table.Rows.Count);
@@ -597,7 +601,7 @@ namespace System.Data.OleDb
 
         internal sealed class OleDbServicesConverter : TypeConverter
         {
-            private StandardValuesCollection _standardValues;
+            private StandardValuesCollection? _standardValues;
 
             // converter classes should have public ctor
             public OleDbServicesConverter() : base()
@@ -612,7 +616,7 @@ namespace System.Data.OleDb
 
             public override object ConvertFrom(ITypeDescriptorContext context, System.Globalization.CultureInfo culture, object value)
             {
-                string svalue = (value as string);
+                string? svalue = (value as string);
                 if (null != svalue)
                 {
                     int services;
@@ -631,7 +635,6 @@ namespace System.Data.OleDb
                                 convertedValue |= (int)(OleDbServiceValues)Enum.Parse(typeof(OleDbServiceValues), v, true);
                             }
                             return (int)convertedValue;
-                            ;
                         }
                         else
                         {
@@ -669,7 +672,7 @@ namespace System.Data.OleDb
 
             public override StandardValuesCollection GetStandardValues(ITypeDescriptorContext context)
             {
-                StandardValuesCollection standardValues = _standardValues;
+                StandardValuesCollection? standardValues = _standardValues;
                 if (null == standardValues)
                 {
                     Array objValues = Enum.GetValues(typeof(OleDbServiceValues));
@@ -711,7 +714,7 @@ namespace System.Data.OleDb
                 }
                 if (typeof(System.ComponentModel.Design.Serialization.InstanceDescriptor) == destinationType)
                 {
-                    OleDbConnectionStringBuilder obj = (value as OleDbConnectionStringBuilder);
+                    OleDbConnectionStringBuilder? obj = (value as OleDbConnectionStringBuilder);
                     if (null != obj)
                     {
                         return ConvertToInstanceDescriptor(obj);
@@ -724,7 +727,7 @@ namespace System.Data.OleDb
             {
                 Type[] ctorParams = new Type[] { typeof(string) };
                 object[] ctorValues = new object[] { options.ConnectionString };
-                System.Reflection.ConstructorInfo ctor = typeof(OleDbConnectionStringBuilder).GetConstructor(ctorParams);
+                System.Reflection.ConstructorInfo ctor = typeof(OleDbConnectionStringBuilder).GetConstructor(ctorParams)!;
                 return new System.ComponentModel.Design.Serialization.InstanceDescriptor(ctor, ctorValues);
             }
         }

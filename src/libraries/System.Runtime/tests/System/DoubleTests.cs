@@ -39,6 +39,10 @@ namespace System.Tests
         [InlineData(double.NaN, double.NaN, 0)]
         [InlineData(double.NaN, 0.0, -1)]
         [InlineData(234.0, null, 1)]
+        [InlineData(double.MinValue, double.NegativeInfinity, 1)]
+        [InlineData(double.NegativeInfinity, double.MinValue, -1)]
+        [InlineData(-0d, double.NegativeInfinity, 1)]
+        [InlineData(double.NegativeInfinity, -0d, -1)]
         public static void CompareTo_Other_ReturnsExpected(double d1, object value, int expected)
         {
             if (value is double d2)

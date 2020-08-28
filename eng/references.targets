@@ -49,7 +49,7 @@
     <ItemGroup>
       <ProjectReferenceWithConfiguration PrivateAssets="all"
                                          Private="false"
-                                         Condition="$(NetCoreAppLibrary.Contains('$([System.IO.Path]::GetFileNameWithoutExtension('%(MSBuildSourceProjectFile)'));'))" />
+                                         Condition="$(NetCoreAppLibrary.Contains('%(Filename);'))" />
     </ItemGroup>
   </Target>
 

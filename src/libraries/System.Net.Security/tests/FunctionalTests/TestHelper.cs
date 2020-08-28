@@ -72,14 +72,53 @@ namespace System.Net.Security.Tests
             return (new VirtualNetworkStream(vn, isServer: false), new VirtualNetworkStream(vn, isServer: true));
         }
 
-        internal static (X509Certificate2 certificate, X509Certificate2Collection) GenerateCertificates(string name, string? testName = null)
+        internal static void CleanupCertificates(string testName)
         {
-            X509Certificate2Collection chain = new X509Certificate2Collection();
+            string caName = $"O={testName}";
+            try
+            {
+                using (X509Store store = new X509Store(StoreName.CertificateAuthority, StoreLocation.LocalMachine))
+                {
+                    store.Open(OpenFlags.ReadWrite);
+                    foreach (X509Certificate2 cert in store.Certificates)
+                    {
+                        if (cert.Subject.Contains(caName))
+                        {
+                            store.Remove(cert);
+                        }
+                    }
+                }
+            }
+            catch { };
 
+            try
+            {
+                using (X509Store store = new X509Store(StoreName.CertificateAuthority, StoreLocation.CurrentUser))
+                {
+                    store.Open(OpenFlags.ReadWrite);
+                    foreach (X509Certificate2 cert in store.Certificates)
+                    {
+                        if (cert.Subject.Contains(caName))
+                        {
+                            store.Remove(cert);
+                        }
+                    }
+                }
+            }
+            catch { };
+        }
+        internal static (X509Certificate2 certificate, X509Certificate2Collection) GenerateCertificates(string targetName, string? testName = null)
+        {
+            if (PlatformDetection.IsWindows && testName != null)
+            {
+                CleanupCertificates(testName);
+            }
+
+            X509Certificate2Collection chain = new X509Certificate2Collection();
             X509ExtensionCollection extensions = new X509ExtensionCollection();
 
             SubjectAlternativeNameBuilder builder = new SubjectAlternativeNameBuilder();
-            builder.AddDnsName(name);
+            builder.AddDnsName(targetName);
             extensions.Add(builder.Build());
             extensions.Add(s_eeConstraints);
             extensions.Add(s_eeKeyUsage);
@@ -91,7 +130,7 @@ namespace System.Net.Security.Tests
                 out CertificateAuthority root,
                 out CertificateAuthority intermediate,
                 out X509Certificate2 endEntity,
-                subjectName: name,
+                subjectName: targetName,
                 testName: testName,
                 keySize: 2048,
                 extensions: extensions);
@@ -102,6 +141,11 @@ namespace System.Net.Security.Tests
             responder.Dispose();
             root.Dispose();
             intermediate.Dispose();
+
+            if (PlatformDetection.IsWindows)
+            {
+                endEntity = new X509Certificate2(endEntity.Export(X509ContentType.Pfx));
+            }
 
             return (endEntity, chain);
         }

@@ -152,7 +152,7 @@ namespace System.Globalization
         /// </remarks>
         private static Dictionary<string, string> RegionNames =>
             s_regionNames ??=
-            new Dictionary<string, string>(257 /* prime */)
+            new Dictionary<string, string>(257 /* prime */, StringComparer.OrdinalIgnoreCase)
             {
                 { "001", "en-001" },
                 { "029", "en-029" },

@@ -7,7 +7,7 @@ using System.Net.Http;
 
 namespace System.Net
 {
-    [EventSource(Name = "Microsoft-System-Net-Http", LocalizationResources = "FxResources.System.Net.Http.SR")]
+    [EventSource(Name = "Private.InternalDiagnostics.System.Net.Http", LocalizationResources = "FxResources.System.Net.Http.SR")]
     internal sealed partial class NetEventSource : EventSource
     {
         private const int UriBaseAddressId = NextAvailableEventId;

@@ -175,6 +175,11 @@ mono_w32process_get_modules (pid_t pid)
 	return g_slist_reverse (ret);
 }
 
+void
+mono_w32process_platform_init_once (void)
+{
+}
+
 #else
 
 MONO_EMPTY_SOURCE_FILE (w32process_unix_bsd);

@@ -18,15 +18,15 @@ namespace System.Runtime.Loader.Tests
         public SatelliteAssembliesTestsFixture()
         {
             AssemblyLoadContext satelliteAssembliesTests = new AssemblyLoadContext("SatelliteAssembliesTests");
-            var satelliteAssembliesTestsPath = (PlatformDetection.IsBrowser ? "/" : "") + typeof(SatelliteAssembliesTests).Assembly.Location;
+            var satelliteAssembliesTestsPath = AssemblyPathHelper.GetAssemblyLocation(typeof(SatelliteAssembliesTests).Assembly);
             satelliteAssembliesTests.LoadFromAssemblyPath(satelliteAssembliesTestsPath);
 
             AssemblyLoadContext referencedClassLib = new AssemblyLoadContext("ReferencedClassLib");
-            var referencedClassLibPath = (PlatformDetection.IsBrowser ? "/" : "") + typeof(ReferencedClassLib.Program).Assembly.Location;
+            var referencedClassLibPath = AssemblyPathHelper.GetAssemblyLocation(typeof(ReferencedClassLib.Program).Assembly);
             referencedClassLib.LoadFromAssemblyPath(referencedClassLibPath);
 
             AssemblyLoadContext referencedClassLibNeutralIsSatellite = new AssemblyLoadContext("ReferencedClassLibNeutralIsSatellite");
-            var referencedClassLibNeutralIsSatellitePath = (PlatformDetection.IsBrowser ? "/" : "") + typeof(ReferencedClassLibNeutralIsSatellite.Program).Assembly.Location;
+            var referencedClassLibNeutralIsSatellitePath = AssemblyPathHelper.GetAssemblyLocation(typeof(ReferencedClassLibNeutralIsSatellite.Program).Assembly);
             referencedClassLibNeutralIsSatellite.LoadFromAssemblyPath(referencedClassLibNeutralIsSatellitePath);
 
             new AssemblyLoadContext("Empty");

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Net.Http;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -96,7 +97,7 @@ namespace Microsoft.Extensions.Http
     /// }
     /// </code>
     /// </example>
-    public interface ITypedHttpClientFactory<TClient>
+    public interface ITypedHttpClientFactory<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TClient>
     {
         /// <summary>
         /// Creates a typed client given an associated <see cref="HttpClient"/>.

@@ -40,7 +40,7 @@ namespace System.Xml.Xsl.Qil
 
         public XmlQueryType TargetType
         {
-            get { return (XmlQueryType)((QilLiteral)Right).Value; }
+            get { return (XmlQueryType)((QilLiteral)Right).Value!; }
             set { ((QilLiteral)Right).Value = value; }
         }
     }

@@ -57,12 +57,6 @@ jobs:
       - name: testArtifactRootName
         value: ${{ parameters.Group }}${{ parameters.Subgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}
 
-    - name: coreClrRepoRoot
-      value: '$(Build.SourcesDirectory)/src/coreclr'
-
-    - name: coreClrRepoRootDir
-      value: '$(coreClrRepoRoot)$(dir)'
-
     - name: binTestsPath
       value: '$(Build.SourcesDirectory)/artifacts/tests/coreclr'
 

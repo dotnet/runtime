@@ -129,15 +129,15 @@ VOID ParseNativeType(Module*                     pModule,
 #endif
             break;
         case MarshalInfo::MARSHAL_TYPE_CURRENCY:
-            *pNFD = NativeFieldDescriptor(pFD, MscorlibBinder::GetClass(CLASS__CURRENCY));
+            *pNFD = NativeFieldDescriptor(pFD, CoreLibBinder::GetClass(CLASS__CURRENCY));
             break;
         case MarshalInfo::MARSHAL_TYPE_DECIMAL:
             // The decimal type can't be blittable since the managed and native alignment requirements differ.
             // Native needs 8-byte alignment since one field is a 64-bit integer, but managed only needs 4-byte alignment since all fields are ints.
-            *pNFD = NativeFieldDescriptor(pFD, MscorlibBinder::GetClass(CLASS__NATIVEDECIMAL));
+            *pNFD = NativeFieldDescriptor(pFD, CoreLibBinder::GetClass(CLASS__NATIVEDECIMAL));
             break;
         case MarshalInfo::MARSHAL_TYPE_GUID:
-            *pNFD = NativeFieldDescriptor(pFD, MscorlibBinder::GetClass(CLASS__GUID));
+            *pNFD = NativeFieldDescriptor(pFD, CoreLibBinder::GetClass(CLASS__GUID));
             break;
         case MarshalInfo::MARSHAL_TYPE_DATE:
             *pNFD = NativeFieldDescriptor(pFD, NativeFieldCategory::FLOAT, sizeof(double), sizeof(double));
@@ -168,7 +168,7 @@ VOID ParseNativeType(Module*                     pModule,
             break;
 #ifdef FEATURE_COMINTEROP
         case MarshalInfo::MARSHAL_TYPE_OBJECT:
-            *pNFD = NativeFieldDescriptor(pFD, MscorlibBinder::GetClass(CLASS__NATIVEVARIANT));
+            *pNFD = NativeFieldDescriptor(pFD, CoreLibBinder::GetClass(CLASS__NATIVEVARIANT));
             break;
 #endif
         case MarshalInfo::MARSHAL_TYPE_SAFEHANDLE:
@@ -184,17 +184,17 @@ VOID ParseNativeType(Module*                     pModule,
 
             if (pMT->IsEnum())
             {
-                pMT = MscorlibBinder::GetElementType(pMT->GetInternalCorElementType());
+                pMT = CoreLibBinder::GetElementType(pMT->GetInternalCorElementType());
             }
 
             *pNFD = NativeFieldDescriptor(pFD, OleVariant::GetNativeMethodTableForVarType(mops.elementType, pMT), mops.additive);
             break;
         }
         case MarshalInfo::MARSHAL_TYPE_FIXED_CSTR:
-            *pNFD = NativeFieldDescriptor(pFD, MscorlibBinder::GetClass(CLASS__BYTE), pargs->fs.fixedStringLength);
+            *pNFD = NativeFieldDescriptor(pFD, CoreLibBinder::GetClass(CLASS__BYTE), pargs->fs.fixedStringLength);
             break;
         case MarshalInfo::MARSHAL_TYPE_FIXED_WSTR:
-            *pNFD = NativeFieldDescriptor(pFD, MscorlibBinder::GetClass(CLASS__UINT16), pargs->fs.fixedStringLength);
+            *pNFD = NativeFieldDescriptor(pFD, CoreLibBinder::GetClass(CLASS__UINT16), pargs->fs.fixedStringLength);
             break;
         case MarshalInfo::MARSHAL_TYPE_UNKNOWN:
         default:
@@ -269,7 +269,7 @@ bool IsFieldBlittable(
             {
                 isBlittable = false;
             }
-            else if (valueTypeHandle.GetMethodTable() == MscorlibBinder::GetClass(CLASS__DECIMAL))
+            else if (valueTypeHandle.GetMethodTable() == CoreLibBinder::GetClass(CLASS__DECIMAL))
             {
                 // The alignment requirements of the managed System.Decimal type do not match the native DECIMAL type.
                 // As a result, a field of type System.Decimal can't be blittable.
@@ -277,7 +277,7 @@ bool IsFieldBlittable(
             }
             else
             {
-                isBlittable = !valueTypeHandle.GetMethodTable()->HasInstantiation() && valueTypeHandle.GetMethodTable()->IsBlittable();
+                isBlittable = valueTypeHandle.GetMethodTable()->IsBlittable();
             }
             break;
         default:

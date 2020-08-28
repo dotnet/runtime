@@ -478,7 +478,7 @@ void CodeGen::inst_IV_handle(instruction ins, int val)
 void CodeGen::inst_set_SV_var(GenTree* tree)
 {
 #ifdef DEBUG
-    assert(tree && (tree->gtOper == GT_LCL_VAR || tree->gtOper == GT_LCL_VAR_ADDR || tree->gtOper == GT_STORE_LCL_VAR));
+    assert((tree != nullptr) && tree->OperIs(GT_LCL_VAR, GT_LCL_VAR_ADDR, GT_STORE_LCL_VAR));
     assert(tree->AsLclVarCommon()->GetLclNum() < compiler->lvaCount);
 
     GetEmitter()->emitVarRefOffs = tree->AsLclVar()->gtLclILoffs;
@@ -1019,9 +1019,11 @@ void CodeGen::inst_RV_TT_IV(instruction ins, emitAttr attr, regNumber reg1, GenT
             switch (addr->OperGet())
             {
                 case GT_LCL_VAR_ADDR:
+                case GT_LCL_FLD_ADDR:
                 {
+                    assert(addr->isContained());
                     varNum = addr->AsLclVarCommon()->GetLclNum();
-                    offset = 0;
+                    offset = addr->AsLclVarCommon()->GetLclOffs();
                     break;
                 }
 
@@ -1146,9 +1148,11 @@ void CodeGen::inst_RV_RV_TT(
             switch (addr->OperGet())
             {
                 case GT_LCL_VAR_ADDR:
+                case GT_LCL_FLD_ADDR:
                 {
+                    assert(addr->isContained());
                     varNum = addr->AsLclVarCommon()->GetLclNum();
-                    offset = 0;
+                    offset = addr->AsLclVarCommon()->GetLclOffs();
                     break;
                 }
 

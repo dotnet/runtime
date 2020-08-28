@@ -10,6 +10,7 @@ namespace System.Data.Tests
         [Theory]
         [InlineData("Microsoft.SqlServer.Server.SqlMetaData")] // Type from System.Data.SqlClient
         [InlineData("System.Data.SqlTypes.SqlBytes")] // Type from System.Data.Common
+        [PlatformSpecific(~TestPlatforms.Browser)]
         public void TestSystemData(string typeName)
         {
             // Verify that the type can be loaded via .NET Framework compat facade

@@ -3,8 +3,8 @@
 
 using System.Collections.Generic;
 using System.Collections.Concurrent;
-using Xunit;
 using System.Numerics;
+using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
 {

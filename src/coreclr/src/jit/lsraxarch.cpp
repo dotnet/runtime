@@ -1280,6 +1280,11 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
     regMaskTP srcRegMask     = RBM_NONE;
     regMaskTP sizeRegMask    = RBM_NONE;
 
+    RefPosition* internalIntDef = nullptr;
+#ifdef TARGET_X86
+    bool internalIsByte = false;
+#endif
+
     if (blkNode->OperIsInitBlkOp())
     {
         if (src->OperIs(GT_INIT_VAL))
@@ -1359,10 +1364,11 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                         if ((size & 1) != 0)
                         {
                             // We'll need to store a byte so a byte register is needed on x86.
-                            regMask = allByteRegs();
+                            regMask        = allByteRegs();
+                            internalIsByte = true;
                         }
 #endif
-                        buildInternalIntRegisterDefForNode(blkNode, regMask);
+                        internalIntDef = buildInternalIntRegisterDefForNode(blkNode, regMask);
                     }
 
                     if (size >= XMM_REGSIZE_BYTES)
@@ -1436,9 +1442,30 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
         BuildUse(blkNode->AsDynBlk()->gtDynamicSize, sizeRegMask);
     }
 
+#ifdef TARGET_X86
+    // If we require a byte register on x86, we may run into an over-constrained situation
+    // if we have BYTE_REG_COUNT or more uses (currently, it can be at most 4, if both the
+    // source and destination have base+index addressing).
+    // This is because the byteable register requirement doesn't "reserve" a specific register,
+    // and it would be possible for the incoming sources to all be occupying the byteable
+    // registers, leaving none free for the internal register.
+    // In this scenario, we will require rax to ensure that it is reserved and available.
+    // We need to make that modification prior to building the uses for the internal register,
+    // so that when we create the use we will also create the RefTypeFixedRef on the RegRecord.
+    // We don't expect a useCount of more than 3 for the initBlk case, so we haven't set
+    // internalIsByte in that case above.
+    assert((useCount < BYTE_REG_COUNT) || !blkNode->OperIsInitBlkOp());
+    if (internalIsByte && (useCount >= BYTE_REG_COUNT))
+    {
+        noway_assert(internalIntDef != nullptr);
+        internalIntDef->registerAssignment = RBM_RAX;
+    }
+#endif
+
     buildInternalRegisterUses();
     regMaskTP killMask = getKillSetForBlockStore(blkNode);
     BuildDefsWithKills(blkNode, 0, RBM_NONE, killMask);
+
     return useCount;
 }
 
@@ -1594,6 +1621,15 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* putArgStk)
 
     srcCount = BuildOperandUses(src);
     buildInternalRegisterUses();
+
+#ifdef TARGET_X86
+    // There are only 4 (BYTE_REG_COUNT) byteable registers on x86. If we require a byteable internal register,
+    // we must have less than BYTE_REG_COUNT sources.
+    // If we have BYTE_REG_COUNT or more sources, and require a byteable internal register, we need to reserve
+    // one explicitly (see BuildBlockStore()).
+    assert(srcCount < BYTE_REG_COUNT);
+#endif
+
     return srcCount;
 }
 #endif // FEATURE_PUT_STRUCT_ARG_STK
@@ -1779,9 +1815,9 @@ int LinearScan::BuildIntrinsic(GenTree* tree)
     assert(op1->TypeGet() == tree->TypeGet());
     RefPosition* internalFloatDef = nullptr;
 
-    switch (tree->AsIntrinsic()->gtIntrinsicId)
+    switch (tree->AsIntrinsic()->gtIntrinsicName)
     {
-        case CORINFO_INTRINSIC_Abs:
+        case NI_System_Math_Abs:
             // Abs(float x) = x & 0x7fffffff
             // Abs(double x) = x & 0x7ffffff ffffffff
 
@@ -1798,16 +1834,16 @@ int LinearScan::BuildIntrinsic(GenTree* tree)
             break;
 
 #ifdef TARGET_X86
-        case CORINFO_INTRINSIC_Cos:
-        case CORINFO_INTRINSIC_Sin:
+        case NI_System_Math_Cos:
+        case NI_System_Math_Sin:
             NYI_X86("Math intrinsics Cos and Sin");
             break;
 #endif // TARGET_X86
 
-        case CORINFO_INTRINSIC_Sqrt:
-        case CORINFO_INTRINSIC_Round:
-        case CORINFO_INTRINSIC_Ceiling:
-        case CORINFO_INTRINSIC_Floor:
+        case NI_System_Math_Sqrt:
+        case NI_System_Math_Round:
+        case NI_System_Math_Ceiling:
+        case NI_System_Math_Floor:
             break;
 
         default:
@@ -2728,6 +2764,7 @@ int LinearScan::BuildIndir(GenTreeIndir* indirTree)
             }
         }
     }
+
 #ifdef FEATURE_SIMD
     if (varTypeIsSIMD(indirTree))
     {
@@ -2735,6 +2772,16 @@ int LinearScan::BuildIndir(GenTreeIndir* indirTree)
     }
     buildInternalRegisterUses();
 #endif // FEATURE_SIMD
+
+#ifdef TARGET_X86
+    // There are only BYTE_REG_COUNT byteable registers on x86. If we have a source that requires
+    // such a register, we must have no more than BYTE_REG_COUNT sources.
+    // If we have more than BYTE_REG_COUNT sources, and require a byteable register, we need to reserve
+    // one explicitly (see BuildBlockStore()).
+    // (Note that the assert below doesn't count internal registers because we only have
+    // floating point internal registers, if any).
+    assert(srcCount <= BYTE_REG_COUNT);
+#endif
 
     if (indirTree->gtOper != GT_STOREIND)
     {

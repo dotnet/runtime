@@ -3424,12 +3424,14 @@ get_shared_ginst_ref (MonoAotCompile *acfg, MonoGenericInst *ginst)
 	guint32 offset = GPOINTER_TO_UINT (g_hash_table_lookup (acfg->ginst_blob_hash, ginst));
 	if (!offset) {
 		guint8 *buf2, *p2;
+		int len;
 
-		buf2 = (guint8 *)g_malloc (1024);
+		len = 1024 + (ginst->type_argc * 32);
+		buf2 = (guint8 *)g_malloc (len);
 		p2 = buf2;
 
 		encode_ginst (acfg, ginst, p2, &p2);
-		g_assert (p2 - buf2 < 1024);
+		g_assert (p2 - buf2 < len);
 
 		offset = add_to_blob (acfg, buf2, p2 - buf2);
 		g_free (buf2);
@@ -5191,6 +5193,17 @@ check_type_depth (MonoType *t, int depth)
 static void
 add_types_from_method_header (MonoAotCompile *acfg, MonoMethod *method);
 
+static gboolean
+inst_has_vtypes (MonoGenericInst *inst)
+{
+	for (int i = 0; i < inst->type_argc; ++i) {
+		MonoType *t = inst->type_argv [i];
+		if (MONO_TYPE_ISSTRUCT (t))
+			return TRUE;
+	}
+	return FALSE;
+}
+
 /*
  * add_generic_class:
  *
@@ -5203,6 +5216,7 @@ add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth,
 	MonoClassField *field;
 	gpointer iter;
 	gboolean use_gsharedvt = FALSE;
+	gboolean use_gsharedvt_for_array = FALSE;
 
 	if (!acfg->ginst_hash)
 		acfg->ginst_hash = g_hash_table_new (NULL, NULL);
@@ -5246,6 +5260,18 @@ add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth,
 		(!strcmp (m_class_get_name (klass), "Dictionary`2") || !strcmp (m_class_get_name (klass), "List`1") || !strcmp (m_class_get_name (klass), "ReadOnlyCollection`1")))
 		use_gsharedvt = TRUE;
 
+#ifdef TARGET_WASM
+	/*
+	 * Use gsharedvt for instances with vtype arguments.
+	 * WASM only since other platforms depend on the
+	 * previous behavior.
+	 */
+	if ((acfg->jit_opts & MONO_OPT_GSHAREDVT) && mono_class_is_ginst (klass) && mono_class_get_generic_class (klass)->context.class_inst && is_vt_inst (mono_class_get_generic_class (klass)->context.class_inst)) {
+		use_gsharedvt = TRUE;
+		use_gsharedvt_for_array = TRUE;
+	}
+#endif
+
 	iter = NULL;
 	while ((method = mono_class_get_methods (klass, &iter))) {
 		if ((acfg->jit_opts & MONO_OPT_GSHAREDVT) && method->is_inflated && mono_method_get_context (method)->method_inst) {
@@ -5254,7 +5280,7 @@ add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth,
 			 */
 			continue;
 		}
-		
+
 		if (mono_method_is_generic_sharable_full (method, FALSE, FALSE, use_gsharedvt)) {
 			/* Already added */
 			add_types_from_method_header (acfg, method);
@@ -5335,7 +5361,7 @@ add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth,
 			if (!strncmp (method->name, name_prefix, strlen (name_prefix))) {
 				MonoMethod *m = mono_aot_get_array_helper_from_wrapper (method);
 
-				if (m->is_inflated && !mono_method_is_generic_sharable_full (m, FALSE, FALSE, FALSE))
+				if (m->is_inflated && !mono_method_is_generic_sharable_full (m, FALSE, FALSE, use_gsharedvt_for_array))
 					add_extra_method_with_depth (acfg, m, depth);
 			}
 		}
@@ -6605,6 +6631,7 @@ encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint
 	case MONO_PATCH_INFO_ICALL_ADDR_CALL:
 	case MONO_PATCH_INFO_METHOD_RGCTX:
 	case MONO_PATCH_INFO_METHOD_CODE_SLOT:
+	case MONO_PATCH_INFO_METHOD_PINVOKE_ADDR_CACHE:
 		encode_method_ref (acfg, patch_info->data.method, p, &p);
 		break;
 	case MONO_PATCH_INFO_AOT_JIT_INFO:
@@ -8484,7 +8511,8 @@ can_encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info)
 	case MONO_PATCH_INFO_METHOD:
 	case MONO_PATCH_INFO_METHOD_FTNDESC:
 	case MONO_PATCH_INFO_METHODCONST:
-	case MONO_PATCH_INFO_METHOD_CODE_SLOT: {
+	case MONO_PATCH_INFO_METHOD_CODE_SLOT:
+	case MONO_PATCH_INFO_METHOD_PINVOKE_ADDR_CACHE: {
 		MonoMethod *method = patch_info->data.method;
 
 		return can_encode_method (acfg, method);
@@ -12294,6 +12322,9 @@ compile_asm (MonoAotCompile *acfg)
 #define LD_NAME "gcc"
 #define LD_OPTIONS "-dynamiclib -Wl,-Bsymbolic"
 #elif defined(TARGET_AMD64) && defined(TARGET_MACH)
+#define LD_NAME "clang"
+#define LD_OPTIONS "--shared"
+#elif defined(TARGET_ARM64) && defined(TARGET_OSX)
 #define LD_NAME "clang"
 #define LD_OPTIONS "--shared"
 #elif defined(TARGET_WIN32_MSVC)

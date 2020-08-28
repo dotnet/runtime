@@ -1,8 +1,13 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Tracing;
+using System.Linq;
+using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 using Xunit.Abstractions;
@@ -36,32 +41,60 @@ namespace System.Net.Sockets.Tests
         {
             RemoteExecutor.Invoke(() =>
             {
-                using (var listener = new TestEventListener("System.Net.Sockets", EventLevel.Verbose))
+                using (var listener = new TestEventListener("System.Net.Sockets", EventLevel.Verbose, 0.1))
                 {
                     var events = new ConcurrentQueue<EventWrittenEventArgs>();
-                    listener.RunWithCallback(events.Enqueue, () =>
+                    listener.RunWithCallbackAsync(events.Enqueue, async () =>
                     {
                         // Invoke several tests to execute code paths while tracing is enabled
 
-                        new SendReceiveSync(null).SendRecv_Stream_TCP(IPAddress.Loopback, false).GetAwaiter();
-                        new SendReceiveSync(null).SendRecv_Stream_TCP(IPAddress.Loopback, true).GetAwaiter();
+                        await new SendReceiveSync(null).SendRecv_Stream_TCP(IPAddress.Loopback, false).ConfigureAwait(false);
+                        await new SendReceiveSync(null).SendRecv_Stream_TCP(IPAddress.Loopback, true).ConfigureAwait(false);
 
-                        new SendReceiveTask(null).SendRecv_Stream_TCP(IPAddress.Loopback, false).GetAwaiter();
-                        new SendReceiveTask(null).SendRecv_Stream_TCP(IPAddress.Loopback, true).GetAwaiter();
+                        await new SendReceiveTask(null).SendRecv_Stream_TCP(IPAddress.Loopback, false).ConfigureAwait(false);
+                        await new SendReceiveTask(null).SendRecv_Stream_TCP(IPAddress.Loopback, true).ConfigureAwait(false);
 
-                        new SendReceiveEap(null).SendRecv_Stream_TCP(IPAddress.Loopback, false).GetAwaiter();
-                        new SendReceiveEap(null).SendRecv_Stream_TCP(IPAddress.Loopback, true).GetAwaiter();
+                        await new SendReceiveEap(null).SendRecv_Stream_TCP(IPAddress.Loopback, false).ConfigureAwait(false);
+                        await new SendReceiveEap(null).SendRecv_Stream_TCP(IPAddress.Loopback, true).ConfigureAwait(false);
 
-                        new SendReceiveApm(null).SendRecv_Stream_TCP(IPAddress.Loopback, false).GetAwaiter();
-                        new SendReceiveApm(null).SendRecv_Stream_TCP(IPAddress.Loopback, true).GetAwaiter();
+                        await new SendReceiveApm(null).SendRecv_Stream_TCP(IPAddress.Loopback, false).ConfigureAwait(false);
+                        await new SendReceiveApm(null).SendRecv_Stream_TCP(IPAddress.Loopback, true).ConfigureAwait(false);
 
-                        new NetworkStreamTest().CopyToAsync_AllDataCopied(4096, true).GetAwaiter().GetResult();
-                        new NetworkStreamTest().Timeout_ValidData_Roundtrips().GetAwaiter().GetResult();
-                    });
+                        await new SendReceiveUdpClient().SendToRecvFromAsync_Datagram_UDP_UdpClient(IPAddress.Loopback).ConfigureAwait(false);
+                        await new SendReceiveUdpClient().SendToRecvFromAsync_Datagram_UDP_UdpClient(IPAddress.Loopback).ConfigureAwait(false);
+
+                        await new NetworkStreamTest().CopyToAsync_AllDataCopied(4096, true).ConfigureAwait(false);
+                        await new NetworkStreamTest().Timeout_ValidData_Roundtrips().ConfigureAwait(false);
+                        await Task.Delay(300).ConfigureAwait(false);
+                    }).Wait();
                     Assert.DoesNotContain(events, ev => ev.EventId == 0); // errors from the EventSource itself
-                    Assert.InRange(events.Count, 1, int.MaxValue);
+                    VerifyEvents(events, "ConnectStart", 10);
+                    VerifyEvents(events, "ConnectStop", 10);
+
+                    Dictionary<string, double> eventCounters = events.Where(e => e.EventName == "EventCounters").Select(e => (IDictionary<string, object>) e.Payload.Single())
+                        .GroupBy(d => (string)d["Name"], d => (double)d["Mean"], (k, v) => new { Name = k, Value = v.Sum() })
+                        .ToDictionary(p => p.Name, p => p.Value);
+
+                    VerifyEventCounter("incoming-connections-established", eventCounters);
+                    VerifyEventCounter("outgoing-connections-established", eventCounters);
+                    VerifyEventCounter("bytes-received", eventCounters);
+                    VerifyEventCounter("bytes-sent", eventCounters);
+                    VerifyEventCounter("datagrams-received", eventCounters);
+                    VerifyEventCounter("datagrams-sent", eventCounters);
                 }
             }).Dispose();
+        }
+
+        private static void VerifyEvents(IEnumerable<EventWrittenEventArgs> events, string eventName, int expectedCount)
+        {
+            EventWrittenEventArgs[] starts = events.Where(e => e.EventName == eventName).ToArray();
+            Assert.Equal(expectedCount, starts.Length);
+        }
+
+        private static void VerifyEventCounter(string name, Dictionary<string, double> eventCounters)
+        {
+            Assert.True(eventCounters.ContainsKey(name));
+            Assert.True(eventCounters[name] > 0);
         }
     }
 }

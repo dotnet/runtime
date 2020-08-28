@@ -53,7 +53,7 @@ namespace MS.Internal.Xml.XPath
 
             Debug.Assert(numSorts > 0, "Why was the sort query created?");
 
-            XPathNavigator eNext;
+            XPathNavigator? eNext;
             while ((eNext = _qyInput.Advance()) != null)
             {
                 SortKey key = new SortKey(numSorts, /*originalPosition:*/_results.Count, eNext.Clone());
@@ -77,7 +77,7 @@ namespace MS.Internal.Xml.XPath
             return this;
         }
 
-        public override XPathNavigator Advance()
+        public override XPathNavigator? Advance()
         {
             Debug.Assert(0 <= count && count <= _results.Count);
             if (count < _results.Count)
@@ -87,7 +87,7 @@ namespace MS.Internal.Xml.XPath
             return null;
         }
 
-        public override XPathNavigator Current
+        public override XPathNavigator? Current
         {
             get
             {
@@ -192,7 +192,7 @@ namespace MS.Internal.Xml.XPath
             return _expressions[i];
         }
 
-        int IComparer<SortKey>.Compare(SortKey x, SortKey y)
+        int IComparer<SortKey>.Compare(SortKey? x, SortKey? y)
         {
             Debug.Assert(x != null && y != null, "Oops!! what happened?");
             int result = 0;

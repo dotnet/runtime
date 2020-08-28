@@ -110,6 +110,7 @@ namespace Microsoft.Extensions.Caching.Memory
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/33993")]
         public async Task DoNotAddIfSizeOverflows()
         {
             var cache = new MemoryCache(new MemoryCacheOptions { SizeLimit = long.MaxValue });

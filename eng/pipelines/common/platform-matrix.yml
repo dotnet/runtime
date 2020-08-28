@@ -86,11 +86,7 @@ jobs:
       archType: x64
       platform: Linux_musl_x64
       container:
-        # alpine coreclr cmake errors on newer builds
-        ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
-          image: alpine-3.9-WithNode-0fc54a3-20200131134036
-        ${{ if eq(parameters.runtimeFlavor, 'coreclr') }}:
-          image: alpine-3.9-WithNode-0fc54a3-20190918214015
+        image: alpine-3.9-WithNode-20200602002639-0fc54a3
         registry: mcr
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
@@ -128,7 +124,7 @@ jobs:
 
 # Linux x64
 
-- ${{ if or(containsValue(parameters.platforms, 'Linux_x64'), in(parameters.platformGroup, 'all', 'gcstress')) }}:
+- ${{ if or(containsValue(parameters.platforms, 'Linux_x64'), containsValue(parameters.platforms, 'CoreClrTestBuildHost'), in(parameters.platformGroup, 'all', 'gcstress')) }}:
   - template: xplat-setup.yml
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
@@ -161,7 +157,7 @@ jobs:
       archType: wasm
       platform: Browser_wasm
       container:
-        image: ubuntu-18.04-webassembly-20200529220811-6a6da63
+        image: ubuntu-18.04-webassembly-20200827125937-9740252
         registry: mcr
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
@@ -408,7 +404,7 @@ jobs:
 
 # macOS x64
 
-- ${{ if or(containsValue(parameters.platforms, 'OSX_x64'), containsValue(parameters.platforms, 'CoreClrTestBuildHost'), eq(parameters.platformGroup, 'all')) }}:
+- ${{ if or(containsValue(parameters.platforms, 'OSX_x64'), eq(parameters.platformGroup, 'all')) }}:
   - template: xplat-setup.yml
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}

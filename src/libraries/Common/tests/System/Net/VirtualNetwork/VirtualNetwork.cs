@@ -14,7 +14,7 @@ namespace System.Net.Test.Common
             public VirtualNetworkConnectionBroken() : base("Connection broken") { }
         }
 
-        private readonly int WaitForReadDataTimeoutMilliseconds = 30 * 1000;
+        private readonly int WaitForReadDataTimeoutMilliseconds = 60 * 1000;
 
         private readonly ConcurrentQueue<byte[]> _clientWriteQueue = new ConcurrentQueue<byte[]>();
         private readonly ConcurrentQueue<byte[]> _serverWriteQueue = new ConcurrentQueue<byte[]>();
@@ -22,8 +22,11 @@ namespace System.Net.Test.Common
         private readonly SemaphoreSlim _clientDataAvailable = new SemaphoreSlim(0);
         private readonly SemaphoreSlim _serverDataAvailable = new SemaphoreSlim(0);
 
+        private volatile bool _clientWriteShutdown = false;
+        private volatile bool _serverWriteShutdown = false;
+
         public bool DisableConnectionBreaking { get; set; } = false;
-        private bool _connectionBroken = false;
+        private volatile bool _connectionBroken = false;
 
         public byte[] ReadFrame(bool server) =>
             ReadFrameCoreAsync(server, sync: true, cancellationToken: default).GetAwaiter().GetResult();
@@ -75,6 +78,11 @@ namespace System.Net.Test.Common
                     return buffer;
                 }
 
+                if ((server && _clientWriteShutdown) || (!server && _serverWriteShutdown))
+                {
+                    return Array.Empty<byte>();
+                }
+
                 remainingTries--;
                 backOffDelayMilliseconds *= backOffDelayMilliseconds;
                 if (sync)
@@ -98,6 +106,16 @@ namespace System.Net.Test.Common
                 throw new VirtualNetworkConnectionBroken();
             }
 
+            if ((server && _serverWriteShutdown) || (!server && _clientWriteShutdown))
+            {
+                throw new InvalidOperationException("Writing to a shutdown side.");
+            }
+
+            if (buffer.Length == 0)
+            {
+                return;
+            }
+
             SemaphoreSlim semaphore;
             ConcurrentQueue<byte[]> packetQueue;
 
@@ -116,11 +134,25 @@ namespace System.Net.Test.Common
             semaphore.Release();
         }
 
+        public void GracefulShutdown(bool server)
+        {
+            if (server)
+            {
+                _serverWriteShutdown = true;
+                _serverDataAvailable.Release(1_000_000);
+            }
+            else
+            {
+                _clientWriteShutdown = true;
+                _clientDataAvailable.Release(1_000_000);
+            }
+        }
+
         public void BreakConnection()
         {
             if (!DisableConnectionBreaking)
             {
-                _connectionBroken = true;
+                _connectionBroken = !_serverWriteShutdown || !_clientWriteShutdown;
                 _serverDataAvailable.Release(1_000_000);
                 _clientDataAvailable.Release(1_000_000);
             }

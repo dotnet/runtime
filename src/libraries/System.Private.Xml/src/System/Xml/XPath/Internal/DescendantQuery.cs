@@ -7,7 +7,7 @@ namespace MS.Internal.Xml.XPath
 {
     internal class DescendantQuery : DescendantBaseQuery
     {
-        private XPathNodeIterator _nodeIterator;
+        private XPathNodeIterator? _nodeIterator;
 
         internal DescendantQuery(Query qyParent, string Name, string Prefix, XPathNodeType Type, bool matchSelf, bool abbrAxis)
             : base(qyParent, Name, Prefix, Type, matchSelf, abbrAxis)
@@ -24,14 +24,14 @@ namespace MS.Internal.Xml.XPath
             base.Reset();
         }
 
-        public override XPathNavigator Advance()
+        public override XPathNavigator? Advance()
         {
             while (true)
             {
                 if (_nodeIterator == null)
                 {
                     position = 0;
-                    XPathNavigator nav = qyInput.Advance();
+                    XPathNavigator? nav = qyInput.Advance();
                     if (nav == null)
                     {
                         return null;
@@ -44,7 +44,7 @@ namespace MS.Internal.Xml.XPath
                         }
                         else
                         {
-                            _nodeIterator = nav.SelectDescendants(Name, Namespace, matchSelf);
+                            _nodeIterator = nav.SelectDescendants(Name, Namespace!, matchSelf);
                         }
                     }
                     else

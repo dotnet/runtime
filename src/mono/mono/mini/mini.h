@@ -1193,7 +1193,7 @@ typedef struct {
 	guint            have_generalized_imt_trampoline : 1;
 	gboolean         have_op_tailcall_membase : 1;
 	gboolean         have_op_tailcall_reg : 1;
-	gboolean	 have_volatile_non_param_register : 1;
+	gboolean         have_volatile_non_param_register : 1;
 	guint            gshared_supported : 1;
 	guint            use_fpstack : 1;
 	guint            ilp32 : 1;
@@ -1203,6 +1203,7 @@ typedef struct {
 	guint            disable_div_with_mul : 1;
 	guint            explicit_null_checks : 1;
 	guint            optimized_div : 1;
+	guint            force_float32 : 1;
 	int              monitor_enter_adjustment;
 	int              dyn_call_param_area;
 } MonoBackend;
@@ -2260,7 +2261,7 @@ void              mini_emit_stobj (MonoCompile *cfg, MonoInst *dest, MonoInst *s
 void              mini_emit_initobj (MonoCompile *cfg, MonoInst *dest, const guchar *ip, MonoClass *klass);
 void              mini_emit_init_rvar (MonoCompile *cfg, int dreg, MonoType *rtype);
 int               mini_emit_sext_index_reg (MonoCompile *cfg, MonoInst *index);
-MonoInst*         mini_emit_ldelema_1_ins (MonoCompile *cfg, MonoClass *klass, MonoInst *arr, MonoInst *index, gboolean bcheck);
+MonoInst*         mini_emit_ldelema_1_ins (MonoCompile *cfg, MonoClass *klass, MonoInst *arr, MonoInst *index, gboolean bcheck, gboolean bounded);
 MonoInst*         mini_emit_get_gsharedvt_info_klass (MonoCompile *cfg, MonoClass *klass, MonoRgctxInfoType rgctx_type);
 MonoInst*         mini_emit_get_rgctx_method (MonoCompile *cfg, int context_used,
 											  MonoMethod *cmethod, MonoRgctxInfoType rgctx_type);
@@ -2717,6 +2718,9 @@ mono_is_partially_sharable_inst (MonoGenericInst *inst);
 
 gboolean
 mini_is_gsharedvt_gparam (MonoType *t);
+
+gboolean
+mini_is_gsharedvt_inst (MonoGenericInst *inst);
 
 MonoGenericContext* mini_method_get_context (MonoMethod *method);
 

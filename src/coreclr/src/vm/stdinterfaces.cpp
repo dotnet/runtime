@@ -56,7 +56,7 @@ static const GUID LIBID_STDOLE2 = { 0x00020430, 0x0000, 0x0000, { 0xc0, 0x00, 0x
 
 // Until the Windows SDK is updated, just hard-code the IAgileObject IID
 #ifndef __IAgileObject_INTERFACE_DEFINED__
-EXTERN_C constexpr GUID IID_IAgileObject = { 0x94ea2b94, 0xe9cc, 0x49e0, { 0xc0, 0xff, 0xee, 0x64, 0xca, 0x8f, 0x5b, 0x90 } };
+EXTERN_C const GUID IID_IAgileObject = { 0x94ea2b94, 0xe9cc, 0x49e0, { 0xc0, 0xff, 0xee, 0x64, 0xca, 0x8f, 0x5b, 0x90 } };
 #endif // !__IAgileObject_INTERFACE_DEFINED__
 
 // Until the Windows SDK is updated, just hard-code the INoMarshal IID

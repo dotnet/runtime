@@ -254,12 +254,12 @@ namespace System.Data.Common
             return (IDbCommand?)((command is ICloneable) ? ((ICloneable)command).Clone() : null);
         }
 
-        protected virtual RowUpdatedEventArgs CreateRowUpdatedEvent(DataRow dataRow, IDbCommand command, StatementType statementType, DataTableMapping tableMapping)
+        protected virtual RowUpdatedEventArgs CreateRowUpdatedEvent(DataRow dataRow, IDbCommand? command, StatementType statementType, DataTableMapping tableMapping)
         {
             return new RowUpdatedEventArgs(dataRow, command, statementType, tableMapping);
         }
 
-        protected virtual RowUpdatingEventArgs CreateRowUpdatingEvent(DataRow dataRow, IDbCommand command, StatementType statementType, DataTableMapping tableMapping)
+        protected virtual RowUpdatingEventArgs CreateRowUpdatingEvent(DataRow dataRow, IDbCommand? command, StatementType statementType, DataTableMapping tableMapping)
         {
             return new RowUpdatingEventArgs(dataRow, command, statementType, tableMapping);
         }
@@ -1035,7 +1035,7 @@ namespace System.Data.Common
                             // TODO: the event may be raised with a null command, but only if the update, but only if
                             // the update attempt fails (because no command was configured). We should not emit the
                             // event in this case.
-                            RowUpdatingEventArgs? rowUpdatingEvent = CreateRowUpdatingEvent(dataRow, dataCommand!, statementType, tableMapping);
+                            RowUpdatingEventArgs? rowUpdatingEvent = CreateRowUpdatingEvent(dataRow, dataCommand, statementType, tableMapping);
 
                             // this try/catch for any exceptions during the parameter initialization
                             try
@@ -1159,7 +1159,7 @@ namespace System.Data.Common
                                 if (null != errors)
                                 {
                                     // TODO: See above comment on dataCommand being null
-                                    rowUpdatedEvent = CreateRowUpdatedEvent(dataRow, dataCommand!, StatementType.Batch, tableMapping);
+                                    rowUpdatedEvent = CreateRowUpdatedEvent(dataRow, dataCommand, StatementType.Batch, tableMapping);
                                     rowUpdatedEvent.Errors = errors;
                                     rowUpdatedEvent.Status = UpdateStatus.ErrorsOccurred;
 
@@ -1182,7 +1182,7 @@ namespace System.Data.Common
                             }
 
                             // TODO: See above comment on dataCommand being null
-                            rowUpdatedEvent = CreateRowUpdatedEvent(dataRow, dataCommand!, statementType, tableMapping);
+                            rowUpdatedEvent = CreateRowUpdatedEvent(dataRow, dataCommand, statementType, tableMapping);
 
                             // this try/catch for any exceptions during the execution, population, output parameters
                             try
@@ -1280,8 +1280,8 @@ namespace System.Data.Common
                         if (1 != maxBatchCommands && 0 < commandCount)
                         {
                             // TODO: See above comment on dataCommand being null
-                            // TODO: DataRow is null because we call AdapterInit below, which populars rows
-                            RowUpdatedEventArgs rowUpdatedEvent = CreateRowUpdatedEvent(null!, dataCommand!, statementType, tableMapping);
+                            // TODO: DataRow is null because we call AdapterInit below, which populates rows
+                            RowUpdatedEventArgs rowUpdatedEvent = CreateRowUpdatedEvent(null!, dataCommand, statementType, tableMapping);
 
                             try
                             {
@@ -1659,7 +1659,7 @@ namespace System.Data.Common
                 DataRow row = batchCommands[i]._row;
                 Debug.Assert(null != row, "null dataRow?");
 
-                if (batchCommands[i]._errors is { } commandErrors)
+                if (batchCommands[i]._errors is Exception commandErrors)
                 { // will exist if 0 == RecordsAffected
                     string rowMsg = commandErrors.Message;
                     if (string.IsNullOrEmpty(rowMsg))

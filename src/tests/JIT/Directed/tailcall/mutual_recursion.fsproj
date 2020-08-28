@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+  <PropertyGroup>
+    <NoStandardLib>True</NoStandardLib>
+    <Noconfig>True</Noconfig>
+    <Optimize>True</Optimize>
+    <JitOptimizationSensitive>True</JitOptimizationSensitive>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="mutual_recursion.fs" />
+  </ItemGroup>
+</Project>
