@@ -1288,7 +1288,7 @@ namespace System.Xml
         [System.Diagnostics.DebuggerStepThroughAttribute]
         public virtual System.Threading.Tasks.Task WriteNodeAsync(System.Xml.XPath.XPathNavigator navigator, bool defattr) { throw null; }
         public abstract void WriteProcessingInstruction(string name, string? text);
-        public virtual System.Threading.Tasks.Task WriteProcessingInstructionAsync(string name, string text) { throw null; }
+        public virtual System.Threading.Tasks.Task WriteProcessingInstructionAsync(string name, string? text) { throw null; }
         public virtual void WriteQualifiedName(string localName, string? ns) { }
         [System.Diagnostics.DebuggerStepThroughAttribute]
         public virtual System.Threading.Tasks.Task WriteQualifiedNameAsync(string localName, string? ns) { throw null; }
@@ -1534,7 +1534,7 @@ namespace System.Xml.Schema
         public XmlSchemaAppInfo() { }
         [System.Xml.Serialization.XmlAnyElementAttribute]
         [System.Xml.Serialization.XmlTextAttribute]
-        public System.Xml.XmlNode[]? Markup { get { throw null; } set { } }
+        public System.Xml.XmlNode?[]? Markup { get { throw null; } set { } }
         [System.Xml.Serialization.XmlAttributeAttribute("source", DataType="anyURI")]
         public string? Source { get { throw null; } set { } }
     }
@@ -1791,7 +1791,7 @@ namespace System.Xml.Schema
         public string? Language { get { throw null; } set { } }
         [System.Xml.Serialization.XmlAnyElementAttribute]
         [System.Xml.Serialization.XmlTextAttribute]
-        public System.Xml.XmlNode[]? Markup { get { throw null; } set { } }
+        public System.Xml.XmlNode?[]? Markup { get { throw null; } set { } }
         [System.Xml.Serialization.XmlAttributeAttribute("source", DataType="anyURI")]
         public string? Source { get { throw null; } set { } }
     }

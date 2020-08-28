@@ -561,7 +561,7 @@ namespace System.Xml.Schema
             return true;
         }
 
-        internal override void ProcessMarkup(XmlNode[] markup)
+        internal override void ProcessMarkup(XmlNode?[] markup)
         {
             throw new InvalidOperationException(SR.Xml_InvalidOperation); // should never be called
         }

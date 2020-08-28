@@ -341,7 +341,7 @@ namespace System.Data.Common
 
             StringReader strreader = new StringReader(s);
             XmlSerializer deserializerWithOutRootAttribute = ObjectStorage.GetXmlSerializer(type);
-            return (deserializerWithOutRootAttribute.Deserialize(strreader));
+            return (deserializerWithOutRootAttribute.Deserialize(strreader))!;
         }
 
         // Prevent inlining so that reflection calls are not moved to caller that may be in a different assembly that may have a different grant set.

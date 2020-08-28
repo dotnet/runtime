@@ -2,7 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "common.h"
+
+#ifdef TARGET_WINDOWS
 #include <intrin.h>
+#include <windows.h>
+#endif
 
 #include "do_vxsort.h"
 
@@ -17,13 +21,11 @@ enum class SupportedISA
 
 static DWORD64 GetEnabledXStateFeaturesHelper()
 {
-    LIMITED_METHOD_CONTRACT;
-
     // On Windows we have an api(GetEnabledXStateFeatures) to check if AVX is supported
     typedef DWORD64(WINAPI* PGETENABLEDXSTATEFEATURES)();
     PGETENABLEDXSTATEFEATURES pfnGetEnabledXStateFeatures = NULL;
 
-    HMODULE hMod = WszLoadLibraryEx(WINDOWS_KERNEL32_DLLNAME_W, NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
+    HMODULE hMod = LoadLibraryExW(L"kernel32.dll", NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
     if (hMod == NULL)
         return 0;
 

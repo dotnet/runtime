@@ -92,6 +92,12 @@
       <_MonoCXXFLAGS Include="-g" />
     </ItemGroup>
 
+    <!-- OSX specific options -->
+    <ItemGroup Condition="'$(TargetOS)' == 'OSX'">
+      <_MonoCFLAGS Include="-mmacosx-version-min=$(macOSVersionMin)" />
+      <_MonoCXXFLAGS Include="-mmacosx-version-min=$(macOSVersionMin)" />
+    </ItemGroup>
+
     <!-- We build LLVM bits for x64 Linux without C++11 ABI (CentOS 7 has libstdc++ < 5.1) -->
     <ItemGroup Condition="'$(TargetOS)' == 'Linux' and '$(MonoEnableLLVM)' == 'true' and '$(MonoLLVMUseCxx11Abi)' != 'true'">
       <_MonoCXXFLAGS Include="-D_GLIBCXX_USE_CXX11_ABI=0" />
