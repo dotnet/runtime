@@ -230,9 +230,9 @@ namespace System.Net.Http
                     return string.Empty;
                 }
             }
-            catch when (LogRequestAborted(telemetryStarted))
+            catch when (LogRequestFailed(telemetryStarted))
             {
-                // Unreachable as LogRequestAborted will return false
+                // Unreachable as LogRequestFailed will return false
                 throw;
             }
             finally
@@ -351,9 +351,9 @@ namespace System.Net.Http
                     return Array.Empty<byte>();
                 }
             }
-            catch when (LogRequestAborted(telemetryStarted))
+            catch when (LogRequestFailed(telemetryStarted))
             {
-                // Unreachable as LogRequestAborted will return false
+                // Unreachable as LogRequestFailed will return false
                 throw;
             }
             finally
@@ -409,9 +409,9 @@ namespace System.Net.Http
                 }
                 return Stream.Null;
             }
-            catch when (LogRequestAborted(telemetryStarted))
+            catch when (LogRequestFailed(telemetryStarted))
             {
-                // Unreachable as LogRequestAborted will return false
+                // Unreachable as LogRequestFailed will return false
                 throw;
             }
             finally
@@ -687,7 +687,7 @@ namespace System.Net.Http
             }
             catch (Exception e)
             {
-                LogRequestAborted(telemetryStarted);
+                LogRequestFailed(telemetryStarted);
 
                 response?.Dispose();
 

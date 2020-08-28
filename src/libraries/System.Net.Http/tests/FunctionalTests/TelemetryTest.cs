@@ -108,7 +108,7 @@ namespace System.Net.Http.Functional.Tests
                 EventWrittenEventArgs stop = Assert.Single(events, e => e.EventName == "RequestStop");
                 Assert.Empty(stop.Payload);
 
-                Assert.DoesNotContain(events, e => e.EventName == "RequestAborted");
+                Assert.DoesNotContain(events, e => e.EventName == "RequestFailed");
 
                 if (version.Major == 1)
                 {
@@ -135,7 +135,7 @@ namespace System.Net.Http.Functional.Tests
         [OuterLoop]
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [MemberData(nameof(TestMethods_MemberData))]
-        public void EventSource_UnsuccessfulRequest_LogsStartAbortedStop(string testMethod)
+        public void EventSource_UnsuccessfulRequest_LogsStartFailedStop(string testMethod)
         {
             RemoteExecutor.Invoke(async (useVersionString, testMethod) =>
             {
@@ -203,8 +203,8 @@ namespace System.Net.Http.Functional.Tests
                 EventWrittenEventArgs start = Assert.Single(events, e => e.EventName == "RequestStart");
                 ValidateStartEventPayload(start);
 
-                EventWrittenEventArgs abort = Assert.Single(events, e => e.EventName == "RequestAborted");
-                Assert.Empty(abort.Payload);
+                EventWrittenEventArgs failure = Assert.Single(events, e => e.EventName == "RequestFailed");
+                Assert.Empty(failure.Payload);
 
                 EventWrittenEventArgs stop = Assert.Single(events, e => e.EventName == "RequestStop");
                 Assert.Empty(stop.Payload);
@@ -241,17 +241,17 @@ namespace System.Net.Http.Functional.Tests
             Assert.True(eventCounters.TryGetValue("requests-started-rate", out double[] requestRate));
             Assert.Contains(requestRate, r => r > 0);
 
-            Assert.True(eventCounters.TryGetValue("requests-aborted", out double[] requestsAborted));
-            Assert.True(eventCounters.TryGetValue("requests-aborted-rate", out double[] requestsAbortedRate));
+            Assert.True(eventCounters.TryGetValue("requests-failed", out double[] requestsFailures));
+            Assert.True(eventCounters.TryGetValue("requests-failed-rate", out double[] requestsFailureRate));
             if (shouldHaveFailures)
             {
-                Assert.Equal(1, requestsAborted[^1]);
-                Assert.Contains(requestsAbortedRate, r => r > 0);
+                Assert.Equal(1, requestsFailures[^1]);
+                Assert.Contains(requestsFailureRate, r => r > 0);
             }
             else
             {
-                Assert.All(requestsAborted, a => Assert.Equal(0, a));
-                Assert.All(requestsAbortedRate, r => Assert.Equal(0, r));
+                Assert.All(requestsFailures, a => Assert.Equal(0, a));
+                Assert.All(requestsFailureRate, r => Assert.Equal(0, r));
             }
 
             Assert.True(eventCounters.TryGetValue("current-requests", out double[] currentRequests));
@@ -343,7 +343,7 @@ namespace System.Net.Http.Functional.Tests
                 Assert.Equal(2, stops.Length);
                 Assert.All(stops, s => Assert.Empty(s.Payload));
 
-                Assert.DoesNotContain(events, e => e.EventName == "RequestAborted");
+                Assert.DoesNotContain(events, e => e.EventName == "RequestFailed");
 
                 EventWrittenEventArgs[] connectionsEstablished = events.Where(e => e.EventName == "Http11ConnectionEstablished").ToArray();
                 Assert.Equal(2, connectionsEstablished.Length);

@@ -47,9 +47,9 @@ namespace System.Net.Http
                 {
                     return _handler.Send(request, cancellationToken);
                 }
-                catch when (LogRequestAborted(telemetryStarted: true))
+                catch when (LogRequestFailed(telemetryStarted: true))
                 {
-                    // Unreachable as LogRequestAborted will return false
+                    // Unreachable as LogRequestFailed will return false
                     throw;
                 }
                 finally
@@ -87,9 +87,9 @@ namespace System.Net.Http
                 {
                     return await handler.SendAsync(request, cancellationToken).ConfigureAwait(false);
                 }
-                catch when (LogRequestAborted(telemetryStarted: true))
+                catch when (LogRequestFailed(telemetryStarted: true))
                 {
-                    // Unreachable as LogRequestAborted will return false
+                    // Unreachable as LogRequestFailed will return false
                     throw;
                 }
                 finally
@@ -99,11 +99,11 @@ namespace System.Net.Http
             }
         }
 
-        internal static bool LogRequestAborted(bool telemetryStarted)
+        internal static bool LogRequestFailed(bool telemetryStarted)
         {
             if (HttpTelemetry.Log.IsEnabled() && telemetryStarted)
             {
-                HttpTelemetry.Log.RequestAborted();
+                HttpTelemetry.Log.RequestFailed();
             }
             return false;
         }

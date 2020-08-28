@@ -13,7 +13,7 @@ namespace System.Net.Http
 
         public void RequestStop() { }
 
-        public void RequestAborted() { }
+        public void RequestFailed() { }
 
         public void ResponseContentBegin() { }
     }
