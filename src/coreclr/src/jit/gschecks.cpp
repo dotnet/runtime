@@ -508,7 +508,7 @@ void Compiler::gsParamsToShadows()
         {
             // We don't need unsafe value cls check here since we are copying the params and this flag
             // would have been set on the original param before reaching here.
-            lvaSetStruct(shadowVar, varDsc->lvVerTypeInfo.GetClassHandle(), false);
+            lvaSetStruct(shadowVar, varDsc->GetStructHnd(), false);
 
             opAssign = gtNewBlkOpNode(dst, src, false, true);
 
