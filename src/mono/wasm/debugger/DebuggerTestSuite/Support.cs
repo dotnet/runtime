@@ -852,6 +852,18 @@ namespace DebuggerTests
             return (null, res);
         }
 
+        internal async Task<Result> RemoveBreakpoint(string id)
+        {
+            var remove_bp = JObject.FromObject(new
+            {
+                breakpointId = id
+            });
+
+            var bp1_res = await ctx.cli.SendCommand("Debugger.removeBreakpoint", remove_bp, ctx.token);
+
+            return bp1_res;
+        }
+
         internal async Task<Result> SetBreakpoint(string url_key, int line, int column, bool expect_ok = true, bool use_regex = false)
         {
             var bp1_req = !use_regex ?

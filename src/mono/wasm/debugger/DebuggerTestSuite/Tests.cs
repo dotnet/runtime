@@ -1523,6 +1523,38 @@ namespace DebuggerTests
             }
         }
 
+        [Fact]
+        public async Task CreateGoodBreakpointAndHitAndRemoveAndDontHit()
+        {
+            var insp = new Inspector();
+
+            //Collect events
+            var scripts = SubscribeToScripts(insp);
+
+            await Ready();
+            await insp.Ready(async (cli, token) =>
+            {
+                ctx = new DebugTestContext(cli, insp, token, scripts);
+
+                var bp = await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 10, 8);
+                var bp2 = await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 12, 8);
+                var wait_res = await EvaluateAndCheck(
+                    "window.setTimeout(function() { invoke_add(); invoke_add()}, 1);",
+                    "dotnet://debugger-test.dll/debugger-test.cs",  10, 8,
+                    "IntAdd",
+                    wait_for_event_fn: (pause_location) =>
+                    {   
+                        Assert.Equal("other", pause_location["reason"]?.Value<string>());
+                        Assert.Equal(bp.Value["breakpointId"]?.ToString(), pause_location["hitBreakpoints"]?[0]?.Value<string>());
+                        return Task.CompletedTask;
+                    }
+                );
+                var bp3 = await RemoveBreakpoint(bp.Value["breakpointId"]?.ToString());
+                await SendCommandAndCheck(JObject.FromObject(new { }), "Debugger.resume", "dotnet://debugger-test.dll/debugger-test.cs", 12, 8, "IntAdd");
+                await SendCommandAndCheck(JObject.FromObject(new { }), "Debugger.resume", "dotnet://debugger-test.dll/debugger-test.cs", 12, 8, "IntAdd");
+            });
+        }
+
         //TODO add tests covering basic stepping behavior as step in/out/over
     }
 }
