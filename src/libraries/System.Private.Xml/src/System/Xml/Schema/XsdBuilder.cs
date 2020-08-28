@@ -675,7 +675,7 @@ namespace System.Xml.Schema
         private XmlSchemaAppInfo? _appInfo;
         private XmlSchemaDocumentation? _documentation;
         private XmlSchemaFacet? _facet;
-        private XmlNode[]? _markup;
+        private XmlNode?[]? _markup;
         private XmlSchemaRedefine? _redefine;
 
         private readonly ValidationEventHandler? _validationEventHandler;
@@ -778,7 +778,7 @@ namespace System.Xml.Schema
             return _currentEntry.ParseContent;
         }
 
-        internal override void ProcessMarkup(XmlNode[] markup)
+        internal override void ProcessMarkup(XmlNode?[] markup)
         {
             _markup = markup;
         }
