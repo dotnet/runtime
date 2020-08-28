@@ -112,7 +112,7 @@ namespace System.Net.Http
             get => _maxAutomaticRedirections;
             set
             {
-                if (value < 1)
+                if (value <= 0)
                 {
                     throw new ArgumentOutOfRangeException(nameof(value), value, SR.Format(SR.net_http_value_must_be_greater_than, 0));
                 }
