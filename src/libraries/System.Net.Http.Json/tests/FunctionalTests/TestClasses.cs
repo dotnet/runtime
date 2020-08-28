@@ -36,12 +36,7 @@ namespace System.Net.Http.Json.Functional.Tests
 
     internal static class JsonOptions
     {
-        public static readonly JsonSerializerOptions DefaultSerializerOptions
-            = new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true,
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-            };
+        public static readonly JsonSerializerOptions DefaultSerializerOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web);
     }
 
     internal class EnsureDefaultOptionsConverter : JsonConverter<EnsureDefaultOptions>

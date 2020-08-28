@@ -106,6 +106,7 @@ namespace System.Text.Json
             {
                 _propertyNameCaseInsensitive = true;
                 _jsonPropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+                _numberHandling = JsonNumberHandling.AllowReadingFromString;
             }
             else if (defaults != JsonSerializerDefaults.General)
             {
