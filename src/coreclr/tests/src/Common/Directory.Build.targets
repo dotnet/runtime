@@ -85,7 +85,14 @@
           Exclude="@(RunTimeArtifactsExcludeFiles -> '$(CoreCLRArtifactsPath)%(Identity)')"
           TargetDir="%(RunTimeArtifactsIncludeFolders.Identity)" />
 
-
+      <RunTimeDependencyCopyLocal
+          Condition="'$(TargetArchitecture)' != 'x64'"
+          Include="$(CoreCLRArtifactsPath)X64/clrjit_*"
+          TargetDir="crossgen2/" />
+      <RunTimeDependencyCopyLocal
+          Condition="'$(TargetArchitecture)' != 'x64'"
+          Include="$(CoreCLRArtifactsPath)x64/jitinterface_*"
+          TargetDir="crossgen2/" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(TargetArchitecture)' == 'wasm'">

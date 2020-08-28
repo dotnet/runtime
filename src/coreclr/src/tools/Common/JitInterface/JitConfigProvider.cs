@@ -57,6 +57,10 @@ namespace Internal.JitInterface
                         libHandle = NativeLibrary.Load("clrjit_" + GetTargetSpec(target), assembly, searchPath);
                     }
                 }
+                if (libName == CorInfoImpl.JitSupportLibrary)
+                {
+                    libHandle = NativeLibrary.Load("jitinterface_" + RuntimeInformation.ProcessArchitecture.ToString().ToLowerInvariant(), assembly, searchPath);
+                }
                 return libHandle;
             });
 #else
