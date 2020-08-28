@@ -42,5 +42,8 @@ namespace System
 
         internal const string CodeBaseMessage = "Assembly.CodeBase and Assembly.EscapedCodeBase are only included for .NET Framework compatibility. Use Assembly.Location instead.";
         internal const string CodeBaseDiagId = "SYSLIB0012";
+
+        internal const string EscapeUriStringMessage = "Uri.EscapeUriString is insecure and should not be used. Consider using Uri.EscapeDataString instead.";
+        internal const string EscapeUriStringDiagId = "SYSLIB0013";
     }
 }
