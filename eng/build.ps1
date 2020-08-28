@@ -112,20 +112,6 @@ function Assert-InstalledDependency($dependencyName)
   }
 }
 
-function Assert-GitLongPathsEnabled()
-{
-  # This needs to be in a variable. Otherwise, Invoke-Command complains about
-  # an incompatible cast.
-  $gitscript = [scriptblock]::Create("git config --get core.longpaths")
-  $longpaths = Invoke-Command -scriptblock $gitscript
-
-  if (-Not $longpaths) {
-    Write-Host "Git Long Paths must be enabled to build this repo."
-    Write-Host "For a full list of requirements, see https://github.com/dotnet/runtime/blob/master/docs/workflow/requirements/windows-requirements.md"
-    exit 1
-  }
-}
-
 if ($help -or (($null -ne $properties) -and ($properties.Contains('/help') -or $properties.Contains('/?')))) {
   Get-Help
   exit 0
@@ -137,7 +123,6 @@ if ($subset -eq 'help') {
 }
 
 Assert-InstalledDependency("Git")
-Assert-GitLongPathsEnabled
 
 if ($vs) {
   . $PSScriptRoot\common\tools.ps1
