@@ -217,7 +217,10 @@ namespace System.Net
 
         protected virtual WebRequest GetWebRequest(Uri address)
         {
+#pragma warning disable SYSLIB0013
             WebRequest request = WebRequest.Create(address);
+#pragma warning restore SYSLIB0013
+
             CopyHeadersTo(request);
 
             if (Credentials != null)

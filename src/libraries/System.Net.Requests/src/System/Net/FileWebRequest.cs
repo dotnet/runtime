@@ -25,6 +25,7 @@ namespace System.Net
         private bool _syncHint;
         private int _aborted;
 
+#pragma warning disable SYSLIB0013
         internal FileWebRequest(Uri uri)
         {
             if (uri.Scheme != (object)Uri.UriSchemeFile)
@@ -39,6 +40,7 @@ namespace System.Net
         {
             throw new PlatformNotSupportedException();
         }
+#pragma warning restore SYSLIB0013
 
         void ISerializable.GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext) =>
             GetObjectData(serializationInfo, streamingContext);

@@ -165,7 +165,6 @@ namespace System.Net
         {
         }
 
-        [Obsolete("Serialization is obsoleted for this type.  https://go.microsoft.com/fwlink/?linkid=14202")]
         [Obsolete(Obsoletions.WebRequestMessage, DiagnosticId = Obsoletions.WebRequestDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         protected HttpWebRequest(SerializationInfo serializationInfo, StreamingContext streamingContext) : base(serializationInfo, streamingContext)
         {
@@ -182,10 +181,12 @@ namespace System.Net
             throw new PlatformNotSupportedException();
         }
 
+#pragma warning disable SYSLIB0013
         internal HttpWebRequest(Uri uri)
         {
             _requestUri = uri;
         }
+#pragma warning restore SYSLIB0013
 
         private void SetSpecialHeaders(string HeaderName, string? value)
         {
@@ -755,7 +756,9 @@ namespace System.Net
             }
         }
 
+#pragma warning disable SYSLIB0013
         public ServicePoint ServicePoint => _servicePoint ??= ServicePointManager.FindServicePoint(Address, Proxy);
+#pragma warning restore SYSLIB0013
 
         public RemoteCertificateValidationCallback? ServerCertificateValidationCallback { get; set; }
 
