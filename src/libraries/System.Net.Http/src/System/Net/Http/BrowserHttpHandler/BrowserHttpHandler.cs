@@ -38,8 +38,6 @@ namespace System.Net.Http
         // flag to determine if the _allowAutoRedirect was explicitly set or not.
         private bool _isAllowAutoRedirectTouched;
         private int _maxAutomaticRedirections = HttpHandlerDefaults.DefaultMaxAutomaticRedirections;
-        private bool _disposed;
-        private bool _handlerStarted;
 
         /// <summary>
         /// Gets whether the current Browser supports streaming responses
@@ -49,23 +47,6 @@ namespace System.Net.Http
         {
             using (var streamingSupported = new Function("return typeof Response !== 'undefined' && 'body' in Response.prototype && typeof ReadableStream === 'function'"))
                 return (bool)streamingSupported.Call();
-        }
-
-        private void CheckDisposed()
-        {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(nameof(BrowserHttpHandler));
-            }
-        }
-
-        private void CheckDisposedOrStarted()
-        {
-            CheckDisposed();
-            if (_handlerStarted)
-            {
-                throw new InvalidOperationException(SR.net_http_operation_started);
-            }
         }
 
         public bool UseCookies
@@ -121,7 +102,6 @@ namespace System.Net.Http
             get => _allowAutoRedirect;
             set
             {
-                CheckDisposedOrStarted();
                 _isAllowAutoRedirectTouched = true;
                 _allowAutoRedirect = value;
             }
@@ -137,7 +117,6 @@ namespace System.Net.Http
                     throw new ArgumentOutOfRangeException(nameof(value), value, SR.Format(SR.net_http_value_must_be_greater_than, 0));
                 }
 
-                CheckDisposedOrStarted();
                 _maxAutomaticRedirections = value;
             }
         }
@@ -167,22 +146,10 @@ namespace System.Net.Http
         private Dictionary<string, object?>? _properties;
         public IDictionary<string, object?> Properties => _properties ??= new Dictionary<string, object?>();
 
-        protected override void Dispose(bool disposing)
-        {
-            if (disposing && !_disposed)
-            {
-                _disposed = true;
-                _handlerStarted = false;
-            }
-
-            base.Dispose(disposing);
-        }
-
         protected internal override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             try
             {
-                _handlerStarted = true;
                 var requestObject = new JSObject();
 
                 if (request.Options.TryGetValue(FetchOptions, out IDictionary<string, object>? fetchOptions))
