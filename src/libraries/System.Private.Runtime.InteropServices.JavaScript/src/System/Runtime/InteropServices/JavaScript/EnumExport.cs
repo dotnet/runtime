@@ -17,11 +17,10 @@ namespace System.Runtime.InteropServices.JavaScript
             AllowMultiple = true, Inherited = false)]
     public class EnumExportAttribute : Attribute
     {
-        public EnumExportAttribute() : this(null)
-        {
-        }
+        public EnumExportAttribute()
+        { }
 
-        public EnumExportAttribute(string? contractName)
+        public EnumExportAttribute(string contractName)
         {
             ContractName = contractName;
         }
