@@ -834,9 +834,13 @@ static size_t GetLogicalProcessorCacheSizeFromOS()
     cacheSize = std::max(cacheSize, ( size_t) sysconf(_SC_LEVEL4_CACHE_SIZE));
 #endif
 
-#if defined(HOST_ARM64)
     if (cacheSize == 0)
     {
+        //
+        // Fallback to retrieve cachesize via /sys/.. if sysconf was not available 
+        // for the platform. Currently musl and arm64 should be only cases to use  
+        // this method to determine cache size.
+        // 
         size_t size;
 
         if (ReadMemoryValueFromFile("/sys/devices/system/cpu/cpu0/cache/index0/size", &size))
@@ -851,6 +855,7 @@ static size_t GetLogicalProcessorCacheSizeFromOS()
             cacheSize = std::max(cacheSize, size);
     }
 
+#if defined(HOST_ARM64)
     if (cacheSize == 0)
     {
         // It is currently expected to be missing cache size info
