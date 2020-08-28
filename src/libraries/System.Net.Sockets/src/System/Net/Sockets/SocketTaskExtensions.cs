@@ -48,7 +48,10 @@ namespace System.Net.Sockets
             socket.SendAsync(buffer, socketFlags, cancellationToken);
         public static Task<int> SendAsync(this Socket socket, IList<ArraySegment<byte>> buffers, SocketFlags socketFlags) =>
             socket.SendAsync(buffers, socketFlags);
+
         public static Task<int> SendToAsync(this Socket socket, ArraySegment<byte> buffer, SocketFlags socketFlags, EndPoint remoteEP) =>
             socket.SendToAsync(buffer, socketFlags, remoteEP);
+        public static ValueTask<int> SendToAsync(this Socket socket, ReadOnlyMemory<byte> buffer, SocketFlags socketFlags, EndPoint remoteEP, CancellationToken cancellationToken = default) =>
+            socket.SendToAsync(buffer, socketFlags, remoteEP, cancellationToken);
     }
 }

@@ -4057,7 +4057,9 @@ namespace System.Net.Sockets
             return socketError == SocketError.IOPending;
         }
 
-        public bool SendToAsync(SocketAsyncEventArgs e)
+        public bool SendToAsync(SocketAsyncEventArgs e) => SendToAsync(e, default);
+
+        private bool SendToAsync(SocketAsyncEventArgs e, CancellationToken cancellationToken)
         {
             ThrowIfDisposed();
 
@@ -4086,7 +4088,7 @@ namespace System.Net.Sockets
             SocketError socketError;
             try
             {
-                socketError = e.DoOperationSendTo(_handle);
+                socketError = e.DoOperationSendTo(_handle, cancellationToken);
             }
             catch
             {

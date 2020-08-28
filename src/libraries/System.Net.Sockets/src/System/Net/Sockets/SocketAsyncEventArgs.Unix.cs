@@ -303,7 +303,7 @@ namespace System.Net.Sockets
             return SocketError.IOPending;
         }
 
-        internal SocketError DoOperationSendTo(SafeSocketHandle handle)
+        internal SocketError DoOperationSendTo(SafeSocketHandle handle, CancellationToken cancellationToken)
         {
             _receivedFlags = System.Net.Sockets.SocketFlags.None;
             _socketAddressSize = 0;
@@ -313,7 +313,7 @@ namespace System.Net.Sockets
             SocketError errorCode;
             if (_bufferList == null)
             {
-                errorCode = handle.AsyncContext.SendToAsync(_buffer, _offset, _count, _socketFlags, _socketAddress.Buffer, ref socketAddressLen, out bytesSent, TransferCompletionCallback);
+                errorCode = handle.AsyncContext.SendToAsync(_buffer, _offset, _count, _socketFlags, _socketAddress.Buffer, ref socketAddressLen, out bytesSent, TransferCompletionCallback, cancellationToken);
             }
             else
             {

@@ -318,14 +318,27 @@ namespace System.Net.Sockets
 
         internal Task<int> SendToAsync(ArraySegment<byte> buffer, SocketFlags socketFlags, EndPoint remoteEP)
         {
-            var tcs = new TaskCompletionSource<int>(this);
-            BeginSendTo(buffer.Array!, buffer.Offset, buffer.Count, socketFlags, remoteEP, iar =>
+            ValidateBuffer(buffer);
+            return SendToAsync(buffer, socketFlags, remoteEP, default).AsTask();
+        }
+
+        internal ValueTask<int> SendToAsync(ReadOnlyMemory<byte> buffer, SocketFlags socketFlags, EndPoint remoteEP, CancellationToken cancellationToken)
+        {
+            if (remoteEP is null)
             {
-                var innerTcs = (TaskCompletionSource<int>)iar.AsyncState!;
-                try { innerTcs.TrySetResult(((Socket)innerTcs.Task.AsyncState!).EndSendTo(iar)); }
-                catch (Exception e) { innerTcs.TrySetException(e); }
-            }, tcs);
-            return tcs.Task;
+                throw new ArgumentNullException(nameof(remoteEP));
+            }
+
+            AwaitableSocketAsyncEventArgs saea =
+                Interlocked.Exchange(ref _singleBufferSendEventArgs, null) ??
+                new AwaitableSocketAsyncEventArgs(this, isReceiveForCaching: false);
+
+            Debug.Assert(saea.BufferList == null);
+            saea.SetBuffer(MemoryMarshal.AsMemory(buffer));
+            saea.SocketFlags = socketFlags;
+            saea.RemoteEndPoint = remoteEP;
+            saea.WrapExceptionsInNetworkExceptions = false;
+            return saea.SendToAsync(this);
         }
 
         /// <summary>Validates the supplied array segment, throwing if its array or indices are null or out-of-bounds, respectively.</summary>
@@ -727,6 +740,25 @@ namespace System.Net.Sockets
                 return error == SocketError.Success ?
                     default :
                     ValueTask.FromException(CreateException(error));
+            }
+
+            public ValueTask<int> SendToAsync(Socket socket)
+            {
+                Debug.Assert(Volatile.Read(ref _continuation) == null, $"Expected null continuation to indicate reserved for use");
+
+                if (socket.SendToAsync(this))
+                {
+                    return new ValueTask<int>(this, _token);
+                }
+
+                int bytesTransferred = BytesTransferred;
+                SocketError error = SocketError;
+
+                Release();
+
+                return error == SocketError.Success ?
+                    new ValueTask<int>(bytesTransferred) :
+                    ValueTask.FromException<int>(CreateException(error));
             }
 
             public ValueTask ConnectAsync(Socket socket)
