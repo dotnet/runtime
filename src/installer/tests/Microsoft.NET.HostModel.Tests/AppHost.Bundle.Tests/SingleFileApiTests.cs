@@ -107,7 +107,6 @@ namespace AppHost.Bundle.Tests
         public class SharedTestState : IDisposable
         {
             public TestProjectFixture TestFixture { get; set; }
-            public TestProjectFixture TestFrameworkDependentFixture { get; set; }
             public RepoDirectoriesProvider RepoDirectories { get; set; }
 
             public SharedTestState()
