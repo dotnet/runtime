@@ -194,7 +194,7 @@ namespace System.Net.Http
                     HttpContent? c = responseMessage.Content;
                     if (c != null)
                     {
-                        if (HttpTelemetry.Log.IsEnabled())
+                        if (HttpTelemetry.Log.IsEnabled() && telemetryStarted)
                         {
                             HttpTelemetry.Log.ResponseContentStart();
                             responseContentTelemetryStarted = true;
@@ -290,7 +290,7 @@ namespace System.Net.Http
                     HttpContent? c = responseMessage.Content;
                     if (c != null)
                     {
-                        if (HttpTelemetry.Log.IsEnabled())
+                        if (HttpTelemetry.Log.IsEnabled() && telemetryStarted)
                         {
                             HttpTelemetry.Log.ResponseContentStart();
                             responseContentTelemetryStarted = true;
@@ -412,7 +412,7 @@ namespace System.Net.Http
                 HttpContent? c = response.Content;
                 if (c != null)
                 {
-                    if (HttpTelemetry.Log.IsEnabled())
+                    if (HttpTelemetry.Log.IsEnabled() && telemetryStarted)
                     {
                         HttpTelemetry.Log.ResponseContentStart();
                         responseContentTelemetryStarted = true;
@@ -685,7 +685,7 @@ namespace System.Net.Http
                 // Buffer the response content if we've been asked to and we have a Content to buffer.
                 if (buffered && response.Content != null)
                 {
-                    if (HttpTelemetry.Log.IsEnabled())
+                    if (HttpTelemetry.Log.IsEnabled() && telemetryStarted)
                     {
                         HttpTelemetry.Log.ResponseContentStart();
                         responseContentTelemetryStarted = true;
