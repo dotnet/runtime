@@ -96,7 +96,7 @@ namespace System.Xml.Serialization
     public partial class SoapElementAttribute : System.Attribute
     {
         public SoapElementAttribute() { }
-        public SoapElementAttribute(string elementName) { }
+        public SoapElementAttribute(string? elementName) { }
         [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string DataType { get { throw null; } set { } }
         [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
