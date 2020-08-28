@@ -857,7 +857,7 @@ static size_t GetLogicalProcessorCacheSizeFromOS()
     }
 #endif
 
-#if defined(HOST_ARM64)
+#if defined(TARGET_LINUX) && !defined(HOST_ARM)
     if (cacheSize == 0)
     {
         // It is currently expected to be missing cache size info
