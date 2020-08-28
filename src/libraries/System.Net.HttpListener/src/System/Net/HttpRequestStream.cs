@@ -37,7 +37,7 @@ namespace System.Net
             return ReadCore(buffer, offset, size);
         }
 
-        public override IAsyncResult BeginRead(byte[] buffer, int offset, int size, AsyncCallback callback, object state)
+        public override IAsyncResult BeginRead(byte[] buffer, int offset, int size, AsyncCallback? callback, object? state)
         {
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "buffer.Length:" + buffer?.Length + " size:" + size + " offset:" + offset);
 
@@ -54,7 +54,7 @@ namespace System.Net
                 throw new ArgumentOutOfRangeException(nameof(size));
             }
 
-            return BeginReadCore(buffer, offset, size, callback, state);
+            return BeginReadCore(buffer, offset, size, callback, state)!;
         }
 
         public override void Flush() { }
@@ -74,7 +74,7 @@ namespace System.Net
 
         public override void Write(byte[] buffer, int offset, int size) => throw new InvalidOperationException(SR.net_readonlystream);
 
-        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int size, AsyncCallback callback, object state)
+        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int size, AsyncCallback? callback, object? state)
         {
             throw new InvalidOperationException(SR.net_readonlystream);
         }

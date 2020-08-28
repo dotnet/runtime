@@ -31,6 +31,7 @@
 //
 
 using System.Collections.Specialized;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Security.Authentication.ExtendedProtection;
@@ -43,7 +44,7 @@ namespace System.Net
     {
         private class Context : TransportContext
         {
-            public override ChannelBinding GetChannelBinding(ChannelBindingKind kind)
+            public override ChannelBinding? GetChannelBinding(ChannelBindingKind kind)
             {
                 if (kind != ChannelBindingKind.Endpoint)
                 {
@@ -57,8 +58,8 @@ namespace System.Net
         private long _contentLength;
         private bool _clSet;
         private WebHeaderCollection _headers;
-        private string _method;
-        private Stream _inputStream;
+        private string? _method;
+        private Stream? _inputStream;
         private HttpListenerContext _context;
         private bool _isChunked;
 
@@ -176,8 +177,9 @@ namespace System.Net
             }
 
             string path;
-            Uri raw_uri = null;
-            if (MaybeUri(_rawUrl.ToLowerInvariant()) && Uri.TryCreate(_rawUrl, UriKind.Absolute, out raw_uri))
+            Uri? raw_uri = null;
+            Debug.Assert(_rawUrl != null);
+            if (MaybeUri(_rawUrl!.ToLowerInvariant()) && Uri.TryCreate(_rawUrl, UriKind.Absolute, out raw_uri))
                 path = raw_uri.PathAndQuery;
             else
                 path = _rawUrl;
@@ -192,7 +194,7 @@ namespace System.Net
             if (colon >= 0)
                 host = host.Substring(0, colon);
 
-            string base_uri = string.Format("{0}://{1}:{2}", RequestScheme, host, LocalEndPoint.Port);
+            string base_uri = string.Format("{0}://{1}:{2}", RequestScheme, host, LocalEndPoint!.Port);
 
             if (!Uri.TryCreate(base_uri + path, UriKind.Absolute, out _requestUri))
             {
@@ -205,7 +207,7 @@ namespace System.Net
 
             if (_version >= HttpVersion.Version11)
             {
-                string t_encoding = Headers[HttpKnownHeaderNames.TransferEncoding];
+                string? t_encoding = Headers[HttpKnownHeaderNames.TransferEncoding];
                 _isChunked = (t_encoding != null && string.Equals(t_encoding, "chunked", StringComparison.OrdinalIgnoreCase));
                 // 'identity' is not valid!
                 if (t_encoding != null && !_isChunked)
@@ -321,14 +323,14 @@ namespace System.Net
             }
         }
 
-        private X509Certificate2 GetClientCertificateCore() => ClientCertificate = _context.Connection.ClientCertificate;
+        private X509Certificate2? GetClientCertificateCore() => ClientCertificate = _context.Connection.ClientCertificate;
 
         private int GetClientCertificateErrorCore()
         {
             HttpConnection cnc = _context.Connection;
             if (cnc.ClientCertificate == null)
                 return 0;
-            int[] errors = cnc.ClientCertificateErrors;
+            int[]? errors = cnc.ClientCertificateErrors;
             if (errors != null && errors.Length > 0)
                 return errors[0];
             return 0;
@@ -349,7 +351,7 @@ namespace System.Net
 
         public NameValueCollection Headers => _headers;
 
-        public string HttpMethod => _method;
+        public string? HttpMethod => _method;
 
         public Stream InputStream
         {
@@ -371,9 +373,9 @@ namespace System.Net
 
         public bool IsSecureConnection => _context.Connection.IsSecure;
 
-        public IPEndPoint LocalEndPoint => _context.Connection.LocalEndPoint;
+        public IPEndPoint? LocalEndPoint => _context.Connection.LocalEndPoint;
 
-        public IPEndPoint RemoteEndPoint => _context.Connection.RemoteEndPoint;
+        public IPEndPoint? RemoteEndPoint => _context.Connection.RemoteEndPoint;
 
         public Guid RequestTraceIdentifier { get; } = Guid.NewGuid();
 
@@ -389,12 +391,12 @@ namespace System.Net
             return asyncResult;
         }
 
-        public X509Certificate2 EndGetClientCertificate(IAsyncResult asyncResult)
+        public X509Certificate2? EndGetClientCertificate(IAsyncResult asyncResult)
         {
             if (asyncResult == null)
                 throw new ArgumentNullException(nameof(asyncResult));
 
-            GetClientCertificateAsyncResult clientCertAsyncResult = asyncResult as GetClientCertificateAsyncResult;
+            GetClientCertificateAsyncResult? clientCertAsyncResult = asyncResult as GetClientCertificateAsyncResult;
             if (clientCertAsyncResult == null || clientCertAsyncResult.AsyncObject != this)
             {
                 throw new ArgumentException(SR.net_io_invalidasyncresult, nameof(asyncResult));
@@ -405,14 +407,14 @@ namespace System.Net
             }
             clientCertAsyncResult.EndCalled = true;
 
-            return (X509Certificate2)clientCertAsyncResult.Result;
+            return (X509Certificate2?)clientCertAsyncResult.Result;
         }
 
-        public string ServiceName => null;
+        public string? ServiceName => null;
 
         public TransportContext TransportContext => new Context();
 
-        private Uri RequestUri => _requestUri;
+        private Uri? RequestUri => _requestUri;
         private bool SupportsWebSockets => true;
 
         private class GetClientCertificateAsyncResult : LazyAsyncResult

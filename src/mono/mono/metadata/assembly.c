@@ -1308,10 +1308,16 @@ assemblyref_public_tok_checked (MonoImage *image, guint32 key_index, guint32 fla
  * The reference count is reduced every time the method mono_assembly_close() is
  * invoked.
  */
-void
+gint32
 mono_assembly_addref (MonoAssembly *assembly)
 {
-	mono_atomic_inc_i32 (&assembly->ref_count);
+	return mono_atomic_inc_i32 (&assembly->ref_count);
+}
+
+gint32
+mono_assembly_decref (MonoAssembly *assembly)
+{
+	return mono_atomic_dec_i32 (&assembly->ref_count);
 }
 
 /*
@@ -5057,7 +5063,7 @@ mono_assembly_close_except_image_pools (MonoAssembly *assembly)
 		return FALSE;
 
 	/* Might be 0 already */
-	if (mono_atomic_dec_i32 (&assembly->ref_count) > 0)
+	if (mono_assembly_decref (assembly) > 0)
 		return FALSE;
 
 	MONO_PROFILER_RAISE (assembly_unloading, (assembly));

@@ -1,5 +1,10 @@
 <Project Sdk="Microsoft.Build.Traversal" DefaultTargets="Build">
 
+  <!--
+      Build properties:
+      - MonoEnableCMake - enable the cmake build
+  -->
+
   <PropertyGroup>
     <MonoCrossDir Condition="'$(MonoCrossDir)' == '' and '$(ROOTFS_DIR)' != ''">$(ROOTFS_DIR)</MonoCrossDir>
     <MonoEnableInterpreter Condition="'$(MonoEnableInterpreter)' == ''">false</MonoEnableInterpreter>
@@ -27,7 +32,7 @@
     <XcodeDir Condition="'$(XcodeDir)' == ''">/Applications/Xcode.app/Contents/Developer</XcodeDir>
     <BuildMonoAOTCrossCompiler Condition="'$(TargetsiOS)' == 'true'">true</BuildMonoAOTCrossCompiler>
     <BuildMonoAOTCrossCompiler Condition="'$(TargetstvOS)' == 'true'">true</BuildMonoAOTCrossCompiler>
-    <BuildMonoAOTCrossCompiler Condition="'$(TargetsBrowser)' == 'true'">true</BuildMonoAOTCrossCompiler>
+    <BuildMonoAOTCrossCompiler Condition="'$(TargetsBrowser)' == 'true' and '$(MonoEnableCMake)' != 'true'">true</BuildMonoAOTCrossCompiler>
     <CrossConfigH Condition="'$(BuildMonoAOTCrossCompiler)' == 'true'">$(MonoObjDir)cross\config.h</CrossConfigH>
     <MonoBundleLLVMOptimizer Condition="'$(MonoEnableLLVM)' == 'true'">true</MonoBundleLLVMOptimizer>
     <MonoCCompiler>$(Compiler)</MonoCCompiler>
@@ -85,6 +90,12 @@
       <_MonoCXXFLAGS Include="-O2" Condition="'$(TargetsMobile)' != 'true'" />
       <_MonoCXXFLAGS Include="-Os" Condition="'$(TargetsMobile)' == 'true'" />
       <_MonoCXXFLAGS Include="-g" />
+    </ItemGroup>
+
+    <!-- OSX specific options -->
+    <ItemGroup Condition="'$(TargetOS)' == 'OSX'">
+      <_MonoCFLAGS Include="-mmacosx-version-min=$(macOSVersionMin)" />
+      <_MonoCXXFLAGS Include="-mmacosx-version-min=$(macOSVersionMin)" />
     </ItemGroup>
 
     <!-- We build LLVM bits for x64 Linux without C++11 ABI (CentOS 7 has libstdc++ < 5.1) -->
@@ -693,6 +704,11 @@
       <_MonoCXXFLAGS Include="-Wl,--build-id=sha1" />
     </ItemGroup>
 
+    <!-- CI-specific build options -->
+    <ItemGroup Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(TargetsOSX)' == 'true'">
+      <_MonoConfigureParams Include="--enable-werror" />
+    </ItemGroup>
+
     <ItemGroup Condition="'$(MonoCrossDir)' != '' and ('$(TargetArchitecture)' == 'arm' Or '$(TargetArchitecture)' == 'arm64')">
       <_MonoConfigureParams Include="--host=$(_MonoTuple)" />
       <_MonoConfigureParams Include="--target=$(_MonoTuple)" />
@@ -755,7 +771,7 @@
     <Touch Condition="'$(_MonoAotCrossConfigureCommand)' != ''" Files="$(MonoObjDir)cross/config.h" />
   </Target>
 
-  <Target Name="BuildMonoRuntimeUnix" Condition="'$(OS)' != 'Windows_NT'" DependsOnTargets="ConfigureMonoRuntimeUnix">
+  <Target Name="BuildMonoRuntimeUnix" Condition="'$(OS)' != 'Windows_NT' and '$(MonoEnableCMake)' != 'true'" DependsOnTargets="ConfigureMonoRuntimeUnix">
     <Message Text="--- Building Mono ---" Importance="High" />
     <Exec Condition="'$(TargetsBrowser)' != 'true'" Command="make -j$([System.Environment]::ProcessorCount)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)" />
     <Exec Condition="'$(TargetsBrowser)' == 'true'" Command="bash -c 'source $(EMSDK_PATH)/emsdk_env.sh &amp;&amp; make -j$([System.Environment]::ProcessorCount)'" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)" />
@@ -768,7 +784,7 @@
   </Target>
 
   <!-- Windows Mono runtime build -->
-  <Target Name="BuildMonoRuntimeWindows" Condition="'$(OS)' == 'Windows_NT'">
+  <Target Name="BuildMonoRuntimeWindows" Condition="'$(OS)' == 'Windows_NT' and '$(MonoEnableCMake)' != 'true'">
 
     <!-- Sanity checks -->
     <Error Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'" Text="Error: Mono runtime for $(TargetOS) can't be built on Windows." />
@@ -933,16 +949,52 @@
     <Error Condition="!Exists('$(LocalDotnet)')" Text="'$(LocalDotnet)' doesn't exist." />
   </Target>
 
+  <Target Name="BuildMonoRuntimeCMake" Condition="'$(MonoEnableCMake)' == 'true'">
+    <Exec Command="which ninja" IgnoreExitCode="true" IgnoreStandardErrorWarningFormat="true">
+      <Output TaskParameter="ExitCode" PropertyName="MonoNinjaFound"/>
+    </Exec>
+    <PropertyGroup>
+      <MonoBuildTool Condition="'$(MonoNinjaFound)' == '0'">ninja</MonoBuildTool>
+      <MonoBuildTool Condition="'$(MonoNinjaFound)' != '0'">make -j$([System.Environment]::ProcessorCount)</MonoBuildTool>
+    </PropertyGroup>
+    <ItemGroup>
+      <MonoCMakeArgs Condition="'$(MonoBuildTool)' == 'ninja'" Include="-G Ninja"/>
+      <MonoCMakeArgs Include="-DCMAKE_INSTALL_PREFIX=$(MonoObjDir)out"/>
+    </ItemGroup>
+    <ItemGroup Condition="'$(TargetsOSX)' == 'true'">
+      <MonoCMakeArgs Include="-DCMAKE_OSX_DEPLOYMENT_TARGET=$(macOSVersionMin)" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
+      <MonoCMakeArgs Include="-DENABLE_MINIMAL=ssa,com,jit,reflection_emit_save,portability,assembly_remapping,attach,verifier,full_messages,appdomains,shadowcopy,security,sgen_marksweep_conc,sgen_split_nursery,sgen_gc_bridge,sgen_toggleref,logging,remoting,shared_perfcounters,sgen_debug_helpers,sgen_binary_protocol,soft_debug,interpreter,assert_messages,cleanup,mdb,gac,threads,eventpipe,aot,interpreter"/>
+      <MonoCMakeArgs Include="-DENABLE_INTERP_LIB=1"/>
+      <MonoCMakeArgs Include="-DDISABLE_ICALL_TABLES=1"/>
+      <MonoCMakeArgs Include="-DDISABLE_CRASH_REPORTING=1"/>
+      <MonoCMakeArgs Include="-DENABLE_ICALL_EXPORT=1"/>
+      <MonoCMakeArgs Include="-DENABLE_LAZY_GC_THREAD_CREATION=1"/>
+      <MonoCMakeArgs Include="-DCMAKE_C_FLAGS=-I$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)/runtimes/browser-wasm/native/include"/>
+    </ItemGroup>
+    <MakeDir Directories="$(MonoObjDir)" />
+    <Message Text="Running cmake with arguments: @(MonoCMakeArgs, ' ') $(MonoProjectRoot)" Importance="High"/>
+    <!-- cmake -->
+    <Exec Condition="'$(TargetsBrowser)' != 'true'" Command="cmake @(MonoCMakeArgs, ' ') $(MonoProjectRoot)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)"/>
+    <Exec Condition="'$(TargetsBrowser)' == 'true'" Command="bash -c 'source $(EMSDK_PATH)/emsdk_env.sh &amp;&amp; emcmake cmake @(MonoCMakeArgs, ' ') $(MonoProjectRoot)'" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)" />
+    <!-- ninja/make -->
+    <Exec Condition="'$(TargetsBrowser)' != 'true'" Command="$(MonoBuildTool) all install" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)"/>
+    <Exec Condition="'$(TargetsBrowser)' == 'true'" Command="bash -c 'source $(EMSDK_PATH)/emsdk_env.sh &amp;&amp; $(MonoBuildTool) all install'" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)" />
+  </Target>
+
   <!-- General targets -->
-  <Target Name="BuildMono" AfterTargets="Build" DependsOnTargets="BuildMonoRuntimeUnix;BuildMonoRuntimeWindows">
+  <Target Name="BuildMono" AfterTargets="Build" DependsOnTargets="BuildMonoRuntimeUnix;BuildMonoRuntimeWindows;BuildMonoRuntimeCMake">
     <PropertyGroup>
       <_MonoRuntimeFilePath Condition="'$(TargetsWindows)' == 'true' and '$(Platform)' == 'x64'">$(MonoObjDir)x64\Bin\$(Configuration)\mono-2.0-sgen.dll</_MonoRuntimeFilePath>
       <_MonoRuntimeFilePath Condition="'$(TargetsWindows)' == 'true' and '$(Platform)' == 'x86'">$(MonoObjDir)Win32\Bin\$(Configuration)\mono-2.0-sgen.dll</_MonoRuntimeFilePath>
-      <_MonoRuntimeFilePath Condition="'$(TargetsOSX)' == 'true'">$(MonoObjDir)mono\mini\.libs\libmonosgen-2.0.dylib</_MonoRuntimeFilePath>
+      <_MonoRuntimeFilePath Condition="'$(TargetsOSX)' == 'true' and '$(MonoEnableCMake)' != 'true'">$(MonoObjDir)mono\mini\.libs\libmonosgen-2.0.dylib</_MonoRuntimeFilePath>
+      <_MonoRuntimeFilePath Condition="'$(TargetsOSX)' == 'true' and '$(MonoEnableCMake)' == 'true'">$(MonoObjDir)out\lib\libmonosgen-2.0.dylib</_MonoRuntimeFilePath>
       <_MonoRuntimeFilePath Condition="'$(TargetsiOS)' == 'true'">$(MonoObjDir)out\lib\libmonosgen-2.0.dylib</_MonoRuntimeFilePath>
       <_MonoRuntimeFilePath Condition="'$(TargetstvOS)' == 'true'">$(MonoObjDir)out\lib\libmonosgen-2.0.dylib</_MonoRuntimeFilePath>
       <_MonoRuntimeFilePath Condition="'$(TargetsAndroid)' == 'true'">$(MonoObjDir)out\lib\libmonosgen-2.0.so</_MonoRuntimeFilePath>
-      <_MonoRuntimeFilePath Condition="'$(TargetsBrowser)' == 'true'">$(MonoObjDir)mono\mini\.libs\libmonosgen-2.0.a</_MonoRuntimeFilePath>
+      <_MonoRuntimeFilePath Condition="'$(TargetsBrowser)' == 'true' and '$(MonoEnableCMake)' != 'true'">$(MonoObjDir)mono\mini\.libs\libmonosgen-2.0.a</_MonoRuntimeFilePath>
+      <_MonoRuntimeFilePath Condition="'$(TargetsBrowser)' == 'true' and '$(MonoEnableCMake)' == 'true'">$(MonoObjDir)out\lib\libmonosgen-2.0.a</_MonoRuntimeFilePath>
       <_MonoRuntimeFilePath Condition="'$(_MonoRuntimeFilePath)' == ''">$(MonoObjDir)mono\mini\.libs\libmonosgen-2.0.so</_MonoRuntimeFilePath>
       <_MonoRuntimeStaticFilePath Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsAndroid)' == 'true'">$(MonoObjDir)out\lib\libmonosgen-2.0.a</_MonoRuntimeStaticFilePath>
       <_MonoAotCrossFilePath Condition="'$(TargetsiOS)' == 'true' and '$(Platform)' == 'arm64'">$(MonoObjDir)cross\out\bin\aarch64-apple-darwin10-mono-sgen</_MonoAotCrossFilePath>
@@ -951,7 +1003,7 @@
       <_MonoAotCrossFilePath Condition="'$(TargetsiOS)' == 'true' and '$(Platform)' == 'x64'">$(MonoObjDir)cross\out\bin\mono-sgen</_MonoAotCrossFilePath>
       <_MonoAotCrossFilePath Condition="'$(TargetstvOS)' == 'true' and '$(Platform)' == 'arm64'">$(MonoObjDir)cross\out\bin\aarch64-apple-darwin10-mono-sgen</_MonoAotCrossFilePath>
       <_MonoAotCrossFilePath Condition="'$(TargetstvOS)' == 'true' and '$(Platform)' == 'x64'">$(MonoObjDir)cross\out\bin\mono-sgen</_MonoAotCrossFilePath>
-      <_MonoAotCrossFilePath Condition="'$(TargetsBrowser)' == 'true'">$(MonoObjDir)cross\out\bin\wasm32-unknown-none-mono-sgen</_MonoAotCrossFilePath>
+      <_MonoAotCrossFilePath Condition="'$(TargetsBrowser)' == 'true' and '$(MonoEnableCMake)' != 'true'">$(MonoObjDir)cross\out\bin\wasm32-unknown-none-mono-sgen</_MonoAotCrossFilePath>
     </PropertyGroup>
 
     <!-- Copy Mono runtime files to artifacts directory -->
@@ -1002,6 +1054,10 @@
           Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsAndroid)' == 'true' or '$(TargetsBrowser)' == 'true'"/>
 
     <Exec Condition="'$(TargetsOSX)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'" Command="install_name_tool -id @rpath/$(MonoFileName) $(BinDir)$(MonoFileName)" />
+  </Target>
+
+  <Target Name="CleanMono">
+    <RemoveDir Directories="$(MonoObjDir)" />
   </Target>
 
 </Project>

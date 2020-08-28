@@ -221,10 +221,16 @@ mono_dl_open_self (char **error_msg)
 MonoDl*
 mono_dl_open (const char *name, int flags, char **error_msg)
 {
+	return mono_dl_open_full (name, flags, 0, error_msg);
+}
+
+MonoDl *
+mono_dl_open_full (const char *name, int mono_flags, int native_flags, char **error_msg)
+{
 	MonoDl *module;
 	void *lib;
 	MonoDlFallbackHandler *dl_fallback = NULL;
-	int lflags = mono_dl_convert_flags (flags);
+	int lflags = mono_dl_convert_flags (mono_flags, native_flags);
 	char *found_name;
 
 	if (error_msg)

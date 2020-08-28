@@ -54,8 +54,8 @@ namespace System.Net
 
         private void DisposeCore()
         {
-            byte[] bytes = null;
-            MemoryStream ms = GetHeaders(true);
+            byte[]? bytes = null;
+            MemoryStream? ms = GetHeaders(true);
             bool chunked = _response.SendChunked;
             if (_stream.CanWrite)
             {
@@ -95,7 +95,7 @@ namespace System.Net
 
             if (_stream.CanWrite)
             {
-                MemoryStream ms = GetHeaders(closing: false, isWebSocketHandshake: true);
+                MemoryStream ms = GetHeaders(closing: false, isWebSocketHandshake: true)!;
                 bool chunked = _response.SendChunked;
 
                 long start = ms.Position;
@@ -111,7 +111,7 @@ namespace System.Net
             }
         }
 
-        private MemoryStream GetHeaders(bool closing, bool isWebSocketHandshake = false)
+        private MemoryStream? GetHeaders(bool closing, bool isWebSocketHandshake = false)
         {
             // SendHeaders works on shared headers
             lock (_response._headersLock)
@@ -171,8 +171,8 @@ namespace System.Net
             if (size == 0)
                 return;
 
-            byte[] bytes = null;
-            MemoryStream ms = GetHeaders(false);
+            byte[]? bytes = null;
+            MemoryStream? ms = GetHeaders(false);
             bool chunked = _response.SendChunked;
             if (ms != null)
             {
@@ -204,7 +204,7 @@ namespace System.Net
                 InternalWrite(s_crlf, 0, 2);
         }
 
-        private IAsyncResult BeginWriteCore(byte[] buffer, int offset, int size, AsyncCallback cback, object state)
+        private IAsyncResult BeginWriteCore(byte[] buffer, int offset, int size, AsyncCallback? cback, object? state)
         {
             if (_closed)
             {
@@ -215,8 +215,8 @@ namespace System.Net
                 return ares;
             }
 
-            byte[] bytes = null;
-            MemoryStream ms = GetHeaders(false);
+            byte[]? bytes = null;
+            MemoryStream? ms = GetHeaders(false);
             bool chunked = _response.SendChunked;
             if (ms != null)
             {

@@ -134,8 +134,7 @@ namespace System.IO.Tests
             Assert.True(firstFileTicks <= secondFileTicks, $"First File Ticks\t{firstFileTicks}\nSecond File Ticks\t{secondFileTicks}");
         }
 
-        [ConditionalFact(nameof(isNotHFS))] // OSX HFS driver format does not support nanosecond granularity.
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/40532", TestPlatforms.Browser)]
+        [ConditionalFact(nameof(HighTemporalResolution))] // OSX HFS driver format/Browser Platform do not support nanosecond granularity.
         public void SetUptoNanoseconds()
         {
             string file = GetTestFilePath();

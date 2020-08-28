@@ -548,4 +548,10 @@
   <data name="MetadataReferenceOfTypeCannotBeAssignedToType" xml:space="preserve">
     <value>The object with reference id '{0}' of type '{1}' cannot be assigned to the type '{2}'.</value>
   </data>
+  <data name="DeserializeUnableToAssignValue" xml:space="preserve">
+    <value>Unable to cast object of type '{0}' to type '{1}'.</value>
+  </data>
+  <data name="DeserializeUnableToAssignNull" xml:space="preserve">
+    <value>Unable to assign 'null' to the property or field of type '{0}'.</value>
+  </data>
 </root>

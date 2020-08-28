@@ -301,7 +301,7 @@ namespace System.Xml.Linq
         /// </returns>
         [CLSCompliant(false)]
         [return: NotNullIfNotNull("attribute")]
-        public static explicit operator int?(XAttribute attribute)
+        public static explicit operator int?(XAttribute? attribute)
         {
             if (attribute == null) return null;
             return XmlConvert.ToInt32(attribute.value);
