@@ -44,6 +44,6 @@ namespace System
         internal const string CodeBaseDiagId = "SYSLIB0012";
 
         internal const string WebRequestMessage = "Use HttpClient instead.";
-        internal const string WebRequestDiagId = "SYSLIB0013";
+        internal const string WebRequestDiagId = "SYSLIB0014";
     }
 }
