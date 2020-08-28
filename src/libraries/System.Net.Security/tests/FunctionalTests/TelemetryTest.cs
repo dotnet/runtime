@@ -5,6 +5,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics.Tracing;
 using System.Linq;
+using System.Security.Authentication;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
@@ -51,8 +52,7 @@ namespace System.Net.Security.Tests
 
                 EventWrittenEventArgs[] stops = events.Where(e => e.EventName == "HandshakeStop").ToArray();
                 Assert.Equal(2, stops.Length);
-                Assert.All(stops, s => Assert.Equal(1, s.Payload.Count));
-                Assert.All(stops, s => Assert.NotEmpty(s.Payload[0] as string));
+                Assert.All(stops, s => ValidateHandshakeStopEventPayload(s, failure: false));
 
                 Assert.DoesNotContain(events, e => e.EventName == "HandshakeFailed");
 
@@ -92,11 +92,28 @@ namespace System.Net.Security.Tests
 
                 EventWrittenEventArgs[] stops = events.Where(e => e.EventName == "HandshakeStop").ToArray();
                 Assert.Equal(2, stops.Length);
-                Assert.All(stops, s => Assert.Equal(1, s.Payload.Count));
-                Assert.All(stops, s => Assert.Empty(s.Payload[0] as string));
+                Assert.All(stops, s => ValidateHandshakeStopEventPayload(s, failure: true));
 
                 VerifyEventCounters(events, shouldHaveFailures: true);
             }).Dispose();
+        }
+
+        private static void ValidateHandshakeStopEventPayload(EventWrittenEventArgs stopEvent, bool failure)
+        {
+            Assert.Equal("HandshakeStop", stopEvent.EventName);
+            Assert.Equal(1, stopEvent.Payload.Count);
+
+            var protocol = (SslProtocols)stopEvent.Payload[0];
+            Assert.True(Enum.IsDefined(protocol));
+
+            if (failure)
+            {
+                Assert.Equal(SslProtocols.None, protocol);
+            }
+            else
+            {
+                Assert.NotEqual(SslProtocols.None, protocol);
+            }
         }
 
         private static void VerifyEventCounters(ConcurrentQueue<EventWrittenEventArgs> events, bool shouldHaveFailures)
