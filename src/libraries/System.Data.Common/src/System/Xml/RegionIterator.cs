@@ -1,9 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// TODO: Enable after System.Private.Xml is annotated
-#nullable disable
-
 using System.Diagnostics;
 using System.Text;
 
@@ -33,7 +30,7 @@ namespace System.Xml
 
         internal override bool Next()
         {
-            XmlNode nextNode;
+            XmlNode? nextNode;
             ElementState oldState = _rowElement.ElementState;
 
             // We do not want to cause any foliation w/ this iterator or use this iterator once the region was defoliated
@@ -61,7 +58,7 @@ namespace System.Xml
             // Make sure we do not get past the rowElement if we call NextRight on a just initialized iterator and rowElement has no children
             if (_currentNode == _rowElement)
             {
-                _currentNode = null;
+                _currentNode = null!;
                 return false;
             }
 
@@ -70,7 +67,7 @@ namespace System.Xml
             // We do not want to cause any foliation w/ this iterator or use this iterator once the region was defoliated
             Debug.Assert(oldState != ElementState.None);
 
-            XmlNode nextNode = _currentNode.NextSibling;
+            XmlNode? nextNode = _currentNode.NextSibling;
 
             if (nextNode != null)
             {
@@ -84,14 +81,14 @@ namespace System.Xml
 
             // No next sibling, try the first sibling of from the parent chain
             nextNode = _currentNode;
-            while (nextNode != _rowElement && nextNode.NextSibling == null)
+            while (nextNode != _rowElement && nextNode!.NextSibling == null)
             {
                 nextNode = nextNode.ParentNode;
             }
 
             if (nextNode == _rowElement)
             {
-                _currentNode = null;
+                _currentNode = null!;
                 // If we have been defoliated, we should have stayed that way
                 Debug.Assert((oldState == ElementState.Defoliated) ? (_rowElement.ElementState == ElementState.Defoliated) : true);
 
@@ -100,8 +97,8 @@ namespace System.Xml
                 return false;
             }
 
+            Debug.Assert(nextNode.NextSibling != null);
             _currentNode = nextNode.NextSibling;
-            Debug.Assert(_currentNode != null);
 
             // If we have been defoliated, we should have stayed that way
             Debug.Assert((oldState == ElementState.Defoliated) ? (_rowElement.ElementState == ElementState.Defoliated) : true);
@@ -133,7 +130,7 @@ namespace System.Xml
             // We do not want to cause any foliation w/ this iterator or use this iterator once the region was defoliated
             Debug.Assert(oldState != ElementState.None);
 
-            XmlNode n = CurrentNode.FirstChild;
+            XmlNode? n = CurrentNode.FirstChild;
             value = GetInitialTextFromNodes(ref n);
             if (n == null)
             {
@@ -155,9 +152,9 @@ namespace System.Xml
             return true;
         }
 
-        private static string GetInitialTextFromNodes(ref XmlNode n)
+        private static string GetInitialTextFromNodes(ref XmlNode? n)
         {
-            string value = null;
+            string? value = null;
 
             if (n != null)
             {

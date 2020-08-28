@@ -1,9 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// TODO: Enable after System.Private.Xml is annotated
-#nullable disable
-
 namespace System.Xml
 {
     // Iterates over non-attribute nodes
@@ -49,7 +46,7 @@ namespace System.Xml
         // Returns true if the current node is on a row element (head of a region)
         internal bool OnRowElement()
         {
-            XmlBoundElement be = CurrentNode as XmlBoundElement;
+            XmlBoundElement? be = CurrentNode as XmlBoundElement;
             return (be != null) && (be.Row != null);
         }
     }
