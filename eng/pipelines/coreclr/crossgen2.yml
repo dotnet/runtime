@@ -62,7 +62,7 @@ jobs:
 # Tests for cross compile correctness, these use a release build
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
-    jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
+    jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
     buildConfig: release
     platforms:
     - Windows_NT_arm64
