@@ -32,11 +32,15 @@ namespace System.Net.Http.Functional.Tests
 
         public static IEnumerable<object[]> TestMethods_MemberData()
         {
-            yield return new object[] { "Get" };
-            yield return new object[] { "String" };
-            yield return new object[] { "ByteArray" };
-            yield return new object[] { "Stream" };
-            yield return new object[] { "Invoker" };
+            yield return new object[] { "GetAsync" };
+            yield return new object[] { "SendAsync" };
+            yield return new object[] { "GetStringAsync" };
+            yield return new object[] { "GetByteArrayAsync" };
+            yield return new object[] { "GetStreamAsync" };
+            yield return new object[] { "InvokerSendAsync" };
+
+            yield return new object[] { "Send" };
+            yield return new object[] { "InvokerSend" };
         }
 
         [OuterLoop]
@@ -44,6 +48,12 @@ namespace System.Net.Http.Functional.Tests
         [MemberData(nameof(TestMethods_MemberData))]
         public void EventSource_SuccessfulRequest_LogsStartStop(string testMethod)
         {
+            if (UseVersion.Major != 1 && !testMethod.EndsWith("Async"))
+            {
+                // Synchronous requests are only supported for HTTP/1.1
+                return;
+            }
+
             RemoteExecutor.Invoke(async (useVersionString, testMethod) =>
             {
                 Version version = Version.Parse(useVersionString);
@@ -58,31 +68,47 @@ namespace System.Net.Http.Functional.Tests
                             using HttpClientHandler handler = CreateHttpClientHandler(useVersionString);
                             using HttpClient client = CreateHttpClient(handler, useVersionString);
 
+                            var request = new HttpRequestMessage(HttpMethod.Get, uri)
+                            {
+                                Version = version
+                            };
+
                             switch (testMethod)
                             {
-                                case "Get":
+                                case "GetAsync":
                                     await client.GetAsync(uri);
                                     break;
 
-                                case "String":
+                                case "Send":
+                                    await Task.Run(() => client.Send(request));
+                                    break;
+
+                                case "SendAsync":
+                                    await client.SendAsync(request);
+                                    break;
+
+                                case "GetStringAsync":
                                     await client.GetStringAsync(uri);
                                     break;
 
-                                case "ByteArray":
+                                case "GetByteArrayAsync":
                                     await client.GetByteArrayAsync(uri);
                                     break;
 
-                                case "Stream":
+                                case "GetStreamAsync":
                                     await client.GetStreamAsync(uri);
                                     break;
 
-                                case "Invoker":
+                                case "InvokerSend":
                                     using (var invoker = new HttpMessageInvoker(handler))
                                     {
-                                        var request = new HttpRequestMessage(HttpMethod.Get, uri)
-                                        {
-                                            Version = version
-                                        };
+                                        await Task.Run(() => invoker.Send(request, cancellationToken: default));
+                                    }
+                                    break;
+
+                                case "InvokerSendAsync":
+                                    using (var invoker = new HttpMessageInvoker(handler))
+                                    {
                                         await invoker.SendAsync(request, cancellationToken: default);
                                     }
                                     break;
@@ -123,7 +149,7 @@ namespace System.Net.Http.Functional.Tests
 
                 Assert.Single(events, e => e.EventName == "ResponseHeadersBegin");
 
-                if (testMethod != "Invoker")
+                if (!testMethod.StartsWith("InvokerSend"))
                 {
                     Assert.Single(events, e => e.EventName == "ResponseContentStart");
                     Assert.Single(events, e => e.EventName == "ResponseContentStop");
@@ -138,6 +164,12 @@ namespace System.Net.Http.Functional.Tests
         [MemberData(nameof(TestMethods_MemberData))]
         public void EventSource_UnsuccessfulRequest_LogsStartFailedStop(string testMethod)
         {
+            if (UseVersion.Major != 1 && !testMethod.EndsWith("Async"))
+            {
+                // Synchronous requests are only supported for HTTP/1.1
+                return;
+            }
+
             RemoteExecutor.Invoke(async (useVersionString, testMethod) =>
             {
                 Version version = Version.Parse(useVersionString);
@@ -155,31 +187,47 @@ namespace System.Net.Http.Functional.Tests
                             using HttpClientHandler handler = CreateHttpClientHandler(useVersionString);
                             using HttpClient client = CreateHttpClient(handler, useVersionString);
 
+                            var request = new HttpRequestMessage(HttpMethod.Get, uri)
+                            {
+                                Version = version
+                            };
+
                             switch (testMethod)
                             {
-                                case "Get":
+                                case "GetAsync":
                                     await Assert.ThrowsAsync<TaskCanceledException>(async () => await client.GetAsync(uri, cts.Token));
                                     break;
 
-                                case "String":
+                                case "Send":
+                                    await Assert.ThrowsAsync<TaskCanceledException>(async () => await Task.Run(() => client.Send(request, cts.Token)));
+                                    break;
+
+                                case "SendAsync":
+                                    await Assert.ThrowsAsync<TaskCanceledException>(async () => await client.SendAsync(request, cts.Token));
+                                    break;
+
+                                case "GetStringAsync":
                                     await Assert.ThrowsAsync<TaskCanceledException>(async () => await client.GetStringAsync(uri, cts.Token));
                                     break;
 
-                                case "ByteArray":
+                                case "GetByteArrayAsync":
                                     await Assert.ThrowsAsync<TaskCanceledException>(async () => await client.GetByteArrayAsync(uri, cts.Token));
                                     break;
 
-                                case "Stream":
+                                case "GetStreamAsync":
                                     await Assert.ThrowsAsync<TaskCanceledException>(async () => await client.GetStreamAsync(uri, cts.Token));
                                     break;
 
-                                case "Invoker":
+                                case "InvokerSend":
                                     using (var invoker = new HttpMessageInvoker(handler))
                                     {
-                                        var request = new HttpRequestMessage(HttpMethod.Get, uri)
-                                        {
-                                            Version = version
-                                        };
+                                        await Assert.ThrowsAsync<TaskCanceledException>(async () => await Task.Run(() => invoker.Send(request, cts.Token)));
+                                    }
+                                    break;
+
+                                case "InvokerSendAsync":
+                                    using (var invoker = new HttpMessageInvoker(handler))
+                                    {
                                         await Assert.ThrowsAsync<TaskCanceledException>(async () => await invoker.SendAsync(request, cts.Token));
                                     }
                                     break;
