@@ -189,6 +189,158 @@
     IL_0012:  ret
   }
 
+  .method private hidebysig static int32 SignExtendsWrittenValue(int8 valueToWrite) cil managed noinlining
+  {
+    .maxstack  8
+    .locals (int8 V_0)
+
+    IL_0000:  br.s       IL_0007
+
+    IL_0002:  ldloca.s   V_0
+    IL_0004:  ldind.i1
+    IL_0005:  br.s       IL_000d
+
+    IL_0007:  ldloca.s   V_0
+    IL_0009:  ldarg.0
+    IL_000a:  stind.i1
+    IL_000b:  br.s       IL_0002
+
+    IL_000d:  ret
+  }
+
+  .method private hidebysig static int32 ZeroExtendsWrittenValue(int8 valueToWrite) cil managed noinlining
+  {
+    .maxstack  8
+    .locals (int8 V_0)
+
+    IL_0000:  br.s       IL_0007
+
+    IL_0002:  ldloca.s   V_0
+    IL_0004:  ldind.u1
+    IL_0005:  br.s       IL_000d
+
+    IL_0007:  ldloca.s   V_0
+    IL_0009:  ldarg.0
+    IL_000a:  stind.i1
+    IL_000b:  br.s       IL_0002
+
+    IL_000d:  ret
+  }
+
+  .method private hidebysig static int32 SignExtendsWrittenValue(uint8 valueToWrite) cil managed noinlining
+  {
+    .maxstack  8
+    .locals (uint8 V_0)
+
+    IL_0000:  br.s       IL_0007
+
+    IL_0002:  ldloca.s   V_0
+    IL_0004:  ldind.i1
+    IL_0005:  br.s       IL_000d
+
+    IL_0007:  ldloca.s   V_0
+    IL_0009:  ldarg.0
+    IL_000a:  stind.i1
+    IL_000b:  br.s       IL_0002
+
+    IL_000d:  ret
+  }
+
+  .method private hidebysig static int32 ZeroExtendsWrittenValue(uint8 valueToWrite) cil managed noinlining
+  {
+    .maxstack  8
+    .locals (uint8 V_0)
+
+    IL_0000:  br.s       IL_0007
+
+    IL_0002:  ldloca.s   V_0
+    IL_0004:  ldind.u1
+    IL_0005:  br.s       IL_000d
+
+    IL_0007:  ldloca.s   V_0
+    IL_0009:  ldarg.0
+    IL_000a:  stind.i1
+    IL_000b:  br.s       IL_0002
+
+    IL_000d:  ret
+  }
+
+  .method private hidebysig static int32 SignExtendsWrittenValue(int16 valueToWrite) cil managed noinlining
+  {
+    .maxstack  8
+    .locals (int16 V_0)
+
+    IL_0000:  br.s       IL_0007
+
+    IL_0002:  ldloca.s   V_0
+    IL_0004:  ldind.i2
+    IL_0005:  br.s       IL_000d
+
+    IL_0007:  ldloca.s   V_0
+    IL_0009:  ldarg.0
+    IL_000a:  stind.i2
+    IL_000b:  br.s       IL_0002
+
+    IL_000d:  ret
+  }
+
+  .method private hidebysig static int32 ZeroExtendsWrittenValue(int16 valueToWrite) cil managed noinlining
+  {
+    .maxstack  8
+    .locals (int16 V_0)
+
+    IL_0000:  br.s       IL_0007
+
+    IL_0002:  ldloca.s   V_0
+    IL_0004:  ldind.u2
+    IL_0005:  br.s       IL_000d
+
+    IL_0007:  ldloca.s   V_0
+    IL_0009:  ldarg.0
+    IL_000a:  stind.i2
+    IL_000b:  br.s       IL_0002
+
+    IL_000d:  ret
+  }
+
+  .method private hidebysig static int32 SignExtendsWrittenValue(uint16 valueToWrite) cil managed noinlining
+  {
+    .maxstack  8
+    .locals (uint16 V_0)
+
+    IL_0000:  br.s       IL_0007
+
+    IL_0002:  ldloca.s   V_0
+    IL_0004:  ldind.i2
+    IL_0005:  br.s       IL_000d
+
+    IL_0007:  ldloca.s   V_0
+    IL_0009:  ldarg.0
+    IL_000a:  stind.i2
+    IL_000b:  br.s       IL_0002
+
+    IL_000d:  ret
+  }
+
+  .method private hidebysig static int32 ZeroExtendsWrittenValue(uint16 valueToWrite) cil managed noinlining
+  {
+    .maxstack  8
+    .locals (uint16 V_0)
+
+    IL_0000:  br.s       IL_0007
+
+    IL_0002:  ldloca.s   V_0
+    IL_0004:  ldind.u2
+    IL_0005:  br.s       IL_000d
+
+    IL_0007:  ldloca.s   V_0
+    IL_0009:  ldarg.0
+    IL_000a:  stind.i2
+    IL_000b:  br.s       IL_0002
+
+    IL_000d:  ret
+  }
+
 
   .method private hidebysig static int32 PoisonStackWith(int32 valueToWrite) cil managed noinlining
   {
@@ -221,125 +373,333 @@
   .method private hidebysig static int32 Main(string[] args) cil managed
   {
     .entrypoint
-    // Code size       75 (0x4b)
     .maxstack  2
     .locals init (int32 V_0)
 
     ldc.i4.s   100
     stloc.0
+// BEGIN_DependsOnUnInitValue_bool
     ldc.i4     0xdeadbeef
     call       int32 Runtime_40607.Program::PoisonStackWith(int32)
     pop
 
     ldc.i4.0
     call       int32 Runtime_40607.Program::DependsOnUnInitValue(bool)
-    ldc.i4.1
-    beq.s      IL_0000
+    brtrue.s   END_DependsOnUnInitValue_bool
 
     ldstr      "DependsOnUnInitValue(bool) has failed"
     call       void [System.Console]System.Console::WriteLine(string)
 
     ldc.i4.0
     stloc.0
+END_DependsOnUnInitValue_bool:
 
-IL_0000:
+// BEGIN_DependsOnUnInitValue_int8
     ldc.i4     0xdeadbeef
     call       int32 Runtime_40607.Program::PoisonStackWith(int32)
     pop
 
     ldc.i4.0
     call       int32 Runtime_40607.Program::DependsOnUnInitValue(int8)
-    ldc.i4.1
-    beq.s      IL_0001
+    brtrue.s   END_DependsOnUnInitValue_int8
 
     ldstr      "DependsOnUnInitValue(int8) has failed"
     call       void [System.Console]System.Console::WriteLine(string)
 
     ldc.i4.0
     stloc.0
+END_DependsOnUnInitValue_int8:
 
-IL_0001:
+// BEGIN_DependsOnUnInitValue_uint8
     ldc.i4     0xdeadbeef
     call       int32 Runtime_40607.Program::PoisonStackWith(int32)
     pop
 
     ldc.i4.0
     call       int32 Runtime_40607.Program::DependsOnUnInitValue(uint8)
-    ldc.i4.1
-    beq.s      IL_0002
+    brtrue.s   END_DependsOnUnInitValue_uint8
 
     ldstr      "DependsOnUnInitValue(uint8) has failed"
     call       void [System.Console]System.Console::WriteLine(string)
 
     ldc.i4.0
     stloc.0
+END_DependsOnUnInitValue_uint8:
 
-IL_0002:
+// BEGIN_DependsOnUnInitValue_int16
     ldc.i4     0xdeadbeef
     call       int32 Runtime_40607.Program::PoisonStackWith(int32)
     pop
 
     ldc.i4.0
     call       int32 Runtime_40607.Program::DependsOnUnInitValue(int16)
-    ldc.i4.1
-    beq.s      IL_0003
+    brtrue.s   END_DependsOnUnInitValue_int16
 
     ldstr      "DependsOnUnInitValue(int16) has failed"
     call       void [System.Console]System.Console::WriteLine(string)
 
     ldc.i4.0
     stloc.0
+END_DependsOnUnInitValue_int16:
 
-IL_0003:
+// BEGIN_DependsOnUnInitValue_uint16
     ldc.i4     0xdeadbeef
     call       int32 Runtime_40607.Program::PoisonStackWith(int32)
     pop
 
     ldc.i4.0
     call       int32 Runtime_40607.Program::DependsOnUnInitValue(uint16)
-    ldc.i4.1
-    beq.s      IL_0004
+    brtrue.s   END_DependsOnUnInitValue_uint16
 
     ldstr      "DependsOnUnInitValue(uint16) has failed"
     call       void [System.Console]System.Console::WriteLine(string)
 
     ldc.i4.0
     stloc.0
+END_DependsOnUnInitValue_uint16:
 
-IL_0004:
+// BEGIN_DependsOnUnInitValue_int32
     ldc.i4     0xdeadbeef
     call       int32 Runtime_40607.Program::PoisonStackWith(int32)
     pop
 
     ldc.i4.0
     call       int32 Runtime_40607.Program::DependsOnUnInitValue(int32)
-    ldc.i4.1
-    beq.s      IL_0005
+    brtrue.s   END_DependsOnUnInitValue_int32
 
     ldstr      "DependsOnUnInitValue(int32) has failed"
     call       void [System.Console]System.Console::WriteLine(string)
 
     ldc.i4.0
     stloc.0
+END_DependsOnUnInitValue_int32:
 
-IL_0005:
+// BEGIN_DependsOnUnInitValue_uint32
     ldc.i4     0xdeadbeef
     call       int32 Runtime_40607.Program::PoisonStackWith(int32)
     pop
 
     ldc.i4.0
     call       int32 Runtime_40607.Program::DependsOnUnInitValue(uint32)
-    ldc.i4.1
-    beq.s      IL_0006
+    brtrue.s   END_DependsOnUnInitValue_uint32
 
     ldstr      "DependsOnUnInitValue(uint32) has failed"
     call       void [System.Console]System.Console::WriteLine(string)
 
     ldc.i4.0
     stloc.0
+END_DependsOnUnInitValue_uint32:
 
-IL_0006:
+// BEGIN_SignExtendsWrittenValue_int8_0x7f:
+    ldc.i4     0x7f
+    call       int32 Runtime_40607.Program::SignExtendsWrittenValue(int8)
+    ldc.i4     0x7f
+    beq.s      END_SignExtendsWrittenValue_int8_0x7f
+
+    ldstr      "SignExtendsWrittenValue(int8) has failed"
+    call       void [System.Console]System.Console::WriteLine(string)
+
+    ldc.i4.0
+    stloc.0
+END_SignExtendsWrittenValue_int8_0x7f:
+
+// BEGIN_ZeroExtendsWrittenValue_int8_0x7f:
+    ldc.i4     0x7f
+    call       int32 Runtime_40607.Program::ZeroExtendsWrittenValue(int8)
+    ldc.i4     0x7f
+    beq.s      END_ZeroExtendsWrittenValue_int8_0x7f
+
+    ldstr      "ZeroExtendsWrittenValue(int8) has failed"
+    call       void [System.Console]System.Console::WriteLine(string)
+
+    ldc.i4.0
+    stloc.0
+END_ZeroExtendsWrittenValue_int8_0x7f:
+
+// BEGIN_SignExtendsWrittenValue_int8_0x80:
+    ldc.i4     0x80
+    call       int32 Runtime_40607.Program::SignExtendsWrittenValue(int8)
+    ldc.i4     0xffffff80
+    beq.s      END_SignExtendsWrittenValue_int8_0x80
+
+    ldstr      "SignExtendsWrittenValue(int8) has failed"
+    call       void [System.Console]System.Console::WriteLine(string)
+
+    ldc.i4.0
+    stloc.0
+END_SignExtendsWrittenValue_int8_0x80:
+
+// BEGIN_ZeroExtendsWrittenValue_int8_0x80:
+    ldc.i4     0x80
+    call       int32 Runtime_40607.Program::ZeroExtendsWrittenValue(int8)
+    ldc.i4     0x80
+    beq.s      END_ZeroExtendsWrittenValue_int8_0x80
+
+    ldstr      "ZeroExtendsWrittenValue(int8) has failed"
+    call       void [System.Console]System.Console::WriteLine(string)
+
+    ldc.i4.0
+    stloc.0
+END_ZeroExtendsWrittenValue_int8_0x80:
+
+// BEGIN_SignExtendsWrittenValue_uint8_0x7f:
+    ldc.i4     0x7f
+    call       int32 Runtime_40607.Program::SignExtendsWrittenValue(uint8)
+    ldc.i4     0x7f
+    beq.s      END_SignExtendsWrittenValue_uint8_0x7f
+
+    ldstr      "SignExtendsWrittenValue(uint8) has failed"
+    call       void [System.Console]System.Console::WriteLine(string)
+
+    ldc.i4.0
+    stloc.0
+END_SignExtendsWrittenValue_uint8_0x7f:
+
+// BEGIN_ZeroExtendsWrittenValue_uint8_0x7f:
+    ldc.i4     0x7f
+    call       int32 Runtime_40607.Program::ZeroExtendsWrittenValue(uint8)
+    ldc.i4     0x7f
+    beq.s      END_ZeroExtendsWrittenValue_uint8_0x7f
+
+    ldstr      "ZeroExtendsWrittenValue(uint8) has failed"
+    call       void [System.Console]System.Console::WriteLine(string)
+
+    ldc.i4.0
+    stloc.0
+END_ZeroExtendsWrittenValue_uint8_0x7f:
+
+// BEGIN_SignExtendsWrittenValue_uint8_0x80:
+    ldc.i4     0x80
+    call       int32 Runtime_40607.Program::SignExtendsWrittenValue(uint8)
+    ldc.i4     0xffffff80
+    beq.s      END_SignExtendsWrittenValue_uint8_0x80
+
+    ldstr      "SignExtendsWrittenValue(uint8) has failed"
+    call       void [System.Console]System.Console::WriteLine(string)
+
+    ldc.i4.0
+    stloc.0
+END_SignExtendsWrittenValue_uint8_0x80:
+
+// BEGIN_ZeroExtendsWrittenValue_uint8_0x80:
+    ldc.i4     0x80
+    call       int32 Runtime_40607.Program::ZeroExtendsWrittenValue(uint8)
+    ldc.i4     0x80
+    beq.s      END_ZeroExtendsWrittenValue_uint8_0x80
+
+    ldstr      "ZeroExtendsWrittenValue(uint8) has failed"
+    call       void [System.Console]System.Console::WriteLine(string)
+
+    ldc.i4.0
+    stloc.0
+END_ZeroExtendsWrittenValue_uint8_0x80:
+
+// BEGIN_SignExtendsWrittenValue_int16_0x7fff:
+    ldc.i4     0x7fff
+    call       int32 Runtime_40607.Program::SignExtendsWrittenValue(int16)
+    ldc.i4     0x7fff
+    beq.s      END_SignExtendsWrittenValue_int16_0x7fff
+
+    ldstr      "SignExtendsWrittenValue(int16) has failed"
+    call       void [System.Console]System.Console::WriteLine(string)
+
+    ldc.i4.0
+    stloc.0
+END_SignExtendsWrittenValue_int16_0x7fff:
+
+// BEGIN_ZeroExtendsWrittenValue_int16_0x7fff:
+    ldc.i4     0x7fff
+    call       int32 Runtime_40607.Program::ZeroExtendsWrittenValue(int16)
+    ldc.i4     0x7fff
+    beq.s      END_ZeroExtendsWrittenValue_int16_0x7fff
+
+    ldstr      "ZeroExtendsWrittenValue(int16) has failed"
+    call       void [System.Console]System.Console::WriteLine(string)
+
+    ldc.i4.0
+    stloc.0
+END_ZeroExtendsWrittenValue_int16_0x7fff:
+
+// BEGIN_SignExtendsWrittenValue_int16_0x8000:
+    ldc.i4     0x8000
+    call       int32 Runtime_40607.Program::SignExtendsWrittenValue(int16)
+    ldc.i4     0xffff8000
+    beq.s      END_SignExtendsWrittenValue_int16_0x8000
+
+    ldstr      "SignExtendsWrittenValue(int16) has failed"
+    call       void [System.Console]System.Console::WriteLine(string)
+
+    ldc.i4.0
+    stloc.0
+END_SignExtendsWrittenValue_int16_0x8000:
+
+// BEGIN_ZeroExtendsWrittenValue_int16_0x8000:
+    ldc.i4     0x8000
+    call       int32 Runtime_40607.Program::ZeroExtendsWrittenValue(int16)
+    ldc.i4     0x8000
+    beq.s      END_ZeroExtendsWrittenValue_int16_0x8000
+
+    ldstr      "ZeroExtendsWrittenValue(int16) has failed"
+    call       void [System.Console]System.Console::WriteLine(string)
+
+    ldc.i4.0
+    stloc.0
+END_ZeroExtendsWrittenValue_int16_0x8000:
+
+// BEGIN_SignExtendsWrittenValue_uint16_0x7fff:
+    ldc.i4     0x7fff
+    call       int32 Runtime_40607.Program::SignExtendsWrittenValue(uint16)
+    ldc.i4     0x7fff
+    beq.s      END_SignExtendsWrittenValue_uint16_0x7fff
+
+    ldstr      "SignExtendsWrittenValue(uint16) has failed"
+    call       void [System.Console]System.Console::WriteLine(string)
+
+    ldc.i4.0
+    stloc.0
+END_SignExtendsWrittenValue_uint16_0x7fff:
+
+// BEGIN_ZeroExtendsWrittenValue_uint16_0x7fff:
+    ldc.i4     0x7fff
+    call       int32 Runtime_40607.Program::ZeroExtendsWrittenValue(uint16)
+    ldc.i4     0x7fff
+    beq.s      END_ZeroExtendsWrittenValue_uint16_0x7fff
+
+    ldstr      "ZeroExtendsWrittenValue(uint16) has failed"
+    call       void [System.Console]System.Console::WriteLine(string)
+
+    ldc.i4.0
+    stloc.0
+END_ZeroExtendsWrittenValue_uint16_0x7fff:
+
+// BEGIN_SignExtendsWrittenValue_uint16_0x8000:
+    ldc.i4     0x8000
+    call       int32 Runtime_40607.Program::SignExtendsWrittenValue(uint16)
+    ldc.i4     0xffff8000
+    beq.s      END_SignExtendsWrittenValue_uint16_0x8000
+
+    ldstr      "SignExtendsWrittenValue(uint16) has failed"
+    call       void [System.Console]System.Console::WriteLine(string)
+
+    ldc.i4.0
+    stloc.0
+END_SignExtendsWrittenValue_uint16_0x8000:
+
+// BEGIN_ZeroExtendsWrittenValue_uint16_0x8000:
+    ldc.i4     0x8000
+    call       int32 Runtime_40607.Program::ZeroExtendsWrittenValue(uint16)
+    ldc.i4     0x8000
+    beq.s      END_ZeroExtendsWrittenValue_uint16_0x8000
+
+    ldstr      "ZeroExtendsWrittenValue(uint16) has failed"
+    call       void [System.Console]System.Console::WriteLine(string)
+
+    ldc.i4.0
+    stloc.0
+END_ZeroExtendsWrittenValue_uint16_0x8000:
+
     ldloc.0
     ret
   }
 }
+
