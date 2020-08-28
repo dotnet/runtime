@@ -267,7 +267,7 @@ jobs:
 
     # Crossgen and generate sha1 hashes of crossgen'd app binaries
     - ${{ if eq(parameters.crossgen_crosscomp_verification, true) }}:
-      - script: $(Build.SourcesDirectory)$(dir)src$(dir)coreclr$(dir)tests$(dir)runtest$(scriptExt) crossgenframeworkonly runcrossgen2tests $(buildConfig) $(archType)
+      - script: $(Build.SourcesDirectory)$(dir)src$(dir)coreclr$(dir)tests$(dir)runtest$(scriptExt) runcrossgen2tests $(buildConfig) $(archType)
         displayName: Crossgen test assemblies and generate sha1 hashes into Core_Root
         env:
           __TestCrossGen2Dll: $(buildProductRootFolderPath)$(dir)x64$(dir)crossgen2$(dir)crossgen2.dll
