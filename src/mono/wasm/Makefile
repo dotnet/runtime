@@ -117,12 +117,12 @@ icu-data:
 
 runtime:
 	EMSDK_PATH=$(TOP)/src/mono/wasm/emsdk $(TOP)/build.sh --subset mono --arch wasm --os Browser -c $(CONFIG) /p:ContinueOnError=false  /p:StopOnFirstFailure=true
-	cp $(TOP)/artifacts/bin/mono/Browser.wasm.$(CONFIG)/IL/System.Private.CoreLib.dll $(TOP)/artifacts/bin/microsoft.netcore.app.runtime.browser-wasm/$(CONFIG)/runtimes/browser-wasm/native/
+	cp $(TOP)/artifacts/bin/mono/Browser.wasm.$(CONFIG)/IL/System.Private.CoreLib.* $(TOP)/artifacts/bin/microsoft.netcore.app.runtime.browser-wasm/$(CONFIG)/runtimes/browser-wasm/native/
 	$(MAKE) build
 
 corlib:
 	EMSDK_PATH=$(TOP)/src/mono/wasm/emsdk $(TOP)/build.sh --subset mono.corelib --arch wasm --os Browser -c $(CONFIG)
-	cp $(TOP)/artifacts/bin/mono/Browser.wasm.$(CONFIG)/IL/System.Private.CoreLib.dll $(TOP)/artifacts/bin/microsoft.netcore.app.runtime.browser-wasm/$(CONFIG)/runtimes/browser-wasm/native/
+	cp $(TOP)/artifacts/bin/mono/Browser.wasm.$(CONFIG)/IL/System.Private.CoreLib.* $(TOP)/artifacts/bin/microsoft.netcore.app.runtime.browser-wasm/$(CONFIG)/runtimes/browser-wasm/native/
 
 build-all:
 	EMSDK_PATH=$(TOP)/src/mono/wasm/emsdk $(TOP)/build.sh --subset mono+libs --arch wasm --os Browser -c $(CONFIG)
