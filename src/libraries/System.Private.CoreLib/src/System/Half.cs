@@ -5,7 +5,6 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Numerics;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace System
@@ -421,7 +420,6 @@ namespace System
         /// <summary>
         /// Returns a value that indicates whether this instance is equal to a specified <paramref name="other"/> value.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(Half other)
         {
             return _value == other._value
