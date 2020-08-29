@@ -915,6 +915,25 @@ describe_value(MonoType * type, gpointer addr, int gpflags)
 			}
 			break;
 		}
+
+		case MONO_TYPE_OBJECT: {
+			MonoObject *obj = *(MonoObject**)addr;
+			MonoClass *klass = obj->vtable->klass;
+			if (!klass) {
+				// boxed null
+				mono_wasm_add_obj_var ("object", NULL, 0);
+				break;
+			}
+
+			type = m_class_get_byval_arg (klass);
+
+			// Boxed valuetype
+			if (m_class_is_valuetype (klass))
+				addr = mono_object_unbox_internal (obj);
+
+			return describe_value (type, addr, gpflags);
+		}
+
 		case MONO_TYPE_GENERICINST: {
 			MonoClass *klass = mono_class_from_mono_type_internal (type);
 			if (mono_class_is_nullable (klass)) {
@@ -940,7 +959,6 @@ describe_value(MonoType * type, gpointer addr, int gpflags)
 
 		case MONO_TYPE_SZARRAY:
 		case MONO_TYPE_ARRAY:
-		case MONO_TYPE_OBJECT:
 		case MONO_TYPE_CLASS: {
 			MonoObject *obj = *(MonoObject**)addr;
 			MonoClass *klass = type->data.klass;
