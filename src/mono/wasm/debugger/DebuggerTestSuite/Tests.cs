@@ -395,6 +395,43 @@ namespace DebuggerTests
             );
 
         [Theory]
+        [InlineData("TestNullableLocal", false)]
+        [InlineData("TestNullableLocalAsync", true)]
+        public async Task InspectNullableLocals(string method_name, bool is_async) => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.NullableTests",
+            method_name,
+            10,
+            is_async ? "MoveNext" : method_name,
+            $"window.setTimeout(function() {{ invoke_static_method_async('[debugger-test] DebuggerTests.NullableTests:{method_name}'); }}, 1);",
+            wait_for_event_fn: async (pause_location) =>
+            {
+                var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
+                var dt = new DateTime(2310, 1, 2, 3, 4, 5);
+                await CheckProps(locals, new
+                {
+                    n_int       = TNumber(5),
+                    n_int_null  = TObject("System.Nullable<int>", null),
+
+                    n_dt        = TDateTime(dt),
+                    n_dt_null   = TObject("System.Nullable<System.DateTime>", null),
+
+                    n_gs        = TValueType("DebuggerTests.ValueTypesTest.GenericStruct<int>"),
+                    n_gs_null   = TObject("System.Nullable<DebuggerTests.ValueTypesTest.GenericStruct<int>>", null),
+                }, "locals");
+
+                // check gs
+
+                var n_gs = GetAndAssertObjectWithName(locals, "n_gs");
+                var n_gs_props = await GetProperties(n_gs["value"]?["objectId"]?.Value<string> ());
+                await CheckProps(n_gs_props, new
+                {
+                    List        = TObject("System.Collections.Generic.List<int>", is_null: true),
+                    StringField = TString("n_gs#StringField"),
+                    Options     = TEnum  ("DebuggerTests.Options", "None")
+                }, nameof(n_gs));
+            });
+
+        [Theory]
         [InlineData(false)]
         [InlineData(true)]
         public async Task InspectLocalsWithGenericTypesAtBreakpointSite(bool use_cfo) =>
