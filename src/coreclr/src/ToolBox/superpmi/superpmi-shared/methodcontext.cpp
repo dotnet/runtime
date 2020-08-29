@@ -5133,6 +5133,50 @@ DWORD MethodContext::repGetFieldThreadLocalStoreID(CORINFO_FIELD_HANDLE field, v
     return (DWORD)value.B;
 }
 
+
+void MethodContext::recAllocMethodBlockCounts(ULONG count, ICorJitInfo::BlockCounts** pBlockCounts, HRESULT result)
+{
+    if (AllocMethodBlockCounts == nullptr)
+        AllocMethodBlockCounts = new LightWeightMap<DWORD, Agnostic_AllocMethodBlockCounts>();
+
+    Agnostic_AllocMethodBlockCounts value;
+
+    value.address = (DWORDLONG)*pBlockCounts;
+    value.count  = (DWORD)count;
+    value.result = (DWORD)result;
+
+    AllocMethodBlockCounts->Add((DWORD)0, value);
+}
+void MethodContext::dmpAllocMethodBlockCounts(DWORD key, const Agnostic_AllocMethodBlockCounts& value)
+{
+    printf("AllocMethodBlockCounts key %u, value addr-%016llX cnt-%u res-%08X", key, value.address, value.count, value.result);
+}
+HRESULT MethodContext::repAllocMethodBlockCounts(ULONG count, ICorJitInfo::BlockCounts** pBlockCounts)
+{
+    Agnostic_AllocMethodBlockCounts value;
+    value = AllocMethodBlockCounts->Get((DWORD)0);
+
+    if (count != value.count)
+    {
+        LogWarning("AllocMethodBlockCount mismatch: record %d, replay %d", value.count, count);
+    }
+
+    HRESULT result = (HRESULT)value.result;
+
+    // Allocate a scratch buffer, linked to method context via AllocMethodBlockCounts, so it gets
+    // cleaned up when the method context does.
+    //
+    // We won't bother recording this via AddBuffer because currently SPMI will never look at it.
+    // But we need a writeable buffer because the jit will store IL offsets inside.
+    //
+    // Todo, perhaps: record the buffer as a compile result instead, and defer copying until
+    // jit completion so we can snapshot the offsets the jit writes.
+    //
+    *pBlockCounts = (ICorJitInfo::BlockCounts*)AllocMethodBlockCounts->CreateBuffer(count * sizeof(ICorJitInfo::BlockCounts));
+    cr->recAddressMap((void*)value.address, (void*)*pBlockCounts, count * (sizeof(ICorJitInfo::BlockCounts)));
+    return result;
+}
+
 void MethodContext::recGetMethodBlockCounts(CORINFO_METHOD_HANDLE        ftnHnd,
                                             UINT32 *                     pCount,
                                             ICorJitInfo::BlockCounts**   pBlockCounts,

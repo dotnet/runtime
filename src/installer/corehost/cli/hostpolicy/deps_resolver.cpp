@@ -729,18 +729,19 @@ void deps_resolver_t::resolve_additional_deps(const arguments_t& args, const dep
     }
 }
 
-void deps_resolver_t::get_app_fx_definition_range(fx_definition_vector_t::iterator *begin, fx_definition_vector_t::iterator *end) const
+void deps_resolver_t::get_app_context_deps_files_range(fx_definition_vector_t::iterator *begin, fx_definition_vector_t::iterator *end) const
 {
     assert(begin != nullptr && end != nullptr);
 
     auto begin_iter = m_fx_definitions.begin();
     auto end_iter = m_fx_definitions.end();
 
-    if (m_host_mode == host_mode_t::libhost
+    if ((m_host_mode == host_mode_t::libhost || bundle::info_t::is_single_file_bundle())
         && begin_iter != end_iter)
     {
-        // In a libhost scenario the app definition shouldn't be
-        // included in the creation of the application.
+        // Neither in a libhost scenario nor in a bundled app
+        // the deps files should be exposed in the app context
+        // properties.
         assert(begin_iter->get() == &get_app(m_fx_definitions));
         ++begin_iter;
     }

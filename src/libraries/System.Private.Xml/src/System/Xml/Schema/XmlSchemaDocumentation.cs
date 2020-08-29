@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 namespace System.Xml.Schema
 {
     using System.Collections;
@@ -13,7 +12,7 @@ namespace System.Xml.Schema
     {
         private string? _source;
         private string? _language;
-        private XmlNode[]? _markup;
+        private XmlNode?[]? _markup;
         private static readonly XmlSchemaSimpleType s_languageType = DatatypeImplementation.GetSimpleTypeFromXsdType(new XmlQualifiedName("language", XmlReservedNs.NsXs))!;
 
         [XmlAttribute("source", DataType = "anyURI")]
@@ -32,7 +31,7 @@ namespace System.Xml.Schema
         }
 
         [XmlText, XmlAnyElement]
-        public XmlNode[]? Markup
+        public XmlNode?[]? Markup
         {
             get { return _markup; }
             set { _markup = value; }

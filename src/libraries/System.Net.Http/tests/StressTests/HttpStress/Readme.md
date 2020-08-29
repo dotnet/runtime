@@ -24,7 +24,7 @@ To achieve this, we will first need to build a new sdk from source. This can be 
 
 ### Running using docker-compose
 
-The prefered way of running the stress suite is using docker-compose,
+The preferred way of running the stress suite is using docker-compose,
 which can be used to target both linux and windows containers.
 Docker and compose-compose are required for this step (both included in [docker for windows](https://docs.docker.com/docker-for-windows/)).
 
