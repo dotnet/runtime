@@ -1977,7 +1977,7 @@ PCODE UnmanagedToManagedFrame::GetReturnAddress()
         return pRetAddr;
     }
 }
-#endif !CROSSGEN_COMPILE
+#endif // !CROSSGEN_COMPILE
 
 #ifndef DACCESS_COMPILE
 //=================================================================================
