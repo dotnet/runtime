@@ -63,7 +63,8 @@ namespace System.Net.Http.Json.Functional.Tests
         private static void AssertDefaultOptions(JsonSerializerOptions options)
         {
             Assert.True(options.PropertyNameCaseInsensitive);
-            Assert.Equal(JsonNamingPolicy.CamelCase, options.PropertyNamingPolicy);
+            Assert.Same(JsonNamingPolicy.CamelCase, options.PropertyNamingPolicy);
+            Assert.Equal(JsonNumberHandling.AllowReadingFromString, options.NumberHandling);
         }
     }
 
