@@ -3,6 +3,7 @@
 
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.Linq;
 using System.Net.Test.Common;
@@ -70,16 +71,7 @@ namespace System.Net.Http.Functional.Tests
 
                 Assert.DoesNotContain(events, e => e.EventName == "RequestAborted");
 
-                if (version.Major == 1)
-                {
-                    Assert.Single(events, e => e.EventName == "Http11ConnectionEstablished");
-                    Assert.Single(events, e => e.EventName == "Http11ConnectionClosed");
-                }
-                else
-                {
-                    Assert.Single(events, e => e.EventName == "Http20ConnectionEstablished");
-                    Assert.Single(events, e => e.EventName == "Http20ConnectionClosed");
-                }
+                ValidateConnectionEstablishedClosed(events, version.Major, version.Minor);
 
                 Assert.Single(events, e => e.EventName == "ResponseHeadersBegin");
 
@@ -148,7 +140,28 @@ namespace System.Net.Http.Functional.Tests
             Assert.True(startEvent.Payload[5] is int versionMinor && (versionMinor == 1 || versionMinor == 0));
         }
 
-        protected static void VerifyEventCounters(ConcurrentQueue<EventWrittenEventArgs> events, int requestCount, bool shouldHaveFailures, bool shouldHaveQueuedRequests = false)
+        protected static void ValidateConnectionEstablishedClosed(ConcurrentQueue<EventWrittenEventArgs> events, int versionMajor, int versionMinor, int count = 1)
+        {
+            EventWrittenEventArgs[] connectionsEstablished = events.Where(e => e.EventName == "ConnectionEstablished").ToArray();
+            Assert.Equal(count, connectionsEstablished.Length);
+            foreach (EventWrittenEventArgs connectionEstablished in connectionsEstablished)
+            {
+                Assert.Equal(2, connectionEstablished.Payload.Count);
+                Assert.Equal(versionMajor, (byte)connectionEstablished.Payload[0]);
+                Assert.Equal(versionMinor, (byte)connectionEstablished.Payload[1]);
+            }
+
+            EventWrittenEventArgs[] connectionsClosed = events.Where(e => e.EventName == "ConnectionClosed").ToArray();
+            Assert.Equal(count, connectionsClosed.Length);
+            foreach (EventWrittenEventArgs connectionClosed in connectionsClosed)
+            {
+                Assert.Equal(2, connectionClosed.Payload.Count);
+                Assert.Equal(versionMajor, (byte)connectionClosed.Payload[0]);
+                Assert.Equal(versionMinor, (byte)connectionClosed.Payload[1]);
+            }
+        }
+
+        protected static void VerifyEventCounters(ConcurrentQueue<EventWrittenEventArgs> events, int requestCount, bool shouldHaveFailures, int requestsLeftQueueVersion = -1)
         {
             Dictionary<string, double[]> eventCounters = events
                 .Where(e => e.EventName == "EventCounters")
@@ -187,30 +200,38 @@ namespace System.Net.Http.Functional.Tests
             Assert.All(http20ConnectionsTotal, c => Assert.True(c >= 0));
             Assert.Equal(0, http20ConnectionsTotal[^1]);
 
-            Assert.True(eventCounters.TryGetValue("http11-requests-queue-duration", out double[] requestQueueDurations));
-            Assert.Equal(0, requestQueueDurations[^1]);
-            if (shouldHaveQueuedRequests)
+            Assert.True(eventCounters.TryGetValue("http11-requests-queue-duration", out double[] http11requestQueueDurations));
+            Assert.Equal(0, http11requestQueueDurations[^1]);
+            if (requestsLeftQueueVersion == 1)
             {
-                Assert.Contains(requestQueueDurations, d => d > 0);
-                Assert.All(requestQueueDurations, d => Assert.True(d >= 0));
+                Assert.Contains(http11requestQueueDurations, d => d > 0);
+                Assert.All(http11requestQueueDurations, d => Assert.True(d >= 0));
             }
             else
             {
-                Assert.All(requestQueueDurations, d => Assert.True(d == 0));
+                Assert.All(http11requestQueueDurations, d => Assert.True(d == 0));
+            }
+
+            Assert.True(eventCounters.TryGetValue("http20-requests-queue-duration", out double[] http20requestQueueDurations));
+            Assert.Equal(0, http20requestQueueDurations[^1]);
+            if (requestsLeftQueueVersion == 2)
+            {
+                Assert.Contains(http20requestQueueDurations, d => d > 0);
+                Assert.All(http20requestQueueDurations, d => Assert.True(d >= 0));
+            }
+            else
+            {
+                Assert.All(http20requestQueueDurations, d => Assert.True(d == 0));
             }
         }
-    }
-
-    public sealed class TelemetryTest_Http11 : TelemetryTest
-    {
-        public TelemetryTest_Http11(ITestOutputHelper output) : base(output) { }
 
         [OuterLoop]
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void EventSource_ConnectionPoolAtMaxConnections_LogsRequestLeftQueue()
         {
-            RemoteExecutor.Invoke(async () =>
+            RemoteExecutor.Invoke(async useVersionString =>
             {
+                Version version = Version.Parse(useVersionString);
                 using var listener = new TestEventListener("System.Net.Http", EventLevel.Verbose, eventCounterInterval: 0.1d);
 
                 var events = new ConcurrentQueue<EventWrittenEventArgs>();
@@ -219,15 +240,17 @@ namespace System.Net.Http.Functional.Tests
                     var firstRequestReceived = new SemaphoreSlim(0, 1);
                     var secondRequestSent = new SemaphoreSlim(0, 1);
 
-                    await LoopbackServer.CreateClientAndServerAsync(
+                    await GetFactoryForVersion(version).CreateClientAndServerAsync(
                         async uri =>
                         {
-                            using var handler = new SocketsHttpHandler
-                            {
-                                MaxConnectionsPerServer = 1
-                            };
+                            using HttpClientHandler handler = CreateHttpClientHandler(useVersionString);
+                            using HttpClient client = CreateHttpClient(handler, useVersionString);
 
-                            using var client = new HttpClient(handler);
+                            var socketsHttpHandler = GetUnderlyingSocketsHttpHandler(handler) as SocketsHttpHandler;
+                            socketsHttpHandler.MaxConnectionsPerServer = 1;
+
+                            // Dummy request to ensure that the MaxConcurrentStreams setting has been acknowledged
+                            await client.GetStringAsync(uri);
 
                             Task firstRequest = client.GetStringAsync(uri);
                             Assert.True(await firstRequestReceived.WaitAsync(TimeSpan.FromSeconds(10)));
@@ -240,16 +263,34 @@ namespace System.Net.Http.Functional.Tests
                         },
                         async server =>
                         {
-                            await server.AcceptConnectionAsync(async connection =>
+                            GenericLoopbackConnection connection;
+                            if (server is Http2LoopbackServer http2Server)
                             {
+                                http2Server.AllowMultipleConnections = true;
+                                connection = await http2Server.EstablishConnectionAsync(new SettingsEntry { SettingId = SettingId.MaxConcurrentStreams, Value = 1 });
+                            }
+                            else
+                            {
+                                connection = await server.EstablishGenericConnectionAsync();
+                            }
+
+                            using (connection)
+                            {
+                                // Dummy request to ensure that the MaxConcurrentStreams setting has been acknowledged
+                                await connection.ReadRequestDataAsync(readBody: false);
+                                await connection.SendResponseAsync();
+
+                                // First request
+                                await connection.ReadRequestDataAsync(readBody: false);
                                 firstRequestReceived.Release();
-                                await connection.ReadRequestDataAsync();
                                 Assert.True(await secondRequestSent.WaitAsync(TimeSpan.FromSeconds(10)));
                                 await Task.Delay(100);
                                 await connection.SendResponseAsync();
-                            });
 
-                            await server.HandleRequestAsync();
+                                // Second request
+                                await connection.ReadRequestDataAsync(readBody: false);
+                                await connection.SendResponseAsync();
+                            };
                         });
 
                     await Task.Delay(300);
@@ -257,34 +298,35 @@ namespace System.Net.Http.Functional.Tests
                 Assert.DoesNotContain(events, ev => ev.EventId == 0); // errors from the EventSource itself
 
                 EventWrittenEventArgs[] starts = events.Where(e => e.EventName == "RequestStart").ToArray();
-                Assert.Equal(2, starts.Length);
+                Assert.Equal(3, starts.Length);
                 Assert.All(starts, s => ValidateStartEventPayload(s));
 
                 EventWrittenEventArgs[] stops = events.Where(e => e.EventName == "RequestStop").ToArray();
-                Assert.Equal(2, stops.Length);
+                Assert.Equal(3, stops.Length);
                 Assert.All(stops, s => Assert.Empty(s.Payload));
 
                 Assert.DoesNotContain(events, e => e.EventName == "RequestAborted");
 
-                EventWrittenEventArgs[] connectionsEstablished = events.Where(e => e.EventName == "Http11ConnectionEstablished").ToArray();
-                Assert.Equal(2, connectionsEstablished.Length);
-                Assert.All(connectionsEstablished, c => Assert.Empty(c.Payload));
+                ValidateConnectionEstablishedClosed(events, version.Major, version.Minor);
 
-                EventWrittenEventArgs[] connectionsClosed = events.Where(e => e.EventName == "Http11ConnectionClosed").ToArray();
-                Assert.Equal(2, connectionsClosed.Length);
-                Assert.All(connectionsClosed, c => Assert.Empty(c.Payload));
-
-                EventWrittenEventArgs requestLeftQueue = Assert.Single(events, e => e.EventName == "Http11RequestLeftQueue");
-                double duration = Assert.IsType<double>(Assert.Single(requestLeftQueue.Payload));
-                Assert.True(duration > 0);
+                EventWrittenEventArgs requestLeftQueue = Assert.Single(events, e => e.EventName == "RequestLeftQueue");
+                Assert.Equal(3, requestLeftQueue.Payload.Count);
+                Assert.True((double)requestLeftQueue.Payload.Count > 0); // timeSpentOnQueue
+                Assert.Equal(version.Major, (byte)requestLeftQueue.Payload[1]);
+                Assert.Equal(version.Minor, (byte)requestLeftQueue.Payload[2]);
 
                 EventWrittenEventArgs[] responseHeadersBegin = events.Where(e => e.EventName == "ResponseHeadersBegin").ToArray();
-                Assert.Equal(2, responseHeadersBegin.Length);
+                Assert.Equal(3, responseHeadersBegin.Length);
                 Assert.All(responseHeadersBegin, r => Assert.Empty(r.Payload));
 
-                VerifyEventCounters(events, requestCount: 2, shouldHaveFailures: false, shouldHaveQueuedRequests: true);
-            }).Dispose();
+                VerifyEventCounters(events, requestCount: 3, shouldHaveFailures: false, requestsLeftQueueVersion: version.Major);
+            }, UseVersion.ToString()).Dispose();
         }
+    }
+
+    public sealed class TelemetryTest_Http11 : TelemetryTest
+    {
+        public TelemetryTest_Http11(ITestOutputHelper output) : base(output) { }
     }
 
     public sealed class TelemetryTest_Http20 : TelemetryTest
