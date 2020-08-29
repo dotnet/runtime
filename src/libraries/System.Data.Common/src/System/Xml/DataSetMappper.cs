@@ -337,7 +337,7 @@ namespace System.Xml
                 }
 
                 // element's must be regions in order to be radially structured
-                DataRow? row = GetRowFromElement((XmlElement)n);
+                DataRow? row = GetRowFromElement((XmlElement?)n);
                 if (row == null)
                 {
                     return false;

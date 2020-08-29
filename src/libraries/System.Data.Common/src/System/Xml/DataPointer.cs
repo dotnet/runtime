@@ -57,7 +57,7 @@ namespace System.Xml
             return rowElem;
         }
 
-        private DataRow Row
+        private DataRow? Row
         {
             get
             {
@@ -184,7 +184,7 @@ namespace System.Xml
             else if (!IsFoliated(_node))
             {
                 // find virtual column elements first
-                DataColumn? c = NextColumn(Row, null, false, false);
+                DataColumn? c = NextColumn(Row!, null, false, false);
                 if (c != null)
                 {
                     MoveTo(_node, c, _doc.IsTextOnly(c));
@@ -216,7 +216,7 @@ namespace System.Xml
                         return false;
                     }
 
-                    DataColumn? c = NextColumn(Row, _column, false, false);
+                    DataColumn? c = NextColumn(Row!, _column, false, false);
                     if (c != null)
                     {
                         MoveTo(_node, c, false);
@@ -320,7 +320,7 @@ namespace System.Xml
                     {
                         if (!IsFoliated(_node))
                         {
-                            return ColumnCount(Row, true, false);
+                            return ColumnCount(Row!, true, false);
                         }
                         else
                         {
@@ -347,7 +347,7 @@ namespace System.Xml
                 {
                     if (!IsFoliated(_node))
                     {
-                        DataColumn? c = NthColumn(Row, true, i, false);
+                        DataColumn? c = NthColumn(Row!, true, i, false);
                         if (c != null)
                         {
                             MoveTo(_node, c, false);
@@ -564,7 +564,7 @@ namespace System.Xml
                 }
                 else if (_column.ColumnMapping == MappingType.Attribute || _fOnValue)
                 {
-                    DataRow row = Row;
+                    DataRow row = Row!;
                     DataRowVersion rowVersion = (row.RowState == DataRowState.Detached) ? DataRowVersion.Proposed : DataRowVersion.Current;
                     object value = row[_column, rowVersion];
                     if (!Convert.IsDBNull(value))

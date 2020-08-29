@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Xml.XPath;
 
@@ -1481,7 +1482,7 @@ namespace System.Xml
                 bool fMore = iter.Next();
                 while (fMore)
                 {
-                    if (iter.CurrentNode.NodeType == XmlNodeType.Element)
+                    if (iter.CurrentNode!.NodeType == XmlNodeType.Element)
                     {
                         XmlElement e = (XmlElement)iter.CurrentNode;
                         Debug.Assert(e != null);
@@ -1907,7 +1908,7 @@ namespace System.Xml
             TreeIterator iter = new TreeIterator(node);
             for (bool fMore = iter.NextRowElement(); fMore; fMore = iter.NextRowElement())
             {
-                rowElem = (XmlBoundElement)(iter.CurrentNode);
+                rowElem = (XmlBoundElement)(iter.CurrentNode!);
                 EnsureDisconnectedDataRow(rowElem);
             }
 
@@ -1942,7 +1943,7 @@ namespace System.Xml
                 TreeIterator iter = new TreeIterator(node);
                 for (bool fMore = iter.NextRowElement(); fMore; fMore = iter.NextRightRowElement())
                 {
-                    XmlBoundElement rowElemChild = (XmlBoundElement)(iter.CurrentNode);
+                    XmlBoundElement rowElemChild = (XmlBoundElement)(iter.CurrentNode!);
                     SetNestedParentRegion(rowElemChild, null);
                 }
             }
@@ -2550,8 +2551,19 @@ namespace System.Xml
 
         internal XmlDataDocument(XmlImplementation imp) : base(imp)
         {
+            _dataSet = null!;
+            _pointers = null!;
+            _columnChangeList = null!;
+            _mapper = null!;
+            _foliationLock = null!;
+            _attrXml = null!;
         }
 
+        [MemberNotNull(nameof(_pointers))]
+        [MemberNotNull(nameof(_columnChangeList))]
+        [MemberNotNull(nameof(_mapper))]
+        [MemberNotNull(nameof(_foliationLock))]
+        [MemberNotNull(nameof(_attrXml))]
         private void Init()
         {
             _pointers = new Hashtable();
@@ -2571,6 +2583,12 @@ namespace System.Xml
             _ignoreXmlEvents = false;
         }
 
+        [MemberNotNull(nameof(_pointers))]
+        [MemberNotNull(nameof(_columnChangeList))]
+        [MemberNotNull(nameof(_mapper))]
+        [MemberNotNull(nameof(_foliationLock))]
+        [MemberNotNull(nameof(_attrXml))]
+        [MemberNotNull(nameof(_dataSet))]
         private void Init(DataSet ds)
         {
             if (ds == null)
@@ -2981,7 +2999,7 @@ namespace System.Xml
             }
         }
 
-        public override XmlElement GetElementById(string elemId)
+        public override XmlElement? GetElementById(string elemId)
         {
             throw new NotSupportedException(SR.DataDom_NotSupport_GetElementById);
         }

@@ -20,7 +20,7 @@ namespace System.Xml
             _currentNode = nodeTop;
         }
 
-        internal override XmlNode CurrentNode => _currentNode;
+        internal override XmlNode? CurrentNode => _currentNode;
 
         internal override bool Next()
         {

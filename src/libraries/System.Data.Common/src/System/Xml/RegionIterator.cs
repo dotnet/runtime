@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 #pragma warning disable 618 // ignore obsolete warning about XmlDataDocument
@@ -26,8 +27,9 @@ namespace System.Xml
             _currentNode = rowElement;
         }
 
-        internal override XmlNode CurrentNode => _currentNode;
+        internal override XmlNode? CurrentNode => _currentNode;
 
+        [MemberNotNullWhen(true, nameof(CurrentNode))]
         internal override bool Next()
         {
             XmlNode? nextNode;
@@ -43,6 +45,7 @@ namespace System.Xml
             if (nextNode != null)
             {
                 _currentNode = nextNode;
+                Debug.Assert(CurrentNode != null);
                 // If we have been defoliated, we should have stayed that way
                 Debug.Assert((oldState == ElementState.Defoliated) ? (_rowElement.ElementState == ElementState.Defoliated) : true);
                 // Rollback foliation
@@ -53,6 +56,7 @@ namespace System.Xml
             return NextRight();
         }
 
+        [MemberNotNullWhen(true, nameof(CurrentNode))]
         internal override bool NextRight()
         {
             // Make sure we do not get past the rowElement if we call NextRight on a just initialized iterator and rowElement has no children
@@ -76,6 +80,7 @@ namespace System.Xml
                 Debug.Assert((oldState == ElementState.Defoliated) ? (_rowElement.ElementState == ElementState.Defoliated) : true);
                 // Rollback foliation
                 _rowElement.ElementState = oldState;
+                Debug.Assert(CurrentNode != null);
                 return true;
             }
 
@@ -105,11 +110,13 @@ namespace System.Xml
 
             // Rollback foliation
             _rowElement.ElementState = oldState;
+            Debug.Assert(CurrentNode != null);
             return true;
         }
 
         // Get the initial text value for the current node. You should be positioned on the node (element) for
         // which to get the initial text value, not on the text node.
+        [MemberNotNullWhen(true, nameof(CurrentNode))]
         internal bool NextInitialTextLikeNodes(out string value)
         {
             Debug.Assert(CurrentNode != null);
