@@ -424,12 +424,8 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(Half other)
         {
-            if (_value == other._value)
-            {
-                return true;
-            }
-
-            return AreZero(this, other)
+            return _value == other._value
+                || AreZero(this, other)
                 || (IsNaN(this) && IsNaN(other));
         }
 
