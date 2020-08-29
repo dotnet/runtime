@@ -49,7 +49,6 @@ namespace Microsoft.Extensions.Http.Logging
             {
                 throw new ArgumentNullException(nameof(request));
             }
-
             
             Func<string, bool> shouldRedactHeaderValue = _options?.ShouldRedactHeaderValue ?? _shouldNotRedactHeaderValue;
 
