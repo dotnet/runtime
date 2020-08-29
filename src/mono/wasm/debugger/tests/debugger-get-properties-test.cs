@@ -49,7 +49,7 @@ namespace DebuggerTests.GetPropertiesTests
             //AutoStringPropertyForOverride = "base#AutoStringPropertyForOverride";
         }
 
-	public string GetBaseName() => _base_name;
+        public string GetBaseName() => _base_name;
 
         public virtual string FirstName => "BaseClass#FirstName";
         public virtual string LastName => "BaseClass#LastName";
@@ -94,7 +94,7 @@ namespace DebuggerTests.GetPropertiesTests
             new DerivedClass().InstanceMethod ();
         }
 
-	public string GetStringField() => _stringField;
+        public string GetStringField() => _stringField;
 
         public void InstanceMethod()
         {
@@ -134,7 +134,7 @@ namespace DebuggerTests.GetPropertiesTests
             new CloneableStruct(3).InstanceMethod ();
         }
 
-	public string GetStringField() => _stringField;
+        public string GetStringField() => _stringField;
 
         public void InstanceMethod()
         {
