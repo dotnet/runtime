@@ -19,17 +19,6 @@ namespace System.Net.Http
         public static readonly Version HttpVersion30 = new Version(3, 0);
         public static readonly SslApplicationProtocol Http3ApplicationProtocol = new SslApplicationProtocol("h3-29");
 
-        /// <summary>
-        /// If we receive a settings frame larger than this, tear down the connection with an error.
-        /// </summary>
-        private const int MaximumSettingsPayloadLength = 4096;
-
-        /// <summary>
-        /// Unknown frame types with a payload larger than this will result in tearing down the connection with an error.
-        /// Frames smaller than this will be ignored and drained.
-        /// </summary>
-        private const int MaximumUnknownFramePayloadLength = 4096;
-
         private readonly HttpConnectionPool _pool;
         private readonly HttpAuthority? _origin;
         private readonly HttpAuthority _authority;
@@ -700,15 +689,6 @@ namespace System.Net.Http
 
             async ValueTask ProcessSettingsFrameAsync(long settingsPayloadLength)
             {
-                if (settingsPayloadLength > MaximumSettingsPayloadLength)
-                {
-                    if (NetEventSource.Log.IsEnabled())
-                    {
-                        Trace($"Received SETTINGS frame with {settingsPayloadLength} byte payload exceeding the {MaximumSettingsPayloadLength} byte maximum.");
-                    }
-                    throw new Http3ConnectionException(Http3ErrorCode.ExcessiveLoad);
-                }
-
                 while (settingsPayloadLength != 0)
                 {
                     long settingId, settingValue;
@@ -773,15 +753,6 @@ namespace System.Net.Http
 
             async ValueTask SkipUnknownPayloadAsync(Http3FrameType frameType, long payloadLength)
             {
-                if (payloadLength > MaximumUnknownFramePayloadLength)
-                {
-                    if (NetEventSource.Log.IsEnabled())
-                    {
-                        Trace($"Received unknown frame type 0x{(long)frameType:x} with {payloadLength} byte payload exceeding the {MaximumUnknownFramePayloadLength} byte maximum.");
-                    }
-                    throw new Http3ConnectionException(Http3ErrorCode.ExcessiveLoad);
-                }
-
                 while (payloadLength != 0)
                 {
                     if (buffer.ActiveLength == 0)
