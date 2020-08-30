@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
-using System;
 using System.Text;
 using System.Globalization;
 using System.IO;
@@ -12,6 +10,8 @@ namespace System.Diagnostics
 {
     public class DelimitedListTraceListener : TextWriterTraceListener
     {
+        private const string DelimiterKey = "delimiter";
+
         private string _delimiter = ";";
         private string _secondaryDelim = ",";
         private bool _initializedDelim;
@@ -20,7 +20,7 @@ namespace System.Diagnostics
         {
         }
 
-        public DelimitedListTraceListener(Stream stream, string name) : base(stream, name)
+        public DelimitedListTraceListener(Stream stream, string? name) : base(stream, name)
         {
         }
 
@@ -28,7 +28,7 @@ namespace System.Diagnostics
         {
         }
 
-        public DelimitedListTraceListener(TextWriter writer, string name) : base(writer, name)
+        public DelimitedListTraceListener(TextWriter writer, string? name) : base(writer, name)
         {
         }
 
@@ -36,7 +36,7 @@ namespace System.Diagnostics
         {
         }
 
-        public DelimitedListTraceListener(string fileName, string name) : base(fileName, name)
+        public DelimitedListTraceListener(string fileName, string? name) : base(fileName, name)
         {
         }
 
@@ -48,9 +48,13 @@ namespace System.Diagnostics
                 {
                     if (!_initializedDelim)
                     {
-                        if (Attributes.ContainsKey("delimiter"))
+                        if (Attributes.ContainsKey(DelimiterKey))
                         {
-                            _delimiter = Attributes["delimiter"];
+                            string? delimiter = Attributes[DelimiterKey];
+                            if (!string.IsNullOrEmpty(delimiter))
+                            {
+                                _delimiter = delimiter;
+                            }
                         }
                         _initializedDelim = true;
                     }
@@ -80,9 +84,9 @@ namespace System.Diagnostics
 
         // base class method is protected internal but since its base class is in another assembly can't override it as protected internal because a CS0507
         // warning would be hitted.
-        protected override string[] GetSupportedAttributes() => new string[] { "delimiter" };
+        protected override string[] GetSupportedAttributes() => new string[] { DelimiterKey };
 
-        public override void TraceEvent(TraceEventCache eventCache, string source, TraceEventType eventType, int id, string format, params object[] args)
+        public override void TraceEvent(TraceEventCache? eventCache, string source, TraceEventType eventType, int id, string format, params object?[]? args)
         {
             if (Filter != null && !Filter.ShouldTrace(eventCache, source, eventType, id, format, args, null, null))
                 return;
@@ -101,7 +105,7 @@ namespace System.Diagnostics
             WriteFooter(eventCache);
         }
 
-        public override void TraceEvent(TraceEventCache eventCache, string source, TraceEventType eventType, int id, string message)
+        public override void TraceEvent(TraceEventCache? eventCache, string source, TraceEventType eventType, int id, string? message)
         {
             if (Filter != null && !Filter.ShouldTrace(eventCache, source, eventType, id, message, null, null, null))
                 return;
@@ -117,7 +121,7 @@ namespace System.Diagnostics
             WriteFooter(eventCache);
         }
 
-        public override void TraceData(TraceEventCache eventCache, string source, TraceEventType eventType, int id, object data)
+        public override void TraceData(TraceEventCache? eventCache, string source, TraceEventType eventType, int id, object? data)
         {
             if (Filter != null && !Filter.ShouldTrace(eventCache, source, eventType, id, null, null, data, null))
                 return;
@@ -127,13 +131,13 @@ namespace System.Diagnostics
             // first a delimiter for the message
             Write(Delimiter); // Use get_Delimiter
 
-            WriteEscaped(data.ToString());
+            WriteEscaped(data?.ToString());
             Write(Delimiter); // Use get_Delimiter
 
             WriteFooter(eventCache);
         }
 
-        public override void TraceData(TraceEventCache eventCache, string source, TraceEventType eventType, int id, params object[] data)
+        public override void TraceData(TraceEventCache? eventCache, string source, TraceEventType eventType, int id, params object?[]? data)
         {
             if (Filter != null && !Filter.ShouldTrace(eventCache, source, eventType, id, null, null, null, data))
                 return;
@@ -149,7 +153,7 @@ namespace System.Diagnostics
                 {
                     if (i != 0)
                         Write(_secondaryDelim);
-                    WriteEscaped(data[i].ToString());
+                    WriteEscaped(data[i]?.ToString());
                 }
             }
             Write(Delimiter); // Use get_Delimiter
@@ -169,7 +173,7 @@ namespace System.Diagnostics
             Write(Delimiter); // Use get_Delimiter
         }
 
-        private void WriteFooter(TraceEventCache eventCache)
+        private void WriteFooter(TraceEventCache? eventCache)
         {
             if (eventCache != null)
             {
@@ -205,7 +209,7 @@ namespace System.Diagnostics
             WriteLine("");
         }
 
-        private void WriteEscaped(string message)
+        private void WriteEscaped(string? message)
         {
             if (!string.IsNullOrEmpty(message))
             {
@@ -220,7 +224,7 @@ namespace System.Diagnostics
         {
             StringBuilder sb = new StringBuilder("\"");
             bool first = true;
-            foreach (object obj in stack)
+            foreach (object? obj in stack)
             {
                 if (!first)
                 {
@@ -231,7 +235,7 @@ namespace System.Diagnostics
                     first = false;
                 }
 
-                string operation = obj.ToString();
+                string? operation = obj?.ToString();
                 EscapeMessage(operation, sb);
             }
 
@@ -239,18 +243,21 @@ namespace System.Diagnostics
             Write(sb.ToString());
         }
 
-        private void EscapeMessage(string message, StringBuilder sb)
+        private void EscapeMessage(string? message, StringBuilder sb)
         {
-            int index;
-            int lastindex = 0;
-            while ((index = message.IndexOf('"', lastindex)) != -1)
+            if (!string.IsNullOrEmpty(message))
             {
-                sb.Append(message, lastindex, index - lastindex);
-                sb.Append("\"\"");
-                lastindex = index + 1;
-            }
+                int index;
+                int lastindex = 0;
+                while ((index = message.IndexOf('"', lastindex)) != -1)
+                {
+                    sb.Append(message, lastindex, index - lastindex);
+                    sb.Append("\"\"");
+                    lastindex = index + 1;
+                }
 
-            sb.Append(message, lastindex, message.Length - lastindex);
+                sb.Append(message, lastindex, message.Length - lastindex);
+            }
         }
     }
 }

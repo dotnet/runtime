@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Linq;
@@ -54,7 +53,6 @@ namespace System.Composition.UnitTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void CreatesInstanceWithNoDependencies()
         {
             var cc = CreateContainer(typeof(A));
@@ -63,7 +61,6 @@ namespace System.Composition.UnitTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void DefaultLifetimeIsNonShared()
         {
             var cc = CreateContainer(typeof(A));
@@ -73,7 +70,6 @@ namespace System.Composition.UnitTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void Composes()
         {
             var cc = CreateContainer(typeof(A), typeof(B));
@@ -82,7 +78,6 @@ namespace System.Composition.UnitTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void CanSpecifyExportsWithConventionBuilder()
         {
             var rb = new ConventionBuilder();
@@ -93,7 +88,6 @@ namespace System.Composition.UnitTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void CanSpecifyLifetimeWithConventionBuilder()
         {
             var rb = new ConventionBuilder();
@@ -105,7 +99,6 @@ namespace System.Composition.UnitTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void InjectsPropertyImports()
         {
             var rb = new ConventionBuilder();
@@ -116,7 +109,6 @@ namespace System.Composition.UnitTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void VerifyAssemblyNameCanBeUsedWithContainer()
         {
             var test = new ContainerConfiguration()
@@ -128,7 +120,6 @@ namespace System.Composition.UnitTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void VerifyAssemblyWithTwoBaseTypeWithOnlyOneExportedWorks()
         {
             var test = new ContainerConfiguration()

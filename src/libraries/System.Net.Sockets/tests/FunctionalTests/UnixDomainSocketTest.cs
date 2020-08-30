@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 using System.Linq;
@@ -59,9 +58,9 @@ namespace System.Net.Sockets.Tests
 
                 SocketAsyncEventArgs args = new SocketAsyncEventArgs();
                 args.RemoteEndPoint = endPoint;
-                args.Completed += (s, e) => ((TaskCompletionSource<bool>)e.UserToken).SetResult(true);
+                args.Completed += (s, e) => ((TaskCompletionSource)e.UserToken).SetResult();
 
-                var complete = new TaskCompletionSource<bool>();
+                var complete = new TaskCompletionSource();
                 args.UserToken = complete;
 
                 using (Socket sock = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
@@ -94,9 +93,9 @@ namespace System.Net.Sockets.Tests
             {
                 SocketAsyncEventArgs args = new SocketAsyncEventArgs();
                 args.RemoteEndPoint = endPoint;
-                args.Completed += (s, e) => ((TaskCompletionSource<bool>)e.UserToken).SetResult(true);
+                args.Completed += (s, e) => ((TaskCompletionSource)e.UserToken).SetResult();
 
-                var complete = new TaskCompletionSource<bool>();
+                var complete = new TaskCompletionSource();
                 args.UserToken = complete;
 
                 using (Socket sock = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
@@ -484,6 +483,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [ConditionalFact(nameof(IsSubWindows10))]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void Socket_CreateUnixDomainSocket_Throws_OnWindows()
         {
             AssertExtensions.Throws<ArgumentNullException>("path", () => new UnixDomainSocketEndPoint(null));

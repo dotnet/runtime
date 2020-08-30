@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="shim_libraries">
+    <ClCompile Include="$(SHIM_GLOBALIZATION)\pal_calendarData.c">
+      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\shimglobalization</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SHIM_GLOBALIZATION)\pal_casing.c">
+      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\shimglobalization</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SHIM_GLOBALIZATION)\pal_collation.c">
+      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\shimglobalization</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SHIM_GLOBALIZATION)\pal_idna.c">
+      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\shimglobalization</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SHIM_GLOBALIZATION)\pal_locale.c">
+      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\shimglobalization</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SHIM_GLOBALIZATION)\pal_localeNumberData.c">
+      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\shimglobalization</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SHIM_GLOBALIZATION)\pal_localeStringData.c">
+      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\shimglobalization</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SHIM_GLOBALIZATION)\pal_normalization.c">
+      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\shimglobalization</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SHIM_GLOBALIZATION)\pal_timeZoneInfo.c">
+      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\shimglobalization</Filter>
+    </ClCompile>             
+    <ClCompile Include="$(SHIM_GLOBALIZATION)\pal_icushim.c">
+      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\shimglobalization</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SHIM_GLOBALIZATION)\entrypoints.c">
+      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\shimglobalization</Filter>
+    </ClCompile>      
+    <ClInclude Include="$(SHIM_GLOBALIZATION)\pal_calendarData.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\shimglobalization</Filter>
+    </ClInclude>
+    <ClInclude Include="$(SHIM_GLOBALIZATION)\pal_casing.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\shimglobalization</Filter>
+    </ClInclude>
+    <ClInclude Include="$(SHIM_GLOBALIZATION)\pal_collation.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\shimglobalization</Filter>
+    </ClInclude>
+    <ClInclude Include="$(SHIM_GLOBALIZATION)\pal_errors.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\shimglobalization</Filter>
+    </ClInclude>
+    <ClInclude Include="$(SHIM_GLOBALIZATION)\pal_errors_internal.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\shimglobalization</Filter>
+    </ClInclude>
+    <ClInclude Include="$(SHIM_GLOBALIZATION)\pal_icushim.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\shimglobalization</Filter>
+    </ClInclude>
+    <ClInclude Include="$(SHIM_GLOBALIZATION)\pal_icushim_internal.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\shimglobalization</Filter>
+    </ClInclude>
+    <ClInclude Include="$(SHIM_GLOBALIZATION)\pal_icushim_internal_android.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\shimglobalization</Filter>
+    </ClInclude>
+    <ClInclude Include="$(SHIM_GLOBALIZATION)\pal_idna.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\shimglobalization</Filter>
+    </ClInclude>
+    <ClInclude Include="$(SHIM_GLOBALIZATION)\pal_locale.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\shimglobalization</Filter>
+    </ClInclude>
+    <ClInclude Include="$(SHIM_GLOBALIZATION)\pal_localeNumberData.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\shimglobalization</Filter>
+    </ClInclude>
+    <ClInclude Include="$(SHIM_GLOBALIZATION)\pal_localeStringData.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\shimglobalization</Filter>
+    </ClInclude>
+    <ClInclude Include="$(SHIM_GLOBALIZATION)\pal_locale_internal.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\shimglobalization</Filter>
+    </ClInclude>
+    <ClInclude Include="$(SHIM_GLOBALIZATION)\pal_normalization.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\shimglobalization</Filter>
+    </ClInclude>
+    <ClInclude Include="$(SHIM_GLOBALIZATION)\pal_timeZoneInfo.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\shimglobalization</Filter>
+    </ClInclude>
+    <ClInclude Include="$(SHIM_GLOBALIZATION_COMMON)\pal_compiler.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\shimglobalization</Filter>
+    </ClInclude>                        
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Header Files$(MonoRuntimeFilterSubFolder)\shimglobalization"/>
+    <Filter Include="Source Files$(MonoRuntimeFilterSubFolder)\shimglobalization"/>
+  </ItemGroup>
+</Project>

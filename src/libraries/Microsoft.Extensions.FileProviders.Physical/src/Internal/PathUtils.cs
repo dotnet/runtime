@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 using System.Linq;
@@ -43,9 +42,9 @@ namespace Microsoft.Extensions.FileProviders.Physical.Internal
         internal static bool PathNavigatesAboveRoot(string path)
         {
             var tokenizer = new StringTokenizer(path, _pathSeparators);
-            var depth = 0;
+            int depth = 0;
 
-            foreach (var segment in tokenizer)
+            foreach (StringSegment segment in tokenizer)
             {
                 if (segment.Equals(".") || segment.Equals(""))
                 {

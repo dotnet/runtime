@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Tests;
 using System.Collections.Generic;
@@ -97,7 +96,7 @@ namespace System.Collections.Concurrent.Tests
 
         protected override bool IDictionary_Generic_Keys_Values_ModifyingTheDictionaryUpdatesTheCollection => false;
 
-        protected override bool ResetImplemented => false;
+        protected override bool ResetImplemented => true;
         protected override bool IDictionary_Generic_Keys_Values_Enumeration_ResetImplemented => true;
 
         protected override EnumerableOrder Order => EnumerableOrder.Unspecified;

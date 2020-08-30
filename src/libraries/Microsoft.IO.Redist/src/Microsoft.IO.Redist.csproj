@@ -1,12 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <AssemblyName>Microsoft.IO.Redist</AssemblyName>
-    <TargetFrameworks>$(NetFrameworkCurrent)</TargetFrameworks>
+    <TargetFrameworks>net472</TargetFrameworks>
     <DefineConstants>$(DefineConstants);MS_IO_REDIST</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <NoWarn>$(NoWarn);CS1573</NoWarn>
     <ClsCompliant>false</ClsCompliant>
     <Nullable>annotations</Nullable>
+    <IncludePlatformAttributes>true</IncludePlatformAttributes>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\..\System.IO.FileSystem\src\System\IO\Directory.cs"
@@ -191,16 +190,13 @@
              Link="Common\System\IO\PathInternal.CaseSensitivity.cs" />
     <Compile Include="$(CommonPath)System\Memory\FixedBufferExtensions.cs"
              Link="Common\System\Memory\FixedBufferExtensions.cs" />
-    <Compile Include="$(CommonPath)System\Runtime\InteropServices\SuppressGCTransitionAttribute.internal.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\InteropServices\SuppressGCTransitionAttribute.cs"
+             Link="System\Runtime\InteropServices\SuppressGCTransitionAttribute.cs" />
     <Compile Include="Microsoft\IO\StringExtensions.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="mscorlib" />
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.ValueTuple" />
-    <Reference Include="System.Buffers" />
-    <Reference Include="System.Memory" />
+    <PackageReference Include="System.Buffers" Version="$(SystemBuffersVersion)" />
+    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Microsoft\IO\Enumeration\" />

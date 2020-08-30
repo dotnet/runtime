@@ -1,13 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-
-#if FEATURE_COMINTEROP
-using EventRegistrationToken = System.Runtime.InteropServices.WindowsRuntime.EventRegistrationToken;
-#endif //#if FEATURE_COMINTEROP
 
 namespace System.Reflection
 {
@@ -71,11 +66,6 @@ namespace System.Reflection
             if (addMethod == null)
                 throw new InvalidOperationException(SR.InvalidOperation_NoPublicAddMethod);
 
-#if FEATURE_COMINTEROP
-            if (addMethod.ReturnType == typeof(EventRegistrationToken))
-                throw new InvalidOperationException(SR.InvalidOperation_NotSupportedOnWinRTEvent);
-#endif //#if FEATURE_COMINTEROP
-
             addMethod.Invoke(target, new object?[] { handler });
         }
 
@@ -87,12 +77,6 @@ namespace System.Reflection
 
             if (removeMethod == null)
                 throw new InvalidOperationException(SR.InvalidOperation_NoPublicRemoveMethod);
-
-#if FEATURE_COMINTEROP
-            ParameterInfo[] parameters = removeMethod.GetParametersNoCopy();
-            if (parameters[0].ParameterType == typeof(EventRegistrationToken))
-                throw new InvalidOperationException(SR.InvalidOperation_NotSupportedOnWinRTEvent);
-#endif //#if FEATURE_COMINTEROP
 
             removeMethod.Invoke(target, new object?[] { handler });
         }

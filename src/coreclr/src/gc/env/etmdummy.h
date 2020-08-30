@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #define FireEtwGCStart(Count, Reason) 0
 #define FireEtwGCStart_V1(Count, Depth, Reason, Type, ClrInstanceID) 0
@@ -164,6 +163,7 @@
 #define FireEtwGCMarkWithType(HeapNum, ClrInstanceID, Type, Bytes) 0
 #define FireEtwGCJoin_V2(Heap, JoinTime, JoinType, ClrInstanceID, JoinID) 0
 #define FireEtwGCPerHeapHistory_V3(ClrInstanceID, FreeListAllocated, FreeListRejected, EndOfSegAllocated, CondemnedAllocated, PinnedAllocated, PinnedAllocatedAdvance, RunningFreeListEfficiency, CondemnReasons0, CondemnReasons1, CompactMechanisms, ExpandMechanisms, HeapIndex, ExtraGen0Commit, Count, Values_Len_, Values) 0
+#define FireEtwGCGlobalHeapHistory_V2(FinalYoungestDesired, NumHeaps, CondemnedGeneration, Gen0ReductionCount, Reason, GlobalMechanisms, ClrInstanceID, PauseMode, MemoryPressure) 0
 #define FireEtwGCGlobalHeapHistory_V3(FinalYoungestDesired, NumHeaps, CondemnedGeneration, Gen0ReductionCount, Reason, GlobalMechanisms, ClrInstanceID, PauseMode, MemoryPressure, CondemnReasons0, CondemnReasons1) 0
 #define FireEtwDebugIPCEventStart() 0
 #define FireEtwDebugIPCEventEnd() 0

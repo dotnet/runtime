@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections;
@@ -19,23 +18,23 @@ namespace System.IO.Ports
         private const int TimeoutResolution = 30;
         // time [ms] loop has to be idle before it stops
         private const int IOLoopIdleTimeout = 2000;
-        private bool _ioLoopFinished = false;
+        private bool _ioLoopFinished;
 
-        private SafeSerialDeviceHandle _handle = null;
+        private SafeSerialDeviceHandle _handle;
         private int _baudRate;
         private StopBits _stopBits;
         private Parity _parity;
         private int _dataBits = 8;
-        private bool _rtsEnable = false;
-        private int _readTimeout = 0;
-        private int _writeTimeout = 0;
+        private bool _rtsEnable;
+        private int _readTimeout;
+        private int _writeTimeout;
         private byte[] _tempBuf = new byte[1];
         private Task _ioLoop;
         private object _ioLoopLock = new object();
         private ConcurrentQueue<SerialStreamIORequest> _readQueue = new ConcurrentQueue<SerialStreamIORequest>();
         private ConcurrentQueue<SerialStreamIORequest> _writeQueue = new ConcurrentQueue<SerialStreamIORequest>();
 
-        private long _totalBytesRead = 0;
+        private long _totalBytesRead;
         private long TotalBytesAvailable => _totalBytesRead + BytesToRead;
         private long _lastTotalBytesAvailable;
 
@@ -464,7 +463,7 @@ namespace System.IO.Ports
         // Will wait `timeout` miliseconds or until reading or writing is possible
         // If no operation is requested it will throw
         // Returns event which has happened
-        private Interop.Sys.PollEvents PollEvents(int timeout, bool pollReadEvents, bool pollWriteEvents, out Interop.ErrorInfo? error)
+        private Interop.PollEvents PollEvents(int timeout, bool pollReadEvents, bool pollWriteEvents, out Interop.ErrorInfo? error)
         {
             if (!pollReadEvents && !pollWriteEvents)
             {
@@ -472,20 +471,20 @@ namespace System.IO.Ports
                 throw new Exception();
             }
 
-            Interop.Sys.PollEvents eventsToPoll = Interop.Sys.PollEvents.POLLERR;
+            Interop.PollEvents eventsToPoll = Interop.PollEvents.POLLERR;
 
             if (pollReadEvents)
             {
-                eventsToPoll |= Interop.Sys.PollEvents.POLLIN;
+                eventsToPoll |= Interop.PollEvents.POLLIN;
             }
 
             if (pollWriteEvents)
             {
-                eventsToPoll |= Interop.Sys.PollEvents.POLLOUT;
+                eventsToPoll |= Interop.PollEvents.POLLOUT;
             }
 
-            Interop.Sys.PollEvents events = Interop.Sys.PollEvents.POLLNONE;
-            Interop.Error ret = Interop.Sys.Poll(
+            Interop.PollEvents events = Interop.PollEvents.POLLNONE;
+            Interop.Error ret = Interop.Serial.Poll(
                 _handle,
                 eventsToPoll,
                 timeout,
@@ -699,7 +698,7 @@ namespace System.IO.Ports
             fixed (byte* bufPtr = buff)
             {
                 // assumes dequeue-ing happens on a single thread
-                int numBytes = Interop.Sys.Read(_handle, bufPtr, buff.Length);
+                int numBytes = Interop.Serial.Read(_handle, bufPtr, buff.Length);
 
                 if (numBytes < 0)
                 {
@@ -731,7 +730,7 @@ namespace System.IO.Ports
             fixed (byte* bufPtr = buff)
             {
                 // assumes dequeue-ing happens on a single thread
-                int numBytes = Interop.Sys.Write(_handle, bufPtr, buff.Length);
+                int numBytes = Interop.Serial.Write(_handle, bufPtr, buff.Length);
 
                 if (numBytes <= 0)
                 {
@@ -843,7 +842,7 @@ namespace System.IO.Ports
                 }
                 else
                 {
-                    Interop.Sys.PollEvents events = PollEvents(1,
+                    Interop.PollEvents events = PollEvents(1,
                                                                pollReadEvents: hasPendingReads,
                                                                pollWriteEvents: hasPendingWrites,
                                                                out Interop.ErrorInfo? error);
@@ -854,21 +853,21 @@ namespace System.IO.Ports
                         break;
                     }
 
-                    if (events.HasFlag(Interop.Sys.PollEvents.POLLNVAL) ||
-                        events.HasFlag(Interop.Sys.PollEvents.POLLERR))
+                    if (events.HasFlag(Interop.PollEvents.POLLNVAL) ||
+                        events.HasFlag(Interop.PollEvents.POLLERR))
                     {
                         // bad descriptor or some other error we can't handle
                         FinishPendingIORequests();
                         break;
                     }
 
-                    if (events.HasFlag(Interop.Sys.PollEvents.POLLIN))
+                    if (events.HasFlag(Interop.PollEvents.POLLIN))
                     {
                         int bytesRead = DoIORequest(_readQueue, _processReadDelegate);
                         _totalBytesRead += bytesRead;
                     }
 
-                    if (events.HasFlag(Interop.Sys.PollEvents.POLLOUT))
+                    if (events.HasFlag(Interop.PollEvents.POLLOUT))
                     {
                         DoIORequest(_writeQueue, _processWriteDelegate);
                     }

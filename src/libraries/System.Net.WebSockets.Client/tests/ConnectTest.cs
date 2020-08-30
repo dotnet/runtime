@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Net.Test.Common;
@@ -215,6 +214,7 @@ namespace System.Net.WebSockets.Client.Tests
                 using (var clientSocket = new ClientWebSocket())
                 using (var cts = new CancellationTokenSource(TimeOutMilliseconds))
                 {
+                    // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy authorisation header.")]
                     clientSocket.Options.SetRequestHeader("Authorization", "AWS4-HMAC-SHA256 Credential= AKIAXXXXXXXXXXXYSZA /20190301/us-east-2/neptune-db/aws4_request, SignedHeaders=host;x-amz-date, Signature=b8155de54d9faab00000000000000000000000000a07e0d7dda49902e4d9202");
                     await clientSocket.ConnectAsync(uri, cts.Token);
                 }
@@ -260,7 +260,7 @@ namespace System.Net.WebSockets.Client.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34690", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public async Task ConnectAsync_CancellationRequestedAfterConnect_ThrowsOperationCanceledException()
         {
-            var releaseServer = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var releaseServer = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             await LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
                 var clientSocket = new ClientWebSocket();
@@ -274,7 +274,7 @@ namespace System.Net.WebSockets.Client.Tests
                 }
                 finally
                 {
-                    releaseServer.SetResult(true);
+                    releaseServer.SetResult();
                     clientSocket.Dispose();
                 }
             }, server => server.AcceptConnectionAsync(async connection =>

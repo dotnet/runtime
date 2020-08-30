@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Reflection;
 using Xunit;
@@ -495,6 +494,8 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData(@"abcd(?<=cd)efgh", 8)]
         [InlineData(@"abcd(?!ab)efgh", 8)]
         [InlineData(@"abcd(?<!ef)efgh", 8)]
+        [InlineData(@"(a{1073741824}){2}", 2147483647)]
+        [InlineData(@"a{1073741824}b{1073741824}", 2147483647)]
         // we stop computing after a certain depth; if that logic changes in the future, these tests can be updated
         [InlineData(@"((((((((((((((((((((((((((((((ab|cd+)|ef+)|gh+)|ij+)|kl+)|mn+)|op+)|qr+)|st+)|uv+)|wx+)|yz+)|01+)|23+)|45+)|67+)|89+)|AB+)|CD+)|EF+)|GH+)|IJ+)|KL+)|MN+)|OP+)|QR+)|ST+)|UV+)|WX+)|YZ)", 0)]
         [InlineData(@"(YZ+|(WX+|(UV+|(ST+|(QR+|(OP+|(MN+|(KL+|(IJ+|(GH+|(EF+|(CD+|(AB+|(89+|(67+|(45+|(23+|(01+|(yz+|(wx+|(uv+|(st+|(qr+|(op+|(mn+|(kl+|(ij+|(gh+|(ef+|(de+|(a|bc+)))))))))))))))))))))))))))))))", 0)]

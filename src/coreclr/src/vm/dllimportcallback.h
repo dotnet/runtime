@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // File: DllImportCallback.h
 //
@@ -146,26 +145,6 @@ public:
         return m_cbRetPop;
     }
 
-    CorPinvokeMap GetCallingConvention()
-    {
-        CONTRACTL
-        {
-            NOTHROW;
-            GC_NOTRIGGER;
-            MODE_ANY;
-            SUPPORTS_DAC;
-            PRECONDITION(IsCompletelyInited());
-        }
-        CONTRACTL_END;
-
-        return (CorPinvokeMap)m_callConv;
-    }
-
-    VOID SetCallingConvention(const CorPinvokeMap callConv)
-    {
-        m_callConv = (UINT16)callConv;
-    }
-
 #else
     PCODE GetExecStubEntryPoint();
 #endif
@@ -195,6 +174,9 @@ public:
 
     VOID SetupArguments(char *pSrc, ArgumentRegisters *pArgRegs, char *pDst);
 #else
+private:
+    VOID SetUpForUnmanagedCallersOnly();
+
     // Compiles an unmanaged to managed thunk for the given signature. The thunk
     // will call the stub or, if fNoStub == TRUE, directly the managed target.
     Stub *CompileNExportThunk(LoaderHeap *pLoaderHeap, PInvokeStaticSigInfo* pSigInfo, MetaSig *pMetaSig, BOOL fNoStub);

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -113,11 +112,11 @@ namespace System.Reflection
         #region Private Data Members
         private int m_tkParamDef;
         private MetadataImport m_scope;
-        private Signature m_signature = null!;
-        private volatile bool m_nameIsCached = false;
-        private readonly bool m_noMetadata = false;
-        private bool m_noDefaultValue = false;
-        private MethodBase? m_originalMember = null;
+        private Signature? m_signature;
+        private volatile bool m_nameIsCached;
+        private readonly bool m_noMetadata;
+        private bool m_noDefaultValue;
+        private MethodBase? m_originalMember;
         #endregion
 
         #region Internal Properties
@@ -217,6 +216,8 @@ namespace System.Reflection
                 // only instance of ParameterInfo has ClassImpl, all its subclasses don't
                 if (ClassImpl == null)
                 {
+                    Debug.Assert(m_signature != null);
+
                     RuntimeType parameterType;
                     if (PositionImpl == -1)
                         parameterType = m_signature.ReturnType;
@@ -481,12 +482,16 @@ namespace System.Reflection
 
         public override Type[] GetRequiredCustomModifiers()
         {
-            return m_signature.GetCustomModifiers(PositionImpl + 1, true);
+            return m_signature is null ?
+                Type.EmptyTypes :
+                m_signature.GetCustomModifiers(PositionImpl + 1, true);
         }
 
         public override Type[] GetOptionalCustomModifiers()
         {
-            return m_signature.GetCustomModifiers(PositionImpl + 1, false);
+            return m_signature is null ?
+                Type.EmptyTypes :
+                m_signature.GetCustomModifiers(PositionImpl + 1, false);
         }
 
         #endregion

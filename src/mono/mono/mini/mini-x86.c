@@ -567,6 +567,112 @@ static gboolean storage_in_ireg (ArgStorage storage)
 	return (storage == ArgInIReg || storage == ArgValuetypeInReg);
 }
 
+static int
+arg_need_temp (ArgInfo *ainfo)
+{
+	/*
+	 * We always fetch the double value from the fpstack. In that case, we
+	 * need to have a separate tmp that is the double value casted to float
+	 */
+	if (ainfo->storage == ArgOnFloatFpStack)
+		return sizeof (float);
+	return 0;
+}
+
+static gpointer
+arg_get_storage (CallContext *ccontext, ArgInfo *ainfo)
+{
+	switch (ainfo->storage) {
+		case ArgOnStack:
+			return ccontext->stack + ainfo->offset;
+		case ArgOnDoubleFpStack:
+			return &ccontext->fret;
+		case ArgInIReg:
+			/* If pair, the storage is for EDX:EAX */
+			return &ccontext->eax;
+		default:
+			g_error ("Arg storage type not yet supported");
+        }
+}
+
+static void
+arg_get_val (CallContext *ccontext, ArgInfo *ainfo, gpointer dest)
+{
+	g_assert (ainfo->storage == ArgOnFloatFpStack);
+
+	*(float*) dest = (float)ccontext->fret;
+}
+
+void
+mono_arch_set_native_call_context_args (CallContext *ccontext, gpointer frame, MonoMethodSignature *sig)
+{
+	CallInfo *cinfo = get_call_info (NULL, sig);
+	const MonoEECallbacks *interp_cb = mini_get_interp_callbacks ();
+	gpointer storage;
+	ArgInfo *ainfo;
+
+	memset (ccontext, 0, sizeof (CallContext));
+
+	ccontext->stack_size = ALIGN_TO (cinfo->stack_usage, MONO_ARCH_FRAME_ALIGNMENT);
+	if (ccontext->stack_size)
+		ccontext->stack = (guint8*)g_calloc (1, ccontext->stack_size);
+
+	if (sig->ret->type != MONO_TYPE_VOID) {
+		ainfo = &cinfo->ret;
+		if (ainfo->storage == ArgOnStack) {
+			/* This is a value type return. The pointer to vt storage is pushed as first argument */
+			g_assert (ainfo->offset == 0);
+			g_assert (ainfo->nslots == 1);
+			storage = interp_cb->frame_arg_to_storage ((MonoInterpFrameHandle)frame, sig, -1);
+			*(host_mgreg_t*)ccontext->stack = (host_mgreg_t)storage;
+		}
+	}
+
+	g_assert (!sig->hasthis);
+
+	for (int i = 0; i < sig->param_count; i++) {
+		ainfo = &cinfo->args [i];
+
+		storage = arg_get_storage (ccontext, ainfo);
+
+		interp_cb->frame_arg_to_data ((MonoInterpFrameHandle)frame, sig, i, storage);
+	}
+
+	g_free (cinfo);
+}
+
+void
+mono_arch_get_native_call_context_ret (CallContext *ccontext, gpointer frame, MonoMethodSignature *sig)
+{
+	const MonoEECallbacks *interp_cb;
+	CallInfo *cinfo;
+	ArgInfo *ainfo;
+	gpointer storage;
+
+	/* No return value */
+	if (sig->ret->type == MONO_TYPE_VOID)
+		return;
+
+	interp_cb = mini_get_interp_callbacks ();
+	cinfo = get_call_info (NULL, sig);
+	ainfo = &cinfo->ret;
+
+	/* Check if return value was stored directly at address passed in reg */
+	if (cinfo->ret.storage != ArgOnStack) {
+		int temp_size = arg_need_temp (ainfo);
+
+		if (temp_size) {
+			storage = alloca (temp_size);
+			arg_get_val (ccontext, ainfo, storage);
+		} else {
+			storage = arg_get_storage (ccontext, ainfo);
+		}
+		interp_cb->data_to_frame_arg ((MonoInterpFrameHandle)frame, sig, -1, storage);
+	}
+
+	g_free (cinfo);
+}
+
 /*
  * mono_arch_get_argument_info:
  * @csig:  a method signature

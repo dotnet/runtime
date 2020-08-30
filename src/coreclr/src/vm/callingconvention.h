@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 
 
@@ -50,21 +49,21 @@ struct ArgLocDesc
 #endif // UNIX_AMD64_ABI
 
 #ifdef FEATURE_HFA
-    static unsigned getHFAFieldSize(CorElementType  hfaType)
+    static unsigned getHFAFieldSize(CorInfoHFAElemType  hfaType)
     {
         switch (hfaType)
         {
-        case ELEMENT_TYPE_R4: return 4;
-        case ELEMENT_TYPE_R8: return 8;
-            // We overload VALUETYPE for 16-byte vectors.
-        case ELEMENT_TYPE_VALUETYPE: return 16;
+        case CORINFO_HFA_ELEM_FLOAT: return 4;
+        case CORINFO_HFA_ELEM_DOUBLE: return 8;
+        case CORINFO_HFA_ELEM_VECTOR64: return 8;
+        case CORINFO_HFA_ELEM_VECTOR128: return 16;
         default: _ASSERTE(!"Invalid HFA Type"); return 0;
         }
     }
 #endif
 #if defined(TARGET_ARM64)
     unsigned m_hfaFieldSize;      // Size of HFA field in bytes.
-    void setHFAFieldSize(CorElementType  hfaType)
+    void setHFAFieldSize(CorInfoHFAElemType  hfaType)
     {
         m_hfaFieldSize = getHFAFieldSize(hfaType);
     }
@@ -624,7 +623,7 @@ public:
 
             if (!m_argTypeHandle.IsNull() && m_argTypeHandle.IsHFA())
             {
-                CorElementType type = m_argTypeHandle.GetHFAType();
+                CorInfoHFAElemType type = m_argTypeHandle.GetHFAType();
                 pLoc->setHFAFieldSize(type);
                 pLoc->m_cFloatReg = GetArgSize()/pLoc->m_hfaFieldSize;
 
@@ -743,6 +742,9 @@ protected:
 #ifdef TARGET_X86
     int                 m_curOfs;           // Current position of the stack iterator
     int                 m_numRegistersUsed;
+#ifdef FEATURE_INTERPRETER
+    bool                m_fUnmanagedCallConv;
+#endif
 #endif
 
 #ifdef TARGET_AMD64
@@ -988,6 +990,7 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
             m_fUnmanagedCallConv = false;
             m_numRegistersUsed = numRegistersUsed;
             m_curOfs = TransitionBlock::GetOffsetOfArgs() + SizeOfArgStack();
+            break;
         }
 #else
         m_numRegistersUsed = numRegistersUsed;
@@ -1350,7 +1353,7 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
         // that are passed in FP argument registers if possible.
         if (thValueType.IsHFA())
         {
-            CorElementType type = thValueType.GetHFAType();
+            CorInfoHFAElemType type = thValueType.GetHFAType();
 
             m_argLocDescForStructInRegs.Init();
             m_argLocDescForStructInRegs.m_idxFloatReg = m_idxFPReg;
@@ -1528,7 +1531,7 @@ void ArgIteratorTemplate<ARGITERATOR_BASE>::ComputeReturnFlags()
 #ifdef FEATURE_HFA
             if (thValueType.IsHFA() && !this->IsVarArg())
             {
-                CorElementType hfaType = thValueType.GetHFAType();
+                CorInfoHFAElemType hfaType = thValueType.GetHFAType();
 
                 int hfaFieldSize = ArgLocDesc::getHFAFieldSize(hfaType);
                 flags |= ((4 * hfaFieldSize) << RETURN_FP_SIZE_SHIFT);
@@ -1601,20 +1604,21 @@ void ArgIteratorTemplate<ARGITERATOR_BASE>::ForceSigWalk()
     }
 
 #ifdef FEATURE_INTERPRETER
-     BYTE callconv = CallConv();
-     switch (callconv)
-     {
-     case IMAGE_CEE_CS_CALLCONV_C:
-     case IMAGE_CEE_CS_CALLCONV_STDCALL:
-           numRegistersUsed = NUM_ARGUMENT_REGISTERS;
-           nSizeOfArgStack = TransitionBlock::GetOffsetOfArgs() + numRegistersUsed * sizeof(void *);
-           break;
+    BYTE callconv = CallConv();
+    switch (callconv)
+    {
+    case IMAGE_CEE_CS_CALLCONV_C:
+    case IMAGE_CEE_CS_CALLCONV_STDCALL:
+        numRegistersUsed = NUM_ARGUMENT_REGISTERS;
+        nSizeOfArgStack = TransitionBlock::GetOffsetOfArgs() + numRegistersUsed * sizeof(void *);
+        break;
 
-     case IMAGE_CEE_CS_CALLCONV_THISCALL:
-     case IMAGE_CEE_CS_CALLCONV_FASTCALL:
-          _ASSERTE_MSG(false, "Unsupported calling convention.");
-     default:
-     }
+    case IMAGE_CEE_CS_CALLCONV_THISCALL:
+    case IMAGE_CEE_CS_CALLCONV_FASTCALL:
+        _ASSERTE_MSG(false, "Unsupported calling convention.");
+    default:
+        break;
+    }
 #endif // FEATURE_INTERPRETER
 
     DWORD nArgs = this->NumFixedArgs();

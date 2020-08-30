@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // File: generics.cpp
 //
@@ -23,11 +22,6 @@
 #include "typekey.h"
 #include "dumpcommon.h"
 #include "array.h"
-
-#include "generics.inl"
-#ifdef FEATURE_COMINTEROP
-#include "winrttypenameconverter.h"
-#endif // FEATURE_COMINTEROP
 
 /* static */
 TypeHandle ClassLoader::CanonicalizeGenericArg(TypeHandle thGenericArg)
@@ -219,10 +213,8 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
 
 #ifdef FEATURE_COMINTEROP
     BOOL fHasDynamicInterfaceMap = pOldMT->HasDynamicInterfaceMap();
-    BOOL fHasRCWPerTypeData = pOldMT->HasRCWPerTypeData();
 #else // FEATURE_COMINTEROP
     BOOL fHasDynamicInterfaceMap = FALSE;
-    BOOL fHasRCWPerTypeData = FALSE;
 #endif // FEATURE_COMINTEROP
 
     // Collectible types have some special restrictions
@@ -253,11 +245,6 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
     DWORD cbIMap = pOldMT->GetInterfaceMapSize();
     InterfaceInfo_t * pOldIMap = (InterfaceInfo_t *)pOldMT->GetInterfaceMap();
 
-    BOOL fHasGuidInfo = FALSE;
-    BOOL fHasCCWTemplate = FALSE;
-
-    Generics::DetermineCCWTemplateAndGUIDPresenceOnNonCanonicalMethodTable(pOldMT, fContainsGenericVariables, &fHasGuidInfo, &fHasCCWTemplate);
-
     DWORD dwMultipurposeSlotsMask = 0;
     dwMultipurposeSlotsMask |= MethodTable::enum_flag_HasPerInstInfo;
     if (wNumInterfaces != 0)
@@ -269,9 +256,6 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
     // We need space for the optional members.
     DWORD cbOptional = MethodTable::GetOptionalMembersAllocationSize(dwMultipurposeSlotsMask,
                                                       fHasGenericsStaticsInfo,
-                                                      fHasGuidInfo,
-                                                      fHasCCWTemplate,
-                                                      fHasRCWPerTypeData,
                                                       pOldMT->HasTokenOverflow());
 
     // We need space for the PerInstInfo, i.e. the generic dictionary pointers...
@@ -282,14 +266,15 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
     // creating this type. In other words: this type will have a smaller dictionary that its layout. This is not a
     // problem however because whenever we need to load a value from the dictionary of this type beyond its size, we
     // will expand the dictionary at that point.
-    DWORD cbInstAndDict = pOldMT->GetInstAndDictSize();
+    DWORD cbInstAndDictSlotSize;
+    DWORD cbInstAndDictAllocSize = pOldMT->GetInstAndDictSize(&cbInstAndDictSlotSize);
 
     // Allocate from the high frequence heap of the correct domain
     S_SIZE_T allocSize = safe_cbMT;
     allocSize += cbOptional;
     allocSize += cbIMap;
     allocSize += cbPerInst;
-    allocSize += cbInstAndDict;
+    allocSize += cbInstAndDictAllocSize;
 
     if (allocSize.IsOverflow())
     {
@@ -459,14 +444,6 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
     if (fHasGenericsStaticsInfo)
         pMT->SetDynamicStatics(TRUE);
 
-
-#ifdef FEATURE_COMINTEROP
-    if (fHasCCWTemplate)
-        pMT->SetHasCCWTemplate();
-    if (fHasGuidInfo)
-        pMT->SetHasGuidInfo();
-#endif
-
     // Since we are fabricating a new MT based on an existing one, the per-inst info should
     // be non-null
     _ASSERTE(pOldMT->HasPerInstInfo());
@@ -498,7 +475,7 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
         _ASSERTE(pLayout->GetMaxSlots() > 0);
         PTR_Dictionary pDictionarySlots = pMT->GetPerInstInfo()[pOldMT->GetNumDicts() - 1].GetValue();
         DWORD* pSizeSlot = (DWORD*)(pDictionarySlots + ntypars);
-        *pSizeSlot = cbInstAndDict;
+        *pSizeSlot = cbInstAndDictSlotSize;
     }
 
     // Copy interface map across
@@ -600,9 +577,6 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
     _ASSERTE(!fHasGenericsStaticsInfo == !pMT->HasGenericsStaticsInfo());
 #ifdef FEATURE_COMINTEROP
     _ASSERTE(!fHasDynamicInterfaceMap == !pMT->HasDynamicInterfaceMap());
-    _ASSERTE(!fHasRCWPerTypeData == !pMT->HasRCWPerTypeData());
-    _ASSERTE(!fHasCCWTemplate == !pMT->HasCCWTemplate());
-    _ASSERTE(!fHasGuidInfo == !pMT->HasGuidInfo());
 #endif
 
     LOG((LF_CLASSLOADER, LL_INFO1000, "GENERICS: Replicated methodtable to create type %s\n", pMT->GetDebugClassName()));

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -12,7 +11,7 @@ namespace System.Xml
         //
         // Fields
         //
-        private byte[] _buffer;
+        private byte[]? _buffer;
         private int _startIndex;
         private int _curIndex;
         private int _endIndex;
@@ -61,10 +60,11 @@ namespace System.Xml
             {
                 return 0;
             }
+
             int bytesDecoded, charsDecoded;
             fixed (char* pChars = &chars[startPos])
             {
-                fixed (byte* pBytes = &_buffer[_curIndex])
+                fixed (byte* pBytes = &_buffer![_curIndex])
                 {
                     Decode(pChars, pChars + len, pBytes, pBytes + (_endIndex - _curIndex),
                             ref _hasHalfByteCached, ref _cachedHalfByte, out charsDecoded, out bytesDecoded);
@@ -97,15 +97,17 @@ namespace System.Xml
             {
                 return 0;
             }
+
             int bytesDecoded, charsDecoded;
             fixed (char* pChars = str)
             {
-                fixed (byte* pBytes = &_buffer[_curIndex])
+                fixed (byte* pBytes = &_buffer![_curIndex])
                 {
                     Decode(pChars + startPos, pChars + startPos + len, pBytes, pBytes + (_endIndex - _curIndex),
                             ref _hasHalfByteCached, ref _cachedHalfByte, out charsDecoded, out bytesDecoded);
                 }
             }
+
             _curIndex += bytesDecoded;
             return charsDecoded;
         }
@@ -196,17 +198,10 @@ namespace System.Xml
                 byte halfByte;
                 char ch = *pChar++;
 
-                if (ch >= 'a' && ch <= 'f')
+                int val = HexConverter.FromChar(ch);
+                if (val != 0xFF)
                 {
-                    halfByte = (byte)(ch - 'a' + 10);
-                }
-                else if (ch >= 'A' && ch <= 'F')
-                {
-                    halfByte = (byte)(ch - 'A' + 10);
-                }
-                else if (ch >= '0' && ch <= '9')
-                {
-                    halfByte = (byte)(ch - '0');
+                    halfByte = (byte)val;
                 }
                 else if (xmlCharType.IsWhiteSpace(ch))
                 {

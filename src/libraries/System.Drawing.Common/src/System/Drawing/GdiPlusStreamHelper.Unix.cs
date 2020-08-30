@@ -1,5 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
-// See the LICENSE file in the project root for more information.
+// The .NET Foundation licenses this file to you under the MIT license.
 //
 // System.Drawing.GdiPlusStreamHelper.cs
 //   - Originally in System.Drawing.gdipFunctions.cs
@@ -43,10 +43,10 @@ namespace System.Drawing
     {
         private Stream _stream;
 
-        public unsafe GdiPlusStreamHelper(Stream stream, bool seekToOrigin)
+        public unsafe GdiPlusStreamHelper(Stream stream, bool seekToOrigin, bool makeSeekable = true)
         {
             // Seeking required
-            if (!stream.CanSeek)
+            if (makeSeekable && !stream.CanSeek)
             {
                 var memoryStream = new MemoryStream();
                 stream.CopyTo(memoryStream);

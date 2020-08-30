@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Tracing;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -891,9 +891,9 @@ namespace System.Diagnostics
                     /// <summary>
                     /// Create a property fetcher for a propertyName
                     /// </summary>
-                    [PreserveDependency(".ctor(System.Type)", "System.Diagnostics.DiagnosticSourceEventSource/TransformSpec/PropertySpec/PropertyFetch/EnumeratePropertyFetch`1")]
-                    [PreserveDependency(".ctor(System.Type, System.Reflection.PropertyInfo)", "System.Diagnostics.DiagnosticSourceEventSource/TransformSpec/PropertySpec/PropertyFetch/RefTypedFetchProperty`2")]
-                    [PreserveDependency(".ctor(System.Type, System.Reflection.PropertyInfo)", "System.Diagnostics.DiagnosticSourceEventSource/TransformSpec/PropertySpec/PropertyFetch/ValueTypedFetchProperty`2")]
+                    [DynamicDependency("#ctor(System.Type)", typeof(EnumeratePropertyFetch<>))]
+                    [DynamicDependency("#ctor(System.Type,System.Reflection.PropertyInfo)", typeof(RefTypedFetchProperty<,>))]
+                    [DynamicDependency("#ctor(System.Type,System.Reflection.PropertyInfo)", typeof(ValueTypedFetchProperty<,>))]
                     public static PropertyFetch FetcherForProperty(Type? type, string propertyName)
                     {
                         if (propertyName == null)
@@ -946,6 +946,12 @@ namespace System.Diagnostics
                             if (propertyInfo == null)
                             {
                                 Logger.Message($"Property {propertyName} not found on {type}");
+                                return new PropertyFetch(type);
+                            }
+                            // Delegate creation below is incompatible with static properties.
+                            else if (propertyInfo.GetMethod?.IsStatic == true || propertyInfo.SetMethod?.IsStatic == true)
+                            {
+                                Logger.Message($"Property {propertyName} is static.");
                                 return new PropertyFetch(type);
                             }
                             Type typedPropertyFetcher = typeInfo.IsValueType ?

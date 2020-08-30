@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -797,7 +796,7 @@ namespace System
                     }
 
                     // sort and copy the TimeZoneInfo's into a ReadOnlyCollection for the user
-                    list.Sort((x, y) =>
+                    list.Sort(static (x, y) =>
                     {
                         // sort by BaseUtcOffset first and by DisplayName second - this is similar to the Windows Date/Time control panel
                         int comparison = x.BaseUtcOffset.CompareTo(y.BaseUtcOffset);

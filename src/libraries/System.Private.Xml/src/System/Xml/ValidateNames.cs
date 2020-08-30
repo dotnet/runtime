@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Xml.XPath;
@@ -48,11 +47,6 @@ namespace System.Xml
                 {
                     i++;
                 }
-#if XML10_FIFTH_EDITION
-                else if (xmlCharType.IsNCNameSurrogateChar(s, i)) {
-                    i += 2;
-                }
-#endif
                 else
                 {
                     break;
@@ -84,12 +78,6 @@ namespace System.Xml
                 {
                     i++;
                 }
-#if XML10_FIFTH_EDITION
-                else if (xmlCharType.IsNCNameSurrogateChar(s, i))
-                {
-                    i += 2;
-                }
-#endif
                 else
                 {
                     break;
@@ -128,12 +116,6 @@ namespace System.Xml
                 {
                     i++;
                 }
-#if XML10_FIFTH_EDITION
-                else if (xmlCharType.IsNCNameSurrogateChar(s, i))
-                {
-                    i += 2;
-                }
-#endif
                 else
                 {
                     return 0; // no valid StartNCName char
@@ -146,12 +128,6 @@ namespace System.Xml
                     {
                         i++;
                     }
-#if XML10_FIFTH_EDITION
-                    else if (xmlCharType.IsNCNameSurrogateChar(s, i))
-                    {
-                        i += 2;
-                    }
-#endif
                     else
                     {
                         break;
@@ -190,11 +166,6 @@ namespace System.Xml
                 {
                     i++;
                 }
-#if XML10_FIFTH_EDITION
-                else if (s_xmlCharType.IsNCNameSurrogateChar(s, i)) {
-                    i += 2;
-                }
-#endif
                 else
                 {
                     return 0; // no valid StartNCName char
@@ -207,11 +178,6 @@ namespace System.Xml
                     {
                         i++;
                     }
-#if XML10_FIFTH_EDITION
-                    else if (s_xmlCharType.IsNCNameSurrogateChar(s, i)) {
-                        i += 2;
-                    }
-#endif
                     else
                     {
                         break;
@@ -328,7 +294,7 @@ namespace System.Xml
         /// If the NameTest contains a star, null values for localName (case NCName':*'), or for
         /// both localName and prefix (case '*') are returned.
         /// </summary>
-        internal static void ParseNameTestThrow(string s, out string prefix, out string localName)
+        internal static void ParseNameTestThrow(string s, out string? prefix, out string? localName)
         {
             int len, lenLocal, offset;
 

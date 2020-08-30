@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Collections.Generic;
@@ -10,12 +9,12 @@ namespace System.Data
 {
     internal sealed class Merger
     {
-        private readonly DataSet _dataSet = null;
-        private readonly DataTable _dataTable = null;
+        private readonly DataSet? _dataSet;
+        private readonly DataTable? _dataTable;
         private readonly bool _preserveChanges;
         private readonly MissingSchemaAction _missingSchemaAction;
-        private readonly bool _isStandAlonetable = false;
-        private bool _IgnoreNSforTableLookup = false; // Everett Behavior : SQL BU DT 370850
+        private readonly bool _isStandAlonetable;
+        private bool _IgnoreNSforTableLookup; // Everett Behavior : SQL BU DT 370850
 
         internal Merger(DataSet dataSet, bool preserveChanges, MissingSchemaAction missingSchemaAction)
         {
@@ -42,13 +41,15 @@ namespace System.Data
 
         internal void MergeDataSet(DataSet source)
         {
+            Debug.Assert(_dataSet != null);
+
             if (source == _dataSet) return;  //somebody is doing an 'automerge'
             bool fEnforce = _dataSet.EnforceConstraints;
             _dataSet.EnforceConstraints = false;
             _IgnoreNSforTableLookup = (_dataSet._namespaceURI != source._namespaceURI); // if two DataSets have different
             // Namespaces, ignore NS for table lookups as we won't be able to find the right tables which inherits its NS
 
-            List<DataColumn> existingColumns = null; // need to cache existing columns
+            List<DataColumn>? existingColumns = null; // need to cache existing columns
 
             if (MissingSchemaAction.Add == _missingSchemaAction)
             {
@@ -61,7 +62,6 @@ namespace System.Data
                     }
                 }
             }
-
 
             for (int i = 0; i < source.Tables.Count; i++)
             {
@@ -89,11 +89,11 @@ namespace System.Data
                     DataTable targetTable;
                     if (_IgnoreNSforTableLookup)
                     {
-                        targetTable = _dataSet.Tables[sourceTable.TableName];
+                        targetTable = _dataSet.Tables[sourceTable.TableName]!;
                     }
                     else
                     {
-                        targetTable = _dataSet.Tables[sourceTable.TableName, sourceTable.Namespace]; // we know that target table won't be null since MissingSchemaAction is Add , we have already added it!
+                        targetTable = _dataSet.Tables[sourceTable.TableName, sourceTable.Namespace]!; // we know that target table won't be null since MissingSchemaAction is Add , we have already added it!
                     }
 
                     foreach (DataColumn dc in sourceTable.Columns)
@@ -101,8 +101,8 @@ namespace System.Data
                         // Should we overwrite the previous expression column? No, refer to spec, if it is new column we need to add the schema
                         if (dc.Computed)
                         {
-                            DataColumn targetColumn = targetTable.Columns[dc.ColumnName];
-                            if (!existingColumns.Contains(targetColumn))
+                            DataColumn targetColumn = targetTable.Columns[dc.ColumnName]!;
+                            if (!existingColumns!.Contains(targetColumn))
                             {
                                 targetColumn.Expression = dc.Expression;
                             }
@@ -125,13 +125,13 @@ namespace System.Data
             if (!_isStandAlonetable)
             {
                 if (src.DataSet == _dataSet) return; //somebody is doing an 'automerge'
-                fEnforce = _dataSet.EnforceConstraints;
+                fEnforce = _dataSet!.EnforceConstraints;
                 _dataSet.EnforceConstraints = false;
             }
             else
             {
                 if (src == _dataTable) return; //somebody is doing an 'automerge'
-                _dataTable.SuspendEnforceConstraints = true;
+                _dataTable!.SuspendEnforceConstraints = true;
             }
 
             if (_dataSet != null)
@@ -146,7 +146,7 @@ namespace System.Data
             else
             {
                 // this is dt.Merge
-                if (_dataTable.DataSet == null || src.DataSet == null || src.DataSet._namespaceURI != _dataTable.DataSet._namespaceURI)
+                if (_dataTable!.DataSet == null || src.DataSet == null || src.DataSet._namespaceURI != _dataTable.DataSet._namespaceURI)
                 {
                     _IgnoreNSforTableLookup = true;
                 }
@@ -154,7 +154,7 @@ namespace System.Data
 
             MergeTableData(src);
 
-            DataTable dt = _dataTable;
+            DataTable? dt = _dataTable;
             if (dt == null && _dataSet != null)
             {
                 dt = _IgnoreNSforTableLookup ?
@@ -169,11 +169,11 @@ namespace System.Data
 
             if (!_isStandAlonetable)
             {
-                _dataSet.EnforceConstraints = fEnforce;
+                _dataSet!.EnforceConstraints = fEnforce;
             }
             else
             {
-                _dataTable.SuspendEnforceConstraints = false;
+                _dataTable!.SuspendEnforceConstraints = false;
                 try
                 {
                     if (_dataTable.EnforceConstraints)
@@ -198,7 +198,7 @@ namespace System.Data
             bool wasEmpty = dst.Rows.Count == 0;
             if (0 < rowsCount)
             {
-                Index ndxSearch = null;
+                Index? ndxSearch = null;
                 DataKey key = default(DataKey);
                 dst.SuspendIndexEvents();
                 try
@@ -215,7 +215,7 @@ namespace System.Data
                     // this improves performance by iterating over the rows instead of computing their position
                     foreach (DataRow sourceRow in src.Rows)
                     {
-                        DataRow targetRow = null;
+                        DataRow? targetRow = null;
                         if (ndxSearch != null)
                         {
                             targetRow = dst.FindMergeTarget(sourceRow, key, ndxSearch);
@@ -233,10 +233,12 @@ namespace System.Data
 
         internal void MergeRows(DataRow[] rows)
         {
-            DataTable src = null;
-            DataTable dst = null;
+            Debug.Assert(_dataSet != null);
+
+            DataTable? src = null;
+            DataTable? dst = null;
             DataKey key = default(DataKey);
-            Index ndxSearch = null;
+            Index? ndxSearch = null;
 
             bool fEnforce = _dataSet.EnforceConstraints;
             _dataSet.EnforceConstraints = false;
@@ -284,7 +286,7 @@ namespace System.Data
                             ndxSearch.RemoveRef();
                             ndxSearch = null;
                         }
-                        ndxSearch = new Index(dst, dst._primaryKey.Key.GetIndexDesc(), DataViewRowState.OriginalRows | DataViewRowState.Added, null);
+                        ndxSearch = new Index(dst, dst._primaryKey!.Key.GetIndexDesc(), DataViewRowState.OriginalRows | DataViewRowState.Added, null);
                         ndxSearch.AddRef(); // need to addref twice, otherwise it will be collected
                         ndxSearch.AddRef(); // in past first adref was done in const
                     }
@@ -295,8 +297,8 @@ namespace System.Data
                     continue;
                 }
 
-                DataRow targetRow = null;
-                if (0 < dst.Rows.Count && ndxSearch != null)
+                DataRow? targetRow = null;
+                if (0 < dst!.Rows.Count && ndxSearch != null)
                 {
                     targetRow = dst.FindMergeTarget(row, key, ndxSearch);
                 }
@@ -317,12 +319,12 @@ namespace System.Data
             _dataSet.EnforceConstraints = fEnforce;
         }
 
-        private DataTable MergeSchema(DataTable table)
+        private DataTable? MergeSchema(DataTable table)
         {
-            DataTable targetTable = null;
+            DataTable? targetTable = null;
             if (!_isStandAlonetable)
             {
-                if (_dataSet.Tables.Contains(table.TableName, true))
+                if (_dataSet!.Tables.Contains(table.TableName, true))
                 {
                     if (_IgnoreNSforTableLookup)
                     {
@@ -347,7 +349,7 @@ namespace System.Data
                     targetTable = table.Clone(table.DataSet); // if we are here mainly we are called from DataSet.Merge at this point we don't set
                     //expression columns, since it might have refer to other columns via relation, so it won't find the table and we get exception;
                     // do it after adding relations.
-                    _dataSet.Tables.Add(targetTable);
+                    _dataSet!.Tables.Add(targetTable);
                 }
                 else if (MissingSchemaAction.Error == _missingSchemaAction)
                 {
@@ -363,7 +365,7 @@ namespace System.Data
                     for (int i = 0; i < table.Columns.Count; i++)
                     {
                         DataColumn src = table.Columns[i];
-                        DataColumn dest = (targetTable.Columns.Contains(src.ColumnName, true)) ? targetTable.Columns[src.ColumnName] : null;
+                        DataColumn? dest = (targetTable.Columns.Contains(src.ColumnName, true)) ? targetTable.Columns[src.ColumnName] : null;
                         if (dest == null)
                         {
                             if (MissingSchemaAction.Add == _missingSchemaAction)
@@ -375,7 +377,7 @@ namespace System.Data
                             {
                                 if (!_isStandAlonetable)
                                 {
-                                    _dataSet.RaiseMergeFailed(targetTable, SR.Format(SR.DataMerge_MissingColumnDefinition, table.TableName, src.ColumnName), _missingSchemaAction);
+                                    _dataSet!.RaiseMergeFailed(targetTable, SR.Format(SR.DataMerge_MissingColumnDefinition, table.TableName, src.ColumnName), _missingSchemaAction);
                                 }
                                 else
                                 {
@@ -389,7 +391,7 @@ namespace System.Data
                                 ((dest.DataType == typeof(DateTime)) && (dest.DateTimeMode != src.DateTimeMode) && ((dest.DateTimeMode & src.DateTimeMode) != DataSetDateTime.Unspecified)))
                             {
                                 if (!_isStandAlonetable)
-                                    _dataSet.RaiseMergeFailed(targetTable, SR.Format(SR.DataMerge_DataTypeMismatch, src.ColumnName), MissingSchemaAction.Error);
+                                    _dataSet!.RaiseMergeFailed(targetTable, SR.Format(SR.DataMerge_DataTypeMismatch, src.ColumnName), MissingSchemaAction.Error);
                                 else
                                     throw ExceptionBuilder.MergeFailed(SR.Format(SR.DataMerge_DataTypeMismatch, src.ColumnName));
                             }
@@ -403,7 +405,7 @@ namespace System.Data
                     {
                         for (int i = oldCount; i < targetTable.Columns.Count; i++)
                         {
-                            targetTable.Columns[i].Expression = table.Columns[targetTable.Columns[i].ColumnName].Expression;
+                            targetTable.Columns[i].Expression = table.Columns[targetTable.Columns[i].ColumnName]!.Expression;
                         }
                     }
 
@@ -419,13 +421,13 @@ namespace System.Data
                             DataColumn[] key = new DataColumn[tablePKey.Length];
                             for (int i = 0; i < tablePKey.Length; i++)
                             {
-                                key[i] = targetTable.Columns[tablePKey[i].ColumnName];
+                                key[i] = targetTable.Columns[tablePKey[i].ColumnName]!;
                             }
                             targetTable.PrimaryKey = key;
                         }
                         else if (tablePKey.Length != 0)
                         {
-                            _dataSet.RaiseMergeFailed(targetTable, SR.DataMerge_PrimaryKeyMismatch, _missingSchemaAction);
+                            _dataSet!.RaiseMergeFailed(targetTable, SR.DataMerge_PrimaryKeyMismatch, _missingSchemaAction);
                         }
                     }
                     else
@@ -434,7 +436,7 @@ namespace System.Data
                         {
                             if (string.Compare(targetPKey[i].ColumnName, tablePKey[i].ColumnName, false, targetTable.Locale) != 0)
                             {
-                                _dataSet.RaiseMergeFailed(table,
+                                _dataSet!.RaiseMergeFailed(table,
                                     SR.Format(SR.DataMerge_PrimaryKeyColumnsMismatch, targetPKey[i].ColumnName, tablePKey[i].ColumnName),
                                     _missingSchemaAction);
                             }
@@ -450,7 +452,7 @@ namespace System.Data
 
         private void MergeTableData(DataTable src)
         {
-            DataTable dest = MergeSchema(src);
+            DataTable? dest = MergeSchema(src);
             if (dest == null) return;
 
             dest.MergingData = true;
@@ -474,11 +476,13 @@ namespace System.Data
 
         private void MergeConstraints(DataTable table)
         {
+            Debug.Assert(_dataSet != null);
+
             // Merge constraints
             for (int i = 0; i < table.Constraints.Count; i++)
             {
                 Constraint src = table.Constraints[i];
-                Constraint dest = src.Clone(_dataSet, _IgnoreNSforTableLookup);
+                Constraint? dest = src.Clone(_dataSet, _IgnoreNSforTableLookup);
 
                 if (dest == null)
                 {
@@ -489,7 +493,7 @@ namespace System.Data
                 }
                 else
                 {
-                    Constraint cons = dest.Table.Constraints.FindConstraint(dest);
+                    Constraint? cons = dest.Table!.Constraints.FindConstraint(dest);
                     if (cons == null)
                     {
                         if (MissingSchemaAction.Add == _missingSchemaAction)
@@ -524,10 +528,11 @@ namespace System.Data
 
         private void MergeRelation(DataRelation relation)
         {
+            Debug.Assert(_dataSet != null);
             Debug.Assert(MissingSchemaAction.Error == _missingSchemaAction ||
                          MissingSchemaAction.Add == _missingSchemaAction,
                          "Unexpected value of MissingSchemaAction parameter : " + _missingSchemaAction.ToString());
-            DataRelation destRelation = null;
+            DataRelation? destRelation = null;
 
             // try to find given relation in this dataSet
 
@@ -549,7 +554,7 @@ namespace System.Data
                     DataColumn dest = destRelation.ParentKey.ColumnsReference[i];
                     DataColumn src = relation.ParentKey.ColumnsReference[i];
 
-                    if (0 != string.Compare(dest.ColumnName, src.ColumnName, false, dest.Table.Locale))
+                    if (0 != string.Compare(dest.ColumnName, src.ColumnName, false, dest.Table!.Locale))
                     {
                         _dataSet.RaiseMergeFailed(null,
                             SR.Format(SR.DataMerge_ReltionKeyColumnsMismatch, relation.RelationName),
@@ -559,7 +564,7 @@ namespace System.Data
                     dest = destRelation.ChildKey.ColumnsReference[i];
                     src = relation.ChildKey.ColumnsReference[i];
 
-                    if (0 != string.Compare(dest.ColumnName, src.ColumnName, false, dest.Table.Locale))
+                    if (0 != string.Compare(dest.ColumnName, src.ColumnName, false, dest.Table!.Locale))
                     {
                         _dataSet.RaiseMergeFailed(null,
                             SR.Format(SR.DataMerge_ReltionKeyColumnsMismatch, relation.RelationName),
@@ -573,19 +578,19 @@ namespace System.Data
                 {
                     // create identical realtion in the current dataset
                     DataTable parent = _IgnoreNSforTableLookup ?
-                        _dataSet.Tables[relation.ParentTable.TableName] :
-                        _dataSet.Tables[relation.ParentTable.TableName, relation.ParentTable.Namespace];
+                        _dataSet.Tables[relation.ParentTable.TableName]! :
+                        _dataSet.Tables[relation.ParentTable.TableName, relation.ParentTable.Namespace]!;
 
                     DataTable child = _IgnoreNSforTableLookup ?
-                        _dataSet.Tables[relation.ChildTable.TableName] :
-                        _dataSet.Tables[relation.ChildTable.TableName, relation.ChildTable.Namespace];
+                        _dataSet.Tables[relation.ChildTable.TableName]! :
+                        _dataSet.Tables[relation.ChildTable.TableName, relation.ChildTable.Namespace]!;
 
                     DataColumn[] parentColumns = new DataColumn[relation.ParentKey.ColumnsReference.Length];
                     DataColumn[] childColumns = new DataColumn[relation.ParentKey.ColumnsReference.Length];
                     for (int i = 0; i < relation.ParentKey.ColumnsReference.Length; i++)
                     {
-                        parentColumns[i] = parent.Columns[relation.ParentKey.ColumnsReference[i].ColumnName];
-                        childColumns[i] = child.Columns[relation.ChildKey.ColumnsReference[i].ColumnName];
+                        parentColumns[i] = parent.Columns[relation.ParentKey.ColumnsReference[i].ColumnName]!;
+                        childColumns[i] = child.Columns[relation.ChildKey.ColumnsReference[i].ColumnName]!;
                     }
                     try
                     {
@@ -597,6 +602,7 @@ namespace System.Data
                     {
                         ExceptionBuilder.TraceExceptionForCapture(e);
                         _dataSet.RaiseMergeFailed(null, e.Message, _missingSchemaAction);
+                        // TODO: destRelation may be null, causing an NRE below
                     }
                 }
                 else
@@ -606,9 +612,8 @@ namespace System.Data
                 }
             }
 
-            MergeExtendedProperties(relation.ExtendedProperties, destRelation.ExtendedProperties);
-
-            return;
+            // TODO: destRelation may be null, see comment above
+            MergeExtendedProperties(relation.ExtendedProperties, destRelation!.ExtendedProperties);
         }
 
         private void MergeExtendedProperties(PropertyCollection src, PropertyCollection dst)
@@ -642,7 +647,7 @@ namespace System.Data
                 DataColumn[] srcColumns = new DataColumn[dstColumns.Length];
                 for (int j = 0; j < dstColumns.Length; j++)
                 {
-                    srcColumns[j] = src.Columns[dstColumns[j].ColumnName];
+                    srcColumns[j] = src.Columns[dstColumns[j].ColumnName]!;
                 }
 
                 key = new DataKey(srcColumns, false); // DataKey will take ownership of srcColumns

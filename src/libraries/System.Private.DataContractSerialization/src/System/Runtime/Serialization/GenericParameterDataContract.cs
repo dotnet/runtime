@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -14,7 +13,7 @@ namespace System.Runtime.Serialization
         internal GenericParameterDataContract(Type type)
             : base(new GenericParameterDataContractCriticalHelper(type))
         {
-            _helper = base.Helper as GenericParameterDataContractCriticalHelper;
+            _helper = (base.Helper as GenericParameterDataContractCriticalHelper)!;
         }
 
         internal int ParameterPosition

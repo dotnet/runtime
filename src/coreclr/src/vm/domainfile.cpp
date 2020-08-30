@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // --------------------------------------------------------------------------------
 // DomainFile.cpp
 //
@@ -30,8 +29,6 @@
 
 #include "dllimportcallback.h"
 #include "peimagelayout.inl"
-
-#include "winrthelpers.h"
 
 #ifdef FEATURE_PERFMAP
 #include "perfmap.h"
@@ -289,7 +286,7 @@ CHECK DomainFile::CheckLoaded()
     if (IsLoaded())
         CHECK_OK;
 
-    // Mscorlib is allowed to run managed code much earlier than other
+    // CoreLib is allowed to run managed code much earlier than other
     // assemblies for bootstrapping purposes.  This is because it has no
     // dependencies, security checks, and doesn't rely on loader notifications.
 
@@ -317,7 +314,7 @@ CHECK DomainFile::CheckActivated()
     if (IsActive())
         CHECK_OK;
 
-    // Mscorlib is allowed to run managed code much earlier than other
+    // CoreLib is allowed to run managed code much earlier than other
     // assemblies for bootstrapping purposes.  This is because it has no
     // dependencies, security checks, and doesn't rely on loader notifications.
 
@@ -426,11 +423,11 @@ OBJECTREF DomainFile::GetExposedModuleObject()
 
         if (GetFile()->IsDynamic())
         {
-            refClass = (REFLECTMODULEBASEREF) AllocateObject(MscorlibBinder::GetClass(CLASS__MODULE_BUILDER));
+            refClass = (REFLECTMODULEBASEREF) AllocateObject(CoreLibBinder::GetClass(CLASS__MODULE_BUILDER));
         }
         else
         {
-            refClass = (REFLECTMODULEBASEREF) AllocateObject(MscorlibBinder::GetClass(CLASS__MODULE));
+            refClass = (REFLECTMODULEBASEREF) AllocateObject(CoreLibBinder::GetClass(CLASS__MODULE));
         }
         refClass->SetModule(m_pModule);
 
@@ -648,7 +645,7 @@ void DomainFile::VerifyNativeImageDependencies(bool verifyOnly)
 
 
         //
-        // CoreCLR hard binds to mscorlib.dll only. Avoid going through the full load.
+        // CoreCLR hard binds to CoreLib only. Avoid going through the full load.
         //
 
 #ifdef _DEBUG
@@ -656,7 +653,7 @@ void DomainFile::VerifyNativeImageDependencies(bool verifyOnly)
         name.InitializeSpec(pDependency->dwAssemblyRef,
                             ((pManifestNativeImage != NULL) ? pManifestNativeImage : pNativeImage)->GetNativeMDImport(),
                             GetDomainAssembly());
-        _ASSERTE(name.IsMscorlib());
+        _ASSERTE(name.IsCoreLib());
 #endif
 
         PEAssembly * pDependencyFile = SystemDomain::SystemFile();
@@ -756,8 +753,8 @@ BOOL DomainFile::IsZapRequired()
         }
         else if (IsSystem())
         {
-            // mscorlib gets loaded before the CompilationDomain gets created.
-            // However, we may be ngening mscorlib itself
+            // CoreLib gets loaded before the CompilationDomain gets created.
+            // However, we may be ngening CoreLib itself
             fileIsBeingNGened = true;
         }
 
@@ -1000,44 +997,6 @@ void DomainFile::FinishLoad()
 
     // Are we absolutely required to use a native image?
     CheckZapRequired();
-
-#if defined(FEATURE_COMINTEROP)
-    // If this is a winmd file, ensure that the ngen reference namespace is loadable.
-    // This is necessary as on the phone we don't check ngen image dependencies, and thus we can get in a situation
-    // where a winmd is loaded as a dependency of an ngen image, but the type used to build cross module references
-    // in winmd files isn't loaded.
-    PEFile* peFile = GetFile();
-    if (peFile && peFile->AsAssembly()->IsWindowsRuntime() && peFile->HasHostAssembly())
-    {
-        IMDInternalImport *pImport = GetFile()->GetPersistentMDImport();
-        LPCSTR  szNameSpace;
-        LPCSTR  szTypeName;
-        // It does not make sense to pass the file name to recieve fake type name for empty WinMDs, because we would use the name
-        // for binding in next call to BindAssemblySpec which would fail for fake WinRT type name
-        // We will throw/return the error instead and the caller will recognize it and react to it by not creating the ngen image -
-        // see code:Zapper::ComputeDependenciesInCurrentDomain
-        if (SUCCEEDED(::GetFirstWinRTTypeDef(pImport, &szNameSpace, &szTypeName, NULL, NULL)))
-        {
-            // Build assembly spec to describe binding to that WinRT type.
-            AssemblySpec spec;
-            IfFailThrow(spec.Init("WindowsRuntimeAssemblyName, ContentType=WindowsRuntime"));
-            spec.SetWindowsRuntimeType(szNameSpace, szTypeName);
-
-            // Bind to assembly using the CLRPriv binder infrastructure. (All WinRT loads are done through CLRPriv binders
-            ReleaseHolder<IAssemblyName> pAssemblyName;
-            IfFailThrow(spec.CreateFusionName(&pAssemblyName, FALSE, TRUE));
-            ReleaseHolder<ICLRPrivAssembly> pPrivAssembly;
-            IfFailThrow(GetFile()->GetHostAssembly()->BindAssemblyByName(pAssemblyName, &pPrivAssembly));
-
-            // Verify that we found this. If this invariant doesn't hold, then the ngen images that reference this winmd are be invalid.
-            // ALSO, this winmd file is invalid as it doesn't follow spec about how it is distributed.
-            if (GetAppDomain()->FindAssembly(pPrivAssembly) != this)
-            {
-                ThrowHR(COR_E_BADIMAGEFORMAT);
-            }
-        }
-    }
-#endif //defined(FEATURE_COMINTEROP)
 #endif // FEATURE_PREJIT
 
     // Flush any log messages
@@ -1267,12 +1226,12 @@ OBJECTREF DomainAssembly::GetExposedAssemblyObject()
             // This is unnecessary because the managed InternalAssemblyBuilder object
             // should have already been created at the time of DefineDynamicAssembly
             OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOADED);
-            pMT = MscorlibBinder::GetClass(CLASS__INTERNAL_ASSEMBLY_BUILDER);
+            pMT = CoreLibBinder::GetClass(CLASS__INTERNAL_ASSEMBLY_BUILDER);
         }
         else
         {
             OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOADED);
-            pMT = MscorlibBinder::GetClass(CLASS__ASSEMBLY);
+            pMT = CoreLibBinder::GetClass(CLASS__ASSEMBLY);
         }
 
         // Will be TRUE only if LoaderAllocator managed object was already collected and therefore we should
@@ -1485,15 +1444,6 @@ void DomainAssembly::Allocate()
         pamTracker->SuppressRelease();
         assemblyHolder.SuppressRelease();
     }
-
-#ifdef FEATURE_COMINTEROP
-    // If we are in an AppX process we should prevent loading of PIA in the AppDomain.
-    // This will ensure that we do not run into any compatibility issues in case a type has both a co-Class and a Winrt Class
-    if (AppX::IsAppXProcess() && pAssembly->IsPIA())
-    {
-        COMPlusThrow(kNotSupportedException, W("NotSupported_PIAInAppxProcess"));
-    }
-#endif
 
     SetAssembly(pAssembly);
 
@@ -1843,7 +1793,7 @@ BOOL DomainAssembly::CheckZapDependencyIdentities(PEImage *pNativeImage)
     spec.InitializeSpec(this->GetFile());
 
     // The assembly spec should have the binding context associated with it
-    _ASSERTE(spec.GetBindingContext()  || spec.IsAssemblySpecForMscorlib());
+    _ASSERTE(spec.GetBindingContext()  || spec.IsAssemblySpecForCoreLib());
 
     CORCOMPILE_VERSION_INFO *pVersionInfo = pNativeImage->GetLoadedLayout()->GetNativeVersionInfo();
 
@@ -1868,7 +1818,7 @@ BOOL DomainAssembly::CheckZapDependencyIdentities(PEImage *pNativeImage)
             AssemblySpec name;
             name.InitializeSpec(pDependencies->dwAssemblyDef, pNativeImage->GetNativeMDImport(), this);
 
-            if (!name.IsAssemblySpecForMscorlib())
+            if (!name.IsAssemblySpecForCoreLib())
             {
                 // We just initialized the assembly spec for the NI dependency. This will not have binding context
                 // associated with it, so set it from that of the parent.

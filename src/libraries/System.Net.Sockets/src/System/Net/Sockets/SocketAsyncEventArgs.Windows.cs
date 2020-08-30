@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -37,7 +37,7 @@ namespace System.Net.Sockets
         private FileStream[]? _sendPacketsFileStreams;
 
         // Overlapped object related variables.
-        private PreAllocatedOverlapped _preAllocatedOverlapped = null!; // initialized by helper called from ctor
+        private PreAllocatedOverlapped _preAllocatedOverlapped;
         private readonly StrongBox<SocketAsyncEventArgs?> _strongThisRef = new StrongBox<SocketAsyncEventArgs?>(); // state for _preAllocatedOverlapped; .Value set to this while operations in flight
 
         // Cancellation support
@@ -47,6 +47,7 @@ namespace System.Net.Sockets
         private PinState _pinState;
         private enum PinState : byte { None = 0, MultipleBuffer, SendPackets }
 
+        [MemberNotNull(nameof(_preAllocatedOverlapped))]
         private void InitializeInternals()
         {
             // PreAllocatedOverlapped captures ExecutionContext, but SocketAsyncEventArgs ensures
@@ -63,7 +64,7 @@ namespace System.Net.Sockets
                 if (suppressFlow) ExecutionContext.RestoreFlow();
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"new PreAllocatedOverlapped {_preAllocatedOverlapped}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"new PreAllocatedOverlapped {_preAllocatedOverlapped}");
         }
 
         private void FreeInternals()
@@ -111,7 +112,7 @@ namespace System.Net.Sockets
                     try
                     {
                         bool canceled = Interop.Kernel32.CancelIoEx(handle, thisRef._pendingOverlappedForCancellation);
-                        if (NetEventSource.IsEnabled)
+                        if (NetEventSource.Log.IsEnabled())
                         {
                             NetEventSource.Info(thisRef, canceled ?
                                 "Socket operation canceled." :
@@ -485,13 +486,13 @@ namespace System.Net.Sockets
             bool ipv4 = (_currentSocket!.AddressFamily == AddressFamily.InterNetwork || (ipAddress != null && ipAddress.IsIPv4MappedToIPv6)); // DualMode
             bool ipv6 = _currentSocket.AddressFamily == AddressFamily.InterNetworkV6;
 
-            if (ipv4 && (_controlBufferPinned == null || _controlBufferPinned.Length != sizeof(Interop.Winsock.ControlData)))
-            {
-                _controlBufferPinned = GC.AllocateUninitializedArray<byte>(sizeof(Interop.Winsock.ControlData), pinned: true);
-            }
-            else if (ipv6 && (_controlBufferPinned == null || _controlBufferPinned.Length != sizeof(Interop.Winsock.ControlDataIPv6)))
+            if (ipv6 && (_controlBufferPinned == null || _controlBufferPinned.Length != sizeof(Interop.Winsock.ControlDataIPv6)))
             {
                 _controlBufferPinned = GC.AllocateUninitializedArray<byte>(sizeof(Interop.Winsock.ControlDataIPv6), pinned: true);
+            }
+            else if (ipv4 && (_controlBufferPinned == null || _controlBufferPinned.Length != sizeof(Interop.Winsock.ControlData)))
+            {
+                _controlBufferPinned = GC.AllocateUninitializedArray<byte>(sizeof(Interop.Winsock.ControlData), pinned: true);
             }
 
             // If single buffer we need a single element WSABuffer.
@@ -1038,7 +1039,7 @@ namespace System.Net.Sockets
             // This should only be called if tracing is enabled. However, there is the potential for a race
             // condition where tracing is disabled between a calling check and here, in which case the assert
             // may fire erroneously.
-            Debug.Assert(NetEventSource.IsEnabled);
+            Debug.Assert(NetEventSource.Log.IsEnabled());
 
             if (_bufferList != null)
             {

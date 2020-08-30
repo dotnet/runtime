@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 /*
  *    CallHelpers.CPP: helpers to call managed code
  *
@@ -21,14 +20,13 @@
 
 #if defined(FEATURE_MULTICOREJIT) && defined(_DEBUG)
 
-// Allow system module, and first party WinMD files for Appx
+// Allow system module for Appx
 
 void AssertMulticoreJitAllowedModule(PCODE pTarget)
 {
     MethodDesc* pMethod = Entry2MethodDesc(pTarget, NULL);
 
     Module * pModule = pMethod->GetModule_NoLogging();
-
 
     _ASSERTE(pModule->IsSystem());
 }
@@ -287,11 +285,11 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
 
     _ASSERTE(!NingenEnabled() && "You cannot invoke managed code inside the ngen compilation process.");
 
-    // If we're invoking an mscorlib method, lift the restriction on type load limits. Calls into mscorlib are
+    // If we're invoking an CoreLib method, lift the restriction on type load limits. Calls into CoreLib are
     // typically calls into specific and controlled helper methods for security checks and other linktime tasks.
     //
     // @todo: In an ideal world, we would require each of those sites to do the override rather than disabling
-    // the assert broadly here. However, by limiting the override to mscorlib methods, we should still be able
+    // the assert broadly here. However, by limiting the override to CoreLib methods, we should still be able
     // to effectively enforce the more general rule about loader recursion.
     MAYBE_OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOADED, m_pMD->GetModule()->IsSystem());
 

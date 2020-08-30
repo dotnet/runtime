@@ -13,7 +13,7 @@
 
       ./build.sh corehost installer.managed
 
-        This builds the CoreHost and also the Managed installer portion (e.g. Microsoft.DotNet.PlatformAbstractions)
+        This builds the CoreHost and also the Managed installer portion (e.g. Microsoft.NET.HostModel)
         projects. A space ' ' or '+' are the delimiters between multiple subsets to build.
 
       ./build.sh -test installer.tests
@@ -38,7 +38,7 @@
 
   <PropertyGroup>
     <DefaultSubsets>clr+mono+libs+installer</DefaultSubsets>
-    <DefaultSubsets Condition="'$(TargetsMobile)' == 'true' or '$(TargetOS)' == 'Browser'">mono+libs+installer</DefaultSubsets>
+    <DefaultSubsets Condition="'$(TargetsMobile)' == 'true'">mono+libs+installer</DefaultSubsets>
   </PropertyGroup>
 
   <!-- Init _subset here in to allow RuntimeFlavor to be set as early as possible -->
@@ -48,7 +48,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <RuntimeFlavor Condition="'$(TargetsMobile)' == 'true' or '$(TargetOS)' == 'Browser'">Mono</RuntimeFlavor>
+    <RuntimeFlavor Condition="'$(TargetsMobile)' == 'true'">Mono</RuntimeFlavor>
     <RuntimeFlavor Condition="'$(RuntimeFlavor)' == '' and ($(_subset.Contains('+mono+')) or $(_subset.Contains('+mono.runtime+'))) and (!$(_subset.Contains('+clr+')) and !$(_subset.Contains('+clr.runtime+')))">Mono</RuntimeFlavor>
     <RuntimeFlavor Condition="'$(RuntimeFlavor)' == ''">CoreCLR</RuntimeFlavor>
   </PropertyGroup>
@@ -57,9 +57,9 @@
     <DefaultCoreClrSubsets>clr.runtime+linuxdac+clr.corelib+clr.nativecorelib+clr.tools+clr.packages</DefaultCoreClrSubsets>
 
     <DefaultMonoSubsets Condition="'$(MonoEnableLLVM)' == 'true' and '$(MonoLLVMDir)' == ''">mono.llvm+</DefaultMonoSubsets>
-    <DefaultMonoSubsets>$(DefaultMonoSubsets)mono.runtime+mono.corelib</DefaultMonoSubsets>
+    <DefaultMonoSubsets>$(DefaultMonoSubsets)mono.runtime+mono.corelib+mono.packages</DefaultMonoSubsets>
 
-    <DefaultLibrariesSubsets>libs.depprojs+libs.native+libs.ref+libs.src+libs.pretest+libs.packages</DefaultLibrariesSubsets>
+    <DefaultLibrariesSubsets>libs.native+libs.ref+libs.src+libs.pretest+libs.packages</DefaultLibrariesSubsets>
 
     <DefaultInstallerSubsets>corehost+installer.managed+installer.depprojs+installer.pkgprojs+bundles+installers+installer.tests</DefaultInstallerSubsets>
     <DefaultInstallerSubsets Condition="'$(RuntimeFlavor)' == 'Mono'">installer.pkgprojs</DefaultInstallerSubsets>
@@ -70,6 +70,7 @@
     <_subset>$(_subset.Replace('+mono+', '+$(DefaultMonoSubsets)+'))</_subset>
     <_subset>$(_subset.Replace('+libs+', '+$(DefaultLibrariesSubsets)+'))</_subset>
     <_subset>$(_subset.Replace('+installer+', '+$(DefaultInstallerSubsets)+'))</_subset>
+    <_subset>$(_subset.Replace('+installer.nocorehost+', '+$(DefaultInstallerSubsets.Replace('corehost+', ''))+'))</_subset>
 
     <!-- Surround _subset in dashes to simplify checks below -->
     <_subset>+$(_subset.Trim('+'))+</_subset>
@@ -79,21 +80,23 @@
     <!-- CoreClr -->
     <SubsetName Include="Clr" Description="The CoreCLR runtime, LinuxDac, CoreLib (+ native), tools and packages." />
     <SubsetName Include="Clr.Runtime" Description="The CoreCLR .NET runtime." />
-    <SubsetName Include="LinuxDac" Condition="$([MSBuild]::IsOsPlatform(Windows))" Description="The cross-OS Windows->libc-based Linux DAC. Skipped on x86." />
-    <SubsetName Include="AlpineDac" Condition="$([MSBuild]::IsOsPlatform(Windows))" OnDemand="true" Description="The cross-OS Windows->musl-libc-based Linux DAC. Skipped on x86." />
     <SubsetName Include="Clr.CoreLib" Description="The managed System.Private.CoreLib library for CoreCLR." />
     <SubsetName Include="Clr.NativeCoreLib" Description="Run crossgen on System.Private.CoreLib library for CoreCLR." />
     <SubsetName Include="Clr.Tools" Description="Managed tools that support CoreCLR development and testing." />
     <SubsetName Include="Clr.Packages" Description="The projects that produce NuGet packages for the CoreCLR runtime, crossgen, and IL tools." />
+    <SubsetName Include="LinuxDac" Condition="$([MSBuild]::IsOsPlatform(Windows))" Description="The cross-OS Windows->libc-based Linux DAC. Skipped on x86." />
+    <SubsetName Include="AlpineDac" Condition="$([MSBuild]::IsOsPlatform(Windows))" OnDemand="true" Description="The cross-OS Windows->musl-libc-based Linux DAC. Skipped on x86 and arm." />
+    <SubsetName Include="CrossDacPack" OnDemand="true"
+            Description="Packaging of cross OS DAC. Requires all assets needed to be present at a folder specified by $(CrossDacArtifactsDir). See 'Microsoft.CrossOsDiag.Private.CoreCLR.proj' for details." />
 
     <!-- Mono -->
     <SubsetName Include="Mono" Description="The Mono runtime and CoreLib." />
     <SubsetName Include="Mono.Runtime" Description="The Mono .NET runtime." />
     <SubsetName Include="Mono.CoreLib" Description="The managed System.Private.CoreLib library for Mono." />
+    <SubsetName Include="Mono.Packages" Description="The projects that produce NuGet packages for the Mono runtime." />
 
     <!-- Libs -->
     <SubsetName Include="Libs" Description="The libraries native part, refs and source assemblies, test infra and packages, but NOT the tests (use Libs.Tests to request those explicitly)" />
-    <SubsetName Include="Libs.Depprojs" Description="The libraries upfront restore projects." />
     <SubsetName Include="Libs.Native" Description="The native libraries used in the shared framework." />
     <SubsetName Include="Libs.Ref" Description="The managed reference libraries." />
     <SubsetName Include="Libs.Src" Description="The managed implementation libraries." />
@@ -104,7 +107,8 @@
     <!-- Installer -->
     <SubsetName Include="Installer" Description="The .NET Core hosts, hosting libraries, bundles, and installers. Includes these projects' tests." />
     <SubsetName Include="CoreHost" Description="The .NET Core hosts." />
-    <SubsetName Include="Installer.Managed" Description="The managed .NET hosting projects. This includes PlatformAbstractions and HostModel." />
+    <SubsetName Include="Installer.NoCoreHost" Description="Hosting libraries, bundles, and installers. Includes these projects' tests." />
+    <SubsetName Include="Installer.Managed" Description="The managed .NET hosting projects. This includes HostModel." />
     <SubsetName Include="Installer.DepProjs" Description="The dependency projects. These gather shared framework files and run crossgen on them to turn them into ready-to-run (R2R) assemblies for the current platform." />
     <SubsetName Include="Installer.PkgProjs" Description="The packaging projects. These produce NETCoreApp assets: NuGet packages, installers, zips, and Linux packages." />
     <SubsetName Include="Bundles" Description="The shared framework bundle installer projects. Produces .exe installers for Windows." />
@@ -115,161 +119,149 @@
 
   <!-- Default targets, parallelization and configurations. -->
   <ItemDefinitionGroup>
-    <CoreClrProject>
+    <ProjectToBuild>
       <Test>false</Test>
       <Pack>false</Pack>
       <Publish>false</Publish>
       <BuildInParallel>false</BuildInParallel>
-      <AdditionalProperties Condition="'$(CoreCLRConfiguration)' != ''">Configuration=$(CoreCLRConfiguration)</AdditionalProperties>
-    </CoreClrProject>
-    <MonoProject>
-      <Test>false</Test>
-      <Pack>false</Pack>
-      <Publish>false</Publish>
-      <BuildInParallel>false</BuildInParallel>
-      <AdditionalProperties Condition="'$(MonoConfiguration)' != ''">Configuration=$(MonoConfiguration)</AdditionalProperties>
-    </MonoProject>
-    <LibrariesProject>
-      <Test>false</Test>
-      <Pack>false</Pack>
-      <Publish>false</Publish>
-      <BuildInParallel>false</BuildInParallel>
-      <AdditionalProperties Condition="'$(LibrariesConfiguration)' != ''">Configuration=$(LibrariesConfiguration)</AdditionalProperties>
-    </LibrariesProject>
-    <InstallerProject>
-      <Test>false</Test>
-      <Pack>true</Pack>
-      <Publish>false</Publish>
-    </InstallerProject>
+    </ProjectToBuild>
   </ItemDefinitionGroup>
 
   <!-- CoreClr sets -->
   <ItemGroup Condition="$(_subset.Contains('+clr.corelib+'))">
-    <CoreClrProject Include="$(CoreClrProjectRoot)src\System.Private.CoreLib\System.Private.CoreLib.csproj" />
+    <ProjectToBuild Include="$(CoreClrProjectRoot)src\System.Private.CoreLib\System.Private.CoreLib.csproj" Category="clr" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+clr.runtime+'))">
-    <CoreClrProject Include="$(CoreClrProjectRoot)runtime.proj" />
+    <ProjectToBuild Include="$(CoreClrProjectRoot)runtime.proj" Category="clr" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+linuxdac+')) and $([MSBuild]::IsOsPlatform(Windows)) and '$(TargetArchitecture)' != 'x86'">
-    <CoreClrProject Include="$(CoreClrProjectRoot)runtime.proj" AdditionalProperties="%(AdditionalProperties);CrossDac=linux" />
+    <ProjectToBuild Include="$(CoreClrProjectRoot)runtime.proj" AdditionalProperties="%(AdditionalProperties);CrossDac=linux" Category="clr" />
   </ItemGroup>
 
-  <ItemGroup Condition="$(_subset.Contains('+alpinedac+')) and $([MSBuild]::IsOsPlatform(Windows)) and '$(TargetArchitecture)' != 'x86'">
-    <CoreClrProject Include="$(CoreClrProjectRoot)runtime.proj" AdditionalProperties="%(AdditionalProperties);CrossDac=alpine" />
+  <ItemGroup Condition="$(_subset.Contains('+alpinedac+')) and $([MSBuild]::IsOsPlatform(Windows)) and '$(TargetArchitecture)' != 'x86' and '$(TargetArchitecture)' != 'arm'">
+    <ProjectToBuild Include="$(CoreClrProjectRoot)runtime.proj" AdditionalProperties="%(AdditionalProperties);CrossDac=alpine" Category="clr" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$(_subset.Contains('+crossdacpack+'))">
+    <ProjectToBuild Include="$(CoreClrProjectRoot)src\.nuget\Microsoft.CrossOsDiag.Private.CoreCLR\Microsoft.CrossOsDiag.Private.CoreCLR.proj" Category="clr" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+clr.nativecorelib+'))">
-    <CoreClrProject Include="$(CoreClrProjectRoot)crossgen-corelib.proj" />
+    <ProjectToBuild Include="$(CoreClrProjectRoot)crossgen-corelib.proj" Category="clr" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+clr.tools+'))">
-    <CoreClrProject Include="$(CoreClrProjectRoot)src\tools\runincontext\runincontext.csproj" BuildInParallel="true" />
-    <CoreClrProject Include="$(CoreClrProjectRoot)src\tools\r2rdump\R2RDump.csproj" BuildInParallel="true" />
-    <CoreClrProject Include="$(CoreClrProjectRoot)src\tools\dotnet-pgo\dotnet-pgo.csproj" BuildInParallel="true" />
-    <CoreClrProject Include="$(CoreClrProjectRoot)src\tools\r2rtest\R2RTest.csproj" BuildInParallel="true" />
-    <CoreClrProject Include="$(CoreClrProjectRoot)src\tools\crossgen2\crossgen2\crossgen2.csproj" />
+    <ProjectToBuild Include="$(CoreClrProjectRoot)src\tools\runincontext\runincontext.csproj;
+                             $(CoreClrProjectRoot)src\tools\r2rdump\R2RDump.csproj;
+                             $(CoreClrProjectRoot)src\tools\dotnet-pgo\dotnet-pgo.csproj;
+                             $(CoreClrProjectRoot)src\tools\r2rtest\R2RTest.csproj" Category="clr" BuildInParallel="true" />
+    <ProjectToBuild Include="$(CoreClrProjectRoot)src\tools\aot\crossgen2\crossgen2.csproj" Category="clr" />
+    <ProjectToBuild Include="$(CoreClrProjectRoot)src\tools\aot\ILCompiler.TypeSystem.ReadyToRun.Tests\ILCompiler.TypeSystem.ReadyToRun.Tests.csproj" Test="true" Category="clr" Condition="'$(__DistroRid)' != 'linux-musl-x64'"/>
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+clr.packages+'))">
-    <CoreClrProject Include="$(CoreClrProjectRoot)src\.nuget\coreclr-packages.proj" Pack="true" />
+    <ProjectToBuild Include="$(CoreClrProjectRoot)src\.nuget\coreclr-packages.proj" Pack="true" Category="clr" />
   </ItemGroup>
 
   <!-- Mono sets -->
   <ItemGroup Condition="$(_subset.Contains('+mono.llvm+')) or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'Browser'">
-    <MonoProject Include="$(MonoProjectRoot)llvm\llvm-init.proj" />
+    <ProjectToBuild Include="$(MonoProjectRoot)llvm\llvm-init.proj" Category="mono" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$(_subset.Contains('+mono.packages+'))">
+    <ProjectToBuild Include="$(MonoProjectRoot)netcore\nuget\mono-packages.proj" Category="mono" Pack="true" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+mono.runtime+'))">
-    <MonoProject Include="$(MonoProjectRoot)mono.proj" />
+    <ProjectToBuild Include="$(MonoProjectRoot)mono.proj" Category="mono" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+mono.corelib+'))">
-    <MonoProject Include="$(MonoProjectRoot)netcore\System.Private.CoreLib\System.Private.CoreLib.csproj" />
+    <ProjectToBuild Include="$(MonoProjectRoot)netcore\System.Private.CoreLib\System.Private.CoreLib.csproj" Category="mono" />
   </ItemGroup>
 
   <!-- Libraries sets -->
-  <ItemGroup Condition="$(_subset.Contains('+libs.depprojs+'))">
-    <LibrariesRestoreProject Include="$(LibrariesProjectRoot)restore\depproj.proj">
-      <AdditionalProperties Condition="'$(LibrariesConfiguration)' != ''">Configuration=$(LibrariesConfiguration)</AdditionalProperties>
-    </LibrariesRestoreProject>
-  </ItemGroup>
-
   <ItemGroup Condition="$(_subset.Contains('+libs.native+'))">
-    <LibrariesProject Include="$(LibrariesProjectRoot)Native\build-native.proj" />
+    <ProjectToBuild Include="$(LibrariesProjectRoot)Native\build-native.proj" Category="libs" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+libs.ref+'))">
-    <LibrariesProject Include="$(LibrariesProjectRoot)ref.proj" />
+    <ProjectToBuild Include="$(LibrariesProjectRoot)ref.proj" Category="libs" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+libs.src+'))">
-    <LibrariesProject Include="$(LibrariesProjectRoot)src.proj" />
+    <ProjectToBuild Include="$(LibrariesProjectRoot)src.proj" Category="libs" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+libs.pretest+'))">
-    <LibrariesProject Include="$(LibrariesProjectRoot)pretest.proj"  />
+    <ProjectToBuild Include="$(LibrariesProjectRoot)pretest.proj" Category="libs"  />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+libs.packages+'))">
-    <LibrariesProject Include="$(LibrariesProjectRoot)libraries-packages.proj" Pack="true" />
+    <ProjectToBuild Include="$(LibrariesProjectRoot)libraries-packages.proj" Category="libs" Pack="true" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+libs.tests+'))">
-    <LibrariesProject Include="$(LibrariesProjectRoot)tests.proj" Test="true" />
+    <ProjectToBuild Include="$(LibrariesProjectRoot)tests.proj" Category="libs" Test="true" />
   </ItemGroup>
 
   <!-- Installer sets -->
   <ItemGroup Condition="$(_subset.Contains('+corehost+'))">
-    <CorehostProjectToBuild Include="$(InstallerProjectRoot)corehost\build.proj" SignPhase="Binaries" />
-    <InstallerProject Include="@(CorehostProjectToBuild)" />
+    <CorehostProjectToBuild Include="$(InstallerProjectRoot)corehost\corehost.proj" SignPhase="Binaries" />
+    <ProjectToBuild Include="@(CorehostProjectToBuild)" BuildInParallel="true" Pack="true" Category="installer" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+installer.managed+'))">
     <ManagedProjectToBuild Include="$(InstallerProjectRoot)managed\**\*.csproj" SignPhase="Binaries" />
     <ManagedProjectToBuild Include="$(InstallerProjectRoot)pkg\packaging\pack-managed.proj" />
-    <InstallerProject Include="@(ManagedProjectToBuild)" />
+    <ProjectToBuild Include="@(ManagedProjectToBuild)" BuildInParallel="true" Pack="true" Category="installer" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+installer.depprojs+'))">
     <DepprojProjectToBuild Condition="'$(RuntimeFlavor)' == 'CoreCLR'" Include="$(InstallerProjectRoot)pkg\projects\**\*.depproj" SignPhase="R2RBinaries" BuildInParallel="false" />
     <DepprojProjectToBuild Condition="'$(RuntimeFlavor)' == 'Mono'" Include="$(InstallerProjectRoot)pkg\projects\**\*.depproj" SignPhase="Binaries" BuildInParallel="false" />
-    <!-- Disable netstandard infra for now and discuss if we should delete it: https://github.com/dotnet/runtime/issues/2294-->
-    <DepprojProjectToBuild Remove="$(InstallerProjectRoot)pkg\projects\netstandard\src\netstandard.depproj" />
-    <InstallerProject Include="@(DepprojProjectToBuild)" />
+    <ProjectToBuild Include="@(DepprojProjectToBuild)" Pack="true" Category="installer" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+installer.pkgprojs+'))">
     <PkgprojProjectToBuild Include="$(InstallerProjectRoot)pkg\projects\**\*.pkgproj" SignPhase="MsiFiles" BuildInParallel="false" />
-    <!-- Disable netstandard infra for now and discuss if we should delete it: https://github.com/dotnet/runtime/issues/2294-->
-    <PkgprojProjectToBuild Remove="$(InstallerProjectRoot)pkg\projects\netstandard\pkg\NETStandard.Library.Ref.pkgproj" />
-    <InstallerProject Include="@(PkgprojProjectToBuild)" />
+    <ProjectToBuild Include="@(PkgprojProjectToBuild)" Pack="true" Category="installer" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+bundles+'))">
     <BundleProjectToBuild Include="$(InstallerProjectRoot)pkg\projects\**\*.bundleproj" SignPhase="BundleInstallerFiles" BuildInParallel="false" />
-    <InstallerProject Include="@(BundleProjectToBuild)" />
+    <ProjectToBuild Include="@(BundleProjectToBuild)" Pack="true" Category="installer" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+installers+'))">
     <InstallerProjectToBuild Include="$(InstallerProjectRoot)pkg\packaging\installers.proj" BuildInParallel="false" />
     <InstallerProjectToBuild Include="$(InstallerProjectRoot)pkg\packaging\vs-insertion-packages.proj" BuildInParallel="false" />
-    <InstallerProject Include="@(InstallerProjectToBuild)" />
+    <ProjectToBuild Include="@(InstallerProjectToBuild)" Pack="true" Category="installer" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+installer.tests+'))">
-    <TestProjectToBuild Include="$(InstallerProjectRoot)test\Microsoft.NET.HostModel.Tests\AppHost.Bundle.Tests\AppHost.Bundle.Tests.csproj" />
-    <TestProjectToBuild Include="$(InstallerProjectRoot)test\Microsoft.NET.HostModel.Tests\Microsoft.NET.HostModel.AppHost.Tests\Microsoft.NET.HostModel.AppHost.Tests.csproj" />
-    <TestProjectToBuild Include="$(InstallerProjectRoot)test\Microsoft.NET.HostModel.Tests\Microsoft.NET.HostModel.Bundle.Tests\Microsoft.NET.HostModel.Bundle.Tests.csproj" />
-    <TestProjectToBuild Include="$(InstallerProjectRoot)test\Microsoft.NET.HostModel.Tests\Microsoft.NET.HostModel.ComHost.Tests\Microsoft.NET.HostModel.ComHost.Tests.csproj" />
-    <TestProjectToBuild Include="$(InstallerProjectRoot)test\HostActivation.Tests\HostActivation.Tests.csproj" />
-    <TestProjectToBuild Include="$(InstallerProjectRoot)test\Microsoft.DotNet.CoreSetup.Packaging.Tests\Microsoft.DotNet.CoreSetup.Packaging.Tests.csproj" />
-    <InstallerProject Include="@(TestProjectToBuild)" Pack="false" Test="true" BuildInParallel="false" />
+    <TestProjectToBuild Include="$(InstallerProjectRoot)tests\Microsoft.NET.HostModel.Tests\AppHost.Bundle.Tests\AppHost.Bundle.Tests.csproj" />
+    <TestProjectToBuild Include="$(InstallerProjectRoot)tests\Microsoft.NET.HostModel.Tests\Microsoft.NET.HostModel.AppHost.Tests\Microsoft.NET.HostModel.AppHost.Tests.csproj" />
+    <TestProjectToBuild Include="$(InstallerProjectRoot)tests\Microsoft.NET.HostModel.Tests\Microsoft.NET.HostModel.Bundle.Tests\Microsoft.NET.HostModel.Bundle.Tests.csproj" />
+    <TestProjectToBuild Include="$(InstallerProjectRoot)tests\Microsoft.NET.HostModel.Tests\Microsoft.NET.HostModel.ComHost.Tests\Microsoft.NET.HostModel.ComHost.Tests.csproj" />
+    <TestProjectToBuild Include="$(InstallerProjectRoot)tests\HostActivation.Tests\HostActivation.Tests.csproj" />
+    <TestProjectToBuild Include="$(InstallerProjectRoot)tests\Microsoft.DotNet.CoreSetup.Packaging.Tests\Microsoft.DotNet.CoreSetup.Packaging.Tests.csproj" />
+    <ProjectToBuild Include="@(TestProjectToBuild)" BuildInParallel="true" Test="true" Category="installer" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+installer.publish+'))">
-    <InstallerProject Include="$(InstallerProjectRoot)publish\prepare-artifacts.proj" />
+    <ProjectToBuild Include="$(InstallerProjectRoot)publish\prepare-artifacts.proj" Pack="true" BuildInParallel="false" Category="installer" />
+  </ItemGroup>
+
+  <!-- Set default configurations. -->
+  <ItemGroup>
+    <ProjectToBuild Update="@(ProjectToBuild)">
+      <AdditionalProperties Condition="'%(ProjectToBuild.Category)' == 'clr' and '$(CoreCLRConfiguration)' != ''">%(AdditionalProperties);Configuration=$(CoreCLRConfiguration)</AdditionalProperties>
+      <AdditionalProperties Condition="'%(ProjectToBuild.Category)' == 'mono' and '$(MonoConfiguration)' != ''">%(AdditionalProperties);Configuration=$(MonoConfiguration)</AdditionalProperties>
+      <AdditionalProperties Condition="'%(ProjectToBuild.Category)' == 'libs' and '$(LibrariesConfiguration)' != ''">%(AdditionalProperties);Configuration=$(LibrariesConfiguration)</AdditionalProperties>
+    </ProjectToBuild>
   </ItemGroup>
 
 </Project>

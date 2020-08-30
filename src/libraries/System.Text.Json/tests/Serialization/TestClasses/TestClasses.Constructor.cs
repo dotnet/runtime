@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Collections.Generic;
@@ -915,6 +914,13 @@ namespace System.Text.Json.Serialization.Tests
             ImmutableArray = immutableArray;
             Int = @int;
         }
+    }
+
+    public class NullArgTester_Mutable
+    {
+        public Point_3D_Struct Point3DStruct { get; set; }
+        public ImmutableArray<int> ImmutableArray { get; set; }
+        public int Int { get; set; }
     }
 
     public class ClassWithConstructor_SimpleAndComplexParameters : ITestClassWithParameterizedCtor
@@ -2060,7 +2066,20 @@ namespace System.Text.Json.Serialization.Tests
 
         public int x { get; }
 
-        public Point_MultipleMembers_BindTo_OneConstructorParameter(int X, int x) { }
+        public Point_MultipleMembers_BindTo_OneConstructorParameter(int X, int x)
+        {
+            this.X = X;
+            this.x = x;
+        }
+    }
+
+    public class Url_BindTo_OneConstructorParameter
+    {
+        public int URL { get; }
+
+        public int Url { get; }
+
+        public Url_BindTo_OneConstructorParameter(int url) { }
     }
 
     public class Point_MultipleMembers_BindTo_OneConstructorParameter_Variant
@@ -2280,7 +2299,7 @@ namespace System.Text.Json.Serialization.Tests
                 var startDateString = string.Format("{0:g}", StartDate.Value);
                 var endDateString = string.Format("{0:g}", EndDate.Value);
 
-                return string.Format($"From {startDateString} to {endDateString}");
+                return $"From {startDateString} to {endDateString}";
             }
         }
     }

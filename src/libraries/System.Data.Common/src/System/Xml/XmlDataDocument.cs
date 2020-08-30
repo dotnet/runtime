@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
+
+// TODO: Enable after System.Private.Xml is annotated
+#nullable disable
 
 using System.Collections;
 using System.Collections.Generic;
@@ -44,10 +46,10 @@ namespace System.Xml
         private object _foliationLock;
         internal const string XSI_NIL = "xsi:nil";
         internal const string XSI = "xsi";
-        private bool _bForceExpandEntity = false;
-        internal XmlAttribute _attrXml = null;
-        internal bool _bLoadFromDataSet = false;
-        internal bool _bHasXSINIL = false;
+        private bool _bForceExpandEntity;
+        internal XmlAttribute _attrXml;
+        internal bool _bLoadFromDataSet;
+        internal bool _bHasXSINIL;
 
         internal void AddPointer(IXmlDataVirtualNode pointer)
         {

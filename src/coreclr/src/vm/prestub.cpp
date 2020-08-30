@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ===========================================================================
 // File: Prestub.cpp
 //
@@ -96,7 +95,8 @@ PCODE MethodDesc::DoBackpatch(MethodTable * pMT, MethodTable *pDispatchingMT, BO
 
     // Only take the lock if the method is versionable with vtable slot backpatch, for recording slots and synchronizing with
     // backpatching slots
-    MethodDescBackpatchInfoTracker::ConditionalLockHolder slotBackpatchLockHolder(isVersionableWithVtableSlotBackpatch);
+    MethodDescBackpatchInfoTracker::ConditionalLockHolderForGCCoop slotBackpatchLockHolder(
+        isVersionableWithVtableSlotBackpatch);
 
     // Get the method entry point inside the lock above to synchronize with backpatching in
     // MethodDesc::BackpatchEntryPointSlots()
@@ -625,16 +625,6 @@ COR_ILMETHOD_DECODER* MethodDesc::GetAndVerifyMetadataILHeader(PrepareCodeConfig
     COR_ILMETHOD* ilHeader = pConfig->GetILHeader();
     if (ilHeader == NULL)
     {
-#ifdef FEATURE_COMINTEROP
-        // Abstract methods can be called through WinRT derivation if the deriving type
-        // is not implemented in managed code, and calls through the CCW to the abstract
-        // method. Throw a sensible exception in that case.
-        if (GetMethodTable()->IsExportedToWinRT() && IsAbstract())
-        {
-            COMPlusThrowHR(E_NOTIMPL);
-        }
-#endif // FEATURE_COMINTEROP
-
         COMPlusThrowHR(COR_E_BADIMAGEFORMAT, BFA_BAD_IL);
     }
 
@@ -1074,11 +1064,21 @@ PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, JitListLockEn
     bool shouldCountCalls = false;
     if (pFlags->IsSet(CORJIT_FLAGS::CORJIT_FLAG_TIER0))
     {
-        _ASSERTE(pConfig->GetCodeVersion().GetOptimizationTier() == NativeCodeVersion::OptimizationTier0);
         _ASSERTE(pConfig->GetMethodDesc()->IsEligibleForTieredCompilation());
 
         if (pConfig->JitSwitchedToOptimized())
         {
+#ifdef _DEBUG
+            // Call counting may already have been disabled due to the possibility of concurrent or reentering JIT of the same
+            // native code version of a method. The current optimization tier should be consistent with the change being made
+            // (Tier 0 to Optimized), such that the tier is not changed in an unexpected way or at an unexpected time. Since
+            // changes to the optimization tier are unlocked, this assertion is just a speculative check on possible values.
+            NativeCodeVersion::OptimizationTier previousOptimizationTier = pConfig->GetCodeVersion().GetOptimizationTier();
+            _ASSERTE(
+                previousOptimizationTier == NativeCodeVersion::OptimizationTier0 ||
+                previousOptimizationTier == NativeCodeVersion::OptimizationTierOptimized);
+#endif // _DEBUG
+
             // Update the tier in the code version. The JIT may have decided to switch from tier 0 to optimized, in which case
             // call counting would have to be disabled for the method.
             NativeCodeVersion codeVersion = pConfig->GetCodeVersion();
@@ -1093,7 +1093,7 @@ PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, JitListLockEn
             shouldCountCalls = true;
         }
     }
-#endif
+#endif // FEATURE_TIERED_COMPILATION
 
     // Aside from rejit, performing a SetNativeCodeInterlocked at this point
     // generally ensures that there is only one winning version of the native
@@ -1486,7 +1486,7 @@ Stub * CreateUnboxingILStubForSharedGenericValueTypeMethods(MethodDesc* pTargetM
     CreateInstantiatingILStubTargetSig(pTargetMD, typeContext, &stubSigBuilder);
 
     // 2. Emit the method body
-    mdToken tokRawData = pCode->GetToken(MscorlibBinder::GetField(FIELD__RAW_DATA__DATA));
+    mdToken tokRawData = pCode->GetToken(CoreLibBinder::GetField(FIELD__RAW_DATA__DATA));
 
     // 2.1 Push the thisptr
     // We need to skip over the MethodTable*
@@ -1690,9 +1690,9 @@ Stub * MakeUnboxingStubWorker(MethodDesc *pMD)
         CPUSTUBLINKER sl;
         _ASSERTE(pUnboxedMD != NULL && pUnboxedMD != pMD);
 
-        // The shuffle for an unboxing stub of a method that doesn't capture the 
+        // The shuffle for an unboxing stub of a method that doesn't capture the
         // type of the this pointer must be a no-op
-        _ASSERTE(pUnboxedMD->RequiresInstMethodTableArg() || (portableShuffle.GetCount() == 1)); 
+        _ASSERTE(pUnboxedMD->RequiresInstMethodTableArg() || (portableShuffle.GetCount() == 1));
 
         sl.EmitComputedInstantiatingMethodStub(pUnboxedMD, &portableShuffle[0], NULL);
 
@@ -1917,8 +1917,7 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, Method
             {
                 pDispatchingMT = curobj->GetMethodTable();
 
-#ifdef FEATURE_ICASTABLE
-                if (pDispatchingMT->IsICastable())
+                if (pDispatchingMT->IsICastable() || pDispatchingMT->IsIDynamicInterfaceCastable())
                 {
                     MethodTable* pMDMT = pMD->GetMethodTable();
                     TypeHandle objectType(pDispatchingMT);
@@ -1935,7 +1934,6 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, Method
                         pDispatchingMT = pMDMT;
                     }
                 }
-#endif // FEATURE_ICASTABLE
 
                 // For value types, the only virtual methods are interface implementations.
                 // Thus pDispatching == pMT because there
@@ -2171,7 +2169,7 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
     {
         if (GetModule()->IsReadyToRun() && GetModule()->GetReadyToRunInfo()->HasNonShareablePInvokeStubs() && MayUsePrecompiledILStub())
         {
-            // In crossgen2, we compile non-shareable IL stubs for pinvokes. If we can find code for such 
+            // In crossgen2, we compile non-shareable IL stubs for pinvokes. If we can find code for such
             // a stub, we'll use it directly instead and avoid emitting an IL stub.
             PrepareCodeConfig config(NativeCodeVersion(this), TRUE, TRUE);
             pCode = GetPrecompiledR2RCode(&config);
@@ -2415,7 +2413,7 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
     //
     // In this IL stub implementation we call the native method kernel32!GetFileAttributes,
     // and then we immediately try to save the Last Error code by calling the
-    // mscorlib method System.StubHelpers.StubHelpers.SetLastError().
+    // CoreLib method System.StubHelpers.StubHelpers.SetLastError().
     //
     // However when we are coming from a precompiled IL Stub in an ngen image
     // we must use an ExternalMethodFixup to find the target address of
@@ -2564,13 +2562,6 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
                 {
                     // We do not emit activation fixups for version resilient references. Activate the target explicitly.
                     pMD->EnsureActive();
-                }
-                else
-                {
-#ifdef FEATURE_WINMD_RESILIENT
-                    // We do not emit activation fixups for version resilient references. Activate the target explicitly.
-                    pMD->EnsureActive();
-#endif
                 }
 
                 break;
@@ -3394,7 +3385,7 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
                 }
                 else
                 {
-                    target = ECall::GetFCallImpl(MscorlibBinder::GetMethod(METHOD__DELEGATE__CONSTRUCT_DELEGATE));
+                    target = ECall::GetFCallImpl(CoreLibBinder::GetMethod(METHOD__DELEGATE__CONSTRUCT_DELEGATE));
                     ctorData.pArg3 = NULL;
                 }
 

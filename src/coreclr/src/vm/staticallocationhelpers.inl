@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // StaticAllocationHelpers.inl -
 //
 
@@ -21,7 +20,7 @@ static CorElementType ParseMetadataForStaticsIsValueTypeEnum(Module * pModule, I
     if (TypeFromToken(tk) != mdtTypeDef)
     {
         // At this point, we would have to load other assemblies. The only one we have guaranteed
-        // to be there is mscorlib.
+        // to be there is CoreLib.
         return ELEMENT_TYPE_END;
     }
 

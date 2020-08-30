@@ -14,6 +14,8 @@
 #define INTERP_ICALL_TRAMP_FARGS 4
 #endif
 
+#define MAX_INTERP_ENTRY_ARGS 8
+
 struct _InterpMethodArguments {
 	size_t ilen;
 	gpointer *iargs;
@@ -21,7 +23,7 @@ struct _InterpMethodArguments {
 	double *fargs;
 	gpointer *retval;
 	size_t is_float_ret;
-#ifdef TARGET_WASM
+#ifdef TARGET_WASM // FIXME HOST
 	MonoMethodSignature *sig;
 #endif
 };
@@ -41,5 +43,15 @@ typedef struct _InterpMethodArguments InterpMethodArguments;
  *  - xor, before mini_init () is called (embedding scenario).
  */
 MONO_API void mono_ee_interp_init (const char *);
+
+#ifdef TARGET_WASM
+
+gpointer
+mono_wasm_get_interp_to_native_trampoline (MonoMethodSignature *sig);
+
+gpointer
+mono_wasm_get_native_to_interp_trampoline (MonoMethod *method, gpointer extra_arg);
+
+#endif
 
 #endif /* __MONO_MINI_INTERPRETER_H__ */

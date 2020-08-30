@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ---------------------------------------------------------------------------
 // SString.h  (Safe String)
 //
@@ -809,6 +808,7 @@ template <COUNT_T MEMSIZE>
 class EMPTY_BASES_DECL InlineSString : public SString
 {
 private:
+    DAC_ALIGNAS(SString)
     BYTE m_inline[SBUFFER_PADDED_SIZE(MEMSIZE)];
 
 public:
@@ -991,6 +991,7 @@ template <COUNT_T MEMSIZE>
 class EMPTY_BASES_DECL ScratchBuffer : public SString::AbstractScratchBuffer
 {
   private:
+    DAC_ALIGNAS(::SString::AbstractScratchBuffer)
     BYTE m_inline[MEMSIZE];
 
   public:

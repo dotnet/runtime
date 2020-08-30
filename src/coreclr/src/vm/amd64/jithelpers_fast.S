@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 .intel_syntax noprefix
 #include "unixasmmacros.inc"
@@ -33,8 +32,13 @@ LEAF_ENTRY JIT_CheckedWriteBarrier, _TEXT
         // See if this is in GCHeap
         PREPARE_EXTERNAL_VAR g_lowest_address, rax
         cmp     rdi, [rax]
+#ifdef FEATURE_WRITEBARRIER_COPY
+        // jb      NotInHeap
+        .byte 0x72, 0x12
+#else
         // jb      NotInHeap
         .byte 0x72, 0x0e
+#endif
         PREPARE_EXTERNAL_VAR g_highest_address, rax
         cmp     rdi, [rax]
 
@@ -419,7 +423,7 @@ LEAF_END JIT_WriteBarrier_Callable, _TEXT
 // NOTE: On Linux we must advance the stack pointer as we probe - it is not allowed to access 65535 bytes below rsp.
 // Since this helper will modify a value of rsp - it must establish the frame pointer.
 //
-// See also https://github.com/dotnet/coreclr/issues/16827#issue-303331518 for more information.
+// See also https://github.com/dotnet/runtime/issues/9899#issue-303331518 for more information.
 
 #define PAGE_SIZE 0x1000
 

@@ -528,7 +528,7 @@ mini_regression_step (MonoImage *image, int verbose, int *total_run, int *total,
 			func = (TestMethod)mono_aot_get_method (mono_get_root_domain (), method, error);
 			mono_error_cleanup (error);
 #else
-			g_error ("No JIT or AOT available, regression testing not possible!")
+			g_error ("No JIT or AOT available, regression testing not possible!");
 #endif
 
 #else
@@ -2006,10 +2006,6 @@ apply_root_domain_configuration_file_bindings (MonoDomain *domain, char *root_do
 static void
 mono_check_interp_supported (void)
 {
-#ifdef DISABLE_INTERPRETER
-	g_error ("Mono IL interpreter support is missing\n");
-#endif
-
 #ifdef MONO_CROSS_COMPILE
 	g_error ("--interpreter on cross-compile runtimes not supported\n");
 #endif
@@ -2999,7 +2995,7 @@ mono_runtime_set_execution_mode_full (int mode, gboolean override)
 		mono_llvm_only = TRUE;
 		break;
 
-	case MONO_EE_MODE_INTERP:
+	case MONO_AOT_MODE_INTERP_ONLY:
 		mono_check_interp_supported ();
 		mono_use_interpreter = TRUE;
 

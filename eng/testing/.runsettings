@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RunSettings>
+  <RunConfiguration>
+    <!-- Timeout in ms, 5 minutes -->
+    <TestSessionTimeout>300000</TestSessionTimeout>
+    <!-- Directory for test run reports. E.g. trx, coverage etc. -->
+    <ResultsDirectory>.\TestResults\</ResultsDirectory>
+    <!-- Working directory for test invocation. Results directory can be relative to this. Used by IDEs. -->
+    <SolutionDirectory>.\</SolutionDirectory>
+    <!-- Degree of parallelization, spawns n test hosts to run tests. -->
+    <MaxCpuCount>$$MAXCPUCOUNT$$</MaxCpuCount>
+    <!-- Configures the architecture of test host. -->
+    <TargetPlatform>$$TARGETPLATFORM$$</TargetPlatform>
+    <!-- If true, an adapter should disable any test case parallelization. -->
+    <DisableParallelization>$$DISABLEPARALLELIZATION$$</DisableParallelization>
+    <!-- If true, an adapter shouldn't create appdomains to run tests. -->
+    <DisableAppDomain>$$DISABLEAPPDOMAIN$$</DisableAppDomain>
+    <!-- Filter out failing (wrong framwork, platform, runtime or activeissue) tests -->
+    <TestCaseFilter>$$TESTCASEFILTER$$</TestCaseFilter>
+    <DotNetHostPath>$$DOTNETHOSTPATH$$</DotNetHostPath>
+  </RunConfiguration>
+  <LoggerRunSettings>
+    <Loggers>
+      <Logger friendlyName="trx" />
+      <Logger friendlyName="html" />
+      <Logger friendlyName="console">
+        <Configuration>
+          <Verbosity>Minimal</Verbosity>
+        </Configuration>
+      </Logger>
+    </Loggers>
+  </LoggerRunSettings>
+  <DataCollectionRunSettings>
+    <DataCollectors>
+      <DataCollector friendlyName="XPlat code coverage" enabled="$$COVERAGE_ENABLED$$">
+        <Configuration>
+          <Include>$$COVERAGE_INCLUDE$$</Include>
+          <ExcludeByFile>$$COVERAGE_EXCLUDEBYFILE$$</ExcludeByFile>
+          <IncludeDirectory>$$COVERAGE_INCLUDEDIRECTORY$$</IncludeDirectory>
+          <Format>opencover</Format>
+          <SingleHit>false</SingleHit>
+          <UseSourceLink>true</UseSourceLink>
+          <IncludeTestAssembly>false</IncludeTestAssembly>
+        </Configuration>
+      </DataCollector>
+      <DataCollector friendlyName="blame" enabled="true" />
+    </DataCollectors>
+  </DataCollectionRunSettings>
+</RunSettings>

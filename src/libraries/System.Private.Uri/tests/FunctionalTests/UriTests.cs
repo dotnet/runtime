@@ -1,8 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.PrivateUri.Tests
@@ -706,6 +707,153 @@ namespace System.PrivateUri.Tests
 
             Assert.Equal("http://www.contoso.com/", u.AbsoluteUri);
             Assert.Equal(80, u.Port);
+        }
+
+        [Fact]
+        public static void Uri_CombineUsesNewUriString()
+        {
+            // Tests that internal Uri fields were properly reset during a Combine operation
+            // Otherwise, the wrong Uri string would be used if the relative Uri contains non-ascii characters
+            // This will only affect parsers without the IriParsing flag - only custom parsers
+            UriParser.Register(new GenericUriParser(GenericUriParserOptions.GenericAuthority), "combine-scheme", -1);
+
+            const string BaseUriString = "combine-scheme://foo";
+            const string RelativeUriString = "/relative/uri/with/non/ascii/\u00FC";
+            const string Combined = BaseUriString + "/relative/uri/with/non/ascii/%C3%BC";
+
+            var baseUri = new Uri(BaseUriString, UriKind.Absolute);
+            var relativeUri = new Uri(RelativeUriString, UriKind.Relative);
+
+            Assert.Equal(Combined, new Uri(baseUri, relativeUri).AbsoluteUri);
+            Assert.Equal(Combined, new Uri(baseUri, RelativeUriString).AbsoluteUri);
+        }
+
+        [Fact]
+        public static void Uri_CachesIdnHost()
+        {
+            var uri = new Uri("https://\u00FCnicode/foo");
+            Assert.Same(uri.IdnHost, uri.IdnHost);
+        }
+
+        [Fact]
+        public static void Uri_CachesPathAndQuery()
+        {
+            var uri = new Uri("https://foo/bar?one=two");
+            Assert.Same(uri.PathAndQuery, uri.PathAndQuery);
+        }
+
+        [Fact]
+        public static void Uri_CachesDnsSafeHost()
+        {
+            var uri = new Uri("https://[::]/bar");
+            Assert.Same(uri.DnsSafeHost, uri.DnsSafeHost);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public static void Uri_DoesNotLockOnString()
+        {
+            // Don't intern the string we lock on
+            string uriString = "*http://www.contoso.com".Substring(1);
+
+            bool timedOut = false;
+
+            var enteredLockMre = new ManualResetEvent(false);
+            var finishedParsingMre = new ManualResetEvent(false);
+
+            Task.Factory.StartNew(() =>
+            {
+                lock (uriString)
+                {
+                    enteredLockMre.Set();
+                    timedOut = !finishedParsingMre.WaitOne(TimeSpan.FromSeconds(10));
+                }
+            }, TaskCreationOptions.LongRunning);
+
+            enteredLockMre.WaitOne();
+            int port = new Uri(uriString).Port;
+            finishedParsingMre.Set();
+            Assert.Equal(80, port);
+
+            Assert.True(Monitor.TryEnter(uriString, TimeSpan.FromSeconds(10)));
+            Assert.False(timedOut);
+        }
+
+        public static IEnumerable<object[]> FilePathHandlesNonAscii_TestData()
+        {
+            if (PlatformDetection.IsNotWindows)
+            {
+                // Unix absolute file path
+                yield return new object[] { "/\u00FCri/", "file:///\u00FCri/", "/%C3%BCri/", "file:///%C3%BCri/", "/\u00FCri/" };
+                yield return new object[] { "/a/b\uD83D\uDE1F/Foo.cs", "file:///a/b\uD83D\uDE1F/Foo.cs", "/a/b%F0%9F%98%9F/Foo.cs", "file:///a/b%F0%9F%98%9F/Foo.cs", "/a/b\uD83D\uDE1F/Foo.cs" };
+            }
+
+            // Absolute fie path
+            yield return new object[] { "file:///\u00FCri/", "file:///\u00FCri/", "/%C3%BCri/", "file:///%C3%BCri/", "/\u00FCri/" };
+            yield return new object[] { "file:///a/b\uD83D\uDE1F/Foo.cs", "file:///a/b\uD83D\uDE1F/Foo.cs", "/a/b%F0%9F%98%9F/Foo.cs", "file:///a/b%F0%9F%98%9F/Foo.cs", "/a/b\uD83D\uDE1F/Foo.cs" };
+
+            // DOS
+            yield return new object[] { "file://C:/\u00FCri/", "file:///C:/\u00FCri/", "C:/%C3%BCri/", "file:///C:/%C3%BCri/", "C:\\\u00FCri\\" };
+            yield return new object[] { "file:///C:/\u00FCri/", "file:///C:/\u00FCri/", "C:/%C3%BCri/", "file:///C:/%C3%BCri/", "C:\\\u00FCri\\" };
+            yield return new object[] { "C:/\u00FCri/", "file:///C:/\u00FCri/", "C:/%C3%BCri/", "file:///C:/%C3%BCri/", "C:\\\u00FCri\\" };
+
+            // UNC
+            yield return new object[] { "\\\\\u00FCri/", "file://\u00FCri/", "/", "file://\u00FCri/", "\\\\\u00FCri\\" };
+            yield return new object[] { "file://\u00FCri/", "file://\u00FCri/", "/", "file://\u00FCri/", "\\\\\u00FCri\\" };
+
+            // ? and # handling
+            if (PlatformDetection.IsWindows)
+            {
+                yield return new object[] { "file:///a/?b/c\u00FC/", "file:///a/?b/c\u00FC/", "/a/", "file:///a/?b/c%C3%BC/", "/a/" };
+                yield return new object[] { "file:///a/#b/c\u00FC/", "file:///a/#b/c\u00FC/", "/a/", "file:///a/#b/c%C3%BC/", "/a/" };
+                yield return new object[] { "file:///a/?b/#c/d\u00FC/", "file:///a/?b/#c/d\u00FC/", "/a/", "file:///a/?b/#c/d%C3%BC/", "/a/" };
+            }
+            else
+            {
+                yield return new object[] { "/a/?b/c\u00FC/", "file:///a/%3Fb/c\u00FC/", "/a/%3Fb/c%C3%BC/", "file:///a/%3Fb/c%C3%BC/", "/a/?b/c\u00FC/" };
+                yield return new object[] { "/a/#b/c\u00FC/", "file:///a/%23b/c\u00FC/", "/a/%23b/c%C3%BC/", "file:///a/%23b/c%C3%BC/", "/a/#b/c\u00FC/" };
+                yield return new object[] { "/a/?b/#c/d\u00FC/", "file:///a/%3Fb/%23c/d\u00FC/", "/a/%3Fb/%23c/d%C3%BC/", "file:///a/%3Fb/%23c/d%C3%BC/", "/a/?b/#c/d\u00FC/" };
+
+                yield return new object[] { "file:///a/?b/c\u00FC/", "file:///a/?b/c\u00FC/", "/a/", "file:///a/?b/c%C3%BC/", "/a/" };
+                yield return new object[] { "file:///a/#b/c\u00FC/", "file:///a/#b/c\u00FC/", "/a/", "file:///a/#b/c%C3%BC/", "/a/" };
+                yield return new object[] { "file:///a/?b/#c/d\u00FC/", "file:///a/?b/#c/d\u00FC/", "/a/", "file:///a/?b/#c/d%C3%BC/", "/a/" };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(FilePathHandlesNonAscii_TestData))]
+        public static void FilePathHandlesNonAscii(string uriString, string toString, string absolutePath, string absoluteUri, string localPath)
+        {
+            var uri = new Uri(uriString);
+
+            Assert.Equal(toString, uri.ToString());
+            Assert.Equal(absolutePath, uri.AbsolutePath);
+            Assert.Equal(absoluteUri, uri.AbsoluteUri);
+            Assert.Equal(localPath, uri.LocalPath);
+
+            var uri2 = new Uri(uri.AbsoluteUri);
+
+            Assert.Equal(toString, uri2.ToString());
+            Assert.Equal(absolutePath, uri2.AbsolutePath);
+            Assert.Equal(absoluteUri, uri2.AbsoluteUri);
+            Assert.Equal(localPath, uri2.LocalPath);
+        }
+
+        public static IEnumerable<object[]> ZeroPortIsParsedForBothKnownAndUnknownSchemes_TestData()
+        {
+            yield return new object[] { "http://example.com:0", 0, false };
+            yield return new object[] { "http://example.com", 80, true };
+            yield return new object[] { "rtsp://example.com:0", 0, false };
+            yield return new object[] { "rtsp://example.com", -1, true };
+        }
+
+        [Theory]
+        [MemberData(nameof(ZeroPortIsParsedForBothKnownAndUnknownSchemes_TestData))]
+        public static void ZeroPortIsParsedForBothKnownAndUnknownSchemes(string uriString, int port, bool isDefaultPort)
+        {
+            Uri.TryCreate(uriString, UriKind.Absolute, out var uri);
+            Assert.Equal(port, uri.Port);
+            Assert.Equal(isDefaultPort, uri.IsDefaultPort);
+            Assert.Equal(uriString + "/", uri.ToString());
         }
     }
 }

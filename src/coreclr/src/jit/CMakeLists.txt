@@ -54,6 +54,7 @@ set( JIT_SOURCES
   instr.cpp
   jitconfig.cpp
   jiteh.cpp
+  jithashtable.cpp
   jittelemetry.cpp
   lclmorph.cpp
   lclvars.cpp
@@ -170,6 +171,7 @@ if (CLR_CMAKE_TARGET_WIN32)
     regset.h
     sideeffects.h
     simd.h
+    simdashwintrinsic.h
     simdintrinsiclist.h
     sm.h
     smallhash.h
@@ -204,14 +206,16 @@ if (CLR_CMAKE_TARGET_WIN32)
       instrsarm.h
       instrsarm64.h
       registerarm.h
-      registerarm64.h)
+      registerarm64.h
+      simdashwintrinsiclistarm64.h)
   elseif (CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_I386)
     list (APPEND JIT_HEADERS
       emitfmtsxarch.h
       emitxarch.h
       hwintrinsiclistxarch.h
       hwintrinsic.h
-      instrsxarch.h)
+      instrsxarch.h
+      simdashwintrinsiclistxarch.h)
   endif ()
 endif(CLR_CMAKE_TARGET_WIN32)
 
@@ -223,6 +227,7 @@ set( JIT_AMD64_SOURCES
   lowerxarch.cpp
   lsraxarch.cpp
   simd.cpp
+  simdashwintrinsic.cpp
   simdcodegenxarch.cpp
   targetamd64.cpp
   unwindamd64.cpp
@@ -249,6 +254,7 @@ set( JIT_I386_SOURCES
   lowerxarch.cpp
   lsraxarch.cpp
   simd.cpp
+  simdashwintrinsic.cpp
   simdcodegenxarch.cpp
   targetx86.cpp
   unwindx86.cpp
@@ -264,6 +270,7 @@ set( JIT_ARM64_SOURCES
   lsraarmarch.cpp
   lsraarm64.cpp
   simd.cpp
+  simdashwintrinsic.cpp
   targetarm64.cpp
   unwindarm.cpp
   unwindarm64.cpp
@@ -299,32 +306,29 @@ convert_to_absolute_path(JIT_ARM_SOURCES ${JIT_ARM_SOURCES})
 convert_to_absolute_path(JIT_I386_SOURCES ${JIT_I386_SOURCES})
 convert_to_absolute_path(JIT_ARM64_SOURCES ${JIT_ARM64_SOURCES})
 
+set(JIT_DLL_MAIN_FILE ${CMAKE_CURRENT_LIST_DIR}/dllmain.cpp)
 
 if(CLR_CMAKE_TARGET_WIN32)
   set(CLRJIT_EXPORTS ${CMAKE_CURRENT_LIST_DIR}/ClrJit.exports)
   set(JIT_EXPORTS_FILE ${CMAKE_CURRENT_BINARY_DIR}/ClrJit.exports.def)
   preprocess_file (${CLRJIT_EXPORTS} ${JIT_EXPORTS_FILE})
 
-  set(SHARED_LIB_SOURCES ${SOURCES} ${JIT_EXPORTS_FILE})
+  set(JIT_CORE_SOURCES ${SOURCES})
+  set(JIT_DEF_FILE ${JIT_EXPORTS_FILE})
 else()
   set(CLRJIT_EXPORTS ${CMAKE_CURRENT_LIST_DIR}/ClrJit.PAL.exports)
 
   set(JIT_EXPORTS_FILE ${CMAKE_CURRENT_BINARY_DIR}/clrjit.exports)
   generate_exports_file(${CLRJIT_EXPORTS} ${JIT_EXPORTS_FILE})
 
-  if(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_NETBSD)
+  if(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_NETBSD OR CLR_CMAKE_TARGET_SUNOS)
     # This is required to force using our own PAL, not one that we are loaded with.
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker -Bsymbolic")
-
-    set(JIT_EXPORTS_LINKER_OPTION -Wl,--version-script=${JIT_EXPORTS_FILE})
-  elseif(CLR_CMAKE_TARGET_OSX)
-    set(JIT_EXPORTS_LINKER_OPTION -Wl,-exported_symbols_list,${JIT_EXPORTS_FILE})
-  elseif(CLR_CMAKE_HOST_SUNOS)
-    # Add linker exports file option
-    set(JIT_EXPORTS_LINKER_OPTION -Wl,-M,${JIT_EXPORTS_FILE})
   endif()
 
-  set(SHARED_LIB_SOURCES ${SOURCES})
+  set_exports_linker_option(${JIT_EXPORTS_FILE})
+  set(JIT_EXPORTS_LINKER_OPTION ${EXPORTS_LINKER_OPTION})
+  set(JIT_CORE_SOURCES ${SOURCES})
 endif()
 
 add_custom_target(jit_exports DEPENDS ${JIT_EXPORTS_FILE})
@@ -372,8 +376,10 @@ function(add_jit jitName)
 
     add_library_clr(${jitName}
         SHARED
-        ${SHARED_LIB_SOURCES}
+        ${JIT_CORE_SOURCES}
         ${JIT_ARCH_SOURCES}
+        ${JIT_DEF_FILE}
+        ${JIT_DLL_MAIN_FILE}
     )
 
     target_precompile_header(TARGET ${jitName} HEADER jitpch.h ADDITIONAL_INCLUDE_DIRECTORIES ${JIT_SOURCE_DIR})
@@ -395,10 +401,11 @@ endfunction()
 set(JIT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
 if (FEATURE_MERGE_JIT_AND_ENGINE)
-  # Despite the directory being named "dll", it creates a static library "clrjit_static" to link into the VM.
-  add_subdirectory(dll)
   add_subdirectory(crossgen)
 endif (FEATURE_MERGE_JIT_AND_ENGINE)
+
+# Creates a static library "clrjit_static" to link into the VM.
+add_subdirectory(static)
 
 add_subdirectory(standalone)
 

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Diagnostics;
@@ -18,7 +17,7 @@ namespace System.Text
     /// assuming that the underlying <see cref="Rune"/> instance is well-formed.
     /// </remarks>
     [DebuggerDisplay("{DebuggerDisplay,nq}")]
-    public readonly struct Rune : IComparable<Rune>, IEquatable<Rune>
+    public readonly struct Rune : IComparable, IComparable<Rune>, IEquatable<Rune>
     {
         internal const int MaxUtf16CharsPerRune = 2; // supplementary plane code points are encoded as 2 UTF-16 code units
         internal const int MaxUtf8BytesPerRune = 4; // supplementary plane code points are encoded as 4 UTF-8 code units
@@ -270,7 +269,7 @@ namespace System.Text
         }
 #endif
 
-        public int CompareTo(Rune other) => _value.CompareTo(other._value);
+        public int CompareTo(Rune other) => this.Value - other.Value; // values don't span entire 32-bit domain; won't integer overflow
 
         /// <summary>
         /// Decodes the <see cref="Rune"/> at the beginning of the provided UTF-16 source buffer.
@@ -1170,7 +1169,7 @@ namespace System.Text
         private static UnicodeCategory GetUnicodeCategoryNonAscii(Rune value)
         {
             Debug.Assert(!value.IsAscii, "Shouldn't use this non-optimized code path for ASCII characters.");
-#if !NETSTANDARD2_0
+#if (!NETSTANDARD2_0 && !NETFRAMEWORK)
             return CharUnicodeInfo.GetUnicodeCategory(value.Value);
 #else
             if (value.IsBmp)
@@ -1437,6 +1436,22 @@ namespace System.Text
 #else
             return ChangeCaseCultureAware(value, CultureInfo.InvariantCulture, toUpper: true);
 #endif
+        }
+
+        /// <inheritdoc cref="IComparable.CompareTo" />
+        int IComparable.CompareTo(object? obj)
+        {
+            if (obj is null)
+            {
+                return 1; // non-null ("this") always sorts after null
+            }
+
+            if (obj is Rune other)
+            {
+                return this.CompareTo(other);
+            }
+
+            throw new ArgumentException(SR.Arg_MustBeRune);
         }
     }
 }

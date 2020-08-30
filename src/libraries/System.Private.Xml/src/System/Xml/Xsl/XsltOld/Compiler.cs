@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections;
@@ -25,12 +24,12 @@ namespace System.Xml.Xsl.XsltOld
     internal class Sort
     {
         internal int select;
-        internal string lang;
+        internal string? lang;
         internal XmlDataType dataType;
         internal XmlSortOrder order;
         internal XmlCaseOrder caseOrder;
 
-        public Sort(int sortkey, string xmllang, XmlDataType datatype, XmlSortOrder xmlorder, XmlCaseOrder xmlcaseorder)
+        public Sort(int sortkey, string? xmllang, XmlDataType datatype, XmlSortOrder xmlorder, XmlCaseOrder xmlcaseorder)
         {
             select = sortkey;
             lang = xmllang;
@@ -57,39 +56,39 @@ namespace System.Xml.Xsl.XsltOld
         internal StringBuilder AvtStringBuilder = new StringBuilder();
 
         private int _stylesheetid; // Root stylesheet has id=0. We are using this in CompileImports to compile BuiltIns
-        private InputScope _rootScope;
+        private InputScope? _rootScope;
 
         //
         // Object members
-        private XmlResolver _xmlResolver;
+        private XmlResolver? _xmlResolver;
 
         //
         // Template being currently compiled
-        private TemplateBaseAction _currentTemplate;
-        private XmlQualifiedName _currentMode;
-        private Hashtable _globalNamespaceAliasTable;
+        private TemplateBaseAction? _currentTemplate;
+        private XmlQualifiedName? _currentMode;
+        private Hashtable? _globalNamespaceAliasTable;
 
         //
         // Current import stack
-        private Stack<Stylesheet> _stylesheets;
+        private Stack<Stylesheet>? _stylesheets;
 
         private readonly HybridDictionary _documentURIs = new HybridDictionary();
 
         // import/include documents, who is here has its URI in this.documentURIs
-        private NavigatorInput _input;
+        private NavigatorInput _input = null!;
 
         // Atom table & InputScopeManager - cached top of the this.input stack
-        private KeywordsTable _atoms;
-        private InputScopeManager _scopeManager;
+        private KeywordsTable? _atoms;
+        private InputScopeManager _scopeManager = null!;
 
         //
         // Compiled stylesheet state
-        internal Stylesheet stylesheet;
-        internal Stylesheet rootStylesheet;
-        private RootAction _rootAction;
-        private List<TheQuery> _queryStore;
+        internal Stylesheet? stylesheet;
+        internal Stylesheet? rootStylesheet;
+        private RootAction _rootAction = null!;
+        private List<TheQuery>? _queryStore;
         private readonly QueryBuilder _queryBuilder = new QueryBuilder();
-        private int _rtfCount = 0;
+        private int _rtfCount;
 
         // Used to load Built In templates
         public bool AllowBuiltInMode;
@@ -110,7 +109,7 @@ namespace System.Xml.Xsl.XsltOld
             set { _stylesheetid = value; }
         }
 
-        internal NavigatorInput Document
+        internal NavigatorInput? Document
         {
             get { return _input; }
         }
@@ -138,7 +137,7 @@ namespace System.Xml.Xsl.XsltOld
             return Document.ToParent();
         }
 
-        internal Stylesheet CompiledStylesheet
+        internal Stylesheet? CompiledStylesheet
         {
             get { return this.stylesheet; }
         }
@@ -155,12 +154,12 @@ namespace System.Xml.Xsl.XsltOld
             }
         }
 
-        internal List<TheQuery> QueryStore
+        internal List<TheQuery>? QueryStore
         {
             get { return _queryStore; }
         }
 
-        public virtual IXsltDebugger Debugger { get { return null; } }
+        public virtual IXsltDebugger? Debugger { get { return null; } }
 
         internal string GetUnicRtfId()
         {
@@ -199,10 +198,10 @@ namespace System.Xml.Xsl.XsltOld
                 }
                 catch (Exception e)
                 {
-                    throw new XsltCompileException(e, this.Input.BaseURI, this.Input.LineNumber, this.Input.LinePosition);
+                    throw new XsltCompileException(e, this.Input!.BaseURI, this.Input.LineNumber, this.Input.LinePosition);
                 }
 
-                this.stylesheet.ProcessTemplates();
+                this.stylesheet!.ProcessTemplates();
                 _rootAction.PorcessAttributeSets(this.rootStylesheet);
                 this.stylesheet.SortWhiteSpace();
 
@@ -229,19 +228,19 @@ namespace System.Xml.Xsl.XsltOld
 
         internal bool ForwardCompatibility
         {
-            get { return _scopeManager.CurrentScope.ForwardCompatibility; }
-            set { _scopeManager.CurrentScope.ForwardCompatibility = value; }
+            get { return _scopeManager.CurrentScope!.ForwardCompatibility; }
+            set { _scopeManager.CurrentScope!.ForwardCompatibility = value; }
         }
 
         internal bool CanHaveApplyImports
         {
-            get { return _scopeManager.CurrentScope.CanHaveApplyImports; }
-            set { _scopeManager.CurrentScope.CanHaveApplyImports = value; }
+            get { return _scopeManager.CurrentScope!.CanHaveApplyImports; }
+            set { _scopeManager.CurrentScope!.CanHaveApplyImports = value; }
         }
 
         internal void InsertExtensionNamespace(string value)
         {
-            string[] nsList = ResolvePrefixes(value);
+            string[]? nsList = ResolvePrefixes(value);
             if (nsList != null)
             {
                 _scopeManager.InsertExtensionNamespaces(nsList);
@@ -250,7 +249,7 @@ namespace System.Xml.Xsl.XsltOld
 
         internal void InsertExcludedNamespace(string value)
         {
-            string[] nsList = ResolvePrefixes(value);
+            string[]? nsList = ResolvePrefixes(value);
             if (nsList != null)
             {
                 _scopeManager.InsertExcludedNamespaces(nsList);
@@ -259,12 +258,12 @@ namespace System.Xml.Xsl.XsltOld
 
         internal void InsertExtensionNamespace()
         {
-            InsertExtensionNamespace(Input.Navigator.GetAttribute(Input.Atoms.ExtensionElementPrefixes, Input.Atoms.UriXsl));
+            InsertExtensionNamespace(Input!.Navigator.GetAttribute(Input.Atoms.ExtensionElementPrefixes, Input.Atoms.UriXsl));
         }
 
         internal void InsertExcludedNamespace()
         {
-            InsertExcludedNamespace(Input.Navigator.GetAttribute(Input.Atoms.ExcludeResultPrefixes, Input.Atoms.UriXsl));
+            InsertExcludedNamespace(Input!.Navigator.GetAttribute(Input.Atoms.ExcludeResultPrefixes, Input.Atoms.UriXsl));
         }
 
         internal bool IsExtensionNamespace(string nspace)
@@ -280,7 +279,7 @@ namespace System.Xml.Xsl.XsltOld
         internal void PushLiteralScope()
         {
             PushNamespaceScope();
-            string value = Input.Navigator.GetAttribute(Atoms.Version, Atoms.UriXsl);
+            string value = Input!.Navigator.GetAttribute(Atoms.Version, Atoms.UriXsl);
             if (value.Length != 0)
             {
                 ForwardCompatibility = (value != "1.0");
@@ -290,7 +289,7 @@ namespace System.Xml.Xsl.XsltOld
         internal void PushNamespaceScope()
         {
             _scopeManager.PushScope();
-            NavigatorInput input = Input;
+            NavigatorInput input = Input!;
 
             if (input.MoveToFirstNamespace())
             {
@@ -310,7 +309,7 @@ namespace System.Xml.Xsl.XsltOld
 
         internal virtual void PopScope()
         {
-            _currentTemplate.ReleaseVariableSlots(_scopeManager.CurrentScope.GetVeriablesCount());
+            _currentTemplate!.ReleaseVariableSlots(_scopeManager.CurrentScope!.GetVeriablesCount());
             _scopeManager.PopScope();
         }
 
@@ -329,7 +328,7 @@ namespace System.Xml.Xsl.XsltOld
             if (variable.IsGlobal)
             {
                 Debug.Assert(_rootAction != null);
-                varScope = _rootScope;
+                varScope = _rootScope!;
             }
             else
             {
@@ -338,7 +337,7 @@ namespace System.Xml.Xsl.XsltOld
                 varScope = _scopeManager.VariableScope;
             }
 
-            VariableAction oldVar = varScope.ResolveVariable(variable.Name);
+            VariableAction? oldVar = varScope.ResolveVariable(variable.Name!);
             if (oldVar != null)
             {
                 // Other variable with this name is visible in this scope
@@ -377,7 +376,7 @@ namespace System.Xml.Xsl.XsltOld
             }
 
             varScope.InsertVariable(variable);
-            return _currentTemplate.AllocateVariableSlot();
+            return _currentTemplate!.AllocateVariableSlot();
         }
 
         internal void AddNamespaceAlias(string StylesheetURI, NamespaceInfo AliasInfo)
@@ -386,7 +385,7 @@ namespace System.Xml.Xsl.XsltOld
             {
                 _globalNamespaceAliasTable = new Hashtable();
             }
-            NamespaceInfo duplicate = _globalNamespaceAliasTable[StylesheetURI] as NamespaceInfo;
+            NamespaceInfo? duplicate = _globalNamespaceAliasTable[StylesheetURI] as NamespaceInfo;
             if (duplicate == null || AliasInfo.stylesheetId <= duplicate.stylesheetId)
             {
                 _globalNamespaceAliasTable[StylesheetURI] = AliasInfo;
@@ -402,11 +401,11 @@ namespace System.Xml.Xsl.XsltOld
             return _globalNamespaceAliasTable.Contains(StylesheetURI);
         }
 
-        internal NamespaceInfo FindNamespaceAlias(string StylesheetURI)
+        internal NamespaceInfo? FindNamespaceAlias(string StylesheetURI)
         {
             if (_globalNamespaceAliasTable != null)
             {
-                return (NamespaceInfo)_globalNamespaceAliasTable[StylesheetURI];
+                return (NamespaceInfo?)_globalNamespaceAliasTable[StylesheetURI];
             }
             return null;
         }
@@ -442,7 +441,7 @@ namespace System.Xml.Xsl.XsltOld
 
         // This function is for processing optional attributes only.  In case of error
         // the value is ignored iff forwards-compatible mode is on.
-        private string[] ResolvePrefixes(string tokens)
+        private string[]? ResolvePrefixes(string tokens)
         {
             if (tokens == null || tokens.Length == 0)
             {
@@ -475,7 +474,7 @@ namespace System.Xml.Xsl.XsltOld
         internal bool GetYesNo(string value)
         {
             Debug.Assert(value != null);
-            Debug.Assert((object)value == (object)Input.Value); // this is always true. Why we passing value to this function.
+            Debug.Assert((object)value == (object)Input!.Value); // this is always true. Why we passing value to this function.
             if (value == "yes")
             {
                 return true;
@@ -489,9 +488,9 @@ namespace System.Xml.Xsl.XsltOld
 
         internal string GetSingleAttribute(string attributeAtom)
         {
-            NavigatorInput input = Input;
+            NavigatorInput input = Input!;
             string element = input.LocalName;
-            string value = null;
+            string? value = null;
 
             if (input.MoveToFirstAttribute())
             {
@@ -579,7 +578,7 @@ namespace System.Xml.Xsl.XsltOld
         internal Uri ResolveUri(string relativeUri)
         {
             Debug.Assert(_xmlResolver != null);
-            string baseUri = this.Input.BaseURI;
+            string baseUri = this.Input!.BaseURI;
             Uri uri = _xmlResolver.ResolveUri((baseUri.Length != 0) ? _xmlResolver.ResolveUri(null, baseUri) : null, relativeUri);
             if (uri == null)
             {
@@ -591,7 +590,7 @@ namespace System.Xml.Xsl.XsltOld
         internal NavigatorInput ResolveDocument(Uri absoluteUri)
         {
             Debug.Assert(_xmlResolver != null);
-            object input = _xmlResolver.GetEntity(absoluteUri, null, null);
+            object? input = _xmlResolver.GetEntity(absoluteUri, null, null);
             string resolved = absoluteUri.ToString();
 
             if (input is Stream)
@@ -633,7 +632,7 @@ namespace System.Xml.Xsl.XsltOld
 
             NavigatorInput lastInput = _input;
 
-            _input = lastInput.Next;
+            _input = lastInput.Next!;
             lastInput.Next = null;
 
             if (_input != null)
@@ -644,7 +643,7 @@ namespace System.Xml.Xsl.XsltOld
             else
             {
                 _atoms = null;
-                _scopeManager = null;
+                _scopeManager = null!;
             }
 
             RemoveDocumentURI(lastInput.Href);
@@ -664,7 +663,7 @@ namespace System.Xml.Xsl.XsltOld
 
         internal Stylesheet PopStylesheet()
         {
-            Debug.Assert(this.stylesheet == _stylesheets.Peek());
+            Debug.Assert(this.stylesheet == _stylesheets!.Peek());
             Stylesheet stylesheet = _stylesheets.Pop();
             this.stylesheet = _stylesheets.Peek();
             return stylesheet;
@@ -676,7 +675,7 @@ namespace System.Xml.Xsl.XsltOld
 
         internal void AddAttributeSet(AttributeSetAction attributeSet)
         {
-            Debug.Assert(this.stylesheet == _stylesheets.Peek());
+            Debug.Assert(this.stylesheet == _stylesheets!.Peek());
             this.stylesheet.AddAttributeSet(attributeSet);
         }
 
@@ -686,7 +685,7 @@ namespace System.Xml.Xsl.XsltOld
 
         internal void AddTemplate(TemplateAction template)
         {
-            Debug.Assert(this.stylesheet == _stylesheets.Peek());
+            Debug.Assert(this.stylesheet == _stylesheets!.Peek());
             this.stylesheet.AddTemplate(template);
         }
 
@@ -704,7 +703,7 @@ namespace System.Xml.Xsl.XsltOld
             _currentTemplate = _rootAction;
         }
 
-        internal XmlQualifiedName CurrentMode
+        internal XmlQualifiedName? CurrentMode
         {
             get { return _currentMode; }
         }
@@ -739,7 +738,7 @@ namespace System.Xml.Xsl.XsltOld
                 {
                     throw XsltException.Create(SR.Xslt_InvalidXPath, new string[] { xpathQuery }, e);
                 }
-                expr = new ErrorXPathExpression(xpathQuery, this.Input.BaseURI, this.Input.LineNumber, this.Input.LinePosition);
+                expr = new ErrorXPathExpression(xpathQuery, this.Input!.BaseURI, this.Input.LineNumber, this.Input.LinePosition);
             }
             _queryStore.Add(new TheQuery(expr, _scopeManager));
             return _queryStore.Count - 1;
@@ -792,7 +791,7 @@ namespace System.Xml.Xsl.XsltOld
         public string GetNsAlias(ref string prefix)
         {
             Debug.Assert(
-                Ref.Equal(_input.LocalName, _input.Atoms.StylesheetPrefix) ||
+                Ref.Equal(_input!.LocalName, _input.Atoms.StylesheetPrefix) ||
                 Ref.Equal(_input.LocalName, _input.Atoms.ResultPrefix)
             );
             if (prefix == "#default")
@@ -1127,7 +1126,7 @@ namespace System.Xml.Xsl.XsltOld
             return action;
         }
 
-        public virtual VariableAction CreateVariableAction(VariableType type)
+        public virtual VariableAction? CreateVariableAction(VariableType type)
         {
             VariableAction action = new VariableAction(type);
             action.Compile(this);
@@ -1163,7 +1162,7 @@ namespace System.Xml.Xsl.XsltOld
 
         public XsltException UnexpectedKeyword()
         {
-            XPathNavigator nav = this.Input.Navigator.Clone();
+            XPathNavigator nav = this.Input!.Navigator.Clone();
             string thisName = nav.Name;
             nav.MoveToParent();
             string parentName = nav.Name;
@@ -1175,7 +1174,7 @@ namespace System.Xml.Xsl.XsltOld
             private readonly string _baseUri;
             private readonly int _lineNumber, _linePosition;
             public ErrorXPathExpression(string expression, string baseUri, int lineNumber, int linePosition)
-                : base(null, expression, false)
+                : base(null!, expression, false)
             {
                 _baseUri = baseUri;
                 _lineNumber = lineNumber;

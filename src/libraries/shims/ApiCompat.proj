@@ -1,22 +1,13 @@
-<Project>
-  <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.props" />
+<Project Sdk="Microsoft.Build.NoTargets">
 
   <PropertyGroup>
     <TargetFramework>$(BuildTargetFramework)</TargetFramework>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <ApiCompatTarget>$(TargetFramework)</ApiCompatTarget>
-    <ApiCompatTarget Condition="$(BuildTargetFramework.Contains('netcoreapp'))">netcoreapp</ApiCompatTarget>
-    <ApiCompatResponseFile>$(IntermediateOutputPath)/apicompat.rsp</ApiCompatResponseFile>
-    <ApiCompatBaselineFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.$(ApiCompatTarget).netfx461.txt</ApiCompatBaselineFile>
-    <ApiCompatBaselineIgnoreFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.$(ApiCompatTarget).netfx461.ignore.txt</ApiCompatBaselineIgnoreFile>
-    <ApiCompatNSBaselineFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.$(ApiCompatTarget).netstandard.txt</ApiCompatNSBaselineFile>
-    <ApiCompatNSOnlyBaselineFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.$(ApiCompatTarget).netstandardOnly.txt</ApiCompatNSOnlyBaselineFile>
-    <ApiCompatImplementationDirs>$(BuildTargetFrameworkRefPath.TrimEnd('\/'))</ApiCompatImplementationDirs>
+    <TargetFramework Condition="'$(TargetFramework)' == ''">$(NetCoreAppCurrent)</TargetFramework>
     <!-- Set to true to build this project -->
     <BaselineApiCompat Condition="'$(BaselineApiCompat)' == ''">false</BaselineApiCompat>
-    <_RunApiCompat>true</_RunApiCompat>
+    <PreviousNetCoreApp>netcoreapp3.1</PreviousNetCoreApp>
+    <PreviousNetCoreAppPackageId>microsoft.netcore.app.ref</PreviousNetCoreAppPackageId>
+    <PreviousNetCoreAppPackageVersion>3.1.0</PreviousNetCoreAppPackageVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -26,13 +17,32 @@
     <NetFxReference Include="System.DirectoryServices.Protocols" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageDownload Include="$(PreviousNetCoreAppPackageId)" Version="[$(PreviousNetCoreAppPackageVersion)]" />
+    <PackageDownload Include="NETStandard.Library" Version="[$(NETStandardLibraryVersion)];[$(NetStandardLibrary20Version)]" />
+  </ItemGroup>
+
+  <!-- Evaluate these properties inside a Target to gain access to TargetFrameworkIdentifier. -->
+  <Target Name="SetApiCompatFiles">
+    <PropertyGroup>
+      <ApiCompatResponseFile>$(IntermediateOutputPath)apicompat.rsp</ApiCompatResponseFile>
+      <ApiCompatTarget>$(TargetFrameworkIdentifier.Substring(1).ToLower())</ApiCompatTarget>
+      <ApiCompatBaselineFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.$(ApiCompatTarget).netfx461.txt</ApiCompatBaselineFile>
+      <ApiCompatBaselineIgnoreFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.$(ApiCompatTarget).netfx461.ignore.txt</ApiCompatBaselineIgnoreFile>
+      <ApiCompatNSBaselineFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.$(ApiCompatTarget).netstandard.txt</ApiCompatNSBaselineFile>
+      <ApiCompatNSOnlyBaselineFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.$(ApiCompatTarget).netstandardOnly.txt</ApiCompatNSOnlyBaselineFile>
+    </PropertyGroup>
+  </Target>
+
   <!-- Run ApiCompat -->
   <Target Name="RunApiCompat"
-          Condition="'$(_RunApiCompat)' == 'true'"
+          DependsOnTargets="SetApiCompatFiles"
+          AfterTargets="Build"
           Inputs="$(ApiCompatResponseFile)"
           Outputs="$(ApiCompatBaselineFile);$(ApiCompatNSBaselineFile)">
 
     <PropertyGroup>
+      <ApiCompatImplementationDirs>$(NetCoreAppCurrentRefPath.TrimEnd('\/'))</ApiCompatImplementationDirs>
       <ApiCompatArgs Condition="'$(ApiCompatExcludeAttributeList)' != ''">$(ApiCompatArgs) --exclude-attributes "$(ApiCompatExcludeAttributeList)"</ApiCompatArgs>
       <ApiCompatArgs>$(ApiCompatArgs) --impl-dirs "$(ApiCompatImplementationDirs)"</ApiCompatArgs>
       <BaselineApiCompatArgs Condition="Exists($(ApiCompatBaselineIgnoreFile))">--baseline "$(ApiCompatBaselineIgnoreFile)"</BaselineApiCompatArgs>
@@ -46,12 +56,11 @@
           Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)' and '$(BaselineApiCompat)' == 'true'"
           CustomErrorRegularExpression="^[a-zA-Z]+ :"
           StandardOutputImportance="Low"
-          IgnoreExitCode="true"
-    >
+          IgnoreExitCode="true">
       <Output TaskParameter="ExitCode" PropertyName="ApiCompatExitCode" />
     </Exec>
 
-    <Error Condition="'$(ApiCompatExitCode)' != '0'" Text="ApiCompat failed comparing $(NetFrameworkCurrent) to $(TargetFramework)" />
+    <Error Condition="'$(ApiCompatExitCode)' != '0'" Text="ApiCompat failed comparing $(NETFrameworkReferenceAssemblyTFM) to $(TargetFramework)" />
 
 
     <!--
@@ -69,51 +78,45 @@
     <PropertyGroup>
       <UpdateNETStandardBaseline Condition="'$(UpdateNETStandardBaseline)' == ''">False</UpdateNETStandardBaseline>
       <UpdateNETStandardBaselineLocally Condition="'$(UpdateNETStandardBaselineLocally)' == ''">False</UpdateNETStandardBaselineLocally>
-      <_netStandard21OnlyRef>$(NetStandard21RefPath)netstandard.dll</_netStandard21OnlyRef>
+      <_netStandardLibraryRefPath>$([MSBuild]::NormalizeDirectory('$(NuGetPackageRoot)', 'netstandard.library', '$(NETStandardLibraryVersion)', 'build', 'netstandard2.1', 'ref'))</_netStandardLibraryRefPath>
+      <_netStandardLibrary20RefPath>$([MSBuild]::NormalizeDirectory('$(NuGetPackageRoot)', 'netstandard.library', '$(NetStandardLibrary20Version)', 'build', 'netstandard2.0', 'ref'))</_netStandardLibrary20RefPath>
+      <_netStandard21OnlyRef>$(_netStandardLibraryRefPath)netstandard.dll</_netStandard21OnlyRef>
       <_netStandard21OnlyRef Condition="$(UpdateNETStandardBaselineLocally)">$(MSBuildThisFileDirectory)..\..\..\standard\artifacts\bin\ref\netstandard\Debug\netstandard.dll</_netStandard21OnlyRef>
       <_netStandard21BaselineModifer>--baseline</_netStandard21BaselineModifer>
       <_netStandard21BaselineModifer Condition="$(UpdateNETStandardBaseline) or $(UpdateNETStandardBaselineLocally)">&gt;</_netStandard21BaselineModifer>
     </PropertyGroup>
 
-    <PropertyGroup Condition="$(UpdateNETStandardBaseline)">
-    </PropertyGroup>
-
     <Exec Command="$(_ApiCompatCommand) &quot;$(_netStandard21OnlyRef)&quot; @&quot;$(ApiCompatResponseFile)&quot; $(_netStandard21BaselineModifer) &quot;$(ApiCompatNSOnlyBaselineFile)&quot;"
           CustomErrorRegularExpression="^[a-zA-Z]+ :"
           StandardOutputImportance="Low"
-          IgnoreExitCode="true"
-    >
+          IgnoreExitCode="true">
       <Output TaskParameter="ExitCode" PropertyName="ApiCompatExitCode" />
     </Exec>
 
     <Error Condition="'$(ApiCompatExitCode)' != '0'" Text="ApiCompat failed comparing netstandard.dll to $(ApiCompatTarget)" />
 
-    <!-- TODO: Once the repo targets netstandard2.1, have this instance of APICompat run against NetStandard21RefPath -->
-    <Exec Command="$(_ApiCompatCommand) &quot;$(NetStandard20RefPath.TrimEnd('\/'))&quot; --baseline &quot;$(ApiCompatNSBaselineFile)&quot; @&quot;$(ApiCompatResponseFile)&quot;"
+    <Exec Command="$(_ApiCompatCommand) &quot;$(_netStandardLibrary20RefPath.TrimEnd('\/'))&quot; --baseline &quot;$(ApiCompatNSBaselineFile)&quot; @&quot;$(ApiCompatResponseFile)&quot;"
           CustomErrorRegularExpression="^[a-zA-Z]+ :"
           StandardOutputImportance="Low"
-          IgnoreExitCode="true"
-    >
+          IgnoreExitCode="true">
       <Output TaskParameter="ExitCode" PropertyName="ApiCompatExitCode" />
     </Exec>
 
     <Error Condition="'$(ApiCompatExitCode)' != '0'" Text="ApiCompat failed comparing netstandard to $(ApiCompatTarget)" />
  
     <PropertyGroup>
-      <PreviousNetCoreApp>netcoreapp3.1</PreviousNetCoreApp>
-      <PreviousNetCoreAppRefPath>$([MSBuild]::NormalizeDirectory('$(RefRootPath)', '$(PreviousNetCoreApp)'))</PreviousNetCoreAppRefPath>
+      <PreviousNetCoreAppRefPath>$([MSBuild]::NormalizeDirectory('$(NuGetPackageRoot)', '$(PreviousNetCoreAppPackageId)', '$(PreviousNetCoreAppPackageVersion)', 'ref', '$(PreviousNetCoreApp)'))</PreviousNetCoreAppRefPath>
       <_previousNetCoreAppBaselineFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.PreviousNetCoreApp.txt</_previousNetCoreAppBaselineFile>
       <_previousNetCoreAppBaselineParam>--baseline &quot;$(_previousNetCoreAppBaselineFile)&quot;</_previousNetCoreAppBaselineParam>
       <_previousNetCoreAppBaselineParam Condition="'$(UpdatePreviousNetCoreAppBaseline)' == 'true'">&gt; &quot;$(_previousNetCoreAppBaselineFile)&quot;</_previousNetCoreAppBaselineParam>
     </PropertyGroup>
  
-    <Error Condition="'$(NetCoreAppCurrent)' != 'netcoreapp5.0'" Text="Update value of PreviousNetCoreApp" />
+    <Error Condition="'$(NetCoreAppCurrent)' != 'net5.0'" Text="Update value of PreviousNetCoreApp" />
     <Error Condition="!Exists($(PreviousNetCoreAppRefPath))" Text="Missing reference assemblies for '$(PreviousNetCoreApp)'" />
     <Exec Command="$(_ApiCompatCommand) &quot;$(PreviousNetCoreAppRefPath.TrimEnd('\/'))&quot;  @&quot;$(ApiCompatResponseFile)&quot; $(_previousNetCoreAppBaselineParam)"
           CustomErrorRegularExpression="^[a-zA-Z]+ :"
           StandardOutputImportance="Low"
-          IgnoreExitCode="true"
-    >
+          IgnoreExitCode="true">
       <Output TaskParameter="ExitCode" PropertyName="ApiCompatExitCode" />
     </Exec>
 
@@ -124,8 +127,4 @@
     <RemoveDir Directories="$(BaseIntermediateOutputPath)" />
   </Target>
 
-  <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.targets" />
-
-  <!-- Ordering matters! Overwriting the Build target after the Sdk.targets import. -->
-  <Target Name="Build" DependsOnTargets="RunApiCompat" />
 </Project>

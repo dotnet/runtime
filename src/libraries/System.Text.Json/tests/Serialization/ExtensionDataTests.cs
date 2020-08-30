@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -56,7 +55,50 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void ExtensionPropertyIgnoredWhenNull()
+        public static void ExtensionFieldNotUsed()
+        {
+            string json = @"{""MyNestedClass"":" + SimpleTestClass.s_json + "}";
+            ClassWithExtensionField obj = JsonSerializer.Deserialize<ClassWithExtensionField>(json);
+            Assert.Null(obj.MyOverflow);
+        }
+
+        [Fact]
+        public static void ExtensionFieldRoundTrip()
+        {
+            ClassWithExtensionField obj;
+
+            {
+                string json = @"{""MyIntMissing"":2, ""MyInt"":1, ""MyNestedClassMissing"":" + SimpleTestClass.s_json + "}";
+                obj = JsonSerializer.Deserialize<ClassWithExtensionField>(json);
+                Verify();
+            }
+
+            // Round-trip the json.
+            {
+                string json = JsonSerializer.Serialize(obj);
+                obj = JsonSerializer.Deserialize<ClassWithExtensionField>(json);
+                Verify();
+
+                // The json should not contain the dictionary name.
+                Assert.DoesNotContain(nameof(ClassWithExtensionField.MyOverflow), json);
+            }
+
+            void Verify()
+            {
+                Assert.NotNull(obj.MyOverflow);
+                Assert.Equal(1, obj.MyInt);
+                Assert.Equal(2, obj.MyOverflow["MyIntMissing"].GetInt32());
+
+                JsonProperty[] properties = obj.MyOverflow["MyNestedClassMissing"].EnumerateObject().ToArray();
+
+                // Verify a couple properties
+                Assert.Equal(1, properties.Where(prop => prop.Name == "MyInt16").First().Value.GetInt32());
+                Assert.True(properties.Where(prop => prop.Name == "MyBooleanTrue").First().Value.GetBoolean());
+            }
+        }
+
+        [Fact]
+        public static void ExtensionPropertyIgnoredWhenWritingDefault()
         {
             string expected = @"{}";
             string actual = JsonSerializer.Serialize(new ClassWithExtensionPropertyAsObject());
@@ -64,7 +106,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void MultipleExtensionPropertyIgnoredWhenNull()
+        public static void MultipleExtensionPropertyIgnoredWhenWritingDefault()
         {
             var obj = new ClassWithMultipleDictionaries();
             string actual = JsonSerializer.Serialize(obj);
@@ -97,6 +139,18 @@ namespace System.Text.Json.Serialization.Tests
             };
             actual = JsonSerializer.Serialize(obj);
             Assert.Equal("{\"ActualDictionary\":{},\"test\":\"value\"}", actual);
+        }
+
+        [Fact]
+        public static void ExtensionPropertyInvalidJsonFail()
+        {
+            const string BadJson = @"{""Good"":""OK"",""Bad"":!}";
+
+            JsonException jsonException = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<ClassWithExtensionPropertyAsObject>(BadJson));
+            Assert.Contains("Path: $.Bad | LineNumber: 0 | BytePositionInLine: 19.", jsonException.ToString());
+            Assert.NotNull(jsonException.InnerException);
+            Assert.IsAssignableFrom<JsonException>(jsonException.InnerException);
+            Assert.Contains("!", jsonException.InnerException.ToString());
         }
 
         [Fact]
@@ -854,9 +908,8 @@ namespace System.Text.Json.Serialization.Tests
             ClassWithInvalidExtensionPropertyStringString obj1 = new ClassWithInvalidExtensionPropertyStringString();
             Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(obj1));
 
-            // This fails with NotSupportedException since all Dictionaries currently need to have a string TKey.
             ClassWithInvalidExtensionPropertyObjectString obj2 = new ClassWithInvalidExtensionPropertyObjectString();
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(obj2));
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(obj2));
         }
 
         private class ClassWithExtensionPropertyAlreadyInstantiated
@@ -1024,8 +1077,9 @@ namespace System.Text.Json.Serialization.Tests
 
             public override void Write(Utf8JsonWriter writer, object value, JsonSerializerOptions options)
             {
-                // Since we are converter for object, the string converter will be called instead of this.
-                throw new InvalidOperationException();
+                // Since we are in a user-provided (not internal to S.T.Json) object converter,
+                // this converter will be called, not the internal string converter.
+                writer.WriteStringValue((string)value);
             }
         }
 

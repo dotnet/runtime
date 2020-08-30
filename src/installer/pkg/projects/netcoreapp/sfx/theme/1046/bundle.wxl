@@ -17,7 +17,7 @@ Tudo pronto? Então, vamos nessa!</String>
 /norestart   - suprime qualquer tentativa de reiniciar. Por padrão, a interface do usuário perguntará antes de reiniciar.
 /log log.txt - registra em um arquivo específico. Por padrão, um arquivo de log é criado em %TEMP%.</String>
   <String Id="HelpCloseButton">&amp;Fechar</String>
-  <String Id="InstallAcceptCheckbox">&amp;Concordo com os termos e condições da licença</String>
+  <String Id="InstallAcceptCheckbox">Eu &amp;concordo com os termos e condições da licença</String>
   <String Id="InstallOptionsButton">&amp;Opções</String>
   <String Id="InstallInstallButton">&amp;Instalar</String>
   <String Id="InstallCloseButton">&amp;Fechar</String>
@@ -59,7 +59,7 @@ Tudo pronto? Então, vamos nessa!</String>
   <String Id="FilesInUseOkButton">&amp;OK</String>
   <String Id="FilesInUseCancelButton">&amp;Cancelar</String>
   <String Id="WelcomeHeaderMessage">Runtime do .NET</String>
-  <String Id="WelcomeDescription">O .NET é uma plataforma de desenvolvimento que você pode usar para criar aplicativos de linha de comando, microsserviços e sites modernos. Trata-se de um software livre, multiplataforma que conta com o suporte da Microsoft. Esperamos que você goste dele!</String>
+  <String Id="WelcomeDescription">O Runtime do .NET é usado para executar aplicativos .NET no seu computador com Windows. O .NET é um software livre, com plataforma cruzada e possui o suporte da Microsoft. Esperamos que você goste!</String>
   <String Id="LearnMoreTitle">Saiba mais sobre o .NET</String>
   <String Id="SuccessInstallLocation">O seguinte foi instalado em [DOTNETHOME]</String>
   <String Id="SuccessInstallProductName"> - [BUNDLEMONIKER] </String>
@@ -69,6 +69,6 @@ Tudo pronto? Então, vamos nessa!</String>
   <String Id="TutorialLink">&lt;A HREF="https://aka.ms/dotnet-tutorials"&gt;Tutoriais&lt;/A&gt;</String>
   <String Id="TelemetryLink">&lt;A HREF="https://aka.ms/dotnet-cli-telemetry"&gt;Telemetria do .NET&lt;/A&gt;</String>
   <String Id="PrivacyStatementLink">&lt;A HREF="https://aka.ms/dev-privacy"&gt;Política de Privacidade&lt;/A&gt;</String>
-  <String Id="EulaLink">&lt;A HREF="https://go.microsoft.com/fwlink/?LinkId=329770"&gt;Termos de licença da Biblioteca do .NET&lt;/A&gt;</String>
-  
+  <String Id="EulaLink">&lt; A HREF = "https://aka.ms/dotnet-License-Windows" &gt; Informações de licenciamento para .NET&lt;/A&gt;</String>
+  <String Id="LicenseAssent">Ao clicar em instalar, você concorda com os termos a seguir.</String>
 </WixLocalization>

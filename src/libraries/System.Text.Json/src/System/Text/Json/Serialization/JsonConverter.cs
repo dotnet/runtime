@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Reflection;
 
@@ -41,15 +40,19 @@ namespace System.Text.Json.Serialization
         internal abstract Type? ElementType { get; }
 
         /// <summary>
-        /// Cached value of ShouldHandleNullValue. It is cached since the converter should never
-        /// change the value depending on state and because it may contain non-trival logic.
-        /// </summary>
-        internal bool HandleNullValue { get; set; }
-
-        /// <summary>
         /// Cached value of TypeToConvert.IsValueType, which is an expensive call.
         /// </summary>
         internal bool IsValueType { get; set; }
+
+        /// <summary>
+        /// Whether the converter is built-in.
+        /// </summary>
+        internal bool IsInternalConverter { get; set; }
+
+        /// <summary>
+        /// Whether the converter is built-in and handles a number type.
+        /// </summary>
+        internal bool IsInternalConverterForNumberType;
 
         /// <summary>
         /// Loosely-typed ReadCore() that forwards to strongly-typed ReadCore().
@@ -68,6 +71,8 @@ namespace System.Text.Json.Serialization
         // This is used internally to quickly determine the type being converted for JsonConverter<T>.
         internal abstract Type TypeToConvert { get; }
 
+        internal abstract bool TryReadAsObject(ref Utf8JsonReader reader, JsonSerializerOptions options, ref ReadStack state, out object? value);
+
         internal abstract bool TryWriteAsObject(Utf8JsonWriter writer, object? value, JsonSerializerOptions options, ref WriteStack state);
 
         /// <summary>
@@ -75,9 +80,21 @@ namespace System.Text.Json.Serialization
         /// </summary>
         internal abstract bool WriteCoreAsObject(Utf8JsonWriter writer, object? value, JsonSerializerOptions options, ref WriteStack state);
 
+        /// <summary>
+        /// Loosely-typed WriteWithQuotes() that forwards to strongly-typed WriteWithQuotes().
+        /// </summary>
+        internal abstract void WriteWithQuotesAsObject(Utf8JsonWriter writer, object value, JsonSerializerOptions options, ref WriteStack state);
+
         // Whether a type (ClassType.Object) is deserialized using a parameterized constructor.
-        internal virtual bool ConstructorIsParameterized => false;
+        internal virtual bool ConstructorIsParameterized { get; }
 
         internal ConstructorInfo? ConstructorInfo { get; set; }
+
+        internal virtual void Initialize(JsonSerializerOptions options) { }
+
+        /// <summary>
+        /// Creates the instance and assigns it to state.Current.ReturnValue.
+        /// </summary>
+        internal virtual void CreateInstanceForReferenceResolver(ref Utf8JsonReader reader, ref ReadStack state, JsonSerializerOptions options) { }
     }
 }

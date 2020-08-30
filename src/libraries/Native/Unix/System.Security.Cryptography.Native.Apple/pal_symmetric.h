@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #pragma once
 
@@ -30,6 +29,8 @@ enum
 {
     PAL_ChainingModeECB = 1,
     PAL_ChainingModeCBC = 2,
+    PAL_ChainingModeCFB = 3,
+    PAL_ChainingModeCFB8 = 10,
 };
 typedef uint32_t PAL_ChainingMode;
 

@@ -18,26 +18,21 @@ stages:
       publishUsingPipelines: true
       dependsOn: PrepareSignedArtifacts
       pool:
-        name: NetCoreInternal-Pool
-        queue: buildpool.windows.10.amd64.vs2017
+        vmImage: vs2017-win2016
 
 # Stages-based publishing entry point
 - template: /eng/common/templates/post-build/post-build.yml
   parameters:
     validateDependsOn:
     - PrepareForPublish
-    # Symbol validation is not ready yet. https://github.com/dotnet/arcade/issues/2871
+    # The following checks are run after the build in the validation and release pipelines
+    # And thus are not enabled here. They can be enabled for dev builds for spot testing if desired
     enableSymbolValidation: false
-    # SourceLink validation doesn't work in dev builds: tries to pull from GitHub. https://github.com/dotnet/arcade/issues/3604
-    enableSourceLinkValidation: true
-    # Allow symbol publish to emit expected warnings without failing the build. Include single
-    # quotes inside the string so that it passes through to MSBuild without script interference.
-    symbolPublishingAdditionalParameters: "'-warnAsError:$false'"
-    # Publish to blob storage.
-    publishInstallersAndChecksums: true
-    # Enable SDL validation, passing through values from the 'core-setup-sdl-validation' group.
+    enableSigningValidation: false
+    enableNugetValidation: false
+    enableSourceLinkValidation: false
     SDLValidationParameters:
-      enable: false # TODO: (Consolidation) Decide who owns SDL validation errors and enable. https://github.com/dotnet/runtime/issues/1027
+      enable: false
       artifactNames:
       - PackageArtifacts
       - BlobArtifacts
@@ -52,3 +47,6 @@ stages:
         -TsaRepositoryName "$(TsaRepositoryName)"
         -TsaCodebaseName "$(TsaCodebaseName)"
         -TsaPublish $True
+    
+    # Publish to blob storage.
+    publishInstallersAndChecksums: true

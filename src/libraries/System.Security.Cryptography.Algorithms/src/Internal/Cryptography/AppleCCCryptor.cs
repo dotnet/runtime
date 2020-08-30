@@ -1,17 +1,26 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography;
+using Internal.Cryptography;
 
 namespace Internal.Cryptography
 {
     internal sealed class AppleCCCryptor : BasicSymmetricCipher
     {
         private readonly bool _encrypting;
-        private SafeAppleCryptorHandle _cryptor = null!;
+        private SafeAppleCryptorHandle _cryptor;
+
+        // Reset operation is not supported on stream cipher
+        private readonly bool _supportsReset;
+
+        private Interop.AppleCrypto.PAL_SymmetricAlgorithm _algorithm;
+        private CipherMode _cipherMode;
+        private byte[] _key;
+        private int _feedbackSizeInBytes;
 
         public AppleCCCryptor(
             Interop.AppleCrypto.PAL_SymmetricAlgorithm algorithm,
@@ -19,12 +28,22 @@ namespace Internal.Cryptography
             int blockSizeInBytes,
             byte[] key,
             byte[]? iv,
-            bool encrypting)
-            : base(cipherMode.GetCipherIv(iv), blockSizeInBytes)
+            bool encrypting,
+            int feedbackSizeInBytes,
+            int paddingSizeInBytes)
+            : base(cipherMode.GetCipherIv(iv), blockSizeInBytes, paddingSizeInBytes)
         {
             _encrypting = encrypting;
 
-            OpenCryptor(algorithm, cipherMode, key);
+            // CFB is streaming cipher, calling CCCryptorReset is not implemented (and is effectively noop)
+            _supportsReset = cipherMode != CipherMode.CFB;
+
+            _algorithm = algorithm;
+            _cipherMode = cipherMode;
+            _key = key;
+            _feedbackSizeInBytes = feedbackSizeInBytes;
+
+            OpenCryptor();
         }
 
         protected override void Dispose(bool disposing)
@@ -38,46 +57,38 @@ namespace Internal.Cryptography
             base.Dispose(disposing);
         }
 
-        public override int Transform(byte[] input, int inputOffset, int count, byte[] output, int outputOffset)
+        public override int Transform(ReadOnlySpan<byte> input, Span<byte> output)
         {
-            Debug.Assert(input != null, "Expected valid input, got null");
-            Debug.Assert(inputOffset >= 0, $"Expected non-negative inputOffset, got {inputOffset}");
-            Debug.Assert(count > 0, $"Expected positive count, got {count}");
-            Debug.Assert((count % BlockSizeInBytes) == 0, $"Expected count aligned to block size {BlockSizeInBytes}, got {count}");
-            Debug.Assert(input.Length - inputOffset >= count, $"Expected valid input length/offset/count triplet, got {input.Length}/{inputOffset}/{count}");
-            Debug.Assert(output != null, "Expected valid output, got null");
-            Debug.Assert(outputOffset >= 0, $"Expected non-negative outputOffset, got {outputOffset}");
-            Debug.Assert(output.Length - outputOffset >= count, $"Expected valid output length/offset/count triplet, got {output.Length}/{outputOffset}/{count}");
+            Debug.Assert(input.Length > 0);
+            Debug.Assert((input.Length % PaddingSizeInBytes) == 0);
 
-            return CipherUpdate(input, inputOffset, count, output, outputOffset);
+            return CipherUpdate(input, output);
         }
 
-        public override byte[] TransformFinal(byte[] input, int inputOffset, int count)
+        public override int TransformFinal(ReadOnlySpan<byte> input, Span<byte> output)
         {
-            Debug.Assert(input != null, "Expected valid input, got null");
-            Debug.Assert(inputOffset >= 0, $"Expected non-negative inputOffset, got {inputOffset}");
-            Debug.Assert(count >= 0, $"Expected non-negative count, got {count}");
-            Debug.Assert((count % BlockSizeInBytes) == 0, $"Expected count aligned to block size {BlockSizeInBytes}, got {count}");
-            Debug.Assert(input.Length - inputOffset >= count, $"Expected valid input length/offset/count triplet, got {input.Length}/{inputOffset}/{count}");
+            Debug.Assert((input.Length % PaddingSizeInBytes) == 0);
+            Debug.Assert(input.Length <= output.Length);
 
-            byte[] output = ProcessFinalBlock(input, inputOffset, count);
+            int written = ProcessFinalBlock(input, output);
             Reset();
-            return output;
+            return written;
         }
 
-        private unsafe byte[] ProcessFinalBlock(byte[] input, int inputOffset, int count)
+        private unsafe int ProcessFinalBlock(ReadOnlySpan<byte> input, Span<byte> output)
         {
-            if (count == 0)
+            if (input.Length == 0)
             {
-                return Array.Empty<byte>();
+                return 0;
             }
 
-            byte[] output = new byte[count];
-            int outputBytes = CipherUpdate(input, inputOffset, count, output, 0);
+            int outputBytes = CipherUpdate(input, output);
             int ret;
             int errorCode;
 
-            fixed (byte* outputStart = &output[0])
+            Debug.Assert(output.Length > 0);
+
+            fixed (byte* outputStart = output)
             {
                 byte* outputCurrent = outputStart + outputBytes;
                 int bytesWritten;
@@ -94,44 +105,29 @@ namespace Internal.Cryptography
 
             ProcessInteropError(ret, errorCode);
 
-            if (outputBytes == output.Length)
-            {
-                return output;
-            }
-
-            if (outputBytes == 0)
-            {
-                return Array.Empty<byte>();
-            }
-
-            byte[] userData = new byte[outputBytes];
-            Buffer.BlockCopy(output, 0, userData, 0, outputBytes);
-            return userData;
+            return outputBytes;
         }
 
-        private unsafe int CipherUpdate(byte[] input, int inputOffset, int count, byte[] output, int outputOffset)
+        private unsafe int CipherUpdate(ReadOnlySpan<byte> input, Span<byte> output)
         {
             int ret;
             int ccStatus;
             int bytesWritten;
 
-            if (count == 0)
+            if (input.Length == 0)
             {
                 return 0;
             }
 
-            fixed (byte* inputStart = input)
-            fixed (byte* outputStart = output)
+            fixed (byte* pInput = input)
+            fixed (byte* pOutput = output)
             {
-                byte* inputCurrent = inputStart + inputOffset;
-                byte* outputCurrent = outputStart + outputOffset;
-
                 ret = Interop.AppleCrypto.CryptorUpdate(
                     _cryptor,
-                    inputCurrent,
-                    count,
-                    outputCurrent,
-                    output.Length - outputOffset,
+                    pInput,
+                    input.Length,
+                    pOutput,
+                    output.Length,
                     out bytesWritten,
                     out ccStatus);
             }
@@ -141,28 +137,26 @@ namespace Internal.Cryptography
             return bytesWritten;
         }
 
-        private unsafe void OpenCryptor(
-            Interop.AppleCrypto.PAL_SymmetricAlgorithm algorithm,
-            CipherMode cipherMode,
-            byte[] key)
+        [MemberNotNull(nameof(_cryptor))]
+        private unsafe void OpenCryptor()
         {
             int ret;
             int ccStatus;
 
             byte[]? iv = IV;
 
-            fixed (byte* pbKey = key)
+            fixed (byte* pbKey = _key)
             fixed (byte* pbIv = iv)
             {
                 ret = Interop.AppleCrypto.CryptorCreate(
                     _encrypting
                         ? Interop.AppleCrypto.PAL_SymmetricOperation.Encrypt
                         : Interop.AppleCrypto.PAL_SymmetricOperation.Decrypt,
-                    algorithm,
-                    GetPalChainMode(cipherMode),
+                    _algorithm,
+                    GetPalChainMode(_algorithm, _cipherMode, _feedbackSizeInBytes),
                     Interop.AppleCrypto.PAL_PaddingMode.None,
                     pbKey,
-                    key.Length,
+                    _key.Length,
                     pbIv,
                     Interop.AppleCrypto.PAL_SymmetricOptions.None,
                     out _cryptor,
@@ -172,7 +166,7 @@ namespace Internal.Cryptography
             ProcessInteropError(ret, ccStatus);
         }
 
-        private Interop.AppleCrypto.PAL_ChainingMode GetPalChainMode(CipherMode cipherMode)
+        private Interop.AppleCrypto.PAL_ChainingMode GetPalChainMode(Interop.AppleCrypto.PAL_SymmetricAlgorithm algorithm, CipherMode cipherMode, int feedbackSizeInBytes)
         {
             switch (cipherMode)
             {
@@ -180,6 +174,17 @@ namespace Internal.Cryptography
                     return Interop.AppleCrypto.PAL_ChainingMode.CBC;
                 case CipherMode.ECB:
                     return Interop.AppleCrypto.PAL_ChainingMode.ECB;
+                case CipherMode.CFB:
+                    if (feedbackSizeInBytes == 1)
+                    {
+                        return Interop.AppleCrypto.PAL_ChainingMode.CFB8;
+                    }
+
+                    Debug.Assert(
+                        (algorithm == Interop.AppleCrypto.PAL_SymmetricAlgorithm.AES && feedbackSizeInBytes == 16) ||
+                        (algorithm == Interop.AppleCrypto.PAL_SymmetricAlgorithm.TripleDES && feedbackSizeInBytes == 8));
+
+                    return Interop.AppleCrypto.PAL_ChainingMode.CFB;
                 default:
                     throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_CipherModeNotSupported, cipherMode));
             }
@@ -187,17 +192,27 @@ namespace Internal.Cryptography
 
         private unsafe void Reset()
         {
-            int ret;
-            int ccStatus;
-
-            byte[]? iv = IV;
-
-            fixed (byte* pbIv = iv)
+            if (!_supportsReset)
             {
-                ret = Interop.AppleCrypto.CryptorReset(_cryptor, pbIv, out ccStatus);
+                // when CryptorReset is not supported,
+                // dispose & reopen
+                _cryptor?.Dispose();
+                OpenCryptor();
             }
+            else
+            {
+                int ret;
+                int ccStatus;
 
-            ProcessInteropError(ret, ccStatus);
+                byte[]? iv = IV;
+
+                fixed (byte* pbIv = iv)
+                {
+                    ret = Interop.AppleCrypto.CryptorReset(_cryptor, pbIv, out ccStatus);
+                }
+
+                ProcessInteropError(ret, ccStatus);
+            }
         }
 
         private static void ProcessInteropError(int functionReturnCode, int ccStatus)

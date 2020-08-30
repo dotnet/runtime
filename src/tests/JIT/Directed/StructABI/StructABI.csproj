@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>PdbOnly</DebugType>
+    <Optimize>True</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="StructABI.cs" />
+    <Compile Include="StructABI.Windows.cs" Condition="'$(TargetOS)' == 'Windows_NT'" />
+    <Compile Include="StructABI.Unix.cs" Condition="'$(TargetOS)' == 'Linux' Or '$(TargetOS)' == 'FreeBSD' Or '$(TargetOS)' == 'NetBSD' Or '$(TargetOS)' == 'illumos' Or '$(TargetOS)' == 'Solaris'" />
+    <Compile Include="StructABI.OSX.cs" Condition="'$(TargetOS)' == 'OSX'" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="CMakeLists.txt" />
+  </ItemGroup>
+</Project>

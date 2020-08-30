@@ -1,0 +1,55 @@
+# Steps used to prepare the Artifacts Staging Directory with required files for
+# executing libraries tests as well as shared framework assets
+parameters:
+  isOfficialBuild: ''
+
+steps:
+  - ${{ if ne(parameters.isOfficialBuild, true) }}:
+    - task: CopyFiles@2
+      displayName: Prepare testhost folder to publish
+      inputs:
+        sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/testhost
+        targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin/testhost
+
+    - task: CopyFiles@2
+      displayName: Prepare runtime folder to publish
+      inputs:
+        sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/runtime
+        targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin/runtime
+
+    - task: CopyFiles@2
+      displayName: Prepare ref folder to publish
+      inputs:
+        sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/ref
+        targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin/ref
+
+  - task: CopyFiles@2
+    displayName: Prepare shared framework ref assemblies to publish
+    inputs:
+      sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/ref/microsoft.netcore.app
+      targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin/ref/microsoft.netcore.app
+
+  - task: CopyFiles@2
+    displayName: Prepare docs folder to publish
+    inputs:
+      sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/docs
+      targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin/docs
+
+  - task: CopyFiles@2
+    displayName: Prepare shared framework runtime folder to publish
+    inputs:
+      sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/pkg
+      targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin/pkg
+  
+  - task: CopyFiles@2
+    displayName: Prepare native folder to publish
+    inputs:
+      sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/native
+      targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin/native
+  
+  - task: CopyFiles@2
+    displayName: Prepare artifacts packages folder to publish
+    inputs:
+      sourceFolder: $(Build.SourcesDirectory)/artifacts/packages
+      targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/packages
+    condition: and(succeeded(), eq(variables['_librariesBuildProducedPackages'], true))

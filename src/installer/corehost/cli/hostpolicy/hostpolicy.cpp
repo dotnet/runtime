@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include <atomic>
 #include <condition_variable>
@@ -477,11 +476,7 @@ namespace
                 "LoadInMemoryAssembly",
                 delegate);
         case coreclr_delegate_type::winrt_activation:
-            return coreclr->create_delegate(
-                "System.Private.CoreLib",
-                "Internal.Runtime.InteropServices.WindowsRuntime.ActivationFactoryLoader",
-                "GetActivationFactory",
-                delegate);
+            return StatusCode::InvalidArgFailure;
         case coreclr_delegate_type::com_register:
             return coreclr->create_delegate(
                 "System.Private.CoreLib",
@@ -499,6 +494,12 @@ namespace
                 "System.Private.CoreLib",
                 "Internal.Runtime.InteropServices.ComponentActivator",
                 "LoadAssemblyAndGetFunctionPointer",
+                delegate);
+        case coreclr_delegate_type::get_function_pointer:
+            return coreclr->create_delegate(
+                "System.Private.CoreLib",
+                "Internal.Runtime.InteropServices.ComponentActivator",
+                "GetFunctionPointer",
                 delegate);
         default:
             return StatusCode::LibHostInvalidArgs;
@@ -634,13 +635,14 @@ namespace
 // initializations. In the case of Success_DifferentRuntimeProperties, it is left to the consumer to verify that
 // the difference in properties is acceptable.
 //
-SHARED_API int HOSTPOLICY_CALLTYPE corehost_initialize(const corehost_initialize_request_t *init_request, int32_t options, /*out*/ corehost_context_contract *context_contract)
+SHARED_API int HOSTPOLICY_CALLTYPE corehost_initialize(const corehost_initialize_request_t *init_request, uint32_t options, /*out*/ corehost_context_contract *context_contract)
 {
     if (context_contract == nullptr)
         return StatusCode::InvalidArgFailure;
 
-    bool wait_for_initialized = (options & intialization_options_t::wait_for_initialized) != 0;
-    bool get_contract = (options & intialization_options_t::get_contract) != 0;
+    bool version_set = (options & initialization_options_t::context_contract_version_set) != 0;
+    bool wait_for_initialized = (options & initialization_options_t::wait_for_initialized) != 0;
+    bool get_contract = (options & initialization_options_t::get_contract) != 0;
     if (wait_for_initialized && get_contract)
     {
         trace::error(_X("Specifying both initialization options for wait_for_initialized and get_contract is not allowed"));
@@ -748,6 +750,8 @@ SHARED_API int HOSTPOLICY_CALLTYPE corehost_initialize(const corehost_initialize
             rc = StatusCode::Success_DifferentRuntimeProperties;
     }
 
+    // If version wasn't set, then it would have the original size of corehost_context_contract, which is 7 * sizeof(size_t).
+    size_t version_lo = version_set ? context_contract->version : 7 * sizeof(size_t);
     context_contract->version = sizeof(corehost_context_contract);
     context_contract->get_property_value = get_property;
     context_contract->set_property_value = set_property;
@@ -755,6 +759,14 @@ SHARED_API int HOSTPOLICY_CALLTYPE corehost_initialize(const corehost_initialize
     context_contract->load_runtime = create_coreclr;
     context_contract->run_app = run_app;
     context_contract->get_runtime_delegate = get_delegate;
+
+    // An old hostfxr may not have provided enough space for these fields.
+    // The version_lo (sizeof) the old hostfxr saw at build time will be
+    // smaller and we should not attempt to write the fields in that case.
+    if (version_lo >= offsetof(corehost_context_contract, last_known_delegate_type) + sizeof(context_contract->last_known_delegate_type))
+    {
+        context_contract->last_known_delegate_type = (size_t)coreclr_delegate_type::__last - 1;
+    }
 
     return rc;
 }
@@ -828,6 +840,7 @@ SHARED_API int HOSTPOLICY_CALLTYPE corehost_resolve_component_dependencies(
             /* additional_deps_serialized */ pal::string_t(), // Additional deps - don't use those from the app, they're already in the app
             /* deps_file */ pal::string_t(), // Avoid using any other deps file than the one next to the component
             g_init.probe_paths,
+            /* init_from_file_system */ true,
             args))
     {
         return StatusCode::LibHostInvalidArgs;

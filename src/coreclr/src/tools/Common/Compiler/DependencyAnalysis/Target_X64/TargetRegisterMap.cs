@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 
@@ -34,6 +33,8 @@ namespace ILCompiler.DependencyAnalysis.X64
                 case TargetOS.Linux:
                 case TargetOS.OSX:
                 case TargetOS.FreeBSD:
+                case TargetOS.SunOS:
+                case TargetOS.NetBSD:
                     Arg0 = Register.RDI;
                     Arg1 = Register.RSI;
                     Arg2 = Register.RDX;

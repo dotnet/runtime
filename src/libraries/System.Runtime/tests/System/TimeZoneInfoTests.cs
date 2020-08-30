@@ -1,13 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Text.RegularExpressions;
 using Microsoft.DotNet.RemoteExecutor;
@@ -17,9 +15,8 @@ namespace System.Tests
 {
     public static partial class TimeZoneInfoTests
     {
-        private static readonly bool s_isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
-        private static readonly bool s_isOSX = RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
-        private static readonly bool s_isOSXAndNotHighSierra = s_isOSX && !PlatformDetection.IsMacOsHighSierraOrHigher;
+        private static readonly bool s_isWindows = OperatingSystem.IsWindows();
+        private static readonly bool s_isOSX = OperatingSystem.IsMacOS();
 
         private static string s_strPacific = s_isWindows ? "Pacific Standard Time" : "America/Los_Angeles";
         private static string s_strSydney = s_isWindows ? "AUS Eastern Standard Time" : "Australia/Sydney";
@@ -2166,7 +2163,7 @@ namespace System.Tests
             Assert.Equal(serialized, deserializedTimeZone.ToSerializedString());
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported))]
         [MemberData(nameof(SystemTimeZonesTestData))]
         public static void BinaryFormatter_RoundTrips(TimeZoneInfo timeZone)
         {
@@ -2254,7 +2251,7 @@ namespace System.Tests
                         }
                         else
                         {
-                            Assert.True(tzi.BaseUtcOffset == ts, $"{offset} != {tzi.BaseUtcOffset}, dn:{tzi.DisplayName}, sn:{tzi.StandardName}");
+                            Assert.True(tzi.BaseUtcOffset == ts || tzi.GetUtcOffset(DateTime.Now) == ts, $"{offset} != {tzi.BaseUtcOffset}, dn:{tzi.DisplayName}, sn:{tzi.StandardName}");
                         }
                     }
                 }
@@ -2269,8 +2266,8 @@ namespace System.Tests
             Assert.True(ReferenceEquals(TimeZoneInfo.FindSystemTimeZoneById("UTC"), TimeZoneInfo.Utc));
         }
 
-        // We test the existance of a specific English time zone name to avoid failures on non-English platforms.
-        [ConditionalFact(nameof(IsEnglishUILanguage))]
+        // We test the existence of a specific English time zone name to avoid failures on non-English platforms.
+        [ConditionalFact(nameof(IsEnglishUILanguageAndRemoteExecutorSupported))]
         public static void TestNameWithInvariantCulture()
         {
             RemoteExecutor.Invoke(() =>
@@ -2290,7 +2287,7 @@ namespace System.Tests
 
         }
 
-        private static bool IsEnglishUILanguage() => CultureInfo.CurrentUICulture.Name == "en" || CultureInfo.CurrentUICulture.Name.StartsWith("en-", StringComparison.Ordinal);
+        private static bool IsEnglishUILanguageAndRemoteExecutorSupported => (CultureInfo.CurrentUICulture.Name == "en" || CultureInfo.CurrentUICulture.Name.StartsWith("en-", StringComparison.Ordinal)) && RemoteExecutor.IsSupported;
 
         private static void VerifyConvertException<TException>(DateTimeOffset inputTime, string destinationTimeZoneId) where TException : Exception
         {
@@ -2403,9 +2400,6 @@ namespace System.Tests
         /// <remarks>
         /// Windows uses the current daylight savings rules for early times.
         ///
-        /// OSX before High Sierra version has V1 tzfiles, which means for early times it uses the first standard offset in the tzfile.
-        /// For Pacific Standard Time it is UTC-8.  For Sydney, it is UTC+10.
-        ///
         /// Other Unix distros use V2 tzfiles, which use local mean time (LMT), which is based on the solar time.
         /// The Pacific Standard Time LMT is UTC-07:53.  For Sydney, LMT is UTC+10:04.
         /// </remarks>
@@ -2413,7 +2407,7 @@ namespace System.Tests
         {
             if (timeZoneId == s_strPacific)
             {
-                if (s_isWindows || s_isOSXAndNotHighSierra)
+                if (s_isWindows)
                 {
                     return TimeSpan.FromHours(-8);
                 }
@@ -2427,10 +2421,6 @@ namespace System.Tests
                 if (s_isWindows)
                 {
                     return TimeSpan.FromHours(11);
-                }
-                else if (s_isOSXAndNotHighSierra)
-                {
-                    return TimeSpan.FromHours(10);
                 }
                 else
                 {

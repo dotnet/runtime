@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable enable
 using System.Buffers;
@@ -50,7 +49,7 @@ namespace System.Net
 
                 if (array != null)
                 {
-                    ArrayPool<byte>.Shared.Return(array, true);
+                    ArrayPool<byte>.Shared.Return(array);
                 }
             }
         }
@@ -58,10 +57,12 @@ namespace System.Net
         public int ActiveLength => _availableStart - _activeStart;
         public Span<byte> ActiveSpan => new Span<byte>(_bytes, _activeStart, _availableStart - _activeStart);
         public ReadOnlySpan<byte> ActiveReadOnlySpan => new ReadOnlySpan<byte>(_bytes, _activeStart, _availableStart - _activeStart);
-        public int AvailableLength => _bytes.Length - _availableStart;
-        public Span<byte> AvailableSpan => new Span<byte>(_bytes, _availableStart, AvailableLength);
         public Memory<byte> ActiveMemory => new Memory<byte>(_bytes, _activeStart, _availableStart - _activeStart);
-        public Memory<byte> AvailableMemory => new Memory<byte>(_bytes, _availableStart, _bytes.Length - _availableStart);
+
+        public int AvailableLength => _bytes.Length - _availableStart;
+        public Span<byte> AvailableSpan => _bytes.AsSpan(_availableStart);
+        public Memory<byte> AvailableMemory => _bytes.AsMemory(_availableStart);
+        public Memory<byte> AvailableMemorySliced(int length) => new Memory<byte>(_bytes, _availableStart, length);
 
         public int Capacity => _bytes.Length;
 

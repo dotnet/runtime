@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "common.h"
 #include "eventpipe.h"
@@ -152,7 +151,8 @@ EventPipeProviderCallbackData EventPipeProvider::UnsetConfiguration(
     return PrepareCallbackData(m_keywords, m_providerLevel, pFilterData);
 }
 
-EventPipeEvent *EventPipeProvider::AddEvent(unsigned int eventID, INT64 keywords, unsigned int eventVersion, EventPipeEventLevel level, bool needStack, BYTE *pMetadata, unsigned int metadataLength)
+EventPipeEvent *EventPipeProvider::AddEvent(unsigned int eventID, INT64 keywords, unsigned int eventVersion, EventPipeEventLevel level, bool needStack,
+    BYTE *pMetadata, unsigned int metadataLength)
 {
     CONTRACTL
     {
@@ -172,7 +172,6 @@ EventPipeEvent *EventPipeProvider::AddEvent(unsigned int eventID, INT64 keywords
         needStack,
         pMetadata,
         metadataLength);
-
     // Add it to the list of events.
     AddEvent(*pEvent);
     return pEvent;
@@ -255,11 +254,14 @@ void EventPipeProvider::AddEvent(EventPipeEvent &event)
         isEventFilterDescriptorInitialized = true;
     }
 
+    // NOTE: When we call the callback, we pass in enabled (which is either 1 or 0) as the ControlCode.
+    // If we want to add new ControlCode, we have to make corresponding change in eventtrace.cpp:EtwCallbackCommon
+    // to address this. See https://github.com/dotnet/runtime/pull/36733 for more discussions on this.
     if (pCallbackFunction != NULL && !g_fEEShutDown)
     {
         (*pCallbackFunction)(
             NULL, /* providerId */
-            enabled,
+            enabled, /* ControlCode */
             (UCHAR)providerLevel,
             keywords,
             0 /* matchAllKeywords */,
@@ -304,6 +306,9 @@ void EventPipeProvider::SetDeleteDeferred()
 {
     LIMITED_METHOD_CONTRACT;
     m_deleteDeferred = true;
+    // EventSources will be collected once they ungregister themselves,
+    // so we can't call back in to them.
+    m_pCallbackFunction = NULL;
 }
 
 void EventPipeProvider::RefreshAllEvents()

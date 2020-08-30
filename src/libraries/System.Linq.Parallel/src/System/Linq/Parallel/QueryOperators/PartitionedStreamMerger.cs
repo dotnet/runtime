@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
 //
@@ -21,14 +20,14 @@ namespace System.Linq.Parallel
         private readonly bool _forEffectMerge;
         private readonly ParallelMergeOptions _mergeOptions;
         private readonly bool _isOrdered;
-        private MergeExecutor<TOutput>? _mergeExecutor = null;
+        private MergeExecutor<TOutput>? _mergeExecutor;
         private readonly TaskScheduler _taskScheduler;
         private readonly int _queryId; // ID of the current query execution
 
         private readonly CancellationState _cancellationState;
 
 #if DEBUG
-        private bool _received = false;
+        private bool _received;
 #endif
         // Returns the merge executor which merges the received partitioned stream.
         internal MergeExecutor<TOutput>? MergeExecutor

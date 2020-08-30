@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // FRAMES.H
 
 
@@ -742,11 +741,7 @@ private:
     friend class StackFrameIterator;
     friend class TailCallFrame;
     friend class AppDomain;
-    friend VOID RealCOMPlusThrow(OBJECTREF
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-        , CorruptionSeverity severity
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
-        );
+    friend VOID RealCOMPlusThrow(OBJECTREF);
     friend FCDECL0(VOID, JIT_StressGC);
 #ifdef _DEBUG
     friend LONG WINAPI CLRVectoredExceptionHandlerShim(PEXCEPTION_POINTERS pExceptionInfo);

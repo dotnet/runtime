@@ -39,7 +39,6 @@
     <Compile Include="Stream\Stream.ReadWriteSpan.cs" />
     <Compile Include="Stream\Stream.NullTests.cs" />
     <Compile Include="Stream\Stream.AsyncTests.cs" />
-    <Compile Include="Stream\Stream.CopyToSpanTests.cs" />
     <Compile Include="Stream\Stream.CopyToTests.cs" />
     <Compile Include="Stream\Stream.Methods.cs" />
     <Compile Include="Stream\Stream.TestLeaveOpen.cs" />

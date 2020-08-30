@@ -1,9 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Linq;
-using System.Runtime.InteropServices;
 using Test.Cryptography;
 using Xunit;
 
@@ -98,7 +96,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             intermediateCert = TamperIfNeeded(intermediateCert, intermediateErrors);
             rootCert = TamperIfNeeded(rootCert, rootErrors);
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            if (OperatingSystem.IsMacOS())
             {
                 // For the lower levels, turn NotSignatureValid into PartialChain,
                 // and clear all errors at higher levels.
@@ -122,16 +120,15 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 {
                     rootErrors &= ~X509ChainStatusFlags.NotSignatureValid;
 
-                    // On 10.12 this is just UntrustedRoot.
                     // On 10.13+ it becomes PartialChain, and UntrustedRoot goes away.
-                    if (PlatformDetection.IsMacOsHighSierraOrHigher)
+                    if (PlatformDetection.IsOSX)
                     {
                         rootErrors &= ~X509ChainStatusFlags.UntrustedRoot;
                         rootErrors |= X509ChainStatusFlags.PartialChain;
                     }
                 }
             }
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            else if (OperatingSystem.IsWindows())
             {
                 // Windows only reports NotTimeValid on the start-of-chain (end-entity in this case)
                 // If it were possible in this suite to get only a higher-level cert as NotTimeValid

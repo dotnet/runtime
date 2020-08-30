@@ -206,7 +206,10 @@ INTRINS(SSE_TESTZ, x86_sse41_ptestz)
 INTRINS(SSE_PBLENDVB, x86_sse41_pblendvb)
 INTRINS(SSE_BLENDVPS, x86_sse41_blendvps)
 INTRINS(SSE_BLENDVPD, x86_sse41_blendvpd)
+#if LLVM_API_VERSION < 700
+// Clang 7 and above use a sequence of IR operations to represent pmuldq.
 INTRINS(SSE_PMULDQ, x86_sse41_pmuldq)
+#endif
 INTRINS(SSE_PHMINPOSUW, x86_sse41_phminposuw)
 INTRINS(SSE_MPSADBW, x86_sse41_mpsadbw)
 INTRINS(PCLMULQDQ, x86_pclmulqdq)

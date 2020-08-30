@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // File: System.cpp
 //
@@ -47,7 +46,7 @@ void WINAPI InitializeGetSystemTimeAsFileTime(LPFILETIME lpSystemTimeAsFileTime)
         {
             // GetSystemTimePreciseAsFileTime exists and we'd like to use it.  However, on
             // misconfigured systems, it's possible for the "precise" time to be inaccurate:
-            //     https://github.com/dotnet/coreclr/issues/14187
+            //     https://github.com/dotnet/runtime/issues/9014
             // If it's inaccurate, though, we expect it to be wildly inaccurate, so as a
             // workaround/heuristic, we get both the "normal" and "precise" times, and as
             // long as they're close, we use the precise one. This workaround can be removed
@@ -608,9 +607,17 @@ BOOL QCALLTYPE SystemNative::WinRTSupported()
 
 #endif // FEATURE_COMINTEROP
 
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
 
+void QCALLTYPE SystemNative::X86BaseCpuId(int cpuInfo[4], int functionId, int subFunctionId)
+{
+    QCALL_CONTRACT;
 
+    BEGIN_QCALL;
 
+    __cpuidex(cpuInfo, functionId, subFunctionId);
 
+    END_QCALL;
+}
 
-
+#endif // defined(TARGET_X86) || defined(TARGET_AMD64)

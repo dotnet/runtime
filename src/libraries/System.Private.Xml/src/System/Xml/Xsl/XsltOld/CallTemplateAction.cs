@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Xml.Xsl.XsltOld
 {
@@ -13,7 +12,7 @@ namespace System.Xml.Xsl.XsltOld
     {
         private const int ProcessedChildren = 2;
         private const int ProcessedTemplate = 3;
-        private XmlQualifiedName _name;
+        private XmlQualifiedName? _name;
 
         internal override void Compile(Compiler compiler)
         {
@@ -57,7 +56,7 @@ namespace System.Xml.Xsl.XsltOld
                             if (Ref.Equal(nspace, input.Atoms.UriXsl) && Ref.Equal(name, input.Atoms.WithParam))
                             {
                                 WithParamAction par = compiler.CreateWithParamAction();
-                                CheckDuplicateParams(par.Name);
+                                CheckDuplicateParams(par.Name!);
                                 AddAction(par);
                             }
                             else
@@ -95,7 +94,7 @@ namespace System.Xml.Xsl.XsltOld
                     }
                     goto case ProcessedChildren;
                 case ProcessedChildren:
-                    TemplateAction action = processor.Stylesheet.FindTemplate(_name);
+                    TemplateAction? action = processor.Stylesheet.FindTemplate(_name!);
                     if (action != null)
                     {
                         frame.State = ProcessedTemplate;
@@ -104,7 +103,7 @@ namespace System.Xml.Xsl.XsltOld
                     }
                     else
                     {
-                        throw XsltException.Create(SR.Xslt_InvalidCallTemplate, _name.ToString());
+                        throw XsltException.Create(SR.Xslt_InvalidCallTemplate, _name!.ToString());
                     }
                 case ProcessedTemplate:
                     frame.Finished();

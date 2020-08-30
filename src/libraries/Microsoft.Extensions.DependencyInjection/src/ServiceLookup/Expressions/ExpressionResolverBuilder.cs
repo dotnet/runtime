@@ -1,11 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -22,7 +21,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         internal static readonly MethodInfo MonitorEnterMethodInfo = GetMethodInfo<Action<object, bool>>((lockObj, lockTaken) => Monitor.Enter(lockObj, ref lockTaken));
         internal static readonly MethodInfo MonitorExitMethodInfo = GetMethodInfo<Action<object>>(lockObj => Monitor.Exit(lockObj));
 
-        internal static readonly MethodInfo ArrayEmptyMethodInfo = typeof(Array).GetMethod(nameof(Array.Empty));
+        private static readonly MethodInfo ArrayEmptyMethodInfo = typeof(Array).GetMethod(nameof(Array.Empty));
 
         private static readonly ParameterExpression ScopeParameter = Expression.Parameter(typeof(ServiceProviderEngineScope));
 
@@ -65,7 +64,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             // Optimize singleton case
             if (callSite.Cache.Location == CallSiteResultCacheLocation.Root)
             {
-                var value = _runtimeResolver.Resolve(callSite, _rootScope);
+                object value = _runtimeResolver.Resolve(callSite, _rootScope);
                 return scope => value;
             }
 
@@ -84,7 +83,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         public Func<ServiceProviderEngineScope, object> BuildNoCache(ServiceCallSite callSite)
         {
-            var expression = BuildExpression(callSite);
+            Expression<Func<ServiceProviderEngineScope, object>> expression = BuildExpression(callSite);
             DependencyInjectionEventSource.Log.ExpressionTreeGenerated(callSite.ServiceType, expression);
             return expression.Compile();
         }
@@ -95,7 +94,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             {
                 return Expression.Lambda<Func<ServiceProviderEngineScope, object>>(
                     Expression.Block(
-                        new [] { ResolvedServices },
+                        new[] { ResolvedServices },
                         ResolvedServicesVariableAssignment,
                         BuildScopedExpression(callSite)),
                     ScopeParameter);
@@ -133,8 +132,8 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         {
             if (callSite.ServiceCallSites.Length == 0)
             {
-                return Expression.Constant(ArrayEmptyMethodInfo
-                    .MakeGenericMethod(callSite.ItemType)
+                return Expression.Constant(
+                    GetArrayEmptyMethodInfo(callSite.ItemType)
                     .Invoke(obj: null, parameters: Array.Empty<object>()));
             }
 
@@ -155,6 +154,11 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 VisitCallSiteMain(callSite, context));
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2060:UnrecognizedReflectionPattern",
+            Justification = "Calling Array.Empty<T>() is safe since the T doesn't have linker annotations.")]
+        internal static MethodInfo GetArrayEmptyMethodInfo(Type itemType) =>
+            ArrayEmptyMethodInfo.MakeGenericMethod(itemType);
+
         private Expression TryCaptureDisposable(ServiceCallSite callSite, ParameterExpression scope, Expression service)
         {
             if (!callSite.CaptureDisposable)
@@ -167,7 +171,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         protected override Expression VisitConstructor(ConstructorCallSite callSite, object context)
         {
-            var parameters = callSite.ConstructorInfo.GetParameters();
+            ParameterInfo[] parameters = callSite.ConstructorInfo.GetParameters();
             Expression[] parameterExpressions;
             if (callSite.ParameterCallSites.Length == 0)
             {
@@ -197,7 +201,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         protected override Expression VisitScopeCache(ServiceCallSite callSite, object context)
         {
-            var lambda = Build(callSite);
+            Func<ServiceProviderEngineScope, object> lambda = Build(callSite);
             return Expression.Invoke(Expression.Constant(lambda), ScopeParameter);
         }
 
@@ -205,33 +209,33 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         private Expression BuildScopedExpression(ServiceCallSite callSite)
         {
 
-            var keyExpression = Expression.Constant(
+            ConstantExpression keyExpression = Expression.Constant(
                 callSite.Cache.Key,
                 typeof(ServiceCacheKey));
 
-            var resolvedVariable = Expression.Variable(typeof(object), "resolved");
+            ParameterExpression resolvedVariable = Expression.Variable(typeof(object), "resolved");
 
-            var resolvedServices = ResolvedServices;
+            ParameterExpression resolvedServices = ResolvedServices;
 
-            var tryGetValueExpression = Expression.Call(
+            MethodCallExpression tryGetValueExpression = Expression.Call(
                 resolvedServices,
                 TryGetValueMethodInfo,
                 keyExpression,
                 resolvedVariable);
 
-            var captureDisposible = TryCaptureDisposable(callSite, ScopeParameter, VisitCallSiteMain(callSite, null));
+            Expression captureDisposible = TryCaptureDisposable(callSite, ScopeParameter, VisitCallSiteMain(callSite, null));
 
-            var assignExpression = Expression.Assign(
+            BinaryExpression assignExpression = Expression.Assign(
                 resolvedVariable,
                 captureDisposible);
 
-            var addValueExpression = Expression.Call(
+            MethodCallExpression addValueExpression = Expression.Call(
                 resolvedServices,
                 AddMethodInfo,
                 keyExpression,
                 resolvedVariable);
 
-            var blockExpression = Expression.Block(
+            BlockExpression blockExpression = Expression.Block(
                 typeof(object),
                 new[]
                 {
@@ -247,13 +251,13 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
             // The C# compiler would copy the lock object to guard against mutation.
             // We don't, since we know the lock object is readonly.
-            var lockWasTaken = Expression.Variable(typeof(bool), "lockWasTaken");
+            ParameterExpression lockWasTaken = Expression.Variable(typeof(bool), "lockWasTaken");
 
-            var monitorEnter = Expression.Call(MonitorEnterMethodInfo, resolvedServices, lockWasTaken);
-            var monitorExit = Expression.Call(MonitorExitMethodInfo, resolvedServices);
+            MethodCallExpression monitorEnter = Expression.Call(MonitorEnterMethodInfo, resolvedServices, lockWasTaken);
+            MethodCallExpression monitorExit = Expression.Call(MonitorExitMethodInfo, resolvedServices);
 
-            var tryBody = Expression.Block(monitorEnter, blockExpression);
-            var finallyBody = Expression.IfThen(lockWasTaken, monitorExit);
+            BlockExpression tryBody = Expression.Block(monitorEnter, blockExpression);
+            ConditionalExpression finallyBody = Expression.IfThen(lockWasTaken, monitorExit);
 
             return Expression.Block(
                 typeof(object),

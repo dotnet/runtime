@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -9,6 +8,7 @@ using System.Linq;
 using System.Reflection.Metadata.Ecma335;
 
 using ILCompiler.Reflection.ReadyToRun;
+using ILCompiler.Reflection.ReadyToRun.Amd64;
 using Internal.Runtime;
 
 namespace R2RDump
@@ -139,8 +139,8 @@ namespace R2RDump
         {
             writer.WriteLine(theThis.SignatureString);
 
-            writer.WriteLine($"Handle: 0x{MetadataTokens.GetToken(theThis.MetadataReader, theThis.MethodHandle):X8}");
-            writer.WriteLine($"Rid: {MetadataTokens.GetRowNumber(theThis.MetadataReader, theThis.MethodHandle)}");
+            writer.WriteLine($"Handle: 0x{MetadataTokens.GetToken(theThis.ComponentReader.MetadataReader, theThis.MethodHandle):X8}");
+            writer.WriteLine($"Rid: {MetadataTokens.GetRowNumber(theThis.ComponentReader.MetadataReader, theThis.MethodHandle)}");
             if (!options.Naked)
             {
                 writer.WriteLine($"EntryPointRuntimeFunctionId: {theThis.EntryPointRuntimeFunctionId}");
@@ -209,22 +209,23 @@ namespace R2RDump
                 writer.WriteLine($"Flags:              0x{amd64UnwindInfo.Flags:X2}{parsedFlags}");
                 writer.WriteLine($"SizeOfProlog:       0x{amd64UnwindInfo.SizeOfProlog:X4}");
                 writer.WriteLine($"CountOfUnwindCodes: {amd64UnwindInfo.CountOfUnwindCodes}");
-                writer.WriteLine($"FrameRegister:      {amd64UnwindInfo.FrameRegister}");
+                writer.WriteLine($"FrameRegister:      {((amd64UnwindInfo.FrameRegister == 0) ? "None" : amd64UnwindInfo.FrameRegister.ToString())}");
                 writer.WriteLine($"FrameOffset:        0x{amd64UnwindInfo.FrameOffset}");
                 if (!options.Naked)
                 {
                     writer.WriteLine($"PersonalityRVA:     0x{amd64UnwindInfo.PersonalityRoutineRVA:X4}");
                 }
 
-                for (int unwindCodeIndex = 0; unwindCodeIndex < amd64UnwindInfo.CountOfUnwindCodes; unwindCodeIndex++)
+                for (int uwcIndex = 0; uwcIndex < amd64UnwindInfo.UnwindCodes.Count; uwcIndex++)
                 {
-                    ILCompiler.Reflection.ReadyToRun.Amd64.UnwindCode unwindCode = amd64UnwindInfo.UnwindCodeArray[unwindCodeIndex];
-                    writer.Write($"UnwindCode[{unwindCode.Index}]: ");
+                    UnwindCode unwindCode = amd64UnwindInfo.UnwindCodes[uwcIndex];
+                    writer.Write($"UnwindCode[{uwcIndex}]: ");
                     writer.Write($"CodeOffset 0x{unwindCode.CodeOffset:X4} ");
                     writer.Write($"FrameOffset 0x{unwindCode.FrameOffset:X4} ");
                     writer.Write($"NextOffset 0x{unwindCode.NextFrameOffset} ");
                     writer.Write($"Op {unwindCode.OpInfoStr}");
                     writer.WriteLine();
+                    uwcIndex++;
                 }
             }
             writer.WriteLine();

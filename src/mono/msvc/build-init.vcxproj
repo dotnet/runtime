@@ -142,6 +142,7 @@
     <PropertyGroup>
       <_EnableDefines Condition="'$(MONO_ENABLE_LLVM)' == 'true'">$(_EnableDefines);ENABLE_LLVM;ENABLE_LLVM_RUNTIME</_EnableDefines>
       <_EnableDefines Condition="'$(MONO_ENABLE_NETCORE)' == 'true'">$(_EnableDefines);ENABLE_NETCORE</_EnableDefines>
+      <_EnableDefines Condition="'$(MONO_ENABLE_PERFTRACING)' == 'true'">$(_EnableDefines);ENABLE_PERFTRACING</_EnableDefines>
       <_HaveDefines Condition="'$(MONO_ENABLE_BTLS)' == 'true'">$(_HaveDefines);HAVE_BTLS</_HaveDefines>
       <_EnableDefines>$(_EnableDefines.Trim(';'))</_EnableDefines>
       <_HaveDefines>$(_HaveDefines.Trim(';'))</_HaveDefines>

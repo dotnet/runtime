@@ -4,6 +4,8 @@
 
 #include <config.h>
 #include <mono/utils/mono-compiler.h>
+#include <mono/metadata/icall-decl.h>
+#include "mini.h"
 
 #if defined(DISABLE_JIT)
 
@@ -18,7 +20,6 @@ mono_simd_intrinsics_init (void)
  * Only LLVM is supported as a backend.
  */
 
-#include "mini.h"
 #include "mini-runtime.h"
 #include "ir-emit.h"
 #ifdef ENABLE_LLVM
@@ -27,6 +28,7 @@ mono_simd_intrinsics_init (void)
 #include "mono/utils/bsearch.h"
 #include <mono/metadata/abi-details.h>
 #include <mono/metadata/reflection-internals.h>
+#include <mono/utils/mono-hwcap.h>
 
 #if defined (MONO_ARCH_SIMD_INTRINSICS) && defined(ENABLE_NETCORE)
 
@@ -373,9 +375,10 @@ static guint16 vector_t_methods [] = {
 	SN_LessThanOrEqual,
 	SN_Max,
 	SN_Min,
-	SN_get_AllOnes,
+	SN_get_AllBitsSet,
 	SN_get_Count,
 	SN_get_Item,
+	SN_get_One,
 	SN_get_Zero,
 	SN_op_Addition,
 	SN_op_BitwiseAnd,
@@ -397,6 +400,9 @@ emit_sys_numerics_vector_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 	MonoClass *klass;
 	int size, len, id;
 	gboolean is_unsigned;
+
+	static const float r4_one = 1.0f;
+	static const double r8_one = 1.0;
 
 	id = lookup_intrins (vector_t_methods, sizeof (vector_t_methods), cmethod);
 	if (id == -1)
@@ -427,7 +433,33 @@ emit_sys_numerics_vector_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 	case SN_get_Zero:
 		g_assert (fsig->param_count == 0 && mono_metadata_type_equal (fsig->ret, type));
 		return emit_simd_ins (cfg, klass, OP_XZERO, -1, -1);
-	case SN_get_AllOnes: {
+	case SN_get_One: {
+		g_assert (fsig->param_count == 0 && mono_metadata_type_equal (fsig->ret, type));
+		MonoInst *one = NULL;
+		int expand_opcode = type_to_expand_op (etype);
+		MONO_INST_NEW (cfg, one, -1);
+		switch (expand_opcode) {
+		case OP_EXPAND_R4:
+			one->opcode = OP_R4CONST;
+			one->type = STACK_R4;
+			one->inst_p0 = (void *) &r4_one;
+			break;
+		case OP_EXPAND_R8:
+			one->opcode = OP_R8CONST;
+			one->type = STACK_R8;
+			one->inst_p0 = (void *) &r8_one;
+			break;
+		default:
+			one->opcode = OP_ICONST;
+			one->type = STACK_I4;
+			one->inst_c0 = 1;
+			break;
+		}
+		one->dreg = alloc_dreg (cfg, one->type);
+		MONO_ADD_INS (cfg->cbb, one);
+		return emit_simd_ins (cfg, klass, expand_opcode, one->dreg, -1);
+	}
+	case SN_get_AllBitsSet: {
 		/* Compare a zero vector with itself */
 		ins = emit_simd_ins (cfg, klass, OP_XZERO, -1, -1);
 		return emit_xcompare (cfg, klass, etype->type, ins, ins);
@@ -503,7 +535,7 @@ emit_sys_numerics_vector_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 			MONO_EMIT_BOUNDS_CHECK (cfg, array_ins->dreg, MonoArray, max_length, end_index_reg);
 
 			/* Load the array slice into the simd reg */
-			ldelema_ins = mini_emit_ldelema_1_ins (cfg, mono_class_from_mono_type_internal (etype), array_ins, index_ins, TRUE);
+			ldelema_ins = mini_emit_ldelema_1_ins (cfg, mono_class_from_mono_type_internal (etype), array_ins, index_ins, TRUE, FALSE);
 			g_assert (args [0]->opcode == OP_LDADDR);
 			var = (MonoInst*)args [0]->inst_p0;
 			EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOADX_MEMBASE, var->dreg, ldelema_ins->dreg, 0);
@@ -538,7 +570,7 @@ emit_sys_numerics_vector_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 			MONO_EMIT_NEW_COND_EXC (cfg, LT, "ArgumentException");
 
 			/* Load the array slice into the simd reg */
-			ldelema_ins = mini_emit_ldelema_1_ins (cfg, mono_class_from_mono_type_internal (etype), array_ins, index_ins, FALSE);
+			ldelema_ins = mini_emit_ldelema_1_ins (cfg, mono_class_from_mono_type_internal (etype), array_ins, index_ins, FALSE, FALSE);
 			EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STOREX_MEMBASE, ldelema_ins->dreg, 0, val_vreg);
 			ins->klass = cmethod->klass;
 			return ins;
@@ -1086,6 +1118,12 @@ static SimdIntrinsic bmi2_methods [] = {
 	{SN_ParallelBitDeposit},
 	{SN_ParallelBitExtract},
 	{SN_ZeroHighBits},
+	{SN_get_IsSupported}
+};
+
+static SimdIntrinsic x86base_methods [] = {
+	{SN_BitScanForward},
+	{SN_BitScanReverse},
 	{SN_get_IsSupported}
 };
 
@@ -1857,6 +1895,39 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 		}
 	}
 
+	if (is_hw_intrinsics_class (klass, "X86Base", &is_64bit)) {
+		if (!COMPILE_LLVM (cfg))
+			return NULL;
+
+		info = lookup_intrins_info (x86base_methods, sizeof (x86base_methods), cmethod);
+		if (!info)
+			return NULL;
+		int id = info->id;
+
+		switch (id) {
+		case SN_get_IsSupported:
+			EMIT_NEW_ICONST (cfg, ins, 1);
+			ins->type = STACK_I4;
+			return ins;
+		case SN_BitScanForward:
+			MONO_INST_NEW (cfg, ins, is_64bit ? OP_X86_BSF64 : OP_X86_BSF32);
+			ins->dreg = is_64bit ? alloc_lreg (cfg) : alloc_ireg (cfg);
+			ins->sreg1 = args [0]->dreg;
+			ins->type = is_64bit ? STACK_I8 : STACK_I4;
+			MONO_ADD_INS (cfg->cbb, ins);
+			return ins;
+		case SN_BitScanReverse:
+			MONO_INST_NEW (cfg, ins, is_64bit ? OP_X86_BSR64 : OP_X86_BSR32);
+			ins->dreg = is_64bit ? alloc_lreg (cfg) : alloc_ireg (cfg);
+			ins->sreg1 = args [0]->dreg;
+			ins->type = is_64bit ? STACK_I8 : STACK_I4;
+			MONO_ADD_INS (cfg->cbb, ins);
+			return ins;
+		default:
+			g_assert_not_reached ();
+		}
+	}
+
 	return NULL;
 }
 
@@ -1916,8 +1987,23 @@ emit_vector128 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig
 		if (fsig->param_count == 1 && mono_metadata_type_equal (fsig->params [0], etype)) {
 			return emit_simd_ins (cfg, klass, type_to_expand_op (etype), args [0]->dreg, -1);
 		} else {
-			// TODO: Optimize Create(a1, a2, a3 ...) overloads
-			break;
+			MonoInst *ins, *load;
+
+			// FIXME: Optimize this
+			MONO_INST_NEW (cfg, ins, OP_LOCALLOC_IMM);
+			ins->dreg = alloc_preg (cfg);
+			ins->inst_imm = 16;
+			MONO_ADD_INS (cfg->cbb, ins);
+
+			int esize = mono_class_value_size (mono_class_from_mono_type_internal (etype), NULL);
+			int store_opcode = mono_type_to_store_membase (cfg, etype);
+			for (int i = 0; i < fsig->param_count; ++i)
+				MONO_EMIT_NEW_STORE_MEMBASE (cfg, store_opcode, ins->dreg, i * esize, args [i]->dreg);
+
+			load = emit_simd_ins (cfg, klass, OP_SSE_LOADU, ins->dreg, -1);
+			load->inst_c0 = 16;
+			load->inst_c1 = get_underlying_type (etype);
+			return load;
 		}
 	}
 	case SN_CreateScalarUnsafe:
@@ -2089,3 +2175,13 @@ MONO_EMPTY_SOURCE_FILE (simd_intrinsics_netcore);
 #endif
 
 #endif /* DISABLE_JIT */
+
+
+#if defined(ENABLE_NETCORE) && defined(TARGET_AMD64)
+void
+ves_icall_System_Runtime_Intrinsics_X86_X86Base___cpuidex (int abcd[4], int function_id, int subfunction_id)
+{
+	mono_hwcap_x86_call_cpuidex (function_id, subfunction_id,
+		&abcd [0], &abcd [1], &abcd [2], &abcd [3]);
+}
+#endif

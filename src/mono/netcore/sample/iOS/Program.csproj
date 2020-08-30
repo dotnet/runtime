@@ -2,68 +2,85 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <OutputPath>bin</OutputPath>
+    <DebugType>Portable</DebugType>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <TargetArchitecture Condition="'$(TargetArchitecture)'==''">x64</TargetArchitecture>
-    <RuntimePackDir>$(ArtifactsDir)bin\lib-runtime-packs\runtimes\ios-$(TargetArchitecture)</RuntimePackDir>
-    <MonoRuntimeDir>$(ArtifactsDir)bin\mono\iOS.$(TargetArchitecture).$(Configuration)</MonoRuntimeDir>
-    <BundleDir>$(MSBuildThisFileDirectory)\bin\bundle</BundleDir>
+    <TargetOS>iOS</TargetOS>
+    <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.ios-$(TargetArchitecture)\$(Configuration)\runtimes\ios-$(TargetArchitecture)\</MicrosoftNetCoreAppRuntimePackDir>
+    <EnableTargetingPackDownload>false</EnableTargetingPackDownload>
+    <RuntimeIdentifier>ios-$(TargetArchitecture)</RuntimeIdentifier>
+    <PublishTrimmed>true</PublishTrimmed>
+    <_TrimmerDefaultAction>link</_TrimmerDefaultAction>
+    <Optimized Condition="'$(Configuration)' == 'Release'">True</Optimized>
   </PropertyGroup>
 
-  <Target Name="RebuildAppleAppBuilder">
-    <MSBuild Projects="$(RepoRoot)src\mono\msbuild\AppleAppBuilder\AppleAppBuilder.csproj"
-             Properties="Configuration=$(Configuration)" Targets="Restore;Build" />
+  <!-- Redirect 'dotnet publish' to in-tree runtime pack -->
+  <Target Name="TrickRuntimePackLocation" AfterTargets="ProcessFrameworkReferences">
+    <ItemGroup>
+      <RuntimePack>
+        <PackageDirectory>$(ArtifactBinDir)microsoft.netcore.app.runtime.ios-$(TargetArchitecture)\$(Configuration)</PackageDirectory>
+      </RuntimePack>
+    </ItemGroup>
+    <Message Text="Packaged ID: %(RuntimePack.PackageDirectory)" Importance="high" />
   </Target>
 
-  <UsingTask TaskName="AppleAppBuilderTask" 
-      AssemblyFile="$(ArtifactsObjDir)mono\AppleAppBuilder\$(TargetArchitecture)\$(Configuration)\AppleAppBuilder.dll" />
+  <Import Project="$(RepoTasksDir)mobile.tasks\AotCompilerTask\MonoAOTCompiler.props" />
+  <UsingTask TaskName="AppleAppBuilderTask"
+             AssemblyFile="$(ArtifactsBinDir)AppleAppBuilder\$(Configuration)\$(NetCoreAppCurrent)\AppleAppBuilder.dll" />
 
-  <Target Name="BuildAppBundle" DependsOnTargets="RebuildAppleAppBuilder">
+  <UsingTask TaskName="MonoAOTCompiler"
+             AssemblyFile="$(ArtifactsBinDir)MonoAOTCompiler\$(Configuration)\$(NetCoreAppCurrent)\MonoAOTCompiler.dll" />
+
+  <Target Name="BuildAppBundle" AfterTargets="CopyFilesToPublishDirectory">
     <PropertyGroup>
-      <TargetArch Condition="$(RuntimeIdentifier.EndsWith('arm64'))">arm64</TargetArch>
-      <TargetArch Condition="'$(TargetArch)' == ''">x64</TargetArch>
+      <AppDir>$(MSBuildThisFileDirectory)$(PublishDir)\app</AppDir>
+      <IosSimulator Condition="'$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'x86'">iPhone 11</IosSimulator>
     </PropertyGroup>
+
+    <RemoveDir Directories="$(AppDir)" />
+
     <ItemGroup>
-      <AppBinaries Include="bin\*.*"/>
-      <BclBinaries Include="$(RuntimePackDir)\lib\$(NetCoreAppCurrent)\*.*" Exclude="$(RuntimePackDir)\lib\$(NetCoreAppCurrent)\System.Runtime.WindowsRuntime.dll" />
-      <BclBinaries Include="$(RuntimePackDir)\native\*.*" />
-      <MonoRuntimeBinaries Include="$(MonoRuntimeDir)\*.*" />
+      <BundleAssemblies Include="$(MSBuildThisFileDirectory)$(PublishDir)\*.dll" />
+      <AotInputAssemblies Include="$(MSBuildThisFileDirectory)$(PublishDir)\*.dll">
+        <AotArguments>@(MonoAOTCompilerDefaultAotArguments, ';')</AotArguments>
+        <ProcessArguments>@(MonoAOTCompilerDefaultProcessArguments, ';')</ProcessArguments>
+      </AotInputAssemblies>
     </ItemGroup>
-    <Error Condition="!Exists('$(RuntimePackDir)')" Text="RuntimePackDir=$(RuntimePackDir) doesn't exist" />
-    <RemoveDir Directories="$(BundleDir)" />
-    <Copy SourceFiles="@(AppBinaries)" DestinationFolder="$(BundleDir)" SkipUnchangedFiles="true"/>
-    <Copy SourceFiles="@(BclBinaries)" DestinationFolder="$(BundleDir)\%(RecursiveDir)" SkipUnchangedFiles="true"/>
-    <!-- runtime pack contains all needed binaries but lets overwrite them from artifacts/bin/mono to sync runtime changes -->
-    <Copy SourceFiles="@(MonoRuntimeBinaries)" DestinationFolder="$(BundleDir)\%(RecursiveDir)" SkipUnchangedFiles="true"/>
-    <AppleAppBuilderTask 
+
+    <MonoAOTCompiler
+        Condition="'$(IosSimulator)' == '' or '$(UseAotForSimulator)' == 'true'"
+        CompilerBinaryPath="$(MicrosoftNetCoreAppRuntimePackDir)native\cross\mono-aot-cross"
+        Mode="Full"
+        OutputType="AsmOnly"
+        Assemblies="@(AotInputAssemblies)"
+        UseLLVM="$(UseLLVM)"
+        LLVMPath="$(MicrosoftNetCoreAppRuntimePackDir)native\cross">
+        <Output TaskParameter="CompiledAssemblies" ItemName="BundleAssemblies" />
+    </MonoAOTCompiler>
+
+    <AppleAppBuilderTask
         Arch="$(TargetArchitecture)"
         ProjectName="HelloiOS"
-        MonoRuntimeHeaders="$(RuntimePackDir)\native\include\mono-2.0"
-        CrossCompiler="$(RuntimePackDir)\native\cross\mono-aot-cross"
+        MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackDir)native\include\mono-2.0"
+        Assemblies="@(BundleAssemblies)"
         MainLibraryFileName="Program.dll"
         GenerateXcodeProject="True"
         BuildAppBundle="True"
         DevTeamProvisioning="$(DevTeamProvisioning)"
-        OutputDirectory="$(BundleDir)"
-        UseLlvm="$(UseLlvm)"
-        LlvmPath="$(RuntimePackDir)\native\cross"
-        Optimized="False"
-        AppDir="$(BundleDir)">
+        OutputDirectory="$(AppDir)"
+        Optimized="$(Optimized)"
+        UseAotForSimulator="$(UseAotForSimulator)"
+        AppDir="$(MSBuildThisFileDirectory)$(PublishDir)">
         <Output TaskParameter="AppBundlePath" PropertyName="AppBundlePath" />
         <Output TaskParameter="XcodeProjectPath" PropertyName="XcodeProjectPath" />
     </AppleAppBuilderTask>
+
     <Message Importance="High" Text="Xcode: $(XcodeProjectPath)"/>
     <Message Importance="High" Text="App:   $(AppBundlePath)"/>
-  </Target>
 
-  <Target Name="IosDeployToSimulator">
-    <PropertyGroup>
-      <IosSimulator Condition="'$(IosSimulator)' == ''">iPhone 11</IosSimulator>
-    </PropertyGroup>
-    <Message Importance="High" Text="\nDeploying to '$(IosSimulator)' simulator..." />
-    <Exec Command="xcrun simctl shutdown &quot;$(IosSimulator)&quot;" ContinueOnError="WarnAndContinue" />
-    <Exec Command="xcrun simctl boot &quot;$(IosSimulator)&quot;" />
-    <Exec Command="open -a Simulator" />
-    <Exec Command="xcrun simctl install &quot;$(IosSimulator)&quot; $(BundleDir)/HelloiOS/Debug-iphonesimulator/HelloiOS.app" />
-    <Exec Command="xcrun simctl launch --console booted net.dot.HelloiOS" />
+    <Exec Condition="'$(IosSimulator)' != ''" Command="xcrun simctl shutdown &quot;$(IosSimulator)&quot;" ContinueOnError="WarnAndContinue" />
+    <Exec Condition="'$(IosSimulator)' != ''" Command="xcrun simctl boot &quot;$(IosSimulator)&quot;" />
+    <Exec Condition="'$(IosSimulator)' != ''" Command="open -a Simulator" />
+    <Exec Condition="'$(IosSimulator)' != ''" Command="xcrun simctl install &quot;$(IosSimulator)&quot; $(AppBundlePath)" />
+    <Exec Condition="'$(IosSimulator)' != ''" Command="xcrun simctl launch --console booted net.dot.HelloiOS" />
   </Target>
 </Project>

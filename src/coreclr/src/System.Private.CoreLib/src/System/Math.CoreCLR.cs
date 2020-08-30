@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================
 **
@@ -57,6 +56,7 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern double Cbrt(double d);
 
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern double Ceiling(double a);
 
@@ -72,6 +72,7 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern double Exp(double d);
 
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern double Floor(double d);
 

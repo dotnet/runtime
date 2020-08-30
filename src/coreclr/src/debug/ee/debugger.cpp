@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: debugger.cpp
 //
@@ -3459,14 +3458,14 @@ void Debugger::getBoundaries(MethodDesc * md,
 
     if (pModule == SystemDomain::SystemModule())
     {
-        // We don't look up PDBs for mscorlib.  This is not quite right, but avoids
+        // We don't look up PDBs for CoreLib.  This is not quite right, but avoids
         // a bootstrapping problem.  When an EXE loads, it has the option of setting
         // the COM apartment model to STA if we need to.  It is important that no
         // other Coinitialize happens before this.  Since loading the PDB reader uses
         // com we can not come first.  However managed code IS run before the COM
         // apartment model is set, and thus we have a problem since this code is
         // called for when JITTing managed code.    We avoid the problem by just
-        // bailing for mscorlib.
+        // bailing for CoreLib.
         return;
     }
 
@@ -7954,7 +7953,7 @@ void Debugger::ProcessAnyPendingEvals(Thread *pThread)
         // Now clear the bit else we'll see it again when we process the Exception notification
         // from this upcoming UserAbort exception.
         pThread->ResetThreadStateNC(Thread::TSNC_DebuggerReAbort);
-        pThread->UserAbort(Thread::TAR_Thread, EEPolicy::TA_Safe, INFINITE, Thread::UAC_Normal);
+        pThread->UserAbort(Thread::TAR_Thread, EEPolicy::TA_Safe, INFINITE);
     }
 
 #endif
@@ -12896,8 +12895,8 @@ private:
 // is a valid Remap Breakpoint location (not in a special offset, must be empty stack, and not in a handler.
 //
 EnCSequencePointHelper::EnCSequencePointHelper(DebuggerJitInfo *pJitInfo)
-    : m_pOffsetToHandlerInfo(NULL),
-      m_pJitInfo(pJitInfo)
+    : m_pJitInfo(pJitInfo),
+    m_pOffsetToHandlerInfo(NULL)      
 {
     CONTRACTL
     {
@@ -15243,15 +15242,6 @@ HRESULT Debugger::FuncEvalSetup(DebuggerIPCE_FuncEvalInfo *pEvalInfo,
         return CORDBG_E_FUNC_EVAL_BAD_START_POINT;
     }
 
-    if (MethodDescBackpatchInfoTracker::IsLockOwnedByAnyThread())
-    {
-        // A thread may have suspended for the debugger while holding the slot backpatching lock while trying to enter
-        // cooperative GC mode. If the FuncEval calls a method that is eligible for slot backpatching (virtual or interface
-        // methods that are eligible for tiering), the FuncEval may deadlock on trying to acquire the same lock. Fail the
-        // FuncEval to avoid the issue.
-        return CORDBG_E_FUNC_EVAL_BAD_START_POINT;
-    }
-
     // Create a DebuggerEval to hold info about this eval while its in progress. Constructor copies the thread's
     // CONTEXT.
     DebuggerEval *pDE = new (interopsafe, nothrow) DebuggerEval(filterContext, pEvalInfo, fInException);
@@ -15485,7 +15475,7 @@ Debugger::FuncEvalAbort(
             //
             EX_TRY
             {
-                hr = pDE->m_thread->UserAbort(Thread::TAR_FuncEval, EEPolicy::TA_Safe, (DWORD)FUNC_EVAL_DEFAULT_TIMEOUT_VALUE, Thread::UAC_Normal);
+                hr = pDE->m_thread->UserAbort(Thread::TAR_FuncEval, EEPolicy::TA_Safe, (DWORD)FUNC_EVAL_DEFAULT_TIMEOUT_VALUE);
                 if (hr == HRESULT_FROM_WIN32(ERROR_TIMEOUT))
                 {
                     hr = S_OK;
@@ -15551,7 +15541,7 @@ Debugger::FuncEvalRudeAbort(
             //
             EX_TRY
             {
-                hr = pDE->m_thread->UserAbort(Thread::TAR_FuncEval, EEPolicy::TA_Rude, (DWORD)FUNC_EVAL_DEFAULT_TIMEOUT_VALUE, Thread::UAC_Normal);
+                hr = pDE->m_thread->UserAbort(Thread::TAR_FuncEval, EEPolicy::TA_Rude, (DWORD)FUNC_EVAL_DEFAULT_TIMEOUT_VALUE);
                 if (hr == HRESULT_FROM_WIN32(ERROR_TIMEOUT))
                 {
                     hr = S_OK;

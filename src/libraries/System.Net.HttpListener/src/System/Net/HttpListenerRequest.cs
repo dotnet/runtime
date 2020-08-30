@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Collections.Specialized;
@@ -16,30 +15,30 @@ namespace System.Net
 {
     public sealed unsafe partial class HttpListenerRequest
     {
-        private CookieCollection _cookies;
+        private CookieCollection? _cookies;
         private bool? _keepAlive;
-        private string _rawUrl;
-        private Uri _requestUri;
+        private string? _rawUrl;
+        private Uri? _requestUri;
         private Version _version;
 
-        public string[] AcceptTypes => Helpers.ParseMultivalueHeader(Headers[HttpKnownHeaderNames.Accept]);
+        public string[]? AcceptTypes => Helpers.ParseMultivalueHeader(Headers[HttpKnownHeaderNames.Accept]!);
 
-        public string[] UserLanguages => Helpers.ParseMultivalueHeader(Headers[HttpKnownHeaderNames.AcceptLanguage]);
+        public string[]? UserLanguages => Helpers.ParseMultivalueHeader(Headers[HttpKnownHeaderNames.AcceptLanguage]!);
 
-        private CookieCollection ParseCookies(Uri uri, string setCookieHeader)
+        private CookieCollection ParseCookies(Uri? uri, string setCookieHeader)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, "uri:" + uri + " setCookieHeader:" + setCookieHeader);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "uri:" + uri + " setCookieHeader:" + setCookieHeader);
             CookieCollection cookies = new CookieCollection();
             CookieParser parser = new CookieParser(setCookieHeader);
             while (true)
             {
-                Cookie cookie = parser.GetServer();
+                Cookie? cookie = parser.GetServer();
                 if (cookie == null)
                 {
                     // EOF, done.
                     break;
                 }
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, "CookieParser returned cookie: " + cookie.ToString());
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "CookieParser returned cookie: " + cookie.ToString());
                 if (cookie.Name.Length == 0)
                 {
                     continue;
@@ -56,7 +55,7 @@ namespace System.Net
             {
                 if (_cookies == null)
                 {
-                    string cookieString = Headers[HttpKnownHeaderNames.Cookie];
+                    string? cookieString = Headers[HttpKnownHeaderNames.Cookie];
                     if (!string.IsNullOrEmpty(cookieString))
                     {
                         _cookies = ParseCookies(RequestUri, cookieString);
@@ -76,7 +75,7 @@ namespace System.Net
             {
                 if (UserAgent != null && CultureInfo.InvariantCulture.CompareInfo.IsPrefix(UserAgent, "UP"))
                 {
-                    string postDataCharset = Headers["x-up-devcap-post-charset"];
+                    string? postDataCharset = Headers["x-up-devcap-post-charset"];
                     if (postDataCharset != null && postDataCharset.Length > 0)
                     {
                         try
@@ -92,7 +91,7 @@ namespace System.Net
                 {
                     if (ContentType != null)
                     {
-                        string charSet = Helpers.GetCharSetValueFromHeader(ContentType);
+                        string? charSet = Helpers.GetCharSetValueFromHeader(ContentType);
                         if (charSet != null)
                         {
                             try
@@ -109,9 +108,9 @@ namespace System.Net
             }
         }
 
-        public string ContentType => Headers[HttpKnownHeaderNames.ContentType];
+        public string? ContentType => Headers[HttpKnownHeaderNames.ContentType];
 
-        public bool IsLocal => LocalEndPoint.Address.Equals(RemoteEndPoint.Address);
+        public bool IsLocal => LocalEndPoint!.Address.Equals(RemoteEndPoint!.Address);
 
         public bool IsWebSocketRequest
         {
@@ -128,7 +127,7 @@ namespace System.Net
                     return false;
                 }
 
-                foreach (string connection in Headers.GetValues(HttpKnownHeaderNames.Connection))
+                foreach (string connection in Headers.GetValues(HttpKnownHeaderNames.Connection)!)
                 {
                     if (string.Equals(connection, HttpKnownHeaderNames.Upgrade, StringComparison.OrdinalIgnoreCase))
                     {
@@ -142,7 +141,7 @@ namespace System.Net
                     return false;
                 }
 
-                foreach (string upgrade in Headers.GetValues(HttpKnownHeaderNames.Upgrade))
+                foreach (string upgrade in Headers.GetValues(HttpKnownHeaderNames.Upgrade)!)
                 {
                     if (string.Equals(upgrade, HttpWebSocket.WebSocketUpgradeToken, StringComparison.OrdinalIgnoreCase))
                     {
@@ -160,7 +159,7 @@ namespace System.Net
             {
                 if (!_keepAlive.HasValue)
                 {
-                    string header = Headers[HttpKnownHeaderNames.ProxyConnection];
+                    string? header = Headers[HttpKnownHeaderNames.ProxyConnection];
                     if (string.IsNullOrEmpty(header))
                     {
                         header = Headers[HttpKnownHeaderNames.Connection];
@@ -182,11 +181,11 @@ namespace System.Net
                         header = header.ToLowerInvariant();
                         _keepAlive =
                             header.IndexOf("close", StringComparison.OrdinalIgnoreCase) < 0 ||
-                            header.IndexOf("keep-alive", StringComparison.OrdinalIgnoreCase) >= 0;
+                            header.Contains("keep-alive", StringComparison.OrdinalIgnoreCase);
                     }
                 }
 
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, "_keepAlive=" + _keepAlive);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "_keepAlive=" + _keepAlive);
                 return _keepAlive.Value;
             }
         }
@@ -196,64 +195,57 @@ namespace System.Net
             get
             {
                 NameValueCollection queryString = new NameValueCollection();
-                Helpers.FillFromString(queryString, Url.Query, true, ContentEncoding);
+                Helpers.FillFromString(queryString, Url!.Query, true, ContentEncoding);
                 return queryString;
             }
         }
 
-        public string RawUrl => _rawUrl;
+        public string? RawUrl => _rawUrl;
 
         private string RequestScheme => IsSecureConnection ? UriScheme.Https : UriScheme.Http;
 
-        public string UserAgent => Headers[HttpKnownHeaderNames.UserAgent];
+        public string UserAgent => Headers[HttpKnownHeaderNames.UserAgent]!;
 
-        public string UserHostAddress => LocalEndPoint.ToString();
+        public string UserHostAddress => LocalEndPoint!.ToString();
 
-        public string UserHostName => Headers[HttpKnownHeaderNames.Host];
+        public string UserHostName => Headers[HttpKnownHeaderNames.Host]!;
 
-        public Uri UrlReferrer
+        public Uri? UrlReferrer
         {
             get
             {
-                string referrer = Headers[HttpKnownHeaderNames.Referer];
+                string? referrer = Headers[HttpKnownHeaderNames.Referer];
                 if (referrer == null)
                 {
                     return null;
                 }
 
-                bool success = Uri.TryCreate(referrer, UriKind.RelativeOrAbsolute, out Uri urlReferrer);
+                bool success = Uri.TryCreate(referrer, UriKind.RelativeOrAbsolute, out Uri? urlReferrer);
                 return success ? urlReferrer : null;
             }
         }
 
-        public Uri Url => RequestUri;
+        public Uri? Url => RequestUri;
 
         public Version ProtocolVersion => _version;
 
-        public X509Certificate2 GetClientCertificate()
+        public X509Certificate2? GetClientCertificate()
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
-            try
-            {
-                if (ClientCertState == ListenerClientCertState.InProgress)
-                    throw new InvalidOperationException(SR.Format(SR.net_listener_callinprogress, $"{nameof(GetClientCertificate)}()/{nameof(BeginGetClientCertificate)}()"));
-                ClientCertState = ListenerClientCertState.InProgress;
+            if (ClientCertState == ListenerClientCertState.InProgress)
+                throw new InvalidOperationException(SR.Format(SR.net_listener_callinprogress, $"{nameof(GetClientCertificate)}()/{nameof(BeginGetClientCertificate)}()"));
+            ClientCertState = ListenerClientCertState.InProgress;
 
-                GetClientCertificateCore();
+            GetClientCertificateCore();
 
-                ClientCertState = ListenerClientCertState.Completed;
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"_clientCertificate:{ClientCertificate}");
-            }
-            finally
-            {
-                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
-            }
+            ClientCertState = ListenerClientCertState.Completed;
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"_clientCertificate:{ClientCertificate}");
+
             return ClientCertificate;
         }
 
         public IAsyncResult BeginGetClientCertificate(AsyncCallback requestCallback, object state)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this);
             if (ClientCertState == ListenerClientCertState.InProgress)
                 throw new InvalidOperationException(SR.Format(SR.net_listener_callinprogress, $"{nameof(GetClientCertificate)}()/{nameof(BeginGetClientCertificate)}()"));
             ClientCertState = ListenerClientCertState.InProgress;
@@ -261,16 +253,16 @@ namespace System.Net
             return BeginGetClientCertificateCore(requestCallback, state);
         }
 
-        public Task<X509Certificate2> GetClientCertificateAsync()
+        public Task<X509Certificate2?> GetClientCertificateAsync()
         {
             return Task.Factory.FromAsync(
-                (callback, state) => ((HttpListenerRequest)state).BeginGetClientCertificate(callback, state),
-                iar => ((HttpListenerRequest)iar.AsyncState).EndGetClientCertificate(iar),
+                (callback, state) => ((HttpListenerRequest)state!).BeginGetClientCertificate(callback, state),
+                iar => ((HttpListenerRequest)iar.AsyncState!).EndGetClientCertificate(iar),
                 this);
         }
 
         internal ListenerClientCertState ClientCertState { get; set; } = ListenerClientCertState.NotInitialized;
-        internal X509Certificate2 ClientCertificate { get; set; }
+        internal X509Certificate2? ClientCertificate { get; set; }
 
         public int ClientCertificateError
         {
@@ -290,7 +282,7 @@ namespace System.Net
             //
             // Get attribute off header value
             //
-            internal static string GetCharSetValueFromHeader(string headerValue)
+            internal static string? GetCharSetValueFromHeader(string headerValue)
             {
                 const string AttrName = "charset";
 
@@ -335,7 +327,7 @@ namespace System.Net
                     return null;
 
                 // parse the value
-                string attrValue = null;
+                string? attrValue = null;
 
                 int j;
 
@@ -366,7 +358,7 @@ namespace System.Net
                 return attrValue;
             }
 
-            internal static string[] ParseMultivalueHeader(string s)
+            internal static string[]? ParseMultivalueHeader(string s)
             {
                 if (s == null)
                     return null;
@@ -438,12 +430,12 @@ namespace System.Net
                     {
                         if (s[pos + 1] == 'u' && pos < count - 5)
                         {
-                            int h1 = HexToInt(s[pos + 2]);
-                            int h2 = HexToInt(s[pos + 3]);
-                            int h3 = HexToInt(s[pos + 4]);
-                            int h4 = HexToInt(s[pos + 5]);
+                            int h1 = HexConverter.FromChar(s[pos + 2]);
+                            int h2 = HexConverter.FromChar(s[pos + 3]);
+                            int h3 = HexConverter.FromChar(s[pos + 4]);
+                            int h4 = HexConverter.FromChar(s[pos + 5]);
 
-                            if (h1 >= 0 && h2 >= 0 && h3 >= 0 && h4 >= 0)
+                            if ((h1 | h2 | h3 | h4) != 0xFF)
                             {   // valid 4 hex chars
                                 ch = (char)((h1 << 12) | (h2 << 8) | (h3 << 4) | h4);
                                 pos += 5;
@@ -455,10 +447,10 @@ namespace System.Net
                         }
                         else
                         {
-                            int h1 = HexToInt(s[pos + 1]);
-                            int h2 = HexToInt(s[pos + 2]);
+                            int h1 = HexConverter.FromChar(s[pos + 1]);
+                            int h2 = HexConverter.FromChar(s[pos + 2]);
 
-                            if (h1 >= 0 && h2 >= 0)
+                            if ((h1 | h2) != 0xFF)
                             {     // valid 2 hex chars
                                 byte b = (byte)((h1 << 4) | h2);
                                 pos += 2;
@@ -479,14 +471,6 @@ namespace System.Net
                 return helper.GetString();
             }
 
-            private static int HexToInt(char h)
-            {
-                return (h >= '0' && h <= '9') ? h - '0' :
-                (h >= 'a' && h <= 'f') ? h - 'a' + 10 :
-                (h >= 'A' && h <= 'F') ? h - 'A' + 10 :
-                -1;
-            }
-
             private class UrlDecoder
             {
                 private readonly int _bufferSize;
@@ -497,7 +481,7 @@ namespace System.Net
 
                 // Accumulate bytes for decoding into characters in a special array
                 private int _numBytes;
-                private byte[] _byteBuffer;
+                private byte[]? _byteBuffer;
 
                 // Encoding to convert chars to bytes
                 private readonly Encoding _encoding;
@@ -506,7 +490,7 @@ namespace System.Net
                 {
                     if (_numBytes > 0)
                     {
-                        _numChars += _encoding.GetChars(_byteBuffer, 0, _numBytes, _charBuffer, _numChars);
+                        _numChars += _encoding.GetChars(_byteBuffer!, 0, _numBytes, _charBuffer, _numChars);
                         _numBytes = 0;
                     }
                 }
@@ -553,8 +537,8 @@ namespace System.Net
 
             internal static void FillFromString(NameValueCollection nvc, string s, bool urlencoded, Encoding encoding)
             {
-                int l = (s != null) ? s.Length : 0;
-                int i = (s.Length > 0 && s[0] == '?') ? 1 : 0;
+                int l = s.Length;
+                int i = (l > 0 && s[0] == '?') ? 1 : 0;
 
                 while (i < l)
                 {
@@ -582,8 +566,8 @@ namespace System.Net
 
                     // extract the name / value pair
 
-                    string name = null;
-                    string value = null;
+                    string? name = null;
+                    string? value = null;
 
                     if (ti >= 0)
                     {

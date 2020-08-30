@@ -4,6 +4,4 @@
   <PropertyGroup>
     <PrereleaseResolveNuGetPackages>true</PrereleaseResolveNuGetPackages>
   </PropertyGroup>
-
-  <Import Project="$(MSBuildThisFileDirectory)\runtime\referenceFromRuntime.targets" Condition="'$(TargetFramework)' == 'netcoreapp3.0' and '$(TargetFrameworkSuffix)' == 'Windows_NT'"/>
 </Project>

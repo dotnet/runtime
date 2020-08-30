@@ -58,7 +58,6 @@ Coding Guidelines
 - [Breaking Change Rules](coding-guidelines/breaking-change-rules.md)
 - [Project Guidelines](coding-guidelines/project-guidelines.md)
 - [Adding APIs Guidelines](coding-guidelines/adding-api-guidelines.md)
-- [Legal Native calls](coding-guidelines/pinvoke-checker.md)
 
 Project Docs
 =================

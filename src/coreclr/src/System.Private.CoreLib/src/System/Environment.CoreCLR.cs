@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -12,7 +11,11 @@ namespace System
 {
     public static partial class Environment
     {
-        public static int CurrentManagedThreadId => Thread.CurrentThread.ManagedThreadId;
+        public static extern int CurrentManagedThreadId
+        {
+            [MethodImpl(MethodImplOptions.InternalCall)]
+            get;
+        }
 
         // Terminates this process with the given exit code.
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
@@ -84,9 +87,7 @@ namespace System
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern int GetProcessorCount();
 
-        // If you change this method's signature then you must change the code that calls it
-        // in excep.cpp and probably you will have to visit mscorlib.h to add the new signature
-        // as well as metasig.h to create the new signature type
+        // Used by VM
         internal static string? GetResourceStringLocal(string key) => SR.GetResourceString(key);
 
         public static string StackTrace
@@ -110,20 +111,5 @@ namespace System
             [MethodImpl(MethodImplOptions.InternalCall)]
             get;
         }
-
-#if FEATURE_COMINTEROP
-        // Separate type so a .cctor is not created for Enviroment which then would be triggered during startup
-        private static class WinRT
-        {
-            // Cache the value in readonly static that can be optimized out by the JIT
-            public static readonly bool IsSupported = WinRTSupported() != Interop.BOOL.FALSE;
-        }
-
-        // Does the current version of Windows have Windows Runtime suppport?
-        internal static bool IsWinRTSupported => WinRT.IsSupported;
-
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern Interop.BOOL WinRTSupported();
-#endif // FEATURE_COMINTEROP
     }
 }

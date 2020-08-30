@@ -48,15 +48,17 @@ check_prereqs()
 {
     echo "Checking prerequisites..."
 
-    # Check presence of CMake on the path
-    command -v cmake 2>/dev/null || { echo >&2 "Please install cmake before running this script"; exit 1; }
+    if [[ "$__HostOS" == "OSX" ]]; then
+        # Check presence of pkg-config on the path
+        command -v pkg-config 2>/dev/null || { echo >&2 "Please install pkg-config before running this script, see https://github.com/dotnet/runtime/blob/master/docs/workflow/requirements/macos-requirements.md"; exit 1; }
 
-    function version { echo "$@" | awk -F. '{ printf("%d%02d%02d\n", $1,$2,$3); }'; }
-
-    local cmake_version="$(cmake --version | awk '/^cmake.* version [0-9]+\.[0-9]+\.[0-9]+$/ {print $3}')"
-
-    if [[ "$(version "$cmake_version")" -lt "$(version 3.14.2)" ]]; then
-        echo "Please install CMake 3.14.2 or newer from http://www.cmake.org/download/ or https://apt.kitware.com and ensure it is on your path."; exit 1;
+        if ! pkg-config openssl ; then
+            # We export the proper PKG_CONFIG_PATH where openssl was installed by Homebrew
+            # It's important to _export_ it since build-commons.sh is sourced by other scripts such as build-native.sh
+            export PKG_CONFIG_PATH=/usr/local/opt/openssl/lib/pkgconfig
+            # We try again with the PKG_CONFIG_PATH in place, if pkg-config still can't find OpenSSL, exit with an error, cmake won't find OpenSSL either
+            pkg-config openssl || { echo >&2 "Please install openssl before running this script, see https://github.com/dotnet/runtime/blob/master/docs/workflow/requirements/macos-requirements.md"; exit 1; }
+        fi
     fi
 
     if [[ "$__UseNinja" == 1 ]]; then
@@ -156,6 +158,17 @@ EOF
         return
     fi
 
+    SAVED_CFLAGS="${CFLAGS}"
+    SAVED_CXXFLAGS="${CXXFLAGS}"
+    SAVED_LDFLAGS="${LDFLAGS}"
+
+    # Let users provide additional compiler/linker flags via EXTRA_CFLAGS/EXTRA_CXXFLAGS/EXTRA_LDFLAGS.
+    # If users directly override CFLAG/CXXFLAGS/LDFLAGS, that may lead to some configure tests working incorrectly.
+    # See https://github.com/dotnet/runtime/issues/35727 for more information.
+    export CFLAGS="${CFLAGS} ${EXTRA_CFLAGS}"
+    export CXXFLAGS="${CXXFLAGS} ${EXTRA_CXXFLAGS}"
+    export LDFLAGS="${LDFLAGS} ${EXTRA_LDFLAGS}"
+
     if [[ "$__StaticAnalyzer" == 1 ]]; then
         pushd "$intermediatesDir"
 
@@ -170,9 +183,13 @@ EOF
             cmake_command="emcmake $cmake_command"
         fi
 
-        echo "Executing $cmake_command --build \"$intermediatesDir\" --target install -j $__NumProc"
-        $cmake_command --build "$intermediatesDir" --target install -j "$__NumProc"
+        echo "Executing $cmake_command --build \"$intermediatesDir\" --target install -- -j $__NumProc"
+        $cmake_command --build "$intermediatesDir" --target install -- -j "$__NumProc"
     fi
+
+    CFLAGS="${SAVED_CFLAGS}"
+    CXXFLAGS="${SAVED_CXXFLAGS}"
+    LDFLAGS="${SAVED_LDFLAGS}"
 
     local exit_code="$?"
     if [[ "$exit_code" != 0 ]]; then
@@ -226,6 +243,20 @@ __HostOS=$os
 __BuildOS=$os
 
 __msbuildonunsupportedplatform=0
+
+# Get the number of processors available to the scheduler
+# Other techniques such as `nproc` only get the number of
+# processors available to a single process.
+platform="$(uname)"
+if [[ "$platform" == "FreeBSD" ]]; then
+  __NumProc=$(sysctl hw.ncpu | awk '{ print $2+1 }')
+elif [[ "$platform" == "NetBSD" || "$platform" == "SunOS" ]]; then
+  __NumProc=$(($(getconf NPROCESSORS_ONLN)+1))
+elif [[ "$platform" == "Darwin" ]]; then
+  __NumProc=$(($(getconf _NPROCESSORS_ONLN)+1))
+else
+  __NumProc=$(nproc --all)
+fi
 
 while :; do
     if [[ "$#" -le 0 ]]; then
@@ -392,20 +423,6 @@ while :; do
 
     shift
 done
-
-# Get the number of processors available to the scheduler
-# Other techniques such as `nproc` only get the number of
-# processors available to a single process.
-platform=$(uname)
-if [[ "$platform" == "FreeBSD" ]]; then
-  __NumProc=$(sysctl hw.ncpu | awk '{ print $2+1 }')
-elif [[ "$platform" == "NetBSD" || "$platform" == "SunOS" ]]; then
-  __NumProc=$(($(getconf NPROCESSORS_ONLN)+1))
-elif [[ "$platform" == "Darwin" ]]; then
-  __NumProc=$(($(getconf _NPROCESSORS_ONLN)+1))
-else
-  __NumProc=$(nproc --all)
-fi
 
 __CommonMSBuildArgs="/p:TargetArchitecture=$__BuildArch /p:Configuration=$__BuildType /p:TargetOS=$__TargetOS /nodeReuse:false $__OfficialBuildIdArg $__SignTypeArg $__SkipRestoreArg"
 

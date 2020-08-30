@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Diagnostics;
@@ -335,7 +334,7 @@ namespace System.Text.RegularExpressions
         }
 
 #if DEBUG
-        [ExcludeFromCodeCoverage]
+        [ExcludeFromCodeCoverage(Justification = "Debug only")]
         internal bool IsDebug => _regex != null && _regex.IsDebug;
 
         internal virtual void Dump()
@@ -377,7 +376,7 @@ namespace System.Text.RegularExpressions
         public override GroupCollection Groups => _groupcoll ??= new GroupCollection(this, _caps);
 
 #if DEBUG
-        [ExcludeFromCodeCoverage]
+        [ExcludeFromCodeCoverage(Justification = "Debug only")]
         internal override void Dump()
         {
             if (_caps != null)

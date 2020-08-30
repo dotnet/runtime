@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -328,17 +327,6 @@ using Address = System.UInt64;
 //                source.UnregisterEventTemplate(value, 30, ProviderGuid);
 //            }
 //        }
-//        public event Action<EmptyTraceData> LogTransferNoOpcode
-//        {
-//            add
-//            {
-//                source.RegisterEventTemplate(LogTransferNoOpcodeTemplate(value));
-//            }
-//            remove
-//            {
-//                source.UnregisterEventTemplate(value, 28, ProviderGuid);
-//            }
-//        }
 //        public event Action<MessageArgs> Message
 //        {
 //            add
@@ -535,10 +523,6 @@ using Address = System.UInt64;
 //        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
 //            return new EventWithWeirdArgsArgs(action, 30, 65504, "EventWithWeirdArgs", Guid.Empty, 0, "", ProviderGuid, ProviderName);
 //        }
-//        private static EmptyTraceData LogTransferNoOpcodeTemplate(Action<EmptyTraceData> action)
-//        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-//            return new EmptyTraceData(action, 28, 65506, "LogTransferNoOpcode", Guid.Empty, 0, "", ProviderGuid, ProviderName);
-//        }
 //        private static MessageArgs MessageTemplate(Action<MessageArgs> action)
 //        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
 //            return new MessageArgs(action, 14, 65520, "Message", Guid.Empty, 0, "", ProviderGuid, ProviderName);
@@ -577,7 +561,7 @@ using Address = System.UInt64;
 //        {
 //            if (s_templates == null)
 //            {
-//                var templates = new TraceEvent[35];
+//                var templates = new TraceEvent[34];
 //                templates[0] = Event0Template(null);
 //                templates[1] = EventITemplate(null);
 //                templates[2] = EventIITemplate(null);
@@ -605,14 +589,13 @@ using Address = System.UInt64;
 //                templates[24] = EventWithManyTypeArgsTemplate(null);
 //                templates[25] = EventWith7StringsTemplate(null);
 //                templates[26] = EventWith9StringsTemplate(null);
-//                templates[27] = LogTransferNoOpcodeTemplate(null);
-//                templates[28] = WorkManyArgsSendTemplate(null);
-//                templates[29] = EventWithWeirdArgsTemplate(null);
-//                templates[30] = WorkWeirdArgsSendTemplate(null);
-//                templates[31] = EventWithEscapingMessageTemplate(null);
-//                templates[32] = EventWithMoreEscapingMessageTemplate(null);
-//                templates[33] = EventWithByteArrArgTemplate(null);
-//                templates[34] = EventWithBytePtrArgTemplate(null);
+//                templates[27] = WorkManyArgsSendTemplate(null);
+//                templates[28] = EventWithWeirdArgsTemplate(null);
+//                templates[29] = WorkWeirdArgsSendTemplate(null);
+//                templates[30] = EventWithEscapingMessageTemplate(null);
+//                templates[31] = EventWithMoreEscapingMessageTemplate(null);
+//                templates[32] = EventWithByteArrArgTemplate(null);
+//                templates[33] = EventWithBytePtrArgTemplate(null);
 //                s_templates = templates;
 //            }
 //            foreach (var template in s_templates)

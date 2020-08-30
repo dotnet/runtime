@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
 
@@ -21,8 +20,8 @@ namespace System.Net.NetworkInformation
         private static readonly object s_socketInitializationLock = new object();
         private static bool s_socketInitialized;
 
-        private int _sendSize = 0;  // Needed to determine what the reply size is for ipv6 in callback.
-        private bool _ipv6 = false;
+        private int _sendSize;  // Needed to determine what the reply size is for ipv6 in callback.
+        private bool _ipv6;
         private ManualResetEvent? _pingEvent;
         private RegisteredWaitHandle? _registeredWait;
         private SafeLocalAllocHandle? _requestBuffer;

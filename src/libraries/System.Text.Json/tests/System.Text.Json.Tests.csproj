@@ -1,14 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);net461</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- Suppress warning 'JsonSerializerOptions.IgnoreNullValues' is obsolete. -->
+    <NoWarn>CS0618</NoWarn>
   </PropertyGroup>
+  <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
-    <DefineConstants Condition="!$(TargetFramework.Contains('net4'))">$(DefineConstants);BUILDING_INBOX_LIBRARY</DefineConstants> 
+    <DefineConstants Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">$(DefineConstants);BUILDING_INBOX_LIBRARY</DefineConstants> 
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(CommonTestPath)System\IO\WrappedMemoryStream.cs"
-             Link="CommonTest\System\IO\WrappedMemoryStream.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\WrappedMemoryStream.cs" Link="CommonTest\System\IO\WrappedMemoryStream.cs" />
     <Compile Include="BitStackTests.cs" />
     <Compile Include="BufferFactory.cs" />
     <Compile Include="BufferSegment.cs" />
@@ -41,9 +43,11 @@
     <Compile Include="Serialization\CollectionTests\CollectionTests.Concurrent.cs" />
     <Compile Include="Serialization\CollectionTests\CollectionTests.Dictionary.cs" />
     <Compile Include="Serialization\CollectionTests\CollectionTests.Dictionary.KeyPolicy.cs" />
+    <Compile Include="Serialization\CollectionTests\CollectionTests.Dictionary.NonStringKey.cs" />
     <Compile Include="Serialization\CollectionTests\CollectionTests.Generic.Read.cs" />
     <Compile Include="Serialization\CollectionTests\CollectionTests.Generic.Write.cs" />
     <Compile Include="Serialization\CollectionTests\CollectionTests.Immutable.Read.cs" />
+    <Compile Include="Serialization\CollectionTests\CollectionTests.KeyValuePair.cs" />
     <Compile Include="Serialization\CollectionTests\CollectionTests.NonGeneric.Read.cs" />
     <Compile Include="Serialization\CollectionTests\CollectionTests.NonGeneric.Write.cs" />
     <Compile Include="Serialization\CollectionTests\CollectionTests.ObjectModel.Read.cs" />
@@ -69,7 +73,9 @@
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.DictionaryKeyValueConverter.cs" />
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.Enum.cs" />
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.Exceptions.cs" />
+    <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.HandleNull.cs" />
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.Int32.cs" />
+    <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.InvalidCast.cs" />
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.List.cs" />
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.NullValueType.cs" />
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.NullableTypes.cs" />
@@ -77,6 +83,7 @@
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.Point.cs" />
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.Polymorphic.cs" />
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.ReadAhead.cs" />
+    <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.ValueTypedMember.cs" />
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.cs" />
     <Compile Include="Serialization\CyclicTests.cs" />
     <Compile Include="Serialization\DeserializationWrapper.cs" />
@@ -84,24 +91,27 @@
     <Compile Include="Serialization\EnumTests.cs" />
     <Compile Include="Serialization\ExceptionTests.cs" />
     <Compile Include="Serialization\ExtensionDataTests.cs" />
+    <Compile Include="Serialization\InvalidJsonTests.cs" />
     <Compile Include="Serialization\InvalidTypeTests.cs" />
     <Compile Include="Serialization\JsonDocumentTests.cs" />
     <Compile Include="Serialization\JsonElementTests.cs" />
     <Compile Include="Serialization\Null.ReadTests.cs" />
     <Compile Include="Serialization\Null.WriteTests.cs" />
     <Compile Include="Serialization\NullableTests.cs" />
+    <Compile Include="Serialization\NumberHandlingTests.cs" />
     <Compile Include="Serialization\Object.ReadTests.cs" />
     <Compile Include="Serialization\Object.WriteTests.cs" />
     <Compile Include="Serialization\OptionsTests.cs" />
     <Compile Include="Serialization\PolymorphicTests.cs" />
     <Compile Include="Serialization\PropertyNameTests.cs" />
+    <Compile Include="Serialization\PropertyVisiblityTests.InitOnly.cs" />
     <Compile Include="Serialization\PropertyVisibilityTests.NonPublicAccessors.cs" />
     <Compile Include="Serialization\PropertyVisibilityTests.cs" />
     <Compile Include="Serialization\ReadScenarioTests.cs" />
     <Compile Include="Serialization\ReadValueTests.cs" />
-    <Compile Include="Serialization\ReferenceHandlingTests.cs" />
-    <Compile Include="Serialization\ReferenceHandlingTests.Deserialize.cs" />
-    <Compile Include="Serialization\ReferenceHandlingTests.Serialize.cs" />
+    <Compile Include="Serialization\ReferenceHandlerTests.cs" />
+    <Compile Include="Serialization\ReferenceHandlerTests.Deserialize.cs" />
+    <Compile Include="Serialization\ReferenceHandlerTests.Serialize.cs" />
     <Compile Include="Serialization\SampleTestData.OrderPayload.cs" />
     <Compile Include="Serialization\SerializationWrapper.cs" />
     <Compile Include="Serialization\SpanTests.cs" />
@@ -116,11 +126,14 @@
     <Compile Include="Serialization\TestClasses\TestClasses.NonGenericCollections.cs" />
     <Compile Include="Serialization\TestClasses\TestClasses.Polymorphic.cs" />
     <Compile Include="Serialization\TestClasses\TestClasses.SimpleTestClass.cs" />
+    <Compile Include="Serialization\TestClasses\TestClasses.SimpleTestClassWithFields.cs" />
     <Compile Include="Serialization\TestClasses\TestClasses.SimpleTestClassWithNullables.cs" />
     <Compile Include="Serialization\TestClasses\TestClasses.SimpleTestClassWithObject.cs" />
     <Compile Include="Serialization\TestClasses\TestClasses.SimpleTestClassWithObjectArrays.cs" />
     <Compile Include="Serialization\TestClasses\TestClasses.SimpleTestClassWithSimpleObject.cs" />
     <Compile Include="Serialization\TestClasses\TestClasses.SimpleTestStruct.cs" />
+    <Compile Include="Serialization\TestClasses\TestClasses.SimpleTestStructWithFields.cs" />
+    <Compile Include="Serialization\TestClasses\TestClasses.ValueTypedMember.cs" />
     <Compile Include="Serialization\TestData.cs" />
     <Compile Include="Serialization\Value.ReadTests.cs" />
     <Compile Include="Serialization\Value.WriteTests.cs" />
@@ -135,14 +148,20 @@
     <Compile Include="Utf8JsonWriterTests.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\src\System\Text\Json\BitStack.cs"
-             Link="BitStack.cs" />
+    <Compile Include="..\src\System\Text\Json\BitStack.cs" Link="BitStack.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">
-    <Compile Include="$(CommonPath)System\Buffers\ArrayBufferWriter.cs"
-             Link="CommonTest\System\Buffers\ArrayBufferWriter.cs" />
+  <ItemGroup Condition="'$(TargetFramework)' != '$(NetCoreAppCurrent)'">
+    <Compile Include="Serialization\IsExternalInit.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
+    <Compile Include="$(CommonPath)System\Buffers\ArrayBufferWriter.cs" Link="CommonTest\System\Buffers\ArrayBufferWriter.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.IO.Pipelines\src\System.IO.Pipelines.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.Immutable\src\System.Collections.Immutable.csproj" />
+    <ProjectReference Include="..\src\System.Text.Json.csproj" />
   </ItemGroup>
 </Project>

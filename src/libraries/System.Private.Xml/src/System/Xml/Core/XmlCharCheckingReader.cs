@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Xml;
@@ -42,7 +41,7 @@ namespace System.Xml
         private XmlNodeType _lastNodeType;
         private XmlCharType _xmlCharType;
 
-        private ReadContentAsBinaryHelper _readBinaryHelper;
+        private ReadContentAsBinaryHelper? _readBinaryHelper;
 
         //
         // Constructor
@@ -75,7 +74,7 @@ namespace System.Xml
         {
             get
             {
-                XmlReaderSettings settings = reader.Settings;
+                XmlReaderSettings? settings = reader.Settings;
                 if (settings == null)
                 {
                     settings = new XmlReaderSettings();
@@ -119,7 +118,7 @@ namespace System.Xml
             return base.reader.MoveToAttribute(name);
         }
 
-        public override bool MoveToAttribute(string name, string ns)
+        public override bool MoveToAttribute(string name, string? ns)
         {
             if (_state == State.InReadBinary)
             {
@@ -310,7 +309,7 @@ namespace System.Xml
                             ValidateQName(base.reader.Name);
                             CheckCharacters(base.reader.Value);
 
-                            string str;
+                            string? str;
                             str = base.reader.GetAttribute("SYSTEM");
                             if (str != null)
                             {
@@ -611,13 +610,13 @@ namespace System.Xml
         private void Throw(string res, string arg)
         {
             _state = State.Error;
-            throw new XmlException(res, arg, (IXmlLineInfo)null);
+            throw new XmlException(res, arg, (IXmlLineInfo?)null);
         }
 
         private void Throw(string res, string[] args)
         {
             _state = State.Error;
-            throw new XmlException(res, args, (IXmlLineInfo)null);
+            throw new XmlException(res, args, (IXmlLineInfo?)null);
         }
 
         private void CheckWhitespace(string value)
@@ -688,12 +687,12 @@ namespace System.Xml
             return readerAsNSResolver.GetNamespacesInScope(scope);
         }
 
-        string IXmlNamespaceResolver.LookupNamespace(string prefix)
+        string? IXmlNamespaceResolver.LookupNamespace(string prefix)
         {
             return readerAsNSResolver.LookupNamespace(prefix);
         }
 
-        string IXmlNamespaceResolver.LookupPrefix(string namespaceName)
+        string? IXmlNamespaceResolver.LookupPrefix(string namespaceName)
         {
             return readerAsNSResolver.LookupPrefix(namespaceName);
         }

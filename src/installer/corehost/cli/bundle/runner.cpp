@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include <memory>
 #include "extractor.h"
@@ -79,8 +78,7 @@ bool runner_t::probe(const pal::string_t& relative_path, int64_t* offset, int64_
     return true;
 }
 
-
-bool runner_t::locate(const pal::string_t& relative_path, pal::string_t& full_path) const
+bool runner_t::locate(const pal::string_t& relative_path, pal::string_t& full_path, bool& extracted_to_disk) const
 {
     const bundle::file_entry_t* entry = probe(relative_path);
 
@@ -90,11 +88,9 @@ bool runner_t::locate(const pal::string_t& relative_path, pal::string_t& full_pa
         return false;
     }
 
-    // Currently, all files except deps.json and runtimeconfig.json are extracted to disk.
-    // The json files are not queried by the host using this method.
-    assert(entry->needs_extraction());
+    extracted_to_disk = entry->needs_extraction();
+    full_path.assign(extracted_to_disk ? extraction_path() : base_path());
 
-    full_path.assign(extraction_path());
     append_path(&full_path, relative_path.c_str());
 
     return true;

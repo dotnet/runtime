@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*
  * Generational GC handle manager.  Main Entrypoint Layer.
@@ -409,10 +408,10 @@ void HndDestroyHandleOfUnknownType(HHANDLETABLE hTable, OBJECTHANDLE handle)
     _ASSERTE(handle);
 
 #ifdef FEATURE_COMINTEROP
-    // If we're being asked to destroy a WinRT weak handle, that will cause a leak
+    // If we're being asked to destroy a native COM weak handle, that will cause a leak
     // of the IWeakReference* that it holds in its extra data. Instead of using this
-    // API use DestroyWinRTWeakHandle instead.
-    _ASSERTE(HandleFetchType(handle) != HNDTYPE_WEAK_WINRT);
+    // API use DestroyNativeComWeakHandle instead.
+    _ASSERTE(HandleFetchType(handle) != HNDTYPE_WEAK_NATIVE_COM);
 #endif // FEATURE_COMINTEROP
 
     // fetch the type and then free normally

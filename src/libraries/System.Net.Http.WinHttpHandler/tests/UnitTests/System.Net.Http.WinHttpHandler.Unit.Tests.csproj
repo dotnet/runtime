@@ -8,7 +8,7 @@
     <Nullable>annotations</Nullable>
   </PropertyGroup>
   <ItemGroup>
-    <DefaultReferenceExclusions Include="System.Net.Http.WinHttpHandler" />
+    <DefaultReferenceExclusion Include="System.Net.Http.WinHttpHandler" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
     <Compile Include="$(CommonTestPath)System\Net\SslProtocolSupport.cs"
@@ -17,8 +17,6 @@
              Link="Common\Interop\Windows\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertEnumCertificatesInStore.cs"
              Link="Common\Interop\Windows\Crypt32\Interop.CertEnumCertificatesInStore.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.certificates_types.cs"
-             Link="Common\Interop\Windows\Crypt32\Interop.certificates_types.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.HRESULT_FROM_WIN32.cs"
              Link="Common\Interop\Windows\Interop.HRESULT_FROM_WIN32.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\SChannel\UnmanagedCertificateContext.IntPtr.cs"
@@ -47,8 +45,6 @@
              Link="Common\System\Net\SecurityProtocol.cs" />
     <Compile Include="$(CommonPath)System\Net\Http\HttpHandlerDefaults.cs"
              Link="Common\System\Net\Http\HttpHandlerDefaults.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\NoWriteNoSeekStreamContent.cs"
-             Link="Common\System\Net\Http\NoWriteNoSeekStreamContent.cs" />
     <Compile Include="$(CommonPath)\System\Net\Http\WinInetProxyHelper.cs"
              Link="Common\System\Net\Http\WinInetProxyHelper.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\CertificateHelper.cs"
@@ -63,10 +59,10 @@
              Link="Common\System\Threading\Tasks\RendezvousAwaitable.cs" />
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
              Link="Common\System\Threading\Tasks\TaskToApm.cs" />
+    <Compile Include="..\..\src\System\Net\Http\NoWriteNoSeekStreamContent.cs"
+             Link="ProductionCode\NoWriteNoSeekStreamContent.cs" />
     <Compile Include="..\..\src\System\Net\Http\WinHttpAuthHelper.cs"
              Link="ProductionCode\WinHttpAuthHelper.cs" />
-    <Compile Include="..\..\src\System\Net\Http\WinHttpCertificateHelper.cs"
-             Link="ProductionCode\WinHttpCertificateHelper.cs" />
     <Compile Include="..\..\src\System\Net\Http\WinHttpChannelBinding.cs"
              Link="ProductionCode\WinHttpChannelBinding.cs" />
     <Compile Include="..\..\src\System\Net\Http\WinHttpCookieContainerAdapter.cs"

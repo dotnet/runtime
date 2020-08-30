@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #define _WITH_GETLINE
 #include <cstdint>
@@ -647,7 +646,7 @@ bool GCToOSInterface::VirtualRelease(void* address, size_t size)
 //  size      - size of the virtual memory range
 // Return:
 //  Starting virtual address of the committed range
-void* GCToOSInterface::VirtualReserveAndCommitLargePages(size_t size)
+void* GCToOSInterface::VirtualReserveAndCommitLargePages(size_t size, uint16_t node)
 {
 #if HAVE_MAP_HUGETLB
     uint32_t largePagesFlag = MAP_HUGETLB;
@@ -658,7 +657,7 @@ void* GCToOSInterface::VirtualReserveAndCommitLargePages(size_t size)
 #endif
 
     void* pRetVal = VirtualReserveInner(size, OS_PAGE_SIZE, 0, largePagesFlag);
-    if (VirtualCommit(pRetVal, size, NUMA_NODE_UNDEFINED))
+    if (VirtualCommit(pRetVal, size, node))
     {
         return pRetVal;
     }
@@ -772,6 +771,52 @@ bool GCToOSInterface::GetWriteWatch(bool resetState, void* address, size_t size,
     return false;
 }
 
+bool ReadMemoryValueFromFile(const char* filename, uint64_t* val)
+{
+    bool result = false;
+    char* line = nullptr;
+    size_t lineLen = 0;
+    char* endptr = nullptr;
+    uint64_t num = 0, l, multiplier;
+    FILE* file = nullptr;
+
+    if (val == nullptr)
+        goto done;
+
+    file = fopen(filename, "r");
+    if (file == nullptr)
+        goto done;
+
+    if (getline(&line, &lineLen, file) == -1)
+        goto done;
+
+    errno = 0;
+    num = strtoull(line, &endptr, 0);
+    if (line == endptr || errno != 0)
+        goto done;
+
+    multiplier = 1;
+    switch (*endptr)
+    {
+    case 'g':
+    case 'G': multiplier = 1024;
+    case 'm':
+    case 'M': multiplier = multiplier * 1024;
+    case 'k':
+    case 'K': multiplier = multiplier * 1024;
+    }
+
+    *val = num * multiplier;
+    result = true;
+    if (*val / multiplier != num)
+        result = false;
+done:
+    if (file)
+        fclose(file);
+    free(line);
+    return result;
+}
+
 static size_t GetLogicalProcessorCacheSizeFromOS()
 {
     size_t cacheSize = 0;
@@ -787,6 +832,56 @@ static size_t GetLogicalProcessorCacheSizeFromOS()
 #endif
 #ifdef _SC_LEVEL4_CACHE_SIZE
     cacheSize = std::max(cacheSize, ( size_t) sysconf(_SC_LEVEL4_CACHE_SIZE));
+#endif
+
+#if defined(TARGET_LINUX) && !defined(HOST_ARM)
+    if (cacheSize == 0)
+    {
+        //
+        // Fallback to retrieve cachesize via /sys/.. if sysconf was not available 
+        // for the platform. Currently musl and arm64 should be only cases to use  
+        // this method to determine cache size.
+        // 
+        size_t size;
+
+        if (ReadMemoryValueFromFile("/sys/devices/system/cpu/cpu0/cache/index0/size", &size))
+            cacheSize = std::max(cacheSize, size);
+        if (ReadMemoryValueFromFile("/sys/devices/system/cpu/cpu0/cache/index1/size", &size))
+            cacheSize = std::max(cacheSize, size);
+        if (ReadMemoryValueFromFile("/sys/devices/system/cpu/cpu0/cache/index2/size", &size))
+            cacheSize = std::max(cacheSize, size);
+        if (ReadMemoryValueFromFile("/sys/devices/system/cpu/cpu0/cache/index3/size", &size))
+            cacheSize = std::max(cacheSize, size);
+        if (ReadMemoryValueFromFile("/sys/devices/system/cpu/cpu0/cache/index4/size", &size))
+            cacheSize = std::max(cacheSize, size);
+    }
+#endif
+
+#if defined(HOST_ARM64)
+    if (cacheSize == 0)
+    {
+        // It is currently expected to be missing cache size info
+        //
+        // _SC_LEVEL*_*CACHE_SIZE is not yet present.  Work is in progress to enable this for arm64
+        //
+        // /sys/devices/system/cpu/cpu*/cache/index*/ is also not yet present in most systems.
+        // Arm64 patch is in Linux kernel tip.
+        //
+        // midr_el1 is available in "/sys/devices/system/cpu/cpu0/regs/identification/midr_el1",
+        // but without an exhaustive list of ARM64 processors any decode of midr_el1
+        // Would likely be incomplete
+
+        // Published information on ARM64 architectures is limited.
+        // If we use recent high core count chips as a guide for state of the art, we find
+        // total L3 cache to be 1-2MB/core.  As always, there are exceptions.
+
+        // Estimate cache size based on CPU count
+        // Assume lower core count are lighter weight parts which are likely to have smaller caches
+        // Assume L3$/CPU grows linearly from 256K to 1.5M/CPU as logicalCPUs grows from 2 to 12 CPUs
+        DWORD logicalCPUs = g_totalCpuCount;
+
+        cacheSize = logicalCPUs * std::min(1536, std::max(256, (int)logicalCPUs * 128)) * 1024;
+    }
 #endif
 
 #if HAVE_SYSCTLBYNAME
@@ -897,19 +992,32 @@ size_t GCToOSInterface::GetCacheSizePerLogicalCpu(bool trueSize)
 //  true if setting the affinity was successful, false otherwise.
 bool GCToOSInterface::SetThreadAffinity(uint16_t procNo)
 {
-#if HAVE_PTHREAD_GETAFFINITY_NP
+#if HAVE_SCHED_SETAFFINITY || HAVE_PTHREAD_SETAFFINITY_NP
     cpu_set_t cpuSet;
     CPU_ZERO(&cpuSet);
     CPU_SET((int)procNo, &cpuSet);
 
+    // Snap's default strict confinement does not allow sched_setaffinity(<nonzeroPid>, ...) without manually connecting the
+    // process-control plug. sched_setaffinity(<currentThreadPid>, ...) is also currently not allowed, only
+    // sched_setaffinity(0, ...). pthread_setaffinity_np(pthread_self(), ...) seems to call
+    // sched_setaffinity(<currentThreadPid>, ...) in at least one implementation, and does not work. To work around those
+    // issues, use sched_setaffinity(0, ...) if available and only otherwise fall back to pthread_setaffinity_np(). See the
+    // following for more information:
+    // - https://github.com/dotnet/runtime/pull/38795
+    // - https://github.com/dotnet/runtime/issues/1634
+    // - https://forum.snapcraft.io/t/requesting-autoconnect-for-interfaces-in-pigmeat-process-control-home/17987/13
+#if HAVE_SCHED_SETAFFINITY
+    int st = sched_setaffinity(0, sizeof(cpu_set_t), &cpuSet);
+#else
     int st = pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuSet);
+#endif
 
     return (st == 0);
 
-#else  // HAVE_PTHREAD_GETAFFINITY_NP
+#else  // !(HAVE_SCHED_SETAFFINITY || HAVE_PTHREAD_SETAFFINITY_NP)
     // There is no API to manage thread affinity, so let's ignore the request
     return false;
-#endif // HAVE_PTHREAD_GETAFFINITY_NP
+#endif // HAVE_SCHED_SETAFFINITY || HAVE_PTHREAD_SETAFFINITY_NP
 }
 
 // Boosts the calling thread's thread priority to a level higher than the default
@@ -957,7 +1065,7 @@ uint32_t GCToOSInterface::GetCurrentProcessCpuCount()
 
 // Return the size of the user-mode portion of the virtual address space of this process.
 // Return:
-//  non zero if it has succeeded, 0 if it has failed
+//  non zero if it has succeeded, (size_t)-1 if not available
 size_t GCToOSInterface::GetVirtualMemoryLimit()
 {
 #ifdef HOST_64BIT
@@ -1143,11 +1251,13 @@ uint64_t GetAvailablePageFile()
 
 // Get memory status
 // Parameters:
+//  restricted_limit - The amount of physical memory in bytes that the current process is being restricted to. If non-zero, it used to calculate
+//      memory_load and available_physical. If zero, memory_load and available_physical is calculate based on all available memory.
 //  memory_load - A number between 0 and 100 that specifies the approximate percentage of physical memory
 //      that is in use (0 indicates no memory use and 100 indicates full memory use).
 //  available_physical - The amount of physical memory currently available, in bytes.
 //  available_page_file - The maximum amount of memory the current process can commit, in bytes.
-void GCToOSInterface::GetMemoryStatus(uint32_t* memory_load, uint64_t* available_physical, uint64_t* available_page_file)
+void GCToOSInterface::GetMemoryStatus(uint64_t restricted_limit, uint32_t* memory_load, uint64_t* available_physical, uint64_t* available_page_file)
 {
     uint64_t available = 0;
     uint32_t load = 0;
@@ -1155,16 +1265,14 @@ void GCToOSInterface::GetMemoryStatus(uint32_t* memory_load, uint64_t* available
     if (memory_load != nullptr || available_physical != nullptr)
     {
         size_t used;
-        bool isRestricted;
-        uint64_t total = GetPhysicalMemoryLimit(&isRestricted);
-        if (isRestricted)
+        if (restricted_limit != 0)
         {
             // Get the physical memory in use - from it, we can get the physical memory available.
             // We do this only when we have the total physical memory available.
             if (GetPhysicalMemoryUsed(&used))
             {
-                available = total > used ? total-used : 0;
-                load = (uint32_t)(((float)used * 100) / (float)total);
+                available = restricted_limit > used ? restricted_limit - used : 0;
+                load = (uint32_t)(((float)used * 100) / (float)restricted_limit);
             }
         }
         else
@@ -1173,7 +1281,9 @@ void GCToOSInterface::GetMemoryStatus(uint32_t* memory_load, uint64_t* available
 
             if (memory_load != NULL)
             {
-                uint32_t load = 0;
+                bool isRestricted;
+                uint64_t total = GetPhysicalMemoryLimit(&isRestricted);
+
                 if (total > available)
                 {
                     used = total - available;
@@ -1191,7 +1301,6 @@ void GCToOSInterface::GetMemoryStatus(uint32_t* memory_load, uint64_t* available
 
     if (available_page_file != nullptr)
         *available_page_file = GetAvailablePageFile();
-
 }
 
 // Get a high precision performance counter

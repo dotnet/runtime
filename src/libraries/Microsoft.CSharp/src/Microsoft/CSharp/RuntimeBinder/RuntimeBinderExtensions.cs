@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -262,7 +261,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                         modifiers: null);
                     if (apiMethod != null)
                     {
-                        Func<MemberInfo, MemberInfo, bool> apiDelegate = (Func<MemberInfo, MemberInfo, bool>)(apiMethod.CreateDelegate(typeof(Func<MemberInfo, MemberInfo, bool>)));
+                        Func<MemberInfo, MemberInfo, bool> apiDelegate = apiMethod.CreateDelegate<Func<MemberInfo, MemberInfo, bool>>();
                         try
                         {
                             bool result = apiDelegate(m1, m2);

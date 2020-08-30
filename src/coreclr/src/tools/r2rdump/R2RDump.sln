@@ -5,7 +5,7 @@ VisualStudioVersion = 16.0.29703.146
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "R2RDump", "R2RDump.csproj", "{00CCF6D0-5905-428E-A2A2-2A6D09D8C257}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ILCompiler.Reflection.ReadyToRun", "..\crossgen2\ILCompiler.Reflection.ReadyToRun\ILCompiler.Reflection.ReadyToRun.csproj", "{E2A577E5-7AF3-49B3-BA78-7071B75ED64B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ILCompiler.Reflection.ReadyToRun", "..\aot\ILCompiler.Reflection.ReadyToRun\ILCompiler.Reflection.ReadyToRun.csproj", "{E2A577E5-7AF3-49B3-BA78-7071B75ED64B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

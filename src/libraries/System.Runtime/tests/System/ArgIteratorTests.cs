@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Globalization;
 using System.Reflection;
@@ -10,6 +9,7 @@ namespace System.Tests
 {
     public static class ArgIteratorTests
     {
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/39343", TestPlatforms.Browser)]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsArgIteratorSupported))]
         public static void ArgIterator_GetRemainingCount_GetNextArg()
         {

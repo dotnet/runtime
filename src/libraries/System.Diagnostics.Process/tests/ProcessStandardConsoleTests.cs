@@ -1,10 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
-using System.Runtime.InteropServices;
 using System.Text;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Diagnostics.Tests
@@ -13,7 +12,7 @@ namespace System.Diagnostics.Tests
     {
         private const int s_ConsoleEncoding = 437;
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestChangesInConsoleEncoding()
         {
             Action<int> run = expectedCodePage =>
@@ -32,7 +31,7 @@ namespace System.Diagnostics.Tests
                 Assert.True(p.WaitForExit(WaitInMS));
             };
 
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (!OperatingSystem.IsWindows())
             {
                 run(Encoding.UTF8.CodePage);
                 return;

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 using System.Net.Sockets;
@@ -19,14 +18,14 @@ namespace System.Net
         private readonly NetworkStream _networkStream;
         private bool _writeable;
         private bool _readable;
-        private bool _isFullyRead = false;
-        private bool _closing = false;
+        private bool _isFullyRead;
+        private bool _closing;
 
         private const int DefaultCloseTimeout = -1;
 
         internal FtpDataStream(NetworkStream networkStream, FtpWebRequest request, TriState writeOnly)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this);
 
             _readable = true;
             _writeable = true;
@@ -60,7 +59,7 @@ namespace System.Net
         //TODO: Add this to FxCopBaseline.cs once https://github.com/dotnet/roslyn/issues/15728 is fixed
         void ICloseEx.CloseEx(CloseExState closeState)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"state = {closeState}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"state = {closeState}");
 
             lock (this)
             {

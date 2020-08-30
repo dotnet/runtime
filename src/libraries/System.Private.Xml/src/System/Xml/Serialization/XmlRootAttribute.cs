@@ -1,12 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 //------------------------------------------------------------------------------
 // </copyright>
 //------------------------------------------------------------------------------
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Xml.Schema;
 
 
@@ -18,9 +18,9 @@ namespace System.Xml.Serialization
     [AttributeUsage(AttributeTargets.ReturnValue | AttributeTargets.Class | AttributeTargets.Enum | AttributeTargets.Interface | AttributeTargets.Struct)]
     public class XmlRootAttribute : System.Attribute
     {
-        private string _elementName;
-        private string _ns;
-        private string _dataType;
+        private string? _elementName;
+        private string? _ns;
+        private string? _dataType;
         private bool _nullable = true;
         private bool _nullableSpecified;
 
@@ -51,7 +51,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public string Namespace
+        public string? Namespace
         {
             get { return _ns; }
             set { _ns = value; }
@@ -60,6 +60,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
+        [AllowNull]
         public string DataType
         {
             get { return _dataType == null ? string.Empty : _dataType; }

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 using System.Net;
@@ -22,8 +21,8 @@ namespace System.Security.Cryptography.Xml
         private readonly object _refTarget;
         private readonly ReferenceTargetType _refTargetType;
         private XmlElement _cachedXml;
-        private SignedXml _signedXml = null;
-        internal CanonicalXmlNodeList _namespaces = null;
+        private SignedXml _signedXml;
+        internal CanonicalXmlNodeList _namespaces;
 
         //
         // public constructors

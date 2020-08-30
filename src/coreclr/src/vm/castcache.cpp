@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // File: castcache.cpp
 //
@@ -40,7 +39,7 @@ BASEARRAYREF CastCache::CreateCastCache(DWORD size)
     EX_CATCH
     {
     }
-    EX_END_CATCH(RethrowCorruptingExceptions)
+    EX_END_CATCH(RethrowTerminalExceptions)
 
     if (!table)
     {
@@ -54,7 +53,7 @@ BASEARRAYREF CastCache::CreateCastCache(DWORD size)
         EX_CATCH
         {
         }
-        EX_END_CATCH(RethrowCorruptingExceptions)
+        EX_END_CATCH(RethrowTerminalExceptions)
 
         if (!table)
         {
@@ -125,7 +124,7 @@ void CastCache::Initialize()
     }
     CONTRACTL_END;
 
-    FieldDesc* pTableField = MscorlibBinder::GetField(FIELD__CASTHELPERS__TABLE);
+    FieldDesc* pTableField = CoreLibBinder::GetField(FIELD__CASTHELPERS__TABLE);
 
     GCX_COOP();
     s_pTableRef = (BASEARRAYREF*)pTableField->GetCurrentStaticAddress();
@@ -160,7 +159,7 @@ TypeHandle::CastResult CastCache::TryGet(TADDR source, TADDR target)
     {
         CastCacheEntry* pEntry = &Elements(tableData)[index];
 
-        // must read in this order: version -> entry parts -> version
+        // must read in this order: version -> [entry parts] -> version
         // if version is odd or changes, the entry is inconsistent and thus ignored
         DWORD version1 = VolatileLoad(&pEntry->version);
         TADDR entrySource = pEntry->source;
@@ -171,12 +170,14 @@ TypeHandle::CastResult CastCache::TryGet(TADDR source, TADDR target)
 
         if (entrySource == source)
         {
-            TADDR entryTargetAndResult = VolatileLoad(&pEntry->targetAndResult);
+            TADDR entryTargetAndResult = pEntry->targetAndResult;
             // target never has its lower bit set.
             // a matching entryTargetAndResult would have the same bits, except for the lowest one, which is the result.
             entryTargetAndResult ^= target;
             if (entryTargetAndResult <= 1)
             {
+                // make sure 'version' is loaded after 'source' and 'targetAndResults'
+                VolatileLoadBarrier();
                 if (version1 != pEntry->version)
                 {
                     // oh, so close, the entry is in inconsistent state.
@@ -243,7 +244,23 @@ void CastCache::TrySet(TADDR source, TADDR target, BOOL result)
             //        We improve average lookup by giving preference to the "richer" entries.
             //        If we used Robin Hood strategy we could eventually end up with all
             //        entries in the table being maximally "poor".
-            DWORD version = pEntry->version;
+
+            // VolatileLoadWithoutBarrier is to ensure that the version cannot be re-fetched between here and CompareExchange.
+            DWORD version = VolatileLoadWithoutBarrier(&pEntry->version);
+
+            // mask the lower version bit to make it even.
+            // This way we will detect both if version is changing (odd) or has changed (even, but different).
+            version &= ~1;
+
+            if ((version & VERSION_NUM_MASK) >= (VERSION_NUM_MASK - 2))
+            {
+                // If exactly VERSION_NUM_MASK updates happens between here and publishing, we may not recognise a race.
+                // It is extremely unlikely, but to not worry about the possibility, lets not allow version to go this high and just get a new cache.
+                // This will not happen often.
+                FlushCurrentCache();
+                return;
+            }
+
             if (version == 0 || (version >> VERSION_NUM_SIZE) > i)
             {
                 DWORD newVersion = (i << VERSION_NUM_SIZE) + (version & VERSION_NUM_MASK) + 1;
@@ -293,11 +310,18 @@ void CastCache::TrySet(TADDR source, TADDR target, BOOL result)
     {
         CastCacheEntry* pEntry = &Elements(tableData)[(bucket + victim) & TableMask(tableData)];
 
-        DWORD version = pEntry->version;
+        // VolatileLoadWithoutBarrier is to ensure that the version cannot be re-fetched between here and CompareExchange.
+        DWORD version = VolatileLoadWithoutBarrier(&pEntry->version);
+
+        // mask the lower version bit to make it even.
+        // This way we will detect both if version is changing (odd) or has changed (even, but different).
+        version &= ~1;
+
         if ((version & VERSION_NUM_MASK) >= (VERSION_NUM_MASK - 2))
         {
-            // It is unlikely for a reader to sit between versions while exactly 2^VERSION_NUM_SIZE updates happens.
-            // Anyways, to not bother about the possibility, lets get a new cache. It will not happen often, if ever.
+            // If exactly VERSION_NUM_MASK updates happens between here and publishing, we may not recognise a race.
+            // It is extremely unlikely, but to not worry about the possibility, lets not allow version to go this high and just get a new cache.
+            // This will not happen often.
             FlushCurrentCache();
             return;
         }

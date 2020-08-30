@@ -128,17 +128,6 @@ get_runtimes_from_exe (const char *exe_file, MonoImage **exe_image);
 static const MonoRuntimeInfo*
 get_runtime_by_version (const char *version);
 
-#ifdef ENABLE_NETCORE
-static void
-mono_domain_alcs_lock (MonoDomain *domain);
-
-static void
-mono_domain_alcs_unlock (MonoDomain *domain);
-
-static void
-mono_domain_create_default_alc (MonoDomain *domain);
-#endif
-
 static LockFreeMempool*
 lock_free_mempool_new (void)
 {
@@ -482,7 +471,7 @@ mono_domain_create (void)
 	mono_debug_domain_create (domain);
 
 #ifdef ENABLE_NETCORE
-	mono_domain_create_default_alc (domain);
+	mono_alc_create_default (domain);
 #endif
 
 	if (create_domain_hook)
@@ -812,6 +801,11 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 	        mono_defaults.corlib, "System.Collections.Generic", "IReadOnlyList`1");
 	mono_defaults.generic_ienumerator_class = mono_class_load_from_name (
 	        mono_defaults.corlib, "System.Collections.Generic", "IEnumerator`1");
+
+#ifdef ENABLE_NETCORE
+	mono_defaults.alc_class = mono_class_get_assembly_load_context_class ();
+	mono_defaults.appcontext_class = mono_class_try_load_from_name (mono_defaults.corlib, "System", "AppContext");
+#endif
 
 #ifndef ENABLE_NETCORE
 	MonoClass *threadpool_wait_callback_class = mono_class_load_from_name (
@@ -2070,60 +2064,3 @@ mono_domain_default_alc (MonoDomain *domain)
 	return domain->default_alc;
 #endif
 }
-
-#ifdef ENABLE_NETCORE
-static inline void
-mono_domain_alcs_lock (MonoDomain *domain)
-{
-	mono_coop_mutex_lock (&domain->alcs_lock);
-}
-
-static inline void
-mono_domain_alcs_unlock (MonoDomain *domain)
-{
-	mono_coop_mutex_unlock (&domain->alcs_lock);
-}
-
-static MonoAssemblyLoadContext *
-create_alc (MonoDomain *domain, gboolean is_default, gboolean collectible)
-{
-	MonoAssemblyLoadContext *alc = NULL;
-
-	mono_domain_alcs_lock (domain);
-	if (is_default && domain->default_alc)
-		goto leave;
-
-	alc = g_new0 (MonoAssemblyLoadContext, 1);
-	mono_alc_init (alc, domain, collectible);
-
-	domain->alcs = g_slist_prepend (domain->alcs, alc);
-	if (is_default)
-		domain->default_alc = alc;
-leave:
-	mono_domain_alcs_unlock (domain);
-	return alc;
-}
-
-void
-mono_domain_create_default_alc (MonoDomain *domain)
-{
-	if (domain->default_alc)
-		return;
-	create_alc (domain, TRUE, FALSE);
-}
-
-MonoAssemblyLoadContext *
-mono_domain_create_individual_alc (MonoDomain *domain, MonoGCHandle this_gchandle, gboolean collectible, MonoError *error)
-{
-	MonoAssemblyLoadContext *alc = create_alc (domain, FALSE, collectible);
-	alc->gchandle = this_gchandle;
-	return alc;
-}
-
-static void
-mono_alc_free (MonoAssemblyLoadContext *alc)
-{
-	mono_alc_cleanup (alc);
-	g_free (alc);
-}
-#endif

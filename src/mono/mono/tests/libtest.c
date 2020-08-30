@@ -2627,6 +2627,34 @@ mono_test_marshal_date_time (double d, double *d2)
 
 #ifndef WIN32
 
+typedef struct
+{
+	guint32 a;
+	guint16 b;
+	guint16 c;
+	guint8 d[8];
+} GUID;
+
+typedef const GUID *REFIID;
+
+typedef struct IDispatch IDispatch;
+
+typedef struct
+{
+	int (STDCALL *QueryInterface)(IDispatch *iface, REFIID iid, gpointer *out);
+	int (STDCALL *AddRef)(IDispatch *iface);
+	int (STDCALL *Release)(IDispatch *iface);
+	int (STDCALL *GetTypeInfoCount)(IDispatch *iface, unsigned int *count);
+	int (STDCALL *GetTypeInfo)(IDispatch *iface, unsigned int index, unsigned int lcid, gpointer *out);
+	int (STDCALL *GetIDsOfNames)(IDispatch *iface, REFIID iid, gpointer names, unsigned int count, unsigned int lcid, gpointer ids);
+	int (STDCALL *Invoke)(IDispatch *iface, unsigned int dispid, REFIID iid, unsigned int lcid, unsigned short flags, gpointer params, gpointer result, gpointer excepinfo, gpointer err_arg);
+} IDispatchVtbl;
+
+struct IDispatch
+{
+	const IDispatchVtbl *lpVtbl;
+};
+
 typedef struct {
 	guint16 vt;
 	guint16 wReserved1;
@@ -2709,14 +2737,6 @@ void VariantInit(VARIANT* vt)
 {
 	vt->vt = VT_EMPTY;
 }
-
-typedef struct
-{
-	guint32 a;
-	guint16 b;
-	guint16 c;
-	guint8 d[8];
-} GUID;
 
 #define S_OK 0
 
@@ -8072,6 +8092,163 @@ mono_test_MerpCrashSignalIll (void)
 #else
 	raise (SIGTERM);
 #endif
+}
+
+typedef struct _TestAutoDual _TestAutoDual;
+
+typedef struct
+{
+	int (STDCALL *QueryInterface)(_TestAutoDual *iface, REFIID iid, gpointer *out);
+	int (STDCALL *AddRef)(_TestAutoDual *iface);
+	int (STDCALL *Release)(_TestAutoDual *iface);
+	int (STDCALL *GetTypeInfoCount)(_TestAutoDual *iface, unsigned int *count);
+	int (STDCALL *GetTypeInfo)(_TestAutoDual *iface, unsigned int index, unsigned int lcid, gpointer *out);
+	int (STDCALL *GetIDsOfNames)(_TestAutoDual *iface, REFIID iid, gpointer names, unsigned int count, unsigned int lcid, gpointer ids);
+	int (STDCALL *Invoke)(_TestAutoDual *iface, unsigned int dispid, REFIID iid, unsigned int lcid, unsigned short flags, gpointer params, gpointer result, gpointer excepinfo, gpointer err_arg);
+	int (STDCALL *ToString)(_TestAutoDual *iface, gpointer string);
+	int (STDCALL *Equals)(_TestAutoDual *iface, VARIANT other, short *retval);
+	int (STDCALL *GetHashCode)(_TestAutoDual *iface, int *retval);
+	int (STDCALL *GetType)(_TestAutoDual *iface, gpointer retval);
+	int (STDCALL *parent_method_virtual)(_TestAutoDual *iface, int *retval);
+	int (STDCALL *get_parent_property)(_TestAutoDual *iface, int *retval);
+	int (STDCALL *parent_method_override)(_TestAutoDual *iface, int *retval);
+	int (STDCALL *parent_iface_method)(_TestAutoDual *iface, int *retval);
+	int (STDCALL *parent_method)(_TestAutoDual *iface, int *retval);
+	int (STDCALL *child_method_virtual)(_TestAutoDual *iface, int *retval);
+	int (STDCALL *iface1_method)(_TestAutoDual *iface, int *retval);
+	int (STDCALL *iface1_parent_method)(_TestAutoDual *iface, int *retval);
+	int (STDCALL *iface2_method)(_TestAutoDual *iface, int *retval);
+	int (STDCALL *child_method)(_TestAutoDual *iface, int *retval);
+} _TestAutoDualVtbl;
+
+struct _TestAutoDual
+{
+	const _TestAutoDualVtbl *lpVtbl;
+};
+
+LIBTEST_API int STDCALL
+mono_test_ccw_class_type_auto_dual (_TestAutoDual *iface)
+{
+	int hr, retval;
+
+	hr = iface->lpVtbl->parent_method_virtual(iface, &retval);
+	if (hr != 0)
+		return 1;
+	if (retval != 101)
+		return 2;
+
+	hr = iface->lpVtbl->get_parent_property(iface, &retval);
+	if (hr != 0)
+		return 3;
+	if (retval != 102)
+		return 4;
+
+	hr = iface->lpVtbl->parent_method_override(iface, &retval);
+	if (hr != 0)
+		return 5;
+	if (retval != 203)
+		return 6;
+
+	hr = iface->lpVtbl->parent_method(iface, &retval);
+	if (hr != 0)
+		return 7;
+	if (retval != 104)
+		return 8;
+
+	hr = iface->lpVtbl->child_method_virtual(iface, &retval);
+	if (hr != 0)
+		return 11;
+	if (retval != 106)
+		return 12;
+
+	hr = iface->lpVtbl->iface1_method(iface, &retval);
+	if (hr != 0)
+		return 13;
+	if (retval != 107)
+		return 14;
+
+	hr = iface->lpVtbl->iface1_parent_method(iface, &retval);
+	if (hr != 0)
+		return 15;
+	if (retval != 108)
+		return 16;
+
+	hr = iface->lpVtbl->iface2_method(iface, &retval);
+	if (hr != 0)
+		return 17;
+	if (retval != 109)
+		return 18;
+
+	hr = iface->lpVtbl->child_method(iface, &retval);
+	if (hr != 0)
+		return 19;
+	if (retval != 110)
+		return 20;
+
+	hr = iface->lpVtbl->parent_iface_method(iface, &retval);
+	if (hr != 0)
+		return 23;
+	if (retval != 112)
+		return 24;
+
+	return 0;
+}
+
+static const GUID IID_IBanana = {0x12345678, 0, 0, {0, 0, 0, 0, 0, 0, 0, 2}};
+
+typedef struct IBanana IBanana;
+
+typedef struct
+{
+	int (STDCALL *QueryInterface)(IBanana *iface, REFIID iid, gpointer *out);
+	int (STDCALL *AddRef)(IBanana *iface);
+	int (STDCALL *Release)(IBanana *iface);
+	int (STDCALL *GetTypeInfoCount)(IBanana *iface, unsigned int *count);
+	int (STDCALL *GetTypeInfo)(IBanana *iface, unsigned int index, unsigned int lcid, gpointer *out);
+	int (STDCALL *GetIDsOfNames)(IBanana *iface, REFIID iid, gpointer names, unsigned int count, unsigned int lcid, gpointer ids);
+	int (STDCALL *Invoke)(IBanana *iface, unsigned int dispid, REFIID iid, unsigned int lcid, unsigned short flags, gpointer params, gpointer result, gpointer excepinfo, gpointer err_arg);
+	int (STDCALL *iface1_method)(IBanana *iface, int *retval);
+} IBananaVtbl;
+
+struct IBanana
+{
+	const IBananaVtbl *lpVtbl;
+};
+
+LIBTEST_API int STDCALL
+mono_test_ccw_class_type_none (IBanana *iface)
+{
+	int hr, retval;
+
+	hr = iface->lpVtbl->iface1_method(iface, &retval);
+	if (hr != 0)
+		return 1;
+	if (retval != 3)
+		return 2;
+	return 0;
+}
+
+LIBTEST_API int STDCALL
+mono_test_ccw_class_type_auto_dispatch (IDispatch *disp)
+{
+	IBanana *banana;
+	int hr, retval;
+
+#ifdef __cplusplus
+	hr = disp->QueryInterface (IID_IBanana, (void **)&banana);
+#else
+	hr = disp->lpVtbl->QueryInterface (disp, &IID_IBanana, (void **)&banana);
+#endif
+	if (hr != 0)
+		return 1;
+	hr = banana->lpVtbl->iface1_method(banana, &retval);
+	if (hr != 0)
+		return 2;
+	if (retval != 3)
+		return 3;
+	banana->lpVtbl->Release(banana);
+
+	return 0;
 }
 
 #ifdef __cplusplus

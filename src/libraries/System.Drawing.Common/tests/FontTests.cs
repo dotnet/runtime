@@ -1,5 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
-// See the LICENSE file in the project root for more information.
+// The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
 using System.Drawing.Text;
@@ -714,7 +714,7 @@ namespace System.Drawing.Tests
             using (var image = new Bitmap(10, 10))
             using (Graphics graphics = Graphics.FromImage(image))
             {
-                IntPtr hdc = graphics.GetHdc();
+                graphics.GetHdc();
                 try
                 {
                     var logFont = new UnblittableLOGFONT

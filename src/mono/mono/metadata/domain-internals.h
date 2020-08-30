@@ -692,15 +692,21 @@ mono_runtime_install_appctx_properties (void);
 gboolean 
 mono_domain_set_fast (MonoDomain *domain, gboolean force);
 
-void
-mono_domain_ensure_entry_assembly (MonoDomain *domain, MonoAssembly *assembly);
-
 MonoAssemblyLoadContext *
 mono_domain_default_alc (MonoDomain *domain);
 
 #ifdef ENABLE_NETCORE
-MonoAssemblyLoadContext *
-mono_domain_create_individual_alc (MonoDomain *domain, MonoGCHandle this_gchandle, gboolean collectible, MonoError *error);
+static inline void
+mono_domain_alcs_lock (MonoDomain *domain)
+{
+	mono_coop_mutex_lock (&domain->alcs_lock);
+}
+
+static inline void
+mono_domain_alcs_unlock (MonoDomain *domain)
+{
+	mono_coop_mutex_unlock (&domain->alcs_lock);
+}
 #endif
 
 static inline

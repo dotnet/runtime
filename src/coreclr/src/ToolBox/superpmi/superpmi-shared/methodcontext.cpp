@@ -908,7 +908,6 @@ void MethodContext::repGetBoundaries(CORINFO_METHOD_HANDLE         ftn,
 void MethodContext::recInitClass(CORINFO_FIELD_HANDLE   field,
                                  CORINFO_METHOD_HANDLE  method,
                                  CORINFO_CONTEXT_HANDLE context,
-                                 BOOL                   speculative,
                                  CorInfoInitClassResult result)
 {
     if (InitClass == nullptr)
@@ -920,20 +919,18 @@ void MethodContext::recInitClass(CORINFO_FIELD_HANDLE   field,
     key.field       = (DWORDLONG)field;
     key.method      = (DWORDLONG)method;
     key.context     = (DWORDLONG)context;
-    key.speculative = (DWORD)speculative;
 
     InitClass->Add(key, (DWORD)result);
     DEBUG_REC(dmpInitClass(key, (DWORD)result));
 }
 void MethodContext::dmpInitClass(const Agnostic_InitClass& key, DWORD value)
 {
-    printf("InitClass key fld-%016llX meth-%016llX con-%016llX spec-%u, value res-%u", key.field, key.method,
-           key.context, key.speculative, value);
+    printf("InitClass key fld-%016llX meth-%016llX con-%016llX, value res-%u", key.field, key.method,
+           key.context, value);
 }
 CorInfoInitClassResult MethodContext::repInitClass(CORINFO_FIELD_HANDLE   field,
                                                    CORINFO_METHOD_HANDLE  method,
-                                                   CORINFO_CONTEXT_HANDLE context,
-                                                   BOOL                   speculative)
+                                                   CORINFO_CONTEXT_HANDLE context)
 {
     Agnostic_InitClass key;
     ZeroMemory(&key, sizeof(Agnostic_InitClass)); // We use the input structs as a key and use memcmp to compare.. so we
@@ -942,7 +939,6 @@ CorInfoInitClassResult MethodContext::repInitClass(CORINFO_FIELD_HANDLE   field,
     key.field       = (DWORDLONG)field;
     key.method      = (DWORDLONG)method;
     key.context     = (DWORDLONG)context;
-    key.speculative = (DWORD)speculative;
 
     AssertCodeMsg(InitClass != nullptr, EXCEPTIONCODE_MC, "Didn't find anything for %016llX", (DWORDLONG)key.method);
     AssertCodeMsg(InitClass->GetIndex(key) != -1, EXCEPTIONCODE_MC, "Didn't find %016llX", (DWORDLONG)key.method);
@@ -2680,7 +2676,7 @@ CORINFO_CLASS_HANDLE MethodContext::repGetArgClass(CORINFO_SIG_INFO*       sig,
     return (CORINFO_CLASS_HANDLE)value.result;
 }
 
-void MethodContext::recGetHFAType(CORINFO_CLASS_HANDLE clsHnd, CorInfoType result)
+void MethodContext::recGetHFAType(CORINFO_CLASS_HANDLE clsHnd, CorInfoHFAElemType result)
 {
     if (GetHFAType == nullptr)
         GetHFAType = new LightWeightMap<DWORDLONG, DWORD>();
@@ -2696,7 +2692,7 @@ void MethodContext::dmpGetHFAType(DWORDLONG key, DWORD value)
     return;
 }
 
-CorInfoType MethodContext::repGetHFAType(CORINFO_CLASS_HANDLE clsHnd)
+CorInfoHFAElemType MethodContext::repGetHFAType(CORINFO_CLASS_HANDLE clsHnd)
 {
     DWORD value;
 
@@ -2706,7 +2702,7 @@ CorInfoType MethodContext::repGetHFAType(CORINFO_CLASS_HANDLE clsHnd)
 
     value = GetHFAType->Get((DWORDLONG)clsHnd);
     DEBUG_REP(dmpGetHFAType((DWORDLONG)clsHnd, value));
-    return (CorInfoType)value;
+    return (CorInfoHFAElemType)value;
 }
 
 void MethodContext::recGetMethodInfo(CORINFO_METHOD_HANDLE ftn,
@@ -5135,6 +5131,50 @@ DWORD MethodContext::repGetFieldThreadLocalStoreID(CORINFO_FIELD_HANDLE field, v
     if (ppIndirection != nullptr)
         *ppIndirection = (void*)value.A;
     return (DWORD)value.B;
+}
+
+
+void MethodContext::recAllocMethodBlockCounts(ULONG count, ICorJitInfo::BlockCounts** pBlockCounts, HRESULT result)
+{
+    if (AllocMethodBlockCounts == nullptr)
+        AllocMethodBlockCounts = new LightWeightMap<DWORD, Agnostic_AllocMethodBlockCounts>();
+
+    Agnostic_AllocMethodBlockCounts value;
+
+    value.address = (DWORDLONG)*pBlockCounts;
+    value.count  = (DWORD)count;
+    value.result = (DWORD)result;
+
+    AllocMethodBlockCounts->Add((DWORD)0, value);
+}
+void MethodContext::dmpAllocMethodBlockCounts(DWORD key, const Agnostic_AllocMethodBlockCounts& value)
+{
+    printf("AllocMethodBlockCounts key %u, value addr-%016llX cnt-%u res-%08X", key, value.address, value.count, value.result);
+}
+HRESULT MethodContext::repAllocMethodBlockCounts(ULONG count, ICorJitInfo::BlockCounts** pBlockCounts)
+{
+    Agnostic_AllocMethodBlockCounts value;
+    value = AllocMethodBlockCounts->Get((DWORD)0);
+
+    if (count != value.count)
+    {
+        LogWarning("AllocMethodBlockCount mismatch: record %d, replay %d", value.count, count);
+    }
+
+    HRESULT result = (HRESULT)value.result;
+
+    // Allocate a scratch buffer, linked to method context via AllocMethodBlockCounts, so it gets
+    // cleaned up when the method context does.
+    //
+    // We won't bother recording this via AddBuffer because currently SPMI will never look at it.
+    // But we need a writeable buffer because the jit will store IL offsets inside.
+    //
+    // Todo, perhaps: record the buffer as a compile result instead, and defer copying until
+    // jit completion so we can snapshot the offsets the jit writes.
+    //
+    *pBlockCounts = (ICorJitInfo::BlockCounts*)AllocMethodBlockCounts->CreateBuffer(count * sizeof(ICorJitInfo::BlockCounts));
+    cr->recAddressMap((void*)value.address, (void*)*pBlockCounts, count * (sizeof(ICorJitInfo::BlockCounts)));
+    return result;
 }
 
 void MethodContext::recGetMethodBlockCounts(CORINFO_METHOD_HANDLE        ftnHnd,

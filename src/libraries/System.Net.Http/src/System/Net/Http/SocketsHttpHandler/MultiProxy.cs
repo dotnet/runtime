@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -45,6 +44,7 @@ namespace System.Net.Http
         /// <summary>
         /// Parses a WinHTTP proxy config into a MultiProxy instance.
         /// </summary>
+        /// <param name="failedProxyCache">The cache of failed proxy requests to employ.</param>
         /// <param name="proxyConfig">The WinHTTP proxy config to parse.</param>
         /// <param name="secure">If true, return proxies suitable for use with a secure connection. If false, return proxies suitable for an insecure connection.</param>
         public static MultiProxy Parse(FailedProxyCache failedProxyCache, string? proxyConfig, bool secure)
@@ -73,6 +73,7 @@ namespace System.Net.Http
         /// <summary>
         /// Initializes a MultiProxy instance that lazily parses a given WinHTTP configuration string.
         /// </summary>
+        /// <param name="failedProxyCache">The cache of failed proxy requests to employ.</param>
         /// <param name="proxyConfig">The WinHTTP proxy config to parse.</param>
         /// <param name="secure">If true, return proxies suitable for use with a secure connection. If false, return proxies suitable for an insecure connection.</param>
         public static MultiProxy CreateLazy(FailedProxyCache failedProxyCache, string proxyConfig, bool secure)

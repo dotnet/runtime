@@ -1,15 +1,19 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
 
 namespace System.Text.Json
 {
     public static partial class JsonSerializer
     {
-        private static TValue ReadCore<TValue>(ref Utf8JsonReader reader, Type returnType, JsonSerializerOptions options)
+        // Members accessed by the serializer when deserializing.
+        private const DynamicallyAccessedMemberTypes MembersAccessedOnRead =
+            DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicFields;
+
+        private static TValue? ReadCore<TValue>(ref Utf8JsonReader reader, Type returnType, JsonSerializerOptions options)
         {
             ReadStack state = default;
             state.Initialize(returnType, options, supportContinuation: false);
@@ -17,7 +21,7 @@ namespace System.Text.Json
             return ReadCore<TValue>(jsonConverter, ref reader, options, ref state);
         }
 
-        private static TValue ReadCore<TValue>(JsonConverter jsonConverter, ref Utf8JsonReader reader, JsonSerializerOptions options, ref ReadStack state)
+        private static TValue? ReadCore<TValue>(JsonConverter jsonConverter, ref Utf8JsonReader reader, JsonSerializerOptions options, ref ReadStack state)
         {
             if (jsonConverter is JsonConverter<TValue> converter)
             {

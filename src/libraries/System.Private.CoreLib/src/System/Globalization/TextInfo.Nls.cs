@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 
@@ -19,6 +18,8 @@ namespace System.Globalization
             Debug.Assert(pSourceLen <= pResultLen);
 
             // Check for Invariant to avoid A/V in LCMapStringEx
+            // We don't specify LCMAP_LINGUISTIC_CASING for Invariant because it will enable Turkish-I behavior too which is not
+            // right for Invariant.
             uint linguisticCasing = IsInvariantLocale(_textInfoName) ? 0 : LCMAP_LINGUISTIC_CASING;
 
             int ret = Interop.Kernel32.LCMapStringEx(_sortHandle != IntPtr.Zero ? null : _textInfoName,

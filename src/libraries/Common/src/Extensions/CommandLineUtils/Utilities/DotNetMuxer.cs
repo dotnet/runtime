@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // System.AppContext.GetData is not available in these frameworks
 #if !NET451 && !NET452 && !NET46 && !NET461
@@ -8,7 +7,6 @@
 using System;
 using System.Diagnostics;
 using System.IO;
-using System.Runtime.InteropServices;
 
 namespace Microsoft.Extensions.CommandLineUtils
 {
@@ -40,7 +38,7 @@ namespace Microsoft.Extensions.CommandLineUtils
         private static string TryFindMuxerPath()
         {
             var fileName = MuxerName;
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
             {
                 fileName += ".exe";
             }

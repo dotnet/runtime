@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
@@ -322,9 +321,8 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static Thread InitializeCurrentThread()
         {
-            Thread? thread = null;
-            InitializeCurrentThread_icall(ref thread);
-            return thread;
+            InitializeCurrentThread_icall(ref t_currentThread);
+            return t_currentThread;
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -365,7 +363,7 @@ namespace System.Threading
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern Thread CreateInternal();
 
-        [PreserveDependency(nameof(StartCallback))]
+        [DynamicDependency(nameof(StartCallback))]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void StartInternal(Thread runtime_thread);
 

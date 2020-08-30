@@ -1085,18 +1085,18 @@ finish_agent_init (gboolean on_startup)
 		// FIXME: Generated address
 		// FIXME: Races with transport_connect ()
 
-		char *argv [ ] = {
-			agent_config.launch,
-			agent_config.transport,
-			agent_config.address,
-			NULL
-		};
 #ifdef G_OS_WIN32
 		// Nothing. FIXME? g_spawn_async_with_pipes is easy enough to provide for Windows if needed.
 #elif !HAVE_G_SPAWN
 		g_printerr ("g_spawn_async_with_pipes not supported on this platform\n");
 		exit (1);
 #else
+		char *argv [ ] = {
+			agent_config.launch,
+			agent_config.transport,
+			agent_config.address,
+			NULL
+		};
 		int res = g_spawn_async_with_pipes (NULL, argv, NULL, (GSpawnFlags)0, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 		if (!res) {
 			g_printerr ("Failed to execute '%s'.\n", agent_config.launch);
@@ -1829,6 +1829,21 @@ buffer_add_data (Buffer *buf, guint8 *data, int len)
 {
 	buffer_make_room (buf, len);
 	memcpy (buf->p, data, len);
+	buf->p += len;
+}
+
+static void
+buffer_add_utf16 (Buffer *buf, guint8 *data, int len)
+{
+#if G_BYTE_ORDER == G_LITTLE_ENDIAN
+	buffer_make_room (buf, len);
+	memcpy (buf->p, data, len);
+#else
+	for (int i=0; i<len; i +=2) {
+		buf->p[i] = data[i+1];
+		buf->p[i+1] = data[i];
+	}
+#endif
 	buf->p += len;
 }
 
@@ -3583,6 +3598,10 @@ dbg_path_get_basename (const char *filename)
 	return g_strdup (&r[1]);
 }
 
+static GENERATE_TRY_GET_CLASS_WITH_CACHE(hidden_klass, "System.Diagnostics", "DebuggerHiddenAttribute")
+static GENERATE_TRY_GET_CLASS_WITH_CACHE(step_through_klass, "System.Diagnostics", "DebuggerStepThroughAttribute")
+static GENERATE_TRY_GET_CLASS_WITH_CACHE(non_user_klass, "System.Diagnostics", "DebuggerNonUserCodeAttribute")
+
 static void
 init_jit_info_dbg_attrs (MonoJitInfo *ji)
 {
@@ -3592,27 +3611,19 @@ init_jit_info_dbg_attrs (MonoJitInfo *ji)
 	if (ji->dbg_attrs_inited)
 		return;
 
-	MONO_STATIC_POINTER_INIT (MonoClass, hidden_klass)
-		hidden_klass = mono_class_load_from_name (mono_defaults.corlib, "System.Diagnostics", "DebuggerHiddenAttribute");
-	MONO_STATIC_POINTER_INIT_END (MonoClass, hidden_klass)
-
-
-	MONO_STATIC_POINTER_INIT (MonoClass, step_through_klass)
-		step_through_klass = mono_class_load_from_name (mono_defaults.corlib, "System.Diagnostics", "DebuggerStepThroughAttribute");
-	MONO_STATIC_POINTER_INIT_END (MonoClass, step_through_klass)
-
-	MONO_STATIC_POINTER_INIT (MonoClass, non_user_klass)
-		non_user_klass = mono_class_load_from_name (mono_defaults.corlib, "System.Diagnostics", "DebuggerNonUserCodeAttribute");
-	MONO_STATIC_POINTER_INIT_END (MonoClass, non_user_klass)
+	// NOTE: The following Debugger attributes may not exist if they are trimmed away by the ILLinker
+	MonoClass *hidden_klass = mono_class_try_get_hidden_klass_class ();
+	MonoClass *step_through_klass = mono_class_try_get_step_through_klass_class ();
+	MonoClass *non_user_klass = mono_class_try_get_non_user_klass_class ();
 
 	ainfo = mono_custom_attrs_from_method_checked (jinfo_get_method (ji), error);
 	mono_error_cleanup (error); /* FIXME don't swallow the error? */
 	if (ainfo) {
-		if (mono_custom_attrs_has_attr (ainfo, hidden_klass))
+		if (hidden_klass && mono_custom_attrs_has_attr (ainfo, hidden_klass))
 			ji->dbg_hidden = TRUE;
-		if (mono_custom_attrs_has_attr (ainfo, step_through_klass))
+		if (step_through_klass && mono_custom_attrs_has_attr (ainfo, step_through_klass))
 			ji->dbg_step_through = TRUE;
-		if (mono_custom_attrs_has_attr (ainfo, non_user_klass))
+		if (non_user_klass && mono_custom_attrs_has_attr (ainfo, non_user_klass))
 			ji->dbg_non_user_code = TRUE;
 		mono_custom_attrs_free (ainfo);
 	}
@@ -3620,9 +3631,9 @@ init_jit_info_dbg_attrs (MonoJitInfo *ji)
 	ainfo = mono_custom_attrs_from_class_checked (jinfo_get_method (ji)->klass, error);
 	mono_error_cleanup (error); /* FIXME don't swallow the error? */
 	if (ainfo) {
-		if (mono_custom_attrs_has_attr (ainfo, step_through_klass))
+		if (step_through_klass && mono_custom_attrs_has_attr (ainfo, step_through_klass))
 			ji->dbg_step_through = TRUE;
-		if (mono_custom_attrs_has_attr (ainfo, non_user_klass))
+		if (non_user_klass && mono_custom_attrs_has_attr (ainfo, non_user_klass))
 			ji->dbg_non_user_code = TRUE;
 		mono_custom_attrs_free (ainfo);
 	}
@@ -4016,6 +4027,9 @@ process_event (EventKind event, gpointer arg, gint32 il_offset, MonoContext *ctx
 			DebuggerTlsData *tls;
 			tls = (DebuggerTlsData *)mono_native_tls_get_value (debugger_tls_id);
 			g_assert (tls);
+			// We are already processing a breakpoint event
+			if (tls->disable_breakpoints)
+				return;
 			mono_stopwatch_stop (&tls->step_time);
 			break;
 		}
@@ -4574,7 +4588,16 @@ get_object_id_for_debugger_method (MonoClass* async_builder_class)
 	ERROR_DECL (error);
 	GPtrArray *array = mono_class_get_methods_by_name (async_builder_class, "get_ObjectIdForDebugger", 0x24, 1, FALSE, error);
 	mono_error_assert_ok (error);
-	g_assert (array->len == 1);
+	if (array->len != 1) {
+		g_ptr_array_free (array, TRUE);
+		//if we don't find method get_ObjectIdForDebugger we try to find the property Task to continue async debug.
+		MonoProperty *prop = mono_class_get_property_from_name_internal (async_builder_class, "Task");
+		if (!prop) {
+			DEBUG_PRINTF (1, "Impossible to debug async methods.\n");
+			return NULL;
+		}
+		return prop->get;
+	}
 	MonoMethod *method = (MonoMethod *)g_ptr_array_index (array, 0);
 	g_ptr_array_free (array, TRUE);
 	return method;
@@ -4592,7 +4615,9 @@ get_class_to_get_builder_field(DbgEngineStackFrame *frame)
 		MonoGenericContext context;
 		MonoType *inflated_type;
 
-		g_assert (this_obj);
+		if (!this_obj)
+			return NULL;
+			
 		context = mono_get_generic_context_from_stack_frame (frame->ji, this_obj->vtable);
 		inflated_type = mono_class_inflate_generic_type_checked (m_class_get_byval_arg (original_class), &context, error);
 		mono_error_assert_ok (error); /* FIXME don't swallow the error */
@@ -4617,7 +4642,8 @@ get_async_method_builder (DbgEngineStackFrame *frame)
 
 	klass = get_class_to_get_builder_field(frame);
 	builder_field = mono_class_get_field_from_name_full (klass, "<>t__builder", NULL);
-	g_assert (builder_field);
+	if (!builder_field)
+		return NULL;
 
 	this_addr = get_this_addr (frame);
 	if (!this_addr)
@@ -4656,7 +4682,8 @@ get_this_async_id (DbgEngineStackFrame *frame)
 		return 0;
 
 	builder_field = mono_class_get_field_from_name_full (get_class_to_get_builder_field(frame), "<>t__builder", NULL);
-	g_assert (builder_field);
+	if (!builder_field)
+		return 0;
 
 	tls = (DebuggerTlsData *)mono_native_tls_get_value (debugger_tls_id);
 	if (tls) {
@@ -4665,6 +4692,11 @@ get_this_async_id (DbgEngineStackFrame *frame)
 	}
 
 	method = get_object_id_for_debugger_method (mono_class_from_mono_type_internal (builder_field->type));
+	if (!method) {
+		if (tls)
+			tls->disable_breakpoints = old_disable_breakpoints;
+		return 0;
+	}
 	obj = mono_runtime_try_invoke (method, builder, NULL, &ex, error);
 	mono_error_assert_ok (error);
 
@@ -4680,9 +4712,11 @@ static gboolean
 set_set_notification_for_wait_completion_flag (DbgEngineStackFrame *frame)
 {
 	MonoClassField *builder_field = mono_class_get_field_from_name_full (get_class_to_get_builder_field(frame), "<>t__builder", NULL);
-	g_assert (builder_field);
+	if (!builder_field)
+		return FALSE;
 	gpointer builder = get_async_method_builder (frame);
-	g_assert (builder);
+	if (!builder)
+		return FALSE;
 
 	MonoMethod* method = get_set_notification_method (mono_class_from_mono_type_internal (builder_field->type));
 	if (method == NULL)
@@ -5035,7 +5069,7 @@ ss_create_init_args (SingleStepReq *ss_req, SingleStepArgs *args)
 	mono_loader_unlock ();
 	g_assert (tls);
 	if (!tls->context.valid) {
-		DEBUG_PRINTF (1, "Received a single step request on a thread with no managed frames.");
+		DEBUG_PRINTF (1, "Received a single step request on a thread with no managed frames.\n");
 		return ERR_INVALID_ARGUMENT;
 	}
 
@@ -5056,7 +5090,10 @@ ss_create_init_args (SingleStepReq *ss_req, SingleStepArgs *args)
 		 * We are stopped at a throw site. Stepping should go to the catch site.
 		 */
 		frame = tls->catch_frame;
-		g_assert (frame.type == FRAME_TYPE_MANAGED || frame.type == FRAME_TYPE_INTERP);
+		if (frame.type != FRAME_TYPE_MANAGED && frame.type != FRAME_TYPE_INTERP) {
+			DEBUG_PRINTF (1, "Current frame is not managed nor interpreter.\n");
+			return ERR_INVALID_ARGUMENT;
+		}
 
 		/*
 		 * Find the seq point corresponding to the landing site ip, which is the first seq
@@ -5065,7 +5102,10 @@ ss_create_init_args (SingleStepReq *ss_req, SingleStepArgs *args)
 		found_sp = mono_find_next_seq_point_for_native_offset (frame.domain, frame.method, frame.native_offset, &info, &args->sp);
 		if (!found_sp)
 			no_seq_points_found (frame.method, frame.native_offset);
-		g_assert (found_sp);
+		if (!found_sp) {
+			DEBUG_PRINTF (1, "Could not find next sequence point.\n");
+			return ERR_INVALID_ARGUMENT;
+		}
 
 		method = frame.method;
 
@@ -5110,7 +5150,10 @@ ss_create_init_args (SingleStepReq *ss_req, SingleStepArgs *args)
 				found_sp = mono_find_prev_seq_point_for_native_offset (frame->de.domain, frame->de.method, frame->de.native_offset, &info, &args->sp);
 				if (!found_sp)
 					no_seq_points_found (frame->de.method, frame->de.native_offset);
-				g_assert (found_sp);				
+				if (!found_sp) {
+					DEBUG_PRINTF (1, "Could not find next sequence point.\n");
+					return ERR_INVALID_ARGUMENT;
+				}
 				method = frame->de.method;
 			}
 		}
@@ -8846,7 +8889,11 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 						if (mono_class_get_context (klass)) {
 							ERROR_DECL (error);
 							result = mono_class_inflate_generic_method_full_checked (result, klass, mono_class_get_context (klass), error);
-							g_assert (is_ok (error)); /* FIXME don't swallow the error */
+							if (!is_ok (error)) {
+								add_error_string (buf, mono_error_get_message (error));
+								mono_error_cleanup (error);
+								return ERR_INVALID_ARGUMENT;
+							}
 						}
 					}
 				}
@@ -8984,7 +9031,12 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 				char *s;
 
 				s = mono_string_to_utf8_checked_internal ((MonoString *)val, error);
-				mono_error_assert_ok (error);
+				if (!is_ok (error)) {
+					add_error_string (buf, mono_error_get_message (error));
+					mono_error_cleanup (error);
+					g_free (s);
+					return ERR_INVALID_ARGUMENT;
+				}
 				buffer_add_byte (buf, TOKEN_TYPE_STRING);
 				buffer_add_string (buf, s);
 				g_free (s);
@@ -9047,7 +9099,11 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 		tmp_context.method_inst = ginst;
 
 		inflated = mono_class_inflate_generic_method_checked (method, &tmp_context, error);
-		g_assert (is_ok (error)); /* FIXME don't swallow the error */
+		if (!is_ok (error)) {
+			add_error_string (buf, mono_error_get_message (error));
+			mono_error_cleanup (error);
+			return ERR_INVALID_ARGUMENT;
+		}
 		if (!mono_verifier_is_method_valid_generic_instantiation (inflated))
 			return ERR_INVALID_ARGUMENT;
 		buffer_add_methodid (buf, domain, inflated);
@@ -9474,7 +9530,10 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 			set_interp_var (m_class_get_this_arg (frame->actual_method->klass), addr, val_buf);
 		} else {
 			var = jit->this_var;
-			g_assert (var);
+			if (!var) {
+				add_error_string (buf, "Invalid this object");
+				return ERR_INVALID_ARGUMENT;
+			}
 
 			set_var (m_class_get_this_arg (frame->actual_method->klass), var, &frame->ctx, frame->de.domain, val_buf, frame->reg_locations, &tls->restore_state.ctx);
 		}
@@ -9517,9 +9576,11 @@ array_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		index = decode_int (p, &p, end);
 		len = decode_int (p, &p, end);
 
-		g_assert (index >= 0 && len >= 0);
+		if (index < 0 || len < 0)
+			return ERR_INVALID_ARGUMENT;
 		// Reordered to avoid integer overflow
-		g_assert (!(index > arr->max_length - len));
+		if (index > arr->max_length - len)
+			return ERR_INVALID_ARGUMENT;
 
 		esize = mono_array_element_size (arr->obj.vtable->klass);
 		for (i = index; i < index + len; ++i) {
@@ -9531,9 +9592,11 @@ array_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		index = decode_int (p, &p, end);
 		len = decode_int (p, &p, end);
 
-		g_assert (index >= 0 && len >= 0);
+		if (index < 0 || len < 0)
+			return ERR_INVALID_ARGUMENT;
 		// Reordered to avoid integer overflow
-		g_assert (!(index > arr->max_length - len));
+		if (index > arr->max_length - len)
+			return ERR_INVALID_ARGUMENT;
 
 		esize = mono_array_element_size (arr->obj.vtable->klass);
 		for (i = index; i < index + len; ++i) {
@@ -9575,7 +9638,7 @@ string_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		}
 		if (use_utf16) {
 			buffer_add_int (buf, mono_string_length_internal (str) * 2);
-			buffer_add_data (buf, (guint8*)mono_string_chars_internal (str), mono_string_length_internal (str) * 2);
+			buffer_add_utf16 (buf, (guint8*)mono_string_chars_internal (str), mono_string_length_internal (str) * 2);
 		} else {
 			ERROR_DECL (error);
 			s = mono_string_to_utf8_checked_internal (str, error);

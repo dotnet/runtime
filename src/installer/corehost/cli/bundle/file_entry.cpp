@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "file_entry.h"
 #include "trace.h"
@@ -38,10 +37,9 @@ bool file_entry_t::needs_extraction() const
 {
     switch (m_type)
     {
-    // Once the runtime can load assemblies from bundle,
-    // file_type_t::assembly should be in this category
     case file_type_t::deps_json:
     case file_type_t::runtime_config_json:
+    case file_type_t::assembly:
         return false;
 
     default:

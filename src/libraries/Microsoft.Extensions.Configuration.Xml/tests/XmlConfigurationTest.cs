@@ -1,13 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.IO;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Xml;
+using System.Tests;
 using System.Xml;
-using Microsoft.AspNetCore.Testing;
 using Microsoft.Extensions.Configuration.Test;
 using Xunit;
 
@@ -319,7 +318,6 @@ namespace Microsoft.Extensions.Configuration.Xml.Test
         }
 
         [Fact]
-        [ReplaceCulture]
         public void ThrowExceptionWhenFindDTD()
         {
             var xml =
@@ -340,15 +338,19 @@ namespace Microsoft.Extensions.Configuration.Xml.Test
                         </Inventory>
                     </Data>
                 </settings>";
-            var xmlConfigSrc = new XmlConfigurationProvider(new XmlConfigurationSource());
-            var isMono = Type.GetType("Mono.Runtime") != null;
-            var expectedMsg = isMono ? "Document Type Declaration (DTD) is prohibited in this XML.  Line 1, position 10." : "For security reasons DTD is prohibited in this XML document. "
-                + "To enable DTD processing set the DtdProcessing property on XmlReaderSettings "
-                + "to Parse and pass the settings into XmlReader.Create method.";
 
-            var exception = Assert.Throws<System.Xml.XmlException>(() => xmlConfigSrc.Load(TestStreamHelpers.StringToStream(xml)));
+            using (new ThreadCultureChange("en-GB"))
+            {
+                var xmlConfigSrc = new XmlConfigurationProvider(new XmlConfigurationSource());
+                var isMono = Type.GetType("Mono.Runtime") != null;
+                var expectedMsg = isMono ? "Document Type Declaration (DTD) is prohibited in this XML.  Line 1, position 10." : "For security reasons DTD is prohibited in this XML document. "
+                    + "To enable DTD processing set the DtdProcessing property on XmlReaderSettings "
+                    + "to Parse and pass the settings into XmlReader.Create method.";
 
-            Assert.Equal(expectedMsg, exception.Message);
+                var exception = Assert.Throws<System.Xml.XmlException>(() => xmlConfigSrc.Load(TestStreamHelpers.StringToStream(xml)));
+
+                Assert.Equal(expectedMsg, exception.Message);
+            }
         }
 
         [Fact]
@@ -432,8 +434,8 @@ namespace Microsoft.Extensions.Configuration.Xml.Test
             var config = new ConfigurationBuilder().AddXmlFile("NotExistingConfig.xml", optional: true).Build();
         }
 
-        [ConditionalFact]
-        [FrameworkSkipCondition(RuntimeFrameworks.Mono)]
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
         public void LoadKeyValuePairsFromValidEncryptedXml()
         {
             var xml = @"

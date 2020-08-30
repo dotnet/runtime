@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.IO;
@@ -11,8 +10,6 @@ namespace System.Diagnostics
 {
     public sealed partial class FileVersionInfo
     {
-        private static readonly char[] s_versionSeparators = new char[] { '.' };
-
         private FileVersionInfo(string fileName)
         {
             _fileName = fileName;
@@ -34,10 +31,6 @@ namespace System.Diagnostics
                 // we can add more cases here as we find need and opportunity.
             }
         }
-
-        // -----------------------------
-        // ---- PAL layer ends here ----
-        // -----------------------------
 
         /// <summary>Attempt to load our fields from the metadata of the file, if it's a managed assembly.</summary>
         /// <returns>true if the file is a managed assembly; otherwise, false.</returns>
@@ -204,7 +197,7 @@ namespace System.Diagnostics
 
             if (versionString != null)
             {
-                string[] parts = versionString.Split(s_versionSeparators);
+                string[] parts = versionString.Split('.');
                 if (parts.Length <= 4 && parts.Length > 0)
                 {
                     major = ParseUInt16UntilNonDigit(parts[0], out bool endedEarly);
@@ -226,6 +219,7 @@ namespace System.Diagnostics
 
         /// <summary>Parses a string as a UInt16 until it hits a non-digit.</summary>
         /// <param name="s">The string to parse.</param>
+        /// <param name="endedEarly">Whether parsing ended prior to reaching the end of the input.</param>
         /// <returns>The parsed value.</returns>
         private static ushort ParseUInt16UntilNonDigit(string s, out bool endedEarly)
         {

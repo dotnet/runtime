@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -32,7 +31,6 @@ namespace System.Composition.UnitTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void RequestingOneWhereMultipleArePresentFails()
         {
             var c = CreateContainer(typeof(LogA), typeof(LogB));
@@ -43,7 +41,6 @@ namespace System.Composition.UnitTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void ImportingOneWhereMultipleArePresentFails()
         {
             var c = CreateContainer(typeof(LogA), typeof(LogB), typeof(UsesLog));

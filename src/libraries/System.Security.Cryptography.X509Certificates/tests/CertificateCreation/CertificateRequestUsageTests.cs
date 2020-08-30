@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Globalization;
 using Test.Cryptography;
@@ -302,7 +301,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         [Theory]
         [InlineData("80", "0080")]
         [InlineData("0080", "0080")]
+        [InlineData("00FF", "00FF")]
         [InlineData("00000080", "0080")]
+        [InlineData("00008008", "008008")]
         [InlineData("00000000", "00")]
         public static void SerialNumber_AlwaysPositive(string desiredSerial, string expectedSerial)
         {
@@ -316,13 +317,28 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                     HashAlgorithmName.SHA512);
 
                 DateTimeOffset now = DateTimeOffset.UtcNow;
+                byte[] serialNumber = desiredSerial.HexToByteArray();
 
+                // byte[] serialNumber
                 X509Certificate2 cert = request.Create(
                     request.SubjectName,
                     generator,
                     now,
                     now.AddDays(1),
-                    desiredSerial.HexToByteArray());
+                    serialNumber);
+
+                using (cert)
+                {
+                    Assert.Equal(expectedSerial, cert.SerialNumber);
+                }
+
+                // ReadOnlySpan<byte> serialNumber
+                cert = request.Create(
+                    request.SubjectName,
+                    generator,
+                    now,
+                    now.AddDays(1),
+                    serialNumber.AsSpan());
 
                 using (cert)
                 {

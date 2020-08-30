@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ============================================================
 //
 // CoreBindResult.inl
@@ -19,7 +18,7 @@ inline BOOL CoreBindResult::Found()
     return (m_pAssembly!=NULL);
 };
 
-inline BOOL CoreBindResult::IsMscorlib()
+inline BOOL CoreBindResult::IsCoreLib()
 {
     CONTRACTL
     {
@@ -31,7 +30,7 @@ inline BOOL CoreBindResult::IsMscorlib()
 
     BINDER_SPACE::Assembly* pAssembly = BINDER_SPACE::GetAssemblyFromPrivAssemblyFast(m_pAssembly);
 #ifndef CROSSGEN_COMPILE
-    return pAssembly->GetAssemblyName()->IsMscorlib();
+    return pAssembly->GetAssemblyName()->IsCoreLib();
 #else
     return (pAssembly->GetPath()).EndsWithCaseInsensitive(SString(CoreLibName_IL_W));
 #endif

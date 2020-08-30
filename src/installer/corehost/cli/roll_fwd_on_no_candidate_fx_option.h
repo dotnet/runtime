@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #ifndef __ROLL_FWD_ON_NO_CANDIDATE_FX_OPTION_H_
 #define __ROLL_FWD_ON_NO_CANDIDATE_FX_OPTION_H_

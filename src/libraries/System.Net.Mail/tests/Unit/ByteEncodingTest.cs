@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Text;
 using Xunit;
@@ -61,6 +60,72 @@ namespace System.Net.Mime.Tests
             }
 
             Assert.Equal(testHeader, MimeBasePart.DecodeHeaderValue(result));
+        }
+
+        [Fact]
+        public void EncodeHeader_Base64Encoding_ShouldSplitBetweenCodepoints()
+        {
+            // header parts split by max line length in base64 encoding = 70 with respect to codepoints
+            string headerPart1 = "Emoji subject : 🕐🕑🕒🕓🕔🕕";
+            string headerPart2 = "🕖🕗🕘🕙🕚";
+            string longEmojiHeader = headerPart1 + headerPart2;
+
+            string encodedHeader = MimeBasePart.EncodeHeaderValue(longEmojiHeader, Encoding.UTF8, true);
+
+            string encodedPart1 = MimeBasePart.EncodeHeaderValue(headerPart1, Encoding.UTF8, true);
+            string encodedPart2 = MimeBasePart.EncodeHeaderValue(headerPart2, Encoding.UTF8, true);
+            Assert.Equal("=?utf-8?B?RW1vamkgc3ViamVjdCA6IPCflZDwn5WR8J+VkvCflZPwn5WU8J+VlQ==?=", encodedPart1);
+            Assert.Equal("=?utf-8?B?8J+VlvCflZfwn5WY8J+VmfCflZo=?=", encodedPart2);
+
+            string expectedEncodedHeader = encodedPart1 + "\r\n " + encodedPart2;
+            Assert.Equal(expectedEncodedHeader, encodedHeader);
+        }
+
+        [Fact]
+        public void EncodeHeader_QEncoding_ShouldSplitBetweenCodepoints()
+        {
+            // header parts split by max line length in q-encoding = 70 with respect to codepoints
+            string headerPart1 = "Emoji subject : 🕐🕑🕒";
+            string headerPart2 = "🕓🕔🕕🕖";
+            string headerPart3 = "🕗🕘🕙🕚";
+            string longEmojiHeader = headerPart1 + headerPart2 + headerPart3;
+
+            string encodedHeader = MimeBasePart.EncodeHeaderValue(longEmojiHeader, Encoding.UTF8, false);
+
+            string encodedPart1 = MimeBasePart.EncodeHeaderValue(headerPart1, Encoding.UTF8, false);
+            string encodedPart2 = MimeBasePart.EncodeHeaderValue(headerPart2, Encoding.UTF8, false);
+            string encodedPart3 = MimeBasePart.EncodeHeaderValue(headerPart3, Encoding.UTF8, false);
+            Assert.Equal("=?utf-8?Q?Emoji_subject_=3A_=F0=9F=95=90=F0=9F=95=91=F0=9F=95=92?=", encodedPart1);
+            Assert.Equal("=?utf-8?Q?=F0=9F=95=93=F0=9F=95=94=F0=9F=95=95=F0=9F=95=96?=", encodedPart2);
+            Assert.Equal("=?utf-8?Q?=F0=9F=95=97=F0=9F=95=98=F0=9F=95=99=F0=9F=95=9A?=", encodedPart3);
+
+            string expectedEncodedHeader = encodedPart1 + "\r\n " + encodedPart2 + "\r\n " + encodedPart3;
+            Assert.Equal(expectedEncodedHeader, encodedHeader);
+        }
+
+        [Theory]
+        [InlineData(false, "🕐11111111111111111111111111111111111111111111:1111")]
+        [InlineData(false, "🕐111111111111111111111111111111111111111111111:111")]
+        [InlineData(false, "🕐1111111111111111111111111111111111111111111111:11")]
+        [InlineData(false, "🕐11111111111111111111111111111111111111111\r\n1111")]
+        [InlineData(false, "🕐111111111111111111111111111111111111111111\r\n111")]
+        [InlineData(false, "🕐1111111111111111111111111111111111111111111\r\n11")]
+        [InlineData(true, "Emoji subject : 🕐🕑🕒🕓🕔🕕:11111")]
+        [InlineData(true, "Emoji subject : 🕐🕑🕒🕓🕔🕕\r\n11")]
+        public void EncodeString_IsSameAsEncodeBytes_IfOneByteCodepointOnLineWrap(bool useBase64Encoding, string value)
+        {
+            var factory = new EncodedStreamFactory();
+            IEncodableStream streamForEncodeString = factory.GetEncoderForHeader(Encoding.UTF8, useBase64Encoding, 0);
+            IEncodableStream streamForEncodeBytes = factory.GetEncoderForHeader(Encoding.UTF8, useBase64Encoding, 0);
+
+            streamForEncodeString.EncodeString(value, Encoding.UTF8);
+            string encodeStringResult = streamForEncodeString.GetEncodedString();
+
+            byte[] bytes = Encoding.UTF8.GetBytes(value);
+            streamForEncodeBytes.EncodeBytes(bytes, 0, bytes.Length);
+            string encodeBytesResult = streamForEncodeBytes.GetEncodedString();
+
+            Assert.Equal(encodeBytesResult, encodeStringResult);
         }
     }
 }

@@ -120,4 +120,7 @@
   <data name="Error_NoSources" xml:space="preserve">
     <value>A configuration source is not registered. Please register one before setting a value.</value>
   </data>
+  <data name="InvalidNullArgument" xml:space="preserve">
+    <value>Null is not a valid value for '{0}'.</value>
+  </data>
 </root>

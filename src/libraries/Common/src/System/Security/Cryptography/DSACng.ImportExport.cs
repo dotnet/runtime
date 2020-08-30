@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable enable
 using Internal.Cryptography;
+using System.Buffers.Binary;
 using System.Diagnostics;
 
 using static Interop.BCrypt;
@@ -360,7 +360,7 @@ namespace System.Security.Cryptography
                             offset = sizeof(KeyBlobMagicNumber) + sizeof(int); // skip Magic and cbKey
 
                             // Read out a (V1) BCRYPT_DSA_KEY_BLOB structure.
-                            dsaParams.Counter = FromBigEndian(Interop.BCrypt.Consume(dsaBlob, ref offset, 4));
+                            dsaParams.Counter = BinaryPrimitives.ReadInt32BigEndian(Interop.BCrypt.Consume(dsaBlob, ref offset, 4));
                             dsaParams.Seed = Interop.BCrypt.Consume(dsaBlob, ref offset, Sha1HashOutputSize);
                             dsaParams.Q = Interop.BCrypt.Consume(dsaBlob, ref offset, Sha1HashOutputSize);
 
@@ -394,7 +394,7 @@ namespace System.Security.Cryptography
                             offset = sizeof(BCRYPT_DSA_KEY_BLOB_V2) - 4; //skip to Count[4]
 
                             // Read out a BCRYPT_DSA_KEY_BLOB_V2 structure.
-                            dsaParams.Counter = FromBigEndian(Interop.BCrypt.Consume(dsaBlob, ref offset, 4));
+                            dsaParams.Counter = BinaryPrimitives.ReadInt32BigEndian(Interop.BCrypt.Consume(dsaBlob, ref offset, 4));
 
                             Debug.Assert(offset == sizeof(BCRYPT_DSA_KEY_BLOB_V2), $"Expected offset = sizeof(BCRYPT_DSA_KEY_BLOB_V2), got {offset} != {sizeof(BCRYPT_DSA_KEY_BLOB_V2)}");
 
@@ -423,14 +423,10 @@ namespace System.Security.Cryptography
                 }
             }
 
-            private static int FromBigEndian(byte[] b)
-            {
-                return (b[0] << 24) | (b[1] << 16) | (b[2] << 8) | b[3];
-            }
-
             /// <summary>
             ///     This function checks the magic value in the key blob header
             /// </summary>
+            /// <param name="magic">The expected magic number.</param>
             /// <param name="includePrivateParameters">Private blob if true else public key blob</param>
             private static void CheckMagicValueOfKey(KeyBlobMagicNumber magic, bool includePrivateParameters)
             {

@@ -29,8 +29,10 @@ set(MDRUNTIME_HEADERS
   ../inc/mdcolumndescriptors.h
   ../inc/metamodel.h
   ../inc/metamodelro.h
+  ../inc/pdbheap.h
+  ../inc/portablepdbmdds.h
+  ../inc/portablepdbmdi.h
   ../inc/recordpool.h
-  ../inc/winmdinterfaces.h
   metamodelcolumndefs.h
   mdinternaldisp.h
   mdinternalro.h
@@ -47,9 +49,11 @@ add_library_clr(mdruntime_dac ${MDRUNTIME_SOURCES})
 set_target_properties(mdruntime_dac PROPERTIES DAC_COMPONENT TRUE)
 target_precompile_header(TARGET mdruntime_dac HEADER stdafx.h)
 
-add_library_clr(mdruntime_wks ${MDRUNTIME_SOURCES})
-target_compile_definitions(mdruntime_wks PRIVATE FEATURE_METADATA_EMIT_ALL)
-target_precompile_header(TARGET mdruntime_wks HEADER stdafx.h)
+add_library_clr(mdruntime_wks_obj OBJECT ${MDRUNTIME_SOURCES})
+target_compile_definitions(mdruntime_wks_obj PRIVATE FEATURE_METADATA_EMIT_ALL)
+target_precompile_header(TARGET mdruntime_wks_obj HEADER stdafx.h)
+add_library(mdruntime_wks INTERFACE)
+target_sources(mdruntime_wks INTERFACE $<TARGET_OBJECTS:mdruntime_wks_obj>)
 
 add_library_clr(mdruntime-dbi ${MDRUNTIME_SOURCES})
 set_target_properties(mdruntime-dbi PROPERTIES DBI_COMPONENT TRUE)
@@ -58,3 +62,7 @@ target_precompile_header(TARGET mdruntime-dbi HEADER stdafx.h)
 add_library_clr(mdruntime_crossgen ${MDRUNTIME_SOURCES})
 set_target_properties(mdruntime_crossgen PROPERTIES CROSSGEN_COMPONENT TRUE)
 target_precompile_header(TARGET mdruntime_crossgen HEADER stdafx.h)
+
+add_library_clr(mdruntime_ppdb ${MDRUNTIME_SOURCES})
+target_compile_definitions(mdruntime_ppdb PRIVATE FEATURE_METADATA_EMIT_ALL FEATURE_METADATA_EMIT_PORTABLE_PDB)
+target_precompile_header(TARGET mdruntime_ppdb HEADER stdafx.h)

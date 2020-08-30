@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Xml;
 using System.Collections;
@@ -12,8 +11,8 @@ namespace System.Runtime.Serialization
 {
     internal sealed class DataContractSet
     {
-        private Dictionary<XmlQualifiedName, DataContract> _contracts;
-        private Dictionary<DataContract, object> _processedContracts;
+        private Dictionary<XmlQualifiedName, DataContract>? _contracts;
+        private Dictionary<DataContract, object>? _processedContracts;
         private readonly ICollection<Type> _referencedTypes;
         private readonly ICollection<Type> _referencedCollectionTypes;
 
@@ -116,7 +115,7 @@ namespace System.Runtime.Serialization
 
         internal void InternalAdd(XmlQualifiedName name, DataContract dataContract)
         {
-            DataContract dataContractInSet = null;
+            DataContract? dataContractInSet = null;
             if (Contracts.TryGetValue(name, out dataContractInSet))
             {
                 if (!dataContractInSet.Equals(dataContract))
@@ -185,7 +184,7 @@ namespace System.Runtime.Serialization
         {
             if (collectionDataContract.IsDictionary)
             {
-                ClassDataContract keyValueContract = collectionDataContract.ItemContract as ClassDataContract;
+                ClassDataContract keyValueContract = (collectionDataContract.ItemContract as ClassDataContract)!;
                 AddClassDataContract(keyValueContract);
             }
             else
@@ -202,7 +201,7 @@ namespace System.Runtime.Serialization
             AddKnownDataContracts(xmlDataContract.KnownDataContracts);
         }
 
-        private void AddKnownDataContracts(DataContractDictionary knownDataContracts)
+        private void AddKnownDataContracts(DataContractDictionary? knownDataContracts)
         {
             if (knownDataContracts != null)
             {
@@ -219,7 +218,7 @@ namespace System.Runtime.Serialization
             if (_dataContractSurrogate == null)
                 return DataContract.GetDataContract(clrType);
 #endif
-            DataContract dataContract = DataContract.GetBuiltInDataContract(clrType);
+            DataContract? dataContract = DataContract.GetBuiltInDataContract(clrType);
             if (dataContract != null)
                 return dataContract;
 
@@ -244,11 +243,9 @@ namespace System.Runtime.Serialization
 
         internal DataContract GetMemberTypeDataContract(DataMember dataMember)
         {
-            if (dataMember.MemberInfo != null)
+            Type dataMemberType = dataMember.MemberType;
+            if (dataMember.IsGetOnlyCollection)
             {
-                Type dataMemberType = dataMember.MemberType;
-                if (dataMember.IsGetOnlyCollection)
-                {
 #if SUPPORT_SURROGATE
                     if (_dataContractSurrogate != null)
                     {
@@ -260,14 +257,12 @@ namespace System.Runtime.Serialization
                         }
                     }
 #endif
-                    return DataContract.GetGetOnlyCollectionDataContract(DataContract.GetId(dataMemberType.TypeHandle), dataMemberType.TypeHandle, dataMemberType, SerializationMode.SharedContract);
-                }
-                else
-                {
-                    return GetDataContract(dataMemberType);
-                }
+                return DataContract.GetGetOnlyCollectionDataContract(DataContract.GetId(dataMemberType.TypeHandle), dataMemberType.TypeHandle, dataMemberType, SerializationMode.SharedContract);
             }
-            return dataMember.MemberTypeContract;
+            else
+            {
+                return GetDataContract(dataMemberType);
+            }
         }
 
         internal DataContract GetItemTypeDataContract(CollectionDataContract collectionContract)

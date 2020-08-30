@@ -1,9 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #ifndef __JSON_PARSER_H__
 #define __JSON_PARSER_H__
+
+#ifdef __sun
+// This optimization relies on zeros in higher 16-bits, whereas SunOS has 1s. More details at
+// https://github.com/Tencent/rapidjson/issues/1596.
+// The impact here was that runtimeOptions key available in hwapp.runtimeconfig.json was not
+// located by RapidJson's FindMember() API from runtime_config_t::ensure_parsed().
+#define RAPIDJSON_48BITPOINTER_OPTIMIZATION 0
+#endif
 
 #include "pal.h"
 #include "rapidjson/document.h"
@@ -23,7 +30,7 @@ class json_parser_t {
 
         const document_t& document() const { return m_document; }
 
-        bool parse_stream(pal::istream_t& stream, const pal::string_t& context);
+        bool parse_raw_data(char* data, int64_t size, const pal::string_t& context);
         bool parse_file(const pal::string_t& path);
 
         json_parser_t()
@@ -45,7 +52,6 @@ class json_parser_t {
         const bundle::location_t* m_bundle_location; // Location of this json file within the bundle.
 
         void realloc_buffer(size_t size);
-        bool parse_json(char* data, int64_t size, const pal::string_t& context);
 };
 
 #endif // __JSON_PARSER_H__

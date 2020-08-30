@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 using System.Threading;
@@ -13,14 +12,18 @@ namespace System.Net.Test.Common
         private readonly VirtualNetwork _network;
         private MemoryStream _readStream;
         private readonly bool _isServer;
+        private readonly bool _gracefulShutdown;
         private SemaphoreSlim _readStreamLock = new SemaphoreSlim(1, 1);
-        private TaskCompletionSource<object> _flushTcs;
+        private TaskCompletionSource _flushTcs;
 
-        public VirtualNetworkStream(VirtualNetwork network, bool isServer)
+        public VirtualNetworkStream(VirtualNetwork network, bool isServer, bool gracefulShutdown = false)
         {
             _network = network;
             _isServer = isServer;
+            _gracefulShutdown = gracefulShutdown;
         }
+
+        public int DelayMilliseconds { get; set; }
 
         public bool Disposed { get; private set; }
 
@@ -34,15 +37,22 @@ namespace System.Net.Test.Common
 
         public override long Position { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
 
+        public bool DelayFlush { get; set; }
+
         public override void Flush() => HasBeenSyncFlushed = true;
 
         public override Task FlushAsync(CancellationToken cancellationToken)
         {
+            if (!DelayFlush)
+            {
+                return Task.CompletedTask;
+            }
+
             if (_flushTcs != null)
             {
                 throw new InvalidOperationException();
             }
-            _flushTcs = new TaskCompletionSource<object>();
+            _flushTcs = new TaskCompletionSource();
 
             return _flushTcs.Task;
         }
@@ -56,7 +66,7 @@ namespace System.Net.Test.Common
                 throw new InvalidOperationException();
             }
 
-            _flushTcs.SetResult(null);
+            _flushTcs.SetResult();
             _flushTcs = null;
         }
 
@@ -71,7 +81,10 @@ namespace System.Net.Test.Common
             {
                 if (_readStream == null || (_readStream.Position >= _readStream.Length))
                 {
-                    _readStream = new MemoryStream(_network.ReadFrame(_isServer));
+                    byte[] frame = _network.ReadFrame(_isServer);
+                    if (frame.Length == 0) return 0;
+
+                    _readStream = new MemoryStream(frame);
                 }
 
                 return _readStream.Read(buffer, offset, count);
@@ -87,9 +100,17 @@ namespace System.Net.Test.Common
             await _readStreamLock.WaitAsync(cancellationToken).ConfigureAwait(false);
             try
             {
+                if (DelayMilliseconds > 0)
+                {
+                    await Task.Delay(DelayMilliseconds, cancellationToken);
+                }
+
                 if (_readStream == null || (_readStream.Position >= _readStream.Length))
                 {
-                    _readStream = new MemoryStream(await _network.ReadFrameAsync(_isServer, cancellationToken).ConfigureAwait(false));
+                    byte[] frame = await _network.ReadFrameAsync(_isServer, cancellationToken).ConfigureAwait(false);
+                    if (frame.Length == 0) return 0;
+
+                    _readStream = new MemoryStream(frame);
                 }
 
                 return await _readStream.ReadAsync(buffer, offset, count, cancellationToken).ConfigureAwait(false);
@@ -105,22 +126,16 @@ namespace System.Net.Test.Common
             _network.WriteFrame(_isServer, buffer.AsSpan(offset, count).ToArray());
         }
 
-        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            if (cancellationToken.IsCancellationRequested)
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (DelayMilliseconds > 0)
             {
-                return Task.FromCanceled<int>(cancellationToken);
+                await Task.Delay(DelayMilliseconds, cancellationToken);
             }
 
-            try
-            {
-                Write(buffer, offset, count);
-                return Task.CompletedTask;
-            }
-            catch (Exception exc)
-            {
-                return Task.FromException(exc);
-            }
+            Write(buffer, offset, count);
         }
 
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, object state) =>
@@ -140,10 +155,22 @@ namespace System.Net.Test.Common
             if (disposing)
             {
                 Disposed = true;
-                _network.BreakConnection();
+                if (_gracefulShutdown)
+                {
+                    GracefulShutdown();
+                }
+                else
+                {
+                    _network.BreakConnection();
+                }
             }
 
             base.Dispose(disposing);
+        }
+
+        public void GracefulShutdown()
+        {
+            _network.GracefulShutdown(_isServer);
         }
     }
 }

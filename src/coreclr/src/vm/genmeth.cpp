@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // File: genmeth.cpp
 //
 // Most functionality for generic methods is put here
@@ -383,19 +382,21 @@ InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
             else if (getWrappedCode)
             {
                 pDL = DictionaryLayout::Allocate(NUM_DICTIONARY_SLOTS, pAllocator, &amt);
-#ifdef _DEBUG 
+#ifdef _DEBUG
                 {
                     SString name;
                     TypeString::AppendMethodDebug(name, pGenericMDescInRepMT);
-                    LOG((LF_JIT, LL_INFO1000, "GENERICS: Created new dictionary layout for dictionary of size %d for %S\n",
-                        DictionaryLayout::GetDictionarySizeFromLayout(pGenericMDescInRepMT->GetNumGenericMethodArgs(), pDL), name.GetUnicode()));
+                    DWORD dictionarySlotSize;
+                    DWORD dictionaryAllocSize = DictionaryLayout::GetDictionarySizeFromLayout(pGenericMDescInRepMT->GetNumGenericMethodArgs(), pDL, &dictionarySlotSize);
+                    LOG((LF_JIT, LL_INFO1000, "GENERICS: Created new dictionary layout for dictionary of slot size %d / alloc size %d for %S\n",
+                        dictionarySlotSize, dictionaryAllocSize, name.GetUnicode()));
                 }
 #endif // _DEBUG
             }
 
             // Allocate space for the instantiation and dictionary
-            infoSize = DictionaryLayout::GetDictionarySizeFromLayout(methodInst.GetNumArgs(), pDL);
-            pInstOrPerInstInfo = (TypeHandle*)(void*)amt.Track(pAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(infoSize)));
+            DWORD allocSize = DictionaryLayout::GetDictionarySizeFromLayout(methodInst.GetNumArgs(), pDL, &infoSize);
+            pInstOrPerInstInfo = (TypeHandle*)(void*)amt.Track(pAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(allocSize)));
             for (DWORD i = 0; i < methodInst.GetNumArgs(); i++)
                 pInstOrPerInstInfo[i] = methodInst[i];
 
@@ -413,18 +414,6 @@ InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
         }
 
         BOOL forComInterop = FALSE;
-#ifdef FEATURE_COMINTEROP
-        if (pExactMT->IsProjectedFromWinRT())
-        {
-            forComInterop = (pExactMT->IsInterface() || (pExactMT->IsDelegate() && COMDelegate::IsDelegateInvokeMethod(pGenericMDescInRepMT)));
-        }
-        else
-        {
-            // redirected interfaces and delegates also support interop
-            forComInterop = (pExactMT->IsWinRTRedirectedInterface(TypeHandle::Interop_ManagedToNative) ||
-                            (pExactMT->IsWinRTRedirectedDelegate() && COMDelegate::IsDelegateInvokeMethod(pGenericMDescInRepMT)));
-        }
-#endif // FEATURE_COMINTEROP
 
         // Create a new singleton chunk for the new instantiated method descriptor
         // Notice that we've passed in the method table pointer; this gets

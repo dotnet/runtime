@@ -13,6 +13,16 @@
 #include <mono/utils/mono-error.h>
 #include <mono/utils/mono-coop-mutex.h>
 
+#ifdef ENABLE_NETCORE
+#if defined(TARGET_OSX)
+#define MONO_LOADER_LIBRARY_NAME "libcoreclr.dylib"
+#elif defined(TARGET_ANDROID)
+#define MONO_LOADER_LIBRARY_NAME "libmonodroid.so"
+#else
+#define MONO_LOADER_LIBRARY_NAME "libcoreclr.so"
+#endif
+#endif
+
 typedef struct _MonoLoadedImages MonoLoadedImages;
 typedef struct _MonoAssemblyLoadContext MonoAssemblyLoadContext;
 
@@ -80,10 +90,10 @@ void
 mono_set_pinvoke_search_directories (int dir_count, char **dirs);
 
 void
-mono_alc_init (MonoAssemblyLoadContext *alc, MonoDomain *domain, gboolean collectible);
+mono_alc_create_default (MonoDomain *domain);
 
-void
-mono_alc_cleanup (MonoAssemblyLoadContext *alc);
+MonoAssemblyLoadContext *
+mono_alc_create_individual (MonoDomain *domain, MonoGCHandle this_gchandle, gboolean collectible, MonoError *error);
 
 void
 mono_alc_assemblies_lock (MonoAssemblyLoadContext *alc);
@@ -105,7 +115,6 @@ mono_alc_invoke_resolve_using_resolve_satellite_nofail (MonoAssemblyLoadContext 
 
 MonoAssemblyLoadContext *
 mono_alc_from_gchandle (MonoGCHandle alc_gchandle);
-
 #endif /* ENABLE_NETCORE */
 
 static inline MonoDomain *

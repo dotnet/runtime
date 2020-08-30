@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 
 #include "common.h"
@@ -1015,10 +1014,6 @@ void PrintDomainName(size_t ob)
 #if defined(TARGET_X86)
 
 #include "gcdump.h"
-
-#include "../gcdump/i386/gcdumpx86.cpp"
-
-#include "../gcdump/gcdump.cpp"
 
 /*********************************************************************/
 void printfToDbgOut(const char* fmt, ...)

@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
@@ -162,7 +161,7 @@ namespace System.Buffers
             {
                 long remainingOffset = offset - (CurrentSpan.Length - CurrentSpanIndex);
                 SequencePosition nextPosition = _nextPosition;
-                ReadOnlyMemory<T> currentMemory = default;
+                ReadOnlyMemory<T> currentMemory;
 
                 while (Sequence.TryGet(ref nextPosition, out currentMemory, advance: true))
                 {

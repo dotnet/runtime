@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 
@@ -16,7 +15,7 @@ namespace System.Tests
         public static void Ctor_Empty()
         {
             var exception = new IOException();
-            ExceptionUtility.ValidateExceptionProperties(exception, hResult: COR_E_IO, validateMessage: false);
+            ExceptionHelpers.ValidateExceptionProperties(exception, hResult: COR_E_IO, validateMessage: false);
         }
 
         [Fact]
@@ -24,7 +23,7 @@ namespace System.Tests
         {
             string message = "IO failure";
             var exception = new IOException(message);
-            ExceptionUtility.ValidateExceptionProperties(exception, hResult: COR_E_IO, message: message);
+            ExceptionHelpers.ValidateExceptionProperties(exception, hResult: COR_E_IO, message: message);
         }
 
         [Fact]
@@ -33,7 +32,7 @@ namespace System.Tests
             string message = "IO failure";
             var innerException = new Exception("Inner exception");
             var exception = new IOException(message, innerException);
-            ExceptionUtility.ValidateExceptionProperties(exception, hResult: COR_E_IO, innerException: innerException, message: message);
+            ExceptionHelpers.ValidateExceptionProperties(exception, hResult: COR_E_IO, innerException: innerException, message: message);
         }
 
         [Fact]
@@ -42,7 +41,7 @@ namespace System.Tests
             string message = "IO failure";
             int hResult = unchecked((int)0x80424242);
             var exception = new IOException(message, hResult);
-            ExceptionUtility.ValidateExceptionProperties(exception, hResult: hResult, message: message);
+            ExceptionHelpers.ValidateExceptionProperties(exception, hResult: hResult, message: message);
         }
     }
 }

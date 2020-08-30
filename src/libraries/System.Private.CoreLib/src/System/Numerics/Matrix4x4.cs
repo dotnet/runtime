@@ -1,10 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
-
+using Internal.Runtime.CompilerServices;
+using System.Diagnostics;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
 
 namespace System.Numerics
@@ -329,26 +331,10 @@ namespace System.Numerics
         /// <returns>The translation matrix.</returns>
         public static Matrix4x4 CreateTranslation(Vector3 position)
         {
-            Matrix4x4 result;
-
-            result.M11 = 1.0f;
-            result.M12 = 0.0f;
-            result.M13 = 0.0f;
-            result.M14 = 0.0f;
-            result.M21 = 0.0f;
-            result.M22 = 1.0f;
-            result.M23 = 0.0f;
-            result.M24 = 0.0f;
-            result.M31 = 0.0f;
-            result.M32 = 0.0f;
-            result.M33 = 1.0f;
-            result.M34 = 0.0f;
-
+            Matrix4x4 result = _identity;
             result.M41 = position.X;
             result.M42 = position.Y;
             result.M43 = position.Z;
-            result.M44 = 1.0f;
-
             return result;
         }
 
@@ -361,26 +347,10 @@ namespace System.Numerics
         /// <returns>The translation matrix.</returns>
         public static Matrix4x4 CreateTranslation(float xPosition, float yPosition, float zPosition)
         {
-            Matrix4x4 result;
-
-            result.M11 = 1.0f;
-            result.M12 = 0.0f;
-            result.M13 = 0.0f;
-            result.M14 = 0.0f;
-            result.M21 = 0.0f;
-            result.M22 = 1.0f;
-            result.M23 = 0.0f;
-            result.M24 = 0.0f;
-            result.M31 = 0.0f;
-            result.M32 = 0.0f;
-            result.M33 = 1.0f;
-            result.M34 = 0.0f;
-
+            Matrix4x4 result = _identity;
             result.M41 = xPosition;
             result.M42 = yPosition;
             result.M43 = zPosition;
-            result.M44 = 1.0f;
-
             return result;
         }
 
@@ -393,25 +363,10 @@ namespace System.Numerics
         /// <returns>The scaling matrix.</returns>
         public static Matrix4x4 CreateScale(float xScale, float yScale, float zScale)
         {
-            Matrix4x4 result;
-
+            Matrix4x4 result = _identity;
             result.M11 = xScale;
-            result.M12 = 0.0f;
-            result.M13 = 0.0f;
-            result.M14 = 0.0f;
-            result.M21 = 0.0f;
             result.M22 = yScale;
-            result.M23 = 0.0f;
-            result.M24 = 0.0f;
-            result.M31 = 0.0f;
-            result.M32 = 0.0f;
             result.M33 = zScale;
-            result.M34 = 0.0f;
-            result.M41 = 0.0f;
-            result.M42 = 0.0f;
-            result.M43 = 0.0f;
-            result.M44 = 1.0f;
-
             return result;
         }
 
@@ -425,29 +380,18 @@ namespace System.Numerics
         /// <returns>The scaling matrix.</returns>
         public static Matrix4x4 CreateScale(float xScale, float yScale, float zScale, Vector3 centerPoint)
         {
-            Matrix4x4 result;
+            Matrix4x4 result = _identity;
 
             float tx = centerPoint.X * (1 - xScale);
             float ty = centerPoint.Y * (1 - yScale);
             float tz = centerPoint.Z * (1 - zScale);
 
             result.M11 = xScale;
-            result.M12 = 0.0f;
-            result.M13 = 0.0f;
-            result.M14 = 0.0f;
-            result.M21 = 0.0f;
             result.M22 = yScale;
-            result.M23 = 0.0f;
-            result.M24 = 0.0f;
-            result.M31 = 0.0f;
-            result.M32 = 0.0f;
             result.M33 = zScale;
-            result.M34 = 0.0f;
             result.M41 = tx;
             result.M42 = ty;
             result.M43 = tz;
-            result.M44 = 1.0f;
-
             return result;
         }
 
@@ -458,25 +402,10 @@ namespace System.Numerics
         /// <returns>The scaling matrix.</returns>
         public static Matrix4x4 CreateScale(Vector3 scales)
         {
-            Matrix4x4 result;
-
+            Matrix4x4 result = _identity;
             result.M11 = scales.X;
-            result.M12 = 0.0f;
-            result.M13 = 0.0f;
-            result.M14 = 0.0f;
-            result.M21 = 0.0f;
             result.M22 = scales.Y;
-            result.M23 = 0.0f;
-            result.M24 = 0.0f;
-            result.M31 = 0.0f;
-            result.M32 = 0.0f;
             result.M33 = scales.Z;
-            result.M34 = 0.0f;
-            result.M41 = 0.0f;
-            result.M42 = 0.0f;
-            result.M43 = 0.0f;
-            result.M44 = 1.0f;
-
             return result;
         }
 
@@ -488,29 +417,18 @@ namespace System.Numerics
         /// <returns>The scaling matrix.</returns>
         public static Matrix4x4 CreateScale(Vector3 scales, Vector3 centerPoint)
         {
-            Matrix4x4 result;
+            Matrix4x4 result = _identity;
 
             float tx = centerPoint.X * (1 - scales.X);
             float ty = centerPoint.Y * (1 - scales.Y);
             float tz = centerPoint.Z * (1 - scales.Z);
 
             result.M11 = scales.X;
-            result.M12 = 0.0f;
-            result.M13 = 0.0f;
-            result.M14 = 0.0f;
-            result.M21 = 0.0f;
             result.M22 = scales.Y;
-            result.M23 = 0.0f;
-            result.M24 = 0.0f;
-            result.M31 = 0.0f;
-            result.M32 = 0.0f;
             result.M33 = scales.Z;
-            result.M34 = 0.0f;
             result.M41 = tx;
             result.M42 = ty;
             result.M43 = tz;
-            result.M44 = 1.0f;
-
             return result;
         }
 
@@ -521,24 +439,11 @@ namespace System.Numerics
         /// <returns>The scaling matrix.</returns>
         public static Matrix4x4 CreateScale(float scale)
         {
-            Matrix4x4 result;
+            Matrix4x4 result = _identity;
 
             result.M11 = scale;
-            result.M12 = 0.0f;
-            result.M13 = 0.0f;
-            result.M14 = 0.0f;
-            result.M21 = 0.0f;
             result.M22 = scale;
-            result.M23 = 0.0f;
-            result.M24 = 0.0f;
-            result.M31 = 0.0f;
-            result.M32 = 0.0f;
             result.M33 = scale;
-            result.M34 = 0.0f;
-            result.M41 = 0.0f;
-            result.M42 = 0.0f;
-            result.M43 = 0.0f;
-            result.M44 = 1.0f;
 
             return result;
         }
@@ -551,28 +456,19 @@ namespace System.Numerics
         /// <returns>The scaling matrix.</returns>
         public static Matrix4x4 CreateScale(float scale, Vector3 centerPoint)
         {
-            Matrix4x4 result;
+            Matrix4x4 result = _identity;
 
             float tx = centerPoint.X * (1 - scale);
             float ty = centerPoint.Y * (1 - scale);
             float tz = centerPoint.Z * (1 - scale);
 
             result.M11 = scale;
-            result.M12 = 0.0f;
-            result.M13 = 0.0f;
-            result.M14 = 0.0f;
-            result.M21 = 0.0f;
             result.M22 = scale;
-            result.M23 = 0.0f;
-            result.M24 = 0.0f;
-            result.M31 = 0.0f;
-            result.M32 = 0.0f;
             result.M33 = scale;
-            result.M34 = 0.0f;
+
             result.M41 = tx;
             result.M42 = ty;
             result.M43 = tz;
-            result.M44 = 1.0f;
 
             return result;
         }
@@ -584,7 +480,7 @@ namespace System.Numerics
         /// <returns>The rotation matrix.</returns>
         public static Matrix4x4 CreateRotationX(float radians)
         {
-            Matrix4x4 result;
+            Matrix4x4 result = _identity;
 
             float c = MathF.Cos(radians);
             float s = MathF.Sin(radians);
@@ -593,22 +489,11 @@ namespace System.Numerics
             // [  0  c  s  0 ]
             // [  0 -s  c  0 ]
             // [  0  0  0  1 ]
-            result.M11 = 1.0f;
-            result.M12 = 0.0f;
-            result.M13 = 0.0f;
-            result.M14 = 0.0f;
-            result.M21 = 0.0f;
+
             result.M22 = c;
             result.M23 = s;
-            result.M24 = 0.0f;
-            result.M31 = 0.0f;
             result.M32 = -s;
             result.M33 = c;
-            result.M34 = 0.0f;
-            result.M41 = 0.0f;
-            result.M42 = 0.0f;
-            result.M43 = 0.0f;
-            result.M44 = 1.0f;
 
             return result;
         }
@@ -621,7 +506,7 @@ namespace System.Numerics
         /// <returns>The rotation matrix.</returns>
         public static Matrix4x4 CreateRotationX(float radians, Vector3 centerPoint)
         {
-            Matrix4x4 result;
+            Matrix4x4 result = _identity;
 
             float c = MathF.Cos(radians);
             float s = MathF.Sin(radians);
@@ -633,22 +518,13 @@ namespace System.Numerics
             // [  0  c  s  0 ]
             // [  0 -s  c  0 ]
             // [  0  y  z  1 ]
-            result.M11 = 1.0f;
-            result.M12 = 0.0f;
-            result.M13 = 0.0f;
-            result.M14 = 0.0f;
-            result.M21 = 0.0f;
+
             result.M22 = c;
             result.M23 = s;
-            result.M24 = 0.0f;
-            result.M31 = 0.0f;
             result.M32 = -s;
             result.M33 = c;
-            result.M34 = 0.0f;
-            result.M41 = 0.0f;
             result.M42 = y;
             result.M43 = z;
-            result.M44 = 1.0f;
 
             return result;
         }
@@ -660,7 +536,7 @@ namespace System.Numerics
         /// <returns>The rotation matrix.</returns>
         public static Matrix4x4 CreateRotationY(float radians)
         {
-            Matrix4x4 result;
+            Matrix4x4 result = _identity;
 
             float c = MathF.Cos(radians);
             float s = MathF.Sin(radians);
@@ -670,21 +546,9 @@ namespace System.Numerics
             // [  s  0  c  0 ]
             // [  0  0  0  1 ]
             result.M11 = c;
-            result.M12 = 0.0f;
             result.M13 = -s;
-            result.M14 = 0.0f;
-            result.M21 = 0.0f;
-            result.M22 = 1.0f;
-            result.M23 = 0.0f;
-            result.M24 = 0.0f;
             result.M31 = s;
-            result.M32 = 0.0f;
             result.M33 = c;
-            result.M34 = 0.0f;
-            result.M41 = 0.0f;
-            result.M42 = 0.0f;
-            result.M43 = 0.0f;
-            result.M44 = 1.0f;
 
             return result;
         }
@@ -697,7 +561,7 @@ namespace System.Numerics
         /// <returns>The rotation matrix.</returns>
         public static Matrix4x4 CreateRotationY(float radians, Vector3 centerPoint)
         {
-            Matrix4x4 result;
+            Matrix4x4 result = _identity;
 
             float c = MathF.Cos(radians);
             float s = MathF.Sin(radians);
@@ -710,21 +574,11 @@ namespace System.Numerics
             // [  s  0  c  0 ]
             // [  x  0  z  1 ]
             result.M11 = c;
-            result.M12 = 0.0f;
             result.M13 = -s;
-            result.M14 = 0.0f;
-            result.M21 = 0.0f;
-            result.M22 = 1.0f;
-            result.M23 = 0.0f;
-            result.M24 = 0.0f;
             result.M31 = s;
-            result.M32 = 0.0f;
             result.M33 = c;
-            result.M34 = 0.0f;
             result.M41 = x;
-            result.M42 = 0.0f;
             result.M43 = z;
-            result.M44 = 1.0f;
 
             return result;
         }
@@ -736,7 +590,7 @@ namespace System.Numerics
         /// <returns>The rotation matrix.</returns>
         public static Matrix4x4 CreateRotationZ(float radians)
         {
-            Matrix4x4 result;
+            Matrix4x4 result = _identity;
 
             float c = MathF.Cos(radians);
             float s = MathF.Sin(radians);
@@ -747,20 +601,8 @@ namespace System.Numerics
             // [  0  0  0  1 ]
             result.M11 = c;
             result.M12 = s;
-            result.M13 = 0.0f;
-            result.M14 = 0.0f;
             result.M21 = -s;
             result.M22 = c;
-            result.M23 = 0.0f;
-            result.M24 = 0.0f;
-            result.M31 = 0.0f;
-            result.M32 = 0.0f;
-            result.M33 = 1.0f;
-            result.M34 = 0.0f;
-            result.M41 = 0.0f;
-            result.M42 = 0.0f;
-            result.M43 = 0.0f;
-            result.M44 = 1.0f;
 
             return result;
         }
@@ -773,7 +615,7 @@ namespace System.Numerics
         /// <returns>The rotation matrix.</returns>
         public static Matrix4x4 CreateRotationZ(float radians, Vector3 centerPoint)
         {
-            Matrix4x4 result;
+            Matrix4x4 result = _identity;
 
             float c = MathF.Cos(radians);
             float s = MathF.Sin(radians);
@@ -787,20 +629,10 @@ namespace System.Numerics
             // [  x  y  0  1 ]
             result.M11 = c;
             result.M12 = s;
-            result.M13 = 0.0f;
-            result.M14 = 0.0f;
             result.M21 = -s;
             result.M22 = c;
-            result.M23 = 0.0f;
-            result.M24 = 0.0f;
-            result.M31 = 0.0f;
-            result.M32 = 0.0f;
-            result.M33 = 1.0f;
-            result.M34 = 0.0f;
             result.M41 = x;
             result.M42 = y;
-            result.M43 = 0.0f;
-            result.M44 = 1.0f;
 
             return result;
         }
@@ -843,24 +675,19 @@ namespace System.Numerics
             float xx = x * x, yy = y * y, zz = z * z;
             float xy = x * y, xz = x * z, yz = y * z;
 
-            Matrix4x4 result;
+            Matrix4x4 result = _identity;
 
             result.M11 = xx + ca * (1.0f - xx);
             result.M12 = xy - ca * xy + sa * z;
             result.M13 = xz - ca * xz - sa * y;
-            result.M14 = 0.0f;
+
             result.M21 = xy - ca * xy - sa * z;
             result.M22 = yy + ca * (1.0f - yy);
             result.M23 = yz - ca * yz + sa * x;
-            result.M24 = 0.0f;
+
             result.M31 = xz - ca * xz + sa * y;
             result.M32 = yz - ca * yz - sa * x;
             result.M33 = zz + ca * (1.0f - zz);
-            result.M34 = 0.0f;
-            result.M41 = 0.0f;
-            result.M42 = 0.0f;
-            result.M43 = 0.0f;
-            result.M44 = 1.0f;
 
             return result;
         }
@@ -998,20 +825,12 @@ namespace System.Numerics
         /// <returns>The orthographic projection matrix.</returns>
         public static Matrix4x4 CreateOrthographic(float width, float height, float zNearPlane, float zFarPlane)
         {
-            Matrix4x4 result;
+            Matrix4x4 result = _identity;
 
             result.M11 = 2.0f / width;
-            result.M12 = result.M13 = result.M14 = 0.0f;
-
             result.M22 = 2.0f / height;
-            result.M21 = result.M23 = result.M24 = 0.0f;
-
             result.M33 = 1.0f / (zNearPlane - zFarPlane);
-            result.M31 = result.M32 = result.M34 = 0.0f;
-
-            result.M41 = result.M42 = 0.0f;
             result.M43 = zNearPlane / (zNearPlane - zFarPlane);
-            result.M44 = 1.0f;
 
             return result;
         }
@@ -1028,21 +847,17 @@ namespace System.Numerics
         /// <returns>The orthographic projection matrix.</returns>
         public static Matrix4x4 CreateOrthographicOffCenter(float left, float right, float bottom, float top, float zNearPlane, float zFarPlane)
         {
-            Matrix4x4 result;
+            Matrix4x4 result = _identity;
 
             result.M11 = 2.0f / (right - left);
-            result.M12 = result.M13 = result.M14 = 0.0f;
 
             result.M22 = 2.0f / (top - bottom);
-            result.M21 = result.M23 = result.M24 = 0.0f;
 
             result.M33 = 1.0f / (zNearPlane - zFarPlane);
-            result.M31 = result.M32 = result.M34 = 0.0f;
 
             result.M41 = (left + right) / (left - right);
             result.M42 = (top + bottom) / (bottom - top);
             result.M43 = zNearPlane / (zNearPlane - zFarPlane);
-            result.M44 = 1.0f;
 
             return result;
         }
@@ -1060,24 +875,23 @@ namespace System.Numerics
             Vector3 xaxis = Vector3.Normalize(Vector3.Cross(cameraUpVector, zaxis));
             Vector3 yaxis = Vector3.Cross(zaxis, xaxis);
 
-            Matrix4x4 result;
+            Matrix4x4 result = _identity;
 
             result.M11 = xaxis.X;
             result.M12 = yaxis.X;
             result.M13 = zaxis.X;
-            result.M14 = 0.0f;
+
             result.M21 = xaxis.Y;
             result.M22 = yaxis.Y;
             result.M23 = zaxis.Y;
-            result.M24 = 0.0f;
+
             result.M31 = xaxis.Z;
             result.M32 = yaxis.Z;
             result.M33 = zaxis.Z;
-            result.M34 = 0.0f;
+
             result.M41 = -Vector3.Dot(xaxis, cameraPosition);
             result.M42 = -Vector3.Dot(yaxis, cameraPosition);
             result.M43 = -Vector3.Dot(zaxis, cameraPosition);
-            result.M44 = 1.0f;
 
             return result;
         }
@@ -1095,24 +909,23 @@ namespace System.Numerics
             Vector3 xaxis = Vector3.Normalize(Vector3.Cross(up, zaxis));
             Vector3 yaxis = Vector3.Cross(zaxis, xaxis);
 
-            Matrix4x4 result;
+            Matrix4x4 result = _identity;
 
             result.M11 = xaxis.X;
             result.M12 = xaxis.Y;
             result.M13 = xaxis.Z;
-            result.M14 = 0.0f;
+
             result.M21 = yaxis.X;
             result.M22 = yaxis.Y;
             result.M23 = yaxis.Z;
-            result.M24 = 0.0f;
+
             result.M31 = zaxis.X;
             result.M32 = zaxis.Y;
             result.M33 = zaxis.Z;
-            result.M34 = 0.0f;
+
             result.M41 = position.X;
             result.M42 = position.Y;
             result.M43 = position.Z;
-            result.M44 = 1.0f;
 
             return result;
         }
@@ -1124,7 +937,7 @@ namespace System.Numerics
         /// <returns>The rotation matrix.</returns>
         public static Matrix4x4 CreateFromQuaternion(Quaternion quaternion)
         {
-            Matrix4x4 result;
+            Matrix4x4 result = _identity;
 
             float xx = quaternion.X * quaternion.X;
             float yy = quaternion.Y * quaternion.Y;
@@ -1140,19 +953,14 @@ namespace System.Numerics
             result.M11 = 1.0f - 2.0f * (yy + zz);
             result.M12 = 2.0f * (xy + wz);
             result.M13 = 2.0f * (xz - wy);
-            result.M14 = 0.0f;
+
             result.M21 = 2.0f * (xy - wz);
             result.M22 = 1.0f - 2.0f * (zz + xx);
             result.M23 = 2.0f * (yz + wx);
-            result.M24 = 0.0f;
+
             result.M31 = 2.0f * (xz + wy);
             result.M32 = 2.0f * (yz - wx);
             result.M33 = 1.0f - 2.0f * (yy + xx);
-            result.M34 = 0.0f;
-            result.M41 = 0.0f;
-            result.M42 = 0.0f;
-            result.M43 = 0.0f;
-            result.M44 = 1.0f;
 
             return result;
         }
@@ -1187,7 +995,7 @@ namespace System.Numerics
             float c = -p.Normal.Z;
             float d = -p.D;
 
-            Matrix4x4 result;
+            Matrix4x4 result = _identity;
 
             result.M11 = a * lightDirection.X + dot;
             result.M21 = b * lightDirection.X;
@@ -1204,9 +1012,6 @@ namespace System.Numerics
             result.M33 = c * lightDirection.Z + dot;
             result.M43 = d * lightDirection.Z;
 
-            result.M14 = 0.0f;
-            result.M24 = 0.0f;
-            result.M34 = 0.0f;
             result.M44 = dot;
 
             return result;
@@ -1229,27 +1034,23 @@ namespace System.Numerics
             float fb = -2.0f * b;
             float fc = -2.0f * c;
 
-            Matrix4x4 result;
+            Matrix4x4 result = _identity;
 
             result.M11 = fa * a + 1.0f;
             result.M12 = fb * a;
             result.M13 = fc * a;
-            result.M14 = 0.0f;
 
             result.M21 = fa * b;
             result.M22 = fb * b + 1.0f;
             result.M23 = fc * b;
-            result.M24 = 0.0f;
 
             result.M31 = fa * c;
             result.M32 = fb * c;
             result.M33 = fc * c + 1.0f;
-            result.M34 = 0.0f;
 
             result.M41 = fa * value.D;
             result.M42 = fb * value.D;
             result.M43 = fc * value.D;
-            result.M44 = 1.0f;
 
             return result;
         }
@@ -1305,173 +1106,373 @@ namespace System.Numerics
                    d * (e * jo_kn - f * io_km + g * in_jm);
         }
 
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector128<float> Permute(Vector128<float> value, byte control)
+        {
+            if (Avx.IsSupported)
+            {
+                return Avx.Permute(value, control);
+            }
+            else if (Sse.IsSupported)
+            {
+                return Sse.Shuffle(value, value, control);
+            }
+            else
+            {
+                // Redundant test so we won't prejit remainder of this method on platforms without AdvSimd.
+                throw new PlatformNotSupportedException();
+            }
+        }
+
         /// <summary>
         /// Attempts to calculate the inverse of the given matrix. If successful, result will contain the inverted matrix.
         /// </summary>
         /// <param name="matrix">The source matrix to invert.</param>
         /// <param name="result">If successful, contains the inverted matrix.</param>
         /// <returns>True if the source matrix could be inverted; False otherwise.</returns>
-        public static bool Invert(Matrix4x4 matrix, out Matrix4x4 result)
+        ///
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe bool Invert(Matrix4x4 matrix, out Matrix4x4 result)
         {
-            //                                       -1
-            // If you have matrix M, inverse Matrix M   can compute
-            //
-            //     -1       1
-            //    M   = --------- A
-            //            det(M)
-            //
-            // A is adjugate (adjoint) of M, where,
-            //
-            //      T
-            // A = C
-            //
-            // C is Cofactor matrix of M, where,
-            //           i + j
-            // C   = (-1)      * det(M  )
-            //  ij                    ij
-            //
-            //     [ a b c d ]
-            // M = [ e f g h ]
-            //     [ i j k l ]
-            //     [ m n o p ]
-            //
-            // First Row
-            //           2 | f g h |
-            // C   = (-1)  | j k l | = + ( f ( kp - lo ) - g ( jp - ln ) + h ( jo - kn ) )
-            //  11         | n o p |
-            //
-            //           3 | e g h |
-            // C   = (-1)  | i k l | = - ( e ( kp - lo ) - g ( ip - lm ) + h ( io - km ) )
-            //  12         | m o p |
-            //
-            //           4 | e f h |
-            // C   = (-1)  | i j l | = + ( e ( jp - ln ) - f ( ip - lm ) + h ( in - jm ) )
-            //  13         | m n p |
-            //
-            //           5 | e f g |
-            // C   = (-1)  | i j k | = - ( e ( jo - kn ) - f ( io - km ) + g ( in - jm ) )
-            //  14         | m n o |
-            //
-            // Second Row
-            //           3 | b c d |
-            // C   = (-1)  | j k l | = - ( b ( kp - lo ) - c ( jp - ln ) + d ( jo - kn ) )
-            //  21         | n o p |
-            //
-            //           4 | a c d |
-            // C   = (-1)  | i k l | = + ( a ( kp - lo ) - c ( ip - lm ) + d ( io - km ) )
-            //  22         | m o p |
-            //
-            //           5 | a b d |
-            // C   = (-1)  | i j l | = - ( a ( jp - ln ) - b ( ip - lm ) + d ( in - jm ) )
-            //  23         | m n p |
-            //
-            //           6 | a b c |
-            // C   = (-1)  | i j k | = + ( a ( jo - kn ) - b ( io - km ) + c ( in - jm ) )
-            //  24         | m n o |
-            //
-            // Third Row
-            //           4 | b c d |
-            // C   = (-1)  | f g h | = + ( b ( gp - ho ) - c ( fp - hn ) + d ( fo - gn ) )
-            //  31         | n o p |
-            //
-            //           5 | a c d |
-            // C   = (-1)  | e g h | = - ( a ( gp - ho ) - c ( ep - hm ) + d ( eo - gm ) )
-            //  32         | m o p |
-            //
-            //           6 | a b d |
-            // C   = (-1)  | e f h | = + ( a ( fp - hn ) - b ( ep - hm ) + d ( en - fm ) )
-            //  33         | m n p |
-            //
-            //           7 | a b c |
-            // C   = (-1)  | e f g | = - ( a ( fo - gn ) - b ( eo - gm ) + c ( en - fm ) )
-            //  34         | m n o |
-            //
-            // Fourth Row
-            //           5 | b c d |
-            // C   = (-1)  | f g h | = - ( b ( gl - hk ) - c ( fl - hj ) + d ( fk - gj ) )
-            //  41         | j k l |
-            //
-            //           6 | a c d |
-            // C   = (-1)  | e g h | = + ( a ( gl - hk ) - c ( el - hi ) + d ( ek - gi ) )
-            //  42         | i k l |
-            //
-            //           7 | a b d |
-            // C   = (-1)  | e f h | = - ( a ( fl - hj ) - b ( el - hi ) + d ( ej - fi ) )
-            //  43         | i j l |
-            //
-            //           8 | a b c |
-            // C   = (-1)  | e f g | = + ( a ( fk - gj ) - b ( ek - gi ) + c ( ej - fi ) )
-            //  44         | i j k |
-            //
-            // Cost of operation
-            // 53 adds, 104 muls, and 1 div.
-            float a = matrix.M11, b = matrix.M12, c = matrix.M13, d = matrix.M14;
-            float e = matrix.M21, f = matrix.M22, g = matrix.M23, h = matrix.M24;
-            float i = matrix.M31, j = matrix.M32, k = matrix.M33, l = matrix.M34;
-            float m = matrix.M41, n = matrix.M42, o = matrix.M43, p = matrix.M44;
+            // This implementation is based on the DirectX Math Library XMMatrixInverse method
+            // https://github.com/microsoft/DirectXMath/blob/master/Inc/DirectXMathMatrix.inl
 
-            float kp_lo = k * p - l * o;
-            float jp_ln = j * p - l * n;
-            float jo_kn = j * o - k * n;
-            float ip_lm = i * p - l * m;
-            float io_km = i * o - k * m;
-            float in_jm = i * n - j * m;
-
-            float a11 = +(f * kp_lo - g * jp_ln + h * jo_kn);
-            float a12 = -(e * kp_lo - g * ip_lm + h * io_km);
-            float a13 = +(e * jp_ln - f * ip_lm + h * in_jm);
-            float a14 = -(e * jo_kn - f * io_km + g * in_jm);
-
-            float det = a * a11 + b * a12 + c * a13 + d * a14;
-
-            if (MathF.Abs(det) < float.Epsilon)
+            if (Sse.IsSupported)
             {
-                result = new Matrix4x4(float.NaN, float.NaN, float.NaN, float.NaN,
-                                       float.NaN, float.NaN, float.NaN, float.NaN,
-                                       float.NaN, float.NaN, float.NaN, float.NaN,
-                                       float.NaN, float.NaN, float.NaN, float.NaN);
-                return false;
+                return SseImpl(matrix, out result);
             }
 
-            float invDet = 1.0f / det;
+            return SoftwareFallback(matrix, out result);
 
-            result.M11 = a11 * invDet;
-            result.M21 = a12 * invDet;
-            result.M31 = a13 * invDet;
-            result.M41 = a14 * invDet;
+            static unsafe bool SseImpl(Matrix4x4 matrix, out Matrix4x4 result)
+            {
+                if (!Sse.IsSupported)
+                {
+                    // Redundant test so we won't prejit remainder of this method on platforms without SSE.
+                    throw new PlatformNotSupportedException();
+                }
 
-            result.M12 = -(b * kp_lo - c * jp_ln + d * jo_kn) * invDet;
-            result.M22 = +(a * kp_lo - c * ip_lm + d * io_km) * invDet;
-            result.M32 = -(a * jp_ln - b * ip_lm + d * in_jm) * invDet;
-            result.M42 = +(a * jo_kn - b * io_km + c * in_jm) * invDet;
+                // Load the matrix values into rows
+                Vector128<float> row1 = Sse.LoadVector128(&matrix.M11);
+                Vector128<float> row2 = Sse.LoadVector128(&matrix.M21);
+                Vector128<float> row3 = Sse.LoadVector128(&matrix.M31);
+                Vector128<float> row4 = Sse.LoadVector128(&matrix.M41);
 
-            float gp_ho = g * p - h * o;
-            float fp_hn = f * p - h * n;
-            float fo_gn = f * o - g * n;
-            float ep_hm = e * p - h * m;
-            float eo_gm = e * o - g * m;
-            float en_fm = e * n - f * m;
+                // Transpose the matrix
+                Vector128<float> vTemp1 = Sse.Shuffle(row1, row2, 0x44); //_MM_SHUFFLE(1, 0, 1, 0)
+                Vector128<float> vTemp3 = Sse.Shuffle(row1, row2, 0xEE); //_MM_SHUFFLE(3, 2, 3, 2)
+                Vector128<float> vTemp2 = Sse.Shuffle(row3, row4, 0x44); //_MM_SHUFFLE(1, 0, 1, 0)
+                Vector128<float> vTemp4 = Sse.Shuffle(row3, row4, 0xEE); //_MM_SHUFFLE(3, 2, 3, 2)
 
-            result.M13 = +(b * gp_ho - c * fp_hn + d * fo_gn) * invDet;
-            result.M23 = -(a * gp_ho - c * ep_hm + d * eo_gm) * invDet;
-            result.M33 = +(a * fp_hn - b * ep_hm + d * en_fm) * invDet;
-            result.M43 = -(a * fo_gn - b * eo_gm + c * en_fm) * invDet;
+                row1 = Sse.Shuffle(vTemp1, vTemp2, 0x88); //_MM_SHUFFLE(2, 0, 2, 0)
+                row2 = Sse.Shuffle(vTemp1, vTemp2, 0xDD); //_MM_SHUFFLE(3, 1, 3, 1)
+                row3 = Sse.Shuffle(vTemp3, vTemp4, 0x88); //_MM_SHUFFLE(2, 0, 2, 0)
+                row4 = Sse.Shuffle(vTemp3, vTemp4, 0xDD); //_MM_SHUFFLE(3, 1, 3, 1)
 
-            float gl_hk = g * l - h * k;
-            float fl_hj = f * l - h * j;
-            float fk_gj = f * k - g * j;
-            float el_hi = e * l - h * i;
-            float ek_gi = e * k - g * i;
-            float ej_fi = e * j - f * i;
+                Vector128<float> V00 = Permute(row3, 0x50);           //_MM_SHUFFLE(1, 1, 0, 0)
+                Vector128<float> V10 = Permute(row4, 0xEE);           //_MM_SHUFFLE(3, 2, 3, 2)
+                Vector128<float> V01 = Permute(row1, 0x50);           //_MM_SHUFFLE(1, 1, 0, 0)
+                Vector128<float> V11 = Permute(row2, 0xEE);           //_MM_SHUFFLE(3, 2, 3, 2)
+                Vector128<float> V02 = Sse.Shuffle(row3, row1, 0x88); //_MM_SHUFFLE(2, 0, 2, 0)
+                Vector128<float> V12 = Sse.Shuffle(row4, row2, 0xDD); //_MM_SHUFFLE(3, 1, 3, 1)
 
-            result.M14 = -(b * gl_hk - c * fl_hj + d * fk_gj) * invDet;
-            result.M24 = +(a * gl_hk - c * el_hi + d * ek_gi) * invDet;
-            result.M34 = -(a * fl_hj - b * el_hi + d * ej_fi) * invDet;
-            result.M44 = +(a * fk_gj - b * ek_gi + c * ej_fi) * invDet;
+                Vector128<float> D0 = Sse.Multiply(V00, V10);
+                Vector128<float> D1 = Sse.Multiply(V01, V11);
+                Vector128<float> D2 = Sse.Multiply(V02, V12);
 
-            return true;
+                V00 = Permute(row3, 0xEE);           //_MM_SHUFFLE(3, 2, 3, 2)
+                V10 = Permute(row4, 0x50);           //_MM_SHUFFLE(1, 1, 0, 0)
+                V01 = Permute(row1, 0xEE);           //_MM_SHUFFLE(3, 2, 3, 2)
+                V11 = Permute(row2, 0x50);           //_MM_SHUFFLE(1, 1, 0, 0)
+                V02 = Sse.Shuffle(row3, row1, 0xDD); //_MM_SHUFFLE(3, 1, 3, 1)
+                V12 = Sse.Shuffle(row4, row2, 0x88); //_MM_SHUFFLE(2, 0, 2, 0)
+
+                // Note:  We use this expansion pattern instead of Fused Multiply Add
+                // in order to support older hardware
+                D0 = Sse.Subtract(D0, Sse.Multiply(V00, V10));
+                D1 = Sse.Subtract(D1, Sse.Multiply(V01, V11));
+                D2 = Sse.Subtract(D2, Sse.Multiply(V02, V12));
+
+                // V11 = D0Y,D0W,D2Y,D2Y
+                V11 = Sse.Shuffle(D0, D2, 0x5D);  //_MM_SHUFFLE(1, 1, 3, 1)
+                V00 = Permute(row2, 0x49);        //_MM_SHUFFLE(1, 0, 2, 1)
+                V10 = Sse.Shuffle(V11, D0, 0x32); //_MM_SHUFFLE(0, 3, 0, 2)
+                V01 = Permute(row1, 0x12);        //_MM_SHUFFLE(0, 1, 0, 2)
+                V11 = Sse.Shuffle(V11, D0, 0x99); //_MM_SHUFFLE(2, 1, 2, 1)
+
+                // V13 = D1Y,D1W,D2W,D2W
+                Vector128<float> V13 = Sse.Shuffle(D1, D2, 0xFD); //_MM_SHUFFLE(3, 3, 3, 1)
+                V02 = Permute(row4, 0x49);                        //_MM_SHUFFLE(1, 0, 2, 1)
+                V12 = Sse.Shuffle(V13, D1, 0x32);                 //_MM_SHUFFLE(0, 3, 0, 2)
+                Vector128<float> V03 = Permute(row3, 0x12);       //_MM_SHUFFLE(0, 1, 0, 2)
+                V13 = Sse.Shuffle(V13, D1, 0x99);                 //_MM_SHUFFLE(2, 1, 2, 1)
+
+                Vector128<float> C0 = Sse.Multiply(V00, V10);
+                Vector128<float> C2 = Sse.Multiply(V01, V11);
+                Vector128<float> C4 = Sse.Multiply(V02, V12);
+                Vector128<float> C6 = Sse.Multiply(V03, V13);
+
+                // V11 = D0X,D0Y,D2X,D2X
+                V11 = Sse.Shuffle(D0, D2, 0x4);    //_MM_SHUFFLE(0, 0, 1, 0)
+                V00 = Permute(row2, 0x9e);         //_MM_SHUFFLE(2, 1, 3, 2)
+                V10 = Sse.Shuffle(D0, V11, 0x93);  //_MM_SHUFFLE(2, 1, 0, 3)
+                V01 = Permute(row1, 0x7b);         //_MM_SHUFFLE(1, 3, 2, 3)
+                V11 = Sse.Shuffle(D0, V11, 0x26);  //_MM_SHUFFLE(0, 2, 1, 2)
+
+                // V13 = D1X,D1Y,D2Z,D2Z
+                V13 = Sse.Shuffle(D1, D2, 0xa4);   //_MM_SHUFFLE(2, 2, 1, 0)
+                V02 = Permute(row4, 0x9e);         //_MM_SHUFFLE(2, 1, 3, 2)
+                V12 = Sse.Shuffle(D1, V13, 0x93);  //_MM_SHUFFLE(2, 1, 0, 3)
+                V03 = Permute(row3, 0x7b);         //_MM_SHUFFLE(1, 3, 2, 3)
+                V13 = Sse.Shuffle(D1, V13, 0x26);  //_MM_SHUFFLE(0, 2, 1, 2)
+
+                C0 = Sse.Subtract(C0, Sse.Multiply(V00, V10));
+                C2 = Sse.Subtract(C2, Sse.Multiply(V01, V11));
+                C4 = Sse.Subtract(C4, Sse.Multiply(V02, V12));
+                C6 = Sse.Subtract(C6, Sse.Multiply(V03, V13));
+
+                V00 = Permute(row2, 0x33); //_MM_SHUFFLE(0, 3, 0, 3)
+
+                // V10 = D0Z,D0Z,D2X,D2Y
+                V10 = Sse.Shuffle(D0, D2, 0x4A); //_MM_SHUFFLE(1, 0, 2, 2)
+                V10 = Permute(V10, 0x2C);        //_MM_SHUFFLE(0, 2, 3, 0)
+                V01 = Permute(row1, 0x8D);       //_MM_SHUFFLE(2, 0, 3, 1)
+
+                // V11 = D0X,D0W,D2X,D2Y
+                V11 = Sse.Shuffle(D0, D2, 0x4C); //_MM_SHUFFLE(1, 0, 3, 0)
+                V11 = Permute(V11, 0x93);        //_MM_SHUFFLE(2, 1, 0, 3)
+                V02 = Permute(row4, 0x33);       //_MM_SHUFFLE(0, 3, 0, 3)
+
+                // V12 = D1Z,D1Z,D2Z,D2W
+                V12 = Sse.Shuffle(D1, D2, 0xEA); //_MM_SHUFFLE(3, 2, 2, 2)
+                V12 = Permute(V12, 0x2C);        //_MM_SHUFFLE(0, 2, 3, 0)
+                V03 = Permute(row3, 0x8D);       //_MM_SHUFFLE(2, 0, 3, 1)
+
+                // V13 = D1X,D1W,D2Z,D2W
+                V13 = Sse.Shuffle(D1, D2, 0xEC); //_MM_SHUFFLE(3, 2, 3, 0)
+                V13 = Permute(V13, 0x93);        //_MM_SHUFFLE(2, 1, 0, 3)
+
+                V00 = Sse.Multiply(V00, V10);
+                V01 = Sse.Multiply(V01, V11);
+                V02 = Sse.Multiply(V02, V12);
+                V03 = Sse.Multiply(V03, V13);
+
+                Vector128<float> C1 = Sse.Subtract(C0, V00);
+                C0 = Sse.Add(C0, V00);
+                Vector128<float> C3 = Sse.Add(C2, V01);
+                C2 = Sse.Subtract(C2, V01);
+                Vector128<float> C5 = Sse.Subtract(C4, V02);
+                C4 = Sse.Add(C4, V02);
+                Vector128<float> C7 = Sse.Add(C6, V03);
+                C6 = Sse.Subtract(C6, V03);
+
+                C0 = Sse.Shuffle(C0, C1, 0xD8); //_MM_SHUFFLE(3, 1, 2, 0)
+                C2 = Sse.Shuffle(C2, C3, 0xD8); //_MM_SHUFFLE(3, 1, 2, 0)
+                C4 = Sse.Shuffle(C4, C5, 0xD8); //_MM_SHUFFLE(3, 1, 2, 0)
+                C6 = Sse.Shuffle(C6, C7, 0xD8); //_MM_SHUFFLE(3, 1, 2, 0)
+
+                C0 = Permute(C0, 0xD8); //_MM_SHUFFLE(3, 1, 2, 0)
+                C2 = Permute(C2, 0xD8); //_MM_SHUFFLE(3, 1, 2, 0)
+                C4 = Permute(C4, 0xD8); //_MM_SHUFFLE(3, 1, 2, 0)
+                C6 = Permute(C6, 0xD8); //_MM_SHUFFLE(3, 1, 2, 0)
+
+                // Get the determinant
+                vTemp2 = row1;
+                float det = Vector4.Dot(C0.AsVector4(), vTemp2.AsVector4());
+
+                // Check determinate is not zero
+                if (MathF.Abs(det) < float.Epsilon)
+                {
+                    result = new Matrix4x4(float.NaN, float.NaN, float.NaN, float.NaN,
+                                float.NaN, float.NaN, float.NaN, float.NaN,
+                                float.NaN, float.NaN, float.NaN, float.NaN,
+                                float.NaN, float.NaN, float.NaN, float.NaN);
+                    return false;
+                }
+
+                // Create Vector128<float> copy of the determinant and invert them.
+                Vector128<float> ones = Vector128.Create(1.0f);
+                Vector128<float> vTemp = Vector128.Create(det);
+                vTemp = Sse.Divide(ones, vTemp);
+
+                row1 = Sse.Multiply(C0, vTemp);
+                row2 = Sse.Multiply(C2, vTemp);
+                row3 = Sse.Multiply(C4, vTemp);
+                row4 = Sse.Multiply(C6, vTemp);
+
+                Unsafe.SkipInit(out result);
+                ref Vector128<float> vResult = ref Unsafe.As<Matrix4x4, Vector128<float>>(ref result);
+
+                vResult = row1;
+                Unsafe.Add(ref vResult, 1) = row2;
+                Unsafe.Add(ref vResult, 2) = row3;
+                Unsafe.Add(ref vResult, 3) = row4;
+
+                return true;
+            }
+
+            static bool SoftwareFallback(Matrix4x4 matrix, out Matrix4x4 result)
+            {
+                //                                       -1
+                // If you have matrix M, inverse Matrix M   can compute
+                //
+                //     -1       1
+                //    M   = --------- A
+                //            det(M)
+                //
+                // A is adjugate (adjoint) of M, where,
+                //
+                //      T
+                // A = C
+                //
+                // C is Cofactor matrix of M, where,
+                //           i + j
+                // C   = (-1)      * det(M  )
+                //  ij                    ij
+                //
+                //     [ a b c d ]
+                // M = [ e f g h ]
+                //     [ i j k l ]
+                //     [ m n o p ]
+                //
+                // First Row
+                //           2 | f g h |
+                // C   = (-1)  | j k l | = + ( f ( kp - lo ) - g ( jp - ln ) + h ( jo - kn ) )
+                //  11         | n o p |
+                //
+                //           3 | e g h |
+                // C   = (-1)  | i k l | = - ( e ( kp - lo ) - g ( ip - lm ) + h ( io - km ) )
+                //  12         | m o p |
+                //
+                //           4 | e f h |
+                // C   = (-1)  | i j l | = + ( e ( jp - ln ) - f ( ip - lm ) + h ( in - jm ) )
+                //  13         | m n p |
+                //
+                //           5 | e f g |
+                // C   = (-1)  | i j k | = - ( e ( jo - kn ) - f ( io - km ) + g ( in - jm ) )
+                //  14         | m n o |
+                //
+                // Second Row
+                //           3 | b c d |
+                // C   = (-1)  | j k l | = - ( b ( kp - lo ) - c ( jp - ln ) + d ( jo - kn ) )
+                //  21         | n o p |
+                //
+                //           4 | a c d |
+                // C   = (-1)  | i k l | = + ( a ( kp - lo ) - c ( ip - lm ) + d ( io - km ) )
+                //  22         | m o p |
+                //
+                //           5 | a b d |
+                // C   = (-1)  | i j l | = - ( a ( jp - ln ) - b ( ip - lm ) + d ( in - jm ) )
+                //  23         | m n p |
+                //
+                //           6 | a b c |
+                // C   = (-1)  | i j k | = + ( a ( jo - kn ) - b ( io - km ) + c ( in - jm ) )
+                //  24         | m n o |
+                //
+                // Third Row
+                //           4 | b c d |
+                // C   = (-1)  | f g h | = + ( b ( gp - ho ) - c ( fp - hn ) + d ( fo - gn ) )
+                //  31         | n o p |
+                //
+                //           5 | a c d |
+                // C   = (-1)  | e g h | = - ( a ( gp - ho ) - c ( ep - hm ) + d ( eo - gm ) )
+                //  32         | m o p |
+                //
+                //           6 | a b d |
+                // C   = (-1)  | e f h | = + ( a ( fp - hn ) - b ( ep - hm ) + d ( en - fm ) )
+                //  33         | m n p |
+                //
+                //           7 | a b c |
+                // C   = (-1)  | e f g | = - ( a ( fo - gn ) - b ( eo - gm ) + c ( en - fm ) )
+                //  34         | m n o |
+                //
+                // Fourth Row
+                //           5 | b c d |
+                // C   = (-1)  | f g h | = - ( b ( gl - hk ) - c ( fl - hj ) + d ( fk - gj ) )
+                //  41         | j k l |
+                //
+                //           6 | a c d |
+                // C   = (-1)  | e g h | = + ( a ( gl - hk ) - c ( el - hi ) + d ( ek - gi ) )
+                //  42         | i k l |
+                //
+                //           7 | a b d |
+                // C   = (-1)  | e f h | = - ( a ( fl - hj ) - b ( el - hi ) + d ( ej - fi ) )
+                //  43         | i j l |
+                //
+                //           8 | a b c |
+                // C   = (-1)  | e f g | = + ( a ( fk - gj ) - b ( ek - gi ) + c ( ej - fi ) )
+                //  44         | i j k |
+                //
+                // Cost of operation
+                // 53 adds, 104 muls, and 1 div.
+                float a = matrix.M11, b = matrix.M12, c = matrix.M13, d = matrix.M14;
+                float e = matrix.M21, f = matrix.M22, g = matrix.M23, h = matrix.M24;
+                float i = matrix.M31, j = matrix.M32, k = matrix.M33, l = matrix.M34;
+                float m = matrix.M41, n = matrix.M42, o = matrix.M43, p = matrix.M44;
+
+                float kp_lo = k * p - l * o;
+                float jp_ln = j * p - l * n;
+                float jo_kn = j * o - k * n;
+                float ip_lm = i * p - l * m;
+                float io_km = i * o - k * m;
+                float in_jm = i * n - j * m;
+
+                float a11 = +(f * kp_lo - g * jp_ln + h * jo_kn);
+                float a12 = -(e * kp_lo - g * ip_lm + h * io_km);
+                float a13 = +(e * jp_ln - f * ip_lm + h * in_jm);
+                float a14 = -(e * jo_kn - f * io_km + g * in_jm);
+
+                float det = a * a11 + b * a12 + c * a13 + d * a14;
+
+                if (MathF.Abs(det) < float.Epsilon)
+                {
+                    result = new Matrix4x4(float.NaN, float.NaN, float.NaN, float.NaN,
+                                           float.NaN, float.NaN, float.NaN, float.NaN,
+                                           float.NaN, float.NaN, float.NaN, float.NaN,
+                                           float.NaN, float.NaN, float.NaN, float.NaN);
+                    return false;
+                }
+
+                float invDet = 1.0f / det;
+
+                result.M11 = a11 * invDet;
+                result.M21 = a12 * invDet;
+                result.M31 = a13 * invDet;
+                result.M41 = a14 * invDet;
+
+                result.M12 = -(b * kp_lo - c * jp_ln + d * jo_kn) * invDet;
+                result.M22 = +(a * kp_lo - c * ip_lm + d * io_km) * invDet;
+                result.M32 = -(a * jp_ln - b * ip_lm + d * in_jm) * invDet;
+                result.M42 = +(a * jo_kn - b * io_km + c * in_jm) * invDet;
+
+                float gp_ho = g * p - h * o;
+                float fp_hn = f * p - h * n;
+                float fo_gn = f * o - g * n;
+                float ep_hm = e * p - h * m;
+                float eo_gm = e * o - g * m;
+                float en_fm = e * n - f * m;
+
+                result.M13 = +(b * gp_ho - c * fp_hn + d * fo_gn) * invDet;
+                result.M23 = -(a * gp_ho - c * ep_hm + d * eo_gm) * invDet;
+                result.M33 = +(a * fp_hn - b * ep_hm + d * en_fm) * invDet;
+                result.M43 = -(a * fo_gn - b * eo_gm + c * en_fm) * invDet;
+
+                float gl_hk = g * l - h * k;
+                float fl_hj = f * l - h * j;
+                float fk_gj = f * k - g * j;
+                float el_hi = e * l - h * i;
+                float ek_gi = e * k - g * i;
+                float ej_fi = e * j - f * i;
+
+                result.M14 = -(b * gl_hk - c * fl_hj + d * fk_gj) * invDet;
+                result.M24 = +(a * gl_hk - c * el_hi + d * ek_gi) * invDet;
+                result.M34 = -(a * fl_hj - b * el_hi + d * ej_fi) * invDet;
+                result.M44 = +(a * fk_gj - b * ek_gi + c * ej_fi) * invDet;
+
+                return true;
+            }
         }
-
 
         private struct CanonicalBasis
         {
@@ -1479,7 +1480,6 @@ namespace System.Numerics
             public Vector3 Row1;
             public Vector3 Row2;
         };
-
 
         private struct VectorBasis
         {
@@ -1759,7 +1759,31 @@ namespace System.Numerics
         /// <returns>The transposed matrix.</returns>
         public static unsafe Matrix4x4 Transpose(Matrix4x4 matrix)
         {
-            if (Sse.IsSupported)
+            if (AdvSimd.Arm64.IsSupported)
+            {
+                // This implementation is based on the DirectX Math Library XMMatrixTranspose method
+                // https://github.com/microsoft/DirectXMath/blob/master/Inc/DirectXMathMatrix.inl
+
+                Vector128<float> M11 = AdvSimd.LoadVector128(&matrix.M11);
+                Vector128<float> M31 = AdvSimd.LoadVector128(&matrix.M31);
+
+                Vector128<float> P00 = AdvSimd.Arm64.ZipLow(M11, M31);
+                Vector128<float> P01 = AdvSimd.Arm64.ZipHigh(M11, M31);
+
+                Vector128<float> M21 = AdvSimd.LoadVector128(&matrix.M21);
+                Vector128<float> M41 = AdvSimd.LoadVector128(&matrix.M41);
+
+                Vector128<float> P10 = AdvSimd.Arm64.ZipLow(M21, M41);
+                Vector128<float> P11 = AdvSimd.Arm64.ZipHigh(M21, M41);
+
+                AdvSimd.Store(&matrix.M11, AdvSimd.Arm64.ZipLow(P00, P10));
+                AdvSimd.Store(&matrix.M21, AdvSimd.Arm64.ZipHigh(P00, P10));
+                AdvSimd.Store(&matrix.M31, AdvSimd.Arm64.ZipLow(P01, P11));
+                AdvSimd.Store(&matrix.M41, AdvSimd.Arm64.ZipHigh(P01, P11));
+
+                return matrix;
+            }
+            else if (Sse.IsSupported)
             {
                 Vector128<float> row1 = Sse.LoadVector128(&matrix.M11);
                 Vector128<float> row2 = Sse.LoadVector128(&matrix.M21);
@@ -1810,7 +1834,16 @@ namespace System.Numerics
         /// <returns>The interpolated matrix.</returns>
         public static unsafe Matrix4x4 Lerp(Matrix4x4 matrix1, Matrix4x4 matrix2, float amount)
         {
-            if (Sse.IsSupported)
+            if (AdvSimd.IsSupported)
+            {
+                Vector128<float> amountVec = Vector128.Create(amount);
+                AdvSimd.Store(&matrix1.M11, VectorMath.Lerp(AdvSimd.LoadVector128(&matrix1.M11), AdvSimd.LoadVector128(&matrix2.M11), amountVec));
+                AdvSimd.Store(&matrix1.M21, VectorMath.Lerp(AdvSimd.LoadVector128(&matrix1.M21), AdvSimd.LoadVector128(&matrix2.M21), amountVec));
+                AdvSimd.Store(&matrix1.M31, VectorMath.Lerp(AdvSimd.LoadVector128(&matrix1.M31), AdvSimd.LoadVector128(&matrix2.M31), amountVec));
+                AdvSimd.Store(&matrix1.M41, VectorMath.Lerp(AdvSimd.LoadVector128(&matrix1.M41), AdvSimd.LoadVector128(&matrix2.M41), amountVec));
+                return matrix1;
+            }
+            else if (Sse.IsSupported)
             {
                 Vector128<float> amountVec = Vector128.Create(amount);
                 Sse.Store(&matrix1.M11, VectorMath.Lerp(Sse.LoadVector128(&matrix1.M11), Sse.LoadVector128(&matrix2.M11), amountVec));
@@ -1895,14 +1928,21 @@ namespace System.Numerics
         /// <returns>The negated matrix.</returns>
         public static unsafe Matrix4x4 operator -(Matrix4x4 value)
         {
-            if (Sse.IsSupported)
+            if (AdvSimd.IsSupported)
+            {
+                AdvSimd.Store(&value.M11, AdvSimd.Negate(AdvSimd.LoadVector128(&value.M11)));
+                AdvSimd.Store(&value.M21, AdvSimd.Negate(AdvSimd.LoadVector128(&value.M21)));
+                AdvSimd.Store(&value.M31, AdvSimd.Negate(AdvSimd.LoadVector128(&value.M31)));
+                AdvSimd.Store(&value.M41, AdvSimd.Negate(AdvSimd.LoadVector128(&value.M41)));
+                return value;
+            }
+            else if (Sse.IsSupported)
             {
                 Vector128<float> zero = Vector128<float>.Zero;
                 Sse.Store(&value.M11, Sse.Subtract(zero, Sse.LoadVector128(&value.M11)));
                 Sse.Store(&value.M21, Sse.Subtract(zero, Sse.LoadVector128(&value.M21)));
                 Sse.Store(&value.M31, Sse.Subtract(zero, Sse.LoadVector128(&value.M31)));
                 Sse.Store(&value.M41, Sse.Subtract(zero, Sse.LoadVector128(&value.M41)));
-
                 return value;
             }
 
@@ -1936,7 +1976,15 @@ namespace System.Numerics
         /// <returns>The resulting matrix.</returns>
         public static unsafe Matrix4x4 operator +(Matrix4x4 value1, Matrix4x4 value2)
         {
-            if (Sse.IsSupported)
+            if (AdvSimd.IsSupported)
+            {
+                AdvSimd.Store(&value1.M11, AdvSimd.Add(AdvSimd.LoadVector128(&value1.M11), AdvSimd.LoadVector128(&value2.M11)));
+                AdvSimd.Store(&value1.M21, AdvSimd.Add(AdvSimd.LoadVector128(&value1.M21), AdvSimd.LoadVector128(&value2.M21)));
+                AdvSimd.Store(&value1.M31, AdvSimd.Add(AdvSimd.LoadVector128(&value1.M31), AdvSimd.LoadVector128(&value2.M31)));
+                AdvSimd.Store(&value1.M41, AdvSimd.Add(AdvSimd.LoadVector128(&value1.M41), AdvSimd.LoadVector128(&value2.M41)));
+                return value1;
+            }
+            else if (Sse.IsSupported)
             {
                 Sse.Store(&value1.M11, Sse.Add(Sse.LoadVector128(&value1.M11), Sse.LoadVector128(&value2.M11)));
                 Sse.Store(&value1.M21, Sse.Add(Sse.LoadVector128(&value1.M21), Sse.LoadVector128(&value2.M21)));
@@ -1975,7 +2023,15 @@ namespace System.Numerics
         /// <returns>The result of the subtraction.</returns>
         public static unsafe Matrix4x4 operator -(Matrix4x4 value1, Matrix4x4 value2)
         {
-            if (Sse.IsSupported)
+            if (AdvSimd.IsSupported)
+            {
+                AdvSimd.Store(&value1.M11, AdvSimd.Subtract(AdvSimd.LoadVector128(&value1.M11), AdvSimd.LoadVector128(&value2.M11)));
+                AdvSimd.Store(&value1.M21, AdvSimd.Subtract(AdvSimd.LoadVector128(&value1.M21), AdvSimd.LoadVector128(&value2.M21)));
+                AdvSimd.Store(&value1.M31, AdvSimd.Subtract(AdvSimd.LoadVector128(&value1.M31), AdvSimd.LoadVector128(&value2.M31)));
+                AdvSimd.Store(&value1.M41, AdvSimd.Subtract(AdvSimd.LoadVector128(&value1.M41), AdvSimd.LoadVector128(&value2.M41)));
+                return value1;
+            }
+            else if (Sse.IsSupported)
             {
                 Sse.Store(&value1.M11, Sse.Subtract(Sse.LoadVector128(&value1.M11), Sse.LoadVector128(&value2.M11)));
                 Sse.Store(&value1.M21, Sse.Subtract(Sse.LoadVector128(&value1.M21), Sse.LoadVector128(&value2.M21)));
@@ -2014,7 +2070,53 @@ namespace System.Numerics
         /// <returns>The result of the multiplication.</returns>
         public static unsafe Matrix4x4 operator *(Matrix4x4 value1, Matrix4x4 value2)
         {
-            if (Sse.IsSupported)
+            if (AdvSimd.Arm64.IsSupported)
+            {
+                Unsafe.SkipInit(out Matrix4x4 result);
+
+                // Perform the operation on the first row
+
+                Vector128<float> M11 = AdvSimd.LoadVector128(&value1.M11);
+
+                Vector128<float> vX = AdvSimd.MultiplyBySelectedScalar(AdvSimd.LoadVector128(&value2.M11), M11, 0);
+                Vector128<float> vY = AdvSimd.MultiplyBySelectedScalar(AdvSimd.LoadVector128(&value2.M21), M11, 1);
+                Vector128<float> vZ = AdvSimd.Arm64.FusedMultiplyAddBySelectedScalar(vX, AdvSimd.LoadVector128(&value2.M31), M11, 2);
+                Vector128<float> vW = AdvSimd.Arm64.FusedMultiplyAddBySelectedScalar(vY, AdvSimd.LoadVector128(&value2.M41), M11, 3);
+
+                AdvSimd.Store(&result.M11, AdvSimd.Add(vZ, vW));
+
+                // Repeat for the other 3 rows
+
+                Vector128<float> M21 = AdvSimd.LoadVector128(&value1.M21);
+
+                vX = AdvSimd.MultiplyBySelectedScalar(AdvSimd.LoadVector128(&value2.M11), M21, 0);
+                vY = AdvSimd.MultiplyBySelectedScalar(AdvSimd.LoadVector128(&value2.M21), M21, 1);
+                vZ = AdvSimd.Arm64.FusedMultiplyAddBySelectedScalar(vX, AdvSimd.LoadVector128(&value2.M31), M21, 2);
+                vW = AdvSimd.Arm64.FusedMultiplyAddBySelectedScalar(vY, AdvSimd.LoadVector128(&value2.M41), M21, 3);
+
+                AdvSimd.Store(&result.M21, AdvSimd.Add(vZ, vW));
+
+                Vector128<float> M31 = AdvSimd.LoadVector128(&value1.M31);
+
+                vX = AdvSimd.MultiplyBySelectedScalar(AdvSimd.LoadVector128(&value2.M11), M31, 0);
+                vY = AdvSimd.MultiplyBySelectedScalar(AdvSimd.LoadVector128(&value2.M21), M31, 1);
+                vZ = AdvSimd.Arm64.FusedMultiplyAddBySelectedScalar(vX, AdvSimd.LoadVector128(&value2.M31), M31, 2);
+                vW = AdvSimd.Arm64.FusedMultiplyAddBySelectedScalar(vY, AdvSimd.LoadVector128(&value2.M41), M31, 3);
+
+                AdvSimd.Store(&result.M31, AdvSimd.Add(vZ, vW));
+
+                Vector128<float> M41 = AdvSimd.LoadVector128(&value1.M41);
+
+                vX = AdvSimd.MultiplyBySelectedScalar(AdvSimd.LoadVector128(&value2.M11), M41, 0);
+                vY = AdvSimd.MultiplyBySelectedScalar(AdvSimd.LoadVector128(&value2.M21), M41, 1);
+                vZ = AdvSimd.Arm64.FusedMultiplyAddBySelectedScalar(vX, AdvSimd.LoadVector128(&value2.M31), M41, 2);
+                vW = AdvSimd.Arm64.FusedMultiplyAddBySelectedScalar(vY, AdvSimd.LoadVector128(&value2.M41), M41, 3);
+
+                AdvSimd.Store(&result.M41, AdvSimd.Add(vZ, vW));
+
+                return result;
+            }
+            else if (Sse.IsSupported)
             {
                 Vector128<float> row = Sse.LoadVector128(&value1.M11);
                 Sse.Store(&value1.M11,
@@ -2086,7 +2188,16 @@ namespace System.Numerics
         /// <returns>The scaled matrix.</returns>
         public static unsafe Matrix4x4 operator *(Matrix4x4 value1, float value2)
         {
-            if (Sse.IsSupported)
+            if (AdvSimd.IsSupported)
+            {
+                Vector128<float> value2Vec = Vector128.Create(value2);
+                AdvSimd.Store(&value1.M11, AdvSimd.Multiply(AdvSimd.LoadVector128(&value1.M11), value2Vec));
+                AdvSimd.Store(&value1.M21, AdvSimd.Multiply(AdvSimd.LoadVector128(&value1.M21), value2Vec));
+                AdvSimd.Store(&value1.M31, AdvSimd.Multiply(AdvSimd.LoadVector128(&value1.M31), value2Vec));
+                AdvSimd.Store(&value1.M41, AdvSimd.Multiply(AdvSimd.LoadVector128(&value1.M41), value2Vec));
+                return value1;
+            }
+            else if (Sse.IsSupported)
             {
                 Vector128<float> value2Vec = Vector128.Create(value2);
                 Sse.Store(&value1.M11, Sse.Multiply(Sse.LoadVector128(&value1.M11), value2Vec));
@@ -2125,13 +2236,19 @@ namespace System.Numerics
         /// <returns>True if the given matrices are equal; False otherwise.</returns>
         public static unsafe bool operator ==(Matrix4x4 value1, Matrix4x4 value2)
         {
-            if (Sse.IsSupported)
+            if (AdvSimd.Arm64.IsSupported)
             {
-                return
-                    VectorMath.Equal(Sse.LoadVector128(&value1.M11), Sse.LoadVector128(&value2.M11)) &&
-                    VectorMath.Equal(Sse.LoadVector128(&value1.M21), Sse.LoadVector128(&value2.M21)) &&
-                    VectorMath.Equal(Sse.LoadVector128(&value1.M31), Sse.LoadVector128(&value2.M31)) &&
-                    VectorMath.Equal(Sse.LoadVector128(&value1.M41), Sse.LoadVector128(&value2.M41));
+                return VectorMath.Equal(AdvSimd.LoadVector128(&value1.M11), AdvSimd.LoadVector128(&value2.M11)) &&
+                       VectorMath.Equal(AdvSimd.LoadVector128(&value1.M21), AdvSimd.LoadVector128(&value2.M21)) &&
+                       VectorMath.Equal(AdvSimd.LoadVector128(&value1.M31), AdvSimd.LoadVector128(&value2.M31)) &&
+                       VectorMath.Equal(AdvSimd.LoadVector128(&value1.M41), AdvSimd.LoadVector128(&value2.M41));
+            }
+            else if (Sse.IsSupported)
+            {
+                return VectorMath.Equal(Sse.LoadVector128(&value1.M11), Sse.LoadVector128(&value2.M11)) &&
+                       VectorMath.Equal(Sse.LoadVector128(&value1.M21), Sse.LoadVector128(&value2.M21)) &&
+                       VectorMath.Equal(Sse.LoadVector128(&value1.M31), Sse.LoadVector128(&value2.M31)) &&
+                       VectorMath.Equal(Sse.LoadVector128(&value1.M41), Sse.LoadVector128(&value2.M41));
             }
 
             return (value1.M11 == value2.M11 && value1.M22 == value2.M22 && value1.M33 == value2.M33 && value1.M44 == value2.M44 && // Check diagonal element first for early out.
@@ -2148,7 +2265,14 @@ namespace System.Numerics
         /// <returns>True if the given matrices are not equal; False if they are equal.</returns>
         public static unsafe bool operator !=(Matrix4x4 value1, Matrix4x4 value2)
         {
-            if (Sse.IsSupported)
+            if (AdvSimd.Arm64.IsSupported)
+            {
+                return VectorMath.NotEqual(AdvSimd.LoadVector128(&value1.M11), AdvSimd.LoadVector128(&value2.M11)) ||
+                       VectorMath.NotEqual(AdvSimd.LoadVector128(&value1.M21), AdvSimd.LoadVector128(&value2.M21)) ||
+                       VectorMath.NotEqual(AdvSimd.LoadVector128(&value1.M31), AdvSimd.LoadVector128(&value2.M31)) ||
+                       VectorMath.NotEqual(AdvSimd.LoadVector128(&value1.M41), AdvSimd.LoadVector128(&value2.M41));
+            }
+            else if (Sse.IsSupported)
             {
                 return
                     VectorMath.NotEqual(Sse.LoadVector128(&value1.M11), Sse.LoadVector128(&value2.M11)) ||
@@ -2196,13 +2320,29 @@ namespace System.Numerics
         /// <returns>The hash code.</returns>
         public override readonly int GetHashCode()
         {
-            unchecked
-            {
-                return M11.GetHashCode() + M12.GetHashCode() + M13.GetHashCode() + M14.GetHashCode() +
-                       M21.GetHashCode() + M22.GetHashCode() + M23.GetHashCode() + M24.GetHashCode() +
-                       M31.GetHashCode() + M32.GetHashCode() + M33.GetHashCode() + M34.GetHashCode() +
-                       M41.GetHashCode() + M42.GetHashCode() + M43.GetHashCode() + M44.GetHashCode();
-            }
+            HashCode hash = default;
+
+            hash.Add(M11);
+            hash.Add(M12);
+            hash.Add(M13);
+            hash.Add(M14);
+
+            hash.Add(M21);
+            hash.Add(M22);
+            hash.Add(M23);
+            hash.Add(M24);
+
+            hash.Add(M31);
+            hash.Add(M32);
+            hash.Add(M33);
+            hash.Add(M34);
+
+            hash.Add(M41);
+            hash.Add(M42);
+            hash.Add(M43);
+            hash.Add(M44);
+
+            return hash.ToHashCode();
         }
     }
 }

@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Collections.Generic;
@@ -35,11 +34,10 @@ namespace System.Linq
 
         public bool MoveNext() => false;
 
-        [ExcludeFromCodeCoverage] // Shouldn't be called, and as undefined can return or throw anything anyway.
+        [ExcludeFromCodeCoverage(Justification = "Shouldn't be called, and as undefined can return or throw anything anyway")]
         public TElement Current => default!;
 
-        [ExcludeFromCodeCoverage] // Shouldn't be called, and as undefined can return or throw anything anyway.
-        [MaybeNull]
+        [ExcludeFromCodeCoverage(Justification = "Shouldn't be called, and as undefined can return or throw anything anyway")]
         object IEnumerator.Current => default!;
 
         void IEnumerator.Reset()
@@ -56,25 +54,22 @@ namespace System.Linq
 
         public IPartition<TElement> Take(int count) => this;
 
-        [return: MaybeNull]
-        public TElement TryGetElementAt(int index, out bool found)
+        public TElement? TryGetElementAt(int index, out bool found)
         {
             found = false;
-            return default!;
+            return default;
         }
 
-        [return: MaybeNull]
-        public TElement TryGetFirst(out bool found)
+        public TElement? TryGetFirst(out bool found)
         {
             found = false;
-            return default!;
+            return default;
         }
 
-        [return: MaybeNull]
-        public TElement TryGetLast(out bool found)
+        public TElement? TryGetLast(out bool found)
         {
             found = false;
-            return default!;
+            return default;
         }
 
         public TElement[] ToArray() => Array.Empty<TElement>();
@@ -118,8 +113,7 @@ namespace System.Linq
             return new OrderedPartition<TElement>(_source, _minIndexInclusive, maxIndex);
         }
 
-        [return: MaybeNull]
-        public TElement TryGetElementAt(int index, out bool found)
+        public TElement? TryGetElementAt(int index, out bool found)
         {
             if (unchecked((uint)index <= (uint)(_maxIndexInclusive - _minIndexInclusive)))
             {
@@ -127,14 +121,12 @@ namespace System.Linq
             }
 
             found = false;
-            return default!;
+            return default;
         }
 
-        [return: MaybeNull]
-        public TElement TryGetFirst(out bool found) => _source.TryGetElementAt(_minIndexInclusive, out found);
+        public TElement? TryGetFirst(out bool found) => _source.TryGetElementAt(_minIndexInclusive, out found);
 
-        [return: MaybeNull]
-        public TElement TryGetLast(out bool found) =>
+        public TElement? TryGetLast(out bool found) =>
             _source.TryGetLast(_minIndexInclusive, _maxIndexInclusive, out found);
 
         public TElement[] ToArray() => _source.ToArray(_minIndexInclusive, _maxIndexInclusive);
@@ -202,8 +194,7 @@ namespace System.Linq
                 return unchecked((uint)maxIndex >= (uint)_maxIndexInclusive) ? this : new ListPartition<TSource>(_source, _minIndexInclusive, maxIndex);
             }
 
-            [return: MaybeNull]
-            public TSource TryGetElementAt(int index, out bool found)
+            public TSource? TryGetElementAt(int index, out bool found)
             {
                 if (unchecked((uint)index <= (uint)(_maxIndexInclusive - _minIndexInclusive) && index < _source.Count - _minIndexInclusive))
                 {
@@ -212,11 +203,10 @@ namespace System.Linq
                 }
 
                 found = false;
-                return default!;
+                return default;
             }
 
-            [return: MaybeNull]
-            public TSource TryGetFirst(out bool found)
+            public TSource? TryGetFirst(out bool found)
             {
                 if (_source.Count > _minIndexInclusive)
                 {
@@ -225,11 +215,10 @@ namespace System.Linq
                 }
 
                 found = false;
-                return default!;
+                return default;
             }
 
-            [return: MaybeNull]
-            public TSource TryGetLast(out bool found)
+            public TSource? TryGetLast(out bool found)
             {
                 int lastIndex = _source.Count - 1;
                 if (lastIndex >= _minIndexInclusive)
@@ -239,7 +228,7 @@ namespace System.Linq
                 }
 
                 found = false;
-                return default!;
+                return default;
             }
 
             private int Count
@@ -481,8 +470,7 @@ namespace System.Linq
                 return new EnumerablePartition<TSource>(_source, _minIndexInclusive, maxIndex);
             }
 
-            [return: MaybeNull]
-            public TSource TryGetElementAt(int index, out bool found)
+            public TSource? TryGetElementAt(int index, out bool found)
             {
                 // If the index is negative or >= our max count, return early.
                 if (index >= 0 && (!HasLimit || index < Limit))
@@ -500,11 +488,10 @@ namespace System.Linq
                 }
 
                 found = false;
-                return default!;
+                return default;
             }
 
-            [return: MaybeNull]
-            public TSource TryGetFirst(out bool found)
+            public TSource? TryGetFirst(out bool found)
             {
                 using (IEnumerator<TSource> en = _source.GetEnumerator())
                 {
@@ -516,11 +503,10 @@ namespace System.Linq
                 }
 
                 found = false;
-                return default!;
+                return default;
             }
 
-            [return: MaybeNull]
-            public TSource TryGetLast(out bool found)
+            public TSource? TryGetLast(out bool found)
             {
                 using (IEnumerator<TSource> en = _source.GetEnumerator())
                 {
@@ -543,7 +529,7 @@ namespace System.Linq
                 }
 
                 found = false;
-                return default!;
+                return default;
             }
 
             public TSource[] ToArray()

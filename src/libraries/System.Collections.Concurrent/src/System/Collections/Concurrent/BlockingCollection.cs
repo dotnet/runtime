@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
 //
@@ -43,14 +42,14 @@ namespace System.Collections.Concurrent
     [DebuggerDisplay("Count = {Count}, Type = {_collection}")]
     public class BlockingCollection<T> : IEnumerable<T>, ICollection, IDisposable, IReadOnlyCollection<T>
     {
-        private IProducerConsumerCollection<T> _collection = null!;
+        private IProducerConsumerCollection<T> _collection;
         private int _boundedCapacity;
         private const int NON_BOUNDED = -1;
         private SemaphoreSlim? _freeNodes;
-        private SemaphoreSlim _occupiedNodes = null!;
+        private SemaphoreSlim _occupiedNodes;
         private bool _isDisposed;
-        private CancellationTokenSource _consumersCancellationTokenSource = null!;
-        private CancellationTokenSource _producersCancellationTokenSource = null!;
+        private CancellationTokenSource _consumersCancellationTokenSource;
+        private CancellationTokenSource _producersCancellationTokenSource;
 
         private volatile int _currentAdders;
         private const int COMPLETE_ADDING_ON_MASK = unchecked((int)0x80000000);
@@ -211,6 +210,10 @@ namespace System.Collections.Concurrent
         /// <param name="collection">The collection to use as the underlying data store.</param>
         /// <param name="boundedCapacity">The bounded size of the collection.</param>
         /// <param name="collectionCount">The number of items currently in the underlying collection.</param>
+        [MemberNotNull(nameof(_collection))]
+        [MemberNotNull(nameof(_consumersCancellationTokenSource))]
+        [MemberNotNull(nameof(_producersCancellationTokenSource))]
+        [MemberNotNull(nameof(_occupiedNodes))]
         private void Initialize(IProducerConsumerCollection<T> collection, int boundedCapacity, int collectionCount)
         {
             Debug.Assert(boundedCapacity > 0 || boundedCapacity == NON_BOUNDED);
@@ -415,7 +418,7 @@ namespace System.Collections.Concurrent
                 CancellationTokenSource? linkedTokenSource = null;
                 try
                 {
-                    waitForSemaphoreWasSuccessful = _freeNodes.Wait(0);
+                    waitForSemaphoreWasSuccessful = _freeNodes.Wait(0, default);
                     if (waitForSemaphoreWasSuccessful == false && millisecondsTimeout != 0)
                     {
                         linkedTokenSource = CancellationTokenSource.CreateLinkedTokenSource(
@@ -755,7 +758,13 @@ namespace System.Collections.Concurrent
                     }
                 }
             }
+
+#pragma warning disable CS8762
+            // https://github.com/dotnet/runtime/issues/36132
+            // Compiler can't automatically deduce that nullability constraints
+            // for 'item' are satisfied at this exit point.
             return waitForSemaphoreWasSuccessful;
+#pragma warning restore CS8762
         }
 
 
@@ -1160,7 +1169,7 @@ namespace System.Collections.Concurrent
         /// <exception cref="System.ArgumentOutOfRangeException">The count of <paramref name="collections"/> is greater than the maximum size of
         /// 62 for STA and 63 for MTA.</exception>
         /// <remarks>A call to TakeFromAny may block until an item is available to be removed.</remarks>
-        public static int TakeFromAny(BlockingCollection<T>[] collections, [MaybeNull] out T item)
+        public static int TakeFromAny(BlockingCollection<T>[] collections, out T? item)
         {
             return TakeFromAny(collections, out item, CancellationToken.None);
         }
@@ -1189,7 +1198,7 @@ namespace System.Collections.Concurrent
         /// <exception cref="System.ArgumentOutOfRangeException">The count of <paramref name="collections"/> is greater than the maximum size of
         /// 62 for STA and 63 for MTA.</exception>
         /// <remarks>A call to TakeFromAny may block until an item is available to be removed.</remarks>
-        public static int TakeFromAny(BlockingCollection<T>[] collections, [MaybeNull] out T item, CancellationToken cancellationToken)
+        public static int TakeFromAny(BlockingCollection<T>[] collections, out T? item, CancellationToken cancellationToken)
         {
             int returnValue = TryTakeFromAnyCore(collections, out item, Timeout.Infinite, true, cancellationToken);
             Debug.Assert(returnValue >= 0 && returnValue < collections.Length,
@@ -1217,7 +1226,7 @@ namespace System.Collections.Concurrent
         /// <exception cref="System.ArgumentOutOfRangeException">The count of <paramref name="collections"/> is greater than the maximum size of
         /// 62 for STA and 63 for MTA.</exception>
         /// <remarks>A call to TryTakeFromAny may block until an item is available to be removed.</remarks>
-        public static int TryTakeFromAny(BlockingCollection<T>[] collections, [MaybeNull] out T item)
+        public static int TryTakeFromAny(BlockingCollection<T>[] collections, out T? item)
         {
             return TryTakeFromAny(collections, out item, 0);
         }
@@ -1248,7 +1257,7 @@ namespace System.Collections.Concurrent
         /// <exception cref="System.ArgumentOutOfRangeException">The count of <paramref name="collections"/> is greater than the maximum size of
         /// 62 for STA and 63 for MTA.</exception>
         /// <remarks>A call to TryTakeFromAny may block until an item is available to be removed.</remarks>
-        public static int TryTakeFromAny(BlockingCollection<T>[] collections, [MaybeNull] out T item, TimeSpan timeout)
+        public static int TryTakeFromAny(BlockingCollection<T>[] collections, out T? item, TimeSpan timeout)
         {
             ValidateTimeout(timeout);
             return TryTakeFromAnyCore(collections, out item, (int)timeout.TotalMilliseconds, false, CancellationToken.None);
@@ -1278,7 +1287,7 @@ namespace System.Collections.Concurrent
         /// <exception cref="System.ArgumentOutOfRangeException">The count of <paramref name="collections"/> is greater than the maximum size of
         /// 62 for STA and 63 for MTA.</exception>
         /// <remarks>A call to TryTakeFromAny may block until an item is available to be removed.</remarks>
-        public static int TryTakeFromAny(BlockingCollection<T>[] collections, [MaybeNull] out T item, int millisecondsTimeout)
+        public static int TryTakeFromAny(BlockingCollection<T>[] collections, out T? item, int millisecondsTimeout)
         {
             ValidateMillisecondsTimeout(millisecondsTimeout);
             return TryTakeFromAnyCore(collections, out item, millisecondsTimeout, false, CancellationToken.None);
@@ -1312,7 +1321,7 @@ namespace System.Collections.Concurrent
         /// <exception cref="System.ArgumentOutOfRangeException">The count of <paramref name="collections"/> is greater than the maximum size of
         /// 62 for STA and 63 for MTA.</exception>
         /// <remarks>A call to TryTakeFromAny may block until an item is available to be removed.</remarks>
-        public static int TryTakeFromAny(BlockingCollection<T>[] collections, [MaybeNull] out T item, int millisecondsTimeout, CancellationToken cancellationToken)
+        public static int TryTakeFromAny(BlockingCollection<T>[] collections, out T? item, int millisecondsTimeout, CancellationToken cancellationToken)
         {
             ValidateMillisecondsTimeout(millisecondsTimeout);
             return TryTakeFromAnyCore(collections, out item, millisecondsTimeout, false, cancellationToken);
@@ -1335,7 +1344,7 @@ namespace System.Collections.Concurrent
         /// <exception cref="System.ArgumentException">If the collections argument is a 0-length array or contains a
         /// null element. Also, if at least one of the collections has been marked complete for adds.</exception>
         /// <exception cref="System.ObjectDisposedException">If at least one of the collections has been disposed.</exception>
-        private static int TryTakeFromAnyCore(BlockingCollection<T>[] collections, [MaybeNull] out T item, int millisecondsTimeout, bool isTakeOperation, CancellationToken externalCancellationToken)
+        private static int TryTakeFromAnyCore(BlockingCollection<T>[] collections, out T? item, int millisecondsTimeout, bool isTakeOperation, CancellationToken externalCancellationToken)
         {
             ValidateCollectionsArray(collections, false);
 
@@ -1369,7 +1378,7 @@ namespace System.Collections.Concurrent
         /// <exception cref="System.ArgumentException">If the collections argument is a 0-length array or contains a
         /// null element. Also, if at least one of the collections has been marked complete for adds.</exception>
         /// <exception cref="System.ObjectDisposedException">If at least one of the collections has been disposed.</exception>
-        private static int TryTakeFromAnyCoreSlow(BlockingCollection<T>[] collections, [MaybeNull] out T item, int millisecondsTimeout, bool isTakeOperation, CancellationToken externalCancellationToken)
+        private static int TryTakeFromAnyCoreSlow(BlockingCollection<T>[] collections, out T? item, int millisecondsTimeout, bool isTakeOperation, CancellationToken externalCancellationToken)
         {
             const int OPERATION_FAILED = -1;
 

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -49,6 +48,11 @@ namespace Internal.TypeSystem
             /// True if information about the shape of value type has been computed.
             /// </summary>
             public const int ComputedValueTypeShapeCharacteristics = 0x40;
+
+            /// <summary>
+            /// True if the layout of the type is not stable for use in the ABI
+            /// </summary>
+            public const int ComputedInstanceLayoutAbiUnstable = 0x80;
         }
 
         private class StaticBlockInfo
@@ -154,6 +158,21 @@ namespace Internal.TypeSystem
                     ComputeInstanceLayout(InstanceLayoutKind.TypeOnly);
                 }
                 return _instanceByteAlignment;
+            }
+        }
+
+        /// <summary>
+        /// The type has stable Abi layout
+        /// </summary>
+        public bool LayoutAbiStable
+        {
+            get
+            {
+                if (!_fieldLayoutFlags.HasFlags(FieldLayoutFlags.ComputedInstanceTypeLayout))
+                {
+                    ComputeInstanceLayout(InstanceLayoutKind.TypeOnly);
+                }
+                return !_fieldLayoutFlags.HasFlags(FieldLayoutFlags.ComputedInstanceLayoutAbiUnstable);
             }
         }
 
@@ -321,7 +340,6 @@ namespace Internal.TypeSystem
                 ValueTypeShapeCharacteristics.Float64Aggregate => 8,
                 ValueTypeShapeCharacteristics.Vector64Aggregate => 8,
                 ValueTypeShapeCharacteristics.Vector128Aggregate => 16,
-                ValueTypeShapeCharacteristics.Vector256Aggregate => 16,
                 _ => throw new InvalidOperationException()
             };
         }
@@ -337,6 +355,10 @@ namespace Internal.TypeSystem
             _instanceFieldAlignment = computedLayout.FieldAlignment;
             _instanceByteCountUnaligned = computedLayout.ByteCountUnaligned;
             _instanceByteAlignment = computedLayout.ByteCountAlignment;
+            if (!computedLayout.LayoutAbiStable)
+            {
+                _fieldLayoutFlags.AddFlags(FieldLayoutFlags.ComputedInstanceLayoutAbiUnstable);
+            }
 
             if (computedLayout.Offsets != null)
             {

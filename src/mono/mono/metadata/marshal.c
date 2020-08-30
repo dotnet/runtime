@@ -113,6 +113,7 @@ static GENERATE_TRY_GET_CLASS_WITH_CACHE (unmanaged_function_pointer_attribute, 
 
 #ifdef ENABLE_NETCORE
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (suppress_gc_transition_attribute, "System.Runtime.InteropServices", "SuppressGCTransitionAttribute")
+static GENERATE_TRY_GET_CLASS_WITH_CACHE (unmanaged_callers_only_attribute, "System.Runtime.InteropServices", "UnmanagedCallersOnlyAttribute")
 #endif
 
 static MonoImage*
@@ -206,12 +207,15 @@ mono_marshal_init (void)
 		register_icall (ves_icall_mono_string_from_utf16, mono_icall_sig_obj_ptr, FALSE);
 		register_icall (mono_string_from_byvalstr, mono_icall_sig_obj_ptr_int, FALSE);
 		register_icall (mono_string_from_byvalwstr, mono_icall_sig_obj_ptr_int, FALSE);
+		register_icall (mono_string_from_ansibstr, mono_icall_sig_obj_ptr, FALSE);
+		register_icall (mono_string_from_tbstr, mono_icall_sig_obj_ptr, FALSE);
 		register_icall (mono_string_new_wrapper_internal, mono_icall_sig_obj_ptr, FALSE);
 		register_icall (ves_icall_string_new_wrapper, mono_icall_sig_obj_ptr, FALSE);
 		register_icall (mono_string_new_len_wrapper, mono_icall_sig_obj_ptr_int, FALSE);
 		register_icall (ves_icall_mono_string_to_utf8, mono_icall_sig_ptr_obj, FALSE);
 		register_icall (mono_string_to_utf8str, mono_icall_sig_ptr_obj, FALSE);
 		register_icall (mono_string_to_ansibstr, mono_icall_sig_ptr_object, FALSE);
+		register_icall (mono_string_to_tbstr, mono_icall_sig_ptr_object, FALSE);
 		register_icall (mono_string_builder_to_utf8, mono_icall_sig_ptr_object, FALSE);
 		register_icall (mono_string_builder_to_utf16, mono_icall_sig_ptr_object, FALSE);
 		register_icall (mono_array_to_savearray, mono_icall_sig_ptr_object, FALSE);
@@ -251,6 +255,7 @@ mono_marshal_init (void)
 		register_icall (mono_threads_attach_coop, mono_icall_sig_ptr_ptr_ptr, TRUE);
 		register_icall (mono_threads_detach_coop, mono_icall_sig_void_ptr_ptr, TRUE);
 		register_icall (mono_marshal_get_type_object, mono_icall_sig_object_ptr, TRUE);
+		register_icall (mono_marshal_lookup_pinvoke, mono_icall_sig_ptr_ptr, FALSE);
 
 		mono_cominterop_init ();
 		mono_remoting_init ();
@@ -512,7 +517,7 @@ mono_ftnptr_to_delegate_impl (MonoClass *klass, gpointer ftn, MonoError *error)
 		gpointer compiled_ptr = mono_compile_method_checked (wrapper, error);
 		goto_if_nok (error, leave);
 
-		mono_delegate_ctor_with_method (MONO_HANDLE_CAST (MonoObject, d), this_obj, compiled_ptr, wrapper, error);
+		mono_delegate_ctor (MONO_HANDLE_CAST (MonoObject, d), this_obj, compiled_ptr, wrapper, error);
 		goto_if_nok (error, leave);
 	}
 
@@ -992,11 +997,52 @@ mono_string_to_utf8str_impl (MonoStringHandle s, MonoError *error)
 
 #endif
 
-gpointer
+// Assume ANSI == UTF8 for now, same as LPSTR
+
+/* This is a JIT icall, it sets the pending exception (in wrapper) and returns NULL on error. */
+char *
 mono_string_to_ansibstr_impl (MonoStringHandle string_obj, MonoError *error)
 {
-	g_error ("UnmanagedMarshal.BStr is not implemented.");
-	return NULL;
+	if (MONO_HANDLE_IS_NULL (string_obj))
+		return NULL;
+
+	char *utf8_str = mono_string_handle_to_utf8 (string_obj, error);
+	return_val_if_nok (error, NULL);
+	char *res = mono_ptr_to_ansibstr (utf8_str, g_utf8_strlen (utf8_str, -1));
+	g_free (utf8_str);
+	return res;
+}
+
+/* This is a JIT icall, it sets the pending exception (in wrapper) and returns NULL on error. */
+MonoStringHandle
+mono_string_from_ansibstr_impl (const char *data, MonoError *error)
+{
+	if (!data)
+		return NULL_HANDLE_STRING;
+
+	return mono_string_new_utf8_len (mono_domain_get (), data, *((guint32 *)data - 1) / sizeof (char), error);
+}
+
+/* This is a JIT icall, it sets the pending exception (in wrapper) and returns NULL on error. */
+gpointer
+mono_string_to_tbstr_impl (MonoStringHandle string_obj, MonoError *error)
+{
+#ifdef TARGET_WIN32
+	return mono_string_to_bstr_impl (string_obj, error);
+#else
+	return mono_string_to_ansibstr_impl (string_obj, error);
+#endif
+}
+
+/* This is a JIT icall, it sets the pending exception (in wrapper) and returns NULL on error. */
+MonoStringHandle
+mono_string_from_tbstr_impl (gpointer data, MonoError *error)
+{
+#ifdef TARGET_WIN32
+	return mono_string_from_bstr_checked ((mono_bstr)data, error);
+#else
+	return mono_string_from_ansibstr_impl ((char *)data, error);
+#endif
 }
 
 /**
@@ -1332,6 +1378,10 @@ mono_marshal_get_string_to_ptr_conv (MonoMethodPInvoke *piinfo, MonoMarshalSpec 
 		return MONO_MARSHAL_CONV_STR_BSTR;
 	case MONO_NATIVE_UTF8STR:
 		return MONO_MARSHAL_CONV_STR_UTF8STR;
+	case MONO_NATIVE_ANSIBSTR:
+		return MONO_MARSHAL_CONV_STR_ANSIBSTR;
+	case MONO_NATIVE_TBSTR:
+		return MONO_MARSHAL_CONV_STR_TBSTR;
 	default:
 		return MONO_MARSHAL_CONV_INVALID;
 	}
@@ -1379,6 +1429,10 @@ mono_marshal_get_ptr_to_string_conv (MonoMethodPInvoke *piinfo, MonoMarshalSpec 
 		return MONO_MARSHAL_CONV_LPTSTR_STR;
 	case MONO_NATIVE_BSTR:
 		return MONO_MARSHAL_CONV_BSTR_STR;
+	case MONO_NATIVE_ANSIBSTR:
+		return MONO_MARSHAL_CONV_ANSIBSTR_STR;
+	case MONO_NATIVE_TBSTR:
+		return MONO_MARSHAL_CONV_TBSTR_STR;
 	default:
 		return MONO_MARSHAL_CONV_INVALID;
 	}
@@ -2228,7 +2282,11 @@ mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt
 			return res;
 		cache_key = method->klass;
 	} else if (static_method_with_first_arg_bound) {
-		cache = get_cache (&get_method_image (target_method)->delegate_bound_static_invoke_cache,
+		GHashTable **cache_ptr;
+
+		cache_ptr = &mono_method_get_wrapper_cache (target_method)->delegate_bound_static_invoke_cache;
+
+		cache = get_cache (cache_ptr,
 						   (GHashFunc)mono_signature_hash, 
 						   (GCompareFunc)mono_metadata_signature_equal);
 		/*
@@ -3473,6 +3531,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 	GHashTable *cache;
 	gboolean pinvoke = FALSE;
 	gboolean skip_gc_trans = FALSE;
+	gboolean pinvoke_not_found = FALSE;
 	gpointer iter;
 	int i;
 	ERROR_DECL (emitted_error);
@@ -3605,11 +3664,33 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 
 	mb->method->save_lmf = 1;
 
+	if (G_UNLIKELY (pinvoke && mono_method_has_unmanaged_callers_only_attribute (method))) {
+		/* emit a wrapper that throws a NotSupportedException */
+		get_marshal_cb ()->mb_emit_exception (mb, "System", "NotSupportedException", "Method canot be marked with both  DllImportAttribute and UnmanagedCallersOnlyAttribute");
+
+		info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_NONE);
+		info->d.managed_to_native.method = method;
+
+		csig = mono_metadata_signature_dup_full (get_method_image (method), sig);
+		csig->pinvoke = 0;
+		res = mono_mb_create_and_cache_full (cache, method, mb, csig,
+											 csig->param_count + 16, info, NULL);
+		mono_mb_free (mb);
+
+		return res;
+	}
+
 	/*
 	 * In AOT mode and embedding scenarios, it is possible that the icall is not
 	 * registered in the runtime doing the AOT compilation.
 	 */
-	if (!piinfo->addr && !aot) {
+#ifdef ENABLE_NETCORE
+	/* Handled at runtime */
+	pinvoke_not_found = !pinvoke && !piinfo->addr && !aot;
+#else
+	pinvoke_not_found = !piinfo->addr && !aot;
+#endif
+	if (pinvoke_not_found) {
 		/* if there's no code but the error isn't set, just use a fairly generic exception. */
 		if (is_ok (emitted_error))
 			mono_error_set_generic_error (emitted_error, "System", "MissingMethodException", "");
@@ -3627,8 +3708,6 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 
 		return res;
 	}
-
-	g_assert (is_ok (emitted_error));
 
 	/* internal calls: we simply push all arguments and call the method (no conversions) */
 	if (method->iflags & (METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL | METHOD_IMPL_ATTRIBUTE_RUNTIME)) {
@@ -3658,8 +3737,6 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 	}
 
 	g_assert (pinvoke);
-	if (!aot)
-		g_assert (piinfo->addr);
 
 	csig = mono_metadata_signature_dup_full (get_method_image (method), sig);
 	mono_marshal_set_callconv_from_modopt (method, csig, FALSE);
@@ -3884,10 +3961,58 @@ emit_managed_wrapper_noilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke
 }
 #endif
 
+static gboolean
+type_is_blittable (MonoType *type)
+{
+	if (type->byref)
+		return FALSE;
+	type = mono_type_get_underlying_type (type);
+	switch (type->type) {
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U1:
+	case MONO_TYPE_I2:
+	case MONO_TYPE_U2:
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U4:
+	case MONO_TYPE_I8:
+	case MONO_TYPE_U8:
+	case MONO_TYPE_R4:
+	case MONO_TYPE_R8:
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+	case MONO_TYPE_PTR:
+	case MONO_TYPE_FNPTR:
+	case MONO_TYPE_VOID:
+		return TRUE;
+	default: {
+		MonoClass *klass = mono_class_from_mono_type_internal (type);
+		mono_class_init_sizes (klass);
+		return m_class_is_blittable (klass);
+	}
+	}
+}
+
+static gboolean
+method_signature_is_blittable (MonoMethodSignature *sig)
+{
+	if (!type_is_blittable (sig->ret))
+		return FALSE;
+
+	for (int i = 0; i < sig->param_count; ++i) {
+		MonoType *type = sig->params [i];
+		if (!type_is_blittable (type))
+			return FALSE;
+	}
+	return TRUE;
+}
+
 /**
  * mono_marshal_get_managed_wrapper:
  * Generates IL code to call managed methods from unmanaged code 
  * If \p target_handle is \c 0, the wrapper info will be a \c WrapperInfo structure.
+ *
+ * If \p delegate_klass is \c NULL, we're creating a wrapper for a function pointer to a method marked with
+ * UnamangedCallersOnlyAttribute.
  */
 MonoMethod *
 mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass, MonoGCHandle target_handle, MonoError *error)
@@ -3919,11 +4044,33 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass,
 	if (!target_handle && (res = mono_marshal_find_in_cache (cache, method)))
 		return res;
 
-	invoke = mono_get_delegate_invoke_internal (delegate_klass);
-	invoke_sig = mono_method_signature_internal (invoke);
-
-	mspecs = g_new0 (MonoMarshalSpec*, mono_method_signature_internal (invoke)->param_count + 1);
-	mono_method_get_marshal_info (invoke, mspecs);
+	if (G_UNLIKELY (!delegate_klass)) {
+		/* creating a wrapper for a function pointer with UnmanagedCallersOnlyAttribute */
+		if (mono_method_has_marshal_info (method)) {
+			mono_error_set_invalid_program (error, "method %s with UnmanadedCallersOnlyAttribute has marshal specs", mono_method_full_name (method, TRUE));
+			return NULL;
+		}
+		invoke = NULL;
+		invoke_sig = mono_method_signature_internal (method);
+		if (invoke_sig->hasthis) {
+			mono_error_set_invalid_program (error, "method %s with UnamanagedCallersOnlyAttribute is an instance method", mono_method_full_name (method, TRUE));
+			return NULL;
+		}
+		if (method->is_generic || method->is_inflated || mono_class_is_ginst (method->klass)) {
+			mono_error_set_invalid_program (error, "method %s with UnamangedCallersOnlyAttribute is generic", mono_method_full_name (method, TRUE));
+			return NULL;
+		}
+		if (!method_signature_is_blittable (invoke_sig)) {
+			mono_error_set_invalid_program (error, "method %s with UnmanagedCallersOnlyAttribute has non-blittable parameters or return type", mono_method_full_name (method, TRUE));
+			return NULL;
+		}
+		mspecs = g_new0 (MonoMarshalSpec*, invoke_sig->param_count + 1);
+	} else {
+		invoke = mono_get_delegate_invoke_internal (delegate_klass);
+		invoke_sig = mono_method_signature_internal (invoke);
+		mspecs = g_new0 (MonoMarshalSpec*, invoke_sig->param_count + 1);
+		mono_method_get_marshal_info (invoke, mspecs);
+	}
 
 	sig = mono_method_signature_internal (method);
 
@@ -3949,10 +4096,11 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass,
 	m.csig = csig;
 	m.image = get_method_image (method);
 
-	mono_marshal_set_callconv_from_modopt (invoke, csig, TRUE);
+	if (invoke)
+		mono_marshal_set_callconv_from_modopt (invoke, csig, TRUE);
 
 	/* The attribute is only available in Net 2.0 */
-	if (mono_class_try_get_unmanaged_function_pointer_attribute_class ()) {
+	if (delegate_klass && mono_class_try_get_unmanaged_function_pointer_attribute_class ()) {
 		MonoCustomAttrInfo *cinfo;
 		MonoCustomAttrEntry *attr;
 
@@ -4041,7 +4189,7 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass,
 	}
 	mono_mb_free (mb);
 
-	for (i = mono_method_signature_internal (invoke)->param_count; i >= 0; i--)
+	for (i = invoke_sig->param_count; i >= 0; i--)
 		if (mspecs [i])
 			mono_metadata_free_marshal_spec (mspecs [i]);
 	g_free (mspecs);
@@ -5593,11 +5741,12 @@ mono_struct_delete_old (MonoClass *klass, char *ptr)
 			break;
 #endif
 		case MONO_MARSHAL_CONV_STR_LPSTR:
-		case MONO_MARSHAL_CONV_STR_ANSIBSTR:
-		case MONO_MARSHAL_CONV_STR_TBSTR:
 		case MONO_MARSHAL_CONV_STR_UTF8STR:
 			mono_marshal_free (*(gpointer *)cpos);
 			break;
+
+		case MONO_MARSHAL_CONV_STR_ANSIBSTR:
+		case MONO_MARSHAL_CONV_STR_TBSTR:
 		case MONO_MARSHAL_CONV_STR_BSTR:
 			mono_free_bstr (*(gpointer*)cpos);
 			break;
@@ -6264,6 +6413,36 @@ mono_marshal_asany_impl (MonoObjectHandle o, MonoMarshalNative string_encoding, 
 
 		return res;
 	}
+	case MONO_TYPE_SZARRAY: {
+		//TODO: Implement structs and in-params for all value types	
+		MonoClass *klass = t->data.klass;
+		MonoClass *eklass = m_class_get_element_class (klass);
+		MonoArray *arr = (MonoArray *) MONO_HANDLE_RAW (o);
+
+		// we only support char[] for in-params; we return a pointer to the managed heap here, and that's not 'in'-safe
+		if ((param_attrs & PARAM_ATTRIBUTE_IN) && eklass != mono_get_char_class ())
+			break;
+
+		if (m_class_get_rank (klass) > 1)
+			break;
+
+		if (arr->bounds)
+			if (arr->bounds->lower_bound != 0)
+				break;
+
+		if (mono_class_is_auto_layout (eklass))
+			break;
+
+		if (m_class_is_valuetype (eklass) && (mono_class_is_explicit_layout (eklass) || m_class_is_blittable (eklass) || m_class_is_enumtype (eklass)))
+			return arr->vector;
+
+		if (eklass == mono_get_char_class ()) {
+			char *res =  mono_utf16_to_utf8 ((mono_unichar2 *) arr->vector, arr->max_length, error);
+			return_val_if_nok (error, NULL);
+			return res;
+		}
+		break;
+	}
 	default:
 		break;
 	}
@@ -6322,6 +6501,20 @@ mono_marshal_free_asany_impl (MonoObjectHandle o, gpointer ptr, MonoMarshalNativ
 		}
 
 		mono_marshal_free (ptr);
+		break;
+	}
+	case MONO_TYPE_SZARRAY: {
+		MonoClass *klass = t->data.klass;
+		MonoClass *eklass = m_class_get_element_class (klass);
+		MonoArray *arr = (MonoArray *) MONO_HANDLE_RAW (o);
+
+		if (eklass != mono_get_char_class ())
+			break;
+
+		mono_unichar2 *utf16_array = g_utf8_to_utf16 ((const char *)ptr, arr->max_length, NULL, NULL, NULL);
+		g_free (ptr);
+		memcpy (arr->vector, utf16_array, arr->max_length * sizeof (mono_unichar2));
+		g_free (utf16_array);
 		break;
 	}
 	default:
@@ -6548,8 +6741,8 @@ mono_marshal_free_dynamic_wrappers (MonoMethod *method)
 	if (image->wrapper_caches.delegate_abstract_invoke_cache)
 		g_hash_table_foreach_remove (image->wrapper_caches.delegate_abstract_invoke_cache, signature_pointer_pair_matches_pointer, method);
 	// FIXME: Need to clear the caches in other images as well
-	if (image->delegate_bound_static_invoke_cache)
-		g_hash_table_remove (image->delegate_bound_static_invoke_cache, mono_method_signature_internal (method));
+	if (image->wrapper_caches.delegate_bound_static_invoke_cache)
+		g_hash_table_remove (image->wrapper_caches.delegate_bound_static_invoke_cache, mono_method_signature_internal (method));
 
 	if (marshal_mutex_initialized)
 		mono_marshal_unlock ();
@@ -6563,6 +6756,20 @@ mono_marshal_get_type_object (MonoClass *klass)
 	MonoObject *result = (MonoObject*)mono_type_get_object_checked (mono_domain_get (), type, error);
 	mono_error_set_pending_exception (error);
 	return result;
+}
+
+gpointer
+mono_marshal_lookup_pinvoke (MonoMethod *method)
+{
+	ERROR_DECL (error);
+	gpointer addr;
+
+	g_assert (method);
+	addr = mono_lookup_pinvoke_call_internal (method, error);
+	if (!addr)
+		g_assert (!is_ok (error));
+	mono_error_set_pending_exception (error);
+	return addr;
 }
 
 void
@@ -6653,4 +6860,34 @@ get_marshal_cb (void)
 #endif
 	}
 	return &marshal_cb;
+}
+
+/**
+ * mono_method_has_unmanaged_callers_only_attribute:
+ *
+ * Returns \c TRUE if \p method has the \c UnmanagedCallersOnlyAttribute
+ */
+gboolean
+mono_method_has_unmanaged_callers_only_attribute (MonoMethod *method)
+{
+#ifndef ENABLE_NETCORE
+	return FALSE;
+#else
+	ERROR_DECL (attr_error);
+	MonoClass *attr_klass = NULL;
+	attr_klass = mono_class_try_get_unmanaged_callers_only_attribute_class ();
+	if (!attr_klass)
+		return FALSE;
+	MonoCustomAttrInfo *cinfo;
+	cinfo = mono_custom_attrs_from_method_checked (method, attr_error);
+	if (!is_ok (attr_error) || !cinfo) {
+		mono_error_cleanup (attr_error);
+		return FALSE;
+	}
+	gboolean result;
+	result = mono_custom_attrs_has_attr (cinfo, attr_klass);
+	if (!cinfo->cached)
+		mono_custom_attrs_free (cinfo);
+	return result;
+#endif
 }

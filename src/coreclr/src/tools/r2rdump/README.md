@@ -130,12 +130,12 @@ In x64/Arm/Arm64, GcTransitions are grouped into chunks where each chunk covers 
 
 ## Todo
 
-* Support R2RDump on ARM and ARM64 (https://github.com/dotnet/coreclr/issues/19089)
+* Support R2RDump on ARM and ARM64 (https://github.com/dotnet/runtime/issues/10753)
 
-* Parse R2RSections: READYTORUN_SECTION_EXCEPTION_INFO, READYTORUN_SECTION_DEBUG_INFO, READYTORUN_SECTION_DELAYLOAD_METHODCALL_THUNKS, READYTORUN_SECTION_INLINING_INFO, READYTORUN_SECTION_PROFILEDATA_INFO (https://github.com/dotnet/coreclr/issues/19616)
+* Parse R2RSections: READYTORUN_SECTION_EXCEPTION_INFO, READYTORUN_SECTION_DEBUG_INFO, READYTORUN_SECTION_DELAYLOAD_METHODCALL_THUNKS, READYTORUN_SECTION_INLINING_INFO, READYTORUN_SECTION_PROFILEDATA_INFO (https://github.com/dotnet/runtime/issues/10948)
 
 * Reenable R2RDumpTests after making it less fragile
 
-* Fix issues with disasm on Arm (https://github.com/dotnet/coreclr/issues/19637) and disasm using x86 coredistools (https://github.com/dotnet/coreclr/issues/19564)
+* Fix issues with disasm on Arm (https://github.com/dotnet/runtime/issues/10959) and disasm using x86 coredistools (https://github.com/dotnet/runtime/issues/10928)
 
-* Test R2RDump on more test cases to make sure it runs reliably and verify that the output is accurate (list of failing inputs: https://github.com/dotnet/coreclr/issues/19642)
+* Test R2RDump on more test cases to make sure it runs reliably and verify that the output is accurate (list of failing inputs: https://github.com/dotnet/runtime/issues/10961)

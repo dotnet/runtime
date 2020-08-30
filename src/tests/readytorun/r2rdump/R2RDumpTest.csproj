@@ -1,0 +1,56 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <CLSCompliant>false</CLSCompliant>
+    <CoreClrDir>..\..\..\..\..\..\</CoreClrDir>
+    <R2RDumpCommand>$(CoreClrDir)artifacts\bin\coreclr\$(TargetOS).$(TargetArchitecture).$(Configuration)\netcoreapp2.0\R2RDump.dll</R2RDumpCommand>
+    <DotnetToolCommand>$(CoreClrDir).dotnet\dotnet</DotnetToolCommand>
+    <BashCoreClrDir>../../../../../../</BashCoreClrDir>
+    <BashR2RDumpCommand>$(BashCoreClrDir)artifacts/bin/coreclr/$(TargetOS).$(TargetArchitecture).$(Configuration)/netcoreapp2.0/R2RDump.dll</BashR2RDumpCommand>
+    <BashDotnetToolCommand>$(CoreClrDir).dotnet/dotnet</BashDotnetToolCommand>
+    <CLRTestExecutionArguments>$(CoreClrDir)tests\src\readytorun\r2rdump\files\$(TargetOS).$(TargetArchitecture).$(Configuration)\</CLRTestExecutionArguments>
+    <!-- Test unsupported outside of windows -->
+    <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' != 'true'">true</CLRTestTargetUnsupported>
+    <!-- Test unsupported on arm targets -->
+    <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' == 'arm64'">true</CLRTestTargetUnsupported>
+    <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' == 'arm' or '$(TargetArchitecture)' == 'armel'">true</CLRTestTargetUnsupported>
+  </PropertyGroup>
+  <PropertyGroup>
+    <!-- Fails with JIT stress modes, issue #19415 -->
+    <JitOptimizationSensitive>true</JitOptimizationSensitive>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="BasicTests.cs" />
+    <Compile Include="TestHelpers.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="files\HelloWorld.csproj" />
+    <ProjectReference Include="files\MultipleRuntimeFunctions.csproj" />
+    <ProjectReference Include="files\GenericFunctions.csproj" />
+    <ProjectReference Include="files\GcInfoTransitions.csproj" />
+  </ItemGroup>
+  <PropertyGroup>
+    <CLRTestBatchPreCommands><![CDATA[
+$(CLRTestBatchPreCommands)
+%Core_Root%\crossgen /readytorun /platform_assemblies_paths %Core_Root%%3B%25CD% /out HelloWorld.ni.dll HelloWorld.dll
+%Core_Root%\crossgen /readytorun /platform_assemblies_paths %Core_Root%%3B%25CD% /out GcInfoTransitions.ni.dll GcInfoTransitions.dll
+%Core_Root%\crossgen /readytorun /platform_assemblies_paths %Core_Root%%3B%25CD% /out GenericFunctions.ni.dll GenericFunctions.dll
+%Core_Root%\crossgen /readytorun /platform_assemblies_paths %Core_Root%%3B%25CD% /out MultipleRuntimeFunctions.ni.dll MultipleRuntimeFunctions.dll
+$(DotnetToolCommand) $(R2RDumpCommand) --in HelloWorld.ni.dll --out HelloWorld-test.xml -x -v --ignoreSensitive
+$(DotnetToolCommand) $(R2RDumpCommand) --in GcInfoTransitions.ni.dll --out GcInfoTransitions-test.xml -x -v --ignoreSensitive
+$(DotnetToolCommand) $(R2RDumpCommand) --in GenericFunctions.ni.dll --out GenericFunctions-test.xml -x -v --ignoreSensitive
+$(DotnetToolCommand) $(R2RDumpCommand) --in MultipleRuntimeFunctions.ni.dll --out MultipleRuntimeFunctions-test.xml -x -v --ignoreSensitive
+]]></CLRTestBatchPreCommands>
+    <BashCLRTestPreCommands><![CDATA[
+$(BashCLRTestPreCommands)
+$CORE_ROOT/crossgen -readytorun -platform_assemblies_paths $CORE_ROOT:`pwd` -out HelloWorld.ni.dll HelloWorld.dll
+$CORE_ROOT/crossgen -readytorun -platform_assemblies_paths $CORE_ROOT:`pwd` -out GcInfoTransitions.ni.dll GcInfoTransitions.dll
+$CORE_ROOT/crossgen -readytorun -platform_assemblies_paths $CORE_ROOT:`pwd` -out GenericFunctions.ni.dll GenericFunctions.dll
+$CORE_ROOT/crossgen -readytorun -platform_assemblies_paths $CORE_ROOT:`pwd` -out MultipleRuntimeFunctions.ni.dll MultipleRuntimeFunctions.dll
+$(BashDotnetToolCommand) $(BashR2RDumpCommand) --in HelloWorld.ni.dll --out HelloWorld-test.xml -x -v --ignoreSensitive
+$(BashDotnetToolCommand) $(BashR2RDumpCommand) --in GcInfoTransitions.ni.dll --out GcInfoTransitions-test.xml -x -v --ignoreSensitive
+$(BashDotnetToolCommand) $(BashR2RDumpCommand) --in GenericFunctions.ni.dll --out GenericFunctions-test.xml -x -v --ignoreSensitive
+$(BashDotnetToolCommand) $(BashR2RDumpCommand) --in MultipleRuntimeFunctions.ni.dll --out MultipleRuntimeFunctions-test.xml -x -v --ignoreSensitive
+]]></BashCLRTestPreCommands>
+  </PropertyGroup>
+</Project>

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*
  * GCHELPERS.CPP
@@ -33,8 +32,6 @@
 #ifdef FEATURE_COMINTEROP
 #include "runtimecallablewrapper.h"
 #endif // FEATURE_COMINTEROP
-
-#include "rcwwalker.h"
 
 //========================================================================
 //
@@ -760,7 +757,7 @@ OBJECTREF AllocatePrimitiveArray(CorElementType type, DWORD cElements)
     // Fetch the proper array type
     if (g_pPredefinedArrayTypes[type] == NULL)
     {
-        TypeHandle elemType = TypeHandle(MscorlibBinder::GetElementType(type));
+        TypeHandle elemType = TypeHandle(CoreLibBinder::GetElementType(type));
         TypeHandle typHnd = ClassLoader::LoadArrayTypeThrowing(elemType, ELEMENT_TYPE_SZARRAY, 0);
         g_pPredefinedArrayTypes[type] = typHnd;
     }
@@ -982,7 +979,7 @@ OBJECTREF AllocateObject(MethodTable *pMT
 
 #ifdef FEATURE_COMINTEROP
 #ifdef FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
-    if (fHandleCom && pMT->IsComObjectType() && !pMT->IsWinRTObjectType())
+    if (fHandleCom && pMT->IsComObjectType())
     {
         // Create a instance of __ComObject here is not allowed as we don't know what COM object to create
         if (pMT == g_pBaseCOMObject)

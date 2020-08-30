@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 
@@ -10,7 +9,7 @@ namespace System.Text.Json.Serialization.Converters
     /// Implementation of <cref>JsonObjectConverter{T}</cref> that supports the deserialization
     /// of JSON objects using parameterized constructors.
     /// </summary>
-    internal sealed class SmallObjectWithParameterizedConstructorConverter<T, TArg0, TArg1, TArg2, TArg3> : ObjectWithParameterizedConstructorConverter<T> where T : notnull
+    internal class SmallObjectWithParameterizedConstructorConverter<T, TArg0, TArg1, TArg2, TArg3> : ObjectWithParameterizedConstructorConverter<T> where T : notnull
     {
         protected override object CreateObject(ref ReadStackFrame frame)
         {
@@ -20,7 +19,10 @@ namespace System.Text.Json.Serialization.Converters
             return createObject!(arguments.Arg0, arguments.Arg1, arguments.Arg2, arguments.Arg3);
         }
 
-        protected override bool ReadAndCacheConstructorArgument(ref ReadStack state, ref Utf8JsonReader reader, JsonParameterInfo jsonParameterInfo)
+        protected override bool ReadAndCacheConstructorArgument(
+            ref ReadStack state,
+            ref Utf8JsonReader reader,
+            JsonParameterInfo jsonParameterInfo)
         {
             Debug.Assert(state.Current.CtorArgumentState!.Arguments != null);
             var arguments = (Arguments<TArg0, TArg1, TArg2, TArg3>)state.Current.CtorArgumentState.Arguments;
@@ -30,37 +32,42 @@ namespace System.Text.Json.Serialization.Converters
             switch (jsonParameterInfo.Position)
             {
                 case 0:
-                    success = ((JsonParameterInfo<TArg0>)jsonParameterInfo).ReadJsonTyped(ref state, ref reader, out TArg0 arg0);
-                    if (success)
-                    {
-                        arguments.Arg0 = arg0;
-                    }
+                    success = TryRead<TArg0>(ref state, ref reader, jsonParameterInfo, out arguments.Arg0);
                     break;
                 case 1:
-                    success = ((JsonParameterInfo<TArg1>)jsonParameterInfo).ReadJsonTyped(ref state, ref reader, out TArg1 arg1);
-                    if (success)
-                    {
-                        arguments.Arg1 = arg1;
-                    }
+                    success = TryRead<TArg1>(ref state, ref reader, jsonParameterInfo, out arguments.Arg1);
                     break;
                 case 2:
-                    success = ((JsonParameterInfo<TArg2>)jsonParameterInfo).ReadJsonTyped(ref state, ref reader, out TArg2 arg2);
-                    if (success)
-                    {
-                        arguments.Arg2 = arg2;
-                    }
+                    success = TryRead<TArg2>(ref state, ref reader, jsonParameterInfo, out arguments.Arg2);
                     break;
                 case 3:
-                    success = ((JsonParameterInfo<TArg3>)jsonParameterInfo).ReadJsonTyped(ref state, ref reader, out TArg3 arg3);
-                    if (success)
-                    {
-                        arguments.Arg3 = arg3;
-                    }
+                    success = TryRead<TArg3>(ref state, ref reader, jsonParameterInfo, out arguments.Arg3);
                     break;
                 default:
                     Debug.Fail("More than 4 params: we should be in override for LargeObjectWithParameterizedConstructorConverter.");
                     throw new InvalidOperationException();
             }
+
+            return success;
+        }
+
+        private bool TryRead<TArg>(
+            ref ReadStack state,
+            ref Utf8JsonReader reader,
+            JsonParameterInfo jsonParameterInfo,
+            out TArg arg)
+        {
+            Debug.Assert(jsonParameterInfo.ShouldDeserialize);
+            Debug.Assert(jsonParameterInfo.Options != null);
+
+            var info = (JsonParameterInfo<TArg>)jsonParameterInfo;
+            var converter = (JsonConverter<TArg>)jsonParameterInfo.ConverterBase;
+
+            bool success = converter.TryRead(ref reader, info.RuntimePropertyType, info.Options!, ref state, out TArg value);
+
+            arg = value == null && jsonParameterInfo.IgnoreDefaultValuesOnRead
+                ? (TArg)info.DefaultValue! // Use default value specified on parameter, if any.
+                : value!;
 
             return success;
         }

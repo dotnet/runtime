@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 //
 // readytorun.h
@@ -204,6 +203,9 @@ enum ReadyToRunFixupKind
     READYTORUN_FIXUP_PInvokeTarget              = 0x2F, /* Target of an inlined pinvoke */
 
     READYTORUN_FIXUP_Check_InstructionSetSupport= 0x30, /* Define the set of instruction sets that must be supported/unsupported to use the fixup */
+
+    READYTORUN_FIXUP_Verify_FieldOffset         = 0x31, /* Generate a runtime check to ensure that the field offset matches between compile and runtime. Unlike Check_FieldOffset, this will generate a runtime failure instead of silently dropping the method */
+    READYTORUN_FIXUP_Verify_TypeLayout          = 0x32, /* Generate a runtime check to ensure that the type layout (size, alignment, HFA, reference map) matches between compile and runtime. Unlike Check_TypeLayout, this will generate a runtime failure instead of silently dropping the method */
 };
 
 //
@@ -217,6 +219,7 @@ enum ReadyToRunHelper
     // Not a real helper - handle to current module passed to delay load helpers.
     READYTORUN_HELPER_Module                    = 0x01,
     READYTORUN_HELPER_GSCookie                  = 0x02,
+    READYTORUN_HELPER_IndirectTrapThreads       = 0x03,
 
     //
     // Delay load helpers
@@ -390,6 +393,15 @@ enum ReadyToRunRuntimeConstants : DWORD
 {
     READYTORUN_PInvokeTransitionFrameSizeInPointerUnits = 11,
     READYTORUN_ReversePInvokeTransitionFrameSizeInPointerUnits = 2
+};
+
+enum ReadyToRunHFAElemType : DWORD
+{
+    READYTORUN_HFA_ELEMTYPE_None = 0,
+    READYTORUN_HFA_ELEMTYPE_Float32 = 1,
+    READYTORUN_HFA_ELEMTYPE_Float64 = 2,
+    READYTORUN_HFA_ELEMTYPE_Vector64 = 3,
+    READYTORUN_HFA_ELEMTYPE_Vector128 = 4,
 };
 
 #endif // __READYTORUN_H__

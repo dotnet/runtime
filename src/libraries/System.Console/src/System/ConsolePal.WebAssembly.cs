@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 using System.Text;
@@ -75,6 +74,8 @@ namespace System
 
     internal static class ConsolePal
     {
+        private static Encoding? s_outputEncoding;
+
         internal static void EnsureConsoleInitialized() { }
 
         public static Stream OpenStandardInput() => throw new PlatformNotSupportedException();
@@ -93,9 +94,9 @@ namespace System
 
         public static void SetConsoleInputEncoding(Encoding enc) => throw new PlatformNotSupportedException();
 
-        public static Encoding OutputEncoding => Encoding.Unicode;
+        public static Encoding OutputEncoding => s_outputEncoding ?? Encoding.UTF8;
 
-        public static void SetConsoleOutputEncoding(Encoding enc) => throw new PlatformNotSupportedException();
+        public static void SetConsoleOutputEncoding(Encoding enc) => s_outputEncoding = enc;
 
         public static bool IsInputRedirectedCore() => false;
 
@@ -105,9 +106,9 @@ namespace System
 
         internal static TextReader GetOrCreateReader() => throw new PlatformNotSupportedException();
 
-        public static bool NumberLock => false;
+        public static bool NumberLock => throw new PlatformNotSupportedException();
 
-        public static bool CapsLock => false;
+        public static bool CapsLock => throw new PlatformNotSupportedException();
 
         public static bool KeyAvailable => false;
 
@@ -145,9 +146,7 @@ namespace System
             set => throw new PlatformNotSupportedException();
         }
 
-        public static int CursorLeft => throw new PlatformNotSupportedException();
-
-        public static int CursorTop => throw new PlatformNotSupportedException();
+        public static (int Left, int Top) GetCursorPosition() => throw new PlatformNotSupportedException();
 
         public static string Title
         {
@@ -188,13 +187,13 @@ namespace System
 
         public static int WindowLeft
         {
-            get => throw new PlatformNotSupportedException();
+            get => 0;
             set => throw new PlatformNotSupportedException();
         }
 
         public static int WindowTop
         {
-            get => throw new PlatformNotSupportedException();
+            get => 0;
             set => throw new PlatformNotSupportedException();
         }
 

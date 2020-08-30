@@ -3,18 +3,26 @@ parameters:
   osGroup: ''
   osSubgroup: ''
   archType: ''
-  framework: ''
+  framework: 'net5.0'
   isOfficialBuild: false
   liveRuntimeBuildConfig: ''
   runtimeFlavor: 'coreclr'
+  runtimeDisplayName: 'coreclr'
+  interpreter: ''
   timeoutInMinutes: 150
   pool: ''
+  runtimeVariant: ''
   testScope: ''
   helixQueues: []
   dependsOnTestBuildConfiguration: Debug
   dependsOnTestArchitecture: x64
   condition: true
   variables: {}
+  # coreclrTestGroup: if empty, then a normal, default test run is created. If set, it indicates a set of
+  # stress modes that each test will be run with. This is the same usage as 'testGroup' in
+  # eng/pipelines/common/templates/runtimes/run-test-job.yml.
+  coreclrTestGroup: ''
+  dependsOn: []
 
 jobs:
   - template: /eng/pipelines/libraries/base-job.yml
@@ -27,31 +35,38 @@ jobs:
       isOfficialBuild: ${{ parameters.isOfficialBuild }}
       liveRuntimeBuildConfig: ${{ parameters.liveRuntimeBuildConfig }}
       runtimeFlavor: ${{ parameters.runtimeFlavor }}
+      runtimeVariant: ${{ parameters.runtimeVariant }}
       timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
       container: '' # we just send to helix, no need to use a container.
       condition: ${{ parameters.condition }}
       pool: ${{ parameters.pool }}
       testScope: ${{ parameters.testScope }}
+      runTests: true
       ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
-        displayName: ${{ format('Test Run {0} {1}', parameters.liveRuntimeBuildConfig, parameters.runtimeFlavor) }}
-        name: ${{ format('test_run_{0}_{1}', parameters.liveRuntimeBuildConfig, parameters.runtimeFlavor) }}
+        displayName: ${{ format('Test Run {0} {1}', parameters.liveRuntimeBuildConfig, parameters.runtimeDisplayName) }}
+        name: ${{ format('test_run_{0}_{1}', parameters.liveRuntimeBuildConfig, parameters.runtimeDisplayName) }}
       ${{ if eq(parameters.liveRuntimeBuildConfig, '') }}:
         displayName: 'Test Run'
         name: test_run
+      ${{ if eq(parameters.interpreter, 'true') }}:
+        testDisplayName: ${{ parameters.runtimeFlavor }}_interpreter_${{ parameters.liveRuntimeBuildConfig }}
 
       dependsOn:
-      - ${{ if notIn(parameters.framework, 'allConfigurations', 'net472') }}:
-        - ${{ format('libraries_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-        - ${{ format('libraries_test_build_{0}_{1}_{2}', parameters.osGroup, parameters.dependsOnTestArchitecture, parameters.dependsOnTestBuildConfiguration) }}
-      - ${{ if in(parameters.framework, 'allConfigurations', 'net472') }}:
-        - ${{ format('libraries_build_{0}_{1}{2}_{3}_{4}', parameters.framework, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-        - ${{ format('libraries_test_build_{0}_{1}_{2}_{3}', parameters.framework, parameters.osGroup, parameters.dependsOnTestArchitecture, parameters.dependsOnTestBuildConfiguration) }}
-      - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
-        - ${{ format('{0}_product_build_{1}{2}_{3}_{4}', parameters.runtimeFlavor, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveRuntimeBuildConfig) }}
+      - ${{ if ne(parameters.dependsOn[0], '') }}:
+        - ${{ parameters.dependsOn }}
+      - ${{ if eq(parameters.dependsOn[0], '') }}:
+        - ${{ if notIn(parameters.framework, 'allConfigurations', 'net48') }}:
+          - ${{ format('libraries_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+          # tests are built as part of product build
+          - ${{ if or(ne(parameters.archType, parameters.dependsOnTestArchitecture), ne(parameters.buildConfig, parameters.dependsOnTestBuildConfiguration)) }}:
+            - ${{ format('libraries_build_{0}_{1}_{2}', parameters.osGroup, parameters.dependsOnTestArchitecture, parameters.dependsOnTestBuildConfiguration) }}
+        - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
+          - ${{ format('{0}_{1}_product_build_{2}{3}_{4}_{5}', parameters.runtimeFlavor, parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveRuntimeBuildConfig) }}
 
       variables:
         - librariesTestsArtifactName: ${{ format('libraries_test_assets_{0}_{1}_{2}', parameters.osGroup, parameters.dependsOnTestArchitecture, parameters.dependsOnTestBuildConfiguration) }}
         - _archiveTestsParameter: /p:ArchiveTests=true
+
         - ${{ parameters.variables }}
 
       steps:
@@ -67,9 +82,24 @@ jobs:
           parameters:
             displayName: Test Assets
             cleanUnpackFolder: false
-            unpackFolder: $(Build.SourcesDirectory)/artifacts
             artifactName: $(librariesTestsArtifactName)
             artifactFileName: $(librariesTestsArtifactName)$(archiveExtension)
+            unpackFolder: $(Build.SourcesDirectory)/artifacts
+
+        - ${{ if in(parameters.coreclrTestGroup, 'gcstress0x3-gcstress0xc', 'gcstress-extra') }}:
+          # We need to find and download the GC stress dependencies (namely, coredistools). Put them
+          # in the 'sharedFramework' directory where we unpacked the CoreCLR build artifacts. The 'sharedFramework'
+          # directory is what is copied into the testhost.
+          - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+            - script: $(Build.SourcesDirectory)\src\coreclr\tests\setup-stress-dependencies.cmd
+                      /arch ${{ parameters.archType }}
+                      /outputdir $(_runtimeDownloadPath)/sharedFramework
+              displayName: Download GC stress dependencies
+          - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+            - script: $(Build.SourcesDirectory)/src/coreclr/tests/setup-stress-dependencies.sh
+                      --arch=${{ parameters.archType }}
+                      --outputDir=$(_runtimeDownloadPath)/sharedFramework
+              displayName: Download GC stress dependencies
 
         - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
           - script: $(_buildScript)
@@ -82,14 +112,70 @@ jobs:
         - template: /eng/pipelines/libraries/helix.yml
           parameters:
             runtimeFlavor: ${{ parameters.runtimeFlavor }}
-            targetOS: ${{ parameters.osGroup }}
-            archGroup: ${{ parameters.archType }}
-            configuration: ${{ parameters.buildConfig }}
-            helixQueues: ${{ join('+', parameters.helixQueues) }}
-            msbuildScript: $(_msbuildCommand)
-            framework: ${{ parameters.framework }}
+            osGroup: ${{ parameters.osGroup }}
+            archType: ${{ parameters.archType }}
+            buildConfig: ${{ parameters.buildConfig }}
+            helixQueues: ${{ parameters.helixQueues }}
             testScope: ${{ parameters.testScope }}
+            interpreter: ${{ parameters.interpreter }}
             creator: dotnet-bot
-            helixToken: ''
             testRunNamePrefixSuffix: $(_testRunNamePrefixSuffix)
             extraHelixArguments: $(_extraHelixArguments)
+
+            # coreclrTestGroup: The following mappings of 'coreclrTestGroup' to 'scenarios' is copied from
+            # eng/pipelines/common/templates/runtimes/run-test-job.yml (with 'testGroup' replaced by 'coreclrTestGroup'
+            # for clarity), and should remain in sync. This is only a subset; only the testGroups that are
+            # used to test the libraries have been added here. More could be added if we decided to test the
+            # libraries with more stress modes. The scenario tags are interpreted by
+            # src\coreclr\tests\testenvironment.proj.
+            #
+            # The one difference here compared to eng/pipelines/common/templates/runtimes/run-test-job.yml is
+            # that 'jitstress' contains 'no_tiered_compilation'. The 'normal' (default) test mode
+            # is run in a regular CI job, so there is no need to duplicate it here. So, add 'no_tiered_compilation'
+            # to the 'jitstress' job instead of adding a new job just for 'no_tiered_compilation'.
+
+            ${{ if in(parameters.coreclrTestGroup, 'jitstress') }}:
+              scenarios:
+              - no_tiered_compilation
+              - jitminopts
+              - jitstress1
+              - jitstress1_tiered
+              - jitstress2
+              - jitstress2_tiered
+              - zapdisable
+              - tailcallstress
+            ${{ if in(parameters.coreclrTestGroup, 'jitstressregs' ) }}:
+              scenarios:
+              - jitstressregs1
+              - jitstressregs2
+              - jitstressregs3
+              - jitstressregs4
+              - jitstressregs8
+              - jitstressregs0x10
+              - jitstressregs0x80
+              - jitstressregs0x1000
+            ${{ if in(parameters.coreclrTestGroup, 'jitstress2-jitstressregs') }}:
+              scenarios:
+              - jitstress2_jitstressregs1
+              - jitstress2_jitstressregs2
+              - jitstress2_jitstressregs3
+              - jitstress2_jitstressregs4
+              - jitstress2_jitstressregs8
+              - jitstress2_jitstressregs0x10
+              - jitstress2_jitstressregs0x80
+              - jitstress2_jitstressregs0x1000
+            ${{ if in(parameters.coreclrTestGroup, 'gcstress0x3-gcstress0xc') }}:
+              scenarios:
+              # Disable gcstress0x3 for now; it causes lots of test timeouts. Investigate this after
+              # gcstress0xc runs are clean. Tracking issue: https://github.com/dotnet/runtime/issues/38903.
+              # - gcstress0x3
+              - gcstress0xc
+            ${{ if in(parameters.coreclrTestGroup, 'gcstress-extra') }}:
+              scenarios:
+              - heapverify1
+              - gcstress0xc_zapdisable
+              - gcstress0xc_zapdisable_jitstress2
+              - gcstress0xc_zapdisable_heapverify1
+              - gcstress0xc_jitstress1
+              - gcstress0xc_jitstress2
+              - gcstress0xc_jitminopts_heapverify1

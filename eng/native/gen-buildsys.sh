@@ -91,6 +91,9 @@ if [[ "$build_arch" == "wasm" ]]; then
     cmake_command="emcmake $cmake_command"
 fi
 
+# We have to be able to build with CMake 3.6.2, so we can't use the -S or -B options
+pushd "$3"
+
 # Include CMAKE_USER_MAKE_RULES_OVERRIDE as uninitialized since it will hold its value in the CMake cache otherwise can cause issues when branch switching
 $cmake_command \
   -G "$generator" \
@@ -98,5 +101,6 @@ $cmake_command \
   "-DCMAKE_INSTALL_PREFIX=$__CMakeBinDir" \
   $cmake_extra_defines \
   $__UnprocessedCMakeArgs \
-  -S "$1" \
-  -B "$3"
+  "$1"
+
+popd

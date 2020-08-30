@@ -29,6 +29,10 @@ endif
 
 glib_libs = $(monodir)/mono/eglib/libeglib.la
 
+if ENABLE_PERFTRACING
+eventpipe_libs = $(monodir)/mono/eventpipe/libeventpipe.la
+endif
+
 boehm_libs=	\
 	$(monodir)/mono/metadata/libmonoruntime.la	\
 	$(monodir)/mono/utils/libmonoutils.la \
@@ -39,6 +43,7 @@ sgen_libs = \
 	$(monodir)/mono/metadata/libmonoruntimesgen.la	\
 	$(monodir)/mono/sgen/libmonosgen.la	\
 	$(monodir)/mono/utils/libmonoutils.la \
+	$(eventpipe_libs) \
 	$(glib_libs)
 
 if ENABLE_LLVM
@@ -422,6 +427,8 @@ interp_sources =	\
 	interp/interp.h	\
 	interp/interp-internals.h	\
 	interp/interp.c	\
+	interp/interp-intrins.h	\
+	interp/interp-intrins.c	\
 	interp/mintops.h	\
 	interp/mintops.def	\
 	interp/mintops.c	\
@@ -761,6 +768,7 @@ libmonosgen_2_0_la_CFLAGS = $(mono_sgen_CFLAGS) @CXX_ADD_CFLAGS@
 
 libmonosgen_2_0_la_LIBADD = libmini.la $(interp_libs_with_mini) $(dbg_libs_with_mini) $(sgen_libs) $(LIBMONO_DTRACE_OBJECT) $(LLVMMONOF)
 libmonosgen_2_0_la_LDFLAGS = $(libmonoldflags) $(monobin_platform_ldflags) $(CCLDFLAGS)
+libmonosgen_2_0_la_LIBTOOLFLAGS = $(MONO_LIBTOOL_TAG)
 
 noinst_LIBRARIES += libmaintest.a
 

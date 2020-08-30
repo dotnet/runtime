@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <RuntimeIdentifier>$(TestTargetRid)</RuntimeIdentifier>
+    <RuntimeFrameworkVersion>$(MNAVersion)</RuntimeFrameworkVersion>
+  </PropertyGroup>
+
+  <Target Name="CopyFiles" AfterTargets="Publish">
+    <ItemGroup>
+      <FilesToCopy Include="$(MSBuildThisFileDirectory)\Sentence\**\*.*" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(FilesToCopy)" DestinationFolder="$(PublishDir)\Sentence\%(RecursiveDir)" SkipUnchangedFiles="true"/>
+  </Target>
+
+</Project>

@@ -1,3 +1,5 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 //
 // Copyright (C) 2010 Novell, Inc (http://www.novell.com)
 //
@@ -24,6 +26,7 @@
 using System.IO;
 using System.Globalization;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Loader;
@@ -57,6 +60,8 @@ namespace System.Reflection
         private IntPtr _mono_assembly;
         private object? _evidence;       // Unused, kept for layout compatibility
         #endregion
+
+        internal IntPtr GetUnderlyingNativeHandle() { return _mono_assembly; }
 
         private ResolveEventHolder? resolve_event_holder;
 
@@ -102,6 +107,7 @@ namespace System.Reflection
 
         public override Module ManifestModule => GetManifestModuleInternal();
 
+        [Obsolete(Obsoletions.GlobalAssemblyCacheMessage, DiagnosticId = Obsoletions.GlobalAssemblyCacheDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public override bool GlobalAssemblyCache => false;
 
         public override long HostContext => 0;
@@ -145,12 +151,14 @@ namespace System.Reflection
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public extern override string[] GetManifestResourceNames();
 
+        [RequiresUnreferencedCode("Types might be removed")]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public extern override Type[] GetExportedTypes();
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal extern Type[] GetTopLevelForwardedTypes();
 
+        [RequiresUnreferencedCode("Types might be removed")]
         public override Type[] GetForwardedTypes()
         {
             Type[] topLevelTypes = GetTopLevelForwardedTypes();
@@ -170,6 +178,7 @@ namespace System.Reflection
             return forwardedTypes.ToArray();
         }
 
+        [RequiresUnreferencedCode("Types might be removed")]
         private static void AddPublicNestedTypes(Type type, List<Type> types, List<Exception> exceptions)
         {
             Type[] nestedTypes;
@@ -245,6 +254,7 @@ namespace System.Reflection
             return AssemblyName.Create(_mono_assembly, CodeBase);
         }
 
+        [RequiresUnreferencedCode("Types might be removed")]
         public override Type GetType(string name, bool throwOnError, bool ignoreCase)
         {
             if (name == null)
@@ -314,9 +324,9 @@ namespace System.Reflection
             return GetModules(getResourceModules);
         }
 
-        public override AssemblyName[] GetReferencedAssemblies()
+        internal static AssemblyName[] GetReferencedAssemblies(Assembly assembly)
         {
-            using (var nativeNames = new Mono.SafeGPtrArrayHandle(InternalGetReferencedAssemblies(this)))
+            using (var nativeNames = new Mono.SafeGPtrArrayHandle(InternalGetReferencedAssemblies(assembly)))
             {
                 int numAssemblies = nativeNames.Length;
                 try
@@ -351,6 +361,9 @@ namespace System.Reflection
             }
         }
 
+        [RequiresUnreferencedCode("Assembly references might be removed")]
+        public override AssemblyName[] GetReferencedAssemblies() => RuntimeAssembly.GetReferencedAssemblies (this);
+
         public override Assembly GetSatelliteAssembly(CultureInfo culture)
         {
             return GetSatelliteAssembly(culture, null);
@@ -361,13 +374,13 @@ namespace System.Reflection
             if (culture == null)
                 throw new ArgumentNullException(nameof(culture));
 
-            return InternalGetSatelliteAssembly(culture, version, true)!;
+            return InternalGetSatelliteAssembly(this, culture, version, true)!;
         }
 
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
-        internal Assembly? InternalGetSatelliteAssembly(CultureInfo culture, Version? version, bool throwOnFileNotFound)
+        internal static Assembly? InternalGetSatelliteAssembly(Assembly assembly, CultureInfo culture, Version? version, bool throwOnFileNotFound)
         {
-            AssemblyName aname = GetName();
+            AssemblyName aname = assembly.GetName();
 
             var an = new AssemblyName();
             if (version == null)
@@ -388,7 +401,7 @@ namespace System.Reflection
             {
             }
 
-            if (res == this)
+            if (res == assembly)
                 res = null;
             if (res == null && throwOnFileNotFound)
                 throw new FileNotFoundException(string.Format(culture, SR.IO_FileNotFound_FileName, an.Name));
@@ -401,39 +414,41 @@ namespace System.Reflection
                 throw new ArgumentNullException(nameof(name), SR.ArgumentNull_FileName);
             if (name.Length == 0)
                 throw new ArgumentException(SR.Argument_EmptyFileName);
+            if (Location.Length == 0)
+            {
+                // Throw if the assembly was loaded from memory, indicated by Location returning an empty string
+                throw new FileNotFoundException(SR.IO_NoFileTableInInMemoryAssemblies);
+            }
 
-            string location = Location;
-            if (location != null && Path.GetFileName(location) == name)
-                return new FileStream(location, FileMode.Open, FileAccess.Read);
-            string filename = (string)GetFilesInternal(name, true);
-            if (filename != null)
-                return new FileStream(filename, FileMode.Open, FileAccess.Read);
+            RuntimeModule? m = (RuntimeModule?)GetModule(name);
+
+            if (m != null)
+                return new FileStream(m.FullyQualifiedName, FileMode.Open, FileAccess.Read);
             else
                 return null;
         }
 
         public override FileStream[] GetFiles(bool getResourceModules)
         {
-            string[] names = (string[])GetFilesInternal(null, getResourceModules);
-            if (names == null)
+            if (Location.Length == 0)
+            {
+                // Throw if the assembly was loaded from memory, indicated by Location returning an empty string
+                throw new FileNotFoundException(SR.IO_NoFileTableInInMemoryAssemblies);
+            }
+
+            Module[] modules = GetModules(getResourceModules);
+
+            if (modules.Length == 0)
                 return Array.Empty<FileStream>();
 
-            string location = Location;
+            FileStream[] res = new FileStream[modules.Length];
 
-            FileStream[] res;
-            if (location != string.Empty)
+            for (int i = 0; i < modules.Length; i++)
             {
-                res = new FileStream[names.Length + 1];
-                res[0] = new FileStream(location, FileMode.Open, FileAccess.Read);
-                for (int i = 0; i < names.Length; ++i)
-                    res[i + 1] = new FileStream(names[i], FileMode.Open, FileAccess.Read);
+                RuntimeModule m = (RuntimeModule)modules[i];
+                res[i] = new FileStream(m.FullyQualifiedName, FileMode.Open, FileAccess.Read);
             }
-            else
-            {
-                res = new FileStream[names.Length];
-                for (int i = 0; i < names.Length; ++i)
-                    res[i] = new FileStream(names[i], FileMode.Open, FileAccess.Read);
-            }
+
             return res;
         }
 

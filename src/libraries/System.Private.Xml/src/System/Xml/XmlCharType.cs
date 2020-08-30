@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.IO;
@@ -44,7 +43,7 @@ namespace System.Xml
         private const uint CharPropertiesSize = (uint)char.MaxValue + 1;
 
         // static lock for XmlCharType class
-        private static object s_Lock;
+        private static object? s_Lock;
 
         private static object StaticLock
         {
@@ -53,8 +52,9 @@ namespace System.Xml
                 if (s_Lock == null)
                 {
                     object o = new object();
-                    Interlocked.CompareExchange<object>(ref s_Lock, o, null);
+                    Interlocked.CompareExchange<object?>(ref s_Lock, o, null);
                 }
+
                 return s_Lock;
             }
         }
@@ -70,7 +70,7 @@ namespace System.Xml
                     return;
                 }
 
-                UnmanagedMemoryStream memStream = (UnmanagedMemoryStream)typeof(XmlWriter).Assembly.GetManifestResourceStream("XmlCharType.bin");
+                UnmanagedMemoryStream memStream = (UnmanagedMemoryStream)typeof(XmlWriter).Assembly.GetManifestResourceStream("XmlCharType.bin")!;
                 Debug.Assert(memStream.Length == CharPropertiesSize);
 
                 byte* chProps = memStream.PositionPointer;
@@ -202,13 +202,13 @@ namespace System.Xml
             highChar = (char)(SurHighStart + v / 1024);
         }
 
-        internal bool IsOnlyWhitespace(string str)
+        internal bool IsOnlyWhitespace(string? str)
         {
             return IsOnlyWhitespaceWithPos(str) == -1;
         }
 
         // Character checking on strings
-        internal int IsOnlyWhitespaceWithPos(string str)
+        internal int IsOnlyWhitespaceWithPos(string? str)
         {
             if (str != null)
             {

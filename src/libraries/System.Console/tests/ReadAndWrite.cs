@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.IO;
@@ -259,6 +258,7 @@ public class ReadAndWrite
     }
 
     [Fact]
+    [PlatformSpecific(~TestPlatforms.Browser)]
     public static unsafe void OutputEncodingPreamble()
     {
         Encoding curEncoding = Console.OutputEncoding;
@@ -281,6 +281,7 @@ public class ReadAndWrite
     }
 
     [Fact]
+    [PlatformSpecific(~TestPlatforms.Browser)]
     public static unsafe void OutputEncoding()
     {
         Encoding curEncoding = Console.OutputEncoding;
@@ -303,6 +304,21 @@ public class ReadAndWrite
         {
             Console.OutputEncoding = curEncoding;
         }
+    }
+
+    [Fact]
+    [PlatformSpecific(TestPlatforms.Browser)]
+    public static void OutputEncoding_Getter_Returns_Unicode()
+    {
+        Encoding curEncoding = Console.OutputEncoding;
+        Assert.Equal(Encoding.UTF8, curEncoding);
+    }
+
+    [Fact]
+    [PlatformSpecific(TestPlatforms.Browser)]
+    public static void InputEncoding_Getter_Throws_PlatformNotSupportedException()
+    {
+        Assert.Throws<PlatformNotSupportedException>(() => Console.InputEncoding);
     }
 
     static readonly string[] s_testLines = new string[] {
@@ -333,6 +349,7 @@ public class ReadAndWrite
     };
 
     [Fact]
+    [PlatformSpecific(~TestPlatforms.Browser)]
     public static void ReadAndReadLine()
     {
         TextWriter savedStandardOutput = Console.Out;

@@ -12,10 +12,8 @@
   <!-- Provide default targets which can be hooked onto or overridden as necessary -->
   <Target Name="Pack" />
 
+  <!-- Remove after https://github.com/dotnet/arcade/pull/5365 is merged. -->
   <UsingTask TaskName="GenerateGuidFromName" AssemblyFile="$(InstallerTasksAssemblyPath)" />
-  <UsingTask TaskName="GenerateMsiVersion" AssemblyFile="$(InstallerTasksAssemblyPath)" />
-  <UsingTask TaskName="GetTargetMachineInfo" AssemblyFile="$(InstallerTasksAssemblyPath)" />
-  <UsingTask TaskName="RegenerateReadmeTable" AssemblyFile="$(InstallerTasksAssemblyPath)" />
 
   <!-- Common target to find all sfxproj. In a target to avoid evaluating for every project. -->
   <Target Name="GetSharedFrameworkProjects">

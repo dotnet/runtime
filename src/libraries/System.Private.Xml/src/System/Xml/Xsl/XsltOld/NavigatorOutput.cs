@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Xml.XPath;
@@ -15,7 +14,7 @@ namespace System.Xml.Xsl.XsltOld
 
         internal XPathNavigator Navigator
         {
-            get { return ((IXPathNavigable)_doc).CreateNavigator(); }
+            get { return ((IXPathNavigable)_doc).CreateNavigator()!; }
         }
 
         internal NavigatorOutput(string baseUri)
@@ -39,7 +38,7 @@ namespace System.Xml.Xsl.XsltOld
                         {
                             _documentIndex++;
                             Debug.Assert(record.AttributeList[attrib] is BuilderInfo);
-                            BuilderInfo attrInfo = (BuilderInfo)record.AttributeList[attrib];
+                            BuilderInfo attrInfo = (BuilderInfo)record.AttributeList[attrib]!;
                             if (attrInfo.NamespaceURI == XmlReservedNs.NsXmlNs)
                             {
                                 if (attrInfo.Prefix.Length == 0)

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -48,9 +47,13 @@ namespace Internal.Cryptography
             throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithmId));
         }
 
-        // -----------------------------
-        // ---- PAL layer ends here ----
-        // -----------------------------
+        public static class OneShotHashProvider
+        {
+            public static int HashData(string hashAlgorithmId, ReadOnlySpan<byte> source, Span<byte> destination)
+            {
+                throw new NotImplementedException();
+            }
+        }
 
         private sealed class NotImplementedHashProvider : HashProvider
         {
@@ -63,12 +66,12 @@ namespace Internal.Cryptography
                 throw new NotImplementedException();
             }
 
-            public override byte[] FinalizeHashAndReset()
+            public override int FinalizeHashAndReset(Span<byte> destination)
             {
                 throw new NotImplementedException();
             }
 
-            public override bool TryFinalizeHashAndReset(Span<byte> destination, out int bytesWritten)
+            public override int GetCurrentHash(Span<byte> destination)
             {
                 throw new NotImplementedException();
             }

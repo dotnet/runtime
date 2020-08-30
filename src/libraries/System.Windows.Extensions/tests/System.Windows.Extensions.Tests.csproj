@@ -12,11 +12,6 @@
              Link="Common\System\Drawing\Helpers.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="System\Drawing\FontConverterTests.cs" />
-    <Compile Include="System\Drawing\IconConverterTests.cs" />
-    <Compile Include="System\Drawing\ImageConverterTests.cs" />
-    <Compile Include="System\Drawing\ImageFormatConverterTests.cs" />
-    <Compile Include="System\Drawing\Printing\MarginsConverterTests.cs" />
     <Compile Include="System\Media\SoundPlayerTests.cs" />
     <Compile Include="System\Media\SystemSoundTests.cs" />
     <Compile Include="System\Media\SystemSoundsTests.cs" />
@@ -25,5 +20,7 @@
     <PackageReference Include="System.ComponentModel.TypeConverter.TestData" Version="$(SystemComponentModelTypeConverterTestDataVersion)" />
     <PackageReference Include="System.Drawing.Common.TestData" Version="$(SystemDrawingCommonTestDataVersion)" />
     <PackageReference Include="System.Windows.Extensions.TestData" Version="$(SystemWindowsExtensionsTestDataVersion)" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Drawing.Common\src\System.Drawing.Common.csproj" />
+    <ProjectReference Include="..\src\System.Windows.Extensions.csproj" />
   </ItemGroup>
 </Project>

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #ifndef __EVENTPIPE_PROTOCOL_HELPER_H__
 #define __EVENTPIPE_PROTOCOL_HELPER_H__
@@ -18,12 +17,11 @@ class IpcStream;
 // see diagnosticsipc.h and diagnosticserver.h for more details
 enum class EventPipeCommandId : uint8_t
 {
-    StopTracing    = 0x01,
-    CollectTracing = 0x02,
+    StopTracing     = 0x01,
+    CollectTracing  = 0x02,
     CollectTracing2 = 0x03,
     // future
 };
-
 
 // Command = 0x0203
 struct EventPipeCollectTracing2CommandPayload

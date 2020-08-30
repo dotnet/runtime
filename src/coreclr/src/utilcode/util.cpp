@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //*****************************************************************************
 //  util.cpp
 //
@@ -851,6 +850,7 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
 
 /*static*/ BOOL CPUGroupInfo::m_enableGCCPUGroups = FALSE;
 /*static*/ BOOL CPUGroupInfo::m_threadUseAllCpuGroups = FALSE;
+/*static*/ BOOL CPUGroupInfo::m_threadAssignCpuGroups = FALSE;
 /*static*/ WORD CPUGroupInfo::m_nGroups = 0;
 /*static*/ WORD CPUGroupInfo::m_nProcessors = 0;
 /*static*/ WORD CPUGroupInfo::m_initialGroup = 0;
@@ -992,6 +992,7 @@ DWORD LCM(DWORD u, DWORD v)
 #if !defined(FEATURE_REDHAWK) && (defined(TARGET_AMD64) || defined(TARGET_ARM64))
     BOOL enableGCCPUGroups     = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_GCCpuGroup) != 0;
     BOOL threadUseAllCpuGroups = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_Thread_UseAllCpuGroups) != 0;
+    BOOL threadAssignCpuGroups = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_Thread_AssignCpuGroups) != 0;
 
     if (!enableGCCPUGroups)
         return;
@@ -1007,10 +1008,11 @@ DWORD LCM(DWORD u, DWORD v)
     CPUGroupInfo::GetThreadGroupAffinity(GetCurrentThread(), &groupAffinity);
     m_initialGroup = groupAffinity.Group;
 
-	// only enable CPU groups if more than one group exists
-	BOOL hasMultipleGroups = m_nGroups > 1;
-	m_enableGCCPUGroups = enableGCCPUGroups && hasMultipleGroups;
-	m_threadUseAllCpuGroups = threadUseAllCpuGroups && hasMultipleGroups;
+    // only enable CPU groups if more than one group exists
+    BOOL hasMultipleGroups = m_nGroups > 1;
+    m_enableGCCPUGroups = enableGCCPUGroups && hasMultipleGroups;
+    m_threadUseAllCpuGroups = threadUseAllCpuGroups && hasMultipleGroups;
+    m_threadAssignCpuGroups = threadAssignCpuGroups && hasMultipleGroups;
 #endif // TARGET_AMD64 || TARGET_ARM64
 
     // Determine if the process is affinitized to a single processor (or if the system has a single processor)
@@ -1165,8 +1167,8 @@ retry:
     WORD i, minGroup = 0;
     DWORD minWeight = 0;
 
-    // m_enableGCCPUGroups and m_threadUseAllCpuGroups must be TRUE
-    _ASSERTE(m_enableGCCPUGroups && m_threadUseAllCpuGroups);
+    // m_enableGCCPUGroups, m_threadUseAllCpuGroups, and m_threadAssignCpuGroups must be TRUE
+    _ASSERTE(m_enableGCCPUGroups && m_threadUseAllCpuGroups && m_threadAssignCpuGroups);
 
     for (i = 0; i < m_nGroups; i++)
     {
@@ -1205,8 +1207,8 @@ found:
 {
     LIMITED_METHOD_CONTRACT;
 #if (defined(TARGET_AMD64) || defined(TARGET_ARM64))
-    // m_enableGCCPUGroups and m_threadUseAllCpuGroups must be TRUE
-    _ASSERTE(m_enableGCCPUGroups && m_threadUseAllCpuGroups);
+    // m_enableGCCPUGroups, m_threadUseAllCpuGroups, and m_threadAssignCpuGroups must be TRUE
+    _ASSERTE(m_enableGCCPUGroups && m_threadUseAllCpuGroups && m_threadAssignCpuGroups);
 
     WORD group = gf->Group;
     m_CPUGroupInfoArray[group].activeThreadWeight -= m_CPUGroupInfoArray[group].groupWeight;
@@ -1238,6 +1240,12 @@ BOOL CPUGroupInfo::GetCPUGroupRange(WORD group_number, WORD* group_begin, WORD* 
 {
     LIMITED_METHOD_CONTRACT;
     return m_threadUseAllCpuGroups;
+}
+
+/*static*/ BOOL CPUGroupInfo::CanAssignCpuGroupsToThreads()
+{
+    LIMITED_METHOD_CONTRACT;
+    return m_threadAssignCpuGroups;
 }
 #endif // HOST_WINDOWS
 
@@ -3030,58 +3038,6 @@ lDone: ;
 
     return param.fRet;
 }
-
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-
-// To include definition of EXCEPTION_SOFTSO
-#include "corexcep.h"
-
-// These functions provide limited support for corrupting exceptions
-// outside the VM folder. Its limited since we don't have access to the
-// throwable.
-//
-// These functions are also wrapped by the corresponding CEHelper
-// methods in excep.cpp.
-
-// Given an exception code, this method returns a BOOL to indicate if the
-// code belongs to a corrupting exception or not.
-BOOL IsProcessCorruptedStateException(DWORD dwExceptionCode, BOOL fCheckForSO /*=TRUE*/)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    // By default, assume its not corrupting
-    BOOL fIsCorruptedStateException = FALSE;
-
-    if (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_legacyCorruptedStateExceptionsPolicy) == 1)
-    {
-        return fIsCorruptedStateException;
-    }
-
-    // If we have been asked not to include SO in the CSE check
-    // and the code represent SO, then exit now.
-    if ((fCheckForSO == FALSE) && (dwExceptionCode == STATUS_STACK_OVERFLOW))
-    {
-        return fIsCorruptedStateException;
-    }
-
-    switch(dwExceptionCode)
-    {
-        case STATUS_ACCESS_VIOLATION:
-        case STATUS_STACK_OVERFLOW:
-        case EXCEPTION_ILLEGAL_INSTRUCTION:
-        case EXCEPTION_IN_PAGE_ERROR:
-        case EXCEPTION_INVALID_DISPOSITION:
-        case EXCEPTION_NONCONTINUABLE_EXCEPTION:
-        case EXCEPTION_PRIV_INSTRUCTION:
-        case STATUS_UNWIND_CONSOLIDATE:
-            fIsCorruptedStateException = TRUE;
-            break;
-    }
-
-    return fIsCorruptedStateException;
-}
-
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
 
 namespace Clr
 {

@@ -1,0 +1,77 @@
+<Project>
+
+  <Target Name="CheckEnv">
+    <Error Condition="'$(TargetArchitecture)' != 'wasm'" Text="Expected TargetArchitecture==wasm, got '$(TargetArchitecture)'"/>
+    <Error Condition="'$(TargetOS)' != 'Browser'" Text="Expected TargetOS==Browser, got '$(TargetOS)'"/>
+    <Error Condition="'$(EMSDK_PATH)' == ''" Text="The EMSDK_PATH environment variable should be set pointing to the emscripten SDK root dir."/>
+  </Target>
+
+  <ItemGroup>
+    <PackageReference Include="$(MicrosoftNETCoreRuntimeICUTransportPackage)" PrivateAssets="all" Version="$(MicrosoftNETCoreRuntimeICUTransportVersion)" GeneratePathProperty="true" />
+  </ItemGroup>
+
+  <UsingTask TaskName="PInvokeTableGenerator" AssemblyFile="$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'WasmAppBuilder', 'Debug', '$(NetCoreAppCurrent)', 'publish', 'WasmAppBuilder.dll'))"/>
+  <Target Name="BuildPInvokeTable" DependsOnTargets="CheckEnv">
+    <PropertyGroup>
+      <WasmPInvokeTablePath>$(ArtifactsObjDir)wasm\pinvoke-table.h</WasmPInvokeTablePath>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <WasmPInvokeModule Include="libSystem.Native" />
+      <WasmPInvokeModule Include="libSystem.IO.Compression.Native" />
+      <WasmPInvokeModule Include="libSystem.Globalization.Native" />
+      <WasmPInvokeAssembly Include="$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)*.dll" />
+    </ItemGroup>
+    
+    <!-- Retrieve CoreLib's targetpath via GetTargetPath as it isn't binplaced yet. -->
+    <MSBuild Projects="$(CoreLibProject)"
+             Targets="GetTargetPath">
+      <Output TaskParameter="TargetOutputs" ItemName="WasmPInvokeAssembly" />
+    </MSBuild>
+
+    <MakeDir Directories="$(ArtifactsObjDir)wasm" />
+    <PInvokeTableGenerator Modules="@(WasmPInvokeModule)"
+                           Assemblies="@(WasmPInvokeAssembly)"
+                           OutputPath="$(WasmPInvokeTablePath)" />
+  </Target>
+
+  <UsingTask TaskName="DownloadTimeZoneData" AssemblyFile="$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'CreateWasmBundle', 'Debug', '$(NetCoreAppCurrent)', 'publish', 'CreateWasmBundle.dll'))"/>
+  <Target Name="LoadTimeZones" DependsOnTargets="CheckEnv">
+    <DownloadTimeZoneData
+      InputDirectory="$(ArtifactsObjDir)wasm/data/input"
+      OutputDirectory="$(ArtifactsObjDir)wasm/data/output"
+      Version="2020a" />
+  </Target>
+
+  <UsingTask TaskName="CreateWasmBundle" AssemblyFile="$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'CreateWasmBundle', 'Debug', '$(NetCoreAppCurrent)', 'publish', 'CreateWasmBundle.dll'))"/>
+  <Target Name="BundleWasm" DependsOnTargets="CheckEnv;LoadTimeZones">
+    <PropertyGroup>
+      <TimeZonesDataPath>$(NativeBinDir)dotnet.timezones.blat</TimeZonesDataPath>
+    </PropertyGroup>
+    <CreateWasmBundle
+      InputDirectory="$(ArtifactsObjDir)wasm/data/output"
+      OutputFileName="$(TimeZonesDataPath)" />
+  </Target>
+
+  <!-- This is a documented target that is invoked by developers in their innerloop work. -->
+  <Target Name="BuildWasmRuntimes"
+          AfterTargets="Build"
+          DependsOnTargets="BuildPInvokeTable;BundleWasm">
+    <Exec Command="make -C $(MonoProjectRoot)wasm all SHELL=/bin/bash BINDIR=$(ArtifactsBinDir) MONO_BIN_DIR=$(MonoArtifactsPath) OBJDIR=$(ArtifactsObjDir) BUILDS_BIN_DIR=$(NativeBinDir) NATIVE_DIR=$(ArtifactsObjDir)/native/$(NetCoreAppCurrent)-$(TargetOS)-$(Configuration)-$(TargetArchitecture) CONFIG=$(Configuration) PINVOKE_TABLE=$(WasmPInvokeTablePath) ICU_LIBDIR=$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)/runtimes/browser-wasm/native/lib"
+          IgnoreStandardErrorWarningFormat="true" />
+
+    <Copy SourceFiles="$(NativeBinDir)dotnet.js;
+                       $(NativeBinDir)dotnet.wasm;
+                       $(NativeBinDir)dotnet.timezones.blat"
+          DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"
+          SkipUnchangedFiles="true" />
+
+    <ItemGroup>
+      <IcuDataFiles Include="$(NativeBinDir)*.dat"/>
+    </ItemGroup>
+    <Copy SourceFiles="@(IcuDataFiles)"
+          DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"
+          SkipUnchangedFiles="true" />
+  </Target>
+
+</Project>

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -33,12 +32,7 @@ namespace System.Net.WebSockets
             TimeSpan keepAliveInterval,
             ArraySegment<byte> internalBuffer)
         {
-            HttpListenerWebSocketContext webSocketContext = null;
-            if (NetEventSource.IsEnabled)
-            {
-                NetEventSource.Enter(null, context);
-            }
-
+            HttpListenerWebSocketContext? webSocketContext = null;
             try
             {
                 // get property will create a new response if one doesn't exist.
@@ -46,10 +40,10 @@ namespace System.Net.WebSockets
                 HttpListenerRequest request = context.Request;
                 ValidateWebSocketHeaders(context);
 
-                string secWebSocketVersion = request.Headers[HttpKnownHeaderNames.SecWebSocketVersion];
+                string? secWebSocketVersion = request.Headers[HttpKnownHeaderNames.SecWebSocketVersion];
 
                 // Optional for non-browser client
-                string origin = request.Headers[HttpKnownHeaderNames.Origin];
+                string? origin = request.Headers[HttpKnownHeaderNames.Origin];
 
                 List<string> secWebSocketProtocols = new List<string>();
                 string outgoingSecWebSocketProtocolString;
@@ -67,7 +61,7 @@ namespace System.Net.WebSockets
                 }
 
                 // negotiate the websocket key return value
-                string secWebSocketKey = request.Headers[HttpKnownHeaderNames.SecWebSocketKey];
+                string? secWebSocketKey = request.Headers[HttpKnownHeaderNames.SecWebSocketKey];
                 string secWebSocketAccept = HttpWebSocket.GetSecWebSocketAcceptString(secWebSocketKey);
 
                 response.Headers.Add(HttpKnownHeaderNames.Connection, HttpKnownHeaderNames.Upgrade);
@@ -85,7 +79,7 @@ namespace System.Net.WebSockets
                         hresult));
                 }
 
-                if (NetEventSource.IsEnabled)
+                if (NetEventSource.Log.IsEnabled())
                 {
                     NetEventSource.Info(null, $"{HttpKnownHeaderNames.Origin} = {origin}");
                     NetEventSource.Info(null, $"{HttpKnownHeaderNames.SecWebSocketVersion} = {secWebSocketVersion}");
@@ -97,7 +91,7 @@ namespace System.Net.WebSockets
 
                 await response.OutputStream.FlushAsync().SuppressContextFlow();
 
-                HttpResponseStream responseStream = response.OutputStream as HttpResponseStream;
+                HttpResponseStream responseStream = (response.OutputStream as HttpResponseStream)!;
                 Debug.Assert(responseStream != null, "'responseStream' MUST be castable to System.Net.HttpResponseStream.");
                 ((HttpResponseStream)response.OutputStream).SwitchToOpaqueMode();
                 HttpRequestStream requestStream = new HttpRequestStream(context);
@@ -111,20 +105,20 @@ namespace System.Net.WebSockets
                     internalBuffer);
 
                 webSocketContext = new HttpListenerWebSocketContext(
-                                                                    request.Url,
+                                                                    request.Url!,
                                                                     request.Headers,
                                                                     request.Cookies,
-                                                                    context.User,
+                                                                    context.User!,
                                                                     request.IsAuthenticated,
                                                                     request.IsLocal,
                                                                     request.IsSecureConnection,
-                                                                    origin,
+                                                                    origin!,
                                                                     secWebSocketProtocols.AsReadOnly(),
-                                                                    secWebSocketVersion,
-                                                                    secWebSocketKey,
+                                                                    secWebSocketVersion!,
+                                                                    secWebSocketKey!,
                                                                     webSocket);
 
-                if (NetEventSource.IsEnabled)
+                if (NetEventSource.Log.IsEnabled())
                 {
                     NetEventSource.Associate(context, webSocketContext);
                     NetEventSource.Associate(webSocketContext, webSocket);
@@ -132,18 +126,11 @@ namespace System.Net.WebSockets
             }
             catch (Exception ex)
             {
-                if (NetEventSource.IsEnabled)
+                if (NetEventSource.Log.IsEnabled())
                 {
                     NetEventSource.Error(context, ex);
                 }
                 throw;
-            }
-            finally
-            {
-                if (NetEventSource.IsEnabled)
-                {
-                    NetEventSource.Exit(context);
-                }
             }
 
             return webSocketContext;

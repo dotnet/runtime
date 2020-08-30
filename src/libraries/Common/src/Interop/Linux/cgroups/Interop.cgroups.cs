@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable enable
 using System;
@@ -306,6 +305,7 @@ internal static partial class Interop
 
         /// <summary>Find the cgroup relative path for the specified subsystem.</summary>
         /// <param name="cgroupVersion">The cgroup version currently in use on the system.</param>
+        /// <param name="procCGroupFilePath">Path to cgroup directory in procfs for the current process.</param>
         /// <param name="subsystem">The subsystem, e.g. "memory".</param>
         /// <param name="path">The found path, or null if it couldn't be found.</param>
         /// <returns>true if a cgroup path for the subsystem is found.</returns>
@@ -348,7 +348,7 @@ internal static partial class Interop
                                 // cgroup v2: Find the first entry that matches the cgroup v2 hierarchy:
                                 //     0::$PATH
 
-                                if ((lineParts[0] == "0") && (lineParts[1] == string.Empty))
+                                if ((lineParts[0] == "0") && (lineParts[1].Length == 0))
                                 {
                                     path = lineParts[2];
                                     return true;

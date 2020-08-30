@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Diagnostics;
@@ -117,37 +116,12 @@ namespace System.Text.Json
 
             if (idx != -1)
             {
-                return new JsonEncodedText(GetEscapedString(utf8Value, idx, encoder));
+                return new JsonEncodedText(JsonHelpers.EscapeValue(utf8Value, idx, encoder));
             }
             else
             {
                 return new JsonEncodedText(utf8Value.ToArray());
             }
-        }
-
-        private static byte[] GetEscapedString(ReadOnlySpan<byte> utf8Value, int firstEscapeIndexVal, JavaScriptEncoder? encoder)
-        {
-            Debug.Assert(int.MaxValue / JsonConstants.MaxExpansionFactorWhileEscaping >= utf8Value.Length);
-            Debug.Assert(firstEscapeIndexVal >= 0 && firstEscapeIndexVal < utf8Value.Length);
-
-            byte[]? valueArray = null;
-
-            int length = JsonWriterHelper.GetMaxEscapedLength(utf8Value.Length, firstEscapeIndexVal);
-
-            Span<byte> escapedValue = length <= JsonConstants.StackallocThreshold ?
-                stackalloc byte[length] :
-                (valueArray = ArrayPool<byte>.Shared.Rent(length));
-
-            JsonWriterHelper.EscapeString(utf8Value, escapedValue, firstEscapeIndexVal, encoder, out int written);
-
-            byte[] escapedString = escapedValue.Slice(0, written).ToArray();
-
-            if (valueArray != null)
-            {
-                ArrayPool<byte>.Shared.Return(valueArray);
-            }
-
-            return escapedString;
         }
 
         /// <summary>

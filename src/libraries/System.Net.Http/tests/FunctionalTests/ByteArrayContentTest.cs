@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.IO;
@@ -79,21 +78,25 @@ namespace System.Net.Http.Functional.Tests
             Assert.Equal(3, content.Headers.ContentLength);
         }
 
-        [Fact]
-        public async Task ReadAsStreamAsync_EmptySourceArray_Succeed()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ReadAsStreamAsync_EmptySourceArray_Succeed(bool readStreamAsync)
         {
             var content = new ByteArrayContent(new byte[0]);
-            Stream stream = await content.ReadAsStreamAsync();
+            Stream stream = await content.ReadAsStreamAsync(readStreamAsync);
             Assert.Equal(0, stream.Length);
         }
 
-        [Fact]
-        public async Task ReadAsStreamAsync_Call_MemoryStreamWrappingByteArrayReturned()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ReadAsStreamAsync_Call_MemoryStreamWrappingByteArrayReturned(bool readStreamAsync)
         {
             var contentData = new byte[10];
             var content = new MockByteArrayContent(contentData, 5, 3);
 
-            Stream stream = await content.ReadAsStreamAsync();
+            Stream stream = await content.ReadAsStreamAsync(readStreamAsync);
             Assert.False(stream.CanWrite);
             Assert.Equal(3, stream.Length);
             Assert.Equal(0, content.CopyToCount);

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -67,7 +66,7 @@ namespace System.Text.Json
         /// </remarks>
         public bool NameEquals(ReadOnlySpan<byte> utf8Text)
         {
-            return Value.TextEqualsHelper(utf8Text, isPropertyName: true);
+            return Value.TextEqualsHelper(utf8Text, isPropertyName: true, shouldUnescape: true);
         }
 
         /// <summary>
@@ -88,6 +87,11 @@ namespace System.Text.Json
         public bool NameEquals(ReadOnlySpan<char> text)
         {
             return Value.TextEqualsHelper(text, isPropertyName: true);
+        }
+
+        internal bool EscapedNameEquals(ReadOnlySpan<byte> utf8Text)
+        {
+            return Value.TextEqualsHelper(utf8Text, isPropertyName: true, shouldUnescape: false);
         }
 
         /// <summary>

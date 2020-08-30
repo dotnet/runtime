@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Formats.Asn1;
 using System.Linq;
 using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.Asn1.Pkcs7;
@@ -317,7 +317,7 @@ namespace System.Security.Cryptography.Pkcs
                 }
 
                 SignedCms cms = new SignedCms();
-                cms.Decode(source);
+                cms.Decode(source.Span);
 
                 // The fields of type EncapsulatedContentInfo of the SignedData
                 // construct have the following meanings:
@@ -411,6 +411,9 @@ namespace System.Security.Cryptography.Pkcs
                     bytesConsumed = bytesActuallyRead;
                     return true;
                 }
+            }
+            catch (AsnContentException)
+            {
             }
             catch (CryptographicException)
             {
@@ -522,7 +525,7 @@ namespace System.Security.Cryptography.Pkcs
                     else
                     {
                         Debug.Fail(
-                            $"TryGetCertHash did not fit in {thumbprint.Length} for hash {certId2.Value.HashAlgorithm.Algorithm.Value}");
+                            $"TryGetCertHash did not fit in {thumbprint.Length} for hash {certId2.Value.HashAlgorithm.Algorithm}");
 
                         thumbprint = signerCert.GetCertHash(alg);
                     }

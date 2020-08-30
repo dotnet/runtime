@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Xml;
 using System.Xml.Schema;
@@ -13,20 +12,20 @@ namespace System.Runtime.Serialization
 {
     public class XsdDataContractExporter
     {
-        private ExportOptions _options;
-        private XmlSchemaSet _schemas;
-        private DataContractSet _dataContractSet;
+        private ExportOptions? _options;
+        private XmlSchemaSet? _schemas;
+        private DataContractSet? _dataContractSet;
 
         public XsdDataContractExporter()
         {
         }
 
-        public XsdDataContractExporter(XmlSchemaSet schemas)
+        public XsdDataContractExporter(XmlSchemaSet? schemas)
         {
             this._schemas = schemas;
         }
 
-        public ExportOptions Options
+        public ExportOptions? Options
         {
             get { return _options; }
             set { _options = value; }
@@ -80,7 +79,7 @@ namespace System.Runtime.Serialization
 
             TraceExportBegin();
 
-            DataContractSet oldValue = (_dataContractSet == null) ? null : new DataContractSet(_dataContractSet);
+            DataContractSet? oldValue = (_dataContractSet == null) ? null : new DataContractSet(_dataContractSet);
             try
             {
                 foreach (Assembly assembly in assemblies)
@@ -115,7 +114,7 @@ namespace System.Runtime.Serialization
 
             TraceExportBegin();
 
-            DataContractSet oldValue = (_dataContractSet == null) ? null : new DataContractSet(_dataContractSet);
+            DataContractSet? oldValue = (_dataContractSet == null) ? null : new DataContractSet(_dataContractSet);
             try
             {
                 foreach (Type type in types)
@@ -147,7 +146,7 @@ namespace System.Runtime.Serialization
 
             TraceExportBegin();
 
-            DataContractSet oldValue = (_dataContractSet == null) ? null : new DataContractSet(_dataContractSet);
+            DataContractSet? oldValue = (_dataContractSet == null) ? null : new DataContractSet(_dataContractSet);
             try
             {
                 AddType(type);
@@ -173,26 +172,26 @@ namespace System.Runtime.Serialization
             type = GetSurrogatedType(type);
             DataContract dataContract = DataContract.GetDataContract(type);
             DataContractSet.EnsureTypeNotGeneric(dataContract.UnderlyingType);
-            XmlDataContract xmlDataContract = dataContract as XmlDataContract;
+            XmlDataContract? xmlDataContract = dataContract as XmlDataContract;
             if (xmlDataContract != null && xmlDataContract.IsAnonymous)
                 return XmlQualifiedName.Empty;
             return dataContract.StableName;
         }
 
-        public XmlSchemaType GetSchemaType(Type type)
+        public XmlSchemaType? GetSchemaType(Type type)
         {
             if (type == null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(type)));
             type = GetSurrogatedType(type);
             DataContract dataContract = DataContract.GetDataContract(type);
             DataContractSet.EnsureTypeNotGeneric(dataContract.UnderlyingType);
-            XmlDataContract xmlDataContract = dataContract as XmlDataContract;
+            XmlDataContract? xmlDataContract = dataContract as XmlDataContract;
             if (xmlDataContract != null && xmlDataContract.IsAnonymous)
                 return xmlDataContract.XsdType;
             return null;
         }
 
-        public XmlQualifiedName GetRootElementName(Type type)
+        public XmlQualifiedName? GetRootElementName(Type type)
         {
             if (type == null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(type)));
@@ -201,7 +200,7 @@ namespace System.Runtime.Serialization
             DataContractSet.EnsureTypeNotGeneric(dataContract.UnderlyingType);
             if (dataContract.HasRoot)
             {
-                return new XmlQualifiedName(dataContract.TopLevelElementName.Value, dataContract.TopLevelElementNamespace.Value);
+                return new XmlQualifiedName(dataContract.TopLevelElementName!.Value, dataContract.TopLevelElementNamespace!.Value);
             }
             else
             {
@@ -262,7 +261,7 @@ namespace System.Runtime.Serialization
             if (assemblies == null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(assemblies)));
 
-            DataContractSet oldValue = (_dataContractSet == null) ? null : new DataContractSet(_dataContractSet);
+            DataContractSet? oldValue = (_dataContractSet == null) ? null : new DataContractSet(_dataContractSet);
             try
             {
                 foreach (Assembly assembly in assemblies)
@@ -299,7 +298,7 @@ namespace System.Runtime.Serialization
             if (types == null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(types)));
 
-            DataContractSet oldValue = (_dataContractSet == null) ? null : new DataContractSet(_dataContractSet);
+            DataContractSet? oldValue = (_dataContractSet == null) ? null : new DataContractSet(_dataContractSet);
             try
             {
                 foreach (Type type in types)
@@ -333,7 +332,7 @@ namespace System.Runtime.Serialization
             if (type == null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(type)));
 
-            DataContractSet oldValue = (_dataContractSet == null) ? null : new DataContractSet(_dataContractSet);
+            DataContractSet? oldValue = (_dataContractSet == null) ? null : new DataContractSet(_dataContractSet);
             try
             {
                 AddType(type);

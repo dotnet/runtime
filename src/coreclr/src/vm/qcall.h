@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // QCall.H
 
 
@@ -14,8 +13,8 @@
 // QCALLS
 //
 
-// QCalls are internal calls from managed code in mscorlib.dll to unmanaged code in mscorwks.dll. QCalls are very much like
-// a normal P/Invoke from mscorlib.dll to mscorwks.dll.
+// QCalls are internal calls from managed code in CoreLib to unmanaged code in VM. QCalls are very much like
+// a normal P/Invoke from CoreLib to VM.
 //
 // Unlike FCalls, QCalls will marshal all arguments as unmanaged types like a normal P/Invoke. QCall also switch to preemptive
 // GC mode like a normal P/Invoke. These two features should make QCalls easier to write reliably compared to FCalls.
@@ -137,7 +136,13 @@
     GC_TRIGGERS;                \
     MODE_PREEMPTIVE;            \
 
+#define QCALL_CHECK_NO_GC_TRANSITION    \
+    THROWS;                             \
+    GC_TRIGGERS;                        \
+    MODE_COOPERATIVE;                   \
+
 #define QCALL_CONTRACT CONTRACTL { QCALL_CHECK; } CONTRACTL_END;
+#define QCALL_CONTRACT_NO_GC_TRANSITION CONTRACTL { QCALL_CHECK_NO_GC_TRANSITION; } CONTRACTL_END;
 
 //
 // Scope class for QCall helper methods and types

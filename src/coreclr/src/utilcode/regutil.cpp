@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // regutil.cpp
 //
@@ -623,9 +622,8 @@ void REGUTIL::InitOptionalConfigCache()
             // Should be OK to proceed.
             continue;
         }
-#if defined(FEATURE_APPX) && !defined(DACCESS_COMPILE)
-        else if (l == ERROR_ACCESS_DENIED && AppX::IsAppXProcess()) {
-            // If we encounter access denied for the current key in AppX, ignore
+        else if (l == ERROR_ACCESS_DENIED) {
+            // If we encounter access denied for the current key, ignore
             // the failure and continue to cache the rest.  Effectively this means
             // we are caching that key as containing no values, which is correct
             // because in the unlikely event there are values hiding underneath
@@ -633,7 +631,6 @@ void REGUTIL::InitOptionalConfigCache()
             // denied and continue on probing other locations.
             continue;
         }
-#endif // FEATURE_APPX && !DACCESS_COMPILE
         else if (l != ERROR_SUCCESS) {
             // Something else went wrong. To be safe, don't enable the cache.
             goto failure;
@@ -660,12 +657,10 @@ void REGUTIL::InitOptionalConfigCache()
                 // Name is too long.  That's OK, we don't cache such names.
                 continue;
             }
-#if defined(FEATURE_APPX) && !defined DACCESS_COMPILE
-            else if (l == ERROR_ACCESS_DENIED && AppX::IsAppXProcess()) {
-                // As above, ignore access denied in AppX and continue on trying to cache
+            else if (l == ERROR_ACCESS_DENIED) {
+                // As above, ignore access denied and continue on trying to cache
                 continue;
             }
-#endif // FEATURE_APPX && !DACCESS_COMPILE
             else {
                 // WszRegEnumValue failed OOM, or something else went wrong.
                 // To be safe, don't enable the cache.

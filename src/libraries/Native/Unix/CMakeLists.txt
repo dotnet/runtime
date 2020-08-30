@@ -1,18 +1,13 @@
-cmake_minimum_required(VERSION 3.14.2)
+cmake_minimum_required(VERSION 3.6.2)
+if(CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS) 
+     # CMake 3.14.5 contains bug fixes for iOS 
+     cmake_minimum_required(VERSION 3.14.5) 
+ endif() 
 cmake_policy(SET CMP0042 NEW)
 
 project(CoreFX C)
 
 include(${CLR_ENG_NATIVE_DIR}/configuretools.cmake)
-
-if(CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
-    # CMake 3.14.5 contains bug fixes for iOS
-    cmake_minimum_required(VERSION 3.14.5)
-endif()
-
-if(NOT CLR_CMAKE_TARGET_ARCH_WASM)
-    cmake_policy(SET CMP0083 NEW)
-endif(NOT CLR_CMAKE_TARGET_ARCH_WASM)
 
 set(CMAKE_MACOSX_RPATH ON)
 set(CMAKE_INSTALL_PREFIX $ENV{__CMakeBinDir})
@@ -46,8 +41,7 @@ if (PRERELEASE)
     add_compile_options(-Werror)
 endif()
 
-if(CLR_CMAKE_TARGET_ARCH_WASM)
-    add_definitions(-D_WASM_)
+if(CLR_CMAKE_TARGET_BROWSER)
     # The emscripten build has additional warnings so -Werror breaks
     add_compile_options(-Wno-unused-parameter)
     add_compile_options(-Wno-unused-function)
@@ -55,7 +49,7 @@ if(CLR_CMAKE_TARGET_ARCH_WASM)
     add_compile_options(-Wno-implicit-int-float-conversion)
 else()
   set(GEN_SHARED_LIB 1)
-endif(CLR_CMAKE_TARGET_ARCH_WASM)
+endif(CLR_CMAKE_TARGET_BROWSER)
 
 if (CLR_CMAKE_TARGET_ARCH_AMD64)
     add_definitions(-DTARGET_64BIT=1)
@@ -70,6 +64,9 @@ elseif (CLR_CMAKE_TARGET_ARCH_WASM)
 elseif (CLR_CMAKE_TARGET_ARCH_ARM64)
     add_definitions(-DTARGET_64BIT=1)
     add_definitions(-DTARGET_ARM64)
+elseif (CLR_CMAKE_TARGET_ARCH_MIPS64)
+    add_definitions(-DTARGET_64BIT=1)
+    add_definitions(-DTARGET_MIPS64)
 elseif (CLR_CMAKE_TARGET_ARCH_ARM)
     add_definitions(-DTARGET_32BIT=1)
     add_definitions(-DTARGET_ARM)
@@ -139,7 +136,7 @@ else ()
     message(FATAL_ERROR "Unknown build type. Set CMAKE_BUILD_TYPE to DEBUG or RELEASE.")
 endif ()
 
-if(CLR_CMAKE_TARGET_ARCH_WASM)
+if(CLR_CMAKE_TARGET_BROWSER)
 elseif (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
     add_definitions(-D__APPLE_USE_RFC_3542)
 
@@ -164,10 +161,11 @@ endif(CLR_CMAKE_TARGET_FREEBSD)
 #       ./build-native.sh cmakeargs -DCLR_ADDITIONAL_COMPILER_OPTIONS=<...> cmakeargs -DCLR_ADDITIONAL_LINKER_FLAGS=<...>
 #
 if(CLR_CMAKE_TARGET_UNIX)
-    if(NOT CLR_CMAKE_TARGET_ARCH_WASM AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS)
+    if(NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS)
         if(CLR_CMAKE_TARGET_OSX)
             add_definitions(-DTARGET_OSX)
-            add_link_options(-Wl,-bind_at_load)
+            set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-bind_at_load")
+            set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-bind_at_load" )
         else()
             add_compile_options($<$<COMPILE_LANGUAGE:ASM>:-Wa,--noexecstack>)
             if(CLR_CMAKE_TARGET_SUNOS)
@@ -175,7 +173,8 @@ if(CLR_CMAKE_TARGET_UNIX)
             else()
                 # -z,now is required for full relro.
                 # see https://www.redhat.com/en/blog/hardening-elf-binaries-using-relocation-read-only-relro
-                add_link_options(-Wl,--build-id=sha1 -Wl,-z,relro,-z,now)
+                set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--build-id=sha1 -Wl,-z,relro,-z,now")
+                set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--build-id=sha1 -Wl,-z,relro,-z,now" )
             endif()
         endif()
     endif()
@@ -190,7 +189,7 @@ include(configure.cmake)
 
 add_subdirectory(System.IO.Compression.Native)
 
-if (NOT CLR_CMAKE_TARGET_ARCH_WASM AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID)
+if (NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID)
     add_subdirectory(System.IO.Ports.Native)
 endif()
 
@@ -200,24 +199,22 @@ endif()
 
 add_subdirectory(System.Native)
 
-if(CLR_CMAKE_TARGET_ARCH_WASM)
+if(CLR_CMAKE_TARGET_BROWSER)
     # skip for now
 elseif(CLR_CMAKE_TARGET_IOS)
     add_subdirectory(System.Net.Security.Native)
-    #add_subdirectory(System.Globalization.Native) # TODO: reenable
     # System.Security.Cryptography.Native is intentionally disabled on iOS
     # it is only used for interacting with OpenSSL which isn't useful there
 elseif(CLR_CMAKE_TARGET_TVOS)
     #add_subdirectory(System.Net.Security.Native) # no gssapi on tvOS, see https://developer.apple.com/documentation/gss
-    #add_subdirectory(System.Globalization.Native) # TODO: reenable
     # System.Security.Cryptography.Native is intentionally disabled on tvOS
     # it is only used for interacting with OpenSSL which isn't useful there
 elseif(CLR_CMAKE_TARGET_ANDROID AND NOT CROSS_ROOTFS)
-    add_subdirectory(System.Globalization.Native)
     #add_subdirectory(System.Net.Security.Native) # TODO: reenable
-    #add_subdirectory(System.Security.Cryptography.Native) # TODO: reenable
+    if (NOT "$ENV{ANDROID_OPENSSL_AAR}" STREQUAL "")
+        add_subdirectory(System.Security.Cryptography.Native)
+    endif()
 else()
-    add_subdirectory(System.Globalization.Native)
     add_subdirectory(System.Net.Security.Native)
     add_subdirectory(System.Security.Cryptography.Native)
 endif()

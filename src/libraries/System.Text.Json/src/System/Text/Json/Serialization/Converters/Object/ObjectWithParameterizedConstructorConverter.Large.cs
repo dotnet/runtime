@@ -1,8 +1,8 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
+using System.Diagnostics;
 
 namespace System.Text.Json.Serialization.Converters
 {
@@ -14,11 +14,14 @@ namespace System.Text.Json.Serialization.Converters
     {
         protected override bool ReadAndCacheConstructorArgument(ref ReadStack state, ref Utf8JsonReader reader, JsonParameterInfo jsonParameterInfo)
         {
-            bool success = jsonParameterInfo.ReadJson(ref state, ref reader, out object? arg0);
+            Debug.Assert(jsonParameterInfo.ShouldDeserialize);
+            Debug.Assert(jsonParameterInfo.Options != null);
 
-            if (success)
+            bool success = jsonParameterInfo.ConverterBase.TryReadAsObject(ref reader, jsonParameterInfo.Options!, ref state, out object? arg);
+
+            if (success && !(arg == null && jsonParameterInfo.IgnoreDefaultValuesOnRead))
             {
-                ((object[])state.Current.CtorArgumentState!.Arguments)[jsonParameterInfo.Position] = arg0!;
+                ((object[])state.Current.CtorArgumentState!.Arguments)[jsonParameterInfo.Position] = arg!;
             }
 
             return success;

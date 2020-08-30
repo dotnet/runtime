@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="libeventpipe">
+    <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ep.c">
+      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ep.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ep-block.c">
+      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ep-block.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ep-buffer.c">
+      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ep-buffer.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ep-buffer-manager.c">
+      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ep-buffer-manager.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ep-config.c">
+      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ep-config.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ep-config-internals.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ep-event.c">
+      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ep-event.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ep-event-instance.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ep-event-instance.c">
+      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ep-event-payload.c">
+      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ep-event-payload.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ep-event-source.c">
+      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ep-event-source.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ep-file.c">
+      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ep-file.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ep-getter-setter.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ep-metadata-generator.c">
+      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ep-metadata-generator.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ep-provider.c">
+      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ep-provider.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ep-provider-internals.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ep-rt.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ep-rt-config.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ep-rt-config-mono.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ep-rt-mono.c">
+      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ep-rt-mono.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ep-rt-types.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ep-rt-types-mono.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ep-thread.c">
+      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ep-thread.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ep-types.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ep-session.c">
+      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ep-session.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ep-session-provider.c">
+      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ep-stack-contents.c">
+      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ep-stack-contents.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ep-stream.c">
+      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ep-stream.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Source Files$(MonoRuntimeFilterSubFolder)\eventpipe">
+      <UniqueIdentifier>{D6D64FF2-7951-44D8-B965-4593893CEF35}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files$(MonoRuntimeFilterSubFolder)\eventpipe">
+      <UniqueIdentifier>{B372B1CF-F13A-43B8-97E0-DF7A9563D4AE}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

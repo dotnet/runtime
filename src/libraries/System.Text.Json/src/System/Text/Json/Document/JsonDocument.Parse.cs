@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Diagnostics;
@@ -675,9 +674,13 @@ namespace System.Text.Json
                     Debug.Assert(rented.Length >= JsonConstants.Utf8Bom.Length);
 
                     lastRead = await stream.ReadAsync(
+#if BUILDING_INBOX_LIBRARY
+                        rented.AsMemory(written, utf8BomLength - written),
+#else
                         rented,
                         written,
                         utf8BomLength - written,
+#endif
                         cancellationToken).ConfigureAwait(false);
 
                     written += lastRead;
@@ -702,9 +705,13 @@ namespace System.Text.Json
                     }
 
                     lastRead = await stream.ReadAsync(
+#if BUILDING_INBOX_LIBRARY
+                        rented.AsMemory(written),
+#else
                         rented,
                         written,
                         rented.Length - written,
+#endif
                         cancellationToken).ConfigureAwait(false);
 
                     written += lastRead;

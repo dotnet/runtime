@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -19,10 +19,10 @@ namespace System.Net.Http
 
         private const string CrLf = "\r\n";
 
-        private static readonly int s_crlfLength = GetEncodedLength(CrLf);
-        private static readonly int s_dashDashLength = GetEncodedLength("--");
-        private static readonly int s_colonSpaceLength = GetEncodedLength(": ");
-        private static readonly int s_commaSpaceLength = GetEncodedLength(", ");
+        private const int CrLfLength = 2;
+        private const int DashDashLength = 2;
+        private const int ColonSpaceLength = 2;
+        private const int CommaSpaceLength = 2;
 
         private readonly List<HttpContent> _nestedContent;
         private readonly string _boundary;
@@ -158,6 +158,47 @@ namespace System.Net.Http
 
         #region Serialization
 
+        /// <summary>
+        /// Gets or sets a callback that returns the <see cref="Encoding"/> to decode the value for the specified response header name,
+        /// or <see langword="null"/> to use the default behavior.
+        /// </summary>
+        public HeaderEncodingSelector<HttpContent>? HeaderEncodingSelector { get; set; }
+
+        // for-each content
+        //   write "--" + boundary
+        //   for-each content header
+        //     write header: header-value
+        //   write content.CopyTo[Async]
+        // write "--" + boundary + "--"
+        // Can't be canceled directly by the user.  If the overall request is canceled
+        // then the stream will be closed an exception thrown.
+        protected override void SerializeToStream(Stream stream, TransportContext? context, CancellationToken cancellationToken)
+        {
+            Debug.Assert(stream != null);
+            try
+            {
+                // Write start boundary.
+                WriteToStream(stream, "--" + _boundary + CrLf);
+
+                // Write each nested content.
+                for (int contentIndex = 0; contentIndex < _nestedContent.Count; contentIndex++)
+                {
+                    // Write divider, headers, and content.
+                    HttpContent content = _nestedContent[contentIndex];
+                    SerializeHeadersToStream(stream, content, writeDivider: contentIndex != 0);
+                    content.CopyTo(stream, context, cancellationToken);
+                }
+
+                // Write footer boundary.
+                WriteToStream(stream, CrLf + "--" + _boundary + "--" + CrLf);
+            }
+            catch (Exception ex)
+            {
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, ex);
+                throw;
+            }
+        }
+
         // for-each content
         //   write "--" + boundary
         //   for-each content header
@@ -184,12 +225,17 @@ namespace System.Net.Http
                 await EncodeStringToStreamAsync(stream, "--" + _boundary + CrLf, cancellationToken).ConfigureAwait(false);
 
                 // Write each nested content.
-                var output = new StringBuilder();
+                var output = new MemoryStream();
                 for (int contentIndex = 0; contentIndex < _nestedContent.Count; contentIndex++)
                 {
                     // Write divider, headers, and content.
                     HttpContent content = _nestedContent[contentIndex];
-                    await EncodeStringToStreamAsync(stream, SerializeHeadersToString(output, contentIndex, content), cancellationToken).ConfigureAwait(false);
+
+                    output.SetLength(0);
+                    SerializeHeadersToStream(output, content, writeDivider: contentIndex != 0);
+                    output.Position = 0;
+                    await output.CopyToAsync(stream, cancellationToken).ConfigureAwait(false);
+
                     await content.CopyToAsync(stream, context, cancellationToken).ConfigureAwait(false);
                 }
 
@@ -198,26 +244,32 @@ namespace System.Net.Http
             }
             catch (Exception ex)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Error(this, ex);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, ex);
                 throw;
             }
         }
 
+        protected override Stream CreateContentReadStream(CancellationToken cancellationToken)
+        {
+            ValueTask<Stream> task = CreateContentReadStreamAsyncCore(async: false, cancellationToken);
+            Debug.Assert(task.IsCompleted);
+            return task.GetAwaiter().GetResult();
+        }
+
         protected override Task<Stream> CreateContentReadStreamAsync() =>
-            CreateContentReadStreamAsyncCore(CancellationToken.None);
+            CreateContentReadStreamAsyncCore(async: true, CancellationToken.None).AsTask();
 
         protected override Task<Stream> CreateContentReadStreamAsync(CancellationToken cancellationToken) =>
             // Only skip the original protected virtual CreateContentReadStreamAsync if this
             // isn't a derived type that may have overridden the behavior.
-            GetType() == typeof(MultipartContent) ? CreateContentReadStreamAsyncCore(cancellationToken) :
+            GetType() == typeof(MultipartContent) ? CreateContentReadStreamAsyncCore(async: true, cancellationToken).AsTask() :
             base.CreateContentReadStreamAsync(cancellationToken);
 
-        private async Task<Stream> CreateContentReadStreamAsyncCore(CancellationToken cancellationToken)
+        private async ValueTask<Stream> CreateContentReadStreamAsyncCore(bool async, CancellationToken cancellationToken)
         {
             try
             {
                 var streams = new Stream[2 + (_nestedContent.Count * 2)];
-                var scratch = new StringBuilder();
                 int streamIndex = 0;
 
                 // Start boundary.
@@ -229,18 +281,31 @@ namespace System.Net.Http
                     cancellationToken.ThrowIfCancellationRequested();
 
                     HttpContent nestedContent = _nestedContent[contentIndex];
-                    streams[streamIndex++] = EncodeStringToNewStream(SerializeHeadersToString(scratch, contentIndex, nestedContent));
+                    streams[streamIndex++] = EncodeHeadersToNewStream(nestedContent, writeDivider: contentIndex != 0);
 
-                    Stream readStream = nestedContent.TryReadAsStream() ?? await nestedContent.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false) ?? new MemoryStream();
+                    Stream readStream;
+                    if (async)
+                    {
+                        readStream = nestedContent.TryReadAsStream() ?? await nestedContent.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        readStream = nestedContent.ReadAsStream(cancellationToken);
+                    }
+                    // Cannot be null, at least an empty stream is necessary.
+                    readStream ??= new MemoryStream();
+
                     if (!readStream.CanSeek)
                     {
-                        // Seekability impacts whether HttpClientHandlers are able to rewind.  To maintain compat
+                        // Seekability impacts whether HttpClientHandlers are able to rewind. To maintain compat
                         // and to allow such use cases when a nested stream isn't seekable (which should be rare),
-                        // we fall back to the base behavior.  We don't dispose of the streams already obtained
+                        // we fall back to the base behavior. We don't dispose of the streams already obtained
                         // as we don't necessarily own them yet.
 
-                        // Do not pass a cancellationToken to base as it would trigger an infinite loop => StackOverflow
-                        return await base.CreateContentReadStreamAsync().ConfigureAwait(false);
+#pragma warning disable CA2016
+                        // Do not pass a cancellationToken to base.CreateContentReadStreamAsync() as it would trigger an infinite loop => StackOverflow
+                        return async ? await base.CreateContentReadStreamAsync().ConfigureAwait(false) : base.CreateContentReadStream(cancellationToken);
+#pragma warning restore CA2016
                     }
                     streams[streamIndex++] = readStream;
                 }
@@ -252,42 +317,40 @@ namespace System.Net.Http
             }
             catch (Exception ex)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Error(this, ex);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, ex);
                 throw;
             }
         }
 
-        private string SerializeHeadersToString(StringBuilder scratch, int contentIndex, HttpContent content)
+        private void SerializeHeadersToStream(Stream stream, HttpContent content, bool writeDivider)
         {
-            scratch.Clear();
-
             // Add divider.
-            if (contentIndex != 0) // Write divider for all but the first content.
+            if (writeDivider) // Write divider for all but the first content.
             {
-                scratch.Append(CrLf + "--"); // const strings
-                scratch.Append(_boundary);
-                scratch.Append(CrLf);
+                WriteToStream(stream, CrLf + "--"); // const strings
+                WriteToStream(stream, _boundary);
+                WriteToStream(stream, CrLf);
             }
 
             // Add headers.
             foreach (KeyValuePair<string, IEnumerable<string>> headerPair in content.Headers)
             {
-                scratch.Append(headerPair.Key);
-                scratch.Append(": ");
+                Encoding headerValueEncoding = HeaderEncodingSelector?.Invoke(headerPair.Key, content) ?? HttpRuleParser.DefaultHttpEncoding;
+
+                WriteToStream(stream, headerPair.Key);
+                WriteToStream(stream, ": ");
                 string delim = string.Empty;
                 foreach (string value in headerPair.Value)
                 {
-                    scratch.Append(delim);
-                    scratch.Append(value);
+                    WriteToStream(stream, delim);
+                    WriteToStream(stream, value, headerValueEncoding);
                     delim = ", ";
                 }
-                scratch.Append(CrLf);
+                WriteToStream(stream, CrLf);
             }
 
             // Extra CRLF to end headers (even if there are no headers).
-            scratch.Append(CrLf);
-
-            return scratch.ToString();
+            WriteToStream(stream, CrLf);
         }
 
         private static ValueTask EncodeStringToStreamAsync(Stream stream, string input, CancellationToken cancellationToken)
@@ -301,55 +364,55 @@ namespace System.Net.Http
             return new MemoryStream(HttpRuleParser.DefaultHttpEncoding.GetBytes(input), writable: false);
         }
 
+        private Stream EncodeHeadersToNewStream(HttpContent content, bool writeDivider)
+        {
+            var stream = new MemoryStream();
+            SerializeHeadersToStream(stream, content, writeDivider);
+            stream.Position = 0;
+            return stream;
+        }
+
         internal override bool AllowDuplex => false;
 
         protected internal override bool TryComputeLength(out long length)
         {
-            int boundaryLength = GetEncodedLength(_boundary);
-
-            long currentLength = 0;
-            long internalBoundaryLength = s_crlfLength + s_dashDashLength + boundaryLength + s_crlfLength;
-
             // Start Boundary.
-            currentLength += s_dashDashLength + boundaryLength + s_crlfLength;
+            long currentLength = DashDashLength + _boundary.Length + CrLfLength;
 
-            bool first = true;
+            if (_nestedContent.Count > 1)
+            {
+                // Internal boundaries
+                currentLength += (_nestedContent.Count - 1) * (CrLfLength + DashDashLength + _boundary.Length + CrLfLength);
+            }
+
             foreach (HttpContent content in _nestedContent)
             {
-                if (first)
-                {
-                    first = false; // First boundary already written.
-                }
-                else
-                {
-                    // Internal Boundary.
-                    currentLength += internalBoundaryLength;
-                }
-
                 // Headers.
                 foreach (KeyValuePair<string, IEnumerable<string>> headerPair in content.Headers)
                 {
-                    currentLength += GetEncodedLength(headerPair.Key) + s_colonSpaceLength;
+                    currentLength += headerPair.Key.Length + ColonSpaceLength;
+
+                    Encoding headerValueEncoding = HeaderEncodingSelector?.Invoke(headerPair.Key, content) ?? HttpRuleParser.DefaultHttpEncoding;
 
                     int valueCount = 0;
                     foreach (string value in headerPair.Value)
                     {
-                        currentLength += GetEncodedLength(value);
+                        currentLength += headerValueEncoding.GetByteCount(value);
                         valueCount++;
                     }
+
                     if (valueCount > 1)
                     {
-                        currentLength += (valueCount - 1) * s_commaSpaceLength;
+                        currentLength += (valueCount - 1) * CommaSpaceLength;
                     }
 
-                    currentLength += s_crlfLength;
+                    currentLength += CrLfLength;
                 }
 
-                currentLength += s_crlfLength;
+                currentLength += CrLfLength;
 
                 // Content.
-                long tempContentLength = 0;
-                if (!content.TryComputeLength(out tempContentLength))
+                if (!content.TryComputeLength(out long tempContentLength))
                 {
                     length = 0;
                     return false;
@@ -358,15 +421,10 @@ namespace System.Net.Http
             }
 
             // Terminating boundary.
-            currentLength += s_crlfLength + s_dashDashLength + boundaryLength + s_dashDashLength + s_crlfLength;
+            currentLength += CrLfLength + DashDashLength + _boundary.Length + DashDashLength + CrLfLength;
 
             length = currentLength;
             return true;
-        }
-
-        private static int GetEncodedLength(string input)
-        {
-            return HttpRuleParser.DefaultHttpEncoding.GetByteCount(input);
         }
 
         private sealed class ContentReadStream : Stream
@@ -610,6 +668,36 @@ namespace System.Net.Http
             public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) { throw new NotSupportedException(); }
             public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default) { throw new NotSupportedException(); }
         }
+
+
+        private static void WriteToStream(Stream stream, string content) =>
+            WriteToStream(stream, content, HttpRuleParser.DefaultHttpEncoding);
+
+        private static void WriteToStream(Stream stream, string content, Encoding encoding)
+        {
+            const int StackallocThreshold = 1024;
+
+            int maxLength = encoding.GetMaxByteCount(content.Length);
+
+            byte[]? rentedBuffer = null;
+            Span<byte> buffer = maxLength <= StackallocThreshold
+                ? stackalloc byte[StackallocThreshold]
+                : (rentedBuffer = ArrayPool<byte>.Shared.Rent(maxLength));
+
+            try
+            {
+                int written = encoding.GetBytes(content, buffer);
+                stream.Write(buffer.Slice(0, written));
+            }
+            finally
+            {
+                if (rentedBuffer != null)
+                {
+                    ArrayPool<byte>.Shared.Return(rentedBuffer);
+                }
+            }
+        }
+
         #endregion Serialization
     }
 }

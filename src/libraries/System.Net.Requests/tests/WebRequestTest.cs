@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
@@ -30,7 +29,7 @@ namespace System.Net.Tests
             Assert.Null(initialDefaultWebProxyCredentials);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void DefaultWebProxy_SetThenGet_ValuesMatch()
         {
             RemoteExecutor.Invoke(() =>
@@ -83,7 +82,7 @@ namespace System.Net.Tests
         public void Create_ValidWebRequestUriScheme_Success(string scheme)
         {
             var uri = new Uri($"{scheme}://example.com/folder/resource.txt");
-            WebRequest request = WebRequest.Create(uri);
+            WebRequest.Create(uri);
         }
 
         [Theory]

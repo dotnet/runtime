@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // Defines the functions understood by the value-numbering system.
 // ValueNumFuncDef(<name of function>, <arity (1-4)>, <is-commutative (for arity = 2)>, <non-null (for gc functions)>,
@@ -177,7 +176,7 @@ ValueNumFuncDef(HWI_##isa##_##name, argCount, false, false, false)   // All of t
 #define HARDWARE_INTRINSIC(isa, name, size, argCount, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag) \
 ValueNumFuncDef(HWI_##isa##_##name, argCount, false, false, false)   // All of the HARDWARE_INTRINSICS for arm64
 #include "hwintrinsiclistarm64.h"
-#define VNF_HWI_FIRST VNF_HWI_Vector64_AsByte
+#define VNF_HWI_FIRST VNF_HWI_Vector64_As
 
 #elif defined (TARGET_ARM)
 // No Hardware Intrinsics on ARM32

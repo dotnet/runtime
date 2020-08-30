@@ -1,1 +1,0 @@
-see ..\Microsoft.NETCore.Platforms\readme.md

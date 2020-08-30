@@ -36,6 +36,8 @@ mono_arch_get_restore_context (MonoTrampInfo **info, gboolean aot)
 	size = 256;
 	code = start = mono_global_codeman_reserve (size);
 
+	MINI_BEGIN_CODEGEN ();
+
 	arm_movx (code, ARMREG_IP0, ARMREG_R0);
 	ctx_reg = ARMREG_IP0;
 
@@ -63,8 +65,8 @@ mono_arch_get_restore_context (MonoTrampInfo **info, gboolean aot)
 	arm_brk (code, 0);
 
 	g_assert ((code - start) < size);
-	mono_arch_flush_icache (start, code - start);
-	MONO_PROFILER_RAISE (jit_code_buffer, (start, code - start, MONO_PROFILER_CODE_BUFFER_EXCEPTION_HANDLING, NULL));
+
+	MINI_END_CODEGEN (start, code - start, MONO_PROFILER_CODE_BUFFER_EXCEPTION_HANDLING, NULL);
 
 	if (info)
 		*info = mono_tramp_info_create ("restore_context", start, code - start, ji, unwind_ops);
@@ -105,6 +107,8 @@ mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 	 * We need to save state, restore ctx, make the call, then restore the previous state,
 	 * returning the value returned by the call.
 	 */
+
+	MINI_BEGIN_CODEGEN ();
 
 	/* Setup a frame */
 	arm_stpx_pre (code, ARMREG_FP, ARMREG_LR, ARMREG_SP, -frame_size);
@@ -152,8 +156,8 @@ mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 	arm_retx (code, ARMREG_LR);
 
 	g_assert ((code - start) < size);
-	mono_arch_flush_icache (start, code - start);
-	MONO_PROFILER_RAISE (jit_code_buffer, (start, code - start, MONO_PROFILER_CODE_BUFFER_EXCEPTION_HANDLING, NULL));
+
+	MINI_END_CODEGEN (start, code - start, MONO_PROFILER_CODE_BUFFER_EXCEPTION_HANDLING, NULL);
 
 	if (info)
 		*info = mono_tramp_info_create ("call_filter", start, code - start, ji, unwind_ops);
@@ -185,6 +189,8 @@ get_throw_trampoline (int size, gboolean corlib, gboolean rethrow, gboolean llvm
 	fregs_offset = offset;
 	offset += num_fregs * 8;
 	frame_size = ALIGN_TO (offset, MONO_ARCH_FRAME_ALIGNMENT);
+
+	MINI_BEGIN_CODEGEN ();
 
 	/* Setup a frame */
 	arm_stpx_pre (code, ARMREG_FP, ARMREG_LR, ARMREG_SP, -frame_size);
@@ -254,8 +260,8 @@ get_throw_trampoline (int size, gboolean corlib, gboolean rethrow, gboolean llvm
 	arm_brk (code, 0x0);
 
 	g_assert ((code - start) < size);
-	mono_arch_flush_icache (start, code - start);
-	MONO_PROFILER_RAISE (jit_code_buffer, (start, code - start, MONO_PROFILER_CODE_BUFFER_EXCEPTION_HANDLING, NULL));
+
+	MINI_END_CODEGEN (start, code - start, MONO_PROFILER_CODE_BUFFER_EXCEPTION_HANDLING, NULL);
 
 	if (info)
 		*info = mono_tramp_info_create (tramp_name, start, code - start, ji, unwind_ops);
@@ -329,9 +335,6 @@ mono_arch_exceptions_init (void)
 	GSList *tramps, *l;
 
 	if (mono_aot_only) {
-
-		// FIXME Macroize.
-
 		tramp = mono_aot_get_trampoline ("llvm_throw_corlib_exception_trampoline");
 		mono_register_jit_icall_info (&mono_get_jit_icall_info ()->mono_llvm_throw_corlib_exception_trampoline, tramp, "llvm_throw_corlib_exception_trampoline", NULL, TRUE, NULL);
 
@@ -340,7 +343,6 @@ mono_arch_exceptions_init (void)
 
 		tramp = mono_aot_get_trampoline ("llvm_resume_unwind_trampoline");
 		mono_register_jit_icall_info (&mono_get_jit_icall_info ()->mono_llvm_resume_unwind_trampoline, tramp, "llvm_resume_unwind_trampoline", NULL, TRUE, NULL);
-
 	} else {
 		tramps = mono_arm_get_exception_trampolines (FALSE);
 		for (l = tramps; l; l = l->next) {

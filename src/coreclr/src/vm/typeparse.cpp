@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ---------------------------------------------------------------------------
 // typeparse.cpp
 // ---------------------------------------------------------------------------
@@ -92,7 +91,7 @@ SAFEHANDLE TypeName::GetSafeHandle()
 
     GCPROTECT_BEGIN(objSafeHandle);
 
-    objSafeHandle = (SAFEHANDLE)AllocateObject(MscorlibBinder::GetClass(CLASS__SAFE_TYPENAMEPARSER_HANDLE));
+    objSafeHandle = (SAFEHANDLE)AllocateObject(CoreLibBinder::GetClass(CLASS__SAFE_TYPENAMEPARSER_HANDLE));
 
     MethodDescCallSite strCtor(METHOD__SAFE_TYPENAMEPARSER_HANDLE__CTOR);
 
@@ -227,7 +226,7 @@ void QCALLTYPE TypeName::QGetTypeArguments(TypeName * pTypeName, QCall::ObjectHa
 
         GCPROTECT_BEGIN(pReturnArguments);
 
-        pReturnArguments = (PTRARRAYREF)AllocateObjectArray(count, MscorlibBinder::GetClass(CLASS__SAFE_TYPENAMEPARSER_HANDLE));
+        pReturnArguments = (PTRARRAYREF)AllocateObjectArray(count, CoreLibBinder::GetClass(CLASS__SAFE_TYPENAMEPARSER_HANDLE));
 
         for (COUNT_T i = 0; i < count; i++)
         {
@@ -796,7 +795,7 @@ BOOL TypeName::TypeNameParser::NESTNAME()
 //    if szTypeName is not ASM-qualified, we will search for the types in the following order:
 //       - in pRequestingAssembly (if not NULL). pRequestingAssembly is the assembly that contained
 //         the custom attribute from which the typename was derived.
-//       - in mscorlib.dll
+//       - in CoreLib
 //       - raise an AssemblyResolveEvent() in the current appdomain
 //
 // pRequestingAssembly may be NULL. In that case, the "visibility" check will simply check that
@@ -864,7 +863,6 @@ TypeHandle TypeName::GetTypeUsingCASearchRules(LPCWSTR szTypeName, Assembly *pRe
         /*fProhibitAsmQualifiedName = */ FALSE,
         pRequestingAssembly,
         nullptr,
-        FALSE,
         &keepAlive);
 
     ASSERT(!th.IsNull());
@@ -902,7 +900,6 @@ TypeHandle TypeName::GetTypeUsingCASearchRules(LPCWSTR szTypeName, Assembly *pRe
     BOOL bIgnoreCase,
     BOOL bProhibitAsmQualifiedName,
     Assembly* pRequestingAssembly,
-    BOOL bLoadTypeFromPartialNameHack,
     OBJECTREF *pKeepAlive,
     ICLRPrivBinder * pPrivHostBinder)
 {
@@ -912,10 +909,6 @@ TypeHandle TypeName::GetTypeUsingCASearchRules(LPCWSTR szTypeName, Assembly *pRe
       COMPlusThrow(kArgumentException, W("Format_StringZeroLength"));
 
     DWORD error = (DWORD)-1;
-
-    /* Partial name workaround loading must not load a collectible type */
-    if (bLoadTypeFromPartialNameHack)
-        pKeepAlive = NULL;
 
 #ifdef __GNUC__
     // When compiling under GCC we have to use the -fstack-check option to ensure we always spot stack
@@ -952,7 +945,6 @@ TypeHandle TypeName::GetTypeUsingCASearchRules(LPCWSTR szTypeName, Assembly *pRe
         bProhibitAsmQualifiedName,
         pRequestingAssembly,
         pPrivHostBinder,
-        bLoadTypeFromPartialNameHack,
         pKeepAlive);
 
     if (bPeriodPrefix && result.IsNull())
@@ -981,7 +973,6 @@ TypeHandle TypeName::GetTypeUsingCASearchRules(LPCWSTR szTypeName, Assembly *pRe
             bProhibitAsmQualifiedName,
             pRequestingAssembly,
             pPrivHostBinder,
-            bLoadTypeFromPartialNameHack,
             pKeepAlive);
     }
 
@@ -1040,7 +1031,7 @@ TypeHandle TypeName::GetTypeUsingCASearchRules(LPCWSTR szTypeName, Assembly *pRe
 
     return pTypeName->GetTypeWorker(bThrowIfNotFound, /*bIgnoreCase = */FALSE, pAssembly, /*fEnableCASearchRules = */FALSE, FALSE, NULL,
         nullptr, // pPrivHostBinder
-        FALSE, NULL /* cannot find a collectible type unless it is in assembly */);
+        NULL /* cannot find a collectible type unless it is in assembly */);
 }
 
 //-------------------------------------------------------------------------------------------
@@ -1106,7 +1097,6 @@ TypeHandle TypeName::GetTypeFromAsm()
         FALSE,
         NULL,
         nullptr, // pPrivHostBinder
-        FALSE,
         NULL /* cannot find a collectible type */);
 }
 
@@ -1123,12 +1113,10 @@ TypeHandle TypeName::GetTypeFromAsm()
     BOOL bThrowIfNotFound,
     BOOL bIgnoreCase,
     Assembly* pAssemblyGetType,
-
     BOOL fEnableCASearchRules,
     BOOL bProhibitAsmQualifiedName,
     Assembly* pRequestingAssembly,
     ICLRPrivBinder * pPrivHostBinder,
-    BOOL bLoadTypeFromPartialNameHack,
     OBJECTREF *pKeepAlive)
 {
     CONTRACT(TypeHandle)
@@ -1168,40 +1156,12 @@ TypeHandle TypeName::GetTypeFromAsm()
             }
         }
 
-        SString * pssOuterTypeName = NULL;
-        if (GetNames().GetCount() > 0)
+        DomainAssembly *pDomainAssembly = LoadDomainAssembly(GetAssembly(), pRequestingAssembly,
+                                                                pPrivHostBinder,
+                                                                bThrowIfNotFound);
+        if (pDomainAssembly)
         {
-            pssOuterTypeName = GetNames()[0];
-        }
-
-        // We want to catch the exception if we're going to later try a partial bind.
-        if (bLoadTypeFromPartialNameHack)
-        {
-            EX_TRY
-            {
-                DomainAssembly *pDomainAssembly = LoadDomainAssembly(GetAssembly(), pRequestingAssembly,
-                                                                     pPrivHostBinder,
-                                                                     bThrowIfNotFound, pssOuterTypeName);
-                if (pDomainAssembly)
-                {
-                    th = GetTypeHaveAssembly(pDomainAssembly->GetAssembly(), bThrowIfNotFound, bIgnoreCase, pKeepAlive);
-                }
-            }
-            EX_CATCH
-            {
-                th = TypeHandle();
-            }
-            EX_END_CATCH(RethrowTransientExceptions);
-        }
-        else
-        {
-            DomainAssembly *pDomainAssembly = LoadDomainAssembly(GetAssembly(), pRequestingAssembly,
-                                                                 pPrivHostBinder,
-                                                                 bThrowIfNotFound, pssOuterTypeName);
-            if (pDomainAssembly)
-            {
-                th = GetTypeHaveAssembly(pDomainAssembly->GetAssembly(), bThrowIfNotFound, bIgnoreCase, pKeepAlive);
-            }
+            th = GetTypeHaveAssembly(pDomainAssembly->GetAssembly(), bThrowIfNotFound, bIgnoreCase, pKeepAlive);
         }
     }
 
@@ -1284,7 +1244,6 @@ TypeHandle TypeName::GetTypeFromAsm()
                 bThrowIfNotFound, bIgnoreCase,
                 pAssemblyGetType, fEnableCASearchRules, bProhibitAsmQualifiedName, pRequestingAssembly,
                 pPrivHostBinder,
-                bLoadTypeFromPartialNameHack,
                 (pKeepAlive != NULL) ? &gc.keepAlive : NULL /* Only pass a keepalive parameter if we were passed a keepalive parameter */);
 
             if (thGenericArg.IsNull())
@@ -1495,8 +1454,7 @@ DomainAssembly * LoadDomainAssembly(
     SString *  psszAssemblySpec,
     Assembly * pRequestingAssembly,
     ICLRPrivBinder * pPrivHostBinder,
-    BOOL       bThrowIfNotFound,
-    SString *  pssOuterTypeName)
+    BOOL       bThrowIfNotFound)
 {
     CONTRACTL
     {
@@ -1512,12 +1470,6 @@ DomainAssembly * LoadDomainAssembly(
     StackScratchBuffer buffer;
     LPCUTF8 szAssemblySpec = psszAssemblySpec ? psszAssemblySpec->GetUTF8(buffer) : NULL;
     IfFailThrow(spec.Init(szAssemblySpec));
-
-    if (spec.IsContentType_WindowsRuntime())
-    {
-        _ASSERTE(pssOuterTypeName != NULL);
-        spec.SetWindowsRuntimeType(*pssOuterTypeName);
-    }
 
     if (pRequestingAssembly)
     {

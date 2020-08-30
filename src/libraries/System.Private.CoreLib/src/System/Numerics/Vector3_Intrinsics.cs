@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.CompilerServices;
 
@@ -106,9 +105,7 @@ namespace System.Numerics
         [Intrinsic]
         public readonly bool Equals(Vector3 other)
         {
-            return X == other.X &&
-                   Y == other.Y &&
-                   Z == other.Z;
+            return this == other;
         }
         #endregion Public Instance Methods
 
@@ -230,7 +227,6 @@ namespace System.Numerics
         /// <param name="left">The source vector.</param>
         /// <param name="right">The scalar value.</param>
         /// <returns>The scaled vector.</returns>
-        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3 operator *(Vector3 left, float right)
         {
@@ -243,7 +239,6 @@ namespace System.Numerics
         /// <param name="left">The scalar value.</param>
         /// <param name="right">The source vector.</param>
         /// <returns>The scaled vector.</returns>
-        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3 operator *(float left, Vector3 right)
         {
@@ -296,9 +291,9 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(Vector3 left, Vector3 right)
         {
-            return (left.X == right.X &&
-                    left.Y == right.Y &&
-                    left.Z == right.Z);
+            return left.X == right.X &&
+                   left.Y == right.Y &&
+                   left.Z == right.Z;
         }
 
         /// <summary>
@@ -311,9 +306,7 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator !=(Vector3 left, Vector3 right)
         {
-            return (left.X != right.X ||
-                    left.Y != right.Y ||
-                    left.Z != right.Z);
+            return !(left == right);
         }
         #endregion Public Static Operators
     }

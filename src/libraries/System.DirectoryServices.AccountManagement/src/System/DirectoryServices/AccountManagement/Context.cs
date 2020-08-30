@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -1021,11 +1020,11 @@ namespace System.DirectoryServices.AccountManagement
         //
 
         // Are we initialized?
-        private bool _initialized = false;
+        private bool _initialized;
         private readonly object _initializationLock = new object();
 
         // Have we been disposed?
-        private bool _disposed = false;
+        private bool _disposed;
         internal bool Disposed { get { return _disposed; } }
 
         // Our constructor parameters
@@ -1052,7 +1051,7 @@ namespace System.DirectoryServices.AccountManagement
         private readonly ContextType _contextType;
 
         // The server we're connected to
-        private string _connectedServer = null;
+        private string _connectedServer;
 
         // The reason there are different contexts for groups, users and computers is so that
         // when a principal is created it will go into the appropriate default container.  This is so users don't
@@ -1062,12 +1061,12 @@ namespace System.DirectoryServices.AccountManagement
 
         // The StoreCtx to be used when inserting a new User/Computer/Group Principal into this
         // PrincipalContext.
-        private StoreCtx _userCtx = null;
-        private StoreCtx _computerCtx = null;
-        private StoreCtx _groupCtx = null;
+        private StoreCtx _userCtx;
+        private StoreCtx _computerCtx;
+        private StoreCtx _groupCtx;
 
         // The StoreCtx to be used when querying against this PrincipalContext for Principals
-        private StoreCtx _queryCtx = null;
+        private StoreCtx _queryCtx;
 
         internal StoreCtx QueryCtx
         {

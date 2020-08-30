@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.IO;
@@ -19,20 +18,20 @@ namespace System.Xml
     internal class XmlBufferReader
     {
         private readonly XmlDictionaryReader _reader;
-        private Stream _stream;
-        private byte[] _streamBuffer;
-        private byte[] _buffer;
+        private Stream? _stream;
+        private byte[]? _streamBuffer;
+        private byte[] _buffer = null!; // initialized by SetBuffer
         private int _offsetMin;
         private int _offsetMax;
-        private IXmlDictionary _dictionary;
-        private XmlBinaryReaderSession _session;
-        private byte[] _guid;
+        private IXmlDictionary? _dictionary;
+        private XmlBinaryReaderSession? _session;
+        private byte[]? _guid;
         private int _offset;
         private const int maxBytesPerChar = 3;
-        private char[] _chars;
+        private char[]? _chars;
         private int _windowOffset;
         private int _windowOffsetMax;
-        private ValueHandle _listValue;
+        private ValueHandle? _listValue;
         private static readonly XmlBufferReader s_empty = new XmlBufferReader(Array.Empty<byte>());
 
         public XmlBufferReader(XmlDictionaryReader reader)
@@ -42,7 +41,7 @@ namespace System.Xml
 
         public XmlBufferReader(byte[] buffer)
         {
-            _reader = null;
+            _reader = null!; // this ctor is only used in 2 places internally, which will never touch _reader
             _buffer = buffer;
         }
 
@@ -71,7 +70,7 @@ namespace System.Xml
         }
 
 
-        public void SetBuffer(Stream stream, IXmlDictionary dictionary, XmlBinaryReaderSession session)
+        public void SetBuffer(Stream stream, IXmlDictionary? dictionary, XmlBinaryReaderSession? session)
         {
             if (_streamBuffer == null)
             {
@@ -82,12 +81,12 @@ namespace System.Xml
             _windowOffsetMax = _streamBuffer.Length;
         }
 
-        public void SetBuffer(byte[] buffer, int offset, int count, IXmlDictionary dictionary, XmlBinaryReaderSession session)
+        public void SetBuffer(byte[] buffer, int offset, int count, IXmlDictionary? dictionary, XmlBinaryReaderSession? session)
         {
             SetBuffer(null, buffer, offset, count, dictionary, session);
         }
 
-        private void SetBuffer(Stream stream, byte[] buffer, int offset, int count, IXmlDictionary dictionary, XmlBinaryReaderSession session)
+        private void SetBuffer(Stream? stream, byte[] buffer, int offset, int count, IXmlDictionary? dictionary, XmlBinaryReaderSession? session)
         {
             _stream = stream;
             _buffer = buffer;
@@ -213,28 +212,37 @@ namespace System.Xml
         {
             if (_stream == null)
                 return false;
-            DiagnosticUtility.DebugAssert(_offset <= int.MaxValue - count, "");
-            int newOffsetMax = _offset + count;
-            if (newOffsetMax < _offsetMax)
-                return true;
-            DiagnosticUtility.DebugAssert(newOffsetMax <= _windowOffsetMax, "");
-            if (newOffsetMax > _buffer.Length)
+
+            // The data could be coming from an untrusted source, so we use a standard
+            // "multiply by 2" growth algorithm to avoid overly large memory utilization.
+            // Constant value of 256 comes from MemoryStream implementation.
+
+            do
             {
-                byte[] newBuffer = new byte[Math.Max(newOffsetMax, _buffer.Length * 2)];
-                System.Buffer.BlockCopy(_buffer, 0, newBuffer, 0, _offsetMax);
-                _buffer = newBuffer;
-                _streamBuffer = newBuffer;
-            }
-            int needed = newOffsetMax - _offsetMax;
-            while (needed > 0)
-            {
-                int actual = _stream.Read(_buffer, _offsetMax, needed);
-                if (actual == 0)
-                    return false;
-                _offsetMax += actual;
-                needed -= actual;
-            }
-            return true;
+                DiagnosticUtility.DebugAssert(_offset <= int.MaxValue - count, "");
+                int newOffsetMax = _offset + count;
+                if (newOffsetMax <= _offsetMax)
+                    return true;
+                DiagnosticUtility.DebugAssert(newOffsetMax <= _windowOffsetMax, "");
+                if (newOffsetMax > _buffer.Length)
+                {
+                    byte[] newBuffer = new byte[Math.Max(256, _buffer.Length * 2)];
+                    System.Buffer.BlockCopy(_buffer, 0, newBuffer, 0, _offsetMax);
+                    newOffsetMax = Math.Min(newOffsetMax, newBuffer.Length);
+                    _buffer = newBuffer;
+                    _streamBuffer = newBuffer;
+                }
+                int needed = newOffsetMax - _offsetMax;
+                DiagnosticUtility.DebugAssert(needed > 0, "");
+                do
+                {
+                    int actual = _stream.Read(_buffer, _offsetMax, needed);
+                    if (actual == 0)
+                        return false;
+                    _offsetMax += actual;
+                    needed -= actual;
+                } while (needed > 0);
+            } while (true);
         }
 
         public void Advance(int count)
@@ -491,7 +499,7 @@ namespace System.Xml
         public Guid ReadGuid()
         {
             int offset;
-            byte[] buffer = GetBuffer(ValueHandleLength.Guid, out offset);
+            _ = GetBuffer(ValueHandleLength.Guid, out offset);
             Guid guid = GetGuid(offset);
             Advance(ValueHandleLength.Guid);
             return guid;
@@ -500,7 +508,7 @@ namespace System.Xml
         public string ReadUTF8String(int length)
         {
             int offset;
-            byte[] buffer = GetBuffer(length, out offset);
+            _ = GetBuffer(length, out offset);
             char[] chars = GetCharBuffer(length);
             int charCount = GetChars(offset, length, chars);
             string value = new string(chars, 0, charCount);
@@ -771,14 +779,8 @@ namespace System.Xml
             for (int i = 3; i < length - 1; i++)
             {
                 byte ch = buffer[offset + i];
-                int digit = 0;
-                if (ch >= '0' && ch <= '9')
-                    digit = (ch - '0');
-                else if (ch >= 'a' && ch <= 'f')
-                    digit = 10 + (ch - 'a');
-                else if (ch >= 'A' && ch <= 'F')
-                    digit = 10 + (ch - 'A');
-                else
+                int digit = HexConverter.FromChar(ch);
+                if (digit == 0xFF)
                     XmlExceptionHelper.ThrowInvalidCharRef(_reader);
                 DiagnosticUtility.DebugAssert(digit >= 0 && digit < 16, "");
                 value = value * 16 + digit;
@@ -844,7 +846,6 @@ namespace System.Xml
 
         public bool IsWhitespaceUnicode(int offset, int length)
         {
-            byte[] buffer = _buffer;
             for (int i = 0; i < length; i += sizeof(char))
             {
                 char ch = (char)GetInt16(offset + i);
@@ -1113,8 +1114,8 @@ namespace System.Xml
                     XmlBinaryNodeType nodeType = GetNodeType();
                     SkipNodeType();
                     DiagnosticUtility.DebugAssert(nodeType != XmlBinaryNodeType.StartListText, "");
-                    ReadValue(nodeType, _listValue);
-                    objects[i] = _listValue.ToObject();
+                    ReadValue(nodeType, _listValue!);
+                    objects[i] = _listValue!.ToObject();
                 }
                 return objects;
             }
@@ -1130,13 +1131,13 @@ namespace System.Xml
             IXmlDictionary keyDictionary;
             if ((key & 1) != 0)
             {
-                keyDictionary = _session;
+                keyDictionary = _session!;
             }
             else
             {
-                keyDictionary = _dictionary;
+                keyDictionary = _dictionary!;
             }
-            XmlDictionaryString s;
+            XmlDictionaryString? s;
             if (!keyDictionary.TryLookup(key >> 1, out s))
                 XmlExceptionHelper.ThrowInvalidBinaryFormat(_reader);
             return s;
@@ -1150,7 +1151,7 @@ namespace System.Xml
                 if (_session == null)
                     XmlExceptionHelper.ThrowInvalidBinaryFormat(_reader);
                 int sessionKey = (key >> 1);
-                XmlDictionaryString xmlString;
+                XmlDictionaryString? xmlString;
                 if (!_session.TryLookup(sessionKey, out xmlString))
                 {
                     if (sessionKey < XmlDictionaryString.MinKey || sessionKey > XmlDictionaryString.MaxKey)
@@ -1163,7 +1164,7 @@ namespace System.Xml
                 if (_dictionary == null)
                     XmlExceptionHelper.ThrowInvalidBinaryFormat(_reader);
                 int staticKey = (key >> 1);
-                XmlDictionaryString xmlString;
+                XmlDictionaryString? xmlString;
                 if (!_dictionary.TryLookup(staticKey, out xmlString))
                 {
                     if (staticKey < XmlDictionaryString.MinKey || staticKey > XmlDictionaryString.MaxKey)

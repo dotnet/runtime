@@ -1,9 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Security.Cryptography.Asn1;
+using System.Formats.Asn1;
 
 namespace System.Security.Cryptography.Pkcs
 {
@@ -21,10 +20,8 @@ namespace System.Security.Cryptography.Pkcs
             Debug.Assert(copyFrom != null);
             Debug.Assert(copyFrom.ConfidentialityMode == Pkcs12ConfidentialityMode.None);
 
-            using (AsnWriter writer = copyFrom.Encode())
-            {
-                return Decode(writer.Encode());
-            }
+            AsnWriter writer = copyFrom.Encode();
+            return Decode(writer.Encode());
         }
 
         internal static Pkcs12SafeContentsBag Decode(ReadOnlyMemory<byte> encodedValue)

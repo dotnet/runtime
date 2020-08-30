@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 
 #include "stdafx.h"
@@ -163,13 +162,10 @@ void DataTargetReader::Align(DWORD alignmentBytes)
 
 void DataTargetReader::AlignBase()
 {
-#ifdef _MSC_VER
-    // Windows MSVC compiler aligns structs based on the largest field size
+    // Align structs based on the largest field size
+    // This is the default for MSVC compilers
+    // This is forced on other platforms by the DAC_ALIGNAS macro
     Align(m_currentStructureAlign);
-#else
-    // clang (on all platforms) aligns structs always on 4 byte boundaries
-    Align(4);
-#endif
 }
 
 HRESULT DataTargetReader::GetRemotePointerSize(ULONG32* pPointerSize)

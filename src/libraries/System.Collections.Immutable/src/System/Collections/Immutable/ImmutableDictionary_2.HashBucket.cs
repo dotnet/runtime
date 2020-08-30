@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
@@ -264,7 +263,7 @@ namespace System.Collections.Immutable
             {
                 if (this.IsEmpty)
                 {
-                    value = default(TValue)!;
+                    value = default;
                     return false;
                 }
 
@@ -278,7 +277,7 @@ namespace System.Collections.Immutable
                 var index = _additionalElements.IndexOf(kv, comparers.KeyOnlyComparer);
                 if (index < 0)
                 {
-                    value = default(TValue)!;
+                    value = default;
                     return false;
                 }
 

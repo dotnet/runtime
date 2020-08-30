@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Linq;
@@ -112,54 +111,6 @@ namespace System.Net.Http.Functional.Tests
                 .Select(a => a.Address)
                 .Where(a => a.IsIPv6LinkLocal)
                 .FirstOrDefault();
-
-        public static void EnableUnencryptedHttp2IfNecessary(HttpClientHandler handler)
-        {
-            if (PlatformDetection.SupportsAlpn && !Capability.Http2ForceUnencryptedLoopback())
-            {
-                return;
-            }
-
-            FieldInfo socketsHttpHandlerField = typeof(HttpClientHandler).GetField("_socketsHttpHandler", BindingFlags.NonPublic | BindingFlags.Instance);
-            if (socketsHttpHandlerField == null)
-            {
-                // Not using .NET Core implementation, i.e. could be .NET Framework.
-                return;
-            }
-
-            object socketsHttpHandler = socketsHttpHandlerField.GetValue(handler);
-            Assert.NotNull(socketsHttpHandler);
-
-            EnableUncryptedHttp2(socketsHttpHandler);
-        }
-
-#if !NETFRAMEWORK
-        public static void EnableUnencryptedHttp2IfNecessary(SocketsHttpHandler socketsHttpHandler)
-        {
-            if (PlatformDetection.SupportsAlpn && !Capability.Http2ForceUnencryptedLoopback())
-            {
-                return;
-            }
-
-            EnableUncryptedHttp2(socketsHttpHandler);
-        }
-#endif
-
-        private static void EnableUncryptedHttp2(object socketsHttpHandler)
-        {
-            // Get HttpConnectionSettings object from SocketsHttpHandler.
-            Type socketsHttpHandlerType = typeof(HttpClientHandler).Assembly.GetType("System.Net.Http.SocketsHttpHandler");
-            FieldInfo settingsField = socketsHttpHandlerType.GetField("_settings", BindingFlags.NonPublic | BindingFlags.Instance);
-            Assert.NotNull(settingsField);
-            object settings = settingsField.GetValue(socketsHttpHandler);
-            Assert.NotNull(settings);
-
-            // Allow HTTP/2.0 via unencrypted socket if ALPN is not supported on platform.
-            Type httpConnectionSettingsType = typeof(HttpClientHandler).Assembly.GetType("System.Net.Http.HttpConnectionSettings");
-            FieldInfo allowUnencryptedHttp2Field = httpConnectionSettingsType.GetField("_allowUnencryptedHttp2", BindingFlags.NonPublic | BindingFlags.Instance);
-            Assert.NotNull(allowUnencryptedHttp2Field);
-            allowUnencryptedHttp2Field.SetValue(settings, true);
-        }
 
         public static byte[] GenerateRandomContent(int size)
         {

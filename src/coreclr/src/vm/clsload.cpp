@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // File: clsload.cpp
 //
@@ -64,7 +63,7 @@
 // Some useful effects of this rule (for ngen purposes) are:
 //
 // * G<object,...,object> lives in the module defining G
-// * non-mscorlib instantiations of mscorlib-defined generic types live in the module
+// * non-CoreLib instantiations of CoreLib-defined generic types live in the module
 //   of the instantiation (when only one module is invloved in the instantiation)
 //
 
@@ -139,9 +138,9 @@ PTR_Module ClassLoader::ComputeLoaderModuleWorker(
 
     if (pLoaderModule == NULL)
     {
-        CONSISTENCY_CHECK(MscorlibBinder::GetModule() && MscorlibBinder::GetModule()->IsSystem());
+        CONSISTENCY_CHECK(CoreLibBinder::GetModule() && CoreLibBinder::GetModule()->IsSystem());
 
-        pLoaderModule = MscorlibBinder::GetModule();
+        pLoaderModule = CoreLibBinder::GetModule();
     }
 
     if (FALSE)
@@ -251,7 +250,7 @@ PTR_Module ClassLoader::ComputeLoaderModuleForCompilation(
 
     // We're a little stuck - we can't force the item into an NGEN image at this point.  So just bail out
     // and use the loader module we've computed without recording the choice. The loader module should always
-    // be mscorlib in this case.
+    // be CoreLib in this case.
     AppDomain * pAppDomain = GetAppDomain();
     if (!pAppDomain->IsCompilationDomain() ||
         !pAppDomain->ToCompilationDomain()->GetTargetModule())
@@ -273,39 +272,6 @@ PTR_Module ClassLoader::ComputeLoaderModuleForCompilation(
     {
         // Everything else can be saved into the current module.
         pZapperLoaderModule = pTargetModule;
-    }
-
-    // If generating WinMD resilient code and we so far choose to use the target module,
-    // we need to check if the definition module or any of the instantiation type can
-    // cause version resilient problems.
-    if (g_fNGenWinMDResilient && pZapperLoaderModule == pTargetModule)
-    {
-        if (pDefinitionModule != NULL && !pDefinitionModule->IsInCurrentVersionBubble())
-        {
-            pZapperLoaderModule = pDefinitionModule;
-            goto ModuleAdjustedForVersionResiliency;
-        }
-
-        for (DWORD i = 0; i < classInst.GetNumArgs(); i++)
-        {
-            Module * pModule = classInst[i].GetLoaderModule();
-            if (!pModule->IsInCurrentVersionBubble())
-            {
-                pZapperLoaderModule = pModule;
-                goto ModuleAdjustedForVersionResiliency;
-            }
-        }
-
-        for (DWORD i = 0; i < methodInst.GetNumArgs(); i++)
-        {
-            Module * pModule = methodInst[i].GetLoaderModule();
-            if (!pModule->IsInCurrentVersionBubble())
-            {
-                pZapperLoaderModule = pModule;
-                goto ModuleAdjustedForVersionResiliency;
-            }
-        }
-ModuleAdjustedForVersionResiliency: ;
     }
 
     // Record this choice just in case we're NGEN'ing multiple modules
@@ -973,34 +939,6 @@ VOID ClassLoader::PopulateAvailableClassHashTable(Module* pModule,
     HENUMInternal       hTypeDefEnum;
     IMDInternalImport * pImport = pModule->GetMDImport();
 
-    LPCSTR szWinRtNamespacePrefix = NULL;
-    DWORD  cchWinRtNamespacePrefix = 0;
-
-#ifdef FEATURE_COMINTEROP
-    SString            ssFileName;
-    StackScratchBuffer ssFileNameBuffer;
-
-    if (pModule->GetAssembly()->IsWinMD())
-    {   // WinMD file in execution context (not ReflectionOnly context) - use its file name as WinRT namespace prefix
-        //  (Windows requirement)
-        // Note: Reflection can work on 'unfinished' WinMD files where the types are in 'wrong' WinMD file (i.e.
-        //  type namespace does not start with the file name)
-
-        _ASSERTE(pModule->GetFile()->IsAssembly()); // No multi-module WinMD file support
-        _ASSERTE(!pModule->GetFile()->GetPath().IsEmpty());
-
-        SplitPath(
-            pModule->GetFile()->GetPath(),
-            NULL,   // Drive
-            NULL,   // Directory
-            &ssFileName,
-            NULL);  // Extension
-
-        szWinRtNamespacePrefix = ssFileName.GetUTF8(ssFileNameBuffer);
-        cchWinRtNamespacePrefix = (DWORD)strlen(szWinRtNamespacePrefix);
-    }
-#endif //FEATURE_COMINTEROP
-
     IfFailThrow(pImport->EnumTypeDefInit(&hTypeDefEnum));
 
     // Now loop through all the classdefs adding the CVID and scope to the hash
@@ -1008,9 +946,7 @@ VOID ClassLoader::PopulateAvailableClassHashTable(Module* pModule,
 
         AddAvailableClassHaveLock(pModule,
                                   td,
-                                  pamTracker,
-                                  szWinRtNamespacePrefix,
-                                  cchWinRtNamespacePrefix);
+                                  pamTracker);
     }
     pImport->EnumClose(&hTypeDefEnum);
 }
@@ -3324,7 +3260,6 @@ TypeHandle ClassLoader::CreateTypeHandleForTypeKey(TypeKey* pKey, AllocMemTracke
                 }
             }
 
-            // We really don't need this check anymore.
             if (rank > MAX_RANK)
             {
                 ThrowTypeLoadException(pKey, IDS_CLASSLOAD_RANK_TOOLARGE);
@@ -3347,7 +3282,7 @@ TypeHandle ClassLoader::CreateTypeHandleForTypeKey(TypeKey* pKey, AllocMemTracke
             // let <Type>* type have a method table
             // System.UIntPtr's method table is used for types like int*, void *, string * etc.
             if (kind == ELEMENT_TYPE_PTR)
-                templateMT = MscorlibBinder::GetElementType(ELEMENT_TYPE_U);
+                templateMT = CoreLibBinder::GetElementType(ELEMENT_TYPE_U);
             else
                 templateMT = NULL;
 
@@ -3654,6 +3589,10 @@ TypeHandle ClassLoader::LoadTypeHandleForTypeKey(TypeKey *pTypeKey,
     }
 #endif
 
+#if defined(FEATURE_EVENT_TRACE)
+    UINT32 typeLoad = ETW::TypeSystemLog::TypeLoadBegin();
+#endif
+
     // When using domain neutral assemblies (and not eagerly propagating dependency loads),
     // it's possible to get here without having injected the module into the current app domain.
     // GetDomainFile will accomplish that.
@@ -3675,6 +3614,13 @@ TypeHandle ClassLoader::LoadTypeHandleForTypeKey(TypeKey *pTypeKey,
     _ASSERTE(typeHnd.GetLoadLevel() >= targetLevelUnderLock);
 
     PushFinalLevels(typeHnd, targetLevel, pInstContext);
+
+#if defined(FEATURE_EVENT_TRACE)
+    if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, TypeLoadStop))
+    {
+        ETW::TypeSystemLog::TypeLoadEnd(typeLoad, typeHnd, (UINT16)targetLevel);
+    }
+#endif
 
     return typeHnd;
 }
@@ -4093,18 +4039,12 @@ VOID ClassLoader::AddAvailableClassDontHaveLock(Module *pModule,
     }
     CONTRACTL_END
 
-#ifdef FEATURE_COMINTEROP
-    _ASSERTE(!pModule->GetAssembly()->IsWinMD());   // WinMD files should never get into this path, otherwise provide szWinRtNamespacePrefix
-#endif
-
     CrstHolder ch(&m_AvailableClassLock);
 
     AddAvailableClassHaveLock(
         pModule,
         classdef,
-        pamTracker,
-        NULL,   // szWinRtNamespacePrefix
-        0);     // cchWinRtNamespacePrefix
+        pamTracker);
 }
 
 // This routine must be single threaded!  The reason is that there are situations which allow
@@ -4116,15 +4056,10 @@ VOID ClassLoader::AddAvailableClassDontHaveLock(Module *pModule,
 // This routine assumes you already have the lock.  Use AddAvailableClassDontHaveLock() if you
 // don't have it.
 //
-// Also validates that TypeDef namespace begins with szWinRTNamespacePrefix (if it is not NULL).
-// The prefix should be NULL for normal non-WinRT .NET assemblies.
-//
 VOID ClassLoader::AddAvailableClassHaveLock(
     Module *          pModule,
     mdTypeDef         classdef,
-    AllocMemTracker * pamTracker,
-    LPCSTR            szWinRtNamespacePrefix,
-    DWORD             cchWinRtNamespacePrefix)  // Optimization for faster prefix comparison implementation
+    AllocMemTracker * pamTracker)  // Optimization for faster prefix comparison implementation
 {
     CONTRACTL
     {
@@ -4244,39 +4179,6 @@ VOID ClassLoader::AddAvailableClassHaveLock(
             if (pClassCaseInsHash)
                 pClassCaseInsHash->InsertValueUsingPreallocatedEntry(pCaseInsEntry, pszLowerCaseNS, pszLowerCaseName, pEntry, pEntry->GetEncloser());
         }
-
-#ifdef FEATURE_COMINTEROP
-        // Check WinRT namespace prefix if required
-        if (szWinRtNamespacePrefix != NULL)
-        {
-            DWORD dwAttr;
-            if (FAILED(pMDImport->GetTypeDefProps(classdef, &dwAttr, NULL)))
-            {
-                pModule->GetAssembly()->ThrowBadImageException(pszNameSpace, pszName, BFA_INVALID_TOKEN);
-            }
-
-            // Check only public WinRT types that are not nested (i.e. only types available for binding, excluding NoPIA)
-            if (IsTdPublic(dwAttr) && IsTdWindowsRuntime(dwAttr))
-            {
-                // Guaranteed by the caller - code:ClassLoader::PopulateAvailableClassHashTable
-                _ASSERTE(cchWinRtNamespacePrefix == strlen(szWinRtNamespacePrefix));
-
-                // Now make sure namespace is, or begins with the namespace-prefix (note: 'MyN' should not match namespace 'MyName')
-                // Note: Case insensitive comparison function has to be in sync with Win8 implementation
-                // (ExtractExactCaseNamespaceSegmentFromMetadataFile in com\WinRT\WinTypes\TypeResolution\NamespaceResolution.cpp)
-                BOOL fIsNamespaceSubstring = (pszNameSpace != NULL) &&
-                                              ((strncmp(pszNameSpace, szWinRtNamespacePrefix, cchWinRtNamespacePrefix) == 0) ||
-                                               (_strnicmp(pszNameSpace, szWinRtNamespacePrefix, cchWinRtNamespacePrefix) == 0));
-                BOOL fIsSubNamespace = fIsNamespaceSubstring &&
-                                       ((pszNameSpace[cchWinRtNamespacePrefix] == '\0') ||
-                                        (pszNameSpace[cchWinRtNamespacePrefix] == '.'));
-                if (!fIsSubNamespace)
-                {
-                    pModule->GetAssembly()->ThrowBadImageException(pszNameSpace, pszName, BFA_WINRT_INVALID_NAMESPACE_FOR_TYPE);
-                }
-            }
-        }
-#endif // FEATURE_COMINTEROP
     }
 }
 

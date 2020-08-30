@@ -1,8 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable enable
+using System.Buffers;
+using System.Collections.Generic;
 using System.IO;
 using System.Net.Security;
 using System.Runtime.InteropServices;
@@ -24,7 +25,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
             try
             {
-                uint status = Interop.MsQuic.MsQuicOpen(version: 1, out registration);
+                uint status = Interop.MsQuic.MsQuicOpen(out registration);
                 if (!MsQuicStatusHelper.SuccessfulStatusCode(status))
                 {
                     throw new NotSupportedException(SR.net_quic_notsupported);
@@ -124,7 +125,13 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                 Marshal.GetDelegateForFunctionPointer<MsQuicNativeMethods.GetParamDelegate>(
                     nativeRegistration.GetParam);
 
-            RegistrationOpenDelegate(Encoding.UTF8.GetBytes("SystemNetQuic"), out IntPtr ctx);
+            var registrationConfig = new MsQuicNativeMethods.RegistrationConfig
+            {
+                AppName = "SystemNetQuic",
+                ExecutionProfile = QUIC_EXECUTION_PROFILE.QUIC_EXECUTION_PROFILE_LOW_LATENCY
+            };
+
+            RegistrationOpenDelegate(ref registrationConfig, out IntPtr ctx);
             _registrationContext = ctx;
         }
 
@@ -141,8 +148,6 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             // - Hopefully, MsQuicOpen will perform this check for us and give us a consistent error code.
             // - Otherwise, dial this in to reflect actual minimum requirements and add some sort of platform
             //   error code mapping when creating exceptions.
-
-            OperatingSystem ver = Environment.OSVersion;
 
             // TODO: try to initialize TLS 1.3 in SslStream.
 
@@ -225,7 +230,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         public async ValueTask<MsQuicSecurityConfig?> CreateSecurityConfig(X509Certificate certificate, string? certFilePath, string? privateKeyFilePath)
         {
             MsQuicSecurityConfig? secConfig = null;
-            var tcs = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             uint secConfigCreateStatus = MsQuicStatusCodes.InternalError;
             uint createConfigStatus;
             IntPtr unmanagedAddr = IntPtr.Zero;
@@ -285,7 +290,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                 {
                     secConfig = new MsQuicSecurityConfig(this, securityConfig);
                     secConfigCreateStatus = status;
-                    tcs.SetResult(null);
+                    tcs.SetResult();
                 }
 
                 await tcs.Task.ConfigureAwait(false);
@@ -315,13 +320,70 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             return secConfig;
         }
 
-        public IntPtr SessionOpen(byte[] alpn)
+        public unsafe IntPtr SessionOpen(List<SslApplicationProtocol> alpnProtocols)
+        {
+            if (alpnProtocols.Count == 1)
+            {
+                return SessionOpen(alpnProtocols[0]);
+            }
+
+            var memoryHandles = ArrayPool<MemoryHandle>.Shared.Rent(alpnProtocols.Count);
+            var quicBuffers = ArrayPool<MsQuicNativeMethods.QuicBuffer>.Shared.Rent(alpnProtocols.Count);
+
+            try
+            {
+                for (int i = 0; i < alpnProtocols.Count; ++i)
+                {
+                    ReadOnlyMemory<byte> alpnProtocol = alpnProtocols[i].Protocol;
+                    MemoryHandle h = alpnProtocol.Pin();
+
+                    memoryHandles[i] = h;
+                    quicBuffers[i].Buffer = (byte*)h.Pointer;
+                    quicBuffers[i].Length = (uint)alpnProtocol.Length;
+                }
+
+                IntPtr session;
+
+                fixed (MsQuicNativeMethods.QuicBuffer* pQuicBuffers = quicBuffers)
+                {
+                    session = SessionOpen(pQuicBuffers, (uint)alpnProtocols.Count);
+                }
+
+                ArrayPool<MsQuicNativeMethods.QuicBuffer>.Shared.Return(quicBuffers);
+                ArrayPool<MemoryHandle>.Shared.Return(memoryHandles);
+
+                return session;
+            }
+            finally
+            {
+                foreach (MemoryHandle handle in memoryHandles)
+                {
+                    handle.Dispose();
+                }
+            }
+        }
+
+        private unsafe IntPtr SessionOpen(SslApplicationProtocol alpnProtocol)
+        {
+            ReadOnlyMemory<byte> memory = alpnProtocol.Protocol;
+            using MemoryHandle h = memory.Pin();
+
+            var quicBuffer = new MsQuicNativeMethods.QuicBuffer()
+            {
+                Buffer = (byte*)h.Pointer,
+                Length = (uint)memory.Length
+            };
+
+            return SessionOpen(&quicBuffer, 1);
+        }
+
+        private unsafe IntPtr SessionOpen(MsQuicNativeMethods.QuicBuffer *alpnBuffers, uint bufferCount)
         {
             IntPtr sessionPtr = IntPtr.Zero;
-
             uint status = SessionOpenDelegate(
                 _registrationContext,
-                alpn,
+                alpnBuffers,
+                bufferCount,
                 IntPtr.Zero,
                 ref sessionPtr);
 

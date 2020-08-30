@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -581,9 +580,7 @@ namespace System
         {
             if (value < -10000 || value > 10000)
             {
-                // DateTimeOffset.AddYears(int years) is implemented on top of DateTime.AddYears(int value). Use the more appropriate
-                // parameter name out of the two for the exception.
-                throw new ArgumentOutOfRangeException("years", SR.ArgumentOutOfRange_DateTimeBadYears);
+                throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_DateTimeBadYears);
             }
             return AddMonths(value * 12);
         }
@@ -1049,13 +1046,16 @@ namespace System
         internal bool IsAmbiguousDaylightSavingTime() =>
             InternalKind == KindLocalAmbiguousDst;
 
-        public DateTimeKind Kind =>
-            InternalKind switch
+        public DateTimeKind Kind
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => InternalKind switch
             {
                 KindUnspecified => DateTimeKind.Unspecified,
                 KindUtc => DateTimeKind.Utc,
                 _ => DateTimeKind.Local,
             };
+        }
 
         // Returns the millisecond part of this DateTime. The returned value
         // is an integer between 0 and 999.

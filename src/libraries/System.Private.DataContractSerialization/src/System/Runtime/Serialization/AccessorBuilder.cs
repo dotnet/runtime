@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -14,15 +13,15 @@ namespace System.Runtime.Serialization
 {
     internal static class FastInvokerBuilder
     {
-        public delegate void Setter(ref object obj, object value);
-        public delegate object Getter(object obj);
+        public delegate void Setter(ref object obj, object? value);
+        public delegate object? Getter(object obj);
 
         private delegate void StructSetDelegate<T, TArg>(ref T obj, TArg value);
         private delegate TResult StructGetDelegate<T, out TResult>(ref T obj);
 
-        private static readonly MethodInfo s_createGetterInternal = typeof(FastInvokerBuilder).GetMethod(nameof(CreateGetterInternal), BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static);
-        private static readonly MethodInfo s_createSetterInternal = typeof(FastInvokerBuilder).GetMethod(nameof(CreateSetterInternal), BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static);
-        private static readonly MethodInfo s_make = typeof(FastInvokerBuilder).GetMethod(nameof(Make), BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static);
+        private static readonly MethodInfo s_createGetterInternal = typeof(FastInvokerBuilder).GetMethod(nameof(CreateGetterInternal), BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static)!;
+        private static readonly MethodInfo s_createSetterInternal = typeof(FastInvokerBuilder).GetMethod(nameof(CreateSetterInternal), BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static)!;
+        private static readonly MethodInfo s_make = typeof(FastInvokerBuilder).GetMethod(nameof(Make), BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static)!;
 
         public static Func<object> GetMakeNewInstanceFunc(Type type)
         {
@@ -32,25 +31,23 @@ namespace System.Runtime.Serialization
 
         public static Getter CreateGetter(MemberInfo memberInfo)
         {
-            if (memberInfo is PropertyInfo)
+            if (memberInfo is PropertyInfo propInfo)
             {
-                var propInfo = (PropertyInfo)memberInfo;
-                var createGetterGeneric = s_createGetterInternal.MakeGenericMethod(propInfo.DeclaringType, propInfo.PropertyType).CreateDelegate<Func<PropertyInfo, Getter>>();
+                var createGetterGeneric = s_createGetterInternal.MakeGenericMethod(propInfo.DeclaringType!, propInfo.PropertyType).CreateDelegate<Func<PropertyInfo, Getter>>();
                 Getter accessor = createGetterGeneric(propInfo);
                 return accessor;
             }
-            else if (memberInfo is FieldInfo)
+            else if (memberInfo is FieldInfo fieldInfo)
             {
                 return (obj) =>
                 {
-                    FieldInfo fieldInfo = (FieldInfo)memberInfo;
                     var value = fieldInfo.GetValue(obj);
                     return value;
                 };
             }
             else
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.Format(SR.InvalidMember, DataContract.GetClrTypeFullName(memberInfo.DeclaringType), memberInfo.Name)));
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.Format(SR.InvalidMember, DataContract.GetClrTypeFullName(memberInfo.DeclaringType!), memberInfo.Name)));
             }
         }
 
@@ -61,7 +58,7 @@ namespace System.Runtime.Serialization
                 PropertyInfo propInfo = (PropertyInfo)memberInfo;
                 if (propInfo.CanWrite)
                 {
-                    var buildSetAccessorGeneric = s_createSetterInternal.MakeGenericMethod(propInfo.DeclaringType, propInfo.PropertyType).CreateDelegate<Func<PropertyInfo, Setter>>();
+                    var buildSetAccessorGeneric = s_createSetterInternal.MakeGenericMethod(propInfo.DeclaringType!, propInfo.PropertyType).CreateDelegate<Func<PropertyInfo, Setter>>();
                     Setter accessor = buildSetAccessorGeneric(propInfo);
                     return accessor;
                 }
@@ -73,14 +70,14 @@ namespace System.Runtime.Serialization
             else if (memberInfo is FieldInfo)
             {
                 FieldInfo fieldInfo = (FieldInfo)memberInfo;
-                return (ref object obj, object val) =>
+                return (ref object obj, object? val) =>
                 {
                     fieldInfo.SetValue(obj, val);
                 };
             }
             else
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.Format(SR.InvalidMember, DataContract.GetClrTypeFullName(memberInfo.DeclaringType), memberInfo.Name)));
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.Format(SR.InvalidMember, DataContract.GetClrTypeFullName(memberInfo.DeclaringType!), memberInfo.Name)));
             }
         }
 
@@ -112,7 +109,7 @@ namespace System.Runtime.Serialization
 
             if (typeof(DeclaringType).IsValueType)
             {
-                var getMethod = propInfo.GetMethod.CreateDelegate<StructGetDelegate<DeclaringType, PropertyType>>();
+                var getMethod = propInfo.GetMethod!.CreateDelegate<StructGetDelegate<DeclaringType, PropertyType>>();
 
                 return (obj) =>
                 {
@@ -122,7 +119,7 @@ namespace System.Runtime.Serialization
             }
             else
             {
-                var getMethod = propInfo.GetMethod.CreateDelegate<Func<DeclaringType, PropertyType>>();
+                var getMethod = propInfo.GetMethod!.CreateDelegate<Func<DeclaringType, PropertyType>>();
 
                 return (obj) =>
                 {
@@ -137,14 +134,14 @@ namespace System.Runtime.Serialization
             {
                 if (propInfo.Name == "Key")
                 {
-                    return (ref object obj, object val) =>
+                    return (ref object obj, object? val) =>
                     {
                         ((IKeyValue)obj).Key = val;
                     };
                 }
                 else
                 {
-                    return (ref object obj, object val) =>
+                    return (ref object obj, object? val) =>
                     {
                         ((IKeyValue)obj).Value = val;
                     };
@@ -153,22 +150,22 @@ namespace System.Runtime.Serialization
 
             if (typeof(DeclaringType).IsValueType)
             {
-                var setMethod = propInfo.SetMethod.CreateDelegate<StructSetDelegate<DeclaringType, PropertyType>>();
+                var setMethod = propInfo.SetMethod!.CreateDelegate<StructSetDelegate<DeclaringType, PropertyType>>();
 
-                return (ref object obj, object val) =>
+                return (ref object obj, object? val) =>
                 {
                     var unboxed = (DeclaringType)obj;
-                    setMethod(ref unboxed, (PropertyType)val);
-                    obj = unboxed;
+                    setMethod(ref unboxed, (PropertyType)val!);
+                    obj = unboxed!;
                 };
             }
             else
             {
-                var setMethod = propInfo.SetMethod.CreateDelegate<Action<DeclaringType, PropertyType>>();
+                var setMethod = propInfo.SetMethod!.CreateDelegate<Action<DeclaringType, PropertyType>>();
 
-                return (ref object obj, object val) =>
+                return (ref object obj, object? val) =>
                 {
-                    setMethod((DeclaringType)obj, (PropertyType)val);
+                    setMethod((DeclaringType)obj, (PropertyType)val!);
                 };
             }
         }
@@ -181,11 +178,11 @@ namespace System.Runtime.Serialization
         {
             try
             {
-                return method.CreateDelegate(typeof(T)) as T;
+                return (method.CreateDelegate(typeof(T)) as T)!;
             }
             catch (Exception e)
             {
-                throw new InvalidOperationException(SR.Format(SR.FailedToCreateMethodDelegate, method.Name, method.DeclaringType.FullName), e);
+                throw new InvalidOperationException(SR.Format(SR.FailedToCreateMethodDelegate, method.Name, method.DeclaringType!.FullName), e);
             }
         }
     }

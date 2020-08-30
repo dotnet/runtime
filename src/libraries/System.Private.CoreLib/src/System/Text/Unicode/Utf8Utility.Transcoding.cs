@@ -1,46 +1,22 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
 
 #if SYSTEM_PRIVATE_CORELIB
 using Internal.Runtime.CompilerServices;
 #endif
 
-#pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
-#if SYSTEM_PRIVATE_CORELIB
-#if TARGET_64BIT
-using nint = System.Int64;
-using nuint = System.UInt64;
-#else // TARGET_64BIT
-using nint = System.Int32;
-using nuint = System.UInt32;
-#endif // TARGET_64BIT
-#else
-using nint = System.Int64; // https://github.com/dotnet/runtime/issues/33575 - use long/ulong outside of corelib until the compiler supports it
-using nuint = System.UInt64;
-#endif
-
 namespace System.Text.Unicode
 {
     internal static unsafe partial class Utf8Utility
     {
-#if DEBUG && SYSTEM_PRIVATE_CORELIB
-        static Utf8Utility()
-        {
-            Debug.Assert(sizeof(nint) == IntPtr.Size && nint.MinValue < 0, "nint is defined incorrectly.");
-            Debug.Assert(sizeof(nuint) == IntPtr.Size && nuint.MinValue == 0, "nuint is defined incorrectly.");
-
-            _ValidateAdditionalNIntDefinitions();
-        }
-#endif // DEBUG && SYSTEM_PRIVATE_CORELIB
-
         // On method return, pInputBufferRemaining and pOutputBufferRemaining will both point to where
         // the next byte would have been consumed from / the next char would have been written to.
         // inputLength in bytes, outputCharsRemaining in chars.
@@ -907,7 +883,7 @@ namespace System.Text.Unicode
             // is not enabled.
 
             Unsafe.SkipInit(out Vector128<short> nonAsciiUtf16DataMask);
-            if (Sse41.X64.IsSupported)
+            if (Sse41.X64.IsSupported || (AdvSimd.Arm64.IsSupported && BitConverter.IsLittleEndian))
             {
                 nonAsciiUtf16DataMask = Vector128.Create(unchecked((short)0xFF80)); // mask of non-ASCII bits in a UTF-16 char
             }
@@ -965,10 +941,8 @@ namespace System.Text.Unicode
                     uint inputCharsRemaining = (uint)(pFinalPosWhereCanReadDWordFromInputBuffer - pInputBuffer) + 2;
                     uint minElementsRemaining = (uint)Math.Min(inputCharsRemaining, outputBytesRemaining);
 
-                    if (Sse41.X64.IsSupported)
+                    if (Sse41.X64.IsSupported || (AdvSimd.Arm64.IsSupported && BitConverter.IsLittleEndian))
                     {
-                        Debug.Assert(BitConverter.IsLittleEndian, "SSE41 requires little-endian.");
-
                         // Try reading and writing 8 elements per iteration.
                         uint maxIters = minElementsRemaining / 8;
                         ulong possibleNonAsciiQWord;
@@ -977,14 +951,30 @@ namespace System.Text.Unicode
                         for (i = 0; (uint)i < maxIters; i++)
                         {
                             utf16Data = Unsafe.ReadUnaligned<Vector128<short>>(pInputBuffer);
-                            if (!Sse41.TestZ(utf16Data, nonAsciiUtf16DataMask))
+
+                            if (AdvSimd.IsSupported)
                             {
-                                goto LoopTerminatedDueToNonAsciiDataInVectorLocal;
+                                Vector128<short> isUtf16DataNonAscii = AdvSimd.CompareTest(utf16Data, nonAsciiUtf16DataMask);
+                                bool hasNonAsciiDataInVector = AdvSimd.Arm64.MinPairwise(isUtf16DataNonAscii, isUtf16DataNonAscii).AsUInt64().ToScalar() != 0;
+
+                                if (hasNonAsciiDataInVector)
+                                {
+                                    goto LoopTerminatedDueToNonAsciiDataInVectorLocal;
+                                }
+
+                                Vector64<byte> lower = AdvSimd.ExtractNarrowingSaturateUnsignedLower(utf16Data);
+                                AdvSimd.Store(pOutputBuffer, lower);
                             }
+                            else
+                            {
+                                if (!Sse41.TestZ(utf16Data, nonAsciiUtf16DataMask))
+                                {
+                                    goto LoopTerminatedDueToNonAsciiDataInVectorLocal;
+                                }
 
-                            // narrow and write
-
-                            Sse2.StoreScalar((ulong*)pOutputBuffer /* unaligned */, Sse2.PackUnsignedSaturate(utf16Data, utf16Data).AsUInt64());
+                                // narrow and write
+                                Sse2.StoreScalar((ulong*)pOutputBuffer /* unaligned */, Sse2.PackUnsignedSaturate(utf16Data, utf16Data).AsUInt64());
+                            }
 
                             pInputBuffer += 8;
                             pOutputBuffer += 8;
@@ -1003,7 +993,16 @@ namespace System.Text.Unicode
                             }
 
                             utf16Data = Vector128.CreateScalarUnsafe(possibleNonAsciiQWord).AsInt16();
-                            Unsafe.WriteUnaligned<uint>(pOutputBuffer, Sse2.ConvertToUInt32(Sse2.PackUnsignedSaturate(utf16Data, utf16Data).AsUInt32()));
+
+                            if (AdvSimd.IsSupported)
+                            {
+                                Vector64<byte> lower = AdvSimd.ExtractNarrowingSaturateUnsignedLower(utf16Data);
+                                AdvSimd.StoreSelectedScalar((uint*)pOutputBuffer, lower.AsUInt32(), 0);
+                            }
+                            else
+                            {
+                                Unsafe.WriteUnaligned<uint>(pOutputBuffer, Sse2.ConvertToUInt32(Sse2.PackUnsignedSaturate(utf16Data, utf16Data).AsUInt32()));
+                            }
 
                             pInputBuffer += 4;
                             pOutputBuffer += 4;
@@ -1015,7 +1014,15 @@ namespace System.Text.Unicode
                     LoopTerminatedDueToNonAsciiDataInVectorLocal:
 
                         outputBytesRemaining -= 8 * i;
-                        possibleNonAsciiQWord = Sse2.X64.ConvertToUInt64(utf16Data.AsUInt64());
+
+                        if (Sse2.X64.IsSupported)
+                        {
+                            possibleNonAsciiQWord = Sse2.X64.ConvertToUInt64(utf16Data.AsUInt64());
+                        }
+                        else
+                        {
+                            possibleNonAsciiQWord = utf16Data.AsUInt64().ToScalar();
+                        }
 
                         // Temporarily set 'possibleNonAsciiQWord' to be the low 64 bits of the vector,
                         // then check whether it's all-ASCII. If so, narrow and write to the destination
@@ -1025,7 +1032,15 @@ namespace System.Text.Unicode
 
                         if (Utf16Utility.AllCharsInUInt64AreAscii(possibleNonAsciiQWord)) // all chars in first QWORD are ASCII
                         {
-                            Unsafe.WriteUnaligned<uint>(pOutputBuffer, Sse2.ConvertToUInt32(Sse2.PackUnsignedSaturate(utf16Data, utf16Data).AsUInt32()));
+                            if (AdvSimd.IsSupported)
+                            {
+                                Vector64<byte> lower = AdvSimd.ExtractNarrowingSaturateUnsignedLower(utf16Data);
+                                AdvSimd.StoreSelectedScalar((uint*)pOutputBuffer, lower.AsUInt32(), 0);
+                            }
+                            else
+                            {
+                                Unsafe.WriteUnaligned<uint>(pOutputBuffer, Sse2.ConvertToUInt32(Sse2.PackUnsignedSaturate(utf16Data, utf16Data).AsUInt32()));
+                            }
                             pInputBuffer += 4;
                             pOutputBuffer += 4;
                             outputBytesRemaining -= 4;

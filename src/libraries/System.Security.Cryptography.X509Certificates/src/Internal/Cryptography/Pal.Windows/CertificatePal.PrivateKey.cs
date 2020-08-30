@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -215,8 +214,9 @@ namespace Internal.Cryptography.Pal
 
             IntPtr privateKeyPtr;
 
-            // If the certificate has a key handle instead of a key prov info, return the
+            // If the certificate has a key handle without a key prov info, return the
             // ephemeral key
+            if (!certificateContext.HasPersistedPrivateKey)
             {
                 int cbData = IntPtr.Size;
 
@@ -245,7 +245,6 @@ namespace Internal.Cryptography.Pal
                     out keySpec,
                     out freeKey))
                 {
-                    int dwErrorCode = Marshal.GetLastWin32Error();
 
                     // The documentation for CryptAcquireCertificatePrivateKey says that freeKey
                     // should already be false if "key acquisition fails", and it can be presumed

@@ -51,7 +51,7 @@ BEGIN {
         var = var + 0;
 
         # Extract string content starting with either " or L"
-        idx = match($0, /L?\"/);
+        idx = match($0, /L?"/);
         content = substr($0, idx);
 
         # remove the L prefix from strings

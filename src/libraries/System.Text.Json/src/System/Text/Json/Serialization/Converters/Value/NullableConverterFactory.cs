@@ -1,11 +1,10 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Reflection;
 
-namespace System.Text.Json.Serialization
+namespace System.Text.Json.Serialization.Converters
 {
     internal class NullableConverterFactory : JsonConverterFactory
     {
@@ -22,6 +21,12 @@ namespace System.Text.Json.Serialization
 
             JsonConverter valueConverter = options.GetConverter(valueTypeToConvert);
             Debug.Assert(valueConverter != null);
+
+            // If the value type has an interface or object converter, just return that converter directly.
+            if (!valueConverter.TypeToConvert.IsValueType && valueTypeToConvert.IsValueType)
+            {
+                return valueConverter;
+            }
 
             return CreateValueConverter(valueTypeToConvert, valueConverter);
         }

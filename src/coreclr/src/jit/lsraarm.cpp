@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -219,31 +218,25 @@ int LinearScan::BuildNode(GenTree* tree)
     switch (tree->OperGet())
     {
         case GT_LCL_VAR:
-        case GT_LCL_FLD:
-        {
-            // We handle tracked variables differently from non-tracked ones.  If it is tracked,
-            // we will simply add a use of the tracked variable at its parent/consumer.
-            // Otherwise, for a use we need to actually add the appropriate references for loading
-            // or storing the variable.
-            //
-            // A tracked variable won't actually get used until the appropriate ancestor tree node
-            // is processed, unless this is marked "isLocalDefUse" because it is a stack-based argument
-            // to a call or an orphaned dead node.
-            //
-            GenTreeLclVarCommon* const lclVar = tree->AsLclVarCommon();
-            LclVarDsc* const           varDsc = compiler->lvaGetDesc(lclVar);
-            if (isCandidateVar(varDsc))
+            // We make a final determination about whether a GT_LCL_VAR is a candidate or contained
+            // after liveness. In either case we don't build any uses or defs. Otherwise, this is a
+            // load of a stack-based local into a register and we'll fall through to the general
+            // local case below.
+            if (checkContainedOrCandidateLclVar(tree->AsLclVar()))
             {
                 return 0;
             }
+            __fallthrough;
 
-            if (lclVar->OperIs(GT_LCL_FLD) && lclVar->AsLclFld()->IsOffsetMisaligned())
+        case GT_LCL_FLD:
+        {
+            if (tree->OperIs(GT_LCL_FLD) && tree->AsLclFld()->IsOffsetMisaligned())
             {
-                buildInternalIntRegisterDefForNode(lclVar); // to generate address.
-                buildInternalIntRegisterDefForNode(lclVar); // to move float into an int reg.
-                if (lclVar->TypeIs(TYP_DOUBLE))
+                buildInternalIntRegisterDefForNode(tree); // to generate address.
+                buildInternalIntRegisterDefForNode(tree); // to move float into an int reg.
+                if (tree->TypeIs(TYP_DOUBLE))
                 {
-                    buildInternalIntRegisterDefForNode(lclVar); // to move the second half into an int reg.
+                    buildInternalIntRegisterDefForNode(tree); // to move the second half into an int reg.
                 }
                 buildInternalRegisterUses();
             }
@@ -253,8 +246,14 @@ int LinearScan::BuildNode(GenTree* tree)
         }
         break;
 
-        case GT_STORE_LCL_FLD:
         case GT_STORE_LCL_VAR:
+            if (tree->IsMultiRegLclVar() && isCandidateMultiRegLclVar(tree->AsLclVar()))
+            {
+                dstCount = compiler->lvaGetDesc(tree->AsLclVar()->GetLclNum())->lvFieldCnt;
+            }
+            __fallthrough;
+
+        case GT_STORE_LCL_FLD:
             srcCount = BuildStoreLoc(tree->AsLclVarCommon());
             break;
 
@@ -291,10 +290,10 @@ int LinearScan::BuildNode(GenTree* tree)
             BuildUse(op1);
             srcCount = 1;
 
-            switch (tree->AsIntrinsic()->gtIntrinsicId)
+            switch (tree->AsIntrinsic()->gtIntrinsicName)
             {
-                case CORINFO_INTRINSIC_Abs:
-                case CORINFO_INTRINSIC_Sqrt:
+                case NI_System_Math_Abs:
+                case NI_System_Math_Sqrt:
                     assert(dstCount == 1);
                     BuildDef(tree);
                     break;
@@ -492,6 +491,8 @@ int LinearScan::BuildNode(GenTree* tree)
 
         case GT_RETURN:
             srcCount = BuildReturn(tree);
+            killMask = getKillSetForReturn();
+            BuildDefsWithKills(tree, 0, RBM_NONE, killMask);
             break;
 
         case GT_RETFILT:
@@ -694,17 +695,15 @@ int LinearScan::BuildNode(GenTree* tree)
         break;
 
         case GT_NULLCHECK:
-            // It requires a internal register on ARM, as it is implemented as a load
-            assert(dstCount == 0);
-            assert(!tree->gtGetOp1()->isContained());
-            srcCount = 1;
-            buildInternalIntRegisterDefForNode(tree);
-            BuildUse(tree->gtGetOp1());
-            buildInternalRegisterUses();
-            break;
-
+#ifdef TARGET_ARM
+            // On Arm32 we never want to use GT_NULLCHECK, as we require a target register.
+            // Previously we used an internal register for this, but that results in a lifetime
+            // that overlaps with all the source registers.
+            assert(!"Should never see GT_NULLCHECK on Arm/32");
+#endif
+        // For Arm64 we simply fall through to the GT_IND case, and will use REG_ZR as the target.
         case GT_IND:
-            assert(dstCount == 1);
+            assert(dstCount == (tree->OperIs(GT_NULLCHECK) ? 0 : 1));
             srcCount = BuildIndir(tree->AsIndir());
             break;
 
@@ -764,7 +763,11 @@ int LinearScan::BuildNode(GenTree* tree)
         {
             assert(dstCount == 1);
             regNumber argReg  = tree->GetRegNum();
-            regMaskTP argMask = genRegMask(argReg);
+            regMaskTP argMask = RBM_NONE;
+            if (argReg != REG_COUNT)
+            {
+                argMask = genRegMask(argReg);
+            }
 
             // If type of node is `long` then it is actually `double`.
             // The actual `long` types must have been transformed as a field list with two fields.
@@ -825,7 +828,7 @@ int LinearScan::BuildNode(GenTree* tree)
     assert((dstCount < 2) || tree->IsMultiRegNode());
     assert(isLocalDefUse == (tree->IsValue() && tree->IsUnusedValue()));
     assert(!tree->IsUnusedValue() || (dstCount != 0));
-    assert(dstCount == tree->GetRegisterDstCount());
+    assert(dstCount == tree->GetRegisterDstCount(compiler));
     return srcCount;
 }
 

@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Microsoft.Extensions.Options
 {
@@ -11,7 +11,9 @@ namespace Microsoft.Extensions.Options
     /// Used to cache <typeparamref name="TOptions"/> instances.
     /// </summary>
     /// <typeparam name="TOptions">The type of options being requested.</typeparam>
-    public class OptionsCache<TOptions> : IOptionsMonitorCache<TOptions> where TOptions : class
+    public class OptionsCache<[DynamicallyAccessedMembers(Options.DynamicallyAccessedMembers)] TOptions> :
+        IOptionsMonitorCache<TOptions>
+        where TOptions : class
     {
         private readonly ConcurrentDictionary<string, Lazy<TOptions>> _cache = new ConcurrentDictionary<string, Lazy<TOptions>>(StringComparer.Ordinal);
 
@@ -60,7 +62,7 @@ namespace Microsoft.Extensions.Options
         public virtual bool TryRemove(string name)
         {
             name = name ?? Options.DefaultName;
-            return _cache.TryRemove(name, out var ignored);
+            return _cache.TryRemove(name, out Lazy<TOptions> ignored);
         }
     }
 }

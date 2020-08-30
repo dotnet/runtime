@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Threading;
@@ -17,7 +16,9 @@ namespace System.IO.Tests
         private static string driveFormat = PlatformDetection.IsInAppContainer ? string.Empty : new DriveInfo(Path.GetTempPath()).DriveFormat;
 
         protected static bool isHFS => driveFormat != null && driveFormat.Equals(HFS, StringComparison.InvariantCultureIgnoreCase);
-        protected static bool isNotHFS => !isHFS;
+
+        protected static bool LowTemporalResolution => PlatformDetection.IsBrowser || isHFS;
+        protected static bool HighTemporalResolution => !LowTemporalResolution;
 
         protected abstract T GetExistingItem();
         protected abstract T GetMissingItem();
@@ -49,7 +50,8 @@ namespace System.IO.Tests
             Assert.All(TimeFunctions(requiresRoundtripping: true), (function) =>
             {
                 // Checking that milliseconds are not dropped after setter.
-                DateTime dt = new DateTime(2014, 12, 1, 12, 3, 3, isHFS ? 0 : 321, function.Kind);
+                // Emscripten drops milliseconds in Browser
+                DateTime dt = new DateTime(2014, 12, 1, 12, 3, 3, LowTemporalResolution ? 0 : 321, function.Kind);
                 function.Setter(item, dt);
                 DateTime result = function.Getter(item);
                 Assert.Equal(dt, result);
@@ -77,7 +79,7 @@ namespace System.IO.Tests
             ValidateSetTimes(item, beforeTime, afterTime);
         }
 
-        [ConditionalFact(nameof(isNotHFS))] // OSX HFS driver format does not support millisec granularity
+        [ConditionalFact(nameof(HighTemporalResolution))] // OSX HFS driver format and Browser platform do not support millisec granularity
         public void TimesIncludeMillisecondPart()
         {
             T item = GetExistingItem();
@@ -109,11 +111,11 @@ namespace System.IO.Tests
             });
         }
 
-        [ConditionalFact(nameof(isHFS))]
-        public void TimesIncludeMillisecondPart_HFS()
+        [ConditionalFact(nameof(LowTemporalResolution))]
+        public void TimesIncludeMillisecondPart_LowTempRes()
         {
             T item = GetExistingItem();
-            // OSX HFS driver format does not support millisec granularity
+            // OSX HFS driver format and Browser do not support millisec granularity
             Assert.All(TimeFunctions(), (function) =>
             {
                 DateTime time = function.Getter(item);

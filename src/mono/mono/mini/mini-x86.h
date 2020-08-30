@@ -204,6 +204,10 @@ typedef struct {
 #define MONO_ARCH_HAVE_GET_TRAMPOLINES 1
 #define MONO_ARCH_HAVE_GENERAL_RGCTX_LAZY_FETCH_TRAMPOLINE 1
 
+#define MONO_ARCH_INTERPRETER_SUPPORTED 1
+#define MONO_ARCH_HAVE_INTERP_NATIVE_TO_MANAGED 1
+#define MONO_ARCH_HAVE_INTERP_PINVOKE_TRAMP 1
+
 #define MONO_ARCH_HAVE_CMOV_OPS 1
 
 #ifdef MONO_ARCH_SIMD_INTRINSICS
@@ -331,6 +335,17 @@ struct CallInfo {
 	ArgInfo sig_cookie;
 	ArgInfo args [1];
 };
+
+typedef struct {
+	/* EAX:EDX */
+	host_mgreg_t eax;
+	host_mgreg_t edx;
+	/* Floating point return value read from the top of x86 fpstack */
+	double fret;
+	/* Stack usage, used for passing params on stack */
+	guint32 stack_size;
+	guint8 *stack;
+} CallContext;
 
 guint32
 mono_x86_get_this_arg_offset (MonoMethodSignature *sig);

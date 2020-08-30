@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.CompilerServices;
 
@@ -230,7 +229,7 @@ namespace System.Numerics
         public static bool LessThanAll<T>(Vector<T> left, Vector<T> right) where T : struct
         {
             Vector<int> cond = (Vector<int>)Vector<T>.LessThan(left, right);
-            return cond.Equals(Vector<int>.AllOnes);
+            return cond.Equals(Vector<int>.AllBitsSet);
         }
 
         /// <summary>
@@ -328,7 +327,7 @@ namespace System.Numerics
         public static bool LessThanOrEqualAll<T>(Vector<T> left, Vector<T> right) where T : struct
         {
             Vector<int> cond = (Vector<int>)Vector<T>.LessThanOrEqual(left, right);
-            return cond.Equals(Vector<int>.AllOnes);
+            return cond.Equals(Vector<int>.AllBitsSet);
         }
 
         /// <summary>
@@ -427,7 +426,7 @@ namespace System.Numerics
         public static bool GreaterThanAll<T>(Vector<T> left, Vector<T> right) where T : struct
         {
             Vector<int> cond = (Vector<int>)Vector<T>.GreaterThan(left, right);
-            return cond.Equals(Vector<int>.AllOnes);
+            return cond.Equals(Vector<int>.AllBitsSet);
         }
 
         /// <summary>
@@ -526,7 +525,7 @@ namespace System.Numerics
         public static bool GreaterThanOrEqualAll<T>(Vector<T> left, Vector<T> right) where T : struct
         {
             Vector<int> cond = (Vector<int>)Vector<T>.GreaterThanOrEqual(left, right);
-            return cond.Equals(Vector<int>.AllOnes);
+            return cond.Equals(Vector<int>.AllBitsSet);
         }
 
         /// <summary>

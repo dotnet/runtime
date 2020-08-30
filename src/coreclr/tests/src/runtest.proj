@@ -65,16 +65,11 @@
 
     <Message Text="Found $(TestCount) built tests"/>
 
-    <Error Condition="'$(CLRTestNeedTargetToBuild)' != '' and '$(CLRTestNeedTargetToBuild)' != 'targetGeneric' and '$(CLRTestNeedTargetToBuild)' != 'targetSpecific'" Text="Unknown CLRTestNeedTargetToBuild $(CLRTestNeedTargetToBuild)" />
-
-    <ItemGroup Condition="'$(CLRTestNeedTargetToBuild)' != 'targetSpecific'">
+    <ItemGroup>
       <Error Condition="'$(CLRTestPriorityToBuild)' == '0' and '$(TestCount)' &lt;= 2000" Text="Unexpected test count. Expected &gt; 2000, found $(TestCount).'" />
       <Error Condition="'$(CLRTestPriorityToBuild)' == '0' and '$(TestCount)' &gt;= 3000" Text="Unexpected test count. Expected &lt; 3000, found $(TestCount).'" />
       <Error Condition="'$(CLRTestPriorityToBuild)' == '1' and '$(TestCount)' &lt;= 9000" Text="Unexpected test count. Expected &gt; 9000, found $(TestCount).'" />
       <Error Condition="'$(CLRTestPriorityToBuild)' != '0' and '$(CLRTestPriorityToBuild)' != '1'" Text="Unknown priority $(CLRTestPriorityToBuild)" />
-    </ItemGroup>
-    <ItemGroup Condition="'$(CLRTestNeedTargetToBuild)' == 'targetSpecific'">
-      <Error Condition="'$(TestCount)' &lt;= 100" Text="Unexpected test count. Expected &lt; 100, found $(TestCount).'" />
     </ItemGroup>
   </Target>
 
@@ -114,7 +109,7 @@ $(_XunitEpilog)
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="$(TestSourceDir)Common\Coreclr.TestWrapper\Coreclr.TestWrapper.csproj" />
+    <ProjectReference Include="$(RepoRoot)\src\tests\Common\Coreclr.TestWrapper\Coreclr.TestWrapper.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -291,7 +286,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
 
                 if (infraEx != null)
                 {
-                    Assert.True(false, "Test Infrastructure Failure: " + infraEx.Message)%3B
+                    Assert.True(false, "Test Infrastructure Failure: " + infraEx.ToString())%3B
                 }
                 else
                 {
@@ -304,7 +299,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
                     catch (Exception ex)
                     {
                         testOutput.Add("Unable to read error file: " + errorFile)%3B
-                        testOutput.Add(ex.Message)%3B
+                        testOutput.Add(ex.ToString())%3B
                     }
 
                     testOutput.Add(string.Empty)%3B
@@ -319,7 +314,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
                     catch(Exception ex)
                     {
                         testOutput.Add("Unable to read output file: " + outputFile)%3B
-                        testOutput.Add(ex.Message)%3B
+                        testOutput.Add(ex.ToString())%3B
                     }
 
                     testOutput.Add("To run the test:")%3B
@@ -353,14 +348,46 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
     </ItemGroup>
   </Target>
 
+  <Target Name="MonoAotCompileTests" DependsOnTargets="GetListOfTestCmds;FindCmdDirectories">
+    <ItemGroup>
+      <AllTestScripts Include="%(TestDirectories.Identity)\**\*.sh" />
+      <TestExclusions Include="@(ExcludeList->Metadata('FullPath'))" Condition="$(HaveExcludes)" />
+      <TestScripts Include="@(AllTestScripts)" Exclude="@(TestExclusions)" />
+      <TestDllPaths Include="$([System.IO.Path]::ChangeExtension('%(TestScripts.Identity)', 'dll'))" />
+      <TestDlls Include="%(TestDllPaths.Identity)" Condition="Exists(%(TestDllPaths.Identity))" />
+    </ItemGroup>
+    <PropertyGroup>
+      <CorerunExecutable Condition="'$(RunningOnUnix)' == 'true'">$(CORE_ROOT)\corerun</CorerunExecutable>
+      <CorerunExecutable Condition="'$(RunningOnUnix)' != 'true'">$(CORE_ROOT)\corerun.exe</CorerunExecutable>
+    </PropertyGroup>
+    <ItemGroup>
+      <AotEnvVar Include="MONO_ENV_OPTIONS=--aot=llvm,llvm-path='$(MonoLlvmPath)'" />
+    </ItemGroup>
+    <PropertyGroup>
+      <AotEnvVars>@(AotEnvVar)</AotEnvVars>
+    </PropertyGroup>
+    <ItemGroup>
+      <AotProject Include="../../../mono/msbuild/aot-compile.proj">
+        <Properties>_CorerunExecutable=$(CorerunExecutable);_TestDll=%(TestDlls.Identity);AotEnvVars=@(AotEnvVar)</Properties>
+      </AotProject>
+    </ItemGroup>
+    <MSBuild
+      Projects="@(AotProject)"
+      Targets="AotCompile"
+      Condition="@(TestDlls->Count()) &gt; 0"
+      BuildInParallel="true"
+      />
+  </Target>
+
   <Target Name="CreateAllWrappers" DependsOnTargets="GetListOfTestCmds;FindCmdDirectories">
-    <MSBuild Projects="$(MSBuildProjectFile)" Targets="CreateXunitWrapper;BuildXunitWrapper" Properties="_CMDDIR=%(TestDirectories.Identity)" />
+    <MSBuild Projects="$(MSBuildProjectFile)" Targets="CreateXunitWrapper;BuildXunitWrapper" Properties="_CMDDIR=%(TestDirectories.Identity);TestSrcDir=$(XunitTestBinBase)" />
   </Target>
 
   <Target Name="GetListOfTestCmds">
     <ItemGroup>
       <AllRunnableTestPaths Include="$(XunitTestBinBase)\**\*.cmd" Condition="'$(TargetOS)' == 'Windows_NT'" />
       <AllRunnableTestPaths Include="$(XunitTestBinBase)\**\*.sh" Condition="'$(TargetOS)' != 'Windows_NT'" />
+      <AllRunnableTestPaths Remove="$(XunitTestBinBase)\**\run-v8.sh" Condition="'$(TargetArchitecture)' == 'wasm'" /> 
     </ItemGroup>
   </Target>
 
@@ -378,6 +405,14 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
     <!-- generate project.lock.json file corresponding to above json file -->
     <MSBuild Projects="$(MSBuildThisFileDirectory)Common\test_dependencies\test_dependencies.csproj"
              Condition=" '$(BuildWrappers)'=='true' " />
+
+    <MSBuild Projects="$(MSBuildThisFileDirectory)Common\test_dependencies_fs\test_dependencies.fsproj"
+             Condition=" '$(BuildWrappers)'=='true' " />
+
+    <MSBuild Projects="$(MSBuildProjectFile)"
+             Targets="MonoAotCompileTests"
+             Properties=""
+             Condition=" '$(MonoAotCompile)'=='true' " />
 
     <!-- Default for building -->
     <MSBuild Projects="$(MSBuildProjectFile)"

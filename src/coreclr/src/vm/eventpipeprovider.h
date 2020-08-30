@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #ifndef __EVENTPIPE_PROVIDER_H__
 #define __EVENTPIPE_PROVIDER_H__
@@ -76,7 +75,8 @@ public:
     INT64 ComputeEventEnabledMask(INT64 keywords, EventPipeEventLevel eventLevel) const;
 
     // Create a new event.
-    EventPipeEvent* AddEvent(unsigned int eventID, INT64 keywords, unsigned int eventVersion, EventPipeEventLevel level, bool needStack, BYTE *pMetadata = NULL, unsigned int metadataLength = 0);
+    EventPipeEvent* AddEvent(unsigned int eventID, INT64 keywords, unsigned int eventVersion, EventPipeEventLevel level, bool needStack,
+        BYTE *pMetadata = NULL, unsigned int metadataLength = 0);
 
 private:
 

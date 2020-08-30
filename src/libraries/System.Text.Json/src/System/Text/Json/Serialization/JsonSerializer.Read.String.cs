@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Diagnostics;
@@ -35,15 +34,14 @@ namespace System.Text.Json
         /// <remarks>Using a <see cref="string"/> is not as efficient as using the
         /// UTF-8 methods since the implementation natively uses UTF-8.
         /// </remarks>
-        [return: MaybeNull]
-        public static TValue Deserialize<TValue>(string json, JsonSerializerOptions? options = null)
+        public static TValue? Deserialize<[DynamicallyAccessedMembers(MembersAccessedOnRead)] TValue>(string json, JsonSerializerOptions? options = null)
         {
             if (json == null)
             {
                 throw new ArgumentNullException(nameof(json));
             }
 
-            return Deserialize<TValue>(json, typeof(TValue), options)!;
+            return Deserialize<TValue>(json, typeof(TValue), options);
         }
 
         /// <summary>
@@ -68,7 +66,7 @@ namespace System.Text.Json
         /// <remarks>Using a <see cref="string"/> is not as efficient as using the
         /// UTF-8 methods since the implementation natively uses UTF-8.
         /// </remarks>
-        public static object? Deserialize(string json, Type returnType, JsonSerializerOptions? options = null)
+        public static object? Deserialize(string json, [DynamicallyAccessedMembers(MembersAccessedOnRead)] Type returnType, JsonSerializerOptions? options = null)
         {
             if (json == null)
             {
@@ -85,7 +83,7 @@ namespace System.Text.Json
             return value;
         }
 
-        private static TValue Deserialize<TValue>(string json, Type returnType, JsonSerializerOptions? options)
+        private static TValue? Deserialize<TValue>(string json, Type returnType, JsonSerializerOptions? options)
         {
             const long ArrayPoolMaxSizeBeforeUsingNormalAlloc = 1024 * 1024;
 

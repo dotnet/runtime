@@ -32,11 +32,9 @@
 
 #include <errno.h>
 
-#if defined(HOST_ANDROID) && !defined(TARGET_ARM64) && !defined(TARGET_AMD64)
+#if !defined(ENABLE_NETCORE) && defined(HOST_ANDROID) && !defined(TARGET_ARM64) && !defined(TARGET_AMD64)
+// tkill was deprecated and removed in the recent versions of Android NDK
 #define USE_TKILL_ON_ANDROID 1
-#endif
-
-#ifdef USE_TKILL_ON_ANDROID
 extern int tkill (pid_t tid, int signal);
 #endif
 
@@ -310,6 +308,15 @@ mono_native_thread_set_name (MonoNativeThreadId tid, const char *name)
 		pthread_setname_np (tid, "%s", (void*)n);
 	}
 #elif defined (HAVE_PTHREAD_SETNAME_NP)
+#if defined (__linux__)
+	/* Ignore requests to set the main thread name because it causes the
+	 * value returned by Process.ProcessName to change.
+	 */
+	MonoNativeThreadId main_thread_tid;
+	if (mono_native_thread_id_main_thread_known (&main_thread_tid) &&
+	    mono_native_thread_id_equals (tid, main_thread_tid))
+		return;
+#endif
 	if (!name) {
 		pthread_setname_np (tid, "");
 	} else {

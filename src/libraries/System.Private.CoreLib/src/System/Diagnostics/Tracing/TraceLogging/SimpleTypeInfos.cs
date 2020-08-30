@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #if ES_BUILD_STANDALONE
 using System;
@@ -147,7 +146,11 @@ namespace System.Diagnostics.Tracing
             string? name,
             EventFieldFormat format)
         {
-            collector.AddNullTerminatedString(name!, Statics.MakeDataType(TraceLoggingDataType.Utf16String, format));
+            // name can be null if the string was used as a top-level object in an event.
+            // In that case, use 'message' as the name of the field.
+            name ??= "message";
+
+            collector.AddNullTerminatedString(name, Statics.MakeDataType(TraceLoggingDataType.Utf16String, format));
         }
 
         public override void WriteData(TraceLoggingDataCollector collector, PropertyValue value)

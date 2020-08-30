@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.InteropServices;
 using System.Diagnostics;
@@ -23,17 +22,16 @@ namespace System.DirectoryServices.ActiveDirectory
 
     public class ReplicationConnection : IDisposable
     {
-        internal readonly DirectoryContext context = null;
-        internal readonly DirectoryEntry cachedDirectoryEntry = null;
-        internal bool existingConnection = false;
-        private bool _disposed = false;
-        private readonly bool _checkADAM = false;
-        private bool _isADAMServer = false;
-        private int _options = 0;
+        internal readonly DirectoryContext context;
+        internal readonly DirectoryEntry cachedDirectoryEntry;
+        internal bool existingConnection;
+        private bool _disposed;
+        private bool _isADAMServer;
+        private int _options;
 
-        private readonly string _connectionName = null;
-        private string _sourceServerName = null;
-        private string _destinationServerName = null;
+        private readonly string _connectionName;
+        private string _sourceServerName;
+        private string _destinationServerName;
         private readonly ActiveDirectoryTransportType _transport = ActiveDirectoryTransportType.Rpc;
 
         private const string ADAMGuid = "1.2.840.113556.1.4.1851";
@@ -824,22 +822,19 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                if (!_checkADAM)
+                DirectoryEntry de = DirectoryEntryManager.GetDirectoryEntry(context, WellKnownDN.RootDSE);
+                PropertyValueCollection values;
+                try
                 {
-                    DirectoryEntry de = DirectoryEntryManager.GetDirectoryEntry(context, WellKnownDN.RootDSE);
-                    PropertyValueCollection values = null;
-                    try
-                    {
-                        values = de.Properties["supportedCapabilities"];
-                    }
-                    catch (COMException e)
-                    {
-                        throw ExceptionHelper.GetExceptionFromCOMException(context, e);
-                    }
-
-                    if (values.Contains(ADAMGuid))
-                        _isADAMServer = true;
+                    values = de.Properties["supportedCapabilities"];
                 }
+                catch (COMException e)
+                {
+                    throw ExceptionHelper.GetExceptionFromCOMException(context, e);
+                }
+
+                if (values.Contains(ADAMGuid))
+                    _isADAMServer = true;
 
                 return _isADAMServer;
             }

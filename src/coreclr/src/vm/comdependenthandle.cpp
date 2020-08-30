@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // File: COMDependentHandle.cpp
 //
@@ -86,6 +85,9 @@ FCIMPL2(VOID, DependentHandle::nSetPrimary, OBJECTHANDLE handle, Object *_primar
     FCALL_CONTRACT;
 
     _ASSERTE(handle != NULL);
+
+    // Avoid collision with MarshalNative::GCHandleInternalSet
+    FCUnique(0x12);
 
     IGCHandleManager *mgr = GCHandleUtilities::GetGCHandleManager();
     mgr->StoreObjectInHandle(handle, _primary);

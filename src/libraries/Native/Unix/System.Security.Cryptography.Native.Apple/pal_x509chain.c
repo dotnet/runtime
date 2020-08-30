@@ -1,19 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "pal_x509chain.h"
 
-#ifndef kCFCoreFoundationVersionNumber10_12
-#define kCFCoreFoundationVersionNumber10_12 1348.00
-#endif
-
 SecPolicyRef AppleCryptoNative_X509ChainCreateDefaultPolicy()
 {
-    // Disable on macOS 10.11 and lower due to segfaults within Security.framework.
-    if (kCFCoreFoundationVersionNumber < kCFCoreFoundationVersionNumber10_12)
-        return NULL;
-
     return SecPolicyCreateBasicX509();
 }
 

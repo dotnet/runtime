@@ -1,0 +1,74 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Nullable>enable</Nullable>
+    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;net461</TargetFrameworks>
+    <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(CommonPath)System\Security\Cryptography\CryptoPool.cs">
+      <Link>Common\System\Security\Cryptography\CryptoPool.cs</Link>
+    </Compile>
+    <Compile Include="System\Formats\Asn1\Asn1Tag.cs" />
+    <Compile Include="System\Formats\Asn1\Asn1Tag.Accelerators.cs" />
+    <Compile Include="System\Formats\Asn1\AsnCharacterStringEncodings.cs" />
+    <Compile Include="System\Formats\Asn1\AsnContentException.cs" />
+    <Compile Include="System\Formats\Asn1\AsnEncodingRules.cs" />
+    <Compile Include="System\Formats\Asn1\AsnDecoder.cs" />
+    <Compile Include="System\Formats\Asn1\AsnDecoder.BitString.cs" />
+    <Compile Include="System\Formats\Asn1\AsnDecoder.Boolean.cs" />
+    <Compile Include="System\Formats\Asn1\AsnDecoder.Enumerated.cs" />
+    <Compile Include="System\Formats\Asn1\AsnDecoder.GeneralizedTime.cs" />
+    <Compile Include="System\Formats\Asn1\AsnDecoder.Integer.cs" />
+    <Compile Include="System\Formats\Asn1\AsnDecoder.NamedBitList.cs" />
+    <Compile Include="System\Formats\Asn1\AsnDecoder.Null.cs" />
+    <Compile Include="System\Formats\Asn1\AsnDecoder.OctetString.cs" />
+    <Compile Include="System\Formats\Asn1\AsnDecoder.Oid.cs" />
+    <Compile Include="System\Formats\Asn1\AsnDecoder.Sequence.cs" />
+    <Compile Include="System\Formats\Asn1\AsnDecoder.SetOf.cs" />
+    <Compile Include="System\Formats\Asn1\AsnDecoder.Text.cs" />
+    <Compile Include="System\Formats\Asn1\AsnDecoder.UtcTime.cs" />
+    <Compile Include="System\Formats\Asn1\AsnReaderOptions.cs" />
+    <Compile Include="System\Formats\Asn1\AsnWriter.cs" />
+    <Compile Include="System\Formats\Asn1\AsnWriter.BitString.cs" />
+    <Compile Include="System\Formats\Asn1\AsnWriter.Boolean.cs" />
+    <Compile Include="System\Formats\Asn1\AsnWriter.Enumerated.cs" />
+    <Compile Include="System\Formats\Asn1\AsnWriter.GeneralizedTime.cs" />
+    <Compile Include="System\Formats\Asn1\AsnWriter.Integer.cs" />
+    <Compile Include="System\Formats\Asn1\AsnWriter.NamedBitList.cs" />
+    <Compile Include="System\Formats\Asn1\AsnWriter.Null.cs" />
+    <Compile Include="System\Formats\Asn1\AsnWriter.OctetString.cs" />
+    <Compile Include="System\Formats\Asn1\AsnWriter.Oid.cs" />
+    <Compile Include="System\Formats\Asn1\AsnWriter.Sequence.cs" />
+    <Compile Include="System\Formats\Asn1\AsnWriter.SetOf.cs" />
+    <Compile Include="System\Formats\Asn1\AsnWriter.Text.cs" />
+    <Compile Include="System\Formats\Asn1\AsnWriter.UtcTime.cs" />
+    <Compile Include="System\Formats\Asn1\SetOfValueComparer.cs" />
+    <Compile Include="System\Formats\Asn1\TagClass.cs" />
+    <Compile Include="System\Formats\Asn1\UniversalTagNumber.cs" />
+  </ItemGroup>
+  <Choose>
+    <When Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+      <ItemGroup>
+        <Reference Include="System.Buffers" />
+        <Reference Include="System.Collections" />
+        <Reference Include="System.Memory" />
+        <Reference Include="System.Runtime" />
+        <Reference Include="System.Runtime.InteropServices" />
+        <Reference Include="System.Runtime.Numerics" />
+        <Reference Include="System.Security.Cryptography.Primitives" />
+        <Reference Include="System.Text.Encoding.Extensions" />
+      </ItemGroup>
+    </When>
+    <Otherwise>
+      <ItemGroup>
+        <PackageReference Include="System.Buffers" Version="$(SystemBuffersVersion)" />
+        <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
+      </ItemGroup>
+    </Otherwise>
+  </Choose>
+  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
+    <Reference Include="System.Numerics" />
+    <PackageReference Include="System.ValueTuple" Version="$(SystemValueTupleVersion)" Condition="'$(TargetFramework)' == 'net461'" />
+  </ItemGroup>
+</Project>

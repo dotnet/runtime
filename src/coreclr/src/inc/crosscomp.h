@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // crosscomp.h - cross-compilation enablement structures.
 //
@@ -373,6 +372,8 @@ typedef struct _T_KNONVOLATILE_CONTEXT_POINTERS {
 #if defined(TARGET_OSX) && defined(TARGET_X86)
 #define DAC_CS_NATIVE_DATA_SIZE 76
 #elif defined(TARGET_OSX) && defined(TARGET_AMD64)
+#define DAC_CS_NATIVE_DATA_SIZE 120
+#elif defined(TARGET_OSX) && defined(TARGET_ARM64)
 #define DAC_CS_NATIVE_DATA_SIZE 120
 #elif defined(TARGET_FREEBSD) && defined(TARGET_X86)
 #define DAC_CS_NATIVE_DATA_SIZE 12

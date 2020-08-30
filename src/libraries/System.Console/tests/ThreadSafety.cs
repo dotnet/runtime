@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.IO;
@@ -13,6 +12,7 @@ public class ThreadSafety
     const int NumberOfIterations = 100;
 
     [Fact]
+    [PlatformSpecific(~TestPlatforms.Browser)]
     public static void OpenStandardXXXCanBeCalledConcurrently()
     {
         Parallel.For(0, NumberOfIterations, i =>
@@ -41,6 +41,7 @@ public class ThreadSafety
     }
 
     [Fact]
+    [PlatformSpecific(~TestPlatforms.Browser)]
     public static void SetStandardXXXCanBeCalledConcurrently()
     {
         TextReader savedStandardInput = Console.In;
@@ -83,6 +84,7 @@ public class ThreadSafety
     }
 
     [Fact]
+    [PlatformSpecific(~TestPlatforms.Browser)]
     public static void ReadMayBeCalledConcurrently()
     {
         const char TestChar = '+';

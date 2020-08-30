@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.IO;
@@ -59,7 +58,7 @@ namespace System.Xml
             {
                 foreach (UndeclaredNotation un in _undeclaredNotations.Values)
                 {
-                    UndeclaredNotation tmpUn = un;
+                    UndeclaredNotation? tmpUn = un;
                     while (tmpUn != null)
                     {
                         SendValidationEvent(XmlSeverityType.Error, new XmlSchemaException(SR.Sch_UndeclaredNotation, un.name, BaseUriStr, (int)un.lineNo, (int)un.linePos));
@@ -149,7 +148,7 @@ namespace System.Xml
                 return;
             }
 
-            Uri baseUri = _readerAdapter.BaseUri;
+            Uri? baseUri = _readerAdapter.BaseUri;
             if (baseUri != null)
             {
                 _externalDtdBaseUri = baseUri.ToString();
@@ -212,7 +211,7 @@ namespace System.Xml
                         if (_condSectionDepth > 0)
                         {
                             _condSectionDepth--;
-                            if (_validate && _currentEntityId != _condSectionEntityIds[_condSectionDepth])
+                            if (_validate && _currentEntityId != _condSectionEntityIds![_condSectionDepth])
                             {
                                 SendValidationEvent(_curPos, XmlSeverityType.Error, SR.Sch_ParEntityRefNesting, string.Empty);
                             }
@@ -296,7 +295,7 @@ namespace System.Xml
 
             // element name
             XmlQualifiedName elementName = GetNameQualified(true);
-            SchemaElementDecl elementDecl;
+            SchemaElementDecl? elementDecl;
             if (!_schemaInfo.ElementDecls.TryGetValue(elementName, out elementDecl))
             {
                 if (!_schemaInfo.UndeclaredElementDecls.TryGetValue(elementName, out elementDecl))
@@ -306,7 +305,7 @@ namespace System.Xml
                 }
             }
 
-            SchemaAttDef attrDef = null;
+            SchemaAttDef? attrDef = null;
             while (true)
             {
                 switch (await GetTokenAsync(false).ConfigureAwait(false))
@@ -334,7 +333,7 @@ namespace System.Xml
                                 }
                                 if (_validate)
                                 {
-                                    attrDef.CheckXmlSpace(_readerAdapterWithValidation.ValidationEventHandling);
+                                    attrDef.CheckXmlSpace(_readerAdapterWithValidation!.ValidationEventHandling!);
                                 }
                             }
                         }
@@ -374,7 +373,7 @@ namespace System.Xml
                             }
                             if (_validate)
                             {
-                                attrDef.CheckXmlSpace(_readerAdapterWithValidation.ValidationEventHandling);
+                                attrDef.CheckXmlSpace(_readerAdapterWithValidation!.ValidationEventHandling!);
                             }
                         }
                     }
@@ -416,7 +415,7 @@ namespace System.Xml
                     case Token.ID:
                         if (_validate && elementDecl.IsIdDeclared)
                         {
-                            SchemaAttDef idAttrDef = elementDecl.GetAttDef(attrDef.Name);
+                            SchemaAttDef? idAttrDef = elementDecl.GetAttDef(attrDef.Name);
                             if ((idAttrDef == null || idAttrDef.Datatype.TokenizedType != XmlTokenizedType.ID) && !ignoreErrors)
                             {
                                 SendValidationEvent(XmlSeverityType.Error, SR.Sch_IdAttrDeclared, elementDecl.Name.ToString());
@@ -580,7 +579,7 @@ namespace System.Xml
             }
 
             // get schema decl for element
-            SchemaElementDecl elementDecl = null;
+            SchemaElementDecl? elementDecl = null;
             XmlQualifiedName name = GetNameQualified(true);
 
             if (_schemaInfo.ElementDecls.TryGetValue(name, out elementDecl))
@@ -630,7 +629,7 @@ namespace System.Xml
                             }
                         case Token.None:
                             {
-                                ParticleContentValidator pcv = null;
+                                ParticleContentValidator? pcv = null;
                                 pcv = new ParticleContentValidator(XmlSchemaContentType.ElementOnly);
                                 pcv.Start();
                                 pcv.OpenGroup();
@@ -840,7 +839,7 @@ namespace System.Xml
         private async Task ParseEntityDeclAsync()
         {
             bool isParamEntity = false;
-            SchemaEntity entity = null;
+            SchemaEntity? entity = null;
 
             // get entity name and type
             switch (await GetTokenAsync(true).ConfigureAwait(false))
@@ -886,8 +885,8 @@ namespace System.Xml
             {
                 case Token.PUBLIC:
                 case Token.SYSTEM:
-                    string systemId;
-                    string publicId;
+                    string? systemId;
+                    string? publicId;
 
                     var tuple_1 = await ParseExternalIdAsync(token, Token.EntityDecl).ConfigureAwait(false);
                     publicId = tuple_1.Item1;
@@ -949,13 +948,14 @@ namespace System.Xml
             }
 
             XmlQualifiedName notationName = GetNameQualified(false);
-            SchemaNotation notation = null;
+            SchemaNotation? notation = null;
             if (!_schemaInfo.Notations.ContainsKey(notationName.Name))
             {
                 if (_undeclaredNotations != null)
                 {
                     _undeclaredNotations.Remove(notationName.Name);
                 }
+
                 notation = new SchemaNotation(notationName);
                 _schemaInfo.Notations.Add(notation.Name.Name, notation);
             }
@@ -972,7 +972,7 @@ namespace System.Xml
             Token token = await GetTokenAsync(true).ConfigureAwait(false);
             if (token == Token.SYSTEM || token == Token.PUBLIC)
             {
-                string notationPublicId, notationSystemId;
+                string? notationPublicId, notationSystemId;
 
                 var tuple_2 = await ParseExternalIdAsync(token, Token.NOTATION).ConfigureAwait(false);
                 notationPublicId = tuple_2.Item1;
@@ -1000,6 +1000,7 @@ namespace System.Xml
             {
                 if (SaveInternalSubsetValue)
                 {
+                    Debug.Assert(_internalSubsetValueSb != null);
                     await _readerAdapter.ParseCommentAsync(_internalSubsetValueSb).ConfigureAwait(false);
                     _internalSubsetValueSb.Append("-->");
                 }
@@ -1027,6 +1028,7 @@ namespace System.Xml
             SaveParsingBuffer();
             if (SaveInternalSubsetValue)
             {
+                Debug.Assert(_internalSubsetValueSb != null);
                 await _readerAdapter.ParsePIAsync(_internalSubsetValueSb).ConfigureAwait(false);
                 _internalSubsetValueSb.Append("?>");
             }
@@ -1093,11 +1095,11 @@ namespace System.Xml
             }
         }
 
-        private async Task<Tuple<string, string>> ParseExternalIdAsync(Token idTokenType, Token declType)
+        private async Task<Tuple<string?, string?>> ParseExternalIdAsync(Token idTokenType, Token declType)
         {
-            Tuple<string, string> tuple;
-            string publicId;
-            string systemId;
+            Tuple<string?, string?> tuple;
+            string? publicId;
+            string? systemId;
 
             LineInfo keywordLineInfo = new LineInfo(LineNo, LinePos - 6);
             publicId = null;
@@ -1172,7 +1174,7 @@ namespace System.Xml
                 }
             }
 
-            tuple = new Tuple<string, string>(publicId, systemId);
+            tuple = new Tuple<string?, string?>(publicId, systemId);
             return tuple;
         }
         //
@@ -2240,11 +2242,7 @@ namespace System.Xml
                         }
                         if (_chars[_curPos + 1] != 'C' || _chars[_curPos + 2] != 'L' ||
                              _chars[_curPos + 3] != 'U' || _chars[_curPos + 4] != 'D' ||
-                             _chars[_curPos + 5] != 'E' || _xmlCharType.IsNameSingleChar(_chars[_curPos + 6])
-#if XML10_FIFTH_EDITION
-                             || xmlCharType.IsNCNameHighSurrogateChar( chars[curPos+6] )
-#endif
-                            )
+                             _chars[_curPos + 5] != 'E' || _xmlCharType.IsNameSingleChar(_chars[_curPos + 6]))
                         {
                             goto default;
                         }
@@ -2255,11 +2253,7 @@ namespace System.Xml
                     case 'G':
                         if (_chars[_curPos + 1] != 'N' || _chars[_curPos + 2] != 'O' ||
                              _chars[_curPos + 3] != 'R' || _chars[_curPos + 4] != 'E' ||
-                             _xmlCharType.IsNameSingleChar(_chars[_curPos + 5])
-#if XML10_FIFTH_EDITION
-                            ||xmlCharType.IsNCNameHighSurrogateChar( chars[curPos+5] )
-#endif
-                            )
+                             _xmlCharType.IsNameSingleChar(_chars[_curPos + 5]))
                         {
                             goto default;
                         }
@@ -2417,11 +2411,6 @@ namespace System.Xml
                 {
                     _curPos++;
                 }
-#if XML10_FIFTH_EDITION
-                else if ( curPos + 1 < charsUsed && xmlCharType.IsNCNameSurrogateChar(chars[curPos+1], chars[curPos])) {
-                    curPos += 2;
-                }
-#endif
                 else
                 {
                     if (_curPos + 1 >= _charsUsed)
@@ -2445,11 +2434,6 @@ namespace System.Xml
                     {
                         _curPos++;
                     }
-#if XML10_FIFTH_EDITION
-                    else if ( curPos + 1 < charsUsed && xmlCharType.IsNameSurrogateChar(chars[curPos + 1], chars[curPos]) ) {
-                        curPos += 2;
-                    }
-#endif
                     else
                     {
                         break;
@@ -2475,11 +2459,7 @@ namespace System.Xml
                     }
                 }
                 // end of buffer
-                else if (_curPos == _charsUsed
-#if XML10_FIFTH_EDITION
-                    || ( curPos + 1 == charsUsed && xmlCharType.IsNCNameHighSurrogateChar( chars[curPos] ) )
-#endif
-                    )
+                else if (_curPos == _charsUsed)
                 {
                     if (await ReadDataInNameAsync().ConfigureAwait(false))
                     {
@@ -2518,22 +2498,13 @@ namespace System.Xml
                     {
                         _curPos++;
                     }
-#if XML10_FIFTH_EDITION
-                    else if (curPos + 1 < charsUsed && xmlCharType.IsNCNameSurrogateChar(chars[curPos + 1], chars[curPos])) {
-                        curPos += 2;
-                    }
-#endif
                     else
                     {
                         break;
                     }
                 }
 
-                if (_curPos < _charsUsed
-#if XML10_FIFTH_EDITION
-                    && ( !xmlCharType.IsNCNameHighSurrogateChar( chars[curPos] ) || curPos + 1 < charsUsed )
-#endif
-                    )
+                if (_curPos < _charsUsed)
                 {
                     if (_curPos - _tokenStartPos == 0)
                     {
@@ -2631,7 +2602,7 @@ namespace System.Xml
                 Throw(_curPos - entityName.Name.Length - 1, SR.Xml_InvalidParEntityRef);
             }
 
-            SchemaEntity entity = VerifyEntityReference(entityName, paramEntity, true, inAttribute);
+            SchemaEntity? entity = VerifyEntityReference(entityName, paramEntity, true, inAttribute);
             if (entity == null)
             {
                 return false;
@@ -2655,7 +2626,7 @@ namespace System.Xml
             }
             else
             {
-                if (entity.Text.Length == 0)
+                if (entity.Text!.Length == 0)
                 {
                     return false;
                 }

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // EEConfig.CPP
 //
 
@@ -11,9 +10,6 @@
 
 
 #include "common.h"
-#ifdef FEATURE_COMINTEROP
-#include <appxutil.h>
-#endif
 #include "eeconfig.h"
 #include "method.hpp"
 #include "eventtrace.h"
@@ -42,7 +38,7 @@ Volatile<DWORD> GCStressPolicy::InhibitHolder::s_nGcStressDisabled = 0;
 
 /**************************************************************/
 // Poor mans narrow
-LPUTF8 NarrowWideChar(__inout_z LPWSTR str)
+LPUTF8 NarrowWideChar(__inout_z LPCWSTR str)
 {
     CONTRACT (LPUTF8)
     {
@@ -54,7 +50,7 @@ LPUTF8 NarrowWideChar(__inout_z LPWSTR str)
     } CONTRACT_END;
 
     if (str != 0) {
-        LPWSTR fromPtr = str;
+        LPCWSTR fromPtr = str;
         LPUTF8 toPtr = (LPUTF8) str;
         LPUTF8 result = toPtr;
         while(*fromPtr != 0)
@@ -125,11 +121,6 @@ HRESULT EEConfig::Init()
     fJitAlignLoops = false;
     fJitMinOpts = false;
     fPInvokeRestoreEsp = (DWORD)-1;
-
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-    // By default, there is not pre-V4 CSE policy
-    fLegacyCorruptedStateExceptionsPolicy = false;
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
 
     fNgenBindOptimizeNonGac = false;
     fStressLog = false;

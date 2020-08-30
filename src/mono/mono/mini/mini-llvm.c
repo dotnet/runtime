@@ -316,6 +316,12 @@ const_int32 (int v)
 	return LLVMConstInt (LLVMInt32Type (), v, FALSE);
 }
 
+static LLVMValueRef
+const_int64 (int64_t v)
+{
+	return LLVMConstInt (LLVMInt64Type (), v, FALSE);
+}
+
 /*
  * IntPtrType:
  *
@@ -1712,6 +1718,9 @@ get_aotconst_name (MonoJumpInfoType type, gconstpointer data, int got_offset)
 	switch (type) {
 	case MONO_PATCH_INFO_JIT_ICALL_ID:
 		name = g_strdup_printf ("jit_icall_%s", mono_find_jit_icall_info ((MonoJitICallId)(gsize)data)->name);
+		break;
+	case MONO_PATCH_INFO_JIT_ICALL_ADDR_NOCALL:
+		name = g_strdup_printf ("jit_icall_addr_nocall_%s", mono_find_jit_icall_info ((MonoJitICallId)(gsize)data)->name);
 		break;
 	case MONO_PATCH_INFO_RGCTX_SLOT_INDEX: {
 		MonoJumpInfoRgctxEntry *entry = (MonoJumpInfoRgctxEntry*)data;
@@ -4572,14 +4581,19 @@ emit_landing_pad (EmitContext *ctx, int group_index, int group_size)
 }
 
 static LLVMValueRef
+create_const_vector (LLVMTypeRef t, const int *vals, int count)
+{
+	g_assert (count <= 16);
+	LLVMValueRef llvm_vals [16];
+	for (int i = 0; i < count; i++)
+		llvm_vals [i] = LLVMConstInt (t, vals [i], FALSE);
+	return LLVMConstVector (llvm_vals, count);
+}
+
+static LLVMValueRef
 create_const_vector_i32 (const int *mask, int count)
 {
-	LLVMValueRef *llvm_mask = g_new (LLVMValueRef, count);
-	for (int i = 0; i < count; i++)
-		llvm_mask [i] = LLVMConstInt (LLVMInt32Type (), mask [i], FALSE);
-	LLVMValueRef vec = LLVMConstVector (llvm_mask, count);
-	g_free (llvm_mask);
-	return vec;
+	return create_const_vector (LLVMInt32Type (), mask, count);
 }
 
 static LLVMValueRef
@@ -5702,6 +5716,28 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			v1 = LLVMBuildMul (builder, convert (ctx, rhs, IntPtrType ()), LLVMConstInt (IntPtrType (), ((unsigned long long)1 << ins->backend.shift_amount), FALSE), "");
 			v2 = LLVMBuildAdd (builder, convert (ctx, lhs, IntPtrType ()), v1, "");
 			values [ins->dreg] = LLVMBuildAdd (builder, v2, LLVMConstInt (IntPtrType (), ins->inst_imm, FALSE), dname);
+			break;
+		}
+		case OP_X86_BSF32:
+		case OP_X86_BSF64: {
+			LLVMValueRef args [] = {
+				lhs,
+				LLVMConstInt (LLVMInt1Type (), 1, TRUE),
+			};
+			int op = ins->opcode == OP_X86_BSF32 ? INTRINS_CTTZ_I32 : INTRINS_CTTZ_I64;
+			values [ins->dreg] = call_intrins (ctx, op, args, dname);
+			break;
+		}
+		case OP_X86_BSR32:
+		case OP_X86_BSR64: {
+			LLVMValueRef args [] = {
+				lhs,
+				LLVMConstInt (LLVMInt1Type (), 1, TRUE),
+			};
+			int op = ins->opcode == OP_X86_BSR32 ? INTRINS_CTLZ_I32 : INTRINS_CTLZ_I64;
+			LLVMValueRef width = ins->opcode == OP_X86_BSR32 ? const_int32 (31) : const_int64 (63);
+			LLVMValueRef tz = call_intrins (ctx, op, args, "");
+			values [ins->dreg] = LLVMBuildXor (builder, tz, width, dname);
 			break;
 		}
 #endif
@@ -8582,10 +8618,23 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		}
 
 		case OP_SSE41_MUL: {
-			// NOTE: LLVM 7 and later use shifts here
-			// however, pmuldq is still available so I guess it's fine to keep using it
+#if LLVM_API_VERSION < 700
 			LLVMValueRef args [] = { lhs, rhs };
 			values [ins->dreg] = call_intrins (ctx, INTRINS_SSE_PMULDQ, args, dname);
+#else
+			const int shift_vals [] = { 32, 32 };
+			const LLVMValueRef args [] = {
+				convert (ctx, lhs, sse_i8_t),
+				convert (ctx, rhs, sse_i8_t),
+			};
+			LLVMValueRef mul_args [2] = { 0 };
+			LLVMValueRef shift_vec = create_const_vector (LLVMInt64Type (), shift_vals, 2);
+			for (int i = 0; i < 2; ++i) {
+				LLVMValueRef padded = LLVMBuildShl (builder, args [i], shift_vec, "");
+				mul_args[i] = mono_llvm_build_exact_ashr (builder, padded, shift_vec);
+			}
+			values [ins->dreg] = LLVMBuildNSWMul (builder, mul_args [0], mul_args [1], dname);
+#endif
 			break;	
 		}
 
@@ -11654,8 +11703,10 @@ llvm_jit_finalize_method (EmitContext *ctx)
 	while (g_hash_table_iter_next (&iter, NULL, (void**)&var))
 		callee_vars [i ++] = var;
 
+	mono_codeman_enable_write ();
 	cfg->native_code = (guint8*)mono_llvm_compile_method (ctx->module->mono_ee, cfg, ctx->lmethod, nvars, callee_vars, callee_addrs, &eh_frame);
 	mono_llvm_remove_gc_safepoint_poll (ctx->lmodule);
+	mono_codeman_disable_write ();
 	if (cfg->verbose_level > 1) {
 		g_print ("\n*** Optimized LLVM IR for %s ***\n", mono_method_full_name (cfg->method, TRUE));
 		if (cfg->compile_aot) {

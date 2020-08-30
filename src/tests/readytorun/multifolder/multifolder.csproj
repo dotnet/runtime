@@ -1,0 +1,105 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>exe</OutputType>
+    <CLRTestKind>BuildAndRun</CLRTestKind>
+    <GCStressIncompatible>true</GCStressIncompatible> <!-- https://github.com/dotnet/runtime/issues/39933 -->
+    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+    <CLRTestPriority>0</CLRTestPriority>
+
+    <!-- Crossgen2 currently targets x64 and ARM64 only -->
+    <DisableProjectBuild Condition="'$(TargetArchitecture)' != 'x64' and '$(TargetArchitecture)' != 'arm64'">true</DisableProjectBuild>
+
+    <!-- This is an explicit crossgen test -->
+    <CrossGenTest>false</CrossGenTest>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Root.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="FolderA/FolderA.csproj" />
+    <ProjectReference Include="FolderB/FolderB.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <CLRTestBatchPreCommands><![CDATA[
+$(CLRTestBatchPreCommands)
+
+    set __ResponseFile=%scriptPath%\multifolder.rsp
+    del %__ResponseFile%
+    echo --composite>>%__ResponseFile%
+    echo -r:%21CORE_ROOT%21\System.*.dll>>%__ResponseFile%
+    echo -r:%21CORE_ROOT%21\Microsoft.*.dll>>%__ResponseFile%
+    echo -r:%21CORE_ROOT%21\mscorlib.dll>>%__ResponseFile%
+    echo -r:%21CORE_ROOT%21\netstandard.dll>>%__ResponseFile%
+    echo -o:%scriptPath%\multifolder-composite.dll>>%__ResponseFile%
+    echo --crp:%scriptPath%\..>>%__ResponseFile%
+    echo --targetarch:$(TargetArchitecture)>>%__ResponseFile%
+    echo %scriptPath%\multifolder.dll>>%__ResponseFile%
+    echo %scriptPath%\..\FolderA\FolderA\FolderA.dll>>%__ResponseFile%
+    echo %scriptPath%\..\FolderB\FolderB\FolderB.dll>>%__ResponseFile%
+
+    set __Command=%_DebuggerFullPath%
+    REM Tests run locally need __TestDotNetCmd (set by runtest.py) or a compatible 5.0 dotnet runtime in the path
+    if defined __TestDotNetCmd (
+        set __Command=!__Command! "!__TestDotNetCmd!"
+    ) else (
+        set __Command=!__Command! "dotnet"
+    )
+    set __Command=%__Command% "%CORE_ROOT%\crossgen2\crossgen2.dll"
+    set __Command=%__Command% @"%__ResponseFile%"
+
+    echo Response file: %__ResponseFile%
+    type %__ResponseFile%
+    echo ------------------
+    echo Running crossgen2: %__Command%
+    %__Command%
+
+    dir %scriptPath%
+    dir %scriptPath%\multifolder
+
+    set ExePath=%scriptPath%\multifolder\multifolder.dll
+    set COMPlus_NativeImageSearchPaths=%scriptPath%
+
+]]></CLRTestBatchPreCommands>
+    <BashCLRTestPreCommands><![CDATA[
+$(BashCLRTestPreCommands)
+
+    __OutputDir=$PWD
+    __ResponseFile=$__OutputDir/multifolder.rsp
+    rm $__ResponseFile
+    echo --composite>>$__ResponseFile
+    echo -r:$CORE_ROOT/System.*.dll>>$__ResponseFile
+    echo -r:$CORE_ROOT/Microsoft.*.dll>>$__ResponseFile
+    echo -r:$CORE_ROOT/mscorlib.dll>>$__ResponseFile
+    echo -r:$CORE_ROOT/netstandard.dll>>$__ResponseFile
+    echo -o:$__OutputDir/multifolder-composite.dll>>$__ResponseFile
+    echo --crp:$__OutputDir/..>>$__ResponseFile
+    echo --targetarch:$(TargetArchitecture)>>$__ResponseFile
+    echo $__OutputDir/multifolder.dll>>$__ResponseFile
+    echo $__OutputDir/../FolderA/FolderA/FolderA.dll>>$__ResponseFile
+    echo $__OutputDir/../FolderB/FolderB/FolderB.dll>>$__ResponseFile
+
+    __Command=$_DebuggerFullPath
+    # Tests run locally need __TestDotNetCmd (set by runtest.py) or a compatible 5.0 dotnet runtime in the path
+    if [ ! -z ${__TestDotNetCmd+x} ] %3B then
+        __Command+=" $__TestDotNetCmd"
+    else
+        __Command+=" dotnet"
+    fi
+    __Command+=" $CORE_ROOT/crossgen2/crossgen2.dll"
+    __Command+=" @$__ResponseFile"
+
+    echo Response file: $__ResponseFile
+    cat $__ResponseFile
+    echo ------------------
+    echo Running crossgen2: $__Command
+    $__Command
+
+    ExePath=$__OutputDir/multifolder/multifolder.dll
+    export COMPlus_NativeImageSearchPaths=$__OutputDir
+
+]]></BashCLRTestPreCommands>
+  </PropertyGroup>
+</Project>

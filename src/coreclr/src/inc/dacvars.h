@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // This file contains the globals and statics that are visible to DAC.
 // It is used for the following:
 // 1. in daccess.h to build the table of DAC globals
@@ -135,10 +134,6 @@ DEFINE_DACVAR(ULONG, DWORD, dac__g_TlsIndex, g_TlsIndex)
 
 DEFINE_DACVAR(ULONG, PTR_SString, SString__s_Empty, SString::s_Empty)
 
-#ifdef FEATURE_APPX
-DEFINE_DACVAR(ULONG, BOOL, dac__g_fAppX, ::g_fAppX)
-#endif // FEATURE_APPX
-
 DEFINE_DACVAR(ULONG, INT32, ArrayBase__s_arrayBoundsZero, ArrayBase::s_arrayBoundsZero)
 
 DEFINE_DACVAR(ULONG, BOOL, StackwalkCache__s_Enabled, StackwalkCache::s_Enabled)
@@ -149,7 +144,7 @@ DEFINE_DACVAR(ULONG, PTR_GcNotification, dac__g_pGcNotificationTable, ::g_pGcNot
 
 DEFINE_DACVAR(ULONG, PTR_EEConfig, dac__g_pConfig, ::g_pConfig)
 
-DEFINE_DACVAR(ULONG, MscorlibBinder, dac__g_Mscorlib, ::g_Mscorlib)
+DEFINE_DACVAR(ULONG, CoreLibBinder, dac__g_CoreLib, ::g_CoreLib)
 
 #if defined(PROFILING_SUPPORTED) || defined(PROFILING_SUPPORTED_DATA)
 DEFINE_DACVAR(ULONG, ProfControlBlock, dac__g_profControlBlock, ::g_profControlBlock)
@@ -191,8 +186,9 @@ DEFINE_DACVAR(ULONG, UNKNOWN_POINTER_TYPE, dac__g_TypedReferenceMT, ::g_TypedRef
 
 #ifdef FEATURE_COMINTEROP
 DEFINE_DACVAR(ULONG, UNKNOWN_POINTER_TYPE, dac__g_pBaseCOMObject, ::g_pBaseCOMObject)
-DEFINE_DACVAR(ULONG, UNKNOWN_POINTER_TYPE, dac__g_pBaseRuntimeClass, ::g_pBaseRuntimeClass)
 #endif
+
+DEFINE_DACVAR(ULONG, UNKNOWN_POINTER_TYPE, dac__g_pIDynamicInterfaceCastableInterface, ::g_pIDynamicInterfaceCastableInterface)
 
 #ifdef FEATURE_ICASTABLE
 DEFINE_DACVAR(ULONG, UNKNOWN_POINTER_TYPE, dac__g_pICastableInterface, ::g_pICastableInterface)
@@ -222,7 +218,6 @@ DEFINE_DACVAR(ULONG, SIZE_T, dac__gFCallMethods, ::gFCallMethods)
 DEFINE_DACVAR(ULONG, PTR_SyncTableEntry, dac__g_pSyncTable, ::g_pSyncTable)
 #ifdef FEATURE_COMINTEROP
 DEFINE_DACVAR(ULONG, UNKNOWN_POINTER_TYPE, dac__g_pRCWCleanupList, ::g_pRCWCleanupList)
-DEFINE_DACVAR(ULONG, BOOL, RCWWalker__s_bIsGlobalPeggingOn, RCWWalker::s_bIsGlobalPeggingOn)
 #endif // FEATURE_COMINTEROP
 
 #ifndef TARGET_UNIX

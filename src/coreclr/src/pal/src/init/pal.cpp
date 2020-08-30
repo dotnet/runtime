@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*++
 
@@ -81,6 +80,24 @@ int CacheLineSize;
 #include <sys/param.h>
 #include <sys/sysctl.h>
 #include <kvm.h>
+#elif defined(__sun)
+#ifndef _KERNEL
+#define _KERNEL
+#define UNDEF_KERNEL
+#endif
+#include <sys/procfs.h>
+#ifdef UNDEF_KERNEL
+#undef _KERNEL
+#endif
+#endif
+
+#if defined(__FreeBSD__)
+#include <sys/types.h>
+#include <sys/param.h>
+#include <sys/sysctl.h>
+#endif
+#if HAVE_GETAUXVAL
+#include <sys/auxv.h>
 #endif
 
 #include <algorithm>
@@ -93,6 +110,8 @@ using namespace CorUnix;
 //
 
 extern "C" BOOL CRTInitStdStreams( void );
+
+extern bool g_running_in_exe;
 
 Volatile<INT> init_count = 0;
 Volatile<BOOL> shutdown_intent = 0;
@@ -115,7 +134,7 @@ static DWORD g_initializeDLLFlags = PAL_INITIALIZE_DLL;
 static int Initialize(int argc, const char *const argv[], DWORD flags);
 static BOOL INIT_IncreaseDescriptorLimit(void);
 static LPWSTR INIT_FormatCommandLine (int argc, const char * const *argv);
-static LPWSTR INIT_ConvertEXEPath(LPCSTR exe_name);
+static LPWSTR INIT_GetCurrentEXEPath();
 static BOOL INIT_SharedFilesPath(void);
 
 #ifdef _DEBUG
@@ -550,7 +569,7 @@ Initialize(
         }
 
         /* find out the application's full path */
-        exe_path = INIT_ConvertEXEPath(argv[0]);
+        exe_path = INIT_GetCurrentEXEPath();
         if (NULL == exe_path)
         {
             ERROR("Unable to find exe path\n");
@@ -777,8 +796,10 @@ Return:
 --*/
 PAL_ERROR
 PALAPI
-PAL_InitializeCoreCLR(const char *szExePath)
+PAL_InitializeCoreCLR(const char *szExePath, bool runningInExe)
 {
+    g_running_in_exe = runningInExe;
+
     // Fake up a command line to call PAL initialization with.
     int result = Initialize(1, &szExePath, PAL_INITIALIZE_CORECLR);
     if (result != 0)
@@ -888,6 +909,25 @@ PAL_IsDebuggerPresent()
         return TRUE;
     else
         return FALSE;
+#elif defined(__sun)
+    int readResult;
+    char statusFilename[64];
+    snprintf(statusFilename, sizeof(statusFilename), "/proc/%d/status", getpid());
+    int fd = open(statusFilename, O_RDONLY);
+    if (fd == -1)
+    {
+        return FALSE;
+    }
+
+    pstatus_t status;
+    do
+    {
+        readResult = read(fd, &status, sizeof(status));
+    }
+    while ((readResult == -1) && (errno == EINTR));
+
+    close(fd);
+    return status.pr_flttrace.word[0] != 0;
 #else
     return FALSE;
 #endif
@@ -1234,45 +1274,160 @@ static LPWSTR INIT_FormatCommandLine (int argc, const char * const *argv)
     return retval;
 }
 
+#if defined(__linux__)
+#define symlinkEntrypointExecutable "/proc/self/exe"
+#elif !defined(__APPLE__)
+#define symlinkEntrypointExecutable "/proc/curproc/exe"
+#endif
+
+bool GetAbsolutePath(const char* path, PathCharString& absolutePath)
+{
+    bool result = false;
+
+    char realPath[PATH_MAX];
+    if (realpath(path, realPath) != nullptr && realPath[0] != '\0')
+    {
+        absolutePath.Set(realPath, strlen(realPath));
+        // realpath should return canonicalized path without the trailing slash
+        _ASSERTE(absolutePath[absolutePath.GetCount() - 1] != '/');
+
+        result = true;
+    }
+
+    return result;
+}
+
+bool GetEntrypointExecutableAbsolutePath(PathCharString& entrypointExecutable)
+{
+    bool result = false;
+
+    entrypointExecutable.Clear();
+
+    // Get path to the executable for the current process using
+    // platform specific means.
+#if defined(__APPLE__)
+
+    // On Mac, we ask the OS for the absolute path to the entrypoint executable
+    uint32_t lenActualPath = 0;
+    if (_NSGetExecutablePath(nullptr, &lenActualPath) == -1)
+    {
+        // OSX has placed the actual path length in lenActualPath,
+        // so re-attempt the operation
+        PathCharString resizedPath;
+        char *pResizedPath = resizedPath.OpenStringBuffer(lenActualPath);
+        if (_NSGetExecutablePath(pResizedPath, &lenActualPath) == 0)
+        {
+            resizedPath.CloseBuffer(lenActualPath - 1);
+            entrypointExecutable.Set(resizedPath);
+            result = true;
+        }
+    }
+#elif defined (__FreeBSD__)
+    static const int name[] =
+    {
+        CTL_KERN, KERN_PROC, KERN_PROC_PATHNAME, -1
+    };
+    char path[PATH_MAX];
+    size_t len;
+
+    len = sizeof(path);
+    if (sysctl(name, 4, path, &len, nullptr, 0) == 0)
+    {
+        entrypointExecutable.Set(path, len);
+        result = true;
+    }
+    else
+    {
+        // ENOMEM
+        result = false;
+    }
+#elif defined(__NetBSD__) && defined(KERN_PROC_PATHNAME)
+    static const int name[] =
+    {
+        CTL_KERN, KERN_PROC_ARGS, -1, KERN_PROC_PATHNAME,
+    };
+    char path[MAXPATHLEN];
+    size_t len;
+
+    len = sizeof(path);
+    if (sysctl(name, __arraycount(name), path, &len, NULL, 0) != -1)
+    {
+        entrypointExecutable.Set(path, len);
+        result = true;
+    }
+    else
+    {
+        result = false;
+    }
+#elif defined(__sun)
+    const char *path;
+    if ((path = getexecname()) == NULL)
+    {
+        result = false;
+    }
+    else if (*path != '/')
+    {
+        char *cwd;
+        if ((cwd = getcwd(NULL, PATH_MAX)) == NULL)
+        {
+            result = false;
+        }
+        else
+        {
+            entrypointExecutable.Set(cwd, strlen(cwd));
+            entrypointExecutable.Append('/');
+            entrypointExecutable.Append(path, strlen(path));
+
+            result = true;
+            free(cwd);
+        }
+    }
+    else
+    {
+        entrypointExecutable.Set(path, strlen(path));
+        result = true;
+    }
+#else
+
+#if HAVE_GETAUXVAL && defined(AT_EXECFN)
+    const char *execfn = (const char *)getauxval(AT_EXECFN);
+
+    if (execfn)
+    {
+        entrypointExecutable.Set(execfn, strlen(execfn));
+        result = true;
+    }
+    else
+#endif
+    // On other OSs, return the symlink that will be resolved by GetAbsolutePath
+    // to fetch the entrypoint EXE absolute path, inclusive of filename.
+    result = GetAbsolutePath(symlinkEntrypointExecutable, entrypointExecutable);
+#endif
+
+    return result;
+}
+
 /*++
 Function:
-  INIT_ConvertEXEPath
+  INIT_GetCurrentEXEPath
 
 Abstract:
-    Check whether the executable path is valid, and convert its type (LPCSTR -> LPWSTR)
-
-Parameters:
-    LPCSTR exe_name : full path of the current executable
+    Get the current exe path
 
 Return:
     pointer to buffer containing the full path. This buffer must be released
     by the caller using free()
 
-Notes :
-    this function assumes that "exe_name" is in Unix style (no \)
 --*/
-static LPWSTR INIT_ConvertEXEPath(LPCSTR exe_path)
+static LPWSTR INIT_GetCurrentEXEPath()
 {
     PathCharString real_path;
     LPWSTR return_value;
     INT return_size;
-    struct stat theStats;
 
-    if (!strchr(exe_path, '/'))
+    if (!GetEntrypointExecutableAbsolutePath(real_path))
     {
-        ERROR( "The exe path is not fully specified\n" );
-        return NULL;
-    }
-
-    if (-1 == stat(exe_path, &theStats))
-    {
-        ERROR( "The file does not exist\n" );
-        return NULL;
-    }
-
-    if (!CorUnix::RealPathHelper(exe_path, real_path))
-    {
-        ERROR("realpath() failed!\n");
+        ERROR( "Cannot get current exe path\n" );
         return NULL;
     }
 

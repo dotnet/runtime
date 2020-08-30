@@ -32,7 +32,7 @@ Hazır mısınız? Haydi başlayalım!</String>
   <String Id="ProgressCancelButton">İ&amp;ptal</String>
   <String Id="ModifyHeader">Kurulumu Değiştir</String>
   <String Id="ModifyRepairButton">&amp;Onar</String>
-  <String Id="ModifyUninstallButton">K&amp;aldır</String>
+  <String Id="ModifyUninstallButton">&amp;Kaldır</String>
   <String Id="ModifyCloseButton">&amp;Kapat</String>
   <String Id="SuccessRepairHeader">Onarım Başarıyla Tamamlandı</String>
   <String Id="SuccessUninstallHeader">Kaldırma Başarıyla Tamamlandı</String>
@@ -40,7 +40,7 @@ Hazır mısınız? Haydi başlayalım!</String>
   <String Id="SuccessHeader">Kurulum Başarılı</String>
   <String Id="SuccessLaunchButton">&amp;Başlat</String>
   <String Id="SuccessRestartText">Yazılımı kullanabilmek için bilgisayarınızı yeniden başlatmanız gerekiyor.</String>
-  <String Id="SuccessRestartButton">Yeniden &amp;Başlat</String>
+  <String Id="SuccessRestartButton">&amp;Yeniden Başlat</String>
   <String Id="SuccessCloseButton">&amp;Kapat</String>
   <String Id="FailureHeader">Kurulum Başarısız</String>
   <String Id="FailureInstallHeader">Kurulum Başarısız</String>
@@ -48,7 +48,7 @@ Hazır mısınız? Haydi başlayalım!</String>
   <String Id="FailureRepairHeader">Onarım Başarısız</String>
   <String Id="FailureHyperlinkLogText">En az bir sorun nedeniyle kurulum başarısız oldu. Lütfen bu sorunları düzeltin ve kurulumu yeniden deneyin. Daha fazla bilgi için &lt;a href="#"&gt;günlük dosyasına&lt;/a&gt; bakın.</String>
   <String Id="FailureRestartText">Yazılımın geri alınmasını tamamlamak için bilgisayarınızı yeniden başlatmanız gerekiyor.</String>
-  <String Id="FailureRestartButton">Yeniden &amp;Başlat</String>
+  <String Id="FailureRestartButton">&amp;Yeniden Başlat</String>
   <String Id="FailureCloseButton">&amp;Kapat</String>
   <String Id="FailureNotSupportedCurrentOperatingSystem">[PRODUCT_NAME] bu işletim sisteminde desteklenmiyor. Daha fazla bilgi için bkz. [LINK_PREREQ_PAGE].</String>
   <String Id="FailureNotSupportedX86OperatingSystem">[PRODUCT_NAME], x86 işletim sistemlerinde desteklenmiyor. Lütfen karşılık gelen x86 yükleyicisini kullanarak yükleyin.</String>
@@ -59,7 +59,7 @@ Hazır mısınız? Haydi başlayalım!</String>
   <String Id="FilesInUseOkButton">&amp;Tamam</String>
   <String Id="FilesInUseCancelButton">&amp;İptal</String>
   <String Id="WelcomeHeaderMessage">.NET Çalışma Zamanı</String>
-  <String Id="WelcomeDescription">.NET, komut satırı uygulamaları, mikro hizmetler ve modern web siteleri oluşturmak için kullanabileceğiniz bir geliştirme platformudur. Açık kaynaktır, platformlar arası kullanılabilir ve Microsoft tarafından desteklenmektedir. Keyfini çıkarmanızı umuyoruz!</String>
+  <String Id="WelcomeDescription">.NET Çalışma Zamanı, Windows bilgisayarınızda .NET uygulamalarını çalıştırmak için kullanılır. .NET açık kaynaktır, platformlar arasında kullanılabilir ve Microsoft tarafından desteklenmektedir. Beğeneceğinizi umuyoruz!</String>
   <String Id="LearnMoreTitle">.NET hakkında daha fazla bilgi edinin</String>
   <String Id="SuccessInstallLocation">Aşağıdakiler [DOTNETHOME] konumunda yüklendi</String>
   <String Id="SuccessInstallProductName"> - [BUNDLEMONIKER] </String>
@@ -69,6 +69,6 @@ Hazır mısınız? Haydi başlayalım!</String>
   <String Id="TutorialLink">&lt;A HREF="https://aka.ms/dotnet-tutorials"&gt;Öğreticiler&lt;/A&gt;</String>
   <String Id="TelemetryLink">&lt;A HREF="https://aka.ms/dotnet-cli-telemetry"&gt;.NET Telemetrisi&lt;/A&gt;</String>
   <String Id="PrivacyStatementLink">&lt;A HREF="https://aka.ms/dev-privacy"&gt;Gizlilik Bildirimi&lt;/A&gt;</String>
-  <String Id="EulaLink">&lt;A HREF="https://go.microsoft.com/fwlink/?LinkId=329770"&gt;.NET Kitaplığı EULA&lt;/A&gt;</String>
-  
+  <String Id="EulaLink">&lt;A HREF="https://aka.ms/dotnet-license-windows"&gt;.NET için Lisans Bilgileri&lt;/A&gt;</String>
+  <String Id="LicenseAssent">Yükle'ye tıklayarak aşağıdaki koşulları kabul etmiş olursunuz.</String>
 </WixLocalization>

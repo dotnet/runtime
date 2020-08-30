@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>library</OutputType>
+    <DefineConstants>$(DefineConstants);CUSTOMMARSHALERS2</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="CustomMarshaler.cs" />
+  </ItemGroup>
+</Project>

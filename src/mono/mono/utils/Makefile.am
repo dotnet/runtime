@@ -186,6 +186,7 @@ monoutils_sources = \
 	mono-threads-haiku.c	\
 	mono-threads-aix.c	\
 	mono-threads-wasm.c	\
+	mono-threads-sunos.c	\
 	mono-threads.h	\
 	mono-threads-debug.h	\
 	mono-threads-api.h	\

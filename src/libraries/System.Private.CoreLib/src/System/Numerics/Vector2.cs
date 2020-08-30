@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Globalization;
 using System.Runtime.CompilerServices;
@@ -54,7 +53,7 @@ namespace System.Numerics
         /// <returns>The hash code.</returns>
         public override readonly int GetHashCode()
         {
-            return HashCode.Combine(this.X.GetHashCode(), this.Y.GetHashCode());
+            return HashCode.Combine(this.X, this.Y);
         }
 
         /// <summary>
@@ -65,9 +64,7 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override readonly bool Equals(object? obj)
         {
-            if (!(obj is Vector2))
-                return false;
-            return Equals((Vector2)obj);
+            return (obj is Vector2 other) && Equals(other);
         }
 
         /// <summary>
@@ -207,9 +204,7 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector2 Lerp(Vector2 value1, Vector2 value2, float amount)
         {
-            return new Vector2(
-                value1.X + (value2.X - value1.X) * amount,
-                value1.Y + (value2.Y - value1.Y) * amount);
+            return (value1 * (1.0f - amount)) + (value2 * amount);
         }
 
         /// <summary>

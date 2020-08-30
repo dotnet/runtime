@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "common.h"
 #include "clrtypes.h"
@@ -18,6 +17,7 @@
 #include "eventpipesession.h"
 #include "eventpipejsonfile.h"
 #include "eventtracebase.h"
+#include "ipcstreamfactory.h"
 #include "sampleprofiler.h"
 #include "win32threadpool.h"
 #include "ceemain.h"
@@ -39,7 +39,9 @@ Volatile<uint64_t> EventPipe::s_allowWrite = 0;
 unsigned int * EventPipe::s_pProcGroupOffsets = nullptr;
 #endif
 Volatile<uint32_t> EventPipe::s_numberOfSessions(0);
-bool EventPipe::s_enableSampleProfilerAtStartup = false;
+CQuickArrayList<EventPipeSessionID> EventPipe::s_rgDeferredEnableEventPipeSessionIds = CQuickArrayList<EventPipeSessionID>();
+CQuickArrayList<EventPipeSessionID> EventPipe::s_rgDeferredDisableEventPipeSessionIds = CQuickArrayList<EventPipeSessionID>();
+bool EventPipe::s_CanStartThreads = false;
 
 // This function is auto-generated from /src/scripts/genEventPipe.py
 #ifdef TARGET_UNIX
@@ -60,6 +62,8 @@ void EventPipe::Initialize()
     const bool tracingInitialized = s_configCrst.InitNoThrow(
         CrstEventPipe,
         (CrstFlags)(CRST_REENTRANCY | CRST_TAKEN_DURING_SHUTDOWN | CRST_HOST_BREAKABLE));
+
+    EventPipeThread::Initialize();
 
     // Initialize the session container to nullptr.
     for (VolatilePtr<EventPipeSession> &session : s_pSessions)
@@ -109,15 +113,39 @@ void EventPipe::FinishInitialize()
 {
     STANDARD_VM_CONTRACT;
 
-    if (s_enableSampleProfilerAtStartup)
+    // Enable streaming for any deferred sessions
     {
-        SampleProfiler::Enable();
+        CrstHolder _crst(GetLock());
+
+        s_CanStartThreads = true;
+
+        while (s_rgDeferredEnableEventPipeSessionIds.Size() > 0)
+        {
+            EventPipeSessionID id = s_rgDeferredEnableEventPipeSessionIds.Pop();
+            if (IsSessionIdInCollection(id))
+            {
+                EventPipeSession *pSession = reinterpret_cast<EventPipeSession*>(id);
+                pSession->StartStreaming();
+            }
+        }
+
+        SampleProfiler::CanStartSampling();
+    }
+
+    // release lock in case someone tried to disable while we held it
+    // s_rgDeferredDisableEventPipeSessionIds is now safe to access without the
+    // lock since we've set s_canStartThreads to true inside the lock.  Anyone
+    // who was waiting on that lock will see that state and not mutate the defer list
+    while (s_rgDeferredDisableEventPipeSessionIds.Size() > 0)
+    {
+        EventPipeSessionID id = s_rgDeferredDisableEventPipeSessionIds.Pop();
+        DisableHelper(id);
     }
 }
 
 //
 // If EventPipe environment variables are specified, parse them and start a session
-// 
+//
 void EventPipe::EnableViaEnvironmentVariables()
 {
     STANDARD_VM_CONTRACT;
@@ -136,7 +164,7 @@ void EventPipe::EnableViaEnvironmentVariables()
         {
             outputPath = configOutputPath;
         }
-        auto configuration = XplatEventLoggerConfiguration();
+        
         LPWSTR configToParse = eventpipeConfig;
         int providerCnt = 0;
 
@@ -152,10 +180,10 @@ void EventPipe::EnableViaEnvironmentVariables()
             pProviders[0] = EventPipeProviderConfiguration(W("Microsoft-Windows-DotNETRuntime"), 0x4c14fccbd, 5, nullptr);
             pProviders[1] = EventPipeProviderConfiguration(W("Microsoft-Windows-DotNETRuntimePrivate"), 0x4002000b, 5, nullptr);
             pProviders[2] = EventPipeProviderConfiguration(W("Microsoft-DotNETCore-SampleProfiler"), 0x0, 5, nullptr);
-            s_enableSampleProfilerAtStartup = true;
         }
         else
         {
+            auto configuration = XplatEventLoggerConfiguration();
             // Count how many providers there are to parse
             static WCHAR comma = W(',');
             while (*configToParse != '\0')
@@ -182,11 +210,6 @@ void EventPipe::EnableViaEnvironmentVariables()
                     return;
                 }
 
-                if (wcscmp(W("Microsoft-DotNETCore-SampleProfiler"), configuration.GetProviderName()) == 0)
-                {
-                    s_enableSampleProfilerAtStartup = true;
-                }
-
                 pProviders[i++] = EventPipeProviderConfiguration(
                     configuration.GetProviderName(),
                     configuration.GetEnabledKeywordsMask(),
@@ -210,8 +233,7 @@ void EventPipe::EnableViaEnvironmentVariables()
             EventPipeSessionType::File,
             EventPipeSerializationFormat::NetTraceV4,
             true,
-            nullptr,
-            false
+            nullptr
         );
         EventPipe::StartStreaming(sessionID);
     }
@@ -283,7 +305,7 @@ EventPipeSessionID EventPipe::Enable(
     EventPipeSerializationFormat format,
     const bool rundownRequested,
     IpcStream *const pStream,
-    const bool enableSampleProfiler)
+    EventPipeSessionSynchronousCallback callback)
 {
     CONTRACTL
     {
@@ -291,7 +313,7 @@ EventPipeSessionID EventPipe::Enable(
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
         PRECONDITION(format < EventPipeSerializationFormat::Count);
-        PRECONDITION(circularBufferSizeInMB > 0);
+        PRECONDITION(sessionType == EventPipeSessionType::Synchronous || circularBufferSizeInMB > 0);
         PRECONDITION(numProviders > 0 && pProviders != nullptr);
     }
     CONTRACTL_END;
@@ -320,9 +342,10 @@ EventPipeSessionID EventPipe::Enable(
             rundownRequested,
             circularBufferSizeInMB,
             pProviders,
-            numProviders);
+            numProviders,
+            callback);
 
-        const bool fSuccess = EnableInternal(pSession, pEventPipeProviderCallbackDataQueue, enableSampleProfiler);
+        const bool fSuccess = EnableInternal(pSession, pEventPipeProviderCallbackDataQueue);
         if (fSuccess)
             sessionId = reinterpret_cast<EventPipeSessionID>(pSession);
         else
@@ -334,8 +357,7 @@ EventPipeSessionID EventPipe::Enable(
 
 bool EventPipe::EnableInternal(
     EventPipeSession *const pSession,
-    EventPipeProviderCallbackDataQueue* pEventPipeProviderCallbackDataQueue,
-    const bool enableSampleProfiler)
+    EventPipeProviderCallbackDataQueue* pEventPipeProviderCallbackDataQueue)
 {
     CONTRACTL
     {
@@ -383,8 +405,7 @@ bool EventPipe::EnableInternal(
     // Enable tracing.
     s_config.Enable(*pSession, pEventPipeProviderCallbackDataQueue);
 
-    // Enable the sample profiler
-    if (enableSampleProfiler)
+    if (SessionRequestedSampling(pSession))
     {
         SampleProfiler::Enable();
     }
@@ -409,7 +430,15 @@ void EventPipe::StartStreaming(EventPipeSessionID id)
 
     EventPipeSession *const pSession = reinterpret_cast<EventPipeSession *>(id);
 
-    pSession->StartStreaming();
+    if (s_CanStartThreads)
+    {
+        pSession->StartStreaming();
+    }
+    else
+    {
+        s_rgDeferredEnableEventPipeSessionIds.Push(id);
+    }
+    
 }
 
 void EventPipe::Disable(EventPipeSessionID id)
@@ -422,7 +451,29 @@ void EventPipe::Disable(EventPipeSessionID id)
     }
     CONTRACTL_END;
 
-    SetupThread();
+    // EventPipe::Disable is called synchronously since the diagnostics server is
+    // single threaded.  HOWEVER, if the runtime was suspended in EEStartupHelper,
+    // then EventPipe::FinishInitialize might not have executed yet.  Disabling a session
+    // needs to either happen before we resume or after initialization.  We briefly take the
+    // lock to check s_CanStartThreads to check whether we've finished initialization.  We 
+    // also check whether we are still suspended in which case we can safely disable the session
+    // without deferral.
+    {
+        CrstHolder _crst(GetLock());
+        if (!s_CanStartThreads && !IpcStreamFactory::AnySuspendedPorts())
+        {
+            s_rgDeferredDisableEventPipeSessionIds.Push(id);
+            return;
+        }
+    }
+
+    DisableHelper(id);
+}
+
+void EventPipe::DisableHelper(EventPipeSessionID id)
+{
+    if (s_CanStartThreads)
+        SetupThread();
 
     if (id == 0)
         return;
@@ -434,19 +485,21 @@ void EventPipe::Disable(EventPipeSessionID id)
         if (s_numberOfSessions > 0)
             DisableInternal(id, pEventPipeProviderCallbackDataQueue);
     });
+
+#ifdef DEBUG
+    if ((int)s_numberOfSessions == 0)
+    {
+        _ASSERTE(!MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context.EventPipeProvider.IsEnabled);
+        _ASSERTE(!MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context.EventPipeProvider.IsEnabled);
+        _ASSERTE(!MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Context.EventPipeProvider.IsEnabled);
+    }
+#endif
 }
 
 static void LogProcessInformationEvent(EventPipeEventSource &eventSource)
 {
     // Get the managed command line.
-    LPCWSTR pCmdLine = GetManagedCommandLine();
-
-    // Checkout https://github.com/dotnet/coreclr/pull/24433 for more information about this fall back.
-    if (pCmdLine == nullptr)
-    {
-        // Use the result from GetCommandLineW() instead
-        pCmdLine = GetCommandLineW();
-    }
+    LPCWSTR pCmdLine = GetCommandLineForDiagnostics();
 
     // Log the process information event.
     eventSource.SendProcessInfo(pCmdLine);
@@ -471,8 +524,11 @@ void EventPipe::DisableInternal(EventPipeSessionID id, EventPipeProviderCallback
     // If the session was not found, then there is nothing else to do.
     EventPipeSession *const pSession = reinterpret_cast<EventPipeSession *>(id);
 
-    // Disable the profiler.
-    SampleProfiler::Disable();
+    if (SessionRequestedSampling(pSession))
+    {
+        // Disable the profiler.
+        SampleProfiler::Disable();
+    }
 
     // Log the process information event.
     LogProcessInformationEvent(*s_pEventSource);
@@ -483,7 +539,7 @@ void EventPipe::DisableInternal(EventPipeSessionID id, EventPipeProviderCallback
     pSession->Disable(); // WriteAllBuffersToFile, and remove providers.
 
     // Do rundown before fully stopping the session unless rundown wasn't requested
-    if (pSession->RundownRequested())
+    if (pSession->RundownRequested() && s_CanStartThreads)
     {
         pSession->EnableRundown(); // Set Rundown provider.
 
@@ -507,18 +563,18 @@ void EventPipe::DisableInternal(EventPipeSessionID id, EventPipeProviderCallback
     }
 
     s_allowWrite &= ~(pSession->GetMask());
+
+    // Remove the session from the array before calling SuspendWriteEvent. This way
+    // we can guarantee that either the event write got the pointer and will complete
+    // the write successfully, or it gets null and will bail.
+    _ASSERTE(s_pSessions[pSession->GetIndex()] == pSession);
+    s_pSessions[pSession->GetIndex()].Store(nullptr);
+
     pSession->SuspendWriteEvent();
     bool ignored;
     pSession->WriteAllBuffersToFile(&ignored); // Flush the buffers to the stream/file
 
     --s_numberOfSessions;
-
-    // At this point, we should not be writing events to this session anymore
-    // This is a good time to remove the session from the array.
-    _ASSERTE(s_pSessions[pSession->GetIndex()] == pSession);
-
-    // Remove the session from the array, and mask.
-    s_pSessions[pSession->GetIndex()].Store(nullptr);
 
     // Write a final sequence point to the file now that all events have
     // been emitted.
@@ -548,6 +604,14 @@ EventPipeSession *EventPipe::GetSession(EventPipeSessionID id)
     }
 }
 
+bool EventPipe::IsSessionEnabled(EventPipeSessionID id)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    const EventPipeSession *const pSession = reinterpret_cast<EventPipeSession *>(id);
+    return s_pSessions[pSession->GetIndex()].Load() != nullptr;
+}
+
 EventPipeProvider *EventPipe::CreateProvider(const SString &providerName, EventPipeCallback pCallbackFunction, void *pCallbackData)
 {
     CONTRACTL
@@ -564,6 +628,7 @@ EventPipeProvider *EventPipe::CreateProvider(const SString &providerName, EventP
         pProvider = CreateProvider(providerName, pCallbackFunction, pCallbackData, pEventPipeProviderCallbackDataQueue);
     });
 
+    NotifyProfilerProviderCreated(pProvider);
     return pProvider;
 }
 
@@ -578,11 +643,10 @@ EventPipeProvider *EventPipe::CreateProvider(const SString &providerName, EventP
     }
     CONTRACTL_END;
 
-    return s_config.CreateProvider(
-        providerName,
-        pCallbackFunction,
-        pCallbackData,
-        pEventPipeProviderCallbackDataQueue);
+    return s_config.CreateProvider(providerName,
+                                   pCallbackFunction,
+                                   pCallbackData,
+                                   pEventPipeProviderCallbackDataQueue);
 }
 
 EventPipeProvider *EventPipe::GetProvider(const SString &providerName)
@@ -596,6 +660,28 @@ EventPipeProvider *EventPipe::GetProvider(const SString &providerName)
     CONTRACTL_END;
 
     return s_config.GetProvider(providerName);
+}
+
+void EventPipe::AddProviderToSession(EventPipeSessionProvider *pProvider, EventPipeSession *pSession)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    }
+
+    CONTRACTL_END;
+
+    if (pProvider == nullptr || pSession == nullptr)
+    {
+        return;
+    }
+    {
+        CrstHolder _crst(GetLock());
+
+        pSession->AddSessionProvider(pProvider);
+    }
 }
 
 void EventPipe::DeleteProvider(EventPipeProvider *pProvider)
@@ -734,7 +820,7 @@ void EventPipe::WriteEventInternal(
             {
                 _ASSERTE(pRundownSession != nullptr);
                 if (pRundownSession != nullptr)
-                    pRundownSession->WriteEventBuffered(
+                    pRundownSession->WriteEvent(
                         pThread,
                         event,
                         payload,
@@ -766,7 +852,7 @@ void EventPipe::WriteEventInternal(
                 // Disable is allowed to set s_pSessions[i] = NULL at any time and that may have occured in between
                 // the check and the load
                 if (pSession != nullptr)
-                    pSession->WriteEventBuffered(
+                    pSession->WriteEvent(
                         pThread,
                         event,
                         payload,
@@ -910,6 +996,23 @@ bool EventPipe::IsSessionIdInCollection(EventPipeSessionID id)
             return true;
         }
     }
+    return false;
+}
+
+bool EventPipe::SessionRequestedSampling(EventPipeSession *pSession)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    EventPipeSessionProviderIterator providerList = pSession->GetProviders();
+    EventPipeSessionProvider *pProvider = nullptr;
+    while (providerList.Next(&pProvider))
+    {
+        if (wcscmp(pProvider->GetProviderName(), W("Microsoft-DotNETCore-SampleProfiler")) == 0)
+        {
+            return true;
+        }
+    }
+
     return false;
 }
 

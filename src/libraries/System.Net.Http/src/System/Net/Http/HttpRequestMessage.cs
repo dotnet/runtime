@@ -1,12 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics.CodeAnalysis;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Threading;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace System.Net.Http
 {
@@ -14,18 +14,20 @@ namespace System.Net.Http
     {
         private const int MessageNotYetSent = 0;
         private const int MessageAlreadySent = 1;
+        private const int MessageAlreadySent_StopNotYetCalled = 2;
 
         // Track whether the message has been sent.
-        // The message shouldn't be sent again if this field is equal to MessageAlreadySent.
+        // The message should only be sent if this field is equal to MessageNotYetSent.
         private int _sendStatus = MessageNotYetSent;
 
-        private HttpMethod _method = null!;
+        private HttpMethod _method;
         private Uri? _requestUri;
         private HttpRequestHeaders? _headers;
-        private Version _version = null!;
+        private Version _version;
+        private HttpVersionPolicy _versionPolicy;
         private HttpContent? _content;
         private bool _disposed;
-        private IDictionary<string, object?>? _properties;
+        private HttpRequestOptions? _options;
 
         public Version Version
         {
@@ -42,6 +44,20 @@ namespace System.Net.Http
             }
         }
 
+        /// <summary>
+        /// Gets or sets the policy determining how <see cref="Version" /> is interpreted and how is the final HTTP version negotiated with the server.
+        /// </summary>
+        public HttpVersionPolicy VersionPolicy
+        {
+            get { return _versionPolicy; }
+            set
+            {
+                CheckDisposed();
+
+                _versionPolicy = value;
+            }
+        }
+
         public HttpContent? Content
         {
             get { return _content; }
@@ -49,7 +65,7 @@ namespace System.Net.Http
             {
                 CheckDisposed();
 
-                if (NetEventSource.IsEnabled)
+                if (NetEventSource.Log.IsEnabled())
                 {
                     if (value == null)
                     {
@@ -112,17 +128,10 @@ namespace System.Net.Http
 
         internal bool HasHeaders => _headers != null;
 
-        public IDictionary<string, object?> Properties
-        {
-            get
-            {
-                if (_properties == null)
-                {
-                    _properties = new Dictionary<string, object?>();
-                }
-                return _properties;
-            }
-        }
+        [Obsolete("Use Options instead.")]
+        public IDictionary<string, object?> Properties => Options;
+
+        public HttpRequestOptions Options => _options ??= new HttpRequestOptions();
 
         public HttpRequestMessage()
             : this(HttpMethod.Get, (Uri?)null)
@@ -131,15 +140,11 @@ namespace System.Net.Http
 
         public HttpRequestMessage(HttpMethod method, Uri? requestUri)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, method, requestUri);
             InitializeValues(method, requestUri);
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         public HttpRequestMessage(HttpMethod method, string? requestUri)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, method, requestUri);
-
             // It's OK to have a 'null' request Uri. If HttpClient is used, the 'BaseAddress' will be added.
             // If there is no 'BaseAddress', sending this request message will throw.
             // Note that we also allow the string to be empty: null and empty are considered equivalent.
@@ -151,8 +156,6 @@ namespace System.Net.Http
             {
                 InitializeValues(method, new Uri(requestUri, UriKind.RelativeOrAbsolute));
             }
-
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         public override string ToString()
@@ -177,9 +180,11 @@ namespace System.Net.Http
             return sb.ToString();
         }
 
+        [MemberNotNull(nameof(_method))]
+        [MemberNotNull(nameof(_version))]
         private void InitializeValues(HttpMethod method, Uri? requestUri)
         {
-            if (method == null)
+            if (method is null)
             {
                 throw new ArgumentNullException(nameof(method));
             }
@@ -191,11 +196,36 @@ namespace System.Net.Http
             _method = method;
             _requestUri = requestUri;
             _version = HttpUtilities.DefaultRequestVersion;
+            _versionPolicy = HttpUtilities.DefaultVersionPolicy;
         }
 
         internal bool MarkAsSent()
         {
-            return Interlocked.Exchange(ref _sendStatus, MessageAlreadySent) == MessageNotYetSent;
+            return Interlocked.CompareExchange(ref _sendStatus, MessageAlreadySent, MessageNotYetSent) == MessageNotYetSent;
+        }
+
+        internal void MarkAsTrackedByTelemetry()
+        {
+            Debug.Assert(_sendStatus != MessageAlreadySent_StopNotYetCalled);
+            _sendStatus = MessageAlreadySent_StopNotYetCalled;
+        }
+
+        internal void OnAborted() => OnStopped(aborted: true);
+
+        internal void OnStopped(bool aborted = false)
+        {
+            if (HttpTelemetry.Log.IsEnabled())
+            {
+                if (Interlocked.Exchange(ref _sendStatus, MessageAlreadySent) == MessageAlreadySent_StopNotYetCalled)
+                {
+                    if (aborted)
+                    {
+                        HttpTelemetry.Log.RequestAborted();
+                    }
+
+                    HttpTelemetry.Log.RequestStop();
+                }
+            }
         }
 
         #region IDisposable Members
@@ -212,6 +242,8 @@ namespace System.Net.Http
                     _content.Dispose();
                 }
             }
+
+            OnStopped();
         }
 
         public void Dispose()

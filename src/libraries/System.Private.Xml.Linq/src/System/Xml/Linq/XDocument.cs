@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 using System.Threading;
@@ -27,7 +26,7 @@ namespace System.Xml.Linq
     /// </remarks>
     public class XDocument : XContainer
     {
-        private XDeclaration _declaration;
+        private XDeclaration? _declaration;
 
         ///<overloads>
         /// Initializes a new instance of the <see cref="XDocument"/> class.
@@ -88,7 +87,7 @@ namespace System.Xml.Linq
         /// See <see cref="XContainer.Add(object)"/> for details about the content that can be added
         /// using this method.
         /// </remarks>
-        public XDocument(XDeclaration declaration, params object[] content)
+        public XDocument(XDeclaration? declaration, params object[] content)
             : this(content)
         {
             _declaration = declaration;
@@ -113,7 +112,7 @@ namespace System.Xml.Linq
         /// <summary>
         /// Gets the XML declaration for this document.
         /// </summary>
-        public XDeclaration Declaration
+        public XDeclaration? Declaration
         {
             get { return _declaration; }
             set { _declaration = value; }
@@ -122,7 +121,7 @@ namespace System.Xml.Linq
         /// <summary>
         /// Gets the Document Type Definition (DTD) for this document.
         /// </summary>
-        public XDocumentType DocumentType
+        public XDocumentType? DocumentType
         {
             get
             {
@@ -147,7 +146,7 @@ namespace System.Xml.Linq
         /// <summary>
         /// Gets the root element of the XML Tree for this document.
         /// </summary>
-        public XElement Root
+        public XElement? Root
         {
             get
             {
@@ -482,7 +481,7 @@ namespace System.Xml.Linq
             XDocument d = new XDocument();
             if ((options & LoadOptions.SetBaseUri) != 0)
             {
-                string baseUri = reader.BaseURI;
+                string? baseUri = reader.BaseURI;
                 if (!string.IsNullOrEmpty(baseUri))
                 {
                     d.SetBaseUri(baseUri);
@@ -490,7 +489,7 @@ namespace System.Xml.Linq
             }
             if ((options & LoadOptions.SetLineInfo) != 0)
             {
-                IXmlLineInfo li = reader as IXmlLineInfo;
+                IXmlLineInfo? li = reader as IXmlLineInfo;
                 if (li != null && li.HasLineInfo())
                 {
                     d.SetLineInfo(li.LineNumber, li.LinePosition);
@@ -868,7 +867,7 @@ namespace System.Xml.Linq
 
         internal override bool DeepEquals(XNode node)
         {
-            XDocument other = node as XDocument;
+            XDocument? other = node as XDocument;
             return other != null && ContentsEqual(other);
         }
 
@@ -877,15 +876,15 @@ namespace System.Xml.Linq
             return ContentsHashCode();
         }
 
-        private T GetFirstNode<T>() where T : XNode
+        private T? GetFirstNode<T>() where T : XNode
         {
-            XNode n = content as XNode;
+            XNode? n = content as XNode;
             if (n != null)
             {
                 do
                 {
-                    n = n.next;
-                    T e = n as T;
+                    n = n.next!;
+                    T? e = n as T;
                     if (e != null) return e;
                 } while (n != content);
             }
@@ -901,7 +900,7 @@ namespace System.Xml.Linq
             return true;
         }
 
-        internal override void ValidateNode(XNode node, XNode previous)
+        internal override void ValidateNode(XNode node, XNode? previous)
         {
             switch (node.NodeType)
             {
@@ -921,15 +920,15 @@ namespace System.Xml.Linq
             }
         }
 
-        private void ValidateDocument(XNode previous, XmlNodeType allowBefore, XmlNodeType allowAfter)
+        private void ValidateDocument(XNode? previous, XmlNodeType allowBefore, XmlNodeType allowAfter)
         {
-            XNode n = content as XNode;
+            XNode? n = content as XNode;
             if (n != null)
             {
                 if (previous == null) allowBefore = allowAfter;
                 do
                 {
-                    n = n.next;
+                    n = n.next!;
                     XmlNodeType nt = n.NodeType;
                     if (nt == XmlNodeType.Element || nt == XmlNodeType.DocumentType)
                     {

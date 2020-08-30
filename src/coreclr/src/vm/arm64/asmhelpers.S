@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "asmconstants.h"
 #include "unixasmmacros.inc"
@@ -545,6 +544,8 @@ NESTED_ENTRY ExternalMethodFixupStub, _TEXT, NoHandler
 
     add x0, sp, #__PWTB_TransitionBlock // pTransitionBlock
     mov x1, x12 // pThunk
+    mov x2, #0  // sectionIndex
+    mov x3, #0  // pModule
 
     bl C_FUNC(ExternalMethodFixupWorker)
 
@@ -1199,7 +1200,7 @@ LEAF_END JIT_ProfilerEnterLeaveTailcallStub, _TEXT
 #define PROFILE_ENTER    1
 #define PROFILE_LEAVE    2
 #define PROFILE_TAILCALL 4
-#define SIZEOF__PROFILE_PLATFORM_SPECIFIC_DATA 256
+#define SIZEOF__PROFILE_PLATFORM_SPECIFIC_DATA 272
 
 // ------------------------------------------------------------------
 .macro GenerateProfileHelper helper, flags

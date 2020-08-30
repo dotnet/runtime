@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -22,13 +21,7 @@ namespace Internal.TypeSystem
             // TODO: need to implement deduplication
             // https://github.com/dotnet/corert/issues/208
 
-            if (type.IsInterface)
-            {
-                // For interfaces, the set of interfaces implemented directly matches the
-                // explicitly implemented interface list
-                return type.ExplicitlyImplementedInterfaces;
-            }
-            else if (type is InstantiatedType)
+            if (type is InstantiatedType)
             {
                 return ComputeRuntimeInterfacesForInstantiatedType((InstantiatedType)type);
             }

@@ -1,12 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Globalization;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml.Xsl.XsltOld
 {
@@ -16,14 +16,14 @@ namespace System.Xml.Xsl.XsltOld
         private readonly XmlNameTable _nameTable;
 
         // Main node + Fields Collection
-        private RecordBuilder _builder;
+        private RecordBuilder? _builder;
         private BuilderInfo _mainNode;
-        private ArrayList _attributeList;
+        private ArrayList? _attributeList;
         private int _attributeCount;
-        private BuilderInfo _attributeValue;
+        private BuilderInfo? _attributeValue;
 
         // OutputScopeManager
-        private OutputScopeManager _manager;
+        private OutputScopeManager? _manager;
 
         // Current position in the list
         private int _currentIndex;
@@ -183,13 +183,13 @@ namespace System.Xml.Xsl.XsltOld
             get { return _attributeCount; }
         }
 
-        public override string GetAttribute(string name)
+        public override string? GetAttribute(string name)
         {
             int ordinal;
             if (FindAttribute(name, out ordinal))
             {
                 Debug.Assert(ordinal >= 0);
-                return ((BuilderInfo)_attributeList[ordinal]).Value;
+                return ((BuilderInfo)_attributeList![ordinal]!).Value;
             }
             else
             {
@@ -198,13 +198,13 @@ namespace System.Xml.Xsl.XsltOld
             }
         }
 
-        public override string GetAttribute(string localName, string namespaceURI)
+        public override string? GetAttribute(string localName, string? namespaceURI)
         {
             int ordinal;
             if (FindAttribute(localName, namespaceURI, out ordinal))
             {
                 Debug.Assert(ordinal >= 0);
-                return ((BuilderInfo)_attributeList[ordinal]).Value;
+                return ((BuilderInfo)_attributeList![ordinal]!).Value;
             }
             else
             {
@@ -224,7 +224,7 @@ namespace System.Xml.Xsl.XsltOld
             get { return GetAttribute(i); }
         }
 
-        public override string this[string name, string namespaceURI]
+        public override string? this[string name, string? namespaceURI]
         {
             get { return GetAttribute(name, namespaceURI); }
         }
@@ -245,7 +245,7 @@ namespace System.Xml.Xsl.XsltOld
             }
         }
 
-        public override bool MoveToAttribute(string localName, string namespaceURI)
+        public override bool MoveToAttribute(string localName, string? namespaceURI)
         {
             int ordinal;
             if (FindAttribute(localName, namespaceURI, out ordinal))
@@ -326,11 +326,11 @@ namespace System.Xml.Xsl.XsltOld
             { // while -- to ignor empty whitespace nodes.
                 if (_haveRecord)
                 {
-                    _processor.ResetOutput();
+                    _processor!.ResetOutput();
                     _haveRecord = false;
                 }
 
-                _processor.Execute();
+                _processor!.Execute();
 
                 if (_haveRecord)
                 {
@@ -376,7 +376,7 @@ namespace System.Xml.Xsl.XsltOld
 
         public override void Close()
         {
-            _processor = null;
+            _processor = null!;
             _state = ReadState.Closed;
             Reset();
         }
@@ -403,7 +403,7 @@ namespace System.Xml.Xsl.XsltOld
                 }
             }
 
-            StringBuilder sb = null;
+            StringBuilder? sb = null;
             bool first = true;
 
             while (true)
@@ -457,7 +457,7 @@ namespace System.Xml.Xsl.XsltOld
                     Read();                 // skeep end element
 
                     output.TheEnd();
-                    return output.Result;
+                    return output.Result!;
                 }
                 else if (NodeType == XmlNodeType.Attribute)
                 {
@@ -482,7 +482,7 @@ namespace System.Xml.Xsl.XsltOld
                     bool emptyElement = IsEmptyElement;
                     int depth = Depth;
                     // process current record
-                    output.RecordDone(_builder);
+                    output.RecordDone(_builder!);
                     Read();
                     // process internal elements & text nodes
                     while (depth < Depth)
@@ -494,12 +494,12 @@ namespace System.Xml.Xsl.XsltOld
                     // process end element
                     if (!emptyElement)
                     {
-                        output.RecordDone(_builder);
+                        output.RecordDone(_builder!);
                         Read();
                     }
 
                     output.TheEnd();
-                    return output.Result;
+                    return output.Result!;
                 }
                 else if (NodeType == XmlNodeType.Attribute)
                 {
@@ -526,13 +526,13 @@ namespace System.Xml.Xsl.XsltOld
             }
         }
 
-        public override string LookupNamespace(string prefix)
+        public override string? LookupNamespace(string prefix)
         {
-            prefix = _nameTable.Get(prefix);
+            string? atomizedPrefix = _nameTable.Get(prefix);
 
-            if (_manager != null && prefix != null)
+            if (_manager != null && atomizedPrefix != null)
             {
-                return _manager.ResolveNamespace(prefix);
+                return _manager.ResolveNamespace(atomizedPrefix);
             }
             return null;
         }
@@ -574,7 +574,8 @@ namespace System.Xml.Xsl.XsltOld
         //
         // RecordOutput interface method implementation
         //
-
+        [MemberNotNull(nameof(_builder))]
+        [MemberNotNull(nameof(_attributeList))]
         public Processor.OutputResult RecordDone(RecordBuilder record)
         {
             _builder = record;
@@ -607,11 +608,11 @@ namespace System.Xml.Xsl.XsltOld
         private void SetAttribute(int attrib)
         {
             Debug.Assert(0 <= attrib && attrib < _attributeCount);
-            Debug.Assert(0 <= attrib && attrib < _attributeList.Count);
+            Debug.Assert(0 <= attrib && attrib < _attributeList!.Count);
             Debug.Assert(_attributeList[attrib] is BuilderInfo);
 
             _currentIndex = attrib;
-            _currentInfo = (BuilderInfo)_attributeList[attrib];
+            _currentInfo = (BuilderInfo)_attributeList[attrib]!;
         }
 
         private BuilderInfo GetBuilderInfo(int attrib)
@@ -621,12 +622,12 @@ namespace System.Xml.Xsl.XsltOld
                 throw new ArgumentOutOfRangeException(nameof(attrib));
             }
 
-            Debug.Assert(_attributeList[attrib] is BuilderInfo);
+            Debug.Assert(_attributeList![attrib] is BuilderInfo);
 
-            return (BuilderInfo)_attributeList[attrib];
+            return (BuilderInfo)_attributeList[attrib]!;
         }
 
-        private bool FindAttribute(string localName, string namespaceURI, out int attrIndex)
+        private bool FindAttribute(string? localName, string? namespaceURI, out int attrIndex)
         {
             if (namespaceURI == null)
             {
@@ -639,9 +640,9 @@ namespace System.Xml.Xsl.XsltOld
 
             for (int index = 0; index < _attributeCount; index++)
             {
-                Debug.Assert(_attributeList[index] is BuilderInfo);
+                Debug.Assert(_attributeList![index] is BuilderInfo);
 
-                BuilderInfo attribute = (BuilderInfo)_attributeList[index];
+                BuilderInfo attribute = (BuilderInfo)_attributeList[index]!;
                 if (attribute.NamespaceURI == namespaceURI && attribute.LocalName == localName)
                 {
                     attrIndex = index;
@@ -653,7 +654,7 @@ namespace System.Xml.Xsl.XsltOld
             return false;
         }
 
-        private bool FindAttribute(string name, out int attrIndex)
+        private bool FindAttribute(string? name, out int attrIndex)
         {
             if (name == null)
             {
@@ -662,9 +663,9 @@ namespace System.Xml.Xsl.XsltOld
 
             for (int index = 0; index < _attributeCount; index++)
             {
-                Debug.Assert(_attributeList[index] is BuilderInfo);
+                Debug.Assert(_attributeList![index] is BuilderInfo);
 
-                BuilderInfo attribute = (BuilderInfo)_attributeList[index];
+                BuilderInfo attribute = (BuilderInfo)_attributeList[index]!;
                 if (attribute.Name == name)
                 {
                     attrIndex = index;
@@ -676,6 +677,8 @@ namespace System.Xml.Xsl.XsltOld
             return false;
         }
 
+        [MemberNotNull(nameof(_currentInfo))]
+        [MemberNotNull(nameof(_mainNode))]
         private void Reset()
         {
             _currentIndex = -1;
@@ -690,14 +693,16 @@ namespace System.Xml.Xsl.XsltOld
             Debug.Assert(_currentInfo != null);
             Debug.Assert(_attributeCount == 0 || _attributeList != null);
             Debug.Assert((_currentIndex == -1) == (_currentInfo == _mainNode));
-            Debug.Assert((_currentIndex == -1) || (_currentInfo == _attributeValue || _attributeList[_currentIndex] is BuilderInfo && _attributeList[_currentIndex] == _currentInfo));
+            Debug.Assert((_currentIndex == -1) || (_currentInfo == _attributeValue || _attributeList![_currentIndex] is BuilderInfo && _attributeList[_currentIndex] == _currentInfo));
         }
 
         private class XmlEncoder
         {
-            private StringBuilder _buffer = null;
-            private XmlTextEncoder _encoder = null;
+            private StringBuilder? _buffer;
+            private XmlTextEncoder? _encoder;
 
+            [MemberNotNull(nameof(_buffer))]
+            [MemberNotNull(nameof(_encoder))]
             private void Init()
             {
                 _buffer = new StringBuilder();
@@ -707,7 +712,7 @@ namespace System.Xml.Xsl.XsltOld
             public string AttributeInnerXml(string value)
             {
                 if (_encoder == null) Init();
-                _buffer.Length = 0;       // clean buffer
+                _buffer!.Length = 0;       // clean buffer
                 _encoder.StartAttribute(/*save:*/false);
                 _encoder.Write(value);
                 _encoder.EndAttribute();
@@ -717,7 +722,7 @@ namespace System.Xml.Xsl.XsltOld
             public string AttributeOuterXml(string name, string value)
             {
                 if (_encoder == null) Init();
-                _buffer.Length = 0;       // clean buffer
+                _buffer!.Length = 0;       // clean buffer
                 _buffer.Append(name);
                 _buffer.Append('=');
                 _buffer.Append(QuoteChar);

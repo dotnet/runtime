@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 
 /*============================================================
@@ -47,7 +46,7 @@ FCIMPL4(INT32, WaitHandleNative::CorWaitMultipleNative, HANDLE *handleArray, INT
 
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
     // There are some issues with wait-all from an STA thread
-    // - https://github.com/dotnet/coreclr/issues/17787#issuecomment-385117537
+    // - https://github.com/dotnet/runtime/issues/10243#issuecomment-385117537
     if (waitForAll && numHandles > 1 && pThread->GetApartment() == Thread::AS_InSTA)
     {
         COMPlusThrow(kNotSupportedException, W("NotSupported_WaitAllSTAThread"));

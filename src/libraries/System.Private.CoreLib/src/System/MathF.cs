@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // ===================================================================================================
 // Portions of the code implemented below are based on the 'Berkeley SoftFloat Release 3e' algorithms.
@@ -13,7 +12,11 @@
 ===========================================================*/
 
 using System.Diagnostics;
+using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
+using System.Runtime.Intrinsics.Arm;
 
 namespace System
 {
@@ -22,6 +25,8 @@ namespace System
         public const float E = 2.71828183f;
 
         public const float PI = 3.14159265f;
+
+        public const float Tau = 6.283185307f;
 
         private const int maxRoundingDigits = 6;
 
@@ -88,24 +93,34 @@ namespace System
             return BitConverter.Int32BitsToSingle(bits);
         }
 
-        public static unsafe float CopySign(float x, float y)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float CopySign(float x, float y)
         {
-            // This method is required to work for all inputs,
-            // including NaN, so we operate on the raw bits.
-
-            int xbits = BitConverter.SingleToInt32Bits(x);
-            int ybits = BitConverter.SingleToInt32Bits(y);
-
-            // If the sign bits of x and y are not the same,
-            // flip the sign bit of x and return the new value;
-            // otherwise, just return x
-
-            if ((xbits ^ ybits) < 0)
+            if (Sse.IsSupported || AdvSimd.IsSupported)
             {
-                return BitConverter.Int32BitsToSingle(xbits ^ int.MinValue);
+                return VectorMath.ConditionalSelectBitwise(Vector128.CreateScalarUnsafe(-0.0f), Vector128.CreateScalarUnsafe(y), Vector128.CreateScalarUnsafe(x)).ToScalar();
+            }
+            else
+            {
+                return SoftwareFallback(x, y);
             }
 
-            return x;
+            static float SoftwareFallback(float x, float y)
+            {
+                const int signMask = 1 << 31;
+
+                // This method is required to work for all inputs,
+                // including NaN, so we operate on the raw bits.
+                int xbits = BitConverter.SingleToInt32Bits(x);
+                int ybits = BitConverter.SingleToInt32Bits(y);
+
+                // Remove the sign from x, and remove everything but the sign from y
+                xbits &= ~signMask;
+                ybits &= signMask;
+
+                // Simply OR them to get the correct sign
+                return BitConverter.Int32BitsToSingle(xbits | ybits);
+            }
         }
 
         public static float IEEERemainder(float x, float y)

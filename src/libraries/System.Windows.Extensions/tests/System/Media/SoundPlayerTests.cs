@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -503,8 +502,8 @@ namespace System.Media.Test
         {
             using (FileStream stream = File.OpenRead(sourceLocation.Replace("file://", "")))
             {
-                var tcs = new TaskCompletionSource<bool>();
-                AsyncCompletedEventHandler handler = (s, e) => tcs.SetResult(true);
+                var tcs = new TaskCompletionSource();
+                AsyncCompletedEventHandler handler = (s, e) => tcs.SetResult();
 
                 var player = new SoundPlayer();
                 player.LoadCompleted += handler;

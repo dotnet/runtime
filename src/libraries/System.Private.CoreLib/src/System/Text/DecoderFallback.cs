@@ -1,25 +1,18 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.Threading;
 
 namespace System.Text
 {
     public abstract class DecoderFallback
     {
-        private static DecoderFallback? s_replacementFallback; // Default fallback, uses no best fit & "?"
-        private static DecoderFallback? s_exceptionFallback;
+        // Default fallback, uses no best fit & "?"
+        public static DecoderFallback ReplacementFallback => DecoderReplacementFallback.s_default;
 
-        public static DecoderFallback ReplacementFallback =>
-            s_replacementFallback ?? Interlocked.CompareExchange(ref s_replacementFallback, new DecoderReplacementFallback(), null) ?? s_replacementFallback;
-
-
-        public static DecoderFallback ExceptionFallback =>
-            s_exceptionFallback ?? Interlocked.CompareExchange<DecoderFallback?>(ref s_exceptionFallback, new DecoderExceptionFallback(), null) ?? s_exceptionFallback;
+        public static DecoderFallback ExceptionFallback => DecoderExceptionFallback.s_default;
 
         // Fallback
         //

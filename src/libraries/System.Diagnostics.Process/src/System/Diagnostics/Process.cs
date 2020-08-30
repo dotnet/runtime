@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
 using System.Collections.ObjectModel;
@@ -11,6 +10,8 @@ using System.Runtime.Serialization;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Runtime.Versioning;
+using System.Collections.Generic;
 
 namespace System.Diagnostics
 {
@@ -20,6 +21,7 @@ namespace System.Diagnostics
     ///       processes. Enables you to start and stop system processes.
     ///    </para>
     /// </devdoc>
+    [Designer("System.Diagnostics.Design.ProcessDesigner, System.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public partial class Process : Component
     {
         private bool _haveProcessId;
@@ -81,7 +83,7 @@ namespace System.Diagnostics
         internal bool _pendingOutputRead;
         internal bool _pendingErrorRead;
 
-        private static int s_cachedSerializationSwitch = 0;
+        private static int s_cachedSerializationSwitch;
 
         /// <devdoc>
         ///    <para>
@@ -265,6 +267,7 @@ namespace System.Diagnostics
                 EnsureWorkingSetLimits();
                 return _maxWorkingSet;
             }
+            [SupportedOSPlatform("windows")]
             set
             {
                 SetWorkingSetLimits(null, value);
@@ -284,6 +287,7 @@ namespace System.Diagnostics
                 EnsureWorkingSetLimits();
                 return _minWorkingSet;
             }
+            [SupportedOSPlatform("windows")]
             set
             {
                 SetWorkingSetLimits(value, null);
@@ -1070,7 +1074,7 @@ namespace System.Diagnostics
         /// </devdoc>
         public static Process GetCurrentProcess()
         {
-            return new Process(".", false, GetCurrentProcessId(), null);
+            return new Process(".", false, Environment.ProcessId, null);
         }
 
         /// <devdoc>
@@ -1083,7 +1087,14 @@ namespace System.Diagnostics
             EventHandler? exited = _onExited;
             if (exited != null)
             {
-                exited(this, EventArgs.Empty);
+                if (SynchronizingObject is ISynchronizeInvoke syncObj && syncObj.InvokeRequired)
+                {
+                    syncObj.BeginInvoke(exited, new object[] { this, EventArgs.Empty });
+                }
+                else
+                {
+                    exited(this, EventArgs.Empty);
+                }
             }
         }
 
@@ -1117,7 +1128,9 @@ namespace System.Diagnostics
         public void Refresh()
         {
             _processInfo = null;
+            _threads?.Dispose();
             _threads = null;
+            _modules?.Dispose();
             _modules = null;
             _exited = false;
             _haveWorkingSetLimits = false;
@@ -1250,6 +1263,25 @@ namespace System.Diagnostics
             // when the ProcessStartInfo.UseShellExecute property is set to true.
             // We can thus safely assert non-nullability for tihs overload.
             return Start(new ProcessStartInfo(fileName, arguments))!;
+        }
+
+        /// <summary>
+        /// Starts a process resource by specifying the name of an application and a set of command line arguments
+        /// </summary>
+        public static Process Start(string fileName, IEnumerable<string> arguments)
+        {
+            if (fileName == null)
+                throw new ArgumentNullException(nameof(fileName));
+            if (arguments == null)
+                throw new ArgumentNullException(nameof(arguments));
+
+            var startInfo = new ProcessStartInfo(fileName);
+            foreach (string argument in arguments)
+            {
+                startInfo.ArgumentList.Add(argument);
+            }
+
+            return Start(startInfo)!;
         }
 
         /// <devdoc>
@@ -1571,8 +1603,16 @@ namespace System.Diagnostics
             DataReceivedEventHandler? outputDataReceived = OutputDataReceived;
             if (outputDataReceived != null)
             {
+                // Call back to user informing data is available
                 DataReceivedEventArgs e = new DataReceivedEventArgs(data);
-                outputDataReceived(this, e);  // Call back to user informing data is available
+                if (SynchronizingObject is ISynchronizeInvoke syncObj && syncObj.InvokeRequired)
+                {
+                    syncObj.Invoke(outputDataReceived, new object[] { this, e });
+                }
+                else
+                {
+                    outputDataReceived(this, e);
+                }
             }
         }
 
@@ -1582,18 +1622,15 @@ namespace System.Diagnostics
             DataReceivedEventHandler? errorDataReceived = ErrorDataReceived;
             if (errorDataReceived != null)
             {
+                // Call back to user informing data is available.
                 DataReceivedEventArgs e = new DataReceivedEventArgs(data);
-                errorDataReceived(this, e); // Call back to user informing data is available.
-            }
-        }
-
-        private static void AppendArguments(StringBuilder stringBuilder, Collection<string> argumentList)
-        {
-            if (argumentList.Count > 0)
-            {
-                foreach (string argument in argumentList)
+                if (SynchronizingObject is ISynchronizeInvoke syncObj && syncObj.InvokeRequired)
                 {
-                    PasteArguments.AppendArgument(stringBuilder, argument);
+                    syncObj.Invoke(errorDataReceived, new object[] { this, e });
+                }
+                else
+                {
+                    errorDataReceived(this, e);
                 }
             }
         }

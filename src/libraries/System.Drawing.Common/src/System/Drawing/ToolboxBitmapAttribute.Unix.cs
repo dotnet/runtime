@@ -1,5 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
-// See the LICENSE file in the project root for more information.
+// The .NET Foundation licenses this file to you under the MIT license.
 //
 // System.Drawing.ToolboxBitmapAttribute.cs
 //
@@ -42,8 +42,8 @@ namespace System.Drawing
     [AttributeUsage(AttributeTargets.Class)]
     public class ToolboxBitmapAttribute : Attribute
     {
-        private Image? smallImage = null;
-        private Image? bigImage = null;
+        private Image? smallImage;
+        private Image? bigImage;
         public static readonly ToolboxBitmapAttribute Default = new ToolboxBitmapAttribute();
 
         private ToolboxBitmapAttribute()

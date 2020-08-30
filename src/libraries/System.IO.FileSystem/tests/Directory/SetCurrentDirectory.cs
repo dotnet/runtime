@@ -1,9 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
@@ -29,7 +27,7 @@ namespace System.IO.Tests
             Assert.Throws<DirectoryNotFoundException>(() => Directory.SetCurrentDirectory(GetTestFilePath()));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void SetToValidOtherDirectory()
         {
             RemoteExecutor.Invoke(() =>
@@ -38,7 +36,7 @@ namespace System.IO.Tests
                 // On OSX, the temp directory /tmp/ is a symlink to /private/tmp, so setting the current
                 // directory to a symlinked path will result in GetCurrentDirectory returning the absolute
                 // path that followed the symlink.
-                if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                if (!OperatingSystem.IsMacOS())
                 {
                     Assert.Equal(TestDirectory, Directory.GetCurrentDirectory());
                 }
@@ -47,7 +45,9 @@ namespace System.IO.Tests
 
         public sealed class Directory_SetCurrentDirectory_SymLink : FileSystemTest
         {
-            [ConditionalFact(nameof(CanCreateSymbolicLinks))]
+            private static bool CanCreateSymbolicLinksAndRemoteExecutorSupported => CanCreateSymbolicLinks && RemoteExecutor.IsSupported;
+
+            [ConditionalFact(nameof(CanCreateSymbolicLinksAndRemoteExecutorSupported))]
             public void SetToPathContainingSymLink()
             {
                 RemoteExecutor.Invoke(() =>
@@ -63,14 +63,12 @@ namespace System.IO.Tests
                     Assert.True(Directory.Exists(linkPath), "linkPath should exist");
 
                     // Set Current Directory to symlink
-                    string currentDir = Directory.GetCurrentDirectory();
-
                     Directory.SetCurrentDirectory(linkPath);
-                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                    if (OperatingSystem.IsWindows())
                     {
                         Assert.Equal(linkPath, Directory.GetCurrentDirectory());
                     }
-                    else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                    else if (OperatingSystem.IsMacOS())
                     {
                         Assert.Equal("/private" + path, Directory.GetCurrentDirectory());
                     }

@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Collections.Generic;
@@ -47,12 +46,17 @@ namespace System.Text.Json
         public bool ReadAhead;
 
         // The bag of preservable references.
-        public DefaultReferenceResolver ReferenceResolver;
+        public ReferenceResolver ReferenceResolver;
 
         /// <summary>
         /// Whether we need to read ahead in the inner read loop.
         /// </summary>
         public bool SupportContinuation;
+
+        /// <summary>
+        /// Whether we can read without the need of saving state for stream and preserve references cases.
+        /// </summary>
+        public bool UseFastPath;
 
         private void AddCurrent()
         {
@@ -77,19 +81,22 @@ namespace System.Text.Json
 
         public void Initialize(Type type, JsonSerializerOptions options, bool supportContinuation)
         {
-            JsonClassInfo jsonClassInfo = options.GetOrAddClass(type);
-
+            JsonClassInfo jsonClassInfo = options.GetOrAddClassForRootType(type);
             Current.JsonClassInfo = jsonClassInfo;
 
             // The initial JsonPropertyInfo will be used to obtain the converter.
             Current.JsonPropertyInfo = jsonClassInfo.PropertyInfoForClassInfo;
 
-            if (options.ReferenceHandling.ShouldReadPreservedReferences())
+            Current.NumberHandling = Current.JsonPropertyInfo.NumberHandling;
+
+            bool preserveReferences = options.ReferenceHandler != null;
+            if (preserveReferences)
             {
-                ReferenceResolver = new DefaultReferenceResolver(writing: false);
+                ReferenceResolver = options.ReferenceHandler!.CreateResolver(writing: false);
             }
 
             SupportContinuation = supportContinuation;
+            UseFastPath = !supportContinuation && !preserveReferences;
         }
 
         public void Push()
@@ -104,6 +111,8 @@ namespace System.Text.Json
                 else
                 {
                     JsonClassInfo jsonClassInfo;
+                    JsonNumberHandling? numberHandling = Current.NumberHandling;
+
                     if (Current.JsonClassInfo.ClassType == ClassType.Object)
                     {
                         if (Current.JsonPropertyInfo != null)
@@ -115,13 +124,14 @@ namespace System.Text.Json
                             jsonClassInfo = Current.CtorArgumentState!.JsonParameterInfo!.RuntimeClassInfo;
                         }
                     }
-                    else if ((Current.JsonClassInfo.ClassType & (ClassType.Value | ClassType.NewValue)) != 0)
+                    else if (((ClassType.Value | ClassType.NewValue) & Current.JsonClassInfo.ClassType) != 0)
                     {
                         // Although ClassType.Value doesn't push, a custom custom converter may re-enter serialization.
                         jsonClassInfo = Current.JsonPropertyInfo!.RuntimeClassInfo;
                     }
                     else
                     {
+                        Debug.Assert(((ClassType.Enumerable | ClassType.Dictionary) & Current.JsonClassInfo.ClassType) != 0);
                         jsonClassInfo = Current.JsonClassInfo.ElementClassInfo!;
                     }
 
@@ -130,6 +140,8 @@ namespace System.Text.Json
 
                     Current.JsonClassInfo = jsonClassInfo;
                     Current.JsonPropertyInfo = jsonClassInfo.PropertyInfoForClassInfo;
+                    // Allow number handling on property to win over handling on type.
+                    Current.NumberHandling = numberHandling ?? Current.JsonPropertyInfo.NumberHandling;
                 }
             }
             else if (_continuationCount == 1)
@@ -154,7 +166,7 @@ namespace System.Text.Json
                 }
             }
 
-            SetConstrutorArgumentState();
+            SetConstructorArgumentState();
         }
 
         public void Pop(bool success)
@@ -205,7 +217,7 @@ namespace System.Text.Json
                 Current = _previous[--_count -1];
             }
 
-            SetConstrutorArgumentState();
+            SetConstructorArgumentState();
         }
 
         // Return a JSONPath using simple dot-notation when possible. When special characters are present, bracket-notation is used:
@@ -244,8 +256,10 @@ namespace System.Text.Json
                         return;
                     }
 
-                    // Once all elements are read, the exception is not within the array.
-                    if (frame.ObjectState < StackFrameObjectState.ReadElements)
+                    // For continuation scenarios only, before or after all elements are read, the exception is not within the array.
+                    if (frame.ObjectState == StackFrameObjectState.None ||
+                        frame.ObjectState == StackFrameObjectState.CreatedObject ||
+                        frame.ObjectState == StackFrameObjectState.ReadElements)
                     {
                         sb.Append('[');
                         sb.Append(GetCount(enumerable));
@@ -297,14 +311,17 @@ namespace System.Text.Json
                 byte[]? utf8PropertyName = frame.JsonPropertyName;
                 if (utf8PropertyName == null)
                 {
-                    // Attempt to get the JSON property name from the JsonPropertyInfo or JsonParameterInfo.
-                    utf8PropertyName = frame.JsonPropertyInfo?.JsonPropertyName ??
-                        frame.CtorArgumentState?.JsonParameterInfo?.JsonPropertyName;
-                    if (utf8PropertyName == null)
+                    if (frame.JsonPropertyNameAsString != null)
                     {
                         // Attempt to get the JSON property name set manually for dictionary
-                        // keys and serializer re-entry cases where a property is specified.
+                        // keys and KeyValuePair property names.
                         propertyName = frame.JsonPropertyNameAsString;
+                    }
+                    else
+                    {
+                        // Attempt to get the JSON property name from the JsonPropertyInfo or JsonParameterInfo.
+                        utf8PropertyName = frame.JsonPropertyInfo?.NameAsUtf8Bytes ??
+                            frame.CtorArgumentState?.JsonParameterInfo?.NameAsUtf8Bytes;
                     }
                 }
 
@@ -318,7 +335,7 @@ namespace System.Text.Json
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void SetConstrutorArgumentState()
+        private void SetConstructorArgumentState()
         {
             if (Current.JsonClassInfo.ParameterCount > 0)
             {

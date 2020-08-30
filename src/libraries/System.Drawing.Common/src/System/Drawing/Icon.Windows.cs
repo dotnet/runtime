@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.ComponentModel;
@@ -14,9 +13,9 @@ using System.Runtime.Serialization;
 
 namespace System.Drawing
 {
-#if NETCOREAPP
-    [TypeConverter("System.Drawing.IconConverter, System.Windows.Extensions, Version=4.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51")]
-#endif
+    [Editor("System.Drawing.Design.IconEditor, System.Drawing.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
+            "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
+    [TypeConverter(typeof(IconConverter))]
     [Serializable]
     [TypeForwardedFrom("System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public sealed partial class Icon : MarshalByRefObject, ICloneable, IDisposable, ISerializable
@@ -36,7 +35,7 @@ namespace System.Drawing
         private uint _bestImageOffset;
         private uint _bestBitDepth;
         private uint _bestBytesInRes;
-        private bool? _isBestImagePng = null;
+        private bool? _isBestImagePng;
         private Size _iconSize = Size.Empty;
         private IntPtr _handle = IntPtr.Zero;
         private readonly bool _ownHandle = true;
@@ -104,6 +103,9 @@ namespace System.Drawing
 
         public Icon(Type type, string resource) : this()
         {
+            if (resource == null)
+                throw new ArgumentNullException(nameof(resource));
+
             Stream? stream = type.Module.Assembly.GetManifestResourceStream(type, resource);
             if (stream == null)
             {
@@ -166,6 +168,9 @@ namespace System.Drawing
             {
                 throw new ArgumentNullException(nameof(filePath));
             }
+
+            if (string.IsNullOrEmpty(filePath))
+                throw new ArgumentException(SR.NullOrEmptyPath, nameof(filePath));
 
             filePath = Path.GetFullPath(filePath);
             if (!File.Exists(filePath))
@@ -440,7 +445,13 @@ namespace System.Drawing
 
         ~Icon() => Dispose(false);
 
-        public static Icon FromHandle(IntPtr handle) => new Icon(handle);
+        public static Icon FromHandle(IntPtr handle)
+        {
+            if (handle == IntPtr.Zero)
+                throw new ArgumentException(null, nameof(handle));
+
+            return new Icon(handle);
+        }
 
         // Initializes this Image object.  This is identical to calling the image's
         // constructor with picture, but this allows non-constructor initialization,
@@ -639,9 +650,8 @@ namespace System.Drawing
                 {
                     try
                     {
-                        // We threw this way on NetFX
                         if (outputStream == null)
-                            throw new ArgumentNullException("dataStream");
+                            throw new ArgumentNullException(nameof(outputStream));
 
                         picture.SaveAsFile(new GPStream(outputStream, makeSeekable: false), -1, out int temp);
                     }

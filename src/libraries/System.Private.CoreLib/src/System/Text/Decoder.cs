@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Runtime.InteropServices;
@@ -20,9 +19,9 @@ namespace System.Text
     //
     public abstract class Decoder
     {
-        internal DecoderFallback? _fallback = null;
+        internal DecoderFallback? _fallback;
 
-        internal DecoderFallbackBuffer? _fallbackBuffer = null;
+        internal DecoderFallbackBuffer? _fallbackBuffer;
 
         protected Decoder()
         {

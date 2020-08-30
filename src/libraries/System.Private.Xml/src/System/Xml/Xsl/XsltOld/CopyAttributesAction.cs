@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Xml.Xsl.XsltOld
 {
@@ -33,7 +32,7 @@ namespace System.Xml.Xsl.XsltOld
                 switch (frame.State)
                 {
                     case Initialized:
-                        if (!frame.Node.HasAttributes || frame.Node.MoveToFirstAttribute() == false)
+                        if (!frame.Node!.HasAttributes || frame.Node.MoveToFirstAttribute() == false)
                         {
                             frame.Finished();
                             break;
@@ -44,7 +43,7 @@ namespace System.Xml.Xsl.XsltOld
 
                     case BeginEvent:
                         Debug.Assert(frame.State == BeginEvent);
-                        Debug.Assert(frame.Node.NodeType == XPathNodeType.Attribute);
+                        Debug.Assert(frame.Node!.NodeType == XPathNodeType.Attribute);
 
                         if (SendBeginEvent(processor, frame.Node) == false)
                         {
@@ -56,7 +55,7 @@ namespace System.Xml.Xsl.XsltOld
 
                     case TextEvent:
                         Debug.Assert(frame.State == TextEvent);
-                        Debug.Assert(frame.Node.NodeType == XPathNodeType.Attribute);
+                        Debug.Assert(frame.Node!.NodeType == XPathNodeType.Attribute);
 
                         if (SendTextEvent(processor, frame.Node) == false)
                         {
@@ -68,7 +67,7 @@ namespace System.Xml.Xsl.XsltOld
 
                     case EndEvent:
                         Debug.Assert(frame.State == EndEvent);
-                        Debug.Assert(frame.Node.NodeType == XPathNodeType.Attribute);
+                        Debug.Assert(frame.Node!.NodeType == XPathNodeType.Attribute);
 
                         if (SendEndEvent(processor, frame.Node) == false)
                         {
@@ -80,7 +79,7 @@ namespace System.Xml.Xsl.XsltOld
 
                     case Advance:
                         Debug.Assert(frame.State == Advance);
-                        Debug.Assert(frame.Node.NodeType == XPathNodeType.Attribute);
+                        Debug.Assert(frame.Node!.NodeType == XPathNodeType.Attribute);
 
                         if (frame.Node.MoveToNextAttribute())
                         {

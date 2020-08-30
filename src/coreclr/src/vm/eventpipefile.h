@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #ifndef __EVENTPIPE_FILE_H__
 #define __EVENTPIPE_FILE_H__
@@ -172,6 +171,8 @@ private:
     MapSHashWithRemove<EventPipeEvent *, unsigned int> *m_pMetadataIds;
 
     Volatile<LONG> m_metadataIdCounter;
+
+    Volatile<bool> m_isInitialized = false;
 
     unsigned int m_stackIdCounter;
     EventPipeStackHash m_stackHash;

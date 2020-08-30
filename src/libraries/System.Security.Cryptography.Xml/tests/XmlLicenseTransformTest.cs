@@ -1,6 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
-// See the LICENSE file in the project root for more information
-//
+// The .NET Foundation licenses this file to you under the MIT license.
+
 // XmlLicenseTransformTest.cs - Test Cases for XmlLicenseTransform
 //
 // Author:
@@ -13,9 +13,6 @@
 // (C) 2003 Aleksey Sanin (aleksey@aleksey.com)
 // (C) 2004 Novell (http://www.novell.com)
 // (C) 2008 Gert Driesen
-//
-// Licensed to the .NET Foundation under one or more agreements.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 using System.Xml;

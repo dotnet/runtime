@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Text;
@@ -52,6 +51,7 @@ namespace System.IO.Tests
             Assert.Equal(curDir, Path.GetDirectoryName(Path.Combine(curDir, "baz")));
 
             Assert.Null(Path.GetDirectoryName(Path.GetPathRoot(curDir)));
+            Assert.True(Path.GetDirectoryName(Path.GetPathRoot(curDir.AsSpan())).IsEmpty);
         }
 
         [Fact]
@@ -108,10 +108,16 @@ namespace System.IO.Tests
         public void GetPathRoot_Basic()
         {
             string cwd = Directory.GetCurrentDirectory();
-            Assert.Equal(cwd.Substring(0, cwd.IndexOf(Path.DirectorySeparatorChar) + 1), Path.GetPathRoot(cwd));
+            string substring = cwd.Substring(0, cwd.IndexOf(Path.DirectorySeparatorChar) + 1);
+
+            Assert.Equal(substring, Path.GetPathRoot(cwd));
+            PathAssert.Equal(substring.AsSpan(), Path.GetPathRoot(cwd.AsSpan()));
+
             Assert.True(Path.IsPathRooted(cwd));
 
             Assert.Equal(string.Empty, Path.GetPathRoot(@"file.exe"));
+            Assert.True(Path.GetPathRoot(@"file.exe".AsSpan()).IsEmpty);
+
             Assert.False(Path.IsPathRooted("file.exe"));
         }
 
@@ -210,8 +216,6 @@ namespace System.IO.Tests
                     { currentDirectory, currentDirectory },
                     // "." => current directory
                     { ".", currentDirectory },
-                    // ".." => up a directory
-                    { "..", Path.GetDirectoryName(currentDirectory) },
                     // "dir/./././." => "dir"
                     { Path.Combine(currentDirectory, ".", ".", ".", ".", "."), currentDirectory },
                     // "dir///." => "dir"
@@ -227,6 +231,12 @@ namespace System.IO.Tests
                     // "C:\\\" => "C:\"
                     { root + new string(Path.DirectorySeparatorChar, 3), root },
                 };
+
+                if (currentDirectory != Path.GetPathRoot(currentDirectory))
+                {
+                    // ".." => up a directory
+                    data.Add("..", Path.GetDirectoryName(currentDirectory));
+                }
 
                 // Path longer than MaxPath that normalizes down to less than MaxPath
                 const int Iters = 10000;
@@ -417,6 +427,7 @@ namespace System.IO.Tests
                     Assert.EndsWith(bad, Path.GetFullPath(bad));
                 }
                 Assert.Equal(string.Empty, Path.GetPathRoot(bad));
+                Assert.True(Path.GetPathRoot(bad.AsSpan()).IsEmpty);
                 Assert.False(Path.IsPathRooted(bad));
             });
         }
@@ -431,7 +442,7 @@ namespace System.IO.Tests
                 Assert.Equal(string.Empty, new string(Path.GetExtension(bad.AsSpan())));
                 Assert.Equal(bad, new string(Path.GetFileName(bad.AsSpan())));
                 Assert.Equal(bad, new string(Path.GetFileNameWithoutExtension(bad.AsSpan())));
-                Assert.Equal(string.Empty, new string(Path.GetPathRoot(bad.AsSpan())));
+                Assert.True(Path.GetPathRoot(bad.AsSpan()).IsEmpty);
                 Assert.False(Path.IsPathRooted(bad.AsSpan()));
             });
         }

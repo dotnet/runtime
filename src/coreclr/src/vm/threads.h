@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // THREADS.H -
 //
 
@@ -238,6 +237,19 @@ public:
 #ifdef DACCESS_COMPILE
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
 #endif
+};
+
+// TailCallArgBuffer states
+#define TAILCALLARGBUFFER_ACTIVE       0
+#define TAILCALLARGBUFFER_INSTARG_ONLY 1
+#define TAILCALLARGBUFFER_ABANDONED    2
+
+struct TailCallArgBuffer
+{
+    int State;
+    int Size;
+    void* GCDesc;
+    BYTE Args[1];
 };
 
 #ifdef CROSSGEN_COMPILE
@@ -581,19 +593,7 @@ enum ThreadpoolThreadType
 //---------------------------------------------------------------------------
 //
 //---------------------------------------------------------------------------
-Thread* SetupThread(BOOL fInternal);
-inline Thread* SetupThread()
-{
-    WRAPPER_NO_CONTRACT;
-    return SetupThread(FALSE);
-}
-// A host can deny a thread entering runtime by returning a NULL IHostTask.
-// But we do want threads used by threadpool.
-inline Thread* SetupInternalThread()
-{
-    WRAPPER_NO_CONTRACT;
-    return SetupThread(TRUE);
-}
+Thread* SetupThread();
 Thread* SetupThreadNoThrow(HRESULT *phresult = NULL);
 // WARNING : only GC calls this with bRequiresTSL set to FALSE.
 Thread* SetupUnstartedThread(BOOL bRequiresTSL=TRUE);
@@ -978,21 +978,17 @@ struct PortableTailCallFrame
 
 class TailCallTls
 {
-    friend class MscorlibBinder;
+    friend class CoreLibBinder;
 
     PortableTailCallFrame* m_frame;
-    char* m_argBuffer;
-    size_t m_argBufferSize;
-    void* m_argBufferGCDesc;
-    char m_argBufferInline[64];
+    TailCallArgBuffer* m_argBuffer;
 
 public:
     TailCallTls();
-    void* AllocArgBuffer(size_t size, void* gcDesc);
-    void FreeArgBuffer();
-    char* GetArgBuffer(void** gcDesc)
+    TailCallArgBuffer* AllocArgBuffer(int size, void* gcDesc);
+    void FreeArgBuffer() { delete[] (BYTE*)m_argBuffer; m_argBuffer = NULL; }
+    TailCallArgBuffer* GetArgBuffer()
     {
-        *gcDesc = m_argBufferGCDesc;
         return m_argBuffer;
     }
     const PortableTailCallFrame* GetFrame() { return m_frame; }
@@ -1002,9 +998,6 @@ public:
 //
 // A code:Thread contains all the per-thread information needed by the runtime.  You can get at this
 // structure throught the and OS TLS slot see code:#RuntimeThreadLocals for more
-// Implementing IUnknown would prevent the field (e.g. m_Context) layout from being rearranged (which will need to be fixed in
-// "asmconstants.h" for the respective architecture). As it is, ICLRTask derives from IUnknown and would have got IUnknown implemented
-// here - so doing this explicitly and maintaining layout sanity should be just fine.
 class Thread
 {
     friend struct ThreadQueue;  // used to enqueue & dequeue threads onto SyncBlocks
@@ -1794,7 +1787,7 @@ public:
     //--------------------------------------------------------------
     // Failable initialization occurs here.
     //--------------------------------------------------------------
-    BOOL InitThread(BOOL fInternal);
+    BOOL InitThread();
     BOOL AllocHandles();
 
     //--------------------------------------------------------------
@@ -2598,16 +2591,9 @@ public:
 
 
 public:
-    enum UserAbort_Client
-    {
-        UAC_Normal,
-        UAC_Host,       // Called by host through IClrTask::Abort
-    };
-
     HRESULT        UserAbort(ThreadAbortRequester requester,
                              EEPolicy::ThreadAbortTypes abortType,
-                             DWORD timeout,
-                             UserAbort_Client client
+                             DWORD timeout
                             );
 
     BOOL    HandleJITCaseForAbort();
@@ -2954,9 +2940,7 @@ public:
     // achieved is returned and may differ from the input state if someone managed to
     // call CoInitializeEx on this thread first (note that calls to SetApartment made
     // before the thread has started are guaranteed to succeed).
-    // The fFireMDAOnMismatch indicates if we should fire the apartment state probe
-    // on an apartment state mismatch.
-    ApartmentState SetApartment(ApartmentState state, BOOL fFireMDAOnMismatch);
+    ApartmentState SetApartment(ApartmentState state);
 
     // when we get apartment tear-down notification,
     // we want reset the apartment state we cache on the thread
@@ -3448,7 +3432,7 @@ private:
     MethodDesc  *m_HijackedFunction;      // remember what we hijacked
 
 #ifndef TARGET_UNIX
-    BOOL    HandledJITCase(BOOL ForTaskSwitchIn = FALSE);
+    BOOL    HandledJITCase();
 
 #ifdef TARGET_X86
     PCODE       m_LastRedirectIP;
@@ -4753,6 +4737,21 @@ public:
 
 private:
     PrepareCodeConfig *m_currentPrepareCodeConfig;
+
+#ifndef DACCESS_COMPILE
+public:
+    bool IsInForbidSuspendForDebuggerRegion() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_isInForbidSuspendForDebuggerRegion;
+    }
+
+    void EnterForbidSuspendForDebuggerRegion();
+    void ExitForbidSuspendForDebuggerRegion();
+#endif
+
+private:
+    bool m_isInForbidSuspendForDebuggerRegion;
 };
 
 // End of class Thread
@@ -4785,7 +4784,7 @@ class ThreadStore
 {
     friend class Thread;
     friend class ThreadSuspend;
-    friend Thread* SetupThread(BOOL);
+    friend Thread* SetupThread();
     friend class AppDomain;
 #ifdef DACCESS_COMPILE
     friend class ClrDataAccess;

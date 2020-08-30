@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 //*****************************************************************************
 // File: module.cpp
@@ -63,7 +62,6 @@ CordbModule::CordbModule(
     m_vmDomainFile(vmDomainFile),
     m_vmModule(vmModule),
     m_EnCCount(0),
-    m_isIlWinMD(Uninitialized),
     m_fForceMetaDataSerialize(FALSE),
     m_nativeCodeTable(101)
 {
@@ -372,14 +370,6 @@ void CordbModule::UpdateMetaDataCacheIfNeeded(mdToken token)
         return;
     }
 
-    // the metadata in WinMD is currently static since there's no
-    // support for profilers or EnC so we can simply exit early.
-    if (IsWinMD())
-    {
-        LOG((LF_CORDB,LL_INFO10000, "CM::UMCIN token is in WinMD, exiting\n"));
-        return;
-    }
-
     //
     // 1) Check if in-range? Compare against tables, etc.
     //
@@ -411,8 +401,6 @@ BOOL CordbModule::CheckIfTokenInMetaData(mdToken token)
     CONTRACTL_END;
     LOG((LF_CORDB,LL_INFO10000, "CM::CITIM token=0x%x\n", token));
     _ASSERTE(TypeFromToken(token) == mdtSignature);
-    // we shouldn't be doing this on WinMD modules since they don't implement IID_IMetaDataTables
-    _ASSERTE(!IsWinMD());
     RSExtSmartPtr<IMetaDataTables> pTable;
 
     HRESULT hr = GetMetaDataImporter()->QueryInterface(IID_IMetaDataTables, (void**) &pTable);
@@ -1211,6 +1199,10 @@ HRESULT CordbModule::QueryInterface(REFIID id, void **pInterface)
     else if (id == IID_ICorDebugModule3)
     {
         *pInterface = static_cast<ICorDebugModule3*>(this);
+    }
+    else if (id == IID_ICorDebugModule4)
+    {
+        *pInterface = static_cast<ICorDebugModule4*>(this);
     }
     else if (id == IID_IUnknown)
     {
@@ -2764,35 +2756,22 @@ HRESULT CordbModule::GetJITCompilerFlags(DWORD *pdwFlags )
     return hr;
 }
 
-BOOL CordbModule::IsWinMD()
+HRESULT CordbModule::IsMappedLayout(BOOL *isMapped)
 {
-    CONTRACTL
+    VALIDATE_POINTER_TO_OBJECT(isMapped, BOOL*);
+    FAIL_IF_NEUTERED(this);
+
+    HRESULT hr = S_OK;
+    CordbProcess *pProcess = GetProcess();
+
+    ATT_REQUIRE_STOPPED_MAY_FAIL(pProcess);
+    PUBLIC_API_BEGIN(pProcess);
     {
-        THROWS;
+        hr = pProcess->GetDAC()->IsModuleMapped(m_vmModule, isMapped);
     }
-    CONTRACTL_END;
+    PUBLIC_API_END(hr);
 
-    if (m_isIlWinMD == Uninitialized)
-    {
-        BOOL isWinRT;
-        HRESULT hr = E_FAIL;
-
-        {
-            RSLockHolder processLockHolder(GetProcess()->GetProcessLock());
-            hr = GetProcess()->GetDAC()->IsWinRTModule(m_vmModule, isWinRT);
-        }
-
-        _ASSERTE(SUCCEEDED(hr));
-        if (FAILED(hr))
-            ThrowHR(hr);
-
-        if (isWinRT)
-            m_isIlWinMD = True;
-        else
-            m_isIlWinMD = False;
-    }
-
-    return m_isIlWinMD == True;
+    return hr;
 }
 
 /* ------------------------------------------------------------------------- *

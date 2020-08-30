@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable enable
 using System.Net.Quic.Implementations;
@@ -23,13 +22,13 @@ namespace System.Net.Quic
         /// <param name="remoteEndPoint">The remote endpoint to connect to.</param>
         /// <param name="sslClientAuthenticationOptions">TLS options</param>
         /// <param name="localEndPoint">The local endpoint to connect from.</param>
-        public QuicConnection(IPEndPoint remoteEndPoint, SslClientAuthenticationOptions? sslClientAuthenticationOptions, IPEndPoint? localEndPoint = null)
+        public QuicConnection(EndPoint remoteEndPoint, SslClientAuthenticationOptions? sslClientAuthenticationOptions, IPEndPoint? localEndPoint = null)
             : this(QuicImplementationProviders.Default, remoteEndPoint, sslClientAuthenticationOptions, localEndPoint)
         {
         }
 
         // !!! TEMPORARY: Remove "implementationProvider" before shipping
-        public QuicConnection(QuicImplementationProvider implementationProvider, IPEndPoint remoteEndPoint, SslClientAuthenticationOptions? sslClientAuthenticationOptions, IPEndPoint? localEndPoint = null)
+        public QuicConnection(QuicImplementationProvider implementationProvider, EndPoint remoteEndPoint, SslClientAuthenticationOptions? sslClientAuthenticationOptions, IPEndPoint? localEndPoint = null)
             : this(implementationProvider, new QuicClientConnectionOptions() { RemoteEndPoint = remoteEndPoint, ClientAuthenticationOptions = sslClientAuthenticationOptions, LocalEndPoint = localEndPoint })
         {
         }
@@ -51,7 +50,7 @@ namespace System.Net.Quic
 
         public IPEndPoint LocalEndPoint => _provider.LocalEndPoint;
 
-        public IPEndPoint RemoteEndPoint => _provider.RemoteEndPoint;
+        public EndPoint RemoteEndPoint => _provider.RemoteEndPoint;
 
         public SslApplicationProtocol NegotiatedApplicationProtocol => _provider.NegotiatedApplicationProtocol;
 

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Globalization;
 using System.Runtime.CompilerServices;
@@ -59,7 +58,7 @@ namespace System.Numerics
         /// <returns>The hash code.</returns>
         public override readonly int GetHashCode()
         {
-            return HashCode.Combine(this.X.GetHashCode(), this.Y.GetHashCode(), this.Z.GetHashCode());
+            return HashCode.Combine(this.X, this.Y, this.Z);
         }
 
         /// <summary>
@@ -70,9 +69,7 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override readonly bool Equals(object? obj)
         {
-            if (!(obj is Vector3))
-                return false;
-            return Equals((Vector3)obj);
+            return (obj is Vector3 other) && Equals(other);
         }
 
         /// <summary>

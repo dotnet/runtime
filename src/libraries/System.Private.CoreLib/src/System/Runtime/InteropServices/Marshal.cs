@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Security;
 using System.Reflection;
@@ -9,13 +8,6 @@ using System.Text;
 
 using Internal.Runtime.CompilerServices;
 using System.Diagnostics.CodeAnalysis;
-
-#pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
-#if TARGET_64BIT
-using nuint = System.UInt64;
-#else
-using nuint = System.UInt32;
-#endif
 
 namespace System.Runtime.InteropServices
 {
@@ -516,6 +508,8 @@ namespace System.Runtime.InteropServices
             PrelinkCore(m);
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
+            Justification = "This only needs to prelink methods that are actually used")]
         public static void PrelinkAll(Type c)
         {
             if (c is null)
@@ -540,7 +534,9 @@ namespace System.Runtime.InteropServices
         /// Creates a new instance of "structuretype" and marshals data from a
         /// native memory block to it.
         /// </summary>
-        public static object? PtrToStructure(IntPtr ptr, Type structureType)
+        public static object? PtrToStructure(IntPtr ptr,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
+            Type structureType)
         {
             if (ptr == IntPtr.Zero)
             {
@@ -576,8 +572,7 @@ namespace System.Runtime.InteropServices
             PtrToStructure(ptr, (object)structure!);
         }
 
-        [return: MaybeNull]
-        public static T PtrToStructure<T>(IntPtr ptr) => (T)PtrToStructure(ptr, typeof(T))!;
+        public static T? PtrToStructure<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]T>(IntPtr ptr) => (T)PtrToStructure(ptr, typeof(T))!;
 
         public static void DestroyStructure<T>(IntPtr ptr) => DestroyStructure(ptr, typeof(T));
 

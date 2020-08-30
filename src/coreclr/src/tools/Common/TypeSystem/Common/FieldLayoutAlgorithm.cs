@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace Internal.TypeSystem
 {
@@ -77,6 +76,7 @@ namespace Internal.TypeSystem
         public LayoutInt FieldAlignment;
         public LayoutInt ByteCountUnaligned;
         public LayoutInt ByteCountAlignment;
+        public bool LayoutAbiStable; // Is the layout stable such that it can safely be used in function calling conventions
 
         /// <summary>
         /// If Offsets is non-null, then all field based layout is complete.
@@ -133,11 +133,6 @@ namespace Internal.TypeSystem
         Vector128Aggregate = 0x08,
 
         /// <summary>
-        /// The type is an aggregate of 256-bit short-vector values.
-        /// </summary>
-        Vector256Aggregate = 0x10,
-
-        /// <summary>
         /// The mask for homogeneous aggregates of floating-point values.
         /// </summary>
         FloatingPointAggregateMask = Float32Aggregate | Float64Aggregate,
@@ -145,7 +140,7 @@ namespace Internal.TypeSystem
         /// <summary>
         /// The mask for homogeneous aggregates of short-vector values.
         /// </summary>
-        ShortVectorAggregateMask = Vector64Aggregate | Vector128Aggregate | Vector256Aggregate,
+        ShortVectorAggregateMask = Vector64Aggregate | Vector128Aggregate,
 
         /// <summary>
         /// The mask for homogeneous aggregates.

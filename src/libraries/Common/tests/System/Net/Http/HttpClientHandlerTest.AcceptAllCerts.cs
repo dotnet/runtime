@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Net.Security;
 using System.Net.Test.Common;
@@ -35,8 +34,8 @@ namespace System.Net.Http.Functional.Tests
 #endif
 
         [Theory]
-        [InlineData(SslProtocols.Tls, false)] // try various protocols to ensure we correctly set versions even when accepting all certs
-        [InlineData(SslProtocols.Tls, true)]
+        [InlineData(SslProtocols.Tls12, false)] // try various protocols to ensure we correctly set versions even when accepting all certs
+        [InlineData(SslProtocols.Tls12, true)]
         [InlineData(SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls, false)]
         [InlineData(SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls, true)]
 #if !NETFRAMEWORK
@@ -49,7 +48,7 @@ namespace System.Net.Http.Functional.Tests
         {
             // Overriding flag for the same reason we skip tests on Catalina
             // On OSX 10.13-10.14 we can override this flag to enable the scenario
-            requestOnlyThisProtocol |= PlatformDetection.IsMacOsHighSierraOrHigher && acceptedProtocol == SslProtocols.Tls;
+            requestOnlyThisProtocol |= PlatformDetection.IsOSX && acceptedProtocol == SslProtocols.Tls;
 
             using (HttpClientHandler handler = CreateHttpClientHandler())
             using (HttpClient client = CreateHttpClient(handler))

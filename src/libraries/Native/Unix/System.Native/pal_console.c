@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "pal_config.h"
 #include "pal_console.h"
@@ -161,7 +160,7 @@ static bool TcSetAttr(struct termios* termios, bool blockIfBackground)
     return rv;
 }
 
-static bool ConfigureTerminal(bool signalForBreak, bool forChild, uint8_t minChars, uint8_t decisecondsTimeout, bool blockIfBackground)
+static bool ConfigureTerminal(bool signalForBreak, bool forChild, uint8_t minChars, uint8_t decisecondsTimeout, bool blockIfBackground, bool convertCrToNl)
 {
     if (!g_hasTty)
     {
@@ -180,8 +179,13 @@ static bool ConfigureTerminal(bool signalForBreak, bool forChild, uint8_t minCha
 
     if (!forChild)
     {
-        termios.c_iflag &= (uint32_t)(~(IXON | IXOFF));
+        termios.c_iflag &= (uint32_t)(~(IXON | IXOFF | ICRNL | INLCR | IGNCR));
         termios.c_lflag &= (uint32_t)(~(ECHO | ICANON | IEXTEN));
+
+        if (convertCrToNl)
+        {
+            termios.c_iflag |= (uint32_t)ICRNL;
+        }
     }
 
     termios.c_cc[VMIN] = minChars;
@@ -222,13 +226,15 @@ void UninitializeTerminal()
     }
 }
 
-void SystemNative_InitializeConsoleBeforeRead(uint8_t minChars, uint8_t decisecondsTimeout)
+void SystemNative_InitializeConsoleBeforeRead(int32_t convertCrToNl, uint8_t minChars, uint8_t decisecondsTimeout)
 {
+    assert(convertCrToNl == 0 || convertCrToNl == 1);
+
     if (pthread_mutex_lock(&g_lock) == 0)
     {
         g_reading = true;
 
-        ConfigureTerminal(g_signalForBreak, /* forChild */ false, minChars, decisecondsTimeout, /* blockIfBackground */ true);
+        ConfigureTerminal(g_signalForBreak, /* forChild */ false, minChars, decisecondsTimeout, /* blockIfBackground */ true, convertCrToNl);
 
         pthread_mutex_unlock(&g_lock);
     }
@@ -263,7 +269,7 @@ void SystemNative_ConfigureTerminalForChildProcess(int32_t childUsesTerminal)
             g_hasCurrentTermios = false;
         }
 
-        ConfigureTerminal(g_signalForBreak, /* forChild */ childUsesTerminal, /* minChars */ 1, /* decisecondsTimeout */ 0, /* blockIfBackground */ false);
+        ConfigureTerminal(g_signalForBreak, /* forChild */ childUsesTerminal, /* minChars */ 1, /* decisecondsTimeout */ 0, /* blockIfBackground */ false, /* convertCrToNl */ false);
 
         // Redo "Application mode" when there are no more children using the terminal.
         if (!childUsesTerminal)
@@ -372,7 +378,7 @@ void SystemNative_GetControlCharacters(
 
 int32_t SystemNative_StdinReady()
 {
-    SystemNative_InitializeConsoleBeforeRead(1, 0);
+    SystemNative_InitializeConsoleBeforeRead(1, 0, 0);
     struct pollfd fd = { .fd = STDIN_FILENO, .events = POLLIN };
     int rv = poll(&fd, 1, 0) > 0 ? 1 : 0;
     SystemNative_UninitializeConsoleAfterRead();
@@ -408,7 +414,7 @@ int32_t SystemNative_SetSignalForBreak(int32_t signalForBreak)
 
     if (pthread_mutex_lock(&g_lock) == 0)
     {
-        if (ConfigureTerminal(signalForBreak, /* forChild */ false, /* minChars */ 1, /* decisecondsTimeout */ 0, /* blockIfBackground */ true))
+        if (ConfigureTerminal(signalForBreak, /* forChild */ false, /* minChars */ 1, /* decisecondsTimeout */ 0, /* blockIfBackground */ true, /* convertCrToNl */ false))
         {
             g_signalForBreak = signalForBreak;
             rv = 1;

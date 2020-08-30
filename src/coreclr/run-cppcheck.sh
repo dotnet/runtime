@@ -17,13 +17,13 @@ usage()
 check_dependencies()
 {
     # Check presence of cppcheck on the path
-    if [ "$RunCppCheck" == true ]
+    if [ "$RunCppCheck" = "true" ]
     then
         hash cppcheck 2>/dev/null || { echo >&2 "Please install cppcheck before running this script"; exit 1; }
     fi
-    
+
     # Check presence of sloccount on the path
-    if [ "$RunSlocCount" == true ]
+    if [ "$RunSlocCount" = "true" ]
     then
         hash sloccount 2>/dev/null || { echo >&2 "Please install sloccount before running this script"; exit 1; }
     fi
@@ -39,9 +39,10 @@ SloccountOutput="sloccount.sc"
 # Get the number of processors available to the scheduler
 # Other techniques such as `nproc` only get the number of
 # processors available to a single process.
-if [ `uname` = "FreeBSD" ]; then
-NumProc=`sysctl hw.ncpu | awk '{ print $2+1 }'`
-elif [ `uname` = "NetBSD" ]; then
+platform="$(uname)"
+if [ "$platform" = "FreeBSD" ]; then
+NumProc=$(sysctl hw.ncpu | awk '{ print $2+1 }')
+elif [ "$platform" = "NetBSD" || "$platform" = "SunOS" ]; then
 NumProc=$(($(getconf NPROCESSORS_ONLN)+1))
 else
 NumProc=$(($(getconf _NPROCESSORS_ONLN)+1))
@@ -80,19 +81,19 @@ do
     esac
 done
 
-if [ "$FilesFromArgs" != "" ];
+if [ -n "$FilesFromArgs" ];
 then
     Files=$FilesFromArgs
 fi
 
-if [ "$CppCheckOutput" == "" ];
+if [ -z "$CppCheckOutput" ];
 then
     echo "Expected: file for cppcheck output"
     usage
     exit 1
 fi
 
-if [ "$SloccountOutput" == "" ];
+if [ -z "$SloccountOutput" ];
 then
     echo "Expected: file for sloccount output"
     usage
@@ -101,14 +102,14 @@ fi
 
 check_dependencies
 
-if [ "$RunCppCheck" == true ]
+if [ "$RunCppCheck" = "true" ]
 then
     echo "Running cppcheck for files: $Files"
     cppcheck --enable=all -j $NumProc --xml --xml-version=2 --force $Files 2> $CppCheckOutput
     CppCheckOutputs="$CppCheckOutput (cppcheck)"
 fi
 
-if [ "$RunSlocCount" == true ]
+if [ "$RunSlocCount" = "true" ]
 then
     echo "Running sloccount for files: $Files"
     sloccount --wide --details $Files > $SloccountOutput

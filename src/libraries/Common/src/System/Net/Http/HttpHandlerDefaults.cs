@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Threading;
 
@@ -10,7 +9,7 @@ namespace System.Net.Http
     /// Central repository for default values used in http handler settings.  Not all settings are relevant
     /// to or configurable by all handlers.
     /// </summary>
-    internal static class HttpHandlerDefaults
+    internal static partial class HttpHandlerDefaults
     {
         public const int DefaultMaxAutomaticRedirections = 50;
         public const int DefaultMaxConnectionsPerServer = int.MaxValue;

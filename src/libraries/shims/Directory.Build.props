@@ -4,7 +4,8 @@
   <Import Project="netfxreference.props" />
 
   <PropertyGroup>
-    <IsNETCoreApp>true</IsNETCoreApp>
+    <IsNETCoreAppSrc>true</IsNETCoreAppSrc>
+    <IsNETCoreAppRef>true</IsNETCoreAppRef>
     <NuGetTargetMoniker Condition="'$(NuGetTargetMoniker)' == ''">$(TargetFramework)</NuGetTargetMoniker>
   </PropertyGroup>
 
@@ -16,8 +17,10 @@
          to reference the latest packages.
          netstandard.dll doesn't need to do this since it has no dangling dependencies -->
     <GenFacadesForceZeroVersionSeeds Condition="'$(MSBuildProjectName)' != 'netstandard'">true</GenFacadesForceZeroVersionSeeds>
-    <IncludeDefaultReferences>false</IncludeDefaultReferences>
     <HasMatchingContract>true</HasMatchingContract>
+    <NETFrameworkReferenceAssemblyTFM>net48</NETFrameworkReferenceAssemblyTFM>
+    <NetFxRefPath>$(NuGetPackageRoot)microsoft.netframework.referenceassemblies.$(NETFrameworkReferenceAssemblyTFM)\$(MicrosoftNetFrameworkReferenceAssembliesVersion)\build\.NETFramework\v4.8\</NetFxRefPath>
+    <NETStandard21RefPath>$(NuGetPackageRoot)netstandard.library\$(NETStandardLibraryVersion)\build\netstandard2.1\ref\</NETStandard21RefPath>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(MSBuildProjectName)' == 'System.Runtime' or '$(MSBuildProjectName)' == 'mscorlib' or '$(MSBuildProjectName)' == 'netstandard'">

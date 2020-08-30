@@ -1,4 +1,3 @@
-include(CheckPIESupported)
 include(${CMAKE_CURRENT_LIST_DIR}/functions.cmake)
 
 # If set, indicates that this is not an officially supported release
@@ -78,8 +77,14 @@ endif(CLR_CMAKE_HOST_OS STREQUAL Linux)
 
 if(CLR_CMAKE_HOST_OS STREQUAL Darwin)
     set(CLR_CMAKE_HOST_UNIX 1)
-    set(CLR_CMAKE_HOST_UNIX_AMD64 1)
     set(CLR_CMAKE_HOST_OSX 1)
+    if(CMAKE_SYSTEM_PROCESSOR STREQUAL x86_64)
+        set(CLR_CMAKE_HOST_UNIX_AMD64 1)
+    elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL arm64)
+        set(CLR_CMAKE_HOST_UNIX_ARM64 1)
+    else()
+        clr_unknown_arch()
+    endif()
     set(CMAKE_ASM_COMPILE_OBJECT "${CMAKE_C_COMPILER} <FLAGS> <DEFINES> <INCLUDES> -o <OBJECT> -c <SOURCE>")
 endif(CLR_CMAKE_HOST_OS STREQUAL Darwin)
 
@@ -88,6 +93,8 @@ if(CLR_CMAKE_HOST_OS STREQUAL iOS)
     set(CLR_CMAKE_HOST_IOS 1)
     if(CMAKE_OSX_ARCHITECTURES MATCHES "x86_64")
         set(CLR_CMAKE_HOST_UNIX_AMD64 1)
+    elseif(CMAKE_OSX_ARCHITECTURES MATCHES "i386")
+        set(CLR_CMAKE_HOST_UNIX_X86 1)
     elseif(CMAKE_OSX_ARCHITECTURES MATCHES "armv7")
         set(CLR_CMAKE_HOST_UNIX_ARM 1)
     elseif(CMAKE_OSX_ARCHITECTURES MATCHES "arm64")
@@ -150,14 +157,24 @@ if(CLR_CMAKE_HOST_OS STREQUAL SunOS)
         COMMAND isainfo -n
         OUTPUT_VARIABLE SUNOS_NATIVE_INSTRUCTION_SET)
 
-    if(SUNOS_NATIVE_INSTRUCTION_SET MATCHES "amd64")
+    if(SUNOS_NATIVE_INSTRUCTION_SET MATCHES "amd64" OR CMAKE_CROSSCOMPILING)
         set(CLR_CMAKE_HOST_UNIX_AMD64 1)
         set(CMAKE_SYSTEM_PROCESSOR "amd64")
     else()
         clr_unknown_arch()
     endif()
 
+    EXECUTE_PROCESS(
+        COMMAND uname -o
+        OUTPUT_VARIABLE SUNOS_KERNEL_KIND
+        ERROR_QUIET)
+
     set(CLR_CMAKE_HOST_SUNOS 1)
+    if(SUNOS_KERNEL_KIND STREQUAL illumos OR CMAKE_CROSSCOMPILING)
+        set(CLR_CMAKE_HOST_OS_ILLUMOS 1)
+    else(SUNOS_KERNEL_KIND STREQUAL illumos OR CMAKE_CROSSCOMPILING)
+        set(CLR_CMAKE_HOST_OS_SOLARIS 1)
+    endif(SUNOS_KERNEL_KIND STREQUAL illumos OR CMAKE_CROSSCOMPILING)
 endif(CLR_CMAKE_HOST_OS STREQUAL SunOS)
 
 if(CLR_CMAKE_HOST_OS STREQUAL Windows)
@@ -168,6 +185,7 @@ endif(CLR_CMAKE_HOST_OS STREQUAL Windows)
 if(CLR_CMAKE_HOST_OS STREQUAL Emscripten)
     #set(CLR_CMAKE_HOST_UNIX 1) # TODO: this should be reenabled but it activates a bunch of additional compiler flags in configurecompiler.cmake
     set(CLR_CMAKE_HOST_UNIX_WASM 1)
+    set(CLR_CMAKE_HOST_BROWSER 1)
 endif(CLR_CMAKE_HOST_OS STREQUAL Emscripten)
 
 #--------------------------------------------
@@ -309,13 +327,18 @@ endif(CLR_CMAKE_TARGET_OS STREQUAL NetBSD)
 
 if(CLR_CMAKE_TARGET_OS STREQUAL SunOS)
     set(CLR_CMAKE_TARGET_UNIX 1)
+    if(CLR_CMAKE_HOST_OS_ILLUMOS)
+        set(CLR_CMAKE_TARGET_OS_ILLUMOS 1)
+    else(CLR_CMAKE_HOST_OS_ILLUMOS)
+        set(CLR_CMAKE_TARGET_OS_SOLARIS 1)
+    endif(CLR_CMAKE_HOST_OS_ILLUMOS)
     set(CLR_CMAKE_TARGET_SUNOS 1)
 endif(CLR_CMAKE_TARGET_OS STREQUAL SunOS)
 
 if(CLR_CMAKE_TARGET_OS STREQUAL Emscripten)
     set(CLR_CMAKE_TARGET_UNIX 1)
     set(CLR_CMAKE_TARGET_LINUX 1)
-    set(CLR_CMAKE_TARGET_EMSCRIPTEN 1)
+    set(CLR_CMAKE_TARGET_BROWSER 1)
 endif(CLR_CMAKE_TARGET_OS STREQUAL Emscripten)
 
 if(CLR_CMAKE_TARGET_UNIX)
@@ -357,25 +380,12 @@ else()
     endif()
 endif()
 
-if(NOT CLR_CMAKE_TARGET_EMSCRIPTEN)
-    # Skip check_pie_supported call on Android as ld from llvm toolchain with NDK API level 21
-    # complains about missing linker flag `-no-pie` (while level 28's ld does support this flag,
-    # but since we know that PIE is supported, we can safely skip this redundant check).
-    #
+if(NOT CLR_CMAKE_TARGET_BROWSER)
     # The default linker on Solaris also does not support PIE.
-    if(NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_SUNOS)
-        # All code we build should be compiled as position independent
-        get_property(languages GLOBAL PROPERTY ENABLED_LANGUAGES)
-        if("CXX" IN_LIST languages)
-            set(CLR_PIE_LANGUAGE CXX)
-        else()
-            set(CLR_PIE_LANGUAGE C)
-        endif()
-        check_pie_supported(OUTPUT_VARIABLE PIE_SUPPORT_OUTPUT LANGUAGES ${CLR_PIE_LANGUAGE})
-        if(NOT MSVC AND NOT CMAKE_${CLR_PIE_LANGUAGE}_LINK_PIE_SUPPORTED)
-            message(WARNING "PIE is not supported at link time: ${PIE_SUPPORT_OUTPUT}.\n"
-                      "PIE link options will not be passed to linker.")
-        endif()
+    if(NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_SUNOS AND NOT CLR_CMAKE_TARGET_OSX AND NOT CLR_CMAKE_HOST_TVOS AND NOT CLR_CMAKE_HOST_IOS AND NOT MSVC)
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pie")
+        add_compile_options($<$<STREQUAL:$<TARGET_PROPERTY:TYPE>,EXECUTABLE>:-fPIE>)
+        add_compile_options($<$<STREQUAL:$<TARGET_PROPERTY:TYPE>,SHARED_LIBRARY>:-fPIC>)
     endif()
 
     set(CMAKE_POSITION_INDEPENDENT_CODE ON)

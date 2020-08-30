@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Xml.Xsl.XsltOld
 {
@@ -58,14 +57,14 @@ namespace System.Xml.Xsl.XsltOld
                 switch (frame.State)
                 {
                     case Initialized:
-                        if (Processor.IsRoot(frame.Node))
+                        if (Processor.IsRoot(frame.Node!))
                         {
                             processor.PushActionFrame(frame);
                             frame.State = ChildrenOnly;
                             break;
                         }
 
-                        if (processor.CopyBeginEvent(frame.Node, _empty) == false)
+                        if (processor.CopyBeginEvent(frame.Node!, _empty) == false)
                         {
                             // This event wasn't processed
                             break;
@@ -75,14 +74,14 @@ namespace System.Xml.Xsl.XsltOld
                         continue;
                     case NamespaceCopy:
                         frame.State = ContentsCopy;
-                        if (frame.Node.NodeType == XPathNodeType.Element)
+                        if (frame.Node!.NodeType == XPathNodeType.Element)
                         {
                             processor.PushActionFrame(CopyNamespacesAction.GetAction(), frame.NodeSet);
                             break;
                         }
                         continue;
                     case ContentsCopy:
-                        if (frame.Node.NodeType == XPathNodeType.Element && !_empty)
+                        if (frame.Node!.NodeType == XPathNodeType.Element && !_empty)
                         {
                             //Debug.Assert(frame.Node.HasValue == false);
                             processor.PushActionFrame(frame);
@@ -104,7 +103,7 @@ namespace System.Xml.Xsl.XsltOld
                         }
 
                     case ProcessChildren:
-                        if (processor.CopyEndEvent(frame.Node))
+                        if (processor.CopyEndEvent(frame.Node!))
                         {
                             frame.Finished();
                         }

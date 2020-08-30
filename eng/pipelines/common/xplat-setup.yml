@@ -7,6 +7,7 @@ parameters:
   helixQueuesTemplate: ''
   platform: ''
   jobParameters: {}
+  variables: []
 
 jobs:
 - template: ${{ coalesce(parameters.helixQueuesTemplate, parameters.jobTemplate) }}
@@ -29,6 +30,17 @@ jobs:
       # https://github.com/dotnet/runtime/issues/32805
       - name: System.DisableZipDownload
         value: true
+
+      - name: buildConfigUpper
+        ${{ if eq(parameters.jobParameters.buildConfig, 'debug') }}:
+          value: 'Debug'
+        ${{ if eq(parameters.jobParameters.buildConfig, 'release') }}:
+          value: 'Release'
+        ${{ if eq(parameters.jobParameters.buildConfig, 'checked') }}:
+          value: 'Checked'
+
+      - name: _BuildConfig
+        value: $(buildConfigUpper)
 
       - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
         - name: archiveExtension
@@ -73,6 +85,9 @@ jobs:
           value: Mono
         ${{ if eq(parameters.jobParameters.runtimeFlavor, 'coreclr') }}:
           value: CoreCLR
+      
+      - ${{ each variable in parameters.variables }}:
+        - ${{ variable }}
 
     osGroup: ${{ parameters.osGroup }}
     osSubgroup: ${{ parameters.osSubgroup }}
@@ -88,12 +103,12 @@ jobs:
     ${{ if eq(parameters.jobParameters.pool, '') }}:
       pool:
         # Public Linux Build Pool
-        ${{ if and(eq(parameters.osGroup, 'Linux'), eq(variables['System.TeamProject'], 'public')) }}:
+        ${{ if and(in(parameters.osGroup, 'Linux', 'FreeBSD'), eq(variables['System.TeamProject'], 'public')) }}:
           name:  NetCorePublic-Pool
           queue: BuildPool.Ubuntu.1604.Amd64.Open
 
         # Official Build Linux Pool
-        ${{ if and(eq(parameters.osGroup, 'Linux'), ne(variables['System.TeamProject'], 'public')) }}:
+        ${{ if and(in(parameters.osGroup, 'Linux', 'FreeBSD'), ne(variables['System.TeamProject'], 'public')) }}:
           name: NetCoreInternal-Pool
           queue: BuildPool.Ubuntu.1604.Amd64
 
@@ -121,6 +136,9 @@ jobs:
 
 
     ${{ if eq(parameters.helixQueuesTemplate, '') }}:
+      # macOS hosted pool machines are slower so we need to give a greater timeout than the 60 mins default.
+      ${{ if and(eq(parameters.jobParameters.timeoutInMinutes, ''), in(parameters.osGroup, 'OSX', 'iOS', 'tvOS')) }}:
+        timeoutInMinutes: 120
       ${{ insert }}: ${{ parameters.jobParameters }}
     ${{ if ne(parameters.helixQueuesTemplate, '') }}:
       jobTemplate: ${{ parameters.jobTemplate }}

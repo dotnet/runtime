@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -164,8 +163,10 @@ bool emitter::IsDstSrcSrcAVXInstruction(instruction ins)
 
 bool emitter::AreUpper32BitsZero(regNumber reg)
 {
-    // Don't look back across IG boundaries (possible control flow)
-    if (emitCurIGinsCnt == 0)
+    // If there are no instructions in this IG, we can look back at
+    // the previous IG's instructions if this IG is an extension.
+    //
+    if ((emitCurIGinsCnt == 0) && ((emitCurIG->igFlags & IGF_EXTEND) == 0))
     {
         return false;
     }
@@ -206,6 +207,93 @@ bool emitter::AreUpper32BitsZero(regNumber reg)
 
             // Else rely on operation size.
             return (id->idOpSize() == EA_4BYTE);
+
+        default:
+            break;
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------
+// AreFlagsSetToZeroCmp: Checks if the previous instruction set the SZ, and optionally OC, flags to
+//                       the same values as if there were a compare to 0
+//
+// Arguments:
+//    reg - register of interest
+//    opSize - size of register
+//    needsOCFlags - additionally check the overflow and carry flags
+//
+// Return Value:
+//    true if the previous instruction set the flags for reg
+//    false if not, or if we can't safely determine
+//
+// Notes:
+//    Currently only looks back one instruction.
+bool emitter::AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, bool needsOCFlags)
+{
+    assert(reg != REG_NA);
+    // Don't look back across IG boundaries (possible control flow)
+    if (emitCurIGinsCnt == 0 && ((emitCurIG->igFlags & IGF_EXTEND) == 0))
+    {
+        return false;
+    }
+
+    instrDesc* id  = emitLastIns;
+    insFormat  fmt = id->idInsFmt();
+
+    // make sure op1 is a reg
+    switch (fmt)
+    {
+        case IF_RWR_CNS:
+        case IF_RRW_CNS:
+        case IF_RRW_SHF:
+        case IF_RWR_RRD:
+        case IF_RRW_RRD:
+        case IF_RWR_MRD:
+        case IF_RWR_SRD:
+        case IF_RRW_SRD:
+        case IF_RWR_ARD:
+        case IF_RRW_ARD:
+        case IF_RWR:
+        case IF_RRD:
+        case IF_RRW:
+            break;
+
+        default:
+            return false;
+    }
+
+    if (id->idReg1() != reg)
+    {
+        return false;
+    }
+
+    switch (id->idIns())
+    {
+        case INS_adc:
+        case INS_add:
+        case INS_dec:
+        case INS_dec_l:
+        case INS_inc:
+        case INS_inc_l:
+        case INS_neg:
+        case INS_shr_1:
+        case INS_shl_1:
+        case INS_sar_1:
+        case INS_sbb:
+        case INS_sub:
+        case INS_xadd:
+            if (needsOCFlags)
+            {
+                return false;
+            }
+            __fallthrough;
+        // these always set OC to 0
+        case INS_and:
+        case INS_or:
+        case INS_xor:
+            return id->idOpSize() == opSize;
 
         default:
             break;
@@ -2870,24 +2958,27 @@ void emitter::emitHandleMemOp(GenTreeIndir* indir, instrDesc* id, insFormat fmt,
     }
     else
     {
+        regNumber amBaseReg = REG_NA;
         if (memBase != nullptr)
         {
-            id->idAddr()->iiaAddrMode.amBaseReg = memBase->GetRegNum();
-        }
-        else
-        {
-            id->idAddr()->iiaAddrMode.amBaseReg = REG_NA;
+            assert(!memBase->isContained());
+            amBaseReg = memBase->GetRegNum();
+            assert(amBaseReg != REG_NA);
         }
 
+        regNumber amIndxReg = REG_NA;
         if (indir->HasIndex())
         {
-            id->idAddr()->iiaAddrMode.amIndxReg = indir->Index()->GetRegNum();
+            GenTree* index = indir->Index();
+            assert(!index->isContained());
+            amIndxReg = index->GetRegNum();
+            assert(amIndxReg != REG_NA);
         }
-        else
-        {
-            id->idAddr()->iiaAddrMode.amIndxReg = REG_NA;
-        }
-        id->idAddr()->iiaAddrMode.amScale = emitEncodeScale(indir->Scale());
+
+        assert((amBaseReg != REG_NA) || (amIndxReg != REG_NA) || (indir->Offset() != 0)); // At least one should be set.
+        id->idAddr()->iiaAddrMode.amBaseReg = amBaseReg;
+        id->idAddr()->iiaAddrMode.amIndxReg = amIndxReg;
+        id->idAddr()->iiaAddrMode.amScale   = emitEncodeScale(indir->Scale());
 
         id->idInsFmt(emitMapFmtForIns(fmt, ins));
 
@@ -2944,7 +3035,7 @@ void emitter::spillIntArgRegsToShadowSlots()
 //
 void emitter::emitInsLoadInd(instruction ins, emitAttr attr, regNumber dstReg, GenTreeIndir* mem)
 {
-    assert(mem->OperIs(GT_IND));
+    assert(mem->OperIs(GT_IND, GT_NULLCHECK));
 
     GenTree* addr = mem->Addr();
 
@@ -2954,10 +3045,11 @@ void emitter::emitInsLoadInd(instruction ins, emitAttr attr, regNumber dstReg, G
         return;
     }
 
-    if (addr->OperGet() == GT_LCL_VAR_ADDR)
+    if (addr->OperIs(GT_LCL_VAR_ADDR, GT_LCL_FLD_ADDR))
     {
         GenTreeLclVarCommon* varNode = addr->AsLclVarCommon();
-        emitIns_R_S(ins, attr, dstReg, varNode->GetLclNum(), 0);
+        unsigned             offset  = varNode->GetLclOffs();
+        emitIns_R_S(ins, attr, dstReg, varNode->GetLclNum(), offset);
 
         // Updating variable liveness after instruction was emitted
         codeGen->genUpdateLife(varNode);
@@ -3006,17 +3098,18 @@ void emitter::emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* m
         return;
     }
 
-    if (addr->OperGet() == GT_LCL_VAR_ADDR)
+    if (addr->OperIs(GT_LCL_VAR_ADDR, GT_LCL_FLD_ADDR))
     {
         GenTreeLclVarCommon* varNode = addr->AsLclVarCommon();
+        unsigned             offset  = varNode->GetLclOffs();
         if (data->isContainedIntOrIImmed())
         {
-            emitIns_S_I(ins, attr, varNode->GetLclNum(), 0, (int)data->AsIntConCommon()->IconValue());
+            emitIns_S_I(ins, attr, varNode->GetLclNum(), offset, (int)data->AsIntConCommon()->IconValue());
         }
         else
         {
             assert(!data->isContained());
-            emitIns_S_R(ins, attr, data->GetRegNum(), varNode->GetLclNum(), 0);
+            emitIns_S_R(ins, attr, data->GetRegNum(), varNode->GetLclNum(), offset);
         }
 
         // Updating variable liveness after instruction was emitted
@@ -3196,9 +3289,11 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
             switch (memBase->OperGet())
             {
                 case GT_LCL_VAR_ADDR:
+                case GT_LCL_FLD_ADDR:
                 {
+                    assert(memBase->isContained());
                     varNum = memBase->AsLclVarCommon()->GetLclNum();
-                    offset = 0;
+                    offset = memBase->AsLclVarCommon()->GetLclOffs();
 
                     // Ensure that all the GenTreeIndir values are set to their defaults.
                     assert(!memIndir->HasIndex());
@@ -3509,8 +3604,7 @@ void emitter::emitInsRMW(instruction ins, emitAttr attr, GenTreeStoreInd* storeI
 {
     GenTree* addr = storeInd->Addr();
     addr          = addr->gtSkipReloadOrCopy();
-    assert(addr->OperGet() == GT_LCL_VAR || addr->OperGet() == GT_LCL_VAR_ADDR || addr->OperGet() == GT_LEA ||
-           addr->OperGet() == GT_CLS_VAR_ADDR || addr->OperGet() == GT_CNS_INT);
+    assert(addr->OperIs(GT_LCL_VAR, GT_LCL_VAR_ADDR, GT_LEA, GT_CLS_VAR_ADDR, GT_CNS_INT));
 
     instrDesc*     id = nullptr;
     UNATIVE_OFFSET sz;
@@ -3589,8 +3683,7 @@ void emitter::emitInsRMW(instruction ins, emitAttr attr, GenTreeStoreInd* storeI
 {
     GenTree* addr = storeInd->Addr();
     addr          = addr->gtSkipReloadOrCopy();
-    assert(addr->OperGet() == GT_LCL_VAR || addr->OperGet() == GT_LCL_VAR_ADDR || addr->OperGet() == GT_CLS_VAR_ADDR ||
-           addr->OperGet() == GT_LEA || addr->OperGet() == GT_CNS_INT);
+    assert(addr->OperIs(GT_LCL_VAR, GT_LCL_VAR_ADDR, GT_CLS_VAR_ADDR, GT_LEA, GT_CNS_INT));
 
     ssize_t offset = 0;
     if (addr->OperGet() != GT_CLS_VAR_ADDR)
@@ -10765,7 +10858,12 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         }
 
         // Check that the offset is properly aligned (i.e. the ddd in [ddd])
-        assert((emitChkAlign == false) || (ins == INS_lea) || (((size_t)addr & (byteSize - 1)) == 0));
+        // When SMALL_CODE is set, we only expect 4-byte alignment, otherwise
+        // we expect the same alignment as the size of the constant.
+
+        assert((emitChkAlign == false) || (ins == INS_lea) ||
+               ((emitComp->compCodeOpt() == Compiler::SMALL_CODE) && (((size_t)addr & 3) == 0)) ||
+               (((size_t)addr & (byteSize - 1)) == 0));
     }
     else
     {

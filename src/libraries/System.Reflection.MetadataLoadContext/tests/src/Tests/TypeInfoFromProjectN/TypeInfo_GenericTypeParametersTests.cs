@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using Xunit;
@@ -116,8 +115,6 @@ namespace System.Reflection.Tests
             VerifyGenericTypeParameters(typeof(Test_SIG21<int, string>).Project(), new string[] { }, new string[] { });
         }
 
-
-
         // Verify Generic Arguments
         [Fact]
         public static void TestGenericParameters16()
@@ -155,7 +152,6 @@ namespace System.Reflection.Tests
         {
             VerifyGenericTypeParameters(typeof(Test_C1).Project(), new string[] { }, null);
         }
-
 
         // Verify Generic Arguments
         [Fact]
@@ -198,7 +194,6 @@ namespace System.Reflection.Tests
         {
             VerifyGenericTypeParameters(typeof(Test_CIG1<>).Project(), new string[] { "T" }, new string[] { });
         }
-
 
         // Verify Generic Arguments
         [Fact]
@@ -264,12 +259,10 @@ namespace System.Reflection.Tests
 
             Assert.Equal(expectedGTP.Length, retGenericTypeParameters.Length);
 
-
             for (int i = 0; i < retGenericTypeParameters.Length; i++)
             {
                 Assert.Equal(expectedGTP[i], retGenericTypeParameters[i].Name);
             }
-
 
             Type baseType = typeInfo.BaseType;
             if (baseType == null)
@@ -283,19 +276,16 @@ namespace System.Reflection.Tests
                 baseType = interfaces[0];
             }
 
-
             TypeInfo typeInfoBase = baseType.GetTypeInfo();
             retGenericTypeParameters = typeInfoBase.GenericTypeParameters;
 
             Assert.Equal(expectedBaseGTP.Length, retGenericTypeParameters.Length);
-
 
             for (int i = 0; i < retGenericTypeParameters.Length; i++)
             {
                 Assert.Equal(expectedBaseGTP[i], retGenericTypeParameters[i].Name);
             }
         }
-
 
         private static Type[] getInterfaces(TypeInfo ti)
         {

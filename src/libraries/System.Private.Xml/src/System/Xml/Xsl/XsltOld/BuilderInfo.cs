@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Xml.Xsl.XsltOld
 {
@@ -10,10 +9,11 @@ namespace System.Xml.Xsl.XsltOld
     using System.Collections.Generic;
     using System.Xml;
     using System.Xml.XPath;
+    using System.Diagnostics.CodeAnalysis;
 
     internal class BuilderInfo
     {
-        private string _name;
+        private string? _name;
         private string _localName;
         private string _namespaceURI;
         private string _prefix;
@@ -22,18 +22,21 @@ namespace System.Xml.Xsl.XsltOld
         private int _depth;
         private bool _isEmptyTag;
 
-        internal string[] TextInfo = new string[4];
-        internal int TextInfoCount = 0;
+        internal string?[] TextInfo = new string[4];
+        internal int TextInfoCount;
 
         internal bool search;
-        internal HtmlElementProps htmlProps;
-        internal HtmlAttributeProps htmlAttrProps;
+        internal HtmlElementProps? htmlProps;
+        internal HtmlAttributeProps? htmlAttrProps;
 
         internal BuilderInfo()
         {
             Initialize(string.Empty, string.Empty, string.Empty);
         }
 
+        [MemberNotNull(nameof(_prefix))]
+        [MemberNotNull(nameof(_localName))]
+        [MemberNotNull(nameof(_namespaceURI))]
         internal void Initialize(string prefix, string name, string nspace)
         {
             _prefix = prefix;
@@ -45,6 +48,9 @@ namespace System.Xml.Xsl.XsltOld
             this.TextInfoCount = 0;
         }
 
+        [MemberNotNull(nameof(_prefix))]
+        [MemberNotNull(nameof(_localName))]
+        [MemberNotNull(nameof(_namespaceURI))]
         internal void Initialize(BuilderInfo src)
         {
             _prefix = src.Prefix;
@@ -135,19 +141,19 @@ namespace System.Xml.Xsl.XsltOld
                 switch (this.TextInfoCount)
                 {
                     case 0: return string.Empty;
-                    case 1: return this.TextInfo[0];
+                    case 1: return this.TextInfo[0]!;
                     default:
                         int size = 0;
                         for (int i = 0; i < this.TextInfoCount; i++)
                         {
-                            string ti = this.TextInfo[i];
+                            string? ti = this.TextInfo[i];
                             if (ti == null) continue; // ignore disableEscaping
                             size += ti.Length;
                         }
                         StringBuilder sb = new StringBuilder(size);
                         for (int i = 0; i < this.TextInfoCount; i++)
                         {
-                            string ti = this.TextInfo[i];
+                            string? ti = this.TextInfo[i];
                             if (ti == null) continue; // ignore disableEscaping
                             sb.Append(ti);
                         }
@@ -161,7 +167,7 @@ namespace System.Xml.Xsl.XsltOld
             }
         }
 
-        internal void ValueAppend(string s, bool disableEscaping)
+        internal void ValueAppend(string? s, bool disableEscaping)
         {
             if (s == null || s.Length == 0)
             {

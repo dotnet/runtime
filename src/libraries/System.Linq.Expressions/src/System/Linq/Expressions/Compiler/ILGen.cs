@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Dynamic.Utils;
@@ -62,11 +61,11 @@ namespace System.Linq.Expressions.Compiler
 
             switch (type.GetTypeCode())
             {
-                case TypeCode.Byte:
+                case TypeCode.SByte:
                     il.Emit(OpCodes.Ldind_I1);
                     break;
                 case TypeCode.Boolean:
-                case TypeCode.SByte:
+                case TypeCode.Byte:
                     il.Emit(OpCodes.Ldind_U1);
                     break;
                 case TypeCode.Int16:

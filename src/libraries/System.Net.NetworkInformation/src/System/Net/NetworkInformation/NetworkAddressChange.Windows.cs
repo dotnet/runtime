@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
 
@@ -41,7 +40,7 @@ namespace System.Net.NetworkInformation
         internal static class AvailabilityChangeListener
         {
             private static readonly NetworkAddressChangedEventHandler s_addressChange = ChangedAddress;
-            private static volatile bool s_isAvailable = false;
+            private static volatile bool s_isAvailable;
 
             private static void ChangedAddress(object? sender, EventArgs eventArgs)
             {
@@ -125,12 +124,12 @@ namespace System.Net.NetworkInformation
         internal static unsafe class AddressChangeListener
         {
             // Need to keep the reference so it isn't GC'd before the native call executes.
-            private static bool s_isListening = false;
-            private static bool s_isPending = false;
-            private static Socket? s_ipv4Socket = null;
-            private static Socket? s_ipv6Socket = null;
-            private static WaitHandle? s_ipv4WaitHandle = null;
-            private static WaitHandle? s_ipv6WaitHandle = null;
+            private static bool s_isListening;
+            private static bool s_isPending;
+            private static Socket? s_ipv4Socket;
+            private static Socket? s_ipv6Socket;
+            private static WaitHandle? s_ipv4WaitHandle;
+            private static WaitHandle? s_ipv6WaitHandle;
 
             // Callback fired when an address change occurs.
             private static void AddressChangedCallback(object? stateObject, bool signaled)
@@ -162,7 +161,7 @@ namespace System.Net.NetworkInformation
                     }
                     catch (NetworkInformationException nie)
                     {
-                        if (NetEventSource.IsEnabled) NetEventSource.Error(null, nie);
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, nie);
                     }
                 }
 
