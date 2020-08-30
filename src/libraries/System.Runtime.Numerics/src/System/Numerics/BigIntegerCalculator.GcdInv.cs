@@ -64,7 +64,7 @@ namespace System.Numerics
             left.CopyTo(result);
 
             uint[]? rightCopyFromPool = null;
-            Span<uint> rightCopy = right.Length <= AllocationThreshold ?
+            Span<uint> rightCopy = right.Length <= StackAllocThreshold ?
                                   stackalloc uint[right.Length]
                                   : (rightCopyFromPool = ArrayPool<uint>.Shared.Rent(right.Length)).AsSpan(0, right.Length);
             right.CopyTo(rightCopy);

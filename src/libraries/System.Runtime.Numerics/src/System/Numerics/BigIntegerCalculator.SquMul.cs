@@ -8,8 +8,13 @@ namespace System.Numerics
 {
     internal static partial class BigIntegerCalculator
     {
+#if DEBUG
         // Mutable for unit testing...
-        private static int SquareThreshold = 32;
+        private static
+#else
+        private const
+#endif
+        int SquareThreshold = 32;
 
         public static void Square(ReadOnlySpan<uint> value, Span<uint> bits)
         {
@@ -86,14 +91,14 @@ namespace System.Numerics
 
                 int foldLength = valueHigh.Length + 1;
                 uint[]? foldFromPool = null;
-                Span<uint> fold = foldLength <= AllocationThreshold ?
+                Span<uint> fold = foldLength <= StackAllocThreshold ?
                                   stackalloc uint[foldLength]
                                   : (foldFromPool = ArrayPool<uint>.Shared.Rent(foldLength)).AsSpan(0, foldLength);
                 fold.Clear();
 
                 int coreLength = foldLength + foldLength;
                 uint[]? coreFromPool = null;
-                Span<uint> core = coreLength <= AllocationThreshold ?
+                Span<uint> core = coreLength <= StackAllocThreshold ?
                                   stackalloc uint[coreLength]
                                   : (coreFromPool = ArrayPool<uint>.Shared.Rent(coreLength)).AsSpan(0, coreLength);
                 core.Clear();
@@ -138,8 +143,13 @@ namespace System.Numerics
             bits[i] = (uint)carry;
         }
 
+#if DEBUG
         // Mutable for unit testing...
-        private static int MultiplyThreshold = 32;
+        private static
+#else
+        private const
+#endif
+        int MultiplyThreshold = 32;
 
         public static void Multiply(ReadOnlySpan<uint> left, ReadOnlySpan<uint> right, Span<uint> bits)
         {
@@ -216,21 +226,21 @@ namespace System.Numerics
 
                 int leftFoldLength = leftHigh.Length + 1;
                 uint[]? leftFoldFromPool = null;
-                Span<uint> leftFold = leftFoldLength <= AllocationThreshold ?
+                Span<uint> leftFold = leftFoldLength <= StackAllocThreshold ?
                                       stackalloc uint[leftFoldLength]
                                       : (leftFoldFromPool = ArrayPool<uint>.Shared.Rent(leftFoldLength)).AsSpan(0, leftFoldLength);
                 leftFold.Clear();
 
                 int rightFoldLength = rightHigh.Length + 1;
                 uint[]? rightFoldFromPool = null;
-                Span<uint> rightFold = rightFoldLength <= AllocationThreshold ?
+                Span<uint> rightFold = rightFoldLength <= StackAllocThreshold ?
                                        stackalloc uint[rightFoldLength]
                                        : (rightFoldFromPool = ArrayPool<uint>.Shared.Rent(rightFoldLength)).AsSpan(0, rightFoldLength);
                 rightFold.Clear();
 
                 int coreLength = leftFoldLength + rightFoldLength;
                 uint[]? coreFromPool = null;
-                Span<uint> core = coreLength <= AllocationThreshold ?
+                Span<uint> core = coreLength <= StackAllocThreshold ?
                                   stackalloc uint[coreLength]
                                   : (coreFromPool = ArrayPool<uint>.Shared.Rent(coreLength)).AsSpan(0, coreLength);
                 core.Clear();

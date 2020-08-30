@@ -86,7 +86,7 @@ namespace System.Numerics
 
             // NOTE: left will get overwritten, we need a local copy
             // However, mutated left is not used afterwards, so use array pooling or stack alloc
-            Span<uint> leftCopy = left.Length <= AllocationThreshold ?
+            Span<uint> leftCopy = left.Length <= StackAllocThreshold ?
                                   stackalloc uint[left.Length]
                                   : (leftCopyFromPool = ArrayPool<uint>.Shared.Rent(left.Length)).AsSpan(0, left.Length);
             left.CopyTo(leftCopy);

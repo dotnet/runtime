@@ -6,8 +6,13 @@ namespace System.Numerics
 {
     internal static partial class BigIntegerCalculator
     {
+#if DEBUG
         // Mutable for unit testing...
-        private static int AllocationThreshold = 256;
+        internal static
+#else
+        internal const
+#endif
+        int StackAllocThreshold = 256;
 
         public static int Compare(ReadOnlySpan<uint> left, ReadOnlySpan<uint> right)
         {
