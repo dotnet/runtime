@@ -105,7 +105,6 @@ namespace System.Numerics
             private static int SubMod(Span<uint> left, ReadOnlySpan<uint> right, ReadOnlySpan<uint> modulus, int k)
             {
                 Debug.Assert(!left.IsEmpty);
-                Debug.Assert(!right.IsEmpty);
 
                 // Executes the subtraction algorithm for left and right,
                 // but considers only the first k limbs, which is equivalent to
