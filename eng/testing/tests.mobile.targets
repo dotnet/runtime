@@ -154,8 +154,9 @@
   <UsingTask TaskName="DownloadTimeZoneData"
              AssemblyFile="$(CreateCreateWasmBundlesAssemblyPath)" />
   <Target Condition="'$(TargetOS)' == 'Browser'" Name="LoadTimeZone" >
-    <DownloadTimeZoneData 
+    <DownloadTimeZoneData
       InputDirectory="$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'CreateWasmBundle', 'Debug', '$(NetCoreAppCurrent)', 'data'))"
+      TimeZones="@(_TimeZonesToBundle)"
       OutputDirectory="$(BundleDir)obj/data/output"/>
   </Target>
 

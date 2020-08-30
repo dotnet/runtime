@@ -37,8 +37,9 @@
 
   <UsingTask TaskName="DownloadTimeZoneData" AssemblyFile="$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'CreateWasmBundle', 'Debug', '$(NetCoreAppCurrent)', 'publish', 'CreateWasmBundle.dll'))"/>
   <Target Name="LoadTimeZones" DependsOnTargets="CheckEnv">
-    <DownloadTimeZoneData 
+    <DownloadTimeZoneData
       InputDirectory="$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'CreateWasmBundle', 'Debug', '$(NetCoreAppCurrent)', 'data'))"
+      TimeZones="@(_TimeZonesToBundle)"
       OutputDirectory="$(ArtifactsObjDir)wasm/data/output" />
   </Target>
 

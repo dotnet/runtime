@@ -14,73 +14,80 @@ using Microsoft.Build.Utilities;
 
 public class DownloadTimeZoneData : Task
 {
+    private const string _zone1970FileName = "zone1970.tab";
+
+    [Required]
+    public string[]? TimeZones { get; set; }
+
     [Required]
     public string? InputDirectory { get; set; }
-    
+
     [Required]
     public string? OutputDirectory { get; set; }
 
-    private void CompileTimeZoneDataSource() 
+    private void CompileTimeZoneDataSource()
     {
-        List<string> files = new List<string>() {"africa", "antarctica", "asia", "australasia", "etcetera", "europe", "northamerica", "southamerica"};    
-
-        using (Process process = new Process()) 
+        using (Process process = new Process())
         {
             process.StartInfo.UseShellExecute = false;
             process.StartInfo.FileName = "zic";
-            foreach (var f in files) 
+            foreach (var tzName in TimeZones!)
             {
-                process.StartInfo.Arguments = $"-d \"{OutputDirectory}\" \"{Path.Combine(InputDirectory!, f)}\"";
+                process.StartInfo.Arguments = $"-d \"{OutputDirectory}\" \"{Path.Combine(InputDirectory!, tzName)}\"";
                 process.Start();
                 process.WaitForExit();
             }
         }
-        File.Copy(Path.Combine(InputDirectory!, "zone1970.tab"), Path.Combine(OutputDirectory!,"zone1970.tab"));
     }
 
-    private void FilterTimeZoneData() 
+    private void FilterTimeZoneData()
     {
-        //  Remove unnecessary timezone files 
-        foreach (var entry in new DirectoryInfo (OutputDirectory!).EnumerateFiles()) 
+        //  Remove unnecessary timezone files in the root dir,
+        //  for named timezones like `CST6CDT`, `MST`, etc.
+        foreach (var entry in new DirectoryInfo (OutputDirectory!).EnumerateFiles())
         {
-            if (entry.Name != "zone1970.tab")
-                File.Delete(entry.FullName);
+            File.Delete(entry.FullName);
         }
     }
 
-    private void FilterZoneTab(string[] filters) 
+    private void FilterZoneTab(string zoneFile, string[] filters)
     {
-        var oldPath = Path.Combine(OutputDirectory!, "zone1970.tab");
         var path = Path.Combine(OutputDirectory!, "zone.tab");
-        using (StreamReader sr = new StreamReader(oldPath))
+        using (StreamReader sr = new StreamReader(zoneFile))
         using (StreamWriter sw = new StreamWriter(path))
         {
             string? line;
             while ((line = sr.ReadLine()) != null) {
-                if (filters.Any(x => Regex.IsMatch(line, $@"\b{x}\b"))) 
+                if (filters.Any(x => Regex.IsMatch(line, $@"\b{x}\b")))
                 {
                     sw.WriteLine(line);
                 }
             }
         }
-        File.Delete(oldPath);
     }
 
-    public override bool Execute() 
+    public override bool Execute()
     {
         if (!Directory.Exists(OutputDirectory))
             Directory.CreateDirectory(OutputDirectory!);
 
+        var zone1970FullPath = Path.Combine(InputDirectory!, _zone1970FileName);
+        if (!File.Exists(zone1970FullPath))
+        {
+            Log.LogError($"Could not find required file ${zone1970FullPath}");
+            return false;
+        }
+
         CompileTimeZoneDataSource();
-        
-        string[] filtered = new string[] { "America/Los_Angeles", "Australia/Sydney", "Europe/London", "Pacific/Tongatapu", 
+
+        string[] filtered = new string[] { "America/Los_Angeles", "Australia/Sydney", "Europe/London", "Pacific/Tongatapu",
                                 "America/Sao_Paulo", "Australia/Perth", "Africa/Nairobi", "Europe/Berlin",
                                 "Europe/Moscow", "Africa/Tripoli", "America/Argentina/Catamarca", "Europe/Lisbon",
                                 "America/St_Johns"};
-        
-        FilterTimeZoneData();
-        FilterZoneTab(filtered);
 
-        return true;
+        FilterTimeZoneData();
+        FilterZoneTab(zone1970FullPath, filtered);
+
+        return !Log.HasLoggedErrors;
     }
 }
