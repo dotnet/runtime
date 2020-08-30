@@ -3563,6 +3563,36 @@ void Compiler::fgInitBlockVarSets()
     fgBBVarSetsInited = true;
 }
 
+static bool blockNeedsGCPoll(BasicBlock* block)
+{
+    bool blockMayNeedGCPoll = false;
+    for (Statement* stmt = block->FirstNonPhiDef(); stmt != nullptr; stmt = stmt->GetNextStmt())
+    {
+        if ((stmt->GetRootNode()->gtFlags & GTF_CALL) != 0)
+        {
+            for (GenTree* tree = stmt->GetTreeList(); tree != nullptr; tree = tree->gtNext)
+            {
+                if (tree->OperGet() == GT_CALL)
+                {
+                    GenTreeCall* call = tree->AsCall();
+                    if (call->IsUnmanaged())
+                    {
+                        if (!call->IsSuppressGCTransition())
+                        {
+                            // If the block contains regular unmanaged call, we can depend on it
+                            // to poll for GC. No need to scan further.
+                            return false;
+                        }
+
+                        blockMayNeedGCPoll = true;
+                    }
+                }
+            }
+        }
+    }
+    return blockMayNeedGCPoll;
+}
+
 //------------------------------------------------------------------------------
 // fgInsertGCPolls : Insert GC polls for basic blocks containing calls to methods
 //                   with SuppressGCTransitionAttribute.
@@ -3601,40 +3631,9 @@ PhaseStatus Compiler::fgInsertGCPolls()
     // Walk through the blocks and hunt for a block that has needs a GC Poll
     for (block = fgFirstBB; block; block = block->bbNext)
     {
-        bool blockNeedsGCPoll = false;
-        if (opts.OptimizationDisabled())
-        {
-            if ((block->bbFlags & BBF_HAS_SUPPRESSGC_CALL) != 0)
-            {
-                blockNeedsGCPoll = true;
-            }
-        }
-        else
-        {
-            // When optimizations are enabled, we can't rely on BBF_HAS_SUPPRESSGC_CALL flag:
-            // the call could've been moved, e.g., hoisted from a loop, CSE'd, etc.
-            for (Statement* stmt = block->FirstNonPhiDef(); !blockNeedsGCPoll && (stmt != nullptr);
-                 stmt            = stmt->GetNextStmt())
-            {
-                if ((stmt->GetRootNode()->gtFlags & GTF_CALL) != 0)
-                {
-                    for (GenTree* tree = stmt->GetTreeList(); !blockNeedsGCPoll && (tree != nullptr);
-                         tree          = tree->gtNext)
-                    {
-                        if (tree->OperGet() == GT_CALL)
-                        {
-                            GenTreeCall* call = tree->AsCall();
-                            if (call->IsUnmanaged() && call->IsSuppressGCTransition())
-                            {
-                                blockNeedsGCPoll = true;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        if (!blockNeedsGCPoll)
+        // When optimizations are enabled, we can't rely on BBF_HAS_SUPPRESSGC_CALL flag:
+        // the call could've been moved, e.g., hoisted from a loop, CSE'd, etc.
+        if (opts.OptimizationDisabled() ? ((block->bbFlags & BBF_HAS_SUPPRESSGC_CALL) == 0) : !blockNeedsGCPoll(block))
         {
             continue;
         }
