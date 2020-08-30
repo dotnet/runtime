@@ -67,7 +67,6 @@ namespace System.Numerics
 
             private static int DivMul(ReadOnlySpan<uint> left, ReadOnlySpan<uint> right, Span<uint> bits, int k)
             {
-                Debug.Assert(!left.IsEmpty);
                 Debug.Assert(!right.IsEmpty);
                 Debug.Assert(!bits.IsEmpty);
                 Debug.Assert(bits.Length + k >= left.Length + right.Length);
