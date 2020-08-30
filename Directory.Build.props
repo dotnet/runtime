@@ -113,4 +113,15 @@
 
   <Import Project="$(RepositoryEngineeringDir)Analyzers.props" />
 
+  <ItemGroup Condition="'$(TargetOS)' == 'Browser'">
+     <_TimeZonesToBundle Include="africa" />
+     <_TimeZonesToBundle Include="antarctica" />
+     <_TimeZonesToBundle Include="asia" />
+     <_TimeZonesToBundle Include="australasia" />
+     <_TimeZonesToBundle Include="etcetera" />
+     <_TimeZonesToBundle Include="europe" />
+     <_TimeZonesToBundle Include="northamerica" />
+     <_TimeZonesToBundle Include="southamerica" />
+   </ItemGroup>
+
 </Project>

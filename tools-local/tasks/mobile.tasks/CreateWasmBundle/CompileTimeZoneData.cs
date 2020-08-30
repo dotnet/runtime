@@ -12,13 +12,18 @@ using System.Diagnostics;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 
-public class DownloadTimeZoneData : Task
+public class CompileTimeZoneData : Task
 {
     [Required]
     public string? InputDirectory { get; set; }
-    
+
     [Required]
     public string? OutputDirectory { get; set; }
+
+    [Required]
+    public string[]? TimeZones { get; set; }
+
+    public const string ZoneTabFileName = "zone1970.tab";
 
     private void CompileTimeZoneDataSource() 
     {
@@ -35,7 +40,6 @@ public class DownloadTimeZoneData : Task
                 process.WaitForExit();
             }
         }
-        File.Copy(Path.Combine(InputDirectory!, "zone1970.tab"), Path.Combine(OutputDirectory!,"zone1970.tab"));
     }
 
     private void FilterTimeZoneData() 
@@ -43,14 +47,14 @@ public class DownloadTimeZoneData : Task
         //  Remove unnecessary timezone files 
         foreach (var entry in new DirectoryInfo (OutputDirectory!).EnumerateFiles()) 
         {
-            if (entry.Name != "zone1970.tab")
+            if (entry.Name != ZoneTabFileName)
                 File.Delete(entry.FullName);
         }
     }
 
     private void FilterZoneTab(string[] filters) 
     {
-        var oldPath = Path.Combine(OutputDirectory!, "zone1970.tab");
+        var oldPath = Path.Combine(InputDirectory!, ZoneTabFileName);
         var path = Path.Combine(OutputDirectory!, "zone.tab");
         using (StreamReader sr = new StreamReader(oldPath))
         using (StreamWriter sw = new StreamWriter(path))
@@ -70,6 +74,11 @@ public class DownloadTimeZoneData : Task
     {
         if (!Directory.Exists(OutputDirectory))
             Directory.CreateDirectory(OutputDirectory!);
+
+        if (!File.Exists(Path.Combine(InputDirectory!, ZoneTabFileName))) {
+            Log.LogError($"Could not find required file {Path.Combine(InputDirectory!, ZoneTabFileName)}"); 
+            return false;
+        }
 
         CompileTimeZoneDataSource();
         
