@@ -31,11 +31,31 @@ namespace System.Net.Http.Functional.Tests
             Assert.NotEmpty(EventSource.GenerateManifest(esType, esType.Assembly.Location));
         }
 
-        [OuterLoop]
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void EventSource_SuccessfulRequest_LogsStartStop()
+        public static IEnumerable<object[]> TestMethods_MemberData()
         {
-            RemoteExecutor.Invoke(async useVersionString =>
+            yield return new object[] { "GetAsync" };
+            yield return new object[] { "SendAsync" };
+            yield return new object[] { "GetStringAsync" };
+            yield return new object[] { "GetByteArrayAsync" };
+            yield return new object[] { "GetStreamAsync" };
+            yield return new object[] { "InvokerSendAsync" };
+
+            yield return new object[] { "Send" };
+            yield return new object[] { "InvokerSend" };
+        }
+
+        [OuterLoop]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [MemberData(nameof(TestMethods_MemberData))]
+        public void EventSource_SuccessfulRequest_LogsStartStop(string testMethod)
+        {
+            if (UseVersion.Major != 1 && !testMethod.EndsWith("Async"))
+            {
+                // Synchronous requests are only supported for HTTP/1.1
+                return;
+            }
+
+            RemoteExecutor.Invoke(async (useVersionString, testMethod) =>
             {
                 Version version = Version.Parse(useVersionString);
                 using var listener = new TestEventListener("System.Net.Http", EventLevel.Verbose, eventCounterInterval: 0.1d);
@@ -46,8 +66,54 @@ namespace System.Net.Http.Functional.Tests
                     await GetFactoryForVersion(version).CreateClientAndServerAsync(
                         async uri =>
                         {
-                            using HttpClient client = CreateHttpClient(useVersionString);
-                            await client.GetStringAsync(uri);
+                            using HttpClientHandler handler = CreateHttpClientHandler(useVersionString);
+                            using HttpClient client = CreateHttpClient(handler, useVersionString);
+
+                            var request = new HttpRequestMessage(HttpMethod.Get, uri)
+                            {
+                                Version = version
+                            };
+
+                            switch (testMethod)
+                            {
+                                case "GetAsync":
+                                    await client.GetAsync(uri);
+                                    break;
+
+                                case "Send":
+                                    await Task.Run(() => client.Send(request));
+                                    break;
+
+                                case "SendAsync":
+                                    await client.SendAsync(request);
+                                    break;
+
+                                case "GetStringAsync":
+                                    await client.GetStringAsync(uri);
+                                    break;
+
+                                case "GetByteArrayAsync":
+                                    await client.GetByteArrayAsync(uri);
+                                    break;
+
+                                case "GetStreamAsync":
+                                    await client.GetStreamAsync(uri);
+                                    break;
+
+                                case "InvokerSend":
+                                    using (var invoker = new HttpMessageInvoker(handler))
+                                    {
+                                        await Task.Run(() => invoker.Send(request, cancellationToken: default));
+                                    }
+                                    break;
+
+                                case "InvokerSendAsync":
+                                    using (var invoker = new HttpMessageInvoker(handler))
+                                    {
+                                        await invoker.SendAsync(request, cancellationToken: default);
+                                    }
+                                    break;
+                            }
                         },
                         async server =>
                         {
@@ -69,22 +135,36 @@ namespace System.Net.Http.Functional.Tests
                 EventWrittenEventArgs stop = Assert.Single(events, e => e.EventName == "RequestStop");
                 Assert.Empty(stop.Payload);
 
-                Assert.DoesNotContain(events, e => e.EventName == "RequestAborted");
+                Assert.DoesNotContain(events, e => e.EventName == "RequestFailed");
 
                 ValidateConnectionEstablishedClosed(events, version.Major, version.Minor);
 
                 Assert.Single(events, e => e.EventName == "ResponseHeadersBegin");
 
+                if (!testMethod.StartsWith("InvokerSend"))
+                {
+                    Assert.Single(events, e => e.EventName == "ResponseContentStart");
+                    Assert.Single(events, e => e.EventName == "ResponseContentStop");
+                }
+
                 VerifyEventCounters(events, requestCount: 1, shouldHaveFailures: false);
-            }, UseVersion.ToString()).Dispose();
+            }, UseVersion.ToString(), testMethod).Dispose();
         }
 
         [OuterLoop]
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void EventSource_UnsuccessfulRequest_LogsStartAbortedStop()
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [MemberData(nameof(TestMethods_MemberData))]
+        public void EventSource_UnsuccessfulRequest_LogsStartFailedStop(string testMethod)
         {
-            RemoteExecutor.Invoke(async useVersionString =>
+            if (UseVersion.Major != 1 && !testMethod.EndsWith("Async"))
             {
+                // Synchronous requests are only supported for HTTP/1.1
+                return;
+            }
+
+            RemoteExecutor.Invoke(async (useVersionString, testMethod) =>
+            {
+                Version version = Version.Parse(useVersionString);
                 using var listener = new TestEventListener("System.Net.Http", EventLevel.Verbose, eventCounterInterval: 0.1d);
 
                 var events = new ConcurrentQueue<EventWrittenEventArgs>();
@@ -93,11 +173,58 @@ namespace System.Net.Http.Functional.Tests
                     var semaphore = new SemaphoreSlim(0, 1);
                     var cts = new CancellationTokenSource();
 
-                    await GetFactoryForVersion(Version.Parse(useVersionString)).CreateClientAndServerAsync(
+                    await GetFactoryForVersion(version).CreateClientAndServerAsync(
                         async uri =>
                         {
-                            using HttpClient client = CreateHttpClient(useVersionString);
-                            await Assert.ThrowsAsync<TaskCanceledException>(async () => await client.GetStringAsync(uri, cts.Token));
+                            using HttpClientHandler handler = CreateHttpClientHandler(useVersionString);
+                            using HttpClient client = CreateHttpClient(handler, useVersionString);
+
+                            var request = new HttpRequestMessage(HttpMethod.Get, uri)
+                            {
+                                Version = version
+                            };
+
+                            switch (testMethod)
+                            {
+                                case "GetAsync":
+                                    await Assert.ThrowsAsync<TaskCanceledException>(async () => await client.GetAsync(uri, cts.Token));
+                                    break;
+
+                                case "Send":
+                                    await Assert.ThrowsAsync<TaskCanceledException>(async () => await Task.Run(() => client.Send(request, cts.Token)));
+                                    break;
+
+                                case "SendAsync":
+                                    await Assert.ThrowsAsync<TaskCanceledException>(async () => await client.SendAsync(request, cts.Token));
+                                    break;
+
+                                case "GetStringAsync":
+                                    await Assert.ThrowsAsync<TaskCanceledException>(async () => await client.GetStringAsync(uri, cts.Token));
+                                    break;
+
+                                case "GetByteArrayAsync":
+                                    await Assert.ThrowsAsync<TaskCanceledException>(async () => await client.GetByteArrayAsync(uri, cts.Token));
+                                    break;
+
+                                case "GetStreamAsync":
+                                    await Assert.ThrowsAsync<TaskCanceledException>(async () => await client.GetStreamAsync(uri, cts.Token));
+                                    break;
+
+                                case "InvokerSend":
+                                    using (var invoker = new HttpMessageInvoker(handler))
+                                    {
+                                        await Assert.ThrowsAsync<TaskCanceledException>(async () => await Task.Run(() => invoker.Send(request, cts.Token)));
+                                    }
+                                    break;
+
+                                case "InvokerSendAsync":
+                                    using (var invoker = new HttpMessageInvoker(handler))
+                                    {
+                                        await Assert.ThrowsAsync<TaskCanceledException>(async () => await invoker.SendAsync(request, cts.Token));
+                                    }
+                                    break;
+                            }
+
                             semaphore.Release();
                         },
                         async server =>
@@ -117,27 +244,28 @@ namespace System.Net.Http.Functional.Tests
                 EventWrittenEventArgs start = Assert.Single(events, e => e.EventName == "RequestStart");
                 ValidateStartEventPayload(start);
 
-                EventWrittenEventArgs abort = Assert.Single(events, e => e.EventName == "RequestAborted");
-                Assert.Empty(abort.Payload);
+                EventWrittenEventArgs failure = Assert.Single(events, e => e.EventName == "RequestFailed");
+                Assert.Empty(failure.Payload);
 
                 EventWrittenEventArgs stop = Assert.Single(events, e => e.EventName == "RequestStop");
                 Assert.Empty(stop.Payload);
 
                 VerifyEventCounters(events, requestCount: 1, shouldHaveFailures: true);
-            }, UseVersion.ToString()).Dispose();
+            }, UseVersion.ToString(), testMethod).Dispose();
         }
 
         protected static void ValidateStartEventPayload(EventWrittenEventArgs startEvent)
         {
             Assert.Equal("RequestStart", startEvent.EventName);
-            Assert.Equal(6, startEvent.Payload.Count);
+            Assert.Equal(7, startEvent.Payload.Count);
 
             Assert.StartsWith("http", (string)startEvent.Payload[0]);
             Assert.NotEmpty((string)startEvent.Payload[1]); // host
             Assert.True(startEvent.Payload[2] is int port && port >= 0 && port <= 65535);
             Assert.NotEmpty((string)startEvent.Payload[3]); // pathAndQuery
-            Assert.True(startEvent.Payload[4] is int versionMajor && (versionMajor == 1 || versionMajor == 2));
-            Assert.True(startEvent.Payload[5] is int versionMinor && (versionMinor == 1 || versionMinor == 0));
+            Assert.True(startEvent.Payload[4] is byte versionMajor && (versionMajor == 1 || versionMajor == 2));
+            Assert.True(startEvent.Payload[5] is byte versionMinor && (versionMinor == 1 || versionMinor == 0));
+            Assert.InRange((HttpVersionPolicy)startEvent.Payload[6], HttpVersionPolicy.RequestVersionOrLower, HttpVersionPolicy.RequestVersionExact);
         }
 
         protected static void ValidateConnectionEstablishedClosed(ConcurrentQueue<EventWrittenEventArgs> events, int versionMajor, int versionMinor, int count = 1)
@@ -175,17 +303,17 @@ namespace System.Net.Http.Functional.Tests
             Assert.True(eventCounters.TryGetValue("requests-started-rate", out double[] requestRate));
             Assert.Contains(requestRate, r => r > 0);
 
-            Assert.True(eventCounters.TryGetValue("requests-aborted", out double[] requestsAborted));
-            Assert.True(eventCounters.TryGetValue("requests-aborted-rate", out double[] requestsAbortedRate));
+            Assert.True(eventCounters.TryGetValue("requests-failed", out double[] requestsFailures));
+            Assert.True(eventCounters.TryGetValue("requests-failed-rate", out double[] requestsFailureRate));
             if (shouldHaveFailures)
             {
-                Assert.Equal(1, requestsAborted[^1]);
-                Assert.Contains(requestsAbortedRate, r => r > 0);
+                Assert.Equal(1, requestsFailures[^1]);
+                Assert.Contains(requestsFailureRate, r => r > 0);
             }
             else
             {
-                Assert.All(requestsAborted, a => Assert.Equal(0, a));
-                Assert.All(requestsAbortedRate, r => Assert.Equal(0, r));
+                Assert.All(requestsFailures, a => Assert.Equal(0, a));
+                Assert.All(requestsFailureRate, r => Assert.Equal(0, r));
             }
 
             Assert.True(eventCounters.TryGetValue("current-requests", out double[] currentRequests));
@@ -305,7 +433,7 @@ namespace System.Net.Http.Functional.Tests
                 Assert.Equal(3, stops.Length);
                 Assert.All(stops, s => Assert.Empty(s.Payload));
 
-                Assert.DoesNotContain(events, e => e.EventName == "RequestAborted");
+                Assert.DoesNotContain(events, e => e.EventName == "RequestFailed");
 
                 ValidateConnectionEstablishedClosed(events, version.Major, version.Minor);
 

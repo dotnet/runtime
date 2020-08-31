@@ -327,12 +327,12 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        public void GetAsync_CustomException_Synchronous_ThrowsException()
+        public async Task GetAsync_CustomException_Synchronous_ThrowsException()
         {
             var e = new FormatException();
             using (var client = new HttpClient(new CustomResponseHandler((r, c) => { throw e; })))
             {
-                FormatException thrown = Assert.Throws<FormatException>(() => { client.GetAsync(CreateFakeUri()); });
+                FormatException thrown = await Assert.ThrowsAsync<FormatException>(() => client.GetAsync(CreateFakeUri()));
                 Assert.Same(e, thrown);
             }
         }
