@@ -7,8 +7,31 @@
     -->
     <BuildLineupPackage>false</BuildLineupPackage>
 
+    <ShouldVerifyClosure>true</ShouldVerifyClosure>
+
     <FrameworkListTargetPath>data/</FrameworkListTargetPath>
     <SkipBuildOnRuntimePackOnlyOS>true</SkipBuildOnRuntimePackOnlyOS>
   </PropertyGroup>
 
+  <ItemGroup>
+    <!-- netstandard will have cycles because OOB packages target netstandard and are used in netstandard closure,
+       We do ensure that netstandard inside the shared framework has no cycles, but we permit them in packages in order to allow for simpler netstandard-based builds.-->
+    <IgnoredReference Include="netstandard" />
+    <!-- windows.winmd is not part of the framework -->
+    <IgnoredReference Include="Windows" />
+
+    <!-- Exclude shims from the closure verification -->
+    <ExcludeFromClosure Include="mscorlib" />
+    <ExcludeFromClosure Include="System" />
+    <ExcludeFromClosure Include="System.Configuration" />
+    <ExcludeFromClosure Include="System.Core" />
+    <ExcludeFromClosure Include="System.Data" />
+    <ExcludeFromClosure Include="System.Drawing" />
+    <ExcludeFromClosure Include="System.Net" />
+    <ExcludeFromClosure Include="System.Security" />
+    <ExcludeFromClosure Include="System.ServiceModel.Web" />
+    <ExcludeFromClosure Include="System.ServiceProcess" />
+    <ExcludeFromClosure Include="System.Transactions" />
+    <ExcludeFromClosure Include="WindowsBase" />
+  </ItemGroup>
 </Project>
