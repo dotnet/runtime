@@ -4665,7 +4665,7 @@ namespace System
         public static string EscapeDataString(string stringToEscape) { throw null; }
         [System.ObsoleteAttribute("The method has been deprecated. Please use GetComponents() or static EscapeDataString() to escape a Uri component or a string. https://go.microsoft.com/fwlink/?linkid=14202")]
         protected static string EscapeString(string? str) { throw null; }
-        [System.ObsoleteAttribute("Uri.EscapeUriString can corrupt the Uri string in some cases. Consider using Uri.EscapeDataString instead.", DiagnosticId = "SYSLIB0013", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("Uri.EscapeUriString can corrupt the Uri string in some cases. Consider using Uri.EscapeDataString for query string components instead.", DiagnosticId = "SYSLIB0013", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static string EscapeUriString(string stringToEscape) { throw null; }
         public static int FromHex(char digit) { throw null; }
         public string GetComponents(System.UriComponents components, System.UriFormat format) { throw null; }
