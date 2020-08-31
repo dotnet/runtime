@@ -170,7 +170,6 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                 case "Debugger.enable":
                     {
-                        System.Console.WriteLine("recebi o Debugger.enable");
                         var resp = await SendCommand(id, method, args, token);
 
                         context.DebuggerId = resp.Value["debuggerId"]?.ToString();
@@ -854,7 +853,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     bp.State = BreakpointState.Disabled;
                 }
             }
-            breakpointRequest.Locations.Clear();
+            context.BreakpointRequests.Remove(bpid);
         }
 
         async Task SetBreakpoint(SessionId sessionId, DebugStore store, BreakpointRequest req, bool sendResolvedEvent, CancellationToken token)
