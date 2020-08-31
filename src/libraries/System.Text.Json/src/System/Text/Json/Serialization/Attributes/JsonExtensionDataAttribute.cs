@@ -16,7 +16,7 @@ namespace System.Text.Json.Serialization
     /// During serializing, the name of the extension data member is not included in the JSON;
     /// the data contained within the extension data is serialized as properties of the JSON object.
     ///
-    /// If there is more than one extension member on a type, or it the member is not of the correct type,
+    /// If there is more than one extension member on a type, or the member is not of the correct type,
     /// an <see cref="InvalidOperationException"/> is thrown during the first serialization or deserialization of that type.
     /// </remarks>
     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field, AllowMultiple = false)]

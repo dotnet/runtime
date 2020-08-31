@@ -71,7 +71,7 @@ namespace System.Data.ProviderBase
             Validate(offset, 2 * length);
             Debug.Assert(0 == offset % ADP.PtrSize, "invalid alignment");
 
-            string value = null;
+            string? value = null;
             bool mustRelease = false;
             RuntimeHelpers.PrepareConstrainedRegions();
             try

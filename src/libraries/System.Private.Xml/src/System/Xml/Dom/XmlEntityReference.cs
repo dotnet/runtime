@@ -30,7 +30,7 @@ namespace System.Xml
     public class XmlEntityReference : XmlLinkedNode
     {
         private readonly string _name;
-        private XmlLinkedNode _lastChild;
+        private XmlLinkedNode? _lastChild;
 
         protected internal XmlEntityReference(string name, XmlDocument doc) : base(doc)
         {
@@ -41,6 +41,7 @@ namespace System.Xml
                     throw new ArgumentException(SR.Xdom_InvalidCharacter_EntityReference);
                 }
             }
+
             _name = doc.NameTable.Add(name);
             doc.fEntRefNodesPresent = true;
         }
@@ -58,7 +59,7 @@ namespace System.Xml
         }
 
         // Gets or sets the value of the node.
-        public override string Value
+        public override string? Value
         {
             get
             {
@@ -103,7 +104,7 @@ namespace System.Xml
             get { return true; }
         }
 
-        internal override void SetParent(XmlNode node)
+        internal override void SetParent(XmlNode? node)
         {
             base.SetParent(node);
             if (LastNode == null && node != null && node != OwnerDocument)
@@ -119,7 +120,7 @@ namespace System.Xml
             this.SetParent(node);
         }
 
-        internal override XmlLinkedNode LastNode
+        internal override XmlLinkedNode? LastNode
         {
             get
             {
@@ -174,7 +175,7 @@ namespace System.Xml
         {
             get
             {
-                return OwnerDocument.BaseURI;
+                return OwnerDocument!.BaseURI;
             }
         }
 
@@ -197,7 +198,7 @@ namespace System.Xml
             get
             {
                 //get the associate entity and return its baseUri
-                XmlEntity ent = OwnerDocument.GetEntityNode(_name);
+                XmlEntity? ent = OwnerDocument!.GetEntityNode(_name);
                 if (ent != null)
                 {
                     if (!string.IsNullOrEmpty(ent.SystemId))
@@ -205,6 +206,7 @@ namespace System.Xml
                     else
                         return ent.BaseURI;
                 }
+
                 return string.Empty;
             }
         }

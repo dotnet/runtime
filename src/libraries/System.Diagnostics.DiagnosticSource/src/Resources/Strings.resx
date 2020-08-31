@@ -156,4 +156,7 @@
   <data name="KeyAlreadyExist" xml:space="preserve">
     <value>"The collection already contains item with same key '{0}''"</value>
   </data>
+  <data name="InvalidTraceParent" xml:space="preserve">
+    <value>"Invalid trace parent."</value>
+  </data>
 </root>

@@ -276,7 +276,7 @@ HRESULT CEECompileInfo::LoadAssemblyByPath(
         AssemblySpec spec;
         spec.InitializeSpec(TokenFromRid(1, mdtAssembly), pImage->GetMDImport(), NULL);
 
-        if (spec.IsMscorlib())
+        if (spec.IsCoreLib())
         {
             pAssembly = SystemDomain::System()->SystemAssembly();
         }
@@ -424,18 +424,13 @@ HRESULT CEECompileInfo::SetCompilationTarget(CORINFO_ASSEMBLY_HANDLE     assembl
 
     if (!pAssembly->IsSystem())
     {
-        // It is possible to get through a compile without calling BindAssemblySpec on mscorlib.  This
-        // is because refs to mscorlib are short circuited in a number of places.  So, we will explicitly
+        // It is possible to get through a compile without calling BindAssemblySpec on CoreLib.  This
+        // is because refs to CoreLib are short circuited in a number of places.  So, we will explicitly
         // add it to our dependencies.
 
-        AssemblySpec mscorlib;
-        mscorlib.InitializeSpec(SystemDomain::SystemFile());
-        GetAppDomain()->BindAssemblySpec(&mscorlib,TRUE);
-
-        if (!IsReadyToRunCompilation() && !SystemDomain::SystemFile()->HasNativeImage())
-        {
-            return NGEN_E_SYS_ASM_NI_MISSING;
-        }
+        AssemblySpec corelib;
+        corelib.InitializeSpec(SystemDomain::SystemFile());
+        GetAppDomain()->BindAssemblySpec(&corelib,TRUE);
     }
 
     if (IsReadyToRunCompilation() && !pModule->GetFile()->IsILOnly())
@@ -1326,7 +1321,7 @@ void CEECompileInfo::EncodeClass(
     COOPERATIVE_TRANSITION_END();
 }
 
-CORINFO_MODULE_HANDLE CEECompileInfo::GetLoaderModuleForMscorlib()
+CORINFO_MODULE_HANDLE CEECompileInfo::GetLoaderModuleForCoreLib()
 {
     STANDARD_VM_CONTRACT;
 
@@ -1634,7 +1629,7 @@ void CEECompileInfo::EncodeGenericSignature(
 {
     STANDARD_VM_CONTRACT;
 
-    Module * pInfoModule = MscorlibBinder::GetModule();
+    Module * pInfoModule = CoreLibBinder::GetModule();
 
     SigPointer ptr((PCCOR_SIGNATURE)signature);
 
@@ -4819,7 +4814,7 @@ static void SpecializeComparer(SString& ss, Instantiation& inst)
     // Override the default ObjectComparer for special cases
     //
     if (elemTypeHnd.CanCastTo(
-        TypeHandle(MscorlibBinder::GetClass(CLASS__ICOMPARABLEGENERIC)).Instantiate(Instantiation(&elemTypeHnd, 1))))
+        TypeHandle(CoreLibBinder::GetClass(CLASS__ICOMPARABLEGENERIC)).Instantiate(Instantiation(&elemTypeHnd, 1))))
     {
         ss.Set(W("System.Collections.Generic.GenericComparer`1"));
         return;
@@ -4829,7 +4824,7 @@ static void SpecializeComparer(SString& ss, Instantiation& inst)
     {
         Instantiation nullableInst = elemTypeHnd.AsMethodTable()->GetInstantiation();
         if (nullableInst[0].CanCastTo(
-            TypeHandle(MscorlibBinder::GetClass(CLASS__ICOMPARABLEGENERIC)).Instantiate(nullableInst)))
+            TypeHandle(CoreLibBinder::GetClass(CLASS__ICOMPARABLEGENERIC)).Instantiate(nullableInst)))
         {
             ss.Set(W("System.Collections.Generic.NullableComparer`1"));
             inst = nullableInst;
@@ -4874,7 +4869,7 @@ static void SpecializeEqualityComparer(SString& ss, Instantiation& inst)
     // Override the default ObjectEqualityComparer for special cases
     //
     if (elemTypeHnd.CanCastTo(
-        TypeHandle(MscorlibBinder::GetClass(CLASS__IEQUATABLEGENERIC)).Instantiate(Instantiation(&elemTypeHnd, 1))))
+        TypeHandle(CoreLibBinder::GetClass(CLASS__IEQUATABLEGENERIC)).Instantiate(Instantiation(&elemTypeHnd, 1))))
     {
         ss.Set(W("System.Collections.Generic.GenericEqualityComparer`1"));
         return;
@@ -4884,7 +4879,7 @@ static void SpecializeEqualityComparer(SString& ss, Instantiation& inst)
     {
         Instantiation nullableInst = elemTypeHnd.AsMethodTable()->GetInstantiation();
         if (nullableInst[0].CanCastTo(
-            TypeHandle(MscorlibBinder::GetClass(CLASS__IEQUATABLEGENERIC)).Instantiate(nullableInst)))
+            TypeHandle(CoreLibBinder::GetClass(CLASS__IEQUATABLEGENERIC)).Instantiate(nullableInst)))
         {
             ss.Set(W("System.Collections.Generic.NullableEqualityComparer`1"));
             inst = nullableInst;
@@ -4925,7 +4920,7 @@ void CEEPreloader::ApplyTypeDependencyProductionsForType(TypeHandle t)
 
     pMT = pMT->GetCanonicalMethodTable();
 
-    // The TypeDependencyAttribute attribute is currently only allowed on mscorlib types
+    // The TypeDependencyAttribute attribute is currently only allowed on CoreLib types
     // Don't even look for the attribute on types in other assemblies.
     if(!pMT->GetModule()->IsSystem()) {
         return;
@@ -5004,7 +4999,7 @@ void CEEPreloader::ApplyTypeDependencyProductionsForType(TypeHandle t)
             TypeHandle typicalDepTH = TypeName::GetTypeUsingCASearchRules(ss.GetUnicode(), pMT->GetAssembly());
 
             _ASSERTE(!typicalDepTH.IsNull());
-            // This attribute is currently only allowed to refer to mscorlib types
+            // This attribute is currently only allowed to refer to CoreLib types
             _ASSERTE(typicalDepTH.GetModule()->IsSystem());
             if (!typicalDepTH.GetModule()->IsSystem())
                 continue;
@@ -5012,7 +5007,7 @@ void CEEPreloader::ApplyTypeDependencyProductionsForType(TypeHandle t)
             // For IList<T>, ICollection<T>, IEnumerable<T>, IReadOnlyCollection<T> & IReadOnlyList<T>, include SZArrayHelper's
             // generic methods (or at least the relevant ones) in the ngen image in
             // case someone casts a T[] to an IList<T> (or ICollection<T> or IEnumerable<T>, etc).
-            if (MscorlibBinder::IsClass(typicalDepTH.AsMethodTable(), CLASS__SZARRAYHELPER))
+            if (CoreLibBinder::IsClass(typicalDepTH.AsMethodTable(), CLASS__SZARRAYHELPER))
             {
 #ifdef FEATURE_FULL_NGEN
                 if (pMT->GetNumGenericArgs() != 1 || !pMT->IsInterface()) {
@@ -5091,14 +5086,14 @@ void CEEPreloader::ApplyTypeDependencyForSZArrayHelper(MethodTable * pInterfaceM
         METHOD__SZARRAYHELPER__REMOVEAT, // Last method of IList<T>
     };
 
-    // Assuming the binder ID's are properly laid out in mscorlib.h
+    // Assuming the binder ID's are properly laid out in corelib.h
 #if _DEBUG
     for(unsigned int i=0; i < NumItems(LastMethodOnGenericArrayInterfaces) - 1; i++) {
         _ASSERTE(LastMethodOnGenericArrayInterfaces[i] < LastMethodOnGenericArrayInterfaces[i+1]);
     }
 #endif
 
-    MethodTable* pExactMT = MscorlibBinder::GetClass(CLASS__SZARRAYHELPER);
+    MethodTable* pExactMT = CoreLibBinder::GetClass(CLASS__SZARRAYHELPER);
 
     // Subtract one from the non-generic IEnumerable that the generic IEnumerable<T>
     // inherits from.
@@ -5114,7 +5109,7 @@ void CEEPreloader::ApplyTypeDependencyForSZArrayHelper(MethodTable * pInterfaceM
         if (SZArrayHelperMethodIDs[i] > LastMethodOnGenericArrayInterfaces[inheritanceDepth])
             continue;
 
-        MethodDesc * pPrimaryMD = MscorlibBinder::GetMethod(SZArrayHelperMethodIDs[i]);
+        MethodDesc * pPrimaryMD = CoreLibBinder::GetMethod(SZArrayHelperMethodIDs[i]);
 
         MethodDesc * pInstantiatedMD = MethodDesc::FindOrCreateAssociatedMethodDesc(pPrimaryMD,
                                            pExactMT, false, Instantiation(&elemTypeHnd, 1), false);
@@ -6272,7 +6267,7 @@ CorCompileILRegion CEEPreloader::GetILRegion(mdMethodDef token)
             else
             if (MethodIsVisibleOutsideItsAssembly(pMD))
             {
-                // We are inlining only leaf methods, except for mscorlib. Thus we can assume that only methods
+                // We are inlining only leaf methods, except for CoreLib. Thus we can assume that only methods
                 // visible outside its assembly are likely to be inlined.
                 region = CORCOMPILE_ILREGION_INLINEABLE;
             }
@@ -6611,7 +6606,7 @@ HRESULT CompilationDomain::AddDependencyEntry(PEAssembly *pFile,
     if (pFile)
     {
         DomainAssembly *pAssembly = GetAppDomain()->LoadDomainAssembly(NULL, pFile, FILE_LOAD_CREATE);
-        // Note that this can trigger an assembly load (of mscorlib)
+        // Note that this can trigger an assembly load (of CoreLib)
         pAssembly->GetOptimizedIdentitySignature(&pDependency->signAssemblyDef);
 
 
@@ -6642,17 +6637,17 @@ HRESULT CompilationDomain::AddDependency(AssemblySpec *pRefSpec,
     // This assert prevents dependencies from silently being loaded without being recorded.
     _ASSERTE(m_pEmit);
 
-    // Normalize any reference to mscorlib; we don't want to record other non-canonical
-    // mscorlib references in the ngen image since fusion doesn't understand how to bind them.
+    // Normalize any reference to CoreLib; we don't want to record other non-canonical
+    // CoreLib references in the ngen image since fusion doesn't understand how to bind them.
     // (Not to mention the fact that they are redundant.)
     AssemblySpec spec;
-    if (pRefSpec->IsMscorlib())
+    if (pRefSpec->IsCoreLib())
     {
-        _ASSERTE(pFile); // mscorlib had better not be missing
+        _ASSERTE(pFile); // CoreLib had better not be missing
         if (!pFile)
             return E_UNEXPECTED;
 
-        // Don't store a binding from mscorlib to itself.
+        // Don't store a binding from CoreLib to itself.
         if (m_pTargetAssembly == SystemDomain::SystemAssembly())
             return S_OK;
 
@@ -6661,8 +6656,8 @@ HRESULT CompilationDomain::AddDependency(AssemblySpec *pRefSpec,
     }
     else if (m_pTargetAssembly == NULL && pFile)
     {
-        // If target assembly is still NULL, we must be loading either the target assembly or mscorlib.
-        // Mscorlib is already handled above, so we must be loading the target assembly if we get here.
+        // If target assembly is still NULL, we must be loading either the target assembly or CoreLib.
+        // CoreLib is already handled above, so we must be loading the target assembly if we get here.
         // Use the assembly name given in the target assembly so that the native image is deterministic
         // regardless of how the target assembly is specified on the command line.
         spec.InitializeSpec(pFile);
@@ -6761,7 +6756,7 @@ BOOL CompilationDomain::CanEagerBindToZapFile(Module *targetModule, BOOL limitTo
 
     //
     // CoreCLR does not have attributes for fine grained eager binding control.
-    // We hard bind to mscorlib.dll only.
+    // We hard bind to CoreLib only.
     //
     return targetModule->IsSystem();
 }

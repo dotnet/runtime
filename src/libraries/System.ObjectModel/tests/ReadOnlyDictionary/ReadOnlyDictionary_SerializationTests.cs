@@ -16,7 +16,7 @@ namespace System.Collections.ObjectModel.Tests
             yield return new object[] { new ReadOnlyDictionary<string, string>(new Dictionary<string, string>() { { "a", "b" }, { "c", "d" } }) };
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported))]
         [MemberData(nameof(SerializeDeserialize_Roundtrips_MemberData))]
         public void SerializeDeserialize_Roundtrips(ReadOnlyDictionary<string, string> d)
         {

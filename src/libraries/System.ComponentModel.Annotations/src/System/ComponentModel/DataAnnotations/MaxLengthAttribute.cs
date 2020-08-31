@@ -59,7 +59,7 @@ namespace System.ComponentModel.DataAnnotations
         ///     <c>true</c> if the value is null or less than or equal to the specified maximum length, otherwise <c>false</c>
         /// </returns>
         /// <exception cref="InvalidOperationException">Length is zero or less than negative one.</exception>
-        public override bool IsValid(object value)
+        public override bool IsValid(object? value)
         {
             // Check the lengths for legality
             EnsureLegalLengths();
@@ -120,10 +120,10 @@ namespace System.ComponentModel.DataAnnotations
                 return true;
             }
 
-            PropertyInfo property = value.GetType().GetRuntimeProperty("Count");
+            PropertyInfo? property = value.GetType().GetRuntimeProperty("Count");
             if (property != null && property.CanRead && property.PropertyType == typeof(int))
             {
-                count = (int)property.GetValue(value);
+                count = (int)property.GetValue(value)!;
                 return true;
             }
 

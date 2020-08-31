@@ -215,22 +215,38 @@ namespace System.Configuration
                 AssemblyName assemblyName = assembly.GetName();
                 Uri codeBase = new Uri(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, assembly.ManifestModule.Name));
 
-                hash = IdentityHelper.GetNormalizedStrongNameHash(assemblyName);
+                try
+                {
+                    // Certain platforms may not have support for crypto
+                    hash = IdentityHelper.GetNormalizedStrongNameHash(assemblyName);
+                }
+                catch (PlatformNotSupportedException) { }
+
                 if (hash != null)
                 {
                     typeName = StrongNameDesc;
                 }
                 else
                 {
-                    hash = IdentityHelper.GetNormalizedUriHash(codeBase);
-                    typeName = UrlDesc;
+                    try
+                    {
+                        // Certain platforms may not have support for crypto
+                        hash = IdentityHelper.GetNormalizedUriHash(codeBase);
+                        typeName = UrlDesc;
+                    }
+                    catch (PlatformNotSupportedException) { }
                 }
             }
             else if (!string.IsNullOrEmpty(exePath))
             {
-                // Fall back on the exe name
-                hash = IdentityHelper.GetStrongHashSuitableForObjectName(exePath);
-                typeName = PathDesc;
+                try
+                {
+                    // Fall back on the exe name
+                    // Certain platforms may not have support for crypto
+                    hash = IdentityHelper.GetStrongHashSuitableForObjectName(exePath);
+                    typeName = PathDesc;
+                }
+                catch (PlatformNotSupportedException) { }
             }
 
             if (!string.IsNullOrEmpty(hash)) suffix = "_" + typeName + "_" + hash;

@@ -17,22 +17,22 @@ namespace System.Xml.Serialization
 
     public class XmlSerializerFactory
     {
-        public XmlSerializer CreateSerializer(Type type, XmlAttributeOverrides overrides, Type[] extraTypes, XmlRootAttribute root, string defaultNamespace)
+        public XmlSerializer CreateSerializer(Type type, XmlAttributeOverrides? overrides, Type[]? extraTypes, XmlRootAttribute? root, string? defaultNamespace)
         {
             return CreateSerializer(type, overrides, extraTypes, root, defaultNamespace, null);
         }
 
-        public XmlSerializer CreateSerializer(Type type, XmlRootAttribute root)
+        public XmlSerializer CreateSerializer(Type type, XmlRootAttribute? root)
         {
             return CreateSerializer(type, null, Array.Empty<Type>(), root, null, null);
         }
 
-        public XmlSerializer CreateSerializer(Type type, Type[] extraTypes)
+        public XmlSerializer CreateSerializer(Type type, Type[]? extraTypes)
         {
             return CreateSerializer(type, null, extraTypes, null, null, null);
         }
 
-        public XmlSerializer CreateSerializer(Type type, XmlAttributeOverrides overrides)
+        public XmlSerializer CreateSerializer(Type type, XmlAttributeOverrides? overrides)
         {
             return CreateSerializer(type, overrides, Array.Empty<Type>(), null, null, null);
         }
@@ -44,15 +44,15 @@ namespace System.Xml.Serialization
 
         public XmlSerializer CreateSerializer(Type type)
         {
-            return CreateSerializer(type, (string)null);
+            return CreateSerializer(type, (string?)null);
         }
 
-        public XmlSerializer CreateSerializer(Type type, string defaultNamespace)
+        public XmlSerializer CreateSerializer(Type type, string? defaultNamespace)
         {
             return new XmlSerializer(type, defaultNamespace);
         }
 
-        public XmlSerializer CreateSerializer(Type type, XmlAttributeOverrides overrides, Type[] extraTypes, XmlRootAttribute root, string defaultNamespace, string location)
+        public XmlSerializer CreateSerializer(Type type, XmlAttributeOverrides? overrides, Type[]? extraTypes, XmlRootAttribute? root, string? defaultNamespace, string? location)
         {
             return new XmlSerializer(type, overrides, extraTypes, root, defaultNamespace, location);
         }

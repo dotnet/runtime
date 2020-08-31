@@ -52,7 +52,7 @@ namespace System.Data.Tests
             return ds;
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void SingleElementTreatmentDifference()
         {
             // This is one of the most complicated case. When the content
@@ -149,7 +149,7 @@ namespace System.Data.Tests
             DataSetAssertion.AssertDataTable("complex", ds.Tables[0], "Root", 1, 0, 0, 0, 0, 0);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void SuspiciousDataSetElement()
         {
             string schema = @"<?xml version='1.0'?>
@@ -174,7 +174,7 @@ namespace System.Data.Tests
             DataSetAssertion.AssertDataTable("table", ds.Tables[0], "elem", 2, 0, 0, 0, 0, 0);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void UnusedComplexTypesIgnored()
         {
             string xs = @"<xs:schema xmlns:xs='http://www.w3.org/2001/XMLSchema' id='hoge'>
@@ -213,7 +213,7 @@ namespace System.Data.Tests
             DataSetAssertion.AssertDataSet("ds", ds, "NewDataSet", 0, 0);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void IsDataSetAndTypeIgnored()
         {
             string xsbase = @"<xs:schema xmlns:xs='http://www.w3.org/2001/XMLSchema' xmlns:msdata='urn:schemas-microsoft-com:xml-msdata'>
@@ -243,7 +243,7 @@ namespace System.Data.Tests
             DataSetAssertion.AssertDataSet("ds", ds, "NewDataSet", 1, 0);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void NestedReferenceNotAllowed()
         {
             string xs = @"<xs:schema xmlns:xs='http://www.w3.org/2001/XMLSchema' xmlns:msdata='urn:schemas-microsoft-com:xml-msdata'>
@@ -272,7 +272,7 @@ namespace System.Data.Tests
            });
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void IsDataSetOnLocalElementIgnored()
         {
             string xsbase = @"<xs:schema xmlns:xs='http://www.w3.org/2001/XMLSchema' xmlns:msdata='urn:schemas-microsoft-com:xml-msdata'>
@@ -294,7 +294,7 @@ namespace System.Data.Tests
             DataSetAssertion.AssertDataSet("ds", ds, "NewDataSet", 1, 0);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void LocaleOnRootWithoutIsDataSet()
         {
             using (new ThreadCultureChange("fi-FI"))
@@ -323,7 +323,7 @@ namespace System.Data.Tests
         }
 
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void ElementHasIdentityConstraint()
         {
             string constraints = @"
@@ -381,7 +381,7 @@ namespace System.Data.Tests
             Assert.Equal(0, ds.Relations.Count);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void PrefixedTargetNS()
         {
             string xs = @"<xs:schema xmlns:xs='http://www.w3.org/2001/XMLSchema' xmlns:msdata='urn:schemas-microsoft-com:xml-msdata' xmlns:x='urn:foo' targetNamespace='urn:foo' elementFormDefault='qualified'>
@@ -477,7 +477,7 @@ namespace System.Data.Tests
                 new string[] { "Column1_3" });
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         // 001-004
         public void TestSampleFileNoTables()
         {
@@ -510,7 +510,7 @@ namespace System.Data.Tests
             DataSetAssertion.AssertDataSet("004", ds, "NewDataSet", 0, 0);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void TestSampleFileSimpleTables()
         {
             var ds = new DataSet();
@@ -547,7 +547,7 @@ namespace System.Data.Tests
             DataSetAssertion.AssertDataColumn("att2", dt.Columns["att2"], "att2", true, false, 0, 1, "att2", MappingType.Attribute, typeof(int), 2, string.Empty, -1, string.Empty, /*1*/-1, string.Empty, false, false);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void TestSampleFileComplexTables()
         {
             // Nested simple type element
@@ -608,7 +608,7 @@ namespace System.Data.Tests
             DataSetAssertion.AssertDataColumn("id", dt.Columns[1], "uno_Id", true, false, 0, 1, "uno_Id", MappingType.Hidden, typeof(int), DBNull.Value, string.Empty, -1, string.Empty, 1, string.Empty, false, false);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void TestSampleFileComplexTables3()
         {
             var ds = new DataSet();
@@ -639,7 +639,7 @@ namespace System.Data.Tests
             DataSetAssertion.AssertDataColumn("simple", dt.Columns[1], "e_text", false, false, 0, 1, "e_text", MappingType.SimpleContent, typeof(decimal), DBNull.Value, string.Empty, -1, string.Empty, 1, string.Empty, false, false);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void TestSampleFileXPath()
         {
             var ds = new DataSet();
@@ -681,7 +681,7 @@ namespace System.Data.Tests
                     </xs:schema>"));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void TestAnnotatedRelation1()
         {
             var ds = new DataSet();
@@ -732,7 +732,7 @@ namespace System.Data.Tests
             DataSetAssertion.AssertDataRelation("rel", ds.Relations[0], "rel", false, new string[] { "pk" }, new string[] { "fk" }, false, false);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void TestAnnotatedRelation2()
         {
             var ds = new DataSet();
@@ -783,7 +783,7 @@ namespace System.Data.Tests
             DataSetAssertion.AssertDataRelation("rel", ds.Relations[0], "rel", true, new string[] { "pk" }, new string[] { "fk" }, false, false);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void RepeatableSimpleElement()
         {
             var ds = new DataSet();
@@ -811,7 +811,7 @@ namespace System.Data.Tests
             DataSetAssertion.AssertDataRelation("rel", ds.Relations[0], "Foo_Bar", true, new string[] { "Foo_Id" }, new string[] { "Foo_Id" }, true, true);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void TestMoreThanOneRepeatableColumns()
         {
             var ds = new DataSet();
@@ -861,7 +861,7 @@ namespace System.Data.Tests
             Assert.True(ds.GetXmlSchema().IndexOf("AutoIncrementStep") > 0);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void ReadConstraints()
         {
             var ds = new DataSet();
@@ -904,7 +904,7 @@ namespace System.Data.Tests
             Assert.Equal("fk1", ds.Tables[1].Constraints[0].ConstraintName);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void ReadAnnotatedRelations_MultipleColumns()
         {
             var ds = new DataSet();

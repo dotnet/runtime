@@ -54,6 +54,7 @@ set( JIT_SOURCES
   instr.cpp
   jitconfig.cpp
   jiteh.cpp
+  jithashtable.cpp
   jittelemetry.cpp
   lclmorph.cpp
   lclvars.cpp

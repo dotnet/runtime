@@ -37,8 +37,16 @@
         BundledNETCoreAppPackageVersion=$(BundledNETCoreAppPackageVersion);
         HelixRuntimeRid=$(HelixRuntimeRid)
       </_PropertiesToPass>
-    </PropertyGroup>
 
+      
+      <_PropertiesToPass Condition="'$(TargetArchitecture)' == 'wasm' ">
+        $(_PropertiesToPass);
+        IncludeDotNetCli=$(IncludeDotNetCli);
+        DotNetCliRuntime=$(DotNetCliRuntime);
+        DotNetCliPackageType=$(DotNetCliPackageType);
+        DotNetCliVersion=$(DotNetCliVersion)
+      </_PropertiesToPass>
+    </PropertyGroup>  
     <Message Text="DotNetCliVersion: $(DotNetCliVersion)" Importance="High" />
     <Message Text="DotNetCliPackageType: $(DotNetCliPackageType)" Importance="High" />
     <Message Text="HelixRuntimeRid: $(HelixRuntimeRid)" Importance="High" />
@@ -66,10 +74,12 @@
 
   <!-- Choose a suitable runtime RID for Helix to restore the dotnet cli -->
   <PropertyGroup Condition="'$(HelixRuntimeRid)' == ''">
-    <HelixRuntimeRid Condition="'$(__TargetOS)' == 'Windows_NT'">win-$(TargetArchitecture)</HelixRuntimeRid>
-    <HelixRuntimeRid Condition="'$(__TargetOS)' == 'OSX'">osx-$(TargetArchitecture)</HelixRuntimeRid>
-    <HelixRuntimeRid Condition="'$(__TargetOS)' == 'Linux'">linux-$(TargetArchitecture)</HelixRuntimeRid>
-    <HelixRuntimeRid Condition="'$(__TargetOS)' == 'Linux_musl'">linux-musl-$(TargetArchitecture)</HelixRuntimeRid>
+    <TargetOSSpec>$(TargetOS)$(TargetOSSubgroup)</TargetOSSpec>
+    <HelixRuntimeRid Condition="'$(TargetOSSpec)' == 'Windows_NT'">win-$(TargetArchitecture)</HelixRuntimeRid>
+    <HelixRuntimeRid Condition="'$(TargetOSSpec)' == 'OSX'">osx-$(TargetArchitecture)</HelixRuntimeRid>
+    <HelixRuntimeRid Condition="'$(TargetOSSpec)' == 'Linux'">linux-$(TargetArchitecture)</HelixRuntimeRid>
+    <HelixRuntimeRid Condition="'$(TargetOSSpec)' == 'Linux_musl'">linux-musl-$(TargetArchitecture)</HelixRuntimeRid>
+    <HelixRuntimeRid Condition="'$(TargetArchitecture)' == 'wasm'">browser-wasm</HelixRuntimeRid>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -82,7 +92,15 @@
     <IncludeDotNetCli>true</IncludeDotNetCli>
     <DotNetCliPackageType>runtime</DotNetCliPackageType>
     <DotNetCliVersion>$(BundledNETCoreAppPackageVersion)</DotNetCliVersion>
-    <DotNetCliRuntime>$(HelixRuntimeRid)</DotNetCliRuntime>
+    <DotNetCliRuntime>$(HelixRuntimeRid)</DotNetCliRuntime> 
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetArchitecture)' == 'wasm'">
+    <DotNetCliPackageType>sdk</DotNetCliPackageType>
+    <GlobalJsonContent>$([System.IO.File]::ReadAllText('$(RepoRoot)global.json'))</GlobalJsonContent>
+    <DotNetCliVersion>$([System.Text.RegularExpressions.Regex]::Match($(GlobalJsonContent), '(%3F&lt;="dotnet": ").*(%3F=")'))</DotNetCliVersion>
+    <!-- wasm needs to use the host OS DotnetCliRuntime, which on its queue is linux-x64 -->
+    <DotNetCliRuntime>linux-x64</DotNetCliRuntime>
   </PropertyGroup>
 
   <Import Project="testgrouping.proj" />

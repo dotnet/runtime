@@ -725,37 +725,6 @@ public:
         return GetRCThreadSendBuffer();
     }
 
-    DebuggerIPCEvent *GetIPCEventSendBufferContinuation(
-        DebuggerIPCEvent *eventCur)
-    {
-        CONTRACTL
-        {
-            NOTHROW;
-            GC_NOTRIGGER;
-            PRECONDITION(eventCur != NULL);
-            PRECONDITION(eventCur->next == NULL);
-        }
-        CONTRACTL_END;
-
-        DebuggerIPCEvent *dipce = (DebuggerIPCEvent *) new (nothrow) BYTE [CorDBIPC_BUFFER_SIZE];
-        dipce->next = NULL;
-
-        LOG((LF_CORDB,LL_INFO1000000, "About to GIPCESBC 0x%x\n",dipce));
-
-        if (dipce != NULL)
-        {
-            eventCur->next = dipce;
-        }
-#ifdef _DEBUG
-        else
-        {
-            _ASSERTE( !"GetIPCEventSendBufferContinuation failed to allocate mem!" );
-        }
-#endif //_DEBUG
-
-        return dipce;
-    }
-
     // Send an IPCEvent once we're ready for sending. This should be done inbetween
     // SENDIPCEVENT_BEGIN & SENDIPCEVENT_END. See definition of SENDIPCEVENT_BEGIN
     // for usage pattern

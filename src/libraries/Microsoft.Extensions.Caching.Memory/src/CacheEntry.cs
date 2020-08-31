@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
 
 namespace Microsoft.Extensions.Caching.Memory
@@ -18,6 +19,7 @@ namespace Microsoft.Extensions.Caching.Memory
         private IList<IDisposable> _expirationTokenRegistrations;
         private IList<PostEvictionCallbackRegistration> _postEvictionCallbacks;
         private bool _isExpired;
+        private readonly ILogger _logger;
 
         internal IList<IChangeToken> _expirationTokens;
         internal DateTimeOffset? _absoluteExpiration;
@@ -31,7 +33,8 @@ namespace Microsoft.Extensions.Caching.Memory
         internal CacheEntry(
             object key,
             Action<CacheEntry> notifyCacheEntryDisposed,
-            Action<CacheEntry> notifyCacheOfExpiration)
+            Action<CacheEntry> notifyCacheOfExpiration,
+            ILogger logger)
         {
             if (key == null)
             {
@@ -48,11 +51,17 @@ namespace Microsoft.Extensions.Caching.Memory
                 throw new ArgumentNullException(nameof(notifyCacheOfExpiration));
             }
 
+            if (logger == null)
+            {
+                throw new ArgumentNullException(nameof(logger));
+            }
+
             Key = key;
             _notifyCacheEntryDisposed = notifyCacheEntryDisposed;
             _notifyCacheOfExpiration = notifyCacheOfExpiration;
 
             _scope = CacheEntryHelper.EnterScope(this);
+            _logger = logger;
         }
 
         /// <summary>
@@ -317,10 +326,10 @@ namespace Microsoft.Extensions.Caching.Memory
                 {
                     registration.EvictionCallback?.Invoke(entry.Key, entry.Value, entry.EvictionReason, registration.State);
                 }
-                catch (Exception)
+                catch (Exception e)
                 {
                     // This will be invoked on a background thread, don't let it throw.
-                    // TODO: LOG
+                    entry._logger.LogError(e, "EvictionCallback invoked failed");
                 }
             }
         }

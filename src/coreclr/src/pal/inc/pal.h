@@ -514,6 +514,32 @@ PAL_Random(
 PALIMPORT
 BOOL
 PALAPI
+PAL_OpenProcessMemory(
+    IN DWORD processId,
+    OUT DWORD* pHandle
+);
+
+PALIMPORT
+VOID
+PALAPI
+PAL_CloseProcessMemory(
+    IN DWORD handle
+);
+
+PALIMPORT
+BOOL
+PALAPI
+PAL_ReadProcessMemory(
+    IN DWORD handle,
+    IN ULONG64 address,
+    IN LPVOID buffer,
+    IN SIZE_T size,
+    OUT SIZE_T* numberOfBytesRead
+);
+
+PALIMPORT
+BOOL
+PALAPI
 PAL_ProbeMemory(
     PVOID pBuffer,
     DWORD cbBuffer,

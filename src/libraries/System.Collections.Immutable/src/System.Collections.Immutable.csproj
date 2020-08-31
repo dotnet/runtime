@@ -1,8 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);netstandard1.0;netstandard1.3;netstandard2.0;net461;$(NetFrameworkCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);netstandard1.0;netstandard1.3;netstandard2.0;net461</TargetFrameworks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
-    <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
@@ -88,13 +87,13 @@
     <Compile Include="Validation\ValidatedNotNullAttribute.cs" />
     <Compile Include="$(CommonPath)System\Runtime\Versioning\NonVersionableAttribute.cs"
              Link="Common\System\Runtime\Versioning\NonVersionableAttribute.cs" />
+    <None Include="Interfaces.cd" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.0' or '$(TargetFramework)' == 'netstandard1.3'">
     <Compile Include="$(CommonPath)System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAttribute.cs"
              Link="System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAttribute.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <None Include="Interfaces.cd" />
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
     <Reference Include="System.Collections" />
     <Reference Include="System.Diagnostics.Contracts" />
     <Reference Include="System.Diagnostics.Debug" />
@@ -104,22 +103,14 @@
     <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Threading" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.3'">
-    <Reference Include="System.AppContext" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.3' or '$(TargetFramework)' == '$(NetCoreAppCurrent)'">
-    <Reference Include="System.Runtime.InteropServices" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.3' or '$(TargetFramework)' == 'netstandard2.0'">
-    <Reference Include="System.Memory" />
-  </ItemGroup>
-  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
-    <Reference Include="mscorlib" />
-    <Reference Include="System" />
-    <Reference Include="System.Memory" />
-    <Reference Include="netstandard" />
-    <Reference Include="System.Core" />
+  <ItemGroup>
+    <PackageReference Include="System.Diagnostics.Contracts" Condition="$(TargetFramework.StartsWith('netstandard1.'))" Version="$(SystemDiagnosticsContractsVersion)" />
+    <PackageReference Include="System.Memory" Condition="'$(TargetFramework)' == 'netstandard1.3' or
+                                                         '$(TargetFramework)' == 'netstandard2.0' or
+                                                         $(TargetFramework.StartsWith('net4'))" Version="$(SystemMemoryVersion)" />
+    <PackageReference Include="System.Runtime.InteropServices" Condition="'$(TargetFramework)' == 'netstandard1.3'" Version="$(SystemRuntimeInteropServicesVersion)" />
   </ItemGroup>
 </Project>

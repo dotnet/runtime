@@ -744,23 +744,37 @@ void replaceSafePointInstructionWithGcStressInstr(UINT32 safePointOffset, LPVOID
     //Determine if instruction before the safe point is call using immediate (BLX Imm)  or call by register (BLX Rm)
     BOOL  instructionIsACallThroughRegister = FALSE;
     BOOL instructionIsACallThroughImmediate = FALSE;
+
 #if defined(TARGET_ARM)
+
+    // POSSIBLE BUG: Note that we are looking backwards by 2 or 4 bytes, looking for particular call instruction encodings.
+    // However, we don't know if the previous instruction is 2 bytes or 4 bytes. Looking back 2 bytes could be looking into
+    // the middle of a 4-byte instruction. The only safe way to do this is by walking forward from the first instruction of
+    // the function.
 
     // call by register instruction is two bytes (BL<c> Reg T1 encoding)
     WORD instr = *((WORD*)savedInstrPtr - 1);
-
     instr = instr & 0xff87;
-    if((instr ^ 0x4780) == 0)
+    if ((instr ^ 0x4780) == 0)
+    {
         // It is call by register
         instructionIsACallThroughRegister = TRUE;
+    }
+    else
+    {
+        // call using immediate instructions are 4 bytes (BL<c> <label> T1 encoding)
+        instr = *((WORD*)savedInstrPtr - 2);
+        instr = instr & 0xf800;
+        if ((instr ^ 0xf000) == 0)
+        {
+            if ((*(((WORD*)savedInstrPtr) - 1) & 0xd000) == 0xd000)
+            {
+                // It is call by immediate
+                instructionIsACallThroughImmediate = TRUE;
+            }
+        }
+    }
 
-    // call using immediate instructions are 4 bytes (BL<c> <label> T1 encoding)
-    instr = *((WORD*)savedInstrPtr - 2);
-    instr = instr & 0xf800;
-    if((instr ^ 0xf000) == 0)
-        if((*(((WORD*)savedInstrPtr)-1) & 0xd000) == 0xd000)
-            // It is call by immediate
-            instructionIsACallThroughImmediate = TRUE;
 #elif defined(TARGET_ARM64)
     DWORD instr = *((DWORD*)savedInstrPtr - 1);
 
@@ -778,6 +792,7 @@ void replaceSafePointInstructionWithGcStressInstr(UINT32 safePointOffset, LPVOID
         instructionIsACallThroughRegister = TRUE;
     }
 #endif  // _TARGET_XXXX_
+
     // safe point must always be after a call instruction
     // and cannot be both call by register & immediate
     // The safe points are also marked at jump calls( a special variant of
@@ -1222,7 +1237,7 @@ bool IsGcCoverageInterrupt(LPVOID ip)
 // original instruction. Only one instruction must be used,
 // because multiple threads can be executing the same code stream.
 
-void RemoveGcCoverageInterrupt(TADDR instrPtr, BYTE * savedInstrPtr)
+void RemoveGcCoverageInterrupt(TADDR instrPtr, BYTE * savedInstrPtr, GCCoverageInfo* gcCover, DWORD offset)
 {
 #ifdef TARGET_ARM
         if (GetARMInstructionLength(savedInstrPtr) == 2)
@@ -1234,6 +1249,17 @@ void RemoveGcCoverageInterrupt(TADDR instrPtr, BYTE * savedInstrPtr)
 #else
         *(BYTE *)instrPtr = *savedInstrPtr;
 #endif
+
+#ifdef TARGET_X86
+    // Epilog checking relies on precise control of when instrumentation for the  first prolog 
+    // instruction is enabled or disabled. In particular, if a function has multiple epilogs, or
+    // the first execution of the function terminates via an exception, and subsequent completions
+    // do not, then the function may trigger a false stress fault if epilog checks are not disabled.
+    if (offset == 0)
+    {
+        gcCover->doingEpilogChecks = false;
+    }
+#endif // TARGET_X86
 
         FlushInstructionCache(GetCurrentProcess(), (LPCVOID)instrPtr, 4);
 }
@@ -1290,7 +1316,7 @@ BOOL OnGcCoverageInterrupt(PCONTEXT regs)
         // where the call could be coming from a thread unknown to the CLR and
         // we haven't created a thread yet - see PreStubWorker_Preemptive().
         _ASSERTE(pMD->HasUnmanagedCallersOnlyAttribute());
-        RemoveGcCoverageInterrupt(instrPtr, savedInstrPtr);
+        RemoveGcCoverageInterrupt(instrPtr, savedInstrPtr, gcCover, offset);
         return TRUE;
     }
 
@@ -1304,7 +1330,7 @@ BOOL OnGcCoverageInterrupt(PCONTEXT regs)
     // anything for this method at this point.
     if (!pThread->PreemptiveGCDisabled() && pMD->HasUnmanagedCallersOnlyAttribute())
     {
-        RemoveGcCoverageInterrupt(instrPtr, savedInstrPtr);
+        RemoveGcCoverageInterrupt(instrPtr, savedInstrPtr, gcCover, offset);
         return TRUE;
     }
 
@@ -1315,7 +1341,7 @@ BOOL OnGcCoverageInterrupt(PCONTEXT regs)
         Frame* pFrame = pThread->GetFrame();
         if (InlinedCallFrame::FrameHasActiveCall(pFrame))
         {
-            RemoveGcCoverageInterrupt(instrPtr, savedInstrPtr);
+            RemoveGcCoverageInterrupt(instrPtr, savedInstrPtr, gcCover, offset);
             return TRUE;
         }
     }
@@ -1325,7 +1351,7 @@ BOOL OnGcCoverageInterrupt(PCONTEXT regs)
     // location.
     if (!pThread->CheckForAndDoRedirectForGCStress(regs))
     {
-        RemoveGcCoverageInterrupt(instrPtr, savedInstrPtr);
+        RemoveGcCoverageInterrupt(instrPtr, savedInstrPtr, gcCover, offset);
     }
 
 #else // !USE_REDIRECT_FOR_GCSTRESS
@@ -1372,16 +1398,15 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
     Thread *pThread = GetThread();
     _ASSERTE(pThread);
 
-    if (!IsGcCoverageInterruptInstruction(instrPtr))
-    {
-        // This assert can fail if another thread changed original instruction to
-        // GCCoverage Interrupt instruction between these two commands. Uncomment it
-        // when threading issue gets resolved.
-        // _ASSERTE(IsOriginalInstruction(instrPtr, gcCover, offset));
-
-        // Someone beat us to it, just go on running.
-        return;
-    }
+    // There is a race condition with the computation of `atCall`. Multiple threads could enter
+    // this function (DoGcStress) at the same time. If one reads `*instrPtr` and sets `atCall`
+    // to `true`, it will proceed to, lower down in this function, call `pThread->CommitGCStressInstructionUpdate()`
+    // to replace the GCStress instruction at the call back to the original call instruction.
+    // Other threads could then read `*instrPtr` and see the actual call instruction instead of the
+    // call-specific GCStress instruction (INTERRUPT_INSTR_CALL[_32]). If `atCall` is set to false as
+    // a result, then we'll do a GCStress as if this is a fully-interruptible code site, which is isn't,
+    // which can leads to asserts (or, presumably, other failures). So, we have to check
+    // `if (!IsGcCoverageInterruptInstruction(instrPtr))` after we read `*instrPtr`.
 
     bool atCall;
     bool afterCallProtect[2] = { false, false };
@@ -1407,6 +1432,7 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
     }
 
 #elif defined(TARGET_ARM)
+
     forceStack[6] = (WORD*)instrPtr;            // This is so I can see it fastchecked
 
     size_t instrLen = GetARMInstructionLength(instrPtr);
@@ -1414,7 +1440,7 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
     if (instrLen == 2)
     {
         WORD instrVal = *(WORD*)instrPtr;
-        atCall           = (instrVal == INTERRUPT_INSTR_CALL);
+        atCall              = (instrVal == INTERRUPT_INSTR_CALL);
         afterCallProtect[0] = (instrVal == INTERRUPT_INSTR_PROTECT_RET);
     }
     else
@@ -1423,10 +1449,12 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
 
         DWORD instrVal32 = *(DWORD*)instrPtr;
 
-        atCall           = (instrVal32 == INTERRUPT_INSTR_CALL_32);
+        atCall              = (instrVal32 == INTERRUPT_INSTR_CALL_32);
         afterCallProtect[0] = (instrVal32 == INTERRUPT_INSTR_PROTECT_RET_32);
     }
+
 #elif defined(TARGET_ARM64)
+
     DWORD instrVal = *(DWORD *)instrPtr;
     forceStack[6] = &instrVal;            // This is so I can see it fastchecked
 
@@ -1435,17 +1463,26 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
 
 #endif // _TARGET_*
 
+    if (!IsGcCoverageInterruptInstruction(instrPtr))
+    {
+        // This assert can fail if another thread changed original instruction to
+        // GCCoverage Interrupt instruction between these two commands. Uncomment it
+        // when threading issue gets resolved.
+        // _ASSERTE(IsOriginalInstruction(instrPtr, gcCover, offset));
+
+        // Someone beat us to it, just go on running.
+        return;
+    }
+
 #ifdef TARGET_X86
     /* are we at the very first instruction?  If so, capture the register state */
     bool bShouldUpdateProlog = true;
     if (gcCover->doingEpilogChecks) {
         if (offset == 0) {
-            if (gcCover->callerThread == 0) {
-                if (FastInterlockCompareExchangePointer(&gcCover->callerThread, pThread, 0) == 0) {
-                    gcCover->callerRegs = *regs;
-                    gcCover->gcCount = GCHeapUtilities::GetGCHeap()->GetGcCount();
-                    bShouldUpdateProlog = false;
-                }
+            if ((gcCover->callerThread == 0) && (FastInterlockCompareExchangePointer(&gcCover->callerThread, pThread, 0) == 0)) {
+                gcCover->callerRegs = *regs;
+                gcCover->gcCount = GCHeapUtilities::GetGCHeap()->GetGcCount();
+                bShouldUpdateProlog = false;
             }
             else {
                 // We have been in this routine before.  Give up on epilog checking because
@@ -1544,7 +1581,7 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM) || defined(TARGET_ARM64)
 
-    /* In non-fully interrruptable code, if the EIP is just after a call instr
+    /* In non-fully interruptible code, if the EIP is just after a call instr
        means something different because it expects that we are IN the
        called method, not actually at the instruction just after the call. This
        is important, because until the called method returns, IT is responsible
@@ -1552,10 +1589,10 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
        we have to protect EAX if the method being called returns a GC pointer.
 
        To figure this out, we need to stop AT the call so we can determine the
-       target (and thus whether it returns a GC pointer), and then place the
+       target (and thus whether it returns one or more GC pointers), and then place
        a different interrupt instruction so that the GCCover harness protects
-       EAX before doing the GC).  This effectively simulates a hijack in
-       non-fully interruptible code */
+       the return value register(s) before doing the GC. This effectively simulates
+       a hijack in non-fully interruptible code */
 
     /* TODO. Simulating the hijack could cause problems in cases where the
        return register is not always a valid GC ref on the return offset.
@@ -1588,15 +1625,15 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
                 // We are in preemptive mode in JITTed code. This implies that we are into IL stub
                 // close to PINVOKE method. This call will never return objectrefs.
 #ifdef TARGET_ARM
-                    size_t instrLen = GetARMInstructionLength(nextInstr);
-                    if (instrLen == 2)
-                        *(WORD*)nextInstr  = INTERRUPT_INSTR;
-                    else
-                        *(DWORD*)nextInstr = INTERRUPT_INSTR_32;
+                size_t instrLen = GetARMInstructionLength(nextInstr);
+                if (instrLen == 2)
+                    *(WORD*)nextInstr  = INTERRUPT_INSTR;
+                else
+                    *(DWORD*)nextInstr = INTERRUPT_INSTR_32;
 #elif defined(TARGET_ARM64)
-                        *(DWORD*)nextInstr = INTERRUPT_INSTR;
+                *(DWORD*)nextInstr = INTERRUPT_INSTR;
 #else
-                        *nextInstr = INTERRUPT_INSTR;
+                *nextInstr = INTERRUPT_INSTR;
 #endif
             }
             else

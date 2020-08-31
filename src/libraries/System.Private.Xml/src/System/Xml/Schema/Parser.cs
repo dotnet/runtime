@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 namespace System.Xml.Schema
 {
     using System;
@@ -244,7 +243,7 @@ namespace System.Xml.Schema
                     {
                         Debug.Assert(_parentNode != null);
                         XmlNodeList list = _parentNode.ChildNodes;
-                        XmlNode[] markup = new XmlNode[list.Count];
+                        XmlNode?[] markup = new XmlNode[list.Count];
                         for (int i = 0; i < list.Count; i++)
                         {
                             markup[i] = list[i];
@@ -254,6 +253,7 @@ namespace System.Xml.Schema
                         _namespaceManager!.PopScope();
                         _builder.EndChildren();
                     }
+
                     _markupDepth = int.MaxValue;
                 }
                 else
@@ -405,7 +405,7 @@ namespace System.Xml.Schema
             XmlAttribute attr;
             if (prefix.Length == 0)
             {
-                attr = _dummyDocument.CreateAttribute(string.Empty, _xmlns, XmlReservedNs.NsXmlNs);
+                attr = _dummyDocument.CreateAttribute(string.Empty, _xmlns!, XmlReservedNs.NsXmlNs);
             }
             else
             {

@@ -8,9 +8,9 @@ namespace System.Data.OleDb
 {
     public sealed class OleDbError
     {
-        private readonly string message;
-        private readonly string source;
-        private readonly string sqlState;
+        private readonly string? message;
+        private readonly string? source;
+        private readonly string? sqlState;
         private readonly int nativeError;
 
         internal OleDbError(UnsafeNativeMethods.IErrorRecords errorRecords, int index)
@@ -56,7 +56,7 @@ namespace System.Data.OleDb
                     {
                         this.source = ODB.FailedGetSource(hr);
                     }
-                    Marshal.ReleaseComObject(errorInfo);
+                    Marshal.ReleaseComObject(errorInfo!);
                 }
             }
 
@@ -74,7 +74,7 @@ namespace System.Data.OleDb
         {
             get
             {
-                string message = this.message;
+                string? message = this.message;
                 return ((null != message) ? message : string.Empty);
             }
         }
@@ -91,7 +91,7 @@ namespace System.Data.OleDb
         {
             get
             {
-                string source = this.source;
+                string? source = this.source;
                 return ((null != source) ? source : string.Empty);
             }
         }
@@ -100,7 +100,7 @@ namespace System.Data.OleDb
         {
             get
             {
-                string sqlState = this.sqlState;
+                string? sqlState = this.sqlState;
                 return ((null != sqlState) ? sqlState : string.Empty);
             }
         }

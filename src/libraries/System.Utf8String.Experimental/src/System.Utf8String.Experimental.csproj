@@ -1,8 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;netstandard2.1;netcoreapp3.0;net461;$(NetFrameworkCurrent)</TargetFrameworks>
-    <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
+    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;netstandard2.1;netcoreapp3.0;net461</TargetFrameworks>
     <Nullable>enable</Nullable>
     <DefineConstants>$(DefineContants);FEATURE_UTF8STRING</DefineConstants>
   </PropertyGroup>
@@ -17,7 +16,7 @@
     <Compile Include="System\IO\Utf8StringStream.cs" />
     <Compile Include="System\Net\Http\Utf8StringContent.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(IsPrerelease)' != 'false' AND ('$(TargetFramework)' == 'netstandard2.0' OR $(TargetFramework.StartsWith('net4')))">
+  <ItemGroup Condition="'$(IsPrerelease)' != 'false' AND ('$(TargetFramework)' == 'netstandard2.0' or $(TargetFramework.StartsWith('net4')))">
     <Compile Include="$(CoreLibSharedDir)\System\Index.cs"
              Link="System\Index.cs" />
     <Compile Include="$(CoreLibSharedDir)\System\Numerics\BitOperations.cs"
@@ -113,15 +112,27 @@
   <ItemGroup Condition="'$(IsPrerelease)' != 'false' AND '$(TargetFramework)' == '$(NetCoreAppCurrent)'">
     <Compile Include="System\Net\Http\Utf8StringContent.netcoreapp.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' OR $(TargetFramework.StartsWith('net4'))">
-    <Reference Include="System.Buffers" />
-    <Reference Include="System.Memory" />
-    <Reference Include="System.Numerics.Vectors" />
-    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
+  <ItemGroup Condition="'$(TargetFramework)' != '$(NetCoreAppCurrent)'">
+    <!-- Duplicate types with System.Runtime.Intrinsics. Excluding the default reference. -->
+    <DefaultReferenceExclusion Include="System.Runtime.Intrinsics" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.CompilerServices.Unsafe\src\System.Runtime.CompilerServices.Unsafe.ilproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' or
+                        $(TargetFramework.StartsWith('net4'))">
+    <PackageReference Include="System.Buffers" Version="$(SystemBuffersVersion)" />
+    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
+    <PackageReference Include="System.Numerics.Vectors" Version="$(SystemNumericsVectorsVersion)" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.1'">
-    <Reference Include="System.Numerics.Vectors" />
-    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
+    <PackageReference Include="System.Numerics.Vectors" Version="$(SystemNumericsVectorsVersion)" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+    <!-- The predefined type 'Interlocked' is defined in multiple assemblies. -->
+    <DefaultReferenceExclusion Include="System.Threading" />
+    <ProjectReference Include="$(CoreLibProject)" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Net.Primitives" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.0'">
     <Reference Include="netstandard" />
@@ -134,21 +145,10 @@
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
-    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
     <Reference Include="System.Security.Cryptography.Algorithms" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
-    <ProjectReference Include="$(CoreLibProject)" />
-    <Reference Include="System.Net.Http" />
-    <Reference Include="System.Net.Primitives" />
-    <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj" />
-  </ItemGroup>
   <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
-    <Reference Include="mscorlib" />
-    <Reference Include="netstandard" />
-    <Reference Include="System" />
     <Reference Include="System.Net.Http" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.ValueTuple" />
+    <PackageReference Include="System.ValueTuple" Version="$(SystemValueTupleVersion)" Condition="'$(TargetFramework)' == 'net461'" />
   </ItemGroup>
 </Project>

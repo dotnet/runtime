@@ -22,12 +22,24 @@
     </AssemblyMetadata>
   </ItemGroup>
 
-  <!-- Adds MinimumOSPlatform attribute for Windows Specific libraries -->
+  <!-- Adds SupportedOSPlatform attribute for Windows Specific libraries -->
   <ItemGroup Condition="'$(IsWindowsSpecific)' == 'true' and '$(IsTestProject)' != 'true'">
-    <AssemblyAttribute Include="System.Runtime.Versioning.MinimumOSPlatform">
-        <_Parameter1>$(MinimiumSupportedWindowsPlatform)</_Parameter1>
+    <AssemblyAttribute Include="System.Runtime.Versioning.SupportedOSPlatform">
+        <_Parameter1>windows</_Parameter1>
     </AssemblyAttribute>
   </ItemGroup>
+
+  <ItemGroup>
+    <_unsupportedOSPlatforms Include="$(UnsupportedOSPlatforms)" />
+  </ItemGroup>
+
+  <Target Name="AddUnsupportedOSPlatformAttribute" BeforeTargets="GenerateAssemblyInfo" AfterTargets="PrepareForBuild">
+    <ItemGroup>
+      <AssemblyAttribute Include="System.Runtime.Versioning.UnsupportedOSPlatform" Condition="'@(_unsupportedOSPlatforms)' != ''">
+        <_Parameter1>%(_unsupportedOSPlatforms.Identity)</_Parameter1>
+      </AssemblyAttribute>
+    </ItemGroup>
+  </Target>
 
   <Target Name="DecideIfWeNeedToIncludeDllSafeSearchPathAttribute"
           Condition="'$(IsDotNetFrameworkProductAssembly)' == 'true' and '$(IsTestProject)' != 'true' and '$(IsTestSupportProject)' != 'true'">

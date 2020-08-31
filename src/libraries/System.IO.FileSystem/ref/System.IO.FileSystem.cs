@@ -121,10 +121,10 @@ namespace System.IO
         public static System.IO.FileStream Create(string path, int bufferSize) { throw null; }
         public static System.IO.FileStream Create(string path, int bufferSize, System.IO.FileOptions options) { throw null; }
         public static System.IO.StreamWriter CreateText(string path) { throw null; }
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static void Decrypt(string path) { }
         public static void Delete(string path) { }
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static void Encrypt(string path) { }
         public static bool Exists(string? path) { throw null; }
         public static System.IO.FileAttributes GetAttributes(string path) { throw null; }
@@ -190,8 +190,10 @@ namespace System.IO
         public System.IO.FileInfo CopyTo(string destFileName, bool overwrite) { throw null; }
         public System.IO.FileStream Create() { throw null; }
         public System.IO.StreamWriter CreateText() { throw null; }
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public void Decrypt() { }
         public override void Delete() { }
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public void Encrypt() { }
         public void MoveTo(string destFileName) { }
         public void MoveTo(string destFileName, bool overwrite) { }

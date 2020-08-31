@@ -7,9 +7,12 @@ set(FLOAT_SOURCES
     floatsingle.cpp
 )
 
-add_library_clr(comfloat_wks
+add_library_clr(comfloat_wks_obj
     OBJECT
     ${FLOAT_SOURCES}
 )
 
-add_dependencies(comfloat_wks eventing_headers)
+add_dependencies(comfloat_wks_obj eventing_headers)
+
+add_library(comfloat_wks INTERFACE)
+target_sources(comfloat_wks INTERFACE $<TARGET_OBJECTS:comfloat_wks_obj>)

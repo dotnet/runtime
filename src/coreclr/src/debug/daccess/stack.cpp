@@ -1391,7 +1391,7 @@ ClrDataFrame::ValueFromDebugInfo(MetaSig* sig,
             // XXX Microsoft - Sometimes types can't be looked
             // up and this at least allows the value to be used,
             // but is it the right behavior?
-            argType = TypeHandle(MscorlibBinder::GetElementType(ELEMENT_TYPE_U8));
+            argType = TypeHandle(CoreLibBinder::GetElementType(ELEMENT_TYPE_U8));
             valueFlags = 0;
         }
         else

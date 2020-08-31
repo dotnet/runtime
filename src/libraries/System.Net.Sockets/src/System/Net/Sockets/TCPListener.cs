@@ -112,7 +112,7 @@ namespace System.Net.Sockets
             }
         }
 
-        [MinimumOSPlatform("windows7.0")]
+        [SupportedOSPlatform("windows")]
         public void AllowNatTraversal(bool allowed)
         {
             if (_active)
@@ -207,40 +207,17 @@ namespace System.Net.Sockets
             return new TcpClient(acceptedSocket);
         }
 
-        public IAsyncResult BeginAcceptSocket(AsyncCallback? callback, object? state)
-        {
+        public IAsyncResult BeginAcceptSocket(AsyncCallback? callback, object? state) =>
+            TaskToApm.Begin(AcceptSocketAsync(), callback, state);
 
-            if (!_active)
-            {
-                throw new InvalidOperationException(SR.net_stopped);
-            }
-
-            return _serverSocket!.BeginAccept(callback, state);
-        }
-
-        public Socket EndAcceptSocket(IAsyncResult asyncResult)
-        {
-            if (asyncResult == null)
-            {
-                throw new ArgumentNullException(nameof(asyncResult));
-            }
-
-            LazyAsyncResult? lazyResult = asyncResult as LazyAsyncResult;
-            Socket? asyncSocket = lazyResult == null ? null : lazyResult.AsyncObject as Socket;
-            if (asyncSocket == null)
-            {
-                throw new ArgumentException(SR.net_io_invalidasyncresult, nameof(asyncResult));
-            }
-
-            // This will throw ObjectDisposedException if Stop() has been called.
-            return asyncSocket.EndAccept(asyncResult);
-        }
+        public Socket EndAcceptSocket(IAsyncResult asyncResult) =>
+            TaskToApm.End<Socket>(asyncResult);
 
         public IAsyncResult BeginAcceptTcpClient(AsyncCallback? callback, object? state) =>
-            BeginAcceptSocket(callback, state);
+            TaskToApm.Begin(AcceptTcpClientAsync(), callback, state);
 
         public TcpClient EndAcceptTcpClient(IAsyncResult asyncResult) =>
-            new TcpClient(EndAcceptSocket(asyncResult));
+            TaskToApm.End<TcpClient>(asyncResult);
 
         public Task<Socket> AcceptSocketAsync()
         {

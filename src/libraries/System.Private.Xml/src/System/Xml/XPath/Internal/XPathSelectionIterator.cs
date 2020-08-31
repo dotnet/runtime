@@ -34,7 +34,7 @@ namespace MS.Internal.Xml.XPath
 
         public override bool MoveNext()
         {
-            XPathNavigator n = _query.Advance();
+            XPathNavigator? n = _query.Advance();
             if (n != null)
             {
                 _position++;

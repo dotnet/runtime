@@ -32,6 +32,9 @@ namespace System.Net.Http
         private static readonly JSObject? s_fetch = (JSObject)System.Runtime.InteropServices.JavaScript.Runtime.GetGlobalObject("fetch");
         private static readonly JSObject? s_window = (JSObject)System.Runtime.InteropServices.JavaScript.Runtime.GetGlobalObject("window");
 
+        private static readonly HttpRequestOptionsKey<bool> EnableStreamingResponse = new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingResponse");
+        private static readonly HttpRequestOptionsKey<IDictionary<string, object>> FetchOptions = new HttpRequestOptionsKey<IDictionary<string, object>>("WebAssemblyFetchOptions");
+
         /// <summary>
         /// Gets whether the current Browser supports streaming responses
         /// </summary>
@@ -120,6 +123,10 @@ namespace System.Net.Http
             set => throw new PlatformNotSupportedException();
         }
 
+        public bool SupportsAutomaticDecompression => false;
+        public bool SupportsProxy => false;
+        public bool SupportsRedirectConfiguration => false;
+
         private Dictionary<string, object?>? _properties;
         public IDictionary<string, object?> Properties => _properties ??= new Dictionary<string, object?>();
 
@@ -129,8 +136,7 @@ namespace System.Net.Http
             {
                 var requestObject = new JSObject();
 
-                if (request.Properties.TryGetValue("WebAssemblyFetchOptions", out object? fetchOptionsValue) &&
-                    fetchOptionsValue is IDictionary<string, object> fetchOptions)
+                if (request.Options.TryGetValue(FetchOptions, out IDictionary<string, object>? fetchOptions))
                 {
                     foreach (KeyValuePair<string, object> item in fetchOptions)
                     {
@@ -221,9 +227,13 @@ namespace System.Net.Http
 
                 HttpResponseMessage httpResponse = new HttpResponseMessage((HttpStatusCode)status.Status);
 
-                bool streamingEnabled = request.Properties.TryGetValue("WebAssemblyEnableStreamingResponse", out object? streamingEnabledValue) && (bool)(streamingEnabledValue ?? false);
+                bool streamingEnabled = false;
+                if (StreamingSupported)
+                {
+                    request.Options.TryGetValue(EnableStreamingResponse, out streamingEnabled);
+                }
 
-                httpResponse.Content = StreamingSupported && streamingEnabled
+                httpResponse.Content = streamingEnabled
                     ? new StreamContent(wasmHttpReadStream = new WasmHttpReadStream(status))
                     : (HttpContent)new BrowserHttpContent(status);
 

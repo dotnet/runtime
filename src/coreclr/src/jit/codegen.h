@@ -341,12 +341,12 @@ protected:
     void genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowestCalleeSavedOffset, int spDelta);
     void genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, int lowestCalleeSavedOffset, int spDelta);
 
-    void genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegModified);
+    void genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroed);
 #else
     void genPushCalleeSavedRegisters();
 #endif
 
-    void genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pInitRegModified, regMaskTP maskArgRegsLiveIn);
+    void genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pInitRegZeroed, regMaskTP maskArgRegsLiveIn);
 
 #if defined(TARGET_ARM)
 
@@ -434,18 +434,18 @@ protected:
 
     void genZeroInitFltRegs(const regMaskTP& initFltRegs, const regMaskTP& initDblRegs, const regNumber& initReg);
 
-    regNumber genGetZeroReg(regNumber initReg, bool* pInitRegModified);
+    regNumber genGetZeroReg(regNumber initReg, bool* pInitRegZeroed);
 
-    void genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, bool* pInitRegModified);
+    void genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, bool* pInitRegZeroed);
 
-    void genReportGenericContextArg(regNumber initReg, bool* pInitRegModified);
+    void genReportGenericContextArg(regNumber initReg, bool* pInitRegZeroed);
 
-    void genSetGSSecurityCookie(regNumber initReg, bool* pInitRegModified);
+    void genSetGSSecurityCookie(regNumber initReg, bool* pInitRegZeroed);
 
     void genFinalizeFrame();
 
 #ifdef PROFILING_SUPPORTED
-    void genProfilingEnterCallback(regNumber initReg, bool* pInitRegModified);
+    void genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed);
     void genProfilingLeaveCallback(unsigned helper);
 #endif // PROFILING_SUPPORTED
 
@@ -511,7 +511,7 @@ protected:
     void genFuncletEpilog();
     void genCaptureFuncletPrologEpilogInfo();
 
-    void genSetPSPSym(regNumber initReg, bool* pInitRegModified);
+    void genSetPSPSym(regNumber initReg, bool* pInitRegZeroed);
 
     void genUpdateCurrentFunclet(BasicBlock* block);
 #if defined(TARGET_ARM)

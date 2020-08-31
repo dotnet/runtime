@@ -11,6 +11,9 @@
 #include <unicode/localpointer.h>
 #include <unicode/utrace.h>
 
+static int32_t isLoaded = 0;
+static int32_t isDataSet = 0;
+
 static void log_icu_error(const char* name, UErrorCode status)
 {
     const char * statusText = u_errorName(status);
@@ -42,6 +45,7 @@ EMSCRIPTEN_KEEPALIVE int32_t mono_wasm_load_icu_data(void * pData)
         //// see https://github.com/unicode-org/icu/blob/master/docs/userguide/icu_data/tracing.md
         // utrace_setFunctions(0, 0, 0, icu_trace_data);
         // utrace_setLevel(UTRACE_VERBOSE);
+        isDataSet = 1;
         return 1;
     }
 }
@@ -49,12 +53,11 @@ EMSCRIPTEN_KEEPALIVE int32_t mono_wasm_load_icu_data(void * pData)
 
 int32_t GlobalizationNative_LoadICU(void)
 {
-    const char* icudir = getenv("DOTNET_ICU_DIR");
-    if (icudir)
-        u_setDataDirectory(icudir);
-    else
-        ; // default ICU search path behavior will be used, see http://userguide.icu-project.org/icudata
-
+    if (!isDataSet) {
+        // don't try to locate icudt.dat automatically if mono_wasm_load_icu_data wasn't called
+        // and fallback to invariant mode
+        return 0;
+    }
     UErrorCode status = 0;
     UVersionInfo version;
     // Request the CLDR version to perform basic ICU initialization and find out
@@ -65,7 +68,8 @@ int32_t GlobalizationNative_LoadICU(void)
         log_icu_error("ulocdata_getCLDRVersion", status);
         return 0;
     }
-
+    
+    isLoaded = 1;
     return 1;
 }
 
@@ -76,6 +80,12 @@ void GlobalizationNative_InitICUFunctions(void* icuuc, void* icuin, const char* 
 
 int32_t GlobalizationNative_GetICUVersion(void)
 {
+    // this method is only used from our tests
+    // this way we ensure we're testing on the right mode
+    // even though we can call u_getVersion without loading since it is statically linked.
+    if (!isLoaded)
+        return 0;
+
     UVersionInfo versionInfo;
     u_getVersion(versionInfo);
 

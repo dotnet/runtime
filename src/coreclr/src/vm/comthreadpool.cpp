@@ -342,7 +342,7 @@ RegisterWaitForSingleObjectCallback_Worker(LPVOID ptr)
     orState = ObjectFromHandle(((DelegateInfo*) args->delegateInfo)->m_stateHandle);
 
 #ifdef _DEBUG
-    MethodDesc *pMeth = MscorlibBinder::GetMethod(METHOD__TPWAITORTIMER_HELPER__PERFORM_WAITORTIMER_CALLBACK);
+    MethodDesc *pMeth = CoreLibBinder::GetMethod(METHOD__TPWAITORTIMER_HELPER__PERFORM_WAITORTIMER_CALLBACK);
     LogCall(pMeth,"RWSOCallback");
 #endif
 
@@ -601,7 +601,7 @@ VOID BindIoCompletionCallBack_Worker(LPVOID args)
     // we set processed to TRUE, now it's our responsibility to guarantee proper cleanup
 
 #ifdef _DEBUG
-    MethodDesc *pMeth = MscorlibBinder::GetMethod(METHOD__IOCB_HELPER__PERFORM_IOCOMPLETION_CALLBACK);
+    MethodDesc *pMeth = CoreLibBinder::GetMethod(METHOD__IOCB_HELPER__PERFORM_IOCOMPLETION_CALLBACK);
     LogCall(pMeth,"IOCallback");
 #endif
 
@@ -769,7 +769,7 @@ void AppDomainTimerCallback_Worker(LPVOID ptr)
     CONTRACTL_END;
 
 #ifdef _DEBUG
-    MethodDesc *pMeth = MscorlibBinder::GetMethod(METHOD__TIMER_QUEUE__APPDOMAIN_TIMER_CALLBACK);
+    MethodDesc *pMeth = CoreLibBinder::GetMethod(METHOD__TIMER_QUEUE__APPDOMAIN_TIMER_CALLBACK);
     LogCall(pMeth,"AppDomainTimerCallback");
 #endif
 

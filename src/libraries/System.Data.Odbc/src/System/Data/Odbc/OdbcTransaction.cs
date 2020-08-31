@@ -7,9 +7,9 @@ namespace System.Data.Odbc
 {
     public sealed class OdbcTransaction : DbTransaction
     {
-        private OdbcConnection _connection;
+        private OdbcConnection? _connection;
         private IsolationLevel _isolevel = IsolationLevel.Unspecified;
-        private OdbcConnectionHandle _handle;
+        private OdbcConnectionHandle? _handle;
 
         internal OdbcTransaction(OdbcConnection connection, IsolationLevel isolevel, OdbcConnectionHandle handle)
         {
@@ -18,7 +18,7 @@ namespace System.Data.Odbc
             _handle = handle;
         }
 
-        public new OdbcConnection Connection
+        public new OdbcConnection? Connection
         { // MDAC 66655
             get
             {
@@ -26,7 +26,7 @@ namespace System.Data.Odbc
             }
         }
 
-        protected override DbConnection DbConnection
+        protected override DbConnection? DbConnection
         { // MDAC 66655
             get
             {
@@ -38,7 +38,7 @@ namespace System.Data.Odbc
         {
             get
             {
-                OdbcConnection connection = _connection;
+                OdbcConnection? connection = _connection;
                 if (null == connection)
                 {
                     throw ADP.TransactionZombied(this);
@@ -67,7 +67,7 @@ namespace System.Data.Odbc
 
         public override void Commit()
         {
-            OdbcConnection connection = _connection;
+            OdbcConnection? connection = _connection;
             if (null == connection)
             {
                 throw ADP.TransactionZombied(this);
@@ -76,7 +76,7 @@ namespace System.Data.Odbc
             connection.CheckState(ADP.CommitTransaction); // MDAC 68289
 
             //Note: SQLEndTran success if not actually in a transaction, so we have to throw
-            //since the IDbTransaciton spec indicates this is an error for the managed packages
+            //since the IDbTransaction spec indicates this is an error for the managed packages
             if (null == _handle)
             {
                 throw ODBC.NotInTransaction();
@@ -100,7 +100,7 @@ namespace System.Data.Odbc
         {
             if (disposing)
             {
-                OdbcConnectionHandle handle = _handle;
+                OdbcConnectionHandle? handle = _handle;
                 _handle = null;
                 if (null != handle)
                 {
@@ -112,7 +112,7 @@ namespace System.Data.Odbc
                             //don't throw an exception here, but trace it so it can be logged
                             if (_connection != null)
                             {
-                                Exception e = _connection.HandleErrorNoThrow(handle, retcode);
+                                Exception e = _connection.HandleErrorNoThrow(handle, retcode)!;
                                 ADP.TraceExceptionWithoutRethrow(e);
                             }
                         }
@@ -141,7 +141,7 @@ namespace System.Data.Odbc
 
         public override void Rollback()
         {
-            OdbcConnection connection = _connection;
+            OdbcConnection? connection = _connection;
             if (null == connection)
             {
                 throw ADP.TransactionZombied(this);
@@ -149,7 +149,7 @@ namespace System.Data.Odbc
             connection.CheckState(ADP.RollbackTransaction); // MDAC 68289
 
             //Note: SQLEndTran success if not actually in a transaction, so we have to throw
-            //since the IDbTransaciton spec indicates this is an error for the managed packages
+            //since the IDbTransaction spec indicates this is an error for the managed packages
             if (null == _handle)
             {
                 throw ODBC.NotInTransaction();

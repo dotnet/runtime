@@ -4,7 +4,7 @@ parameters:
   osSubgroup: ''
   archType: ''
   crossrootfsDir: ''
-  framework: ''
+  framework: 'net5.0'
   isOfficialBuild: false
   isOfficialAllConfigurations: false
   runtimeVariant: ''
@@ -41,6 +41,7 @@ jobs:
       isOfficialAllConfigurations: ${{ parameters.isOfficialAllConfigurations }}
       liveRuntimeBuildConfig: ${{ parameters.liveRuntimeBuildConfig }}
       runtimeFlavor: ${{ parameters.runtimeFlavor }}
+      runTests: ${{ parameters.runTests }}
       timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
       preBuildSteps: ${{ parameters.preBuildSteps }}
       container: ${{ parameters.container }}
@@ -51,15 +52,18 @@ jobs:
       name: build
       displayName: 'Build'
 
+      ${{ if and(ne(parameters.liveRuntimeBuildConfig, ''), eq(parameters.runTests, true)) }}:
+        dependsOn:
+        # Use full product dependency for test runs
+        - ${{ format('{0}_{1}_product_build_{2}{3}_{4}_{5}', parameters.runtimeFlavor, parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveRuntimeBuildConfig) }}
+
       variables:
         - librariesTestsArtifactName: ${{ format('libraries_test_assets_{0}_{1}_{2}', parameters.osGroup, parameters.archType, parameters.buildConfig) }}
         - _subset: libs
         - _additionalBuildArguments: ''
         - ${{ parameters.variables }}
-        - ${{ if eq(parameters.osGroup, 'Browser') }}:
-          - EMSDK_PATH: /usr/local/emscripten
 
-        # Tests only run for 'allConfiguration' and 'net472' build-jobs
+        # Tests only run for 'allConfiguration' and 'net48' build-jobs
         # If platform is in testBuildPlatforms we build tests as well.
         - ${{ if or(eq(parameters.runTests, true), containsValue(parameters.testBuildPlatforms, parameters.platform)) }}:
           - _subset: libs+libs.tests
@@ -93,55 +97,9 @@ jobs:
             displayName: Disk Usage after Build
 
         - ${{ if eq(parameters.runTests, false) }}:
-          - ${{ if ne(parameters.isOfficialBuild, true) }}:          
-            - task: CopyFiles@2
-              displayName: Prepare testhost folder to publish
-              inputs:
-                sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/testhost
-                targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin/testhost
-
-            - task: CopyFiles@2
-              displayName: Prepare runtime folder to publish
-              inputs:
-                sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/runtime
-                targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin/runtime
-
-            - task: CopyFiles@2
-              displayName: Prepare ref folder to publish
-              inputs:
-                sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/ref
-                targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin/ref
-
-          - task: CopyFiles@2
-            displayName: Prepare shared framework ref assemblies to publish
-            inputs:
-              sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/ref/microsoft.netcore.app
-              targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin/ref/microsoft.netcore.app
-
-          - task: CopyFiles@2
-            displayName: Prepare shared framework runtime folder to publish
-            inputs:
-              sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/pkg
-              targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin/pkg
-
-          - task: CopyFiles@2
-            displayName: Prepare docs folder to publish
-            inputs:
-              sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/docs
-              targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin/docs
-
-          - task: CopyFiles@2
-            displayName: Prepare native folder to publish
-            inputs:
-              sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/native
-              targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin/native
-
-          - task: CopyFiles@2
-            displayName: Prepare artifacts packages folder to publish
-            inputs:
-              sourceFolder: $(Build.SourcesDirectory)/artifacts/packages
-              targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/packages
-            condition: and(succeeded(), eq(variables['_librariesBuildProducedPackages'], true))
+          - template: /eng/pipelines/libraries/prepare-for-bin-publish.yml
+            parameters:
+              isOfficialBuild: ${{ parameters.isOfficialBuild }}
 
           - template: /eng/pipelines/common/upload-artifact-step.yml
             parameters:

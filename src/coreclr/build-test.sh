@@ -34,7 +34,6 @@ build_test_wrappers()
 
         nextCommand="\"${__DotNetCli}\" msbuild \"${__ProjectDir}/tests/src/runtest.proj\" /nodereuse:false /p:BuildWrappers=true /p:TestBuildMode=$__TestBuildMode /p:TargetsWindows=false $__Logging /p:TargetOS=$__TargetOS /p:Configuration=$__BuildType /p:TargetArchitecture=$__BuildArch /p:RuntimeFlavor=$__RuntimeFlavor \"/bl:${__RepoRootDir}/artifacts/log/${__BuildType}/build_test_wrappers_${__RuntimeFlavor}.binlog\" ${__UnprocessedBuildArgs[@]}"
         eval $nextCommand
-
         local exitCode="$?"
         if [[ "$exitCode" -ne 0 ]]; then
             echo "${__ErrMsgPrefix}${__MsgPrefix}Error: XUnit wrapper build failed. Refer to the build log files for details (above)"
@@ -168,35 +167,30 @@ precompile_coreroot_fx()
     local outputDir="$overlayDir"/out
 
     # Delete previously crossgened assemblies
-    rm "$overlayDir"/*.ni.dll
-
-    # Collect reference assemblies for Crossgen2
-    local crossgen2References=""
+    rm "$overlayDir"/*.ni.dll 2>/dev/null
 
     if [[ "$__DoCrossgen2" != 0 ]]; then
         compilerName=Crossgen2
 
         mkdir "$outputDir"
-
-        skipCrossGenFiles+=('Microsoft.CodeAnalysis.CSharp.dll')
-        skipCrossGenFiles+=('Microsoft.CodeAnalysis.dll')
-        skipCrossGenFiles+=('Microsoft.CodeAnalysis.VisualBasic.dll')
-
-        for reference in "$overlayDir"/*.dll; do
-            crossgen2References+=" -r:${reference}"
-        done
     fi
 
     echo "${__MsgPrefix}Running ${compilerName} on framework assemblies in CORE_ROOT: '${CORE_ROOT}'"
 
     local totalPrecompiled=0
     local failedToPrecompile=0
-    local compositeCommandLine="${__DotNetCli}"
-    compositeCommandLine+=" $__Crossgen2Dll"
-    compositeCommandLine+=" --composite"
-    compositeCommandLine+=" -O"
-    compositeCommandLine+=" --out:$outputDir/framework-r2r.dll"
-    compositeCommandLine+=" --targetarch ${__BuildArch}"
+    local compositeOutputFile=$outputDir/framework-r2r.dll
+    local compositeResponseFile=$compositeOutputFile.rsp
+    local compositeCommandLine="${__DotNetCli} $__Crossgen2Dll @$compositeResponseFile"
+
+    if [[ "$__CompositeBuildMode" != 0 ]]; then
+        rm $compositeResponseFile 2>/dev/null
+        echo --composite>>$compositeResponseFile
+        echo -O>>$compositeResponseFile
+        echo --out:$compositeOutputFile>>$compositeResponseFile
+        echo --targetarch:${__BuildArch}>>$compositeResponseFile
+    fi
+
     declare -a failedAssemblies
 
     filesToPrecompile=$(find -L "$overlayDir" -maxdepth 1 -iname Microsoft.\*.dll -o -iname System.\*.dll -o -iname netstandard.dll -o -iname mscorlib.dll -type f)
@@ -207,18 +201,32 @@ precompile_coreroot_fx()
         fi
 
         if [[ "$__CompositeBuildMode" != 0 ]]; then
-            compositeCommandLine+=" $filename"
+            echo $filename>>$compositeResponseFile
             continue
         fi
 
         local commandLine=""
+        local responseFile="$overlayDir/$(basename $filename).rsp"
+
+        rm $responseFile 2>/dev/null
 
         if [[ "$__DoCrossgen" != 0 ]]; then
-            commandLine="$__CrossgenExe /Platform_Assemblies_Paths $overlayDir $filename"
+            commandLine="$__CrossgenExe @$responseFile"
+            echo /Platform_Assemblies_Paths>>$responseFile
+            echo $overlayDir>>$responseFile
+            echo $filename>>$responseFile
         fi
 
         if [[ "$__DoCrossgen2" != 0 ]]; then
-            commandLine="${__DotNetCli} $__Crossgen2Dll $crossgen2References -O --inputbubble --out $outputDir/$(basename $filename) $filename --targetarch ${__BuildArch}"
+            commandLine="${__DotNetCli} $__Crossgen2Dll @$responseFile"
+            echo -O>>$responseFile
+            echo --inputbubble>>$responseFile
+            echo --out:$outputDir/$(basename $filename)>>$responseFile
+            echo --targetarch:${__BuildArch}>>$responseFile
+            echo $filename>>$responseFile
+            for reference in $overlayDir/*.dll; do
+                echo -r:$reference>>$responseFile
+            done
         fi
 
         echo Precompiling "$filename"
@@ -245,6 +253,8 @@ precompile_coreroot_fx()
 
     if [[ "$__CompositeBuildMode" != 0 ]]; then
         # Compile the entire framework in composite build mode
+        echo "Response file: $compositeResponseFile"
+        cat $compositeResponseFile
         echo "Compiling composite R2R framework: $compositeCommandLine"
         $compositeCommandLine
         local exitCode="$?"
@@ -357,7 +367,7 @@ build_Tests()
         fi
     fi
 
-    if [[ "$__SkipNative" != 1 ]]; then
+    if [[ "$__SkipNative" != 1 && "$__BuildArch" != "wasm" ]]; then
         build_native "$__BuildArch" "$__TestDir" "$__ProjectRoot" "$__NativeTestIntermediatesDir" "CoreCLR test component"
 
         if [[ "$?" -ne 0 ]]; then
@@ -393,7 +403,7 @@ build_Tests()
     if [[ "$__CopyNativeTestBinaries" == 1 ]]; then
         echo "Copying native test binaries to output..."
 
-        build_MSBuild_projects "Tests_Managed" "$__ProjectDir/tests/build.proj" "Managed tests build (build tests)" "/t:CopyAllNativeProjectReferenceBinaries"
+        build_MSBuild_projects "Tests_Managed" "$__ProjectDir/tests/build.proj" "Managed tests build (build tests)" "/t:CopyAllNativeProjectReferenceBinaries" "/bl:${__RepoRootDir}/artifacts/log/${__BuildType}/copy_native_test_binaries${__RuntimeFlavor}.binlog"
 
         if [[ "$?" -ne 0 ]]; then
             echo "${__ErrMsgPrefix}${__MsgPrefix}Error: copying native test binaries failed. Refer to the build log files for details (above)"

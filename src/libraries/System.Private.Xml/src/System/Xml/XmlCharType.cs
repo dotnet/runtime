@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
@@ -203,13 +202,13 @@ namespace System.Xml
             highChar = (char)(SurHighStart + v / 1024);
         }
 
-        internal bool IsOnlyWhitespace(string str)
+        internal bool IsOnlyWhitespace(string? str)
         {
             return IsOnlyWhitespaceWithPos(str) == -1;
         }
 
         // Character checking on strings
-        internal int IsOnlyWhitespaceWithPos(string str)
+        internal int IsOnlyWhitespaceWithPos(string? str)
         {
             if (str != null)
             {

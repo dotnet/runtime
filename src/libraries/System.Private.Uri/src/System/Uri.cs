@@ -504,6 +504,7 @@ namespace System
             _flags = Flags.Zero;
             _info = null!;
             _syntax = null!;
+            _originalUnicodeString = null!;
             // If not resolved, we reparse modified Uri string and populate Uri internal data.
             CreateThis(relativeUri, dontEscape, UriKind.Absolute);
         }
@@ -550,6 +551,7 @@ namespace System
             _flags = Flags.Zero;
             _info = null!;
             _syntax = null!;
+            _originalUnicodeString = null!;
             CreateThis(newUriString, dontEscape, UriKind.Absolute);
             DebugSetLeftCtor();
         }
@@ -2265,7 +2267,7 @@ namespace System
                                 }
                             }
                         }
-                        if (notEmpty && info.Offset.PortValue != port)
+                        if (notEmpty && _syntax.DefaultPort != port)
                         {
                             info.Offset.PortValue = (ushort)port;
                             cF |= Flags.NotDefaultPort;

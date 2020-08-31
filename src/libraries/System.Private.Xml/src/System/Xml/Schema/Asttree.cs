@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 namespace System.Xml.Schema
 {
     using System.Xml.XPath;
@@ -416,7 +415,7 @@ namespace System.Xml.Schema
         }
 
         //constructor
-        internal DoubleLinkAxis(Axis axis, DoubleLinkAxis inputaxis)
+        internal DoubleLinkAxis(Axis axis, DoubleLinkAxis? inputaxis)
             : base(axis.TypeOfAxis, inputaxis, axis.Prefix, axis.Name, axis.NodeType)
         {
             this.next = null;
@@ -437,7 +436,7 @@ namespace System.Xml.Schema
                 return null;
             }
 
-            return new DoubleLinkAxis(axis, ConvertTree((Axis)axis.Input));
+            return new DoubleLinkAxis(axis, ConvertTree((Axis?)axis.Input));
         }
     }
 
@@ -575,7 +574,7 @@ namespace System.Xml.Schema
                 throw new XmlSchemaException(SR.Sch_ICXpathError, xPath);
             }
 
-            Axis stepAst;
+            Axis? stepAst;
             for (int i = 0; i < AstArray.Count; ++i)
             {
                 Axis ast = (Axis)AstArray[i]!;
@@ -603,7 +602,7 @@ namespace System.Xml.Schema
                         SetURN(stepAst, nsmgr);
                         try
                         {
-                            stepAst = (Axis)(stepAst.Input);
+                            stepAst = (Axis?)(stepAst.Input);
                         }
                         catch
                         {
@@ -631,7 +630,7 @@ namespace System.Xml.Schema
                     }
                     try
                     {
-                        stepAst = (Axis)(stepAst.Input);
+                        stepAst = (Axis?)(stepAst.Input);
                     }
                     catch
                     {
@@ -660,7 +659,7 @@ namespace System.Xml.Schema
                 }
                 try
                 {
-                    stepAst = (Axis)(stepAst.Input);
+                    stepAst = (Axis?)(stepAst.Input);
                 }
                 catch
                 {

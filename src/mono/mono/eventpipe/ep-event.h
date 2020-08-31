@@ -52,8 +52,11 @@ struct _EventPipeEvent {
 EP_DEFINE_GETTER(EventPipeEvent *, event, uint64_t, keywords)
 EP_DEFINE_GETTER_REF(EventPipeEvent *, event, volatile int64_t *, enabled_mask)
 EP_DEFINE_SETTER(EventPipeEvent *, event, int64_t, enabled_mask)
+EP_DEFINE_GETTER(EventPipeEvent *, event, uint8_t *, metadata)
 EP_DEFINE_GETTER(EventPipeEvent *, event, EventPipeProvider *, provider)
 EP_DEFINE_GETTER(EventPipeEvent *, event, uint32_t, event_id)
+EP_DEFINE_GETTER(EventPipeEvent *, event, uint32_t, event_version)
+EP_DEFINE_GETTER(EventPipeEvent *, event, uint32_t, metadata_len)
 EP_DEFINE_GETTER(EventPipeEvent *, event, EventPipeEventLevel, level)
 EP_DEFINE_GETTER(EventPipeEvent *, event, bool, need_stack)
 

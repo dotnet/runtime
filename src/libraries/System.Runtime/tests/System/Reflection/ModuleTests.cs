@@ -81,7 +81,15 @@ namespace System.Reflection.Tests
         [Fact]
         public void FullyQualifiedName()
         {
-            Assert.Equal(Assembly.GetExecutingAssembly().Location, Module.FullyQualifiedName);
+            var loc = AssemblyPathHelper.GetAssemblyLocation(Assembly.GetExecutingAssembly());
+
+            // Browser will include the path (/), so strip it
+            if (PlatformDetection.IsBrowser && loc.Length > 1)
+            {
+                loc = loc.Substring(1);
+            }
+
+            Assert.Equal(loc, Module.FullyQualifiedName);
         }
 
         [Fact]

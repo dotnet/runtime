@@ -387,6 +387,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
     <ItemGroup>
       <AllRunnableTestPaths Include="$(XunitTestBinBase)\**\*.cmd" Condition="'$(TargetOS)' == 'Windows_NT'" />
       <AllRunnableTestPaths Include="$(XunitTestBinBase)\**\*.sh" Condition="'$(TargetOS)' != 'Windows_NT'" />
+      <AllRunnableTestPaths Remove="$(XunitTestBinBase)\**\run-v8.sh" Condition="'$(TargetArchitecture)' == 'wasm'" /> 
     </ItemGroup>
   </Target>
 
@@ -403,6 +404,9 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
 
     <!-- generate project.lock.json file corresponding to above json file -->
     <MSBuild Projects="$(MSBuildThisFileDirectory)Common\test_dependencies\test_dependencies.csproj"
+             Condition=" '$(BuildWrappers)'=='true' " />
+
+    <MSBuild Projects="$(MSBuildThisFileDirectory)Common\test_dependencies_fs\test_dependencies.fsproj"
              Condition=" '$(BuildWrappers)'=='true' " />
 
     <MSBuild Projects="$(MSBuildProjectFile)"

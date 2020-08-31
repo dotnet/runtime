@@ -37,7 +37,7 @@ namespace System.Data
         /// <returns>IEnumerable of T.</returns>
         public IEnumerator<T> GetEnumerator()
         {
-            return Rows.Cast<T>().GetEnumerator();
+            return Rows.Cast<T>().GetEnumerator()!;
         }
 
         IEnumerator IEnumerable.GetEnumerator()

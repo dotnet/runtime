@@ -68,7 +68,7 @@ private:
     DbgTransportTarget  * m_pProxy;
     DbgTransportSession * m_pTransport;
 #ifdef FEATURE_REMOTE_PROC_MEM
-    int m_fd;                           // /proc/<pid>/mem handle
+    DWORD m_memoryHandle;                   // PAL_ReadProcessMemory handle or UINT32_MAX if fallback
 #endif
 };
 
@@ -106,9 +106,7 @@ ShimRemoteDataTarget::ShimRemoteDataTarget(DWORD processId,
     m_pContinueStatusChangedUserData = NULL;
 
 #ifdef FEATURE_REMOTE_PROC_MEM
-    char memPath[128];
-    _snprintf_s(memPath, sizeof(memPath), sizeof(memPath), "/proc/%lu/mem", m_processId);
-    m_fd = _open(memPath, 0); // O_RDONLY
+    PAL_OpenProcessMemory(m_processId, &m_memoryHandle);
 #endif
 }
 
@@ -135,11 +133,8 @@ ShimRemoteDataTarget::~ShimRemoteDataTarget()
 void ShimRemoteDataTarget::Dispose()
 {
 #ifdef FEATURE_REMOTE_PROC_MEM
-    if (m_fd != -1)
-    {
-        _close(m_fd);
-        m_fd = -1;
-    }
+    PAL_CloseProcessMemory(m_memoryHandle);
+    m_memoryHandle = UINT32_MAX;
 #endif
     if (m_pTransport != NULL)
     {
@@ -269,10 +264,9 @@ ShimRemoteDataTarget::ReadVirtual(
     HRESULT hr = S_OK;
 
 #ifdef FEATURE_REMOTE_PROC_MEM
-    if (m_fd != -1)
+    if (m_memoryHandle != UINT32_MAX)
     {
-        read = _pread(m_fd, pBuffer, cbRequestSize, (ULONG64)address);
-        if (read == (size_t)-1)
+        if (!PAL_ReadProcessMemory(m_memoryHandle, (ULONG64)address, pBuffer, cbRequestSize, &read))
         {
             hr = E_FAIL;
         }

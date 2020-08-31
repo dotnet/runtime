@@ -324,7 +324,7 @@ namespace Microsoft.Extensions.Http
             }
 
             // We didn't totally empty the cleanup queue, try again later.
-            if (_expiredHandlers.Count > 0)
+            if (!_expiredHandlers.IsEmpty)
             {
                 StartCleanupTimer();
             }

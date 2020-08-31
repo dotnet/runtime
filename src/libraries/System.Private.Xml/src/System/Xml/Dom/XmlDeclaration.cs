@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text;
 
@@ -17,7 +18,7 @@ namespace System.Xml
         private string _encoding;
         private string _standalone;
 
-        protected internal XmlDeclaration(string version, string encoding, string standalone, XmlDocument doc) : base(doc)
+        protected internal XmlDeclaration(string version, string? encoding, string? standalone, XmlDocument doc) : base(doc)
         {
             if (!IsValidXmlVersion(version))
                 throw new ArgumentException(SR.Xdom_Version);
@@ -34,21 +35,26 @@ namespace System.Xml
         public string Version
         {
             get { return _version; }
+            [MemberNotNull(nameof(_version))]
             internal set { _version = value; }
         }
 
         // Specifies the value of the encoding attribute, as for
         // <?xml version= '1.0' encoding= 'UTF-8' ?>
+        [AllowNull]
         public string Encoding
         {
             get { return _encoding; }
+            [MemberNotNull(nameof(_encoding))]
             set { _encoding = ((value == null) ? string.Empty : value); }
         }
 
         // Specifies the value of the standalone attribute.
+        [AllowNull]
         public string Standalone
         {
             get { return _standalone; }
+            [MemberNotNull(nameof(_standalone))]
             set
             {
                 if (value == null)
@@ -60,10 +66,10 @@ namespace System.Xml
             }
         }
 
-        public override string Value
+        public override string? Value
         {
             get { return InnerText; }
-            set { InnerText = value; }
+            set { InnerText = value!; }
         }
 
 
@@ -89,17 +95,18 @@ namespace System.Xml
                     strb.Append(Standalone);
                     strb.Append('"');
                 }
+
                 return StringBuilderCache.GetStringAndRelease(strb);
             }
 
             set
             {
-                string tempVersion = null;
-                string tempEncoding = null;
-                string tempStandalone = null;
+                string? tempVersion = null;
+                string? tempEncoding = null;
+                string? tempStandalone = null;
                 string orgEncoding = this.Encoding;
                 string orgStandalone = this.Standalone;
-                string orgVersion = this.Version;
+                string? orgVersion = this.Version;
 
                 XmlLoader.ParseXmlDeclarationValue(value, out tempVersion, out tempEncoding, out tempStandalone);
 
@@ -107,7 +114,7 @@ namespace System.Xml
                 {
                     if (tempVersion != null && !IsValidXmlVersion(tempVersion))
                         throw new ArgumentException(SR.Xdom_Version);
-                    Version = tempVersion;
+                    Version = tempVersion!;
 
                     if (tempEncoding != null)
                         Encoding = tempEncoding;

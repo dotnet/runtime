@@ -64,7 +64,7 @@ jobs:
         - ${{ if eq(parameters.jobParameters.isFullMatrix, false) }}:
           - Centos.7.Amd64.Open
           - RedHat.7.Amd64.Open
-          - Debian.9.Amd64.Open
+          - (Debian.10.Amd64.Open)ubuntu.1604.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-10-helix-amd64-bfcd90a-20200121150006
           - Ubuntu.1604.Amd64.Open
           - Ubuntu.1804.Amd64.Open
           - SLES.15.Amd64.Open
@@ -78,17 +78,15 @@ jobs:
       - ${{ if eq(parameters.jobParameters.isFullMatrix, true) }}:
         - OSX.1013.Amd64.Open
         - OSX.1014.Amd64.Open
-        # The 10.15 machines aren't in the same configuration, see
-        # https://github.com/dotnet/runtime/issues/24736
-        #- OSX.1015.Amd64.Open
+        - OSX.1015.Amd64.Open
       - ${{ if eq(parameters.jobParameters.isFullMatrix, false) }}:
-        - OSX.1013.Amd64.Open
         - OSX.1014.Amd64.Open
+        - OSX.1015.Amd64.Open
 
     # Windows_NT x64
     - ${{ if eq(parameters.platform, 'Windows_NT_x64') }}:
       # netcoreapp
-      - ${{ if notIn(parameters.jobParameters.framework, 'allConfigurations', 'net472') }}:
+      - ${{ if notIn(parameters.jobParameters.framework, 'allConfigurations', 'net48') }}:
         - ${{ if eq(parameters.jobParameters.isFullMatrix, true) }}:
           - Windows.81.Amd64.Open
           - Windows.10.Amd64.ServerRS5.Open
@@ -101,8 +99,8 @@ jobs:
           - ${{ if ne(parameters.jobParameters.runtimeFlavor, 'mono') }}:
             - (Windows.Nano.1809.Amd64.Open)windows.10.amd64.serverrs5.open@mcr.microsoft.com/dotnet-buildtools/prereqs:nanoserver-1809-helix-amd64-08e8e40-20200107182504
 
-      # NET472
-      - ${{ if eq(parameters.jobParameters.framework, 'net472') }}:
+      # .NETFramework
+      - ${{ if eq(parameters.jobParameters.framework, 'net48') }}:
         - Windows.10.Amd64.Client19H1.Open
       
       # AllConfigurations
@@ -112,7 +110,7 @@ jobs:
     # Windows_NT x86
     - ${{ if eq(parameters.platform, 'Windows_NT_x86') }}:
       # netcoreapp
-      - ${{ if notIn(parameters.jobParameters.framework, 'allConfigurations', 'net472') }}:
+      - ${{ if notIn(parameters.jobParameters.framework, 'allConfigurations', 'net48') }}:
         - ${{ if eq(parameters.jobParameters.isFullMatrix, true) }}:
           - Windows.7.Amd64.Open
           - Windows.10.Amd64.ServerRS5.Open
@@ -124,8 +122,8 @@ jobs:
             - Windows.7.Amd64.Open
             - Windows.10.Amd64.Server19H1.Open
 
-      # NET472
-      - ${{ if eq(parameters.jobParameters.framework, 'net472') }}:
+      # .NETFramework
+      - ${{ if eq(parameters.jobParameters.framework, 'net48') }}:
         - Windows.10.Amd64.Client19H1.Open
 
     # Windows_NT arm

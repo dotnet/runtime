@@ -103,7 +103,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
                 {
                     throw new Exception(SR.Diagnostic_InternalExceptionMessage);
                 }
-                return MemberType.GetHashCode() ^ _accessors[0]!.GetHashCode(); // TODO-NULLABLE https://github.com/dotnet/roslyn/issues/34644
+                return MemberType.GetHashCode() ^ _accessors[0]!.GetHashCode(); // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
             }
         }
 

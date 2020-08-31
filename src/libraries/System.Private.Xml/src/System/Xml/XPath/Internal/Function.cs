@@ -43,8 +43,8 @@ namespace MS.Internal.Xml.XPath
         private readonly FunctionType _functionType;
         private readonly List<AstNode> _argumentList;
 
-        private readonly string _name;
-        private readonly string _prefix;
+        private readonly string? _name;
+        private readonly string? _prefix;
 
         public Function(FunctionType ftype, List<AstNode> argumentList)
         {
@@ -79,8 +79,8 @@ namespace MS.Internal.Xml.XPath
 
         public FunctionType TypeOfFunction { get { return _functionType; } }
         public List<AstNode> ArgumentList { get { return _argumentList; } }
-        public string Prefix { get { return _prefix; } }
-        public string Name { get { return _name; } }
+        public string? Prefix { get { return _prefix; } }
+        public string? Name { get { return _name; } }
 
         internal static XPathResultType[] ReturnTypes = {
             /* FunctionType.FuncLast            */ XPathResultType.Number,

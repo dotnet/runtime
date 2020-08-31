@@ -129,8 +129,10 @@ internal partial class Interop
         public const uint WINHTTP_AUTH_TARGET_PROXY = 0x00000001;
 
         public const uint WINHTTP_OPTION_USERNAME = 0x1000;
+        // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="It is property descriptor, not secret value.")]
         public const uint WINHTTP_OPTION_PASSWORD = 0x1001;
         public const uint WINHTTP_OPTION_PROXY_USERNAME = 0x1002;
+        // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="It is property descriptor, not secret value.")]
         public const uint WINHTTP_OPTION_PROXY_PASSWORD = 0x1003;
 
         public const uint WINHTTP_OPTION_SERVER_SPN_USED = 106;

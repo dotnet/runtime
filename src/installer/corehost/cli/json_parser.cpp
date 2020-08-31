@@ -74,8 +74,10 @@ void json_parser_t::realloc_buffer(size_t size)
     m_json[size] = '\0';
 }
 
-bool json_parser_t::parse_json(char* data, int64_t size, const pal::string_t& context)
+bool json_parser_t::parse_raw_data(char* data, int64_t size, const pal::string_t& context)
 {
+    assert(data != nullptr);
+
     constexpr auto flags = rapidjson::ParseFlag::kParseStopWhenDoneFlag | rapidjson::ParseFlag::kParseCommentsFlag;
 #ifdef _WIN32
     // Can't use in-situ parsing on Windows, as JSON data is encoded in
@@ -109,26 +111,6 @@ bool json_parser_t::parse_json(char* data, int64_t size, const pal::string_t& co
     return true;
 }
 
-bool json_parser_t::parse_stream(pal::istream_t& stream,
-                                 const pal::string_t& context)
-{
-    if (!stream.good())
-    {
-        trace::error(_X("Cannot use stream for resource [%s]: %s"), context.c_str(), pal::strerror(errno));
-        return false;
-    }
-
-    auto current_pos = ::get_utf8_bom_length(stream);
-    stream.seekg(0, stream.end);
-    auto stream_size = stream.tellg();
-    stream.seekg(current_pos, stream.beg);
-
-    realloc_buffer(stream_size - current_pos);
-    stream.read(m_json.data(), stream_size - current_pos);
-
-    return parse_json(m_json.data(), m_json.size(), context);
-}
-
 bool json_parser_t::parse_file(const pal::string_t& path)
 {
     // This code assumes that the caller has checked that the file `path` exists
@@ -145,13 +127,33 @@ bool json_parser_t::parse_file(const pal::string_t& path)
 
         if (m_bundle_data != nullptr)
         {
-            bool result = parse_json(m_bundle_data, m_bundle_location->size, path);
+            bool result = parse_raw_data(m_bundle_data, m_bundle_location->size, path);
             return result;
         }
     }
 
     pal::ifstream_t file{ path };
-    return parse_stream(file, path);
+    if (!file.good())
+    {
+        trace::error(_X("Cannot use file stream for [%s]: %s"), path.c_str(), pal::strerror(errno));
+        return false;
+    }
+
+    auto current_pos = ::get_utf8_bom_length(file);
+    file.seekg(0, file.end);
+    auto stream_size = file.tellg();
+    if (stream_size == -1)
+    {
+        trace::error(_X("Failed to get size of file [%s]"), path.c_str());
+        return false;
+    }
+
+    file.seekg(current_pos, file.beg);
+
+    realloc_buffer(stream_size - current_pos);
+    file.read(m_json.data(), stream_size - current_pos);
+
+    return parse_raw_data(m_json.data(), m_json.size(), path);
 }
 
 json_parser_t::~json_parser_t()

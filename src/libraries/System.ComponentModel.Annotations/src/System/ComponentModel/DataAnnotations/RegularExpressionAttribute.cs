@@ -35,7 +35,7 @@ namespace System.ComponentModel.DataAnnotations
         /// </summary>
         public string Pattern { get; }
 
-        private Regex Regex { get; set; }
+        private Regex? Regex { get; set; }
 
         /// <summary>
         ///     Override of <see cref="ValidationAttribute.IsValid(object)" />
@@ -47,12 +47,12 @@ namespace System.ComponentModel.DataAnnotations
         /// <returns><c>true</c> if the given value matches the current regular expression pattern</returns>
         /// <exception cref="InvalidOperationException"> is thrown if the current attribute is ill-formed.</exception>
         /// <exception cref="ArgumentException"> is thrown if the <see cref="Pattern" /> is not a valid regular expression.</exception>
-        public override bool IsValid(object value)
+        public override bool IsValid(object? value)
         {
             SetupRegex();
 
             // Convert the value to a string
-            string stringValue = Convert.ToString(value, CultureInfo.CurrentCulture);
+            string? stringValue = Convert.ToString(value, CultureInfo.CurrentCulture);
 
             // Automatically pass if value is null or empty. RequiredAttribute should be used to assert a value is not empty.
             if (string.IsNullOrEmpty(stringValue))
@@ -60,7 +60,7 @@ namespace System.ComponentModel.DataAnnotations
                 return true;
             }
 
-            var m = Regex.Match(stringValue);
+            var m = Regex!.Match(stringValue);
 
             // We are looking for an exact match, not just a search hit. This matches what
             // the RegularExpressionValidator control does

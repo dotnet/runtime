@@ -818,20 +818,17 @@ public:
     // "arg0VN". For binary ops, return the value number for the application of this function to "arg0VN" and
     // "arg1VN".
 
-    ValueNum EvalMathFuncUnary(var_types typ, CorInfoIntrinsics mthFunc, ValueNum arg0VN);
+    ValueNum EvalMathFuncUnary(var_types typ, NamedIntrinsic mthFunc, ValueNum arg0VN);
 
-    ValueNum EvalMathFuncBinary(var_types typ, CorInfoIntrinsics mthFunc, ValueNum arg0VN, ValueNum arg1VN);
+    ValueNum EvalMathFuncBinary(var_types typ, NamedIntrinsic mthFunc, ValueNum arg0VN, ValueNum arg1VN);
 
-    ValueNumPair EvalMathFuncUnary(var_types typ, CorInfoIntrinsics mthFunc, ValueNumPair arg0VNP)
+    ValueNumPair EvalMathFuncUnary(var_types typ, NamedIntrinsic mthFunc, ValueNumPair arg0VNP)
     {
         return ValueNumPair(EvalMathFuncUnary(typ, mthFunc, arg0VNP.GetLiberal()),
                             EvalMathFuncUnary(typ, mthFunc, arg0VNP.GetConservative()));
     }
 
-    ValueNumPair EvalMathFuncBinary(var_types         typ,
-                                    CorInfoIntrinsics mthFunc,
-                                    ValueNumPair      arg0VNP,
-                                    ValueNumPair      arg1VNP)
+    ValueNumPair EvalMathFuncBinary(var_types typ, NamedIntrinsic mthFunc, ValueNumPair arg0VNP, ValueNumPair arg1VNP)
     {
         return ValueNumPair(EvalMathFuncBinary(typ, mthFunc, arg0VNP.GetLiberal(), arg1VNP.GetLiberal()),
                             EvalMathFuncBinary(typ, mthFunc, arg0VNP.GetConservative(), arg1VNP.GetConservative()));

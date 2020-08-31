@@ -256,5 +256,66 @@ namespace System.Security.Cryptography.Pkcs.Tests.Pkcs12
 
             Assert.Throws<InvalidOperationException>(() => info.VerifyMac("hi"));
         }
+
+        [Theory]
+        [MemberData(nameof(DecodeWithHighPbeIterationsData))]
+        public static void DecodeWithHighPbeIterations(
+            PbeEncryptionAlgorithm encryptionAlgorithm,
+            HashAlgorithmName hashAlgorithmName,
+            int iterations)
+        {
+            string pw = nameof(CreateAndSealPkcs12);
+            byte[] data = CreateAndSealPkcs12(encryptionAlgorithm, hashAlgorithmName, iterations);
+            Pkcs12Info info = Pkcs12Info.Decode(data, out _, skipCopy: true);
+            info.AuthenticatedSafe.Single().Decrypt(pw);
+        }
+
+        [Fact]
+        public static void DecodeWithTooManyPbeIterations()
+        {
+            const string pw = "test";
+            Pkcs12Info info = Pkcs12Info.Decode(Pkcs12Documents.HighPbeIterationCount3Des, out _, skipCopy: true);
+            foreach (Pkcs12SafeContents contents in info.AuthenticatedSafe)
+            {
+                if (contents.ConfidentialityMode == Pkcs12ConfidentialityMode.None)
+                {
+                    continue;
+                }
+
+                Assert.ThrowsAny<CryptographicException>(() => contents.Decrypt(pw));
+            }
+        }
+
+        public static IEnumerable<object[]> DecodeWithHighPbeIterationsData
+        {
+            get
+            {
+                yield return new object[] { PbeEncryptionAlgorithm.Aes128Cbc, HashAlgorithmName.SHA256, 700_000 };
+                yield return new object[] { PbeEncryptionAlgorithm.Aes192Cbc, HashAlgorithmName.SHA256, 700_000 };
+                yield return new object[] { PbeEncryptionAlgorithm.Aes256Cbc, HashAlgorithmName.SHA256, 700_000 };
+                yield return new object[] { PbeEncryptionAlgorithm.TripleDes3KeyPkcs12, HashAlgorithmName.SHA1, 600_000 };
+            }
+        }
+
+        private static byte[] CreateAndSealPkcs12(
+            PbeEncryptionAlgorithm encryptionAlgorithm,
+            HashAlgorithmName hashAlgorithmName,
+            int iterations)
+        {
+            PbeParameters pbeParameters = new PbeParameters(
+                encryptionAlgorithm,
+                hashAlgorithmName,
+                iterations);
+
+            using RSA rsa = RSA.Create();
+            string pw = nameof(CreateAndSealPkcs12);
+            Pkcs12Builder builder = new Pkcs12Builder();
+            Pkcs12SafeContents contents = new Pkcs12SafeContents();
+            contents.AddShroudedKey(rsa, pw, pbeParameters);
+            builder.AddSafeContentsEncrypted(contents, pw, pbeParameters);
+            builder.SealWithMac(pw, hashAlgorithmName, iterations);
+
+            return builder.Encode();
+        }
     }
 }

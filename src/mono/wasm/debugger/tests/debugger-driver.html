@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en-us">
+  <head>
+  </head>
+  <body>
+	<script type='text/javascript'>
+		var App = {
+			init: function () {
+				this.int_add = Module.mono_bind_static_method ("[debugger-test] Math:IntAdd");
+				this.use_complex = Module.mono_bind_static_method ("[debugger-test] Math:UseComplex");
+				this.delegates_test = Module.mono_bind_static_method ("[debugger-test] Math:DelegatesTest");
+				this.generic_types_test = Module.mono_bind_static_method ("[debugger-test] Math:GenericTypesTest");
+				this.outer_method = Module.mono_bind_static_method ("[debugger-test] Math:OuterMethod");
+				this.async_method = Module.mono_bind_static_method ("[debugger-test] Math/NestedInMath:AsyncTest");
+				this.method_with_structs = Module.mono_bind_static_method ("[debugger-test] DebuggerTests.ValueTypesTest:MethodWithLocalStructs");
+				this.run_all = Module.mono_bind_static_method ("[debugger-test] DebuggerTest:run_all");
+				this.static_method_table = {};
+				console.log ("ready");
+			},
+		};
+		function invoke_static_method (method_name, ...args) {
+			var method = App.static_method_table [method_name];
+			if (method == undefined)
+				method = App.static_method_table [method_name] = Module.mono_bind_static_method (method_name);
+
+			return method (...args);
+		}
+
+		async function invoke_static_method_async (method_name, ...args) {
+			var method = App.static_method_table [method_name];
+			if (method == undefined) {
+				method = App.static_method_table [method_name] = Module.mono_bind_static_method (method_name);
+			}
+
+			return await method (...args);
+		}
+
+		function invoke_big_array_js_test (len) {
+			big_array_js_test(len);
+		}
+
+		function invoke_getters_js_test () {
+			getters_js_test ();
+		}
+
+		function invoke_add () {
+			return App.int_add (10, 20);
+		}
+		function invoke_use_complex () {
+			return App.use_complex (10, 20);
+		}
+		function invoke_delegates_test () {
+			return App.delegates_test ();
+		}
+		function invoke_generic_types_test () {
+			return App.generic_types_test ();
+		}
+		function invoke_bad_js_test () {
+			console.log ("js: In invoke_bad_js_test");
+			App.non_existant ();
+			console.log ("js: After.. shouldn't reach here");
+		}
+		function invoke_outer_method () {
+			console.log('invoke_outer_method called');
+			return App.outer_method ();
+		}
+		async function invoke_async_method_with_await () {
+			return await App.async_method ("string from js", 42);
+		}
+		function invoke_method_with_structs () {
+			return App.method_with_structs ();
+		}
+		function invoke_run_all () {
+			return App.run_all ();
+		}
+      </script>
+      <script type="text/javascript" src="mono-config.js"></script>
+      <script type="text/javascript" src="runtime-debugger.js"></script>
+      <script type="text/javascript" src="other.js"></script>
+      <script async type="text/javascript" src="dotnet.js"></script>
+	  Stuff goes here
+  </body>
+  </html> 
+     
+17  sdks/wasm/debugger-test.cs
+@@ -0,0 +1,17 @@
+using System;
+
+public class Math { //Only append content to this class as the test suite depends on line info
+	public static int IntAdd (int a, int b) {
+		int c = a + b;
+		int d = c + b;
+		int e = d + a;
+
+		return e;
+	}
+
+	public static int UseComplex () {
+		var complex = new Simple.Complex (10, "xx");
+		var res = complex.DoStuff ();
+		return res;
+	}
+}
+     
+19  sdks/wasm/debugger-test2.cs
+@@ -0,0 +1,19 @@
+using System;
+
+public class Misc { //Only append content to this class as the test suite depends on line info
+	public static int CreateObject (int foo, int bar) {
+		var f = new Fancy () {
+			Foo = foo,
+			Bar = bar,
+		};
+
+		Console.WriteLine ($"{f.Foo} {f.Bar}");
+		return f.Foo + f.Bar;
+	}
+}
+
+public class Fancy {
+	public int Foo;
+	public int Bar { get ; set; }
+}

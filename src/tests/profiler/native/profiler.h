@@ -3,6 +3,8 @@
 
 #pragma once
 
+#define NOMINMAX
+
 #include <atomic>
 #include <cstdio>
 #include "cor.h"
@@ -108,7 +110,7 @@ protected:
     String GetModuleIDName(ModuleID modId);
 
 public:
-    ICorProfilerInfo9* pCorProfilerInfo;
+    ICorProfilerInfo11* pCorProfilerInfo;
 
     Profiler();
     virtual ~Profiler();

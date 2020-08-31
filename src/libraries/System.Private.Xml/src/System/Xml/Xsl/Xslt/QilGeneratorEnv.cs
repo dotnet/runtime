@@ -21,13 +21,13 @@ namespace System.Xml.Xsl.Xslt
 
         private readonly struct ThrowErrorHelper : IErrorHelper
         {
-            public void ReportError(string res, params string[] args)
+            public void ReportError(string res, params string?[]? args)
             {
                 Debug.Assert(args == null || args.Length == 0, "Error message must already be composed in res");
                 throw new XslLoadException(SR.Xml_UserException, res);
             }
 
-            public void ReportWarning(string res, params string[] args)
+            public void ReportWarning(string res, params string?[]? args)
             {
                 Debug.Fail("Should never get here");
             }
@@ -76,7 +76,7 @@ namespace System.Xml.Xsl.Xslt
             Debug.Assert(ns != null);
 
             // Look up in params and variables of the current scope and all outer ones
-            QilNode var = _scope.LookupVariable(name, ns);
+            QilNode? var = _scope.LookupVariable(name, ns);
 
             if (var == null)
             {
@@ -85,7 +85,7 @@ namespace System.Xml.Xsl.Xslt
 
             // All Node* parameters are guaranteed to be in document order with no duplicates, so TypeAssert
             // this so that optimizer can use this information to avoid redundant sorts and duplicate removal.
-            XmlQueryType varType = var.XmlType;
+            XmlQueryType varType = var.XmlType!;
             if (var.NodeType == QilNodeType.Parameter && varType.IsNode && varType.IsNotRtf && varType.MaybeMany && !varType.IsDod)
             {
                 var = _f.TypeAssert(var, XmlQueryTypeFactory.NodeSDod);
@@ -100,7 +100,7 @@ namespace System.Xml.Xsl.Xslt
             Debug.Assert(!args.IsReadOnly, "Writable collection expected");
             if (prefix.Length == 0)
             {
-                FunctionInfo func;
+                FunctionInfo? func;
                 if (FunctionTable.TryGetValue(name, out func))
                 {
                     func.CastArguments(args, name, _f);
@@ -113,7 +113,7 @@ namespace System.Xml.Xsl.Xslt
                                 throw new XslLoadException(SR.Xslt_CurrentNotAllowed);
                             }
                             // NOTE: This is the only place where the current node (and not the context node) must be used
-                            return ((IXPathEnvironment)this).GetCurrent();
+                            return ((IXPathEnvironment)this).GetCurrent()!;
                         case FuncId.Key:
                             if (!_allowKey)
                             {
@@ -123,7 +123,7 @@ namespace System.Xml.Xsl.Xslt
                         case FuncId.Document: return CompileFnDocument(args[0], args.Count > 1 ? args[1] : null);
                         case FuncId.FormatNumber: return CompileFormatNumber(args[0], args[1], args.Count > 2 ? args[2] : null);
                         case FuncId.UnparsedEntityUri: return CompileUnparsedEntityUri(args[0]);
-                        case FuncId.GenerateId: return CompileGenerateId(args.Count > 0 ? args[0] : env.GetCurrent());
+                        case FuncId.GenerateId: return CompileGenerateId(args.Count > 0 ? args[0] : env.GetCurrent()!);
                         case FuncId.SystemProperty: return CompileSystemProperty(args[0]);
                         case FuncId.ElementAvailable: return CompileElementAvailable(args[0]);
                         case FuncId.FunctionAvailable: return CompileFunctionAvailable(args[0]);
@@ -181,7 +181,7 @@ namespace System.Xml.Xsl.Xslt
                     else if (name == "namespace-uri")
                     {
                         FunctionInfo.CheckArity(/*minArg:*/1, /*maxArg:*/1, name, args.Count);
-                        return _f.InvokeMsNamespaceUri(_f.ConvertToString(args[0]), env.GetCurrent());
+                        return _f.InvokeMsNamespaceUri(_f.ConvertToString(args[0]), env.GetCurrent()!);
                     }
                     else if (name == "number")
                     {
@@ -212,7 +212,7 @@ namespace System.Xml.Xsl.Xslt
 
                 if (_compiler.Settings.EnableScript)
                 {
-                    XmlExtensionFunction scrFunc = _compiler.Scripts.ResolveFunction(name, ns, args.Count, (IErrorHelper)this);
+                    XmlExtensionFunction? scrFunc = _compiler.Scripts.ResolveFunction(name, ns, args.Count, (IErrorHelper)this);
                     if (scrFunc != null)
                     {
                         return GenerateScriptCall(_f.QName(name, ns, prefix), scrFunc, args);
@@ -223,7 +223,7 @@ namespace System.Xml.Xsl.Xslt
                     if (_compiler.Scripts.ScriptClasses.ContainsKey(ns))
                     {
                         ReportWarning(SR.Xslt_ScriptsProhibited);
-                        return _f.Error(_lastScope.SourceLine, SR.Xslt_ScriptsProhibited);
+                        return _f.Error(_lastScope!.SourceLine, SR.Xslt_ScriptsProhibited);
                     }
                 }
 
@@ -260,7 +260,7 @@ namespace System.Xml.Xsl.Xslt
             }
             else
             {
-                string ns = _scope.LookupNamespace(prefix);
+                string? ns = _scope.LookupNamespace(prefix);
                 if (ns == null)
                 {
                     if (prefix.Length != 0)
@@ -374,7 +374,7 @@ namespace System.Xml.Xsl.Xslt
         {
             QilNode result;
             QilIterator i, n, k;
-            if (keys.XmlType.IsNode)
+            if (keys.XmlType!.IsNode)
             {
                 if (keys.XmlType.IsSingleton)
                 {
@@ -428,7 +428,7 @@ namespace System.Xml.Xsl.Xslt
                 }
                 QilIterator i = _f.Let(name);
                 QilNode resolvedName = ResolveQNameDynamic(/*ignoreDefaultNs:*/true, i);
-                result = _f.Invoke(_generalKey, _f.ActualParameterList(i, resolvedName, key, env.GetCurrent()));
+                result = _f.Invoke(_generalKey, _f.ActualParameterList(i, resolvedName, key, env.GetCurrent()!));
                 result = _f.Loop(i, result);
             }
             return result;
@@ -439,14 +439,14 @@ namespace System.Xml.Xsl.Xslt
             Debug.Assert(defList != null && defList.Count > 0);
             if (defList.Count == 1)
             {
-                return _f.Invoke(defList[0].Function, _f.ActualParameterList(env.GetCurrent(), key));
+                return _f.Invoke(defList[0].Function!, _f.ActualParameterList(env.GetCurrent()!, key));
             }
 
             QilIterator i = _f.Let(key);
             QilNode result = _f.Sequence();
             foreach (Key keyDef in defList)
             {
-                result.Add(_f.Invoke(keyDef.Function, _f.ActualParameterList(env.GetCurrent(), i)));
+                result.Add(_f.Invoke(keyDef.Function!, _f.ActualParameterList(env.GetCurrent()!, i)));
             }
             return _f.Loop(i, result);
         }
@@ -455,14 +455,14 @@ namespace System.Xml.Xsl.Xslt
         {
             Debug.Assert(defList != null && defList.Count > 0);
             QilList result = _f.BaseFactory.Sequence();
-            QilNode keyRef = null;
+            QilNode? keyRef = null;
 
             foreach (Key keyDef in defList)
             {
-                keyRef = _f.Invoke(keyDef.Function, _f.ActualParameterList(context, key));
+                keyRef = _f.Invoke(keyDef.Function!, _f.ActualParameterList(context, key));
                 result.Add(keyRef);
             }
-            return defList.Count == 1 ? keyRef : result;
+            return defList.Count == 1 ? keyRef! : result;
         }
 
         private QilFunction CreateGeneralKeyFunction()
@@ -475,7 +475,7 @@ namespace System.Xml.Xsl.Xslt
             QilNode fdef = _f.Error(SR.Xslt_UndefinedKey, name);
             for (int idx = 0; idx < _compiler.Keys.Count; idx++)
             {
-                fdef = _f.Conditional(_f.Eq(resolvedName, _compiler.Keys[idx][0].Name.DeepClone(_f.BaseFactory)),
+                fdef = _f.Conditional(_f.Eq(resolvedName, _compiler.Keys[idx][0].Name!.DeepClone(_f.BaseFactory)),
                     CompileSingleKey(_compiler.Keys[idx], key, context),
                     fdef
                 );
@@ -487,17 +487,18 @@ namespace System.Xml.Xsl.Xslt
             return result;
         }
 
-        private QilNode CompileFnDocument(QilNode uris, QilNode baseNode)
+        private QilNode CompileFnDocument(QilNode uris, QilNode? baseNode)
         {
             QilNode result;
-            QilIterator i, j, u;
+            QilIterator i, u;
+            QilIterator? j;
 
             if (!_compiler.Settings.EnableDocumentFunction)
             {
                 ReportWarning(SR.Xslt_DocumentFuncProhibited);
-                return _f.Error(_lastScope.SourceLine, SR.Xslt_DocumentFuncProhibited);
+                return _f.Error(_lastScope!.SourceLine, SR.Xslt_DocumentFuncProhibited);
             }
-            if (uris.XmlType.IsNode)
+            if (uris.XmlType!.IsNode)
             {
                 result = _f.DocOrderDistinct(_f.Loop(i = _f.For(uris),
                     CompileSingleDocument(_f.ConvertToString(i), baseNode ?? i)
@@ -517,25 +518,25 @@ namespace System.Xml.Xsl.Xslt
                     )),
                     CompileSingleDocument(_f.XsltConvert(u, T.StringX), j)
                 );
-                result = (baseNode != null) ? _f.Loop(j, result) : result;
+                result = (baseNode != null) ? _f.Loop(j!, result) : result;
                 result = _f.Loop(u, result);
             }
             return result;
         }
 
-        private QilNode CompileSingleDocument(QilNode uri, QilNode baseNode)
+        private QilNode CompileSingleDocument(QilNode uri, QilNode? baseNode)
         {
             _f.CheckString(uri);
             QilNode baseUri;
 
             if (baseNode == null)
             {
-                baseUri = _f.String(_lastScope.SourceLine.Uri);
+                baseUri = _f.String(_lastScope!.SourceLine!.Uri);
             }
             else
             {
                 _f.CheckNodeSet(baseNode);
-                if (baseNode.XmlType.IsSingleton)
+                if (baseNode.XmlType!.IsSingleton)
                 {
                     baseUri = _f.InvokeBaseUri(baseNode);
                 }
@@ -553,11 +554,11 @@ namespace System.Xml.Xsl.Xslt
             return _f.DataSource(uri, baseUri);
         }
 
-        private QilNode CompileFormatNumber(QilNode value, QilNode formatPicture, QilNode formatName)
+        private QilNode CompileFormatNumber(QilNode value, QilNode formatPicture, QilNode? formatName)
         {
             _f.CheckDouble(value);
             _f.CheckString(formatPicture);
-            XmlQualifiedName resolvedName;
+            XmlQualifiedName? resolvedName;
 
             if (formatName == null)
             {
@@ -622,13 +623,13 @@ namespace System.Xml.Xsl.Xslt
         private QilNode CompileUnparsedEntityUri(QilNode n)
         {
             _f.CheckString(n);
-            return _f.Error(_lastScope.SourceLine, SR.Xslt_UnsupportedXsltFunction, "unparsed-entity-uri");
+            return _f.Error(_lastScope!.SourceLine, SR.Xslt_UnsupportedXsltFunction, "unparsed-entity-uri");
         }
 
         private QilNode CompileGenerateId(QilNode n)
         {
             _f.CheckNodeSet(n);
-            if (n.XmlType.IsSingleton)
+            if (n.XmlType!.IsSingleton)
             {
                 return _f.XsltGenerateId(n);
             }
@@ -721,7 +722,7 @@ namespace System.Xml.Xsl.Xslt
 
         private QilNode CompileMsNodeSet(QilNode n)
         {
-            if (n.XmlType.IsNode && n.XmlType.IsNotRtf)
+            if (n.XmlType!.IsNode && n.XmlType.IsNotRtf)
             {
                 return n;
             }
@@ -737,7 +738,7 @@ namespace System.Xml.Xsl.Xslt
         {
             if (EvaluateFuncCalls)
             {
-                switch (n.XmlType.TypeCode)
+                switch (n.XmlType!.TypeCode)
                 {
                     case XmlTypeCode.Boolean: return _f.String("boolean");
                     case XmlTypeCode.Double: return _f.String("number");

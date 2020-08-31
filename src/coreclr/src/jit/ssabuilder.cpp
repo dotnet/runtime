@@ -1656,8 +1656,6 @@ bool SsaBuilder::IncludeInSsa(unsigned lclNum)
         // - SSA doesn't allow a single node to contain multiple SSA definitions.
         // - and PROMOTION_TYPE_DEPENDEDNT fields  are never candidates for a register.
         //
-        // Example mscorlib method: CompatibilitySwitches:IsCompatibilitySwitchSet
-        //
         return false;
     }
     else if (varDsc->lvIsStructField && m_pCompiler->lvaGetDesc(varDsc->lvParentLcl)->lvIsMultiRegRet)

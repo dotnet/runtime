@@ -9,11 +9,11 @@ namespace System.Xml.Xsl.XPath
     [Serializable]
     internal class XPathCompileException : XslLoadException
     {
-        public string queryString;
+        public string? queryString;
         public int startChar;
         public int endChar;
 
-        internal XPathCompileException(string queryString, int startChar, int endChar, string resId, params string[] args)
+        internal XPathCompileException(string queryString, int startChar, int endChar, string resId, params string?[]? args)
             : base(resId, args)
         {
             this.queryString = queryString;
@@ -28,9 +28,9 @@ namespace System.Xml.Xsl.XPath
         internal XPathCompileException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
-            queryString = (string)info.GetValue("QueryString", typeof(string));
-            startChar = (int)info.GetValue("StartChar", typeof(int));
-            endChar = (int)info.GetValue("EndChar", typeof(int));
+            queryString = (string)info.GetValue("QueryString", typeof(string))!;
+            startChar = (int)info.GetValue("StartChar", typeof(int))!;
+            endChar = (int)info.GetValue("EndChar", typeof(int))!;
         }
 
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
@@ -79,7 +79,7 @@ namespace System.Xml.Xsl.XPath
             }
         }
 
-        internal string MarkOutError()
+        internal string? MarkOutError()
         {
             if (queryString == null || queryString.Trim(' ').Length == 0)
             {
@@ -105,7 +105,7 @@ namespace System.Xml.Xsl.XPath
         internal override string FormatDetailedMessage()
         {
             string message = Message;
-            string error = MarkOutError();
+            string? error = MarkOutError();
 
             if (error != null && error.Length > 0)
             {

@@ -30,14 +30,16 @@ namespace System.Reflection.Tests
 {
     public class AssemblyTests : FileCleanupTestBase
     {
-        private string SourceTestAssemblyPath { get; } = Path.Combine(Environment.CurrentDirectory, "TestAssembly.dll");
+        private const string s_sourceTestAssemblyName = "TestAssembly.dll";
+
+        private string SourceTestAssemblyPath { get; } = Path.Combine(Environment.CurrentDirectory, s_sourceTestAssemblyName);
         private string DestTestAssemblyPath { get; }
         private string LoadFromTestPath { get; }
 
         public AssemblyTests()
         {
             // Assembly.Location does not return the file path for single-file deployment targets.
-            DestTestAssemblyPath = Path.Combine(base.TestDirectory, "TestAssembly.dll");
+            DestTestAssemblyPath = Path.Combine(base.TestDirectory, s_sourceTestAssemblyName);
             LoadFromTestPath = Path.Combine(base.TestDirectory, "System.Reflection.Tests.dll");
             File.Copy(SourceTestAssemblyPath, DestTestAssemblyPath);
             string currAssemblyPath = Path.Combine(Environment.CurrentDirectory, "System.Reflection.Tests.dll");
@@ -142,6 +144,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        [PlatformSpecific(~TestPlatforms.Browser)] // entry assembly won't be xunit.console on browser
         public void GetEntryAssembly()
         {
             Assert.NotNull(Assembly.GetEntryAssembly());
@@ -153,19 +156,62 @@ namespace System.Reflection.Tests
         [Fact]
         public void GetFile()
         {
-            Assert.Throws<ArgumentNullException>(() => typeof(AssemblyTests).Assembly.GetFile(null));
-            AssertExtensions.Throws<ArgumentException>(null, () => typeof(AssemblyTests).Assembly.GetFile(""));
-            Assert.Null(typeof(AssemblyTests).Assembly.GetFile("NonExistentfile.dll"));
-            Assert.NotNull(typeof(AssemblyTests).Assembly.GetFile("System.Reflection.Tests.dll"));
-            Assert.Equal(typeof(AssemblyTests).Assembly.GetFile("System.Reflection.Tests.dll").Name, typeof(AssemblyTests).Assembly.Location);
+            var asm = typeof(AssemblyTests).Assembly;
+            if (asm.Location.Length > 0)
+            {
+                Assert.Throws<ArgumentNullException>(() => asm.GetFile(null));
+                AssertExtensions.Throws<ArgumentException>(null, () => asm.GetFile(""));
+                Assert.Null(asm.GetFile("NonExistentfile.dll"));
+                Assert.NotNull(asm.GetFile("System.Reflection.Tests.dll"));
+
+                string name = AssemblyPathHelper.GetAssemblyLocation(asm);
+                Assert.Equal(asm.GetFile("System.Reflection.Tests.dll").Name, name);
+            }
+            else
+            {
+                Assert.Throws<FileNotFoundException>(() => asm.GetFile("System.Reflection.Tests.dll"));
+            }
+        }
+
+        [Fact]
+        public void GetFile_InMemory()
+        {
+            var inMemBlob = File.ReadAllBytes(SourceTestAssemblyPath);
+            var asm = Assembly.Load(inMemBlob);
+            Assert.ThrowsAny<Exception>(() => asm.GetFile(null));
+            Assert.Throws<FileNotFoundException>(() => asm.GetFile(s_sourceTestAssemblyName));
+            Assert.Throws<FileNotFoundException>(() => asm.GetFiles());
+            Assert.Throws<FileNotFoundException>(() => asm.GetFiles(getResourceModules: true));
+            Assert.Throws<FileNotFoundException>(() => asm.GetFiles(getResourceModules: false));
+        }
+
+        [Fact]
+        public void CodeBaseInMemory()
+        {
+            var inMemBlob = File.ReadAllBytes(SourceTestAssemblyPath);
+            var asm = Assembly.Load(inMemBlob);
+            // Should not throw
+            #pragma warning disable SYSLIB0012
+            _ = asm.CodeBase;
+            #pragma warning restore SYSLIB0012
         }
 
         [Fact]
         public void GetFiles()
         {
-            Assert.NotNull(typeof(AssemblyTests).Assembly.GetFiles());
-            Assert.Equal(1, typeof(AssemblyTests).Assembly.GetFiles().Length);
-            Assert.Equal(typeof(AssemblyTests).Assembly.GetFiles()[0].Name, typeof(AssemblyTests).Assembly.Location);
+            var asm = typeof(AssemblyTests).Assembly;
+            if (asm.Location.Length > 0)
+            {
+                Assert.NotNull(asm.GetFiles());
+                Assert.Equal(1, asm.GetFiles().Length);
+
+                string name = AssemblyPathHelper.GetAssemblyLocation(asm);
+                Assert.Equal(asm.GetFiles()[0].Name, name);
+            }
+            else
+            {
+                Assert.Throws<FileNotFoundException>(() => asm.GetFiles());
+            }
         }
 
         public static IEnumerable<object[]> GetHashCode_TestData()
@@ -384,7 +430,7 @@ namespace System.Reflection.Tests
         [Fact]
         public void LoadFrom_SameIdentityAsAssemblyWithDifferentPath_ReturnsEqualAssemblies()
         {
-            Assembly assembly1 = Assembly.LoadFrom(typeof(AssemblyTests).Assembly.Location);
+            Assembly assembly1 = Assembly.LoadFrom(AssemblyPathHelper.GetAssemblyLocation(typeof(AssemblyTests).Assembly));
             Assert.Equal(assembly1, typeof(AssemblyTests).Assembly);
 
             Assembly assembly2 = Assembly.LoadFrom(LoadFromTestPath);
@@ -461,11 +507,13 @@ namespace System.Reflection.Tests
             Assert.NotNull(Helpers.ExecutingAssembly.Location);
         }
 
+#pragma warning disable SYSLIB0012
         [Fact]
         public void CodeBase()
         {
             Assert.NotEmpty(Helpers.ExecutingAssembly.CodeBase);
         }
+#pragma warning restore SYSLIB0012
 
         [Fact]
         public void ImageRuntimeVersion()
@@ -654,7 +702,7 @@ namespace System.Reflection.Tests
         public void AssemblyLoadFromBytes()
         {
             Assembly assembly = typeof(AssemblyTests).Assembly;
-            byte[] aBytes = System.IO.File.ReadAllBytes(assembly.Location);
+            byte[] aBytes = System.IO.File.ReadAllBytes(AssemblyPathHelper.GetAssemblyLocation(assembly));
 
             Assembly loadedAssembly = Assembly.Load(aBytes);
             Assert.NotNull(loadedAssembly);
@@ -672,8 +720,8 @@ namespace System.Reflection.Tests
         public void AssemblyLoadFromBytesWithSymbols()
         {
             Assembly assembly = typeof(AssemblyTests).Assembly;
-            byte[] aBytes = System.IO.File.ReadAllBytes(assembly.Location);
-            byte[] symbols = System.IO.File.ReadAllBytes((System.IO.Path.ChangeExtension(assembly.Location, ".pdb")));
+            byte[] aBytes = System.IO.File.ReadAllBytes(AssemblyPathHelper.GetAssemblyLocation(assembly));
+            byte[] symbols = System.IO.File.ReadAllBytes((System.IO.Path.ChangeExtension(AssemblyPathHelper.GetAssemblyLocation(assembly), ".pdb")));
 
             Assembly loadedAssembly = Assembly.Load(aBytes, symbols);
             Assert.NotNull(loadedAssembly);
@@ -691,7 +739,7 @@ namespace System.Reflection.Tests
         public void AssemblyReflectionOnlyLoadFromBytes()
         {
             Assembly assembly = typeof(AssemblyTests).Assembly;
-            byte[] aBytes = System.IO.File.ReadAllBytes(assembly.Location);
+            byte[] aBytes = System.IO.File.ReadAllBytes(AssemblyPathHelper.GetAssemblyLocation(assembly));
             Assert.Throws<PlatformNotSupportedException>(() => Assembly.ReflectionOnlyLoad(aBytes));
         }
 

@@ -570,7 +570,7 @@ mono_type_get_object_checked (MonoDomain *domain, MonoType *type, MonoError *err
 	res->type = type;
 	mono_g_hash_table_insert_internal (domain->type_hash, type, res);
 
-	if (type->type == MONO_TYPE_VOID)
+	if (type->type == MONO_TYPE_VOID && !type->byref)
 		domain->typeof_void = (MonoObject*)res;
 
 	mono_domain_unlock (domain);
@@ -3131,7 +3131,11 @@ mono_reflection_call_is_assignable_to (MonoClass *klass, MonoClass *oklass, Mono
 	error_init (error);
 
 	if (method == NULL) {
+#ifdef ENABLE_NETCORE
+		method = mono_class_get_method_from_name_checked (mono_class_get_type_builder_class (), "IsAssignableToInternal", 1, 0, error);
+#else
 		method = mono_class_get_method_from_name_checked (mono_class_get_type_builder_class (), "IsAssignableTo", 1, 0, error);
+#endif		
 		mono_error_assert_ok (error);
 		g_assert (method);
 	}

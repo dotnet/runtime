@@ -1894,7 +1894,7 @@ namespace System.Data.Tests
             Assert.True(dr.IsNull(1));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void IsNull_ByName()
         {
             DataTable dt = new DataTable();

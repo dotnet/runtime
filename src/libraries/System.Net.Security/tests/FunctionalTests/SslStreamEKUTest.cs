@@ -3,7 +3,6 @@
 
 using System.IO;
 using System.Net.Test.Common;
-using System.Runtime.InteropServices;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
@@ -122,7 +121,7 @@ namespace System.Net.Security.Tests
 
                 await Assert.ThrowsAsync<AuthenticationException>(() => tasks[0]);
 
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                if (OperatingSystem.IsWindows())
                 {
                     // IOException is thrown when trying to read from a disconnected socket.
                     await Assert.ThrowsAsync<IOException>(() => tasks[1]);

@@ -653,17 +653,14 @@ if defined __CompositeBuildMode (
 )
 
 for %%F in ("%CORE_ROOT%\System.*.dll";"%CORE_ROOT%\Microsoft.*.dll";%CORE_ROOT%\netstandard.dll;%CORE_ROOT%\mscorlib.dll) do (
-    if not "%%~nxF"=="Microsoft.CodeAnalysis.VisualBasic.dll" (
-    if not "%%~nxF"=="Microsoft.CodeAnalysis.CSharp.dll" (
-    if not "%%~nxF"=="Microsoft.CodeAnalysis.dll" (
     if not "%%~nxF"=="System.Runtime.WindowsRuntime.dll" (
         if defined __CompositeBuildMode (
             echo %%F>>!__CompositeResponseFile!
         ) else (
-            call :PrecompileAssembly "%%F" %%~nxF __TotalPrecompiled __FailedToPrecompile __FailedAssemblies
+            call :PrecompileAssembly %%F %%~nxF __TotalPrecompiled __FailedToPrecompile __FailedAssemblies
             echo Processed: !__TotalPrecompiled!, failed !__FailedToPrecompile!
         )
-    )))))
+    ))
 )
 
 if defined __CompositeBuildMode (
@@ -695,18 +692,32 @@ set AssemblyName=%2
 
 REM Intentionally avoid using the .dll extension to prevent
 REM subsequent compilations from picking it up as a reference
-set __CrossgenOutputFile="%CORE_ROOT%\temp.ni._dll"
+set __CrossgenOutputFile=%CORE_ROOT%\temp.ni._dll
+set __CrossgenResponseFile="%CORE_ROOT%\%AssemblyName%.rsp
 set __CrossgenCmd=
 
+del /Q %__CrossgenResponseFile%
+
 if defined __DoCrossgen (
-    set __CrossgenCmd=!__CrossgenExe! /Platform_Assemblies_Paths "!CORE_ROOT!" /in !AssemblyPath! /out !__CrossgenOutputFile!
-    echo !__CrossgenCmd!
-    !__CrossgenCmd!
+    set __CrossgenCmd=!__CrossgenExe! @!__CrossgenResponseFile!
+    echo /Platform_Assemblies_Paths "!CORE_ROOT!">>!__CrossgenResponseFile!
+    echo /in !AssemblyPath!>>!__CrossgenResponseFile!
+    echo /out !__CrossgenOutputFile!>>!__CrossgenResponseFile!
 ) else (
-    set __CrossgenCmd=!__Crossgen2Dll! -r:"!CORE_ROOT!\System.*.dll" -r:"!CORE_ROOT!\Microsoft.*.dll" -r:"!CORE_ROOT!\mscorlib.dll" -r:"!CORE_ROOT!\netstandard.dll" -O --inputbubble --out:!__CrossgenOutputFile! !AssemblyPath! --targetarch %__BuildArch%
-    echo !__CrossgenCmd!
-    call !__CrossgenCmd!
+    set __CrossgenCmd=!__Crossgen2Dll! @!__CrossgenResponseFile!
+    echo -r:!CORE_ROOT!\System.*.dll>>!__CrossgenResponseFile!
+    echo -r:!CORE_ROOT!\Microsoft.*.dll>>!__CrossgenResponseFile!
+    echo -r:!CORE_ROOT!\mscorlib.dll>>!__CrossgenResponseFile!
+    echo -r:!CORE_ROOT!\netstandard.dll>>!__CrossgenResponseFile!
+    echo -O>>!__CrossgenResponseFile!
+    echo --inputbubble>>!__CrossgenResponseFile!
+    echo --out:!__CrossgenOutputFile!>>!__CrossgenResponseFile!
+    echo !AssemblyPath!>>!__CrossgenResponseFile!
+    echo --targetarch:!__BuildArch!>>!__CrossgenResponseFile!
 )
+
+echo !__CrossgenCmd!
+call !__CrossgenCmd!
 
 set /a __exitCode = !errorlevel!
 

@@ -18,7 +18,7 @@ namespace System.Net.Http
 #else
         private readonly SocketsHttpHandler _underlyingHandler;
 #endif
-        private readonly DiagnosticsHandler _diagnosticsHandler;
+        private readonly DiagnosticsHandler? _diagnosticsHandler;
         private ClientCertificateOption _clientCertificateOptions;
 
         private volatile bool _disposed;
@@ -30,7 +30,10 @@ namespace System.Net.Http
 #else
             _underlyingHandler = new SocketsHttpHandler();
 #endif
-            _diagnosticsHandler = new DiagnosticsHandler(_underlyingHandler);
+            if (DiagnosticsHandler.IsGloballyEnabled())
+            {
+                _diagnosticsHandler = new DiagnosticsHandler(_underlyingHandler);
+            }
             ClientCertificateOptions = ClientCertificateOption.Manual;
         }
 
@@ -45,9 +48,9 @@ namespace System.Net.Http
             base.Dispose(disposing);
         }
 
-        public virtual bool SupportsAutomaticDecompression => true;
-        public virtual bool SupportsProxy => true;
-        public virtual bool SupportsRedirectConfiguration => true;
+        public virtual bool SupportsAutomaticDecompression => _underlyingHandler.SupportsAutomaticDecompression;
+        public virtual bool SupportsProxy => _underlyingHandler.SupportsProxy;
+        public virtual bool SupportsRedirectConfiguration => _underlyingHandler.SupportsRedirectConfiguration;
 
         public bool UseCookies
         {
@@ -273,7 +276,7 @@ namespace System.Net.Http
         protected internal override HttpResponseMessage Send(HttpRequestMessage request,
             CancellationToken cancellationToken)
         {
-            return DiagnosticsHandler.IsEnabled() ?
+            return DiagnosticsHandler.IsEnabled() && _diagnosticsHandler != null ?
                 _diagnosticsHandler.Send(request, cancellationToken) :
                 _underlyingHandler.Send(request, cancellationToken);
         }
@@ -281,7 +284,7 @@ namespace System.Net.Http
         protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
             CancellationToken cancellationToken)
         {
-            return DiagnosticsHandler.IsEnabled() ?
+            return DiagnosticsHandler.IsEnabled() && _diagnosticsHandler != null ?
                 _diagnosticsHandler.SendAsync(request, cancellationToken) :
                 _underlyingHandler.SendAsync(request, cancellationToken);
         }

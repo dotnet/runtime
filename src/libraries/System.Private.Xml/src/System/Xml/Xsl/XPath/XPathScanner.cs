@@ -62,9 +62,9 @@ namespace System.Xml.Xsl.XPath
         private int _curIndex;
         private char _curChar;
         private LexKind _kind;
-        private string _name;
-        private string _prefix;
-        private string _stringValue;
+        private string? _name;
+        private string? _prefix;
+        private string? _stringValue;
         private bool _canBeFunction;
         private int _lexStart;
         private int _prevLexEnd;
@@ -423,6 +423,8 @@ namespace System.Xml.Xsl.XPath
             }
             else
             {
+                Debug.Assert(_prefix != null);
+                Debug.Assert(_name != null);
                 if (_prefix.Length != 0 || _name.Length > 3)
                     return false;
 

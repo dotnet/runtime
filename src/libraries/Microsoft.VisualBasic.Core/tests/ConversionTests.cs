@@ -476,17 +476,23 @@ namespace Microsoft.VisualBasic.Tests
 
         public static IEnumerable<object[]> Hex_Single_TestData()
         {
-            yield break; // Add more...
+            yield return new object[] { (float)0, "0" };
+            yield return new object[] { (float)1, "1" };
+            yield return new object[] { (float)15, "F" };
         }
 
         public static IEnumerable<object[]> Hex_Double_TestData()
         {
-            yield break; // Add more...
+            yield return new object[] { (double)0, "0" };
+            yield return new object[] { (double)1, "1" };
+            yield return new object[] { (double)15, "F" };
         }
 
         public static IEnumerable<object[]> Hex_Decimal_TestData()
         {
-            yield break; // Add more...
+            yield return new object[] { (decimal)0, "0" };
+            yield return new object[] { (decimal)1, "1" };
+            yield return new object[] { (decimal)15, "F" };
         }
 
         [Theory]
@@ -812,17 +818,23 @@ namespace Microsoft.VisualBasic.Tests
 
         public static IEnumerable<object[]> Oct_Single_TestData()
         {
-            yield break; // Add more...
+            yield return new object[] { (float)0, "0" };
+            yield return new object[] { (float)1, "1" };
+            yield return new object[] { (float)15, "17" };
         }
 
         public static IEnumerable<object[]> Oct_Double_TestData()
         {
-            yield break; // Add more...
+            yield return new object[] { (double)0, "0" };
+            yield return new object[] { (double)1, "1" };
+            yield return new object[] { (double)15, "17" };
         }
 
         public static IEnumerable<object[]> Oct_Decimal_TestData()
         {
-            yield break; // Add more...
+            yield return new object[] { (decimal)0, "0" };
+            yield return new object[] { (decimal)1, "1" };
+            yield return new object[] { (decimal)15, "17" };
         }
 
         [Theory]
@@ -894,31 +906,10 @@ namespace Microsoft.VisualBasic.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Val_Char_ArgumentException_TestData))]
-        public void Val_ArgumentException_Char(char value)
-        {
-            Assert.Throws<ArgumentException>(() => Conversion.Val(value));
-        }
-
-        [Theory]
-        [MemberData(nameof(Val_Char_OverflowException_TestData))]
-        public void Val_OverflowException_Char(char value)
-        {
-            Assert.Throws<OverflowException>(() => Conversion.Val(value));
-        }
-
-        [Theory]
         [MemberData(nameof(Val_String_TestData))]
         public void Val_String_Double(string value, double expected)
         {
             Assert.Equal(expected, Conversion.Val(value));
-        }
-
-        [Theory]
-        [MemberData(nameof(Val_String_ArgumentException_TestData))]
-        public void Val_ArgumentException_String(string value)
-        {
-            Assert.Throws<ArgumentException>(() => Conversion.Val(value));
         }
 
         [Theory]
@@ -943,12 +934,12 @@ namespace Microsoft.VisualBasic.Tests
 
         public static IEnumerable<object[]> Val_Object_ArgumentException_TestData()
         {
-            yield break; // Add more...
+            yield return new object[] { new object() };
         }
 
         public static IEnumerable<object[]> Val_Object_OverflowException_TestData()
         {
-            yield break; // Add more...
+            yield return new object[] { "123456e789" };
         }
 
         public static IEnumerable<object[]> Val_Char_TestData()
@@ -966,16 +957,6 @@ namespace Microsoft.VisualBasic.Tests
             yield return new object[] { '9', 9 };
             yield return new object[] { 'A', 0 };
             yield return new object[] { char.MaxValue, 0 };
-        }
-
-        public static IEnumerable<object[]> Val_Char_ArgumentException_TestData()
-        {
-            yield break; // Add more...
-        }
-
-        public static IEnumerable<object[]> Val_Char_OverflowException_TestData()
-        {
-            yield break; // Add more...
         }
 
         public static IEnumerable<object[]> Val_String_TestData()
@@ -1019,11 +1000,6 @@ namespace Microsoft.VisualBasic.Tests
             yield return new object[] { "&O37777777777&", -1.0 };
         }
 
-        public static IEnumerable<object[]> Val_String_ArgumentException_TestData()
-        {
-            yield break; // Add more...
-        }
-
         public static IEnumerable<object[]> Val_String_InvalidCastException_TestData()
         {
             yield return new object[] { "1.0%" };
@@ -1032,7 +1008,7 @@ namespace Microsoft.VisualBasic.Tests
 
         public static IEnumerable<object[]> Val_String_OverflowException_TestData()
         {
-            yield break; // Add more...
+            yield return new object[] { "123456e789" };
         }
 
         public static IEnumerable<object[]> Various_ArgumentException_TestData()

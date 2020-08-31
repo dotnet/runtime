@@ -4,6 +4,7 @@
 using MS.Internal.Xml.Cache;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 
 namespace System.Xml.XPath
@@ -15,12 +16,12 @@ namespace System.Xml.XPath
     /// </summary>
     public class XPathDocument : IXPathNavigable
     {
-        private XPathNode[] _pageText, _pageRoot, _pageXmlNmsp;
+        private XPathNode[]? _pageText, _pageRoot, _pageXmlNmsp;
         private int _idxText, _idxRoot, _idxXmlNmsp;
         private XmlNameTable _nameTable;
         private bool _hasLineInfo;
-        private Dictionary<XPathNodeRef, XPathNodeRef> _mapNmsp;
-        private Dictionary<string, XPathNodeRef> _idValueMap;
+        private Dictionary<XPathNodeRef, XPathNodeRef>? _mapNmsp;
+        private Dictionary<string, XPathNodeRef>? _idValueMap;
 
         /// <summary>
         /// Flags that control Load behavior.
@@ -145,11 +146,12 @@ namespace System.Xml.XPath
         /// Create a writer that can be used to create nodes in this document.  The root node will be assigned "baseUri", and flags
         /// can be passed to indicate that names should be atomized by the builder and/or a fragment should be created.
         /// </summary>
+        [MemberNotNull(nameof(_nameTable))]
         internal void LoadFromReader(XmlReader reader, XmlSpace space)
         {
             XPathDocumentBuilder builder;
-            IXmlLineInfo lineInfo;
-            string xmlnsUri;
+            IXmlLineInfo? lineInfo;
+            string? xmlnsUri;
             bool topLevelReader;
             int initialDepth;
 
@@ -172,7 +174,7 @@ namespace System.Xml.XPath
                 initialDepth = reader.Depth;
 
                 // Get atomized xmlns uri
-                Debug.Assert((object)_nameTable.Get(string.Empty) == (object)string.Empty, "NameTable must contain atomized string.Empty");
+                Debug.Assert((object?)_nameTable.Get(string.Empty) == (object)string.Empty, "NameTable must contain atomized string.Empty");
                 xmlnsUri = _nameTable.Get(XmlReservedNs.NsXmlNs);
 
                 // Read past Initial state; if there are no more events then load is complete
@@ -199,7 +201,7 @@ namespace System.Xml.XPath
                                 {
                                     string namespaceUri = reader.NamespaceURI;
 
-                                    if ((object)namespaceUri == (object)xmlnsUri)
+                                    if ((object)namespaceUri == (object?)xmlnsUri)
                                     {
                                         if (reader.Prefix.Length == 0)
                                         {
@@ -269,7 +271,7 @@ namespace System.Xml.XPath
 
                         case XmlNodeType.DocumentType:
                             // Create ID tables
-                            IDtdInfo info = reader.DtdInfo;
+                            IDtdInfo? info = reader.DtdInfo;
                             if (info != null)
                                 builder.CreateIdTables(info);
                             break;
@@ -322,7 +324,7 @@ namespace System.Xml.XPath
         /// represents each logical text node in the document that is the only content-typed child of its
         /// element parent.
         /// </summary>
-        internal int GetCollapsedTextNode(out XPathNode[] pageText)
+        internal int GetCollapsedTextNode(out XPathNode[]? pageText)
         {
             pageText = _pageText;
             return _idxText;
@@ -341,7 +343,7 @@ namespace System.Xml.XPath
         /// Return the root node of the document.  This may not be a node of type XPathNodeType.Root if this
         /// is a document fragment.
         /// </summary>
-        internal int GetRootNode(out XPathNode[] pageRoot)
+        internal int GetRootNode(out XPathNode[]? pageRoot)
         {
             pageRoot = _pageRoot;
             return _idxRoot;
@@ -359,7 +361,7 @@ namespace System.Xml.XPath
         /// <summary>
         /// Every document has an implicit xmlns:xml namespace node.
         /// </summary>
-        internal int GetXmlNamespaceNode(out XPathNode[] pageXmlNmsp)
+        internal int GetXmlNamespaceNode(out XPathNode[]? pageXmlNmsp)
         {
             pageXmlNmsp = _pageXmlNmsp;
             return _idxXmlNmsp;
@@ -390,7 +392,7 @@ namespace System.Xml.XPath
         /// <summary>
         /// Lookup the namespace nodes associated with an element.
         /// </summary>
-        internal int LookupNamespaces(XPathNode[] pageElem, int idxElem, out XPathNode[] pageNmsp)
+        internal int LookupNamespaces(XPathNode[] pageElem, int idxElem, out XPathNode[]? pageNmsp)
         {
             XPathNodeRef nodeRef = new XPathNodeRef(pageElem, idxElem);
             Debug.Assert(pageElem[idxElem].NodeType == XPathNodeType.Element);
@@ -424,7 +426,7 @@ namespace System.Xml.XPath
         /// <summary>
         /// Lookup the element node associated with the specified ID value.
         /// </summary>
-        internal int LookupIdElement(string id, out XPathNode[] pageElem)
+        internal int LookupIdElement(string id, out XPathNode[]? pageElem)
         {
             XPathNodeRef nodeRef;
 

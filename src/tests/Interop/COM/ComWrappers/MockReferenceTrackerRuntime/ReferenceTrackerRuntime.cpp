@@ -142,6 +142,7 @@ namespace
             if (S_OK == iter->second->QueryInterface(&mowMaybe))
             {
                 (void)mowMaybe->ReleaseFromReferenceTracker();
+                (void)mowMaybe->Unpeg();
             }
 
             _elements.erase(iter);

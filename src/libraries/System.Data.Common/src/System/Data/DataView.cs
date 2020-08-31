@@ -15,8 +15,11 @@ namespace System.Data
     /// Represents a databindable, customized view of a <see cref='System.Data.DataTable'/>
     /// for sorting, filtering, searching, editing, and navigation.
     /// </summary>
+    [Designer("Microsoft.VSDesigner.Data.VS.DataViewDesigner, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     [DefaultProperty(nameof(Table))]
     [DefaultEvent("PositionChanged")]
+    [Editor("Microsoft.VSDesigner.Data.Design.DataSourceEditor, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
+            "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public class DataView : MarshalByValueComponent, IBindingListView, System.ComponentModel.ITypedList, ISupportInitializeNotification
     {
         private DataViewManager? _dataViewManager;

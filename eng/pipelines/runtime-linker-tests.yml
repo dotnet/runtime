@@ -64,6 +64,7 @@ jobs:
     - Linux_x64
     jobParameters:
       testGroup: innerloop
+      timeoutInMinutes: 120
       nameSuffix: Runtime_Release
       buildArgs: -s clr+libs -c $(_BuildConfig)
       extraStepsTemplate: /eng/pipelines/libraries/execute-trimming-tests-steps.yml

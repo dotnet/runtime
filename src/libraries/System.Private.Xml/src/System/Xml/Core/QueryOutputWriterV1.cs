@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System;
 using System.IO;
 using System.Diagnostics;
@@ -29,7 +28,7 @@ namespace System.Xml
         private readonly BitStack? _bitsCData;
         private readonly XmlQualifiedName? _qnameCData;
         private bool _outputDocType, _inAttr;
-        private readonly string _systemId, _publicId;
+        private readonly string? _systemId, _publicId;
 
         public QueryOutputWriterV1(XmlWriter writer, XmlWriterSettings settings)
         {

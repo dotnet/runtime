@@ -49,7 +49,7 @@
 			<method signature="System.Void .ctor(System.String)" />
 			<!-- create_exception_two_strings -->
 			<method signature="System.Void .ctor(System.String,System.String)" />
- 		</type>
+		</type>
 
 		<!-- exception.c (mono_get_exception_argument_out_of_range) -->
 		<type fullname="System.ArgumentOutOfRangeException">
@@ -57,7 +57,7 @@
 			<method signature="System.Void .ctor()" />
 			<!-- create_exception_two_strings -->
 			<method signature="System.Void .ctor(System.String,System.String)" />
- 		</type>
+		</type>
 
 		<!-- exception.c (mono_get_exception_arithmetic) -->
 		<type fullname="System.ArithmeticException">
@@ -225,7 +225,7 @@
 
 		<!-- domain.c: mono_defaults.int_class -->
 		<type fullname="System.IntPtr">
-			<field name="m_value"/>
+			<field name="_value"/>
 		</type>
 
 		<!-- exception.c (mono_get_exception_invalid_cast) -->
@@ -275,9 +275,6 @@
 
 		<!-- mono-mlist.c (managed list): used in threadpool.c and gc.c -->
 		<type fullname="Mono.MonoListItem" preserve="fields" />
-
-		<!-- domain.c: mono_defaults.type_class -->
-		<type fullname="System.MonoType" preserve="nothing" />
 
 		<!-- domain.c: mono_defaults.multicastdelegate_class -->
 		<type fullname="System.MulticastDelegate" preserve="fields" />
@@ -420,7 +417,7 @@
 			<!-- marshal.c (mono_marshal_get_synchronized_wrapper) -->
 			<method name="GetTypeFromHandle" />
 			<!-- sre.c (mono_reflection_type_get_underlying_system_type) -->
-			<method name="get_UnderlyingSystemType" feature="sre" />
+			<method name="get_UnderlyingSystemType" />
 		</type>
 
 		<!-- exception.c (mono_get_exception_type_initialization) -->
@@ -457,7 +454,7 @@
 
 		<!-- domain.c: mono_defaults.uint_class -->
 		<type fullname="System.UIntPtr">
-			<field name="m_value"/>
+			<field name="_value"/>
 		</type>
 
 		<!-- object.c: create_unhandled_exception_eventargs (assert) -->
@@ -520,11 +517,6 @@
 
 		<type fullname="System.Reflection.AssemblyName" preserve="fields" />
 
-		<type fullname="System.Reflection.EventInfo" preserve="fields">
-			<method name="AddEventFrame" />
-			<method name="StaticAddEventAdapterFrame" />
-		</type>
-
 		<!-- reflection.c: mono_method_body_get_object -->
 		<type fullname="System.Reflection.RuntimeExceptionHandlingClause" preserve="fields" >
 			<!-- reflection.c mono_object_new_checked in add_exception_handling_clause_to_array -->
@@ -577,12 +569,9 @@
 			<!-- reflection.c mono_object_new_checked in add_parameter_object_to_array -->
 			<method signature="System.Void .ctor()" />
 		</type>
-		<type fullname="System.Reflection.ParameterInfo" preserve="fields" />
 		<!-- reflection.c: ves_icall_get_parameter_info -->
+		<type fullname="System.Reflection.ParameterInfo" preserve="fields" />
 		<type fullname="System.Reflection.RuntimeParameterInfo" >
-			<!-- reflection.c mono_reflection_get_param_info_member_and_pos -->
-			<field name="MemberImpl" />
-			<field name="PositionImpl" />
 			<!-- reflection.c add_parameter_object_to_array -->
 			<method signature="System.Void .ctor(System.String,System.Type,System.Int32,System.Int32,System.Object,System.Reflection.MemberInfo,System.Runtime.InteropServices.MarshalAsAttribute)" />
 		</type>
@@ -592,7 +581,7 @@
 			<method name="Box" />
 		</type>
 
- 		<!-- exception.c (mono_get_exception_reflection_type_load) -->
+		<!-- exception.c (mono_get_exception_reflection_type_load) -->
 		<type fullname="System.Reflection.ReflectionTypeLoadException">
 			<method signature="System.Void .ctor(System.Type[],System.Exception[])" />
 		</type>
@@ -640,8 +629,6 @@
 		<!-- native-library.c: mono_class_get_native_library_class -->
 		<type fullname="System.Runtime.InteropServices.NativeLibrary">
 			<method name="MonoLoadLibraryCallbackStub" />
-			<method name="MonoResolveUnmanagedDll" />
-			<method name="MonoResolveUnmanagedDllUsingEvent" />
 		</type>
 
 		<!-- domain.c: mono_defaults.monitor_class -->
@@ -660,9 +647,7 @@
 
 		<!-- domain.c: mono_defaults.thread_class -->
 		<!-- FIXME: -->
-		<type fullname="System.Threading.Thread" preserve="fields">
-			<method name="get_CurrentContext" />
-		</type>
+		<type fullname="System.Threading.Thread" preserve="fields" />
 
 		<!-- domain.c: mono_defaults.threadabortexception_class -->
 		<!-- exception.c (mono_get_exception_thread_abort) -->
@@ -684,7 +669,7 @@
 		</type>
 
 		<!-- mini-generic-sharing.c -->
-		<type fullname="Mono.ValueTuple" preserve="fields"/>
+		<type fullname="Mono.ValueTuple" required="true"/>
 		<type fullname="Mono.ValueTuple`1" preserve="fields"/>
 		<type fullname="Mono.ValueTuple`2" preserve="fields"/>
 		<type fullname="Mono.ValueTuple`3" preserve="fields"/>

@@ -2137,7 +2137,7 @@ MAPRecordMapping(
     return palError;
 }
 
-static size_t OffsetWithinPage(off_t addr)
+size_t OffsetWithinPage(off_t addr)
 {
     return addr & (GetVirtualPageSize() - 1);
 }

@@ -10,7 +10,7 @@
   </PropertyGroup>
   <!-- Do not reference these assemblies from the TargetingPack since we are building part of the source code for tests. -->
   <ItemGroup>
-    <DefaultReferenceExclusions Include="System.Net.NameResolution" />
+    <DefaultReferenceExclusion Include="System.Net.NameResolution" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\..\src\System\Net\IPHostEntry.cs"

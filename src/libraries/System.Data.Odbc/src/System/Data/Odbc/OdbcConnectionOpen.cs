@@ -19,7 +19,7 @@ namespace System.Data.Odbc
         {
             get
             {
-                OdbcConnection outerConnection = (OdbcConnection)Owner;
+                OdbcConnection? outerConnection = (OdbcConnection?)Owner;
 
                 if (null == outerConnection)
                     throw ODBC.OpenConnectionNoOwner();
@@ -32,7 +32,9 @@ namespace System.Data.Odbc
         {
             get
             {
-                return OuterConnection.Open_GetServerVersion();
+                // TODO-NULLABLE: This seems like it returns null if the connection is open, whereas the docs say it should throw
+                // InvalidOperationException
+                return OuterConnection.Open_GetServerVersion()!;
             }
         }
 

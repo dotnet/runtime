@@ -3,7 +3,6 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
 
 namespace System.Text.Json
@@ -11,10 +10,10 @@ namespace System.Text.Json
     public static partial class JsonSerializer
     {
         // Members accessed by the serializer when deserializing.
-        private const DynamicallyAccessedMemberTypes MembersAccessedOnRead = DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.PublicProperties;
+        private const DynamicallyAccessedMemberTypes MembersAccessedOnRead =
+            DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicFields;
 
-        [return: MaybeNull]
-        private static TValue ReadCore<TValue>(ref Utf8JsonReader reader, Type returnType, JsonSerializerOptions options)
+        private static TValue? ReadCore<TValue>(ref Utf8JsonReader reader, Type returnType, JsonSerializerOptions options)
         {
             ReadStack state = default;
             state.Initialize(returnType, options, supportContinuation: false);
@@ -22,8 +21,7 @@ namespace System.Text.Json
             return ReadCore<TValue>(jsonConverter, ref reader, options, ref state);
         }
 
-        [return: MaybeNull]
-        private static TValue ReadCore<TValue>(JsonConverter jsonConverter, ref Utf8JsonReader reader, JsonSerializerOptions options, ref ReadStack state)
+        private static TValue? ReadCore<TValue>(JsonConverter jsonConverter, ref Utf8JsonReader reader, JsonSerializerOptions options, ref ReadStack state)
         {
             if (jsonConverter is JsonConverter<TValue> converter)
             {
@@ -35,12 +33,6 @@ namespace System.Text.Json
             object? value = jsonConverter.ReadCoreAsObject(ref reader, options, ref state);
             Debug.Assert(value == null || value is TValue);
             return (TValue)value!;
-        }
-
-        internal static bool IsValidNumberHandlingValue(JsonNumberHandling handling)
-        {
-            int handlingValue = (int)handling;
-            return handlingValue >= 0 && handlingValue <= 7;
         }
     }
 }

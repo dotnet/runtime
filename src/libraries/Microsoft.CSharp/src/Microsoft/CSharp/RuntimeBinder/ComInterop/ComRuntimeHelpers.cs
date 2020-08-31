@@ -260,9 +260,9 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
         }
 
         // This method is intended for use through reflection and should only be used directly by IUnknownReleaseNotZero
-        public static int IUnknownRelease(IntPtr interfacePointer)
+        public static unsafe int IUnknownRelease(IntPtr interfacePointer)
         {
-            return s_iUnknownRelease(interfacePointer);
+            return ((delegate* stdcall<IntPtr, int>)(*(*(void***)interfacePointer + 2 /* IUnknown.Release slot */)))(interfacePointer);
         }
 
         // This method is intended for use through reflection and should not be used directly
@@ -275,7 +275,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
         }
 
         // This method is intended for use through reflection and should not be used directly
-        public static int IDispatchInvoke(
+        public static unsafe int IDispatchInvoke(
             IntPtr dispatchPointer,
             int memberDispId,
             ComTypes.INVOKEKIND flags,
@@ -284,31 +284,30 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             out ExcepInfo excepInfo,
             out uint argErr)
         {
-            int hresult = s_iDispatchInvoke(
-                dispatchPointer,
-                memberDispId,
-                flags,
-                ref dispParams,
-                out result,
-                out excepInfo,
-                out argErr
-            );
+            Guid IID_NULL = default;
 
-            if (hresult == ComHresults.DISP_E_MEMBERNOTFOUND
-                && (flags & ComTypes.INVOKEKIND.INVOKE_FUNC) != 0
-                && (flags & (ComTypes.INVOKEKIND.INVOKE_PROPERTYPUT | ComTypes.INVOKEKIND.INVOKE_PROPERTYPUTREF)) == 0)
+            fixed (ComTypes.DISPPARAMS* pDispParams = &dispParams)
+            fixed (Variant* pResult = &result)
+            fixed (ExcepInfo* pExcepInfo = &excepInfo)
+            fixed (uint* pArgErr = &argErr)
             {
-                // Re-invoke with no result argument to accomodate Word
-                hresult = _IDispatchInvokeNoResult(
-                    dispatchPointer,
-                    memberDispId,
-                    ComTypes.INVOKEKIND.INVOKE_FUNC,
-                    ref dispParams,
-                    out result,
-                    out excepInfo,
-                    out argErr);
+                var pfnIDispatchInvoke = (delegate* stdcall <IntPtr, int, Guid*, int, ushort, ComTypes.DISPPARAMS*, Variant*, ExcepInfo*, uint*, int>)
+                    (*(*(void***)dispatchPointer + 6 /* IDispatch.Invoke slot */));
+
+                int hresult = pfnIDispatchInvoke(dispatchPointer,
+                    memberDispId, &IID_NULL, 0, (ushort)flags, pDispParams, pResult, pExcepInfo, pArgErr);
+
+                if (hresult == ComHresults.DISP_E_MEMBERNOTFOUND
+                    && (flags & ComTypes.INVOKEKIND.INVOKE_FUNC) != 0
+                    && (flags & (ComTypes.INVOKEKIND.INVOKE_PROPERTYPUT | ComTypes.INVOKEKIND.INVOKE_PROPERTYPUTREF)) == 0)
+                {
+                    // Re-invoke with no result argument to accomodate Word
+                    hresult = pfnIDispatchInvoke(dispatchPointer,
+                        memberDispId, &IID_NULL, 0, (ushort)ComTypes.INVOKEKIND.INVOKE_FUNC, pDispParams, null, pExcepInfo, pArgErr);
+                }
+
+                return hresult;
             }
-            return hresult;
         }
 
         // This method is intended for use through reflection and should not be used directly
@@ -338,12 +337,6 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 
         #region non-public members
 
-        private static void EmitLoadArg(ILGenerator il, int index)
-        {
-            Requires.Condition(index >= 0, nameof(index));
-            il.Emit(OpCodes.Ldarg, index);
-        }
-
         private static readonly object s_lock = new object();
         private static ModuleBuilder s_dynamicModule;
 
@@ -366,179 +359,6 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
                     return s_dynamicModule;
                 }
             }
-        }
-
-        /// <summary>
-        /// We will emit an indirect call to an unmanaged function pointer from the vtable of the given interface pointer.
-        /// This approach can take only ~300 instructions on x86 compared with ~900 for Marshal.Release. We are relying on
-        /// the JIT-compiler to do pinvoke-stub-inlining and calling the pinvoke target directly.
-        /// </summary>
-        private delegate int IUnknownReleaseDelegate(IntPtr interfacePointer);
-        private static readonly IUnknownReleaseDelegate s_iUnknownRelease = Create_IUnknownRelease();
-
-        private static IUnknownReleaseDelegate Create_IUnknownRelease()
-        {
-            DynamicMethod dm = new DynamicMethod("IUnknownRelease", typeof(int), new Type[] { typeof(IntPtr) }, DynamicModule);
-
-            ILGenerator method = dm.GetILGenerator();
-
-            // return functionPtr(...)
-
-            method.Emit(OpCodes.Ldarg_0);
-
-            // functionPtr = *(IntPtr*)(*(interfacePointer) + VTABLE_OFFSET)
-            int iunknownReleaseOffset = ((int)IDispatchMethodIndices.IUnknown_Release) * Marshal.SizeOf(typeof(IntPtr));
-            method.Emit(OpCodes.Ldarg_0);
-            method.Emit(OpCodes.Ldind_I);
-            method.Emit(OpCodes.Ldc_I4, iunknownReleaseOffset);
-            method.Emit(OpCodes.Add);
-            method.Emit(OpCodes.Ldind_I);
-
-            method.EmitCalli(OpCodes.Calli, CallingConvention.Winapi, typeof(int), new[] { typeof(IntPtr) });
-
-            method.Emit(OpCodes.Ret);
-
-            return dm.CreateDelegate<IUnknownReleaseDelegate>();
-        }
-
-        internal static readonly IntPtr s_nullInterfaceId = GetNullInterfaceId();
-
-        private static IntPtr GetNullInterfaceId()
-        {
-            int size = Marshal.SizeOf(Guid.Empty);
-            IntPtr ptr = Marshal.AllocHGlobal(size);
-            for (int i = 0; i < size; i++)
-            {
-                Marshal.WriteByte(ptr, i, 0);
-            }
-            return ptr;
-        }
-
-        /// <summary>
-        /// We will emit an indirect call to an unmanaged function pointer from the vtable of the given IDispatch interface pointer.
-        /// It is not possible to express this in C#. Using an indirect pinvoke call allows us to do our own marshalling.
-        /// We can allocate the Variant arguments cheaply on the stack. We are relying on the JIT-compiler to do
-        /// pinvoke-stub-inlining and calling the pinvoke target directly.
-        /// The alternative of calling via a managed interface declaration of IDispatch would have a performance
-        /// penalty of going through a CLR stub that would have to re-push the arguments on the stack, etc.
-        /// Marshal.GetDelegateForFunctionPointer could be used here, but its too expensive (~2000 instructions on x86).
-        /// </summary>
-        private delegate int IDispatchInvokeDelegate(
-            IntPtr dispatchPointer,
-            int memberDispId,
-            ComTypes.INVOKEKIND flags,
-            ref ComTypes.DISPPARAMS dispParams,
-            out Variant result,
-            out ExcepInfo excepInfo,
-            out uint argErr
-        );
-
-        private static readonly IDispatchInvokeDelegate s_iDispatchInvoke = Create_IDispatchInvoke(true);
-        private static IDispatchInvokeDelegate s_iDispatchInvokeNoResultImpl;
-
-        private static IDispatchInvokeDelegate _IDispatchInvokeNoResult
-        {
-            get
-            {
-                if (s_iDispatchInvokeNoResultImpl == null)
-                {
-                    lock (s_iDispatchInvoke)
-                    {
-                        if (s_iDispatchInvokeNoResultImpl == null)
-                        {
-                            s_iDispatchInvokeNoResultImpl = Create_IDispatchInvoke(false);
-                        }
-                    }
-                }
-                return s_iDispatchInvokeNoResultImpl;
-            }
-        }
-
-        private static IDispatchInvokeDelegate Create_IDispatchInvoke(bool returnResult)
-        {
-            const int dispatchPointerIndex = 0;
-            const int memberDispIdIndex = 1;
-            const int flagsIndex = 2;
-            const int dispParamsIndex = 3;
-            const int resultIndex = 4;
-            const int exceptInfoIndex = 5;
-            const int argErrIndex = 6;
-            Debug.Assert(argErrIndex + 1 == typeof(IDispatchInvokeDelegate).GetMethod(nameof(IDispatchInvokeDelegate.Invoke)).GetParameters().Length);
-
-            Type[] paramTypes = new Type[argErrIndex + 1];
-            paramTypes[dispatchPointerIndex] = typeof(IntPtr);
-            paramTypes[memberDispIdIndex] = typeof(int);
-            paramTypes[flagsIndex] = typeof(ComTypes.INVOKEKIND);
-            paramTypes[dispParamsIndex] = typeof(ComTypes.DISPPARAMS).MakeByRefType();
-            paramTypes[resultIndex] = typeof(Variant).MakeByRefType();
-            paramTypes[exceptInfoIndex] = typeof(ExcepInfo).MakeByRefType();
-            paramTypes[argErrIndex] = typeof(uint).MakeByRefType();
-
-            // Define the dynamic method in our assembly so we skip verification
-            DynamicMethod dm = new DynamicMethod("IDispatchInvoke", typeof(int), paramTypes, DynamicModule);
-            ILGenerator method = dm.GetILGenerator();
-
-            // return functionPtr(...)
-
-            EmitLoadArg(method, dispatchPointerIndex);
-            EmitLoadArg(method, memberDispIdIndex);
-
-            // burn the address of our empty IID in directly.  This is never freed, relocated, etc...
-            // Note passing this as a Guid directly results in a ~30% perf hit for IDispatch invokes so
-            // we also pass it directly as an IntPtr instead.
-            if (IntPtr.Size == 4)
-            {
-                method.Emit(OpCodes.Ldc_I4, UnsafeMethods.s_nullInterfaceId.ToInt32()); // riid
-            }
-            else
-            {
-                method.Emit(OpCodes.Ldc_I8, UnsafeMethods.s_nullInterfaceId.ToInt64()); // riid
-            }
-            method.Emit(OpCodes.Conv_I);
-
-            method.Emit(OpCodes.Ldc_I4_0); // lcid
-            EmitLoadArg(method, flagsIndex);
-
-            EmitLoadArg(method, dispParamsIndex);
-            method.Emit(OpCodes.Conv_I);
-
-            if (returnResult)
-            {
-                EmitLoadArg(method, resultIndex);
-                method.Emit(OpCodes.Conv_I);
-            }
-            else
-            {
-                method.Emit(OpCodes.Ldsfld, typeof(IntPtr).GetField(nameof(IntPtr.Zero)));
-            }
-            EmitLoadArg(method, exceptInfoIndex);
-            method.Emit(OpCodes.Conv_I);
-            EmitLoadArg(method, argErrIndex);
-            method.Emit(OpCodes.Conv_I);
-
-            // functionPtr = *(IntPtr*)(*(dispatchPointer) + VTABLE_OFFSET)
-            int idispatchInvokeOffset = ((int)IDispatchMethodIndices.IDispatch_Invoke) * Marshal.SizeOf(typeof(IntPtr));
-            EmitLoadArg(method, dispatchPointerIndex);
-            method.Emit(OpCodes.Ldind_I);
-            method.Emit(OpCodes.Ldc_I4, idispatchInvokeOffset);
-            method.Emit(OpCodes.Add);
-            method.Emit(OpCodes.Ldind_I);
-
-            Type[] invokeParamTypes = new Type[] {
-                    typeof(IntPtr), // dispatchPointer
-                    typeof(int),    // memberDispId
-                    typeof(IntPtr), // riid
-                    typeof(int),    // lcid
-                    typeof(ushort), // flags
-                    typeof(IntPtr), // dispParams
-                    typeof(IntPtr), // result
-                    typeof(IntPtr), // excepInfo
-                    typeof(IntPtr), // argErr
-                };
-            method.EmitCalli(OpCodes.Calli, CallingConvention.Winapi, typeof(int), invokeParamTypes);
-
-            method.Emit(OpCodes.Ret);
-            return dm.CreateDelegate<IDispatchInvokeDelegate>();
         }
 
         #endregion

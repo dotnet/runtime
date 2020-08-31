@@ -56,6 +56,7 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern double Cbrt(double d);
 
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern double Ceiling(double a);
 
@@ -71,6 +72,7 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern double Exp(double d);
 
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern double Floor(double d);
 

@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetFrameworkCurrent)-Windows_NT</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;net461-Windows_NT</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.Constants.cs"
@@ -13,5 +13,8 @@
     <Compile Include="MutexSecurityTests.cs" />
     <Compile Include="SemaphoreAclTests.cs" />
     <Compile Include="ThreadingAclExtensionsTests.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Threading.AccessControl.csproj" />
   </ItemGroup>
 </Project>

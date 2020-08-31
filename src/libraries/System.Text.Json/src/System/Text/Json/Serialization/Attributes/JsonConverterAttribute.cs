@@ -12,7 +12,7 @@ namespace System.Text.Json.Serialization
     /// The specified converter type must derive from <see cref="JsonConverter"/>.
     /// When placed on a property or field, the specified converter will always be used.
     /// When placed on a type, the specified converter will be used unless a compatible converter is added to
-    /// <see cref="JsonSerializerOptions.Converters"/> or there is another <see cref="JsonConverterAttribute"/> on a member
+    /// <see cref="JsonSerializerOptions.Converters"/> or there is another <see cref="JsonConverterAttribute"/> on a property or field
     /// of the same type.
     /// </remarks>
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Enum | AttributeTargets.Property | AttributeTargets.Field, AllowMultiple = false)]
