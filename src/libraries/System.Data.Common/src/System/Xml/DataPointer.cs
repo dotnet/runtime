@@ -64,7 +64,7 @@ namespace System.Xml
                 XmlBoundElement? rowElem = GetRowElement();
                 if (rowElem == null)
                 {
-                    return null!;
+                    return null;
                 }
 
                 Debug.Assert(rowElem.Row != null);

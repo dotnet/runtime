@@ -2551,6 +2551,8 @@ namespace System.Xml
 
         internal XmlDataDocument(XmlImplementation imp) : base(imp)
         {
+            // This constructor is used by XmlDataImplementation.CreateDocument(), which
+            // exposes it as XmlDocument. The methods using these fields are never called.
             _dataSet = null!;
             _pointers = null!;
             _columnChangeList = null!;

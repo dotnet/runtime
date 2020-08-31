@@ -55,13 +55,7 @@ namespace System.Xml
         [MemberNotNullWhen(true, nameof(CurrentNode))]
         internal bool OnRowElement()
         {
-            XmlBoundElement? be = CurrentNode as XmlBoundElement;
-            if ((be != null) && (be.Row != null))
-            {
-                Debug.Assert(CurrentNode != null);
-                return true;
-            }
-            return false;
+            return CurrentNode is XmlBoundElement be && be.Row != null;
         }
     }
 }
