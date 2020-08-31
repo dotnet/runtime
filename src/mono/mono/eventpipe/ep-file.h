@@ -48,6 +48,7 @@ struct _EventPipeFile_Internal {
 	uint32_t sampling_rate_in_ns;
 	uint32_t stack_id_counter;
 	volatile uint32_t metadata_id_counter;
+	volatile uint32_t initialized;
 	// The format to serialize.
 	EventPipeSerializationFormat format;
 };

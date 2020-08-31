@@ -351,12 +351,6 @@ namespace System.Net.Http
                     w.Dispose();
                     _creditWaiter = null;
                 }
-
-                if (HttpTelemetry.Log.IsEnabled())
-                {
-                    bool aborted = _requestCompletionState == StreamCompletionState.Failed || _responseCompletionState == StreamCompletionState.Failed;
-                    _request.OnStopped(aborted);
-                }
             }
 
             private void Cancel()
@@ -391,8 +385,6 @@ namespace System.Net.Http
                 {
                     _waitSource.SetResult(true);
                 }
-
-                if (HttpTelemetry.Log.IsEnabled()) _request.OnAborted();
             }
 
             // Returns whether the waiter should be signalled or not.
@@ -1154,10 +1146,6 @@ namespace System.Net.Http
                 if (!fullyConsumed)
                 {
                     Cancel();
-                }
-                else
-                {
-                    _request.OnStopped();
                 }
 
                 _responseBuffer.Dispose();

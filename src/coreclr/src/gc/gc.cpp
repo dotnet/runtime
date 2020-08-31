@@ -1987,6 +1987,8 @@ void stomp_write_barrier_resize(bool is_runtime_suspended, bool requires_upper_b
 
 void stomp_write_barrier_ephemeral(uint8_t* ephemeral_low, uint8_t* ephemeral_high)
 {
+    initGCShadow();
+
     WriteBarrierParameters args = {};
     args.operation = WriteBarrierOp::StompEphemeral;
     args.is_runtime_suspended = true;
@@ -5703,6 +5705,7 @@ void gc_heap::gc_thread_function ()
             END_TIMING(suspend_ee_during_log);
 
             proceed_with_gc_p = TRUE;
+            gradual_decommit_in_progress_p = FALSE;
 
             if (!should_proceed_with_gc())
             {
@@ -11622,6 +11625,15 @@ BOOL gc_heap::grow_heap_segment (heap_segment* seg, uint8_t* high_address, bool*
 
         assert (heap_segment_committed (seg) <= heap_segment_reserved (seg));
         assert (high_address <= heap_segment_committed (seg));
+
+#ifdef MULTIPLE_HEAPS
+        // we should never increase committed beyond decommit target when gradual
+        // decommit is in progress - if we do, this means commit and decommit are
+        // going on at the same time.
+        assert (!gradual_decommit_in_progress_p ||
+                (seg != ephemeral_heap_segment) ||
+                (heap_segment_committed (seg) <= heap_segment_decommit_target (seg)));
+#endif // MULTIPLE_HEAPS
     }
 
     return !!ret;
@@ -32574,7 +32586,7 @@ void gc_heap::trim_youngest_desired_low_memory()
 
 void gc_heap::decommit_ephemeral_segment_pages()
 {
-    if (settings.concurrent || use_large_pages_p)
+    if (settings.concurrent || use_large_pages_p || (settings.pause_mode == pause_no_gc))
     {
         return;
     }
@@ -32613,7 +32625,7 @@ void gc_heap::decommit_ephemeral_segment_pages()
         decommit_target += target_decrease * 2 / 3;
     }
 
-    heap_segment_decommit_target(ephemeral_heap_segment) = decommit_target;
+    heap_segment_decommit_target (ephemeral_heap_segment) = decommit_target;
 
 #ifdef MULTIPLE_HEAPS
     if (decommit_target < heap_segment_committed (ephemeral_heap_segment))
@@ -37532,11 +37544,6 @@ void gc_heap::update_recorded_gen_data (last_recorded_gc_info* gc_info)
 
 void gc_heap::do_post_gc()
 {
-    if (!settings.concurrent)
-    {
-        initGCShadow();
-    }
-
 #ifdef MULTIPLE_HEAPS
     gc_heap* hp = g_heaps[0];
 #else

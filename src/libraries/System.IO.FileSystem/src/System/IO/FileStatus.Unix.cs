@@ -264,6 +264,12 @@ namespace System.IO
             const long TicksPerSecond = TicksPerMillisecond * 1000;
             long nanoseconds = (time.UtcDateTime.Ticks - DateTimeOffset.UnixEpoch.Ticks - seconds * TicksPerSecond) * NanosecondsPerTick;
 
+#if TARGET_BROWSER
+            buf[0].TvSec = seconds;
+            buf[0].TvNsec = nanoseconds;
+            buf[1].TvSec = seconds;
+            buf[1].TvNsec = nanoseconds;
+#else
             if (isAccessTime)
             {
                 buf[0].TvSec = seconds;
@@ -278,9 +284,8 @@ namespace System.IO
                 buf[1].TvSec = seconds;
                 buf[1].TvNsec = nanoseconds;
             }
-
+#endif
             Interop.CheckIo(Interop.Sys.UTimensat(path, buf), path, InitiallyDirectory);
-
             _fileStatusInitialized = -1;
         }
 
@@ -301,6 +306,7 @@ namespace System.IO
             // lstat fails, as a broken symlink should still report info on exists, attributes, etc.
             _isDirectory = false;
             path = Path.TrimEndingDirectorySeparator(path);
+
             int result = Interop.Sys.LStat(path, out _fileStatus);
             if (result < 0)
             {

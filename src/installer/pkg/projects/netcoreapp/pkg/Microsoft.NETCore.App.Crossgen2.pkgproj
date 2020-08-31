@@ -87,7 +87,11 @@
     </MSBuild>
 
     <ItemGroup>
-      <File Include="@(Crossgen2File)">
+      <!-- Avoid having two copies of System.Private.CoreLib.ni.pdb in the same directory -->
+      <Crossgen2File Update="@(Crossgen2File)" SavedIdentity="%(Identity)" />
+      <Crossgen2FileDistinct Include="@(Crossgen2File->'%(Filename)%(Extension)'->Distinct())" />
+
+      <File Include="@(Crossgen2FileDistinct->'%(SavedIdentity)')" RemoveMetadata="SavedIdentity">
         <TargetPath>tools</TargetPath>
       </File>
       <!-- 
