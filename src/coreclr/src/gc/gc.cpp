@@ -8534,8 +8534,22 @@ static void do_vxsort (uint8_t** item_array, ptrdiff_t item_count, uint8_t* rang
 
 #ifdef MULTIPLE_HEAPS
 #ifdef PARALLEL_MARK_LIST_SORT
+size_t target_mark_count_for_heap (size_t total_mark_count, int heap_count, int heap_number)
+{
+    // compute the average (rounded down)
+    size_t average_mark_count = total_mark_count / heap_count;
+
+    // compute the remainder
+    size_t remaining_mark_count = total_mark_count - (average_mark_count * heap_count);
+
+    // compute the target count for this heap - last heap has the remainder
+    if (heap_number == heap_count - 1)
+        return average_mark_count + remaining_mark_count;
+    else
+        return average_mark_count;
+}
 NOINLINE
-uint8_t** gc_heap::equalize_mark_lists()
+uint8_t** gc_heap::equalize_mark_lists (size_t total_mark_list_size)
 {
     size_t local_mark_count[MAX_SUPPORTED_CPUS];
     size_t total_mark_count = 0;
@@ -8550,18 +8564,15 @@ uint8_t** gc_heap::equalize_mark_lists()
         total_mark_count += mark_count;
     }
 
-    // compute the average (rounded down)
-    size_t average_mark_count = total_mark_count / n_heaps;
+    // this should agree with our input parameter
+    assert(total_mark_count == total_mark_list_size);
 
-    // compute the remainder
-    size_t remaining_mark_count = total_mark_count - (average_mark_count * n_heaps);
-
-    // compute the target count for this heap - last heap has the remainder
-    size_t target_mark_count = average_mark_count + ((heap_number == n_heaps - 1) ? remaining_mark_count : 0);
+    // compute the target count for this heap
+    size_t this_target_mark_count = target_mark_count_for_heap (total_mark_count, n_heaps, heap_number);
 
     // if our heap has sufficient entries, we can exit early
-    if (local_mark_count[heap_number] >= target_mark_count)
-        return mark_list + target_mark_count;
+    if (local_mark_count[heap_number] >= this_target_mark_count)
+        return mark_list + this_target_mark_count;
 
     // In the following, we try to fill the deficit in heap "deficit_heap_index" with 
     // surplus from "surplus_heap_index".
@@ -8570,20 +8581,22 @@ uint8_t** gc_heap::equalize_mark_lists()
     for (int deficit_heap_index = 0; deficit_heap_index <= heap_number; deficit_heap_index++)
     {
         // compute the target count for this heap - last heap has the remainder
-        target_mark_count = average_mark_count + ((deficit_heap_index == n_heaps - 1) ? remaining_mark_count : 0);
+        size_t deficit_target_mark_count = target_mark_count_for_heap (total_mark_count, n_heaps, deficit_heap_index);
 
         // if this heap has the target or larger count, skip it
-        if (local_mark_count[deficit_heap_index] >= target_mark_count)
+        if (local_mark_count[deficit_heap_index] >= deficit_target_mark_count)
             continue;
 
         // while this heap is lower than average, fill it up
-        while (surplus_heap_index < n_heaps && local_mark_count[deficit_heap_index] < average_mark_count)
+        while (surplus_heap_index < n_heaps && local_mark_count[deficit_heap_index] < deficit_target_mark_count)
         {
-            size_t deficit = target_mark_count - local_mark_count[deficit_heap_index];
+            size_t deficit = deficit_target_mark_count - local_mark_count[deficit_heap_index];
 
-            if (local_mark_count[surplus_heap_index] > average_mark_count)
+            size_t surplus_target_mark_count = target_mark_count_for_heap(total_mark_count, n_heaps, surplus_heap_index);
+
+            if (local_mark_count[surplus_heap_index] > surplus_target_mark_count)
             {
-                size_t surplus = local_mark_count[surplus_heap_index] - average_mark_count;
+                size_t surplus = local_mark_count[surplus_heap_index] - surplus_target_mark_count;
                 size_t amount_to_transfer = min(deficit, surplus);
                 local_mark_count[surplus_heap_index] -= amount_to_transfer;
                 if (deficit_heap_index == heap_number)
@@ -8604,13 +8617,13 @@ uint8_t** gc_heap::equalize_mark_lists()
     return mark_list + local_mark_count[heap_number];
 }
 NOINLINE
-void gc_heap::sort_mark_list()
+size_t gc_heap::sort_mark_list()
 {
     if (settings.condemned_generation >= max_generation)
     {
         // fake a mark list overflow so merge_mark_lists knows to quit early
         mark_list_index = mark_list_end + 1;
-        return;
+        return 0;
     }
 
     // if this heap had a mark list overflow, we don't do anything
@@ -8618,7 +8631,7 @@ void gc_heap::sort_mark_list()
     {
 //        printf("sort_mark_list: overflow on heap %d\n", heap_number);
         mark_list_overflow = true;
-        return;
+        return 0;
     }
 
 #ifdef BACKGROUND_GC
@@ -8627,7 +8640,7 @@ void gc_heap::sort_mark_list()
     if (gc_heap::background_running_p())
     {
         mark_list_index = mark_list_end + 1;
-        return;
+        return 0;
     }
 #endif //BACKGROUND_GC
 
@@ -8639,7 +8652,7 @@ void gc_heap::sort_mark_list()
         {
             mark_list_index = mark_list_end + 1;
 //            printf("sort_mark_list: overflow on heap %d\n", i);
-            return;
+            return 0;
         }
     }
 
@@ -8666,10 +8679,10 @@ void gc_heap::sort_mark_list()
         mark_list_index = mark_list_end + 1;
         // let's not count this as a mark list overflow
         mark_list_overflow = false;
-        return;
+        return 0;
     }
 
-    uint8_t **local_mark_list_index = equalize_mark_lists();
+    uint8_t **local_mark_list_index = equalize_mark_lists(total_mark_list_size);
 
 #ifdef USE_VXSORT
     ptrdiff_t item_count = local_mark_list_index - mark_list;
@@ -8829,6 +8842,7 @@ void gc_heap::sort_mark_list()
 #undef predicate
 
 //    printf("second phase of sort_mark_list for heap %d took %u cycles\n", this->heap_number, GetCycleCount32() - start);
+    return total_mark_list_size;
 }
 
 void gc_heap::append_to_mark_list(uint8_t **start, uint8_t **end)
@@ -8841,7 +8855,19 @@ void gc_heap::append_to_mark_list(uint8_t **start, uint8_t **end)
 //    printf("heap %d: appended %Id slots to mark_list\n", heap_number, slots_to_copy);
 }
 
-void gc_heap::merge_mark_lists()
+static int cmp_mark_list_item(const void* vkey, const void* vdatum)
+{
+    uint8_t** key = (uint8_t**)vkey;
+    uint8_t** datum = (uint8_t**)vdatum;
+    if (*key < *datum)
+        return -1;
+    else if (*key > *datum)
+        return 1;
+    else
+        return 0;
+}
+
+void gc_heap::merge_mark_lists(size_t total_mark_list_size)
 {
     uint8_t** source[MAX_SUPPORTED_CPUS];
     uint8_t** source_end[MAX_SUPPORTED_CPUS];
@@ -8849,11 +8875,30 @@ void gc_heap::merge_mark_lists()
     int source_count = 0;
 
     // in case of mark list overflow, don't bother
-    if (mark_list_index >  mark_list_end)
+    if (total_mark_list_size == 0)
     {
-//        printf("merge_mark_lists: overflow\n");
         return;
     }
+
+#ifdef _DEBUG
+    // if we had more than the average number of mark list items,
+    // make sure these got copied to other heap, i.e. didn't get lost
+    size_t this_mark_list_size = target_mark_count_for_heap (total_mark_list_size, n_heaps, heap_number);
+    uint8_t** found_slot = nullptr;
+    for (uint8_t** p = mark_list + this_mark_list_size; p < mark_list_index; p++)
+    {
+        uint8_t* item = *p;
+        for (int i = 0; i < n_heaps; i++)
+        {
+            uint8_t** heap_mark_list = &g_mark_list[i * mark_list_size];
+            size_t heap_mark_list_size = target_mark_count_for_heap (total_mark_list_size, n_heaps, i);
+            found_slot = (uint8_t**)bsearch (&item, heap_mark_list, heap_mark_list_size, sizeof(item), cmp_mark_list_item);
+            if (found_slot != nullptr)
+                break;
+        }
+        assert(found_slot);
+    }
+#endif
 
     dprintf(3, ("merge_mark_lists: heap_number = %d  starts out with %Id entries", heap_number, mark_list_index - mark_list));
 //    unsigned long start = GetCycleCount32();
@@ -21070,7 +21115,7 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
 #ifdef MARK_LIST
 #ifdef PARALLEL_MARK_LIST_SORT
 //    unsigned long start = GetCycleCount32();
-    sort_mark_list();
+    size_t total_mark_list_size = sort_mark_list();
 //    printf("sort_mark_list took %u cycles\n", GetCycleCount32() - start);
 #endif //PARALLEL_MARK_LIST_SORT
 #endif //MARK_LIST
@@ -21203,7 +21248,7 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
 #ifdef MARK_LIST
 #ifdef PARALLEL_MARK_LIST_SORT
 //    start = GetCycleCount32();
-    merge_mark_lists();
+    merge_mark_lists(total_mark_list_size);
 //    printf("merge_mark_lists took %u cycles\n", GetCycleCount32() - start);
 #endif //PARALLEL_MARK_LIST_SORT
 #endif //MARK_LIST
