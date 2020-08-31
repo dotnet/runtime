@@ -3563,6 +3563,19 @@ void Compiler::fgInitBlockVarSets()
     fgBBVarSetsInited = true;
 }
 
+//------------------------------------------------------------------------
+// blockNeedsGCPoll: Determine whether the block needs GC poll inserted
+//
+// Arguments:
+//   block         - the block to check
+//
+// Notes:
+//    The GC poll may not be required because optimizations applied earlier
+//    or because GC poll done implicitly by regular unmanaged calls.
+//
+// Returns:
+//    Whether the GC poll needs to be inserted after the block
+//
 static bool blockNeedsGCPoll(BasicBlock* block)
 {
     bool blockMayNeedGCPoll = false;
