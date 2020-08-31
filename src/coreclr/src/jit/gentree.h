@@ -6048,13 +6048,13 @@ struct GenTreePutArgStk : public GenTreeUnOp
 
 #endif // !FEATURE_FASTTAILCALL
 
-    unsigned getArgOffset()
+    unsigned getArgOffset() const
     {
         return gtSlotNum * TARGET_POINTER_SIZE;
     }
 
 #if defined(UNIX_X86_ABI)
-    unsigned getArgPadding()
+    unsigned getArgPadding() const
     {
         return gtPadAlign;
     }
@@ -6066,15 +6066,14 @@ struct GenTreePutArgStk : public GenTreeUnOp
 #endif
 
 #ifdef FEATURE_PUT_STRUCT_ARG_STK
-
-    unsigned getArgSize()
+    unsigned getArgSize() const
     {
         return gtNumSlots * TARGET_POINTER_SIZE;
     }
 
     // Return true if this is a PutArgStk of a SIMD12 struct.
     // This is needed because such values are re-typed to SIMD16, and the type of PutArgStk is VOID.
-    unsigned isSIMD12()
+    unsigned isSIMD12() const
     {
         return (varTypeIsSIMD(gtOp1) && (gtNumSlots == 3));
     }
@@ -6089,7 +6088,7 @@ struct GenTreePutArgStk : public GenTreeUnOp
     };
 
     Kind gtPutArgStkKind;
-    bool isPushKind()
+    bool isPushKind() const
     {
         return (gtPutArgStkKind == Kind::Push) || (gtPutArgStkKind == Kind::PushAllSlots);
     }
@@ -6227,7 +6226,7 @@ struct GenTreePutArgSplit : public GenTreePutArgStk
     // Return Value:
     //    var_type of the register specified by its index.
 
-    var_types GetRegType(unsigned index)
+    var_types GetRegType(unsigned index) const
     {
         assert(index < gtNumRegs);
         var_types result = m_regType[index];
@@ -6249,7 +6248,7 @@ struct GenTreePutArgSplit : public GenTreePutArgStk
     }
 
 #ifdef FEATURE_PUT_STRUCT_ARG_STK
-    unsigned getArgSize()
+    unsigned getArgSize() const
     {
         return (gtNumSlots + gtNumRegs) * TARGET_POINTER_SIZE;
     }

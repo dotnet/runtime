@@ -767,7 +767,7 @@ REMOVE_CAST:
 #endif
 
 #ifdef DEBUG
-void fgArgTabEntry::Dump()
+void fgArgTabEntry::Dump() const
 {
     printf("fgArgTabEntry[arg %u", argNum);
     printf(" %d.%s", GetNode()->gtTreeID, GenTree::OpName(GetNode()->OperGet()));
@@ -1859,7 +1859,7 @@ void fgArgInfo::SortArgs()
 }
 
 #ifdef DEBUG
-void fgArgInfo::Dump(Compiler* compiler)
+void fgArgInfo::Dump(Compiler* compiler) const
 {
     for (unsigned curInx = 0; curInx < ArgCount(); curInx++)
     {
