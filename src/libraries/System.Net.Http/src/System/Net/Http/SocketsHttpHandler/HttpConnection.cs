@@ -364,6 +364,8 @@ namespace System.Net.Http
             CancellationTokenRegistration cancellationRegistration = RegisterCancellation(cancellationToken);
             try
             {
+                if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestHeadersStart();
+
                 Debug.Assert(request.RequestUri != null);
                 // Write request line
                 await WriteStringAsync(normalizedMethod.Method, async).ConfigureAwait(false);
@@ -457,6 +459,8 @@ namespace System.Net.Http
                 // CRLF for end of headers.
                 await WriteTwoBytesAsync((byte)'\r', (byte)'\n', async).ConfigureAwait(false);
 
+                if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestHeadersStop();
+
                 if (request.Content == null)
                 {
                     // We have nothing more to send, so flush out any headers we haven't yet sent.
@@ -535,7 +539,7 @@ namespace System.Net.Http
                 var response = new HttpResponseMessage() { RequestMessage = request, Content = new HttpConnectionResponseContent() };
                 ParseStatusLine(await ReadNextResponseHeaderLineAsync(async).ConfigureAwait(false), response);
 
-                if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.ResponseHeadersBegin();
+                if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.ResponseHeadersStart();
 
                 // Multiple 1xx responses handling.
                 // RFC 7231: A client MUST be able to parse one or more 1xx responses received prior to a final response,
@@ -583,6 +587,8 @@ namespace System.Net.Http
                     }
                     ParseHeaderNameValue(this, line, response);
                 }
+
+                if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.ResponseHeadersStop();
 
                 if (allowExpect100ToContinue != null)
                 {
@@ -817,6 +823,9 @@ namespace System.Net.Http
             // Now that we're sending content, prohibit retries on this connection.
             _canRetry = false;
 
+            Debug.Assert(stream.BytesWritten == 0);
+            if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestContentStart();
+
             // Copy all of the data to the server.
             if (async)
             {
@@ -832,6 +841,8 @@ namespace System.Net.Http
 
             // Flush any content that might still be buffered.
             await FlushAsync(async).ConfigureAwait(false);
+
+            if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestContentStop(stream.BytesWritten);
 
             if (NetEventSource.Log.IsEnabled()) Trace("Finished sending request content.");
         }
