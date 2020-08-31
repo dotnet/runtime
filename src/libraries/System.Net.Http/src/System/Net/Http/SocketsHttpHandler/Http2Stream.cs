@@ -194,6 +194,8 @@ namespace System.Net.Http
                     {
                         using var writeStream = new Http2WriteStream(this);
 
+                        if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestContentStart();
+
                         ValueTask vt = _request.Content.InternalCopyToAsync(writeStream, context: null, _requestBodyCancellationSource.Token);
                         if (vt.IsCompleted)
                         {
@@ -208,6 +210,8 @@ namespace System.Net.Http
 
                             await vt.ConfigureAwait(false);
                         }
+
+                        if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestContentStop(writeStream.BytesWritten);
                     }
 
                     if (NetEventSource.Log.IsEnabled()) Trace($"Finished sending request body.");
@@ -568,8 +572,6 @@ namespace System.Net.Http
 
             public void OnHeadersStart()
             {
-                if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.ResponseHeadersBegin();
-
                 Debug.Assert(!Monitor.IsEntered(SyncObject));
                 lock (SyncObject)
                 {
@@ -839,6 +841,8 @@ namespace System.Net.Http
                 bool emptyResponse;
                 try
                 {
+                    if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.ResponseHeadersStart();
+
                     // Wait for response headers to be read.
                     bool wait;
 
@@ -851,6 +855,8 @@ namespace System.Net.Http
                         (wait, emptyResponse) = TryEnsureHeaders();
                         Debug.Assert(!wait);
                     }
+
+                    if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.ResponseHeadersStop();
                 }
                 catch
                 {
@@ -1344,6 +1350,8 @@ namespace System.Net.Http
             {
                 private Http2Stream? _http2Stream;
 
+                public long BytesWritten { get; private set; }
+
                 public Http2WriteStream(Http2Stream http2Stream)
                 {
                     Debug.Assert(http2Stream != null);
@@ -1370,6 +1378,8 @@ namespace System.Net.Http
 
                 public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
                 {
+                    BytesWritten += buffer.Length;
+
                     Http2Stream? http2Stream = _http2Stream;
 
                     if (http2Stream == null)
