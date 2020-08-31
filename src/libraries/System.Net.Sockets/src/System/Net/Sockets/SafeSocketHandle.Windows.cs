@@ -57,7 +57,7 @@ namespace System.Net.Sockets
                     {
                         bool closed = IsClosed;
                         bool alreadyBound = !IsInvalid && !IsClosed && (exception is ArgumentException);
-                        CloseAsIs(abortive: false, finalizing: false);
+                        CloseAsIs(abortive: false);
                         if (closed)
                         {
                             // If the handle was closed just before the call to BindHandle,
