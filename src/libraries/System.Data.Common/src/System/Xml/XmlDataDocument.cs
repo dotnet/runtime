@@ -93,6 +93,7 @@ namespace System.Xml
         //  - ds.ReadXmlData();             // ds is now filled, however doc has no content (since there were no listeners for the new created DataRow's)
         // We can set-up listeners and track each change in schema, but it is more perf-friendly to do it laizily, all at once, when the first DataRow is created
         // (we rely on the fact that DataRowCreated is a DataSet wide event, rather than a DataTable event)
+        [MemberNotNull(nameof(_dataSet))]
         private void AttachDataSet(DataSet ds)
         {
             // You should not have already an associated dataset
