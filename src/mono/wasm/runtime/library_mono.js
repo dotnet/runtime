@@ -386,6 +386,10 @@ var MonoSupportLib = {
 
 			for (var i in props) {
 				var p = props [i];
+
+				if (p.name == null)
+					continue;
+					
 				if (p.name in names_found)
 					continue;
 
