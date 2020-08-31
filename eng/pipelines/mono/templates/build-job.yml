@@ -68,8 +68,6 @@ jobs:
       - name: osOverride
         value: -os Android
     - ${{ if eq(parameters.osGroup, 'Browser') }}:
-      - name: EMSDK_PATH
-        value: /usr/local/emscripten
       - name: archType
         value: wasm
       - name: osOverride

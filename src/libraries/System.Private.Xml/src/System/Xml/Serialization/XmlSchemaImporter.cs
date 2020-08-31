@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 namespace System.Xml.Serialization
 {
     using System;
@@ -1486,10 +1485,10 @@ namespace System.Xml.Serialization
             {
                 if (o is XmlSchemaAppInfo)
                 {
-                    XmlNode[]? nodes = ((XmlSchemaAppInfo)o).Markup;
+                    XmlNode?[]? nodes = ((XmlSchemaAppInfo)o).Markup;
                     if (nodes != null && nodes.Length > 0)
                     {
-                        foreach (XmlNode node in nodes)
+                        foreach (XmlNode? node in nodes)
                         {
                             if (node is XmlElement)
                             {

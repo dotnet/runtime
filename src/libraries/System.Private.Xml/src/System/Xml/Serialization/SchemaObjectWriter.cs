@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 namespace System.Xml.Serialization
 {
     using System;
@@ -524,12 +523,12 @@ namespace System.Xml.Serialization
 
             WriteAttribute(@"source", @"", ((string?)o.@Source));
             WriteAttribute(@"lang", @"http://www.w3.org/XML/1998/namespace", ((string?)o.@Language));
-            XmlNode[]? a = (XmlNode[]?)o.@Markup;
+            XmlNode?[]? a = (XmlNode?[]?)o.@Markup;
             if (a != null)
             {
                 for (int ia = 0; ia < a.Length; ia++)
                 {
-                    XmlNode ai = (XmlNode)a[ia];
+                    XmlNode ai = (XmlNode)a[ia]!;
                     WriteStartElement("node");
                     WriteAttribute("xml", "", ai.OuterXml);
                 }
@@ -543,12 +542,12 @@ namespace System.Xml.Serialization
             WriteStartElement("appinfo");
 
             WriteAttribute("source", "", o.Source);
-            XmlNode[]? a = (XmlNode[]?)o.@Markup;
+            XmlNode?[]? a = (XmlNode?[]?)o.@Markup;
             if (a != null)
             {
                 for (int ia = 0; ia < a.Length; ia++)
                 {
-                    XmlNode ai = (XmlNode)a[ia];
+                    XmlNode ai = (XmlNode)a[ia]!;
                     WriteStartElement("node");
                     WriteAttribute("xml", "", ai.OuterXml);
                 }

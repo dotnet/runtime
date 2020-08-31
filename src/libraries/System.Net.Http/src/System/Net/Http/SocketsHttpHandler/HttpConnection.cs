@@ -120,8 +120,6 @@ namespace System.Net.Http
 
                 _pool.DecrementConnectionCount();
 
-                if (HttpTelemetry.Log.IsEnabled()) _currentRequest?.OnAborted();
-
                 if (disposing)
                 {
                     GC.SuppressFinalize(this);
@@ -1871,8 +1869,6 @@ namespace System.Net.Http
         {
             Debug.Assert(_currentRequest != null, "Expected the connection to be associated with a request.");
             Debug.Assert(_writeOffset == 0, "Everything in write buffer should have been flushed.");
-
-            if (HttpTelemetry.Log.IsEnabled()) _currentRequest.OnStopped();
 
             // Disassociate the connection from a request.
             _currentRequest = null;
