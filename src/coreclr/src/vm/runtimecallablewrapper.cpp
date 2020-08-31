@@ -2633,6 +2633,11 @@ BOOL ComObject::SupportsInterface(OBJECTREF oref, MethodTable* pIntfTable)
     // Make sure the interface method table has been restored.
     pIntfTable->CheckRestore();
 
+    if (pIntfTable->GetComInterfaceType() == ifInspectable)
+    {
+        COMPlusThrow(kPlatformNotSupportedException, IDS_EE_NO_IINSPECTABLE);
+    }
+
     // Check to see if the static class definition indicates we implement the interface.
     MethodTable *pMT = oref->GetMethodTable();
     if (pMT->CanCastToInterface(pIntfTable))
