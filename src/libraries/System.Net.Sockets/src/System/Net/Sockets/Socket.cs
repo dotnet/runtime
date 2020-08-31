@@ -4253,12 +4253,21 @@ namespace System.Net.Sockets
                 return;
             }
 
+            // When we are running on the finalizer thread, we don't call CloseAsIs
+            // because it may lead to blocking the finalizer thread when trying
+            // to abort on-going operations. We directly dispose the SafeHandle.
+            if (!disposing)
+            {
+                _handle.Dispose();
+                return;
+            }
+
             // Close the handle in one of several ways depending on the timeout.
             // Ignore ObjectDisposedException just in case the handle somehow gets disposed elsewhere.
             try
             {
                 int timeout = _closeTimeout;
-                if (timeout == 0 || !disposing)
+                if (timeout == 0)
                 {
                     // Abortive.
                     if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Calling _handle.CloseAsIs()");
@@ -4353,11 +4362,7 @@ namespace System.Net.Sockets
 
         ~Socket()
         {
-            // We don't call Dispose because it may lead to blocking the finalizer thread
-            // when SocketSafeHandle.CloseAsIs tries to abort on-going operations.
-            // Because we are running on the finalizer thread, there are no ongoing operations to be aborted
-            // and we can directly dispose the SafeHandle.
-            _handle?.Dispose();
+            Dispose(false);
         }
 
         // This version does not throw.
