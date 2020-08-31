@@ -4253,100 +4253,101 @@ namespace System.Net.Sockets
                 return;
             }
 
-            // When we are running on the finalizer thread, we don't call CloseAsIs
-            // because it may lead to blocking the finalizer thread when trying
-            // to abort on-going operations. We directly dispose the SafeHandle.
             if (!disposing)
             {
+                // When we are running on the finalizer thread, we don't call CloseAsIs
+                // because it may lead to blocking the finalizer thread when trying
+                // to abort on-going operations. We directly dispose the SafeHandle.
                 _handle.Dispose();
-                return;
             }
-
-            // Close the handle in one of several ways depending on the timeout.
-            // Ignore ObjectDisposedException just in case the handle somehow gets disposed elsewhere.
-            try
+            else
             {
-                int timeout = _closeTimeout;
-                if (timeout == 0)
+                // Close the handle in one of several ways depending on the timeout.
+                // Ignore ObjectDisposedException just in case the handle somehow gets disposed elsewhere.
+                try
                 {
-                    // Abortive.
-                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Calling _handle.CloseAsIs()");
-                    _handle?.CloseAsIs(abortive: true);
-                }
-                else
-                {
-                    SocketError errorCode;
-
-                    // Go to blocking mode.
-                    if (!_willBlock || !_willBlockInternal)
+                    int timeout = _closeTimeout;
+                    if (timeout == 0)
                     {
-                        bool willBlock;
-                        errorCode = SocketPal.SetBlocking(_handle, false, out willBlock);
-                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"handle:{_handle} ioctlsocket(FIONBIO):{errorCode}");
-                    }
-
-                    if (timeout < 0)
-                    {
-                        // Close with existing user-specified linger option.
+                        // Abortive.
                         if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Calling _handle.CloseAsIs()");
-                        _handle.CloseAsIs(abortive: false);
+                        _handle?.CloseAsIs(abortive: true);
                     }
                     else
                     {
-                        // Since our timeout is in ms and linger is in seconds, implement our own sortof linger here.
-                        errorCode = SocketPal.Shutdown(_handle, _isConnected, _isDisconnected, SocketShutdown.Send);
-                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"handle:{_handle} shutdown():{errorCode}");
+                        SocketError errorCode;
 
-                        // This should give us a timeout in milliseconds.
-                        errorCode = SocketPal.SetSockOpt(
-                            _handle,
-                            SocketOptionLevel.Socket,
-                            SocketOptionName.ReceiveTimeout,
-                            timeout);
-                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"handle:{_handle} setsockopt():{errorCode}");
-
-                        if (errorCode != SocketError.Success)
+                        // Go to blocking mode.
+                        if (!_willBlock || !_willBlockInternal)
                         {
-                            _handle.CloseAsIs(abortive: true);
+                            bool willBlock;
+                            errorCode = SocketPal.SetBlocking(_handle, false, out willBlock);
+                            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"handle:{_handle} ioctlsocket(FIONBIO):{errorCode}");
+                        }
+
+                        if (timeout < 0)
+                        {
+                            // Close with existing user-specified linger option.
+                            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Calling _handle.CloseAsIs()");
+                            _handle.CloseAsIs(abortive: false);
                         }
                         else
                         {
-                            int unused;
-                            errorCode = SocketPal.Receive(_handle, Array.Empty<byte>(), 0, 0, SocketFlags.None, out unused);
-                            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"handle:{_handle} recv():{errorCode}");
+                            // Since our timeout is in ms and linger is in seconds, implement our own sortof linger here.
+                            errorCode = SocketPal.Shutdown(_handle, _isConnected, _isDisconnected, SocketShutdown.Send);
+                            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"handle:{_handle} shutdown():{errorCode}");
 
-                            if (errorCode != (SocketError)0)
+                            // This should give us a timeout in milliseconds.
+                            errorCode = SocketPal.SetSockOpt(
+                                _handle,
+                                SocketOptionLevel.Socket,
+                                SocketOptionName.ReceiveTimeout,
+                                timeout);
+                            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"handle:{_handle} setsockopt():{errorCode}");
+
+                            if (errorCode != SocketError.Success)
                             {
-                                // We got a timeout - abort.
                                 _handle.CloseAsIs(abortive: true);
                             }
                             else
                             {
-                                // We got a FIN or data.  Use ioctlsocket to find out which.
-                                int dataAvailable = 0;
-                                errorCode = SocketPal.GetAvailable(_handle, out dataAvailable);
-                                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"handle:{_handle} ioctlsocket(FIONREAD):{errorCode}");
+                                int unused;
+                                errorCode = SocketPal.Receive(_handle, Array.Empty<byte>(), 0, 0, SocketFlags.None, out unused);
+                                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"handle:{_handle} recv():{errorCode}");
 
-                                if (errorCode != SocketError.Success || dataAvailable != 0)
+                                if (errorCode != (SocketError)0)
                                 {
-                                    // If we have data or don't know, safest thing is to reset.
+                                    // We got a timeout - abort.
                                     _handle.CloseAsIs(abortive: true);
                                 }
                                 else
                                 {
-                                    // We got a FIN.  It'd be nice to block for the remainder of the timeout for the handshake to finish.
-                                    // Since there's no real way to do that, close the socket with the user's preferences.  This lets
-                                    // the user decide how best to handle this case via the linger options.
-                                    _handle.CloseAsIs(abortive: false);
+                                    // We got a FIN or data.  Use ioctlsocket to find out which.
+                                    int dataAvailable = 0;
+                                    errorCode = SocketPal.GetAvailable(_handle, out dataAvailable);
+                                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"handle:{_handle} ioctlsocket(FIONREAD):{errorCode}");
+
+                                    if (errorCode != SocketError.Success || dataAvailable != 0)
+                                    {
+                                        // If we have data or don't know, safest thing is to reset.
+                                        _handle.CloseAsIs(abortive: true);
+                                    }
+                                    else
+                                    {
+                                        // We got a FIN.  It'd be nice to block for the remainder of the timeout for the handshake to finish.
+                                        // Since there's no real way to do that, close the socket with the user's preferences.  This lets
+                                        // the user decide how best to handle this case via the linger options.
+                                        _handle.CloseAsIs(abortive: false);
+                                    }
                                 }
                             }
                         }
                     }
                 }
-            }
-            catch (ObjectDisposedException)
-            {
-                NetEventSource.Fail(this, $"handle:{_handle}, Closing the handle threw ObjectDisposedException.");
+                catch (ObjectDisposedException)
+                {
+                    NetEventSource.Fail(this, $"handle:{_handle}, Closing the handle threw ObjectDisposedException.");
+                }
             }
 
             // Clean up any cached data
