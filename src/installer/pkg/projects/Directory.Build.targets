@@ -146,6 +146,28 @@
   </Target>
 
   <!--
+    Overriding VerifyClosure target to enable closure validation without other validations.
+  -->
+  <Target Name="VerifyClosure"
+          DependsOnTargets="GetClosureFiles"
+          Condition="'$(SkipValidatePackage)' != 'true' or '$(ShouldVerifyClosure)' == 'true'"
+          Inputs="%(ClosureFile.FileSet)"
+          Outputs="batching-on-FileSet-metadata">
+    <ItemGroup>
+      <_closureFileNames Include="@(ClosureFile->'%(FileName)')" Original="%(Identity)" />
+
+      <_closureFileNamesFiltered Include="@(_closureFileNames)" Exclude="@(ExcludeFromClosure)"/>
+      <_closureFileFiltered Include="@(_closureFileNamesFiltered->'%(Original)')"/>
+    </ItemGroup>
+
+    <Message Importance="High" Text="Verifying closure of $(Id) %(ClosureFile.FileSet) assemblies" />
+    <VerifyClosure
+      Sources="@(_closureFileFiltered)"
+      IgnoredReferences="@(IgnoredReference)"
+      DependencyGraphFilePath="$(PackageReportDir)$(Id)$(NuspecSuffix)-%(ClosureFile.FileSet).dgml" />
+  </Target>
+
+  <!--
     Finds symbol files and injects them into the package build.
   -->
   <Target Name="GetSymbolPackageFiles"
