@@ -46,8 +46,17 @@ jobs:
 
   - bash: |
       cd '$(sslStressProject)'
+      export HTTPSTRESS_CLIENT_ARGS="-http 2.0"
+      export HTTPSTRESS_SERVER_ARGS="-http 2.0"
       docker-compose up --abort-on-container-exit --no-color
-    displayName: Run SslStress
+    displayName: Run SslStress - HTTP/2
+  
+  - bash: |
+      cd '$(sslStressProject)'
+      export HTTPSTRESS_CLIENT_ARGS="-http 1.1"
+      export HTTPSTRESS_SERVER_ARGS="-http 1.1"
+      docker-compose up --abort-on-container-exit --no-color
+    displayName: Run SslStress - HTTP 1.1
 
 - job: windows
   displayName: Docker NanoServer
@@ -72,5 +81,14 @@ jobs:
   
   - powershell: |
       cd '$(sslStressProject)'
+      $env:HTTPSTRESS_CLIENT_ARGS = "-http 2.0"
+      $env:HTTPSTRESS_SERVER_ARGS = "-http 2.0"
       docker-compose up --abort-on-container-exit --no-color
-    displayName: Run SslStress 
+    displayName: Run SslStress - HTTP/2
+
+  - powershell: |
+      cd '$(sslStressProject)'
+      $env:HTTPSTRESS_CLIENT_ARGS = "-http 1.1"
+      $env:HTTPSTRESS_SERVER_ARGS = "-http 1.1"
+      docker-compose up --abort-on-container-exit --no-color
+    displayName: Run SslStress - HTTP 1.1
