@@ -972,6 +972,7 @@
       <MonoCMakeArgs Include="-DENABLE_ICALL_EXPORT=1"/>
       <MonoCMakeArgs Include="-DENABLE_LAZY_GC_THREAD_CREATION=1"/>
       <MonoCMakeArgs Include="-DCMAKE_C_FLAGS=-I$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)/runtimes/browser-wasm/native/include"/>
+      <MonoCMakeArgs Include="-DCMAKE_BUILD_TYPE=$(Configuration)"/>
     </ItemGroup>
     <MakeDir Directories="$(MonoObjDir)" />
     <Message Text="Running cmake with arguments: @(MonoCMakeArgs, ' ') $(MonoProjectRoot)" Importance="High"/>

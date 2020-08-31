@@ -16,6 +16,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Internal;
 
 namespace System.Net.Http
 {
@@ -1308,16 +1309,24 @@ namespace System.Net.Http
             // in order to avoid consuming resources in potentially many requests waiting for access.
             try
             {
-                if (_pool.EnableMultipleHttp2Connections)
+                if (!_concurrentStreams.TryRequestCreditNoWait(1))
                 {
-                    if (!_concurrentStreams.TryRequestCreditNoWait(1))
+                    if (_pool.EnableMultipleHttp2Connections)
                     {
                         throw new HttpRequestException(null, null, RequestRetryType.RetryOnNextConnection);
                     }
-                }
-                else
-                {
-                    await _concurrentStreams.RequestCreditAsync(1, cancellationToken).ConfigureAwait(false);
+
+                    if (HttpTelemetry.Log.IsEnabled())
+                    {
+                        // Only log Http20RequestLeftQueue if we spent time waiting on the queue
+                        ValueStopwatch stopwatch = ValueStopwatch.StartNew();
+                        await _concurrentStreams.RequestCreditAsync(1, cancellationToken).ConfigureAwait(false);
+                        HttpTelemetry.Log.Http20RequestLeftQueue(stopwatch.GetElapsedTime().TotalMilliseconds);
+                    }
+                    else
+                    {
+                        await _concurrentStreams.RequestCreditAsync(1, cancellationToken).ConfigureAwait(false);
+                    }
                 }
             }
             catch (ObjectDisposedException)
