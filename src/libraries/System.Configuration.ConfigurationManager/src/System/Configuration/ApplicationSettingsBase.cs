@@ -725,6 +725,7 @@ namespace System.Configuration
                     }
                 }
 
+                object temp = base[propertyName];
                 SettingsProperty setting = Properties[propertyName];
                 SettingsProvider provider = setting != null ? setting.Provider : null;
 
