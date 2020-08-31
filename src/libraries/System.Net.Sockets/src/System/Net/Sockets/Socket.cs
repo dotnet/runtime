@@ -4258,6 +4258,7 @@ namespace System.Net.Sockets
                 // When we are running on the finalizer thread, we don't call CloseAsIs
                 // because it may lead to blocking the finalizer thread when trying
                 // to abort on-going operations. We directly dispose the SafeHandle.
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Calling _handle.Dispose()");
                 _handle.Dispose();
             }
             else
