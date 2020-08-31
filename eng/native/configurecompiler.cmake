@@ -501,7 +501,8 @@ if (MSVC)
   endif (CLR_CMAKE_HOST_ARCH_I386)
 
   add_compile_options($<$<OR:$<CONFIG:Release>,$<CONFIG:Relwithdebinfo>>:/GL>)
-  add_compile_options($<$<OR:$<OR:$<CONFIG:Release>,$<CONFIG:Relwithdebinfo>>,$<CONFIG:Checked>>:/O1>)
+  add_compile_options($<$<CONFIG:Checked>:/O1>)
+  add_compile_options($<$<OR:$<CONFIG:Release>,$<CONFIG:Relwithdebinfo>>:/Ob2iy->)
 
   if (CLR_CMAKE_HOST_ARCH_AMD64)
   # The generator expression in the following command means that the /homeparams option is added only for debug builds
