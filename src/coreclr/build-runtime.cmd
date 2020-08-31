@@ -86,7 +86,7 @@ set __RestoreOptData=1
 set __CrossArch=
 set __PgoOptDataPath=
 set __CMakeArgs=
-set __NMakeMakefiles=0
+set __Ninja=0
 
 @REM CMD has a nasty habit of eating "=" on the argument list, so passing:
 @REM    -priority=1
@@ -160,7 +160,7 @@ if /i "%1" == "-skipnative"          (set __BuildNative=0&set processedArgs=!pro
 if /i "%1" == "-skipcrossarchnative" (set __SkipCrossArchNative=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-skipgenerateversion" (set __SkipGenerateVersion=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-skiprestoreoptdata"  (set __RestoreOptData=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "-usenmakemakefiles"   (set __NMakeMakefiles=1&set __BuildNative=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "-ninja"               (set __Ninja=1&set __BuildNative=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-pgoinstrument"       (set __PgoInstrument=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-enforcepgo"          (set __EnforcePgo=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-nopgooptimize"       (set __PgoOptimize=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
@@ -173,7 +173,8 @@ if /i "%1" == "skipnative"          (set __BuildNative=0&set processedArgs=!proc
 if /i "%1" == "skipcrossarchnative" (set __SkipCrossArchNative=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "skipgenerateversion" (set __SkipGenerateVersion=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "skiprestoreoptdata"  (set __RestoreOptData=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "usenmakemakefiles"   (set __NMakeMakefiles=1&set __BuildNative=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+REM Keep around usenmakemakefiles for usage by the jit-format tool
+if /i "%1" == "usenmakemakefiles"   (set __Ninja=1&set __BuildNative=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "pgoinstrument"       (set __PgoInstrument=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "nopgooptimize"       (set __PgoOptimize=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "enforcepgo"          (set __EnforcePgo=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
@@ -266,7 +267,7 @@ set "__IntermediatesDir=%__RootBinDir%\obj\coreclr\%__TargetOS%.%__BuildArch%.%_
 set "__LogsDir=%__RootBinDir%\log\!__BuildType!"
 set "__MsbuildDebugLogsDir=%__LogsDir%\MsbuildDebugLogs"
 set "__ArtifactsIntermediatesDir=%__RepoRootDir%\artifacts\obj\coreclr\"
-if "%__NMakeMakefiles%"=="1" (set "__IntermediatesDir=%__RootBinDir%\nmakeobj\%__TargetOS%.%__BuildArch%.%__BuildType%")
+if "%__Ninja%"=="1" (set "__IntermediatesDir=%__RootBinDir%\nmakeobj\%__TargetOS%.%__BuildArch%.%__BuildType%")
 set "__PackagesBinDir=%__BinDir%\.nuget"
 set "__CrossComponentBinDir=%__BinDir%"
 set "__CrossCompIntermediatesDir=%__IntermediatesDir%\crossgen"
@@ -456,7 +457,7 @@ if %__BuildCrossArchNative% EQU 1 (
 
     set __CmakeBuildToolArgs=
 
-    if %__NMakeMakefiles% EQU 1 (
+    if %__Ninja% EQU 1 (
         set __CmakeBuildToolArgs=-j
     ) else (
         set __CmakeBuildToolArgs=/nologo /m !__Logging!
@@ -517,7 +518,7 @@ if %__BuildNative% EQU 1 (
 
     echo %__MsgPrefix%Regenerating the Visual Studio solution
 
-    if %__NMakeMakefiles% EQU 1 (
+    if %__Ninja% EQU 1 (
         set __ExtraCmakeArgs="-DCMAKE_BUILD_TYPE=!__BuildType!" 
     )
 
@@ -549,7 +550,7 @@ if %__BuildNative% EQU 1 (
     set "__MsbuildBinLog=/bl:!__BinLog!"
     set "__Logging=!__MsbuildLog! !__MsbuildWrn! !__MsbuildErr! !__MsbuildBinLog!"
 
-    if %__NMakeMakefiles% EQU 1 (
+    if %__Ninja% EQU 1 (
         set __CmakeBuildToolArgs=-j
     ) else (
         set __CmakeBuildToolArgs=/nologo /m !__Logging!
