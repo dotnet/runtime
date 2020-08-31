@@ -4258,12 +4258,11 @@ namespace System.Net.Sockets
             try
             {
                 int timeout = _closeTimeout;
-                bool finalizing = !disposing;
-                if (timeout == 0 || finalizing)
+                if (timeout == 0 || !disposing)
                 {
                     // Abortive.
                     if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Calling _handle.CloseAsIs()");
-                    _handle?.CloseAsIs(abortive: true, finalizing);
+                    _handle?.CloseAsIs(abortive: true);
                 }
                 else
                 {
@@ -4281,7 +4280,7 @@ namespace System.Net.Sockets
                     {
                         // Close with existing user-specified linger option.
                         if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Calling _handle.CloseAsIs()");
-                        _handle.CloseAsIs(abortive: false, finalizing);
+                        _handle.CloseAsIs(abortive: false);
                     }
                     else
                     {
@@ -4299,7 +4298,7 @@ namespace System.Net.Sockets
 
                         if (errorCode != SocketError.Success)
                         {
-                            _handle.CloseAsIs(abortive: true, finalizing);
+                            _handle.CloseAsIs(abortive: true);
                         }
                         else
                         {
@@ -4310,7 +4309,7 @@ namespace System.Net.Sockets
                             if (errorCode != (SocketError)0)
                             {
                                 // We got a timeout - abort.
-                                _handle.CloseAsIs(abortive: true, finalizing);
+                                _handle.CloseAsIs(abortive: true);
                             }
                             else
                             {
@@ -4322,14 +4321,14 @@ namespace System.Net.Sockets
                                 if (errorCode != SocketError.Success || dataAvailable != 0)
                                 {
                                     // If we have data or don't know, safest thing is to reset.
-                                    _handle.CloseAsIs(abortive: true, finalizing);
+                                    _handle.CloseAsIs(abortive: true);
                                 }
                                 else
                                 {
                                     // We got a FIN.  It'd be nice to block for the remainder of the timeout for the handshake to finish.
                                     // Since there's no real way to do that, close the socket with the user's preferences.  This lets
                                     // the user decide how best to handle this case via the linger options.
-                                    _handle.CloseAsIs(abortive: false, finalizing);
+                                    _handle.CloseAsIs(abortive: false);
                                 }
                             }
                         }
@@ -4354,7 +4353,11 @@ namespace System.Net.Sockets
 
         ~Socket()
         {
-            Dispose(false);
+            // We don't call Dispose because it may lead to blocking the finalizer thread
+            // when SocketSafeHandle.CloseAsIs tries to abort on-going operations.
+            // Because we are running on the finalizer thread, there are no ongoing operations to be aborted
+            // and we can directly dispose the SafeHandle.
+            _handle?.Dispose();
         }
 
         // This version does not throw.
