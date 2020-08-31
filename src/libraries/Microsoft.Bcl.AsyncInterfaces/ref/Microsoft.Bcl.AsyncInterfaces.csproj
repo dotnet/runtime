@@ -10,6 +10,6 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' != 'netstandard2.1'">
     <PackageReference Include="System.Threading.Tasks.Extensions" Version="$(SystemThreadingTasksExtensionsVersion)" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.CompilerServices.Unsafe\ref\System.CompilerServices.Unsafe.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.CompilerServices.Unsafe\ref\System.Runtime.CompilerServices.Unsafe.csproj" />
   </ItemGroup>
 </Project>
