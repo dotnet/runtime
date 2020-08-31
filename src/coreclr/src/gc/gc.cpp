@@ -8855,6 +8855,7 @@ void gc_heap::append_to_mark_list(uint8_t **start, uint8_t **end)
 //    printf("heap %d: appended %Id slots to mark_list\n", heap_number, slots_to_copy);
 }
 
+#ifdef _DEBUG
 static int cmp_mark_list_item(const void* vkey, const void* vdatum)
 {
     uint8_t** key = (uint8_t**)vkey;
@@ -8866,6 +8867,7 @@ static int cmp_mark_list_item(const void* vkey, const void* vdatum)
     else
         return 0;
 }
+#endif // _DEBUG
 
 void gc_heap::merge_mark_lists(size_t total_mark_list_size)
 {
@@ -8882,7 +8884,7 @@ void gc_heap::merge_mark_lists(size_t total_mark_list_size)
 
 #ifdef _DEBUG
     // if we had more than the average number of mark list items,
-    // make sure these got copied to other heap, i.e. didn't get lost
+    // make sure these got copied to another heap, i.e. didn't get lost
     size_t this_mark_list_size = target_mark_count_for_heap (total_mark_list_size, n_heaps, heap_number);
     uint8_t** found_slot = nullptr;
     for (uint8_t** p = mark_list + this_mark_list_size; p < mark_list_index; p++)
