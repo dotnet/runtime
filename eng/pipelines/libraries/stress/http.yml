@@ -48,7 +48,7 @@ jobs:
       export HTTPSTRESS_CLIENT_ARGS="$HTTPSTRESS_CLIENT_ARGS -http 2.0"
       export HTTPSTRESS_SERVER_ARGS="$HTTPSTRESS_SERVER_ARGS -http 2.0"
       docker-compose up --abort-on-container-exit --no-color
-    displayName: Run HttpStress - HTTP/2
+    displayName: Run HttpStress - HTTP 2.0
 
   - bash: |
       cd '$(httpStressProject)'
