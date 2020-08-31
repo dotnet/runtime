@@ -1609,7 +1609,7 @@ var MonoSupportLib = {
 		},
 
 		_mono_wasm_add_string_var: function(var_value) {
-			if (var_value == 0) {
+			if (var_value === 0) {
 				MONO.mono_wasm_add_null_var ("string");
 				return;
 			}
@@ -1692,7 +1692,7 @@ var MonoSupportLib = {
 				value: {
 					type            : "object",
 					className       : fixed_class_name,
-					description     : (toString == 0 ? fixed_class_name: Module.UTF8ToString (toString)),
+					description     : (toString === 0 ? fixed_class_name: Module.UTF8ToString (toString)),
 					expanded        : true,
 					isValueType     : true,
 					__extra_vt_props: { klass: args.klass, value64: base64String },
@@ -1734,7 +1734,7 @@ var MonoSupportLib = {
 				value: {
 					type: "object",
 					className: fixed_class_name,
-					description: (toString == 0 ? fixed_class_name : Module.UTF8ToString (toString)),
+					description: (toString === 0 ? fixed_class_name : Module.UTF8ToString (toString)),
 					isValueType: true
 				}
 			});
@@ -1745,6 +1745,8 @@ var MonoSupportLib = {
 			let type_str = type;
 			if (typeof type != 'string')
 				type_str = Module.UTF8ToString (type);
+
+			if (str_value !== 0)
 				str_value = Module.UTF8ToString (str_value);
 
 			switch (type_str) {
@@ -1962,7 +1964,7 @@ var MonoSupportLib = {
 			value: {
 				type: "object",
 				className: fixed_class_name,
-				description: (toString == 0 ? fixed_class_name : Module.UTF8ToString (toString)),
+				description: (toString === 0 ? fixed_class_name : Module.UTF8ToString (toString)),
 				objectId: "dotnet:object:"+ objectId,
 			}
 		});
