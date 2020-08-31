@@ -1143,7 +1143,7 @@ void InitThreadManager()
     }
 
 #if defined(HOST_OSX) && defined(HOST_ARM64)
-    bool jitWriteEnabled = PAL_JITWriteEnable(true);
+    auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
 #endif // defined(HOST_OSX) && defined(HOST_ARM64)
 
     memcpy(s_barrierCopy, (BYTE*)JIT_PatchedCodeStart, (BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart);
@@ -1158,10 +1158,6 @@ void InitThreadManager()
     // Store the JIT_WriteBarrier_Table copy location to a global variable so that it can be updated.
     JIT_WriteBarrier_Table_Loc = GetWriteBarrierCodeLocation((void*)&JIT_WriteBarrier_Table);
 #endif // TARGET_ARM64
-
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-    PAL_JITWriteEnable(jitWriteEnabled);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
 
 #else // FEATURE_WRITEBARRIER_COPY
 

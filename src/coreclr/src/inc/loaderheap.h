@@ -550,7 +550,7 @@ private:
         WRAPPER_NO_CONTRACT;
 
 #if defined(HOST_OSX) && defined(HOST_ARM64)
-        bool jitWriteEnabled = PAL_JITWriteEnable(true);
+        auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
 #endif // defined(HOST_OSX) && defined(HOST_ARM64)
 
         void *pResult;
@@ -571,10 +571,6 @@ private:
         tmap.m_szFile           = szFile;
         tmap.m_lineNum          = lineNum;
 #endif
-
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-        PAL_JITWriteEnable(jitWriteEnabled);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
 
         return tmap;
     }
@@ -634,7 +630,7 @@ public:
         WRAPPER_NO_CONTRACT;
 
 #if defined(HOST_OSX) && defined(HOST_ARM64)
-        bool jitWriteEnabled = PAL_JITWriteEnable(true);
+        auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
 #endif // defined(HOST_OSX) && defined(HOST_ARM64)
 
         CRITSEC_Holder csh(m_CriticalSection);
@@ -661,10 +657,6 @@ public:
         tmap.m_szFile           = szFile;
         tmap.m_lineNum          = lineNum;
 #endif
-
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-        PAL_JITWriteEnable(jitWriteEnabled);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
 
         return tmap;
     }

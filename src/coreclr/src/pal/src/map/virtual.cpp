@@ -1762,8 +1762,7 @@ ExitVirtualProtect:
 
 #if defined(TARGET_OSX) && defined(TARGET_ARM64)
 bool
-PALAPI
-PAL_JITWriteEnable(bool writeEnable)
+PAL_JITWriteEnableHolder::JITWriteEnable(bool writeEnable)
 {
     // Use a thread local to track per thread JIT Write enable state
     // Threads start with MAP_JIT pages readable and executable (R-X) by default.

@@ -268,7 +268,7 @@ public:
         CONTRACTL_END;
 
 #if defined(HOST_OSX) && defined(HOST_ARM64)
-        bool jitWriteEnabled = PAL_JITWriteEnable(true);
+        auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
 #endif // defined(HOST_OSX) && defined(HOST_ARM64)
 
         m_pManagedTarget = pManagedTarget;
@@ -282,9 +282,6 @@ public:
 #ifdef _DEBUG
         m_state = kLoadTimeInited;
 #endif
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-        PAL_JITWriteEnable(jitWriteEnabled);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
     }
 
     void Terminate();
@@ -306,14 +303,10 @@ public:
 
 #ifdef _DEBUG
 #if defined(HOST_OSX) && defined(HOST_ARM64)
-    bool jitWriteEnabled = PAL_JITWriteEnable(true);
+    auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
 #endif // defined(HOST_OSX) && defined(HOST_ARM64)
 
         m_state = kRunTimeInited;
-
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-    PAL_JITWriteEnable(jitWriteEnabled);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
 #endif // _DEBUG
     }
 

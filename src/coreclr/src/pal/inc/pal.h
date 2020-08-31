@@ -2715,10 +2715,30 @@ VirtualFree(
         IN DWORD dwFreeType);
 
 #if defined(HOST_OSX) && defined(HOST_ARM64)
-PALIMPORT
-bool
-PALAPI
-PAL_JITWriteEnable(IN bool enable);
+#ifdef __cplusplus
+extern "C++" {
+struct PAL_JITWriteEnableHolder
+{
+public:
+  PAL_JITWriteEnableHolder(bool jitWriteEnable)
+  {
+      m_jitWriteEnableRestore = JITWriteEnable(jitWriteEnable);
+  };
+  ~PAL_JITWriteEnableHolder()
+  {
+      JITWriteEnable(m_jitWriteEnableRestore);
+  }
+
+private:
+  bool JITWriteEnable(bool enable);
+  bool m_jitWriteEnableRestore;
+};
+
+inline
+PAL_JITWriteEnableHolder
+PAL_JITWriteEnable(IN bool enable) { return PAL_JITWriteEnableHolder(enable); }
+}
+#endif // __cplusplus
 #endif // defined(HOST_OSX) && defined(HOST_ARM64)
 
 PALIMPORT

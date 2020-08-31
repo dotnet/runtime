@@ -1830,7 +1830,7 @@ TaggedMemAllocPtr CodeFragmentHeap::RealAllocAlignedMem(size_t  dwRequestedSize
     CrstHolder ch(&m_CritSec);
 
 #if defined(HOST_OSX) && defined(HOST_ARM64)
-    bool jitWriteEnabled = PAL_JITWriteEnable(true);
+    auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
 #endif // defined(HOST_OSX) && defined(HOST_ARM64)
 
     dwRequestedSize = ALIGN_UP(dwRequestedSize, sizeof(TADDR));
@@ -1897,9 +1897,6 @@ TaggedMemAllocPtr CodeFragmentHeap::RealAllocAlignedMem(size_t  dwRequestedSize
     tmap.m_szFile           = szFile;
     tmap.m_lineNum          = lineNum;
 #endif
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-    PAL_JITWriteEnable(jitWriteEnabled);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
     return tmap;
 }
 
@@ -1918,7 +1915,7 @@ void CodeFragmentHeap::RealBackoutMem(void *pMem
     _ASSERTE(dwSize >= sizeof(FreeBlock));
 
 #if defined(HOST_OSX) && defined(HOST_ARM64)
-    bool jitWriteEnabled = PAL_JITWriteEnable(true);
+    auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
 #endif // defined(HOST_OSX) && defined(HOST_ARM64)
 
     ZeroMemory((BYTE *)pMem, dwSize);
@@ -1951,10 +1948,6 @@ void CodeFragmentHeap::RealBackoutMem(void *pMem
     }
 
     AddBlock(pMem, dwSize);
-
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-    PAL_JITWriteEnable(jitWriteEnabled);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
 }
 #endif // !CROSSGEN_COMPILE
 
@@ -4840,7 +4833,7 @@ void ExecutionManager::Unload(LoaderAllocator *pLoaderAllocator)
     } CONTRACTL_END;
 
 #if defined(HOST_OSX) && defined(HOST_ARM64)
-    bool jitWriteEnabled = PAL_JITWriteEnable(true);
+    auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
 #endif // defined(HOST_OSX) && defined(HOST_ARM64)
 
     // a size of 0 is a signal to Nirvana to flush the entire cache
@@ -4862,10 +4855,6 @@ void ExecutionManager::Unload(LoaderAllocator *pLoaderAllocator)
     }
 
     GetEEJitManager()->Unload(pLoaderAllocator);
-
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-    PAL_JITWriteEnable(jitWriteEnabled);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
 }
 
 // This method is used by the JIT and the runtime for PreStubs. It will return
