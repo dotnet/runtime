@@ -1354,6 +1354,8 @@ namespace System.Net.Http
             ArrayBuffer headerBuffer = default;
             try
             {
+                if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestHeadersStart();
+
                 // Serialize headers to a temporary buffer, and do as much work to prepare to send the headers as we can
                 // before taking the write lock.
                 headerBuffer = new ArrayBuffer(InitialConnectionBufferSize, usePool: true);
@@ -1434,6 +1436,9 @@ namespace System.Net.Http
 
                     return s.mustFlush || s.endStream;
                 }, cancellationToken).ConfigureAwait(false);
+
+                if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestHeadersStop();
+
                 return http2Stream;
             }
             catch
