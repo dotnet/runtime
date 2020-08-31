@@ -19,13 +19,13 @@ namespace System.Xml
     [Obsolete("XmlDataDocument class will be removed in a future release.")]
     public class XmlDataDocument : XmlDocument
     {
-        private DataSet _dataSet = null!;
+        private DataSet _dataSet;
 
-        private DataSetMapper _mapper = null!;
-        internal Hashtable _pointers = null!; // Hastable w/ all pointer objects used by this XmlDataDocument. Hashtable are guaranteed to work OK w/ one writer and mutiple readers, so as long as we guarantee
+        private DataSetMapper _mapper;
+        internal Hashtable _pointers;         // Hastable w/ all pointer objects used by this XmlDataDocument. Hashtable are guaranteed to work OK w/ one writer and mutiple readers, so as long as we guarantee
                                               // that there is at most one thread in AddPointer we are OK.
-        private int _countAddPointer;         // Approximate count of how many times AddPointer was called since the last time we removed the unused pointer objects from pointers hashtable.
-        private ArrayList _columnChangeList = null!;
+        private int _countAddPointer;    // Approximate count of how many times AddPointer was called since the last time we removed the unused pointer objects from pointers hashtable.
+        private ArrayList _columnChangeList;
         private DataRowState _rollbackState;
 
         private bool _fBoundToDataSet;       // true if our permanent event listeners are registered to receive DataSet events
@@ -41,11 +41,11 @@ namespace System.Xml
         private bool _fAssociateDataRow;     // if true, CreateElement will create and associate data rows w/ the newly created XmlBoundElement.
                                              // If false, then CreateElement will just create the XmlBoundElement nodes. This is usefull for Loading case,
                                              // when CreateElement is called by DOM.
-        private object _foliationLock = null!;
+        private object _foliationLock;
         internal const string XSI_NIL = "xsi:nil";
         internal const string XSI = "xsi";
         private bool _bForceExpandEntity;
-        internal XmlAttribute _attrXml = null!;
+        internal XmlAttribute _attrXml;
         internal bool _bLoadFromDataSet;
         internal bool _bHasXSINIL;
 
@@ -2537,7 +2537,7 @@ namespace System.Xml
         {
             Init();
             AttachDataSet(new DataSet());
-            _dataSet!.EnforceConstraints = false;
+            _dataSet.EnforceConstraints = false;
         }
 
         /// <summary>

@@ -64,7 +64,7 @@ namespace System.Xml
             //the function can only be called on text like nodes.
             Debug.Assert(XmlDataDocument.IsTextNode(node.NodeType));
             XPathNodeType xnt = XPathNodeType.Whitespace;
-            XmlNode? n = null;
+            XmlNode? n = node;
             while (n != null)
             {
                 switch (n.NodeType)
