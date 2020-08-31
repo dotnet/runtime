@@ -338,7 +338,7 @@ namespace System.Net.Sockets
             saea.SocketFlags = socketFlags;
             saea.RemoteEndPoint = remoteEP;
             saea.WrapExceptionsInNetworkExceptions = false;
-            return saea.SendToAsync(this);
+            return saea.SendToAsync(this, cancellationToken);
         }
 
         /// <summary>Validates the supplied array segment, throwing if its array or indices are null or out-of-bounds, respectively.</summary>
@@ -742,12 +742,13 @@ namespace System.Net.Sockets
                     ValueTask.FromException(CreateException(error));
             }
 
-            public ValueTask<int> SendToAsync(Socket socket)
+            public ValueTask<int> SendToAsync(Socket socket, CancellationToken cancellationToken)
             {
                 Debug.Assert(Volatile.Read(ref _continuation) == null, $"Expected null continuation to indicate reserved for use");
 
-                if (socket.SendToAsync(this))
+                if (socket.SendToAsync(this, cancellationToken))
                 {
+                    _cancellationToken = cancellationToken;
                     return new ValueTask<int>(this, _token);
                 }
 
