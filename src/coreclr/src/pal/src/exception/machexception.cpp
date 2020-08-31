@@ -1518,7 +1518,7 @@ InjectActivationInternal(CPalThread* pThread)
                 size_t* sp = (size_t*)arm_thread_state64_get_sp(ThreadState);
                 *(--sp) = (size_t)arm_thread_state64_get_pc_fptr(ThreadState);
                 *(--sp) = arm_thread_state64_get_fp(ThreadState);
-                size_t rfpAddress = (size_t)sp;
+                size_t fpAddress = (size_t)sp;
 #else
 #error Unexpected architecture
 #endif
@@ -1556,7 +1556,7 @@ InjectActivationInternal(CPalThread* pThread)
                 arm_thread_state64_set_lr_fptr(ThreadState, ActivationHandlerReturnOffset + (size_t)ActivationHandlerWrapper);
                 arm_thread_state64_set_pc_fptr(ThreadState, ActivationHandler);
                 arm_thread_state64_set_sp(ThreadState, contextAddress);
-                arm_thread_state64_set_fp(ThreadState, rfpAddress);
+                arm_thread_state64_set_fp(ThreadState, fpAddress);
                 ThreadState.__x[0] = contextAddress;
 #else
 #error Unexpected architecture
