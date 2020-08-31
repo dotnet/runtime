@@ -3570,8 +3570,8 @@ void Compiler::fgInitBlockVarSets()
 //   block         - the block to check
 //
 // Notes:
-//    The GC poll may not be required because optimizations applied earlier
-//    or because GC poll done implicitly by regular unmanaged calls.
+//    The GC poll may not be required because of optimizations applied earlier
+//    or because of GC poll done implicitly by regular unmanaged calls.
 //
 // Returns:
 //    Whether the GC poll needs to be inserted after the block
@@ -3615,6 +3615,9 @@ static bool blockNeedsGCPoll(BasicBlock* block)
 //    find the basic blocks that require GC polls; when optimizing the tree nodes
 //    are scanned to find calls to methods with SuppressGCTransitionAttribute.
 //
+//    This must be done after any transformations that would add control flow between
+//    calls.
+//
 // Returns:
 //    PhaseStatus indicating what, if anything, was changed.
 //
@@ -3641,7 +3644,7 @@ PhaseStatus Compiler::fgInsertGCPolls()
 
     BasicBlock* block;
 
-    // Walk through the blocks and hunt for a block that has needs a GC Poll
+    // Walk through the blocks and hunt for a block that needs a GC Poll
     for (block = fgFirstBB; block; block = block->bbNext)
     {
         // When optimizations are enabled, we can't rely on BBF_HAS_SUPPRESSGC_CALL flag:
