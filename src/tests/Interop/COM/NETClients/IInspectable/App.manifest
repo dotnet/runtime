@@ -2,7 +2,7 @@
 <assembly manifestVersion="1.0" xmlns="urn:schemas-microsoft-com:asm.v1">
   <assemblyIdentity
     type="win32" 
-    name="NetPrimitivesIDispatch"
+    name="NetPrimitivesIInspectable"
     version="1.0.0.0" />
 
   <dependency>
