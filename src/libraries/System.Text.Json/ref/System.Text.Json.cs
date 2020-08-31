@@ -217,6 +217,8 @@ namespace System.Text.Json
         public System.Text.Json.Serialization.JsonIgnoreCondition DefaultIgnoreCondition { get { throw null; } set { } }
         public System.Text.Json.JsonNamingPolicy? DictionaryKeyPolicy { get { throw null; } set { } }
         public System.Text.Encodings.Web.JavaScriptEncoder? Encoder { get { throw null; } set { } }
+        [System.ObsoleteAttribute("To ignore null values when serializing, set DefaultIgnoreCondition to JsonIgnoreCondition.WhenWritingNull.", false)]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public bool IgnoreNullValues { get { throw null; } set { } }
         public bool IgnoreReadOnlyFields { get { throw null; } set { } }
         public bool IgnoreReadOnlyProperties { get { throw null; } set { } }
