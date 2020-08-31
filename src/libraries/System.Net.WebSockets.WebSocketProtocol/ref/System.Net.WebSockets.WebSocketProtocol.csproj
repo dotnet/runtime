@@ -8,5 +8,6 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.CompilerServices.Unsafe\ref\System.CompilerServices.Unsafe.csproj" />
   </ItemGroup>
 </Project>

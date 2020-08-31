@@ -18,5 +18,6 @@
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' or
                          $(TargetFramework.StartsWith('net4'))">
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.CompilerServices.Unsafe\ref\System.CompilerServices.Unsafe.csproj" />
   </ItemGroup>
 </Project>

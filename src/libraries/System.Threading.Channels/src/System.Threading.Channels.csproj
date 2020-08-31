@@ -46,5 +46,6 @@
   <ItemGroup Condition="$(TargetFramework.StartsWith('netstandard')) or
                         $(TargetFramework.StartsWith('net4'))">
     <PackageReference Include="System.Threading.Tasks.Extensions" Version="$(SystemThreadingTasksExtensionsVersion)" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.CompilerServices.Unsafe\src\System.CompilerServices.Unsafe.ilproj" />
   </ItemGroup>
 </Project>

@@ -197,6 +197,7 @@
   <ItemGroup>
     <PackageReference Include="System.Buffers" Version="$(SystemBuffersVersion)" />
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.CompilerServices.Unsafe\src\System.CompilerServices.Unsafe.ilproj" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Microsoft\IO\Enumeration\" />

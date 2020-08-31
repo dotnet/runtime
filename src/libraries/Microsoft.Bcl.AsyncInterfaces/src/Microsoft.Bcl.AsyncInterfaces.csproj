@@ -35,5 +35,6 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' != 'netstandard2.1'">
     <PackageReference Include="System.Threading.Tasks.Extensions" Version="$(SystemThreadingTasksExtensionsVersion)" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.CompilerServices.Unsafe\src\System.CompilerServices.Unsafe.ilproj" />
   </ItemGroup>
 </Project>
