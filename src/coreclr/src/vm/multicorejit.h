@@ -114,7 +114,7 @@ public:
     PCODE GetEntryPoint() const
     {
         WRAPPER_NO_CONTRACT;
-        return PINSTRToPCODE(m_entryPointAndTierInfo & ~(TADDR)TierInfo::Mask);
+        return IsNull() ? NULL : PINSTRToPCODE(m_entryPointAndTierInfo & ~(TADDR)TierInfo::Mask);
     }
 
     bool WasTier0Jit() const
