@@ -18,11 +18,7 @@ namespace System.Runtime.Serialization
     using System.Diagnostics.CodeAnalysis;
     using System.Diagnostics;
 
-#if USE_REFEMIT
-    public abstract class DataContract
-#else
     internal abstract class DataContract
-#endif
     {
         private XmlDictionaryString _name;
 
@@ -159,11 +155,7 @@ namespace System.Runtime.Serialization
             DataContractCriticalHelper.ThrowInvalidDataContractException(message, type);
         }
 
-#if USE_REFEMIT
-        internal DataContractCriticalHelper Helper
-#else
         protected DataContractCriticalHelper Helper
-#endif
         {
             get
             { return _helper; }
