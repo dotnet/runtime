@@ -240,12 +240,6 @@
 #define _RETURN_TRUNCATE \
     return STRUNCATE
 
-#define _SET_MBCS_ERROR \
-    (errno = EILSEQ)
-
-#define _RETURN_MBCS_ERROR \
-    return _SET_MBCS_ERROR
-
 /* locale dependent */
 #define _LOCALE_ARG \
     _LocInfo

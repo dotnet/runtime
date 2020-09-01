@@ -362,7 +362,7 @@ void __cdecl _invalid_parameter(const WCHAR *_Message, const WCHAR *_FunctionNam
 #if _SAFECRT_DEFINE_TCS_MACROS
 
 /* _tcs macros */
-#if !defined(_UNICODE) && !defined(UNICODE) && !defined(_MBCS)
+#if !defined(_UNICODE) && !defined(UNICODE)
 
 #define _tcscpy_s       strcpy_s
 #define _tcsncpy_s      strncpy_s
