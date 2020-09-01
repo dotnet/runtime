@@ -330,7 +330,6 @@ namespace Server.Contract
     [Guid("3021236a-2a9e-4a29-bf14-533842c55262")]
     internal interface IInspectableTesting
     {
-        int Add(int i, int j);
     }
 
     [ComImport]
