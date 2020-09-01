@@ -23,9 +23,8 @@ namespace System.Net.Security.Tests
 
         static SslStreamNetworkStreamTest()
         {
-            string name = System.Reflection.MethodBase.GetCurrentMethod().DeclaringType.Name.ToString();
-            TestHelper.CleanupCertificates(name);
-            (_serverCert, _serverChain) = TestHelper.GenerateCertificates("localhost", name);
+            TestHelper.CleanupCertificates(nameof(SslStreamNetworkStreamTest));
+            (_serverCert, _serverChain) = TestHelper.GenerateCertificates("localhost", nameof(SslStreamNetworkStreamTest));
         }
 
         [Fact]
