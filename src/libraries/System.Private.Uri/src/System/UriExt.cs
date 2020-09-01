@@ -548,6 +548,7 @@ namespace System
 
         // Where stringToEscape is intended to be a completely unescaped URI string.
         // This method will escape any character that is not a reserved or unreserved character, including percent signs.
+        [Obsolete(Obsoletions.EscapeUriStringMessage, DiagnosticId = Obsoletions.EscapeUriStringDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static string EscapeUriString(string stringToEscape) =>
             UriHelper.EscapeString(stringToEscape, checkExistingEscaped: false, UriHelper.UnreservedReservedTable);
 
