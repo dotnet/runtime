@@ -10106,7 +10106,7 @@ var_types Compiler::GetHfaType(GenTree* tree)
 
 unsigned Compiler::GetHfaCount(GenTree* tree)
 {
-    return GetHfaCount(gtGetStructHandleIfPresent(tree));
+    return GetHfaCount(gtGetStructHandle(tree));
 }
 
 var_types Compiler::GetHfaType(CORINFO_CLASS_HANDLE hClass)
