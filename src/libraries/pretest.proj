@@ -8,11 +8,11 @@
   </PropertyGroup>
 
   <!--
-    Explicitly build the externals.csproj project first to create the PlatformManifest for
+    Explicitly build the Externals.csproj project first to create the PlatformManifest for
     the targeting and runtimepack before the test runners which consume that asset are built.
   -->
   <ItemGroup>
-    <ExternalsProject Include="externals.csproj" />
+    <ExternalsProject Include="Externals.csproj" />
     <ProjectReference Include="@(ExternalsProject)" Condition="'$(MSBuildRestoreSessionId)' != ''" />
 
     <ProjectReference Include="$(CommonTestPath)AppleTestRunner\AppleTestRunner.csproj" Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'"/>
