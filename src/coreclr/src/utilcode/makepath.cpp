@@ -101,7 +101,7 @@ void MakePath (
                 }
 
 #ifdef _MBCS
-                if (*(p=_mbsdec(dir,p)) != _T('/') && *p != _T('\\')) {
+                if (p > dir && *(--p) != _T('/') && *p != _T('\\')) {
 #else  /* _MBCS */
                 // suppress warning for the following line; this is safe but would require significant code
                 // delta for prefast to understand.

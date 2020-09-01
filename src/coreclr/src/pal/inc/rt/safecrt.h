@@ -338,11 +338,6 @@ typedef int errno_t; /* standard */
     _ismbblead(_Character)
 #endif
 
-#if !defined(_SAFECRT__MBSDEC)
-#define _SAFECRT__MBSDEC(_String, _Current) \
-    _mbsdec(_String, _Current)
-#endif
-
 _SAFECRT__EXTERN_C
 void __cdecl _invalid_parameter(const WCHAR *_Message, const WCHAR *_FunctionName, const WCHAR *_FileName, unsigned int _LineNumber, uintptr_t _Reserved);
 
@@ -2506,7 +2501,7 @@ errno_t __cdecl _makepath_s(char *_Dst, size_t _SizeInBytes, const char *_Drive,
             *d++ = *p++;
         } while (*p != 0);
 
-        p = (const char *)_SAFECRT__MBSDEC((const unsigned char *)_Dir, (const unsigned char *)p);
+        p--;
         if (*p != '/' && *p != '\\')
         {
             if(++written >= _SizeInBytes)

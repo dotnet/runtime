@@ -123,7 +123,6 @@ set(SOURCES
   cruntime/filecrt.cpp
   cruntime/malloc.cpp
   cruntime/math.cpp
-  cruntime/mbstring.cpp
   cruntime/misc.cpp
   cruntime/path.cpp
   cruntime/printf.cpp

@@ -259,9 +259,6 @@
 #define _ISMBBLEAD(_Character) \
     _ismbblead_l((_Character), _LocUpdate.GetLocaleT())
 
-#define _MBSDEC(_String, _Current) \
-    _mbsdec((_String), (_Current))
-
 #define _ISMBBLEADPREFIX(_Result, _StringStart, _BytePtr)               \
     {                                                                   \
         unsigned char *_Tmp_VAR, *_StringStart_VAR, *_BytePtr_VAR;      \
