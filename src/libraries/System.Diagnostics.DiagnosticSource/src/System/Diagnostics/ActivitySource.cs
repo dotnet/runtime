@@ -44,6 +44,8 @@ namespace System.Diagnostics
                     }
                 }, this);
             }
+
+            GC.KeepAlive(DiagnosticSourceEventSource.Logger);
         }
 
         /// <summary>
