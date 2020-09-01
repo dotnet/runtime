@@ -3949,7 +3949,9 @@ namespace System.Net.Sockets
             return pending;
         }
 
-        public bool ReceiveMessageFromAsync(SocketAsyncEventArgs e)
+        public bool ReceiveMessageFromAsync(SocketAsyncEventArgs e) => ReceiveMessageFromAsync(e, default);
+
+        private bool ReceiveMessageFromAsync(SocketAsyncEventArgs e, CancellationToken cancellationToken)
         {
             ThrowIfDisposed();
 
@@ -3979,6 +3981,8 @@ namespace System.Net.Sockets
             e.RemoteEndPoint = endPointSnapshot;
 
             SetReceivingPacketInformation();
+
+            // TODO: Handle cancellation
 
             // Prepare for and make the native call.
             e.StartOperationCommon(this, SocketAsyncOperation.ReceiveMessageFrom);
