@@ -245,12 +245,12 @@ if(CLR_CMAKE_TARGET_OSX)
     ${LIBUNWIND_DAC_OBJECTS}
   )
 
-  target_compile_definitions(coreclrpal_dac PUBLIC 
+  target_compile_definitions(coreclrpal_dac PUBLIC
     "-D_XOPEN_SOURCE"
     "-DUNW_REMOTE_ONLY"
   )
 
-  target_include_directories(coreclrpal_dac PUBLIC 
+  target_include_directories(coreclrpal_dac PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/libunwind/include
     ${CMAKE_CURRENT_SOURCE_DIR}/libunwind/include/tdep
     ${CMAKE_CURRENT_BINARY_DIR}
