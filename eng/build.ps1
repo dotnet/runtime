@@ -114,9 +114,28 @@ if ($subset -eq 'help') {
 }
 
 if ($vs) {
-  . $PSScriptRoot\common\tools.ps1
-
-  if (-Not (Test-Path $vs)) {
+  if ($vs -ieq "coreclr.sln") {
+    # If someone passes in coreclr.sln (case-insensitive),
+    # launch the generated CMake solution.
+    $archToOpen = $arch[0]
+    $configToOpen = $configuration[0]
+    if ($runtimeConfiguration) {
+      $configToOpen = $runtimeConfiguration
+    }
+    $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "artifacts\obj\coreclr" | Join-Path -ChildPath "Windows_NT.$archToOpen.$((Get-Culture).TextInfo.ToTitleCase($configToOpen))" | Join-Path -ChildPath "CoreCLR.sln"
+    if (-Not (Test-Path $vs)) {
+      $repoRoot = Split-Path $PSScriptRoot -Parent
+      Invoke-Expression "& `"$repoRoot/src/coreclr/build-runtime.cmd`" -configureonly -$archToOpen -$configToOpen"
+      if ($lastExitCode -ne 0) {
+        Write-Error "Failed to generate the CoreCLR solution file."
+        exit 1
+      }
+      if (-Not (Test-Path $vs)) {
+        Write-Error "Unable to find the CoreCLR solution file at $vs."
+      }
+    }
+  }
+  elseif (-Not (Test-Path $vs)) {
     $solution = $vs
     # Search for the solution in libraries
     $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "src\libraries" | Join-Path -ChildPath $vs | Join-Path -ChildPath "$vs.sln"
@@ -133,6 +152,8 @@ if ($vs) {
       }
     }
   }
+  
+  . $PSScriptRoot\common\tools.ps1
 
   # This tells .NET Core to use the bootstrapped runtime
   $env:DOTNET_ROOT=InitializeDotNetCli -install:$true -createSdkLocationFile:$true
