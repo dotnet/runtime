@@ -37862,7 +37862,7 @@ size_t GCHeap::ApproxTotalBytesInUse(BOOL small_heap_only)
         // Get small block heap size info
         totsize = (pGenGCHeap->alloc_allocated - heap_segment_mem (eph_seg));
         heap_segment* seg1 = generation_start_segment (pGenGCHeap->generation_of (max_generation));
-        while (seg1 != eph_seg && seg1 != nullptr && seg1 != pGenGCHeap->freeable_soh_segment)
+        while ((seg1 != eph_seg) && (seg1 != nullptr) && (seg1 != pGenGCHeap->freeable_soh_segment))
         {
             if (!heap_segment_decommitted_p (seg1))
             {
