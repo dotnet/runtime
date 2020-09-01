@@ -584,6 +584,8 @@ namespace System
         public static byte[] GetBytes(uint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static byte[] GetBytes(ulong value) { throw null; }
+        public static short HalfToInt16Bits(System.Half value) { throw null; }
+        public static System.Half Int16BitsToHalf(short value) { throw null; }
         public static float Int32BitsToSingle(int value) { throw null; }
         public static double Int64BitsToDouble(long value) { throw null; }
         public static int SingleToInt32Bits(float value) { throw null; }
@@ -6841,6 +6843,7 @@ namespace System.IO
         public virtual char[] ReadChars(int count) { throw null; }
         public virtual decimal ReadDecimal() { throw null; }
         public virtual double ReadDouble() { throw null; }
+        public virtual System.Half ReadHalf() { throw null; }
         public virtual short ReadInt16() { throw null; }
         public virtual int ReadInt32() { throw null; }
         public virtual long ReadInt64() { throw null; }
@@ -6879,6 +6882,7 @@ namespace System.IO
         public virtual void Write(char[] chars, int index, int count) { }
         public virtual void Write(decimal value) { }
         public virtual void Write(double value) { }
+        public virtual void Write(System.Half value) { }
         public virtual void Write(short value) { }
         public virtual void Write(int value) { }
         public virtual void Write(long value) { }
