@@ -6,6 +6,7 @@
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
 
     <!-- TODO: (Consolidation) Skip signing steps by default for non-official builds. https://github.com/dotnet/runtime/issues/1026 -->
+    <SkipSigning>$(PostBuildSign)</SkipSigning>
     <SkipSigning Condition="'$(DotNetSignType)' == ''">true</SkipSigning>
   </PropertyGroup>
 </Project>
