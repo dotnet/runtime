@@ -57,7 +57,7 @@ namespace System.Diagnostics
     ///     Or it can be "[AS] ACTIVITY_SOURCE_NAME + ACTIVITY_NAME / ACTIVITY_EVENT_NAME - SAMPLING_RESULT"
     ///       * All parts are optional and can be empty string.
     ///       * ACTIVITY_SOURCE_NAME can be "*" to listen to all ActivitySources
-    ///       * ACTIVITY_SOURCE_NAME can b empty string which will listen to ActivitySource that create Activities using "new Activity(...)"
+    ///       * ACTIVITY_SOURCE_NAME can be empty string which will listen to ActivitySource that create Activities using "new Activity(...)"
     ///       * ACTIVITY_NAME is the activity operation name to filter with.
     ///       * ACTIVITY_EVENT_NAME either "Start" to listen to Activity Start event, or "Stop" to listen to Activity Stop event, or empty string to listen to both Start and Stop Activity events.
     ///       * SAMPLING_RESULT either "Propagate" to create the Activity with PropagationData, or "Record" to create the Activity with AllData, or empty string to create the Activity with AllDataAndRecorded
@@ -311,7 +311,11 @@ namespace System.Diagnostics
         /// <param name="SourceName">The ActivitySource name</param>
         /// <param name="ActivityName">The Activity name</param>
         /// <param name="Arguments">Name and value pairs of the Activity properties</param>
+#if NO_EVENTSOURCE_COMPLEX_TYPE_SUPPORT
         [Event(11, Keywords = Keywords.Events)]
+#else
+        [Event(11, Keywords = Keywords.Events, ActivityOptions = EventActivityOptions.Recursive)]
+#endif
         private void ActivityStart(string SourceName, string ActivityName, IEnumerable<KeyValuePair<string, string?>> Arguments) =>
             WriteEvent(11, SourceName, ActivityName, Arguments);
 
@@ -321,7 +325,11 @@ namespace System.Diagnostics
         /// <param name="SourceName">The ActivitySource name</param>
         /// <param name="ActivityName">The Activity name</param>
         /// <param name="Arguments">Name and value pairs of the Activity properties</param>
+#if NO_EVENTSOURCE_COMPLEX_TYPE_SUPPORT
         [Event(12, Keywords = Keywords.Events)]
+#else
+        [Event(12, Keywords = Keywords.Events, ActivityOptions = EventActivityOptions.Recursive)]
+#endif
         private void ActivityStop(string SourceName, string ActivityName, IEnumerable<KeyValuePair<string, string?>> Arguments) =>
             WriteEvent(12, SourceName, ActivityName, Arguments);
 
@@ -550,41 +558,6 @@ namespace System.Diagnostics
                 }
             }
 
-            private void ParseTransformSpecs(string filterAndPayloadSpec, int startTransformIdx, int endIdx)
-            {
-                // If the transform spec begins with a - it means you don't want implicit transforms.
-                if (startTransformIdx < endIdx && filterAndPayloadSpec[startTransformIdx] == '-')
-                {
-                    _eventSource.Message("DiagnosticSource: suppressing implicit transforms.");
-                    _noImplicitTransforms = true;
-                    startTransformIdx++;
-                }
-
-                // Parse all the explicit transforms, if present
-                if (startTransformIdx < endIdx)
-                {
-                    while (true)
-                    {
-                        int specStartIdx = startTransformIdx;
-                        int semiColonIdx = filterAndPayloadSpec.LastIndexOf(';', endIdx - 1, endIdx - startTransformIdx);
-                        if (0 <= semiColonIdx)
-                            specStartIdx = semiColonIdx + 1;
-
-                        // Ignore empty specifications.
-                        if (specStartIdx < endIdx)
-                        {
-                            if (_eventSource.IsEnabled(EventLevel.Informational, Keywords.Messages))
-                                _eventSource.Message("DiagnosticSource: Parsing Explicit Transform '" + filterAndPayloadSpec.Substring(specStartIdx, endIdx - specStartIdx) + "'");
-
-                            _explicitTransforms = new TransformSpec(filterAndPayloadSpec, specStartIdx, endIdx, _explicitTransforms);
-                        }
-                        if (startTransformIdx == specStartIdx)
-                            break;
-                        endIdx = semiColonIdx;
-                    }
-                }
-            }
-
             /// <summary>
             /// Creates one FilterAndTransform specification from filterAndPayloadSpec starting at 'startIdx' and ending just before 'endIdx'.
             /// This FilterAndTransform will subscribe to DiagnosticSources specified by the specification and forward them to 'eventSource.
@@ -633,7 +606,36 @@ namespace System.Diagnostics
 
                 _eventSource.Message("DiagnosticSource: Enabling '" + (listenerNameFilter ?? "*") + "/" + (eventNameFilter ?? "*") + "'");
 
-                ParseTransformSpecs(filterAndPayloadSpec, startTransformIdx, endIdx);
+                if (startTransformIdx < endIdx && filterAndPayloadSpec[startTransformIdx] == '-')
+                {
+                    _eventSource.Message("DiagnosticSource: suppressing implicit transforms.");
+                    _noImplicitTransforms = true;
+                    startTransformIdx++;
+                }
+
+                // Parse all the explicit transforms, if present
+                if (startTransformIdx < endIdx)
+                {
+                    while (true)
+                    {
+                        int specStartIdx = startTransformIdx;
+                        int semiColonIdx = filterAndPayloadSpec.LastIndexOf(';', endIdx - 1, endIdx - startTransformIdx);
+                        if (0 <= semiColonIdx)
+                            specStartIdx = semiColonIdx + 1;
+
+                        // Ignore empty specifications.
+                        if (specStartIdx < endIdx)
+                        {
+                            if (_eventSource.IsEnabled(EventLevel.Informational, Keywords.Messages))
+                                _eventSource.Message("DiagnosticSource: Parsing Explicit Transform '" + filterAndPayloadSpec.Substring(specStartIdx, endIdx - specStartIdx) + "'");
+
+                            _explicitTransforms = new TransformSpec(filterAndPayloadSpec, specStartIdx, endIdx, _explicitTransforms);
+                        }
+                        if (startTransformIdx == specStartIdx)
+                            break;
+                        endIdx = semiColonIdx;
+                    }
+                }
 
                 Action<string, string, IEnumerable<KeyValuePair<string, string?>>>? writeEvent = null;
                 if (activityName != null && activityName.Contains("Activity"))
@@ -695,7 +697,7 @@ namespace System.Diagnostics
             }
 
 #if EVENTSOURCE_ACTIVITY_SUPPORT
-            internal FilterAndTransform(string activitySourceName, string? activityName, ActivityEvents events, ActivitySamplingResult samplingResult, DiagnosticSourceEventSource eventSource)
+            internal FilterAndTransform(string filterAndPayloadSpec, int endIdx, int colonIdx, string activitySourceName, string? activityName, ActivityEvents events, ActivitySamplingResult samplingResult, DiagnosticSourceEventSource eventSource)
             {
                 _eventSource = eventSource;
 
@@ -706,6 +708,43 @@ namespace System.Diagnostics
                 ActivityName = activityName;
                 Events = events;
                 SamplingResult = samplingResult;
+
+                if (colonIdx >= 0)
+                {
+                    int startTransformIdx = colonIdx + 1;
+
+                    // If the transform spec begins with a - it means you don't want implicit transforms.
+                    if (startTransformIdx < endIdx && filterAndPayloadSpec[startTransformIdx] == '-')
+                    {
+                        _eventSource.Message("DiagnosticSource: suppressing implicit transforms.");
+                        _noImplicitTransforms = true;
+                        startTransformIdx++;
+                    }
+
+                    // Parse all the explicit transforms, if present
+                    if (startTransformIdx < endIdx)
+                    {
+                        while (true)
+                        {
+                            int specStartIdx = startTransformIdx;
+                            int semiColonIdx = filterAndPayloadSpec.LastIndexOf(';', endIdx - 1, endIdx - startTransformIdx);
+                            if (0 <= semiColonIdx)
+                                specStartIdx = semiColonIdx + 1;
+
+                            // Ignore empty specifications.
+                            if (specStartIdx < endIdx)
+                            {
+                                if (_eventSource.IsEnabled(EventLevel.Informational, Keywords.Messages))
+                                    _eventSource.Message("DiagnosticSource: Parsing Explicit Transform '" + filterAndPayloadSpec.Substring(specStartIdx, endIdx - specStartIdx) + "'");
+
+                                _explicitTransforms = new TransformSpec(filterAndPayloadSpec, specStartIdx, endIdx, _explicitTransforms);
+                            }
+                            if (startTransformIdx == specStartIdx)
+                                break;
+                            endIdx = semiColonIdx;
+                        }
+                    }
+                }
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -723,7 +762,7 @@ namespace System.Diagnostics
                 ActivityEvents supportedEvent = ActivityEvents.All; // Default events
                 ActivitySamplingResult samplingResult = ActivitySamplingResult.AllDataAndRecorded; // Default sampling results
 
-                var colonIdx = filterAndPayloadSpec.IndexOf(':', startIdx + c_ActivitySourcePrefix.Length, endIdx - startIdx - c_ActivitySourcePrefix.Length);
+                int colonIdx = filterAndPayloadSpec.IndexOf(':', startIdx + c_ActivitySourcePrefix.Length, endIdx - startIdx - c_ActivitySourcePrefix.Length);
 
                 ReadOnlySpan<char> entry = filterAndPayloadSpec.AsSpan(
                                                 startIdx + c_ActivitySourcePrefix.Length,
@@ -736,12 +775,12 @@ namespace System.Diagnostics
                     activitySourceName = entry.Slice(0, eventNameIndex).Trim();
 
                     ReadOnlySpan<char> suffixPart = entry.Slice(eventNameIndex + 1, entry.Length - eventNameIndex - 1).Trim();
-                    int sampleingResultIndex = suffixPart.IndexOf('-');
-                    if (sampleingResultIndex >= 0)
+                    int samplingResultIndex = suffixPart.IndexOf('-');
+                    if (samplingResultIndex >= 0)
                     {
-                        // We have the format "[AS]SourecName/[EventName]-[SamplingResult]
-                        eventName = suffixPart.Slice(0, sampleingResultIndex).Trim();
-                        suffixPart = suffixPart.Slice(sampleingResultIndex + 1, suffixPart.Length - sampleingResultIndex - 1).Trim();
+                        // We have the format "[AS]SourceName/[EventName]-[SamplingResult]
+                        eventName = suffixPart.Slice(0, samplingResultIndex).Trim();
+                        suffixPart = suffixPart.Slice(samplingResultIndex + 1, suffixPart.Length - samplingResultIndex - 1).Trim();
 
                         if (suffixPart.Length > 0)
                         {
@@ -762,7 +801,7 @@ namespace System.Diagnostics
                     }
                     else
                     {
-                        // We have the format "[AS]SourecName/[EventName]
+                        // We have the format "[AS]SourceName/[EventName]
                         eventName = suffixPart;
                     }
 
@@ -785,7 +824,7 @@ namespace System.Diagnostics
                 }
                 else
                 {
-                    // We have the format "[AS]SourecName"
+                    // We have the format "[AS]SourceName"
                     activitySourceName = entry;
                 }
 
@@ -797,12 +836,7 @@ namespace System.Diagnostics
                     activitySourceName = activitySourceName.Slice(0, plusSignIndex).Trim();
                 }
 
-                var transform = new FilterAndTransform(activitySourceName.ToString(), activityName, supportedEvent, samplingResult, eventSource);
-
-                if (colonIdx >= 0)
-                {
-                    transform.ParseTransformSpecs(filterAndPayloadSpec, colonIdx + 1, endIdx);
-                }
+                var transform = new FilterAndTransform(filterAndPayloadSpec, endIdx, colonIdx, activitySourceName.ToString(), activityName, supportedEvent, samplingResult, eventSource);
             }
 
             // Check if we are interested to listen to such ActivitySource
@@ -1104,10 +1138,10 @@ namespace System.Diagnostics
 
             private IDisposable? _diagnosticsListenersSubscription; // This is our subscription that listens for new Diagnostic source to appear.
             private Subscriptions? _liveSubscriptions;              // These are the subscriptions that we are currently forwarding to the EventSource.
-            private bool _noImplicitTransforms;                    // Listener can say they don't want implicit transforms.
+            private readonly bool _noImplicitTransforms;                    // Listener can say they don't want implicit transforms.
             private ImplicitTransformEntry? _firstImplicitTransformsEntry; // The transform for _firstImplicitFieldsType
             private ConcurrentDictionary<Type, TransformSpec?>? _implicitTransformsTable; // If there is more than one object type for an implicit transform, they go here.
-            private TransformSpec? _explicitTransforms;             // payload to include because the user explicitly indicated how to fetch the field.
+            private readonly TransformSpec? _explicitTransforms;             // payload to include because the user explicitly indicated how to fetch the field.
             private readonly DiagnosticSourceEventSource _eventSource;      // Where the data is written to.
             #endregion
         }
