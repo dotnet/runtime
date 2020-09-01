@@ -768,6 +768,13 @@ var MonoSupportLib = {
 				if (value.type != "object" || value.isValueType != true || value.expanded != true) // undefined would also give us false
 					continue;
 
+				if (value.members === undefined) {
+					// this could happen for valuetypes that maybe
+					// we were not able to describe, like `ref` parameters
+					// So, skip that
+					continue;
+				}
+
 				// Generate objectId for expanded valuetypes
 				value.objectId = value.objectId || this._new_or_add_id_props ({ scheme: 'valuetype' });
 
