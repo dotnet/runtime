@@ -923,14 +923,13 @@ describe_value(MonoType * type, gpointer addr, int gpflags)
 					MONO.mono_wasm_add_typed_value ('array', $0, { objectId: $1, length: $2 });
 				}, class_name, obj_id, mono_array_length_internal (array));
 			} else if (m_class_is_delegate (klass) || (type->type == MONO_TYPE_GENERICINST && m_class_is_delegate (type->data.generic_class->container_class))) {
-				MonoMethod *method;
-
 				if (type->type == MONO_TYPE_GENERICINST)
 					klass = type->data.generic_class->container_class;
 
-				method = mono_get_delegate_invoke_internal (klass);
-				if (!method) {
-					DEBUG_PRINTF (2, "Could not get a method for the delegate for %s\n", class_name);
+				if (m_class_get_parent (klass) == mono_defaults.multicastdelegate_class || klass == mono_defaults.multicastdelegate_class) {
+					EM_ASM ({
+						MONO.mono_wasm_add_typed_value ("symbol", $0, { isClassName: true });
+					}, class_name);
 					break;
 				}
 

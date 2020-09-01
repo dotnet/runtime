@@ -1926,6 +1926,21 @@ var MonoSupportLib = {
 				}
 				break;
 
+
+			case "symbol": {
+				if (typeof value === 'object' && value.isClassName)
+					str_value = MONO._mono_csharp_fixup_class_name (str_value);
+
+				MONO.var_info.push ({
+					value: {
+						type: "symbol",
+						value: str_value,
+						description: str_value
+					}
+				});
+				break;
+			}
+
 			default: {
 				const msg = `'${str_value}' ${value}`;
 
@@ -2092,6 +2107,8 @@ var MonoSupportLib = {
 			tgt_sig = args_to_sig (Module.UTF8ToString (targetName));
 
 		const type_name = MONO._mono_csharp_fixup_class_name (Module.UTF8ToString (className));
+		if (tgt_sig === undefined)
+			tgt_sig = type_name;
 
 		if (objectId == -1) {
 			// Target property
