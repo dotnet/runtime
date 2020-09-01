@@ -21,7 +21,7 @@ jobs:
     value: $[ coalesce(variables.OfficialSignType, 'real') ]
 
   steps:
-  - template: /eng/pipelines/common/clone-checkout-bundle-step.yml
+  # - template: /eng/pipelines/common/clone-checkout-bundle-step.yml
 
   - ${{ if eq(parameters.isOfficialBuild, true) }}:
     - task: NuGetAuthenticate@0
@@ -43,11 +43,12 @@ jobs:
   #     artifactName: IntermediateUnsignedArtifacts
   #     downloadPath: $(Build.SourcesDirectory)\artifacts\PackageDownload
 
-  - powershell: >-
-      $uri = "https://runtimesigningtest.blob.core.windows.net/runtimesigningtest/IntermediateUnsignedArtifacts.zip"
-      $zipLocation = "$env:AGENT_TEMPDIRECTORY\IntermediateUnsignedArtifacts.zip"
-      Invoke-WebRequest -Uri $uri -OutFile $zipLocation
-      Expand-Archive -Path $zipLocation -DestinationPath "$env:BUILD_SOURCESDIRECTORY\artifacts\PackageDownload"
+  - powershell:
+      [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12;
+      $uri = "https://runtimesigningtest.blob.core.windows.net/runtimesigningtest/IntermediateUnsignedArtifacts.zip";
+      $zipLocation = "$env:AGENT_TEMPDIRECTORY\IntermediateUnsignedArtifacts.zip";
+      Invoke-WebRequest -Uri $uri -OutFile $zipLocation;
+      Expand-Archive -Path $zipLocation -DestinationPath "$env:BUILD_SOURCESDIRECTORY\artifacts\PackageDownload";
     displayName: Download IntermediateUnsignedArtifacts
 
   - script: >-
