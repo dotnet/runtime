@@ -2179,6 +2179,11 @@ CLRCriticalSection gc_heap::check_commit_cs;
 
 size_t      gc_heap::current_total_committed = 0;
 
+#ifdef VERIFY_COMMITTED_BY_OH
+#ifndef MULTIPLE_HEAPS
+size_t      gc_heap::committed_by_oh_per_heap[total_oh_count] = {0, 0, 0, 0};
+#endif
+#endif
 size_t      gc_heap::committed_by_oh[total_oh_count] = {0, 0, 0, 0};
 
 size_t      gc_heap::current_total_committed_bookkeeping = 0;
@@ -5840,6 +5845,17 @@ bool gc_heap::virtual_commit (void* address, size_t size, gc_oh_num oh, int h_nu
     assert (heap_hard_limit == 0);
 #endif //!HOST_64BIT
 
+#ifdef VERIFY_COMMITTED_BY_OH
+#ifdef MULTIPLE_HEAPS
+    if (h_number != -1)
+    {
+        g_heaps [h_number]->committed_by_oh_per_heap[oh] += size;
+    }
+#else
+    committed_by_oh_per_heap[oh] += size;
+    dprintf (COMMIT_ACCOUNTING_LOG, ("%d += %d\n", oh, size));
+#endif
+#endif
     if (heap_hard_limit)
     {
         check_commit_cs.Enter();
@@ -5888,18 +5904,29 @@ bool gc_heap::virtual_commit (void* address, size_t size, gc_oh_num oh, int h_nu
                               virtual_alloc_commit_for_heap (address, size, h_number)) :
                               GCToOSInterface::VirtualCommit(address, size));
 
-    if (!commit_succeeded_p && heap_hard_limit)
+    if (!commit_succeeded_p)
     {
-        check_commit_cs.Enter();
-        committed_by_oh[oh] -= size;
+#ifdef VERIFY_COMMITTED_BY_OH
+#ifdef MULTIPLE_HEAPS
+        g_heaps[h_number]->committed_by_oh_per_heap[oh] -= size;
+#else
+        committed_by_oh_per_heap[oh] -= size;
+        dprintf (COMMIT_ACCOUNTING_LOG, ("%d -= %d\n", oh, size));
+#endif
+#endif
+        if (heap_hard_limit)
+        {
+            check_commit_cs.Enter();
+            committed_by_oh[oh] -= size;
         
-        dprintf (1, ("commit failed, updating %Id to %Id",
-                current_total_committed, (current_total_committed - size)));
-        current_total_committed -= size;
-        if (h_number < 0)
-            current_total_committed_bookkeeping -= size;
+            dprintf (1, ("commit failed, updating %Id to %Id",
+                    current_total_committed, (current_total_committed - size)));
+            current_total_committed -= size;
+            if (h_number < 0)
+                current_total_committed_bookkeeping -= size;
 
-        check_commit_cs.Leave();
+            check_commit_cs.Leave();
+        }
     }
     return commit_succeeded_p;
 }
@@ -5912,14 +5939,25 @@ bool gc_heap::virtual_decommit (void* address, size_t size, gc_oh_num oh, int h_
 
     bool decommit_succeeded_p = GCToOSInterface::VirtualDecommit (address, size);
 
-    if (decommit_succeeded_p && heap_hard_limit)
+    if (decommit_succeeded_p)
     {
-        check_commit_cs.Enter();
-        committed_by_oh[oh] -= size;
-        current_total_committed -= size;
-        if (h_number < 0)
-            current_total_committed_bookkeeping -= size;
-        check_commit_cs.Leave();
+#ifdef VERIFY_COMMITTED_BY_OH
+#ifdef MULTIPLE_HEAPS
+        g_heaps[h_number]->committed_by_oh_per_heap[oh] -= size;
+#else
+        committed_by_oh_per_heap[oh] -= size;
+        dprintf (COMMIT_ACCOUNTING_LOG, ("%d -= %d\n", oh, size));
+#endif
+#endif
+        if (heap_hard_limit)
+        {
+            check_commit_cs.Enter();
+            committed_by_oh[oh] -= size;
+            current_total_committed -= size;
+            if (h_number < 0)
+                current_total_committed_bookkeeping -= size;
+            check_commit_cs.Leave();
+        }
     }
 
     return decommit_succeeded_p;
@@ -5928,6 +5966,19 @@ bool gc_heap::virtual_decommit (void* address, size_t size, gc_oh_num oh, int h_
 void gc_heap::virtual_free (void* add, size_t allocated_size, heap_segment* sg)
 {
     assert(!heap_hard_limit);
+#ifdef VERIFY_COMMITTED_BY_OH
+    if (sg)
+    {
+        size_t committed_size = (uint8_t*)heap_segment_committed (sg)-(uint8_t*)sg;
+        gc_oh_num oh = heap_segment_oh (sg);
+#ifdef MULTIPLE_HEAPS
+        heap_segment_heap (sg)->committed_by_oh_per_heap[oh] -= committed_size;
+#else
+        committed_by_oh_per_heap[oh] -= committed_size;
+        dprintf (COMMIT_ACCOUNTING_LOG, ("%d -= %d\n", oh, committed_size));
+#endif
+    }
+#endif
     bool release_succeeded_p = GCToOSInterface::VirtualRelease (add, allocated_size);
     if (release_succeeded_p)
     {
@@ -9787,7 +9838,8 @@ void gc_heap::reset_heap_segment_pages (heap_segment* seg)
 }
 
 void gc_heap::decommit_heap_segment_pages (heap_segment* seg,
-                                           size_t extra_space)
+                                           size_t extra_space
+                                           VERIFY_COMMITTED_BY_OH_ARG (bool skip_commit_verification))
 {
     if (use_large_pages_p)
         return;
@@ -9797,12 +9849,13 @@ void gc_heap::decommit_heap_segment_pages (heap_segment* seg,
     if (size >= max ((extra_space + 2*OS_PAGE_SIZE), MIN_DECOMMIT_SIZE))
     {
         page_start += max(extra_space, 32*OS_PAGE_SIZE);
-        decommit_heap_segment_pages_worker (seg, page_start);
+        decommit_heap_segment_pages_worker (seg, page_start VERIFY_COMMITTED_BY_OH_ARG (skip_commit_verification));
     }
 }
 
 size_t gc_heap::decommit_heap_segment_pages_worker (heap_segment* seg,
-                                                    uint8_t* new_committed)
+                                                    uint8_t* new_committed
+                                                    VERIFY_COMMITTED_BY_OH_ARG (bool skip_commit_verification))
 {
     assert (!use_large_pages_p);
     uint8_t* page_start = align_on_page (new_committed);
@@ -9817,6 +9870,12 @@ size_t gc_heap::decommit_heap_segment_pages_worker (heap_segment* seg,
                 (size_t)(page_start + size),
                 size));
             heap_segment_committed (seg) = page_start;
+#ifdef VERIFY_COMMITTED_BY_OH
+            if (!skip_commit_verification)
+            {
+                verify_committed_by_oh_per_heap (seg);
+            }
+#endif
             if (heap_segment_used (seg) > heap_segment_committed (seg))
             {
                 heap_segment_used (seg) = heap_segment_committed (seg);
@@ -9848,6 +9907,9 @@ void gc_heap::decommit_heap_segment (heap_segment* seg)
     {
         //re-init the segment object
         heap_segment_committed (seg) = page_start;
+#ifdef VERIFY_COMMITTED_BY_OH
+        verify_committed_by_oh_per_heap (seg);
+#endif
         if (heap_segment_used (seg) > heap_segment_committed (seg))
         {
             heap_segment_used (seg) = heap_segment_committed (seg);
@@ -10977,7 +11039,13 @@ int
 gc_heap::init_gc_heap (int  h_number)
 {
 #ifdef MULTIPLE_HEAPS
-
+#ifdef VERIFY_COMMITTED_BY_OH
+    g_heaps [h_number] = this;
+    for (int i = 0; i < gc_oh_num::total_oh_count; i++)
+    {
+        committed_by_oh_per_heap [i] = 0;
+    }
+#endif
     time_bgc_last = 0;
 
     allocated_since_last_gc = 0;
@@ -11240,8 +11308,6 @@ gc_heap::init_gc_heap (int  h_number)
     if (!create_gc_thread ())
         return 0;
 
-    g_heaps [heap_number] = this;
-
 #endif //MULTIPLE_HEAPS
 
 #ifdef FEATURE_PREMORTEM_FINALIZATION
@@ -11472,7 +11538,7 @@ BOOL gc_heap::a_size_fit_p (size_t size, uint8_t* alloc_pointer, uint8_t* alloc_
 }
 
 // Grow by committing more pages
-BOOL gc_heap::grow_heap_segment (heap_segment* seg, uint8_t* high_address, bool* hard_limit_exceeded_p)
+BOOL gc_heap::grow_heap_segment (heap_segment* seg, uint8_t* high_address, bool* hard_limit_exceeded_p VERIFY_COMMITTED_BY_OH_ARG (bool skip_commit_verification))
 {
     assert (high_address <= heap_segment_reserved (seg));
 
@@ -11501,6 +11567,12 @@ BOOL gc_heap::grow_heap_segment (heap_segment* seg, uint8_t* high_address, bool*
     if (ret)
     {
         heap_segment_committed (seg) += c_size;
+#ifdef VERIFY_COMMITTED_BY_OH
+        if (!skip_commit_verification)
+        {
+            verify_committed_by_oh_per_heap (seg);
+        }
+#endif
 
         STRESS_LOG1(LF_GC, LL_INFO10000, "New commit: %Ix\n",
                     (size_t)heap_segment_committed (seg));
@@ -20259,6 +20331,25 @@ size_t gc_heap::get_total_gen_estimated_reclaim (int gen_number)
     return total_estimated_reclaim;
 }
 
+#ifdef VERIFY_COMMITTED_BY_OH
+void gc_heap::verify_committed_by_oh_per_heap(heap_segment* inst)
+{
+    gc_oh_num oh = heap_segment_oh (inst);
+    generation* gen = generation_of (oh + max_generation);
+    heap_segment* seg = heap_segment_rw (generation_start_segment (gen));        
+    size_t verify = 0;
+    while (seg)
+    {
+        verify += heap_segment_committed (seg) - (uint8_t*)seg;
+        seg = heap_segment_next (seg);
+    }
+    dprintf (COMMIT_ACCOUNTING_LOG, ("check %d %d==%d\n", oh, committed_by_oh_per_heap[oh], verify));
+    // It is possible that get_uoh_segment () creates a new segment and commit 2 pages 
+    // in a way that is not synchronized with other allocations.
+    assert((committed_by_oh_per_heap[oh] == verify) || (oh != gc_oh_num::soh && committed_by_oh_per_heap[oh] == verify + 8192));
+}
+#endif
+
 size_t gc_heap::committed_size()
 {
     size_t total_committed = 0;
@@ -23906,6 +23997,8 @@ void gc_heap::plan_phase (int condemned_gen_number)
                     generation_start_segment (gen) = ephemeral_heap_segment;
                     generation_allocation_segment (gen) = ephemeral_heap_segment;
                 }
+                // If we happen to create a new segment during the plan phase, 
+                // this is the time when it is threaded into the list of segments
             }
         }
 
@@ -31713,7 +31806,9 @@ generation* gc_heap::expand_heap (int condemned_generation,
 #endif //RESPECT_LARGE_ALIGNMENT
             //Since the generation start can be larger than min_obj_size
             //Compare the alignment of the first object in gen1
-            if (grow_heap_segment (new_seg, heap_segment_mem (new_seg) + eph_size) == 0)
+            // The new segment committed here is not threaded into the generation until the end of 
+            // the GC, that's why we have to skip verification here.
+            if (grow_heap_segment (new_seg, heap_segment_mem (new_seg) + eph_size VERIFY_COMMITTED_BY_OH_ARGS (NULL, true)) == 0)
             {
                 fgm_result.set_fgm (fgm_commit_eph_segment, eph_size, FALSE);
                 return consing_gen;
@@ -34121,7 +34216,11 @@ void gc_heap::sweep_uoh_objects (int gen_num)
                 {
                     dprintf (3, ("Trimming seg to %Ix[", (size_t)plug_end));
                     heap_segment_allocated (seg) = plug_end;
-                    decommit_heap_segment_pages (seg, 0);
+                    // Note the block above - it is possible for a segment to 
+                    // leave the segment chain without being decommitted in the 
+                    // previous iteration, therefore we have to skip verification
+                    // here.
+                    decommit_heap_segment_pages (seg, 0 VERIFY_COMMITTED_BY_OH_ARG (true));
                 }
                 prev_seg = seg;
             }

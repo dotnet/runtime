@@ -325,6 +325,18 @@ class card_marking_enumerator;
 #define CARD_MARKING_STEALING_ARGS(a,b,c)
 #endif // FEATURE_CARD_MARKING_STEALING
 
+#ifdef _DEBUG
+#define VERIFY_COMMITTED_BY_OH
+#endif
+
+#ifdef VERIFY_COMMITTED_BY_OH
+#define VERIFY_COMMITTED_BY_OH_ARG(a)    ,a
+#define VERIFY_COMMITTED_BY_OH_ARGS(a,b)    ,a,b
+#else // VERIFY_COMMITTED_BY_OH
+#define VERIFY_COMMITTED_BY_OH_ARG(a)
+#define VERIFY_COMMITTED_BY_OH_ARGS(a,b)
+#endif // VERIFY_COMMITTED_BY_OH
+
 // The following 2 modes are of the same format as in clr\src\bcl\system\runtime\gcsettings.cs
 // make sure you change that one if you change this one!
 enum gc_pause_mode
@@ -1704,11 +1716,11 @@ protected:
     PER_HEAP
     void reset_heap_segment_pages (heap_segment* seg);
     PER_HEAP
-    void decommit_heap_segment_pages (heap_segment* seg, size_t extra_space);
+    void decommit_heap_segment_pages (heap_segment* seg, size_t extra_space VERIFY_COMMITTED_BY_OH_ARG(bool skip_commit_verification = false));
     PER_HEAP
     size_t decommit_ephemeral_segment_pages_step ();
     PER_HEAP
-    size_t decommit_heap_segment_pages_worker (heap_segment* seg, uint8_t *new_committed);
+    size_t decommit_heap_segment_pages_worker (heap_segment* seg, uint8_t *new_committed VERIFY_COMMITTED_BY_OH_ARG(bool skip_commit_verification = false));
     PER_HEAP_ISOLATED
     bool decommit_step ();
     PER_HEAP
@@ -1813,7 +1825,7 @@ protected:
     BOOL find_card (uint32_t* card_table, size_t& card,
                     size_t card_word_end, size_t& end_card);
     PER_HEAP
-    BOOL grow_heap_segment (heap_segment* seg, uint8_t* high_address, bool* hard_limit_exceeded_p=NULL);
+    BOOL grow_heap_segment (heap_segment* seg, uint8_t* high_address, bool* hard_limit_exceeded_p=NULL VERIFY_COMMITTED_BY_OH_ARG (bool skip_commit_verification=false));
     PER_HEAP
     int grow_heap_segment (heap_segment* seg, uint8_t* high_address, uint8_t* old_loc, size_t size, BOOL pad_front_p REQD_ALIGN_AND_OFFSET_DCL);
     PER_HEAP
@@ -2811,6 +2823,10 @@ protected:
     size_t get_total_heap_size ();
     PER_HEAP_ISOLATED
     size_t get_total_committed_size();
+#ifdef VERIFY_COMMITTED_BY_OH
+    PER_HEAP
+    void verify_committed_by_oh_per_heap(heap_segment* inst);
+#endif
     PER_HEAP_ISOLATED
     size_t get_total_fragmentation();
     PER_HEAP_ISOLATED
@@ -3482,6 +3498,13 @@ public:
 
     PER_HEAP_ISOLATED
     size_t current_total_committed;
+
+#ifdef VERIFY_COMMITTED_BY_OH
+    PER_HEAP
+    size_t committed_by_oh_per_heap[total_oh_count];
+    PER_HEAP
+    int unsaved_virtual_operation_count_per_heap;
+#endif
 
     PER_HEAP_ISOLATED
     size_t committed_by_oh[total_oh_count];
