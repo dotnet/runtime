@@ -161,10 +161,20 @@
     </ItemGroup>
 
     <Message Importance="High" Text="Verifying closure of $(Id) %(ClosureFile.FileSet) assemblies" />
+
+    <PropertyGroup>
+      <_DependencyGraphFilePath>$(PackageReportDir)$(Id)$(NuspecSuffix)-%(ClosureFile.FileSet).dgml</_DependencyGraphFilePath>
+      <_DependencyGraphDir>$([System.IO.Path]::GetDirectoryName($(_DependencyGraphFilePath)))</_DependencyGraphDir>
+    </PropertyGroup>
+
+    <!-- Ensure directory for dependency graph file exists. -->
+    <MakeDir Condition="!Exists('$(_DependencyGraphDir')"
+             Directories="$(_DependencyGraphDir)" />
+
     <VerifyClosure
       Sources="@(_closureFileFiltered)"
       IgnoredReferences="@(IgnoredReference)"
-      DependencyGraphFilePath="$(PackageReportDir)$(Id)$(NuspecSuffix)-%(ClosureFile.FileSet).dgml" />
+      DependencyGraphFilePath="$(_DependencyGraphFilePath)" />
   </Target>
 
   <!--
