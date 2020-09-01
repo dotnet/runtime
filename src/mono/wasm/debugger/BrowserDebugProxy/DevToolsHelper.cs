@@ -185,6 +185,8 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public static MonoCommands ClearAllBreakpoints() => new MonoCommands("MONO.mono_wasm_clear_all_breakpoints()");
 
+        public static MonoCommands GetLazyLoadedFiles() => new MonoCommands("MONO.mono_wasm_get_lazy_loaded_files()");
+
         public static MonoCommands GetDetails(DotnetObjectId objectId, JToken args = null) => new MonoCommands($"MONO.mono_wasm_get_details ('{objectId}', {(args ?? "{ }")})");
 
         public static MonoCommands GetScopeVariables(int scopeId, params VarInfo[] vars)

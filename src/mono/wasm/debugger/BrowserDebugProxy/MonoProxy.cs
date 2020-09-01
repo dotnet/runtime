@@ -99,7 +99,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         //TODO figure out how to stich out more frames and, in particular what happens when real wasm is on the stack
                         var top_func = args?["callFrames"]?[0]?["functionName"]?.Value<string>();
 
-                        if (top_func == "mono_wasm_fire_bp" || top_func == "_mono_wasm_fire_bp" || top_func == "_mono_wasm_fire_exception")
+                        if (top_func == "mono_wasm_fire_bp" || top_func == "_mono_wasm_fire_bp" || top_func == "_mono_wasm_fire_exception" || top_func == "mono_wasm_add_lazy_load_files")
                         {
                             return await OnPause(sessionId, args, token);
                         }
@@ -496,6 +496,32 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 var function_name = frame["functionName"]?.Value<string>();
                 var url = frame["url"]?.Value<string>();
+                if ("mono_wasm_add_lazy_load_files" == function_name)
+                {
+                    var loaded_assemblies = await SendMonoCommand(sessionId, MonoCommands.GetLazyLoadedFiles(), token);
+                    var res_val = loaded_assemblies.Value?["result"]?["value"];
+                    var lazy_loaded_files = res_val?.ToObject<string[]>();
+
+                    await
+                    foreach (var source in context.store.Load(sessionId, lazy_loaded_files, token))
+                    {
+                        var scriptSource = JObject.FromObject(source.ToScriptSource(context.Id, context.AuxData));
+                        Log("verbose", $"Loading assembly from {source.Url} to context with ID {context.Id}.");
+
+                        SendEvent(sessionId, "Debugger.scriptParsed", scriptSource, token);
+
+                        foreach (var req in context.BreakpointRequests.Values)
+                        {
+                            if (req.TryResolve(source))
+                            {
+                                await SetBreakpoint(sessionId, context.store, req, true, token);
+                            }
+                        }
+                    }
+
+                    await SendCommand(sessionId, "Debugger.resume", new JObject(), token);
+                    return true;
+                }
                 if ("mono_wasm_fire_bp" == function_name || "_mono_wasm_fire_bp" == function_name ||
                     "_mono_wasm_fire_exception" == function_name)
                 {

@@ -78,6 +78,7 @@ var MonoSupportLib = {
 			module ["mono_wasm_new_root"] = MONO.mono_wasm_new_root;
 			module ["mono_wasm_new_roots"] = MONO.mono_wasm_new_roots;
 			module ["mono_wasm_release_roots"] = MONO.mono_wasm_release_roots;
+			module ["mono_wasm_add_lazy_load_files"] = MONO.mono_wasm_add_lazy_load_files;
 		},
 
 		_mono_wasm_root_buffer_prototype: {
@@ -337,6 +338,11 @@ var MonoSupportLib = {
 			var exception_obj = MONO.active_exception;
 			MONO.active_exception = null;
 			return exception_obj ;
+		},
+
+		mono_wasm_add_lazy_load_files: function(lazy_loaded_files) {
+			MONO.lazy_loaded_files = lazy_loaded_files;
+			debugger;
 		},
 
 		mono_wasm_get_call_stack: function() {
@@ -1704,6 +1710,12 @@ var MonoSupportLib = {
 		// Used by the debugger to enumerate loaded dlls and pdbs
 		mono_wasm_get_loaded_files: function() {
 			return MONO.loaded_files;
+		},
+
+		// Used by the debugger to enumerate DLLs and PDBs loaded
+		// after the initial launch of the runtime
+		mono_wasm_get_lazy_loaded_files: function() {
+			return MONO.lazy_loaded_files;
 		},
 
 		mono_wasm_get_loaded_asset_table: function() {
