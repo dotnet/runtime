@@ -13,6 +13,10 @@ SET_DEFAULT_DEBUG_CHANNEL(MISC);
 #include <asm/hwcap.h>
 #endif
 
+#if HAVE_SYSCTLBYNAME
+#include <sys/sysctl.h>
+#endif
+
 #if defined(HOST_ARM64) && defined(__linux__)
 struct CpuCapability
 {
@@ -254,6 +258,16 @@ PAL_GetJitCpuCapabilityFlags(CORJIT_FLAGS *flags)
 //        CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_SVE);
 #endif
 #else // !HAVE_AUXV_HWCAP_H
+#if HAVE_SYSCTLBYNAME
+    int64_t valueFromSysctl = 0;
+    size_t sz = sizeof(valueFromSysctl);
+
+    if ((sysctlbyname("hw.optional.armv8_1_atomics", &valueFromSysctl, &sz, nullptr, 0) == 0) && (valueFromSysctl != 0))
+        CPUCompileFlags.Set(InstructionSet_Atomics);
+
+    if ((sysctlbyname("hw.optional.armv8_crc32", &valueFromSysctl, &sz, nullptr, 0) == 0) && (valueFromSysctl != 0))
+        CPUCompileFlags.Set(InstructionSet_Crc32);
+#endif // HAVE_SYSCTLBYNAME
     // CoreCLR SIMD and FP support is included in ARM64 baseline
     // On exceptional basis platforms may leave out support, but CoreCLR does not
     // yet support such platforms
