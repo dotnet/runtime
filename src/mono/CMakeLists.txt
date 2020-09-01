@@ -56,9 +56,6 @@ if(NOT DISABLE_EVENTPIPE)
   set(ENABLE_PERFTRACING 1)
 endif()
 
-# FIXME:
-set(VERSION "")
-
 execute_process(
   COMMAND grep ^MONO_CORLIB_VERSION= ${CMAKE_SOURCE_DIR}/configure.ac
   COMMAND cut -d = -f  2
@@ -93,6 +90,10 @@ else()
   message(FATAL_ERROR "Building without -DENABLE_NETCORE=1 is not supported.")
 endif()
 
+if(DISABLE_ASSEMBLY_REMAPPING)
+  set(DISABLE_DESKTOP_LOADER 1)
+endif()
+
 #FIXME:
 set(VERSION "\"\"")
 set(DISABLED_FEATURES "\"\"")
@@ -116,6 +117,8 @@ set(HAVE_CLASSIC_WINAPI_SUPPORT 1)
 set(HAVE_MOVING_COLLECTOR 1)
 set(HAVE_CONC_GC_AS_DEFAULT 1)
 set(MONO_INSIDE_RUNTIME 1)
+# FIXME:
+set(NAME_DEV_RANDOM "/dev/random")
 
 if(ENABLE_LAZY_GC_THREAD_CREATION)
   set(LAZY_GC_THREAD_CREATION 1)
@@ -137,6 +140,8 @@ if(GCC)
   set(WERROR "-Werror=incompatible-pointer-types -Werror=return-type -Werror-implicit-function-declaration")
 
   append("${WARNINGS} ${WERROR}" CMAKE_C_FLAGS CMAKE_CXX_FLAGS)
+
+  set(MONO_ZERO_LEN_ARRAY 0)
 endif()
 
 ######################################
@@ -148,6 +153,21 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
   set(HOST_DARWIN 1)
   set(PTHREAD_POINTER_ID 1)
   set(USE_MACH_SEMA 1)
+elseif(CMAKE_SYSTEM_NAME STREQUAL "iOS")
+  # See man cmake-toolchains(7) on which variables
+  # control cross-compiling to ios
+  add_definitions(-DNO_GLOBALIZATION_SHIM)
+  add_definitions(-D_THREAD_SAFE)
+  set(HOST_DARWIN 1)
+  set(PTHREAD_POINTER_ID 1)
+  set(USE_MACH_SEMA 1)
+  set(DISABLE_EXECUTABLES 1)
+  set(DISABLE_CRASH_REPORTING 1)
+  set(ENABLE_MONOTOUCH 1)
+  add_definitions(-DMONOTOUCH=1)
+  add_definitions(-DHOST_IOS=1)
+  set(HAVE_SYSTEM 0)
+  set(MONO_DL_NEED_USCORE 1)
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
   set(HOST_WASM 1)
   set(DISABLE_EXECUTABLES 1)
@@ -167,6 +187,9 @@ set(TARGET_SYSTEM_NAME "${CMAKE_SYSTEM_NAME}")
 if(TARGET_SYSTEM_NAME STREQUAL "Darwin")
   set(TARGET_MACH 1)
   set(TARGET_OSX 1)
+elseif(TARGET_SYSTEM_NAME STREQUAL "iOS")
+  set(TARGET_MACH 1)
+  set(TARGET_IOS 1)
 elseif(TARGET_SYSTEM_NAME STREQUAL "Emscripten")
   set(TARGET_WASM 1)
   if (CMAKE_BUILD_TYPE STREQUAL "Release")
@@ -180,6 +203,10 @@ endif()
 # HOST ARCH CHECKS
 ######################################
 
+if(NOT CMAKE_OSX_ARCHITECTURES STREQUAL "")
+  set(CMAKE_SYSTEM_PROCESSOR "${CMAKE_OSX_ARCHITECTURES}")
+endif()
+
 if(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
   set(HOST_AMD64 1)
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
@@ -191,6 +218,7 @@ endif()
 ######################################
 # TARGET ARCH CHECKS
 ######################################
+
 # FIXME:
 set(TARGET_ARCH "${CMAKE_SYSTEM_PROCESSOR}")
 
@@ -224,6 +252,7 @@ elseif(TARGET_WASM)
   set(ICU_FLAGS "-DPALEXPORT=\"\" -DTARGET_UNIX -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option")
   set(HAVE_SYS_ICU 1)
   set(STATIC_ICU 1)
+elseif(TARGET_IOS)
 else()
   message(FATAL_ERROR "")
 endif()
