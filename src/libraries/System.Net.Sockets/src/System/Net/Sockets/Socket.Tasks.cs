@@ -927,9 +927,7 @@ namespace System.Net.Sockets
                 }
 
                 return WrapExceptionsForNetworkStream ?
-                    (_isReadForCaching ?
-                        new IOException(SR.Format(SR.net_io_readfailure, e.Message), e) :
-                        new IOException(SR.Format(SR.net_io_writefailure, e.Message), e)) :
+                    new IOException(SR.Format(_isReadForCaching ? SR.net_io_readfailure : SR.net_io_writefailure, e.Message), e) :
                     e;
             }
         }
