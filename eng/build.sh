@@ -151,8 +151,14 @@ portableBuild=1
 source $scriptroot/native/init-os-and-arch.sh
 
 # Check if an action is passed in
-declare -a actions=("b" "build" "r" "restore" "rebuild" "testnobuild" "sign" "publish" "clean")
-actInt=($(comm -12 <(printf '%s\n' "${actions[@]/#/-}" | sort) <(printf '%s\n' "${@/#--/-}" | sort)))
+typeset -a actions userActions actInt
+actions=("b" "build" "r" "restore" "rebuild" "testnobuild" "sign" "publish" "clean")
+# case pattern for matching action options: -?(-)@(b|build|r|restore ...)
+IFS=$'|'; actptrn="-?([-])@(${actions[*]})";
+IFS=$'\n'; userActions=($( { IFS=$'
+'; echo "$*"; printf '%s\n' "${actions[@]/#/-}" "${actions[@]/#/--}"; } | tr -s - - | sort | uniq -c | grep -vFwe 1 | cut -d- -f2- | tr -d -; ));
+typeset -i actInt; (( actInt = ${#userActions[@]} ))
+
 firstArgumentChecked=0
 
 while [[ $# > 0 ]]; do
@@ -172,6 +178,13 @@ while [[ $# > 0 ]]; do
   firstArgumentChecked=1
 
   case "$opt" in
+     $actptrn)
+      act="-${opt##*([-])}"
+      [ x$ARG_DEBUG = x1 ] && echo "Add build action: ${act}" 1>&2
+      arguments="${arguments:+ }${act}"
+      shift
+      ;;
+
      -help|-h)
       usage
       exit 0
@@ -391,6 +404,7 @@ if [ ${#actInt[@]} -eq 0 ]; then
     arguments="-restore -build $arguments"
 fi
 
+[[ "${arch:-unset}" == unset ]] && { usage; echo "Arch (--arch) must be specified for ${0##*/}." 1>&2; exit 127; };
 initDistroRid $os $arch $crossBuild $portableBuild
 
 # URL-encode space (%20) to avoid quoting issues until the msbuild call in /eng/common/tools.sh.
