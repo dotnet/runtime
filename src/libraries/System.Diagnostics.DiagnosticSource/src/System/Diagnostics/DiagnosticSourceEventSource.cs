@@ -54,10 +54,11 @@ namespace System.Diagnostics
     ///       * DIAGNOSTIC_SOURCE_NAME / DIAGNOSTIC_EVENT_NAME
     ///       * DIAGNOSTIC_SOURCE_NAME    - which wildcards every event in the Diagnostic source or
     ///       * EMPTY                     - which turns on all sources
-    ///     Or it can be "[AS] ACTIVITY_SOURCE_NAME / ACTIVITY_EVENT_NAME - SAMPLING_RESULT"
+    ///     Or it can be "[AS] ACTIVITY_SOURCE_NAME + ACTIVITY_NAME / ACTIVITY_EVENT_NAME - SAMPLING_RESULT"
     ///       * All parts are optional and can be empty string.
     ///       * ACTIVITY_SOURCE_NAME can be "*" to listen to all ActivitySources
     ///       * ACTIVITY_SOURCE_NAME can b empty string which will listen to ActivitySource that create Activities using "new Activity(...)"
+    ///       * ACTIVITY_NAME is the activity operation name to filter with.
     ///       * ACTIVITY_EVENT_NAME either "Start" to listen to Activity Start event, or "Stop" to listen to Activity Stop event, or empty string to listen to both Start and Stop Activity events.
     ///       * SAMPLING_RESULT either "Propagate" to create the Activity with PropagationData, or "Record" to create the Activity with AllData, or empty string to create the Activity with AllDataAndRecorded
     ///   * TRANSFORM_SPEC is a semicolon separated list of TRANSFORM_SPEC, which can be
@@ -111,6 +112,7 @@ namespace System.Diagnostics
     ///     "[AS]MyLibrary/-Propagate"   listen to `MyLibrary` ActivitySource and the 'Start and Stop' Activity events. The Activities will be created with PropagationData sampling.
     ///     "[AS]MyLibrary/Stop-Record"  listen to `MyLibrary` ActivitySource and the 'Stop' Activity event. The Activities will be created with AllData sampling.
     ///     "[AS]*/-"                    listen to all ActivitySources and the Start and Stop Activity events. Activities will be created with AllDataAndRecorded sampling. this equivalent to "[AS]*" too.
+    ///     "[AS]*+MyActivity"           listen to all activity sources when creating Activity with the operation name "MyActivity".
     ///
     /// * How data is logged in the EventSource
     ///
@@ -693,7 +695,7 @@ namespace System.Diagnostics
             }
 
 #if EVENTSOURCE_ACTIVITY_SUPPORT
-            internal FilterAndTransform(string activitySourceName, ActivityEvents events, ActivitySamplingResult samplingResult, DiagnosticSourceEventSource eventSource)
+            internal FilterAndTransform(string activitySourceName, string? activityName, ActivityEvents events, ActivitySamplingResult samplingResult, DiagnosticSourceEventSource eventSource)
             {
                 _eventSource = eventSource;
 
@@ -701,6 +703,7 @@ namespace System.Diagnostics
                 _eventSource._activitySourceSpecs = this;
 
                 SourceName = activitySourceName;
+                ActivityName = activityName;
                 Events = events;
                 SamplingResult = samplingResult;
             }
@@ -786,7 +789,15 @@ namespace System.Diagnostics
                     activitySourceName = entry;
                 }
 
-                var transform = new FilterAndTransform(activitySourceName.ToString(), supportedEvent, samplingResult, eventSource);
+                string? activityName = null;
+                int plusSignIndex = activitySourceName.IndexOf('+');
+                if (plusSignIndex >= 0)
+                {
+                    activityName = activitySourceName.Slice(plusSignIndex + 1).Trim().ToString();
+                    activitySourceName = activitySourceName.Slice(0, plusSignIndex).Trim();
+                }
+
+                var transform = new FilterAndTransform(activitySourceName.ToString(), activityName, supportedEvent, samplingResult, eventSource);
 
                 if (colonIdx >= 0)
                 {
@@ -795,7 +806,7 @@ namespace System.Diagnostics
             }
 
             // Check if we are interested to listen to such ActivitySource
-            private static ActivitySamplingResult Sample(string activitySourceName, DiagnosticSourceEventSource eventSource)
+            private static ActivitySamplingResult Sample(string activitySourceName, string activityName, DiagnosticSourceEventSource eventSource)
             {
                 FilterAndTransform? list = eventSource._activitySourceSpecs;
                 ActivitySamplingResult specificResult = ActivitySamplingResult.None;
@@ -803,34 +814,36 @@ namespace System.Diagnostics
 
                 while (list != null)
                 {
-                    if (activitySourceName == list.SourceName)
+                    if (list.ActivityName == null || list.ActivityName == activityName)
                     {
-                        if (list.SamplingResult > specificResult)
+                        if (activitySourceName == list.SourceName)
                         {
-                            specificResult = list.SamplingResult;
-                        }
+                                if (list.SamplingResult > specificResult)
+                                {
+                                    specificResult = list.SamplingResult;
+                                }
 
-                        if (specificResult >= ActivitySamplingResult.AllDataAndRecorded)
+                                if (specificResult >= ActivitySamplingResult.AllDataAndRecorded)
+                                {
+                                    return specificResult; // highest possible value
+                                }
+                                // We don't break here as we can have more than one entry with the same source name.
+                            }
+                        else if (list.SourceName == "*")
                         {
-                            return specificResult; // highest possible value
+                            if (specificResult != ActivitySamplingResult.None)
+                            {
+                                // We reached the '*' nodes which means there is no more specific source names in the list.
+                                // If we encountered any specific node before, then return that value.
+                                return specificResult;
+                            }
+
+                            if (list.SamplingResult > wildResult)
+                            {
+                                wildResult = list.SamplingResult;
+                            }
                         }
-                        // We don't break here as we can have more than one entry with the same source name.
                     }
-                    else if (list.SourceName == "*")
-                    {
-                        if (specificResult != ActivitySamplingResult.None)
-                        {
-                            // We reached the '*' nodes which means there is no more specific source names in the list.
-                            // If we encountered any specific node before, then return that value.
-                            return specificResult;
-                        }
-
-                        if (list.SamplingResult > wildResult)
-                        {
-                            wildResult = list.SamplingResult;
-                        }
-                    }
-
                     list = list.Next;
                 }
 
@@ -845,8 +858,8 @@ namespace System.Diagnostics
 
                 eventSource._activityListener = new ActivityListener();
 
-                eventSource._activityListener.SampleUsingParentId = (ref ActivityCreationOptions<string> activityOptions) => Sample(activityOptions.Source.Name, eventSource);
-                eventSource._activityListener.Sample = (ref ActivityCreationOptions<ActivityContext> activityOptions) => Sample(activityOptions.Source.Name, eventSource);
+                eventSource._activityListener.SampleUsingParentId = (ref ActivityCreationOptions<string> activityOptions) => Sample(activityOptions.Source.Name, activityOptions.Name, eventSource);
+                eventSource._activityListener.Sample = (ref ActivityCreationOptions<ActivityContext> activityOptions) => Sample(activityOptions.Source.Name, activityOptions.Name, eventSource);
 
                 eventSource._activityListener.ShouldListenTo = (activitySource) =>
                 {
@@ -869,7 +882,9 @@ namespace System.Diagnostics
                     FilterAndTransform? list = eventSource._activitySourceSpecs;
                     while (list != null)
                     {
-                        if ((list.Events & ActivityEvents.ActivityStart) != 0 && (activity.Source.Name == list.SourceName || list.SourceName == "*"))
+                        if ((list.Events & ActivityEvents.ActivityStart) != 0 &&
+                            (activity.Source.Name == list.SourceName || list.SourceName == "*") &&
+                            (list.ActivityName == null || list.ActivityName == activity.OperationName))
                         {
                             eventSource.ActivityStart(activity.Source.Name, activity.OperationName, list.Morph(activity));
                             return;
@@ -884,7 +899,9 @@ namespace System.Diagnostics
                     FilterAndTransform? list = eventSource._activitySourceSpecs;
                     while (list != null)
                     {
-                        if ((list.Events & ActivityEvents.ActivityStop) != 0 && (activity.Source.Name == list.SourceName || list.SourceName == "*"))
+                        if ((list.Events & ActivityEvents.ActivityStop) != 0 &&
+                            (activity.Source.Name == list.SourceName || list.SourceName == "*") &&
+                            (list.ActivityName == null || list.ActivityName == activity.OperationName))
                         {
                             eventSource.ActivityStop(activity.Source.Name, activity.OperationName, list.Morph(activity));
                             return;
@@ -1048,6 +1065,7 @@ namespace System.Diagnostics
 #if EVENTSOURCE_ACTIVITY_SUPPORT
             internal const string c_ActivitySourcePrefix = "[AS]";
             internal string? SourceName { get; set; }
+            internal string? ActivityName { get; set; }
             internal DiagnosticSourceEventSource.ActivityEvents Events  { get; set; }
             internal ActivitySamplingResult SamplingResult { get; set; }
 #endif // EVENTSOURCE_ACTIVITY_SUPPORT

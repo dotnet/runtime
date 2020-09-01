@@ -279,6 +279,110 @@ namespace System.Diagnostics.Tests
             }).Dispose();
         }
 
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TestFilteringWithActivityName()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                using (TestDiagnosticSourceEventListener eventSourceListener = new TestDiagnosticSourceEventListener())
+                {
+                    using ActivitySource aSource1 = new ActivitySource("Source1");
+                    using ActivitySource aSource2 = new ActivitySource("Source2");
+
+                    eventSourceListener.Enable("[AS]*+MyActivity");
+                    Assert.Equal(0, eventSourceListener.EventCount);
+
+                    Activity a = aSource1.StartActivity("NotMyActivity"); // Shouldn't get created because nt matching MyActivity
+                    Assert.Null(a);
+                    Assert.Equal(0, eventSourceListener.EventCount);
+
+                    a = aSource1.StartActivity("MyActivity");
+                    Assert.NotNull(a);
+                    Assert.Equal(1, eventSourceListener.EventCount);
+                    Assert.Equal(a.OperationName, eventSourceListener.LastEvent.Arguments["OperationName"]);
+                    a.Stop();
+                    Assert.Equal(2, eventSourceListener.EventCount);
+                    Assert.Equal(a.OperationName, eventSourceListener.LastEvent.Arguments["OperationName"]);
+
+                    a = aSource2.StartActivity("MyActivity");
+                    Assert.NotNull(a);
+                    Assert.Equal(3, eventSourceListener.EventCount);
+                    Assert.Equal(a.OperationName, eventSourceListener.LastEvent.Arguments["OperationName"]);
+                    a.Stop();
+                    Assert.Equal(4, eventSourceListener.EventCount);
+                    Assert.Equal(a.OperationName, eventSourceListener.LastEvent.Arguments["OperationName"]);
+
+                    //
+                    // Now test with specific ActivitySource and ActivityName
+                    //
+
+                    eventSourceListener.Enable("[AS]MySource+MyActivity");
+                    a = aSource1.StartActivity("MyActivity"); // Not from MySource
+                    Assert.Null(a);
+                    Assert.Equal(4, eventSourceListener.EventCount);
+                    using ActivitySource aSource3 = new ActivitySource("MySource");
+                    a = aSource3.StartActivity("NotMyActivity"); // from MySource but NoMyActivity
+                    Assert.Null(a);
+                    Assert.Equal(4, eventSourceListener.EventCount);
+
+                    a = aSource3.StartActivity("MyActivity"); // from MySource and MyActivity
+                    Assert.NotNull(a);
+                    Assert.Equal(5, eventSourceListener.EventCount);
+                    Assert.Equal(a.OperationName, eventSourceListener.LastEvent.Arguments["OperationName"]);
+
+                    a.Stop();
+                    Assert.Equal(6, eventSourceListener.EventCount);
+                    Assert.Equal(a.OperationName, eventSourceListener.LastEvent.Arguments["OperationName"]);
+
+                    //
+                    // test with full query
+                    //
+                    eventSourceListener.Enable("[AS]MySource+MyActivity/Start-Propagate");
+                    a = aSource3.StartActivity("MyActivity"); // from MySource and MyActivity
+                    Assert.NotNull(a);
+                    Assert.Equal(7, eventSourceListener.EventCount);
+                    Assert.Equal(a.OperationName, eventSourceListener.LastEvent.Arguments["OperationName"]);
+                    Assert.False(a.IsAllDataRequested);
+
+                    a.Stop(); // shouldn't fire
+                    Assert.Equal(7, eventSourceListener.EventCount);
+
+                    //
+                    // test with default Source
+                    //
+                    eventSourceListener.Enable("[AS]+MyActivity");
+                    a = new Activity("MyActivity");
+                    a.Start();
+                    Assert.Equal(8, eventSourceListener.EventCount);
+                    Assert.Equal(a.OperationName, eventSourceListener.LastEvent.Arguments["OperationName"]);
+                    Assert.True(a.IsAllDataRequested);
+
+                    a.Stop();
+                    Assert.Equal(9, eventSourceListener.EventCount);
+                    Assert.Equal(a.OperationName, eventSourceListener.LastEvent.Arguments["OperationName"]);
+
+                    a = new Activity("NotMyActivity");
+                    a.Start(); // nothing fire
+                    Assert.Equal(9, eventSourceListener.EventCount);
+
+                    //
+                    // Test with Empty ActivityName
+                    //
+                    eventSourceListener.Enable("[AS]+");
+                    a = new Activity("");
+                    a.Start();
+                    Assert.Equal(10, eventSourceListener.EventCount);
+                    a.Stop();
+                    Assert.Equal(11, eventSourceListener.EventCount);
+
+                    a = aSource3.StartActivity("");
+                    Assert.Null(a);
+                }
+
+            }).Dispose();
+        }
+
         internal void ValidateActivityEvents(TestDiagnosticSourceEventListener eventSourceListener, string eventName, string sourceName, string activityName)
         {
             Assert.Equal(eventName, eventSourceListener.LastEvent.EventSourceEventName);
