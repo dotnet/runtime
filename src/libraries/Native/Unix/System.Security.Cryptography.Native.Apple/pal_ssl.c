@@ -449,6 +449,7 @@ int32_t AppleCryptoNative_SslIsHostnameMatch(SSLContextRef sslContext, CFStringR
                 osStatus = SecTrustEvaluate(trust, &trustResult);
             }
         }
+
 #pragma clang diagnostic pop
 
         if (osStatus == noErr && trustResult != kSecTrustResultUnspecified && trustResult != kSecTrustResultProceed)
@@ -512,6 +513,9 @@ int32_t AppleCryptoNative_SslIsHostnameMatch(SSLContextRef sslContext, CFStringR
 
     if (anchors != NULL)
         CFRelease(anchors);
+
+    if (existingTrust != NULL)
+        CFRelease(existingTrust);
 
     CFRelease(sslPolicy);
     return ret;
