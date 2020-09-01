@@ -719,26 +719,34 @@ namespace DebuggerTests
                 return;
             }
 
-            foreach (var jp in exp_val.Values<JProperty>())
+            try
             {
-                if (jp.Value.Type == JTokenType.Object)
+                foreach (var jp in exp_val.Values<JProperty>())
                 {
-                    var new_val = await GetProperties(actual_val["objectId"].Value<string>());
-                    await CheckProps(new_val, jp.Value, $"{label}-{actual_val["objectId"]?.Value<string>()}");
+                    if (jp.Value.Type == JTokenType.Object)
+                    {
+                        var new_val = await GetProperties(actual_val["objectId"].Value<string>());
+                        await CheckProps(new_val, jp.Value, $"{label}-{actual_val["objectId"]?.Value<string>()}");
 
-                    continue;
+                        continue;
+                    }
+
+                    var exp_val_str = jp.Value.Value<string>();
+                    bool null_or_empty_exp_val = String.IsNullOrEmpty(exp_val_str);
+
+                    var actual_field_val = actual_val?.Values<JProperty>()?.FirstOrDefault(a_jp => a_jp.Name == jp.Name);
+                    var actual_field_val_str = actual_field_val?.Value?.Value<string>();
+                    if (null_or_empty_exp_val && String.IsNullOrEmpty(actual_field_val_str))
+                        continue;
+
+                    Assert.True(actual_field_val != null, $"[{label}] Could not find value field named {jp.Name}");
+                    AssertEqual(exp_val_str, actual_field_val_str, $"[{label}] Value for json property named {jp.Name} didn't match.");
                 }
-
-                var exp_val_str = jp.Value.Value<string>();
-                bool null_or_empty_exp_val = String.IsNullOrEmpty(exp_val_str);
-
-                var actual_field_val = actual_val?.Values<JProperty>()?.FirstOrDefault(a_jp => a_jp.Name == jp.Name);
-                var actual_field_val_str = actual_field_val?.Value?.Value<string>();
-                if (null_or_empty_exp_val && String.IsNullOrEmpty(actual_field_val_str))
-                    continue;
-
-                Assert.True(actual_field_val != null, $"[{label}] Could not find value field named {jp.Name}");
-                AssertEqual(exp_val_str, actual_field_val_str, $"[{label}] Value for json property named {jp.Name} didn't match.");
+            }
+            catch
+            {
+                Console.WriteLine ($"Expected: {exp_val}. Actual: {actual_val}");
+                throw;
             }
         }
 

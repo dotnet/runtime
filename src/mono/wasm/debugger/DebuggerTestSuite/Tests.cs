@@ -1624,9 +1624,25 @@ namespace DebuggerTests
                 await SendCommandAndCheck(JObject.FromObject(new { }), "Debugger.resume", "dotnet://debugger-test.dll/debugger-test.cs", 12, 8, "IntAdd");
                 bp = await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 10, 8);
                 await SendCommandAndCheck(JObject.FromObject(new { }), "Debugger.resume", "dotnet://debugger-test.dll/debugger-test.cs", 10, 8, "IntAdd");
-                
+
             });
         }
+
+        [Fact]
+        public async Task MulticastDelegateTest() => await CheckInspectLocalsAtBreakpointSite(
+            "MulticastDelegateTestClass", "Test", 5, "Test",
+            "window.setTimeout(function() { invoke_static_method('[debugger-test] MulticastDelegateTestClass:run'); })",
+            wait_for_event_fn: async (pause_location) =>
+            {
+               var frame_locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
+               var this_props = await GetObjectOnLocals(frame_locals, "this");
+               await CheckProps(this_props, new
+               {
+                   TestEvent = TSymbol("System.EventHandler<string>"),
+                   Delegate = TSymbol("System.MulticastDelegate")
+               }, "this_props");
+            });
+
         //TODO add tests covering basic stepping behavior as step in/out/over
     }
 }

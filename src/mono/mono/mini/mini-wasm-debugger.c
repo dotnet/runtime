@@ -930,17 +930,16 @@ describe_value(MonoType * type, gpointer addr, int gpflags)
 
 				method = mono_get_delegate_invoke_internal (klass);
 				if (!method) {
-					DEBUG_PRINTF (2, "Could not get a method for the delegate for %s\n", class_name);
-					break;
+					mono_wasm_add_func_var (class_name, NULL, -1);
+				} else {
+					MonoMethod *tm = ((MonoDelegate *)obj)->method;
+					char *tm_desc = NULL;
+					if (tm)
+						tm_desc = mono_method_to_desc_for_js (tm, FALSE);
+
+					mono_wasm_add_func_var (class_name, tm_desc, obj_id);
+					g_free (tm_desc);
 				}
-
-				MonoMethod *tm = ((MonoDelegate *)obj)->method;
-				char *tm_desc = NULL;
-				if (tm)
-					tm_desc = mono_method_to_desc_for_js (tm, FALSE);
-
-				mono_wasm_add_func_var (class_name, tm_desc, obj_id);
-				g_free (tm_desc);
 			} else {
 				char *to_string_val = get_to_string_description (class_name, klass, addr);
 				mono_wasm_add_obj_var (class_name, to_string_val, obj_id);

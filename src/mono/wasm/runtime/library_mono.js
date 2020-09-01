@@ -2086,14 +2086,15 @@ var MonoSupportLib = {
 			var args_sig = parts.splice (1).join (', ');
 			return `${ret_sig} ${method_name} (${args_sig})`;
 		}
-
 		let tgt_sig;
 		if (targetName != 0)
 			tgt_sig = args_to_sig (Module.UTF8ToString (targetName));
 
 		const type_name = MONO._mono_csharp_fixup_class_name (Module.UTF8ToString (className));
+		if (tgt_sig === undefined)
+			tgt_sig = type_name;
 
-		if (objectId == -1) {
+		if (objectId == -1 || targetName === 0) {
 			// Target property
 			MONO.var_info.push ({
 				value: {
