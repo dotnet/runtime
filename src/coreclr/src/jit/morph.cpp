@@ -1859,7 +1859,7 @@ void fgArgInfo::SortArgs()
 }
 
 #ifdef DEBUG
-void fgArgInfo::Dump(Compiler* compiler)
+void fgArgInfo::Dump(Compiler* compiler) const
 {
     for (unsigned curInx = 0; curInx < ArgCount(); curInx++)
     {
