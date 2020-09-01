@@ -946,7 +946,7 @@ namespace System.Diagnostics
 
                 if (firstSpecificList == null || firstWildcardList == null)
                 {
-                    Debug.Assert(firstWildcardList != null || firstWildcardList != null);
+                    Debug.Assert(firstSpecificList != null || firstWildcardList != null);
                     return; // list shouldn't be chanaged.
                 }
 
