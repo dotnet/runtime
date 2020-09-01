@@ -1,11 +1,16 @@
 trigger: none
 
 schedules:
-- cron: "0 11 * * *" # 11 AM UTC => 3 AM PST
-  displayName: Outerloop scheduled build
+- cron: "0 11 * * *"
+  displayName: Mon through Sun at 3:00 AM (UTC-8:00)
   branches:
     include:
     - master
+
+- cron: "0 8 * * *"
+  displayName: Mon through Sun at 12:00 AM (UTC-8:00)
+  branches:
+    include:
     - release/*.*
 
 variables:
@@ -36,8 +41,9 @@ jobs:
         - OSX_x64
       jobParameters:
         testGroup: innerloop
+
   #
-  # Libraries Build
+  # Release Libraries Build
   #
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
@@ -61,10 +67,70 @@ jobs:
       jobParameters:
         isOfficialBuild: ${{ variables['isOfficialBuild'] }}
         isFullMatrix: ${{ variables['isFullMatrix'] }}
-        runTests: true
+        runTests: false
+        liveRuntimeBuildConfig: release
+
+  #
+  # Release Libraries Test Run on CoreCLR
+  #
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/libraries/run-test-job.yml
+      buildConfig: Release
+      platforms:
+      - ${{ if eq(variables['includeWindowsOuterloop'], true) }}:
+        - Windows_NT_x86
+        - ${{ if eq(variables['isFullMatrix'], true) }}:
+          - Windows_NT_x64
+      - ${{ if eq(variables['includeLinuxOuterloop'], true) }}:
+        - ${{ if eq(variables['isFullMatrix'], true) }}:
+          - Linux_x64
+          - Linux_arm
+          - Linux_arm64
+          - Linux_musl_x64
+          - Linux_musl_arm64
+      - ${{ if and(eq(variables['includeOsxOuterloop'], true), eq(variables['isFullMatrix'], true)) }}:
+        - OSX_x64
+      helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+      jobParameters:
+        isOfficialBuild: ${{ variables['isOfficialBuild'] }}
+        isFullMatrix: ${{ variables['isFullMatrix'] }}
         testScope: outerloop
         liveRuntimeBuildConfig: release
+        runtimeFlavor: coreclr
   
+  #
+  # Release Libraries Test Run on Mono
+  #
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/libraries/run-test-job.yml
+      buildConfig: Release
+      platforms:
+      - ${{ if eq(variables['includeWindowsOuterloop'], true) }}:
+        - Windows_NT_x86
+        - ${{ if eq(variables['isFullMatrix'], true) }}:
+          - Windows_NT_x64
+      - ${{ if eq(variables['includeLinuxOuterloop'], true) }}:
+        - ${{ if eq(variables['isFullMatrix'], true) }}:
+          - Linux_x64
+          - Linux_arm
+          - Linux_arm64
+          - Linux_musl_x64
+          - Linux_musl_arm64
+      - ${{ if and(eq(variables['includeOsxOuterloop'], true), eq(variables['isFullMatrix'], true)) }}:
+        - OSX_x64
+      helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+      jobParameters:
+        isOfficialBuild: ${{ variables['isOfficialBuild'] }}
+        isFullMatrix: ${{ variables['isFullMatrix'] }}
+        testScope: outerloop
+        liveRuntimeBuildConfig: release
+        runtimeFlavor: mono
+
+  #
+  # Debug Libraries Build
+  #
   - ${{ if eq(variables['isFullMatrix'], false) }}:
     - template: /eng/pipelines/common/platform-matrix.yml
       parameters:
@@ -82,10 +148,71 @@ jobs:
         jobParameters:
           isOfficialBuild: ${{ variables['isOfficialBuild'] }}
           isFullMatrix: ${{ variables['isFullMatrix'] }}
-          runTests: true
+          runTests: false
           testScope: outerloop
           liveRuntimeBuildConfig: release
 
+  #
+  # Debug Libraries Test Run on CoreCLR
+  #
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/libraries/run-test-job.yml
+      buildConfig: Release
+      platforms:
+      - ${{ if eq(variables['includeWindowsOuterloop'], true) }}:
+        - Windows_NT_x86
+        - ${{ if eq(variables['isFullMatrix'], true) }}:
+          - Windows_NT_x64
+      - ${{ if eq(variables['includeLinuxOuterloop'], true) }}:
+        - ${{ if eq(variables['isFullMatrix'], true) }}:
+          - Linux_x64
+          - Linux_arm
+          - Linux_arm64
+          - Linux_musl_x64
+          - Linux_musl_arm64
+      - ${{ if and(eq(variables['includeOsxOuterloop'], true), eq(variables['isFullMatrix'], true)) }}:
+        - OSX_x64
+      helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+      jobParameters:
+        isOfficialBuild: ${{ variables['isOfficialBuild'] }}
+        isFullMatrix: ${{ variables['isFullMatrix'] }}
+        testScope: outerloop
+        liveRuntimeBuildConfig: release
+        runtimeFlavor: coreclr
+  
+  #
+  # Debug Libraries Test Run on Mono
+  #
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/libraries/run-test-job.yml
+      buildConfig: Release
+      platforms:
+      - ${{ if eq(variables['includeWindowsOuterloop'], true) }}:
+        - Windows_NT_x86
+        - ${{ if eq(variables['isFullMatrix'], true) }}:
+          - Windows_NT_x64
+      - ${{ if eq(variables['includeLinuxOuterloop'], true) }}:
+        - ${{ if eq(variables['isFullMatrix'], true) }}:
+          - Linux_x64
+          - Linux_arm
+          - Linux_arm64
+          - Linux_musl_x64
+          - Linux_musl_arm64
+      - ${{ if and(eq(variables['includeOsxOuterloop'], true), eq(variables['isFullMatrix'], true)) }}:
+        - OSX_x64
+      helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+      jobParameters:
+        isOfficialBuild: ${{ variables['isOfficialBuild'] }}
+        isFullMatrix: ${{ variables['isFullMatrix'] }}
+        testScope: outerloop
+        liveRuntimeBuildConfig: release
+        runtimeFlavor: mono
+
+  #
+  # Release Libraries Test Build & Run using the .NET 4.8 framework
+  #
   - ${{ if eq(variables['includeWindowsOuterloop'], true) }}:
     - template: /eng/pipelines/common/platform-matrix.yml
       parameters:
