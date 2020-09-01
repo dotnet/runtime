@@ -217,7 +217,7 @@ namespace System.Globalization.Tests
 
             if (PlatformDetection.IsBrowser)
             {
-                Assert.Equal(currencyShortName, currencyEnglishName);
+                Assert.Equal(currencyShortName, ri.CurrencyEnglishName);
                 Assert.Equal(currencyShortName, ri.CurrencyNativeName);
             }
             else
