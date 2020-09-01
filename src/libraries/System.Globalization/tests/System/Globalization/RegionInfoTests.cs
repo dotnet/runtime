@@ -181,14 +181,7 @@ namespace System.Globalization.Tests
         public void CurrencySymbol()
         {
             Assert.Equal("$", new RegionInfo("en-US").CurrencySymbol);
-            if (PlatformDetection.IsNotBrowser)
-            {
-                Assert.Contains(new RegionInfo("zh-CN").CurrencySymbol, new string[] { "\u00A5", "\uffe5" });
-            }
-            else
-            {
-                Assert.Equal("CN¥", new RegionInfo("zh-CN").CurrencySymbol);
-            }
+            Assert.Contains(new RegionInfo("zh-CN").CurrencySymbol, new string[] { "\u00A5", "\uffe5" });
         }
 
         [Theory]
