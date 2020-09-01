@@ -788,7 +788,8 @@ void CodeGen::genCodeForDivMod(GenTreeOp* treeNode)
     genCopyRegIfNeeded(dividend, REG_RAX);
 
     // zero or sign extend rax to rdx
-    if (oper == GT_UMOD || oper == GT_UDIV)
+    if (oper == GT_UMOD || oper == GT_UDIV ||
+        (dividend->IsIntegralConst() && (dividend->AsIntConCommon()->IconValue() > 0)))
     {
         instGen_Set_Reg_To_Zero(EA_PTRSIZE, REG_EDX);
     }

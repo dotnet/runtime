@@ -302,6 +302,23 @@ public partial class Math
         public static GenericStruct<bool[]> DelegateTargetForSignatureTest(Math m, GenericStruct<GenericStruct<T[]>> gs) => new GenericStruct<bool[]>();
     }
 
+    public static void TestSimpleStrings()
+    {
+        string str_null = null;
+        string str_empty = String.Empty;
+        string str_spaces = " ";
+        string str_esc = "\\";
+
+        var strings = new[]
+        {
+            str_null,
+            str_empty,
+            str_spaces,
+            str_esc
+        };
+        Console.WriteLine ($"break here");
+    }
+
 }
 
 public class DebuggerTest

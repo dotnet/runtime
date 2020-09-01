@@ -91,21 +91,51 @@ namespace System.Net.Http
         }
 
         [Event(7, Level = EventLevel.Informational)]
-        public void ResponseHeadersBegin()
+        public void RequestHeadersStart()
         {
             WriteEvent(eventId: 7);
         }
 
         [Event(8, Level = EventLevel.Informational)]
-        public void ResponseContentStart()
+        public void RequestHeadersStop()
         {
             WriteEvent(eventId: 8);
         }
 
         [Event(9, Level = EventLevel.Informational)]
-        public void ResponseContentStop()
+        public void RequestContentStart()
         {
             WriteEvent(eventId: 9);
+        }
+
+        [Event(10, Level = EventLevel.Informational)]
+        public void RequestContentStop(long contentLength)
+        {
+            WriteEvent(eventId: 10, contentLength);
+        }
+
+        [Event(11, Level = EventLevel.Informational)]
+        public void ResponseHeadersStart()
+        {
+            WriteEvent(eventId: 11);
+        }
+
+        [Event(12, Level = EventLevel.Informational)]
+        public void ResponseHeadersStop()
+        {
+            WriteEvent(eventId: 12);
+        }
+
+        [Event(13, Level = EventLevel.Informational)]
+        public void ResponseContentStart()
+        {
+            WriteEvent(eventId: 13);
+        }
+
+        [Event(14, Level = EventLevel.Informational)]
+        public void ResponseContentStop()
+        {
+            WriteEvent(eventId: 14);
         }
 
         [NonEvent]
