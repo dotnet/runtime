@@ -465,7 +465,7 @@ namespace System.Net.Sockets
             }
         }
 
-        internal unsafe SocketError DoOperationReceiveMessageFrom(Socket socket, SafeSocketHandle handle)
+        internal unsafe SocketError DoOperationReceiveMessageFrom(Socket socket, SafeSocketHandle handle, CancellationToken cancellationToken)
         {
             // WSARecvMsg uses a WSAMsg descriptor.
             // The WSAMsg buffer is a pinned array to avoid complicating the use of Overlapped.
@@ -555,7 +555,7 @@ namespace System.Net.Sockets
                     overlapped,
                     IntPtr.Zero);
 
-                return ProcessIOCPResultWithSingleBufferHandle(socketError, bytesTransferred, overlapped);
+                return ProcessIOCPResultWithSingleBufferHandle(socketError, bytesTransferred, overlapped, cancellationToken);
             }
             catch
             {

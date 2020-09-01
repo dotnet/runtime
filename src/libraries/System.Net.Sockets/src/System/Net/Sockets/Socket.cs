@@ -3982,14 +3982,12 @@ namespace System.Net.Sockets
 
             SetReceivingPacketInformation();
 
-            // TODO: Handle cancellation
-
             // Prepare for and make the native call.
             e.StartOperationCommon(this, SocketAsyncOperation.ReceiveMessageFrom);
             SocketError socketError;
             try
             {
-                socketError = e.DoOperationReceiveMessageFrom(this, _handle);
+                socketError = e.DoOperationReceiveMessageFrom(this, _handle, cancellationToken);
             }
             catch
             {
