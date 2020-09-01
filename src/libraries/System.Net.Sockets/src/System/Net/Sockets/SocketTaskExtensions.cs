@@ -37,8 +37,12 @@ namespace System.Net.Sockets
             socket.ReceiveAsync(buffer, socketFlags, fromNetworkStream: false, cancellationToken: cancellationToken);
         public static Task<int> ReceiveAsync(this Socket socket, IList<ArraySegment<byte>> buffers, SocketFlags socketFlags) =>
             socket.ReceiveAsync(buffers, socketFlags);
+
         public static Task<SocketReceiveFromResult> ReceiveFromAsync(this Socket socket, ArraySegment<byte> buffer, SocketFlags socketFlags, EndPoint remoteEndPoint) =>
             socket.ReceiveFromAsync(buffer, socketFlags, remoteEndPoint);
+        public static ValueTask<SocketReceiveFromResult> ReceiveFromAsync(this Socket socket, Memory<byte> buffer, SocketFlags socketFlags, EndPoint remoteEndPoint, CancellationToken cancellationToken = default) =>
+            socket.ReceiveFromAsync(buffer, socketFlags, remoteEndPoint, cancellationToken);
+
         public static Task<SocketReceiveMessageFromResult> ReceiveMessageFromAsync(this Socket socket, ArraySegment<byte> buffer, SocketFlags socketFlags, EndPoint remoteEndPoint) =>
             socket.ReceiveMessageFromAsync(buffer, socketFlags, remoteEndPoint);
 

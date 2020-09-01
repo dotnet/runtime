@@ -217,6 +217,42 @@ namespace System.Net.Sockets
 
         internal Task<SocketReceiveFromResult> ReceiveFromAsync(ArraySegment<byte> buffer, SocketFlags socketFlags, EndPoint remoteEndPoint)
         {
+            ValidateBuffer(buffer);
+            return ReceiveFromAsync(buffer, socketFlags, remoteEndPoint, default).AsTask();
+        }
+
+        internal ValueTask<SocketReceiveFromResult> ReceiveFromAsync(Memory<byte> buffer, SocketFlags socketFlags, EndPoint remoteEndPoint, CancellationToken cancellationToken)
+        {
+            if (remoteEndPoint is null)
+            {
+                throw new ArgumentNullException(nameof(remoteEndPoint));
+            }
+            if (!CanTryAddressFamily(remoteEndPoint.AddressFamily))
+            {
+                throw new ArgumentException(SR.Format(SR.net_InvalidEndPointAddressFamily, remoteEndPoint.AddressFamily, _addressFamily), nameof(remoteEndPoint));
+            }
+            if (_rightEndPoint == null)
+            {
+                throw new InvalidOperationException(SR.net_sockets_mustbind);
+            }
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return ValueTask.FromCanceled<SocketReceiveFromResult>(cancellationToken);
+            }
+
+            AwaitableSocketAsyncEventArgs saea =
+                Interlocked.Exchange(ref _singleBufferReceiveEventArgs, null) ??
+                new AwaitableSocketAsyncEventArgs(this, isReceiveForCaching: true);
+
+            Debug.Assert(saea.BufferList == null);
+            saea.SetBuffer(buffer);
+            saea.SocketFlags = socketFlags;
+            saea.RemoteEndPoint = remoteEndPoint;
+            saea.WrapExceptionsInNetworkExceptions = false;
+            return saea.ReceiveFromAsync(this, cancellationToken);
+
+#if false
             var tcs = new StateTaskCompletionSource<EndPoint, SocketReceiveFromResult>(this) { _field1 = remoteEndPoint };
             BeginReceiveFrom(buffer.Array!, buffer.Offset, buffer.Count, socketFlags, ref tcs._field1, iar =>
             {
@@ -233,6 +269,7 @@ namespace System.Net.Sockets
                 catch (Exception e) { innerTcs.TrySetException(e); }
             }, tcs);
             return tcs.Task;
+#endif
         }
 
         internal Task<SocketReceiveMessageFromResult> ReceiveMessageFromAsync(ArraySegment<byte> buffer, SocketFlags socketFlags, EndPoint remoteEndPoint)
@@ -599,7 +636,7 @@ namespace System.Net.Sockets
         }
 
         /// <summary>A SocketAsyncEventArgs that can be awaited to get the result of an operation.</summary>
-        internal sealed class AwaitableSocketAsyncEventArgs : SocketAsyncEventArgs, IValueTaskSource, IValueTaskSource<int>
+        internal sealed class AwaitableSocketAsyncEventArgs : SocketAsyncEventArgs, IValueTaskSource, IValueTaskSource<int>, IValueTaskSource<SocketReceiveFromResult>
         {
             private static readonly Action<object?> s_completedSentinel = new Action<object?>(state => throw new InvalidOperationException(SR.Format(SR.net_sockets_valuetaskmisuse, nameof(s_completedSentinel))));
             /// <summary>The owning socket.</summary>
@@ -699,6 +736,29 @@ namespace System.Net.Sockets
                 return error == SocketError.Success ?
                     new ValueTask<int>(bytesTransferred) :
                     ValueTask.FromException<int>(CreateException(error));
+            }
+
+            /// <summary>Initiates a receive operation on the associated socket.</summary>
+            /// <returns>This instance.</returns>
+            public ValueTask<SocketReceiveFromResult> ReceiveFromAsync(Socket socket, CancellationToken cancellationToken)
+            {
+                Debug.Assert(Volatile.Read(ref _continuation) == null, $"Expected null continuation to indicate reserved for use");
+
+                if (socket.ReceiveFromAsync(this, cancellationToken))
+                {
+                    _cancellationToken = cancellationToken;
+                    return new ValueTask<SocketReceiveFromResult>(this, _token);
+                }
+
+                int bytesTransferred = BytesTransferred;
+                EndPoint remoteEndPoint = RemoteEndPoint!;
+                SocketError error = SocketError;
+
+                Release();
+
+                return error == SocketError.Success ?
+                    new ValueTask<SocketReceiveFromResult>(new SocketReceiveFromResult() { ReceivedBytes = bytesTransferred, RemoteEndPoint = remoteEndPoint }) :
+                    ValueTask.FromException<SocketReceiveFromResult>(CreateException(error));
             }
 
             /// <summary>Initiates a send operation on the associated socket.</summary>
@@ -934,6 +994,28 @@ namespace System.Net.Sockets
                 {
                     ThrowException(error, cancellationToken);
                 }
+            }
+
+            SocketReceiveFromResult IValueTaskSource<SocketReceiveFromResult>.GetResult(short token)
+            {
+                if (token != _token)
+                {
+                    ThrowIncorrectTokenException();
+                }
+
+                SocketError error = SocketError;
+                int bytes = BytesTransferred;
+                EndPoint remoteEndPoint = RemoteEndPoint!;
+                CancellationToken cancellationToken = _cancellationToken;
+
+                Release();
+
+                if (error != SocketError.Success)
+                {
+                    ThrowException(error, cancellationToken);
+                }
+
+                return new SocketReceiveFromResult() { ReceivedBytes = bytes, RemoteEndPoint = remoteEndPoint };
             }
 
             private void ThrowIncorrectTokenException() => throw new InvalidOperationException(SR.InvalidOperation_IncorrectToken);
