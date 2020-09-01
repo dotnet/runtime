@@ -863,7 +863,7 @@ namespace System.Data
         public override System.Type GetProviderSpecificFieldType(int ordinal) { throw null; }
         public override object GetProviderSpecificValue(int ordinal) { throw null; }
         public override int GetProviderSpecificValues(object[] values) { throw null; }
-        public override System.Data.DataTable GetSchemaTable() { throw null; }
+        public override System.Data.DataTable? GetSchemaTable() { throw null; }
         public override string GetString(int ordinal) { throw null; }
         public override object GetValue(int ordinal) { throw null; }
         public override int GetValues(object[] values) { throw null; }
@@ -1247,7 +1247,7 @@ namespace System.Data
         bool IsClosed { get; }
         int RecordsAffected { get; }
         void Close();
-        System.Data.DataTable GetSchemaTable();
+        System.Data.DataTable? GetSchemaTable();
         bool NextResult();
         bool Read();
     }
@@ -1948,7 +1948,7 @@ namespace System.Data.Common
         protected abstract string GetParameterName(int parameterOrdinal);
         protected abstract string GetParameterName(string parameterName);
         protected abstract string GetParameterPlaceholder(int parameterOrdinal);
-        protected virtual System.Data.DataTable GetSchemaTable(System.Data.Common.DbCommand sourceCommand) { throw null; }
+        protected virtual System.Data.DataTable? GetSchemaTable(System.Data.Common.DbCommand sourceCommand) { throw null; }
         public System.Data.Common.DbCommand GetUpdateCommand() { throw null; }
         public System.Data.Common.DbCommand GetUpdateCommand(bool useColumnsForParameterNames) { throw null; }
         protected virtual System.Data.Common.DbCommand InitializeCommand(System.Data.Common.DbCommand? command) { throw null; }
@@ -2169,8 +2169,8 @@ namespace System.Data.Common
         public virtual object GetProviderSpecificValue(int ordinal) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public virtual int GetProviderSpecificValues(object[] values) { throw null; }
-        public virtual System.Data.DataTable GetSchemaTable() { throw null; }
-        public virtual System.Threading.Tasks.Task<System.Data.DataTable> GetSchemaTableAsync(System.Threading.CancellationToken cancellationToken = default) { throw null; }
+        public virtual System.Data.DataTable? GetSchemaTable() { throw null; }
+        public virtual System.Threading.Tasks.Task<System.Data.DataTable?> GetSchemaTableAsync(System.Threading.CancellationToken cancellationToken = default) { throw null; }
         public virtual System.Threading.Tasks.Task<System.Collections.ObjectModel.ReadOnlyCollection<System.Data.Common.DbColumn>> GetColumnSchemaAsync(System.Threading.CancellationToken cancellationToken = default) { throw null; }
         public virtual System.IO.Stream GetStream(int ordinal) { throw null; }
         public abstract string GetString(int ordinal);
@@ -3536,7 +3536,6 @@ namespace System.Data.SqlTypes
         UnmanagedBuffer = 2,
     }
 }
-#nullable disable
 namespace System.Xml
 {
     [System.ObsoleteAttribute("XmlDataDocument class will be removed in a future release.")]
@@ -3546,17 +3545,16 @@ namespace System.Xml
         public XmlDataDocument(System.Data.DataSet dataset) { }
         public System.Data.DataSet DataSet { get { throw null; } }
         public override System.Xml.XmlNode CloneNode(bool deep) { throw null; }
-        public override System.Xml.XmlElement CreateElement(string prefix, string localName, string namespaceURI) { throw null; }
+        public override System.Xml.XmlElement CreateElement(string? prefix, string localName, string? namespaceURI) { throw null; }
         public override System.Xml.XmlEntityReference CreateEntityReference(string name) { throw null; }
-        protected override System.Xml.XPath.XPathNavigator CreateNavigator(System.Xml.XmlNode node) { throw null; }
-        public override System.Xml.XmlElement GetElementById(string elemId) { throw null; }
+        protected override System.Xml.XPath.XPathNavigator? CreateNavigator(System.Xml.XmlNode node) { throw null; }
+        public override System.Xml.XmlElement? GetElementById(string elemId) { throw null; }
         public System.Xml.XmlElement GetElementFromRow(System.Data.DataRow r) { throw null; }
         public override System.Xml.XmlNodeList GetElementsByTagName(string name) { throw null; }
-        public System.Data.DataRow GetRowFromElement(System.Xml.XmlElement e) { throw null; }
+        public System.Data.DataRow? GetRowFromElement(System.Xml.XmlElement? e) { throw null; }
         public override void Load(System.IO.Stream inStream) { }
         public override void Load(System.IO.TextReader txtReader) { }
         public override void Load(string filename) { }
         public override void Load(System.Xml.XmlReader reader) { }
     }
 }
-#nullable enable
