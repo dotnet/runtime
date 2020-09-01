@@ -16,19 +16,16 @@ namespace System.Net.Security.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
-    public class SslStreamNetworkStreamTest : IDisposable
+    public class SslStreamNetworkStreamTest
     {
-        private readonly X509Certificate2 _serverCert;
-        private readonly X509Certificate2Collection _serverChain;
+        private static readonly X509Certificate2 _serverCert;
+        private static readonly X509Certificate2Collection _serverChain;
 
-        public SslStreamNetworkStreamTest()
+        static SslStreamNetworkStreamTest()
         {
-            (_serverCert, _serverChain) = TestHelper.GenerateCertificates("localhost", this.GetType().Name);
-        }
-
-        public void Dispose()
-        {
-            TestHelper.CleanupCertificates(this.GetType().Name);
+            string name = System.Reflection.MethodBase.GetCurrentMethod().DeclaringType.Name.ToString();
+            TestHelper.CleanupCertificates(name);
+            (_serverCert, _serverChain) = TestHelper.GenerateCertificates("localhost", name);
         }
 
         [Fact]
