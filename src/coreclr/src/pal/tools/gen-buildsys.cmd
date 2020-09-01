@@ -21,7 +21,7 @@ set __VSVersion=%3
 set __Arch=%4
 set __CmakeGenerator=Visual Studio
 
-if /i "%__NMakeMakefiles%" == "1" (
+if /i "%__Ninja%" == "1" (
     set __CmakeGenerator=Ninja
 ) else (
     if /i "%__VSVersion%" == "vs2019" (set __CmakeGenerator=%__CmakeGenerator% 16 2019)
