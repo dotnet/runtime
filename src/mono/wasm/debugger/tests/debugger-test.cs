@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-
+using System.Threading.Tasks;
 public partial class Math
 { //Only append content to this class as the test suite depends on line info
     public static int IntAdd(int a, int b)
@@ -369,5 +369,6 @@ public class MulticastDelegateTestClass
         Delegate = TestEvent;
 
         TestEvent?.Invoke(this, Delegate?.ToString());
+        await Task.CompletedTask;
     }
 }

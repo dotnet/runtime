@@ -362,7 +362,7 @@ var MonoSupportLib = {
 			var i = 0;
 			while (i < var_list.length) {
 				let o = var_list [i];
-				const this_has_name = name !== undefined;
+				const this_has_name = o.name !== undefined;
 				let next_has_value_or_get_set = false;
 
 				if (i + 1 < var_list.length) {
