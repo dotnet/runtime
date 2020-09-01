@@ -160,10 +160,8 @@ namespace System.Runtime.InteropServices.Tests
             using var buffer = new HGlobalBuffer(200);
 
             int[] intArray = new int[] { 11, 22, 33, 44 };
-            Span<int> intSpan = stackalloc int[] { 44, 33, 22, 11 };
             TestArray(intArray);
             TestSpan<int>(intArray);
-            TestSpan<int>(intSpan);
 
             TestStruct[] structArray = new TestStruct[]
             {
