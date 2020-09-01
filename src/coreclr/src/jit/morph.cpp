@@ -783,9 +783,9 @@ void fgArgTabEntry::Dump() const
     }
     if (numSlots > 0)
     {
-        printf(", numSlots=%u, slotNum=%u", numSlots, slotNum);
+        printf(", numSlots=%u, slotNum=%u, byteSize=%u, byteOffset=%u", numSlots, slotNum, _byteSize, _byteOffset);
     }
-    printf(", align=%u", alignment);
+    printf(", align=%u", byteAlignment);
     if (isLateArg())
     {
         printf(", lateArgInx=%u", GetLateArgInx());
@@ -832,11 +832,14 @@ void fgArgTabEntry::Dump() const
 
 fgArgInfo::fgArgInfo(Compiler* comp, GenTreeCall* call, unsigned numArgs)
 {
-    compiler    = comp;
-    callTree    = call;
-    argCount    = 0; // filled in arg count, starts at zero
+    compiler = comp;
+    callTree = call;
+    argCount = 0; // filled in arg count, starts at zero
+#if !defined(HELLO_APPLE)
     nextSlotNum = INIT_ARG_STACK_SLOT;
-    stkLevel    = 0;
+#endif
+    nextStackByteOffset = INIT_ARG_STACK_SLOT * TARGET_POINTER_SIZE;
+    stkLevel            = 0;
 #if defined(UNIX_X86_ABI)
     alignmentDone = false;
     stkSizeBytes  = 0;
@@ -879,11 +882,14 @@ fgArgInfo::fgArgInfo(GenTreeCall* newCall, GenTreeCall* oldCall)
 {
     fgArgInfo* oldArgInfo = oldCall->AsCall()->fgArgInfo;
 
-    compiler    = oldArgInfo->compiler;
-    callTree    = newCall;
-    argCount    = 0; // filled in arg count, starts at zero
+    compiler = oldArgInfo->compiler;
+    callTree = newCall;
+    argCount = 0; // filled in arg count, starts at zero
+#if !defined(HELLO_APPLE)
     nextSlotNum = INIT_ARG_STACK_SLOT;
-    stkLevel    = oldArgInfo->stkLevel;
+#endif
+    nextStackByteOffset = INIT_ARG_STACK_SLOT * TARGET_POINTER_SIZE;
+    stkLevel            = oldArgInfo->stkLevel;
 #if defined(UNIX_X86_ABI)
     alignmentDone = oldArgInfo->alignmentDone;
     stkSizeBytes  = oldArgInfo->stkSizeBytes;
@@ -957,8 +963,12 @@ fgArgInfo::fgArgInfo(GenTreeCall* newCall, GenTreeCall* oldCall)
         }
     }
 
-    argCount     = oldArgInfo->argCount;
-    nextSlotNum  = oldArgInfo->nextSlotNum;
+    argCount = oldArgInfo->argCount;
+#if !defined(HELLO_APPLE)
+    nextSlotNum = oldArgInfo->nextSlotNum;
+#endif
+    nextStackByteOffset = oldArgInfo->nextStackByteOffset;
+
     hasRegArgs   = oldArgInfo->hasRegArgs;
     hasStackArgs = oldArgInfo->hasStackArgs;
     argsComplete = true;
@@ -977,9 +987,11 @@ fgArgTabEntry* fgArgInfo::AddRegArg(unsigned          argNum,
                                     GenTreeCall::Use* use,
                                     regNumber         regNum,
                                     unsigned          numRegs,
-                                    unsigned          alignment,
-                                    bool              isStruct,
-                                    bool              isVararg /*=false*/)
+                                    unsigned          byteSize,
+
+                                    unsigned byteAlignment,
+                                    bool     isStruct,
+                                    bool     isVararg /*=false*/)
 {
     fgArgTabEntry* curArgTabEntry = new (compiler, CMK_fgArgInfo) fgArgTabEntry;
 
@@ -989,14 +1001,15 @@ fgArgTabEntry* fgArgInfo::AddRegArg(unsigned          argNum,
     // may actually be less.
     curArgTabEntry->setRegNum(0, regNum);
 
-    curArgTabEntry->argNum    = argNum;
-    curArgTabEntry->argType   = node->TypeGet();
-    curArgTabEntry->use       = use;
-    curArgTabEntry->lateUse   = nullptr;
-    curArgTabEntry->slotNum   = 0;
-    curArgTabEntry->numRegs   = numRegs;
-    curArgTabEntry->numSlots  = 0;
-    curArgTabEntry->alignment = alignment;
+    curArgTabEntry->argNum  = argNum;
+    curArgTabEntry->argType = node->TypeGet();
+    curArgTabEntry->use     = use;
+    curArgTabEntry->lateUse = nullptr;
+    curArgTabEntry->slotNum = 0;
+    curArgTabEntry->numRegs = numRegs;
+    curArgTabEntry->SetByteSize(byteSize);
+    curArgTabEntry->numSlots      = 0;
+    curArgTabEntry->byteAlignment = byteAlignment;
     curArgTabEntry->SetLateArgInx(UINT_MAX);
     curArgTabEntry->tmpNum = BAD_VAR_NUM;
     curArgTabEntry->SetSplit(false);
@@ -1023,7 +1036,8 @@ fgArgTabEntry* fgArgInfo::AddRegArg(unsigned                                    
                                     GenTreeCall::Use*                                                use,
                                     regNumber                                                        regNum,
                                     unsigned                                                         numRegs,
-                                    unsigned                                                         alignment,
+                                    unsigned                                                         byteSize,
+                                    unsigned                                                         byteAlignment,
                                     const bool                                                       isStruct,
                                     const bool                                                       isVararg,
                                     const regNumber                                                  otherRegNum,
@@ -1031,7 +1045,8 @@ fgArgTabEntry* fgArgInfo::AddRegArg(unsigned                                    
                                     const unsigned                                                   structFloatRegs,
                                     const SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* const structDescPtr)
 {
-    fgArgTabEntry* curArgTabEntry = AddRegArg(argNum, node, use, regNum, numRegs, alignment, isStruct, isVararg);
+    fgArgTabEntry* curArgTabEntry =
+        AddRegArg(argNum, node, use, regNum, numRegs, byteSize, byteAlignment, isStruct, isVararg);
     assert(curArgTabEntry != nullptr);
 
     curArgTabEntry->isStruct        = isStruct; // is this a struct arg
@@ -1058,27 +1073,42 @@ fgArgTabEntry* fgArgInfo::AddStkArg(unsigned          argNum,
                                     GenTree*          node,
                                     GenTreeCall::Use* use,
                                     unsigned          numSlots,
-                                    unsigned          alignment,
+                                    unsigned          byteSize,
+                                    unsigned          byteAlignment,
                                     bool              isStruct,
                                     bool              isVararg /*=false*/)
 {
     fgArgTabEntry* curArgTabEntry = new (compiler, CMK_fgArgInfo) fgArgTabEntry;
 
-    nextSlotNum = roundUp(nextSlotNum, alignment);
+#if !defined(HELLO_APPLE)
+    nextSlotNum = roundUp(nextSlotNum, byteAlignment / TARGET_POINTER_SIZE);
+#endif
+    nextStackByteOffset = roundUp(nextStackByteOffset, byteAlignment);
+
+    JITDUMP("Add a stack argument num=%d, byteSize=%d, byteAligment=%d, nextStackByteOffset=%d\n", argNum, byteSize,
+            byteAlignment, nextStackByteOffset);
+
+#if !defined(HELLO_APPLE)
+    assert(nextStackByteOffset / TARGET_POINTER_SIZE == nextSlotNum);
+#endif
 
     curArgTabEntry->setRegNum(0, REG_STK);
     curArgTabEntry->argNum  = argNum;
     curArgTabEntry->argType = node->TypeGet();
     curArgTabEntry->use     = use;
     curArgTabEntry->lateUse = nullptr;
+#if !defined(HELLO_APPLE)
     curArgTabEntry->slotNum = nextSlotNum;
+#endif
+    curArgTabEntry->SetByteSize(byteSize);
+    curArgTabEntry->SetByteOffset(nextStackByteOffset);
     curArgTabEntry->numRegs = 0;
 #if defined(UNIX_AMD64_ABI)
     curArgTabEntry->structIntRegs   = 0;
     curArgTabEntry->structFloatRegs = 0;
 #endif // defined(UNIX_AMD64_ABI)
-    curArgTabEntry->numSlots  = numSlots;
-    curArgTabEntry->alignment = alignment;
+    curArgTabEntry->numSlots      = numSlots;
+    curArgTabEntry->byteAlignment = byteAlignment;
     curArgTabEntry->SetLateArgInx(UINT_MAX);
     curArgTabEntry->tmpNum = BAD_VAR_NUM;
     curArgTabEntry->SetSplit(false);
@@ -1096,14 +1126,19 @@ fgArgTabEntry* fgArgInfo::AddStkArg(unsigned          argNum,
 
     hasStackArgs = true;
     AddArg(curArgTabEntry);
-
+#if !defined(HELLO_APPLE)
     nextSlotNum += numSlots;
+#endif
+    nextStackByteOffset += byteSize;
     return curArgTabEntry;
 }
 
 void fgArgInfo::RemorphReset()
 {
+#if !defined(HELLO_APPLE)
     nextSlotNum = INIT_ARG_STACK_SLOT;
+#endif
+    nextStackByteOffset = INIT_ARG_STACK_SLOT * TARGET_POINTER_SIZE;
 }
 
 //------------------------------------------------------------------------
@@ -1149,10 +1184,23 @@ void fgArgInfo::UpdateStkArg(fgArgTabEntry* curArgTabEntry, GenTree* node, bool 
     noway_assert(curArgTabEntry->use != callTree->gtCallThisArg);
     assert((curArgTabEntry->GetRegNum() == REG_STK) || curArgTabEntry->IsSplit());
     assert(curArgTabEntry->use->GetNode() == node);
-    nextSlotNum = (unsigned)roundUp(nextSlotNum, curArgTabEntry->alignment);
+#if !defined(HELLO_APPLE)
+    nextSlotNum = (unsigned)roundUp(nextSlotNum, curArgTabEntry->byteAlignment / TARGET_POINTER_SIZE);
     assert(curArgTabEntry->slotNum == nextSlotNum);
-
     nextSlotNum += curArgTabEntry->numSlots;
+#endif
+    nextStackByteOffset = (unsigned)roundUp(nextStackByteOffset, curArgTabEntry->byteAlignment);
+    assert(curArgTabEntry->GetByteOffset() == nextStackByteOffset);
+
+    if (!curArgTabEntry->IsSplit())
+    {
+        nextStackByteOffset += curArgTabEntry->GetByteSize();
+    }
+    else
+    {
+        // TODO-Cleanup: proabably `SplitArg` should record the stack size, meaning another field in `fgArgTabEntry`?
+        nextStackByteOffset += curArgTabEntry->GetByteSize() - curArgTabEntry->numRegs * TARGET_POINTER_SIZE;
+    }
 }
 
 void fgArgInfo::SplitArg(unsigned argNum, unsigned numRegs, unsigned numSlots)
@@ -1183,9 +1231,14 @@ void fgArgInfo::SplitArg(unsigned argNum, unsigned numRegs, unsigned numSlots)
         curArgTabEntry->SetSplit(true);
         curArgTabEntry->numRegs  = numRegs;
         curArgTabEntry->numSlots = numSlots;
-        hasStackArgs             = true;
+        curArgTabEntry->SetByteOffset(0);
+        hasStackArgs = true;
     }
+#if !defined(HELLO_APPLE)
     nextSlotNum += numSlots;
+#endif
+    // TODO-Cleanup: structs are aligned to 8 bytes on arm64 apple, so it would work, but pass the precise size.
+    nextStackByteOffset += numSlots * TARGET_POINTER_SIZE;
 }
 
 //------------------------------------------------------------------------
@@ -2677,7 +2730,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         *insertionPoint = gtNewCallArgs(arg);
 #else  // !defined(TARGET_X86)
         // All other architectures pass the cookie in a register.
-        call->gtCallArgs = gtPrependNewCallArg(arg, call->gtCallArgs);
+        call->gtCallArgs       = gtPrependNewCallArg(arg, call->gtCallArgs);
 #endif // defined(TARGET_X86)
 
         nonStandardArgs.Add(arg, REG_PINVOKE_COOKIE_PARAM);
@@ -2736,10 +2789,16 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         assert(call->gtCallType == CT_USER_FUNC || call->gtCallType == CT_INDIRECT);
         assert(varTypeIsGC(argx) || (argx->gtType == TYP_I_IMPL));
 
+        const regNumber regNum        = genMapIntRegArgNumToRegNum(intArgRegNum);
+        const unsigned  numRegs       = 1;
+        const unsigned  byteSize      = TARGET_POINTER_SIZE;
+        const unsigned  byteAlignment = TARGET_POINTER_SIZE;
+        const bool      isStruct      = false;
+
         // This is a register argument - put it in the table.
-        call->fgArgInfo->AddRegArg(argIndex, argx, call->gtCallThisArg, genMapIntRegArgNumToRegNum(intArgRegNum), 1, 1,
-                                   false, callIsVararg UNIX_AMD64_ABI_ONLY_ARG(REG_STK) UNIX_AMD64_ABI_ONLY_ARG(0)
-                                              UNIX_AMD64_ABI_ONLY_ARG(0) UNIX_AMD64_ABI_ONLY_ARG(nullptr));
+        call->fgArgInfo->AddRegArg(argIndex, argx, call->gtCallThisArg, regNum, numRegs, byteSize, byteAlignment,
+                                   isStruct, callIsVararg UNIX_AMD64_ABI_ONLY_ARG(REG_STK) UNIX_AMD64_ABI_ONLY_ARG(0)
+                                                 UNIX_AMD64_ABI_ONLY_ARG(0) UNIX_AMD64_ABI_ONLY_ARG(nullptr));
 
         intArgRegNum++;
 #ifdef WINDOWS_AMD64_ABI
@@ -2856,9 +2915,14 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         var_types hfaType  = TYP_UNDEF;
         unsigned  hfaSlots = 0;
 
-        bool                 passUsingFloatRegs;
-        unsigned             argAlign      = 1;
+        bool passUsingFloatRegs;
+#if !defined(HELLO_APPLE)
+        unsigned argAlignBytes = TARGET_POINTER_SIZE;
+#else
+        unsigned argAlignBytes = 1; // Hi Apple!
+#endif
         unsigned             size          = 0;
+        unsigned             byteSize      = 0;
         CORINFO_CLASS_HANDLE copyBlkClass  = nullptr;
         bool                 isRegArg      = false;
         bool                 isNonStandard = false;
@@ -2892,12 +2956,11 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         bool passUsingIntRegs = passUsingFloatRegs ? false : (intArgRegNum < MAX_REG_ARG);
 
         // We don't use the "size" return value from InferOpSizeAlign().
-        codeGen->InferOpSizeAlign(argx, &argAlign);
+        codeGen->InferOpSizeAlign(argx, &argAlignBytes);
 
-        argAlign = roundUp(argAlign, TARGET_POINTER_SIZE);
-        argAlign /= TARGET_POINTER_SIZE;
+        argAlignBytes = roundUp(argAlignBytes, TARGET_POINTER_SIZE);
 
-        if (argAlign == 2)
+        if (argAlignBytes == 2 * TARGET_POINTER_SIZE)
         {
             if (passUsingFloatRegs)
             {
@@ -2988,15 +3051,22 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
 #ifdef UNIX_AMD64_ABI
         if (!isStructArg)
         {
-            size = 1; // On AMD64, all primitives fit in a single (64-bit) 'slot'
+            size     = 1; // On AMD64, all primitives fit in a single (64-bit) 'slot'
+            byteSize = genTypeSize(argx);
         }
         else
         {
-            size = (unsigned)(roundUp(structSize, TARGET_POINTER_SIZE)) / TARGET_POINTER_SIZE;
+            size     = (unsigned)(roundUp(structSize, TARGET_POINTER_SIZE)) / TARGET_POINTER_SIZE;
+            byteSize = structSize;
             eeGetSystemVAmd64PassStructInRegisterDescriptor(objClass, &structDesc);
         }
-#else  // !UNIX_AMD64_ABI
+#else // !UNIX_AMD64_ABI
         size               = 1; // On AMD64 Windows, all args fit in a single (64-bit) 'slot'
+        if (!isStructArg)
+        {
+            byteSize = genTypeSize(argx);
+        }
+
 #endif // UNIX_AMD64_ABI
 #elif defined(TARGET_ARM64)
         if (isStructArg)
@@ -3005,7 +3075,9 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
             {
                 // HFA structs are passed by value in multiple registers.
                 // The "size" in registers may differ the size in pointer-sized units.
-                size = GetHfaCount(argx);
+                CORINFO_CLASS_HANDLE structHnd = gtGetStructHandle(argx);
+                size                           = GetHfaCount(structHnd);
+                byteSize                       = info.compCompHnd->getClassSize(structHnd);
             }
             else
             {
@@ -3014,8 +3086,8 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
                 // if sufficient registers are available.
                 // Structs that are larger than 2 pointers (except for HFAs) are passed by
                 // reference (to a copy)
-                size = (unsigned)(roundUp(structSize, TARGET_POINTER_SIZE)) / TARGET_POINTER_SIZE;
-
+                size     = (unsigned)(roundUp(structSize, TARGET_POINTER_SIZE)) / TARGET_POINTER_SIZE;
+                byteSize = structSize;
                 if (size > 2)
                 {
                     size = 1;
@@ -3026,22 +3098,26 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         }
         else
         {
-            size = 1; // Otherwise, all primitive types fit in a single (64-bit) 'slot'
+            size     = 1; // Otherwise, all primitive types fit in a single (64-bit) 'slot'
+            byteSize = genTypeSize(argx);
         }
 #elif defined(TARGET_ARM) || defined(TARGET_X86)
         if (isStructArg)
         {
-            size = (unsigned)(roundUp(structSize, TARGET_POINTER_SIZE)) / TARGET_POINTER_SIZE;
+            size     = (unsigned)(roundUp(structSize, TARGET_POINTER_SIZE)) / TARGET_POINTER_SIZE;
+            byteSize = structSize;
         }
         else
         {
             // The typical case.
             // Long/double type argument(s) will be modified as needed in Lowering.
-            size = genTypeStSz(argx->gtType);
+            size     = genTypeStSz(argx->gtType);
+            byteSize = genTypeSize(argx);
         }
 #else
 #error Unsupported or unset target architecture
 #endif // TARGET_XXX
+
         if (isStructArg)
         {
             // We have an argument with a struct type, but it may be be a child of a GT_COMMA
@@ -3050,28 +3126,26 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
             assert(argx == args->GetNode());
 
             unsigned originalSize = structSize;
-            originalSize          = (originalSize == 0 ? TARGET_POINTER_SIZE : originalSize);
+            originalSize          = (originalSize == 0 ? TARGET_POINTER_SIZE : originalSize); // WTF...
             unsigned roundupSize  = (unsigned)roundUp(originalSize, TARGET_POINTER_SIZE);
 
             structSize = originalSize;
 
             structPassingKind howToPassStruct;
 
-            structBaseType = getArgTypeForStruct(objClass, &howToPassStruct, callIsVararg, originalSize);
-
-            bool passedInRegisters = false;
-            passStructByRef        = (howToPassStruct == SPK_ByReference);
+            structBaseType  = getArgTypeForStruct(objClass, &howToPassStruct, callIsVararg, originalSize);
+            passStructByRef = (howToPassStruct == SPK_ByReference);
+            if (howToPassStruct == SPK_ByReference)
+            {
+                byteSize = TARGET_POINTER_SIZE;
+            }
+            else
+            {
+                byteSize = structSize;
+            }
 
             if (howToPassStruct == SPK_PrimitiveType)
             {
-// For ARM64 or AMD64/UX we can pass non-power-of-2 structs in a register.
-// For ARM or AMD64/Windows only power-of-2 structs are passed in registers.
-#if !defined(TARGET_ARM64) && !defined(UNIX_AMD64_ABI)
-                if (!isPow2(originalSize))
-#endif //  !TARGET_ARM64 && !UNIX_AMD64_ABI
-                {
-                    passedInRegisters = true;
-                }
 #ifdef TARGET_ARM
                 // TODO-CQ: getArgTypeForStruct should *not* return TYP_DOUBLE for a double struct,
                 // or for a struct of two floats. This causes the struct to be address-taken.
@@ -3093,6 +3167,9 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
 
         // The 'size' value has now must have been set. (the original value of zero is an invalid value)
         assert(size != 0);
+        assert(byteSize != 0);
+        // It would be nice to check something like "byteSize / TARGET_REG_SIZE == size" byt actual "size" could
+        // be number of bigger registers, like vector regs for example.
 
         //
         // Figure out if the argument will be passed in a register.
@@ -3335,11 +3412,11 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
 #endif
 
             // This is a register argument - put it in the table
-            newArgEntry = call->fgArgInfo->AddRegArg(argIndex, argx, args, nextRegNum, size, argAlign, isStructArg,
-                                                     callIsVararg UNIX_AMD64_ABI_ONLY_ARG(nextOtherRegNum)
-                                                         UNIX_AMD64_ABI_ONLY_ARG(structIntRegs)
-                                                             UNIX_AMD64_ABI_ONLY_ARG(structFloatRegs)
-                                                                 UNIX_AMD64_ABI_ONLY_ARG(&structDesc));
+            newArgEntry = call->fgArgInfo->AddRegArg(argIndex, argx, args, nextRegNum, size, byteSize, argAlignBytes,
+                                                     isStructArg, callIsVararg UNIX_AMD64_ABI_ONLY_ARG(nextOtherRegNum)
+                                                                      UNIX_AMD64_ABI_ONLY_ARG(structIntRegs)
+                                                                          UNIX_AMD64_ABI_ONLY_ARG(structFloatRegs)
+                                                                              UNIX_AMD64_ABI_ONLY_ARG(&structDesc));
 
             newArgEntry->SetIsBackFilled(isBackFilled);
             newArgEntry->isNonStandard = isNonStandard;
@@ -3400,7 +3477,8 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         else // We have an argument that is not passed in a register
         {
             // This is a stack argument - put it in the table
-            newArgEntry = call->fgArgInfo->AddStkArg(argIndex, argx, args, size, argAlign, isStructArg, callIsVararg);
+            newArgEntry = call->fgArgInfo->AddStkArg(argIndex, argx, args, size, byteSize, argAlignBytes, isStructArg,
+                                                     callIsVararg);
 #ifdef UNIX_AMD64_ABI
             // TODO-Amd64-Unix-CQ: This is temporary (see also in fgMorphArgs).
             if (structDesc.passedInRegisters)
@@ -3547,11 +3625,11 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
         *parentArgx = argx;
         assert(argx == args->GetNode());
 
-        unsigned             argAlign     = argEntry->alignment;
-        unsigned             size         = argEntry->getSize();
-        CORINFO_CLASS_HANDLE copyBlkClass = NO_CLASS_HANDLE;
+        unsigned             argAlignBytes = argEntry->byteAlignment;
+        unsigned             size          = argEntry->getSize();
+        CORINFO_CLASS_HANDLE copyBlkClass  = NO_CLASS_HANDLE;
 
-        if (argAlign == 2)
+        if (argAlignBytes == 2 * TARGET_POINTER_SIZE)
         {
             if (argSlots % 2 == 1)
             {
@@ -4001,21 +4079,33 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
     // outgoing arg size.
     if (!call->IsFastTailCall())
     {
-        unsigned preallocatedArgCount = call->fgArgInfo->GetNextSlotNum();
 
 #if defined(UNIX_AMD64_ABI)
         // This is currently required for the UNIX ABI to work correctly.
         opts.compNeedToAlignFrame = true;
 #endif // UNIX_AMD64_ABI
 
-        const unsigned outgoingArgSpaceSize = preallocatedArgCount * REGSIZE_BYTES;
+        const unsigned outgoingArgSpaceSize = roundUp(call->fgArgInfo->GetNextSlotByteOffset(), REGSIZE_BYTES);
+
+#if !defined(HELLO_APPLE)
+        unsigned preallocatedArgCount = call->fgArgInfo->GetNextSlotNum();
+        assert(outgoingArgSpaceSize == preallocatedArgCount * REGSIZE_BYTES);
+#endif
         call->fgArgInfo->SetOutArgSize(max(outgoingArgSpaceSize, MIN_ARG_AREA_FOR_CALL));
 
 #ifdef DEBUG
         if (verbose)
         {
-            printf("argSlots=%d, preallocatedArgCount=%d, nextSlotNum=%d, outgoingArgSpaceSize=%d\n", argSlots,
-                   preallocatedArgCount, call->fgArgInfo->GetNextSlotNum(), outgoingArgSpaceSize);
+            const fgArgInfo* argInfo = call->fgArgInfo;
+#if !defined(HELLO_APPLE)
+            printf("argSlots=%d, preallocatedArgCount=%d, nextSlotNum=%d, nextSlotByteOffset=%d, "
+                   "outgoingArgSpaceSize=%d\n",
+                   argSlots, preallocatedArgCount, argInfo->GetNextSlotNum(), argInfo->GetNextSlotByteOffset(),
+                   outgoingArgSpaceSize);
+#else
+            printf("argSlots=%d, nextSlotByteOffset=%d, outgoingArgSpaceSize=%d\n", argSlots,
+                   argInfo->GetNextSlotByteOffset(), outgoingArgSpaceSize);
+#endif
         }
 #endif
     }

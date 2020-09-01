@@ -6526,8 +6526,8 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
     {
 #if defined(TARGET_AMD64) && !defined(UNIX_AMD64_ABI) // No 4 slots for outgoing params on System V.
         noway_assert(lvaOutgoingArgSpaceSize >= (4 * TARGET_POINTER_SIZE));
-#endif
         noway_assert((lvaOutgoingArgSpaceSize % TARGET_POINTER_SIZE) == 0);
+#endif
 
         // Give it a value so we can avoid asserts in CHK builds.
         // Since this will always use an SP relative offset of zero

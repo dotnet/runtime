@@ -12,6 +12,10 @@
 #define FEATURE_VARARG 0
 #endif
 
+#if defined(TARGET_ARM64) && defined(TARGET_OSX)
+#define HELLO_APPLE
+#endif
+
 /*****************************************************************************/
 // The following are human readable names for the target architectures
 #if defined(TARGET_X86)

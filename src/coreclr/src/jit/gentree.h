@@ -5992,6 +5992,13 @@ struct GenTreePhiArg : public GenTreeLclVarCommon
 
 struct GenTreePutArgStk : public GenTreeUnOp
 {
+private:
+    unsigned _stackByteOffset;
+#ifdef FEATURE_PUT_STRUCT_ARG_STK
+    unsigned _byteSize;
+#endif // FEATURE_PUT_STRUCT_ARG_STK
+
+public:
     unsigned gtSlotNum; // Slot number of the argument to be passed on stack
 #if defined(UNIX_X86_ABI)
     unsigned gtPadAlign; // Number of padding slots for stack alignment
@@ -6003,11 +6010,17 @@ struct GenTreePutArgStk : public GenTreeUnOp
     GenTreePutArgStk(genTreeOps   oper,
                      var_types    type,
                      GenTree*   op1,
+                     unsigned stackByteOffset
+                     PUT_STRUCT_ARG_STK_ONLY_ARG(unsigned byteSize),
                      unsigned     slotNum
                      PUT_STRUCT_ARG_STK_ONLY_ARG(unsigned numSlots),
                      bool         putInIncomingArgArea = false,
                      GenTreeCall* callNode = nullptr)
         : GenTreeUnOp(oper, type, op1 DEBUGARG(/*largeNode*/ false))
+        , _stackByteOffset(stackByteOffset)
+#ifdef FEATURE_PUT_STRUCT_ARG_STK
+        , _byteSize(byteSize)
+#endif // FEATURE_PUT_STRUCT_ARG_STK
         , gtSlotNum(slotNum)
 #if defined(UNIX_X86_ABI)
         , gtPadAlign(0)
@@ -6023,6 +6036,9 @@ struct GenTreePutArgStk : public GenTreeUnOp
         , gtCall(callNode)
 #endif
     {
+#if !defined(HELLO_APPLE)
+        assert(stackByteOffset == slotNum * TARGET_POINTER_SIZE);
+#endif
     }
 
 // clang-format on
@@ -6050,7 +6066,10 @@ struct GenTreePutArgStk : public GenTreeUnOp
 
     unsigned getArgOffset()
     {
-        return gtSlotNum * TARGET_POINTER_SIZE;
+#if !defined(HELLO_APPLE)
+        assert(_stackByteOffset / TARGET_POINTER_SIZE == gtSlotNum);
+#endif
+        return _stackByteOffset;
     }
 
 #if defined(UNIX_X86_ABI)
@@ -6118,6 +6137,7 @@ struct GenTreePutArgSplit : public GenTreePutArgStk
     unsigned gtNumRegs;
 
     GenTreePutArgSplit(GenTree* op1,
+                       unsigned stackByteOffset PUT_STRUCT_ARG_STK_ONLY_ARG(unsigned byteSize),
                        unsigned slotNum PUT_STRUCT_ARG_STK_ONLY_ARG(unsigned numSlots),
                        unsigned     numRegs,
                        bool         putIncomingArgArea = false,
@@ -6125,7 +6145,8 @@ struct GenTreePutArgSplit : public GenTreePutArgStk
         : GenTreePutArgStk(GT_PUTARG_SPLIT,
                            TYP_STRUCT,
                            op1,
-                           slotNum PUT_STRUCT_ARG_STK_ONLY_ARG(numSlots),
+                           stackByteOffset PUT_STRUCT_ARG_STK_ONLY_ARG(byteSize),
+                           slotNum         PUT_STRUCT_ARG_STK_ONLY_ARG(numSlots),
                            putIncomingArgArea,
                            callNode)
         , gtNumRegs(numRegs)

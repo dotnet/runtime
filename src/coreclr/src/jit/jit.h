@@ -245,13 +245,13 @@
 #define UNIX_AMD64_ABI_ONLY(x)
 #endif // defined(UNIX_AMD64_ABI)
 
-#if defined(UNIX_AMD64_ABI) || !defined(TARGET_64BIT) || defined(TARGET_ARM64)
+#if defined(TARGET_X64) && !defined(UNIX_AMD64_ABI)
+#define PUT_STRUCT_ARG_STK_ONLY_ARG(x)
+#define PUT_STRUCT_ARG_STK_ONLY(x)
+#else
 #define FEATURE_PUT_STRUCT_ARG_STK 1
 #define PUT_STRUCT_ARG_STK_ONLY_ARG(x) , x
 #define PUT_STRUCT_ARG_STK_ONLY(x) x
-#else
-#define PUT_STRUCT_ARG_STK_ONLY_ARG(x)
-#define PUT_STRUCT_ARG_STK_ONLY(x)
 #endif
 
 #if defined(UNIX_AMD64_ABI)
@@ -629,14 +629,12 @@ enum accessLevel
 inline size_t roundUp(size_t size, size_t mult = sizeof(size_t))
 {
     assert(mult && ((mult & (mult - 1)) == 0)); // power of two test
-
     return (size + (mult - 1)) & ~(mult - 1);
 }
 
 inline size_t roundDn(size_t size, size_t mult = sizeof(size_t))
 {
     assert(mult && ((mult & (mult - 1)) == 0)); // power of two test
-
     return (size) & ~(mult - 1);
 }
 

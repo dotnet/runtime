@@ -1449,7 +1449,7 @@ public:
     unsigned slotNum;  // When an argument is passed in the OutArg area this is the slot number in the OutArg area
     unsigned numSlots; // Count of number of slots that this argument uses
 
-    unsigned alignment; // 1 or 2 (slots/registers)
+    unsigned byteAlignment; // 8 or 16 bytes (slots/registers)
 private:
     unsigned _lateArgInx; // index into gtCallLateArgs list; UINT_MAX if this is not a late arg.
 public:
@@ -1755,6 +1755,37 @@ public:
         return size;
     }
 
+private:
+    unsigned _byteOffset;
+    unsigned _byteSize;
+
+public:
+    void SetByteOffset(unsigned byteOffset)
+    {
+#if !defined(HELLO_APPLE)
+        assert(byteOffset / TARGET_POINTER_SIZE == slotNum);
+#endif
+        _byteOffset = byteOffset;
+    }
+
+    unsigned GetByteOffset() const
+    {
+#if !defined(HELLO_APPLE)
+        assert(_byteOffset / TARGET_POINTER_SIZE == slotNum);
+#endif
+        return _byteOffset;
+    }
+
+    void SetByteSize(unsigned byteSize)
+    {
+        _byteSize = byteSize;
+    }
+
+    unsigned GetByteSize() const
+    {
+        return _byteSize;
+    }
+
     // Set the register numbers for a multireg argument.
     // There's nothing to do on x64/Ux because the structDesc has already been used to set the
     // register numbers.
@@ -1833,11 +1864,14 @@ public:
 
 class fgArgInfo
 {
-    Compiler*    compiler;    // Back pointer to the compiler instance so that we can allocate memory
-    GenTreeCall* callTree;    // Back pointer to the GT_CALL node for this fgArgInfo
-    unsigned     argCount;    // Updatable arg count value
-    unsigned     nextSlotNum; // Updatable slot count value
-    unsigned     stkLevel;    // Stack depth when we make this call (for x86)
+    Compiler*    compiler; // Back pointer to the compiler instance so that we can allocate memory
+    GenTreeCall* callTree; // Back pointer to the GT_CALL node for this fgArgInfo
+    unsigned     argCount; // Updatable arg count value
+#if !defined(HELLO_APPLE)
+    unsigned nextSlotNum; // Updatable slot count value
+#endif
+    unsigned nextStackByteOffset;
+    unsigned stkLevel; // Stack depth when we make this call (for x86)
 
 #if defined(UNIX_X86_ABI)
     bool     alignmentDone; // Updateable flag, set to 'true' after we've done any required alignment.
@@ -1872,7 +1906,8 @@ public:
                              GenTreeCall::Use* use,
                              regNumber         regNum,
                              unsigned          numRegs,
-                             unsigned          alignment,
+                             unsigned          byteSize,
+                             unsigned          byteAlignment,
                              bool              isStruct,
                              bool              isVararg = false);
 
@@ -1882,7 +1917,8 @@ public:
                              GenTreeCall::Use*                                                use,
                              regNumber                                                        regNum,
                              unsigned                                                         numRegs,
-                             unsigned                                                         alignment,
+                             unsigned                                                         byteSize,
+                             unsigned                                                         byteAlignment,
                              const bool                                                       isStruct,
                              const bool                                                       isVararg,
                              const regNumber                                                  otherRegNum,
@@ -1895,6 +1931,7 @@ public:
                              GenTree*          node,
                              GenTreeCall::Use* use,
                              unsigned          numSlots,
+                             unsigned          byteSize,
                              unsigned          alignment,
                              bool              isStruct,
                              bool              isVararg = false);
@@ -1921,10 +1958,19 @@ public:
     {
         return argTable;
     }
+
+#if !defined(HELLO_APPLE)
     unsigned GetNextSlotNum() const
     {
         return nextSlotNum;
     }
+#endif
+
+    unsigned GetNextSlotByteOffset() const
+    {
+        return nextStackByteOffset;
+    }
+
     bool HasRegArgs() const
     {
         return hasRegArgs;

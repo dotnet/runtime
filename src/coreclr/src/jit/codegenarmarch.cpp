@@ -665,9 +665,13 @@ void CodeGen::genIntrinsic(GenTree* treeNode)
 void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
 {
     assert(treeNode->OperIs(GT_PUTARG_STK));
-    GenTree*  source     = treeNode->gtOp1;
+    GenTree* source = treeNode->gtOp1;
+#if !defined(HELLO_APPLE)
     var_types targetType = genActualType(source->TypeGet());
-    emitter*  emit       = GetEmitter();
+#else
+    var_types targetType = source->TypeGet();
+#endif
+    emitter* emit = GetEmitter();
 
     // This is the varNum for our store operations,
     // typically this is the varNum for the Outgoing arg space
@@ -678,12 +682,14 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
     // Get argument offset to use with 'varNumOut'
     // Here we cross check that argument offset hasn't changed from lowering to codegen since
     // we are storing arg slot number in GT_PUTARG_STK node in lowering phase.
-    unsigned argOffsetOut = treeNode->gtSlotNum * TARGET_POINTER_SIZE;
+    unsigned argOffsetOut = treeNode->getArgOffset();
 
 #ifdef DEBUG
     fgArgTabEntry* curArgTabEntry = compiler->gtArgEntryByNode(treeNode->gtCall, treeNode);
-    assert(curArgTabEntry);
+    assert(curArgTabEntry != nullptr);
+#if !defined(HELLO_APPLE)
     assert(argOffsetOut == (curArgTabEntry->slotNum * TARGET_POINTER_SIZE));
+#endif
 #endif // DEBUG
 
     // Whether to setup stk arg in incoming or out-going arg area?

@@ -1042,7 +1042,8 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, fgArgTabEntry* inf
         }
 
         putArg = new (comp, GT_PUTARG_SPLIT)
-            GenTreePutArgSplit(arg, info->slotNum PUT_STRUCT_ARG_STK_ONLY_ARG(info->numSlots), info->numRegs,
+            GenTreePutArgSplit(arg, info->GetByteOffset() PUT_STRUCT_ARG_STK_ONLY_ARG(info->GetByteSize()),
+                               info->slotNum PUT_STRUCT_ARG_STK_ONLY_ARG(info->numSlots), info->numRegs,
                                call->IsFastTailCall(), call);
 
         // If struct argument is morphed to GT_FIELD_LIST node(s),
@@ -1146,10 +1147,11 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, fgArgTabEntry* inf
                 }
             }
 
-            putArg =
-                new (comp, GT_PUTARG_STK) GenTreePutArgStk(GT_PUTARG_STK, TYP_VOID, arg,
-                                                           info->slotNum PUT_STRUCT_ARG_STK_ONLY_ARG(info->numSlots),
-                                                           call->IsFastTailCall(), call);
+            putArg = new (comp, GT_PUTARG_STK)
+                GenTreePutArgStk(GT_PUTARG_STK, TYP_VOID, arg,
+                                 info->GetByteOffset() PUT_STRUCT_ARG_STK_ONLY_ARG(info->GetByteSize()),
+                                 info->slotNum PUT_STRUCT_ARG_STK_ONLY_ARG(info->numSlots), call->IsFastTailCall(),
+                                 call);
 
 #ifdef FEATURE_PUT_STRUCT_ARG_STK
             // If the ArgTabEntry indicates that this arg is a struct
@@ -2115,7 +2117,12 @@ GenTree* Lowering::LowerTailCallViaJitHelper(GenTreeCall* call, GenTree* callTar
     // We need to figure out the size of the outgoing stack arguments, not including the special args.
     // The number of 4-byte words is passed to the helper for the incoming and outgoing argument sizes.
     // This number is exactly the next slot number in the call's argument info struct.
-    unsigned nNewStkArgsWords = call->fgArgInfo->GetNextSlotNum();
+    unsigned  nNewStkArgsBytes = call->fgArgInfo->GetNextSlotByteOffset();
+    const int wordSize         = 4;
+    unsigned  nNewStkArgsWords = nNewStkArgsBytes / wordSize;
+#if !defined(HELLO_APPLE)
+    assert(call->fgArgInfo->GetNextSlotNum() == nNewStkArgsWords);
+#endif
     assert(nNewStkArgsWords >= 4); // There must be at least the four special stack args.
     nNewStkArgsWords -= 4;
 
@@ -4160,7 +4167,7 @@ void Lowering::InsertPInvokeCallProlog(GenTreeCall* call)
         // On x86 targets, PInvoke calls need the size of the stack args in InlinedCallFrame.m_Datum.
         // This is because the callee pops stack arguments, and we need to keep track of this during stack
         // walking
-        const unsigned    numStkArgBytes = call->fgArgInfo->GetNextSlotNum() * TARGET_POINTER_SIZE;
+        const unsigned    numStkArgBytes = call->fgArgInfo->GetNextSlotByteOffset();
         GenTree*          stackBytes     = comp->gtNewIconNode(numStkArgBytes, TYP_INT);
         GenTreeCall::Use* args           = comp->gtNewCallArgs(frameAddr, stackBytes);
 #else
@@ -4194,7 +4201,7 @@ void Lowering::InsertPInvokeCallProlog(GenTreeCall* call)
     {
 #if !defined(TARGET_64BIT)
         // On 32-bit targets, indirect calls need the size of the stack args in InlinedCallFrame.m_Datum.
-        const unsigned numStkArgBytes = call->fgArgInfo->GetNextSlotNum() * TARGET_POINTER_SIZE;
+        const unsigned numStkArgBytes = call->fgArgInfo->GetNextSlotByteOffset();
 
         src = comp->gtNewIconNode(numStkArgBytes, TYP_INT);
 #else

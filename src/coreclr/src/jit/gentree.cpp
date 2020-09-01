@@ -11929,7 +11929,7 @@ void Compiler::gtGetArgMsg(
                     if (curArgTabEntry->numRegs == 1)
                     {
                         sprintf_s(bufp, bufLength, "arg%d %s out+%02x%c", argNum, compRegVarName(firstReg),
-                                  (curArgTabEntry->slotNum) * TARGET_POINTER_SIZE, 0);
+                                  curArgTabEntry->GetByteOffset(), 0);
                     }
                     else
                     {
@@ -11946,8 +11946,7 @@ void Compiler::gtGetArgMsg(
                             lastReg             = genMapIntRegArgNumToRegNum(lastRegNum);
                         }
                         sprintf_s(bufp, bufLength, "arg%d %s%c%s out+%02x%c", argNum, compRegVarName(firstReg),
-                                  separator, compRegVarName(lastReg), (curArgTabEntry->slotNum) * TARGET_POINTER_SIZE,
-                                  0);
+                                  separator, compRegVarName(lastReg), curArgTabEntry->GetByteOffset(), 0);
                     }
                 }
                 else
@@ -11976,6 +11975,7 @@ void Compiler::gtGetArgMsg(
                     else
                     {
                         unsigned stackSlot = listCount - curArgTabEntry->numRegs;
+                        // TODO-seandree: check what we print here.
                         sprintf_s(bufp, bufLength, "arg%d m%d out+%02x%c", argNum, listCount,
                                   stackSlot * TARGET_POINTER_SIZE, 0);
                     }
@@ -11986,12 +11986,12 @@ void Compiler::gtGetArgMsg(
 #if FEATURE_FIXED_OUT_ARGS
             if (listCount == -1)
             {
-                sprintf_s(bufp, bufLength, "arg%d out+%02x%c", argNum, curArgTabEntry->slotNum * TARGET_POINTER_SIZE,
-                          0);
+                sprintf_s(bufp, bufLength, "arg%d out+%02x%c", argNum, curArgTabEntry->GetByteOffset(), 0);
             }
             else // listCount is 0,1,2 or 3
             {
                 assert(listCount <= MAX_ARG_REG_COUNT);
+                // TODO-seandree: check what we print here.
                 sprintf_s(bufp, bufLength, "arg%d out+%02x%c", argNum,
                           (curArgTabEntry->slotNum + listCount) * TARGET_POINTER_SIZE, 0);
             }
@@ -12040,8 +12040,7 @@ void Compiler::gtGetLateArgMsg(
 #else
     if (argReg == REG_STK)
     {
-        sprintf_s(bufp, bufLength, "arg%d in out+%02x%c", curArgTabEntry->argNum,
-                  curArgTabEntry->slotNum * TARGET_POINTER_SIZE, 0);
+        sprintf_s(bufp, bufLength, "arg%d in out+%02x%c", curArgTabEntry->argNum, curArgTabEntry->GetByteOffset(), 0);
     }
     else
 #endif
@@ -12060,7 +12059,7 @@ void Compiler::gtGetLateArgMsg(
                 if (curArgTabEntry->numRegs == 1)
                 {
                     sprintf_s(bufp, bufLength, "arg%d %s out+%02x%c", argNum, compRegVarName(firstReg),
-                              (curArgTabEntry->slotNum) * TARGET_POINTER_SIZE, 0);
+                              curArgTabEntry->GetByteOffset(), 0);
                 }
                 else
                 {
@@ -12077,7 +12076,7 @@ void Compiler::gtGetLateArgMsg(
                         lastReg             = genMapIntRegArgNumToRegNum(lastRegNum);
                     }
                     sprintf_s(bufp, bufLength, "arg%d %s%c%s out+%02x%c", argNum, compRegVarName(firstReg), separator,
-                              compRegVarName(lastReg), (curArgTabEntry->slotNum) * TARGET_POINTER_SIZE, 0);
+                              compRegVarName(lastReg), curArgTabEntry->GetByteOffset(), 0);
                 }
             }
             else
@@ -12106,6 +12105,7 @@ void Compiler::gtGetLateArgMsg(
                 else
                 {
                     unsigned stackSlot = listCount - curArgTabEntry->numRegs;
+                    // TODO-seandree: check what we print here.
                     sprintf_s(bufp, bufLength, "arg%d m%d out+%02x%c", argNum, listCount,
                               stackSlot * TARGET_POINTER_SIZE, 0);
                 }

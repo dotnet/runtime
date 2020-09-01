@@ -7667,8 +7667,10 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* putArgStk)
 
 #ifdef DEBUG
         fgArgTabEntry* curArgTabEntry = compiler->gtArgEntryByNode(putArgStk->gtCall, putArgStk);
-        assert(curArgTabEntry);
+        assert(curArgTabEntry != nullptr);
+#if !defined(HELLO_APPLE)
         assert(argOffset == (int)curArgTabEntry->slotNum * TARGET_POINTER_SIZE);
+#endif
 #endif
 
         if (data->isContainedIntOrIImmed())
@@ -7930,15 +7932,15 @@ void CodeGen::genPutStructArgStk(GenTreePutArgStk* putArgStk)
 
         for (int i = numSlots - 1; i >= 0; --i)
         {
-            emitAttr       slotAttr = emitTypeSize(layout->GetGCPtrType(i));
-            const unsigned offset   = i * TARGET_POINTER_SIZE;
+            emitAttr       slotAttr   = emitTypeSize(layout->GetGCPtrType(i));
+            const unsigned byteOffset = i * TARGET_POINTER_SIZE;
             if (srcAddrInReg)
             {
-                GetEmitter()->emitIns_AR_R(INS_push, slotAttr, REG_NA, srcRegNum, offset);
+                GetEmitter()->emitIns_AR_R(INS_push, slotAttr, REG_NA, srcRegNum, byteOffset);
             }
             else
             {
-                GetEmitter()->emitIns_S(INS_push, slotAttr, srcLclNum, srcLclOffset + offset);
+                GetEmitter()->emitIns_S(INS_push, slotAttr, srcLclNum, srcLclOffset + byteOffset);
             }
             AddStackLevel(TARGET_POINTER_SIZE);
         }
