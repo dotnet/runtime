@@ -1325,7 +1325,7 @@ namespace System.Diagnostics.Tests
                 if (eventData.Payload.Count == 3 && (eventData.EventName == "Event" || eventData.EventName.Contains("Activity")))
                 {
                     Debug.Assert(eventData.PayloadNames[0] == "SourceName");
-                    Debug.Assert(eventData.PayloadNames[1] == "EventName");
+                    Debug.Assert(eventData.PayloadNames[1] == "EventName" || eventData.PayloadNames[1] == "ActivityName");
                     Debug.Assert(eventData.PayloadNames[2] == "Arguments");
 
                     var anEvent = new DiagnosticSourceEvent();
