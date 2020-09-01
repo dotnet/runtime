@@ -553,7 +553,23 @@ var MonoSupportLib = {
 		 * @returns {object[]}
 		 */
 		_get_vt_properties: function (id, args={}) {
-			let entry = this._id_table [id.idStr];
+			let entry = this._get_id_props (id.idStr);
+
+			if (entry === undefined || entry.members === undefined) {
+				if (!isNaN (id.o.containerId)) {
+					// We are expanding, so get *all* the members.
+					// Which ones to return based on @args, can be determined
+					// at the time of return
+					this._get_object_properties (id.o.containerId, { expandValueTypes: true });
+				} else if (!isNaN (id.o.arrayId))
+					this._get_array_values (id, Number (id.o.arrayIdx), 1, true);
+				else
+					throw new Error (`Invalid valuetype id (${id.idStr}). Can't get properties for it.`);
+			}
+
+			// Let's try again
+			entry = this._get_id_props (id.idStr);
+
 			if (entry !== undefined && entry.members !== undefined) {
 				if (args.accessorPropertiesOnly === true)
 					return entry.accessors;
@@ -561,19 +577,7 @@ var MonoSupportLib = {
 				return entry.members;
 			}
 
-			if (!isNaN (id.o.containerId)) {
-				args.expandValueTypes = true;
-				this._get_object_properties (id.o.containerId, args);
-			} else if (!isNaN (id.o.arrayId))
-				this._get_array_values (id, Number (id.o.arrayIdx), 1, true);
-			else
-				throw new Error (`Invalid valuetype id (${id.idStr}). Can't get properties for it.`);
-
-			entry = this._get_id_props (id.idStr);
-			if (entry !== undefined && entry.members !== undefined)
-				return entry.members;
-
-			throw new Error (`Unknown valuetype id: ${id.idStr}`);
+			throw new Error (`Unknown valuetype id: ${id.idStr}. Failed to get properties for it.`);
 		},
 
 		/**

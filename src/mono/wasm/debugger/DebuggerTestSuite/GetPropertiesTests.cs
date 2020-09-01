@@ -13,9 +13,9 @@ namespace DebuggerTests
 {
     public class GetPropertiesTests : DebuggerTestBase
     {
-        public static TheoryData<string, bool?, bool?, string[], Dictionary<string, (JObject, bool)>> ClassGetPropertiesTestData()
+        public static TheoryData<string, bool?, bool?, string[], Dictionary<string, (JObject, bool)>, bool> ClassGetPropertiesTestData(bool is_async)
         {
-            var data = new TheoryData<string, bool?, bool?, string[], Dictionary<string, (JObject, bool)>>();
+            var data = new TheoryData<string, bool?, bool?, string[], Dictionary<string, (JObject, bool)>, bool>();
 
             var type_name = "DerivedClass";
             var all_props = new Dictionary<string, (JObject, bool)>()
@@ -51,13 +51,13 @@ namespace DebuggerTests
 
             // default, all properties
             // n, n
-            data.Add(type_name, null, null, all_props.Keys.ToArray(), all_props);
+            data.Add(type_name, null, null, all_props.Keys.ToArray(), all_props, is_async);
             // f, f
-            data.Add(type_name, false, false, all_props.Keys.ToArray(), all_props);
+            data.Add(type_name, false, false, all_props.Keys.ToArray(), all_props, is_async);
             // f, n
-            data.Add(type_name, false, null, all_props.Keys.ToArray(), all_props);
+            data.Add(type_name, false, null, all_props.Keys.ToArray(), all_props, is_async);
             // n, f
-            data.Add(type_name, null, false, all_props.Keys.ToArray(), all_props);
+            data.Add(type_name, null, false, all_props.Keys.ToArray(), all_props, is_async);
 
             // all own
             // t, f
@@ -65,7 +65,7 @@ namespace DebuggerTests
             foreach (bool? accessors in new bool?[] { false, null })
             {
                 // Breaking from JS behavior, we return *all* members irrespective of `ownMembers`
-                data.Add(type_name, true, accessors, all_props.Keys.ToArray(), all_props);
+                data.Add(type_name, true, accessors, all_props.Keys.ToArray(), all_props, is_async);
                 // data.Add(type_name, true, accessors, new[]
                 // {
                 //     "_stringField",
@@ -77,7 +77,7 @@ namespace DebuggerTests
                 //     "FirstName",
                 //     "DateTimeForOverride",
                 //     "StringPropertyForOverrideWithAutoProperty"
-                // }, all_props);
+                // }, all_props, is_async);
             }
 
             var all_accessors = new[]
@@ -102,23 +102,23 @@ namespace DebuggerTests
             // t, t
 
             // Breaking from JS behavior, we return *all* members irrespective of `ownMembers`
-            // data.Add(type_name, true, true, only_own_accessors, all_props);
-            data.Add(type_name, true, true, all_accessors, all_props);
+            // data.Add(type_name, true, true, only_own_accessors, all_props, is_async);
+            data.Add(type_name, true, true, all_accessors, all_props, is_async);
 
             // all accessors
             // f, t
             // n, t
             foreach (bool? own in new bool?[] { false, null })
             {
-                data.Add(type_name, own, true, all_accessors, all_props);
+                data.Add(type_name, own, true, all_accessors, all_props, is_async);
             }
 
             return data;
         }
 
-        public static TheoryData<string, bool?, bool?, string[], Dictionary<string, (JObject, bool)>> StructGetPropertiesTestData()
+        public static TheoryData<string, bool?, bool?, string[], Dictionary<string, (JObject, bool)>, bool> StructGetPropertiesTestData(bool is_async)
         {
-            var data = new TheoryData<string, bool?, bool?, string[], Dictionary<string, (JObject, bool)>>();
+            var data = new TheoryData<string, bool?, bool?, string[], Dictionary<string, (JObject, bool)>, bool>();
 
             var type_name = "CloneableStruct";
             var all_props = new Dictionary<string, (JObject, bool)>()
@@ -139,11 +139,11 @@ namespace DebuggerTests
             };
 
             // default, all properties
-            data.Add(type_name, null, null, all_props.Keys.ToArray(), all_props);
-            data.Add(type_name, false, false, all_props.Keys.ToArray(), all_props);
+            data.Add(type_name, null, null, all_props.Keys.ToArray(), all_props, is_async);
+            data.Add(type_name, false, false, all_props.Keys.ToArray(), all_props, is_async);
 
             // all own
-            data.Add(type_name, true, false, all_props.Keys.ToArray(), all_props);
+            data.Add(type_name, true, false, all_props.Keys.ToArray(), all_props, is_async);
 
             var all_accessor_names = new[]
             {
@@ -154,18 +154,21 @@ namespace DebuggerTests
             };
 
             // all own, only accessors
-            data.Add(type_name, true, true, all_accessor_names, all_props);
+            data.Add(type_name, true, true, all_accessor_names, all_props, is_async);
             // all accessors
-            data.Add(type_name, false, true, all_accessor_names, all_props);
+            data.Add(type_name, false, true, all_accessor_names, all_props, is_async);
 
             return data;
         }
 
         [Theory]
-        [MemberData(nameof(ClassGetPropertiesTestData))]
-        [MemberData(nameof(StructGetPropertiesTestData))]
-        public async Task InspectTypeInheritedMembers(string type_name, bool? own_properties, bool? accessors_only, string[] expected_names, Dictionary<string, (JObject, bool)> all_props) => await CheckInspectLocalsAtBreakpointSite(
-            $"DebuggerTests.GetPropertiesTests.{type_name}", "InstanceMethod", 1, "InstanceMethod",
+        [MemberData(nameof(ClassGetPropertiesTestData), parameters: true)]
+        [MemberData(nameof(ClassGetPropertiesTestData), parameters: false)]
+        [MemberData(nameof(StructGetPropertiesTestData), parameters: true)]
+        [MemberData(nameof(StructGetPropertiesTestData), parameters: false)]
+        public async Task InspectTypeInheritedMembers(string type_name, bool? own_properties, bool? accessors_only, string[] expected_names, Dictionary<string, (JObject, bool)> all_props, bool is_async) => await CheckInspectLocalsAtBreakpointSite(
+            $"DebuggerTests.GetPropertiesTests.{type_name}",
+            $"InstanceMethod{(is_async ? "Async" : "")}", 1, (is_async ? "MoveNext" : "InstanceMethod"),
             $"window.setTimeout(function() {{ invoke_static_method_async ('[debugger-test] DebuggerTests.GetPropertiesTests.{type_name}:run'); }})",
             wait_for_event_fn: async (pause_location) =>
             {
@@ -184,13 +187,17 @@ namespace DebuggerTests
                 AssertEqual(expected_names.Length, this_props.Count(), $"expected number of properties");
             });
 
-        public static IEnumerable<object[]> MembersForLocalNestedStructData
-            => StructGetPropertiesTestData().Select (datum => datum [1..]);
+        public static IEnumerable<object[]> MembersForLocalNestedStructData(bool is_async)
+            => StructGetPropertiesTestData(false).Select (datum => datum [1..]);
 
         [Theory]
-        [MemberData(nameof(MembersForLocalNestedStructData))]
-        public async Task MembersForLocalNestedStruct(bool? own_properties, bool? accessors_only, string[] expected_names, Dictionary<string, (JObject, bool)> all_props) => await CheckInspectLocalsAtBreakpointSite(
-            $"DebuggerTests.GetPropertiesTests.NestedStruct", "run", 2, "run",
+        [MemberData(nameof(MembersForLocalNestedStructData), parameters: false)]
+        [MemberData(nameof(MembersForLocalNestedStructData), parameters: true)]
+        public async Task MembersForLocalNestedStruct(bool? own_properties, bool? accessors_only, string[] expected_names, Dictionary<string, (JObject, bool)> all_props, bool is_async) => await CheckInspectLocalsAtBreakpointSite(
+            $"DebuggerTests.GetPropertiesTests.NestedStruct",
+            is_async ? $"TestNestedStructStaticAsync" : "TestNestedStructStatic",
+            2,
+            is_async ? "MoveNext" : $"TestNestedStructStatic",
             $"window.setTimeout(function() {{ invoke_static_method_async ('[debugger-test] DebuggerTests.GetPropertiesTests.NestedStruct:run'); }})",
             wait_for_event_fn: async (pause_location) =>
             {
