@@ -1505,14 +1505,20 @@ void AsmParse::ParseFile(ReadStream* stream)
 char* AsmParse::fillBuff(__in_opt __nullterminated char* pos)
 {
     int iPutToBuffer;
-    g_uCodePage = CP_ACP;
+    g_uCodePage = CP_UTF8;
     iPutToBuffer = (int)penv->in->getAll(&(penv->curPos));
 
     penv->endPos = penv->curPos + iPutToBuffer;
     if(iPutToBuffer > 128) iPutToBuffer = 128;
-    if(iPutToBuffer >= 4 && (penv->curPos[0] & 0xFF) == 0xFF && (penv->curPos[1] & 0xFF) == 0xFE && ((penv->curPos[2] & 0xFF) == 0x00 || (penv->curPos[3] & 0xFF) != 0x00))
+    if(iPutToBuffer >= 4 && (penv->curPos[0] & 0xFF) == 0xFF && (penv->curPos[1] & 0xFF) == 0xFE)
     {
-        g_uCodePage = CP_UTF8;
+        // U+FFFE followed by U+0000 is UTF-32 LE, any other value than 0 is a true UTF-16 LE
+        if((penv->curPos[2] & 0xFF) == 0x00 && (penv->curPos[3] & 0xFF) == 0x00)
+        {
+            error("UTF-32 LE is not supported\n\n");
+            return NULL;
+        }
+
         penv->curPos += 2; // skip signature
         if(assem->m_fReportProgress) printf("Source file is UNICODE\n\n");
         penv->pfn_Sym = SymW;
@@ -1525,14 +1531,10 @@ char* AsmParse::fillBuff(__in_opt __nullterminated char* pos)
     {
         if((penv->curPos[0] & 0xFF) == 0xEF && (penv->curPos[1] & 0xFF) == 0xBB && (penv->curPos[2] & 0xFF) == 0xBF)
         {
-            g_uCodePage = CP_UTF8;
             penv->curPos += 3;
-            if(assem->m_fReportProgress) printf("Source file is UTF-8\n\n");
         }
-        else
-        {
-            if(assem->m_fReportProgress) printf("Source file is UTF-8\n\n");
-        }
+
+        if(assem->m_fReportProgress) printf("Source file is UTF-8\n\n");
         penv->pfn_nextchar = nextcharU;
         penv->pfn_Sym = SymAU;
         penv->pfn_NewStrFromToken = NewStrFromTokenAU;

@@ -256,23 +256,6 @@
 #define _LOCALE_UPDATE \
     _LocaleUpdate _LocUpdate(_LOCALE_ARG)
 
-#define _ISMBBLEAD(_Character) \
-    _ismbblead_l((_Character), _LocUpdate.GetLocaleT())
-
-#define _ISMBBLEADPREFIX(_Result, _StringStart, _BytePtr)               \
-    {                                                                   \
-        unsigned char *_Tmp_VAR, *_StringStart_VAR, *_BytePtr_VAR;      \
-                                                                        \
-        _StringStart_VAR = (_StringStart);                              \
-        _BytePtr_VAR = (_BytePtr);                                      \
-        _Tmp_VAR = _BytePtr_VAR;                                        \
-        while ((_Tmp_VAR >= _StringStart_VAR) && _ISMBBLEAD(*_Tmp_VAR)) \
-        {                                                               \
-            _Tmp_VAR--;                                                 \
-        }                                                               \
-        (_Result) = ((_BytePtr_VAR - _Tmp_VAR) & 1) != 0;               \
-    }
-
 #define _LOCALE_SHORTCUT_TEST \
     _LocUpdate.GetLocaleT()->mbcinfo->ismbcodepage == 0
 
