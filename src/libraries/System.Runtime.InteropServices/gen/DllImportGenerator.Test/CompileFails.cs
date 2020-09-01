@@ -1,5 +1,6 @@
 ﻿using Microsoft.CodeAnalysis;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace DllImportGenerator.Test
@@ -13,9 +14,9 @@ namespace DllImportGenerator.Test
 
         [Theory]
         [MemberData(nameof(CodeSnippetsToCompile))]
-        public void ValidateSnippets(string source, int failCount)
+        public async Task ValidateSnippets(string source, int failCount)
         {
-            Compilation comp = TestUtils.CreateCompilation(source);
+            Compilation comp = await TestUtils.CreateCompilation(source);
             TestUtils.AssertPreSourceGeneratorCompilation(comp);
 
             var newComp = TestUtils.RunGenerators(comp, out var generatorDiags, new Microsoft.Interop.DllImportGenerator());

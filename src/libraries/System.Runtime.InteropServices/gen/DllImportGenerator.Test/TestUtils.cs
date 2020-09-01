@@ -1,10 +1,13 @@
 ﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.Testing;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace DllImportGenerator.Test
@@ -35,26 +38,26 @@ namespace DllImportGenerator.Test
         /// <param name="source">Source to compile</param>
         /// <param name="outputKind">Output type</param>
         /// <returns>The resulting compilation</returns>
-        public static Compilation CreateCompilation(string source, OutputKind outputKind = OutputKind.DynamicallyLinkedLibrary)
+        public static async Task<Compilation> CreateCompilation(string source, OutputKind outputKind = OutputKind.DynamicallyLinkedLibrary)
         {
-            var mdRefs = new List<MetadataReference>();
+            var (mdRefs, ancillary) = GetReferenceAssemblies();
+            
+            return CSharpCompilation.Create("compilation",
+                new[] { CSharpSyntaxTree.ParseText(source, new CSharpParseOptions(LanguageVersion.Preview)) },
+                (await mdRefs.ResolveAsync(LanguageNames.CSharp, CancellationToken.None)).Add(ancillary),
+                new CSharpCompilationOptions(outputKind));
+        }
+
+        public static (ReferenceAssemblies, MetadataReference) GetReferenceAssemblies()
+        {
+            // TODO: When .NET 5.0 releases, we can simplify this.
+            var referenceAssemblies = ReferenceAssemblies.NetCore.NetCoreApp50;
 
             // Include the assembly containing the new attribute and all of its references.
             // [TODO] Remove once the attribute has been added to the BCL
             var attrAssem = typeof(GeneratedDllImportAttribute).GetTypeInfo().Assembly;
-            mdRefs.Add(MetadataReference.CreateFromFile(attrAssem.Location));
-            foreach (var assemName in attrAssem.GetReferencedAssemblies())
-            {
-                var assemRef = Assembly.Load(assemName);
-                mdRefs.Add(MetadataReference.CreateFromFile(assemRef.Location));
-            }
 
-            // Add a CoreLib reference
-            mdRefs.Add(MetadataReference.CreateFromFile(typeof(Binder).GetTypeInfo().Assembly.Location));
-            return CSharpCompilation.Create("compilation",
-                new[] { CSharpSyntaxTree.ParseText(source, new CSharpParseOptions(LanguageVersion.Preview)) },
-                mdRefs,
-                new CSharpCompilationOptions(outputKind));
+            return (referenceAssemblies, MetadataReference.CreateFromFile(attrAssem.Location));
         }
 
         /// <summary>
