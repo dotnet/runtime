@@ -15,6 +15,14 @@ namespace System.Text.Json
     /// or a type's converter, if the current instance is a <see cref="JsonClassInfo.PropertyInfoForClassInfo"/>.
     internal sealed class JsonPropertyInfo<T> : JsonPropertyInfo
     {
+        /// <summary>
+        /// Returns true if the property's converter is external (a user's custom converter)
+        /// and the type to convert is not the same as the declared property type (polymorphic).
+        /// Used to determine whether to perform additional validation on the value returned by the
+        /// converter on deserialization.
+        /// </summary>
+        private bool _converterIsExternalAndPolymorphic;
+
         public Func<object, T>? Get { get; private set; }
         public Action<object, T>? Set { get; private set; }
 
@@ -91,6 +99,7 @@ namespace System.Text.Json
                     }
             }
 
+            _converterIsExternalAndPolymorphic = !converter.IsInternalConverter && DeclaredPropertyType != converter.TypeToConvert;
             GetPolicies(ignoreCondition, parentTypeNumberHandling, defaultValueIsNull: Converter.CanBeNull);
         }
 
@@ -230,7 +239,9 @@ namespace System.Text.Json
                     success = Converter.TryRead(ref reader, RuntimePropertyType!, Options, ref state, out T value);
                     if (success)
                     {
-                        if (!Converter.IsInternalConverter)
+#if !DEBUG
+                        if (_converterIsExternalAndPolymorphic)
+#endif
                         {
                             if (value != null)
                             {
@@ -245,6 +256,7 @@ namespace System.Text.Json
                                 ThrowHelper.ThrowInvalidOperationException_DeserializeUnableToAssignNull(DeclaredPropertyType);
                             }
                         }
+
                         Set!(obj, value!);
                     }
                 }

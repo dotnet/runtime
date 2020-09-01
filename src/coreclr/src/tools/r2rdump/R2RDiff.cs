@@ -255,7 +255,7 @@ namespace R2RDump
         {
             Dictionary<string, int> sectionMap = new Dictionary<string, int>();
 
-            foreach (SectionHeader sectionHeader in reader.PEReader.PEHeaders.SectionHeaders)
+            foreach (SectionHeader sectionHeader in reader.CompositeReader.PEHeaders.SectionHeaders)
             {
                 sectionMap.Add(sectionHeader.Name, sectionHeader.SizeOfRawData);
             }

@@ -16,16 +16,16 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public XmlElementAttribute this[int index]
+        public XmlElementAttribute? this[int index]
         {
-            get { return (XmlElementAttribute)List[index]; }
+            get { return (XmlElementAttribute?)List[index]; }
             set { List[index] = value; }
         }
 
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public int Add(XmlElementAttribute attribute)
+        public int Add(XmlElementAttribute? attribute)
         {
             return List.Add(attribute);
         }
@@ -33,7 +33,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public void Insert(int index, XmlElementAttribute attribute)
+        public void Insert(int index, XmlElementAttribute? attribute)
         {
             List.Insert(index, attribute);
         }
@@ -41,7 +41,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public int IndexOf(XmlElementAttribute attribute)
+        public int IndexOf(XmlElementAttribute? attribute)
         {
             return List.IndexOf(attribute);
         }
@@ -49,7 +49,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public bool Contains(XmlElementAttribute attribute)
+        public bool Contains(XmlElementAttribute? attribute)
         {
             return List.Contains(attribute);
         }
@@ -57,7 +57,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public void Remove(XmlElementAttribute attribute)
+        public void Remove(XmlElementAttribute? attribute)
         {
             List.Remove(attribute);
         }

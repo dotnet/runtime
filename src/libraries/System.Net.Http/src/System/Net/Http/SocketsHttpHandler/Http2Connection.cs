@@ -16,6 +16,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Internal;
 
 namespace System.Net.Http
 {
@@ -1308,16 +1309,24 @@ namespace System.Net.Http
             // in order to avoid consuming resources in potentially many requests waiting for access.
             try
             {
-                if (_pool.EnableMultipleHttp2Connections)
+                if (!_concurrentStreams.TryRequestCreditNoWait(1))
                 {
-                    if (!_concurrentStreams.TryRequestCreditNoWait(1))
+                    if (_pool.EnableMultipleHttp2Connections)
                     {
                         throw new HttpRequestException(null, null, RequestRetryType.RetryOnNextConnection);
                     }
-                }
-                else
-                {
-                    await _concurrentStreams.RequestCreditAsync(1, cancellationToken).ConfigureAwait(false);
+
+                    if (HttpTelemetry.Log.IsEnabled())
+                    {
+                        // Only log Http20RequestLeftQueue if we spent time waiting on the queue
+                        ValueStopwatch stopwatch = ValueStopwatch.StartNew();
+                        await _concurrentStreams.RequestCreditAsync(1, cancellationToken).ConfigureAwait(false);
+                        HttpTelemetry.Log.Http20RequestLeftQueue(stopwatch.GetElapsedTime().TotalMilliseconds);
+                    }
+                    else
+                    {
+                        await _concurrentStreams.RequestCreditAsync(1, cancellationToken).ConfigureAwait(false);
+                    }
                 }
             }
             catch (ObjectDisposedException)
@@ -1345,6 +1354,8 @@ namespace System.Net.Http
             ArrayBuffer headerBuffer = default;
             try
             {
+                if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestHeadersStart();
+
                 // Serialize headers to a temporary buffer, and do as much work to prepare to send the headers as we can
                 // before taking the write lock.
                 headerBuffer = new ArrayBuffer(InitialConnectionBufferSize, usePool: true);
@@ -1425,6 +1436,9 @@ namespace System.Net.Http
 
                     return s.mustFlush || s.endStream;
                 }, cancellationToken).ConfigureAwait(false);
+
+                if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestHeadersStop();
+
                 return http2Stream;
             }
             catch

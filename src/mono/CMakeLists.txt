@@ -8,10 +8,13 @@ include(CheckFunctionExists)
 include(TestBigEndian)
 include(FindPkgConfig)
 
+include("cmake/QuietOSXRanlib.cmake")
+
 set(CMAKE_MODULE_PATH
   ${CMAKE_MODULE_PATH}
   "${CMAKE_CURRENT_SOURCE_DIR}/cmake"
   )
+set(CMAKE_INSTALL_MESSAGE LAZY)
 
 find_program(CCACHE_PROGRAM ccache)
 if(CCACHE_PROGRAM)
@@ -46,7 +49,11 @@ if(ENABLE_INTERP_LIB)
 endif()
 
 if(NOT DISABLE_INTERPRETER AND NOT DISABLE_JIT)
-set(ENABLE_ILGEN 1)
+  set(ENABLE_ILGEN 1)
+endif()
+
+if(NOT DISABLE_EVENTPIPE)
+  set(ENABLE_PERFTRACING 1)
 endif()
 
 # FIXME:
@@ -162,6 +169,9 @@ if(TARGET_SYSTEM_NAME STREQUAL "Darwin")
   set(TARGET_OSX 1)
 elseif(TARGET_SYSTEM_NAME STREQUAL "Emscripten")
   set(TARGET_WASM 1)
+  if (CMAKE_BUILD_TYPE STREQUAL "Release")
+    add_compile_options(-Os)
+  endif()
 else()
   message(FATAL_ERROR "")
 endif()

@@ -50,6 +50,24 @@ namespace AppHost.Bundle.Tests
         }
 
         [Fact]
+        public void AppContext_Deps_Files_Bundled_Self_Contained()
+        {
+            var fixture = sharedTestState.TestFixture.Copy();
+            var singleFile = BundleHelper.BundleApp(fixture);
+
+            Command.Create(singleFile, "appcontext")
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .Execute()
+                .Should()
+                .Pass()
+                .And
+                .NotHaveStdOutContaining("SingleFileApiTests.deps.json")
+                .And
+                .NotHaveStdOutContaining("Microsoft.NETCore.App.deps.json");
+        }
+
+        [Fact]
         public void GetEnvironmentArgs_0_Returns_Bundled_Executable_Path()
         {
             var fixture = sharedTestState.TestFixture.Copy();

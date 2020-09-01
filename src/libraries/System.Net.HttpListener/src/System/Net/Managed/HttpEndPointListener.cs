@@ -43,9 +43,9 @@ namespace System.Net
         private readonly Socket _socket;
         private readonly Dictionary<HttpConnection, HttpConnection> _unregisteredConnections;
         private Dictionary<ListenerPrefix, HttpListener> _prefixes;
-        private List<ListenerPrefix> _unhandledPrefixes; // host = '*'
-        private List<ListenerPrefix> _allPrefixes;       // host = '+'
-        private X509Certificate _cert;
+        private List<ListenerPrefix>? _unhandledPrefixes; // host = '*'
+        private List<ListenerPrefix>? _allPrefixes;       // host = '+'
+        private X509Certificate? _cert;
         private bool _secure;
 
         public HttpEndPointListener(HttpListener listener, IPAddress addr, int port, bool secure)
@@ -102,9 +102,9 @@ namespace System.Net
 
         private static void ProcessAccept(SocketAsyncEventArgs args)
         {
-            HttpEndPointListener epl = (HttpEndPointListener)args.UserToken;
+            HttpEndPointListener epl = (HttpEndPointListener)args.UserToken!;
 
-            Socket accepted = args.SocketError == SocketError.Success ? args.AcceptSocket : null;
+            Socket? accepted = args.SocketError == SocketError.Success ? args.AcceptSocket : null;
             epl.Accept(args);
 
             if (accepted == null)
@@ -119,7 +119,7 @@ namespace System.Net
             HttpConnection conn;
             try
             {
-                conn = new HttpConnection(accepted, epl, epl._secure, epl._cert);
+                conn = new HttpConnection(accepted, epl, epl._secure, epl._cert!);
             }
             catch
             {
@@ -134,7 +134,7 @@ namespace System.Net
             conn.BeginReadRequest();
         }
 
-        private static void OnAccept(object sender, SocketAsyncEventArgs e)
+        private static void OnAccept(object? sender, SocketAsyncEventArgs e)
         {
             ProcessAccept(e);
         }
@@ -150,8 +150,8 @@ namespace System.Net
         public bool BindContext(HttpListenerContext context)
         {
             HttpListenerRequest req = context.Request;
-            ListenerPrefix prefix;
-            HttpListener listener = SearchListener(req.Url, out prefix);
+            ListenerPrefix? prefix;
+            HttpListener? listener = SearchListener(req.Url, out prefix);
             if (listener == null)
                 return false;
 
@@ -165,10 +165,10 @@ namespace System.Net
             if (context == null || context.Request == null)
                 return;
 
-            context._listener.UnregisterContext(context);
+            context._listener!.UnregisterContext(context);
         }
 
-        private HttpListener SearchListener(Uri uri, out ListenerPrefix prefix)
+        private HttpListener? SearchListener(Uri? uri, out ListenerPrefix? prefix)
         {
             prefix = null;
             if (uri == null)
@@ -179,7 +179,7 @@ namespace System.Net
             string path = WebUtility.UrlDecode(uri.AbsolutePath);
             string pathSlash = path[path.Length - 1] == '/' ? path : path + "/";
 
-            HttpListener bestMatch = null;
+            HttpListener? bestMatch = null;
             int bestLength = -1;
 
             if (host != null && host != "")
@@ -187,7 +187,7 @@ namespace System.Net
                 Dictionary<ListenerPrefix, HttpListener> localPrefixes = _prefixes;
                 foreach (ListenerPrefix p in localPrefixes.Keys)
                 {
-                    string ppath = p.Path;
+                    string ppath = p.Path!;
                     if (ppath.Length < bestLength)
                         continue;
 
@@ -205,7 +205,7 @@ namespace System.Net
                     return bestMatch;
             }
 
-            List<ListenerPrefix> list = _unhandledPrefixes;
+            List<ListenerPrefix>? list = _unhandledPrefixes;
             bestMatch = MatchFromList(host, path, list, out prefix);
 
             if (path != pathSlash && bestMatch == null)
@@ -226,18 +226,18 @@ namespace System.Net
             return null;
         }
 
-        private HttpListener MatchFromList(string host, string path, List<ListenerPrefix> list, out ListenerPrefix prefix)
+        private HttpListener? MatchFromList(string? host, string path, List<ListenerPrefix>? list, out ListenerPrefix? prefix)
         {
             prefix = null;
             if (list == null)
                 return null;
 
-            HttpListener bestMatch = null;
+            HttpListener? bestMatch = null;
             int bestLength = -1;
 
             foreach (ListenerPrefix p in list)
             {
-                string ppath = p.Path;
+                string ppath = p.Path!;
                 if (ppath.Length < bestLength)
                     continue;
 
@@ -288,7 +288,7 @@ namespace System.Net
             if (_prefixes.Count > 0)
                 return;
 
-            List<ListenerPrefix> list = _unhandledPrefixes;
+            List<ListenerPrefix>? list = _unhandledPrefixes;
             if (list != null && list.Count > 0)
                 return;
 
@@ -315,7 +315,7 @@ namespace System.Net
 
         public void AddPrefix(ListenerPrefix prefix, HttpListener listener)
         {
-            List<ListenerPrefix> current;
+            List<ListenerPrefix>? current;
             List<ListenerPrefix> future;
             if (prefix.Host == "*")
             {
@@ -356,7 +356,7 @@ namespace System.Net
 
         public void RemovePrefix(ListenerPrefix prefix, HttpListener listener)
         {
-            List<ListenerPrefix> current;
+            List<ListenerPrefix>? current;
             List<ListenerPrefix> future;
             if (prefix.Host == "*")
             {
