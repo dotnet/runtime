@@ -274,6 +274,21 @@ namespace System.Diagnostics.Tests
                     a.Stop();
                     Assert.Equal(1, eventSourceListener.LastEvent.Arguments.Count);
                     Assert.Equal(aSource1.Name, eventSourceListener.LastEvent.Arguments["ActivitySourceName"]);
+
+                    // Collect TraceId, SpanId, and ParentSpanId only
+                    eventSourceListener.Enable("[AS]*:-TraceId;SpanId;ParentSpanId");
+                    a = aSource1.StartActivity("ActivityData");
+                    Assert.Equal(3, eventSourceListener.LastEvent.Arguments.Count);
+
+                    Assert.Equal(a.SpanId.ToString(), eventSourceListener.LastEvent.Arguments["SpanId"]);
+                    Assert.Equal(a.TraceId.ToString(), eventSourceListener.LastEvent.Arguments["TraceId"]);
+                    Assert.Equal(a.ParentSpanId.ToString(), eventSourceListener.LastEvent.Arguments["ParentSpanId"]);
+
+                    a.Stop();
+                    Assert.Equal(3, eventSourceListener.LastEvent.Arguments.Count);
+                    Assert.Equal(a.SpanId.ToString(), eventSourceListener.LastEvent.Arguments["SpanId"]);
+                    Assert.Equal(a.TraceId.ToString(), eventSourceListener.LastEvent.Arguments["TraceId"]);
+                    Assert.Equal(a.ParentSpanId.ToString(), eventSourceListener.LastEvent.Arguments["ParentSpanId"]);
                 }
 
             }).Dispose();
