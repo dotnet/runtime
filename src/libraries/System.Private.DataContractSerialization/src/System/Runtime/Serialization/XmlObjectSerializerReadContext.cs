@@ -14,11 +14,7 @@ namespace System.Runtime.Serialization
     using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, DataContract>;
     using System.Diagnostics.CodeAnalysis;
 
-#if USE_REFEMIT
-    public class XmlObjectSerializerReadContext : XmlObjectSerializerContext
-#else
     internal class XmlObjectSerializerReadContext : XmlObjectSerializerContext
-#endif
     {
         internal Attributes? attributes;
         private HybridObjectCache? _deserializedObjects;
@@ -47,21 +43,12 @@ namespace System.Runtime.Serialization
             set { _isGetOnlyCollection = value; }
         }
 
-
-#if USE_REFEMIT
-        public object? GetCollectionMember()
-#else
         internal object? GetCollectionMember()
-#endif
         {
             return _getOnlyCollectionValue;
         }
 
-#if USE_REFEMIT
-        public void StoreCollectionMemberInfo(object? collectionMember)
-#else
         internal void StoreCollectionMemberInfo(object? collectionMember)
-#endif
         {
             _getOnlyCollectionValue = collectionMember;
             _isGetOnlyCollection = true;
@@ -74,21 +61,13 @@ namespace System.Runtime.Serialization
         }
 
         [DoesNotReturn]
-#if USE_REFEMIT
-        public static void ThrowNullValueReturnedForGetOnlyCollectionException(Type type)
-#else
         internal static void ThrowNullValueReturnedForGetOnlyCollectionException(Type type)
-#endif
         {
             throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.NullValueReturnedForGetOnlyCollection, DataContract.GetClrTypeFullName(type))));
         }
 
         [DoesNotReturn]
-#if USE_REFEMIT
-        public static void ThrowArrayExceededSizeException(int arraySize, Type type)
-#else
         internal static void ThrowArrayExceededSizeException(int arraySize, Type type)
-#endif
         {
             throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.ArrayExceededSize, arraySize, DataContract.GetClrTypeFullName(type))));
         }
@@ -112,11 +91,7 @@ namespace System.Runtime.Serialization
         }
 
 
-#if USE_REFEMIT
-        public virtual object? InternalDeserialize(XmlReaderDelegator xmlReader, int id, RuntimeTypeHandle declaredTypeHandle, string name, string ns)
-#else
         internal virtual object? InternalDeserialize(XmlReaderDelegator xmlReader, int id, RuntimeTypeHandle declaredTypeHandle, string name, string ns)
-#endif
         {
             DataContract dataContract = GetDataContract(id, declaredTypeHandle);
             return InternalDeserialize(xmlReader, name, ns, Type.GetTypeFromHandle(declaredTypeHandle), ref dataContract);
@@ -234,20 +209,12 @@ namespace System.Runtime.Serialization
             return knownTypesAddedInCurrentScope;
         }
 
-#if USE_REFEMIT
-        public static bool MoveToNextElement(XmlReaderDelegator xmlReader)
-#else
         internal static bool MoveToNextElement(XmlReaderDelegator xmlReader)
-#endif
         {
             return (xmlReader.MoveToContent() != XmlNodeType.EndElement);
         }
 
-#if USE_REFEMIT
-        public int GetMemberIndex(XmlReaderDelegator xmlReader, XmlDictionaryString[] memberNames, XmlDictionaryString[] memberNamespaces, int memberIndex, ExtensionDataObject? extensionData)
-#else
         internal int GetMemberIndex(XmlReaderDelegator xmlReader, XmlDictionaryString[] memberNames, XmlDictionaryString[] memberNamespaces, int memberIndex, ExtensionDataObject? extensionData)
-#endif
         {
             for (int i = memberIndex + 1; i < memberNames.Length; i++)
             {
@@ -258,11 +225,7 @@ namespace System.Runtime.Serialization
             return memberNames.Length;
         }
 
-#if USE_REFEMIT
-        public int GetMemberIndexWithRequiredMembers(XmlReaderDelegator xmlReader, XmlDictionaryString[] memberNames, XmlDictionaryString[] memberNamespaces, int memberIndex, int requiredIndex, ExtensionDataObject? extensionData)
-#else
         internal int GetMemberIndexWithRequiredMembers(XmlReaderDelegator xmlReader, XmlDictionaryString[] memberNames, XmlDictionaryString[] memberNamespaces, int memberIndex, int requiredIndex, ExtensionDataObject? extensionData)
-#endif
         {
             for (int i = memberIndex + 1; i < memberNames.Length; i++)
             {
@@ -278,11 +241,7 @@ namespace System.Runtime.Serialization
         }
 
         [DoesNotReturn]
-#if USE_REFEMIT
-        public static void ThrowRequiredMemberMissingException(XmlReaderDelegator xmlReader, int memberIndex, int requiredIndex, XmlDictionaryString[] memberNames)
-#else
         internal static void ThrowRequiredMemberMissingException(XmlReaderDelegator xmlReader, int memberIndex, int requiredIndex, XmlDictionaryString[] memberNames)
-#endif
         {
             StringBuilder stringBuilder = new StringBuilder();
             if (requiredIndex == memberNames.Length)
@@ -315,21 +274,13 @@ namespace System.Runtime.Serialization
             extensionData.Members.Add(ReadExtensionDataMember(xmlReader, memberIndex));
         }
 
-#if USE_REFEMIT
-        public void SkipUnknownElement(XmlReaderDelegator xmlReader)
-#else
         internal void SkipUnknownElement(XmlReaderDelegator xmlReader)
-#endif
         {
             ReadAttributes(xmlReader);
             xmlReader.Skip();
         }
 
-#if USE_REFEMIT
-        public string ReadIfNullOrRef(XmlReaderDelegator xmlReader, Type memberType, bool isMemberTypeSerializable)
-#else
         internal string ReadIfNullOrRef(XmlReaderDelegator xmlReader, Type memberType, bool isMemberTypeSerializable)
-#endif
         {
             Debug.Assert(attributes != null);
 
@@ -349,63 +300,39 @@ namespace System.Runtime.Serialization
         }
 
         [MemberNotNull(nameof(attributes))]
-#if USE_REFEMIT
-        public virtual void ReadAttributes(XmlReaderDelegator xmlReader)
-#else
         internal virtual void ReadAttributes(XmlReaderDelegator xmlReader)
-#endif
         {
             if (attributes == null)
                 attributes = new Attributes();
             attributes.Read(xmlReader);
         }
 
-#if USE_REFEMIT
-        public void ResetAttributes()
-#else
         internal void ResetAttributes()
-#endif
         {
             if (attributes != null)
                 attributes.Reset();
         }
 
-#if USE_REFEMIT
-        public string GetObjectId()
-#else
         internal string GetObjectId()
-#endif
         {
             Debug.Assert(attributes != null);
 
             return attributes.Id;
         }
 
-#if USE_REFEMIT
-        public virtual int GetArraySize()
-#else
         internal virtual int GetArraySize()
-#endif
         {
             return -1;
         }
 
-#if USE_REFEMIT
-        public void AddNewObject(object? obj)
-#else
         internal void AddNewObject(object? obj)
-#endif
         {
             Debug.Assert(attributes != null);
 
             AddNewObjectWithId(attributes.Id, obj);
         }
 
-#if USE_REFEMIT
-        public void AddNewObjectWithId(string id, object? obj)
-#else
         internal void AddNewObjectWithId(string id, object? obj)
-#endif
         {
             if (id != Globals.NewObjectId)
                 DeserializedObjects.Add(id, obj);
@@ -435,11 +362,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-#if USE_REFEMIT
-        public object GetExistingObject(string id, Type? type, string? name, string? ns)
-#else
         internal object GetExistingObject(string id, Type? type, string? name, string? ns)
-#endif
         {
             object? retObj = DeserializedObjects.GetObject(id);
             if (retObj == null)
@@ -474,11 +397,7 @@ namespace System.Runtime.Serialization
             return realObj;
         }
 
-#if USE_REFEMIT
-        public static void Read(XmlReaderDelegator xmlReader)
-#else
         internal static void Read(XmlReaderDelegator xmlReader)
-#endif
         {
             if (!xmlReader.Read())
                 throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.UnexpectedEndOfFile));
@@ -494,11 +413,7 @@ namespace System.Runtime.Serialization
             ns = xmlReader.LookupNamespace(prefix);
         }
 
-#if USE_REFEMIT
-        public static T[] EnsureArraySize<T>(T[] array, int index)
-#else
         internal static T[] EnsureArraySize<T>(T[] array, int index)
-#endif
         {
             if (array.Length <= index)
             {
@@ -517,11 +432,7 @@ namespace System.Runtime.Serialization
             return array;
         }
 
-#if USE_REFEMIT
-        public static T[] TrimArraySize<T>(T[] array, int size)
-#else
         internal static T[] TrimArraySize<T>(T[] array, int size)
-#endif
         {
             if (size != array.Length)
             {
@@ -532,11 +443,7 @@ namespace System.Runtime.Serialization
             return array;
         }
 
-#if USE_REFEMIT
-        public void CheckEndOfArray(XmlReaderDelegator xmlReader, int arraySize, XmlDictionaryString itemName, XmlDictionaryString itemNamespace)
-#else
         internal void CheckEndOfArray(XmlReaderDelegator xmlReader, int arraySize, XmlDictionaryString itemName, XmlDictionaryString itemNamespace)
-#endif
         {
             if (xmlReader.NodeType == XmlNodeType.EndElement)
                 return;
@@ -1111,21 +1018,13 @@ namespace System.Runtime.Serialization
             return attribute;
         }
 
-#if USE_REFEMIT
-        public static Exception CreateUnexpectedStateException(XmlNodeType expectedState, XmlReaderDelegator xmlReader)
-#else
         internal static Exception CreateUnexpectedStateException(XmlNodeType expectedState, XmlReaderDelegator xmlReader)
-#endif
         {
             return XmlObjectSerializer.CreateSerializationExceptionWithReaderDetails(SR.Format(SR.ExpectingState, expectedState), xmlReader);
         }
 
         //Silverlight only helper function to create SerializationException
-#if USE_REFEMIT
-        public static Exception CreateSerializationException(string message)
-#else
         internal static Exception CreateSerializationException(string message)
-#endif
         {
             return XmlObjectSerializer.CreateSerializationException(message);
         }

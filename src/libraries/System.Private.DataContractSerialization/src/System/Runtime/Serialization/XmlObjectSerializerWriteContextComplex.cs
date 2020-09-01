@@ -15,11 +15,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.Runtime.Serialization
 {
-#if USE_REFEMIT
-    public class XmlObjectSerializerWriteContextComplex : XmlObjectSerializerWriteContext
-#else
     internal class XmlObjectSerializerWriteContextComplex : XmlObjectSerializerWriteContext
-#endif
     {
         private readonly ISerializationSurrogateProvider? _serializationSurrogateProvider;
         private readonly SerializationMode _mode;
