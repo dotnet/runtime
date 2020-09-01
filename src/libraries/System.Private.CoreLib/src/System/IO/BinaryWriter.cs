@@ -304,18 +304,24 @@ namespace System.IO
         // Writes a float to this stream. The current position of the stream is
         // advanced by four.
         //
-        public virtual unsafe void Write(float value)
+        public virtual void Write(float value)
         {
-            BinaryPrimitives.WriteSingleLittleEndian(_buffer, value);
+            uint tmpValue = (uint)BitConverter.SingleToInt32Bits(value);
+            _buffer[0] = (byte)tmpValue;
+            _buffer[1] = (byte)(tmpValue >> 8);
+            _buffer[2] = (byte)(tmpValue >> 16);
+            _buffer[3] = (byte)(tmpValue >> 24);
             OutStream.Write(_buffer, 0, 4);
         }
 
         // Writes a half to this stream. The current position of the stream is
         // advanced by two.
         //
-        public virtual unsafe void Write(Half value)
+        public virtual void Write(Half value)
         {
-            BinaryPrimitives.WriteHalfLittleEndian(_buffer, value);
+            ushort tmpValue = (ushort)BitConverter.HalfToInt16Bits(value);
+            _buffer[0] = (byte)tmpValue;
+            _buffer[1] = (byte)(tmpValue >> 8);
             OutStream.Write(_buffer, 0, 2);
         }
 
