@@ -9,7 +9,6 @@
     <BinPlaceNative>true</BinPlaceNative>
     <BinPlaceRuntime>false</BinPlaceRuntime>
     <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
-    <SkipNoneItemGlobbing>true</SkipNoneItemGlobbing>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
 
