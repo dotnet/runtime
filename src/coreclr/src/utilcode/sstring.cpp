@@ -172,6 +172,10 @@ int SString::CaseCompareHelperA(const CHAR *buffer1, const CHAR *buffer2, COUNT_
         diff = ch1 - ch2;
         if  (diff != 0 || stopOnNull)
         {
+            if (!CAN_SIMPLE_UPCASE_ANSI(ch1) || !CAN_SIMPLE_UPCASE_ANSI(ch2))
+            {
+                break;
+            }
             diff = (SIMPLE_UPCASE_ANSI(ch1) - SIMPLE_UPCASE_ANSI(ch2));
             if (diff != 0)
             {
