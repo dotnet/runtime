@@ -302,7 +302,7 @@ jobs:
           eq(variables['isFullMatrix'], true))
 
 #
-# Build the whole product using Mono and run tests
+# Build the whole product using Mono and run libraries tests
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
