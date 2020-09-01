@@ -45,6 +45,9 @@ namespace System.Net.Sockets
 
         public static Task<SocketReceiveMessageFromResult> ReceiveMessageFromAsync(this Socket socket, ArraySegment<byte> buffer, SocketFlags socketFlags, EndPoint remoteEndPoint) =>
             socket.ReceiveMessageFromAsync(buffer, socketFlags, remoteEndPoint);
+        public static ValueTask<SocketReceiveMessageFromResult> ReceiveMessageFromAsync(this Socket socket, Memory<byte> buffer, SocketFlags socketFlags, EndPoint remoteEndPoint, CancellationToken cancellationToken = default) =>
+            socket.ReceiveMessageFromAsync(buffer, socketFlags, remoteEndPoint, cancellationToken);
+
 
         public static Task<int> SendAsync(this Socket socket, ArraySegment<byte> buffer, SocketFlags socketFlags) =>
             socket.SendAsync(buffer, socketFlags);
