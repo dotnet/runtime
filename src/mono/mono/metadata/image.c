@@ -47,6 +47,7 @@
 #include <mono/metadata/loaded-images-internals.h>
 #include <mono/metadata/w32process-internals.h>
 #include <mono/metadata/debug-internals.h>
+#include <mono/metadata/mono-private-unstable.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #ifdef HAVE_UNISTD_H
@@ -1920,6 +1921,21 @@ mono_image_open_from_data_internal (MonoAssemblyLoadContext *alc, char *data, gu
 		return NULL;
 
 	return register_image (mono_alc_get_loaded_images (alc), image, NULL);
+}
+
+MonoImage *
+mono_image_open_from_data_alc (MonoAssemblyLoadContextGCHandle alc_gchandle, char *data, uint32_t data_len, mono_bool need_copy, MonoImageOpenStatus *status, const char *name)
+{
+	MonoImage *result;
+	MONO_ENTER_GC_UNSAFE;
+#ifdef ENABLE_NETCORE
+	MonoAssemblyLoadContext *alc = mono_alc_from_gchandle (alc_gchandle);
+#else
+	MonoAssemblyLoadContext *alc = mono_domain_default_alc (mono_domain_get ());
+#endif
+	result = mono_image_open_from_data_internal (alc, data, data_len, need_copy, status, FALSE, FALSE, name, name);
+	MONO_EXIT_GC_UNSAFE;
+	return result;
 }
 
 /**
