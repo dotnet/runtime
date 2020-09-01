@@ -3,10 +3,11 @@
 
 using System.Threading.Tasks;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace System.Net.Sockets.Tests
 {
-    public abstract class LocalEndPointTest
+    public abstract class LocalEndPointTest<T> : SocketTestHelperBase<T> where T : SocketHelperBase, new()
     {
         protected abstract bool IPv6 { get; }
 
@@ -14,104 +15,66 @@ namespace System.Net.Sockets.Tests
 
         private IPAddress Loopback => IPv6 ? IPAddress.IPv6Loopback : IPAddress.Loopback;
 
+        public LocalEndPointTest(ITestOutputHelper output) : base(output) { }
+
         [Fact]
-        public void UdpSocket_ClientBoundToWildcardAddress_LocalEPDoesNotChangeOnSendTo()
+        public async Task UdpSocket_WhenBoundToWildcardAddress_LocalEPDoesNotChangeOnSendTo()
         {
-            using (Socket server = CreateUdpSocket())
-            using (Socket client = CreateUdpSocket())
+            using (Socket receiver = CreateUdpSocket())
+            using (Socket sender = CreateUdpSocket())
             {
-                int serverPort = server.BindToAnonymousPort(Wildcard);
+                int receiverPort = receiver.BindToAnonymousPort(Wildcard);
 
-                Assert.Null(client.LocalEndPoint);
+                Assert.Null(sender.LocalEndPoint);
 
-                int clientPortAfterBind = client.BindToAnonymousPort(Wildcard);
+                int senderPortAfterBind = sender.BindToAnonymousPort(Wildcard);
 
-                Assert.Equal(Wildcard, GetLocalEPAddress(client)); // wildcard before sendto
+                Assert.Equal(Wildcard, GetLocalEPAddress(sender)); // wildcard before sendto
 
-                var sendToEP = new IPEndPoint(Loopback, serverPort);
+                var sendToEP = new IPEndPoint(Loopback, receiverPort);
 
-                client.SendTo(new byte[] { 1, 2, 3 }, sendToEP);
+                await SendToAsync(sender, new byte[] { 1, 2, 3 }, sendToEP);
 
-                Assert.Equal(Wildcard, GetLocalEPAddress(client)); // stays as wildcard after sendto
-                Assert.Equal(clientPortAfterBind, GetLocalEPPort(client));
+                Assert.Equal(Wildcard, GetLocalEPAddress(sender)); // stays as wildcard after sendto
+                Assert.Equal(senderPortAfterBind, GetLocalEPPort(sender));
 
                 byte[] buf = new byte[3];
                 EndPoint receiveFromEP = new IPEndPoint(Wildcard, 0);
-                server.ReceiveFrom(buf, ref receiveFromEP);
+                receiver.ReceiveFrom(buf, ref receiveFromEP);
 
                 Assert.Equal(new byte[] { 1, 2, 3 }, buf);
                 Assert.Equal(Loopback, ((IPEndPoint)receiveFromEP).Address); // received from specific address
-                Assert.Equal(clientPortAfterBind, ((IPEndPoint)receiveFromEP).Port);
-
-                IAsyncResult sendToResult = client.BeginSendTo(new byte[] { 4, 5, 6 }, 0, 3, SocketFlags.None, sendToEP, null, null);
-                sendToResult.AsyncWaitHandle.WaitOne();
-                client.EndSendTo(sendToResult);
-
-                Assert.Equal(Wildcard, GetLocalEPAddress(client)); // stays as wildcard after async WSASendTo
-                Assert.Equal(clientPortAfterBind, GetLocalEPPort(client));
-
-                buf = new byte[3];
-                receiveFromEP = new IPEndPoint(Wildcard, 0);
-                server.ReceiveFrom(buf, ref receiveFromEP);
-
-                Assert.Equal(new byte[] { 4, 5, 6 }, buf);
-                Assert.Equal(Loopback, ((IPEndPoint)receiveFromEP).Address); // received from specific address
-                Assert.Equal(clientPortAfterBind, ((IPEndPoint)receiveFromEP).Port);
+                Assert.Equal(senderPortAfterBind, ((IPEndPoint)receiveFromEP).Port);
             }
         }
 
         [Fact]
-        public void UdpSocket_ClientNotBound_LocalEPBecomesWildcardOnSendTo()
+        public async Task UdpSocket_WhenNotBound_LocalEPChangeToWildcardOnSendTo()
         {
-            using (Socket server = CreateUdpSocket())
-            using (Socket client = CreateUdpSocket())
+            using (Socket receiver = CreateUdpSocket())
+            using (Socket sender = CreateUdpSocket())
             {
-                int serverPort = server.BindToAnonymousPort(Wildcard);
+                int receiverPort = receiver.BindToAnonymousPort(Wildcard);
 
-                Assert.Null(client.LocalEndPoint); // null before sendto
+                Assert.Null(sender.LocalEndPoint); // null before sendto
 
-                var sendToEP = new IPEndPoint(Loopback, serverPort);
+                var sendToEP = new IPEndPoint(Loopback, receiverPort);
 
-                client.SendTo(new byte[] { 1, 2, 3 }, sendToEP);
+                await SendToAsync(sender, new byte[] { 1, 2, 3 }, sendToEP);
 
-                Assert.Equal(Wildcard, GetLocalEPAddress(client)); // wildcard after sendto
+                Assert.Equal(Wildcard, GetLocalEPAddress(sender)); // changes to wildcard after sendto
 
                 byte[] buf = new byte[3];
                 EndPoint receiveFromEP = new IPEndPoint(Wildcard, 0);
-                server.ReceiveFrom(buf, ref receiveFromEP);
+                receiver.ReceiveFrom(buf, ref receiveFromEP);
 
                 Assert.Equal(new byte[] { 1, 2, 3 }, buf);
+                Assert.Equal(Loopback, ((IPEndPoint)receiveFromEP).Address); // received from specific address
             }
         }
 
         [Fact]
-        public void UdpSocket_ClientNotBound_LocalEPBecomesWildcardOnAsyncSendTo()
-        {
-            using (Socket server = CreateUdpSocket())
-            using (Socket client = CreateUdpSocket())
-            {
-                int serverPort = server.BindToAnonymousPort(Wildcard);
-
-                Assert.Null(client.LocalEndPoint); // null before async WSASendTo
-
-                var sendToEP = new IPEndPoint(Loopback, serverPort);
-
-                IAsyncResult sendToResult = client.BeginSendTo(new byte[] { 4, 5, 6 }, 0, 3, SocketFlags.None, sendToEP, null, null);
-                sendToResult.AsyncWaitHandle.WaitOne();
-                client.EndSendTo(sendToResult);
-
-                Assert.Equal(Wildcard, GetLocalEPAddress(client)); // wildcard after async WSASendTo
-
-                byte[] buf = new byte[3];
-                EndPoint receiveFromEP = new IPEndPoint(Wildcard, 0);
-                server.ReceiveFrom(buf, ref receiveFromEP);
-
-                Assert.Equal(new byte[] { 4, 5, 6 }, buf);
-            }
-        }
-
-        [Fact]
-        public async Task TcpSocket_ClientBoundToWildcardAddress_LocalEPChangeToSpecificOnConnnect()
+        public async Task TcpClientSocket_WhenBoundToWildcardAddress_LocalEPChangeToSpecificOnConnnect()
         {
             using (Socket server = CreateTcpSocket())
             using (Socket client = CreateTcpSocket())
@@ -122,11 +85,11 @@ namespace System.Net.Sockets.Tests
                 Assert.Equal(Wildcard, GetLocalEPAddress(client)); // wildcard before connect
 
                 server.Listen();
-                Task<Socket> acceptTask = server.AcceptAsync();
+                Task<Socket> acceptTask = AcceptAsync(server);
 
-                client.Connect(new IPEndPoint(Loopback, serverPort));
+                await ConnectAsync(client, new IPEndPoint(Loopback, serverPort));
 
-                Assert.Equal(Loopback, GetLocalEPAddress(client)); // specific after connect
+                Assert.Equal(Loopback, GetLocalEPAddress(client)); // changes to specific after connect
                 Assert.Equal(clientPortAfterBind, GetLocalEPPort(client));
 
                 Socket accept = await acceptTask;
@@ -135,20 +98,20 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        public async Task TcpSocket_ClientNotBound_LocalEPChangeToSpecificOnConnnect()
+        public async Task TcpClientSocket_WhenNotBound_LocalEPChangeToSpecificOnConnnect()
         {
             using (Socket server = CreateTcpSocket())
             using (Socket client = CreateTcpSocket())
             {
                 int serverPort = server.BindToAnonymousPort(Loopback);
                 server.Listen();
-                Task<Socket> acceptTask = server.AcceptAsync();
+                Task<Socket> acceptTask = AcceptAsync(server);
 
                 Assert.Null(client.LocalEndPoint); // null before connect
 
-                client.Connect(new IPEndPoint(Loopback, serverPort));
+                await ConnectAsync(client, new IPEndPoint(Loopback, serverPort));
 
-                Assert.Equal(Loopback, GetLocalEPAddress(client)); // specific after connect
+                Assert.Equal(Loopback, GetLocalEPAddress(client)); // changes to specific after connect
 
                 Socket accept = await acceptTask;
                 Assert.Equal(accept.RemoteEndPoint, client.LocalEndPoint);
@@ -156,7 +119,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        public async Task TcpSocket_ServerBoundToWildcardAddress_AcceptSocketLocalEPIsSpecific()
+        public async Task TcpAcceptSocket_WhenServerBoundToWildcardAddress_LocalEPIsSpecific()
         {
             using (Socket server = CreateTcpSocket())
             using (Socket client = CreateTcpSocket())
@@ -166,9 +129,9 @@ namespace System.Net.Sockets.Tests
                 Assert.Equal(Wildcard, GetLocalEPAddress(server)); // server -> wildcard before accept
 
                 server.Listen();
-                Task<Socket> acceptTask = server.AcceptAsync();
+                Task<Socket> acceptTask = AcceptAsync(server);
 
-                client.Connect(new IPEndPoint(Loopback, serverPort));
+                await ConnectAsync(client, new IPEndPoint(Loopback, serverPort));
 
                 Socket accept = await acceptTask;
                 Assert.Equal(accept.RemoteEndPoint, client.LocalEndPoint);
@@ -181,7 +144,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        public async Task TcpSocket_ServerBoundToSpecificAddress_AcceptSocketLocalEPIsSame()
+        public async Task TcpAcceptSocket_WhenServerBoundToSpecificAddress_LocalEPIsSame()
         {
             using (Socket server = CreateTcpSocket())
             using (Socket client = CreateTcpSocket())
@@ -191,9 +154,9 @@ namespace System.Net.Sockets.Tests
                 Assert.Equal(Loopback, GetLocalEPAddress(server)); // server -> specific before accept
 
                 server.Listen();
-                Task<Socket> acceptTask = server.AcceptAsync();
+                Task<Socket> acceptTask = AcceptAsync(server);
 
-                client.Connect(new IPEndPoint(Loopback, serverPort));
+                await ConnectAsync(client, new IPEndPoint(Loopback, serverPort));
 
                 Socket accept = await acceptTask;
                 Assert.Equal(accept.RemoteEndPoint, client.LocalEndPoint);
@@ -245,16 +208,77 @@ namespace System.Net.Sockets.Tests
             return ((IPEndPoint)socket.LocalEndPoint).Port;
         }
     }
-
-    [Trait("IPv4", "true")]
-    public class LocalEndPointIPv4Test : LocalEndPointTest
+    public abstract class LocalEndPointTestIPv4<T> : LocalEndPointTest<T> where T : SocketHelperBase, new()
     {
         protected override bool IPv6 => false;
+
+        public LocalEndPointTestIPv4(ITestOutputHelper output) : base(output) { }
+    }
+
+    public abstract class LocalEndPointTestIPv6<T> : LocalEndPointTest<T> where T : SocketHelperBase, new()
+    {
+        protected override bool IPv6 => true;
+
+        public LocalEndPointTestIPv6(ITestOutputHelper output) : base(output) { }
+    }
+
+    [Trait("IPv4", "true")]
+    public sealed class LocalEndPointTestIPv4Sync : LocalEndPointTestIPv4<SocketHelperArraySync>
+    {
+        public LocalEndPointTestIPv4Sync(ITestOutputHelper output) : base(output) { }
+    }
+
+    [Trait("IPv4", "true")]
+    public sealed class LocalEndPointTestIPv4SyncForceNonBlocking : LocalEndPointTestIPv4<SocketHelperSyncForceNonBlocking>
+    {
+        public LocalEndPointTestIPv4SyncForceNonBlocking(ITestOutputHelper output) : base(output) { }
+    }
+
+    [Trait("IPv4", "true")]
+    public sealed class LocalEndPointTestIPv4Apm : LocalEndPointTestIPv4<SocketHelperApm>
+    {
+        public LocalEndPointTestIPv4Apm(ITestOutputHelper output) : base(output) { }
+    }
+
+    [Trait("IPv4", "true")]
+    public sealed class LocalEndPointTestIPv4Task : LocalEndPointTestIPv4<SocketHelperTask>
+    {
+        public LocalEndPointTestIPv4Task(ITestOutputHelper output) : base(output) { }
+    }
+
+    [Trait("IPv4", "true")]
+    public sealed class LocalEndPointTestIPv4Eap : LocalEndPointTestIPv4<SocketHelperEap>
+    {
+        public LocalEndPointTestIPv4Eap(ITestOutputHelper output) : base(output) { }
     }
 
     [Trait("IPv6", "true")]
-    public class LocalEndPointIPv6Test : LocalEndPointTest
+    public sealed class LocalEndPointTestIPv6Sync : LocalEndPointTestIPv6<SocketHelperArraySync>
     {
-        protected override bool IPv6 => true;
+        public LocalEndPointTestIPv6Sync(ITestOutputHelper output) : base(output) { }
+    }
+
+    [Trait("IPv6", "true")]
+    public sealed class LocalEndPointTestIPv6SyncForceNonBlocking : LocalEndPointTestIPv6<SocketHelperSyncForceNonBlocking>
+    {
+        public LocalEndPointTestIPv6SyncForceNonBlocking(ITestOutputHelper output) : base(output) { }
+    }
+
+    [Trait("IPv6", "true")]
+    public sealed class LocalEndPointTestIPv6Apm : LocalEndPointTestIPv6<SocketHelperApm>
+    {
+        public LocalEndPointTestIPv6Apm(ITestOutputHelper output) : base(output) { }
+    }
+
+    [Trait("IPv6", "true")]
+    public sealed class LocalEndPointTestIPv6Task : LocalEndPointTestIPv6<SocketHelperTask>
+    {
+        public LocalEndPointTestIPv6Task(ITestOutputHelper output) : base(output) { }
+    }
+
+    [Trait("IPv6", "true")]
+    public sealed class LocalEndPointTestIPv6Eap : LocalEndPointTestIPv6<SocketHelperEap>
+    {
+        public LocalEndPointTestIPv6Eap(ITestOutputHelper output) : base(output) { }
     }
 }
