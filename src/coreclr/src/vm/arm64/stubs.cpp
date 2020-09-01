@@ -1070,7 +1070,7 @@ void JIT_TailCall()
 #if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
 EXTERN_C void JIT_UpdateWriteBarrierState(bool skipEphemeralCheck);
 
-static void SafeUpdateWriteBarrierState(bool skipEphemeralCheck)
+static void UpdateWriteBarrierState          (bool skipEphemeralCheck)
 {
 #if defined(HOST_OSX) && defined(HOST_ARM64)
     auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
@@ -1104,12 +1104,12 @@ void InitJITHelpers1()
         }
     }
 
-    SafeUpdateWriteBarrierState(GCHeapUtilities::IsServerHeap());
+    UpdateWriteBarrierState          (GCHeapUtilities::IsServerHeap());
 }
 
 
 #else
-void SafeUpdateWriteBarrierState(bool) {}
+void UpdateWriteBarrierState          (bool) {}
 #endif // !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
 
 PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrame(T_DISPATCHER_CONTEXT * pDispatcherContext)
@@ -1278,26 +1278,26 @@ void FlushWriteBarrierInstructionCache()
 #ifndef CROSSGEN_COMPILE
 int StompWriteBarrierEphemeral(bool isRuntimeSuspended)
 {
-    SafeUpdateWriteBarrierState(GCHeapUtilities::IsServerHeap());
+    UpdateWriteBarrierState          (GCHeapUtilities::IsServerHeap());
     return SWB_PASS;
 }
 
 int StompWriteBarrierResize(bool isRuntimeSuspended, bool bReqUpperBoundsCheck)
 {
-    SafeUpdateWriteBarrierState(GCHeapUtilities::IsServerHeap());
+    UpdateWriteBarrierState          (GCHeapUtilities::IsServerHeap());
     return SWB_PASS;
 }
 
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 int SwitchToWriteWatchBarrier(bool isRuntimeSuspended)
 {
-    SafeUpdateWriteBarrierState(GCHeapUtilities::IsServerHeap());
+    UpdateWriteBarrierState          (GCHeapUtilities::IsServerHeap());
     return SWB_PASS;
 }
 
 int SwitchToNonWriteWatchBarrier(bool isRuntimeSuspended)
 {
-    SafeUpdateWriteBarrierState(GCHeapUtilities::IsServerHeap());
+    UpdateWriteBarrierState          (GCHeapUtilities::IsServerHeap());
     return SWB_PASS;
 }
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
