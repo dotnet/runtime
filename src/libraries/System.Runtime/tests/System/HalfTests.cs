@@ -10,12 +10,12 @@ namespace System.Tests
 {
     public partial class HalfTests
     {
-        private static unsafe ushort HalfToUInt16Bits(Half value)
+        private static ushort HalfToUInt16Bits(Half value)
         {
             return (ushort)BitConverter.HalfToInt16Bits(value);
         }
 
-        private static unsafe Half UInt16BitsToHalf(ushort value)
+        private static Half UInt16BitsToHalf(ushort value)
         {
             return BitConverter.Int16BitsToHalf((short)value);
         }
