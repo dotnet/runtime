@@ -174,7 +174,7 @@
       </XHarnessAppBundleToTest>
     </ItemGroup>
 
-    <ItemGroup Condition="'$(TargetOS)' != 'Browser' and '$(TargetOS)' != 'iOS' and '$(TargetOS)' != 'tvOS'">
+    <ItemGroup Condition="'$(TargetOS)' != 'iOS' and '$(TargetOS)' != 'tvOS'">
       <HelixCorrelationPayload Condition="'$(TargetOS)' != 'Browser'" Include="$(HelixCorrelationPayload)" />
 
       <_WorkItem Include="$(WorkItemArchiveWildCard)" Exclude="$(HelixCorrelationPayload)" />
