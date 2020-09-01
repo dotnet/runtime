@@ -77,6 +77,7 @@ dlldata.c
 *.tmp
 *.tmp_proj
 *.log
+*.tdrec
 *.vspscc
 *.vssscc
 .builds
@@ -191,6 +192,10 @@ Generated_Code/
 # because we have git ;-)
 _UpgradeReport_Files/
 Backup*/
+*.1[45]*.bak
+*.1[45]*.mod
+*~
+*~[0-9]*~
 UpgradeLog*.XML
 UpgradeLog*.htm
 
