@@ -362,17 +362,21 @@ var MonoSupportLib = {
 			var i = 0;
 			while (i < var_list.length) {
 				let o = var_list [i];
-				const name = o.name;
-				if (name == null || name == undefined) {
+				const this_has_name = o.name !== undefined;
+				let next_has_value_or_get_set = false;
+
+				if (i + 1 < var_list.length) {
+					const next = var_list [i+1];
+					next_has_value_or_get_set = next.value !== undefined || next.get !== undefined || next.set !== undefined;
+				}
+
+				if (!this_has_name || !next_has_value_or_get_set) {
 					i ++;
 					out_list.push (o);
 					continue;
 				}
 
-				if (i + 1 < var_list.length) {
-					o = Object.assign (o, var_list [i + 1]);
-				}
-
+				o = Object.assign (o, var_list [i + 1]);
 				out_list.push (o);
 				i += 2;
 			}
@@ -396,6 +400,11 @@ var MonoSupportLib = {
 
 			// Split props into the 3 groups - backing_fields, getters, and all_fields_except_backing_fields
 			props.forEach(p => {
+				if (p.name === undefined) {
+					console.debug(`Bug: Found a member with no name. Skipping it. p: ${JSON.stringify(p)}`);
+					return;
+				}
+
 				if (p.name.endsWith('k__BackingField')) {
 					const auto_prop_name = p.name.replace ('k__BackingField', '')
 						.replace ('<', '')
