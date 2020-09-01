@@ -606,6 +606,7 @@ namespace System.Diagnostics
 
                 _eventSource.Message("DiagnosticSource: Enabling '" + (listenerNameFilter ?? "*") + "/" + (eventNameFilter ?? "*") + "'");
 
+                // If the transform spec begins with a - it means you don't want implicit transforms.
                 if (startTransformIdx < endIdx && filterAndPayloadSpec[startTransformIdx] == '-')
                 {
                     _eventSource.Message("DiagnosticSource: suppressing implicit transforms.");
