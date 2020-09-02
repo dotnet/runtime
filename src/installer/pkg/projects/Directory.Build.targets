@@ -146,35 +146,12 @@
   </Target>
 
   <!--
-    Overriding VerifyClosure target to enable closure validation without other validations.
+    Ensures package reports dir exists, to work around the issue in VerifyClosure task:
+    https://github.com/dotnet/arcade/issues/6090
+    Remove this target, once the issue is fixed.
   -->
-  <Target Name="VerifyClosure"
-          DependsOnTargets="GetClosureFiles"
-          Condition="'$(SkipValidatePackage)' != 'true' or '$(ShouldVerifyClosure)' == 'true'"
-          Inputs="%(ClosureFile.FileSet)"
-          Outputs="batching-on-FileSet-metadata">
-    <ItemGroup>
-      <_closureFileNames Include="@(ClosureFile->'%(FileName)')" Original="%(Identity)" />
-
-      <_closureFileNamesFiltered Include="@(_closureFileNames)" Exclude="@(ExcludeFromClosure)"/>
-      <_closureFileFiltered Include="@(_closureFileNamesFiltered->'%(Original)')"/>
-    </ItemGroup>
-
-    <Message Importance="High" Text="Verifying closure of $(Id) %(ClosureFile.FileSet) assemblies" />
-
-    <PropertyGroup>
-      <_DependencyGraphFilePath>$(PackageReportDir)$(Id)$(NuspecSuffix)-%(ClosureFile.FileSet).dgml</_DependencyGraphFilePath>
-      <_DependencyGraphDir>$([System.IO.Path]::GetDirectoryName($(_DependencyGraphFilePath)))</_DependencyGraphDir>
-    </PropertyGroup>
-
-    <!-- Ensure directory for dependency graph file exists. -->
-    <MakeDir Condition="!Exists('$(_DependencyGraphDir')"
-             Directories="$(_DependencyGraphDir)" />
-
-    <VerifyClosure
-      Sources="@(_closureFileFiltered)"
-      IgnoredReferences="@(IgnoredReference)"
-      DependencyGraphFilePath="$(_DependencyGraphFilePath)" />
+  <Target Name="EnsureDepenedencyGraphDir" BeforeTargets="VerifyClosure">
+    <MakeDir Directories="$(PackageReportDir)" />
   </Target>
 
   <!--
