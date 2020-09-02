@@ -214,7 +214,6 @@ typedef LIFO<ARG_NAME_LIST> ARG_NAME_LIST_STACK;
 /*--------------------------------------------------------------------------*/
 typedef char*(*PFN_NEXTCHAR)(char*);
 
-char* nextcharA(__in __nullterminated char* pos);
 char* nextcharU(__in __nullterminated char* pos);
 char* nextcharW(__in __nullterminated char* pos);
 
@@ -292,7 +291,7 @@ public:
     ARG_NAME_LIST_STACK  m_ANSFirst;
     ARG_NAME_LIST_STACK  m_ANSLast;
     PARSING_ENVIRONMENT *penv;
-    PARSING_ENVIRONMENT_STACK   PEStack;
+    PARSING_ENVIRONMENT_STACK PEStack;
 
 private:
     BinStr* MakeSig(unsigned callConv, BinStr* retType, BinStr* args, int ntyargs = 0);
@@ -300,9 +299,8 @@ private:
     BinStr* MakeTypeArray(CorElementType kind, BinStr* elemType, BinStr* bounds);
 
     char* fillBuff(__in_opt __nullterminated char* curPos);   // refill the input buffer
-    DWORD IsItUnicode(CONST LPVOID pBuff, int cb, LPINT lpi);
-	HANDLE	hstdout;
-	HANDLE	hstderr;
+    HANDLE hstdout;
+    HANDLE hstderr;
 
 private:
     friend void yyerror(__in __nullterminated const char* str);
