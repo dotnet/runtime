@@ -1339,7 +1339,7 @@ gpointer
 #ifndef DISABLE_PERFCOUNTERS
 	mono_atomic_fetch_add_i32 (&mono_perfcounters->loader_bytes, size);
 #endif
-	res = mono_mempool_alloc (domain->mp, size);
+	res = mono_mempool_alloc (mono_domain_default_memory_manager (domain)->mp, size);
 	mono_domain_unlock (domain);
 
 	return res;
@@ -1359,9 +1359,7 @@ gpointer
 #ifndef DISABLE_PERFCOUNTERS
 	mono_atomic_fetch_add_i32 (&mono_perfcounters->loader_bytes, size);
 #endif
-	res = mono_mempool_alloc0 (domain->mp, size);
-	mono_domain_unlock (domain);
-
+	res = mono_mempool_alloc0 (mono_domain_default_memory_manager (domain)->mp, size);
 	return res;
 }
 
@@ -1382,7 +1380,7 @@ void*
 	gpointer res;
 
 	mono_domain_lock (domain);
-	res = mono_code_manager_reserve (domain->code_mp, size);
+	res = mono_code_manager_reserve (mono_domain_default_memory_manager (domain)->code_mp, size);
 	mono_domain_unlock (domain);
 
 	return res;
@@ -1399,7 +1397,7 @@ void*
 	gpointer res;
 
 	mono_domain_lock (domain);
-	res = mono_code_manager_reserve_align (domain->code_mp, size, alignment);
+	res = mono_code_manager_reserve_align (mono_domain_default_memory_manager (domain)->code_mp, size, alignment);
 	mono_domain_unlock (domain);
 
 	return res;
@@ -1414,7 +1412,7 @@ void
 mono_domain_code_commit (MonoDomain *domain, void *data, int size, int newsize)
 {
 	mono_domain_lock (domain);
-	mono_code_manager_commit (domain->code_mp, data, size, newsize);
+	mono_code_manager_commit (mono_domain_default_memory_manager (domain)->code_mp, data, size, newsize);
 	mono_domain_unlock (domain);
 }
 
@@ -1431,7 +1429,7 @@ void
 mono_domain_code_foreach (MonoDomain *domain, MonoCodeManagerFunc func, void *user_data)
 {
 	mono_domain_lock (domain);
-	mono_code_manager_foreach (domain->code_mp, func, user_data);
+	mono_code_manager_foreach (mono_domain_default_memory_manager (domain)->code_mp, func, user_data);
 	mono_domain_unlock (domain);
 }
 
