@@ -125,6 +125,23 @@ if(ENABLE_LAZY_GC_THREAD_CREATION)
 endif()
 
 ######################################
+# AOT CROSS COMPILER SUPPORT
+######################################
+if(NOT AOT_TARGET_TRIPLE STREQUAL "")
+  set(MONO_CROSS_COMPILE 1)
+  add_definitions(-DNO_GLOBALIZATION_SHIM)
+  if (NOT AOT_OFFSETS_FILE STREQUAL "")
+	set(MONO_OFFSETS_FILE "${AOT_OFFSETS_FILE}")
+  endif()
+  if (AOT_TARGET_TRIPLE STREQUAL "x86_64-apple-darwin10")
+	set(TARGET_SYSTEM_NAME "iOS")
+	set(TARGET_ARCH "x86_64")
+  else()
+	message(FATAL_ERROR "AOT target '${AOT_TARGET_TRIPLE}' not supported.")
+  endif()
+endif()
+
+######################################
 # GCC CHECKS
 ######################################
 if(GCC)
@@ -181,8 +198,9 @@ endif()
 # TARGET OS CHECKS
 ######################################
 
-# FIXME:
-set(TARGET_SYSTEM_NAME "${CMAKE_SYSTEM_NAME}")
+if(NOT TARGET_SYSTEM_NAME)
+  set(TARGET_SYSTEM_NAME "${CMAKE_SYSTEM_NAME}")
+endif()
 
 if(TARGET_SYSTEM_NAME STREQUAL "Darwin")
   set(TARGET_MACH 1)
@@ -196,7 +214,7 @@ elseif(TARGET_SYSTEM_NAME STREQUAL "Emscripten")
     add_compile_options(-Os)
   endif()
 else()
-  message(FATAL_ERROR "")
+  message(FATAL_ERROR "Target '${TARGET_SYSTEM_NAME}' not supported.")
 endif()
 
 ######################################
@@ -219,8 +237,9 @@ endif()
 # TARGET ARCH CHECKS
 ######################################
 
-# FIXME:
-set(TARGET_ARCH "${CMAKE_SYSTEM_PROCESSOR}")
+if(NOT TARGET_ARCH)
+  set(TARGET_ARCH "${CMAKE_SYSTEM_PROCESSOR}")
+endif()
 
 if(TARGET_ARCH STREQUAL "x86_64")
   set(TARGET_AMD64 1)
