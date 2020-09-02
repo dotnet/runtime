@@ -209,11 +209,11 @@ namespace Internal.JitInterface
 #endif
             }
 
-            PublishCode();
+            PublishCode(codeSize);
             PublishROData();
         }
 
-        private void PublishCode()
+        private void PublishCode(uint codeSize)
         {
             var relocs = _codeRelocs.ToArray();
             Array.Sort(relocs, (x, y) => (x.Offset - y.Offset));
@@ -224,7 +224,10 @@ namespace Internal.JitInterface
 
             alignment = Math.Max(alignment, _codeAlignment);
 
-            var objectData = new ObjectNode.ObjectData(_code,
+            byte[] actualCodeBytes = _code;
+            Array.Resize(ref actualCodeBytes, (int)codeSize);
+
+            var objectData = new ObjectNode.ObjectData(actualCodeBytes,
                                                        relocs,
                                                        alignment,
                                                        new ISymbolDefinitionNode[] { _methodCodeNode });
@@ -397,12 +400,19 @@ namespace Internal.JitInterface
         private const int handleMultipler = 8;
         private const int handleBase = 0x420000;
 
+#if DEBUG
+        private static readonly IntPtr s_handleHighBitSet = (sizeof(IntPtr) == 4) ? new IntPtr(0x40000000) : new IntPtr(0x4000000000000000);
+#endif
+
         private IntPtr ObjectToHandle(Object obj)
         {
             IntPtr handle;
             if (!_objectToHandle.TryGetValue(obj, out handle))
             {
                 handle = (IntPtr)(handleMultipler * _handleToObject.Count + handleBase);
+#if DEBUG
+                handle = new IntPtr((long)s_handleHighBitSet | (long)handle);
+#endif
                 _handleToObject.Add(obj);
                 _objectToHandle.Add(obj, handle);
             }
@@ -411,6 +421,9 @@ namespace Internal.JitInterface
 
         private Object HandleToObject(IntPtr handle)
         {
+#if DEBUG
+            handle = new IntPtr(~(long)s_handleHighBitSet & (long) handle);
+#endif
             int index = ((int)handle - handleBase) / handleMultipler;
             return _handleToObject[index];
         }
