@@ -712,7 +712,7 @@ var BindingSupportLib = {
 		_get_converter_for_marshal_string: function (args_marshal) {
 			var converters = this.converters;
 			if (!converters)
-				converters = this._create_default_converters();
+				converters = this._create_default_converters ();
 
 			var converter = converters.get (args_marshal);
 			if (!converter) {
@@ -748,7 +748,7 @@ var BindingSupportLib = {
 			if (has_args) {
 				if (!has_args_marshal)
 					throw new Error ("No signature provided.");
-				else if (args.length !== args_marshal.length))
+				else if (args.length !== args_marshal.length)
 					throw new Error ("Parameter count mismatch.");
 			}
 
@@ -1281,8 +1281,9 @@ var BindingSupportLib = {
 				var argsList = new Array();
 				argsList[0] = constructor;
 				if (js_args)
-					argsList = argsList.concat(js_args);
-				var obj = new (constructor.bind.apply(constructor, argsList ));
+					argsList = argsList.concat (js_args);
+				var tempCtor = constructor.bind.apply (constructor, argsList);
+				var obj = new tempCtor ();
 				return obj;
 			};
 	
