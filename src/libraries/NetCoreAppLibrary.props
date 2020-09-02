@@ -48,7 +48,6 @@
       System.IO.FileSystem.Watcher;
       System.IO.IsolatedStorage;
       System.IO.MemoryMappedFiles;
-      System.IO.Pipelines;
       System.IO.Pipes;
       System.IO.Pipes.AccessControl;
       System.IO.UnmanagedMemoryStream;
@@ -57,7 +56,6 @@
       System.Linq.Parallel;
       System.Linq.Queryable;
       System.Memory;
-      System.Net.Connections;
       System.Net.Http;
       System.Net.Http.Json;
       System.Net.HttpListener;
