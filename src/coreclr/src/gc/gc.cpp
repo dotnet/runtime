@@ -37867,15 +37867,26 @@ size_t GCHeap::ApproxTotalBytesInUse(BOOL small_heap_only)
     size_t totsize = 0;
     enter_spin_lock (&pGenGCHeap->gc_lock);
 
-    heap_segment* eph_seg = generation_allocation_segment (pGenGCHeap->generation_of (0));
-    // Get small block heap size info
-    totsize = (pGenGCHeap->alloc_allocated - heap_segment_mem (eph_seg));
-    heap_segment* seg1 = generation_start_segment (pGenGCHeap->generation_of (max_generation));
-    while (seg1 != eph_seg)
+    // the complication with the following code is that background GC may
+    // remove the ephemeral segment while we are iterating
+    // if so, we retry a couple times and ultimately may report a slightly wrong result
+    for (int tries = 1; tries <= 3; tries++)
     {
-        totsize += heap_segment_allocated (seg1) -
-            heap_segment_mem (seg1);
-        seg1 = heap_segment_next (seg1);
+        heap_segment* eph_seg = generation_allocation_segment (pGenGCHeap->generation_of (0));
+        // Get small block heap size info
+        totsize = (pGenGCHeap->alloc_allocated - heap_segment_mem (eph_seg));
+        heap_segment* seg1 = generation_start_segment (pGenGCHeap->generation_of (max_generation));
+        while ((seg1 != eph_seg) && (seg1 != nullptr) && (seg1 != pGenGCHeap->freeable_soh_segment))
+        {
+            if (!heap_segment_decommitted_p (seg1))
+            {
+                totsize += heap_segment_allocated (seg1) -
+                    heap_segment_mem (seg1);
+            }
+            seg1 = heap_segment_next (seg1);
+        }
+        if (seg1 == eph_seg)
+            break;
     }
 
     //discount the fragmentation

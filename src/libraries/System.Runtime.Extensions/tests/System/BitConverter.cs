@@ -271,5 +271,15 @@ namespace System.Tests
             float roundtripped = BitConverter.Int32BitsToSingle(result);
             Assert.Equal(input, roundtripped);
         }
+
+        [Fact]
+        public static void HalfToInt16Bits()
+        {
+            Half input = (Half)12.34;
+            short result = BitConverter.HalfToInt16Bits(input);
+            Assert.Equal((short)18988, result);
+            Half roundtripped = BitConverter.Int16BitsToHalf(result);
+            Assert.Equal(input, roundtripped);
+        }
     }
 }
