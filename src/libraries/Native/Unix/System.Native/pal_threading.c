@@ -54,9 +54,10 @@ LowLevelMonitor* SystemNative_LowLevelMonitor_Create()
     error = pthread_cond_init(&monitor->Condition, NULL);
     if (error != 0)
     {
-        pthread_mutex_destroy(&monitor->Mutex);
+        error = pthread_mutex_destroy(&monitor->Mutex);
+        assert(error == 0);
         free(monitor);
-        return false;
+        return NULL;
     }
 
 #ifdef DEBUG
