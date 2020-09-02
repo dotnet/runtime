@@ -198,7 +198,7 @@ namespace System.Globalization.Tests
         {
             yield return new object[] { 0x409, 244, "US Dollar", "USD", "US Dollar", "\u0055\u0053\u0020\u0044\u006f\u006c\u006c\u0061\u0072", "USA", "USA" };
             yield return new object[] { 0x411, 122, "Japanese Yen", "JPY", "Japanese Yen", PlatformDetection.IsNlsGlobalization ? "\u5186" : "\u65e5\u672c\u5186", "JPN", "JPN" };
-            yield return new object[] { 0x804, 45, "Chinese Yuan", "CNH", "PRC Yuan Renminbi", "\u4eba\u6c11\u5e01", "CHN", "CHN" };
+            yield return new object[] { 0x804, 45, "Chinese Yuan", "CNY", "PRC Yuan Renminbi", "\u4eba\u6c11\u5e01", "CHN", "CHN" };
             yield return new object[] { 0x401, 205, "Saudi Riyal", "SAR", "Saudi Riyal", PlatformDetection.IsNlsGlobalization ?
                                                     "\u0631\u064a\u0627\u0644\u00a0\u0633\u0639\u0648\u062f\u064a" :
                                                     "\u0631\u064a\u0627\u0644\u0020\u0633\u0639\u0648\u062f\u064a",
