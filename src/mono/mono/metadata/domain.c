@@ -432,14 +432,15 @@ mono_domain_create (void)
 
 	MONO_PROFILER_RAISE (domain_loading, (domain));
 
-	domain->mp = mono_mempool_new ();
-	domain->code_mp = mono_code_manager_new ();
+#ifndef ENABLE_NETCORE
+	domain->memory_manager = (MonoMemoryManager *)mono_memory_manager_create_singleton (NULL, TRUE);
+#endif
+
 	domain->lock_free_mp = lock_free_mempool_new ();
 	domain->env = mono_g_hash_table_new_type_internal ((GHashFunc)mono_string_hash_internal, (GCompareFunc)mono_string_equal_internal, MONO_HASH_KEY_VALUE_GC, MONO_ROOT_SOURCE_DOMAIN, domain, "Domain Environment Variable Table");
 	domain->domain_assemblies = NULL;
 	domain->assembly_bindings = NULL;
 	domain->assembly_bindings_parsed = FALSE;
-	domain->class_vtable_array = g_ptr_array_new ();
 	domain->proxy_vtable_hash = g_hash_table_new ((GHashFunc)mono_ptrarray_hash, (GCompareFunc)mono_ptrarray_equal);
 	mono_jit_code_hash_init (&domain->jit_code_hash);
 	domain->ldstr_table = mono_g_hash_table_new_type_internal ((GHashFunc)mono_string_hash_internal, (GCompareFunc)mono_string_equal_internal, MONO_HASH_KEY_VALUE_GC, MONO_ROOT_SOURCE_DOMAIN, domain, "Domain String Pool Table");
@@ -1086,15 +1087,6 @@ mono_domain_assembly_open_internal (MonoDomain *domain, MonoAssemblyLoadContext 
 	return ass;
 }
 
-static void
-unregister_vtable_reflection_type (MonoVTable *vtable)
-{
-	MonoObject *type = (MonoObject *)vtable->type;
-
-	if (type->vtable->klass != mono_defaults.runtimetype_class)
-		MONO_GC_UNREGISTER_ROOT_IF_MOVING (vtable->type);
-}
-
 /**
  * mono_domain_free:
  * \param domain the domain to release
@@ -1146,23 +1138,11 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 	mono_g_hash_table_destroy (domain->env);
 	domain->env = NULL;
 
-	mono_reflection_cleanup_domain (domain);
-
-	/* This must be done before type_hash is freed */
-	if (domain->class_vtable_array) {
-		int i;
-		for (i = 0; i < domain->class_vtable_array->len; ++i)
-			unregister_vtable_reflection_type ((MonoVTable *)g_ptr_array_index (domain->class_vtable_array, i));
-	}
-
-	if (domain->type_hash) {
-		mono_g_hash_table_destroy (domain->type_hash);
-		domain->type_hash = NULL;
-	}
-	if (domain->type_init_exception_hash) {
-		mono_g_hash_table_destroy (domain->type_init_exception_hash);
-		domain->type_init_exception_hash = NULL;
-	}
+	// Collect statistics
+	code_alloc = mono_code_manager_size (domain->memory_manager->code_mp, &code_size);
+	total_domain_code_alloc += code_alloc;
+	max_domain_code_alloc = MAX (max_domain_code_alloc, code_alloc);
+	max_domain_code_size = MAX (max_domain_code_size, code_size);
 
 	for (tmp = domain->domain_assemblies; tmp; tmp = tmp->next) {
 		MonoAssembly *ass = (MonoAssembly *)tmp->data;
@@ -1249,25 +1229,6 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 	domain->jit_info_table = NULL;
 	g_assert (!domain->jit_info_free_queue);
 
-	/* collect statistics */
-	code_alloc = mono_code_manager_size (domain->code_mp, &code_size);
-	total_domain_code_alloc += code_alloc;
-	max_domain_code_alloc = MAX (max_domain_code_alloc, code_alloc);
-	max_domain_code_size = MAX (max_domain_code_size, code_size);
-
-	if (debug_domain_unload) {
-		mono_mempool_invalidate (domain->mp);
-		mono_code_manager_invalidate (domain->code_mp);
-	} else {
-#ifndef DISABLE_PERFCOUNTERS
-		/* FIXME: use an explicit subtraction method as soon as it's available */
-		mono_atomic_fetch_add_i32 (&mono_perfcounters->loader_bytes, -1 * mono_mempool_get_allocated (domain->mp));
-#endif
-		mono_mempool_destroy (domain->mp);
-		domain->mp = NULL;
-		mono_code_manager_destroy (domain->code_mp);
-		domain->code_mp = NULL;
-	}
 	lock_free_mempool_free (domain->lock_free_mp);
 	domain->lock_free_mp = NULL;
 

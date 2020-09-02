@@ -21,9 +21,6 @@ memory_manager_init (MonoMemoryManager *memory_manager, gboolean collectible)
 	memory_manager->type_hash = mono_g_hash_table_new_type_internal ((GHashFunc)mono_metadata_type_hash, (GCompareFunc)mono_metadata_type_equal, MONO_HASH_VALUE_GC, MONO_ROOT_SOURCE_DOMAIN, domain, "Domain Reflection Type Table");
 	memory_manager->refobject_hash = mono_conc_g_hash_table_new_type (mono_reflected_hash, mono_reflected_equal, MONO_HASH_VALUE_GC, MONO_ROOT_SOURCE_DOMAIN, domain, "Domain Reflection Object Table");
 	memory_manager->type_init_exception_hash = mono_g_hash_table_new_type_internal (mono_aligned_addr_hash, NULL, MONO_HASH_VALUE_GC, MONO_ROOT_SOURCE_DOMAIN, domain, "Domain Type Initialization Exception Table");
-
-	memory_manager->finalizable_objects_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
-	mono_os_mutex_init_recursive (&memory_manager->finalizable_objects_hash_lock);
 }
 
 MonoSingletonMemoryManager *
@@ -88,10 +85,6 @@ memory_manager_delete (MonoMemoryManager *memory_manager, gboolean debug_unload)
 	memory_manager->refobject_hash = NULL;
 	mono_g_hash_table_destroy (memory_manager->type_init_exception_hash);
 	memory_manager->type_init_exception_hash = NULL;
-
-	g_hash_table_destroy (memory_manager->finalizable_objects_hash);
-	memory_manager->finalizable_objects_hash = NULL;
-	mono_os_mutex_destroy (&memory_manager->finalizable_objects_hash_lock);
 }
 
 void

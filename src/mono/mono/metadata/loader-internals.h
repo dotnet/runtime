@@ -107,10 +107,6 @@ struct _MonoMemoryManager {
 	// Maps delegate trampoline addr -> delegate object
 	//MonoGHashTable *delegate_hash_table;
 	// End of GC roots
-
-	// This must be a GHashTable, since these objects can't be finalized if the hash table contains a GC-visible reference to them
-	GHashTable *finalizable_objects_hash;
-	mono_mutex_t finalizable_objects_hash_lock; // TODO: should this be an OS lock?
 };
 
 struct _MonoSingletonMemoryManager {
@@ -168,6 +164,12 @@ mono_alc_assemblies_lock (MonoAssemblyLoadContext *alc);
 
 void
 mono_alc_assemblies_unlock (MonoAssemblyLoadContext *alc);
+
+void
+mono_alc_memory_managers_lock (MonoAssemblyLoadContext *alc);
+
+void
+mono_alc_memory_managers_unlock (MonoAssemblyLoadContext *alc);
 
 gboolean
 mono_alc_is_default (MonoAssemblyLoadContext *alc);
