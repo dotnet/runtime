@@ -6,18 +6,13 @@ using System.Diagnostics;
 
 namespace System.Threading
 {
-    /// <summary>
-    /// Wraps a non-recursive mutex and condition.
-    ///
-    /// Used by the wait subsystem on Unix, so this class cannot have any dependencies on the wait subsystem.
-    /// </summary>
-    internal sealed partial class LowLevelMonitor : IDisposable
+    internal partial struct LowLevelMonitor
     {
         private IntPtr _nativeMonitor;
 
-        public LowLevelMonitor()
+        public void Initialize()
         {
-            _nativeMonitor = Interop.Sys.LowLevelMonitor_New();
+            _nativeMonitor = Interop.Sys.LowLevelMonitor_Create();
             if (_nativeMonitor == IntPtr.Zero)
             {
                 throw new OutOfMemoryException();
@@ -31,7 +26,7 @@ namespace System.Threading
                 return;
             }
 
-            Interop.Sys.LowLevelMonitor_Delete(_nativeMonitor);
+            Interop.Sys.LowLevelMonitor_Destroy(_nativeMonitor);
             _nativeMonitor = IntPtr.Zero;
         }
 

@@ -7,33 +7,48 @@ using System.Runtime.InteropServices;
 
 namespace System.Threading
 {
-    /// <summary>
-    /// Wraps a critical section and condition variable.
-    /// </summary>
-    internal sealed partial class LowLevelMonitor : IDisposable
+    internal unsafe partial struct LowLevelMonitor
     {
-        private Interop.Kernel32.CRITICAL_SECTION _criticalSection;
-        private Interop.Kernel32.CONDITION_VARIABLE _conditionVariable;
-
-        public LowLevelMonitor()
+        internal struct Monitor
         {
-            Interop.Kernel32.InitializeCriticalSection(out _criticalSection);
-            Interop.Kernel32.InitializeConditionVariable(out _conditionVariable);
+            // We cannot allocate CRITICAL_SECTION on GC heap. The CRITICAL_SECTION documentation
+            // explicitly says that critical section object cannot be moved or copied. The debug
+            // info attached to critical section is has back pointer to the owning CRITICAL_SECTION,
+            // and moving CRITICAL_SECTION arond makes this back pointer orphaned.
+            public Interop.Kernel32.CRITICAL_SECTION _criticalSection;
+            public Interop.Kernel32.CONDITION_VARIABLE _conditionVariable;
+        }
+
+        private Monitor* _pMonitor;
+
+        public void Initialize()
+        {
+            _pMonitor = (Monitor*)Marshal.AllocHGlobal(sizeof(Monitor));
+
+            Interop.Kernel32.InitializeCriticalSection(&_pMonitor->_criticalSection);
+            Interop.Kernel32.InitializeConditionVariable(&_pMonitor->_conditionVariable);
         }
 
         private void DisposeCore()
         {
-            Interop.Kernel32.DeleteCriticalSection(ref _criticalSection);
+            if (_pMonitor == null)
+            {
+                return;
+            }
+
+            Interop.Kernel32.DeleteCriticalSection(&_pMonitor->_criticalSection);
+            Marshal.FreeHGlobal((IntPtr)_pMonitor);
+            _pMonitor = null;
         }
 
         private void AcquireCore()
         {
-            Interop.Kernel32.EnterCriticalSection(ref _criticalSection);
+            Interop.Kernel32.EnterCriticalSection(&_pMonitor->_criticalSection);
         }
 
         private void ReleaseCore()
         {
-            Interop.Kernel32.LeaveCriticalSection(ref _criticalSection);
+            Interop.Kernel32.LeaveCriticalSection(&_pMonitor->_criticalSection);
         }
 
         private void WaitCore()
@@ -44,25 +59,13 @@ namespace System.Threading
         private bool WaitCore(int timeoutMilliseconds)
         {
             Debug.Assert(timeoutMilliseconds >= -1);
-
-            bool waitResult = Interop.Kernel32.SleepConditionVariableCS(ref _conditionVariable, ref _criticalSection, timeoutMilliseconds);
-            if (!waitResult)
-            {
-                int lastError = Marshal.GetLastWin32Error();
-                if (lastError != Interop.Errors.ERROR_TIMEOUT)
-                {
-                    var exception = new OutOfMemoryException();
-                    exception.HResult = lastError;
-                    throw exception;
-                }
-            }
-            return waitResult;
+            return Interop.Kernel32.SleepConditionVariableCS(&_pMonitor->_conditionVariable, &_pMonitor->_criticalSection, timeoutMilliseconds);
         }
 
         private void Signal_ReleaseCore()
         {
-            Interop.Kernel32.WakeConditionVariable(ref _conditionVariable);
-            Interop.Kernel32.LeaveCriticalSection(ref _criticalSection);
+            Interop.Kernel32.WakeConditionVariable(&_pMonitor->_conditionVariable);
+            Interop.Kernel32.LeaveCriticalSection(&_pMonitor->_criticalSection);
         }
     }
 }

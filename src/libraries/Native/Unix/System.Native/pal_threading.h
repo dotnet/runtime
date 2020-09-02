@@ -4,130 +4,19 @@
 
 #pragma once
 
-#include <assert.h>
-#include <stdbool.h>
-#include <stdlib.h>
+#include "pal_compiler.h"
+#include "pal_types.h"
 
-#include <pthread.h>
+typedef struct LowLevelMonitor LowLevelMonitor;
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// LowLevelMutex - Represents a non-recursive mutex
+PALEXPORT LowLevelMonitor *SystemNative_LowLevelMonitor_Create(void);
 
-typedef struct
-{
-    pthread_mutex_t m_mutex;
+PALEXPORT void SystemNative_LowLevelMonitor_Destroy(LowLevelMonitor* monitor);
 
-#ifdef DEBUG
-    bool m_isLocked;
-#endif
-} LowLevelMutex;
+PALEXPORT void SystemNative_LowLevelMonitor_Acquire(LowLevelMonitor* monitor);
 
-bool LowLevelMutex_TryInitialize(LowLevelMutex *mutex);
-bool LowLevelMutex_TryInitialize(LowLevelMutex *mutex)
-{
-    assert(mutex != NULL);
+PALEXPORT void SystemNative_LowLevelMonitor_Release(LowLevelMonitor* monitor);
 
-#ifdef DEBUG
-    mutex->m_isLocked = false;
-#endif
+PALEXPORT void SystemNative_LowLevelMonitor_Wait(LowLevelMonitor* monitor);
 
-    int error = pthread_mutex_init(&mutex->m_mutex, NULL);
-    return error == 0;
-}
-
-void LowLevelMutex_Destroy(LowLevelMutex *mutex);
-void LowLevelMutex_Destroy(LowLevelMutex *mutex)
-{
-    assert(mutex != NULL);
-
-    int error = pthread_mutex_destroy(&mutex->m_mutex);
-    assert(error == 0);
-
-    (void)error; // unused in release build
-}
-
-void LowLevelMutex_SetIsLocked(LowLevelMutex *mutex, bool isLocked);
-void LowLevelMutex_SetIsLocked(LowLevelMutex *mutex, bool isLocked)
-{
-    assert(mutex != NULL);
-
-#ifdef DEBUG
-    assert(mutex->m_isLocked != isLocked);
-    mutex->m_isLocked = isLocked;
-#endif
-
-    (void)mutex; // unused in release build
-    (void)isLocked; // unused in release build
-}
-
-void LowLevelMutex_Acquire(LowLevelMutex *mutex);
-void LowLevelMutex_Acquire(LowLevelMutex *mutex)
-{
-    assert(mutex != NULL);
-
-    int error = pthread_mutex_lock(&mutex->m_mutex);
-    assert(error == 0);
-    LowLevelMutex_SetIsLocked(mutex, true);
-
-    (void)error; // unused in release build
-}
-
-void LowLevelMutex_Release(LowLevelMutex *mutex);
-void LowLevelMutex_Release(LowLevelMutex *mutex)
-{
-    assert(mutex != NULL);
-
-    LowLevelMutex_SetIsLocked(mutex, false);
-    int error = pthread_mutex_unlock(&mutex->m_mutex);
-    assert(error == 0);
-
-    (void)error; // unused in release build
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// LowLevelMonitor - Represents a non-recursive mutex and condition
-
-typedef struct
-{
-    LowLevelMutex m_mutex;
-    pthread_cond_t m_condition;
-} LowLevelMonitor;
-
-bool LowLevelMonitor_TryInitialize(LowLevelMonitor *monitor);
-
-void LowLevelMonitor_Destroy(LowLevelMonitor *monitor);
-void LowLevelMonitor_Destroy(LowLevelMonitor *monitor)
-{
-    assert(monitor != NULL);
-
-    int error = pthread_cond_destroy(&monitor->m_condition);
-    assert(error == 0);
-
-    LowLevelMutex_Destroy(&monitor->m_mutex);
-
-    (void)error; // unused in release build
-}
-
-void LowLevelMonitor_Wait(LowLevelMonitor *monitor);
-void LowLevelMonitor_Wait(LowLevelMonitor *monitor)
-{
-    assert(monitor != NULL);
-
-    LowLevelMutex_SetIsLocked(&monitor->m_mutex, false);
-    int error = pthread_cond_wait(&monitor->m_condition, &monitor->m_mutex.m_mutex);
-    assert(error == 0);
-    LowLevelMutex_SetIsLocked(&monitor->m_mutex, true);
-
-    (void)error; // unused in release build
-}
-
-void LowLevelMonitor_Signal(LowLevelMonitor *monitor);
-void LowLevelMonitor_Signal(LowLevelMonitor *monitor)
-{
-    assert(monitor != NULL);
-
-    int error = pthread_cond_signal(&monitor->m_condition);
-    assert(error == 0);
-
-    (void)error; // unused in release build
-}
+PALEXPORT void SystemNative_LowLevelMonitor_Signal_Release(LowLevelMonitor* monitor);

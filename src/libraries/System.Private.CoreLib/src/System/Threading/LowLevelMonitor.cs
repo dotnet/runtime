@@ -3,36 +3,33 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace System.Threading
 {
     /// <summary>
     /// Wraps a non-recursive mutex and condition.
     ///
-    /// Used by the wait subsystem on Unix, so this class cannot have any dependencies on the wait subsystem.
+    /// Used by the other threading subsystems, so this type cannot have any dependencies on them.
     /// </summary>
-    internal sealed partial class LowLevelMonitor : IDisposable
+    [StructLayout(LayoutKind.Auto)]
+    internal partial struct LowLevelMonitor
     {
 #if DEBUG
         private Thread? _ownerThread;
 #endif
 
-        ~LowLevelMonitor()
-        {
-            Dispose();
-        }
-
         public void Dispose()
         {
             VerifyIsNotLockedByAnyThread();
             DisposeCore();
-            GC.SuppressFinalize(this);
         }
 
 #if DEBUG
         public bool IsLocked => _ownerThread == Thread.CurrentThread;
 #endif
 
+        [Conditional("DEBUG")]
         public void VerifyIsLocked()
         {
 #if DEBUG
@@ -40,6 +37,7 @@ namespace System.Threading
 #endif
         }
 
+        [Conditional("DEBUG")]
         public void VerifyIsNotLocked()
         {
 #if DEBUG
@@ -47,6 +45,7 @@ namespace System.Threading
 #endif
         }
 
+        [Conditional("DEBUG")]
         private void VerifyIsNotLockedByAnyThread()
         {
 #if DEBUG
@@ -54,6 +53,7 @@ namespace System.Threading
 #endif
         }
 
+        [Conditional("DEBUG")]
         private void ResetOwnerThread()
         {
 #if DEBUG
@@ -62,6 +62,7 @@ namespace System.Threading
 #endif
         }
 
+        [Conditional("DEBUG")]
         private void SetOwnerThreadToCurrent()
         {
 #if DEBUG

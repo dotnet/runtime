@@ -3,82 +3,134 @@
 // See the LICENSE file in the project root for more information.
 
 #include "pal_threading.h"
-#include "pal_compiler.h"
 
 #include <limits.h>
 #include <sched.h>
+#include <assert.h>
+#include <stdbool.h>
+#include <stdlib.h>
 
-bool LowLevelMonitor_TryInitialize(LowLevelMonitor *monitor)
+#include <pthread.h>
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// LowLevelMonitor - Represents a non-recursive mutex and condition
+
+struct LowLevelMonitor
 {
-    assert(monitor != NULL);
+    pthread_mutex_t Mutex;
+    pthread_cond_t Condition;
+#ifdef DEBUG
+    bool IsLocked;
+#endif
+};
 
-    if (!LowLevelMutex_TryInitialize(&monitor->m_mutex))
-    {
-        return false;
-    }
-
-    int initError = pthread_cond_init(&monitor->m_condition, NULL);
-    if (initError != 0)
-    {
-        LowLevelMutex_Destroy(&monitor->m_mutex);
-        return false;
-    }
-
-    return true;
+#ifdef DEBUG
+static void SetIsLocked(LowLevelMonitor* monitor, bool isLocked)
+{
+    assert(mutex->IsLocked != isLocked);
+    mutex->IsLocked = isLocked;
 }
+#else
+#define SetIsLocked(monitor, isLocked)
+#endif
 
-PALEXPORT LowLevelMonitor *SystemNative_LowLevelMonitor_New(void);
-PALEXPORT LowLevelMonitor *SystemNative_LowLevelMonitor_New()
+LowLevelMonitor* SystemNative_LowLevelMonitor_Create()
 {
-    LowLevelMonitor *monitor = (LowLevelMonitor *)malloc(sizeof(LowLevelMonitor));
+    LowLevelMonitor* monitor = (LowLevelMonitor *)malloc(sizeof(LowLevelMonitor));
     if (monitor == NULL)
     {
         return NULL;
     }
 
-    if (!LowLevelMonitor_TryInitialize(monitor))
+    int error;
+
+    error = pthread_mutex_init(&monitor->Mutex, NULL);
+    if (error != 0)
     {
         free(monitor);
         return NULL;
     }
+
+    error = pthread_cond_init(&monitor->Condition, NULL);
+    if (error != 0)
+    {
+        pthread_mutex_destroy(&monitor->Mutex);
+        free(monitor);
+        return false;
+    }
+
+#ifdef DEBUG
+    mutex->IsLocked = false;
+#endif
+
     return monitor;
 }
 
-PALEXPORT void SystemNative_LowLevelMonitor_Delete(LowLevelMonitor *monitor);
-PALEXPORT void SystemNative_LowLevelMonitor_Delete(LowLevelMonitor *monitor)
+void SystemNative_LowLevelMonitor_Destroy(LowLevelMonitor* monitor)
 {
     assert(monitor != NULL);
 
-    LowLevelMonitor_Destroy(monitor);
+    int error;
+
+    error = pthread_cond_destroy(&monitor->Condition);
+    assert(error == 0);
+
+    error = pthread_mutex_destroy(&monitor->Mutex);
+    assert(error == 0);
+
+    (void)error; // unused in release build
+
     free(monitor);
 }
 
-PALEXPORT void SystemNative_LowLevelMonitor_Acquire(LowLevelMonitor *monitor);
-PALEXPORT void SystemNative_LowLevelMonitor_Acquire(LowLevelMonitor *monitor)
+void SystemNative_LowLevelMonitor_Acquire(LowLevelMonitor* monitor)
 {
     assert(monitor != NULL);
-    LowLevelMutex_Acquire(&monitor->m_mutex);
+
+    int error = pthread_mutex_lock(&monitor->Mutex);
+    assert(error == 0);
+    (void)error; // unused in release build
+
+    SetIsLocked(monitor, true);
 }
 
-PALEXPORT void SystemNative_LowLevelMonitor_Release(LowLevelMonitor *monitor);
-PALEXPORT void SystemNative_LowLevelMonitor_Release(LowLevelMonitor *monitor)
+void SystemNative_LowLevelMonitor_Release(LowLevelMonitor* monitor)
 {
     assert(monitor != NULL);
-    LowLevelMutex_Release(&monitor->m_mutex);
+
+    SetIsLocked(monitor, false);
+
+    int error = pthread_mutex_unlock(&monitor->Mutex);
+    assert(error == 0);
+    (void)error; // unused in release build
 }
 
-PALEXPORT void SystemNative_LowLevelMonitor_Wait(LowLevelMonitor *monitor);
-PALEXPORT void SystemNative_LowLevelMonitor_Wait(LowLevelMonitor *monitor)
+void SystemNative_LowLevelMonitor_Wait(LowLevelMonitor* monitor)
 {
     assert(monitor != NULL);
-    LowLevelMonitor_Wait(monitor);
+
+    SetIsLocked(monitor, false);
+
+    int error = pthread_cond_wait(&monitor->Condition, &monitor->Mutex);
+    assert(error == 0);
+    (void)error; // unused in release build
+
+    SetIsLocked(monitor, true);
 }
 
-PALEXPORT void SystemNative_LowLevelMonitor_Signal_Release(LowLevelMonitor *monitor);
-PALEXPORT void SystemNative_LowLevelMonitor_Signal_Release(LowLevelMonitor *monitor)
+void SystemNative_LowLevelMonitor_Signal_Release(LowLevelMonitor* monitor)
 {
     assert(monitor != NULL);
 
-    LowLevelMonitor_Signal(monitor);
-    LowLevelMutex_Release(&monitor->m_mutex);
+    int error;
+
+    error = pthread_cond_signal(&monitor->Condition);
+    assert(error == 0);
+
+    SetIsLocked(monitor, false);
+
+    error = pthread_mutex_unlock(&monitor->Mutex);
+    assert(error == 0);
+
+    (void)error; // unused in release build
 }
