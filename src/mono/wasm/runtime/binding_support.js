@@ -748,8 +748,8 @@ var BindingSupportLib = {
 			if (has_args) {
 				if (!has_args_marshal)
 					throw new Error ("No signature provided.");
-				else if (args.length !== args_marshal.length)
-					throw new Error ("Parameter count mismatch.");
+				else if (args.length > args_marshal.length)
+					throw new Error ("Too many parameter values.");
 			}
 
 			var args_start = 0;
