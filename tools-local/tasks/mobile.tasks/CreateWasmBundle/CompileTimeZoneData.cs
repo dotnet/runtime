@@ -23,17 +23,15 @@ public class CompileTimeZoneData : Task
     [Required]
     public string[]? TimeZones { get; set; }
 
-    public const string ZoneTabFileName = "zone1970.tab";
+    private const string ZoneTabFileName = "zone1970.tab";
 
     private void CompileTimeZoneDataSource() 
     {
-        List<string> files = new List<string>() {"africa", "antarctica", "asia", "australasia", "etcetera", "europe", "northamerica", "southamerica"};    
-
         using (Process process = new Process()) 
         {
             process.StartInfo.UseShellExecute = false;
             process.StartInfo.FileName = "zic";
-            foreach (var f in files) 
+            foreach (var f in TimeZones!) 
             {
                 process.StartInfo.Arguments = $"-d \"{OutputDirectory}\" \"{Path.Combine(InputDirectory!, f)}\"";
                 process.Start();
@@ -44,19 +42,18 @@ public class CompileTimeZoneData : Task
 
     private void FilterTimeZoneData() 
     {
-        //  Remove unnecessary timezone files 
+        //  Remove unnecessary timezone files in the root dir 
+        //  for ex: `CST6CDT`, `MST`, etc. 
         foreach (var entry in new DirectoryInfo (OutputDirectory!).EnumerateFiles()) 
         {
-            if (entry.Name != ZoneTabFileName)
-                File.Delete(entry.FullName);
+            File.Delete(entry.FullName);
         }
     }
 
-    private void FilterZoneTab(string[] filters) 
+    private void FilterZoneTab(string[] filters, string ZoneTabFile) 
     {
-        var oldPath = Path.Combine(InputDirectory!, ZoneTabFileName);
         var path = Path.Combine(OutputDirectory!, "zone.tab");
-        using (StreamReader sr = new StreamReader(oldPath))
+        using (StreamReader sr = new StreamReader(ZoneTabFile))
         using (StreamWriter sw = new StreamWriter(path))
         {
             string? line;
@@ -67,16 +64,18 @@ public class CompileTimeZoneData : Task
                 }
             }
         }
-        File.Delete(oldPath);
     }
 
     public override bool Execute() 
     {
+        string ZoneTabFile = Path.Combine(InputDirectory!, ZoneTabFileName);
+
         if (!Directory.Exists(OutputDirectory))
             Directory.CreateDirectory(OutputDirectory!);
 
-        if (!File.Exists(Path.Combine(InputDirectory!, ZoneTabFileName))) {
-            Log.LogError($"Could not find required file {Path.Combine(InputDirectory!, ZoneTabFileName)}"); 
+        if (!File.Exists(ZoneTabFile)) 
+        {
+            Log.LogError($"Could not find required file {ZoneTabFile}"); 
             return false;
         }
 
@@ -88,8 +87,8 @@ public class CompileTimeZoneData : Task
                                 "America/St_Johns"};
         
         FilterTimeZoneData();
-        FilterZoneTab(filtered);
+        FilterZoneTab(filtered, ZoneTabFile);
 
-        return true;
+        return !Log.HasLoggedErrors;
     }
 }
