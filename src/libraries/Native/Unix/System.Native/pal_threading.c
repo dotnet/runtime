@@ -27,8 +27,8 @@ struct LowLevelMonitor
 #ifdef DEBUG
 static void SetIsLocked(LowLevelMonitor* monitor, bool isLocked)
 {
-    assert(mutex->IsLocked != isLocked);
-    mutex->IsLocked = isLocked;
+    assert(monitor->IsLocked != isLocked);
+    monitor->IsLocked = isLocked;
 }
 #else
 #define SetIsLocked(monitor, isLocked)
