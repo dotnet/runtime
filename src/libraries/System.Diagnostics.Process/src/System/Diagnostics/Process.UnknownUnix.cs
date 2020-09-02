@@ -76,11 +76,6 @@ namespace System.Diagnostics
             throw new PlatformNotSupportedException();
         }
 
-        private static string GetExePath()
-        {
-            throw new PlatformNotSupportedException();
-        }
-
         /// <summary>Gets execution path</summary>
         private string GetPathToOpenFile()
         {

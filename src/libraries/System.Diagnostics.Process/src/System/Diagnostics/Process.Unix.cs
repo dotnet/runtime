@@ -680,7 +680,7 @@ namespace System.Diagnostics
             }
 
             // Then check the executable's directory
-            string? path = GetExePath();
+            string? path = Environment.ProcessPath;
             if (path != null)
             {
                 try

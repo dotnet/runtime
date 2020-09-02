@@ -28,6 +28,9 @@
 #include <sched.h>
 #endif
 
+#ifdef __APPLE__
+#include <mach-o/dyld.h>
+#endif
 
 // Validate that our SysLogPriority values are correct for the platform
 c_static_assert(PAL_LOG_EMERG == LOG_EMERG);
@@ -516,19 +519,6 @@ done:;
 #endif
 }
 
-FILE* SystemNative_POpen(const char* command, const char* type)
-{
-    assert(command != NULL);
-    assert(type != NULL);
-    return popen(command, type);
-}
-
-int32_t SystemNative_PClose(FILE* stream)
-{
-    assert(stream != NULL);
-    return pclose(stream);
-}
-
 // Each platform type has it's own RLIMIT values but the same name, so we need
 // to convert our standard types into the platform specific ones.
 static int32_t ConvertRLimitResourcesPalToPlatform(RLimitResources value)
@@ -871,3 +861,39 @@ int32_t SystemNative_SchedGetAffinity(int32_t pid, intptr_t* mask)
     return result;
 }
 #endif
+
+// Returns the full path to the executable for the current process resolving symbolic links.
+// The caller is responsible for releasing the buffer. Returns null on error.
+char* SystemNative_GetProcessPath()
+{
+    // Get path to the executable for the current process using
+    // platform specific means.
+#ifdef __APPLE__
+    // On Mac, we ask the OS for the absolute path to the entrypoint executable
+    uint32_t path_length = 0;
+    if (_NSGetExecutablePath(nullptr, &path_length) != -1)
+    {
+        errno = EINVAL;
+        return NULL;
+    }
+
+    char path_buf[path_length];
+    if (_NSGetExecutablePath(path_buf, &path_length) != 0)
+    {
+        errno = EINVAL;
+        return NULL;
+    }
+
+    return realpath(path_buf, NULL);
+#else
+
+#ifdef __linux__
+#define symlinkEntrypointExecutable "/proc/self/exe"
+#else
+#define symlinkEntrypointExecutable "/proc/curproc/exe"
+#endif
+
+    // Resove the symlink to the executable from /proc
+    return realpath(symlinkEntrypointExecutable, NULL);
+#endif
+}

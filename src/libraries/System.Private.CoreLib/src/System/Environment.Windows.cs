@@ -72,7 +72,7 @@ namespace System
             }
 
             if (length == 0)
-                Marshal.ThrowExceptionForHR(Marshal.GetHRForLastWin32Error());
+                throw Win32Marshal.GetExceptionForLastWin32Error();
 
             // length includes the null terminator
             builder.Length = (int)length - 1;
@@ -87,6 +87,30 @@ namespace System
             throw new InvalidOperationException(SR.InvalidOperation_ComputerName);
 
         private static int GetCurrentProcessId() => unchecked((int)Interop.Kernel32.GetCurrentProcessId());
+
+        /// <summary>
+        /// Returns the path of the executable that started the currently executing process. Returns null when the path is not available.
+        /// </summary>
+        /// <returns>Path of the executable that started the currently executing process</returns>
+        public static string? ProcessPath
+        {
+            get
+            {
+                var builder = new ValueStringBuilder(stackalloc char[Interop.Kernel32.MAX_PATH]);
+
+                uint length;
+                while ((length = Interop.Kernel32.GetModuleFileName(IntPtr.Zero, ref builder.GetPinnableReference(), (uint)builder.Capacity)) >= builder.Capacity)
+                {
+                    builder.EnsureCapacity((int)length);
+                }
+
+                if (length == 0)
+                    throw Win32Marshal.GetExceptionForLastWin32Error();
+
+                builder.Length = (int)length;
+                return builder.ToString();
+            }
+        }
 
         private static unsafe OperatingSystem GetOSVersion()
         {

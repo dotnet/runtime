@@ -40,11 +40,6 @@
 // Somehow, AIX mangles the definition for this behind a C++ def
 // Redeclare it here
 extern int     getpeereid(int, uid_t *__restrict__, gid_t *__restrict__);
-// This function declaration is hidden behind `_XOPEN_SOURCE=700`, but we need
-// `_ALL_SOURCE` to build the runtime, and that resets that definition to 600.
-// Instead of trying to wrangle ifdefs in system headers with more definitions,
-// just declare it here.
-extern ssize_t  getline(char **, size_t *, FILE *);
 #endif
 
 #if HAVE_STAT64
@@ -959,17 +954,6 @@ int32_t SystemNative_PosixFAdvise(intptr_t fd, int64_t offset, int64_t length, i
     (void)fd, (void)offset, (void)length, (void)advice;
     return ENOTSUP;
 #endif
-}
-
-char* SystemNative_GetLine(FILE* stream)
-{
-    assert(stream != NULL);
-
-    char* lineptr = NULL;
-    size_t n = 0;
-    ssize_t length = getline(&lineptr, &n, stream);
-
-    return length >= 0 ? lineptr : NULL;
 }
 
 int32_t SystemNative_Read(intptr_t fd, void* buffer, int32_t bufferSize)

@@ -156,10 +156,6 @@ if (CLR_CMAKE_TARGET_LINUX)
    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D_GNU_SOURCE")
 endif ()
 
-if(CLR_CMAKE_TARGET_FREEBSD)
-    add_definitions(-D_BSD_SOURCE) # required for getline
-endif(CLR_CMAKE_TARGET_FREEBSD)
-
 # CLR_ADDITIONAL_LINKER_FLAGS - used for passing additional arguments to linker
 # CLR_ADDITIONAL_COMPILER_OPTIONS - used for passing additional arguments to compiler
 #

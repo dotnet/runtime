@@ -26,5 +26,11 @@ namespace System
         }
 
         private static int GetCurrentProcessId() => 42;
+
+        /// <summary>
+        /// Returns the path of the executable that started the currently executing process. Returns null when the path is not available.
+        /// </summary>
+        /// <returns>Path of the executable that started the currently executing process</returns>
+        public static string? ProcessPath => null;
     }
 }

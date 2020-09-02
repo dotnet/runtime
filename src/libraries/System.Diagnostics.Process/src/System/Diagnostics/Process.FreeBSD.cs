@@ -101,12 +101,6 @@ namespace System.Diagnostics
             }
         }
 
-        /// <summary>Gets the path to the current executable, or null if it could not be retrieved.</summary>
-        private static string? GetExePath()
-        {
-            return Interop.Process.GetProcPath(Environment.ProcessId);
-        }
-
         // ----------------------------------
         // ---- Unix PAL layer ends here ----
         // ----------------------------------
