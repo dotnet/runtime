@@ -60,7 +60,7 @@ LowLevelMonitor* SystemNative_LowLevelMonitor_Create()
     }
 
 #ifdef DEBUG
-    mutex->IsLocked = false;
+    monitor->IsLocked = false;
 #endif
 
     return monitor;
