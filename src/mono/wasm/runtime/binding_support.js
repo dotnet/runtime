@@ -174,19 +174,19 @@ var BindingSupportLib = {
 			let elemRoot = MONO.mono_wasm_new_root (); 
 
 			try {
-				var res = [];
 				var len = this.mono_array_length (arrayRoot.value);
+				var res = new Array (len);
 				for (var i = 0; i < len; ++i)
 				{
 					elemRoot.value = this.mono_array_get (arrayRoot.value, i);
 					
 					if (this.is_nested_array (elemRoot.value))
-						res.push (this._mono_array_to_js_array_rooted (elemRoot));
+						res[i] = this._mono_array_to_js_array_rooted (elemRoot);
 					else
-						res.push (this._unbox_mono_obj_rooted (elemRoot));
+						res[i] = this._unbox_mono_obj_rooted (elemRoot);
 				}
 			} finally {
-				elemRoot.release();
+				elemRoot.release ();
 			}
 
 			return res;
@@ -677,6 +677,50 @@ var BindingSupportLib = {
 			return js_obj;
 		},
 
+		_create_default_converters: function () {
+			var converters = new Map ();
+			converters.set ('m', { steps: [{ }], size: 0});
+			converters.set ('s', { steps: [{ convert: this.js_string_to_mono_string.bind (this)}], size: 0});
+			converters.set ('o', { steps: [{ convert: this.js_to_mono_obj.bind (this)}], size: 0});
+			converters.set ('u', { steps: [{ convert: this.js_to_mono_uri.bind (this)}], size: 0});
+			converters.set ('k', { steps: [{ convert: this.js_to_mono_enum.bind (this), indirect: 'i64'}], size: 8});
+			converters.set ('j', { steps: [{ convert: this.js_to_mono_enum.bind (this), indirect: 'i32'}], size: 8});
+			converters.set ('i', { steps: [{ indirect: 'i32'}], size: 8});
+			converters.set ('l', { steps: [{ indirect: 'i64'}], size: 8});
+			converters.set ('f', { steps: [{ indirect: 'float'}], size: 8});
+			converters.set ('d', { steps: [{ indirect: 'double'}], size: 8});
+			this.converters = converters;
+		},
+
+		_create_converter_for_marshal_string: function (args_marshal) {
+			var steps = [];
+			var size = 0;
+
+			for (i = 0; i < args_marshal.length; ++i) {
+				var conv = this.converters.get (args_marshal[i]);
+				if (!conv)
+					throw Error ("Unknown parameter type " + type);
+
+				steps.push (conv.steps[0]);
+				size += conv.size;
+			}
+			converter = { steps: steps, size: size };
+		},
+
+		_get_converter_for_marshal_string: function (args_marshal) {
+			var converters = this.converters;
+			if (!converters)
+				converters = this._create_default_converters();
+
+			var converter = converters.get (args_marshal);
+			if (!converter) {
+				converter = this._create_converter_for_marshal_string (args_marshal);
+				converters.set (args_marshal, converter);
+			}
+
+			return converter;
+		},
+
 		/*
 		args_marshal is a string with one character per parameter that tells how to marshal it, here are the valid values:
 
@@ -696,11 +740,11 @@ var BindingSupportLib = {
 			this.bindings_lazy_init ();
 
 			// Allocate memory for error
-			var has_args = args !== null && typeof args !== "undefined" && args.length > 0;
-			var has_args_marshal = args_marshal !== null && typeof args_marshal !== "undefined" && args_marshal.length > 0;
+			var has_args = Array.isArray(args) && args.length > 0;
+			var has_args_marshal = ((typeof args_marshal) === "string") && args_marshal.length > 0;
 
 			if (has_args_marshal && (!has_args || args.length > args_marshal.length))
-				throw Error("Parameter count mismatch.");
+				throw Error ("Parameter count mismatch.");
 
 			var args_start = null;
 			var buffer = null;
@@ -711,41 +755,7 @@ var BindingSupportLib = {
 			if (has_args_marshal && has_args) {
 				var i;
 
-				var converters = this.converters;
-				if (!converters) {
-					converters = new Map ();
-					converters.set ('m', { steps: [{ }], size: 0});
-					converters.set ('s', { steps: [{ convert: this.js_string_to_mono_string.bind (this)}], size: 0});
-					converters.set ('o', { steps: [{ convert: this.js_to_mono_obj.bind (this)}], size: 0});
-					converters.set ('u', { steps: [{ convert: this.js_to_mono_uri.bind (this)}], size: 0});
-					converters.set ('k', { steps: [{ convert: this.js_to_mono_enum.bind (this), indirect: 'i64'}], size: 8});
-					converters.set ('j', { steps: [{ convert: this.js_to_mono_enum.bind (this), indirect: 'i32'}], size: 8});
-					converters.set ('i', { steps: [{ indirect: 'i32'}], size: 8});
-					converters.set ('l', { steps: [{ indirect: 'i64'}], size: 8});
-					converters.set ('f', { steps: [{ indirect: 'float'}], size: 8});
-					converters.set ('d', { steps: [{ indirect: 'double'}], size: 8});
-					this.converters = converters;
-				}
-
-				var converter = converters.get (args_marshal);
-				if (!converter) {
-					var steps = [];
-					var size = 0;
-
-					for (i = 0; i < args_marshal.length; ++i) {
-						var conv = this.converters.get (args_marshal[i]);
-						if (!conv)
-							throw Error ("Unknown parameter type " + type);
-
-						steps.push (conv.steps[0]);
-						size += conv.size;
-					}
-					converter = { steps: steps, size: size };
-					converters.set (args_marshal, converter);
-				}
-
-				// FIXME: Allocate a root buffer to contain all the managed objects like strings so that they aren't
-				//  collected until the method call completes.
+				var converter = this._get_converter_for_marshal_string (args_marshal);
 
 				// assume at least 8 byte alignment from malloc
 				var bufferSizeBytes = converter.size + (args.length * 4);
