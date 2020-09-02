@@ -89,6 +89,20 @@
       <SymbolNupkgToPublishFile
         Include="@(PotentialSymbolNupkgToPublishFile)"
         Condition="Exists('%(Identity)')" />
+    
+      <!-- Split nupkgs into shipping/nonshipping for BAR categorization. -->
+      <ShippingNupkgToPublishFile
+        Include="@(NupkgToPublishFile)"
+        Condition="$([System.String]::new('%(Identity)').Contains('\Shipping\'))" />
+
+      <NonShippingNupkgToPublishFile
+        Include="@(NupkgToPublishFile)"
+        Exclude="@(ShippingNupkgToPublishFile)" />
+
+      <ItemsToSign Remove="@(ItemsToSign)" />
+      <ItemsToSign Include="@(DownloadedArtifactFile)"
+                   Exclude="@(DownloadedSymbolNupkgFile)" />
+
     </ItemGroup>
 
     <Error

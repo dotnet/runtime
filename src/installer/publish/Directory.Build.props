@@ -26,19 +26,6 @@
   <ItemGroup>
     <PackageReference Include="$(MicrosoftDotNetBuildTasksFeedPackage)" Version="$(MicrosoftDotNetBuildTasksFeedVersion)" />
     <PackageReference Include="Microsoft.DotNet.VersionTools.Tasks" Version="$(MicrosoftDotNetVersionToolsTasksVersion)" />
-    
-    <!-- Split nupkgs into shipping/nonshipping for BAR categorization. -->
-    <ShippingNupkgToPublishFile
-      Include="@(NupkgToPublishFile)"
-      Condition="$([System.String]::new('%(Identity)').Contains('\Shipping\'))" />
-
-    <NonShippingNupkgToPublishFile
-      Include="@(NupkgToPublishFile)"
-      Exclude="@(ShippingNupkgToPublishFile)" />
-
-    <ItemsToSign Remove="@(ItemsToSign)" />
-    <ItemsToSign Include="@(DownloadedArtifactFile)"
-                  Exclude="@(DownloadedSymbolNupkgFile)" />
   </ItemGroup>
 
 </Project>

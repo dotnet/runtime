@@ -1,7 +1,7 @@
 Set-PSDebug -Trace 1
 
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-$uri = "https://runtimesigningtest.blob.core.windows.net/runtimesigningtest/IntermediateUnsignedArtifacts_minimal.zip";
+$uri = "https://runtimesigningtest.blob.core.windows.net/runtimesigningtest/IntermediateUnsignedArtifacts_infintesimal.zip";
 $zipLocation = "$env:AGENT_TEMPDIRECTORY\IntermediateUnsignedArtifacts.zip";
 Write-Host "ZipLocation: $zipLocation"
 Invoke-WebRequest -Uri $uri -OutFile $zipLocation;
