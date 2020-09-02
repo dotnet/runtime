@@ -253,6 +253,7 @@ elseif(TARGET_WASM)
   set(HAVE_SYS_ICU 1)
   set(STATIC_ICU 1)
 elseif(TARGET_IOS)
+  # FIXME:
 else()
   message(FATAL_ERROR "")
 endif()

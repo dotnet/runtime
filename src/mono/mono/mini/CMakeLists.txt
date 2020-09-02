@@ -979,10 +979,14 @@ add_custom_command(
   VERBATIM
 )
 
+if(HOST_DARWIN)
+set(OS_LIBS "-framework CoreFoundation" "-framework Foundation")
+endif()
+
 if(NOT DISABLE_EXECUTABLES)
 add_executable(mono-sgen "main-sgen.c")
-target_link_libraries(mono-sgen monosgen-static "-framework CoreFoundation" "-framework Foundation" "iconv" ${LLVM_LIBS} ${ICU_LIBS})
-target_link_libraries(monosgen "-framework CoreFoundation" "-framework Foundation" "iconv" ${LLVM_LIBS} ${ICU_LIBS})
+target_link_libraries(mono-sgen monosgen-static ${OS_LIBS} "iconv" ${LLVM_LIBS} ${ICU_LIBS})
+target_link_libraries(monosgen ${OS_LIBS} "iconv" ${LLVM_LIBS} ${ICU_LIBS})
 set_target_properties(mono-sgen monosgen PROPERTIES LINK_FLAGS ${ICU_LDFLAGS})
 install(TARGETS mono-sgen RUNTIME)
 endif()
