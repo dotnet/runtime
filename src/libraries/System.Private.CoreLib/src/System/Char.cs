@@ -74,7 +74,7 @@ namespace System
         // Return true for all characters below or equal U+007f, which is ASCII.
 
         /// <summary>
-        /// Returns <see langword="true"/> iff <paramref name="c"/> is an ASCII
+        /// Returns <see langword="true"/> if <paramref name="c"/> is an ASCII
         /// character ([ U+0000..U+007F ]).
         /// </summary>
         /// <remarks>
