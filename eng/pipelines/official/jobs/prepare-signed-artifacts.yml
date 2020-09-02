@@ -43,12 +43,9 @@ jobs:
   #     artifactName: IntermediateUnsignedArtifacts
   #     downloadPath: $(Build.SourcesDirectory)\artifacts\PackageDownload
 
-  - powershell:
-      [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12;
-      $uri = "https://runtimesigningtest.blob.core.windows.net/runtimesigningtest/IntermediateUnsignedArtifacts.zip";
-      $zipLocation = "$env:AGENT_TEMPDIRECTORY\IntermediateUnsignedArtifacts.zip";
-      Invoke-WebRequest -Uri $uri -OutFile $zipLocation;
-      Expand-Archive -Path $zipLocation -DestinationPath "$env:BUILD_SOURCESDIRECTORY\artifacts\PackageDownload";
+  - task: PowerShell@2
+    inputs:
+      filePath: $(Build.SourcesDirectory)\eng\pipelines\download-artifacts.ps1
     displayName: Download IntermediateUnsignedArtifacts
 
   - script: >-
