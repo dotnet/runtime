@@ -741,9 +741,8 @@ var BindingSupportLib = {
 		call_method: function (method, this_arg, args_marshal, args) {
 			this.bindings_lazy_init ();
 
-			// Allocate memory for error
-			var has_args = Array.isArray(args) && args.length > 0;
-			var has_args_marshal = ((typeof args_marshal) === "string") && args_marshal.length > 0;
+			var has_args = args !== null && typeof args !== "undefined" && args.length > 0;
+			var has_args_marshal = args_marshal !== null && typeof args_marshal !== "undefined" && args_marshal.length > 0;
 
 			if (has_args) {
 				if (!has_args_marshal)
@@ -752,7 +751,7 @@ var BindingSupportLib = {
 					throw new Error ("Too many parameter values.");
 			}
 
-			var args_start = 0;
+			var args_start = null;
 			var buffer = null;
 			var converter = null;
 			var is_result_marshaled = false;
@@ -771,7 +770,7 @@ var BindingSupportLib = {
 				var indirect_start = buffer; // buffer + buffer % 8
 				args_start = indirect_start + converter.size;
 
-				var slot = (args_start / 4) | 0;
+				var slot = args_start;
 				var indirect_value = indirect_start;
 				for (var i = 0; i < args.length; ++i) {
 					var handler = converter.steps[i];
@@ -785,13 +784,19 @@ var BindingSupportLib = {
 						argsRootBuffer.set (i, obj);
 					}
 
+					Module.setValue (slot, obj, "*");
+					slot += 4;
+
+					/*
 					Module.HEAP32[slot] = obj;
 					slot++;
+					*/
 				}
-
-				if (args.length < converter.steps.length)
-					is_result_marshaled = Boolean (converter.steps[args.length].raw);
 			}
+
+			if (has_args_marshal && has_args)
+				if (args_marshal.length >= args.length && args_marshal [args.length] === "m")
+					is_result_marshaled = true;
 
 			try {
 				resultRoot.value = this.invoke_method (method, this_arg, args_start, exceptionRoot.get_address ());
@@ -801,10 +806,10 @@ var BindingSupportLib = {
 					throw new Error (msg); //the convention is that invoke_method ToString () any outgoing exception
 				}
 
-				if (!is_result_marshaled)
-					return resultRoot.value;
-				else
+				if (is_result_marshaled)
 					return this._unbox_mono_obj_rooted (resultRoot);
+				else
+					return resultRoot.value;
 			} finally {
 				Module._free (buffer);
 				MONO.mono_wasm_release_roots (resultRoot, exceptionRoot, argsRootBuffer);
