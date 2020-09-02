@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\IO\PositionValueStream.cs"
@@ -67,7 +67,6 @@
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\TripleDES\TripleDESFactory.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\TripleDES\TripleDESReusabilityTests.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\TripleDES\TripleDESReusabilityTests.cs" />
-    <Compile Include="AssemblyInfo.cs" />
     <Compile Include="AesProvider.cs" />
     <Compile Include="AesTests.cs" />
     <Compile Include="DefaultECDsaProvider.cs" />
@@ -100,12 +99,12 @@
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="DefaultECDiffieHellmanProvider.Windows.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true'">
     <Compile Include="DefaultECDsaProvider.Unix.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
              Link="Common\Interop\Unix\Interop.Libraries.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true'">
     <Compile Include="DefaultECDiffieHellmanProvider.Unix.cs" />
   </ItemGroup>
   <ItemGroup>
