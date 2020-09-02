@@ -21017,13 +21017,14 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
 //    printf("sort_mark_list took %u cycles\n", GetCycleCount32() - start);
     // first thread to finish sorting will scan the sync syncblk cache
     if ((syncblock_scan_p == 0) && (Interlocked::Increment(&syncblock_scan_p) == 1))
+#endif //PARALLEL_MARK_LIST_SORT
+#endif //MARK_LIST
+#endif //MULTIPLE_HEAPS
     {
         // scan for deleted entries in the syncblk cache
         GCScan::GcWeakPtrScanBySingleThread(condemned_gen_number, max_generation, &sc);
     }
-#endif //PARALLEL_MARK_LIST_SORT
-#endif //MARK_LIST
-
+#ifdef MULTIPLE_HEAPS
     dprintf (3, ("Joining for sync block cache entry scanning"));
     gc_t_join.join(this, gc_join_null_dead_syncblk);
     if (gc_t_join.joined())
