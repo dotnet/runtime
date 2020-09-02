@@ -11,7 +11,7 @@ namespace System.Xml
     ///  The XmlCharType class is used for quick character type recognition
     ///  which is optimized for the first 127 ascii characters.
     /// </summary>
-    internal unsafe struct XmlCharType
+    internal struct XmlCharType
     {
         // Surrogate constants
         internal const int SurHighStart = 0xd800;    // 1101 10xx
@@ -39,77 +39,22 @@ namespace System.Xml
         // bitmap for public ID characters - 1 bit per character 0x0 - 0x80; no character > 0x80 is a PUBLIC ID char
         private const string s_PublicIdBitmap = "\u2400\u0000\uffbb\uafff\uffff\u87ff\ufffe\u07ff";
 
-        // size of XmlCharType table
-        private const uint CharPropertiesSize = (uint)char.MaxValue + 1;
 
-        // static lock for XmlCharType class
-        private static object? s_Lock;
-
-        private static object StaticLock
-        {
-            get
-            {
-                if (s_Lock == null)
-                {
-                    object o = new object();
-                    Interlocked.CompareExchange<object?>(ref s_Lock, o, null);
-                }
-
-                return s_Lock;
-            }
-        }
-
-        private static volatile byte* s_CharProperties;
-        internal byte* charProperties;
-        private static void InitInstance()
-        {
-            lock (StaticLock)
-            {
-                if (s_CharProperties != null)
-                {
-                    return;
-                }
-
-                UnmanagedMemoryStream memStream = (UnmanagedMemoryStream)typeof(XmlWriter).Assembly.GetManifestResourceStream("XmlCharType.bin")!;
-                Debug.Assert(memStream.Length == CharPropertiesSize);
-
-                byte* chProps = memStream.PositionPointer;
-                Thread.MemoryBarrier();  // For weak memory models (IA64)
-                s_CharProperties = chProps;
-            }
-        }
-
-        private XmlCharType(byte* charProperties)
-        {
-            Debug.Assert(s_CharProperties != null);
-            this.charProperties = charProperties;
-        }
-
-        public static XmlCharType Instance
-        {
-            get
-            {
-                if (s_CharProperties == null)
-                {
-                    InitInstance();
-                }
-                return new XmlCharType(s_CharProperties);
-            }
-        }
+        public static XmlCharType Instance => default;
 
         public bool IsWhiteSpace(char ch)
         {
-            return (charProperties[ch] & fWhitespace) != 0;
+            return (s_charProperties[ch] & fWhitespace) != 0;
         }
 
         public bool IsNCNameSingleChar(char ch)
         {
-            return (charProperties[ch] & fNCNameSC) != 0;
+            return (s_charProperties[ch] & fNCNameSC) != 0;
         }
 
         public bool IsStartNCNameSingleChar(char ch)
         {
-            return (charProperties[ch] & fNCStartNameSC) != 0;
+            return (s_charProperties[ch] & fNCStartNameSC) != 0;
         }
 
         public bool IsNameSingleChar(char ch)
@@ -119,7 +64,7 @@ namespace System.Xml
 
         public bool IsCharData(char ch)
         {
-            return (charProperties[ch] & fCharData) != 0;
+            return (s_charProperties[ch] & fCharData) != 0;
         }
 
         // [13] PubidChar ::=  #x20 | #xD | #xA | [a-zA-Z0-9] | [-'()+,./:=?;!*#@$_%] Section 2.3 of spec
@@ -135,25 +80,25 @@ namespace System.Xml
         // TextChar = CharData - { 0xA, 0xD, '<', '&', ']' }
         internal bool IsTextChar(char ch)
         {
-            return (charProperties[ch] & fText) != 0;
+            return (s_charProperties[ch] & fText) != 0;
         }
 
         // AttrValueChar = CharData - { 0xA, 0xD, 0x9, '<', '>', '&', '\'', '"' }
         internal bool IsAttributeValueChar(char ch)
         {
-            return (charProperties[ch] & fAttrValue) != 0;
+            return (s_charProperties[ch] & fAttrValue) != 0;
         }
 
         // XML 1.0 Fourth Edition definitions
         public bool IsLetter(char ch)
         {
-            return (charProperties[ch] & fLetter) != 0;
+            return (s_charProperties[ch] & fLetter) != 0;
         }
 
         // This method uses the XML 4th edition name character ranges
         public bool IsNCNameCharXml4e(char ch)
         {
-            return (charProperties[ch] & fNCNameXml4e) != 0;
+            return (s_charProperties[ch] & fNCNameXml4e) != 0;
         }
 
         // This method uses the XML 4th edition name character ranges
@@ -214,7 +159,7 @@ namespace System.Xml
             {
                 for (int i = 0; i < str.Length; i++)
                 {
-                    if ((charProperties[str[i]] & fWhitespace) == 0)
+                    if ((s_charProperties[str[i]] & fWhitespace) == 0)
                     {
                         return i;
                     }
@@ -229,7 +174,7 @@ namespace System.Xml
             {
                 for (int i = 0; i < str.Length; i++)
                 {
-                    if ((charProperties[str[i]] & fCharData) == 0)
+                    if ((s_charProperties[str[i]] & fCharData) == 0)
                     {
                         if (i + 1 >= str.Length || !(XmlCharType.IsHighSurrogate(str[i]) && XmlCharType.IsLowSurrogate(str[i + 1])))
                         {
@@ -283,46 +228,5 @@ namespace System.Xml
             return (uint)(value - start) <= (uint)(end - start);
         }
 
-#if XMLCHARTYPE_GEN_RESOURCE
-        //
-        // Code for generating XmlCharType.bin table and s_PublicIdBitmap
-        //
-        // build command line:  csc XmlCharType.cs /d:XMLCHARTYPE_GEN_RESOURCE
-        //
-        public static void Main( string[] args ) {
-            try {
-                InitInstance();
-
-                // generate PublicId bitmap
-                ushort[] bitmap = new ushort[0x80 >> 4];
-                for (int i = 0; i < s_PublicID.Length; i += 2) {
-                    for (int j = s_PublicID[i], last = s_PublicID[i + 1]; j <= last; j++) {
-                        bitmap[j >> 4] |= (ushort)(1 << (j & 0xF));
-                    }
-                }
-
-                Console.Write("private const string s_PublicIdBitmap = \"");
-                for (int i = 0; i < bitmap.Length; i++) {
-                    Console.Write("\\u{0:x4}", bitmap[i]);
-                }
-                Console.WriteLine("\";");
-                Console.WriteLine();
-
-                string fileName = ( args.Length == 0 ) ? "XmlCharType.bin" : args[0];
-                Console.Write( "Writing XmlCharType character properties to {0}...", fileName );
-
-                FileStream fs = new FileStream( fileName, FileMode.Create );
-                for ( int i = 0; i < CharPropertiesSize; i += 4096 ) {
-                    fs.Write( s_CharProperties, i, 4096 );
-                }
-                fs.Close();
-                Console.WriteLine( "done." );
-            }
-            catch ( Exception e ) {
-                Console.WriteLine();
-                Console.WriteLine( "Exception: {0}", e.Message );
-            }
-        }
-#endif
     }
 }
