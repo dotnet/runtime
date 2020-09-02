@@ -11,7 +11,7 @@
     <PackageReference Include="Microsoft.Build.Utilities.Core" Version="$(RefOnlyMicrosoftBuildUtilitiesCoreVersion)" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="System.Runtime.TimeZoneData" Version="$(SystemRuntimeTimeZoneDataVersion)" GeneratePathProperty="true" PrivateAssets="all" />
+    <PackageReference Include="System.Runtime.TimeZoneData" Version="$(SystemRuntimeTimeZoneDataVersion)" PrivateAssets="all" />
   </ItemGroup>
   <Target Name="PublishBuilder"
           AfterTargets="Build"
