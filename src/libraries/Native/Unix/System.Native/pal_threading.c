@@ -24,15 +24,16 @@ struct LowLevelMonitor
 #endif
 };
 
-#ifdef DEBUG
 static void SetIsLocked(LowLevelMonitor* monitor, bool isLocked)
 {
+#ifdef DEBUG
     assert(monitor->IsLocked != isLocked);
     monitor->IsLocked = isLocked;
-}
 #else
-#define SetIsLocked(monitor, isLocked)
+    (void)monitor; // unused in release build
+    (void)isLocked; // unused in release build
 #endif
+}
 
 LowLevelMonitor* SystemNative_LowLevelMonitor_Create()
 {
