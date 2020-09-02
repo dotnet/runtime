@@ -1286,19 +1286,25 @@ namespace System.Net.Http
             }
         }
 
-        private static readonly SocketsConnectionFactory s_defaultConnectionFactory = new SocketsConnectionFactory(SocketType.Stream, ProtocolType.Tcp);
+        private static readonly SocketsConnectionFactory s_connectionFactoryInstance = new SocketsConnectionFactory(SocketType.Stream, ProtocolType.Tcp);
+        private static readonly Func<DnsEndPoint, HttpRequestMessage, CancellationToken, ValueTask<Stream>> s_defaultConnectionCallback = (ep, r, token) => s_connectionFactoryInstance.ConnectAsync(ep, token);
 
         private ValueTask<Stream> ConnectToTcpHostAsync(string host, int port, HttpRequestMessage initialRequest, bool async, CancellationToken cancellationToken)
         {
             if (async)
             {
-                SocketsConnectionFactory connectionFactory = s_defaultConnectionFactory;
+                Func<DnsEndPoint, HttpRequestMessage, CancellationToken, ValueTask<Stream>> connectionCallback = Settings._connectionCallback ?? s_defaultConnectionCallback;
 
                 var endPoint = new DnsEndPoint(host, port);
-                return ConnectHelper.ConnectAsync(connectionFactory, endPoint, cancellationToken);
+                return ConnectHelper.ConnectAsync(connectionCallback, endPoint, initialRequest, cancellationToken);
             }
 
             // Synchronous path.
+
+            if (Settings._connectionCallback is not null)
+            {
+                throw new InvalidOperationException(SR.net_http_sync_operations_not_allowed_with_connect_callback);
+            }
 
             try
             {

@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Net.Security;
 using System.Threading;
 using System.Threading.Tasks;
@@ -361,6 +362,19 @@ namespace System.Net.Http
         internal bool SupportsAutomaticDecompression => true;
         internal bool SupportsProxy => true;
         internal bool SupportsRedirectConfiguration => true;
+
+        /// <summary>
+        /// When non-null, a custom factory used to open new connections.
+        /// </summary>
+        public Func<DnsEndPoint, HttpRequestMessage, CancellationToken, ValueTask<Stream>>? ConnectCallback
+        {
+            get => _settings._connectionCallback;
+            set
+            {
+                CheckDisposedOrStarted();
+                _settings._connectionCallback = value;
+            }
+        }
 
         public IDictionary<string, object?> Properties =>
             _settings._properties ?? (_settings._properties = new Dictionary<string, object?>());
