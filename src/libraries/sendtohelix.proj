@@ -35,7 +35,8 @@
         HelixAccessToken=$(HelixAccessToken);
         HelixTargetQueues=$(HelixTargetQueues);
         BuildTargetFramework=$(BuildTargetFramework);
-        BuildSettings=$(BuildSettings)
+        BuildSettings=$(BuildSettings);
+        HelixBaseUri='https://dotnet-eng-helix.westus2.cloudapp.azure.com/'
       </_PropertiesToPass>
     </PropertyGroup>
 
