@@ -14,7 +14,7 @@ namespace System.Threading
             // We cannot allocate CRITICAL_SECTION on GC heap. The CRITICAL_SECTION documentation
             // explicitly says that critical section object cannot be moved or copied. The debug
             // info attached to critical section has back pointer to the owning CRITICAL_SECTION,
-            // and moving CRITICAL_SECTION arond makes this back pointer orphaned.
+            // and moving CRITICAL_SECTION around makes this back pointer orphaned.
             public Interop.Kernel32.CRITICAL_SECTION _criticalSection;
             public Interop.Kernel32.CONDITION_VARIABLE _conditionVariable;
         }
