@@ -86,8 +86,6 @@ jobs:
 
     # Windows_NT x64
     - ${{ if eq(parameters.platform, 'Windows_NT_x64') }}:
-      - ${{ if and(eq(variables['System.TeamProject'], 'public'), in(parameters.jobParameters.helixQueueGroup, 'pr', 'ci')) }}:
-        - (Windows.Server.Core.1909.Amd64.Open)windows.10.amd64.server20h1.open@mcr.microsoft.com/dotnet-buildtools/prereqs:windowsservercore-1909-helix-amd64-20200521124620-7c805e9
       - ${{ if and(eq(variables['System.TeamProject'], 'public'), in(parameters.jobParameters.helixQueueGroup, 'pr', 'ci', 'libraries')) }}:
         - Windows.10.Amd64.Open
       - ${{ if and(eq(variables['System.TeamProject'], 'public'), notIn(parameters.jobParameters.helixQueueGroup, 'pr', 'ci', 'libraries')) }}:
