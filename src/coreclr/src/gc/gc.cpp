@@ -1922,6 +1922,19 @@ uint8_t* align_lower_page (uint8_t* add)
 }
 
 inline
+size_t align_upper_page(size_t add)
+{
+    return (((add - 1) | ((size_t)OS_PAGE_SIZE - 1)) + 1);
+}
+
+inline
+uint8_t* align_upper_page(uint8_t* add)
+{
+    return (uint8_t*)align_upper_page((size_t)add);
+}
+
+
+inline
 size_t align_write_watch_lower_page (size_t add)
 {
     return (add & ~(WRITE_WATCH_UNIT_SIZE - 1));
@@ -26507,7 +26520,12 @@ BOOL gc_heap::commit_mark_array_by_range (uint8_t* begin, uint8_t* end, uint32_t
 {
     size_t beg_word = mark_word_of (begin);
     size_t end_word = mark_word_of (align_on_mark_word (end));
-    uint8_t* commit_start = align_lower_page ((uint8_t*)&mark_array_addr[beg_word]);
+
+    // The mark array is not aligned to a page boundary.If it starts mid page the first part has
+    // already been committed.To avoid committing the same page twice the commit starts with the
+    // first page that only contains the mark array.
+
+    uint8_t* commit_start = align_upper_page((uint8_t*)&mark_array_addr[beg_word]);
     uint8_t* commit_end = align_on_page ((uint8_t*)&mark_array_addr[end_word]);
     size_t size = (size_t)(commit_end - commit_start);
 
