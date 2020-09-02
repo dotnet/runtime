@@ -183,6 +183,25 @@ namespace System
             return true;
         }
 
+        // Converts a half into an array of bytes with length
+        // two.
+        public static unsafe byte[] GetBytes(Half value)
+        {
+            byte[] bytes = new byte[sizeof(Half)];
+            Unsafe.As<byte, Half>(ref bytes[0]) = value;
+            return bytes;
+        }
+
+        // Converts a half into a Span
+        public static unsafe bool TryWriteBytes(Span<byte> destination, Half value)
+        {
+            if (destination.Length < sizeof(Half))
+                return false;
+
+            Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), value);
+            return true;
+        }
+
         // Converts a float into an array of bytes with length
         // four.
         public static byte[] GetBytes(float value)
@@ -335,6 +354,17 @@ namespace System
             if (value.Length < sizeof(ulong))
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.value);
             return Unsafe.ReadUnaligned<ulong>(ref MemoryMarshal.GetReference(value));
+        }
+
+        // Converts an array of bytes into a half.
+        public static Half ToHalf(byte[] value, int startIndex) => Int16BitsToHalf(ToInt16(value, startIndex));
+
+        // Converts a Span into a half
+        public static unsafe Half ToHalf(ReadOnlySpan<byte> value)
+        {
+            if (value.Length < sizeof(Half))
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.value);
+            return Unsafe.ReadUnaligned<Half>(ref MemoryMarshal.GetReference(value));
         }
 
         // Converts an array of bytes into a float.
