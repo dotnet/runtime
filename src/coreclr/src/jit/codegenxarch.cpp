@@ -4067,10 +4067,11 @@ void CodeGen::genCodeForShift(GenTree* tree)
 
     if (shiftBy->isContainedIntOrIImmed())
     {
+        emitAttr size = emitTypeSize(tree);
+
         // Optimize "X<<1" to "lea [reg+reg]" or "add reg, reg"
         if (tree->OperIs(GT_LSH) && !tree->gtOverflowEx() && !tree->gtSetFlags() && shiftBy->IsIntegralConst(1))
         {
-            emitAttr size = emitTypeSize(tree);
             if (tree->GetRegNum() == operandReg)
             {
                 GetEmitter()->emitIns_R_R(INS_add, size, tree->GetRegNum(), operandReg);
@@ -4082,16 +4083,27 @@ void CodeGen::genCodeForShift(GenTree* tree)
         }
         else
         {
-            // First, move the operand to the destination register and
-            // later on perform the shift in-place.
-            // (LSRA will try to avoid this situation through preferencing.)
-            if (tree->GetRegNum() != operandReg)
-            {
-                inst_RV_RV(INS_mov, tree->GetRegNum(), operandReg, targetType);
-            }
-
+            int typeWidth    = genTypeSize(genActualType(targetType)) * 8;
             int shiftByValue = (int)shiftBy->AsIntConCommon()->IconValue();
-            inst_RV_SH(ins, emitTypeSize(tree), tree->GetRegNum(), shiftByValue);
+            if (tree->OperIs(GT_ROL) && (shiftByValue > 0) && (shiftByValue < typeWidth))
+            {
+                assert((typeWidth == 32) || (typeWidth == 64));
+
+                // TODO: check if BMI2 is available
+                int reversedValue = typeWidth - shiftByValue;
+                GetEmitter()->emitIns_R_R_I(INS_rorx, size, tree->GetRegNum(), operandReg, reversedValue);
+            }
+            else
+            {
+                // First, move the operand to the destination register and
+                // later on perform the shift in-place.
+                // (LSRA will try to avoid this situation through preferencing.)
+                if (tree->GetRegNum() != operandReg)
+                {
+                    inst_RV_RV(INS_mov, tree->GetRegNum(), operandReg, targetType);
+                }
+                inst_RV_SH(ins, size, tree->GetRegNum(), shiftByValue);
+            }
         }
     }
     else
