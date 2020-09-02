@@ -1740,7 +1740,7 @@ namespace System.Net.Http.Functional.Tests
                     // Send response and close the stream.
                     if (expectRequestFail)
                     {
-                        await Assert.ThrowsAsync<NetworkException>(() => connection.SendDefaultResponseAsync(streamId2));
+                        await Assert.ThrowsAsync<IOException>(() => connection.SendDefaultResponseAsync(streamId2));
                         // As stream is closed we don't want to continue with sending data.
                         return;
                     }
