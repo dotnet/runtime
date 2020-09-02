@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
-using System.Net.Connections;
 using System.Net.Http.Headers;
 using System.Net.Http.HPack;
 using System.Net.Security;
@@ -24,7 +23,6 @@ namespace System.Net.Http
     {
         private readonly HttpConnectionPool _pool;
         private readonly Stream _stream;
-        private readonly Connection _connection;
 
         // NOTE: These are mutable structs; do not make these readonly.
         private ArrayBuffer _incomingBuffer;
@@ -119,11 +117,10 @@ namespace System.Net.Http
         private long _keepAlivePingTimeoutTimestamp;
         private volatile KeepAliveState _keepAliveState;
 
-        public Http2Connection(HttpConnectionPool pool, Connection connection)
+        public Http2Connection(HttpConnectionPool pool, Stream stream)
         {
             _pool = pool;
-            _stream = connection.Stream;
-            _connection = connection;
+            _stream = stream;
             _incomingBuffer = new ArrayBuffer(InitialConnectionBufferSize);
             _outgoingBuffer = new ArrayBuffer(InitialConnectionBufferSize);
 
@@ -1703,7 +1700,7 @@ namespace System.Net.Http
             GC.SuppressFinalize(this);
 
             // Do shutdown.
-            _connection.Dispose();
+            _stream.Dispose();
 
             _connectionWindow.Dispose();
             _concurrentStreams.Dispose();

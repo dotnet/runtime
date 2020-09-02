@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Net.Connections;
 using System.Net.Quic;
 using System.Net.Security;
 using System.Net.Sockets;
@@ -104,110 +103,6 @@ namespace System.Net.Http.Functional.Tests
             internal TaskCompletionSource _completedWhenFinalized;
             ~SetOnFinalized() => _completedWhenFinalized.SetResult();
         }
-    }
-
-    public class SocketsHttpHandler_ConnectionFactoryTest : HttpClientHandlerTestBase
-    {
-        public SocketsHttpHandler_ConnectionFactoryTest(ITestOutputHelper output) : base(output) { }
-
-        [Fact]
-        public async Task CustomConnectionFactory_AsyncRequest_Success()
-        {
-            await using ConnectionListenerFactory listenerFactory = new VirtualNetworkConnectionListenerFactory();
-            await using ConnectionListener listener = await listenerFactory.ListenAsync(endPoint: null);
-            await using ConnectionFactory connectionFactory = VirtualNetworkConnectionListenerFactory.GetConnectionFactory(listener);
-
-            var options = new GenericLoopbackOptions();
-
-            Task serverTask = Task.Run(async () =>
-            {
-                await using Connection serverConnection = await listener.AcceptAsync();
-                using GenericLoopbackConnection loopbackConnection = await LoopbackServerFactory.CreateConnectionAsync(socket: null, serverConnection.Stream, options);
-
-                await loopbackConnection.InitializeConnectionAsync();
-
-                HttpRequestData requestData = await loopbackConnection.ReadRequestDataAsync();
-                await loopbackConnection.SendResponseAsync(content: "foo");
-
-                Assert.Equal("/foo", requestData.Path);
-            });
-
-            Task clientTask = Task.Run(async () =>
-            {
-                using HttpClientHandler handler = CreateHttpClientHandler();
-                handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
-
-                var socketsHandler = (SocketsHttpHandler)GetUnderlyingSocketsHttpHandler(handler);
-                socketsHandler.ConnectionFactory = connectionFactory;
-
-                using HttpClient client = CreateHttpClient(handler);
-
-                string response = await client.GetStringAsync($"{(options.UseSsl ? "https" : "http")}://{Guid.NewGuid():N}.com/foo");
-                Assert.Equal("foo", response);
-            });
-
-            await new[] { serverTask, clientTask }.WhenAllOrAnyFailed(60_000);
-        }
-
-        [Fact]
-        public async Task CustomConnectionFactory_SyncRequest_Fails()
-        {
-            await using ConnectionFactory connectionFactory = new SocketsConnectionFactory(SocketType.Stream, ProtocolType.Tcp);
-            using SocketsHttpHandler handler = new SocketsHttpHandler
-            {
-                ConnectionFactory = connectionFactory
-            };
-
-            using HttpClient client = CreateHttpClient(handler);
-
-            HttpRequestException e = await Assert.ThrowsAnyAsync<HttpRequestException>(() => client.GetStringAsync($"http://{Guid.NewGuid():N}.com/foo"));
-            Assert.IsType<NetworkException>(e.InnerException);
-        }
-
-        class CustomConnectionFactory : SocketsConnectionFactory
-        {
-            public CustomConnectionFactory() : base(SocketType.Stream, ProtocolType.Tcp) { }
-
-            public HttpRequestMessage LastHttpRequestMessage { get; private set; }
-
-            public override ValueTask<Connection> ConnectAsync(EndPoint endPoint, IConnectionProperties options = null, CancellationToken cancellationToken = default)
-            {
-                if (options.TryGet(out HttpRequestMessage message))
-                {
-                    LastHttpRequestMessage = message;
-                }
-
-                return base.ConnectAsync(endPoint, options, cancellationToken);
-            }
-        }
-
-        [Fact]
-        public Task CustomConnectionFactory_ConnectAsync_CanCaptureHttpRequestMessage()
-        {
-            return LoopbackServer.CreateClientAndServerAsync(async uri =>
-            {
-                using var connectionFactory = new CustomConnectionFactory();
-                using var handler = new SocketsHttpHandler()
-                {
-                    ConnectionFactory = connectionFactory
-                };
-                using HttpClient client = CreateHttpClient(handler);
-
-                using var request = new HttpRequestMessage(HttpMethod.Get, uri);
-
-                using HttpResponseMessage response = await client.SendAsync(request);
-                string content = await response.Content.ReadAsStringAsync();
-
-                Assert.Equal("OK", content);
-                Assert.Same(request, connectionFactory.LastHttpRequestMessage);
-            }, server => server.HandleRequestAsync(content: "OK"));
-        }
-    }
-
-    public sealed class SocketsHttpHandler_ConnectionFactoryTest_Http2 : SocketsHttpHandler_ConnectionFactoryTest
-    {
-        public SocketsHttpHandler_ConnectionFactoryTest_Http2(ITestOutputHelper output) : base(output) { }
-        protected override Version UseVersion => HttpVersion.Version20;
     }
 
     public sealed class SocketsHttpHandler_HttpProtocolTests : HttpProtocolTests
