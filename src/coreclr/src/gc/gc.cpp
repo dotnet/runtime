@@ -8537,7 +8537,7 @@ static void do_vxsort (uint8_t** item_array, ptrdiff_t item_count, uint8_t* rang
 
 #ifdef MULTIPLE_HEAPS
 #ifdef PARALLEL_MARK_LIST_SORT
-size_t target_mark_count_for_heap (size_t total_mark_count, int heap_count, int heap_number)
+static size_t target_mark_count_for_heap (size_t total_mark_count, int heap_count, int heap_number)
 {
     // compute the average (rounded down)
     size_t average_mark_count = total_mark_count / heap_count;
@@ -8546,8 +8546,8 @@ size_t target_mark_count_for_heap (size_t total_mark_count, int heap_count, int 
     size_t remaining_mark_count = total_mark_count - (average_mark_count * heap_count);
 
     // compute the target count for this heap - last heap has the remainder
-    if (heap_number == heap_count - 1)
-        return average_mark_count + remaining_mark_count;
+    if (heap_number == (heap_count - 1))
+        return (average_mark_count + remaining_mark_count);
     else
         return average_mark_count;
 }
@@ -8562,7 +8562,7 @@ uint8_t** gc_heap::equalize_mark_lists (size_t total_mark_list_size)
     for (int i = 0; i < n_heaps; i++)
     {
         gc_heap* hp = g_heaps[i];
-        size_t mark_count = (hp->mark_list_index - hp->mark_list);
+        size_t mark_count = hp->mark_list_index - hp->mark_list;
         local_mark_count[i] = mark_count;
         total_mark_count += mark_count;
     }
@@ -8575,7 +8575,7 @@ uint8_t** gc_heap::equalize_mark_lists (size_t total_mark_list_size)
 
     // if our heap has sufficient entries, we can exit early
     if (local_mark_count[heap_number] >= this_target_mark_count)
-        return mark_list + this_target_mark_count;
+        return (mark_list + this_target_mark_count);
 
     // In the following, we try to fill the deficit in heap "deficit_heap_index" with 
     // surplus from "surplus_heap_index".
@@ -8591,7 +8591,7 @@ uint8_t** gc_heap::equalize_mark_lists (size_t total_mark_list_size)
             continue;
 
         // while this heap is lower than average, fill it up
-        while (surplus_heap_index < n_heaps && local_mark_count[deficit_heap_index] < deficit_target_mark_count)
+        while ((surplus_heap_index < n_heaps) && (local_mark_count[deficit_heap_index] < deficit_target_mark_count))
         {
             size_t deficit = deficit_target_mark_count - local_mark_count[deficit_heap_index];
 
@@ -8607,7 +8607,7 @@ uint8_t** gc_heap::equalize_mark_lists (size_t total_mark_list_size)
                     // copy amount_to_transfer mark list items
                     memcpy(&g_heaps[deficit_heap_index]->mark_list[local_mark_count[deficit_heap_index]],
                            &g_heaps[surplus_heap_index]->mark_list[local_mark_count[surplus_heap_index]],
-                            amount_to_transfer*sizeof(mark_list[0]));
+                           (amount_to_transfer*sizeof(mark_list[0])));
                 }
                 local_mark_count[deficit_heap_index] += amount_to_transfer;
             }
@@ -8617,7 +8617,7 @@ uint8_t** gc_heap::equalize_mark_lists (size_t total_mark_list_size)
             }
         }
     }
-    return mark_list + local_mark_count[heap_number];
+    return (mark_list + local_mark_count[heap_number]);
 }
 NOINLINE
 size_t gc_heap::sort_mark_list()
@@ -8685,7 +8685,7 @@ size_t gc_heap::sort_mark_list()
         return 0;
     }
 
-    uint8_t **local_mark_list_index = equalize_mark_lists(total_mark_list_size);
+    uint8_t **local_mark_list_index = equalize_mark_lists (total_mark_list_size);
 
 #ifdef USE_VXSORT
     ptrdiff_t item_count = local_mark_list_index - mark_list;
@@ -8848,7 +8848,7 @@ size_t gc_heap::sort_mark_list()
     return total_mark_list_size;
 }
 
-void gc_heap::append_to_mark_list(uint8_t **start, uint8_t **end)
+void gc_heap::append_to_mark_list (uint8_t **start, uint8_t **end)
 {
     size_t slots_needed = end - start;
     size_t slots_available = mark_list_end + 1 - mark_list_index;
@@ -8859,7 +8859,7 @@ void gc_heap::append_to_mark_list(uint8_t **start, uint8_t **end)
 }
 
 #ifdef _DEBUG
-static int __cdecl cmp_mark_list_item(const void* vkey, const void* vdatum)
+static int __cdecl cmp_mark_list_item (const void* vkey, const void* vdatum)
 {
     uint8_t** key = (uint8_t**)vkey;
     uint8_t** datum = (uint8_t**)vdatum;
@@ -8872,7 +8872,7 @@ static int __cdecl cmp_mark_list_item(const void* vkey, const void* vdatum)
 }
 #endif // _DEBUG
 
-void gc_heap::merge_mark_lists(size_t total_mark_list_size)
+void gc_heap::merge_mark_lists (size_t total_mark_list_size)
 {
     uint8_t** source[MAX_SUPPORTED_CPUS];
     uint8_t** source_end[MAX_SUPPORTED_CPUS];
@@ -8889,10 +8889,10 @@ void gc_heap::merge_mark_lists(size_t total_mark_list_size)
     // if we had more than the average number of mark list items,
     // make sure these got copied to another heap, i.e. didn't get lost
     size_t this_mark_list_size = target_mark_count_for_heap (total_mark_list_size, n_heaps, heap_number);
-    uint8_t** found_slot = nullptr;
     for (uint8_t** p = mark_list + this_mark_list_size; p < mark_list_index; p++)
     {
         uint8_t* item = *p;
+        uint8_t** found_slot = nullptr;
         for (int i = 0; i < n_heaps; i++)
         {
             uint8_t** heap_mark_list = &g_mark_list[i * mark_list_size];
@@ -8901,7 +8901,7 @@ void gc_heap::merge_mark_lists(size_t total_mark_list_size)
             if (found_slot != nullptr)
                 break;
         }
-        assert(found_slot);
+        assert ((found_slot != nullptr) && (*found_slot == item));
     }
 #endif
 
