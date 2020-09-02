@@ -259,8 +259,8 @@ namespace System.Net.Sockets.Tests
             listener.Start();
 
             IAsyncResult iar = listener.BeginAcceptSocket(callback: null, state: null);
-            
-            // Give some time for the connect operation to kick in:
+
+            // Give some time for the underlying OS operation to start:
             Thread.Sleep(50);
             listener.Stop();
 
@@ -275,7 +275,7 @@ namespace System.Net.Sockets.Tests
 
             IAsyncResult iar = listener.BeginAcceptTcpClient(callback: null, state: null);
 
-            // Give some time for the connect operation to kick in:
+            // Give some time for the underlying OS operation to start:
             Thread.Sleep(50);
             listener.Stop();
 
