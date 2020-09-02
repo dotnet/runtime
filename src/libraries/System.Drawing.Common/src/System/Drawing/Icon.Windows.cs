@@ -657,6 +657,7 @@ namespace System.Drawing
                     }
                     finally
                     {
+                        Debug.Assert(OperatingSystem.IsWindows());
                         Marshal.ReleaseComObject(picture);
                     }
                 }

@@ -3,6 +3,7 @@
 
 using Microsoft.Win32;
 using System.ComponentModel;
+using System.Diagnostics;
 
 namespace System.IO.Ports
 {
@@ -17,6 +18,8 @@ namespace System.IO.Ports
             //
             // QueryDosDevice involves finding any ports that map to \Device\Serialx (call with null to get all, then iterate to get the actual device name)
 
+#pragma warning disable CA1416 // Debug.Assert(OperatingSystem.IsWindows()) is not available
+
             using (RegistryKey serialKey = Registry.LocalMachine.OpenSubKey(@"HARDWARE\DEVICEMAP\SERIALCOMM"))
             {
                 if (serialKey != null)
@@ -30,6 +33,8 @@ namespace System.IO.Ports
                     return result;
                 }
             }
+
+#pragma warning restore CA1416 // Debug.Assert(OperatingSystem.IsWindows()) is not available
 
             return Array.Empty<string>();
         }

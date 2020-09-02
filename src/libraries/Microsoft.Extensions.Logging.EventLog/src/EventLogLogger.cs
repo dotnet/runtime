@@ -164,6 +164,8 @@ namespace Microsoft.Extensions.Logging.EventLog
             }
         }
 
+#pragma warning disable CA1416 // Debug.Assert(OperatingSystem.IsWindows()) is not available
+
         private EventLogEntryType GetEventLogEntryType(LogLevel level)
         {
             switch (level)
@@ -181,5 +183,7 @@ namespace Microsoft.Extensions.Logging.EventLog
                     return EventLogEntryType.Information;
             }
         }
+
+#pragma warning restore CA1416 // Debug.Assert(OperatingSystem.IsWindows()) is not available
     }
 }
