@@ -2182,6 +2182,7 @@ size_t      gc_heap::current_total_committed = 0;
 #ifdef VERIFY_COMMITTED_BY_OH
 #ifndef MULTIPLE_HEAPS
 size_t      gc_heap::committed_by_oh_per_heap[total_oh_count] = {0, 0, 0, 0};
+int         gc_heap::outstanding_uoh_segment_count = 0;
 #endif
 #endif
 size_t      gc_heap::committed_by_oh[total_oh_count] = {0, 0, 0, 0};
@@ -11051,6 +11052,7 @@ gc_heap::init_gc_heap (int  h_number)
     {
         committed_by_oh_per_heap [i] = 0;
     }
+    outstanding_uoh_segment_count = 0;
 #endif
     time_bgc_last = 0;
 
@@ -13802,7 +13804,13 @@ allocation_state gc_heap::allocate_uoh (int gen_number,
 
                 current_full_compact_gc_count = get_full_compact_gc_count();
 
+#ifdef VERIFY_COMMITTED_BY_OH
+                outstanding_uoh_segment_count++;
+#endif
                 can_get_new_seg_p = uoh_get_new_seg (gen_number, size, &did_full_compacting_gc, &oom_r);
+#ifdef VERIFY_COMMITTED_BY_OH
+                outstanding_uoh_segment_count--;
+#endif
                 uoh_alloc_state = (can_get_new_seg_p ? 
                                         a_state_try_fit_new_seg : 
                                         (did_full_compacting_gc ? 
@@ -20343,16 +20351,14 @@ void gc_heap::verify_committed_by_oh_per_heap(heap_segment* inst)
     gc_oh_num oh = heap_segment_oh (inst);
     generation* gen = generation_of (oh + max_generation);
     heap_segment* seg = heap_segment_rw (generation_start_segment (gen));        
-    size_t verify = 0;
+    size_t recorded_committed = 0;
     while (seg)
     {
-        verify += heap_segment_committed (seg) - (uint8_t*)seg;
+        recorded_committed += heap_segment_committed (seg) - (uint8_t*)seg;
         seg = heap_segment_next (seg);
     }
-    dprintf (COMMIT_ACCOUNTING_LOG, ("check %d %d==%d\n", oh, committed_by_oh_per_heap[oh], verify));
-    // It is possible that get_uoh_segment () creates a new segment and commit 2 pages 
-    // in a way that is not synchronized with other allocations.
-    assert((committed_by_oh_per_heap[oh] == verify) || (oh != gc_oh_num::soh && committed_by_oh_per_heap[oh] == verify + 8192));
+    dprintf (COMMIT_ACCOUNTING_LOG, ("check %d %d==%d\n", oh, committed_by_oh_per_heap[oh], recorded_committed));
+    assert((committed_by_oh_per_heap[oh] == recorded_committed) || (oh != gc_oh_num::soh && committed_by_oh_per_heap[oh] <= recorded_committed + outstanding_uoh_segment_count * 8192));
 }
 #endif
 
@@ -34222,9 +34228,9 @@ void gc_heap::sweep_uoh_objects (int gen_num)
                 {
                     dprintf (3, ("Trimming seg to %Ix[", (size_t)plug_end));
                     heap_segment_allocated (seg) = plug_end;
-                    // Note the block above - it is possible for a segment to 
-                    // leave the segment chain without being decommitted in the 
-                    // previous iteration, therefore we have to skip verification
+                    // when we delete a segment and thread it into the freeable_uoh_segment list
+                    // it is possible for a segment to leave the segment chain without being 
+                    // decommitted in the previous iteration, therefore we have to skip verification
                     // here.
                     decommit_heap_segment_pages (seg, 0 VERIFY_COMMITTED_BY_OH_ARG (true));
                 }

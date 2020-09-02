@@ -3503,7 +3503,7 @@ public:
     PER_HEAP
     size_t committed_by_oh_per_heap[total_oh_count];
     PER_HEAP
-    int unsaved_virtual_operation_count_per_heap;
+    int outstanding_uoh_segment_count;
 #endif
 
     PER_HEAP_ISOLATED
