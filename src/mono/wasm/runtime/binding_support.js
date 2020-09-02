@@ -754,7 +754,7 @@ var BindingSupportLib = {
 			var args_start = null;
 			var buffer = null;
 			var converter = null;
-			var is_result_marshaled = false;
+			var is_result_marshaled = true;
 			var [resultRoot, exceptionRoot] = MONO.mono_wasm_new_roots (2);
 			var argsRootBuffer = null;
 
@@ -793,10 +793,10 @@ var BindingSupportLib = {
 					*/
 				}
 			}
-
+			
 			if (has_args_marshal && has_args)
 				if (args_marshal.length >= args.length && args_marshal [args.length] === "m")
-					is_result_marshaled = true;
+					is_result_marshaled = false;
 
 			try {
 				resultRoot.value = this.invoke_method (method, this_arg, args_start, exceptionRoot.get_address ());
