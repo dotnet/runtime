@@ -1058,6 +1058,18 @@ namespace Internal.Cryptography.Pal
                 case Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_UNHANDLED_CRITICAL_EXTENSION:
                     return X509ChainStatusFlags.HasNotSupportedCriticalExtension;
 
+                case Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_PERMITTED_VIOLATION:
+                    return X509ChainStatusFlags.HasNotPermittedNameConstraint;
+
+                case Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_EXCLUDED_VIOLATION:
+                    return X509ChainStatusFlags.HasExcludedNameConstraint;
+
+                case Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_SUBTREE_MINMAX:
+                    return X509ChainStatusFlags.HasNotSupportedNameConstraint;
+
+                case Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_UNSUPPORTED_NAME_SYNTAX:
+                    return X509ChainStatusFlags.InvalidNameConstraints;
+
                 case Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_CERT_CHAIN_TOO_LONG:
                     throw new CryptographicException();
 
