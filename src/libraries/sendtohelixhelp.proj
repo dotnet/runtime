@@ -189,7 +189,9 @@
     </ItemGroup>
 
     <Message Condition="'$(Scenario)' != ''" Importance="High" Text="Done building Helix work items for scenario $(Scenario). Work item count: @(_WorkItem->Count())" />
-    <Message Condition="'$(Scenario)' == ''" Importance="High" Text="Done building Helix work items. Work item count: @(_WorkItem->Count())" />
+    <Message Condition="'$(Scenario)' == '' and '$(TargetOS)' == 'Android'" Importance="High" Text="Done building Helix work items. Work item count: @(XHarnessApkToTest->Count())" />
+    <Message Condition="'$(Scenario)' == '' and '$(TargetOS)' != 'Android'" Importance="High" Text="Done building Helix work items. Work item count: @(_WorkItem->Count())" />
+
 
   </Target>
 
