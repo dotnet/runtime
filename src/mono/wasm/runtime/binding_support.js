@@ -679,7 +679,7 @@ var BindingSupportLib = {
 
 		_create_default_converters: function () {
 			var converters = new Map ();
-			converters.set ('m', { steps: [{ }], size: 0});
+			converters.set ('m', { steps: [{ raw: true }], size: 0});
 			converters.set ('s', { steps: [{ convert: this.js_string_to_mono_string.bind (this)}], size: 0});
 			converters.set ('o', { steps: [{ convert: this.js_to_mono_obj.bind (this)}], size: 0});
 			converters.set ('u', { steps: [{ convert: this.js_to_mono_uri.bind (this)}], size: 0});
@@ -690,13 +690,14 @@ var BindingSupportLib = {
 			converters.set ('f', { steps: [{ indirect: 'float'}], size: 8});
 			converters.set ('d', { steps: [{ indirect: 'double'}], size: 8});
 			this.converters = converters;
+			return converters;
 		},
 
 		_create_converter_for_marshal_string: function (args_marshal) {
 			var steps = [];
 			var size = 0;
 
-			for (i = 0; i < args_marshal.length; ++i) {
+			for (var i = 0; i < args_marshal.length; ++i) {
 				var conv = this.converters.get (args_marshal[i]);
 				if (!conv)
 					throw Error ("Unknown parameter type " + type);
@@ -704,7 +705,8 @@ var BindingSupportLib = {
 				steps.push (conv.steps[0]);
 				size += conv.size;
 			}
-			converter = { steps: steps, size: size };
+
+			return { steps: steps, size: size };
 		},
 
 		_get_converter_for_marshal_string: function (args_marshal) {
@@ -743,19 +745,23 @@ var BindingSupportLib = {
 			var has_args = Array.isArray(args) && args.length > 0;
 			var has_args_marshal = ((typeof args_marshal) === "string") && args_marshal.length > 0;
 
-			if (has_args_marshal && (!has_args || args.length > args_marshal.length))
-				throw Error ("Parameter count mismatch.");
+			if (has_args) {
+				if (!has_args_marshal)
+					throw new Error ("No signature provided.");
+				else if (args.length !== args_marshal.length))
+					throw new Error ("Parameter count mismatch.");
+			}
 
-			var args_start = null;
+			var args_start = 0;
 			var buffer = null;
+			var converter = null;
+			var is_result_marshaled = false;
 			var [resultRoot, exceptionRoot] = MONO.mono_wasm_new_roots (2);
 			var argsRootBuffer = null;
 
 			// check if the method signature needs argument mashalling
 			if (has_args_marshal && has_args) {
-				var i;
-
-				var converter = this._get_converter_for_marshal_string (args_marshal);
+				converter = this._get_converter_for_marshal_string (args_marshal);
 
 				// assume at least 8 byte alignment from malloc
 				var bufferSizeBytes = converter.size + (args.length * 4);
@@ -765,9 +771,9 @@ var BindingSupportLib = {
 				var indirect_start = buffer; // buffer + buffer % 8
 				args_start = indirect_start + converter.size;
 
-				var slot = args_start;
+				var slot = (args_start / 4) | 0;
 				var indirect_value = indirect_start;
-				for (i = 0; i < args.length; ++i) {
+				for (var i = 0; i < args.length; ++i) {
 					var handler = converter.steps[i];
 					var obj = handler.convert ? handler.convert (args[i], method, i) : args[i];
 
@@ -779,27 +785,28 @@ var BindingSupportLib = {
 						argsRootBuffer.set (i, obj);
 					}
 
-					Module.setValue (slot, obj, "*");
-					slot += 4;
+					Module.HEAP32[slot] = obj;
+					slot++;
 				}
+
+				if (args.length < converter.steps.length)
+					is_result_marshaled = Boolean (converter.steps[args.length].raw);
 			}
 
 			try {
 				resultRoot.value = this.invoke_method (method, this_arg, args_start, exceptionRoot.get_address ());
-				Module._free (buffer);
 
-				if (exceptionRoot.value != 0) {
+				if (exceptionRoot.value !== 0) {
 					var msg = this.conv_string (resultRoot.value);
 					throw new Error (msg); //the convention is that invoke_method ToString () any outgoing exception
 				}
 
-				if (has_args_marshal && has_args) {
-					if (args_marshal.length >= args.length && args_marshal [args.length] === "m")
-						return resultRoot.value;
-				}
-
-				return this._unbox_mono_obj_rooted (resultRoot);
+				if (!is_result_marshaled)
+					return resultRoot.value;
+				else
+					return this._unbox_mono_obj_rooted (resultRoot);
 			} finally {
+				Module._free (buffer);
 				MONO.mono_wasm_release_roots (resultRoot, exceptionRoot, argsRootBuffer);
 			}
 		},
