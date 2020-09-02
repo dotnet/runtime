@@ -48,7 +48,8 @@
 
     <TargetOSComponent>unix</TargetOSComponent>
     <TargetOSComponent Condition="'$(TargetOS)' == 'Windows_NT'">win</TargetOSComponent>
-    <TargetSpec>$(TargetOSComponent)_$(TargetArchitecture)_$(BuildArchitecture)</TargetSpec>
+    <TargetSpec>$(TargetOSComponent)_$(TargetArchitecture)_$(TargetArchitecture)</TargetSpec>
+    <CrossTargetSpec>$(TargetOSComponent)_$(TargetArchitecture)_$(CrossHostArch)</CrossTargetSpec>
 
     <LibraryNamePrefix>lib</LibraryNamePrefix>
     <LibraryNamePrefix Condition="$([MSBuild]::IsOsPlatform('WINDOWS'))"></LibraryNamePrefix>
@@ -56,7 +57,7 @@
     <LibraryNameExtension Condition="$([MSBuild]::IsOsPlatform('LINUX'))">.so</LibraryNameExtension>
     <LibraryNameExtension Condition="$([MSBuild]::IsOsPlatform('OSX'))">.dylib</LibraryNameExtension>
 
-    <JitInterfaceLibraryName>$(LibraryNamePrefix)jitinterface$(LibraryNameExtension)</JitInterfaceLibraryName>
+    <JitInterfaceLibraryName>$(LibraryNamePrefix)jitinterface_$(TargetArchitecture)$(LibraryNameExtension)</JitInterfaceLibraryName>
   </PropertyGroup>
 
   <ItemGroup>
@@ -87,13 +88,12 @@
 
     <PropertyGroup>
       <CrossPackageFolder>$(BinDir)\$(CrossHostArch)\crossgen2</CrossPackageFolder>
-      <CrossTargetSpec>$(TargetOSComponent)_$(TargetArchitecture)_$(CrossHostArch)</CrossTargetSpec>
     </PropertyGroup>
 
     <ItemGroup>
       <PackageFile Include="$(BinDir)\crossgen2\*"
         Exclude="$(BinDir)\crossgen2\$(JitInterfaceLibraryName);$(BinDir)\crossgen2\$(LibraryNamePrefix)clrjit_*$(LibraryNameExtension)" />
-      <PackageFile Include="$(BinDir)\$(CrossHostArch)\$(JitInterfaceLibraryName)" />
+      <PackageFile Include="$(BinDir)\$(CrossHostArch)\$(LibraryNamePrefix)jitinterface_$(CrossHostArch)$(LibraryNameExtension)" />
     </ItemGroup>
 
     <MakeDir Directories="$(CrossPackageFolder)" />

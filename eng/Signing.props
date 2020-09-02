@@ -47,7 +47,7 @@
       <ItemsToSign Include="$(CoreCLRCrossgen2Dir)ILCompiler.DependencyAnalysisFramework.dll" />
       <ItemsToSign Include="$(CoreCLRCrossgen2Dir)ILCompiler.ReadyToRun.dll" />
       <ItemsToSign Include="$(CoreCLRCrossgen2Dir)ILCompiler.TypeSystem.ReadyToRun.dll" />
-      <ItemsToSign Include="$(CoreCLRCrossgen2Dir)jitinterface.dll" />
+      <ItemsToSign Include="$(CoreCLRCrossgen2Dir)jitinterface_$(TargetArchitecture).dll" />
 
       <ItemsToSign Include="$(CoreCLRCrossgen2Dir)clrjit_win_x86_$(TargetArchitecture).dll" />
       <ItemsToSign Include="$(CoreCLRCrossgen2Dir)clrjit_win_arm_$(TargetArchitecture).dll" />
