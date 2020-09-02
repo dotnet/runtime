@@ -22,12 +22,18 @@ namespace System.Net.Sockets
     {
         internal const int DefaultCloseTimeout = -1; // NOTE: changing this default is a breaking change.
 
+        private static readonly IPAddress s_IPAddressAnyMapToIPv6 = IPAddress.Any.MapToIPv6();
+
         private SafeSocketHandle _handle;
 
         // _rightEndPoint is null if the socket has not been bound.  Otherwise, it is any EndPoint of the
         // correct type (IPEndPoint, etc).
         internal EndPoint? _rightEndPoint;
         internal EndPoint? _remoteEndPoint;
+
+        // Cached LocalEndPoint value. Cleared on disconnect and error. Cached wildcard addresses are
+        // also cleared on connect and accept.
+        private EndPoint? _localEndPoint;
 
         // These flags monitor if the socket was ever connected at any time and if it still is.
         private bool _isConnected;
@@ -317,6 +323,7 @@ namespace System.Net.Sockets
                     // Update the state if we've become connected after a non-blocking connect.
                     _isConnected = true;
                     _rightEndPoint = _nonBlockingConnectRightEndPoint;
+                    UpdateLocalEndPointOnConnect();
                     _nonBlockingConnectInProgress = false;
                 }
 
@@ -325,23 +332,27 @@ namespace System.Net.Sockets
                     return null;
                 }
 
-                Internals.SocketAddress socketAddress = IPEndPointExtensions.Serialize(_rightEndPoint);
-
-                unsafe
+                if (_localEndPoint == null)
                 {
-                    fixed (byte* buffer = socketAddress.Buffer)
-                    fixed (int* bufferSize = &socketAddress.InternalSize)
+                    Internals.SocketAddress socketAddress = IPEndPointExtensions.Serialize(_rightEndPoint);
+
+                    unsafe
                     {
-                        // This may throw ObjectDisposedException.
-                        SocketError errorCode = SocketPal.GetSockName(_handle, buffer, bufferSize);
-                        if (errorCode != SocketError.Success)
+                        fixed (byte* buffer = socketAddress.Buffer)
+                        fixed (int* bufferSize = &socketAddress.InternalSize)
                         {
-                            UpdateStatusAfterSocketErrorAndThrowException(errorCode);
+                            // This may throw ObjectDisposedException.
+                            SocketError errorCode = SocketPal.GetSockName(_handle, buffer, bufferSize);
+                            if (errorCode != SocketError.Success)
+                            {
+                                UpdateStatusAfterSocketErrorAndThrowException(errorCode);
+                            }
                         }
                     }
+                    _localEndPoint = _rightEndPoint.Create(socketAddress);
                 }
 
-                return _rightEndPoint.Create(socketAddress);
+                return _localEndPoint;
             }
         }
 
@@ -359,6 +370,7 @@ namespace System.Net.Sockets
                         // Update the state if we've become connected after a non-blocking connect.
                         _isConnected = true;
                         _rightEndPoint = _nonBlockingConnectRightEndPoint;
+                        UpdateLocalEndPointOnConnect();
                         _nonBlockingConnectInProgress = false;
                     }
 
@@ -470,6 +482,7 @@ namespace System.Net.Sockets
                     // Update the state if we've become connected after a non-blocking connect.
                     _isConnected = true;
                     _rightEndPoint = _nonBlockingConnectRightEndPoint;
+                    UpdateLocalEndPointOnConnect();
                     _nonBlockingConnectInProgress = false;
                 }
 
@@ -2303,6 +2316,7 @@ namespace System.Net.Sockets
             {
                 SetToDisconnected();
                 _remoteEndPoint = null;
+                _localEndPoint = null;
             }
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"UnsafeNclNativeMethods.OSSOCK.DisConnectEx returns:{errorCode}");
@@ -2332,6 +2346,7 @@ namespace System.Net.Sockets
 
             SetToDisconnected();
             _remoteEndPoint = null;
+            _localEndPoint = null;
         }
 
         // Routine Description:
@@ -2760,6 +2775,7 @@ namespace System.Net.Sockets
             catch (ObjectDisposedException)
             {
                 _rightEndPoint = oldEndPoint;
+                _localEndPoint = null;
                 throw;
             }
 
@@ -2769,6 +2785,7 @@ namespace System.Net.Sockets
                 UpdateSendSocketErrorForDisposed(ref errorCode);
                 // Update the internal state of this socket according to the error before throwing.
                 _rightEndPoint = oldEndPoint;
+                _localEndPoint = null;
 
                 throw new SocketException((int)errorCode);
             }
@@ -3148,6 +3165,7 @@ namespace System.Net.Sockets
             catch (ObjectDisposedException)
             {
                 _rightEndPoint = oldEndPoint;
+                _localEndPoint = null;
                 throw;
             }
 
@@ -3157,6 +3175,7 @@ namespace System.Net.Sockets
             {
                 // Update the internal state of this socket according to the error before throwing.
                 _rightEndPoint = oldEndPoint;
+                _localEndPoint = null;
 
                 throw new SocketException((int)errorCode);
             }
@@ -3357,6 +3376,7 @@ namespace System.Net.Sockets
             catch (ObjectDisposedException)
             {
                 _rightEndPoint = oldEndPoint;
+                _localEndPoint = null;
                 throw;
             }
 
@@ -3366,6 +3386,7 @@ namespace System.Net.Sockets
             {
                 // Update the internal state of this socket according to the error before throwing.
                 _rightEndPoint = oldEndPoint;
+                _localEndPoint = null;
 
                 throw new SocketException((int)errorCode);
             }
@@ -3762,6 +3783,7 @@ namespace System.Net.Sockets
                 catch
                 {
                     _rightEndPoint = oldEndPoint;
+                    _localEndPoint = null;
 
                     // Clear in-use flag on event args object.
                     e.Complete();
@@ -4091,6 +4113,7 @@ namespace System.Net.Sockets
             catch
             {
                 _rightEndPoint = null;
+                _localEndPoint = null;
                 // Clear in-use flag on event args object.
                 e.Complete();
                 throw;
@@ -4099,6 +4122,7 @@ namespace System.Net.Sockets
             if (!CheckErrorAndUpdateStatus(socketError))
             {
                 _rightEndPoint = oldEndPoint;
+                _localEndPoint = null;
             }
 
             return socketError == SocketError.IOPending;
@@ -4619,6 +4643,7 @@ namespace System.Net.Sockets
             {
                 // _rightEndPoint will always equal oldEndPoint.
                 _rightEndPoint = oldEndPoint;
+                _localEndPoint = null;
                 throw;
             }
 
@@ -4635,6 +4660,7 @@ namespace System.Net.Sockets
                 UpdateConnectSocketErrorForDisposed(ref errorCode);
                 // Update the internal state of this socket according to the error before throwing.
                 _rightEndPoint = oldEndPoint;
+                _localEndPoint = null;
 
                 throw new SocketException((int)errorCode);
             }
@@ -4858,6 +4884,12 @@ namespace System.Net.Sockets
             socket._rightEndPoint = _rightEndPoint;
             socket._remoteEndPoint = remoteEP;
 
+            // If the listener socket was bound to a wildcard address, then the `accept` system call
+            // will assign a specific address to the accept socket's local endpoint instead of a
+            // wildcard address. In that case we should not copy listener's wildcard local endpoint.
+
+            socket._localEndPoint = !IsWildcardEndPoint(_localEndPoint) ? _localEndPoint : null;
+
             // The socket is connected.
             socket.SetToConnected();
 
@@ -4889,7 +4921,36 @@ namespace System.Net.Sockets
             // some point in time update the perf counter as well.
             _isConnected = true;
             _isDisconnected = false;
+            UpdateLocalEndPointOnConnect();
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "now connected");
+        }
+
+        private void UpdateLocalEndPointOnConnect()
+        {
+            // If the client socket was bound to a wildcard address, then the `connect` system call
+            // will assign a specific address to the client socket's local endpoint instead of a
+            // wildcard address. In that case we should clear the cached wildcard local endpoint.
+
+            if (IsWildcardEndPoint(_localEndPoint))
+            {
+                _localEndPoint = null;
+            }
+        }
+
+        private bool IsWildcardEndPoint(EndPoint? endPoint)
+        {
+            if (endPoint == null)
+            {
+                return false;
+            }
+
+            if (endPoint is IPEndPoint ipEndpoint)
+            {
+                IPAddress address = ipEndpoint.Address;
+                return IPAddress.Any.Equals(address) || IPAddress.IPv6Any.Equals(address) || s_IPAddressAnyMapToIPv6.Equals(address);
+            }
+
+            return false;
         }
 
         internal void SetToDisconnected()
