@@ -8,10 +8,6 @@
     <AllowEmptySignList Condition="'$(SignFinalPackages)' != 'true'">true</AllowEmptySignList>
   </PropertyGroup>
 
-  <!-- Get artifact locations to sign. -->
-  <Import Project="$(RepositoryEngineeringDir)Configurations.props" />
-  <Import Project="$(RepositoryEngineeringDir)liveBuilds.targets" />
-
   <!-- We need  this to be inside a target to workaround: https://github.com/microsoft/msbuild/issues/5445 -->
   <Target Name="PrepareItemsToSign" BeforeTargets="Sign">
 
