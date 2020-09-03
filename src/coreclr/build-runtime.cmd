@@ -463,13 +463,13 @@ if %__BuildCrossArchNative% EQU 1 (
     set __CmakeBuildToolArgs=
 
     if %__Ninja% EQU 1 (
-        set __CmakeBuildToolArgs=-j
+        set __CmakeBuildToolArgs=
     ) else (
+        REM We pass the /m flag directly to MSBuild so that we can get both MSBuild and CL parallelism, which is fastest for our builds.
         set __CmakeBuildToolArgs=/nologo /m !__Logging!
     )
 
-    REM We pass the /m flag directly to MSBuild so that we can get both MSBuild and CL parallelism, which is fastest for our builds.
-    "%CMakePath%" --build %__CrossCompIntermediatesDir% --target install --config %__BuildType% -- %__CmakeBuildToolArgs%
+    "%CMakePath%" --build %__CrossCompIntermediatesDir% --target install --config %__BuildType% -- !__CmakeBuildToolArgs!
 
     if not !errorlevel! == 0 (
         set __exitCode=!errorlevel!
@@ -555,14 +555,15 @@ if %__BuildNative% EQU 1 (
     set "__MsbuildBinLog=/bl:!__BinLog!"
     set "__Logging=!__MsbuildLog! !__MsbuildWrn! !__MsbuildErr! !__MsbuildBinLog!"
 
+    set __CmakeBuildToolArgs=
     if %__Ninja% EQU 1 (
-        set __CmakeBuildToolArgs=-j
+        set __CmakeBuildToolArgs=
     ) else (
+        REM We pass the /m flag directly to MSBuild so that we can get both MSBuild and CL parallelism, which is fastest for our builds.
         set __CmakeBuildToolArgs=/nologo /m !__Logging!
     )
 
-    REM We pass the /m flag directly to MSBuild so that we can get both MSBuild and CL parallelism, which is fastest for our builds.
-    "%CMakePath%" --build %__IntermediatesDir% --target install --config %__BuildType% -- %__CmakeBuildToolArgs%
+    "%CMakePath%" --build %__IntermediatesDir% --target install --config %__BuildType% -- !__CmakeBuildToolArgs!
 
     if not !errorlevel! == 0 (
         set __exitCode=!errorlevel!

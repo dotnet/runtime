@@ -63,9 +63,9 @@ goto loop
 set __ExtraCmakeParams="-DCMAKE_INSTALL_PREFIX=%__CMakeBinDir%" "-DCLR_CMAKE_HOST_ARCH=%__Arch%" %__ExtraCmakeParams%
 
 if /i "%__UseEmcmake%" == "1" (
-    emcmake "%CMakePath%" %__ExtraCmakeParams% -G "%__CmakeGenerator%" -S %__SourceDir% -B %__IntermediatesDir%
+    emcmake "%CMakePath%" %__ExtraCmakeParams% -G "%__CmakeGenerator%" -B %__IntermediatesDir% -S %__SourceDir% 
 ) else (
-    "%CMakePath%" %__ExtraCmakeParams% -G "%__CmakeGenerator%" -S %__SourceDir% -B %__IntermediatesDir%
+    "%CMakePath%" %__ExtraCmakeParams% -G "%__CmakeGenerator%" -B %__IntermediatesDir% -S %__SourceDir% 
 )
 endlocal
 exit /B %errorlevel%
