@@ -100,8 +100,8 @@ namespace System.Tests
         {
             yield return new object[] { (Half)0.0, new byte[] { 0x00, 0x00 } };
             yield return new object[] { (Half)123.44, new byte[] { 0xB7, 0x57 } };
-            yield return new object[] { Half.MinValue, new byte[] { 0xFF, 0x7B } };
-            yield return new object[] { Half.MaxValue, new byte[] { 0xFF, 0xFB } };
+            yield return new object[] { Half.MinValue, new byte[] { 0xFF, 0xFB } };
+            yield return new object[] { Half.MaxValue, new byte[] { 0xFF, 0x7B } };
             yield return new object[] { Half.Epsilon, new byte[] { 0x01, 0x00 } };
             yield return new object[] { Half.NaN, new byte[] { 0x00, 0xFE } };
             yield return new object[] { Half.PositiveInfinity, new byte[] { 0x00, 0x7C } };
@@ -278,7 +278,7 @@ namespace System.Tests
         public abstract void ToUInt64(int index, ulong expected, byte[] byteArray);
 
         private static byte[] s_toHalfByteArray =
-            { 0x00, 0x00, 0xB7, 0x57, 0xFF, 0x7B, 0xFF, 0xFB, 0x01, 0x00, 0x00, 0xFE, 0x00, 0x7C, 0x00, 0xFC };
+            { 0x00, 0x00, 0xB7, 0x57, 0xFF, 0xFB, 0xFF, 0x7B, 0x01, 0x00, 0x00, 0xFE, 0x00, 0x7C, 0x00, 0xFC };
 
         public static IEnumerable<object[]> ToHalfTestData()
         {
