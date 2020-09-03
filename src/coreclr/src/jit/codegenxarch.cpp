@@ -7519,11 +7519,11 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk)
                         case GT_CNS_INT:
                             if (fieldNode->IsIconHandle())
                             {
-                                inst_IV_handle(INS_push, (target_ssize_t)fieldNode->AsIntCon()->gtIconVal);
+                                inst_IV_handle(INS_push, fieldNode->AsIntCon()->gtIconVal);
                             }
                             else
                             {
-                                inst_IV(INS_push, (target_ssize_t)fieldNode->AsIntCon()->gtIconVal);
+                                inst_IV(INS_push, fieldNode->AsIntCon()->gtIconVal);
                             }
                             break;
                         default:
@@ -7618,11 +7618,11 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* putArgStk)
     {
         if (data->IsIconHandle())
         {
-            inst_IV_handle(INS_push, (target_ssize_t)data->AsIntCon()->gtIconVal);
+            inst_IV_handle(INS_push, data->AsIntCon()->gtIconVal);
         }
         else
         {
-            inst_IV(INS_push, (target_ssize_t)data->AsIntCon()->gtIconVal);
+            inst_IV(INS_push, data->AsIntCon()->gtIconVal);
         }
         AddStackLevel(argSize);
     }
@@ -8493,12 +8493,11 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
     // Push the profilerHandle
     if (compiler->compProfilerMethHndIndirected)
     {
-        GetEmitter()->emitIns_AR_R(INS_push, EA_PTR_DSP_RELOC, REG_NA, REG_NA,
-                                   (target_ssize_t)(size_t)compiler->compProfilerMethHnd);
+        GetEmitter()->emitIns_AR_R(INS_push, EA_PTR_DSP_RELOC, REG_NA, REG_NA, (ssize_t)compiler->compProfilerMethHnd);
     }
     else
     {
-        inst_IV(INS_push, (target_ssize_t)(size_t)compiler->compProfilerMethHnd);
+        inst_IV(INS_push, (size_t)compiler->compProfilerMethHnd);
     }
 
     //
@@ -8579,12 +8578,11 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
 
     if (compiler->compProfilerMethHndIndirected)
     {
-        GetEmitter()->emitIns_AR_R(INS_push, EA_PTR_DSP_RELOC, REG_NA, REG_NA,
-                                   (target_ssize_t)(ssize_t)compiler->compProfilerMethHnd);
+        GetEmitter()->emitIns_AR_R(INS_push, EA_PTR_DSP_RELOC, REG_NA, REG_NA, (ssize_t)compiler->compProfilerMethHnd);
     }
     else
     {
-        inst_IV(INS_push, (target_size_t)(size_t)compiler->compProfilerMethHnd);
+        inst_IV(INS_push, (size_t)compiler->compProfilerMethHnd);
     }
     genSinglePush();
 

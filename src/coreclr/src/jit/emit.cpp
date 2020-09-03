@@ -6422,7 +6422,7 @@ unsigned char emitter::emitOutputLong(BYTE* dst, ssize_t val)
 
 unsigned char emitter::emitOutputSizeT(BYTE* dst, ssize_t val)
 {
-#if !TARGET_64BIT
+#if !defined(TARGET_64BIT)
     MISALIGNED_WR_I4(dst, (int)val);
 #else
     MISALIGNED_WR_ST(dst, val);
@@ -7028,7 +7028,7 @@ void emitter::emitNxtIG(bool extend)
  *  emitGetInsSC: Get the instruction's constant value.
  */
 
-target_ssize_t emitter::emitGetInsSC(instrDesc* id)
+cnsval_ssize_t emitter::emitGetInsSC(instrDesc* id)
 {
 #ifdef TARGET_ARM // should it be TARGET_ARMARCH? Why do we need this? Note that on ARM64 we store scaled immediates
                   // for some formats

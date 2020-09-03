@@ -2013,6 +2013,15 @@ typedef int          target_ssize_t;
 C_ASSERT(sizeof(target_size_t) == TARGET_POINTER_SIZE);
 C_ASSERT(sizeof(target_ssize_t) == TARGET_POINTER_SIZE);
 
+#if defined(TARGET_X86)
+typedef ssize_t cnsval_ssize_t;
+typedef size_t cnsval_size_t;
+#else
+typedef target_ssize_t cnsval_ssize_t;
+typedef target_size_t cnsval_size_t;
+#endif
+
+
 /*****************************************************************************/
 #endif // TARGET_H_
 /*****************************************************************************/

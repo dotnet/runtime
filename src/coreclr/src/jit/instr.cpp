@@ -454,7 +454,7 @@ void CodeGen::inst_RV_RV_RV(instruction ins,
  *  Generate a "op icon" instruction.
  */
 
-void CodeGen::inst_IV(instruction ins, int val)
+void CodeGen::inst_IV(instruction ins, cnsval_ssize_t val)
 {
     GetEmitter()->emitIns_I(ins, EA_PTRSIZE, val);
 }
@@ -465,7 +465,7 @@ void CodeGen::inst_IV(instruction ins, int val)
  *  by 'flags'
  */
 
-void CodeGen::inst_IV_handle(instruction ins, int val)
+void CodeGen::inst_IV_handle(instruction ins, cnsval_ssize_t val)
 {
     GetEmitter()->emitIns_I(ins, EA_HANDLE_CNS_RELOC, val);
 }
@@ -631,9 +631,9 @@ AGAIN:
             assert(offs == 0);
             assert(!shfv);
             if (tree->IsIconHandle())
-                inst_IV_handle(ins, (target_ssize_t)tree->AsIntCon()->gtIconVal);
+                inst_IV_handle(ins, tree->AsIntCon()->gtIconVal);
             else
-                inst_IV(ins, (target_ssize_t)tree->AsIntCon()->gtIconVal);
+                inst_IV(ins, tree->AsIntCon()->gtIconVal);
             break;
 #endif
 

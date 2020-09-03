@@ -3310,14 +3310,14 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     costSz = 8;
                     costEx = 2;
                 }
-                else if (codeGen->validImmForInstr(INS_add, (target_ssize_t)conVal))
+                else if (codeGen->validImmForInstr(INS_add, conVal))
                 {
                     // Typically included with parent oper
                     costSz = 2;
                     costEx = 1;
                 }
-                else if (codeGen->validImmForInstr(INS_mov, (target_ssize_t)conVal) &&
-                         codeGen->validImmForInstr(INS_mvn, (target_ssize_t)conVal))
+                else if (codeGen->validImmForInstr(INS_mov, conVal) &&
+                         codeGen->validImmForInstr(INS_mvn, conVal))
                 {
                     // Uses mov or mvn
                     costSz = 4;

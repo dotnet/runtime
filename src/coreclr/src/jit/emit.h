@@ -1370,7 +1370,7 @@ protected:
 
     struct instrDescCns : instrDesc // large const
     {
-        target_ssize_t idcCnsVal;
+        cnsval_ssize_t idcCnsVal;
     };
 
     struct instrDescDsp : instrDesc // large displacement
@@ -1466,7 +1466,7 @@ protected:
 
 #endif // TARGET_XARCH
 
-    target_ssize_t emitGetInsSC(instrDesc* id);
+    cnsval_ssize_t emitGetInsSC(instrDesc* id);
     unsigned emitInsCount;
 
 /************************************************************************/
@@ -1911,7 +1911,7 @@ private:
         return (instrDescCns*)emitAllocAnyInstr(sizeof(instrDescCns), attr);
     }
 
-    instrDescCns* emitAllocInstrCns(emitAttr attr, target_size_t cns)
+    instrDescCns* emitAllocInstrCns(emitAttr attr, cnsval_size_t cns)
     {
         instrDescCns* result = emitAllocInstrCns(attr);
         result->idSetIsLargeCns();
@@ -1965,8 +1965,8 @@ private:
 
     instrDesc* emitNewInstrSmall(emitAttr attr);
     instrDesc* emitNewInstr(emitAttr attr = EA_4BYTE);
-    instrDesc* emitNewInstrSC(emitAttr attr, target_ssize_t cns);
-    instrDesc* emitNewInstrCns(emitAttr attr, target_ssize_t cns);
+    instrDesc* emitNewInstrSC(emitAttr attr, cnsval_ssize_t cns);
+    instrDesc* emitNewInstrCns(emitAttr attr, cnsval_ssize_t cns);
     instrDesc* emitNewInstrDsp(emitAttr attr, target_ssize_t dsp);
     instrDesc* emitNewInstrCnsDsp(emitAttr attr, target_ssize_t cns, int dsp);
 #ifdef TARGET_ARM
@@ -2513,7 +2513,7 @@ inline emitter::instrDesc* emitter::emitNewInstrDsp(emitAttr attr, target_ssize_
  *  Note that this very similar to emitter::emitNewInstrSC(), except it never
  *  allocates a small descriptor.
  */
-inline emitter::instrDesc* emitter::emitNewInstrCns(emitAttr attr, target_ssize_t cns)
+inline emitter::instrDesc* emitter::emitNewInstrCns(emitAttr attr, cnsval_ssize_t cns)
 {
     if (instrDesc::fitsInSmallCns(cns))
     {
@@ -2572,7 +2572,7 @@ inline size_t emitter::emitGetInstrDescSize(const instrDesc* id)
  *  emitNewInstrCns() always allocates at least sizeof(instrDesc)).
  */
 
-inline emitter::instrDesc* emitter::emitNewInstrSC(emitAttr attr, target_ssize_t cns)
+inline emitter::instrDesc* emitter::emitNewInstrSC(emitAttr attr, cnsval_ssize_t cns)
 {
     if (instrDesc::fitsInSmallCns(cns))
     {

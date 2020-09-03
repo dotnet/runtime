@@ -3924,7 +3924,7 @@ void emitter::emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, ssize_t
         sz += emitGetRexPrefixSize(ins);
     }
 
-    id = emitNewInstrSC(attr, (target_ssize_t)val);
+    id = emitNewInstrSC(attr, val);
     id->idIns(ins);
     id->idInsFmt(fmt);
     id->idReg1(reg);
@@ -3945,7 +3945,7 @@ void emitter::emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, ssize_t
  *  Add an instruction referencing an integer constant.
  */
 
-void emitter::emitIns_I(instruction ins, emitAttr attr, int val)
+void emitter::emitIns_I(instruction ins, emitAttr attr, cnsval_ssize_t val)
 {
     UNATIVE_OFFSET sz;
     instrDesc*     id;
@@ -5349,7 +5349,7 @@ void emitter::emitIns_R_AI(instruction ins, emitAttr attr, regNumber ireg, ssize
     emitCurIGsize += sz;
 }
 
-void emitter::emitIns_AR_R(instruction ins, emitAttr attr, regNumber reg, regNumber base, int disp)
+void emitter::emitIns_AR_R(instruction ins, emitAttr attr, regNumber reg, regNumber base, cnsval_ssize_t disp)
 {
     emitIns_ARX_R(ins, attr, reg, base, REG_NA, 1, disp);
 }
@@ -5587,7 +5587,7 @@ void emitter::emitIns_R_ARX(
 }
 
 void emitter::emitIns_ARX_R(
-    instruction ins, emitAttr attr, regNumber reg, regNumber base, regNumber index, unsigned scale, int disp)
+    instruction ins, emitAttr attr, regNumber reg, regNumber base, regNumber index, unsigned scale, cnsval_ssize_t disp)
 {
     UNATIVE_OFFSET sz;
     instrDesc*     id = emitNewInstrAmd(attr, disp);
