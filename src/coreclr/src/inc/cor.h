@@ -2093,7 +2093,8 @@ inline ULONG CorSigUncompressData(      // return number of bytes of that compre
 }
 
 
-FORCEINLINE mdToken CorSigDecodeTokenType(int encoded) {
+FORCEINLINE mdToken CorSigDecodeTokenType(int encoded)
+{
     static const mdToken s_tableTokenTypes[] = {mdtTypeDef, mdtTypeRef, mdtTypeSpec, mdtBaseType};
     return s_tableTokenTypes[encoded];
 }
