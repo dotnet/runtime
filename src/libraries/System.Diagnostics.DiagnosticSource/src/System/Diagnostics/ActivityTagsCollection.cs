@@ -59,12 +59,15 @@ namespace System.Diagnostics
         ///     - Otherwise, a new item will get added to the collection.
         /// </summary>
         /// <value>Object mapped to the key</value>
-        public object this[string key]
+        [DisallowNull]
+        public object? this[string key]
         {
+#pragma warning disable CS8766
             get
+#pragma warning restore CS8766
             {
                 int index = _list.FindIndex(kvp => kvp.Key == key);
-                return index < 0 ? null! : _list[index].Value;
+                return index < 0 ? null : _list[index].Value;
             }
 
             set
