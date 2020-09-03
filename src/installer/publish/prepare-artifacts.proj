@@ -77,6 +77,13 @@
       <ItemsToPush Include="@(SymbolNupkgToPublishFile)" />
     </ItemGroup>
 
+    <!-- Generate productVersion.txt containing the value of $(PackageVersion) -->
+    <WriteLinesToFile
+      File="$(ArtifactsShippingPackagesDir)productVersion.txt"
+      Lines="$(ProductVersionTxtContents)"
+      Overwrite="true"
+      Encoding="ASCII" />
+
     <ItemGroup>
       <ItemsToPush
         Include="@(UploadToBlobStorageFile)"
@@ -94,13 +101,6 @@
       <ItemsToPush Include="$(ArtifactsShippingPackagesDir)productVersion.txt">
         <RelativeBlobPath>$(InstallersRelativePath)productVersion.txt</RelativeBlobPath>
       </ItemsToPush>
-      
-      <!-- Generate productVersion.txt containing the value of $(PackageVersion) -->
-      <WriteLinesToFile
-        File="$(ArtifactsShippingPackagesDir)productVersion.txt"
-        Lines="$(ProductVersionTxtContents)"
-        Overwrite="true"
-        Encoding="ASCII" />
 
     </ItemGroup>
 
