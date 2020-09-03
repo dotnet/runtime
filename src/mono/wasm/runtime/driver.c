@@ -16,9 +16,7 @@
 // FIXME: unavailable in emscripten
 // #include <mono/metadata/gc-internals.h>
 
-#ifdef ENABLE_NETCORE
 #include <mono/metadata/mono-private-unstable.h>
-#endif
 
 #include <mono/utils/mono-logger.h>
 #include <mono/utils/mono-dl-fallback.h>
@@ -495,6 +493,7 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 		mono_register_bundled_assemblies ((const MonoBundledAssembly **)bundle_array);
 	}
 
+	/* In legacy satellite_assembly_count is always false */
 	if (satellite_assembly_count) {
 		MonoBundledSatelliteAssembly **satellite_bundle_array =  g_new0 (MonoBundledSatelliteAssembly *, satellite_assembly_count + 1);
 		WasmSatelliteAssembly *cur = satellite_assemblies;

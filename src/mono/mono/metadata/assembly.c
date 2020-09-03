@@ -1772,15 +1772,14 @@ leave:
 }
 
 static MonoImage *
-netcore_open_from_satellite_bundle (MonoAssemblyLoadContext *alc, const char *filename, MonoImageOpenStatus *status, gboolean refonly, const char *culture)
+open_from_satellite_bundle (MonoAssemblyLoadContext *alc, const char *filename, MonoImageOpenStatus *status, gboolean refonly, const char *culture)
 {
 	if (!satellite_bundles)
 		return NULL;
 
-	int i;
 	MonoImage *image = NULL;
 	char *name = g_strdup (filename);
-	for (i = 0; !image && satellite_bundles [i]; ++i) {
+	for (int i = 0; !image && satellite_bundles [i]; ++i) {
 		if (strcmp (satellite_bundles [i]->name, name) == 0 && strcmp (satellite_bundles [i]->culture, culture) == 0) {
 			image = mono_image_open_from_data_internal (alc, (char *)satellite_bundles [i]->data, satellite_bundles [i]->size, FALSE, status, refonly, FALSE, name, NULL);
 			break;
@@ -2542,10 +2541,9 @@ open_from_bundle_internal (MonoAssemblyLoadContext *alc, const char *filename, M
 	if (!bundles)
 		return NULL;
 
-	int i;
 	MonoImage *image = NULL;
-	char *name = is_satellite ? g_strdup(filename) : g_path_get_basename (filename);
-	for (i = 0; !image && bundles [i]; ++i) {
+	char *name = is_satellite ? g_strdup (filename) : g_path_get_basename (filename);
+	for (int i = 0; !image && bundles [i]; ++i) {
 		if (strcmp (bundles [i]->name, name) == 0) {
 #ifdef ENABLE_NETCORE
 			// Since bundled images don't exist on disk, don't give them a legit filename
@@ -2590,7 +2588,7 @@ mono_assembly_open_from_bundle (MonoAssemblyLoadContext *alc, const char *filena
 	gboolean is_satellite = culture && culture [0] != 0;;
 	if (is_satellite)
 	{
-		image = netcore_open_from_satellite_bundle (alc, filename, status, refonly, culture);
+		image = open_from_satellite_bundle (alc, filename, status, refonly, culture);
 	} else {
 		image = open_from_bundle_internal (alc, filename, status, refonly, FALSE);
 	}
@@ -2755,6 +2753,7 @@ mono_assembly_request_open (const char *filename, const MonoAssemblyOpenRequest 
 	// If VM built with mkbundle
 	loaded_from_bundle = FALSE;
 	if (bundles != NULL || satellite_bundles != NULL) {
+		/* We don't know the culture of the filename we're loading here, so this call is not culture aware. */
 		image = mono_assembly_open_from_bundle (load_req.alc, fname, status, refonly, NULL);
 		loaded_from_bundle = image != NULL;
 	}
