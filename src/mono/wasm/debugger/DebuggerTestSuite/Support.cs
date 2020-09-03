@@ -222,7 +222,6 @@ namespace DebuggerTests
                        var top_frame = pause_location["callFrames"][0];
 
                        var scope = top_frame["scopeChain"][0];
-                       Assert.Equal("dotnet:scope:0", scope["object"]["objectId"]);
                        if (wait_for_event_fn != null)
                            await wait_for_event_fn(pause_location);
                        else
@@ -271,7 +270,6 @@ namespace DebuggerTests
                 var top_frame = pause_location["callFrames"][0];
 
                 var scope = top_frame["scopeChain"][0];
-                Assert.Equal("dotnet:scope:0", scope["object"]["objectId"]);
 
                 if (wait_for_event_fn != null)
                     await wait_for_event_fn(pause_location);

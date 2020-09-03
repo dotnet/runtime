@@ -54,7 +54,7 @@ EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_invoke_getter_on_value (void *value, Mon
 EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_get_deref_ptr_value (void *value_addr, MonoClass *klass);
 
 //JS functions imported that we use
-extern void mono_wasm_add_frame (int il_offset, int method_token, const char *assembly_name, const char *method_name);
+extern void mono_wasm_add_frame (int il_offset, int method_token, int frame_id, const char *assembly_name, const char *method_name);
 extern void mono_wasm_fire_bp (void);
 extern void mono_wasm_fire_exception (int exception_obj_id, const char* message, const char* class_name, gboolean uncaught);
 extern void mono_wasm_add_obj_var (const char*, const char*, guint64);
@@ -143,7 +143,7 @@ collect_frames (MonoStackFrameInfo *info, MonoContext *ctx, gpointer data)
 	if (!method)
 		return FALSE;
 
-	DEBUG_PRINTF (2, "Reporting method %s native_offset %d\n", method->name, info->native_offset);
+	DEBUG_PRINTF (2, "collect_frames: Reporting method %s native_offset %d, wrapper_type: %d\n", method->name, info->native_offset, method->wrapper_type);
 
 	if (!mono_find_prev_seq_point_for_native_offset (mono_get_root_domain (), method, info->native_offset, NULL, &sp))
 		DEBUG_PRINTF (2, "collect_frames: Failed to lookup sequence point. method: %s, native_offset: %d \n", method->name, info->native_offset);
@@ -657,20 +657,22 @@ list_frames (MonoStackFrameInfo *info, MonoContext *ctx, gpointer data)
 	MonoMethod *method;
 	char *method_full_name;
 
+	int* frame_id_p = (int*)data;
+	(*frame_id_p)++;
+
 	//skip wrappers
 	if (info->type != FRAME_TYPE_MANAGED && info->type != FRAME_TYPE_INTERP)
 		return FALSE;
-
 
 	if (info->ji)
 		method = jinfo_get_method (info->ji);
 	else
 		method = info->method;
 
-	if (!method)
+	if (!method || method->wrapper_type != MONO_WRAPPER_NONE)
 		return FALSE;
 
-	DEBUG_PRINTF (2, "Reporting method %s native_offset %d\n", method->name, info->native_offset);
+	DEBUG_PRINTF (2, "list_frames: Reporting method %s native_offset %d, wrapper_type: %d\n", method->name, info->native_offset, method->wrapper_type);
 
 	if (!mono_find_prev_seq_point_for_native_offset (mono_get_root_domain (), method, info->native_offset, NULL, &sp))
 		DEBUG_PRINTF (2, "list_frames: Failed to lookup sequence point. method: %s, native_offset: %d\n", method->name, info->native_offset);
@@ -682,10 +684,8 @@ list_frames (MonoStackFrameInfo *info, MonoContext *ctx, gpointer data)
 	char *assembly_name = g_strdup (m_class_get_image (method->klass)->module_name);
 	inplace_tolower (assembly_name);
 
-	if (method->wrapper_type == MONO_WRAPPER_NONE) {
-		DEBUG_PRINTF (2, "adding off %d token %d assembly name %s\n", sp.il_offset, mono_metadata_token_index (method->token), assembly_name);
-		mono_wasm_add_frame (sp.il_offset, mono_metadata_token_index (method->token), assembly_name, method_full_name);
-	}
+	DEBUG_PRINTF (2, "adding off %d token %d assembly name %s\n", sp.il_offset, mono_metadata_token_index (method->token), assembly_name);
+	mono_wasm_add_frame (sp.il_offset, mono_metadata_token_index (method->token), *frame_id_p, assembly_name, method_full_name);
 
 	g_free (assembly_name);
 
@@ -695,7 +695,8 @@ list_frames (MonoStackFrameInfo *info, MonoContext *ctx, gpointer data)
 EMSCRIPTEN_KEEPALIVE void
 mono_wasm_enum_frames (void)
 {
-	mono_walk_stack_with_ctx (list_frames, NULL, MONO_UNWIND_NONE, NULL);
+	int frame_id = 0;
+	mono_walk_stack_with_ctx (list_frames, NULL, MONO_UNWIND_NONE, &frame_id);
 }
 
 static char*
@@ -1351,15 +1352,15 @@ describe_variables_on_frame (MonoStackFrameInfo *info, MonoContext *ctx, gpointe
 	ERROR_DECL (error);
 	FrameDescData *data = (FrameDescData*)ud;
 
+	++data->cur_frame;
+
 	//skip wrappers
 	if (info->type != FRAME_TYPE_MANAGED && info->type != FRAME_TYPE_INTERP) {
 		return FALSE;
 	}
 
-	if (data->cur_frame < data->target_frame) {
-		++data->cur_frame;
+	if ((data->cur_frame - 1) != data->target_frame)
 		return FALSE;
-	}
 
 	data->found = TRUE;
 

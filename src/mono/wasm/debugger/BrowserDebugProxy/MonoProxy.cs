@@ -457,7 +457,6 @@ namespace Microsoft.WebAssembly.Diagnostics
             return res;
         }
 
-        //static int frame_id=0;
         async Task<bool> OnPause(SessionId sessionId, JObject args, CancellationToken token)
         {
             //FIXME we should send release objects every now and then? Or intercept those we inject and deal in the runtime
@@ -518,12 +517,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
 
                     var frames = new List<Frame>();
-                    int frame_id = 0;
                     var the_mono_frames = res.Value?["result"]?["value"]?["frames"]?.Values<JObject>();
 
                     foreach (var mono_frame in the_mono_frames)
                     {
-                        ++frame_id;
+                        int frame_id = mono_frame["frame_id"].Value<int>();
                         var il_pos = mono_frame["il_pos"].Value<int>();
                         var method_token = mono_frame["method_token"].Value<uint>();
                         var assembly_name = mono_frame["assembly_name"].Value<string>();
