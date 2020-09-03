@@ -464,7 +464,6 @@ namespace System
             ConsolePal.MoveBufferArea(sourceLeft, sourceTop, sourceWidth, sourceHeight, targetLeft, targetTop, sourceChar, sourceForeColor, sourceBackColor);
         }
 
-        [UnsupportedOSPlatform("browser")]
         public static void Clear()
         {
             ConsolePal.Clear();

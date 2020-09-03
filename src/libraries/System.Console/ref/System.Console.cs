@@ -59,7 +59,6 @@ namespace System
         public static void Beep() { }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static void Beep(int frequency, int duration) { }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static void Clear() { }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static (int Left, int Top) GetCursorPosition() { throw null; }
