@@ -25,11 +25,11 @@ PATH=/Users/<your_user>/.jsvu/:$PATH V8
 
 Now we're ready to build everything for WebAssembly (for more details, please read [this document](../../building/libraries/webassembly-instructions.md#building-everything)):
 ```bash
-./build.sh --arch wasm --os Browser -c release
+./build.sh -os Browser -c release
 ```
 and even run tests one by one for each library:
 ```
-./build.sh --subset libs.tests -t --arch wasm --os Browser -c release
+./build.sh --subset libs.tests --test -os Browser -c release
 ```
 
 ### Running individual test suites

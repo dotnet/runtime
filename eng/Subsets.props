@@ -57,6 +57,7 @@
     <DefaultCoreClrSubsets>clr.runtime+linuxdac+clr.corelib+clr.nativecorelib+clr.tools+clr.packages</DefaultCoreClrSubsets>
 
     <DefaultMonoSubsets Condition="'$(MonoEnableLLVM)' == 'true' and '$(MonoLLVMDir)' == ''">mono.llvm+</DefaultMonoSubsets>
+    <DefaultMonoSubsets Condition="'$(TargetOS)' == 'Browser'">$(DefaultMonoSubsets)mono.wasmruntime+</DefaultMonoSubsets>
     <DefaultMonoSubsets>$(DefaultMonoSubsets)mono.runtime+mono.corelib+mono.packages</DefaultMonoSubsets>
 
     <DefaultLibrariesSubsets>libs.native+libs.ref+libs.src+libs.pretest+libs.packages</DefaultLibrariesSubsets>
@@ -94,6 +95,7 @@
     <SubsetName Include="Mono.Runtime" Description="The Mono .NET runtime." />
     <SubsetName Include="Mono.CoreLib" Description="The managed System.Private.CoreLib library for Mono." />
     <SubsetName Include="Mono.Packages" Description="The projects that produce NuGet packages for the Mono runtime." />
+    <SubsetName Include="Mono.WasmRuntime" Description="The WebAssembly runtime." />
 
     <!-- Libs -->
     <SubsetName Include="Libs" Description="The libraries native part, refs and source assemblies, test infra and packages, but NOT the tests (use Libs.Tests to request those explicitly)" />
@@ -193,6 +195,10 @@
 
   <ItemGroup Condition="$(_subset.Contains('+libs.src+'))">
     <ProjectToBuild Include="$(LibrariesProjectRoot)src.proj" Category="libs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$(_subset.Contains('+mono.wasmruntime+'))">
+    <ProjectToBuild Include="$(MonoProjectRoot)wasm\wasm.proj" Category="mono" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+libs.pretest+'))">
