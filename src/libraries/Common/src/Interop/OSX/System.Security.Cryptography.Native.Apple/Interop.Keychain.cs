@@ -227,23 +227,25 @@ internal static partial class Interop
                 Path.GetTempPath(),
                 Guid.NewGuid().ToString("N") + ".keychain");
 
-            // Use a distinct GUID so that if a keychain is abandoned it isn't recoverable.
+            // Use a random password so that if a keychain is abandoned it isn't recoverable.
             // We use stack to minimize lingering
             Span<byte> random = stackalloc byte[randomSize];
             RandomNumberGenerator.Fill(random);
 
             // Create hex-like UTF8 string.
-            Span<byte> utf8Passphrase =  stackalloc byte[randomSize * 2];
-            for (int i = 0; i< random.Length; i++)
+            Span<byte> utf8Passphrase =  stackalloc byte[randomSize * 2 +1];
+            utf8Passphrase[randomSize * 2] = 0; // null termination for C string.
+
+            for (int i = 0; i < random.Length; i++)
             {
                 // Instead of true hexadecimal, we simply take lower and upper 4 bits and we offset them from ASCII 'A'
                 // to get printable form. We dont use managed string to avoid lingering copies.
                 utf8Passphrase[i*2] = (byte)((random[i] & 0x0F) + 65);
-                utf8Passphrase[i*2 + 1 ] = (byte)((random[i] >> 4) & 0x0F + 65);
+                utf8Passphrase[i*2 + 1] = (byte)((random[i] >> 4) & 0x0F + 65);
             }
 
             // clear the binary bits.
-            random.Fill(0);
+            CryptographicOperations.ZeroMemory(random);
 
             SafeTemporaryKeychainHandle keychain;
             int osStatus;
@@ -257,7 +259,7 @@ internal static partial class Interop
                     out keychain);
             }
 
-            utf8Passphrase.Fill(0);
+            CryptographicOperations.ZeroMemory(utf8Passphrase);
             SafeTemporaryKeychainHandle.TrackKeychain(keychain);
 
             if (osStatus == 0)
