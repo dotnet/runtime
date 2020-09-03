@@ -3,6 +3,7 @@
 //
 
 #include <stdlib.h>
+#include <string.h>
 #include <stdio.h>
 #include "pal_icushim_internal.h"
 #include "pal_icushim.h"
@@ -51,15 +52,16 @@ EMSCRIPTEN_KEEPALIVE const char* mono_wasm_get_icudt_name(const char* culture)
     if (!strncasecmp("ja", culture, 2) || 
         !strncasecmp("ko", culture, 2) || 
         !strncasecmp("zh", culture, 2))
-        return "icudt_CJK.dat";
+        return "icudt_CJK.dat"; // contains "en" as well.
 
     // EFIGS
-    const char efigsCultures[] { 
-        "de_DE", "en_US", "es_ES", "fr_FR", "it_IT",
-        "en-US", "es-ES", "fr-FR", "it-IT", "de-DE",
-        "en",    "es",    "fr",    "it",    "de"
+    const char* efigsCultures[15] = {
+        "en-US", "fr-FR", "es-ES", "it-IT", "de-DE",
+        "en_US", "fr_FR", "es_ES", "it_IT", "de_DE",
+        "en",    "fr",    "es",    "it",    "de"
     };
-    for (int i = 0; i < sizeof(efigsCultures)/sizeof(*efigsCultures); i++)
+
+    for (int i = 0; i < 15; i++)
         if (!strcasecmp(culture, efigsCultures[i]))
             return "icudt_EFIGS.dat";
 
