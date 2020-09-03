@@ -779,47 +779,61 @@ var BindingSupportLib = {
 
 		_compile_converter_for_marshal_string: function (args_marshal) {
 			var converter = this._get_converter_for_marshal_string (args_marshal);
+			if (converter.compiledFunction)
+				return converter.compiledFunction;
+			
 			var body = [];
 			var argumentNames = ["args", "method"];
 
-			// worst-case allocation size instead of allocating dynamically
-			var bufferSizeBytes = converter.size + (args_marshal.length * 4);
+			// worst-case allocation size instead of allocating dynamically, plus padding
+			var bufferSizeBytes = converter.size + (args_marshal.length * 4) + 8;
 			var bufferSizeElements = (bufferSizeBytes / 4) | 0;
+			var indirectBaseOffset = (args_marshal.length * 4) + 4;
 
-			/*
+			var closure = {};
+			var indirectLocalOffset = 0;
 
-					// assume at least 8 byte alignment from malloc
-					var bufferSizeBytes = converter.size + (args.length * 4);
-					var bufferSizeElements = (bufferSizeBytes / 4) | 0;
-					argsRootBuffer = MONO.mono_wasm_new_root_buffer (bufferSizeElements);
-					buffer = Module._malloc (bufferSizeBytes);
-					var indirect_start = buffer; // buffer + buffer % 8
-					args_start = indirect_start + converter.size;
-
-					var slot = (args_start / 4) | 0;
-					var indirect_value = indirect_start;
-					for (var i = 0; i < args.length; ++i) {
-						var handler = converter.steps[i];
-						var obj = handler.convert ? handler.convert (args[i], method, i) : args[i];
-
-						if (handler.indirect) {
-							Module.setValue (indirect_value, obj, handler.indirect);
-							obj = indirect_value;
-							indirect_value += 8;
-						} else if (handler.needsRoot) {
-							argsRootBuffer.set (i, obj);
-						}
-
-						Module.HEAP32[slot] = obj;
-						slot++;
-					}
-			*/
+			body.push ("var buffer = Module._malloc (" + bufferSizeBytes + ");");
+			body.push ("var rootBuffer = MONO.mono_wasm_new_root_buffer (" + bufferSizeElements + ");");
+			body.push ("var indirectStart = buffer + " + indirectBaseOffset + ";");
+			body.push ("var bufferElements = (buffer / 4) | 0;");
+			body.push ("var obj;");
 
 			for (var i = 0; i < converter.steps.length; i++) {
-				body.push("");
+				var step = converter.steps[i];
+				var closureKey = "step" + i;
+				var argKey = "args[" + i + "]";
+
+				if (step.convert) {
+					closure[closureKey] = step.convert;
+					body.push ("obj = " + closureKey + "(" + argKey + ", method, " + i + ");");
+				} else {
+					body.push ("obj = " + argKey + ";");
+				}
+
+				if (step.indirect) {
+					body.push ("Module.setValue (indirectStart + " + indirectLocalOffset + ", obj, '" + handler.indirect + "');");
+					body.push ("obj = indirectStart + " + indirectLocalOffset + ";");
+					
+					indirectLocalOffset += step.size;
+				}
+				
+				if (step.needsRoot)
+					body.push ("rootBuffer.set (" + i + ", obj);");
+
+				body.push ("Module.HEAP32[bufferElements + " + i + "] = obj;");
+				body.push ("console.log ('arg #'" + i + "', obj);");
 			}
 
-			var bodyJs = body.join("\r\n");
+			body.push ("return [buffer, rootBuffer];");
+
+			var bodyJs = body.join ("\r\n");
+			console.log ("combined signature", args_marshal, "to", bodyJs);
+
+			var compiledFunction = this._createNamedFunction("converter_" + args_marshal, argumentNames, bodyJs, closure);
+			converter.compiledFunction = compiledFunction;
+			console.log ("result function", compiledFunction);
+			return compiledFunction;
 		},
 
 		/*
