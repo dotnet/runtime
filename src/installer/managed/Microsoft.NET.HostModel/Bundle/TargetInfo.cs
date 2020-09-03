@@ -78,7 +78,8 @@ namespace Microsoft.NET.HostModel.Bundle
         public override string ToString()
         {
             string os = IsWindows ? "win" : IsLinux ? "linux" : "osx";
-            return $"OS: {os} FrameworkVersion: {FrameworkVersion}";
+            string arch = Arch.ToString().ToLowerInvariant();
+            return $"OS: {os} Arch: {arch} FrameworkVersion: {FrameworkVersion}";
         }
 
         static OSPlatform HostOS => RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? OSPlatform.Linux :
