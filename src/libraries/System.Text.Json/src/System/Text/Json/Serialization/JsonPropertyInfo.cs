@@ -212,23 +212,19 @@ namespace System.Text.Json
             }
             else
             {
-                JsonNumberHandling? handling = null;
+                Debug.Assert(MemberInfo != null);
 
-                // Priority 1: Get handling from attribute on property or field.
-                if (MemberInfo != null)
+                JsonNumberHandlingAttribute? attribute = GetAttribute<JsonNumberHandlingAttribute>(MemberInfo);
+                if (attribute != null && !numberHandlingIsApplicable)
                 {
-                    JsonNumberHandlingAttribute? attribute = GetAttribute<JsonNumberHandlingAttribute>(MemberInfo);
-
-                    if (attribute != null && !numberHandlingIsApplicable)
-                    {
-                        ThrowHelper.ThrowInvalidOperationException_NumberHandlingOnPropertyInvalid(this);
-                    }
-
-                    handling = attribute?.Handling;
+                    ThrowHelper.ThrowInvalidOperationException_NumberHandlingOnPropertyInvalid(this);
                 }
 
                 if (numberHandlingIsApplicable)
                 {
+                    // Priority 1: Get handling from attribute on property or field.
+                    JsonNumberHandling? handling = attribute?.Handling;
+
                     // Priority 2: Get handling from attribute on parent class type.
                     handling ??= parentTypeNumberHandling;
 
