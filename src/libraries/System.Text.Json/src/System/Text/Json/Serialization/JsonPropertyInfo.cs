@@ -184,9 +184,7 @@ namespace System.Text.Json
 
         private void DetermineNumberHandling(JsonNumberHandling? parentTypeNumberHandling)
         {
-            bool numberHandlingIsApplicable =
-                ConverterBase.IsInternalConverterForNumberType ||
-                TypeIsCollectionOfNumbersWithInternalConverter();
+            bool numberHandlingIsApplicable = ConverterBase.IsInternalConverterForNumberType || TypeIsCollectionOfNumbersWithInternalConverter();
 
             if (IsForClassInfo)
             {
