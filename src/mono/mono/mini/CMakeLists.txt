@@ -934,6 +934,10 @@ if(LLVM_LIBDIR)
   link_directories(${LLVM_LIBDIR})
 endif()
 
+if(HOST_DARWIN)
+set(OS_LIBS "-framework CoreFoundation" "-framework Foundation")
+endif()
+
 add_library(monosgen-objects OBJECT "${eglib_sources};${metadata_sources};${utils_sources};${sgen_sources};${icu_shim_sources};${eventpipe_sources};${mini_sources}")
 add_library(monosgen-static STATIC $<TARGET_OBJECTS:monosgen-objects>)
 set_target_properties(monosgen-static PROPERTIES OUTPUT_NAME monosgen-2.0)
@@ -947,7 +951,7 @@ install(FILES ${mini_public_headers}
 if(NOT DISABLE_SHARED_LIBS)
    add_library(monosgen SHARED $<TARGET_OBJECTS:monosgen-objects>)
    set_target_properties(monosgen PROPERTIES OUTPUT_NAME monosgen-2.0)
-   target_link_libraries(monosgen "-framework CoreFoundation" "-framework Foundation" "iconv" ${LLVM_LIBS} ${ICU_LIBS})
+   target_link_libraries(monosgen ${OS_LIBS} "iconv" ${LLVM_LIBS} ${ICU_LIBS})
    install(TARGETS monosgen LIBRARY)
 endif()
 
@@ -982,10 +986,6 @@ add_custom_command(
   COMMAND python ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py TARGET_AMD64 ${CMAKE_CURRENT_SOURCE_DIR} cpu-amd64.h amd64_desc ${CMAKE_CURRENT_SOURCE_DIR}/cpu-amd64.md
   VERBATIM
 )
-
-if(HOST_DARWIN)
-set(OS_LIBS "-framework CoreFoundation" "-framework Foundation")
-endif()
 
 if(NOT DISABLE_EXECUTABLES)
 add_executable(mono-sgen "main-sgen.c")
