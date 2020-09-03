@@ -184,8 +184,9 @@ namespace System.Text.Json
 
         private void DetermineNumberHandling(JsonNumberHandling? parentTypeNumberHandling)
         {
-            bool propertyIsNumberOrNumberCollection = ConverterBase.IsInternalConverterForNumberType || TypeIsCollectionOfNumbers();
-            bool numberHandlingIsApplicable = ConverterBase.IsInternalConverter && propertyIsNumberOrNumberCollection;
+            bool numberHandlingIsApplicable =
+                ConverterBase.IsInternalConverterForNumberType ||
+                TypeIsCollectionOfNumbersWithInternalConverter();
 
             if (IsForClassInfo)
             {
@@ -242,9 +243,10 @@ namespace System.Text.Json
             }
         }
 
-        private bool TypeIsCollectionOfNumbers()
+        private bool TypeIsCollectionOfNumbersWithInternalConverter()
         {
-            if (((ClassType.Enumerable | ClassType.Dictionary) & ClassType) == 0)
+            if (!ConverterBase.IsInternalConverter ||
+                ((ClassType.Enumerable | ClassType.Dictionary) & ClassType) == 0)
             {
                 return false;
             }
@@ -265,8 +267,7 @@ namespace System.Text.Json
                 elementType == typeof(ushort) ||
                 elementType == typeof(uint) ||
                 elementType == typeof(ulong) ||
-                elementType == JsonClassInfo.ObjectType
-                )
+                elementType == JsonClassInfo.ObjectType)
             {
                 return true;
             }

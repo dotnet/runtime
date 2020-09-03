@@ -126,7 +126,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void Number_AsBoxedRootType()
+        public static void Number_AsBoxed_RootType()
         {
             string numberAsString = @"""2""";
 
@@ -144,6 +144,109 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(2, (float)JsonSerializer.Deserialize(numberAsString, typeof(float), s_optionReadAndWriteFromStr));
             Assert.Equal(2, (int?)JsonSerializer.Deserialize(numberAsString, typeof(int?), s_optionReadAndWriteFromStr));
             Assert.Equal(2, (float?)JsonSerializer.Deserialize(numberAsString, typeof(float?), s_optionReadAndWriteFromStr));
+        }
+
+        [Fact]
+        public static void Number_AsBoxed_Property()
+        {
+            int @int = 2;
+            float? nullableFloat = 2;
+
+            string expected = @"{""MyInt"":""2"",""MyNullableFloat"":""2""}";
+
+            var obj = new Class_With_BoxedNumbers
+            {
+                MyInt = @int,
+                MyNullableFloat = nullableFloat
+            };
+
+            string serialized = JsonSerializer.Serialize(obj);
+            JsonTestHelper.AssertJsonEqual(expected, serialized);
+
+            obj = JsonSerializer.Deserialize<Class_With_BoxedNumbers>(serialized);
+
+            JsonElement el = Assert.IsType<JsonElement>(obj.MyInt);
+            Assert.Equal(JsonValueKind.String, el.ValueKind);
+            Assert.Equal("2", el.GetString());
+
+            el = Assert.IsType<JsonElement>(obj.MyNullableFloat);
+            Assert.Equal(JsonValueKind.String, el.ValueKind);
+            Assert.Equal("2", el.GetString());
+        }
+
+        public class Class_With_BoxedNumbers
+        {
+            [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString | JsonNumberHandling.WriteAsString)]
+            public object MyInt { get; set; }
+
+            [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString | JsonNumberHandling.WriteAsString)]
+            public object MyNullableFloat { get; set; }
+        }
+
+        [Fact]
+        public static void Number_AsBoxed_CollectionRootType_Element()
+        {
+            int @int = 2;
+            float? nullableFloat = 2;
+
+            string expected = @"[""2""]";
+
+            var obj = new List<object> { @int };
+            string serialized = JsonSerializer.Serialize(obj, s_optionReadAndWriteFromStr);
+            Assert.Equal(expected, serialized);
+
+            obj = JsonSerializer.Deserialize<List<object>>(serialized, s_optionReadAndWriteFromStr);
+
+            JsonElement el = Assert.IsType<JsonElement>(obj[0]);
+            Assert.Equal(JsonValueKind.String, el.ValueKind);
+            Assert.Equal("2", el.GetString());
+
+            IList obj2 = new object[] { nullableFloat };
+            serialized = JsonSerializer.Serialize(obj, s_optionReadAndWriteFromStr);
+            Assert.Equal(expected, serialized);
+
+            obj2 = JsonSerializer.Deserialize<IList>(serialized, s_optionReadAndWriteFromStr);
+
+            el = Assert.IsType<JsonElement>(obj2[0]);
+            Assert.Equal(JsonValueKind.String, el.ValueKind);
+            Assert.Equal("2", el.GetString());
+        }
+
+        [Fact]
+        public static void Number_AsBoxed_CollectionProperty_Element()
+        {
+            int @int = 2;
+            float? nullableFloat = 2;
+
+            string expected = @"{""MyInts"":[""2""],""MyNullableFloats"":[""2""]}";
+
+            var obj = new Class_With_ListsOfBoxedNumbers
+            {
+                MyInts = new List<object> { @int },
+                MyNullableFloats = new object[] { nullableFloat }
+            };
+
+            string serialized = JsonSerializer.Serialize(obj);
+            JsonTestHelper.AssertJsonEqual(expected, serialized);
+
+            obj = JsonSerializer.Deserialize<Class_With_ListsOfBoxedNumbers>(serialized);
+
+            JsonElement el = Assert.IsType<JsonElement>(obj.MyInts[0]);
+            Assert.Equal(JsonValueKind.String, el.ValueKind);
+            Assert.Equal("2", el.GetString());
+
+            el = Assert.IsType<JsonElement>(obj.MyNullableFloats[0]);
+            Assert.Equal(JsonValueKind.String, el.ValueKind);
+            Assert.Equal("2", el.GetString());
+        }
+
+        public class Class_With_ListsOfBoxedNumbers
+        {
+            [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString | JsonNumberHandling.WriteAsString)]
+            public List<object> MyInts { get; set; }
+
+            [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString | JsonNumberHandling.WriteAsString)]
+            public IList MyNullableFloats { get; set; }
         }
 
         [Fact]
