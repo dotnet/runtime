@@ -130,7 +130,7 @@ namespace System.Data
             _isOpen = false;
         }
 
-        public override DataTable GetSchemaTable()
+        public override DataTable? GetSchemaTable()
         {
             ValidateOpen(nameof(GetSchemaTable));
             ValidateReader();
