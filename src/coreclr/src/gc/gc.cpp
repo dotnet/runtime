@@ -20357,6 +20357,18 @@ void gc_heap::verify_committed_by_oh_per_heap(heap_segment* inst)
         recorded_committed += heap_segment_committed (seg) - (uint8_t*)seg;
         seg = heap_segment_next (seg);
     }
+    seg = freeable_soh_segment;
+    while (seg)
+    {
+        recorded_committed += heap_segment_committed (seg) - (uint8_t*)seg;
+        seg = heap_segment_next (seg);
+    }
+    seg = freeable_uoh_segment;
+    while (seg)
+    {
+        recorded_committed += heap_segment_committed (seg) - (uint8_t*)seg;
+        seg = heap_segment_next (seg);
+    }
     dprintf (COMMIT_ACCOUNTING_LOG, ("check %d %d==%d\n", oh, committed_by_oh_per_heap[oh], recorded_committed));
     assert((committed_by_oh_per_heap[oh] == recorded_committed) || (oh != gc_oh_num::soh && committed_by_oh_per_heap[oh] <= recorded_committed + outstanding_uoh_segment_count * 8192));
 }
@@ -34228,11 +34240,8 @@ void gc_heap::sweep_uoh_objects (int gen_num)
                 {
                     dprintf (3, ("Trimming seg to %Ix[", (size_t)plug_end));
                     heap_segment_allocated (seg) = plug_end;
-                    // when we delete a segment and thread it into the freeable_uoh_segment list
-                    // it is possible for a segment to leave the segment chain without being 
-                    // decommitted in the previous iteration, therefore we have to skip verification
-                    // here.
-                    decommit_heap_segment_pages (seg, 0 VERIFY_COMMITTED_BY_OH_ARG (true));
+                    // TODO: Eliminate optional argument
+                    decommit_heap_segment_pages (seg, 0);
                 }
                 prev_seg = seg;
             }
