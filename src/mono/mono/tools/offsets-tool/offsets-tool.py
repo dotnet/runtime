@@ -127,12 +127,12 @@ class OffsetsTool:
 			self.target_args += ["-isysroot", args.sysroot]
 		elif "i386-apple-darwin10" == args.abi:
 			require_sysroot (args)
-			self.target = Target ("TARGET_X86", "TARGET_IOS", IOS_DEFINES)
+			self.target = Target ("TARGET_X86", "", IOS_DEFINES)
 			self.target_args += ["-arch", "i386"]
 			self.target_args += ["-isysroot", args.sysroot]
 		elif "x86_64-apple-darwin10" == args.abi:
 			require_sysroot (args)
-			self.target = Target ("TARGET_AMD64", "TARGET_IOS", IOS_DEFINES)
+			self.target = Target ("TARGET_AMD64", "", IOS_DEFINES)
 			self.target_args += ["-arch", "x86_64"]
 			self.target_args += ["-isysroot", args.sysroot]
 
