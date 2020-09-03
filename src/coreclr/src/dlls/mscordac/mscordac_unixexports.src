@@ -111,7 +111,6 @@ nativeStringResourceTable_mscorrc
 #FreeLibrary
 #FileTimeToSystemTime
 #GetACP
-#GetCPInfo
 #GetCurrentDirectoryW
 #GetCurrentProcess
 #GetCurrentProcessId
@@ -134,7 +133,6 @@ nativeStringResourceTable_mscorrc
 #GetTempPathA
 #GetTempPathW
 #InitializeCriticalSection
-#IsDBCSLeadByte
 #LeaveCriticalSection
 #LoadLibraryA
 #LoadLibraryW

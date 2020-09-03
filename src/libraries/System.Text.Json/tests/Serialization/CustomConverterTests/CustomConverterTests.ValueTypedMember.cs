@@ -208,7 +208,7 @@ namespace System.Text.Json.Serialization.Tests
                 json = JsonSerializer.Serialize(obj, options);
 
                 Assert.Equal(4, converter.WriteCallCount);
-                Assert.Equal(expected, json);
+                JsonTestHelper.AssertJsonEqual(expected, json);
             }
 
             {
@@ -240,7 +240,7 @@ namespace System.Text.Json.Serialization.Tests
                 json = JsonSerializer.Serialize(obj, options);
 
                 Assert.Equal(4, converter.WriteCallCount);
-                Assert.Equal(expected, json);
+                JsonTestHelper.AssertJsonEqual(expected, json);
             }
 
             {
@@ -272,7 +272,7 @@ namespace System.Text.Json.Serialization.Tests
                 json = JsonSerializer.Serialize(obj, options);
 
                 Assert.Equal(4, converter.WriteCallCount);
-                Assert.Equal(expected, json);
+                JsonTestHelper.AssertJsonEqual(expected, json);
             }
 
             {
@@ -304,7 +304,7 @@ namespace System.Text.Json.Serialization.Tests
                 json = JsonSerializer.Serialize(obj, options);
 
                 Assert.Equal(4, converter.WriteCallCount);
-                Assert.Equal(expected, json);
+                JsonTestHelper.AssertJsonEqual(expected, json);
             }
 
             {
@@ -334,7 +334,7 @@ namespace System.Text.Json.Serialization.Tests
                 json = JsonSerializer.Serialize(obj, options);
 
                 Assert.Equal(4, converter.WriteCallCount);
-                Assert.Equal(expected, json);
+                JsonTestHelper.AssertJsonEqual(expected, json);
             }
 
             {
@@ -367,7 +367,7 @@ namespace System.Text.Json.Serialization.Tests
                 json = JsonSerializer.Serialize(obj, options);
 
                 Assert.Equal(4, converter.WriteCallCount);
-                Assert.Equal(expected, json);
+                JsonTestHelper.AssertJsonEqual(expected, json);
             }
 
             {
@@ -380,6 +380,5 @@ namespace System.Text.Json.Serialization.Tests
                 Assert.Null(obj.MyRefTypedField);
             }
         }
-
     }
 }

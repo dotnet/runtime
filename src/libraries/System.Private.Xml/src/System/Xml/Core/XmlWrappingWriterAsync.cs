@@ -68,7 +68,7 @@ namespace System.Xml
             return writer.WriteCommentAsync(text);
         }
 
-        public override Task WriteProcessingInstructionAsync(string name, string text)
+        public override Task WriteProcessingInstructionAsync(string name, string? text)
         {
             return writer.WriteProcessingInstructionAsync(name, text);
         }

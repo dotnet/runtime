@@ -22,12 +22,18 @@ namespace System.Net.Sockets
     {
         internal const int DefaultCloseTimeout = -1; // NOTE: changing this default is a breaking change.
 
+        private static readonly IPAddress s_IPAddressAnyMapToIPv6 = IPAddress.Any.MapToIPv6();
+
         private SafeSocketHandle _handle;
 
         // _rightEndPoint is null if the socket has not been bound.  Otherwise, it is any EndPoint of the
         // correct type (IPEndPoint, etc).
         internal EndPoint? _rightEndPoint;
         internal EndPoint? _remoteEndPoint;
+
+        // Cached LocalEndPoint value. Cleared on disconnect and error. Cached wildcard addresses are
+        // also cleared on connect and accept.
+        private EndPoint? _localEndPoint;
 
         // These flags monitor if the socket was ever connected at any time and if it still is.
         private bool _isConnected;
@@ -317,6 +323,7 @@ namespace System.Net.Sockets
                     // Update the state if we've become connected after a non-blocking connect.
                     _isConnected = true;
                     _rightEndPoint = _nonBlockingConnectRightEndPoint;
+                    UpdateLocalEndPointOnConnect();
                     _nonBlockingConnectInProgress = false;
                 }
 
@@ -325,23 +332,27 @@ namespace System.Net.Sockets
                     return null;
                 }
 
-                Internals.SocketAddress socketAddress = IPEndPointExtensions.Serialize(_rightEndPoint);
-
-                unsafe
+                if (_localEndPoint == null)
                 {
-                    fixed (byte* buffer = socketAddress.Buffer)
-                    fixed (int* bufferSize = &socketAddress.InternalSize)
+                    Internals.SocketAddress socketAddress = IPEndPointExtensions.Serialize(_rightEndPoint);
+
+                    unsafe
                     {
-                        // This may throw ObjectDisposedException.
-                        SocketError errorCode = SocketPal.GetSockName(_handle, buffer, bufferSize);
-                        if (errorCode != SocketError.Success)
+                        fixed (byte* buffer = socketAddress.Buffer)
+                        fixed (int* bufferSize = &socketAddress.InternalSize)
                         {
-                            UpdateStatusAfterSocketErrorAndThrowException(errorCode);
+                            // This may throw ObjectDisposedException.
+                            SocketError errorCode = SocketPal.GetSockName(_handle, buffer, bufferSize);
+                            if (errorCode != SocketError.Success)
+                            {
+                                UpdateStatusAfterSocketErrorAndThrowException(errorCode);
+                            }
                         }
                     }
+                    _localEndPoint = _rightEndPoint.Create(socketAddress);
                 }
 
-                return _rightEndPoint.Create(socketAddress);
+                return _localEndPoint;
             }
         }
 
@@ -359,6 +370,7 @@ namespace System.Net.Sockets
                         // Update the state if we've become connected after a non-blocking connect.
                         _isConnected = true;
                         _rightEndPoint = _nonBlockingConnectRightEndPoint;
+                        UpdateLocalEndPointOnConnect();
                         _nonBlockingConnectInProgress = false;
                     }
 
@@ -470,6 +482,7 @@ namespace System.Net.Sockets
                     // Update the state if we've become connected after a non-blocking connect.
                     _isConnected = true;
                     _rightEndPoint = _nonBlockingConnectRightEndPoint;
+                    UpdateLocalEndPointOnConnect();
                     _nonBlockingConnectInProgress = false;
                 }
 
@@ -2303,6 +2316,7 @@ namespace System.Net.Sockets
             {
                 SetToDisconnected();
                 _remoteEndPoint = null;
+                _localEndPoint = null;
             }
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"UnsafeNclNativeMethods.OSSOCK.DisConnectEx returns:{errorCode}");
@@ -2332,6 +2346,7 @@ namespace System.Net.Sockets
 
             SetToDisconnected();
             _remoteEndPoint = null;
+            _localEndPoint = null;
         }
 
         // Routine Description:
@@ -2760,6 +2775,7 @@ namespace System.Net.Sockets
             catch (ObjectDisposedException)
             {
                 _rightEndPoint = oldEndPoint;
+                _localEndPoint = null;
                 throw;
             }
 
@@ -2769,6 +2785,7 @@ namespace System.Net.Sockets
                 UpdateSendSocketErrorForDisposed(ref errorCode);
                 // Update the internal state of this socket according to the error before throwing.
                 _rightEndPoint = oldEndPoint;
+                _localEndPoint = null;
 
                 throw new SocketException((int)errorCode);
             }
@@ -3148,6 +3165,7 @@ namespace System.Net.Sockets
             catch (ObjectDisposedException)
             {
                 _rightEndPoint = oldEndPoint;
+                _localEndPoint = null;
                 throw;
             }
 
@@ -3157,6 +3175,7 @@ namespace System.Net.Sockets
             {
                 // Update the internal state of this socket according to the error before throwing.
                 _rightEndPoint = oldEndPoint;
+                _localEndPoint = null;
 
                 throw new SocketException((int)errorCode);
             }
@@ -3357,6 +3376,7 @@ namespace System.Net.Sockets
             catch (ObjectDisposedException)
             {
                 _rightEndPoint = oldEndPoint;
+                _localEndPoint = null;
                 throw;
             }
 
@@ -3366,6 +3386,7 @@ namespace System.Net.Sockets
             {
                 // Update the internal state of this socket according to the error before throwing.
                 _rightEndPoint = oldEndPoint;
+                _localEndPoint = null;
 
                 throw new SocketException((int)errorCode);
             }
@@ -3762,6 +3783,7 @@ namespace System.Net.Sockets
                 catch
                 {
                     _rightEndPoint = oldEndPoint;
+                    _localEndPoint = null;
 
                     // Clear in-use flag on event args object.
                     e.Complete();
@@ -4091,6 +4113,7 @@ namespace System.Net.Sockets
             catch
             {
                 _rightEndPoint = null;
+                _localEndPoint = null;
                 // Clear in-use flag on event args object.
                 e.Complete();
                 throw;
@@ -4099,6 +4122,7 @@ namespace System.Net.Sockets
             if (!CheckErrorAndUpdateStatus(socketError))
             {
                 _rightEndPoint = oldEndPoint;
+                _localEndPoint = null;
             }
 
             return socketError == SocketError.IOPending;
@@ -4246,98 +4270,107 @@ namespace System.Net.Sockets
 
             SetToDisconnected();
 
-            // If the safe handle doesn't own the underlying handle, we're done.
-            SafeSocketHandle handle = _handle;
-            if (handle != null && !handle.OwnsHandle)
+            SafeSocketHandle? handle = _handle;
+            // Avoid side effects when we don't own the handle.
+            if (handle?.OwnsHandle == true)
             {
-                return;
-            }
-
-            // Close the handle in one of several ways depending on the timeout.
-            // Ignore ObjectDisposedException just in case the handle somehow gets disposed elsewhere.
-            try
-            {
-                int timeout = _closeTimeout;
-                if (timeout == 0 || !disposing)
+                if (!disposing)
                 {
-                    // Abortive.
-                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Calling _handle.CloseAsIs()");
-                    _handle?.CloseAsIs(abortive: true);
+                    // When we are running on the finalizer thread, we don't call CloseAsIs
+                    // because it may lead to blocking the finalizer thread when trying
+                    // to abort on-going operations. We directly dispose the SafeHandle.
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Calling _handle.Dispose()");
+                    handle.Dispose();
                 }
                 else
                 {
-                    SocketError errorCode;
-
-                    // Go to blocking mode.
-                    if (!_willBlock || !_willBlockInternal)
+                    // Close the handle in one of several ways depending on the timeout.
+                    // Ignore ObjectDisposedException just in case the handle somehow gets disposed elsewhere.
+                    try
                     {
-                        bool willBlock;
-                        errorCode = SocketPal.SetBlocking(_handle, false, out willBlock);
-                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"handle:{_handle} ioctlsocket(FIONBIO):{errorCode}");
-                    }
-
-                    if (timeout < 0)
-                    {
-                        // Close with existing user-specified linger option.
-                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Calling _handle.CloseAsIs()");
-                        _handle.CloseAsIs(abortive: false);
-                    }
-                    else
-                    {
-                        // Since our timeout is in ms and linger is in seconds, implement our own sortof linger here.
-                        errorCode = SocketPal.Shutdown(_handle, _isConnected, _isDisconnected, SocketShutdown.Send);
-                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"handle:{_handle} shutdown():{errorCode}");
-
-                        // This should give us a timeout in milliseconds.
-                        errorCode = SocketPal.SetSockOpt(
-                            _handle,
-                            SocketOptionLevel.Socket,
-                            SocketOptionName.ReceiveTimeout,
-                            timeout);
-                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"handle:{_handle} setsockopt():{errorCode}");
-
-                        if (errorCode != SocketError.Success)
+                        int timeout = _closeTimeout;
+                        if (timeout == 0)
                         {
-                            _handle.CloseAsIs(abortive: true);
+                            // Abortive.
+                            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Calling _handle.CloseAsIs()");
+                            handle.CloseAsIs(abortive: true);
                         }
                         else
                         {
-                            int unused;
-                            errorCode = SocketPal.Receive(_handle, Array.Empty<byte>(), 0, 0, SocketFlags.None, out unused);
-                            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"handle:{_handle} recv():{errorCode}");
+                            SocketError errorCode;
 
-                            if (errorCode != (SocketError)0)
+                            // Go to blocking mode.
+                            if (!_willBlock || !_willBlockInternal)
                             {
-                                // We got a timeout - abort.
-                                _handle.CloseAsIs(abortive: true);
+                                bool willBlock;
+                                errorCode = SocketPal.SetBlocking(handle, false, out willBlock);
+                                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"handle:{handle} ioctlsocket(FIONBIO):{errorCode}");
+                            }
+
+                            if (timeout < 0)
+                            {
+                                // Close with existing user-specified linger option.
+                                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Calling _handle.CloseAsIs()");
+                                handle.CloseAsIs(abortive: false);
                             }
                             else
                             {
-                                // We got a FIN or data.  Use ioctlsocket to find out which.
-                                int dataAvailable = 0;
-                                errorCode = SocketPal.GetAvailable(_handle, out dataAvailable);
-                                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"handle:{_handle} ioctlsocket(FIONREAD):{errorCode}");
+                                // Since our timeout is in ms and linger is in seconds, implement our own sortof linger here.
+                                errorCode = SocketPal.Shutdown(handle, _isConnected, _isDisconnected, SocketShutdown.Send);
+                                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"handle:{handle} shutdown():{errorCode}");
 
-                                if (errorCode != SocketError.Success || dataAvailable != 0)
+                                // This should give us a timeout in milliseconds.
+                                errorCode = SocketPal.SetSockOpt(
+                                    handle,
+                                    SocketOptionLevel.Socket,
+                                    SocketOptionName.ReceiveTimeout,
+                                    timeout);
+                                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"handle:{handle} setsockopt():{errorCode}");
+
+                                if (errorCode != SocketError.Success)
                                 {
-                                    // If we have data or don't know, safest thing is to reset.
-                                    _handle.CloseAsIs(abortive: true);
+                                    handle.CloseAsIs(abortive: true);
                                 }
                                 else
                                 {
-                                    // We got a FIN.  It'd be nice to block for the remainder of the timeout for the handshake to finish.
-                                    // Since there's no real way to do that, close the socket with the user's preferences.  This lets
-                                    // the user decide how best to handle this case via the linger options.
-                                    _handle.CloseAsIs(abortive: false);
+                                    int unused;
+                                    errorCode = SocketPal.Receive(handle, Array.Empty<byte>(), 0, 0, SocketFlags.None, out unused);
+                                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"handle:{handle} recv():{errorCode}");
+
+                                    if (errorCode != (SocketError)0)
+                                    {
+                                        // We got a timeout - abort.
+                                        handle.CloseAsIs(abortive: true);
+                                    }
+                                    else
+                                    {
+                                        // We got a FIN or data.  Use ioctlsocket to find out which.
+                                        int dataAvailable = 0;
+                                        errorCode = SocketPal.GetAvailable(handle, out dataAvailable);
+                                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"handle:{handle} ioctlsocket(FIONREAD):{errorCode}");
+
+                                        if (errorCode != SocketError.Success || dataAvailable != 0)
+                                        {
+                                            // If we have data or don't know, safest thing is to reset.
+                                            handle.CloseAsIs(abortive: true);
+                                        }
+                                        else
+                                        {
+                                            // We got a FIN.  It'd be nice to block for the remainder of the timeout for the handshake to finish.
+                                            // Since there's no real way to do that, close the socket with the user's preferences.  This lets
+                                            // the user decide how best to handle this case via the linger options.
+                                            handle.CloseAsIs(abortive: false);
+                                        }
+                                    }
                                 }
                             }
                         }
                     }
+                    catch (ObjectDisposedException)
+                    {
+                        NetEventSource.Fail(this, $"handle:{handle}, Closing the handle threw ObjectDisposedException.");
+                    }
                 }
-            }
-            catch (ObjectDisposedException)
-            {
-                NetEventSource.Fail(this, $"handle:{_handle}, Closing the handle threw ObjectDisposedException.");
             }
 
             // Clean up any cached data
@@ -4610,6 +4643,7 @@ namespace System.Net.Sockets
             {
                 // _rightEndPoint will always equal oldEndPoint.
                 _rightEndPoint = oldEndPoint;
+                _localEndPoint = null;
                 throw;
             }
 
@@ -4626,6 +4660,7 @@ namespace System.Net.Sockets
                 UpdateConnectSocketErrorForDisposed(ref errorCode);
                 // Update the internal state of this socket according to the error before throwing.
                 _rightEndPoint = oldEndPoint;
+                _localEndPoint = null;
 
                 throw new SocketException((int)errorCode);
             }
@@ -4849,6 +4884,12 @@ namespace System.Net.Sockets
             socket._rightEndPoint = _rightEndPoint;
             socket._remoteEndPoint = remoteEP;
 
+            // If the listener socket was bound to a wildcard address, then the `accept` system call
+            // will assign a specific address to the accept socket's local endpoint instead of a
+            // wildcard address. In that case we should not copy listener's wildcard local endpoint.
+
+            socket._localEndPoint = !IsWildcardEndPoint(_localEndPoint) ? _localEndPoint : null;
+
             // The socket is connected.
             socket.SetToConnected();
 
@@ -4880,7 +4921,36 @@ namespace System.Net.Sockets
             // some point in time update the perf counter as well.
             _isConnected = true;
             _isDisconnected = false;
+            UpdateLocalEndPointOnConnect();
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "now connected");
+        }
+
+        private void UpdateLocalEndPointOnConnect()
+        {
+            // If the client socket was bound to a wildcard address, then the `connect` system call
+            // will assign a specific address to the client socket's local endpoint instead of a
+            // wildcard address. In that case we should clear the cached wildcard local endpoint.
+
+            if (IsWildcardEndPoint(_localEndPoint))
+            {
+                _localEndPoint = null;
+            }
+        }
+
+        private bool IsWildcardEndPoint(EndPoint? endPoint)
+        {
+            if (endPoint == null)
+            {
+                return false;
+            }
+
+            if (endPoint is IPEndPoint ipEndpoint)
+            {
+                IPAddress address = ipEndpoint.Address;
+                return IPAddress.Any.Equals(address) || IPAddress.IPv6Any.Equals(address) || s_IPAddressAnyMapToIPv6.Equals(address);
+            }
+
+            return false;
         }
 
         internal void SetToDisconnected()

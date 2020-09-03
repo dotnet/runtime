@@ -92,6 +92,12 @@
       <_MonoCXXFLAGS Include="-g" />
     </ItemGroup>
 
+    <!-- OSX specific options -->
+    <ItemGroup Condition="'$(TargetOS)' == 'OSX'">
+      <_MonoCFLAGS Include="-mmacosx-version-min=$(macOSVersionMin)" />
+      <_MonoCXXFLAGS Include="-mmacosx-version-min=$(macOSVersionMin)" />
+    </ItemGroup>
+
     <!-- We build LLVM bits for x64 Linux without C++11 ABI (CentOS 7 has libstdc++ < 5.1) -->
     <ItemGroup Condition="'$(TargetOS)' == 'Linux' and '$(MonoEnableLLVM)' == 'true' and '$(MonoLLVMUseCxx11Abi)' != 'true'">
       <_MonoCXXFLAGS Include="-D_GLIBCXX_USE_CXX11_ABI=0" />
@@ -966,6 +972,7 @@
       <MonoCMakeArgs Include="-DENABLE_ICALL_EXPORT=1"/>
       <MonoCMakeArgs Include="-DENABLE_LAZY_GC_THREAD_CREATION=1"/>
       <MonoCMakeArgs Include="-DCMAKE_C_FLAGS=-I$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)/runtimes/browser-wasm/native/include"/>
+      <MonoCMakeArgs Include="-DCMAKE_BUILD_TYPE=$(Configuration)"/>
     </ItemGroup>
     <MakeDir Directories="$(MonoObjDir)" />
     <Message Text="Running cmake with arguments: @(MonoCMakeArgs, ' ') $(MonoProjectRoot)" Importance="High"/>

@@ -25,6 +25,4 @@
 #define _SIZE _SizeInBytes
 #define _T(_Character) _Character
 
-#define _MBS_SUPPORT 0
-
 #include "tmakepath_s.inl"

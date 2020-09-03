@@ -1485,10 +1485,10 @@ namespace System.Xml.Serialization
             {
                 if (o is XmlSchemaAppInfo)
                 {
-                    XmlNode[]? nodes = ((XmlSchemaAppInfo)o).Markup;
+                    XmlNode?[]? nodes = ((XmlSchemaAppInfo)o).Markup;
                     if (nodes != null && nodes.Length > 0)
                     {
-                        foreach (XmlNode node in nodes)
+                        foreach (XmlNode? node in nodes)
                         {
                             if (node is XmlElement)
                             {
