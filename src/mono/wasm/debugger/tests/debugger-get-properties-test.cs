@@ -105,6 +105,7 @@ namespace DebuggerTests.GetPropertiesTests
         public async Task InstanceMethodAsync()
         {
             Console.WriteLine ($"break here");
+            await Task.CompletedTask;
         }
     }
 
@@ -151,6 +152,7 @@ namespace DebuggerTests.GetPropertiesTests
         public async Task InstanceMethodAsync()
         {
             Console.WriteLine ($"break here");
+            await Task.CompletedTask;
         }
     }
 
