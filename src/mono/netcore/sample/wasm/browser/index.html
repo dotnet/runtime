@@ -16,21 +16,41 @@
           var ret = BINDING.call_static_method("[WasmSample]Sample.Test:TestMeaning", []);
           document.getElementById("out").innerHTML = ret;
           console.log ("ready");
-          console.log ("starting benchmark in 1 second");
-          window.setTimeout(App.runBenchmark, 1000);
+
+          console.log ("warming");
+
+          var method = BINDING.bind_static_method("[WasmSample]Sample.Test:BenchmarkMethod", "ifd");
+          method(0, 0, 0);
+
+          for (var i = 0; i < 500; i++)
+            App.benchmarkIter(method, i);
+
+          console.log ("starting benchmark in 2 seconds");
+
+          window.setTimeout(App.runBenchmark.bind(App, method), 2000);
         },
 
-        runBenchmark: function () {
-          var method = BINDING.bind_static_method("[WasmSample]Sample.Test.BenchmarkMethod", "ifd");
+        iterFailed: function (expected, actual) {
+          throw new Error("Result mismatch, expected " + expected + " but got " + res);
+        },
 
-          var iterationCount = 5000;
+        benchmarkIter: function (method, i) {
+          var expected = i + i + i + 0.03;
+          var res = method(i, i + 0.01, i + 0.02);
+          if (Math.abs(expected - res) >= 0.5)
+            this.iterFailed(expected, res);
+        },
+
+        runBenchmark: function (method, i) {
+          var iterationCount = 125000;
           var started = performance.now ();
+
           for (var i = 0; i < iterationCount; i++) {
-            var expected = i + i + i + 0.03;
-            var res = method(i, i + 0.01, i + 0.02);
-            if (Math.abs(expected - res) >= 0.001)
-              throw new Error("Result mismatch, expected " + expected + " but got " + res);            
+            if (i && ((i % 10000) === 0))
+              console.log(i);
+            this.benchmarkIter(method, i);
           }
+
           var ended = performance.now();
           console.log("ran", iterationCount, "iterations in", ended - started);
           console.log((ended - started) / iterationCount, "ms/iter");
