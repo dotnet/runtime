@@ -10,7 +10,6 @@ using System.IO;
 using System.Net.Http.Headers;
 using System.Net.Security;
 using System.Net.Sockets;
-using System.Net.Connections;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
@@ -46,7 +45,6 @@ namespace System.Net.Http
         private readonly HttpConnectionPool _pool;
         private readonly Socket? _socket; // used for polling; _stream should be used for all reading/writing. _stream owns disposal.
         private readonly Stream _stream;
-        private readonly Connection _connection;
         private readonly TransportContext? _transportContext;
         private readonly WeakReference<HttpConnection> _weakThisRef;
 
@@ -73,16 +71,19 @@ namespace System.Net.Http
 
         public HttpConnection(
             HttpConnectionPool pool,
-            Connection connection,
+            Stream stream,
             TransportContext? transportContext)
         {
             Debug.Assert(pool != null);
-            Debug.Assert(connection != null);
+            Debug.Assert(stream != null);
 
             _pool = pool;
-            connection.ConnectionProperties.TryGet(out _socket); // may be null in cases where we couldn't easily get the underlying socket
-            _stream = connection.Stream;
-            _connection = connection;
+            _stream = stream;
+            if (stream is NetworkStream networkStream)
+            {
+                _socket = networkStream.Socket;
+            }
+
             _transportContext = transportContext;
 
             _writeBuffer = new byte[InitialWriteBufferSize];
@@ -123,7 +124,7 @@ namespace System.Net.Http
                 if (disposing)
                 {
                     GC.SuppressFinalize(this);
-                    _connection.Dispose();
+                    _stream.Dispose();
 
                     // Eat any exceptions from the read-ahead task.  We don't need to log, as we expect
                     // failures from this task due to closing the connection while a read is in progress.

@@ -99,7 +99,6 @@ loader/LoadLibraryA/test8/paltest_loadlibrarya_test8
 loader/LoadLibraryW/test1/paltest_loadlibraryw_test1
 locale_info/CompareStringA/test1/paltest_comparestringa_test1
 locale_info/CompareStringW/test1/paltest_comparestringw_test1
-locale_info/GetCPInfo/test2/paltest_getcpinfo_test2
 locale_info/GetLocaleInfoW/test1/paltest_getlocaleinfow_test1
 locale_info/GetLocaleInfoW/test2/paltest_getlocaleinfow_test2
 locale_info/GetStringTypeExW/test1/paltest_getstringtypeexw_test1

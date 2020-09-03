@@ -1,4 +1,4 @@
-if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+if((CMAKE_SYSTEM_NAME STREQUAL "Darwin") OR (CMAKE_SYSTEM_NAME STREQUAL "iOS"))
   # Quiet 'file ... has no symbols' messages from ranlib
   find_program(CMAKE_XCRUN NAMES xcrun)
   execute_process(COMMAND ${CMAKE_XCRUN} -find libtool
