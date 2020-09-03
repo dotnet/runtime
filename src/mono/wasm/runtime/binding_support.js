@@ -883,7 +883,7 @@ var BindingSupportLib = {
 
 			var args_start = 0, buffer = 0, converter = null, argsRootBuffer = null;
 			var is_result_marshaled = true;
-			var [resultRoot, exceptionRoot] = MONO.mono_wasm_new_roots (2);
+			var resultRoot = MONO.mono_wasm_new_root (), exceptionRoot = MONO.mono_wasm_new_root ();
 
 			// check if the method signature needs argument mashalling
 			if (has_args_marshal && has_args) {
