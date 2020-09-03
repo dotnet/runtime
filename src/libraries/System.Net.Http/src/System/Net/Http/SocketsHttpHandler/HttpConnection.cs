@@ -747,15 +747,15 @@ namespace System.Net.Http
                         }
                         catch (Exception ex)
                         {
-                            // Overwrite the exception so that the one thrown by sendRequestContentTask one gets propagated,
-                            // but still gets handled the same way as any other.
-                            error = ex;
+                            // Map the exception the same way as we normally do.
+                            if (MapSendException(ex, cancellationToken, out Exception mappedEx))
+                            {
+                                throw mappedEx;
+                            }
+                            throw;
                         }
                     }
-                    else
-                    {
-                        LogExceptions(sendRequestContentTask);
-                    }
+                    LogExceptions(sendRequestContentTask);
                 }
 
                 // Now clean up the connection.
@@ -763,41 +763,51 @@ namespace System.Net.Http
 
                 // At this point, we're going to throw an exception; we just need to
                 // determine which exception to throw.
-
-                if (CancellationHelper.ShouldWrapInOperationCanceledException(error, cancellationToken))
+                if (MapSendException(error, cancellationToken, out Exception mappedException))
                 {
-                    // Cancellation was requested, so assume that the failure is due to
-                    // the cancellation request. This is a bit unorthodox, as usually we'd
-                    // prioritize a non-OperationCanceledException over a cancellation
-                    // request to avoid losing potentially pertinent information.  But given
-                    // the cancellation design where we tear down the underlying connection upon
-                    // a cancellation request, which can then result in a myriad of different
-                    // exceptions (argument exceptions, object disposed exceptions, socket exceptions,
-                    // etc.), as a middle ground we treat it as cancellation, but still propagate the
-                    // original information as the inner exception, for diagnostic purposes.
-                    throw CancellationHelper.CreateOperationCanceledException(error, cancellationToken);
+                    throw mappedException;
                 }
-                else if (error is InvalidOperationException)
-                {
-                    // For consistency with other handlers we wrap the exception in an HttpRequestException.
-                    throw new HttpRequestException(SR.net_http_client_execution_error, error);
-                }
-                else if (error is IOException ioe)
-                {
-                    // For consistency with other handlers we wrap the exception in an HttpRequestException.
-                    // If the request is retryable, indicate that on the exception.
-                    throw new HttpRequestException(SR.net_http_client_execution_error, ioe, _canRetry ? RequestRetryType.RetryOnSameOrNextProxy : RequestRetryType.NoRetry);
-                }
-                else
-                {
-                    // Otherwise, just allow the original exception to propagate.
-                    throw;
-                }
+                // Otherwise, just allow the original exception to propagate.
+                throw;
             }
         }
 
         public sealed override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken) =>
             SendAsyncCore(request, async, cancellationToken);
+
+        private bool MapSendException(Exception exception, CancellationToken cancellationToken, out Exception mappedException)
+        {
+            if (CancellationHelper.ShouldWrapInOperationCanceledException(exception, cancellationToken))
+            {
+                // Cancellation was requested, so assume that the failure is due to
+                // the cancellation request. This is a bit unorthodox, as usually we'd
+                // prioritize a non-OperationCanceledException over a cancellation
+                // request to avoid losing potentially pertinent information.  But given
+                // the cancellation design where we tear down the underlying connection upon
+                // a cancellation request, which can then result in a myriad of different
+                // exceptions (argument exceptions, object disposed exceptions, socket exceptions,
+                // etc.), as a middle ground we treat it as cancellation, but still propagate the
+                // original information as the inner exception, for diagnostic purposes.
+                mappedException = CancellationHelper.CreateOperationCanceledException(exception, cancellationToken);
+                return true;
+            }
+            if (exception is InvalidOperationException)
+            {
+                // For consistency with other handlers we wrap the exception in an HttpRequestException.
+                mappedException = new HttpRequestException(SR.net_http_client_execution_error, exception);
+                return true;
+            }
+            if (exception is IOException ioe)
+            {
+                // For consistency with other handlers we wrap the exception in an HttpRequestException.
+                // If the request is retryable, indicate that on the exception.
+                mappedException = new HttpRequestException(SR.net_http_client_execution_error, ioe, _canRetry ? RequestRetryType.RetryOnSameOrNextProxy : RequestRetryType.NoRetry);
+                return true;
+            }
+            // Otherwise, just allow the original exception to propagate.
+            mappedException = exception;
+            return false;
+        }
 
         private HttpContentWriteStream CreateRequestContentStream(HttpRequestMessage request)
         {
