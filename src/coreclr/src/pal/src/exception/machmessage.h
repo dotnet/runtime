@@ -67,7 +67,7 @@ using namespace CorUnix;
 
 // Debug-only output with printf-style formatting.
 #define NONPAL_TRACE(_format, ...) do {                                              \
-        if (NONPAL_TRACE_ENABLED) printf("NONPAL_TRACE: " _format, ## __VA_ARGS__);  \
+        if (NONPAL_TRACE_ENABLED) { printf("NONPAL_TRACE: " _format, ## __VA_ARGS__); fflush(stdout); } \
     } while (false)
 
 #else // _DEBUG
