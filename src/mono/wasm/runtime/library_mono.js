@@ -229,6 +229,9 @@ var MonoSupportLib = {
 
 				this.__handle = this.__offset = this.__count = this.__offset32 = undefined;
 			},
+			toString: function () {
+				return "[root buffer @" + this.get_address (0) + ", size " + this.__count + "]";
+			}
 		},
 
 		_scratch_root_buffer: null,
@@ -260,6 +263,9 @@ var MonoSupportLib = {
 				MONO._mono_wasm_release_scratch_index (this.__index);
 				this.__buffer = undefined;
 				this.__index = undefined;
+			},
+			toString: function () {
+				return "[root @" + this.get_address () + "]";
 			}
 		},
 

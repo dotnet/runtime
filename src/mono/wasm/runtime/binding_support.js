@@ -737,6 +737,7 @@ var BindingSupportLib = {
 			converters.set ('s', { steps: [{ convert: this.js_string_to_mono_string.bind (this)}], size: 0, needsRoot: true });
 			converters.set ('o', { steps: [{ convert: this.js_to_mono_obj.bind (this)}], size: 0, needsRoot: true });
 			converters.set ('u', { steps: [{ convert: this.js_to_mono_uri.bind (this)}], size: 0, needsRoot: true });
+			// FIXME: The signature of js_to_mono_enum is incompatible - it should be (obj, method, parmIdx);
 			converters.set ('k', { steps: [{ convert: this.js_to_mono_enum.bind (this), indirect: 'i64'}], size: 8});
 			converters.set ('j', { steps: [{ convert: this.js_to_mono_enum.bind (this), indirect: 'i32'}], size: 8});
 			converters.set ('i', { steps: [{ indirect: 'i32'}], size: 8});
@@ -756,7 +757,10 @@ var BindingSupportLib = {
 				if (!conv)
 					throw Error ("Unknown parameter type " + type);
 
-				steps.push (conv.steps[0]);
+				var localStep = Object.create (conv.steps[0]);
+				localStep.size = conv.size;
+				localStep.key = args_marshal[i];
+				steps.push (localStep);
 				size += conv.size;
 			}
 
@@ -787,14 +791,14 @@ var BindingSupportLib = {
 
 			// worst-case allocation size instead of allocating dynamically, plus padding
 			var bufferSizeBytes = converter.size + (args_marshal.length * 4) + 8;
-			var bufferSizeElements = (bufferSizeBytes / 4) | 0;
+			var rootBufferSize = args_marshal.length;
 			var indirectBaseOffset = (args_marshal.length * 4) + 4;
 
 			var closure = {};
 			var indirectLocalOffset = 0;
 
 			body.push ("var buffer = Module._malloc (" + bufferSizeBytes + ");");
-			body.push ("var rootBuffer = MONO.mono_wasm_new_root_buffer (" + bufferSizeElements + ");");
+			body.push ("var rootBuffer = MONO.mono_wasm_new_root_buffer (" + rootBufferSize + ");");
 			body.push ("var indirectStart = buffer + " + indirectBaseOffset + ";");
 			body.push ("var bufferElements = (buffer / 4) | 0;");
 			body.push ("var obj;");
@@ -804,9 +808,13 @@ var BindingSupportLib = {
 				var closureKey = "step" + i;
 				var argKey = "args[" + i + "]";
 
+				body.push ("if (args.length <= " + i + ") return [buffer, rootBuffer];");
+
 				if (step.convert) {
 					closure[closureKey] = step.convert;
+					body.push ("console.log('calling converter '" + step.key + ", " + closureKey + ", 'with value', obj);"); 
 					body.push ("obj = " + closureKey + "(" + argKey + ", method, " + i + ");");
+					body.push ("console.log('converter result', obj);"); 
 				} else {
 					body.push ("obj = " + argKey + ";");
 				}
@@ -822,17 +830,18 @@ var BindingSupportLib = {
 					body.push ("rootBuffer.set (" + i + ", obj);");
 
 				body.push ("Module.HEAP32[bufferElements + " + i + "] = obj;");
-				body.push ("console.log ('arg #" + i + "', obj);");
 			}
 
 			body.push ("return [buffer, rootBuffer];");
 
 			var bodyJs = body.join ("\r\n");
-			console.log ("combined signature", args_marshal, "to", bodyJs);
-
-			var compiledFunction = this._createNamedFunction("converter_" + args_marshal, argumentNames, bodyJs, closure);
+			try {
+				var compiledFunction = this._createNamedFunction("converter_" + args_marshal, argumentNames, bodyJs, closure);
+			} catch (exc) {
+				console.log("compiling failed for", bodyJs, "with error", exc);
+				throw exc;
+			}
 			converter.compiledFunction = compiledFunction;
-			console.log ("result function", compiledFunction);
 			return compiledFunction;
 		},
 
@@ -871,12 +880,16 @@ var BindingSupportLib = {
 			var [resultRoot, exceptionRoot] = MONO.mono_wasm_new_roots (2);
 			var argsRootBuffer = null;
 
+			if (!this_arg)
+				this_arg = 0;
+
 			// check if the method signature needs argument mashalling
 			if (has_args_marshal && has_args) {
 				var useCompiledConverter = true;
 				if (useCompiledConverter) {
 					converter = this._compile_converter_for_marshal_string (args_marshal);
 					[buffer, argsRootBuffer] = converter (args, method);
+					console.log("converter returned", buffer, argsRootBuffer);
 					args_start = buffer;
 				} else {
 					converter = this._get_converter_for_marshal_string (args_marshal);
