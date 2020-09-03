@@ -47,7 +47,7 @@ namespace System.Diagnostics
         public System.Diagnostics.ActivitySpanId SpanId { get { throw null; } }
         public System.DateTime StartTimeUtc { get { throw null; } }
         public System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string?>> Tags { get { throw null; } }
-        public System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object>> TagObjects { get { throw null; } }
+        public System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>> TagObjects { get { throw null; } }
         public System.Collections.Generic.IEnumerable<System.Diagnostics.ActivityEvent> Events { get { throw null; } }
         public System.Collections.Generic.IEnumerable<System.Diagnostics.ActivityLink> Links { get { throw null; } }
         public System.Diagnostics.ActivityTraceId TraceId { get { throw null; } }
@@ -55,8 +55,8 @@ namespace System.Diagnostics
         public System.Diagnostics.Activity AddBaggage(string key, string? value) { throw null; }
         public System.Diagnostics.Activity AddEvent(System.Diagnostics.ActivityEvent e) { throw null; }
         public System.Diagnostics.Activity AddTag(string key, string? value) { throw null; }
-        public System.Diagnostics.Activity AddTag(string key, object value) { throw null; }
-        public System.Diagnostics.Activity SetTag(string key, object value) { throw null; }
+        public System.Diagnostics.Activity AddTag(string key, object? value) { throw null; }
+        public System.Diagnostics.Activity SetTag(string key, object? value) { throw null; }
         public string? GetBaggageItem(string key) { throw null; }
         public System.Diagnostics.Activity SetEndTime(System.DateTime endTimeUtc) { throw null; }
         public System.Diagnostics.Activity SetIdFormat(System.Diagnostics.ActivityIdFormat format) { throw null; }
@@ -75,7 +75,7 @@ namespace System.Diagnostics
     {
         public ActivityTagsCollection() { throw null; }
         public ActivityTagsCollection(System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object>> list) { throw null; }
-        public object? this[string key] { get { throw null; } set { } }
+        public object this[string key] { get { throw null; } set { } }
         public System.Collections.Generic.ICollection<string> Keys { get { throw null; } }
         public System.Collections.Generic.ICollection<object> Values { get { throw null; } }
         public int Count { get { throw null; } }
@@ -235,8 +235,8 @@ namespace System.Diagnostics
         public string Name  { get { throw null; } }
         public System.Diagnostics.ActivityKind Kind  { get { throw null; } }
         public T Parent  { get { throw null; } }
-        public System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>> Tags  { get { throw null; } }
-        public System.Collections.Generic.IEnumerable<System.Diagnostics.ActivityLink> Links  { get { throw null; } }
+        public System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>? Tags  { get { throw null; } }
+        public System.Collections.Generic.IEnumerable<System.Diagnostics.ActivityLink>? Links  { get { throw null; } }
         public System.Diagnostics.ActivityTagsCollection SamplingTags { get { throw null; } }
         public System.Diagnostics.ActivityTraceId TraceId { get { throw null; } }
     }
