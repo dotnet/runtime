@@ -281,13 +281,13 @@ namespace System.Net.Sockets
             }
         }
 
-        private static TResult EndAcceptCore<TResult>(IAsyncResult asyncResult)
+        private TResult EndAcceptCore<TResult>(IAsyncResult asyncResult)
         {
             try
             {
                 return TaskToApm.End<TResult>(asyncResult);
             }
-            catch (SocketException ex) when (ex.SocketErrorCode == SocketError.OperationAborted)
+            catch (SocketException) when (!_active)
             {
                 // Socket.EndAccept(iar) throws ObjectDisposedException when the underlying socket gets closed.
                 // TcpClient's documented behavior was to propagate that exception, we need to emulate it for compatibility:
