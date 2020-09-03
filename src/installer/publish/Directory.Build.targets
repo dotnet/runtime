@@ -106,7 +106,7 @@
 
       <ItemsToSign Remove="@(ItemsToSign)" />
       <ItemsToSign Include="@(DownloadedArtifactFile)"
-                   Exclude="@(DownloadedSymbolNupkgFile)" />
+                   Exclude="@(DownloadedSymbolNupkgFile);$(ArtifactsShippingPackagesDir)productVersion.txt" />
 
     </ItemGroup>
 
