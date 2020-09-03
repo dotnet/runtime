@@ -55,6 +55,12 @@ static MonoClass* uri_class;
 static MonoClass* task_class;
 static MonoClass* safehandle_class;
 
+static int resolved_datetime_class = 0,
+	resolved_datetimeoffset_class = 0,
+	resolved_uri_class = 0,
+	resolved_task_class = 0,
+	resolved_safehandle_class = 0;
+
 int mono_wasm_enable_gc = 1;
 
 /* Not part of public headers */
@@ -584,8 +590,10 @@ mono_wasm_string_from_js (const char *str)
 static int
 class_is_task (MonoClass *klass)
 {
-	if (!task_class)
+	if (!task_class && !resolved_task_class) {
 		task_class = mono_class_from_name (mono_get_corlib(), "System.Threading.Tasks", "Task");
+		resolved_task_class = 1;
+	}
 
 	if (task_class && (klass == task_class || mono_class_is_subclass_of(klass, task_class, 0)))
 		return 1;
@@ -638,16 +646,23 @@ mono_wasm_get_obj_type (MonoObject *obj)
 	MonoType *type = mono_class_get_type (klass);
 	obj = NULL;
 
-	if (!datetime_class)
+	if (!datetime_class && !resolved_datetime_class) {
 		datetime_class = mono_class_from_name (mono_get_corlib(), "System", "DateTime");
-	if (!datetimeoffset_class)
+		resolved_datetime_class = 1;
+	}
+	if (!datetimeoffset_class && !resolved_datetimeoffset_class) {
 		datetimeoffset_class = mono_class_from_name (mono_get_corlib(), "System", "DateTimeOffset");
-	if (!uri_class) {
+		resolved_datetimeoffset_class = 1;
+	}
+	if (!uri_class && !resolved_uri_class) {
 		MonoException** exc = NULL;
 		uri_class = mono_get_uri_class(exc);
+		resolved_uri_class = 1;
 	}
-	if (!safehandle_class)
+	if (!safehandle_class && !resolved_safehandle_class) {
 		safehandle_class = mono_class_from_name (mono_get_corlib(), "System.Runtime.InteropServices", "SafeHandle");
+		resolved_safehandle_class = 1;
+	}
 
 	switch (mono_type_get_type (type)) {
 	// case MONO_TYPE_CHAR: prob should be done not as a number?
