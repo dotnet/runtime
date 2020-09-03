@@ -7,6 +7,7 @@ using Test.Cryptography;
 
 namespace System.Security.Cryptography.EcDsa.Tests
 {
+    [SkipOnMono("Not supported on Browser", TestPlatforms.Browser)]
     public class ECDsaImportExportTests : ECDsaTestsBase
     {
 #if NETCOREAPP
