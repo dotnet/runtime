@@ -8,33 +8,33 @@ namespace Microsoft.Win32.SafeHandles
 {
     public abstract partial class CriticalHandleMinusOneIsInvalid : System.Runtime.InteropServices.CriticalHandle
     {
-        protected CriticalHandleMinusOneIsInvalid() : base(default(System.IntPtr)) { }
+        protected CriticalHandleMinusOneIsInvalid() : base (default(System.IntPtr)) { }
         public override bool IsInvalid { get { throw null; } }
     }
     public abstract partial class CriticalHandleZeroOrMinusOneIsInvalid : System.Runtime.InteropServices.CriticalHandle
     {
-        protected CriticalHandleZeroOrMinusOneIsInvalid() : base(default(System.IntPtr)) { }
+        protected CriticalHandleZeroOrMinusOneIsInvalid() : base (default(System.IntPtr)) { }
         public override bool IsInvalid { get { throw null; } }
     }
     public sealed partial class SafeFileHandle : Microsoft.Win32.SafeHandles.SafeHandleZeroOrMinusOneIsInvalid
     {
-        public SafeFileHandle(System.IntPtr preexistingHandle, bool ownsHandle) : base(default(bool)) { }
+        public SafeFileHandle(System.IntPtr preexistingHandle, bool ownsHandle) : base (default(bool)) { }
         public override bool IsInvalid { get { throw null; } }
         protected override bool ReleaseHandle() { throw null; }
     }
     public abstract partial class SafeHandleMinusOneIsInvalid : System.Runtime.InteropServices.SafeHandle
     {
-        protected SafeHandleMinusOneIsInvalid(bool ownsHandle) : base(default(System.IntPtr), default(bool)) { }
+        protected SafeHandleMinusOneIsInvalid(bool ownsHandle) : base (default(System.IntPtr), default(bool)) { }
         public override bool IsInvalid { get { throw null; } }
     }
     public abstract partial class SafeHandleZeroOrMinusOneIsInvalid : System.Runtime.InteropServices.SafeHandle
     {
-        protected SafeHandleZeroOrMinusOneIsInvalid(bool ownsHandle) : base(default(System.IntPtr), default(bool)) { }
+        protected SafeHandleZeroOrMinusOneIsInvalid(bool ownsHandle) : base (default(System.IntPtr), default(bool)) { }
         public override bool IsInvalid { get { throw null; } }
     }
     public sealed partial class SafeWaitHandle : Microsoft.Win32.SafeHandles.SafeHandleZeroOrMinusOneIsInvalid
     {
-        public SafeWaitHandle(System.IntPtr existingHandle, bool ownsHandle) : base(default(bool)) { }
+        public SafeWaitHandle(System.IntPtr existingHandle, bool ownsHandle) : base (default(bool)) { }
         protected override bool ReleaseHandle() { throw null; }
     }
 }
@@ -437,7 +437,7 @@ namespace System
         public System.ArraySegment<T>.Enumerator GetEnumerator() { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool operator ==(System.ArraySegment<T> a, System.ArraySegment<T> b) { throw null; }
-        public static implicit operator System.ArraySegment<T>(T[] array) { throw null; }
+        public static implicit operator System.ArraySegment<T> (T[] array) { throw null; }
         public static bool operator !=(System.ArraySegment<T> a, System.ArraySegment<T> b) { throw null; }
         public System.ArraySegment<T> Slice(int index) { throw null; }
         public System.ArraySegment<T> Slice(int index, int count) { throw null; }
@@ -477,7 +477,7 @@ namespace System
     }
     public delegate void AssemblyLoadEventHandler(object? sender, System.AssemblyLoadEventArgs args);
     public delegate void AsyncCallback(System.IAsyncResult ar);
-    [System.AttributeUsageAttribute(System.AttributeTargets.All, Inherited = true, AllowMultiple = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.All, Inherited=true, AllowMultiple=false)]
     public abstract partial class Attribute
     {
         protected Attribute() { }
@@ -539,7 +539,7 @@ namespace System
         GenericParameter = 16384,
         All = 32767,
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Class, Inherited = true)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class, Inherited=true)]
     public sealed partial class AttributeUsageAttribute : System.Attribute
     {
         public AttributeUsageAttribute(System.AttributeTargets validOn) { }
@@ -815,7 +815,7 @@ namespace System
         public bool MoveNext() { throw null; }
         public void Reset() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.All, Inherited = true, AllowMultiple = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.All, Inherited=true, AllowMultiple=false)]
     public sealed partial class CLSCompliantAttribute : System.Attribute
     {
         public CLSCompliantAttribute(bool isCompliant) { }
@@ -833,7 +833,7 @@ namespace System
         public ContextMarshalException(string? message) { }
         public ContextMarshalException(string? message, System.Exception? inner) { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Field, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field, Inherited=false)]
     public partial class ContextStaticAttribute : System.Attribute
     {
         public ContextStaticAttribute() { }
@@ -1474,7 +1474,7 @@ namespace System
         public static bool operator ==(System.DateTimeOffset left, System.DateTimeOffset right) { throw null; }
         public static bool operator >(System.DateTimeOffset left, System.DateTimeOffset right) { throw null; }
         public static bool operator >=(System.DateTimeOffset left, System.DateTimeOffset right) { throw null; }
-        public static implicit operator System.DateTimeOffset(System.DateTime dateTime) { throw null; }
+        public static implicit operator System.DateTimeOffset (System.DateTime dateTime) { throw null; }
         public static bool operator !=(System.DateTimeOffset left, System.DateTimeOffset right) { throw null; }
         public static bool operator <(System.DateTimeOffset left, System.DateTimeOffset right) { throw null; }
         public static bool operator <=(System.DateTimeOffset left, System.DateTimeOffset right) { throw null; }
@@ -1593,38 +1593,38 @@ namespace System
         public static System.Decimal operator --(System.Decimal d) { throw null; }
         public static System.Decimal operator /(System.Decimal d1, System.Decimal d2) { throw null; }
         public static bool operator ==(System.Decimal d1, System.Decimal d2) { throw null; }
-        public static explicit operator byte(System.Decimal value) { throw null; }
-        public static explicit operator char(System.Decimal value) { throw null; }
-        public static explicit operator double(System.Decimal value) { throw null; }
-        public static explicit operator short(System.Decimal value) { throw null; }
-        public static explicit operator int(System.Decimal value) { throw null; }
-        public static explicit operator long(System.Decimal value) { throw null; }
+        public static explicit operator byte (System.Decimal value) { throw null; }
+        public static explicit operator char (System.Decimal value) { throw null; }
+        public static explicit operator double (System.Decimal value) { throw null; }
+        public static explicit operator short (System.Decimal value) { throw null; }
+        public static explicit operator int (System.Decimal value) { throw null; }
+        public static explicit operator long (System.Decimal value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator sbyte(System.Decimal value) { throw null; }
-        public static explicit operator float(System.Decimal value) { throw null; }
+        public static explicit operator sbyte (System.Decimal value) { throw null; }
+        public static explicit operator float (System.Decimal value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator ushort(System.Decimal value) { throw null; }
+        public static explicit operator ushort (System.Decimal value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator uint(System.Decimal value) { throw null; }
+        public static explicit operator uint (System.Decimal value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator ulong(System.Decimal value) { throw null; }
-        public static explicit operator System.Decimal(double value) { throw null; }
-        public static explicit operator System.Decimal(float value) { throw null; }
+        public static explicit operator ulong (System.Decimal value) { throw null; }
+        public static explicit operator System.Decimal (double value) { throw null; }
+        public static explicit operator System.Decimal (float value) { throw null; }
         public static bool operator >(System.Decimal d1, System.Decimal d2) { throw null; }
         public static bool operator >=(System.Decimal d1, System.Decimal d2) { throw null; }
-        public static implicit operator System.Decimal(byte value) { throw null; }
-        public static implicit operator System.Decimal(char value) { throw null; }
-        public static implicit operator System.Decimal(short value) { throw null; }
-        public static implicit operator System.Decimal(int value) { throw null; }
-        public static implicit operator System.Decimal(long value) { throw null; }
+        public static implicit operator System.Decimal (byte value) { throw null; }
+        public static implicit operator System.Decimal (char value) { throw null; }
+        public static implicit operator System.Decimal (short value) { throw null; }
+        public static implicit operator System.Decimal (int value) { throw null; }
+        public static implicit operator System.Decimal (long value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static implicit operator System.Decimal(sbyte value) { throw null; }
+        public static implicit operator System.Decimal (sbyte value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static implicit operator System.Decimal(ushort value) { throw null; }
+        public static implicit operator System.Decimal (ushort value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static implicit operator System.Decimal(uint value) { throw null; }
+        public static implicit operator System.Decimal (uint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static implicit operator System.Decimal(ulong value) { throw null; }
+        public static implicit operator System.Decimal (ulong value) { throw null; }
         public static System.Decimal operator ++(System.Decimal d) { throw null; }
         public static bool operator !=(System.Decimal d1, System.Decimal d2) { throw null; }
         public static bool operator <(System.Decimal d1, System.Decimal d2) { throw null; }
@@ -1821,7 +1821,7 @@ namespace System
         public static string? GetName(System.Type enumType, object value) { throw null; }
         public static string? GetName<TEnum>(TEnum value) where TEnum : struct, System.Enum { throw null; }
         public static string[] GetNames(System.Type enumType) { throw null; }
-        public static string[] GetNames<TEnum>() where TEnum : struct, System.Enum { throw null; }
+        public static string[] GetNames<TEnum>() where TEnum: struct, System.Enum { throw null; }
         public System.TypeCode GetTypeCode() { throw null; }
         public static System.Type GetUnderlyingType(System.Type enumType) { throw null; }
         public static System.Array GetValues(System.Type enumType) { throw null; }
@@ -2021,7 +2021,7 @@ namespace System
     {
         public FileStyleUriParser() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Enum, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Enum, Inherited=false)]
     public partial class FlagsAttribute : System.Attribute
     {
         public FlagsAttribute() { }
@@ -2233,10 +2233,10 @@ namespace System
         public static bool IsPositiveInfinity(System.Half value) { throw null; }
         public static bool IsSubnormal(System.Half value) { throw null; }
         public static bool operator ==(System.Half left, System.Half right) { throw null; }
-        public static explicit operator System.Half(double value) { throw null; }
-        public static explicit operator double(System.Half value) { throw null; }
-        public static explicit operator float(System.Half value) { throw null; }
-        public static explicit operator System.Half(float value) { throw null; }
+        public static explicit operator System.Half (double value) { throw null; }
+        public static explicit operator double (System.Half value) { throw null; }
+        public static explicit operator float (System.Half value) { throw null; }
+        public static explicit operator System.Half (float value) { throw null; }
         public static bool operator >(System.Half left, System.Half right) { throw null; }
         public static bool operator >=(System.Half left, System.Half right) { throw null; }
         public static bool operator !=(System.Half left, System.Half right) { throw null; }
@@ -2360,7 +2360,7 @@ namespace System
         public static System.Index FromStart(int value) { throw null; }
         public override int GetHashCode() { throw null; }
         public int GetOffset(int length) { throw null; }
-        public static implicit operator System.Index(int value) { throw null; }
+        public static implicit operator System.Index (int value) { throw null; }
         public override string ToString() { throw null; }
     }
     public sealed partial class IndexOutOfRangeException : System.SystemException
@@ -2523,14 +2523,14 @@ namespace System
         public override int GetHashCode() { throw null; }
         public static System.IntPtr operator +(System.IntPtr pointer, int offset) { throw null; }
         public static bool operator ==(System.IntPtr value1, System.IntPtr value2) { throw null; }
-        public static explicit operator System.IntPtr(int value) { throw null; }
-        public static explicit operator System.IntPtr(long value) { throw null; }
-        public static explicit operator int(System.IntPtr value) { throw null; }
-        public static explicit operator long(System.IntPtr value) { throw null; }
+        public static explicit operator System.IntPtr (int value) { throw null; }
+        public static explicit operator System.IntPtr (long value) { throw null; }
+        public static explicit operator int (System.IntPtr value) { throw null; }
+        public static explicit operator long (System.IntPtr value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public unsafe static explicit operator void*(System.IntPtr value) { throw null; }
+        public unsafe static explicit operator void* (System.IntPtr value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public unsafe static explicit operator System.IntPtr(void* value) { throw null; }
+        public unsafe static explicit operator System.IntPtr (void* value) { throw null; }
         public static bool operator !=(System.IntPtr value1, System.IntPtr value2) { throw null; }
         public static System.IntPtr operator -(System.IntPtr pointer, int offset) { throw null; }
         public static System.IntPtr Parse(string s) { throw null; }
@@ -2833,9 +2833,9 @@ namespace System
         public override bool Equals(object? obj) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public override int GetHashCode() { throw null; }
-        public static implicit operator System.Memory<T>(System.ArraySegment<T> segment) { throw null; }
-        public static implicit operator System.ReadOnlyMemory<T>(System.Memory<T> memory) { throw null; }
-        public static implicit operator System.Memory<T>(T[]? array) { throw null; }
+        public static implicit operator System.Memory<T> (System.ArraySegment<T> segment) { throw null; }
+        public static implicit operator System.ReadOnlyMemory<T> (System.Memory<T> memory) { throw null; }
+        public static implicit operator System.Memory<T> (T[]? array) { throw null; }
         public System.Buffers.MemoryHandle Pin() { throw null; }
         public System.Memory<T> Slice(int start) { throw null; }
         public System.Memory<T> Slice(int start, int length) { throw null; }
@@ -2917,8 +2917,8 @@ namespace System
     }
     public abstract partial class MulticastDelegate : System.Delegate
     {
-        protected MulticastDelegate(object target, string method) : base(default(object), default(string)) { }
-        protected MulticastDelegate(System.Type target, string method) : base(default(object), default(string)) { }
+        protected MulticastDelegate(object target, string method) : base (default(object), default(string)) { }
+        protected MulticastDelegate(System.Type target, string method) : base (default(object), default(string)) { }
         protected sealed override System.Delegate CombineImpl(System.Delegate? follow) { throw null; }
         public sealed override bool Equals(object? obj) { throw null; }
         public sealed override int GetHashCode() { throw null; }
@@ -2947,7 +2947,7 @@ namespace System
     {
         public NewsStyleUriParser() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Field, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field, Inherited=false)]
     public sealed partial class NonSerializedAttribute : System.Attribute
     {
         public NonSerializedAttribute() { }
@@ -2995,8 +2995,8 @@ namespace System
         public override int GetHashCode() { throw null; }
         public readonly T GetValueOrDefault() { throw null; }
         public readonly T GetValueOrDefault(T defaultValue) { throw null; }
-        public static explicit operator T(T? value) { throw null; }
-        public static implicit operator T?(T value) { throw null; }
+        public static explicit operator T (T? value) { throw null; }
+        public static implicit operator T? (T value) { throw null; }
         public override string? ToString() { throw null; }
     }
     public partial class NullReferenceException : System.SystemException
@@ -3028,7 +3028,7 @@ namespace System
         public string ObjectName { get { throw null; } }
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Delegate | System.AttributeTargets.Enum | System.AttributeTargets.Event | System.AttributeTargets.Field | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Property | System.AttributeTargets.Struct, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Delegate | System.AttributeTargets.Enum | System.AttributeTargets.Event | System.AttributeTargets.Field | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Property | System.AttributeTargets.Struct, Inherited=false)]
     public sealed partial class ObsoleteAttribute : System.Attribute
     {
         public ObsoleteAttribute() { }
@@ -3093,7 +3093,7 @@ namespace System
         public OverflowException(string? message) { }
         public OverflowException(string? message, System.Exception? innerException) { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, Inherited = true, AllowMultiple = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, Inherited=true, AllowMultiple=false)]
     public sealed partial class ParamArrayAttribute : System.Attribute
     {
         public ParamArrayAttribute() { }
@@ -3180,8 +3180,8 @@ namespace System
         public bool Equals(System.ReadOnlyMemory<T> other) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public override int GetHashCode() { throw null; }
-        public static implicit operator System.ReadOnlyMemory<T>(System.ArraySegment<T> segment) { throw null; }
-        public static implicit operator System.ReadOnlyMemory<T>(T[]? array) { throw null; }
+        public static implicit operator System.ReadOnlyMemory<T> (System.ArraySegment<T> segment) { throw null; }
+        public static implicit operator System.ReadOnlyMemory<T> (T[]? array) { throw null; }
         public System.Buffers.MemoryHandle Pin() { throw null; }
         public System.ReadOnlyMemory<T> Slice(int start) { throw null; }
         public System.ReadOnlyMemory<T> Slice(int start, int length) { throw null; }
@@ -3212,8 +3212,8 @@ namespace System
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public ref readonly T GetPinnableReference() { throw null; }
         public static bool operator ==(System.ReadOnlySpan<T> left, System.ReadOnlySpan<T> right) { throw null; }
-        public static implicit operator System.ReadOnlySpan<T>(System.ArraySegment<T> segment) { throw null; }
-        public static implicit operator System.ReadOnlySpan<T>(T[]? array) { throw null; }
+        public static implicit operator System.ReadOnlySpan<T> (System.ArraySegment<T> segment) { throw null; }
+        public static implicit operator System.ReadOnlySpan<T> (T[]? array) { throw null; }
         public static bool operator !=(System.ReadOnlySpan<T> left, System.ReadOnlySpan<T> right) { throw null; }
         public System.ReadOnlySpan<T> Slice(int start) { throw null; }
         public System.ReadOnlySpan<T> Slice(int start, int length) { throw null; }
@@ -3322,7 +3322,7 @@ namespace System
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.SByte result) { throw null; }
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, out System.SByte result) { throw null; }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Delegate | System.AttributeTargets.Enum | System.AttributeTargets.Struct, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Delegate | System.AttributeTargets.Enum | System.AttributeTargets.Struct, Inherited=false)]
     public sealed partial class SerializableAttribute : System.Attribute
     {
         public SerializableAttribute() { }
@@ -3411,9 +3411,9 @@ namespace System
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public ref T GetPinnableReference() { throw null; }
         public static bool operator ==(System.Span<T> left, System.Span<T> right) { throw null; }
-        public static implicit operator System.Span<T>(System.ArraySegment<T> segment) { throw null; }
-        public static implicit operator System.ReadOnlySpan<T>(System.Span<T> span) { throw null; }
-        public static implicit operator System.Span<T>(T[]? array) { throw null; }
+        public static implicit operator System.Span<T> (System.ArraySegment<T> segment) { throw null; }
+        public static implicit operator System.ReadOnlySpan<T> (System.Span<T> span) { throw null; }
+        public static implicit operator System.Span<T> (T[]? array) { throw null; }
         public static bool operator !=(System.Span<T> left, System.Span<T> right) { throw null; }
         public System.Span<T> Slice(int start) { throw null; }
         public System.Span<T> Slice(int start, int length) { throw null; }
@@ -3566,7 +3566,7 @@ namespace System
         public System.String Normalize() { throw null; }
         public System.String Normalize(System.Text.NormalizationForm normalizationForm) { throw null; }
         public static bool operator ==(System.String? a, System.String? b) { throw null; }
-        public static implicit operator System.ReadOnlySpan<char>(System.String? value) { throw null; }
+        public static implicit operator System.ReadOnlySpan<char> (System.String? value) { throw null; }
         public static bool operator !=(System.String? a, System.String? b) { throw null; }
         public System.String PadLeft(int totalWidth) { throw null; }
         public System.String PadLeft(int totalWidth, char paddingChar) { throw null; }
@@ -3680,7 +3680,7 @@ namespace System
         public SystemException(string? message) { }
         public SystemException(string? message, System.Exception? innerException) { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Field, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field, Inherited=false)]
     public partial class ThreadStaticAttribute : System.Attribute
     {
         public ThreadStaticAttribute() { }
@@ -4577,12 +4577,12 @@ namespace System
         public override int GetHashCode() { throw null; }
         public static System.UIntPtr operator +(System.UIntPtr pointer, int offset) { throw null; }
         public static bool operator ==(System.UIntPtr value1, System.UIntPtr value2) { throw null; }
-        public static explicit operator System.UIntPtr(uint value) { throw null; }
-        public static explicit operator System.UIntPtr(ulong value) { throw null; }
-        public static explicit operator uint(System.UIntPtr value) { throw null; }
-        public static explicit operator ulong(System.UIntPtr value) { throw null; }
-        public unsafe static explicit operator void*(System.UIntPtr value) { throw null; }
-        public unsafe static explicit operator System.UIntPtr(void* value) { throw null; }
+        public static explicit operator System.UIntPtr (uint value) { throw null; }
+        public static explicit operator System.UIntPtr (ulong value) { throw null; }
+        public static explicit operator uint (System.UIntPtr value) { throw null; }
+        public static explicit operator ulong (System.UIntPtr value) { throw null; }
+        public unsafe static explicit operator void* (System.UIntPtr value) { throw null; }
+        public unsafe static explicit operator System.UIntPtr (void* value) { throw null; }
         public static bool operator !=(System.UIntPtr value1, System.UIntPtr value2) { throw null; }
         public static System.UIntPtr operator -(System.UIntPtr pointer, int offset) { throw null; }
         public static System.UIntPtr Parse(string s) { throw null; }
@@ -5105,7 +5105,7 @@ namespace System.Buffers
 }
 namespace System.CodeDom.Compiler
 {
-    [System.AttributeUsageAttribute(System.AttributeTargets.All, Inherited = false, AllowMultiple = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.All, Inherited=false, AllowMultiple=false)]
     public sealed partial class GeneratedCodeAttribute : System.Attribute
     {
         public GeneratedCodeAttribute(string? tool, string? version) { }
@@ -5612,7 +5612,7 @@ namespace System.Configuration.Assemblies
 }
 namespace System.Diagnostics
 {
-    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Method, AllowMultiple = true)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Method, AllowMultiple=true)]
     public sealed partial class ConditionalAttribute : System.Attribute
     {
         public ConditionalAttribute(string conditionString) { }
@@ -5684,7 +5684,7 @@ namespace System.Diagnostics
         [System.Diagnostics.ConditionalAttribute("DEBUG")]
         public static void WriteLineIf(bool condition, string? message, string? category) { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Module, AllowMultiple = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Module, AllowMultiple=false)]
     public sealed partial class DebuggableAttribute : System.Attribute
     {
         public DebuggableAttribute(bool isJITTrackingEnabled, bool isJITOptimizerDisabled) { }
@@ -5712,7 +5712,7 @@ namespace System.Diagnostics
         public static void Log(int level, string? category, string? message) { }
         public static void NotifyOfCrossThreadDependency() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Property, AllowMultiple = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Property, AllowMultiple=false)]
     public sealed partial class DebuggerBrowsableAttribute : System.Attribute
     {
         public DebuggerBrowsableAttribute(System.Diagnostics.DebuggerBrowsableState state) { }
@@ -5724,7 +5724,7 @@ namespace System.Diagnostics
         Collapsed = 2,
         RootHidden = 3,
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Delegate | System.AttributeTargets.Enum | System.AttributeTargets.Field | System.AttributeTargets.Property | System.AttributeTargets.Struct, AllowMultiple = true)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Delegate | System.AttributeTargets.Enum | System.AttributeTargets.Field | System.AttributeTargets.Property | System.AttributeTargets.Struct, AllowMultiple=true)]
     public sealed partial class DebuggerDisplayAttribute : System.Attribute
     {
         public DebuggerDisplayAttribute(string? value) { }
@@ -5734,27 +5734,27 @@ namespace System.Diagnostics
         public string? Type { get { throw null; } set { } }
         public string Value { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Property, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Property, Inherited=false)]
     public sealed partial class DebuggerHiddenAttribute : System.Attribute
     {
         public DebuggerHiddenAttribute() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Property | System.AttributeTargets.Struct, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Property | System.AttributeTargets.Struct, Inherited=false)]
     public sealed partial class DebuggerNonUserCodeAttribute : System.Attribute
     {
         public DebuggerNonUserCodeAttribute() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Constructor | System.AttributeTargets.Method, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Constructor | System.AttributeTargets.Method, Inherited=false)]
     public sealed partial class DebuggerStepperBoundaryAttribute : System.Attribute
     {
         public DebuggerStepperBoundaryAttribute() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Struct, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Struct, Inherited=false)]
     public sealed partial class DebuggerStepThroughAttribute : System.Attribute
     {
         public DebuggerStepThroughAttribute() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Struct, AllowMultiple = true)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Struct, AllowMultiple=true)]
     public sealed partial class DebuggerTypeProxyAttribute : System.Attribute
     {
         public DebuggerTypeProxyAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] string typeName) { }
@@ -5764,7 +5764,7 @@ namespace System.Diagnostics
         public System.Type? Target { get { throw null; } set { } }
         public string? TargetTypeName { get { throw null; } set { } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Struct, AllowMultiple = true)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Struct, AllowMultiple=true)]
     public sealed partial class DebuggerVisualizerAttribute : System.Attribute
     {
         public DebuggerVisualizerAttribute(string visualizerTypeName) { }
@@ -5798,28 +5798,28 @@ namespace System.Diagnostics
 }
 namespace System.Diagnostics.CodeAnalysis
 {
-    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property, Inherited=false)]
     public sealed partial class AllowNullAttribute : System.Attribute
     {
         public AllowNullAttribute() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property, Inherited=false)]
     public sealed partial class DisallowNullAttribute : System.Attribute
     {
         public DisallowNullAttribute() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited=false)]
     public sealed partial class DoesNotReturnAttribute : System.Attribute
     {
         public DoesNotReturnAttribute() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, Inherited=false)]
     public sealed partial class DoesNotReturnIfAttribute : System.Attribute
     {
         public DoesNotReturnIfAttribute(bool parameterValue) { }
         public bool ParameterValue { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.GenericParameter | System.AttributeTargets.Method | System.AttributeTargets.Parameter | System.AttributeTargets.Property | System.AttributeTargets.ReturnValue, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.GenericParameter | System.AttributeTargets.Method | System.AttributeTargets.Parameter | System.AttributeTargets.Property | System.AttributeTargets.ReturnValue, Inherited=false)]
     public sealed partial class DynamicallyAccessedMembersAttribute : System.Attribute
     {
         public DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes memberTypes) { }
@@ -5844,7 +5844,7 @@ namespace System.Diagnostics.CodeAnalysis
         PublicEvents = 2048,
         NonPublicEvents = 4096,
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Constructor | System.AttributeTargets.Field | System.AttributeTargets.Method, AllowMultiple = true, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Constructor | System.AttributeTargets.Field | System.AttributeTargets.Method, AllowMultiple=true, Inherited=false)]
     public sealed partial class DynamicDependencyAttribute : System.Attribute
     {
         public DynamicDependencyAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes memberTypes, string typeName, string assemblyName) { }
@@ -5859,31 +5859,31 @@ namespace System.Diagnostics.CodeAnalysis
         public System.Type? Type { get { throw null; } }
         public string? TypeName { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Event | System.AttributeTargets.Method | System.AttributeTargets.Property | System.AttributeTargets.Struct, Inherited = false, AllowMultiple = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Event | System.AttributeTargets.Method | System.AttributeTargets.Property | System.AttributeTargets.Struct, Inherited=false, AllowMultiple=false)]
     public sealed partial class ExcludeFromCodeCoverageAttribute : System.Attribute
     {
         public ExcludeFromCodeCoverageAttribute() { }
         public string? Justification { get; set; }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property | System.AttributeTargets.ReturnValue, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property | System.AttributeTargets.ReturnValue, Inherited=false)]
     public sealed partial class MaybeNullAttribute : System.Attribute
     {
         public MaybeNullAttribute() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, Inherited=false)]
     public sealed partial class MaybeNullWhenAttribute : System.Attribute
     {
         public MaybeNullWhenAttribute(bool returnValue) { }
         public bool ReturnValue { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Method | System.AttributeTargets.Property, Inherited = false, AllowMultiple = true)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Method | System.AttributeTargets.Property, Inherited=false, AllowMultiple=true)]
     public sealed partial class MemberNotNullAttribute : System.Attribute
     {
         public MemberNotNullAttribute(string member) { }
         public MemberNotNullAttribute(params string[] members) { }
         public string[] Members { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Method | System.AttributeTargets.Property, Inherited = false, AllowMultiple = true)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Method | System.AttributeTargets.Property, Inherited=false, AllowMultiple=true)]
     public sealed partial class MemberNotNullWhenAttribute : System.Attribute
     {
         public MemberNotNullWhenAttribute(bool returnValue, string member) { }
@@ -5891,31 +5891,31 @@ namespace System.Diagnostics.CodeAnalysis
         public string[] Members { get { throw null; } }
         public bool ReturnValue { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property | System.AttributeTargets.ReturnValue, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property | System.AttributeTargets.ReturnValue, Inherited=false)]
     public sealed partial class NotNullAttribute : System.Attribute
     {
         public NotNullAttribute() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter | System.AttributeTargets.Property | System.AttributeTargets.ReturnValue, AllowMultiple = true, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter | System.AttributeTargets.Property | System.AttributeTargets.ReturnValue, AllowMultiple=true, Inherited=false)]
     public sealed partial class NotNullIfNotNullAttribute : System.Attribute
     {
         public NotNullIfNotNullAttribute(string parameterName) { }
         public string ParameterName { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, Inherited=false)]
     public sealed partial class NotNullWhenAttribute : System.Attribute
     {
         public NotNullWhenAttribute(bool returnValue) { }
         public bool ReturnValue { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Constructor | System.AttributeTargets.Method, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Constructor | System.AttributeTargets.Method, Inherited=false)]
     public sealed partial class RequiresUnreferencedCodeAttribute : System.Attribute
     {
         public RequiresUnreferencedCodeAttribute(string message) { }
         public string Message { get { throw null; } }
         public string? Url { get { throw null; } set { } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.All, Inherited = false, AllowMultiple = true)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.All, Inherited=false, AllowMultiple=true)]
     [System.Diagnostics.ConditionalAttribute("CODE_ANALYSIS")]
     public sealed partial class SuppressMessageAttribute : System.Attribute
     {
@@ -5927,7 +5927,7 @@ namespace System.Diagnostics.CodeAnalysis
         public string? Scope { get { throw null; } set { } }
         public string? Target { get { throw null; } set { } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.All, Inherited = false, AllowMultiple = true)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.All, Inherited=false, AllowMultiple=true)]
     public sealed partial class UnconditionalSuppressMessageAttribute : System.Attribute
     {
         public UnconditionalSuppressMessageAttribute(string category, string checkId) { }
@@ -7695,7 +7695,7 @@ namespace System.Reflection
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Types and members the loaded assembly depends on might be removed")]
         public static System.Reflection.Assembly UnsafeLoadFrom(string assemblyFile) { throw null; }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited=false)]
     public sealed partial class AssemblyAlgorithmIdAttribute : System.Attribute
     {
         public AssemblyAlgorithmIdAttribute(System.Configuration.Assemblies.AssemblyHashAlgorithm algorithmId) { }
@@ -7704,13 +7704,13 @@ namespace System.Reflection
         [System.CLSCompliantAttribute(false)]
         public uint AlgorithmId { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited=false)]
     public sealed partial class AssemblyCompanyAttribute : System.Attribute
     {
         public AssemblyCompanyAttribute(string company) { }
         public string Company { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited=false)]
     public sealed partial class AssemblyConfigurationAttribute : System.Attribute
     {
         public AssemblyConfigurationAttribute(string configuration) { }
@@ -7721,43 +7721,43 @@ namespace System.Reflection
         Default = 0,
         WindowsRuntime = 1,
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited=false)]
     public sealed partial class AssemblyCopyrightAttribute : System.Attribute
     {
         public AssemblyCopyrightAttribute(string copyright) { }
         public string Copyright { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited=false)]
     public sealed partial class AssemblyCultureAttribute : System.Attribute
     {
         public AssemblyCultureAttribute(string culture) { }
         public string Culture { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited=false)]
     public sealed partial class AssemblyDefaultAliasAttribute : System.Attribute
     {
         public AssemblyDefaultAliasAttribute(string defaultAlias) { }
         public string DefaultAlias { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited=false)]
     public sealed partial class AssemblyDelaySignAttribute : System.Attribute
     {
         public AssemblyDelaySignAttribute(bool delaySign) { }
         public bool DelaySign { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited=false)]
     public sealed partial class AssemblyDescriptionAttribute : System.Attribute
     {
         public AssemblyDescriptionAttribute(string description) { }
         public string Description { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited=false)]
     public sealed partial class AssemblyFileVersionAttribute : System.Attribute
     {
         public AssemblyFileVersionAttribute(string version) { }
         public string Version { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited=false)]
     public sealed partial class AssemblyFlagsAttribute : System.Attribute
     {
         [System.ObsoleteAttribute("This constructor has been deprecated. Please use AssemblyFlagsAttribute(AssemblyNameFlags) instead. https://go.microsoft.com/fwlink/?linkid=14202")]
@@ -7771,25 +7771,25 @@ namespace System.Reflection
         [System.ObsoleteAttribute("This property has been deprecated. Please use AssemblyFlags instead. https://go.microsoft.com/fwlink/?linkid=14202")]
         public uint Flags { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited=false)]
     public sealed partial class AssemblyInformationalVersionAttribute : System.Attribute
     {
         public AssemblyInformationalVersionAttribute(string informationalVersion) { }
         public string InformationalVersion { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited=false)]
     public sealed partial class AssemblyKeyFileAttribute : System.Attribute
     {
         public AssemblyKeyFileAttribute(string keyFile) { }
         public string KeyFile { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited=false)]
     public sealed partial class AssemblyKeyNameAttribute : System.Attribute
     {
         public AssemblyKeyNameAttribute(string keyName) { }
         public string KeyName { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, AllowMultiple = true, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, AllowMultiple=true, Inherited=false)]
     public sealed partial class AssemblyMetadataAttribute : System.Attribute
     {
         public AssemblyMetadataAttribute(string key, string? value) { }
@@ -7838,32 +7838,32 @@ namespace System.Reflection
         public AssemblyNameProxy() { }
         public System.Reflection.AssemblyName GetAssemblyName(string assemblyFile) { throw null; }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited=false)]
     public sealed partial class AssemblyProductAttribute : System.Attribute
     {
         public AssemblyProductAttribute(string product) { }
         public string Product { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited = false, AllowMultiple = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited=false, AllowMultiple=false)]
     public sealed partial class AssemblySignatureKeyAttribute : System.Attribute
     {
         public AssemblySignatureKeyAttribute(string publicKey, string countersignature) { }
         public string Countersignature { get { throw null; } }
         public string PublicKey { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited=false)]
     public sealed partial class AssemblyTitleAttribute : System.Attribute
     {
         public AssemblyTitleAttribute(string title) { }
         public string Title { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited=false)]
     public sealed partial class AssemblyTrademarkAttribute : System.Attribute
     {
         public AssemblyTrademarkAttribute(string trademark) { }
         public string Trademark { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited=false)]
     public sealed partial class AssemblyVersionAttribute : System.Attribute
     {
         public AssemblyVersionAttribute(string version) { }
@@ -8465,14 +8465,14 @@ namespace System.Reflection
         public override string ToString() { throw null; }
     }
     public delegate System.Reflection.Module ModuleResolveEventHandler(object sender, System.ResolveEventArgs e);
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, AllowMultiple = false, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, AllowMultiple=false, Inherited=false)]
     public sealed partial class ObfuscateAssemblyAttribute : System.Attribute
     {
         public ObfuscateAssemblyAttribute(bool assemblyIsPrivate) { }
         public bool AssemblyIsPrivate { get { throw null; } }
         public bool StripAfterObfuscation { get { throw null; } set { } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Delegate | System.AttributeTargets.Enum | System.AttributeTargets.Event | System.AttributeTargets.Field | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Parameter | System.AttributeTargets.Property | System.AttributeTargets.Struct, AllowMultiple = true, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Delegate | System.AttributeTargets.Enum | System.AttributeTargets.Event | System.AttributeTargets.Field | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Parameter | System.AttributeTargets.Property | System.AttributeTargets.Struct, AllowMultiple=true, Inherited=false)]
     public sealed partial class ObfuscationAttribute : System.Attribute
     {
         public ObfuscationAttribute() { }
@@ -8844,7 +8844,7 @@ namespace System.Resources
         public MissingSatelliteAssemblyException(string? message, string? cultureName) { }
         public string? CultureName { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, AllowMultiple = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, AllowMultiple=false)]
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class NeutralResourcesLanguageAttribute : System.Attribute
     {
@@ -8911,7 +8911,7 @@ namespace System.Resources
         protected virtual void ReadResources() { }
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, AllowMultiple = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, AllowMultiple=false)]
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class SatelliteContractVersionAttribute : System.Attribute
     {
@@ -8932,7 +8932,7 @@ namespace System.Runtime
         public AmbiguousImplementationException(string? message) { }
         public AmbiguousImplementationException(string? message, System.Exception? innerException) { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited=false)]
     public sealed partial class AssemblyTargetedPatchBandAttribute : System.Attribute
     {
         public AssemblyTargetedPatchBandAttribute(string targetedPatchBand) { }
@@ -8968,7 +8968,7 @@ namespace System.Runtime
         public static void SetProfileRoot(string directoryPath) { }
         public static void StartProfile(string? profile) { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Constructor | System.AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Constructor | System.AttributeTargets.Method, AllowMultiple=false, Inherited=false)]
     public sealed partial class TargetedPatchingOptOutAttribute : System.Attribute
     {
         public TargetedPatchingOptOutAttribute(string reason) { }
@@ -8993,21 +8993,21 @@ namespace System.Runtime.CompilerServices
         public static System.Runtime.CompilerServices.AsyncIteratorMethodBuilder Create() { throw null; }
         public void MoveNext<TStateMachine>(ref TStateMachine stateMachine) where TStateMachine : System.Runtime.CompilerServices.IAsyncStateMachine { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited = false, AllowMultiple = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited=false, AllowMultiple=false)]
     public sealed partial class AsyncIteratorStateMachineAttribute : System.Runtime.CompilerServices.StateMachineAttribute
     {
-        public AsyncIteratorStateMachineAttribute(System.Type stateMachineType) : base(default(System.Type)) { }
+        public AsyncIteratorStateMachineAttribute(System.Type stateMachineType) : base (default(System.Type)) { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Delegate | System.AttributeTargets.Enum | System.AttributeTargets.Interface | System.AttributeTargets.Struct, Inherited = false, AllowMultiple = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Delegate | System.AttributeTargets.Enum | System.AttributeTargets.Interface | System.AttributeTargets.Struct, Inherited=false, AllowMultiple=false)]
     public sealed partial class AsyncMethodBuilderAttribute : System.Attribute
     {
         public AsyncMethodBuilderAttribute(System.Type builderType) { }
         public System.Type BuilderType { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited = false, AllowMultiple = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited=false, AllowMultiple=false)]
     public sealed partial class AsyncStateMachineAttribute : System.Runtime.CompilerServices.StateMachineAttribute
     {
-        public AsyncStateMachineAttribute(System.Type stateMachineType) : base(default(System.Type)) { }
+        public AsyncStateMachineAttribute(System.Type stateMachineType) : base (default(System.Type)) { }
     }
     public partial struct AsyncTaskMethodBuilder
     {
@@ -9090,23 +9090,23 @@ namespace System.Runtime.CompilerServices
     {
         public CallConvThiscall() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, AllowMultiple = false, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, AllowMultiple=false, Inherited=false)]
     public sealed partial class CallerArgumentExpressionAttribute : System.Attribute
     {
         public CallerArgumentExpressionAttribute(string parameterName) { }
         public string ParameterName { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, Inherited=false)]
     public sealed partial class CallerFilePathAttribute : System.Attribute
     {
         public CallerFilePathAttribute() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, Inherited=false)]
     public sealed partial class CallerLineNumberAttribute : System.Attribute
     {
         public CallerLineNumberAttribute() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, Inherited=false)]
     public sealed partial class CallerMemberNameAttribute : System.Attribute
     {
         public CallerMemberNameAttribute() { }
@@ -9123,7 +9123,7 @@ namespace System.Runtime.CompilerServices
         public CompilationRelaxationsAttribute(System.Runtime.CompilerServices.CompilationRelaxations relaxations) { }
         public int CompilationRelaxations { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.All, Inherited = true)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.All, Inherited=true)]
     public sealed partial class CompilerGeneratedAttribute : System.Attribute
     {
         public CompilerGeneratedAttribute() { }
@@ -9229,19 +9229,19 @@ namespace System.Runtime.CompilerServices
             public void UnsafeOnCompleted(System.Action continuation) { }
         }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter, Inherited=false)]
     public abstract partial class CustomConstantAttribute : System.Attribute
     {
         protected CustomConstantAttribute() { }
         public abstract object? Value { get; }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter, Inherited=false)]
     public sealed partial class DateTimeConstantAttribute : System.Runtime.CompilerServices.CustomConstantAttribute
     {
         public DateTimeConstantAttribute(long ticks) { }
         public override object Value { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter, Inherited=false)]
     public sealed partial class DecimalConstantAttribute : System.Attribute
     {
         public DecimalConstantAttribute(byte scale, byte sign, int hi, int mid, int low) { }
@@ -9255,14 +9255,14 @@ namespace System.Runtime.CompilerServices
         public DefaultDependencyAttribute(System.Runtime.CompilerServices.LoadHint loadHintArgument) { }
         public System.Runtime.CompilerServices.LoadHint LoadHint { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, AllowMultiple = true)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, AllowMultiple=true)]
     public sealed partial class DependencyAttribute : System.Attribute
     {
         public DependencyAttribute(string dependentAssemblyArgument, System.Runtime.CompilerServices.LoadHint loadHintArgument) { }
         public string DependentAssembly { get { throw null; } }
         public System.Runtime.CompilerServices.LoadHint LoadHint { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, AllowMultiple = false, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, AllowMultiple=false, Inherited=false)]
     public sealed partial class DisablePrivateReflectionAttribute : System.Attribute
     {
         public DisablePrivateReflectionAttribute() { }
@@ -9272,7 +9272,7 @@ namespace System.Runtime.CompilerServices
     {
         public DiscardableAttribute() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, Inherited=false)]
     public sealed partial class EnumeratorCancellationAttribute : System.Attribute
     {
         public EnumeratorCancellationAttribute() { }
@@ -9287,7 +9287,7 @@ namespace System.Runtime.CompilerServices
     {
         public FixedAddressValueTypeAttribute() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Field, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field, Inherited=false)]
     public sealed partial class FixedBufferAttribute : System.Attribute
     {
         public FixedBufferAttribute(System.Type elementType, int length) { }
@@ -9307,7 +9307,7 @@ namespace System.Runtime.CompilerServices
     {
         void UnsafeOnCompleted(System.Action continuation);
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Property, Inherited = true)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Property, Inherited=true)]
     public sealed partial class IndexerNameAttribute : System.Attribute
     {
         public IndexerNameAttribute(string indexerName) { }
@@ -9316,7 +9316,7 @@ namespace System.Runtime.CompilerServices
     {
         void OnCompleted(System.Action continuation);
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, AllowMultiple = true, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, AllowMultiple=true, Inherited=false)]
     public sealed partial class InternalsVisibleToAttribute : System.Attribute
     {
         public InternalsVisibleToAttribute(string assemblyName) { }
@@ -9336,7 +9336,7 @@ namespace System.Runtime.CompilerServices
     public static partial class IsExternalInit
     {
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.All, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.All, Inherited=false)]
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class IsReadOnlyAttribute : System.Attribute
     {
@@ -9349,10 +9349,10 @@ namespace System.Runtime.CompilerServices
     public static partial class IsVolatile
     {
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited = false, AllowMultiple = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited=false, AllowMultiple=false)]
     public sealed partial class IteratorStateMachineAttribute : System.Runtime.CompilerServices.StateMachineAttribute
     {
-        public IteratorStateMachineAttribute(System.Type stateMachineType) : base(default(System.Type)) { }
+        public IteratorStateMachineAttribute(System.Type stateMachineType) : base (default(System.Type)) { }
     }
     public partial interface ITuple
     {
@@ -9372,7 +9372,7 @@ namespace System.Runtime.CompilerServices
         OPTIL = 2,
         Runtime = 3,
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Constructor | System.AttributeTargets.Method, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Constructor | System.AttributeTargets.Method, Inherited=false)]
     public sealed partial class MethodImplAttribute : System.Attribute
     {
         public System.Runtime.CompilerServices.MethodCodeType MethodCodeType;
@@ -9394,24 +9394,24 @@ namespace System.Runtime.CompilerServices
         AggressiveOptimization = 512,
         InternalCall = 4096,
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited=false)]
     public sealed partial class ModuleInitializerAttribute : System.Attribute
     {
         public ModuleInitializerAttribute() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Method, AllowMultiple=false, Inherited=false)]
     public sealed partial class PreserveBaseOverridesAttribute : System.Attribute
     {
         public PreserveBaseOverridesAttribute() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, AllowMultiple = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, AllowMultiple=false)]
     public sealed partial class ReferenceAssemblyAttribute : System.Attribute
     {
         public ReferenceAssemblyAttribute() { }
         public ReferenceAssemblyAttribute(string? description) { }
         public string? Description { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited = false, AllowMultiple = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited=false, AllowMultiple=false)]
     public sealed partial class RuntimeCompatibilityAttribute : System.Attribute
     {
         public RuntimeCompatibilityAttribute() { }
@@ -9466,7 +9466,7 @@ namespace System.Runtime.CompilerServices
         public object WrappedException { get { throw null; } }
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Event | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Module | System.AttributeTargets.Property | System.AttributeTargets.Struct, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Event | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Module | System.AttributeTargets.Property | System.AttributeTargets.Struct, Inherited=false)]
     public sealed partial class SkipLocalsInitAttribute : System.Attribute
     {
         public SkipLocalsInitAttribute() { }
@@ -9476,13 +9476,13 @@ namespace System.Runtime.CompilerServices
     {
         public SpecialNameAttribute() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited = false, AllowMultiple = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited=false, AllowMultiple=false)]
     public partial class StateMachineAttribute : System.Attribute
     {
         public StateMachineAttribute(System.Type stateMachineType) { }
         public System.Type StateMachineType { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited=false)]
     public sealed partial class StringFreezingAttribute : System.Attribute
     {
         public StringFreezingAttribute() { }
@@ -9536,13 +9536,13 @@ namespace System.Runtime.CompilerServices
         public TupleElementNamesAttribute(string?[] transformNames) { }
         public System.Collections.Generic.IList<string?> TransformNames { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Delegate | System.AttributeTargets.Enum | System.AttributeTargets.Interface | System.AttributeTargets.Struct, Inherited = false, AllowMultiple = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Delegate | System.AttributeTargets.Enum | System.AttributeTargets.Interface | System.AttributeTargets.Struct, Inherited=false, AllowMultiple=false)]
     public sealed partial class TypeForwardedFromAttribute : System.Attribute
     {
         public TypeForwardedFromAttribute(string assemblyFullName) { }
         public string AssemblyFullName { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, AllowMultiple = true, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, AllowMultiple=true, Inherited=false)]
     public sealed partial class TypeForwardedToAttribute : System.Attribute
     {
         public TypeForwardedToAttribute(System.Type destination) { }
@@ -9606,13 +9606,13 @@ namespace System.Runtime.ConstrainedExecution
         ~CriticalFinalizerObject() { }
     }
     [System.ObsoleteAttribute("The Constrained Execution Region (CER) feature is not supported.", DiagnosticId = "SYSLIB0004", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
-    [System.AttributeUsageAttribute(System.AttributeTargets.Constructor | System.AttributeTargets.Method, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Constructor | System.AttributeTargets.Method, Inherited=false)]
     public sealed partial class PrePrepareMethodAttribute : System.Attribute
     {
         public PrePrepareMethodAttribute() { }
     }
     [System.ObsoleteAttribute("The Constrained Execution Region (CER) feature is not supported.", DiagnosticId = "SYSLIB0004", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Struct, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Struct, Inherited=false)]
     public sealed partial class ReliabilityContractAttribute : System.Attribute
     {
         public ReliabilityContractAttribute(System.Runtime.ConstrainedExecution.Consistency consistencyGuarantee, System.Runtime.ConstrainedExecution.Cer cer) { }
@@ -9638,7 +9638,7 @@ namespace System.Runtime.ExceptionServices
         public FirstChanceExceptionEventArgs(System.Exception exception) { }
         public System.Exception Exception { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Method, AllowMultiple=false, Inherited=false)]
     public sealed partial class HandleProcessCorruptedStateExceptionsAttribute : System.Attribute
     {
         public HandleProcessCorruptedStateExceptionsAttribute() { }
@@ -9653,7 +9653,7 @@ namespace System.Runtime.InteropServices
         Unicode = 3,
         Auto = 4,
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Delegate | System.AttributeTargets.Enum | System.AttributeTargets.Field | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Property | System.AttributeTargets.Struct, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Delegate | System.AttributeTargets.Enum | System.AttributeTargets.Field | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Property | System.AttributeTargets.Struct, Inherited=false)]
     public sealed partial class ComVisibleAttribute : System.Attribute
     {
         public ComVisibleAttribute(bool visibility) { }
@@ -9683,7 +9683,7 @@ namespace System.Runtime.InteropServices
         public virtual int ErrorCode { get { throw null; } }
         public override string ToString() { throw null; }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Field, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field, Inherited=false)]
     public sealed partial class FieldOffsetAttribute : System.Attribute
     {
         public FieldOffsetAttribute(int offset) { }
@@ -9702,8 +9702,8 @@ namespace System.Runtime.InteropServices
         public static System.Runtime.InteropServices.GCHandle FromIntPtr(System.IntPtr value) { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool operator ==(System.Runtime.InteropServices.GCHandle a, System.Runtime.InteropServices.GCHandle b) { throw null; }
-        public static explicit operator System.Runtime.InteropServices.GCHandle(System.IntPtr value) { throw null; }
-        public static explicit operator System.IntPtr(System.Runtime.InteropServices.GCHandle value) { throw null; }
+        public static explicit operator System.Runtime.InteropServices.GCHandle (System.IntPtr value) { throw null; }
+        public static explicit operator System.IntPtr (System.Runtime.InteropServices.GCHandle value) { throw null; }
         public static bool operator !=(System.Runtime.InteropServices.GCHandle a, System.Runtime.InteropServices.GCHandle b) { throw null; }
         public static System.IntPtr ToIntPtr(System.Runtime.InteropServices.GCHandle value) { throw null; }
     }
@@ -9714,7 +9714,7 @@ namespace System.Runtime.InteropServices
         Normal = 2,
         Pinned = 3,
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, Inherited=false)]
     public sealed partial class InAttribute : System.Attribute
     {
         public InAttribute() { }
@@ -9725,14 +9725,14 @@ namespace System.Runtime.InteropServices
         Explicit = 2,
         Auto = 3,
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, Inherited=false)]
     public sealed partial class OutAttribute : System.Attribute
     {
         public OutAttribute() { }
     }
     public abstract partial class SafeBuffer : Microsoft.Win32.SafeHandles.SafeHandleZeroOrMinusOneIsInvalid
     {
-        protected SafeBuffer(bool ownsHandle) : base(default(bool)) { }
+        protected SafeBuffer(bool ownsHandle) : base (default(bool)) { }
         [System.CLSCompliantAttribute(false)]
         public ulong ByteLength { get { throw null; } }
         [System.CLSCompliantAttribute(false)]
@@ -9774,7 +9774,7 @@ namespace System.Runtime.InteropServices
         protected void SetHandle(System.IntPtr handle) { }
         public void SetHandleAsInvalid() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Struct, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Struct, Inherited=false)]
     public sealed partial class StructLayoutAttribute : System.Attribute
     {
         public System.Runtime.InteropServices.CharSet CharSet;
@@ -9784,7 +9784,7 @@ namespace System.Runtime.InteropServices
         public StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind layoutKind) { }
         public System.Runtime.InteropServices.LayoutKind Value { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited=false)]
     public sealed partial class SuppressGCTransitionAttribute : System.Attribute
     {
         public SuppressGCTransitionAttribute() { }
@@ -9837,27 +9837,27 @@ namespace System.Runtime.Serialization
     {
         void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context);
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited=false)]
     public sealed partial class OnDeserializedAttribute : System.Attribute
     {
         public OnDeserializedAttribute() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited=false)]
     public sealed partial class OnDeserializingAttribute : System.Attribute
     {
         public OnDeserializingAttribute() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited=false)]
     public sealed partial class OnSerializedAttribute : System.Attribute
     {
         public OnSerializedAttribute() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited=false)]
     public sealed partial class OnSerializingAttribute : System.Attribute
     {
         public OnSerializingAttribute() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Field, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field, Inherited=false)]
     public sealed partial class OptionalFieldAttribute : System.Attribute
     {
         public OptionalFieldAttribute() { }
@@ -9977,7 +9977,7 @@ namespace System.Runtime.Serialization
 }
 namespace System.Runtime.Versioning
 {
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Delegate | System.AttributeTargets.Enum | System.AttributeTargets.Event | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Module | System.AttributeTargets.Property | System.AttributeTargets.Struct, AllowMultiple = false, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Delegate | System.AttributeTargets.Enum | System.AttributeTargets.Event | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Module | System.AttributeTargets.Property | System.AttributeTargets.Struct, AllowMultiple=false, Inherited=false)]
     public sealed partial class ComponentGuaranteesAttribute : System.Attribute
     {
         public ComponentGuaranteesAttribute(System.Runtime.Versioning.ComponentGuaranteesOptions guarantees) { }
@@ -10022,7 +10022,7 @@ namespace System.Runtime.Versioning
     {
         public UnsupportedOSPlatformAttribute(string platformName) : base(platformName) { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Property, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Property, Inherited=false)]
     [System.Diagnostics.ConditionalAttribute("RESOURCE_ANNOTATION_WORK")]
     public sealed partial class ResourceConsumptionAttribute : System.Attribute
     {
@@ -10031,7 +10031,7 @@ namespace System.Runtime.Versioning
         public System.Runtime.Versioning.ResourceScope ConsumptionScope { get { throw null; } }
         public System.Runtime.Versioning.ResourceScope ResourceScope { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Constructor | System.AttributeTargets.Field | System.AttributeTargets.Method | System.AttributeTargets.Property, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Constructor | System.AttributeTargets.Field | System.AttributeTargets.Method | System.AttributeTargets.Property, Inherited=false)]
     [System.Diagnostics.ConditionalAttribute("RESOURCE_ANNOTATION_WORK")]
     public sealed partial class ResourceExposureAttribute : System.Attribute
     {
@@ -10049,7 +10049,7 @@ namespace System.Runtime.Versioning
         Private = 16,
         Assembly = 32,
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, AllowMultiple = false, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, AllowMultiple=false, Inherited=false)]
     public sealed partial class TargetFrameworkAttribute : System.Attribute
     {
         public TargetFrameworkAttribute(string frameworkName) { }
@@ -10069,7 +10069,7 @@ namespace System.Runtime.Versioning
 }
 namespace System.Security
 {
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, AllowMultiple = false, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, AllowMultiple=false, Inherited=false)]
     public sealed partial class AllowPartiallyTrustedCallersAttribute : System.Attribute
     {
         public AllowPartiallyTrustedCallersAttribute() { }
@@ -10144,7 +10144,7 @@ namespace System.Security
         public virtual System.Security.SecurityElement? ToXml() { throw null; }
         public System.Security.PermissionSet? Union(System.Security.PermissionSet? other) { throw null; }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Delegate | System.AttributeTargets.Enum | System.AttributeTargets.Field | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Struct, AllowMultiple = false, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Delegate | System.AttributeTargets.Enum | System.AttributeTargets.Field | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Struct, AllowMultiple=false, Inherited=false)]
     public sealed partial class SecurityCriticalAttribute : System.Attribute
     {
         public SecurityCriticalAttribute() { }
@@ -10202,7 +10202,7 @@ namespace System.Security
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public override string ToString() { throw null; }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, AllowMultiple = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, AllowMultiple=false)]
     public sealed partial class SecurityRulesAttribute : System.Attribute
     {
         public SecurityRulesAttribute(System.Security.SecurityRuleSet ruleSet) { }
@@ -10215,28 +10215,28 @@ namespace System.Security
         Level1 = (byte)1,
         Level2 = (byte)2,
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Delegate | System.AttributeTargets.Enum | System.AttributeTargets.Field | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Struct, AllowMultiple = false, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Delegate | System.AttributeTargets.Enum | System.AttributeTargets.Field | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Struct, AllowMultiple=false, Inherited=false)]
     public sealed partial class SecuritySafeCriticalAttribute : System.Attribute
     {
         public SecuritySafeCriticalAttribute() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, AllowMultiple = false, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, AllowMultiple=false, Inherited=false)]
     public sealed partial class SecurityTransparentAttribute : System.Attribute
     {
         public SecurityTransparentAttribute() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Delegate | System.AttributeTargets.Enum | System.AttributeTargets.Field | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Struct, AllowMultiple = false, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Delegate | System.AttributeTargets.Enum | System.AttributeTargets.Field | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Struct, AllowMultiple=false, Inherited=false)]
     [System.ObsoleteAttribute("SecurityTreatAsSafe is only used for .NET 2.0 transparency compatibility.  Please use the SecuritySafeCriticalAttribute instead.")]
     public sealed partial class SecurityTreatAsSafeAttribute : System.Attribute
     {
         public SecurityTreatAsSafeAttribute() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Delegate | System.AttributeTargets.Interface | System.AttributeTargets.Method, AllowMultiple = true, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Delegate | System.AttributeTargets.Interface | System.AttributeTargets.Method, AllowMultiple=true, Inherited=false)]
     public sealed partial class SuppressUnmanagedCodeSecurityAttribute : System.Attribute
     {
         public SuppressUnmanagedCodeSecurityAttribute() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Module, AllowMultiple = true, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Module, AllowMultiple=true, Inherited=false)]
     public sealed partial class UnverifiableCodeAttribute : System.Attribute
     {
         public UnverifiableCodeAttribute() { }
@@ -10264,10 +10264,10 @@ namespace System.Security.Cryptography
 namespace System.Security.Permissions
 {
     [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Struct, AllowMultiple = true, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Struct, AllowMultiple=true, Inherited=false)]
     public abstract partial class CodeAccessSecurityAttribute : System.Security.Permissions.SecurityAttribute
     {
-        protected CodeAccessSecurityAttribute(System.Security.Permissions.SecurityAction action) : base(default(System.Security.Permissions.SecurityAction)) { }
+        protected CodeAccessSecurityAttribute(System.Security.Permissions.SecurityAction action) : base (default(System.Security.Permissions.SecurityAction)) { }
     }
     [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public enum PermissionState
@@ -10289,7 +10289,7 @@ namespace System.Security.Permissions
         RequestRefuse = 10,
     }
     [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Struct, AllowMultiple = true, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Struct, AllowMultiple=true, Inherited=false)]
     public abstract partial class SecurityAttribute : System.Attribute
     {
         protected SecurityAttribute(System.Security.Permissions.SecurityAction action) { }
@@ -10298,10 +10298,10 @@ namespace System.Security.Permissions
         public abstract System.Security.IPermission? CreatePermission();
     }
     [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Struct, AllowMultiple = true, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Struct, AllowMultiple=true, Inherited=false)]
     public sealed partial class SecurityPermissionAttribute : System.Security.Permissions.CodeAccessSecurityAttribute
     {
-        public SecurityPermissionAttribute(System.Security.Permissions.SecurityAction action) : base(default(System.Security.Permissions.SecurityAction)) { }
+        public SecurityPermissionAttribute(System.Security.Permissions.SecurityAction action) : base (default(System.Security.Permissions.SecurityAction)) { }
         public bool Assertion { get { throw null; } set { } }
         public bool BindingRedirects { get { throw null; } set { } }
         public bool ControlAppDomain { get { throw null; } set { } }
@@ -10688,10 +10688,10 @@ namespace System.Text
         public static bool IsValid(uint value) { throw null; }
         public static bool IsWhiteSpace(System.Text.Rune value) { throw null; }
         public static bool operator ==(System.Text.Rune left, System.Text.Rune right) { throw null; }
-        public static explicit operator System.Text.Rune(char ch) { throw null; }
-        public static explicit operator System.Text.Rune(int value) { throw null; }
+        public static explicit operator System.Text.Rune (char ch) { throw null; }
+        public static explicit operator System.Text.Rune (int value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator System.Text.Rune(uint value) { throw null; }
+        public static explicit operator System.Text.Rune (uint value) { throw null; }
         public static bool operator >(System.Text.Rune left, System.Text.Rune right) { throw null; }
         public static bool operator >=(System.Text.Rune left, System.Text.Rune right) { throw null; }
         public static bool operator !=(System.Text.Rune left, System.Text.Rune right) { throw null; }
@@ -11322,14 +11322,14 @@ namespace System.Threading.Tasks
     }
     public partial class Task<TResult> : System.Threading.Tasks.Task
     {
-        public Task(System.Func<object?, TResult> function, object? state) : base(default(System.Action)) { }
-        public Task(System.Func<object?, TResult> function, object? state, System.Threading.CancellationToken cancellationToken) : base(default(System.Action)) { }
-        public Task(System.Func<object?, TResult> function, object? state, System.Threading.CancellationToken cancellationToken, System.Threading.Tasks.TaskCreationOptions creationOptions) : base(default(System.Action)) { }
-        public Task(System.Func<object?, TResult> function, object? state, System.Threading.Tasks.TaskCreationOptions creationOptions) : base(default(System.Action)) { }
-        public Task(System.Func<TResult> function) : base(default(System.Action)) { }
-        public Task(System.Func<TResult> function, System.Threading.CancellationToken cancellationToken) : base(default(System.Action)) { }
-        public Task(System.Func<TResult> function, System.Threading.CancellationToken cancellationToken, System.Threading.Tasks.TaskCreationOptions creationOptions) : base(default(System.Action)) { }
-        public Task(System.Func<TResult> function, System.Threading.Tasks.TaskCreationOptions creationOptions) : base(default(System.Action)) { }
+        public Task(System.Func<object?, TResult> function, object? state) : base (default(System.Action)) { }
+        public Task(System.Func<object?, TResult> function, object? state, System.Threading.CancellationToken cancellationToken) : base (default(System.Action)) { }
+        public Task(System.Func<object?, TResult> function, object? state, System.Threading.CancellationToken cancellationToken, System.Threading.Tasks.TaskCreationOptions creationOptions) : base (default(System.Action)) { }
+        public Task(System.Func<object?, TResult> function, object? state, System.Threading.Tasks.TaskCreationOptions creationOptions) : base (default(System.Action)) { }
+        public Task(System.Func<TResult> function) : base (default(System.Action)) { }
+        public Task(System.Func<TResult> function, System.Threading.CancellationToken cancellationToken) : base (default(System.Action)) { }
+        public Task(System.Func<TResult> function, System.Threading.CancellationToken cancellationToken, System.Threading.Tasks.TaskCreationOptions creationOptions) : base (default(System.Action)) { }
+        public Task(System.Func<TResult> function, System.Threading.Tasks.TaskCreationOptions creationOptions) : base (default(System.Action)) { }
         public static new System.Threading.Tasks.TaskFactory<TResult> Factory { get { throw null; } }
         public TResult Result { get { throw null; } }
         public new System.Runtime.CompilerServices.ConfiguredTaskAwaitable<TResult> ConfigureAwait(bool continueOnCapturedContext) { throw null; }
