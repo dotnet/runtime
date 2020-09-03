@@ -52,8 +52,9 @@ namespace Microsoft.NET.HostModel.Bundle
 
             if (IsLinux && Arch == Architecture.Arm64)
             {
-                // On ARM64, we use adrp; add instructions to encode pointers in the instruction stream.
-                // Adrp computes a page-relative offset, and these don't get fixed up, so we keep assemblies page-aligned.
+                // We align assemblies in the bundle at 4K so that we can use mmap on Linux without changing the page alignment of ARM64 R2R code.
+                // This is only necessary for R2R assemblies, but we do it for all assemblies for simplicity.
+                // See https://github.com/dotnet/runtime/issues/41832.
                 AssemblyAlignment = 4096;
             }
             else
