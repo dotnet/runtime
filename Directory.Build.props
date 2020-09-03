@@ -57,7 +57,7 @@
     <AppleAppBuilderTasksAssemblyPath>$([MSBuild]::NormalizePath('$(AppleAppBuilderDir)', 'AppleAppBuilder.dll'))</AppleAppBuilderTasksAssemblyPath>
     <AndroidAppBuilderTasksAssemblyPath>$([MSBuild]::NormalizePath('$(AndroidAppBuilderDir)', 'AndroidAppBuilder.dll'))</AndroidAppBuilderTasksAssemblyPath>
     <WasmAppBuilderTasksAssemblyPath>$([MSBuild]::NormalizePath('$(WasmAppBuilderDir)', 'WasmAppBuilder.dll'))</WasmAppBuilderTasksAssemblyPath>
-    <CreateGenerateWasmBundlesAssemblyPath>$([MSBuild]::NormalizePath('$(GenerateWasmBundleDir)', 'GenerateWasmBundle.dll'))</CreateGenerateWasmBundlesAssemblyPath>
+    <GenerateWasmBundlesAssemblyPath>$([MSBuild]::NormalizePath('$(GenerateWasmBundleDir)', 'GenerateWasmBundle.dll'))</GenerateWasmBundlesAssemblyPath>
     <MonoAOTCompilerTasksAssemblyPath>$([MSBuild]::NormalizePath('$(MonoAOTCompilerDir)', 'MonoAOTCompiler.dll'))</MonoAOTCompilerTasksAssemblyPath>
   </PropertyGroup>
 

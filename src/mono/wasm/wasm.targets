@@ -37,7 +37,7 @@
 
   <Import Project="timezones.props" Condition="'$(TargetOS)' == 'Browser'" />
   <UsingTask TaskName="CompileTimeZoneData" 
-    AssemblyFile="$(CreateGenerateWasmBundlesAssemblyPath)"/>
+    AssemblyFile="$(GenerateWasmBundlesAssemblyPath)"/>
   <Target Name="LoadTimeZones" DependsOnTargets="CheckEnv">
     <CompileTimeZoneData
       TimeZones="@(TimeZoneToBundle )" 
@@ -46,7 +46,7 @@
   </Target>
 
   <UsingTask TaskName="GenerateWasmBundle"
-    AssemblyFile="$(CreateGenerateWasmBundlesAssemblyPath)"/>
+    AssemblyFile="$(GenerateWasmBundlesAssemblyPath)"/>
   <Target Name="BundleWasm" DependsOnTargets="CheckEnv;LoadTimeZones">
     <PropertyGroup>
       <TimeZonesDataPath>$(NativeBinDir)dotnet.timezones.blat</TimeZonesDataPath>

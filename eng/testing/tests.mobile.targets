@@ -153,7 +153,7 @@
 
   <Import Project="$(MonoProjectRoot)wasm\timezones.props" Condition="'$(TargetOS)' == 'Browser'" />
   <UsingTask TaskName="CompileTimeZoneData"
-             AssemblyFile="$(CreateGenerateWasmBundlesAssemblyPath)" />
+             AssemblyFile="$(GenerateWasmBundlesAssemblyPath)" />
   <Target Condition="'$(TargetOS)' == 'Browser'" Name="LoadTimeZone" >
     <CompileTimeZoneData 
       TimeZones="@(TimeZoneToBundle )"
@@ -162,7 +162,7 @@
   </Target>
 
   <UsingTask TaskName="GenerateWasmBundle"
-             AssemblyFile="$(CreateGenerateWasmBundlesAssemblyPath)" />
+             AssemblyFile="$(GenerateWasmBundlesAssemblyPath)" />
   <Target Condition="'$(TargetOS)' == 'Browser'" Name="BundleWasmTestData" DependsOnTargets="LoadTimeZone">
     <GenerateWasmBundle
       InputDirectory="$(BundleDir)obj/data/output"
