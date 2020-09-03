@@ -44,17 +44,17 @@ namespace System.Xml
 
         public bool IsWhiteSpace(char ch)
         {
-            return (s_charProperties[ch] & fWhitespace) != 0;
+            return (CharProperties[ch] & fWhitespace) != 0;
         }
 
         public bool IsNCNameSingleChar(char ch)
         {
-            return (s_charProperties[ch] & fNCNameSC) != 0;
+            return (CharProperties[ch] & fNCNameSC) != 0;
         }
 
         public bool IsStartNCNameSingleChar(char ch)
         {
-            return (s_charProperties[ch] & fNCStartNameSC) != 0;
+            return (CharProperties[ch] & fNCStartNameSC) != 0;
         }
 
         public bool IsNameSingleChar(char ch)
@@ -64,7 +64,7 @@ namespace System.Xml
 
         public bool IsCharData(char ch)
         {
-            return (s_charProperties[ch] & fCharData) != 0;
+            return (CharProperties[ch] & fCharData) != 0;
         }
 
         // [13] PubidChar ::=  #x20 | #xD | #xA | [a-zA-Z0-9] | [-'()+,./:=?;!*#@$_%] Section 2.3 of spec
@@ -80,25 +80,25 @@ namespace System.Xml
         // TextChar = CharData - { 0xA, 0xD, '<', '&', ']' }
         internal bool IsTextChar(char ch)
         {
-            return (s_charProperties[ch] & fText) != 0;
+            return (CharProperties[ch] & fText) != 0;
         }
 
         // AttrValueChar = CharData - { 0xA, 0xD, 0x9, '<', '>', '&', '\'', '"' }
         internal bool IsAttributeValueChar(char ch)
         {
-            return (s_charProperties[ch] & fAttrValue) != 0;
+            return (CharProperties[ch] & fAttrValue) != 0;
         }
 
         // XML 1.0 Fourth Edition definitions
         public bool IsLetter(char ch)
         {
-            return (s_charProperties[ch] & fLetter) != 0;
+            return (CharProperties[ch] & fLetter) != 0;
         }
 
         // This method uses the XML 4th edition name character ranges
         public bool IsNCNameCharXml4e(char ch)
         {
-            return (s_charProperties[ch] & fNCNameXml4e) != 0;
+            return (CharProperties[ch] & fNCNameXml4e) != 0;
         }
 
         // This method uses the XML 4th edition name character ranges
@@ -159,7 +159,7 @@ namespace System.Xml
             {
                 for (int i = 0; i < str.Length; i++)
                 {
-                    if ((s_charProperties[str[i]] & fWhitespace) == 0)
+                    if ((CharProperties[str[i]] & fWhitespace) == 0)
                     {
                         return i;
                     }
@@ -174,7 +174,7 @@ namespace System.Xml
             {
                 for (int i = 0; i < str.Length; i++)
                 {
-                    if ((s_charProperties[str[i]] & fCharData) == 0)
+                    if ((CharProperties[str[i]] & fCharData) == 0)
                     {
                         if (i + 1 >= str.Length || !(XmlCharType.IsHighSurrogate(str[i]) && XmlCharType.IsLowSurrogate(str[i + 1])))
                         {
@@ -228,7 +228,7 @@ namespace System.Xml
             return (uint)(value - start) <= (uint)(end - start);
         }
 
-        private static ReadOnlySpan<byte> s_charProperties => new byte[]
+        private static ReadOnlySpan<byte> CharProperties => new byte[]
         {
             //            0,    1,    2,    3,    4,    5,    6,    7,    8,    9,    A,    B,    C,    D,    E,    F
             /* 0000 */ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x11, 0x11, 0x00, 0x00, 0x11, 0x00, 0x00,
