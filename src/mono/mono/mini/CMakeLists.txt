@@ -930,6 +930,10 @@ addprefix(mini_public_headers ../mini "${mini_public_headers_base}")
 
 set(mini_sources "${CMAKE_CURRENT_BINARY_DIR}/buildver-sgen.h;main-core.c;${mini_common_sources};${arch_sources};${os_sources};${mini_interp_sources};${llvm_sources};${debugger_sources};${llvm_runtime_sources}")
 
+if(LLVM_LIBDIR)
+  link_directories(${LLVM_LIBDIR})
+endif()
+
 add_library(monosgen-objects OBJECT "${eglib_sources};${metadata_sources};${utils_sources};${sgen_sources};${icu_shim_sources};${eventpipe_sources};${mini_sources}")
 add_library(monosgen-static STATIC $<TARGET_OBJECTS:monosgen-objects>)
 set_target_properties(monosgen-static PROPERTIES OUTPUT_NAME monosgen-2.0)

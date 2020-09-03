@@ -57,3 +57,4 @@ option (ENABLE_LAZY_GC_THREAD_CREATION "Enable lazy runtime thread creation, emb
 
 set (AOT_TARGET_TRIPLE "" CACHE STRING "Target triple for AOT cross compiler")
 set (AOT_OFFSETS_FILE "" CACHE STRING "Offsets file for AOT cross compiler")
+set (LLVM_PREFIX "" CACHE STRING "Enable LLVM support with LLVM installed at <LLVM_PREFIX>.")

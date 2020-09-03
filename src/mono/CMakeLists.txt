@@ -147,7 +147,7 @@ endif()
 ######################################
 if(GCC)
   # We require C99 with some GNU extensions, e.g. `linux` macro
-  add_definitions(-std=gnu99)
+  set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
   # The runtime code does not respect ANSI C strict aliasing rules
   append("-fno-strict-aliasing" CMAKE_C_FLAGS CMAKE_CXX_FLAGS)
   # We rely on signed overflow to behave
@@ -252,7 +252,46 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
   set(MONO_ARCHITECTURE "\"wasm\"")
 else()
   message(FATAL_ERROR "CMAKE_SYSTEM_PROCESSOR='${CMAKE_SYSTEM_PROCESSOR}' not supported.")
-  message(FATAL_ERROR "")
+endif()
+
+
+######################################
+# LLVM CHECKS
+######################################
+if (LLVM_PREFIX)
+  # FIXME: windows
+
+  set(LLVM_CONFIG ${LLVM_PREFIX}/bin/llvm-config)
+  if (NOT EXISTS ${LLVM_CONFIG})
+	message(FATAL_ERROR "LLVM executable '${LLVM_CONFIG}' not found.")
+  endif()
+
+  if(TARGET_ARCH STREQUAL "x86_64")
+	set(llvm_codegen_libs "x86codegen")
+  else()
+	message(FATAL_ERROR "FIXME")
+  endif()
+
+  execute_process(COMMAND ${LLVM_CONFIG} --mono-api-version RESULT_VARIABLE llvm_config_res OUTPUT_VARIABLE llvm_api_version OUTPUT_STRIP_TRAILING_WHITESPACE)
+  if (NOT ${llvm_config_res} EQUAL 0)
+	message(FATAL_ERROR "'${LLVM_CONFIG} --mono-api-version' failed. Use the llvm fork at https://github.com/dotnet/llvm-project.")
+  endif()
+  execute_process(COMMAND ${LLVM_CONFIG} --cflags OUTPUT_VARIABLE llvm_cflags OUTPUT_STRIP_TRAILING_WHITESPACE)
+  execute_process(COMMAND ${LLVM_CONFIG} --cxxflags OUTPUT_VARIABLE llvm_cxxflags OUTPUT_STRIP_TRAILING_WHITESPACE)
+  execute_process(COMMAND ${LLVM_CONFIG} --system-libs OUTPUT_VARIABLE llvm_system_libs OUTPUT_STRIP_TRAILING_WHITESPACE)
+  execute_process(COMMAND ${LLVM_CONFIG} --libs analysis core bitwriter orcjit ${llvm_codegen_libs} OUTPUT_VARIABLE llvm_libs OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+  if (${llvm_api_version} LESS 900)
+	message(FATAL_ERROR "LLVM version too old.")
+  endif()
+
+  set(ENABLE_LLVM 1)
+  set(ENABLE_LLVM_RUNTIME 1)
+  set(LLVM_LIBS ${llvm_libs} ${llvm_system_libs})
+  set(LLVM_LIBDIR "${LLVM_PREFIX}/lib")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${llvm_cflags}")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${llvm_cxxflags} -fexceptions -fno-rtti")
+  add_definitions(-DLLVM_API_VERSION=${llvm_api_version})
 endif()
 
 ######################################
