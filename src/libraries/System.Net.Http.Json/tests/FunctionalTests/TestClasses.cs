@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Xunit;
@@ -32,11 +31,23 @@ namespace System.Net.Http.Json.Functional.Tests
         {
             return JsonSerializer.Serialize(this, options);
         }
+
+        public string SerializeWithNumbersAsStrings(JsonSerializerOptions options = null)
+        {
+            options ??= new JsonSerializerOptions();
+            options.NumberHandling = options.NumberHandling | JsonNumberHandling.WriteAsString;
+            return JsonSerializer.Serialize(this, options);
+        }
     }
 
     internal static class JsonOptions
     {
         public static readonly JsonSerializerOptions DefaultSerializerOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+
+        public static readonly JsonSerializerOptions DefaultSerializerOptions_StrictNumberHandling = new JsonSerializerOptions(DefaultSerializerOptions)
+        {
+            NumberHandling = JsonNumberHandling.Strict
+        };
     }
 
     internal class EnsureDefaultOptionsConverter : JsonConverter<EnsureDefaultOptions>
