@@ -812,7 +812,7 @@ var BindingSupportLib = {
 				}
 
 				if (step.indirect) {
-					body.push ("Module.setValue (indirectStart + " + indirectLocalOffset + ", obj, '" + handler.indirect + "');");
+					body.push ("Module.setValue (indirectStart + " + indirectLocalOffset + ", obj, '" + step.indirect + "');");
 					body.push ("obj = indirectStart + " + indirectLocalOffset + ";");
 					
 					indirectLocalOffset += step.size;
@@ -822,7 +822,7 @@ var BindingSupportLib = {
 					body.push ("rootBuffer.set (" + i + ", obj);");
 
 				body.push ("Module.HEAP32[bufferElements + " + i + "] = obj;");
-				body.push ("console.log ('arg #'" + i + "', obj);");
+				body.push ("console.log ('arg #" + i + "', obj);");
 			}
 
 			body.push ("return [buffer, rootBuffer];");
@@ -873,10 +873,11 @@ var BindingSupportLib = {
 
 			// check if the method signature needs argument mashalling
 			if (has_args_marshal && has_args) {
-				var useCompiledConverter = false;
+				var useCompiledConverter = true;
 				if (useCompiledConverter) {
 					converter = this._compile_converter_for_marshal_string (args_marshal);
 					[buffer, argsRootBuffer] = converter (args, method);
+					args_start = buffer;
 				} else {
 					converter = this._get_converter_for_marshal_string (args_marshal);
 
