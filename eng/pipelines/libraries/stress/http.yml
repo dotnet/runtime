@@ -40,6 +40,7 @@ jobs:
     displayName: Build CLR and Libraries
   
   - bash: |
+      exit 1
       $(httpStressProject)/run-docker-compose.sh -o -c $(BUILD_CONFIGURATION) -t $(sdkBaseImage)
     displayName: Build HttpStress
   
@@ -56,6 +57,7 @@ jobs:
       export HTTPSTRESS_SERVER_ARGS="$HTTPSTRESS_SERVER_ARGS -http 1.1"
       docker-compose up --abort-on-container-exit --no-color
     displayName: Run HttpStress - HTTP 1.1
+    condition: succeededOrFailed()
 
 - job: windows
   displayName: Docker NanoServer
