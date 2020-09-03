@@ -1385,8 +1385,7 @@ var MonoSupportLib = {
 		//   "en_US" (or "en-US" or just "en") -> "icudt_EFIGS.dat"
 		// etc, see "mono_wasm_get_icudt_name" implementation in pal_icushim_static.c
 		mono_wasm_get_icudt_name: function (culture) {
-			var fn = Module.cwrap ('mono_wasm_get_icudt_name', 'string', ['string']);
-			return fn (culture);
+			return Module.ccall ('mono_wasm_get_icudt_name', 'string', ['string'], [culture]);
 		},
 
 		_finalize_startup: function (args, ctx) {
