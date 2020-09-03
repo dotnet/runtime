@@ -4085,8 +4085,8 @@ void CodeGen::genCodeForShift(GenTree* tree)
         {
             int typeWidth    = genTypeSize(genActualType(targetType)) * 8;
             int shiftByValue = (int)shiftBy->AsIntConCommon()->IconValue();
-            if (compiler->compExactlyDependsOn(InstructionSet_BMI2) && tree->OperIs(GT_ROL) &&
-                (shiftByValue > 0) && (shiftByValue < typeWidth))
+            if (compiler->compExactlyDependsOn(InstructionSet_BMI2) && tree->OperIs(GT_ROL) && (shiftByValue > 0) &&
+                (shiftByValue < typeWidth))
             {
                 assert((typeWidth == 32) || (typeWidth == 64));
 
