@@ -257,17 +257,34 @@ set(utils_common_sources
     unlocked.h
     ward.h)
 
-if(TARGET_AMD64)
+if(MONO_CROSS_COMPILE)
+set(utils_arch_sources mach-support-unknown.c)
+elseif(HOST_AMD64)
 set(utils_arch_sources
     mach-support-amd64.c)
+elseif(HOST_X86)
+set(utils_arch_sources
+    mach-support-x86.c)
+elseif(HOST_ARM64)
+set(utils_arch_sources
+    mach-support-arm64.c)
+elseif(HOST_ARM)
+set(utils_arch_sources
+    mach-support-arm.c)
 else()
 #message(FATAL_ERROR "")
 endif()
 
-if(CROSS_COMPILE)
+if(MONO_CROSS_COMPILE)
 set(utils_arch_sources "${utils_arch_sources};mono-hwcap-cross.c")
 elseif(TARGET_AMD64)
 set(utils_arch_sources "${utils_arch_sources};mono-hwcap-x86.c")
+elseif(TARGET_X86)
+set(utils_arch_sources "${utils_arch_sources};mono-hwcap-x86.c")
+elseif(TARGET_ARM64)
+set(utils_arch_sources "${utils_arch_sources};mono-hwcap-arm64.c")
+elseif(TARGET_ARM)
+set(utils_arch_sources "${utils_arch_sources};mono-hwcap-arm.c")
 elseif(TARGET_WASM)
 set(utils_arch_sources "${utils_arch_sources};mono-hwcap-wasm.c;mono-mmap-wasm.c")
 else()
@@ -855,6 +872,35 @@ set(amd64_sources
     tramp-amd64-gsharedvt.c
     cpu-amd64.h)
 
+set(x86_sources
+    mini-x86.c
+    mini-x86.h
+    exceptions-x86.c
+    tramp-x86.c
+    mini-x86-gsharedvt.c
+    tramp-x86-gsharedvt.c
+    cpu-x86.h)
+
+set(arm64_sources
+    mini-arm64.c
+    mini-arm64.h
+    exceptions-arm64.c
+    tramp-arm64.c
+    mini-arm64-gsharedvt.c
+    mini-arm64-gsharedvt.h
+    tramp-arm64-gsharedvt.c
+    cpu-arm64.h)
+
+set(arm_sources
+    mini-arm.c
+    mini-arm.h
+    exceptions-arm.c
+    tramp-arm.c
+    mini-arm-gsharedvt.c
+    mini-arm-gsharedvt.h
+    tramp-arm-gsharedvt.c
+    cpu-arm.h)
+
 set(wasm_sources
     mini-wasm.c
     tramp-wasm.c
@@ -865,6 +911,12 @@ set(wasm_sources
 
 if(TARGET_AMD64)
 set(arch_sources ${amd64_sources})
+elseif(TARGET_X86)
+set(arch_sources ${x86_sources})
+elseif(TARGET_ARM64)
+set(arch_sources ${arm64_sources})
+elseif(TARGET_ARM)
+set(arch_sources ${arm_sources})
 elseif(TARGET_WASM)
 set(arch_sources ${wasm_sources})
 endif()
@@ -941,23 +993,21 @@ endif()
 add_library(monosgen-objects OBJECT "${eglib_sources};${metadata_sources};${utils_sources};${sgen_sources};${icu_shim_sources};${eventpipe_sources};${mini_sources}")
 add_library(monosgen-static STATIC $<TARGET_OBJECTS:monosgen-objects>)
 set_target_properties(monosgen-static PROPERTIES OUTPUT_NAME monosgen-2.0)
-install(TARGETS monosgen-static LIBRARY)
-install(FILES ${metadata_public_headers}
-  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/mono-2.0/mono/metadata)
-install(FILES ${utils_public_headers}
-  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/mono-2.0/mono/utils)
-install(FILES ${mini_public_headers}
-  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/mono-2.0/mono/jit)
+if(NOT DISABLE_LIBS)
+  install(TARGETS monosgen-static LIBRARY)
+  install(FILES ${metadata_public_headers}
+	DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/mono-2.0/mono/metadata)
+  install(FILES ${utils_public_headers}
+	DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/mono-2.0/mono/utils)
+  install(FILES ${mini_public_headers}
+	DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/mono-2.0/mono/jit)
+endif()
 if(NOT DISABLE_SHARED_LIBS)
    add_library(monosgen SHARED $<TARGET_OBJECTS:monosgen-objects>)
    set_target_properties(monosgen PROPERTIES OUTPUT_NAME monosgen-2.0)
+   set_target_properties(monosgen PROPERTIES LIBRARY_OUTPUT_DIRECTORY .libs)
    target_link_libraries(monosgen ${OS_LIBS} "iconv" ${LLVM_LIBS} ${ICU_LIBS})
    install(TARGETS monosgen LIBRARY)
-endif()
-
-if(NOT DISABLE_EXECUTABLES)
-   set_target_properties(monosgen PROPERTIES OUTPUT_NAME monosgen-2.0)
-   set_target_properties(monosgen PROPERTIES LIBRARY_OUTPUT_DIRECTORY .libs)
 endif()
 
 # FIXME: Always rebuilds, creates non-deterministic builds
@@ -987,10 +1037,28 @@ add_custom_command(
   VERBATIM
 )
 
+add_custom_command(
+  OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cpu-x86.h
+  COMMAND python ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py TARGET_X86 ${CMAKE_CURRENT_SOURCE_DIR} cpu-x86.h x86_desc ${CMAKE_CURRENT_SOURCE_DIR}/cpu-x86.md
+  VERBATIM
+)
+
+add_custom_command(
+  OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cpu-arm64.h
+  COMMAND python ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py TARGET_ARM64 ${CMAKE_CURRENT_SOURCE_DIR} cpu-arm64.h arm64_cpu_desc ${CMAKE_CURRENT_SOURCE_DIR}/cpu-arm64.md
+  VERBATIM
+)
+
+add_custom_command(
+  OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cpu-arm.h
+  COMMAND python ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py TARGET_ARM ${CMAKE_CURRENT_SOURCE_DIR} cpu-arm.h arm_cpu_desc ${CMAKE_CURRENT_SOURCE_DIR}/cpu-arm.md
+  VERBATIM
+)
+
 if(NOT DISABLE_EXECUTABLES)
+set(CMAKE_SKIP_RPATH 1)
 add_executable(mono-sgen "main-sgen.c")
 target_link_libraries(mono-sgen monosgen-static ${OS_LIBS} "iconv" ${LLVM_LIBS} ${ICU_LIBS})
-target_link_libraries(monosgen ${OS_LIBS} "iconv" ${LLVM_LIBS} ${ICU_LIBS})
 if(ICU_LDFLAGS)
   set_target_properties(mono-sgen monosgen PROPERTIES LINK_FLAGS ${ICU_LDFLAGS})
 endif()
