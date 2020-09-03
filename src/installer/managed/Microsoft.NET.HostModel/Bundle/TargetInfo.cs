@@ -21,13 +21,16 @@ namespace Microsoft.NET.HostModel.Bundle
     public class TargetInfo
     {
         public readonly OSPlatform OS;
+        public readonly Architecture Arch;
         public readonly Version FrameworkVersion;
         public readonly uint BundleVersion;
         public readonly BundleOptions DefaultOptions;
+        public readonly int AssemblyAlignment;
 
-        public TargetInfo(OSPlatform? os, Version targetFrameworkVersion)
+        public TargetInfo(OSPlatform? os, Architecture? arch, Version targetFrameworkVersion)
         {
             OS = os ?? HostOS;
+            Arch = arch ?? RuntimeInformation.OSArchitecture;
             FrameworkVersion = targetFrameworkVersion ?? net50;
 
             Debug.Assert(IsLinux || IsOSX || IsWindows);
@@ -45,6 +48,18 @@ namespace Microsoft.NET.HostModel.Bundle
             else
             {
                 throw new ArgumentException($"Invalid input: Unsupported Target Framework Version {targetFrameworkVersion}");
+            }
+
+            if (IsLinux && Arch == Architecture.Arm64)
+            {
+                // On ARM64, we use adrp; add instructions to encode pointers in the instruction stream.
+                // Adrp computes a page-relative offset, and these don't get fixed up, so we keep assemblies page-aligned.
+                AssemblyAlignment = 4096;
+            }
+            else
+            {
+                // Otherwise, assemblies are 16 bytes aligned, so that their sections can be memory-mapped cache aligned.
+                AssemblyAlignment = 16;
             }
         }
 

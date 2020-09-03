@@ -6,6 +6,8 @@ using Microsoft.NET.HostModel.Bundle;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.InteropServices;
+using System.Linq;
 using System.Xml.Linq;
 
 namespace BundleTests.Helpers
@@ -90,9 +92,31 @@ namespace BundleTests.Helpers
             return Path.Combine(GetExtractionRootPath(fixture), GetAppBaseName(fixture), bundler.BundleManifest.BundleID);
 
         }
+
         public static DirectoryInfo GetExtractionDir(TestProjectFixture fixture, Bundler bundler)
         {
             return new DirectoryInfo(GetExtractionPath(fixture, bundler));
+        }
+
+        public static OSPlatform GetTargetOS(string runtimeIdentifier)
+        {
+            return runtimeIdentifier.Split('-').First() switch {
+                "win" => OSPlatform.Windows,
+                "osx" => OSPlatform.OSX,
+                "linux" => OSPlatform.Linux,
+                _ => throw new ArgumentException(nameof(runtimeIdentifier))
+            };
+        }
+
+        public static Architecture GetTargetArch(string runtimeIdentifier)
+        {
+            return runtimeIdentifier.Split('-').Last() switch {
+                "x64" => Architecture.X64,
+                "x86" => Architecture.X86,
+                "arm64" => Architecture.Arm64,
+                "arm" => Architecture.Arm,
+                _ => throw new ArgumentException(nameof (runtimeIdentifier))
+            };
         }
 
         /// Generate a bundle containind the (embeddable) files in sourceDir
@@ -145,8 +169,10 @@ namespace BundleTests.Helpers
             var hostName = GetHostName(fixture);
             string publishPath = GetPublishPath(fixture);
             var bundleDir = GetBundleDir(fixture);
+            var targetOS = GetTargetOS(fixture.CurrentRid);
+            var targetArch = GetTargetArch(fixture.CurrentRid);
 
-            var bundler = new Bundler(hostName, bundleDir.FullName, options, targetFrameworkVersion: targetFrameworkVersion);
+            var bundler = new Bundler(hostName, bundleDir.FullName, options, targetOS, targetArch, targetFrameworkVersion);
             singleFile = GenerateBundle(bundler, publishPath, bundleDir.FullName, copyExcludedFiles);
 
             return bundler;
