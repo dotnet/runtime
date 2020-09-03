@@ -733,17 +733,29 @@ namespace System.Net.Http
                     // We're awaiting the task to propagate the exception in this case.
                     if (Volatile.Read(ref _disposed) == Status_Disposed)
                     {
-                        if (async)
+                        try
                         {
-                            await sendRequestContentTask.ConfigureAwait(false);
+                            if (async)
+                            {
+                                await sendRequestContentTask.ConfigureAwait(false);
+                            }
+                            else
+                            {
+                                // No way around it here if we want to get the exception from the task.
+                                sendRequestContentTask.GetAwaiter().GetResult();
+                            }
                         }
-                        else
+                        catch (Exception ex)
                         {
-                            // No way around it here if we want to get the exception from the task.
-                            sendRequestContentTask.GetAwaiter().GetResult();
+                            // Overwrite the exception so that the one thrown by sendRequestContentTask one gets propagated,
+                            // but still gets handled the same way as any other.
+                            error = ex;
                         }
                     }
-                    LogExceptions(sendRequestContentTask);
+                    else
+                    {
+                        LogExceptions(sendRequestContentTask);
+                    }
                 }
 
                 // Now clean up the connection.
