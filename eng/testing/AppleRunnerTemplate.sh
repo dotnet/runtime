@@ -38,9 +38,6 @@ done
 
 # Restart the simulator to make sure it is tied to the right user session
 XCODE_PATH="`xcode-select -p`/../.."
-SIMULATOR_APP="$XCODE_PATH/Contents/Developer/Applications/Simulator.app"
-sudo pkill -9 -f "$SIMULATOR_APP"
-open -a "$SIMULATOR_APP"
 export XHARNESS_OUT="$EXECUTION_DIR/xharness-output"
 
 dotnet xharness ios test  \
