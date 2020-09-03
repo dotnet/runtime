@@ -569,6 +569,7 @@ namespace System
             return OpenStandardError();
         }
 
+        [UnsupportedOSPlatform("browser")]
         public static void SetIn(TextReader newIn)
         {
             CheckNonNull(newIn, nameof(newIn));

@@ -89,6 +89,7 @@ namespace System
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static void SetCursorPosition(int left, int top) { }
         public static void SetError(System.IO.TextWriter newError) { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static void SetIn(System.IO.TextReader newIn) { }
         public static void SetOut(System.IO.TextWriter newOut) { }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
