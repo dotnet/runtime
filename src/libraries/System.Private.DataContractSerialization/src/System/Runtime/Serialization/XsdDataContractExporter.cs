@@ -96,10 +96,6 @@ namespace System.Runtime.Serialization
             }
             catch (Exception ex)
             {
-                if (DiagnosticUtility.IsFatal(ex))
-                {
-                    throw;
-                }
                 _dataContractSet = oldValue;
                 TraceExportError(ex);
                 throw;
@@ -128,10 +124,6 @@ namespace System.Runtime.Serialization
             }
             catch (Exception ex)
             {
-                if (DiagnosticUtility.IsFatal(ex))
-                {
-                    throw;
-                }
                 _dataContractSet = oldValue;
                 TraceExportError(ex);
                 throw;
@@ -154,10 +146,6 @@ namespace System.Runtime.Serialization
             }
             catch (Exception ex)
             {
-                if (DiagnosticUtility.IsFatal(ex))
-                {
-                    throw;
-                }
                 _dataContractSet = oldValue;
                 TraceExportError(ex);
                 throw;
@@ -283,10 +271,6 @@ namespace System.Runtime.Serialization
             }
             catch (Exception ex)
             {
-                if (DiagnosticUtility.IsFatal(ex))
-                {
-                    throw;
-                }
                 _dataContractSet = oldValue;
                 TraceExportError(ex);
                 throw;
@@ -317,10 +301,6 @@ namespace System.Runtime.Serialization
             }
             catch (Exception ex)
             {
-                if (DiagnosticUtility.IsFatal(ex))
-                {
-                    throw;
-                }
                 _dataContractSet = oldValue;
                 TraceExportError(ex);
                 throw;
@@ -346,10 +326,6 @@ namespace System.Runtime.Serialization
             }
             catch (Exception ex)
             {
-                if (DiagnosticUtility.IsFatal(ex))
-                {
-                    throw;
-                }
                 _dataContractSet = oldValue;
                 TraceExportError(ex);
                 throw;
@@ -420,10 +396,6 @@ namespace System.Runtime.Serialization
             }
             catch (Exception ex)
             {
-                if (DiagnosticUtility.IsFatal(ex))
-                {
-                    throw;
-                }
                 dataContractSet = oldValue;
                 TraceExportError(ex);
                 throw;

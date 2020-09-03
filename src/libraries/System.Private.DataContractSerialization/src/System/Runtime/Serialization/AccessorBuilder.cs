@@ -170,20 +170,4 @@ namespace System.Runtime.Serialization
             }
         }
     }
-
-    internal static class CreateDelegateExtension
-    {
-        // a generic extension for CreateDelegate
-        public static T CreateDelegate<T>(this MethodInfo method) where T : class
-        {
-            try
-            {
-                return (method.CreateDelegate(typeof(T)) as T)!;
-            }
-            catch (Exception e)
-            {
-                throw new InvalidOperationException(SR.Format(SR.FailedToCreateMethodDelegate, method.Name, method.DeclaringType!.FullName), e);
-            }
-        }
-    }
 }
