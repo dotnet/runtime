@@ -300,7 +300,7 @@ set __CMakeNeeded=1
 if %__BuildNative%==0 if %__BuildCrossArchNative%==0 set __CMakeNeeded=0
 if %__CMakeNeeded%==1 (
     REM Eval the output from set-cmake-path.ps1
-    for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy ByPass "& ""%__SourceDir%\pal\tools\set-cmake-path.ps1"""') do %%a
+    for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy ByPass "& ""%__RepoRootDir%\eng\native\set-cmake-path.ps1"""') do %%a
     echo %__MsgPrefix%Using CMake from !CMakePath!
 )
 
@@ -433,7 +433,7 @@ if %__BuildCrossArchNative% EQU 1 (
     )
 
     set __ExtraCmakeArgs="-DCLR_CROSS_COMPONENTS_BUILD=1" "-DCLR_CMAKE_TARGET_ARCH=%__BuildArch%" "-DCLR_CMAKE_TARGET_OS=%__TargetOS%" "-DCLR_CMAKE_PGO_INSTRUMENT=%__PgoInstrument%" "-DCLR_CMAKE_OPTDATA_PATH=%__PgoOptDataPath%" "-DCLR_CMAKE_PGO_OPTIMIZE=%__PgoOptimize%" "-DCMAKE_SYSTEM_VERSION=10.0" "-DCLR_ENG_NATIVE_DIR=%__RepoRootDir%/eng/native" "-DCLR_REPO_ROOT_DIR=%__RepoRootDir%" %__CMakeArgs%
-    call "%__SourceDir%\pal\tools\gen-buildsys.cmd" "%__ProjectDir%" "%__CrossCompIntermediatesDir%" %__VSVersion% %__CrossArch% !__ExtraCmakeArgs!
+    call "%__RepoRootDir%\eng\native\gen-buildsys.cmd" "%__ProjectDir%" "%__CrossCompIntermediatesDir%" %__VSVersion% %__CrossArch% !__ExtraCmakeArgs!
 
     if not !errorlevel! == 0 (
         echo %__ErrMsgPrefix%%__MsgPrefix%Error: failed to generate cross architecture native component build project!
@@ -528,7 +528,7 @@ if %__BuildNative% EQU 1 (
     )
 
     set __ExtraCmakeArgs=%__ExtraCmakeArgs% "-DCMAKE_SYSTEM_VERSION=10.0" !___CrossBuildDefine! "-DCLR_CMAKE_PGO_INSTRUMENT=%__PgoInstrument%" "-DCLR_CMAKE_OPTDATA_PATH=%__PgoOptDataPath%" "-DCLR_CMAKE_PGO_OPTIMIZE=%__PgoOptimize%" "-DCLR_ENG_NATIVE_DIR=%__RepoRootDir%/eng/native" "-DCLR_REPO_ROOT_DIR=%__RepoRootDir%" %__CMakeArgs%
-    call "%__SourceDir%\pal\tools\gen-buildsys.cmd" "%__ProjectDir%" "%__IntermediatesDir%" %__VSVersion% %__BuildArch% !__ExtraCmakeArgs!
+    call "%__RepoRootDir%\eng\native\gen-buildsys.cmd" "%__ProjectDir%" "%__IntermediatesDir%" %__VSVersion% %__BuildArch% !__ExtraCmakeArgs!
     if not !errorlevel! == 0 (
         echo %__ErrMsgPrefix%%__MsgPrefix%Error: failed to generate native component build project!
         goto ExitWithError

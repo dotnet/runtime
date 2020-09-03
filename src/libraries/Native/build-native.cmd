@@ -3,8 +3,9 @@ setlocal
 
 :SetupArgs
 :: Initialize the args that will be passed to cmake
-set __nativeWindowsDir=%~dp0\Windows
+set __sourceDir=%~dp0\Windows
 set __repoRoot=%~dp0..\..\..
+set __engNativeDir=%__repoRoot%\eng\native
 set __artifactsDir=%__repoRoot%\artifacts
 set __CMakeBinDir=""
 set __IntermediatesDir=""
@@ -93,6 +94,7 @@ goto :SetupDirs
 echo Commencing build of native components
 echo.
 
+if /i "%__BuildArch%" == "wasm" set __sourceDir=%~dp0..\Unix
 
 if [%__outConfig%] == [] set __outConfig=%__TargetOS%-%__BuildArch%-%CMAKE_BUILD_TYPE%
 
@@ -117,7 +119,7 @@ set MSBUILD_EMPTY_PROJECT_CONTENT= ^
 echo %MSBUILD_EMPTY_PROJECT_CONTENT% > "%__artifactsDir%\obj\native\Directory.Build.props"
 echo %MSBUILD_EMPTY_PROJECT_CONTENT% > "%__artifactsDir%\obj\native\Directory.Build.targets"
 
-if exist "%VSINSTALLDIR%DIA SDK" goto GenVSSolution
+if exist "%VSINSTALLDIR%DIA SDK" goto FindCMake
 echo Error: DIA SDK is missing at "%VSINSTALLDIR%DIA SDK". ^
 Did you install all the requirements for building on Windows, including the "Desktop Development with C++" workload? ^
 Please see https://github.com/dotnet/runtime/blob/master/docs/workflow/requirements/windows-requirements.md ^
@@ -125,16 +127,25 @@ Another possibility is that you have a parallel installation of Visual Studio an
 may help to copy its "DIA SDK" folder into "%VSINSTALLDIR%" manually, then try again.
 exit /b 1
 
+:FindCMake
+if defined CMakePath goto GenVSSolution
+:: Find CMake
+
+:: Eval the output from set-cmake-path.ps1
+for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy ByPass "& ""%__repoRoot%\eng\native\set-cmake-path.ps1"""') do %%a
+
 :GenVSSolution
 :: generate version file
 powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__repoRoot%\eng\common\msbuild.ps1" /clp:nosummary %__ArcadeScriptArgs%^
     %__repoRoot%\eng\empty.csproj /p:NativeVersionFile="%__artifactsDir%\obj\_version.h"^
     /t:GenerateNativeVersionFile /restore
-
 :: Regenerate the VS solution
 
+:: cmake requires forward slashes in paths
+set __cmakeRepoRoot=%__repoRoot:\=/%
+
 pushd "%__IntermediatesDir%"
-call "%__nativeWindowsDir%\gen-buildsys-win.bat" "%__nativeWindowsDir%" %__VSVersion% %__BuildArch%
+call "%__repoRoot%\eng\native\gen-buildsys.cmd" "%__sourceDir%" "%__IntermediatesDir%" %__VSVersion% %__BuildArch% "-DCMAKE_REPO_ROOT=%__cmakeRepoRoot%"
 popd
 
 :CheckForProj

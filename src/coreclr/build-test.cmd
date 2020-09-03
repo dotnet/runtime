@@ -226,7 +226,7 @@ echo %__MsgPrefix%Commencing build of native test components for %__BuildArch%/%
 REM Set the environment for the native build
 
 REM Eval the output from set-cmake-path.ps1
-for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy ByPass "& ""%__SourceDir%\pal\tools\set-cmake-path.ps1"""') do %%a
+for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy ByPass "& ""%__RepoRootDir%\eng\native\set-cmake-path.ps1"""') do %%a
 echo %__MsgPrefix%Using CMake from !CMakePath!
 
 REM NumberOfCores is an WMI property providing number of physical cores on machine
