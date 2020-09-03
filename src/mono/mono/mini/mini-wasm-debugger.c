@@ -1037,7 +1037,7 @@ are_getters_allowed (const char *class_name)
 	return FALSE;
 }
 
-static void
+static gboolean
 invoke_and_describe_getter_value (MonoObject *obj, MonoProperty *p)
 {
 	ERROR_DECL (error);
@@ -1050,11 +1050,11 @@ invoke_and_describe_getter_value (MonoObject *obj, MonoProperty *p)
 	if (!is_ok (error) && exc == NULL)
 		exc = (MonoObject*) mono_error_convert_to_exception (error);
 	if (exc)
-		describe_value (mono_get_object_type (), &exc, GPFLAG_EXPAND_VALUETYPES);
+		return describe_value (mono_get_object_type (), &exc, GPFLAG_EXPAND_VALUETYPES);
 	else if (!res || !m_class_is_valuetype (mono_object_class (res)))
-		describe_value (sig->ret, &res, GPFLAG_EXPAND_VALUETYPES);
+		return describe_value (sig->ret, &res, GPFLAG_EXPAND_VALUETYPES);
 	else
-		describe_value (sig->ret, mono_object_unbox_internal (res), GPFLAG_EXPAND_VALUETYPES);
+		return describe_value (sig->ret, mono_object_unbox_internal (res), GPFLAG_EXPAND_VALUETYPES);
 }
 
 static void
@@ -1313,20 +1313,28 @@ describe_non_async_this (InterpFrame *frame, MonoMethod *method)
 }
 
 static gboolean
-describe_variable (InterpFrame *frame, MonoMethod *method, int pos, int gpflags)
+describe_variable (InterpFrame *frame, MonoMethod *method, MonoMethodHeader *header, int pos, int gpflags)
 {
 	ERROR_DECL (error);
-	MonoMethodHeader *header = NULL;
 
 	MonoType *type = NULL;
 	gpointer addr = NULL;
 	if (pos < 0) {
+		MonoMethodSignature *sig = mono_method_signature_internal (method);
 		pos = -pos - 1;
-		type = mono_method_signature_internal (method)->params [pos];
+
+		if (pos >= sig->param_count) {
+			DEBUG_PRINTF(1, "BUG: describe_variable, trying to access param indexed %d, but the method (%s) has only %d params\n", pos, method->name, sig->param_count);
+			return FALSE;
+		}
+
+		type = sig->params [pos];
 		addr = mini_get_interp_callbacks ()->frame_get_arg (frame, pos);
 	} else {
-		header = mono_method_get_header_checked (method, error);
-		mono_error_assert_ok (error); /* FIXME report error */
+		if (pos >= header->num_locals) {
+			DEBUG_PRINTF(1, "BUG: describe_variable, trying to access local indexed %d, but the method (%s) has only %d locals\n", pos, method->name, header->num_locals);
+			return FALSE;
+		}
 
 		type = header->locals [pos];
 		addr = mini_get_interp_callbacks ()->frame_get_local (frame, pos);
@@ -1334,16 +1342,13 @@ describe_variable (InterpFrame *frame, MonoMethod *method, int pos, int gpflags)
 
 	DEBUG_PRINTF (2, "adding val %p type [%p] %s\n", addr, type, mono_type_full_name (type));
 
-	describe_value(type, addr, gpflags);
-	if (header)
-		mono_metadata_free_mh (header);
-
-	return TRUE;
+	return describe_value(type, addr, gpflags);
 }
 
 static gboolean
 describe_variables_on_frame (MonoStackFrameInfo *info, MonoContext *ctx, gpointer ud)
 {
+	ERROR_DECL (error);
 	FrameDescData *data = (FrameDescData*)ud;
 
 	//skip wrappers
@@ -1363,14 +1368,19 @@ describe_variables_on_frame (MonoStackFrameInfo *info, MonoContext *ctx, gpointe
 	MonoMethod *method = frame->imethod->method;
 	g_assert (method);
 
+	MonoMethodHeader *header = mono_method_get_header_checked (method, error);
+	mono_error_assert_ok (error); /* FIXME report error */
+
 	for (int i = 0; i < data->len; i++)
 	{
-		describe_variable (frame, method, data->pos[i], GPFLAG_EXPAND_VALUETYPES);
+		if (!describe_variable (frame, method, header, data->pos[i], GPFLAG_EXPAND_VALUETYPES))
+			mono_wasm_add_typed_value("symbol", "<unreadable value>", 0);
 	}
 
 	describe_async_method_locals (frame, method);
 	describe_non_async_this (frame, method);
 
+	mono_metadata_free_mh (header);
 	return TRUE;
 }
 
@@ -1384,8 +1394,7 @@ mono_wasm_get_deref_ptr_value (void *value_addr, MonoClass *klass)
 	}
 
 	mono_wasm_add_properties_var ("deref", -1);
-	describe_value (type->data.type, value_addr, GPFLAG_EXPAND_VALUETYPES);
-	return TRUE;
+	return describe_value (type->data.type, value_addr, GPFLAG_EXPAND_VALUETYPES);
 }
 
 //FIXME this doesn't support getting the return value pseudo-var

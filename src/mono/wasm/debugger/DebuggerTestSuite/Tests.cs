@@ -1643,6 +1643,45 @@ namespace DebuggerTests
                }, "this_props");
             });
 
+        [Theory]
+        [InlineData("EmptyClass", false)]
+        [InlineData("EmptyClass", true)]
+        [InlineData("EmptyStruct", false)]
+        [InlineData("EmptyStruct", true)]
+        public async Task EmptyTypeWithNoLocalsOrParams(string type_name, bool is_async) => await CheckInspectLocalsAtBreakpointSite(
+            type_name,
+            $"StaticMethodWithNoLocals{ (is_async ? "Async" : "") }",
+            1,
+            is_async ? "MoveNext" : "StaticMethodWithNoLocals",
+            $"window.setTimeout(function() {{ invoke_static_method('[debugger-test] {type_name}:run'); }})",
+            wait_for_event_fn: async (pause_location) =>
+            {
+                var frame_locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
+                AssertEqual(0, frame_locals.Values<JToken>().Count(), "locals");
+            });
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task StaticMethodWithLocalEmptyStructThatWillGetExpanded(bool is_async) => await CheckInspectLocalsAtBreakpointSite(
+            "EmptyStruct",
+            $"StaticMethodWithLocalEmptyStruct{ (is_async ? "Async" : "") }",
+            1,
+            is_async ? "MoveNext" : "StaticMethodWithLocalEmptyStruct",
+            $"window.setTimeout(function() {{ invoke_static_method('[debugger-test] EmptyStruct:run'); }})",
+            wait_for_event_fn: async (pause_location) =>
+            {
+                var frame_locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
+                await CheckProps(frame_locals, new
+                {
+                    es = TValueType("EmptyStruct")
+                }, "locals");
+
+                var es = GetAndAssertObjectWithName(frame_locals, "es");
+                var es_props = await GetProperties(es["value"]["objectId"]?.Value<string>());
+                AssertEqual(0, es_props.Values<JToken>().Count(), "es_props");
+            });
+
         //TODO add tests covering basic stepping behavior as step in/out/over
     }
 }

@@ -372,3 +372,59 @@ public class MulticastDelegateTestClass
         await Task.CompletedTask;
     }
 }
+
+public class EmptyClass
+{
+    public static void StaticMethodWithNoLocals()
+    {
+        Console.WriteLine ($"break here");
+    }
+
+    public static async Task StaticMethodWithNoLocalsAsync()
+    {
+        Console.WriteLine ($"break here");
+        await Task.CompletedTask;
+    }
+
+    public static void run()
+    {
+        StaticMethodWithNoLocals();
+        StaticMethodWithNoLocalsAsync().Wait();
+    }
+}
+
+public struct EmptyStruct
+{
+    public static void StaticMethodWithNoLocals()
+    {
+        Console.WriteLine ($"break here");
+    }
+
+    public static async Task StaticMethodWithNoLocalsAsync()
+    {
+        Console.WriteLine ($"break here");
+        await Task.CompletedTask;
+    }
+
+    public static void StaticMethodWithLocalEmptyStruct()
+    {
+        var es = new EmptyStruct();
+        Console.WriteLine ($"break here");
+    }
+
+    public static async Task StaticMethodWithLocalEmptyStructAsync()
+    {
+        var es = new EmptyStruct();
+        Console.WriteLine ($"break here");
+        await Task.CompletedTask;
+    }
+
+    public static void run()
+    {
+        StaticMethodWithNoLocals();
+        StaticMethodWithNoLocalsAsync().Wait();
+
+        StaticMethodWithLocalEmptyStruct();
+        StaticMethodWithLocalEmptyStructAsync().Wait();
+    }
+}

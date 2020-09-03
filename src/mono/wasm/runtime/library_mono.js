@@ -370,15 +370,26 @@ var MonoSupportLib = {
 					next_has_value_or_get_set = next.value !== undefined || next.get !== undefined || next.set !== undefined;
 				}
 
-				if (!this_has_name || !next_has_value_or_get_set) {
+				if (!this_has_name) {
+					// insert the object as-is
+					// Eg. in case of locals, the names are added
+					// later
 					i ++;
-					out_list.push (o);
-					continue;
+				} else if (next_has_value_or_get_set) {
+					// found a {name} followed by a {value/get}
+					o = Object.assign (o, var_list [i + 1]);
+					i += 2;
+				} else {
+					// missing value/get, so add a placeholder one
+					o.value = {
+						type: "symbol",
+						value: "<unreadable value>",
+						description: "<unreadable value>"
+					};
+					i ++;
 				}
 
-				o = Object.assign (o, var_list [i + 1]);
 				out_list.push (o);
-				i += 2;
 			}
 
 			return out_list;
@@ -1930,6 +1941,20 @@ var MonoSupportLib = {
 						}
 					});
 				}
+				}
+				break;
+
+			case "symbol": {
+				if (typeof value === 'object' && value.isClassName)
+					str_value = MONO._mono_csharp_fixup_class_name (str_value);
+
+				MONO.var_info.push ({
+					value: {
+						type: "symbol",
+						value: str_value,
+						description: str_value
+					}
+				});
 				}
 				break;
 
