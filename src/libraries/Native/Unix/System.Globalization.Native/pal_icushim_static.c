@@ -45,7 +45,7 @@ EMSCRIPTEN_KEEPALIVE const char* mono_wasm_get_icudt_name(const char* culture)
     // Based on https://github.com/dotnet/icu/tree/maint/maint-67/icu-filters
 
     // Use full one if culture is null or empty
-    if (!culture || strlen(culture) == 0)
+    if (!culture || strlen(culture) < 2)
         return "icudt.dat";
 
     // CJK: starts with "ja", "ko" or "zh"
