@@ -12,7 +12,7 @@ namespace Microsoft.Interop
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public class ManualTypeMarshallingAnalyzer : DiagnosticAnalyzer
     {
-        private const string Category = "Interoperability";
+        private const string Category = "Usage";
         public readonly static DiagnosticDescriptor BlittableTypeMustBeBlittableRule =
             new DiagnosticDescriptor(
                 "INTEROPGEN001",
@@ -159,7 +159,13 @@ namespace Microsoft.Interop
                 marshalUsingAttribute is not null &&
                 spanOfByte is not null)
             {
-                var perCompilationAnalyzer = new PerCompilationAnalyzer(generatedMarshallingAttribute, blittableTypeAttribute, nativeMarshallingAttribute, marshalUsingAttribute, spanOfByte);
+                var perCompilationAnalyzer = new PerCompilationAnalyzer(
+                    generatedMarshallingAttribute,
+                    blittableTypeAttribute,
+                    nativeMarshallingAttribute,
+                    marshalUsingAttribute,
+                    spanOfByte,
+                    context.Compilation.GetTypeByMetadataName(TypeNames.System_Runtime_InteropServices_StructLayoutAttribute)!);
                 context.RegisterSymbolAction(context => perCompilationAnalyzer.AnalyzeTypeDefinition(context), SymbolKind.NamedType);
                 context.RegisterSymbolAction(context => perCompilationAnalyzer.AnalyzeElement(context), SymbolKind.Parameter, SymbolKind.Field);
                 context.RegisterSymbolAction(context => perCompilationAnalyzer.AnalyzeReturnType(context), SymbolKind.Method);
@@ -172,19 +178,22 @@ namespace Microsoft.Interop
             private readonly INamedTypeSymbol BlittableTypeAttribute;
             private readonly INamedTypeSymbol NativeMarshallingAttribute;
             private readonly INamedTypeSymbol MarshalUsingAttribute;
-            private readonly ITypeSymbol SpanOfByte;
+            private readonly INamedTypeSymbol SpanOfByte;
+            private readonly INamedTypeSymbol StructLayoutAttribute;
 
             public PerCompilationAnalyzer(INamedTypeSymbol generatedMarshallingAttribute,
                                           INamedTypeSymbol blittableTypeAttribute,
                                           INamedTypeSymbol nativeMarshallingAttribute,
                                           INamedTypeSymbol marshalUsingAttribute,
-                                          INamedTypeSymbol spanOfByte)
+                                          INamedTypeSymbol spanOfByte,
+                                          INamedTypeSymbol structLayoutAttribute)
             {
                 GeneratedMarshallingAttribute = generatedMarshallingAttribute;
                 BlittableTypeAttribute = blittableTypeAttribute;
                 NativeMarshallingAttribute = nativeMarshallingAttribute;
                 MarshalUsingAttribute = marshalUsingAttribute;
                 SpanOfByte = spanOfByte;
+                StructLayoutAttribute = structLayoutAttribute;
             }
 
             public void AnalyzeTypeDefinition(SymbolAnalysisContext context)
@@ -211,11 +220,11 @@ namespace Microsoft.Interop
                     }
                 }
 
-                if (blittableTypeAttributeData is not null && nativeMarshallingAttributeData is not null)
+                if (HasMultipleMarshallingAttributes(blittableTypeAttributeData, nativeMarshallingAttributeData))
                 {
-                    context.ReportDiagnostic(Diagnostic.Create(CannotHaveMultipleMarshallingAttributesRule, blittableTypeAttributeData.ApplicationSyntaxReference!.GetSyntax().GetLocation(), type.ToDisplayString()));
+                    context.ReportDiagnostic(Diagnostic.Create(CannotHaveMultipleMarshallingAttributesRule, blittableTypeAttributeData!.ApplicationSyntaxReference!.GetSyntax().GetLocation(), type.ToDisplayString()));
                 }
-                else if (blittableTypeAttributeData is not null && !type.HasOnlyBlittableFields())
+                else if (blittableTypeAttributeData is not null && (!type.HasOnlyBlittableFields() || type.IsAutoLayout(StructLayoutAttribute)))
                 {
                     context.ReportDiagnostic(Diagnostic.Create(BlittableTypeMustBeBlittableRule, blittableTypeAttributeData.ApplicationSyntaxReference!.GetSyntax().GetLocation(), type.ToDisplayString()));
                 }
@@ -223,6 +232,17 @@ namespace Microsoft.Interop
                 {
                     AnalyzeNativeMarshalerType(context, type, nativeMarshallingAttributeData, validateGetPinnableReference: true, validateAllScenarioSupport: true);
                 }
+            }
+
+            private bool HasMultipleMarshallingAttributes(AttributeData? blittableTypeAttributeData, AttributeData? nativeMarshallingAttributeData)
+            {
+                return (blittableTypeAttributeData, nativeMarshallingAttributeData) switch
+                {
+                    (null, null) => false,
+                    (not null, null) => false,
+                    (null, not null) => false,
+                    _ => true
+                };
             }
 
             public void AnalyzeElement(SymbolAnalysisContext context)

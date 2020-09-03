@@ -40,7 +40,6 @@ public class MarshalUsingAttribute : Attribute
 {
      public MarshalUsingAttribute(Type nativeType) {}
 }
-
 ```
 
 The `NativeMarshallingAttribute` and `MarshalUsingAttribute` attributes would require that the provided native type `TNative` is a blittable `struct` and has a subset of three methods with the following names and shapes (with the managed type named TManaged):
@@ -179,6 +178,17 @@ When the source generator (either Struct, P/Invoke, Reverse P/Invoke, etc.) enco
 
 
 If someone actively disables the analyzer or writes their types in IL, then they have stepped out of the supported scenarios and marshalling code generated for their types may be inaccurate.
+
+#### Exception: Generics
+
+Because the Roslyn compiler needs to be able to validate that there are not recursive struct definitions, reference assemblies have to contain a field of a type parameter type in the reference assembly if they do in the runtime assembly. As a result, we can inspect private generic fields reliably.
+
+To enable blittable generics support in this struct marshalling model, we extend `[BlittableType]` as follows:
+
+- In a generic type definition, we consider all type parameters that can be value types as blittable for the purposes of validating that `[BlittableType]` is only applied to blittable types.
+- When the source generator discovers a generic type marked with `[BlittableType]` it will look through the fields on the type and validate that they are blittable. 
+
+Since all fields typed with non-parameterized types are validated to be blittable at type definition time, we know that they are all blittable at type usage time. So, we only need to validate that the generic fields are instantiated with blittable types.
 
 ### Special case: Transparent Structures
 

@@ -124,7 +124,7 @@
     <value>Type '{0}' is marked with 'BlittableTypeAttribute' but is not blittable.</value>
   </data>
   <data name="CannotHaveMultipleMarshallingAttributesDescription" xml:space="preserve">
-    <value>The 'BlittableTypeAttribute' and 'NativeMarshallingAttributes' are mutually exclusive.</value>
+    <value>The 'BlittableTypeAttribute' and 'NativeMarshallingAttribute' attributes are mutually exclusive.</value>
   </data>
   <data name="CannotHaveMultipleMarshallingAttributesMessage" xml:space="preserve">
     <value>Type '{0}' is marked with 'BlittableTypeAttribute' and 'NativeMarshallingAttribute'. A type can only have one of these two attributes.</value>

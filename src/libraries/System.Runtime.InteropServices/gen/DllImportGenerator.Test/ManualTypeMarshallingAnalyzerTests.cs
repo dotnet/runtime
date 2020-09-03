@@ -140,7 +140,6 @@ struct T
 }
 ";
             await VerifyCS.VerifyAnalyzerAsync(source,
-                VerifyCS.Diagnostic(BlittableTypeMustBeBlittableRule).WithSpan(4, 2, 4, 15).WithArguments("S"),
                 VerifyCS.Diagnostic(BlittableTypeMustBeBlittableRule).WithSpan(10, 2, 10, 15).WithArguments("T"));
         }
 
@@ -243,7 +242,7 @@ class Native
     public S ToManaged() => new S();
 }";
             await VerifyCS.VerifyAnalyzerAsync(source,
-                VerifyCS.Diagnostic(NativeTypeMustBeBlittableRule).WithSpan(11, 1, 20, 2).WithArguments("Native", "S"));
+                VerifyCS.Diagnostic(NativeTypeMustHaveRequiredShapeRule).WithSpan(11, 1, 20, 2).WithArguments("Native", "S"));
         }
 
         [Fact]
@@ -837,64 +836,6 @@ struct Native<T>
 }";
             await VerifyCS.VerifyAnalyzerAsync(source);
         }
-        
-        public static IEnumerable<object[]> GenericTypeWithGenericFieldMarkedBlittable_ReportsDiagnostic_TestData {
-            get
-            {
-                yield return new object[]
-                {
-                    @"
-using System.Runtime.InteropServices;
-
-[BlittableType]
-struct S<T>
-{
-    public T t;
-}"
-                };
-                yield return new object[]
-                {
-                    @"
-using System.Runtime.InteropServices;
-
-[BlittableType]
-struct S<T> where T : class
-{
-    public T t;
-}"
-                };
-                yield return new object[]
-                {
-                   @"
-using System.Runtime.InteropServices;
-
-[BlittableType]
-struct S<T> where T : struct
-{
-    public T t;
-}"
-                };
-                yield return new object[]
-                {
-                   @"
-using System.Runtime.InteropServices;
-
-[BlittableType]
-struct S<T> where T : unmanaged
-{
-    public T t;
-}"
-                };
-            }
-        }
-        
-        [MemberData(nameof(GenericTypeWithGenericFieldMarkedBlittable_ReportsDiagnostic_TestData))]
-        [Theory]
-        public async Task GenericTypeWithGenericFieldMarkedBlittable_ReportsDiagnostic(string source)
-        {
-            await VerifyCS.VerifyAnalyzerAsync(source,
-                VerifyCS.Diagnostic(BlittableTypeMustBeBlittableRule).WithSpan(4, 2, 4, 15).WithArguments("S<T>"));
-        }
 
         [Fact]
         public async Task ValueTypeContainingPointerBlittableType_DoesNotReportDiagnostic()
@@ -967,6 +908,141 @@ using System.Runtime.InteropServices;
 unsafe struct S
 {
     private delegate*<int> ptr;
+}";
+            await VerifyCS.VerifyAnalyzerAsync(source);
+        }
+
+        [Fact]
+        public async Task BlittableGenericTypeInBlittableType_DoesNotReportDiagnostic()
+        {
+            
+            var source = @"
+using System.Runtime.InteropServices;
+
+[BlittableType]
+struct G<T>
+{
+    T fld;
+}
+
+[BlittableType]
+unsafe struct S
+{
+    private G<int> field;
+}";
+            await VerifyCS.VerifyAnalyzerAsync(source);
+        }
+
+        [Fact]
+        public async Task NonBlittableGenericTypeInBlittableType_ReportsDiagnostic()
+        {
+            var source = @"
+using System.Runtime.InteropServices;
+
+[BlittableType]
+struct G<T>
+{
+    T fld;
+}
+
+[BlittableType]
+unsafe struct S
+{
+    private G<string> field;
+}";
+            await VerifyCS.VerifyAnalyzerAsync(source,
+                VerifyCS.Diagnostic(BlittableTypeMustBeBlittableRule).WithSpan(10, 2, 10, 15).WithArguments("S"));
+        }
+
+        [Fact]
+        public async Task BlittableGenericTypeTypeParameterReferenceType_ReportsDiagnostic()
+        {
+            var source = @"
+using System.Runtime.InteropServices;
+
+[BlittableType]
+struct G<T> where T : class
+{
+    T fld;
+}";
+            await VerifyCS.VerifyAnalyzerAsync(source,
+                VerifyCS.Diagnostic(BlittableTypeMustBeBlittableRule).WithSpan(4, 2, 4, 15).WithArguments("G<T>"));
+        }
+
+        [Fact]
+        public async Task BlittableGenericTypeContainingGenericType_DoesNotReportDiagnostic()
+        {
+            var source = @"
+using System.Runtime.InteropServices;
+
+[BlittableType]
+struct G<T>
+{
+    T fld;
+}
+
+[BlittableType]
+struct F<T>
+{
+    G<T> fld;
+}
+";
+            await VerifyCS.VerifyAnalyzerAsync(source);
+        }
+
+        [Fact]
+        public async Task BlittableNestedGenericType_DoesNotReportDiagnostic()
+        {
+            var source = @"
+using System.Runtime.InteropServices;
+
+struct C<T>
+{
+    [BlittableType]
+    public struct G
+    {
+        T fld;
+    }
+}
+
+[BlittableType]
+struct S
+{
+    C<int>.G g;
+}
+";
+            await VerifyCS.VerifyAnalyzerAsync(source);
+        }
+
+        [Fact]
+        public async Task BlittableNestedGenericTypeWithReferenceTypeGenericParameter_DoesNotReportDiagnostic()
+        {
+            var source = @"
+using System.Runtime.InteropServices;
+
+struct C<T> where T : class
+{
+    [BlittableType]
+    struct G
+    {
+        T fld;
+    }
+}
+";
+            await VerifyCS.VerifyAnalyzerAsync(source,
+                VerifyCS.Diagnostic(BlittableTypeMustBeBlittableRule).WithSpan(6, 6, 6, 19).WithArguments("C<T>.G"));
+        }
+
+        [Fact]
+        public async Task BlittableGenericTypeWithReferenceTypeParameterNotUsedInFieldType_DoesNotReportDiagnostic()
+        {
+            var source = @"
+using System.Runtime.InteropServices;
+
+[BlittableType]
+struct G<T, U> where U : class
+{
+    T fld;
 }";
             await VerifyCS.VerifyAnalyzerAsync(source);
         }

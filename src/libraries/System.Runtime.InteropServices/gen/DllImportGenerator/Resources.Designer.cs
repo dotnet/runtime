@@ -79,7 +79,7 @@ namespace DllImportGenerator {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to The &apos;BlittableTypeAttribute&apos; and &apos;NativeMarshallingAttributes&apos; are mutually exclusive..
+        ///   Looks up a localized string similar to The &apos;BlittableTypeAttribute&apos; and &apos;NativeMarshallingAttribute&apos; attributes are mutually exclusive..
         /// </summary>
         internal static string CannotHaveMultipleMarshallingAttributesDescription {
             get {
@@ -169,7 +169,7 @@ namespace DllImportGenerator {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to The native type must be pointer sized so we can cast the pinned result of &apos;GetPinnableReference&apos; to the native type..
+        ///   Looks up a localized string similar to The native type must be pointer sized so the pinned result of &apos;GetPinnableReference&apos; can be cast to the native type..
         /// </summary>
         internal static string NativeTypeMustBePointerSizedDescription {
             get {
@@ -178,7 +178,7 @@ namespace DllImportGenerator {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to The native type &apos;{0}&apos; must be pointer sized because the managed type &apos;{1}&apos; has a &apos;GetPinnableReference&quot; method..
+        ///   Looks up a localized string similar to The native type &apos;{0}&apos; must be pointer sized because the managed type &apos;{1}&apos; has a &apos;GetPinnableReference&apos; method..
         /// </summary>
         internal static string NativeTypeMustBePointerSizedMessage {
             get {
