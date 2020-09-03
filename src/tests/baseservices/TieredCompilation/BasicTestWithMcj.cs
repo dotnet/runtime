@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
@@ -11,10 +12,17 @@ public static class BasicTest
     {
         const int Pass = 100;
 
+        ProfileOptimization.SetProfileRoot(Environment.CurrentDirectory);
+        ProfileOptimization.StartProfile("profile.mcj");
+
+        // Let multi-core JIT start jitting
+        Thread.Sleep(100);
+
         PromoteToTier1(Foo, () => FooWithLoop(2));
         Foo();
         FooWithLoop(2);
 
+        ProfileOptimization.StartProfile(null);
         return Pass;
     }
 
