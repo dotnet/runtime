@@ -196,9 +196,12 @@ var MonoSupportLib = {
 		},
 
 		_mono_wasm_root_buffer_prototype: {
+			_throw_index_out_of_range: function () {
+				throw new Error ("index out of range");
+			},
 			_check_in_range: function (index) {
 				if ((index >= this.__count) || (index < 0))
-					throw new Error ("index out of range");
+					this._throw_index_out_of_range();
 			},
 			/** @returns {NativePointer} */
 			get_address: function (index) {
@@ -220,6 +223,10 @@ var MonoSupportLib = {
 				Module.HEAP32[this.get_address_32 (index)] = value;
 				return value;
 			},
+			clear: function () {
+				if (this.__offset)
+					MONO._zero_region (this.__offset, this.__count * 4);
+			},
 			release: function () {
 				if (this.__offset && this.__ownsAllocation) {
 					MONO.mono_wasm_deregister_root (this.__offset);
@@ -227,7 +234,7 @@ var MonoSupportLib = {
 					Module._free (this.__offset);
 				}
 
-				this.__handle = this.__offset = this.__count = this.__offset32 = undefined;
+				this.__handle = this.__offset = this.__count = this.__offset32 = 0;
 			},
 			toString: function () {
 				return "[root buffer @" + this.get_address (0) + ", size " + this.__count + "]";
@@ -259,10 +266,13 @@ var MonoSupportLib = {
 			valueOf: function () {
 				return this.get ();
 			},
+			clear: function () {
+				this.set (0);
+			},
 			release: function () {
 				MONO._mono_wasm_release_scratch_index (this.__index);
-				this.__buffer = undefined;
-				this.__index = undefined;
+				this.__buffer = 0;
+				this.__index = 0;
 			},
 			toString: function () {
 				return "[root @" + this.get_address () + "]";
@@ -301,8 +311,31 @@ var MonoSupportLib = {
 			return result;
 		},
 
+		_zero_region_fast: function (byteOffset, sizeBytes) {
+			var elementOffset = byteOffset / 4;
+			var end = elementOffset + (sizeBytes / 4);
+
+			var heap = Module.HEAP32;
+			while (elementOffset < end) {
+				heap[elementOffset] = 0;
+				elementOffset++;
+			}
+		},
+
+		_zero_region_slow: function (byteOffset, sizeBytes) {
+			var end = byteOffset + sizeBytes;
+			var heap = Module.HEAPU8;
+			while (byteOffset < end) {
+				heap[byteOffset] = 0;
+				byteOffset++;
+			}
+		},
+
 		_zero_region: function (byteOffset, sizeBytes) {
-			(new Uint8Array (Module.HEAPU8.buffer, byteOffset, sizeBytes)).fill (0);
+			if (((byteOffset % 4) === 0) && ((sizeBytes % 4) === 0))
+				return this._zero_region_fast (byteOffset, sizeBytes);
+
+			return this._zero_region_slow (byteOffset, sizeBytes);
 		},
 
 		/**

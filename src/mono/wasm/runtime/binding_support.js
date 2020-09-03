@@ -764,7 +764,7 @@ var BindingSupportLib = {
 				size += conv.size;
 			}
 
-			return { steps: steps, size: size };
+			return { steps: steps, size: size, args_marshal: args_marshal };
 		},
 
 		_get_converter_for_marshal_string: function (args_marshal) {
@@ -784,10 +784,10 @@ var BindingSupportLib = {
 		_compile_converter_for_marshal_string: function (args_marshal) {
 			var converter = this._get_converter_for_marshal_string (args_marshal);
 			if (converter.compiledFunction)
-				return converter.compiledFunction;
+				return converter;
 			
 			var body = [];
-			var argumentNames = ["args", "method"];
+			var argumentNames = ["rootBuffer", "method", "args"];
 
 			// worst-case allocation size instead of allocating dynamically, plus padding
 			var bufferSizeBytes = converter.size + (args_marshal.length * 4) + 16;
@@ -795,12 +795,12 @@ var BindingSupportLib = {
 			// ensure the indirect values are 8-byte aligned so that aligned loads and stores will work
 			var indirectBaseOffset = ((((args_marshal.length * 4) + 7) / 8) | 0) * 8;
 
-			var closure = {};
+			var closure = {
+				converter: converter
+			};
 			var indirectLocalOffset = 0;
 
 			body.push ("var buffer = Module._malloc (" + bufferSizeBytes + ");");
-			body.push ("MONO._zero_region (buffer, " + bufferSizeBytes + ");");
-			body.push ("var rootBuffer = MONO.mono_wasm_new_root_buffer (" + rootBufferSize + ");");
 			body.push ("var indirectStart = buffer + " + indirectBaseOffset + ";");
 			body.push ("var bufferElements = (buffer / 4) | 0;");
 			body.push ("var obj;");
@@ -810,7 +810,7 @@ var BindingSupportLib = {
 				var closureKey = "step" + i;
 				var argKey = "args[" + i + "]";
 
-				body.push ("if (args.length <= " + i + ") return [buffer, rootBuffer];");
+				body.push ("if (args.length <= " + i + ") return buffer;");
 
 				if (step.convert) {
 					closure[closureKey] = step.convert;
@@ -834,18 +834,20 @@ var BindingSupportLib = {
 				body.push ("Module.HEAP32[bufferElements + " + i + "] = obj;");
 			}
 
-			body.push ("return [buffer, rootBuffer];");
+			body.push ("return buffer;");
 
 			var bodyJs = body.join ("\r\n");
 			try {
 				var compiledFunction = this._createNamedFunction("converter_" + args_marshal, argumentNames, bodyJs, closure);
+				converter.compiledFunction = compiledFunction;
 				// console.log("compiled converter", compiledFunction);
 			} catch (exc) {
+				converter.compiledFunction = null;
 				console.log("compiling converter failed for", bodyJs, "with error", exc);
 				throw exc;
 			}
-			converter.compiledFunction = compiledFunction;
-			return compiledFunction;
+
+			return converter;
 		},
 
 		/*
@@ -888,40 +890,17 @@ var BindingSupportLib = {
 				if (args_marshal.length > args.length && args_marshal [args.length] === "m")
 					is_result_marshaled = false;
 
-				var useCompiledConverter = true;
-				if (useCompiledConverter) {
-					converter = this._compile_converter_for_marshal_string (args_marshal);
-					[buffer, argsRootBuffer] = converter (args, method);
-					args_start = buffer;
+				converter = this._compile_converter_for_marshal_string (args_marshal);
+
+				if (converter.scratchRootBuffer) {
+					argsRootBuffer = converter.scratchRootBuffer;
+					converter.scratchRootBuffer = null;
 				} else {
-					converter = this._get_converter_for_marshal_string (args_marshal);
-
-					// assume at least 8 byte alignment from malloc
-					var bufferSizeBytes = converter.size + (args.length * 4);
-					var bufferSizeElements = (bufferSizeBytes / 4) | 0;
-					argsRootBuffer = MONO.mono_wasm_new_root_buffer (bufferSizeElements);
-					buffer = Module._malloc (bufferSizeBytes);
-					var indirect_start = buffer; // buffer + buffer % 8
-					args_start = indirect_start + converter.size;
-
-					var slot = (args_start / 4) | 0;
-					var indirect_value = indirect_start;
-					for (var i = 0; i < args.length; ++i) {
-						var handler = converter.steps[i];
-						var obj = handler.convert ? handler.convert (args[i], method, i) : args[i];
-
-						if (handler.indirect) {
-							Module.setValue (indirect_value, obj, handler.indirect);
-							obj = indirect_value;
-							indirect_value += 8;
-						} else if (handler.needsRoot) {
-							argsRootBuffer.set (i, obj);
-						}
-
-						Module.HEAP32[slot] = obj;
-						slot++;
-					}
+					argsRootBuffer = MONO.mono_wasm_new_root_buffer (args_marshal.length);
 				}
+
+				buffer = converter.compiledFunction (argsRootBuffer, method, args);
+				args_start = buffer;
 			}
 
 			try {
@@ -939,7 +918,16 @@ var BindingSupportLib = {
 				else
 					return resultRoot.value;
 			} finally {
-				Module._free (buffer);
+				// Store the arguments root buffer for re-use in later calls
+				if (converter && !converter.scratchRootBuffer && argsRootBuffer) {
+					argsRootBuffer.clear ();
+					converter.scratchRootBuffer = argsRootBuffer;
+					argsRootBuffer = undefined;
+				}
+
+				if (buffer)
+					Module._free (buffer);
+
 				MONO.mono_wasm_release_roots (resultRoot, exceptionRoot, argsRootBuffer);
 			}
 		},

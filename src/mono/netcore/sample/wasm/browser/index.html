@@ -22,12 +22,12 @@
           var method = BINDING.bind_static_method("[WasmSample]Sample.Test:BenchmarkMethod", "ifd");
           method(0, 0, 0);
 
-          for (var i = 0; i < 500; i++)
+          for (var i = 0; i < 100; i++)
             App.benchmarkIter(method, i);
 
-          console.log ("starting benchmark in 2 seconds");
+          console.log ("starting benchmark in 4 seconds");
 
-          window.setTimeout(App.runBenchmark.bind(App, method), 2000);
+          window.setTimeout(App.runBenchmark.bind(App, method), 4000);
         },
 
         iterFailed: function (expected, actual) {
@@ -36,13 +36,16 @@
 
         benchmarkIter: function (method, i) {
           var expected = i + i + i + 0.03;
-          var res = method(i, i + 0.01, i + 0.02);
-          if (Math.abs(expected - res) >= 0.5)
-            this.iterFailed(expected, res);
+
+          for (var j = 0; j < 100; j++) {
+            var res = method(i, i + 0.01, i + 0.02);
+            if (Math.abs(expected - res) >= 0.5)
+              this.iterFailed(expected, res);
+          }
         },
 
         runBenchmark: function (method, i) {
-          var iterationCount = 125000;
+          var iterationCount = 50000;
           var started = performance.now ();
 
           for (var i = 0; i < iterationCount; i++) {
