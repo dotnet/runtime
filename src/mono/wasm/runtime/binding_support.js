@@ -790,9 +790,10 @@ var BindingSupportLib = {
 			var argumentNames = ["args", "method"];
 
 			// worst-case allocation size instead of allocating dynamically, plus padding
-			var bufferSizeBytes = converter.size + (args_marshal.length * 4) + 8;
+			var bufferSizeBytes = converter.size + (args_marshal.length * 4) + 16;
 			var rootBufferSize = args_marshal.length;
-			var indirectBaseOffset = (args_marshal.length * 4) + 4;
+			// ensure the indirect values are 8-byte aligned so that aligned loads and stores will work
+			var indirectBaseOffset = ((((args_marshal.length * 4) + 7) / 8) | 0) * 8;
 
 			var closure = {};
 			var indirectLocalOffset = 0;
@@ -812,9 +813,9 @@ var BindingSupportLib = {
 
 				if (step.convert) {
 					closure[closureKey] = step.convert;
-					body.push ("console.log('calling converter '" + step.key + ", " + closureKey + ", 'with value', obj);"); 
+					// body.push ("console.log('calling converter '" + step.key + ", " + closureKey + ", 'with value', obj);"); 
 					body.push ("obj = " + closureKey + "(" + argKey + ", method, " + i + ");");
-					body.push ("console.log('converter result', obj);"); 
+					// body.push ("console.log('converter result', obj);"); 
 				} else {
 					body.push ("obj = " + argKey + ";");
 				}
@@ -837,8 +838,9 @@ var BindingSupportLib = {
 			var bodyJs = body.join ("\r\n");
 			try {
 				var compiledFunction = this._createNamedFunction("converter_" + args_marshal, argumentNames, bodyJs, closure);
+				// console.log("compiled converter", compiledFunction);
 			} catch (exc) {
-				console.log("compiling failed for", bodyJs, "with error", exc);
+				console.log("compiling converter failed for", bodyJs, "with error", exc);
 				throw exc;
 			}
 			converter.compiledFunction = compiledFunction;
@@ -889,7 +891,6 @@ var BindingSupportLib = {
 				if (useCompiledConverter) {
 					converter = this._compile_converter_for_marshal_string (args_marshal);
 					[buffer, argsRootBuffer] = converter (args, method);
-					console.log("converter returned", buffer, argsRootBuffer);
 					args_start = buffer;
 				} else {
 					converter = this._get_converter_for_marshal_string (args_marshal);
@@ -931,7 +932,9 @@ var BindingSupportLib = {
 
 				if (exceptionRoot.value !== 0) {
 					var msg = this.conv_string (resultRoot.value);
-					throw new Error (msg); //the convention is that invoke_method ToString () any outgoing exception
+					var err = new Error (msg); //the convention is that invoke_method ToString () any outgoing exception
+					// console.log(err, err.stack);
+					throw err;
 				}
 
 				if (is_result_marshaled)
