@@ -799,6 +799,7 @@ var BindingSupportLib = {
 			var indirectLocalOffset = 0;
 
 			body.push ("var buffer = Module._malloc (" + bufferSizeBytes + ");");
+			body.push ("MONO._zero_region (buffer, " + bufferSizeBytes + ");");
 			body.push ("var rootBuffer = MONO.mono_wasm_new_root_buffer (" + rootBufferSize + ");");
 			body.push ("var indirectStart = buffer + " + indirectBaseOffset + ";");
 			body.push ("var bufferElements = (buffer / 4) | 0;");
@@ -865,28 +866,28 @@ var BindingSupportLib = {
 		call_method: function (method, this_arg, args_marshal, args) {
 			this.bindings_lazy_init ();
 
-			var has_args = args !== null && typeof args !== "undefined" && args.length > 0;
-			var has_args_marshal = args_marshal !== null && typeof args_marshal !== "undefined" && args_marshal.length > 0;
+			// HACK: Sometimes callers pass null or undefined, coerce it to 0 since that's what wasm expects
+			this_arg = this_arg | 0;
+
+			var has_args = (typeof args === "object") && args.length > 0;
+			var has_args_marshal = typeof args_marshal === "string";
 
 			if (has_args) {
 				if (!has_args_marshal)
-					throw new Error ("No signature provided.");
+					throw new Error ("No signature provided for method call.");
 				else if (args.length > args_marshal.length)
-					throw new Error ("Too many parameter values.");
+					throw new Error ("Too many parameter values. Expected at most " + args_marshal.length + " value(s) for signature " + args_marshal);
 			}
 
-			var args_start = null;
-			var buffer = null;
-			var converter = null;
+			var args_start = 0, buffer = 0, converter = null, argsRootBuffer = null;
 			var is_result_marshaled = true;
 			var [resultRoot, exceptionRoot] = MONO.mono_wasm_new_roots (2);
-			var argsRootBuffer = null;
-
-			if (!this_arg)
-				this_arg = 0;
 
 			// check if the method signature needs argument mashalling
 			if (has_args_marshal && has_args) {
+				if (args_marshal.length > args.length && args_marshal [args.length] === "m")
+					is_result_marshaled = false;
+
 				var useCompiledConverter = true;
 				if (useCompiledConverter) {
 					converter = this._compile_converter_for_marshal_string (args_marshal);
@@ -922,10 +923,6 @@ var BindingSupportLib = {
 					}
 				}
 			}
-			
-			if (has_args_marshal && has_args)
-				if (args_marshal.length > args.length && args_marshal [args.length] === "m")
-					is_result_marshaled = false;
 
 			try {
 				resultRoot.value = this.invoke_method (method, this_arg, args_start, exceptionRoot.get_address ());
