@@ -28,7 +28,7 @@ namespace System.Xml.Xsl.XsltOld
             get
             {
                 Debug.Assert(_elementScopesStack.Peek() != null); // We adding rootElementScope to garantee this
-                return (OutputScope)_elementScopesStack.Peek();
+                return (OutputScope)_elementScopesStack.Peek()!;
             }
         }
 
@@ -95,23 +95,23 @@ namespace System.Xml.Xsl.XsltOld
 
         internal void PopScope()
         {
-            OutputScope elementScope = (OutputScope)_elementScopesStack.Pop();
+            OutputScope? elementScope = (OutputScope?)_elementScopesStack.Pop();
 
-            Debug.Assert(elementScope != null); // We adding rootElementScope to garantee this
+            Debug.Assert(elementScope != null); // We're adding rootElementScope to gurantee this
 
-            for (NamespaceDecl scope = elementScope.Scopes; scope != null; scope = scope.Next)
+            for (NamespaceDecl? scope = elementScope.Scopes; scope != null; scope = scope.Next)
             {
                 _defaultNS = scope.PrevDefaultNsUri;
             }
         }
 
-        internal string ResolveNamespace(string prefix)
+        internal string? ResolveNamespace(string prefix)
         {
             bool thisScope;
             return ResolveNamespace(prefix, out thisScope);
         }
 
-        internal string ResolveNamespace(string prefix, out bool thisScope)
+        internal string? ResolveNamespace(string prefix, out bool thisScope)
         {
             Debug.Assert(prefix != null);
             thisScope = true;
@@ -136,7 +136,7 @@ namespace System.Xml.Xsl.XsltOld
                     Debug.Assert(_elementScopesStack[i] is OutputScope);
                     OutputScope elementScope = (OutputScope)_elementScopesStack[i];
 
-                    string nspace = elementScope.ResolveAtom(prefix);
+                    string? nspace = elementScope.ResolveAtom(prefix);
                     if (nspace != null)
                     {
                         thisScope = (i == _elementScopesStack.Length - 1);
@@ -148,7 +148,7 @@ namespace System.Xml.Xsl.XsltOld
             return null;
         }
 
-        internal bool FindPrefix(string nspace, out string prefix)
+        internal bool FindPrefix(string nspace, out string? prefix)
         {
             Debug.Assert(nspace != null);
             for (int i = _elementScopesStack.Length - 1; 0 <= i; i--)
@@ -156,10 +156,10 @@ namespace System.Xml.Xsl.XsltOld
                 Debug.Assert(_elementScopesStack[i] is OutputScope);
 
                 OutputScope elementScope = (OutputScope)_elementScopesStack[i];
-                string pfx = null;
+                string? pfx = null;
                 if (elementScope.FindPrefix(nspace, out pfx))
                 {
-                    string testNspace = ResolveNamespace(pfx);
+                    string? testNspace = ResolveNamespace(pfx);
                     if (testNspace != null && Ref.Equal(testNspace, nspace))
                     {
                         prefix = pfx;

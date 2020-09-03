@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using System.IO;
 using Xunit;
 
 namespace System
@@ -24,6 +25,26 @@ namespace System
         }
 
         [ConditionalFact(nameof(ManualTestsEnabled))]
+        public static void ReadLineFromOpenStandardInput()
+        {
+            string expectedLine = "aab";
+
+            // Use Console.ReadLine
+            Console.WriteLine($"Please type 'a' 3 times, press 'Backspace' to erase 1, then type a single 'b' and press 'Enter'.");
+            string result = Console.ReadLine();
+            Assert.Equal(expectedLine, result);
+            AssertUserExpectedResults("the characters you typed properly echoed as you typed");
+
+            // ReadLine from Console.OpenStandardInput
+            Console.WriteLine($"Please type 'a' 3 times, press 'Backspace' to erase 1, then type a single 'b' and press 'Enter'.");
+            using Stream inputStream = Console.OpenStandardInput();
+            using StreamReader reader = new StreamReader(inputStream);
+            result = reader.ReadLine();
+            Assert.Equal(expectedLine, result);
+            AssertUserExpectedResults("the characters you typed properly echoed as you typed");
+        }
+
+        [ConditionalFact(nameof(ManualTestsEnabled))]
         public static void ReadLine_BackSpaceCanMoveAccrossWrappedLines()
         {
             Console.WriteLine("Please press 'a' until it wraps to the next terminal line, then press 'Backspace' until the input is erased, and then type a single 'a' and press 'Enter'.");
@@ -36,6 +57,7 @@ namespace System
         }
 
         [ConditionalFact(nameof(ManualTestsEnabled))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/40735", TestPlatforms.Windows)]
         public static void InPeek()
         {
             Console.WriteLine("Please type \"peek\" (without the quotes). You should see it as you type:");
@@ -91,19 +113,11 @@ namespace System
 
         public static IEnumerable<object[]> GetKeyChords()
         {
-            yield return MkConsoleKeyInfo('\x01', ConsoleKey.A, ConsoleModifiers.Control);
-            yield return MkConsoleKeyInfo('\x01', ConsoleKey.A, ConsoleModifiers.Control | ConsoleModifiers.Alt);
+            yield return MkConsoleKeyInfo('\x02', ConsoleKey.B, ConsoleModifiers.Control);
+            yield return MkConsoleKeyInfo(OperatingSystem.IsWindows() ? '\x00' : '\x02', ConsoleKey.B, ConsoleModifiers.Control | ConsoleModifiers.Alt);
             yield return MkConsoleKeyInfo('\r', ConsoleKey.Enter, (ConsoleModifiers)0);
-
-            if (OperatingSystem.IsWindows())
-            {
-                // windows will report '\n' as 'Ctrl+Enter', which is typically not picked up by Unix terminals
-                yield return MkConsoleKeyInfo('\n', ConsoleKey.Enter, ConsoleModifiers.Control);
-            }
-            else
-            {
-                yield return MkConsoleKeyInfo('\n', ConsoleKey.J, ConsoleModifiers.Control);
-            }
+            // windows will report '\n' as 'Ctrl+Enter', which is typically not picked up by Unix terminals
+            yield return MkConsoleKeyInfo('\n', OperatingSystem.IsWindows() ? ConsoleKey.Enter : ConsoleKey.J, ConsoleModifiers.Control);
 
             static object[] MkConsoleKeyInfo (char keyChar, ConsoleKey consoleKey, ConsoleModifiers modifiers)
             {
@@ -115,18 +129,6 @@ namespace System
                         shift: modifiers.HasFlag(ConsoleModifiers.Shift))
                 };
             }
-        }
-
-        [ConditionalFact(nameof(ManualTestsEnabled))]
-        public static void OpenStandardInput()
-        {
-            Console.WriteLine("Please type \"console\" (without the quotes). You shouldn't see it as you type:");
-            var stream = Console.OpenStandardInput();
-            var textReader = new System.IO.StreamReader(stream);
-            var result = textReader.ReadLine();
-
-            Assert.Equal("console", result);
-            AssertUserExpectedResults("\"console\" correctly not echoed as you typed it");
         }
 
         [ConditionalFact(nameof(ManualTestsEnabled))]
@@ -216,7 +218,7 @@ namespace System
                 }
             }
 
-            AssertUserExpectedResults("the arrow keys move around the screen as expected with no other bad artificts");
+            AssertUserExpectedResults("the arrow keys move around the screen as expected with no other bad artifacts");
         }
 
         [ConditionalFact(nameof(ManualTestsEnabled))]

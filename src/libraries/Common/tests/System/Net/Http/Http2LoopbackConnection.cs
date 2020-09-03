@@ -644,6 +644,27 @@ namespace System.Net.Test.Common
 
         public async Task<SettingsFrame> ReadAndSendSettingsAsync(TimeSpan? ackTimeout, params SettingsEntry[] settingsEntries)
         {
+            SettingsFrame clientSettingsFrame = await ReadSettingsAsync().ConfigureAwait(false);
+            await SendSettingsAsync(ackTimeout, settingsEntries).ConfigureAwait(false);
+            return clientSettingsFrame;
+        }
+
+        public async Task SendSettingsAsync(TimeSpan? ackTimeout, SettingsEntry[] settingsEntries)
+        {
+            // Send the initial server settings frame.
+            SettingsFrame settingsFrame = new SettingsFrame(settingsEntries);
+            await WriteFrameAsync(settingsFrame).ConfigureAwait(false);
+
+            // Send the client settings frame ACK.
+            Frame settingsAck = new Frame(0, FrameType.Settings, FrameFlags.Ack, 0);
+            await WriteFrameAsync(settingsAck).ConfigureAwait(false);
+
+            // The client will send us a SETTINGS ACK eventually, but not necessarily right away.
+            await ExpectSettingsAckAsync((int?)ackTimeout?.TotalMilliseconds ?? 5000);
+        }
+
+        public async Task<SettingsFrame> ReadSettingsAsync()
+        {
             // Receive the initial client settings frame.
             Frame receivedFrame = await ReadFrameAsync(_timeout).ConfigureAwait(false);
             Assert.Equal(FrameType.Settings, receivedFrame.Type);
@@ -657,18 +678,6 @@ namespace System.Net.Test.Common
             Assert.Equal(FrameType.WindowUpdate, receivedFrame.Type);
             Assert.Equal(FrameFlags.None, receivedFrame.Flags);
             Assert.Equal(0, receivedFrame.StreamId);
-
-            // Send the initial server settings frame.
-            SettingsFrame settingsFrame = new SettingsFrame(settingsEntries);
-            await WriteFrameAsync(settingsFrame).ConfigureAwait(false);
-
-            // Send the client settings frame ACK.
-            Frame settingsAck = new Frame(0, FrameType.Settings, FrameFlags.Ack, 0);
-            await WriteFrameAsync(settingsAck).ConfigureAwait(false);
-
-            // The client will send us a SETTINGS ACK eventually, but not necessarily right away.
-            await ExpectSettingsAckAsync((int?)ackTimeout?.TotalMilliseconds ?? 5000);
-
             return clientSettingsFrame;
         }
 

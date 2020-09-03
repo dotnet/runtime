@@ -89,7 +89,7 @@ namespace System.Data
         internal EnumerableRowCollection(DataTable table)
         {
             _table = table;
-            _enumerableRows = table.Rows.Cast<TRow>();
+            _enumerableRows = table.Rows.Cast<TRow>()!;
             _listOfPredicates = new List<Func<TRow, bool>>();
             _sortExpression = new SortExpressionBuilder<TRow>();
         }

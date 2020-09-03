@@ -117,48 +117,49 @@ stages:
 #         extraStepsParameters:
 #           name: MonoRuntimePacks
 
-#   #
-#   # Build Mono LLVM runtime packs
-#   #
-#   - template: /eng/pipelines/common/platform-matrix-multijob.yml
-#     parameters:
-#       platforms:
-#       - OSX_x64
-#       - Linux_x64
-#       # - Linux_arm
-#       - Linux_arm64
-#       # - Linux_musl_x64
-#       # - Linux_musl_arm64
-#       # - Windows_NT_x64
-#       # - Windows_NT_x86
-#       # - Windows_NT_arm
-#       # - Windows_NT_arm64
-#       jobTemplates:
-#       # LLVMJIT
-#       - jobTemplate: /eng/pipelines/common/global-build-job.yml
-#         buildConfig: release
-#         runtimeFlavor: mono
-#         jobParameters:
-#           buildArgs: -s mono+libs+installer -c $(_BuildConfig) /p:MonoEnableLLVM=true
-#           nameSuffix: AllSubsets_Mono_LLVMJIT
-#           runtimeVariant: LLVMJIT
-#           isOfficialBuild: ${{ variables.isOfficialBuild }}
-#           extraStepsTemplate: /eng/pipelines/common/upload-unsigned-artifacts-step.yml
-#           extraStepsParameters:
-#             name: MonoRuntimePacks
-#       #LLVMAOT
-#       - jobTemplate: /eng/pipelines/common/global-build-job.yml
-#         buildConfig: release
-#         runtimeFlavor: mono
-#         jobParameters:
-#           buildArgs: -s mono+libs+installer -c $(_BuildConfig)
-#                       /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
-#           nameSuffix: AllSubsets_Mono_LLVMAOT
-#           runtimeVariant: LLVMAOT
-#           isOfficialBuild: ${{ variables.isOfficialBuild }}
-#           extraStepsTemplate: /eng/pipelines/common/upload-unsigned-artifacts-step.yml
-#           extraStepsParameters:
-#             name: MonoRuntimePacks
+  # #
+  # # Build Mono LLVM runtime packs
+  # #
+  # - template: /eng/pipelines/common/platform-matrix-multijob.yml
+  #   parameters:
+  #     platforms:
+  #     - OSX_x64
+  #     - Linux_x64
+  #     # - Linux_arm
+  #     - Linux_arm64
+  #     # - Linux_musl_x64
+  #     # - Linux_musl_arm64
+  #     # - Windows_NT_x64
+  #     # - Windows_NT_x86
+  #     # - Windows_NT_arm
+  #     # - Windows_NT_arm64
+  #     jobTemplates:
+  #     # LLVMJIT
+  #     - jobTemplate: /eng/pipelines/common/global-build-job.yml
+  #       buildConfig: release
+  #       runtimeFlavor: mono
+  #       jobParameters:
+  #         buildArgs: -s mono+libs+installer -c $(_BuildConfig)
+  #                    /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=false
+  #         nameSuffix: AllSubsets_Mono_LLVMJIT
+  #         runtimeVariant: LLVMJIT
+  #         isOfficialBuild: ${{ variables.isOfficialBuild }}
+  #         extraStepsTemplate: /eng/pipelines/common/upload-unsigned-artifacts-step.yml
+  #         extraStepsParameters:
+  #           name: MonoRuntimePacks
+  #     #LLVMAOT
+  #     - jobTemplate: /eng/pipelines/common/global-build-job.yml
+  #       buildConfig: release
+  #       runtimeFlavor: mono
+  #       jobParameters:
+  #         buildArgs: -s mono+libs+installer -c $(_BuildConfig)
+  #                     /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
+  #         nameSuffix: AllSubsets_Mono_LLVMAOT
+  #         runtimeVariant: LLVMAOT
+  #         isOfficialBuild: ${{ variables.isOfficialBuild }}
+  #         extraStepsTemplate: /eng/pipelines/common/upload-unsigned-artifacts-step.yml
+  #         extraStepsParameters:
+  #           name: MonoRuntimePacks
 
 #   #
 #   # Build libraries using live CoreLib from CoreCLR

@@ -86,7 +86,7 @@ namespace System.Xml.Xsl.XsltOld
         public void TheEnd()
         {
             _writer.Flush();
-            _writer = null;
+            _writer = null!;
         }
 
         private void WriteAttributes(ArrayList list, int count)
@@ -95,7 +95,7 @@ namespace System.Xml.Xsl.XsltOld
             for (int attrib = 0; attrib < count; attrib++)
             {
                 Debug.Assert(list[attrib] is BuilderInfo);
-                BuilderInfo attribute = (BuilderInfo)list[attrib];
+                BuilderInfo attribute = (BuilderInfo)list[attrib]!;
                 _writer.WriteAttributeString(attribute.Prefix, attribute.LocalName, attribute.NamespaceURI, attribute.Value);
             }
         }

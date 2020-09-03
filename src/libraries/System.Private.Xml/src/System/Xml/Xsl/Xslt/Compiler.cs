@@ -41,14 +41,14 @@ namespace System.Xml.Xsl.Xslt
     {
         public XsltSettings Settings;
         public bool IsDebug;
-        public string ScriptAssemblyPath;
+        public string? ScriptAssemblyPath;
         public int Version;                // 0 - Auto; 1 - XSLT 1.0; 2 - XSLT 2.0
-        public string inputTypeAnnotations;   // null - "unspecified"; "preserve"; "strip"
+        public string? inputTypeAnnotations;   // null - "unspecified"; "preserve"; "strip"
 
         public CompilerErrorCollection CompilerErrorColl;        // Results of the compilation
         public int CurrentPrecedence;  // Decreases by 1 with each import
-        public XslNode StartApplyTemplates;
-        public RootLevel Root;
+        public XslNode? StartApplyTemplates;
+        public RootLevel? Root;
         public Scripts Scripts;
         public Output Output = new Output();
         public List<VarPar> ExternalPars = new List<VarPar>();
@@ -65,7 +65,7 @@ namespace System.Xml.Xsl.Xslt
 
         private readonly Dictionary<string, int> _moduleOrder = new Dictionary<string, int>();
 
-        public Compiler(XsltSettings settings, bool debug, string scriptAssemblyPath)
+        public Compiler(XsltSettings settings, bool debug, string? scriptAssemblyPath)
         {
             Debug.Assert(CompilerErrorColl == null, "Compiler cannot be reused");
 
@@ -77,7 +77,7 @@ namespace System.Xml.Xsl.Xslt
             Scripts = new Scripts(this);
         }
 
-        public CompilerErrorCollection Compile(object stylesheet, XmlResolver xmlResolver, out QilExpression qil)
+        public CompilerErrorCollection Compile(object stylesheet, XmlResolver? xmlResolver, out QilExpression qil)
         {
             Debug.Assert(stylesheet != null);
             Debug.Assert(Root == null, "Compiler cannot be reused");
@@ -106,9 +106,9 @@ namespace System.Xml.Xsl.Xslt
             }
         }
 
-        public void ApplyNsAliases(ref string prefix, ref string nsUri)
+        public void ApplyNsAliases(ref string? prefix, ref string nsUri)
         {
-            NsAlias alias;
+            NsAlias? alias;
             if (NsAliases.TryGetValue(nsUri, out alias))
             {
                 nsUri = alias.ResultNsUri;
@@ -117,9 +117,9 @@ namespace System.Xml.Xsl.Xslt
         }
 
         // Returns true in case of redefinition
-        public bool SetNsAlias(string ssheetNsUri, string resultNsUri, string resultPrefix, int importPrecedence)
+        public bool SetNsAlias(string ssheetNsUri, string resultNsUri, string? resultPrefix, int importPrecedence)
         {
-            NsAlias oldNsAlias;
+            NsAlias? oldNsAlias;
             if (NsAliases.TryGetValue(ssheetNsUri, out oldNsAlias))
             {
                 // Namespace alias for this stylesheet namespace URI has already been defined
@@ -139,7 +139,7 @@ namespace System.Xml.Xsl.Xslt
         {
             for (int idx = 0; idx <= 2; idx++)
             {
-                sheet.WhitespaceRules[idx].Reverse();
+                sheet.WhitespaceRules![idx].Reverse();
                 this.WhitespaceRules.AddRange(sheet.WhitespaceRules[idx]);
             }
             sheet.WhitespaceRules = null;
@@ -147,9 +147,9 @@ namespace System.Xml.Xsl.Xslt
 
         private void MergeAttributeSets(Stylesheet sheet)
         {
-            foreach (QilName attSetName in sheet.AttributeSets.Keys)
+            foreach (QilName attSetName in sheet.AttributeSets!.Keys)
             {
-                AttributeSet attSet;
+                AttributeSet? attSet;
                 if (!this.AttributeSets.TryGetValue(attSetName, out attSet))
                 {
                     this.AttributeSets[attSetName] = sheet.AttributeSets[attSetName];
@@ -165,10 +165,10 @@ namespace System.Xml.Xsl.Xslt
 
         private void MergeGlobalVarPars(Stylesheet sheet)
         {
-            foreach (VarPar var in sheet.GlobalVarPars)
+            foreach (VarPar var in sheet.GlobalVarPars!)
             {
                 Debug.Assert(var.NodeType == XslNodeType.Variable || var.NodeType == XslNodeType.Param);
-                if (!AllGlobalVarPars.ContainsKey(var.Name))
+                if (!AllGlobalVarPars.ContainsKey(var.Name!))
                 {
                     if (var.NodeType == XslNodeType.Variable)
                     {
@@ -178,7 +178,7 @@ namespace System.Xml.Xsl.Xslt
                     {
                         ExternalPars.Add(var);
                     }
-                    AllGlobalVarPars[var.Name] = var;
+                    AllGlobalVarPars[var.Name!] = var;
                 }
             }
             sheet.GlobalVarPars = null;
@@ -220,7 +220,7 @@ namespace System.Xml.Xsl.Xslt
             }
         }
 
-        public bool ParseNameTest(string nameTest, out string prefix, out string localName, IErrorHelper errorHelper)
+        public bool ParseNameTest(string nameTest, out string? prefix, out string? localName, IErrorHelper errorHelper)
         {
             Debug.Assert(nameTest != null);
             try
@@ -313,22 +313,22 @@ namespace System.Xml.Xsl.Xslt
             return true;
         }
 
-        public CompilerError CreateError(ISourceLineInfo lineInfo, string res, params string[] args)
+        public CompilerError CreateError(ISourceLineInfo lineInfo, string res, params string?[]? args)
         {
-            AddModule(lineInfo.Uri);
+            AddModule(lineInfo.Uri!);
             return new CompilerError(
-                lineInfo.Uri, lineInfo.Start.Line, lineInfo.Start.Pos, /*errorNumber:*/string.Empty,
+                lineInfo.Uri!, lineInfo.Start.Line, lineInfo.Start.Pos, /*errorNumber:*/string.Empty,
                 /*errorText:*/XslTransformException.CreateMessage(res, args)
             );
         }
 
-        public void ReportError(ISourceLineInfo lineInfo, string res, params string[] args)
+        public void ReportError(ISourceLineInfo lineInfo, string res, params string?[]? args)
         {
             CompilerError error = CreateError(lineInfo, res, args);
             CompilerErrorColl.Add(error);
         }
 
-        public void ReportWarning(ISourceLineInfo lineInfo, string res, params string[] args)
+        public void ReportWarning(ISourceLineInfo lineInfo, string res, params string?[]? args)
         {
             int warningLevel = 1;
             if (0 <= Settings.WarningLevel && Settings.WarningLevel < warningLevel)
@@ -371,9 +371,9 @@ namespace System.Xml.Xsl.Xslt
                 _moduleOrder = moduleOrder;
             }
 
-            public int Compare(CompilerError x, CompilerError y)
+            public int Compare(CompilerError? x, CompilerError? y)
             {
-                if ((object)x == (object)y)
+                if ((object?)x == (object?)y)
                     return 0;
 
                 if (x == null)
@@ -410,9 +410,9 @@ namespace System.Xml.Xsl.Xslt
     internal class Output
     {
         public XmlWriterSettings Settings;
-        public string Version;
-        public string Encoding;
-        public XmlQualifiedName Method;
+        public string? Version;
+        public string? Encoding;
+        public XmlQualifiedName? Method;
 
         // All the xsl:output elements occurring in a stylesheet are merged into a single effective xsl:output element.
         // We store the import precedence of each attribute value to catch redefinitions with the same import precedence.
@@ -467,10 +467,10 @@ namespace System.Xml.Xsl.Xslt
     internal class NsAlias
     {
         public readonly string ResultNsUri;
-        public readonly string ResultPrefix;
+        public readonly string? ResultPrefix;
         public readonly int ImportPrecedence;
 
-        public NsAlias(string resultNsUri, string resultPrefix, int importPrecedence)
+        public NsAlias(string resultNsUri, string? resultPrefix, int importPrecedence)
         {
             this.ResultNsUri = resultNsUri;
             this.ResultPrefix = resultPrefix;

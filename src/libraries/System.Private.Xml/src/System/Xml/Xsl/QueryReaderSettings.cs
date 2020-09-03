@@ -12,14 +12,14 @@ namespace System.Xml.Xsl
     internal class QueryReaderSettings
     {
         private readonly bool _validatingReader;
-        private readonly XmlReaderSettings _xmlReaderSettings;
-        private readonly XmlNameTable _xmlNameTable;
+        private readonly XmlReaderSettings? _xmlReaderSettings;
+        private readonly XmlNameTable? _xmlNameTable;
         private readonly EntityHandling _entityHandling;
         private readonly bool _namespaces;
         private readonly bool _normalization;
         private readonly bool _prohibitDtd;
         private readonly WhitespaceHandling _whitespaceHandling;
-        private readonly XmlResolver _xmlResolver;
+        private readonly XmlResolver? _xmlResolver;
 
         public QueryReaderSettings(XmlNameTable xmlNameTable)
         {
@@ -35,7 +35,7 @@ namespace System.Xml.Xsl
         public QueryReaderSettings(XmlReader reader)
         {
 #pragma warning disable 618
-            XmlValidatingReader valReader = reader as XmlValidatingReader;
+            XmlValidatingReader? valReader = reader as XmlValidatingReader;
 #pragma warning restore 618
             if (valReader != null)
             {
@@ -43,6 +43,7 @@ namespace System.Xml.Xsl
                 _validatingReader = true;
                 reader = valReader.Impl.Reader;
             }
+
             _xmlReaderSettings = reader.Settings;
             if (_xmlReaderSettings != null)
             {
@@ -51,7 +52,7 @@ namespace System.Xml.Xsl
                 _xmlReaderSettings.CloseInput = true;
                 _xmlReaderSettings.LineNumberOffset = 0;
                 _xmlReaderSettings.LinePositionOffset = 0;
-                XmlTextReaderImpl impl = reader as XmlTextReaderImpl;
+                XmlTextReaderImpl? impl = reader as XmlTextReaderImpl;
                 if (impl != null)
                 {
                     _xmlReaderSettings.XmlResolver = impl.GetResolver();
@@ -60,7 +61,7 @@ namespace System.Xml.Xsl
             else
             {
                 _xmlNameTable = reader.NameTable;
-                XmlTextReader xmlTextReader = reader as XmlTextReader;
+                XmlTextReader? xmlTextReader = reader as XmlTextReader;
                 if (xmlTextReader != null)
                 {
                     XmlTextReaderImpl impl = xmlTextReader.Impl;
@@ -92,7 +93,7 @@ namespace System.Xml.Xsl
             }
             else
             {
-                XmlTextReaderImpl readerImpl = new XmlTextReaderImpl(baseUri, stream, _xmlNameTable);
+                XmlTextReaderImpl readerImpl = new XmlTextReaderImpl(baseUri, stream, _xmlNameTable!);
                 readerImpl.EntityHandling = _entityHandling;
                 readerImpl.Namespaces = _namespaces;
                 readerImpl.Normalization = _normalization;
@@ -112,7 +113,7 @@ namespace System.Xml.Xsl
 
         public XmlNameTable NameTable
         {
-            get { return _xmlReaderSettings != null ? _xmlReaderSettings.NameTable : _xmlNameTable; }
+            get { return _xmlReaderSettings != null ? _xmlReaderSettings.NameTable! : _xmlNameTable!; }
         }
     }
 }

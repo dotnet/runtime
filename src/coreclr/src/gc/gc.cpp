@@ -5703,6 +5703,7 @@ void gc_heap::gc_thread_function ()
             END_TIMING(suspend_ee_during_log);
 
             proceed_with_gc_p = TRUE;
+            gradual_decommit_in_progress_p = FALSE;
 
             if (!should_proceed_with_gc())
             {
@@ -11504,6 +11505,15 @@ BOOL gc_heap::grow_heap_segment (heap_segment* seg, uint8_t* high_address, bool*
 
         assert (heap_segment_committed (seg) <= heap_segment_reserved (seg));
         assert (high_address <= heap_segment_committed (seg));
+
+#ifdef MULTIPLE_HEAPS
+        // we should never increase committed beyond decommit target when gradual
+        // decommit is in progress - if we do, this means commit and decommit are
+        // going on at the same time.
+        assert (!gradual_decommit_in_progress_p ||
+                (seg != ephemeral_heap_segment) ||
+                (heap_segment_committed (seg) <= heap_segment_decommit_target (seg)));
+#endif // MULTIPLE_HEAPS
     }
 
     return !!ret;
@@ -20909,9 +20919,19 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
     if (gc_t_join.joined())
 #endif //MULTIPLE_HEAPS
     {
+        uint64_t promoted_bytes_global = 0;
 #ifdef HEAP_ANALYZE
         heap_analyze_enabled = FALSE;
-        GCToEEInterface::AnalyzeSurvivorsFinished(condemned_gen_number);
+#ifdef MULTIPLE_HEAPS
+        for (int i = 0; i < n_heaps; i++)
+        {
+            promoted_bytes_global += promoted_bytes (i);
+        }
+#else
+        promoted_bytes_global = promoted_bytes (0);
+#endif //MULTIPLE_HEAPS
+
+        GCToEEInterface::AnalyzeSurvivorsFinished (settings.gc_index, condemned_gen_number, promoted_bytes_global, GCHeap::ReportGenerationBounds);
 #endif // HEAP_ANALYZE
         GCToEEInterface::AfterGcScanRoots (condemned_gen_number, max_generation, &sc);
 
@@ -32446,7 +32466,7 @@ void gc_heap::trim_youngest_desired_low_memory()
 
 void gc_heap::decommit_ephemeral_segment_pages()
 {
-    if (settings.concurrent || use_large_pages_p)
+    if (settings.concurrent || use_large_pages_p || (settings.pause_mode == pause_no_gc))
     {
         return;
     }
@@ -32485,7 +32505,7 @@ void gc_heap::decommit_ephemeral_segment_pages()
         decommit_target += target_decrease * 2 / 3;
     }
 
-    heap_segment_decommit_target(ephemeral_heap_segment) = decommit_target;
+    heap_segment_decommit_target (ephemeral_heap_segment) = decommit_target;
 
 #ifdef MULTIPLE_HEAPS
     if (decommit_target < heap_segment_committed (ephemeral_heap_segment))
@@ -37843,15 +37863,26 @@ size_t GCHeap::ApproxTotalBytesInUse(BOOL small_heap_only)
     size_t totsize = 0;
     enter_spin_lock (&pGenGCHeap->gc_lock);
 
-    heap_segment* eph_seg = generation_allocation_segment (pGenGCHeap->generation_of (0));
-    // Get small block heap size info
-    totsize = (pGenGCHeap->alloc_allocated - heap_segment_mem (eph_seg));
-    heap_segment* seg1 = generation_start_segment (pGenGCHeap->generation_of (max_generation));
-    while (seg1 != eph_seg)
+    // the complication with the following code is that background GC may
+    // remove the ephemeral segment while we are iterating
+    // if so, we retry a couple times and ultimately may report a slightly wrong result
+    for (int tries = 1; tries <= 3; tries++)
     {
-        totsize += heap_segment_allocated (seg1) -
-            heap_segment_mem (seg1);
-        seg1 = heap_segment_next (seg1);
+        heap_segment* eph_seg = generation_allocation_segment (pGenGCHeap->generation_of (0));
+        // Get small block heap size info
+        totsize = (pGenGCHeap->alloc_allocated - heap_segment_mem (eph_seg));
+        heap_segment* seg1 = generation_start_segment (pGenGCHeap->generation_of (max_generation));
+        while ((seg1 != eph_seg) && (seg1 != nullptr) && (seg1 != pGenGCHeap->freeable_soh_segment))
+        {
+            if (!heap_segment_decommitted_p (seg1))
+            {
+                totsize += heap_segment_allocated (seg1) -
+                    heap_segment_mem (seg1);
+            }
+            seg1 = heap_segment_next (seg1);
+        }
+        if (seg1 == eph_seg)
+            break;
     }
 
     //discount the fragmentation

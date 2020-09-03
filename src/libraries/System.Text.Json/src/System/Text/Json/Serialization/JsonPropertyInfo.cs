@@ -156,7 +156,6 @@ namespace System.Text.Json
                     }
                 }
             }
-#pragma warning disable CS0618 // IgnoreNullValues is obsolete
             else if (Options.IgnoreNullValues)
             {
                 Debug.Assert(Options.DefaultIgnoreCondition == JsonIgnoreCondition.Never);
@@ -179,7 +178,6 @@ namespace System.Text.Json
                 Debug.Assert(!Options.IgnoreNullValues);
                 IgnoreDefaultValuesOnWrite = true;
             }
-#pragma warning restore CS0618 // IgnoreNullValues is obsolete
         }
 
         private void DetermineNumberHandling(JsonNumberHandling? parentTypeNumberHandling)

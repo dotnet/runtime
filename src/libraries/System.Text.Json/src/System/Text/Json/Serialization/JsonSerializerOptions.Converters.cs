@@ -177,6 +177,18 @@ namespace System.Text.Json
                 Debug.Assert(converter != null);
             }
 
+            // User indicated that non-nullable-struct-handling converter should handle a nullable struct type.
+            // The serializer would have picked that converter up by default and wrapped it in NullableConverter<T>;
+            // throw so that user can modify or remove their unnecessary CanConvert method override.
+            //
+            // We also throw to avoid passing an invalid argument to setters for nullable struct properties,
+            // which would cause an InvalidProgramException when the generated IL is invoked.
+            // This is not an issue of the converter is wrapped in NullableConverter<T>.
+            if (runtimePropertyType.IsNullableType() && !converter.TypeToConvert.IsNullableType())
+            {
+                ThrowHelper.ThrowInvalidOperationException_ConverterCanConvertNullableRedundant(runtimePropertyType, converter);
+            }
+
             return converter;
         }
 
@@ -260,8 +272,8 @@ namespace System.Text.Json
 
             Type converterTypeToConvert = converter.TypeToConvert;
 
-            if (!converterTypeToConvert.IsAssignableFrom(typeToConvert) &&
-                !typeToConvert.IsAssignableFrom(converterTypeToConvert))
+            if (!converterTypeToConvert.IsAssignableFromInternal(typeToConvert)
+                && !typeToConvert.IsAssignableFromInternal(converterTypeToConvert))
             {
                 ThrowHelper.ThrowInvalidOperationException_SerializationConverterNotCompatible(converter.GetType(), typeToConvert);
             }
@@ -309,6 +321,11 @@ namespace System.Text.Json
                 Type? underlyingType = Nullable.GetUnderlyingType(typeToConvert);
                 if (underlyingType != null && converter.CanConvert(underlyingType))
                 {
+                    if (converter is JsonConverterFactory converterFactory)
+                    {
+                        converter = converterFactory.GetConverterInternal(underlyingType, this);
+                    }
+
                     // Allow nullable handling to forward to the underlying type's converter.
                     return NullableConverterFactory.CreateValueConverter(underlyingType, converter);
                 }
@@ -346,5 +363,6 @@ namespace System.Text.Json
             ThrowHelper.ThrowInvalidOperationException_SerializationDuplicateAttribute(attributeType, classType, memberInfo);
             return default;
         }
+
     }
 }

@@ -41,7 +41,7 @@ namespace System.Xml.Xsl
         /// <returns>the atomic value type</returns>
         public static XmlQueryType Type(XmlSchemaSimpleType schemaType, bool isStrict)
         {
-            if (schemaType.Datatype.Variety == XmlSchemaDatatypeVariety.Atomic)
+            if (schemaType.Datatype!.Variety == XmlSchemaDatatypeVariety.Atomic)
             {
                 // We must special-case xs:anySimpleType because it is broken in Xsd and is sometimes treated as
                 // an atomic value and sometimes as a list value.  In XQuery, it always maps to xdt:anyAtomicType*.
@@ -53,16 +53,16 @@ namespace System.Xml.Xsl
 
             // Skip restrictions. It is safe to do that because this is a list or union, so it's not a build in type
             while (schemaType.DerivedBy == XmlSchemaDerivationMethod.Restriction)
-                schemaType = (XmlSchemaSimpleType)schemaType.BaseXmlSchemaType;
+                schemaType = (XmlSchemaSimpleType)schemaType.BaseXmlSchemaType!;
 
             // Convert Xsd list
             if (schemaType.DerivedBy == XmlSchemaDerivationMethod.List)
-                return PrimeProduct(Type(((XmlSchemaSimpleTypeList)schemaType.Content).BaseItemType, isStrict), XmlQueryCardinality.ZeroOrMore);
+                return PrimeProduct(Type(((XmlSchemaSimpleTypeList)schemaType.Content!).BaseItemType!, isStrict), XmlQueryCardinality.ZeroOrMore);
 
             // Convert Xsd union
             Debug.Assert(schemaType.DerivedBy == XmlSchemaDerivationMethod.Union);
-            XmlSchemaSimpleType[] baseMemberTypes = ((XmlSchemaSimpleTypeUnion)schemaType.Content).BaseMemberTypes;
-            XmlQueryType[] queryMemberTypes = new XmlQueryType[baseMemberTypes.Length];
+            XmlSchemaSimpleType[] baseMemberTypes = ((XmlSchemaSimpleTypeUnion)schemaType.Content!).BaseMemberTypes!;
+            XmlQueryType[] queryMemberTypes = new XmlQueryType[baseMemberTypes!.Length];
 
             for (int i = 0; i < baseMemberTypes.Length; i++)
                 queryMemberTypes[i] = Type(baseMemberTypes[i], isStrict);
@@ -348,7 +348,7 @@ namespace System.Xml.Xsl
             {
 #if DEBUG
                 Array arrEnum = Enum.GetValues(typeof(XmlTypeCode));
-                Debug.Assert((XmlTypeCode)arrEnum.GetValue(arrEnum.Length - 1) == XmlTypeCode.DayTimeDuration,
+                Debug.Assert((XmlTypeCode)arrEnum.GetValue(arrEnum.Length - 1)! == XmlTypeCode.DayTimeDuration,
                              "DayTimeDuration is no longer the last item in XmlTypeCode.  This code expects it to be.");
 #endif
 
@@ -434,7 +434,7 @@ namespace System.Xml.Xsl
             /// </summary>
             public static XmlQueryType Create(XmlSchemaSimpleType schemaType, bool isStrict)
             {
-                Debug.Assert(schemaType.Datatype.Variety == XmlSchemaDatatypeVariety.Atomic, "List or Union Xsd types should have been handled by caller.");
+                Debug.Assert(schemaType.Datatype!.Variety == XmlSchemaDatatypeVariety.Atomic, "List or Union Xsd types should have been handled by caller.");
                 XmlTypeCode code = schemaType.Datatype.TypeCode;
 
                 // If schemaType is a built-in type,
@@ -510,7 +510,7 @@ namespace System.Xml.Xsl
                 _isStrict = isStrict;
                 _isNotRtf = isNotRtf;
 
-                Debug.Assert(!IsAtomicValue || schemaType.Datatype.Variety == XmlSchemaDatatypeVariety.Atomic);
+                Debug.Assert(!IsAtomicValue || schemaType.Datatype!.Variety == XmlSchemaDatatypeVariety.Atomic);
 
                 _nodeKinds = code switch
                 {
@@ -690,7 +690,7 @@ namespace System.Xml.Xsl
             public static readonly XmlQueryType None = new ChoiceType(new List<XmlQueryType>());
 
             private readonly XmlTypeCode _code;
-            private readonly XmlSchemaType _schemaType;
+            private readonly XmlSchemaType? _schemaType;
             private readonly XmlNodeKindFlags _nodeKinds;
             private readonly List<XmlQueryType> _members;
 
@@ -853,7 +853,14 @@ namespace System.Xml.Xsl
             /// </summary>
             public override XmlSchemaType SchemaType
             {
-                get { return _schemaType; }
+                get
+                {
+                    // TODO-NULLABLE: Per documentation of base class we should not be returning null here
+                    //                Currently we return null for some type codes (i.e. Item, Node)
+                    //                but doc says we should be returning AnyType
+                    //                which presumably means XmlSchemaComplexType.AnyType
+                    return _schemaType!;
+                }
             }
 
             /// <summary>

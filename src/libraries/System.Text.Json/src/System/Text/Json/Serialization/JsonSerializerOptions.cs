@@ -208,7 +208,6 @@ namespace System.Text.Json
         /// Thrown if this property is set after serialization or deserialization has occurred.
         /// or <see cref="DefaultIgnoreCondition"/> has been set to a non-default value. These properties cannot be used together.
         /// </exception>
-        [Obsolete("To ignore null values when serializing, set DefaultIgnoreCondition to JsonIgnoreCondition.WhenWritingDefault.", error: false)]
         [EditorBrowsable(EditorBrowsableState.Never)]
         public bool IgnoreNullValues
         {

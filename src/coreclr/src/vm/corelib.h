@@ -318,9 +318,12 @@ DEFINE_CLASS(ENCODING,              Text,                   Encoding)
 
 DEFINE_CLASS(RUNE,                  Text,                   Rune)
 
-#ifdef FEATURE_UTF8STRING
-DEFINE_CLASS(CHAR8,                 System,                 Char8)
-#endif // FEATURE_UTF8STRING
+// https://github.com/dotnet/runtime/issues/41654 - having DEFINE_CLASS (even under #ifdef) causes an entry
+// in System.Private.CoreLib's ILLink.Descriptor.xml which causes warnings
+// Use /// comments because CreateRuntimeRootILLinkDescriptorFile will still match `// DEFINE_CLASS`
+/// #ifdef FEATURE_UTF8STRING
+/// DEFINE_CLASS(CHAR8,                 System,                 Char8)
+/// #endif // FEATURE_UTF8STRING
 
 DEFINE_CLASS(ENUM,                  System,                 Enum)
 
@@ -708,7 +711,6 @@ DEFINE_METHOD(RUNTIME_HELPERS,      ENUM_EQUALS,            EnumEquals, NoSig)
 DEFINE_METHOD(RUNTIME_HELPERS,      ENUM_COMPARE_TO,        EnumCompareTo, NoSig)
 DEFINE_METHOD(RUNTIME_HELPERS,      ALLOC_TAILCALL_ARG_BUFFER, AllocTailCallArgBuffer,  SM_Int_IntPtr_RetIntPtr)
 DEFINE_METHOD(RUNTIME_HELPERS,      GET_TAILCALL_INFO,      GetTailCallInfo, NoSig)
-DEFINE_METHOD(RUNTIME_HELPERS,      FREE_TAILCALL_ARG_BUFFER, FreeTailCallArgBuffer,    SM_RetVoid)
 DEFINE_METHOD(RUNTIME_HELPERS,      DISPATCH_TAILCALLS,     DispatchTailCalls,          NoSig)
 
 DEFINE_CLASS(UNSAFE,                InternalCompilerServices,       Unsafe)
@@ -760,9 +762,6 @@ DEFINE_FIELD(PORTABLE_TAIL_CALL_FRAME, NEXT_CALL,                     NextCall)
 DEFINE_CLASS(TAIL_CALL_TLS,            CompilerServices,              TailCallTls)
 DEFINE_FIELD(TAIL_CALL_TLS,            FRAME,                         Frame)
 DEFINE_FIELD(TAIL_CALL_TLS,            ARG_BUFFER,                    ArgBuffer)
-DEFINE_FIELD(TAIL_CALL_TLS,            ARG_BUFFER_SIZE,               _argBufferSize)
-DEFINE_FIELD(TAIL_CALL_TLS,            ARG_BUFFER_GC_DESC,            _argBufferGCDesc)
-DEFINE_FIELD(TAIL_CALL_TLS,            ARG_BUFFER_INLINE,             _argBufferInline)
 
 DEFINE_CLASS_U(CompilerServices,           PortableTailCallFrame, PortableTailCallFrame)
 DEFINE_FIELD_U(Prev,                       PortableTailCallFrame, Prev)
@@ -772,10 +771,6 @@ DEFINE_FIELD_U(NextCall,                   PortableTailCallFrame, NextCall)
 DEFINE_CLASS_U(CompilerServices,           TailCallTls,           TailCallTls)
 DEFINE_FIELD_U(Frame,                      TailCallTls,           m_frame)
 DEFINE_FIELD_U(ArgBuffer,                  TailCallTls,           m_argBuffer)
-DEFINE_FIELD_U(_argBufferSize,             TailCallTls,           m_argBufferSize)
-DEFINE_FIELD_U(_argBufferGCDesc,           TailCallTls,           m_argBufferGCDesc)
-DEFINE_FIELD_U(_argBufferInline,           TailCallTls,           m_argBufferInline)
-
 
 DEFINE_CLASS(RUNTIME_WRAPPED_EXCEPTION, CompilerServices,   RuntimeWrappedException)
 DEFINE_METHOD(RUNTIME_WRAPPED_EXCEPTION, OBJ_CTOR,          .ctor,                      IM_Obj_RetVoid)
@@ -857,16 +852,19 @@ DEFINE_METHOD(STRING,               WCSLEN,                 wcslen,             
 DEFINE_METHOD(STRING,               STRLEN,                 strlen,                     SM_PtrByte_RetInt)
 DEFINE_PROPERTY(STRING,             LENGTH,                 Length,                     Int)
 
-#ifdef FEATURE_UTF8STRING
-DEFINE_CLASS(UTF8_STRING,           System,                 Utf8String)
-DEFINE_METHOD(UTF8_STRING,          CTORF_READONLYSPANOFBYTE,Ctor,                      IM_ReadOnlySpanOfByte_RetUtf8Str)
-DEFINE_METHOD(UTF8_STRING,          CTORF_READONLYSPANOFCHAR,Ctor,                      IM_ReadOnlySpanOfChar_RetUtf8Str)
-DEFINE_METHOD(UTF8_STRING,          CTORF_BYTEARRAY_START_LEN,Ctor,                     IM_ArrByte_Int_Int_RetUtf8Str)
-DEFINE_METHOD(UTF8_STRING,          CTORF_BYTEPTR,           Ctor,                      IM_PtrByte_RetUtf8Str)
-DEFINE_METHOD(UTF8_STRING,          CTORF_CHARARRAY_START_LEN,Ctor,                     IM_ArrChar_Int_Int_RetUtf8Str)
-DEFINE_METHOD(UTF8_STRING,          CTORF_CHARPTR,           Ctor,                      IM_PtrChar_RetUtf8Str)
-DEFINE_METHOD(UTF8_STRING,          CTORF_STRING,            Ctor,                      IM_String_RetUtf8Str)
-#endif // FEATURE_UTF8STRING
+// https://github.com/dotnet/runtime/issues/41654 - having DEFINE_CLASS (even under #ifdef) causes an entry
+// in System.Private.CoreLib's ILLink.Descriptor.xml which causes warnings.
+// Use /// comments because CreateRuntimeRootILLinkDescriptorFile will still match `// DEFINE_CLASS`
+/// #ifdef FEATURE_UTF8STRING
+/// DEFINE_CLASS(UTF8_STRING,           System,                 Utf8String)
+/// DEFINE_METHOD(UTF8_STRING,          CTORF_READONLYSPANOFBYTE,Ctor,                      IM_ReadOnlySpanOfByte_RetUtf8Str)
+/// DEFINE_METHOD(UTF8_STRING,          CTORF_READONLYSPANOFCHAR,Ctor,                      IM_ReadOnlySpanOfChar_RetUtf8Str)
+/// DEFINE_METHOD(UTF8_STRING,          CTORF_BYTEARRAY_START_LEN,Ctor,                     IM_ArrByte_Int_Int_RetUtf8Str)
+/// DEFINE_METHOD(UTF8_STRING,          CTORF_BYTEPTR,           Ctor,                      IM_PtrByte_RetUtf8Str)
+/// DEFINE_METHOD(UTF8_STRING,          CTORF_CHARARRAY_START_LEN,Ctor,                     IM_ArrChar_Int_Int_RetUtf8Str)
+/// DEFINE_METHOD(UTF8_STRING,          CTORF_CHARPTR,           Ctor,                      IM_PtrChar_RetUtf8Str)
+/// DEFINE_METHOD(UTF8_STRING,          CTORF_STRING,            Ctor,                      IM_String_RetUtf8Str)
+/// #endif // FEATURE_UTF8STRING
 
 DEFINE_CLASS(STRING_BUILDER,        Text,                   StringBuilder)
 DEFINE_PROPERTY(STRING_BUILDER,     LENGTH,                 Length,                     Int)
@@ -972,7 +970,7 @@ DEFINE_CLASS_U(Threading,              WaitHandle,             WaitHandleBase)
 DEFINE_FIELD_U(_waitHandle,         WaitHandleBase,         m_safeHandle)
 
 DEFINE_CLASS(DEBUGGER,              Diagnostics,            Debugger)
-DEFINE_METHOD(DEBUGGER,             BREAK_CAN_THROW,        BreakCanThrow,          SM_RetVoid)
+DEFINE_METHOD(DEBUGGER,             BREAK,                  Break,                  SM_RetVoid)
 
 DEFINE_CLASS(BUFFER,                System,                 Buffer)
 DEFINE_METHOD(BUFFER,               MEMCPY_PTRBYTE_ARRBYTE, Memcpy,                 SM_PtrByte_Int_ArrByte_Int_Int_RetVoid)

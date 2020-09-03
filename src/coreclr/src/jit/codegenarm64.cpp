@@ -2976,7 +2976,7 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
         gcInfo.gcMarkRegPtrVal(addrReg, addr->TypeGet());
 
         // TODO-ARM64-CQ Use ARMv8.1 atomics if available
-        // https://github.com/dotnet/coreclr/issues/11881
+        // https://github.com/dotnet/runtime/issues/8225
 
         // Emit code like this:
         //   retry:

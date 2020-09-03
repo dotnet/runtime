@@ -7,6 +7,7 @@
 namespace System.Data.OleDb
 {
     [System.ComponentModel.DesignerAttribute("Microsoft.VSDesigner.Data.VS.OleDbCommandDesigner, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
+    [System.ComponentModel.ToolboxItemAttribute(true)]
     public sealed partial class OleDbCommand : System.Data.Common.DbCommand, System.Data.IDbCommand, System.ICloneable, System.IDisposable
     {
         public OleDbCommand() { }
@@ -14,6 +15,7 @@ namespace System.Data.OleDb
         public OleDbCommand(string? cmdText, System.Data.OleDb.OleDbConnection? connection) { }
         public OleDbCommand(string? cmdText, System.Data.OleDb.OleDbConnection? connection, System.Data.OleDb.OleDbTransaction? transaction) { }
         [System.ComponentModel.DefaultValueAttribute("")]
+        [System.ComponentModel.EditorAttribute("Microsoft.VSDesigner.Data.ADO.Design.OleDbCommandTextEditor, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
         [System.ComponentModel.RefreshPropertiesAttribute(System.ComponentModel.RefreshProperties.All)]
         public override string? CommandText { get { throw null; } set { } }
         public override int CommandTimeout { get { throw null; } set { } }
@@ -21,6 +23,7 @@ namespace System.Data.OleDb
         [System.ComponentModel.RefreshPropertiesAttribute(System.ComponentModel.RefreshProperties.All)]
         public override System.Data.CommandType CommandType { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute(null)]
+        [System.ComponentModel.EditorAttribute("Microsoft.VSDesigner.Data.Design.DbConnectionEditor, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
         public new System.Data.OleDb.OleDbConnection? Connection { get { throw null; } set { } }
         protected override System.Data.Common.DbConnection? DbConnection { get { throw null; } set { } }
         protected override System.Data.Common.DbParameterCollection DbParameterCollection { get { throw null; } }
@@ -70,10 +73,10 @@ namespace System.Data.OleDb
         public new System.Data.OleDb.OleDbCommand GetUpdateCommand() { throw null; }
         public new System.Data.OleDb.OleDbCommand GetUpdateCommand(bool useColumnsForParameterNames) { throw null; }
         public override string QuoteIdentifier(string unquotedIdentifier) { throw null; }
-        public string QuoteIdentifier(string unquotedIdentifier, System.Data.OleDb.OleDbConnection connection) { throw null; }
+        public string QuoteIdentifier(string unquotedIdentifier, System.Data.OleDb.OleDbConnection? connection) { throw null; }
         protected override void SetRowUpdatingHandler(System.Data.Common.DbDataAdapter adapter) { }
         public override string UnquoteIdentifier(string quotedIdentifier) { throw null; }
-        public string UnquoteIdentifier(string quotedIdentifier, System.Data.OleDb.OleDbConnection connection) { throw null; }
+        public string UnquoteIdentifier(string quotedIdentifier, System.Data.OleDb.OleDbConnection? connection) { throw null; }
     }
     [System.ComponentModel.DefaultEventAttribute("InfoMessage")]
     public sealed partial class OleDbConnection : System.Data.Common.DbConnection, System.Data.IDbConnection, System.ICloneable, System.IDisposable
@@ -81,6 +84,7 @@ namespace System.Data.OleDb
         public OleDbConnection() { }
         public OleDbConnection(string? connectionString) { }
         [System.ComponentModel.DefaultValueAttribute("")]
+        [System.ComponentModel.EditorAttribute("Microsoft.VSDesigner.Data.ADO.Design.OleDbConnectionStringEditor, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
         [System.ComponentModel.RecommendedAsConfigurableAttribute(true)]
         [System.ComponentModel.RefreshPropertiesAttribute(System.ComponentModel.RefreshProperties.All)]
         [System.ComponentModel.SettingsBindableAttribute(true)]
@@ -128,6 +132,7 @@ namespace System.Data.OleDb
         [System.ComponentModel.RefreshPropertiesAttribute(System.ComponentModel.RefreshProperties.All)]
         public string DataSource { get { throw null; } set { } }
         [System.ComponentModel.DisplayNameAttribute("File Name")]
+        [System.ComponentModel.EditorAttribute("System.Windows.Forms.Design.FileNameEditor, System.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
         [System.ComponentModel.RefreshPropertiesAttribute(System.ComponentModel.RefreshProperties.All)]
         public string FileName { get { throw null; } set { } }
         [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
@@ -142,6 +147,7 @@ namespace System.Data.OleDb
         public override bool TryGetValue(string keyword, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out object? value) { throw null; }
     }
     [System.ComponentModel.DesignerAttribute("Microsoft.VSDesigner.Data.VS.OleDbDataAdapterDesigner, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
+    [System.ComponentModel.ToolboxItemAttribute("Microsoft.VSDesigner.Data.VS.OleDbDataAdapterToolboxItem, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public sealed partial class OleDbDataAdapter : System.Data.Common.DbDataAdapter, System.Data.IDataAdapter, System.Data.IDbDataAdapter, System.ICloneable
     {
         public OleDbDataAdapter() { }
@@ -149,16 +155,20 @@ namespace System.Data.OleDb
         public OleDbDataAdapter(string? selectCommandText, System.Data.OleDb.OleDbConnection? selectConnection) { }
         public OleDbDataAdapter(string? selectCommandText, string? selectConnectionString) { }
         [System.ComponentModel.DefaultValueAttribute(null)]
+        [System.ComponentModel.EditorAttribute("Microsoft.VSDesigner.Data.Design.DBCommandEditor, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
         public new System.Data.OleDb.OleDbCommand? DeleteCommand { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute(null)]
+        [System.ComponentModel.EditorAttribute("Microsoft.VSDesigner.Data.Design.DBCommandEditor, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
         public new System.Data.OleDb.OleDbCommand? InsertCommand { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute(null)]
+        [System.ComponentModel.EditorAttribute("Microsoft.VSDesigner.Data.Design.DBCommandEditor, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
         public new System.Data.OleDb.OleDbCommand? SelectCommand { get { throw null; } set { } }
         System.Data.IDbCommand? System.Data.IDbDataAdapter.DeleteCommand { get { throw null; } set { } }
         System.Data.IDbCommand? System.Data.IDbDataAdapter.InsertCommand { get { throw null; } set { } }
         System.Data.IDbCommand? System.Data.IDbDataAdapter.SelectCommand { get { throw null; } set { } }
         System.Data.IDbCommand? System.Data.IDbDataAdapter.UpdateCommand { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute(null)]
+        [System.ComponentModel.EditorAttribute("Microsoft.VSDesigner.Data.Design.DBCommandEditor, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
         public new System.Data.OleDb.OleDbCommand? UpdateCommand { get { throw null; } set { } }
         public event System.Data.OleDb.OleDbRowUpdatedEventHandler? RowUpdated { add { } remove { } }
         public event System.Data.OleDb.OleDbRowUpdatingEventHandler? RowUpdating { add { } remove { } }
@@ -202,7 +212,7 @@ namespace System.Data.OleDb
         public override long GetInt64(int ordinal) { throw null; }
         public override string GetName(int index) { throw null; }
         public override int GetOrdinal(string name) { throw null; }
-        public override System.Data.DataTable GetSchemaTable() { throw null; }
+        public override System.Data.DataTable? GetSchemaTable() { throw null; }
         public override string GetString(int ordinal) { throw null; }
         public System.TimeSpan GetTimeSpan(int ordinal) { throw null; }
         public override object GetValue(int ordinal) { throw null; }
@@ -355,6 +365,7 @@ namespace System.Data.OleDb
         object? System.ICloneable.Clone() { throw null; }
         public override string ToString() { throw null; }
     }
+    [System.ComponentModel.EditorAttribute("Microsoft.VSDesigner.Data.Design.DBParametersEditor, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public sealed partial class OleDbParameterCollection : System.Data.Common.DbParameterCollection
     {
         internal OleDbParameterCollection() { }

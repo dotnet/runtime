@@ -90,6 +90,18 @@
         <Category>Checksum</Category>
         <PublishFlatContainer>true</PublishFlatContainer>
       </ItemsToPush>
+
+      <ItemsToPush Include="$(ArtifactsShippingPackagesDir)productVersion.txt">
+        <RelativeBlobPath>$(InstallersRelativePath)productVersion.txt</RelativeBlobPath>
+      </ItemsToPush>
+      
+      <!-- Generate productVersion.txt containing the value of $(PackageVersion) -->
+      <WriteLinesToFile
+        File="$(ArtifactsShippingPackagesDir)productVersion.txt"
+        Lines="$(ProductVersionTxtContents)"
+        Overwrite="true"
+        Encoding="ASCII" />
+
     </ItemGroup>
 
     <!-- Push items to AzDO as build artifacts, generating the asset manifest as a side effect. -->

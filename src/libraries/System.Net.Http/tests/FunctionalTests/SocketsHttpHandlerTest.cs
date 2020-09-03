@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Net.Connections;
 using System.Net.Quic;
 using System.Net.Security;
 using System.Net.Sockets;
@@ -104,71 +103,6 @@ namespace System.Net.Http.Functional.Tests
             internal TaskCompletionSource _completedWhenFinalized;
             ~SetOnFinalized() => _completedWhenFinalized.SetResult();
         }
-    }
-
-    public class SocketsHttpHandler_ConnectionFactoryTest : HttpClientHandlerTestBase
-    {
-        public SocketsHttpHandler_ConnectionFactoryTest(ITestOutputHelper output) : base(output) { }
-
-        [Fact]
-        public async Task CustomConnectionFactory_AsyncRequest_Success()
-        {
-            await using ConnectionListenerFactory listenerFactory = new VirtualNetworkConnectionListenerFactory();
-            await using ConnectionListener listener = await listenerFactory.ListenAsync(endPoint: null);
-            await using ConnectionFactory connectionFactory = VirtualNetworkConnectionListenerFactory.GetConnectionFactory(listener);
-
-            var options = new GenericLoopbackOptions();
-
-            Task serverTask = Task.Run(async () =>
-            {
-                await using Connection serverConnection = await listener.AcceptAsync();
-                using GenericLoopbackConnection loopbackConnection = await LoopbackServerFactory.CreateConnectionAsync(socket: null, serverConnection.Stream, options);
-
-                await loopbackConnection.InitializeConnectionAsync();
-
-                HttpRequestData requestData = await loopbackConnection.ReadRequestDataAsync();
-                await loopbackConnection.SendResponseAsync(content: "foo");
-
-                Assert.Equal("/foo", requestData.Path);
-            });
-
-            Task clientTask = Task.Run(async () =>
-            {
-                using HttpClientHandler handler = CreateHttpClientHandler();
-                handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
-
-                var socketsHandler = (SocketsHttpHandler)GetUnderlyingSocketsHttpHandler(handler);
-                socketsHandler.ConnectionFactory = connectionFactory;
-
-                using HttpClient client = CreateHttpClient(handler);
-
-                string response = await client.GetStringAsync($"{(options.UseSsl ? "https" : "http")}://{Guid.NewGuid():N}.com/foo");
-                Assert.Equal("foo", response);
-            });
-
-            await new[] { serverTask, clientTask }.WhenAllOrAnyFailed(60_000);
-        }
-
-        [Fact]
-        public async Task CustomConnectionFactory_SyncRequest_Fails()
-        {
-            await using ConnectionFactory connectionFactory = new SocketsHttpConnectionFactory();
-            using SocketsHttpHandler handler = new SocketsHttpHandler
-            {
-                ConnectionFactory = connectionFactory
-            };
-
-            using HttpClient client = CreateHttpClient(handler);
-
-            HttpRequestException e = await Assert.ThrowsAnyAsync<HttpRequestException>(() => client.GetStringAsync($"http://{Guid.NewGuid():N}.com/foo"));
-            NetworkException networkException = Assert.IsType<NetworkException>(e.InnerException);
-        }
-    }
-
-    public sealed class SocketsHttpHandler_ConnectionFactoryTest_Http2 : SocketsHttpHandler_ConnectionFactoryTest
-    {
-        public SocketsHttpHandler_ConnectionFactoryTest_Http2(ITestOutputHelper output) : base(output) { }
-        protected override Version UseVersion => HttpVersion.Version20;
     }
 
     public sealed class SocketsHttpHandler_HttpProtocolTests : HttpProtocolTests
@@ -2264,23 +2198,24 @@ namespace System.Net.Http.Functional.Tests
 
         private async Task<(int Count, int LastStreamId)> HandleAllPendingRequests(Http2LoopbackConnection connection, int totalRequestCount)
         {
-            int streamId = -1;
+            int lastStreamId = -1;
             for (int i = 0; i < totalRequestCount; i++)
             {
                 try
                 {
                     // Exact number of requests sent over the given connection is unknown,
                     // so we keep reading headers and sending response while there are available requests.
-                    streamId = await connection.ReadRequestHeaderAsync().ConfigureAwait(false);
+                    (int streamId, _) = await connection.ReadAndParseRequestHeaderAsync().ConfigureAwait(false);
                     await connection.SendDefaultResponseAsync(streamId).ConfigureAwait(false);
+                    lastStreamId = streamId;
                 }
                 catch (OperationCanceledException)
                 {
-                    return (i, streamId);
+                    return (i, lastStreamId);
                 }
             }
 
-            return (totalRequestCount, streamId);
+            return (totalRequestCount, lastStreamId);
         }
 
         private async Task<List<int>> AcceptRequests(Http2LoopbackConnection connection, int maxRequests = int.MaxValue)
@@ -2290,7 +2225,8 @@ namespace System.Net.Http.Functional.Tests
             {
                 try
                 {
-                    streamIds.Add(await connection.ReadRequestHeaderAsync().ConfigureAwait(false));
+                    (int streamId, _) = await connection.ReadAndParseRequestHeaderAsync().ConfigureAwait(false);
+                    streamIds.Add(streamId);
                 }
                 catch (OperationCanceledException)
                 {

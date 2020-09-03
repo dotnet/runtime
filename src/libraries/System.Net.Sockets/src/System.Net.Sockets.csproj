@@ -95,8 +95,6 @@
              Link="Common\System\Net\Sockets\ProtocolType.cs" />
     <Compile Include="$(CommonPath)System\Net\Sockets\SocketType.cs"
              Link="Common\System\Net\Sockets\SocketType.cs" />
-    <Compile Include="$(CommonPath)System\Net\NetworkErrorHelper.cs"
-             Link="Common\System\Net\NetworkErrorHelper.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <!-- Windows: CoreCLR -->

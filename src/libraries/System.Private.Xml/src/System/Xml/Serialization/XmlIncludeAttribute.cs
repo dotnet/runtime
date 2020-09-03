@@ -3,7 +3,6 @@
 
 using System;
 
-
 namespace System.Xml.Serialization
 {
     /// <devdoc>
@@ -12,12 +11,12 @@ namespace System.Xml.Serialization
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Interface | AttributeTargets.Method, AllowMultiple = true)]
     public class XmlIncludeAttribute : System.Attribute
     {
-        private Type _type;
+        private Type? _type;
 
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public XmlIncludeAttribute(Type type)
+        public XmlIncludeAttribute(Type? type)
         {
             _type = type;
         }
@@ -25,7 +24,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public Type Type
+        public Type? Type
         {
             get { return _type; }
             set { _type = value; }

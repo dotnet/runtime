@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);netcoreapp3.0;netstandard2.0;net461</TargetFrameworks>
+    <EnableDefaultItems>true</EnableDefaultItems>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
     <!-- Use targeting pack references instead of granular ones in the project file. -->
@@ -10,17 +11,10 @@
   <ItemGroup>
     <Compile Include="$(CommonPath)Extensions\HashCodeCombiner\HashCodeCombiner.cs"
              Link="Common\src\Extensions\HashCodeCombiner\HashCodeCombiner.cs" />
-    <Compile Include="CancellationChangeToken.cs" />
-    <Compile Include="ChangeToken.cs" />
-    <Compile Include="CompositeChangeToken.cs" />
-    <Compile Include="Extensions.cs" />
-    <Compile Include="IChangeToken.cs" />
-    <Compile Include="InplaceStringBuilder.cs" />
-    <Compile Include="StringSegment.cs" />
-    <Compile Include="StringSegmentComparer.cs" />
-    <Compile Include="StringTokenizer.cs" />
-    <Compile Include="StringValues.cs" />
-    <Compile Include="ThrowHelper.cs" />
+    <Compile Condition="'$(TargetFramework)' == 'netstandard2.0' or
+                        $(TargetFramework.StartsWith('net4'))"
+             Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
+             Link="Common\System\Text\ValueStringBuilder.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' or

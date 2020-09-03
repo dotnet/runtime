@@ -470,50 +470,56 @@ namespace System.Net.Security
             get
             {
                 ThrowIfExceptionalOrNotHandshake();
-                SslConnectionInfo? info = _context!.ConnectionInfo;
-                if (info == null)
-                {
-                    return SslProtocols.None;
-                }
+                return GetSslProtocolInternal();
+            }
+        }
 
-                SslProtocols proto = (SslProtocols)info.Protocol;
-                SslProtocols ret = SslProtocols.None;
+        // Skips the ThrowIfExceptionalOrNotHandshake() check
+        private SslProtocols GetSslProtocolInternal()
+        {
+            SslConnectionInfo? info = _context!.ConnectionInfo;
+            if (info == null)
+            {
+                return SslProtocols.None;
+            }
+
+            SslProtocols proto = (SslProtocols)info.Protocol;
+            SslProtocols ret = SslProtocols.None;
 
 #pragma warning disable 0618 // Ssl2, Ssl3 are deprecated.
-                // Restore client/server bits so the result maps exactly on published constants.
-                if ((proto & SslProtocols.Ssl2) != 0)
-                {
-                    ret |= SslProtocols.Ssl2;
-                }
+            // Restore client/server bits so the result maps exactly on published constants.
+            if ((proto & SslProtocols.Ssl2) != 0)
+            {
+                ret |= SslProtocols.Ssl2;
+            }
 
-                if ((proto & SslProtocols.Ssl3) != 0)
-                {
-                    ret |= SslProtocols.Ssl3;
-                }
+            if ((proto & SslProtocols.Ssl3) != 0)
+            {
+                ret |= SslProtocols.Ssl3;
+            }
 #pragma warning restore
 
-                if ((proto & SslProtocols.Tls) != 0)
-                {
-                    ret |= SslProtocols.Tls;
-                }
-
-                if ((proto & SslProtocols.Tls11) != 0)
-                {
-                    ret |= SslProtocols.Tls11;
-                }
-
-                if ((proto & SslProtocols.Tls12) != 0)
-                {
-                    ret |= SslProtocols.Tls12;
-                }
-
-                if ((proto & SslProtocols.Tls13) != 0)
-                {
-                    ret |= SslProtocols.Tls13;
-                }
-
-                return ret;
+            if ((proto & SslProtocols.Tls) != 0)
+            {
+                ret |= SslProtocols.Tls;
             }
+
+            if ((proto & SslProtocols.Tls11) != 0)
+            {
+                ret |= SslProtocols.Tls11;
+            }
+
+            if ((proto & SslProtocols.Tls12) != 0)
+            {
+                ret |= SslProtocols.Tls12;
+            }
+
+            if ((proto & SslProtocols.Tls13) != 0)
+            {
+                ret |= SslProtocols.Tls13;
+            }
+
+            return ret;
         }
 
         public virtual bool CheckCertRevocationStatus => _context != null && _context.CheckCertRevocationStatus != X509RevocationMode.NoCheck;

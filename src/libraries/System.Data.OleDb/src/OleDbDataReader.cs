@@ -252,7 +252,7 @@ namespace System.Data.OleDb
             return irow;
         }
 
-        public override DataTable GetSchemaTable()
+        public override DataTable? GetSchemaTable()
         {
             DataTable? schemaTable = _dbSchemaTable;
             if (null == schemaTable)
@@ -273,10 +273,7 @@ namespace System.Data.OleDb
                 //GetSchemaTable() is defined to return null after NextResult returns false
                 //throw ADP.DataReaderNoData();
             }
-// TODO-NULLABLE: Behavior change (https://github.com/dotnet/runtime/issues/509)
-#nullable disable
             return schemaTable;
-#nullable enable
         }
 
         internal void BuildMetaInfo()

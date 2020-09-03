@@ -9,15 +9,15 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
 using System.Runtime.Serialization;
-
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml
 {
     public class XmlDictionary : IXmlDictionary
     {
-        private static IXmlDictionary s_empty;
+        private static IXmlDictionary? s_empty;
         private readonly Dictionary<string, XmlDictionaryString> _lookup;
-        private XmlDictionaryString[] _strings;
+        private XmlDictionaryString[]? _strings;
         private int _nextId;
 
         public static IXmlDictionary Empty
@@ -46,7 +46,7 @@ namespace System.Xml
 
         public virtual XmlDictionaryString Add(string value)
         {
-            XmlDictionaryString str;
+            XmlDictionaryString? str;
             if (!_lookup.TryGetValue(value, out str))
             {
                 if (_strings == null)
@@ -68,23 +68,23 @@ namespace System.Xml
             return str;
         }
 
-        public virtual bool TryLookup(string value, out XmlDictionaryString result)
+        public virtual bool TryLookup(string value, [NotNullWhen(true)] out XmlDictionaryString? result)
         {
             return _lookup.TryGetValue(value, out result);
         }
 
-        public virtual bool TryLookup(int key, out XmlDictionaryString result)
+        public virtual bool TryLookup(int key, [NotNullWhen(true)] out XmlDictionaryString? result)
         {
             if (key < 0 || key >= _nextId)
             {
                 result = null;
                 return false;
             }
-            result = _strings[key];
+            result = _strings![key];
             return true;
         }
 
-        public virtual bool TryLookup(XmlDictionaryString value, out XmlDictionaryString result)
+        public virtual bool TryLookup(XmlDictionaryString value, [NotNullWhen(true)] out XmlDictionaryString? result)
         {
             if (value == null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(value)));
@@ -99,19 +99,19 @@ namespace System.Xml
 
         private class EmptyDictionary : IXmlDictionary
         {
-            public bool TryLookup(string value, out XmlDictionaryString result)
+            public bool TryLookup(string value, [NotNullWhen(true)] out XmlDictionaryString? result)
             {
                 result = null;
                 return false;
             }
 
-            public bool TryLookup(int key, out XmlDictionaryString result)
+            public bool TryLookup(int key, [NotNullWhen(true)] out XmlDictionaryString? result)
             {
                 result = null;
                 return false;
             }
 
-            public bool TryLookup(XmlDictionaryString value, out XmlDictionaryString result)
+            public bool TryLookup(XmlDictionaryString value, [NotNullWhen(true)] out XmlDictionaryString? result)
             {
                 result = null;
                 return false;

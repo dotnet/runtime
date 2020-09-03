@@ -38,7 +38,7 @@ namespace System.Xml.Xsl.XsltOld
 
                         if (Ref.Equal(nspace, input.Atoms.UriXsl))
                         {
-                            IfAction action = null;
+                            IfAction? action = null;
                             if (Ref.Equal(name, input.Atoms.When))
                             {
                                 if (otherwise)

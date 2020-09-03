@@ -4,9 +4,9 @@
 // This was copied from corefx\src\System.Numerics.Vectors\tests\Vector3Tests.cs.
 // It exposed a bug in morph, in which a SIMD field was being morphed in
 // a MACK_Ind context, even though it was under a GT_IND(G_ADDR()).
-// This was https://github.com/dotnet/corefx/issues/15713, and was "fixed" with
-// https://github.com/dotnet/coreclr/issues/9496 and a new issue,
-// https://github.com/dotnet/coreclr/issues/9518, has been filed to track the underlying unexpected
+// This was https://github.com/dotnet/runtime/issues/20080, and was "fixed" with
+// https://github.com/dotnet/coreclr/pull/9496 and a new issue,
+// https://github.com/dotnet/runtime/issues/7405, has been filed to track the underlying unexpected
 // MACK_Ind context, which causes us to mark the Vector3 local as do-not-enregister.
 
 using System;

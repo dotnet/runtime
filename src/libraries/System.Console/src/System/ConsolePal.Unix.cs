@@ -43,7 +43,8 @@ namespace System
 
         public static Stream OpenStandardInput()
         {
-            return new UnixConsoleStream(SafeFileHandleHelper.Open(() => Interop.Sys.Dup(Interop.Sys.FileDescriptors.STDIN_FILENO)), FileAccess.Read);
+            return new UnixConsoleStream(SafeFileHandleHelper.Open(() => Interop.Sys.Dup(Interop.Sys.FileDescriptors.STDIN_FILENO)), FileAccess.Read,
+                                         useReadLine: !Console.IsInputRedirected);
         }
 
         public static Stream OpenStandardOutput()
@@ -68,7 +69,7 @@ namespace System
 
         private static SyncTextReader? s_stdInReader;
 
-        private static SyncTextReader StdInReader
+        internal static SyncTextReader StdInReader
         {
             get
             {
@@ -1356,6 +1357,9 @@ namespace System
 
         private static void CheckTerminalSettingsInvalidated()
         {
+            // Register for signals that invalidate cached values.
+            EnsureConsoleInitialized();
+
             bool invalidateSettings = Interlocked.CompareExchange(ref s_invalidateCachedSettings, 0, 1) == 1;
             if (invalidateSettings)
             {
@@ -1410,15 +1414,19 @@ namespace System
             /// <summary>The file descriptor for the opened file.</summary>
             private readonly SafeFileHandle _handle;
 
+            private readonly bool _useReadLine;
+
             /// <summary>Initialize the stream.</summary>
             /// <param name="handle">The file handle wrapped by this stream.</param>
             /// <param name="access">FileAccess.Read or FileAccess.Write.</param>
-            internal UnixConsoleStream(SafeFileHandle handle, FileAccess access)
+            /// <param name="useReadLine">Use ReadLine API for reading.</param>
+            internal UnixConsoleStream(SafeFileHandle handle, FileAccess access, bool useReadLine = false)
                 : base(access)
             {
                 Debug.Assert(handle != null, "Expected non-null console handle");
                 Debug.Assert(!handle.IsInvalid, "Expected valid console handle");
                 _handle = handle;
+                _useReadLine = useReadLine;
             }
 
             protected override void Dispose(bool disposing)
@@ -1434,7 +1442,14 @@ namespace System
             {
                 ValidateRead(buffer, offset, count);
 
-                return ConsolePal.Read(_handle, buffer, offset, count);
+                if (_useReadLine)
+                {
+                    return ConsolePal.StdInReader.ReadLine(buffer, offset, count);
+                }
+                else
+                {
+                    return ConsolePal.Read(_handle, buffer, offset, count);
+                }
             }
 
             public override void Write(byte[] buffer, int offset, int count)
