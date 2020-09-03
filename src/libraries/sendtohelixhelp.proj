@@ -164,6 +164,7 @@
     <Message Importance="High" Text="Using Timeout: $(_timeoutSpan)" />
 
     <ItemGroup Condition="'$(TargetOS)' == 'Android'">
+      <!-- We have to define this temp item list because of a bug in MSBuild that would prevent access %(Filename) right away -->
       <_apks Include="$(TestArchiveTestsRoot)**/*.apk" />
       <XHarnessApkToTest Include="@(_apks)">
         <Targets Condition="'$(TargetArchitecture)' == 'arm'">armeabi-v7a</Targets>
