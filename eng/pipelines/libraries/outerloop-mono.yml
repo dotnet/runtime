@@ -1,12 +1,13 @@
 trigger: none
 
-schedules:
-- cron: "0 8 * * *" # 8 AM UTC => 12 AM PST
-  displayName: Outerloop scheduled build
-  branches:
-    include:
-    - master
-    - release/*.*
+# Disabled until we get the build clean
+# schedules:
+# - cron: "0 8 * * *" # 8 AM UTC => 12 AM PST
+#   displayName: Outerloop scheduled build
+#   branches:
+#     include:
+#     - master
+#     - release/*.*
 
 variables:
   - template: variables.yml
