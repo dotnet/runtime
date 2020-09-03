@@ -9,7 +9,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.Encryption.TripleDes.Tests
 {
-
+    [SkipOnMono("Not supported on Browser", TestPlatforms.Browser)]
     public static partial class TripleDesTests
     {
         [Fact]

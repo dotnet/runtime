@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Net.Connections;
 using System.Net.Security;
 using System.Threading;
 using System.Threading.Tasks;
@@ -362,33 +361,6 @@ namespace System.Net.Http
         internal bool SupportsAutomaticDecompression => true;
         internal bool SupportsProxy => true;
         internal bool SupportsRedirectConfiguration => true;
-
-        /// <summary>
-        /// When non-null, a custom factory used to open new TCP connections.
-        /// When null, a <see cref="SocketsConnectionFactory"/> will be used.
-        /// </summary>
-        public ConnectionFactory? ConnectionFactory
-        {
-            get => _settings._connectionFactory;
-            set
-            {
-                CheckDisposedOrStarted();
-                _settings._connectionFactory = value;
-            }
-        }
-
-        /// <summary>
-        /// When non-null, a connection filter that is applied prior to any TLS encryption.
-        /// </summary>
-        public Func<HttpRequestMessage, Connection, CancellationToken, ValueTask<Connection>>? PlaintextFilter
-        {
-            get => _settings._plaintextFilter;
-            set
-            {
-                CheckDisposedOrStarted();
-                _settings._plaintextFilter = value;
-            }
-        }
 
         public IDictionary<string, object?> Properties =>
             _settings._properties ?? (_settings._properties = new Dictionary<string, object?>());

@@ -509,11 +509,7 @@ namespace System.Runtime.Serialization
         }
     }
 
-#if USE_REFEMIT
-    public class AttributeData
-#else
     internal class AttributeData
-#endif
     {
         public string? prefix;
         public string? ns;
@@ -521,11 +517,7 @@ namespace System.Runtime.Serialization
         public string? value;
     }
 
-#if USE_REFEMIT
-    public class ElementData
-#else
     internal class ElementData
-#endif
     {
         public string? localName;
         public string? ns;

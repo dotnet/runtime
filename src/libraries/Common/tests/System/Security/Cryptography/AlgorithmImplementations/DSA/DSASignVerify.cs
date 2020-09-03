@@ -7,6 +7,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.Dsa.Tests
 {
+    [SkipOnMono("Not supported on Browser", TestPlatforms.Browser)]
     public sealed class DSASignVerify_Array : DSASignVerify
     {
         public override byte[] SignData(DSA dsa, byte[] data, HashAlgorithmName hashAlgorithm) =>
@@ -53,6 +54,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         }
     }
 
+    [SkipOnMono("Not supported on Browser", TestPlatforms.Browser)]
     public sealed class DSASignVerify_Stream : DSASignVerify
     {
         public override byte[] SignData(DSA dsa, byte[] data, HashAlgorithmName hashAlgorithm) =>
@@ -74,6 +76,7 @@ namespace System.Security.Cryptography.Dsa.Tests
     }
 
 #if NETCOREAPP
+    [SkipOnMono("Not supported on Browser", TestPlatforms.Browser)]
     public sealed class DSASignVerify_Span : DSASignVerify
     {
         public override byte[] SignData(DSA dsa, byte[] data, HashAlgorithmName hashAlgorithm) =>
@@ -106,6 +109,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         }
     }
 #endif
+    [SkipOnMono("Not supported on Browser", TestPlatforms.Browser)]
     public abstract partial class DSASignVerify
     {
         public abstract byte[] SignData(DSA dsa, byte[] data, HashAlgorithmName hashAlgorithm);

@@ -16,19 +16,12 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Runtime.Serialization
 {
-#if USE_REFEMIT
-    public delegate object XmlFormatClassReaderDelegate(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, XmlDictionaryString[] memberNames, XmlDictionaryString[] memberNamespaces);
-    public delegate object XmlFormatCollectionReaderDelegate(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, XmlDictionaryString itemName, XmlDictionaryString itemNamespace, CollectionDataContract collectionContract);
-    public delegate void XmlFormatGetOnlyCollectionReaderDelegate(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, XmlDictionaryString itemName, XmlDictionaryString itemNamespace, CollectionDataContract collectionContract);
 
-    public sealed class XmlFormatReaderGenerator
-#else
     internal delegate object? XmlFormatClassReaderDelegate(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext? context, XmlDictionaryString[]? memberNames, XmlDictionaryString[]? memberNamespaces);
     internal delegate object XmlFormatCollectionReaderDelegate(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, XmlDictionaryString itemName, XmlDictionaryString itemNamespace, CollectionDataContract collectionContract);
     internal delegate void XmlFormatGetOnlyCollectionReaderDelegate(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, XmlDictionaryString itemName, XmlDictionaryString itemNamespace, CollectionDataContract collectionContract);
 
     internal sealed class XmlFormatReaderGenerator
-#endif
     {
         private readonly CriticalHelper _helper;
 
@@ -957,11 +950,8 @@ namespace System.Runtime.Serialization
         /// Safe - marked as such so that it's callable from transparent generated IL. Takes id as parameter which
         ///        is guaranteed to be in internal serialization cache.
         /// </SecurityNote>
-#if USE_REFEMIT
-        public static object UnsafeGetUninitializedObject(int id)
-#else
+
         internal static object UnsafeGetUninitializedObject(int id)
-#endif
         {
             var type = DataContract.GetDataContractForInitialization(id).TypeForInitialization;
             return UnsafeGetUninitializedObject(type);

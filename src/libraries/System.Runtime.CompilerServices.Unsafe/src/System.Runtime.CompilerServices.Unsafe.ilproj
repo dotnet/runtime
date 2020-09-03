@@ -28,7 +28,7 @@
   </ItemGroup>
 
   <Target Name="GenerateVersionFile"
-          DependsOnTargets="ResolveReferences"
+          DependsOnTargets="GetAssemblyVersion;ResolveReferences"
           Inputs="$(MSBuildAllProjects)"
           Outputs="'$(VersionFilePath)">
    <PropertyGroup>
@@ -51,6 +51,8 @@
 #define CORE_ASSEMBLY "$(CoreAssembly)"
 #define ASSEMBLY_VERSION "$(_AssemblyVersion)"
 #define CORE_ASSEMBLY_VERSION "$(_CoreAssemblyVersion)"
+#define FILE_VERSION "{string('$(FileVersion)')}"
+#define INFORMATIONAL_VERSION "{string('$(InformationalVersion)')}"
 $(ExtraMacros)
 // Metadata version: v4.0.30319
 .assembly extern CORE_ASSEMBLY
