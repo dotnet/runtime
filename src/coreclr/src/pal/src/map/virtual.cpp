@@ -1766,7 +1766,7 @@ PAL_JITWriteEnableHolder::JITWriteEnable(bool writeEnable)
 {
     // Use a thread local to track per thread JIT Write enable state
     // Threads start with MAP_JIT pages readable and executable (R-X) by default.
-    thread_local bool enabled = false;
+    thread_local int enabled = 0xdeadbeef;
     bool result = enabled;
     if (enabled != writeEnable)
     {
