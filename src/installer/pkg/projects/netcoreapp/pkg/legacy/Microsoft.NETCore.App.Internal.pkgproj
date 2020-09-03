@@ -20,8 +20,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Dependency Include="Microsoft.NETCore.Platforms" Version="$(Version)" TargetFramework="$(NetCoreAppCurrent)" />
-    <Dependency Include="Microsoft.NETCore.Targets" Version="$(Version)" TargetFramework="$(NetCoreAppCurrent)" />
+    <Dependency Include="Microsoft.NETCore.Platforms" Version="5.0.0" TargetFramework="$(NetCoreAppCurrent)" />
+    <Dependency Include="Microsoft.NETCore.Targets" Version="5.0.0" TargetFramework="$(NetCoreAppCurrent)" />
   </ItemGroup>
 
   <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />

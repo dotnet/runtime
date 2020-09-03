@@ -1,12 +1,12 @@
 <Project>
   <PropertyGroup>
     <!-- The .NET product branding version -->
-    <ProductVersion>5.0.0</ProductVersion>
+    <ProductVersion>5.0.1</ProductVersion>
     <!-- File version numbers -->
     <MajorVersion>5</MajorVersion>
     <MinorVersion>0</MinorVersion>
-    <PatchVersion>0</PatchVersion>
-    <PreReleaseVersionLabel>rtm</PreReleaseVersionLabel>
+    <PatchVersion>1</PatchVersion>
+    <PreReleaseVersionLabel>servicing</PreReleaseVersionLabel>
     <!-- Set assembly version to align with major and minor version,
          as for the patches and revisions should be manually updated per assembly if it is serviced. -->
     <AssemblyVersion>$(MajorVersion).$(MinorVersion).0.0</AssemblyVersion>

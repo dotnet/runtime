@@ -7,4 +7,7 @@
     <ProjectReference Include="..\src\System.Windows.Extensions.csproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
+  <PropertyGroup>
+    <HarvestStablePackage>false</HarvestStablePackage>
+  </PropertyGroup>
 </Project>

@@ -84,4 +84,7 @@
     <RestoreSources Condition="Exists('$(LibrariesAllConfigShippingPackagesDir)')">$(RestoreSources);$(LibrariesAllConfigShippingPackagesDir)</RestoreSources>
     <RestoreSources Condition="Exists('$(LibrariesAllConfigNonShippingPackagesDir)')">$(RestoreSources);$(LibrariesAllConfigNonShippingPackagesDir)</RestoreSources>
   </PropertyGroup>
+  <PropertyGroup>
+    <RestoreSources>$(RestoreSources);https://pkgs.dev.azure.com/dnceng/public/_packaging/darc-pub-dotnet-arcade-a885ba04-2/nuget/v3/index.json</RestoreSources>
+  </PropertyGroup>
 </Project>
