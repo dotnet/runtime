@@ -4,6 +4,8 @@
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.Diagnostics
 {
     public partial class Activity : IDisposable
@@ -75,7 +77,8 @@ namespace System.Diagnostics
     {
         public ActivityTagsCollection() { throw null; }
         public ActivityTagsCollection(System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object>> list) { throw null; }
-        public object this[string key] { get { throw null; } set { } }
+        [DisallowNull]
+        public object? this[string key] { get { throw null; } set { } }
         public System.Collections.Generic.ICollection<string> Keys { get { throw null; } }
         public System.Collections.Generic.ICollection<object> Values { get { throw null; } }
         public int Count { get { throw null; } }
