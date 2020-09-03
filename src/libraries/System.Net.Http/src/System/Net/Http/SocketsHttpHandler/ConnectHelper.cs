@@ -3,12 +3,9 @@
 
 using System.Diagnostics;
 using System.IO;
-using System.IO.Pipelines;
-using System.Net.Connections;
 using System.Net.Quic;
 using System.Net.Security;
 using System.Net.Sockets;
-using System.Runtime.ExceptionServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
@@ -34,11 +31,11 @@ namespace System.Net.Http
             }
         }
 
-        public static async ValueTask<Connection> ConnectAsync(ConnectionFactory factory, DnsEndPoint endPoint, IConnectionProperties? options, CancellationToken cancellationToken)
+        public static async ValueTask<Stream> ConnectAsync(SocketsConnectionFactory factory, DnsEndPoint endPoint, CancellationToken cancellationToken)
         {
             try
             {
-                return await factory.ConnectAsync(endPoint, options, cancellationToken).ConfigureAwait(false);
+                return await factory.ConnectAsync(endPoint, cancellationToken).ConfigureAwait(false);
             }
             catch (OperationCanceledException ex) when (ex.CancellationToken == cancellationToken)
             {
@@ -50,7 +47,7 @@ namespace System.Net.Http
             }
         }
 
-        public static Connection Connect(string host, int port, CancellationToken cancellationToken)
+        public static Stream Connect(string host, int port, CancellationToken cancellationToken)
         {
             // For synchronous connections, we can just create a socket and make the connection.
             cancellationToken.ThrowIfCancellationRequested();
@@ -63,17 +60,7 @@ namespace System.Net.Http
                     socket.Connect(new DnsEndPoint(host, port));
                 }
 
-                // Since we only do GracefulShutdown in SocketsHttpHandler code, Connection.FromStream() should match SocketConnection's behavior:
-                return Connection.FromStream(new NetworkStream(socket, ownsSocket: true), localEndPoint: socket.LocalEndPoint, remoteEndPoint: socket.RemoteEndPoint);
-            }
-            catch (SocketException se)
-            {
-                socket.Dispose();
-
-                // SocketConnectionFactory wraps SocketException in NetworkException. Do the same here.
-                NetworkException ne = NetworkErrorHelper.MapSocketException(se);
-
-                throw CreateWrappedException(ne, host, port, cancellationToken);
+                return new NetworkStream(socket, ownsSocket: true);
             }
             catch (Exception e)
             {

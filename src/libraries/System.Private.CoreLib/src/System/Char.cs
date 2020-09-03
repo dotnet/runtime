@@ -72,6 +72,14 @@ namespace System
         private static bool IsLatin1(char c) => (uint)c < (uint)Latin1CharInfo.Length;
 
         // Return true for all characters below or equal U+007f, which is ASCII.
+
+        /// <summary>
+        /// Returns <see langword="true"/> if <paramref name="c"/> is an ASCII
+        /// character ([ U+0000..U+007F ]).
+        /// </summary>
+        /// <remarks>
+        /// Per http://www.unicode.org/glossary/#ASCII, ASCII is only U+0000..U+007F.
+        /// </remarks>
         public static bool IsAscii(char c) => (uint)c <= '\x007f';
 
         // Return the Unicode category for Unicode character <= 0x00ff.
