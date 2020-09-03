@@ -7,6 +7,7 @@ using System.Xml.XPath;
 using System.Collections;
 using System.Diagnostics;
 using System.Globalization;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml
 {
@@ -277,7 +278,7 @@ namespace System.Xml
 
         // Sets the value of the attribute
         // with the specified name.
-        public virtual void SetAttribute(string name, string value)
+        public virtual void SetAttribute(string name, string? value)
         {
             XmlAttribute? attr = GetAttributeNode(name);
             if (attr == null)
@@ -308,7 +309,7 @@ namespace System.Xml
         }
 
         // Adds the specified XmlAttribute.
-        public virtual XmlAttribute SetAttributeNode(XmlAttribute newAttr)
+        public virtual XmlAttribute? SetAttributeNode(XmlAttribute newAttr)
         {
             if (newAttr.OwnerElement != null)
                 throw new InvalidOperationException(SR.Xdom_Attr_InUse);
@@ -347,7 +348,8 @@ namespace System.Xml
 
         // Sets the value of the attribute with the specified name
         // and namespace.
-        public virtual string SetAttribute(string localName, string? namespaceURI, string value)
+        [return: NotNullIfNotNull("value")]
+        public virtual string? SetAttribute(string localName, string? namespaceURI, string? value)
         {
             XmlAttribute? attr = GetAttributeNode(localName, namespaceURI);
             if (attr == null)

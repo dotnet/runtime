@@ -237,7 +237,6 @@
     <Compile Include="Watchdog.cs" />
     <Compile Include="$(CommonTestPath)System\Net\VirtualNetwork\VirtualNetwork.cs" Link="Common\System\Net\VirtualNetwork\VirtualNetwork.cs" />
     <Compile Include="$(CommonTestPath)System\Net\VirtualNetwork\VirtualNetworkStream.cs" Link="Common\System\Net\VirtualNetwork\VirtualNetworkStream.cs" />
-    <Compile Include="$(CommonTestPath)System\Net\VirtualNetwork\VirtualNetworkConnectionListenerFactory.cs" Link="Common\System\Net\VirtualNetwork\VirtualNetworkConnectionListenerFactory.cs" />
   </ItemGroup>
   <!-- Windows specific files -->
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true'">

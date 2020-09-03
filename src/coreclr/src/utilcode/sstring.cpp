@@ -155,34 +155,6 @@ int SString::CaseCompareHelper(const WCHAR *buffer1, const WCHAR *buffer2, COUNT
 #define CAN_SIMPLE_UPCASE_ANSI(x) (((x) >= 0x20) && ((x) <= 0x7f))
 #define SIMPLE_UPCASE_ANSI(x) (IS_LOWER_A_TO_Z(x) ? ((x) - 'a' + 'A') : (x))
 
-int GetCaseInsensitiveValueA(const CHAR *buffer, int length) {
-    LIMITED_METHOD_CONTRACT;
-    _ASSERTE(buffer != NULL);
-    _ASSERTE(length == 1 || ((length == 2) && IsDBCSLeadByte(*buffer)));
-
-    WCHAR wideCh;
-    int sortValue;
-    int conversionReturn = MultiByteToWideChar(CP_ACP, MB_ERR_INVALID_CHARS, buffer, length, &wideCh, 1);
-    if (conversionReturn == 0)
-    {
-        // An invalid sequence should only compare equal to itself, so use a negative mapping.
-        if (length == 1)
-        {
-            sortValue = -((int)((unsigned char)(*buffer)));
-        }
-        else
-        {
-            sortValue = -(((((int)((unsigned char)(*buffer))) << 8) | ((int)((unsigned char)(*(buffer + 1))))));
-        }
-    }
-    else
-    {
-        _ASSERTE(conversionReturn == 1);
-        sortValue = MapChar(wideCh, LCMAP_UPPERCASE);
-    }
-    return sortValue;
-}
-
 /* static */
 int SString::CaseCompareHelperA(const CHAR *buffer1, const CHAR *buffer2, COUNT_T count, BOOL stopOnNull, BOOL stopOnCount)
 {
@@ -197,49 +169,21 @@ int SString::CaseCompareHelperA(const CHAR *buffer1, const CHAR *buffer2, COUNT_
     {
         CHAR ch1 = *buffer1;
         CHAR ch2 = *buffer2;
-        if ((ch1 == 0) || (ch2 == 0))
+        diff = ch1 - ch2;
+        if  (diff != 0 || stopOnNull)
         {
-            diff = ch1 - ch2;
-            if  (diff != 0 || stopOnNull)
+            if (ch1 == 0 || ch2 == 0)
             {
                 break;
             }
-            buffer1++;
-            buffer2++;
-        }
-        else if (CAN_SIMPLE_UPCASE_ANSI(ch1) && CAN_SIMPLE_UPCASE_ANSI(ch2))
-        {
-            diff = ch1 - ch2;
-            if (diff != 0)
-            {
-                diff = (SIMPLE_UPCASE_ANSI(ch1) - SIMPLE_UPCASE_ANSI(ch2));
-                if (diff != 0)
-                {
-                    break;
-                }
-            }
-            buffer1++;
-            buffer2++;
-        }
-        else
-        {
-            int length = 1;
-            if (IsDBCSLeadByte(ch1)
-                && IsDBCSLeadByte(ch2)
-                && (!stopOnCount || ((buffer1 + 1) < buffer1End)))
-            {
-                length = 2;
-            }
-            int sortValue1 = GetCaseInsensitiveValueA(buffer1, length);
-            int sortValue2 = GetCaseInsensitiveValueA(buffer2, length);
-            diff = sortValue1 - sortValue2;
+            diff = (SIMPLE_UPCASE_ANSI(ch1) - SIMPLE_UPCASE_ANSI(ch2));
             if (diff != 0)
             {
                 break;
             }
-            buffer1 += length;
-            buffer2 += length;
         }
+        buffer1++;
+        buffer2++;
     }
     return diff;
 }
@@ -1517,11 +1461,11 @@ int SString::CompareCaseInsensitive(const SString &s) const
     switch (GetRepresentation())
     {
     case REPRESENTATION_UNICODE:
+    case REPRESENTATION_ANSI:
         result = CaseCompareHelper(GetRawUnicode(), source.GetRawUnicode(), smaller, FALSE, TRUE);
         break;
 
     case REPRESENTATION_ASCII:
-    case REPRESENTATION_ANSI:
         result = CaseCompareHelperA(GetRawASCII(), source.GetRawASCII(), smaller, FALSE, TRUE);
         break;
 
@@ -1612,10 +1556,10 @@ BOOL SString::EqualsCaseInsensitive(const SString &s) const
     switch (GetRepresentation())
     {
     case REPRESENTATION_UNICODE:
+    case REPRESENTATION_ANSI:
         RETURN (CaseCompareHelper(GetRawUnicode(), source.GetRawUnicode(), count, FALSE, TRUE) == 0);
 
     case REPRESENTATION_ASCII:
-    case REPRESENTATION_ANSI:
         RETURN (CaseCompareHelperA(GetRawASCII(), source.GetRawASCII(), count, FALSE, TRUE) == 0);
 
     case REPRESENTATION_EMPTY:

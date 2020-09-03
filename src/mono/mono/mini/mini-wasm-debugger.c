@@ -140,7 +140,7 @@ collect_frames (MonoStackFrameInfo *info, MonoContext *ctx, gpointer data)
 	DEBUG_PRINTF (2, "Reporting method %s native_offset %d\n", method->name, info->native_offset);
 
 	if (!mono_find_prev_seq_point_for_native_offset (mono_get_root_domain (), method, info->native_offset, NULL, &sp))
-		DEBUG_PRINTF (2, "Failed to lookup sequence point\n");
+		DEBUG_PRINTF (2, "collect_frames: Failed to lookup sequence point. method: %s, native_offset: %d \n", method->name, info->native_offset);
 
 	DbgEngineStackFrame *frame = g_new0 (DbgEngineStackFrame, 1);
 
@@ -667,7 +667,7 @@ list_frames (MonoStackFrameInfo *info, MonoContext *ctx, gpointer data)
 	DEBUG_PRINTF (2, "Reporting method %s native_offset %d\n", method->name, info->native_offset);
 
 	if (!mono_find_prev_seq_point_for_native_offset (mono_get_root_domain (), method, info->native_offset, NULL, &sp))
-		DEBUG_PRINTF (1, "Failed to lookup sequence point\n");
+		DEBUG_PRINTF (2, "list_frames: Failed to lookup sequence point. method: %s, native_offset: %d\n", method->name, info->native_offset);
 
 	method_full_name = mono_method_full_name (method, FALSE);
 	while (method->is_inflated)
