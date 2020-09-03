@@ -106,5 +106,5 @@ GENERATE_EXPORT_HEADER( clrcompression
 
 install (TARGETS clrcompression DESTINATION .)
 install (TARGETS clrcompression-static DESTINATION .)
-install (FILES ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/clrcompression.pdb DESTINATION .)
+install (FILES $<TARGET_PDB_FILE:clrcompression> DESTINATION .)
 

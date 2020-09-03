@@ -16,6 +16,7 @@ set __TargetOS=Windows_NT
 set CMAKE_BUILD_TYPE=Debug
 set "__LinkArgs= "
 set "__LinkLibraries= "
+set __Ninja=0
 
 :Arg_Loop
 :: Since the native build requires some configuration information before msbuild is called, we have to do some manual args parsing
@@ -36,6 +37,8 @@ if /i [%1] == [outconfig] ( set __outConfig=%2&&shift&&shift&goto Arg_Loop)
 if /i [%1] == [Browser] ( set __TargetOS=Browser&&shift&goto Arg_Loop)
 
 if /i [%1] == [rebuild] ( set __BuildTarget=rebuild&&shift&goto Arg_Loop)
+
+if /i [%1] == [ninja] ( set __Ninja=1&&shift&goto Arg_Loop)
 
 shift
 goto :Arg_Loop
@@ -146,34 +149,26 @@ set __cmakeRepoRoot=%__repoRoot:\=/%
 
 pushd "%__IntermediatesDir%"
 call "%__repoRoot%\eng\native\gen-buildsys.cmd" "%__sourceDir%" "%__IntermediatesDir%" %__VSVersion% %__BuildArch% "-DCMAKE_REPO_ROOT=%__cmakeRepoRoot%"
+if NOT [%errorlevel%] == [0] goto :Failure
 popd
-
-:CheckForProj
-:: Check that the project created by Cmake exists
-if exist "%__IntermediatesDir%\install.vcxproj" goto BuildNativeProj
-if exist "%__IntermediatesDir%\Makefile" goto BuildNativeEmscripten
-goto :Failure
 
 :BuildNativeProj
 :: Build the project created by Cmake
-set __msbuildArgs=/p:Platform=%__BuildArch% /p:PlatformToolset="%__PlatformToolset%" -noWarn:MSB8065
+set __generatorArgs=
+if [%__Ninja%] == [1] (
+    set __generatorArgs=
+) else if [%__BuildArch%] == [wasm] (
+    set __generatorArgs=-j
+) else (
+    set __generatorArgs=/p:Platform=%__BuildArch% /p:PlatformToolset="%__PlatformToolset%" -noWarn:MSB8065
+)
 
-call msbuild "%__IntermediatesDir%\install.vcxproj" /t:%__BuildTarget% /p:Configuration=%CMAKE_BUILD_TYPE% %__msbuildArgs%
+call "%CMakePath%" --build "%__IntermediatesDir%" --target install --config %CMAKE_BUILD_TYPE% -- %__generatorArgs%
 IF ERRORLEVEL 1 (
     goto :Failure
 )
 
 echo Done building Native components
-exit /B 0
-
-:BuildNativeEmscripten
-pushd "%__IntermediatesDir%"
-nmake install
-popd
-IF ERRORLEVEL 1 (
-    goto :Failure
-)
-
 exit /B 0
 
 :Failure

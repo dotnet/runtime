@@ -66,7 +66,7 @@ if /i "%__UseEmcmake%" == "1" (
     "%CMakePath%" %__ExtraCmakeParams% -G "%__CmakeGenerator%" -S %__SourceDir% -B %__IntermediatesDir%
 )
 endlocal
-exit /B !errorlevel!
+exit /B %errorlevel%
 
 :USAGE
   echo "Usage..."
