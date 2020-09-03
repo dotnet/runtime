@@ -13,6 +13,7 @@ namespace BundleTests.Helpers
     public static class BundleHelper
     {
         public const string DotnetBundleExtractBaseEnvVariable = "DOTNET_BUNDLE_EXTRACT_BASE_DIR";
+        public const string CoreServicingEnvVariable = "CORE_SERVICING";
 
         public static string GetHostPath(TestProjectFixture fixture)
         {
@@ -22,6 +23,11 @@ namespace BundleTests.Helpers
         public static string GetAppPath(TestProjectFixture fixture)
         {
             return Path.Combine(GetPublishPath(fixture), GetAppName(fixture));
+        }
+
+        public static string GetDepsJsonPath(TestProjectFixture fixture)
+        {
+            return Path.Combine(GetPublishPath(fixture), $"{GetAppBaseName(fixture)}.deps.json");
         }
 
         public static string GetPublishedSingleFilePath(TestProjectFixture fixture)

@@ -228,7 +228,7 @@ private:
         const pal::string_t& deps_dir,
         int fx_level,
         pal::string_t* candidate,
-        bool &loaded_from_bundle);
+        bool &found_in_bundle);
 
     fx_definition_vector_t& m_fx_definitions;
 
