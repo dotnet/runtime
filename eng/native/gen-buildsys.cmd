@@ -49,6 +49,8 @@ if /i "%__Arch%" == "wasm" (
     )
     set __ExtraCmakeParams=%__ExtraCmakeParams% "-DEMSCRIPTEN_GENERATE_BITCODE_STATIC_LIBRARIES=1" "-DCMAKE_TOOLCHAIN_FILE=%EMSCRIPTEN%/cmake/Modules/Platform/Emscripten.cmake"
     set __UseEmcmake=1
+) else (
+    set __ExtraCmakeParams="-DCMAKE_SYSTEM_VERSION=10.0"
 )
 
 :loop
