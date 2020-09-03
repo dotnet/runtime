@@ -524,7 +524,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     X509ChainStatusFlags.HasNotSupportedNameConstraint |
                     X509ChainStatusFlags.InvalidNameConstraints;
 
-                if ((flags & AnyNameConstraintFlags) > 0)
+                if ((flags & AnyNameConstraintFlags) != 0)
                 {
                     flags &= ~AnyNameConstraintFlags;
                     flags |= X509ChainStatusFlags.InvalidNameConstraints;
