@@ -67,7 +67,6 @@ struct _MonoAssemblyLoadContext {
 	// Maps malloc-ed char* pinvoke scope -> MonoDl*
 	GHashTable *pinvoke_scopes;
 };
-
 #endif /* ENABLE_NETCORE */
 
 void

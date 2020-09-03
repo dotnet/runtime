@@ -79,6 +79,7 @@ loaded_images_get_owner (MonoImage *image)
 gboolean
 mono_loaded_images_remove_image (MonoImage *image)
 {
+	char *name = NULL;
 	gboolean proceed = FALSE;
 	/*
 	 * Atomically decrement the refcount and remove ourselves from the hash tables, so
@@ -102,12 +103,11 @@ mono_loaded_images_remove_image (MonoImage *image)
 	loaded_images         = mono_loaded_images_get_hash (li, image->ref_only);
 	loaded_images_by_name = mono_loaded_images_get_by_name_hash (li, image->ref_only);
 
-	char *name = image->name;
+	name = image->name;
 #ifdef ENABLE_NETCORE
 	char *name_with_culture = mono_image_get_name_with_culture_if_needed (image);
-	if (name_with_culture) {
+	if (name_with_culture)
 		name = name_with_culture;
-	}
 #endif
 	image2 = (MonoImage *)g_hash_table_lookup (loaded_images, name);
 	if (image == image2) {

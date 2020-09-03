@@ -1879,10 +1879,11 @@ register_image (MonoLoadedImages *li, MonoImage *image, gboolean *problematic)
 	MonoImage *image2;
 	char *name = image->name;
 #ifdef ENABLE_NETCORE
+	/* Since we register cultures by file name, we need to make this culture aware for
+	   satellite assemblies */
 	char *name_with_culture = mono_image_get_name_with_culture_if_needed (image);
-	if (name_with_culture) {
+	if (name_with_culture)
 		name = name_with_culture;
-	}
 #endif
 	GHashTable *loaded_images = mono_loaded_images_get_hash (li, image->ref_only);
 
@@ -2069,6 +2070,11 @@ mono_image_open_full (const char *fname, MonoImageOpenStatus *status, gboolean r
 	return mono_image_open_a_lot (alc, fname, status, refonly, FALSE);
 }
 
+/**
+ * mono_image_open_a_lot_parameterized
+ * this API is not culture aware, so if we load a satellite assembly for one culture by name
+ * via this API, and then try to load it with another culture we will return the first one.
+ */
 static MonoImage *
 mono_image_open_a_lot_parameterized (MonoLoadedImages *li, MonoAssemblyLoadContext *alc, const char *fname, MonoImageOpenStatus *status, gboolean refonly, gboolean load_from_context, gboolean *problematic)
 {
