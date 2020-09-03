@@ -769,6 +769,7 @@ typedef struct {
 	int target_frame;
 	int len;
 	int *pos;
+	gboolean found;
 } FrameDescData;
 
 /*
@@ -1355,6 +1356,8 @@ describe_variables_on_frame (MonoStackFrameInfo *info, MonoContext *ctx, gpointe
 		return FALSE;
 	}
 
+	data->found = TRUE;
+
 	InterpFrame *frame = (InterpFrame*)info->interp_frame;
 	g_assert (frame);
 	MonoMethod *method = frame->imethod->method;
@@ -1389,15 +1392,19 @@ mono_wasm_get_deref_ptr_value (void *value_addr, MonoClass *klass)
 EMSCRIPTEN_KEEPALIVE gboolean
 mono_wasm_get_local_vars (int scope, int* pos, int len)
 {
+	if (scope < 0)
+		return FALSE;
+
 	FrameDescData data;
 	data.target_frame = scope;
 	data.cur_frame = 0;
 	data.len = len;
 	data.pos = pos;
+	data.found = FALSE;
 
 	mono_walk_stack_with_ctx (describe_variables_on_frame, NULL, MONO_UNWIND_NONE, &data);
 
-	return TRUE;
+	return data.found;
 }
 
 EMSCRIPTEN_KEEPALIVE gboolean
