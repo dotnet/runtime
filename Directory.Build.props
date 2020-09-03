@@ -51,13 +51,13 @@
     <AppleAppBuilderDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AppleAppBuilder', 'Debug', '$(NetCoreAppCurrent)'))</AppleAppBuilderDir>
     <AndroidAppBuilderDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AndroidAppBuilder', 'Debug', '$(NetCoreAppCurrent)'))</AndroidAppBuilderDir>
     <WasmAppBuilderDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'WasmAppBuilder', 'Debug', '$(NetCoreAppCurrent)', 'publish'))</WasmAppBuilderDir>
-    <CreateWasmBundleDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'CreateWasmBundle', 'Debug', '$(NetCoreAppCurrent)', 'publish'))</CreateWasmBundleDir>
+    <GenerateWasmBundleDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'GenerateWasmBundle', 'Debug', '$(NetCoreAppCurrent)', 'publish'))</GenerateWasmBundleDir>
     <MonoAOTCompilerDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'MonoAOTCompiler', 'Debug', '$(NetCoreAppCurrent)'))</MonoAOTCompilerDir>
   
     <AppleAppBuilderTasksAssemblyPath>$([MSBuild]::NormalizePath('$(AppleAppBuilderDir)', 'AppleAppBuilder.dll'))</AppleAppBuilderTasksAssemblyPath>
     <AndroidAppBuilderTasksAssemblyPath>$([MSBuild]::NormalizePath('$(AndroidAppBuilderDir)', 'AndroidAppBuilder.dll'))</AndroidAppBuilderTasksAssemblyPath>
     <WasmAppBuilderTasksAssemblyPath>$([MSBuild]::NormalizePath('$(WasmAppBuilderDir)', 'WasmAppBuilder.dll'))</WasmAppBuilderTasksAssemblyPath>
-    <CreateCreateWasmBundlesAssemblyPath>$([MSBuild]::NormalizePath('$(CreateWasmBundleDir)', 'CreateWasmBundle.dll'))</CreateCreateWasmBundlesAssemblyPath>
+    <CreateGenerateWasmBundlesAssemblyPath>$([MSBuild]::NormalizePath('$(GenerateWasmBundleDir)', 'GenerateWasmBundle.dll'))</CreateGenerateWasmBundlesAssemblyPath>
     <MonoAOTCompilerTasksAssemblyPath>$([MSBuild]::NormalizePath('$(MonoAOTCompilerDir)', 'MonoAOTCompiler.dll'))</MonoAOTCompilerTasksAssemblyPath>
   </PropertyGroup>
 
@@ -112,16 +112,5 @@
   </PropertyGroup>
 
   <Import Project="$(RepositoryEngineeringDir)Analyzers.props" />
-
-  <ItemGroup Condition="'$(TargetOS)' == 'Browser'">
-     <_TimeZonesToBundle Include="africa" />
-     <_TimeZonesToBundle Include="antarctica" />
-     <_TimeZonesToBundle Include="asia" />
-     <_TimeZonesToBundle Include="australasia" />
-     <_TimeZonesToBundle Include="etcetera" />
-     <_TimeZonesToBundle Include="europe" />
-     <_TimeZonesToBundle Include="northamerica" />
-     <_TimeZonesToBundle Include="southamerica" />
-   </ItemGroup>
 
 </Project>

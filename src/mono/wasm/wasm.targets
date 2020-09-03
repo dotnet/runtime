@@ -35,22 +35,23 @@
                            OutputPath="$(WasmPInvokeTablePath)" />
   </Target>
 
+  <Import Project="timezones.props" />
   <UsingTask TaskName="CompileTimeZoneData" 
-    AssemblyFile="$(CreateCreateWasmBundlesAssemblyPath)"/>
+    AssemblyFile="$(CreateGenerateWasmBundlesAssemblyPath)"/>
   <Target Name="LoadTimeZones" DependsOnTargets="CheckEnv">
     <CompileTimeZoneData
       TimeZones="@(_TimeZonesToBundle)" 
-      InputDirectory="$([MSBuild]::NormalizePath('$(CreateWasmBundleDir)', '..', 'data'))"
+      InputDirectory="$([MSBuild]::NormalizePath('$(GenerateWasmBundleDir)', '..', 'data'))"
       OutputDirectory="$(ArtifactsObjDir)wasm/data/output" />
   </Target>
 
-  <UsingTask TaskName="CreateWasmBundle"
-    AssemblyFile="$(CreateCreateWasmBundlesAssemblyPath)"/>
+  <UsingTask TaskName="GenerateWasmBundle"
+    AssemblyFile="$(CreateGenerateWasmBundlesAssemblyPath)"/>
   <Target Name="BundleWasm" DependsOnTargets="CheckEnv;LoadTimeZones">
     <PropertyGroup>
       <TimeZonesDataPath>$(NativeBinDir)dotnet.timezones.blat</TimeZonesDataPath>
     </PropertyGroup>
-    <CreateWasmBundle
+    <GenerateWasmBundle
       InputDirectory="$(ArtifactsObjDir)wasm/data/output"
       OutputFileName="$(TimeZonesDataPath)" />
   </Target>

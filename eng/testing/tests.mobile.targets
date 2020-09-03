@@ -151,19 +151,20 @@
       AssemblySearchPaths="@(AssemblySearchPaths)" />
   </Target>
 
+  <Import Project="$(MonoProjectRoot)\wasm\timezones.props" />
   <UsingTask TaskName="CompileTimeZoneData"
-             AssemblyFile="$(CreateCreateWasmBundlesAssemblyPath)" />
+             AssemblyFile="$(CreateGenerateWasmBundlesAssemblyPath)" />
   <Target Condition="'$(TargetOS)' == 'Browser'" Name="LoadTimeZone" >
     <CompileTimeZoneData 
       TimeZones="@(_TimeZonesToBundle)"
-      InputDirectory="$([MSBuild]::NormalizePath('$(CreateWasmBundleDir)', '..', 'data'))"
+      InputDirectory="$([MSBuild]::NormalizePath('$(GenerateWasmBundleDir)', '..', 'data'))"
       OutputDirectory="$(BundleDir)obj/data/output"/>
   </Target>
 
-  <UsingTask TaskName="CreateWasmBundle"
-             AssemblyFile="$(CreateCreateWasmBundlesAssemblyPath)" />
+  <UsingTask TaskName="GenerateWasmBundle"
+             AssemblyFile="$(CreateGenerateWasmBundlesAssemblyPath)" />
   <Target Condition="'$(TargetOS)' == 'Browser'" Name="BundleWasmTestData" DependsOnTargets="LoadTimeZone">
-    <CreateWasmBundle
+    <GenerateWasmBundle
       InputDirectory="$(BundleDir)obj/data/output"
       OutputFileName="$(MicrosoftNetCoreAppRuntimePackRidDir)dotnet.timezones.blat" />
   </Target>
