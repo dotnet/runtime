@@ -151,12 +151,12 @@
       AssemblySearchPaths="@(AssemblySearchPaths)" />
   </Target>
 
-  <Import Project="$(MonoProjectRoot)\wasm\timezones.props" />
+  <Import Project="$(MonoProjectRoot)wasm\timezones.props" Condition="'$(TargetOS)' == 'Browser'" />
   <UsingTask TaskName="CompileTimeZoneData"
              AssemblyFile="$(CreateGenerateWasmBundlesAssemblyPath)" />
   <Target Condition="'$(TargetOS)' == 'Browser'" Name="LoadTimeZone" >
     <CompileTimeZoneData 
-      TimeZones="@(_TimeZonesToBundle)"
+      TimeZones="@(TimeZoneToBundle )"
       InputDirectory="$([MSBuild]::NormalizePath('$(GenerateWasmBundleDir)', '..', 'data'))"
       OutputDirectory="$(BundleDir)obj/data/output"/>
   </Target>

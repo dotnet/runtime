@@ -35,12 +35,12 @@
                            OutputPath="$(WasmPInvokeTablePath)" />
   </Target>
 
-  <Import Project="timezones.props" />
+  <Import Project="timezones.props" Condition="'$(TargetOS)' == 'Browser'" />
   <UsingTask TaskName="CompileTimeZoneData" 
     AssemblyFile="$(CreateGenerateWasmBundlesAssemblyPath)"/>
   <Target Name="LoadTimeZones" DependsOnTargets="CheckEnv">
     <CompileTimeZoneData
-      TimeZones="@(_TimeZonesToBundle)" 
+      TimeZones="@(TimeZoneToBundle )" 
       InputDirectory="$([MSBuild]::NormalizePath('$(GenerateWasmBundleDir)', '..', 'data'))"
       OutputDirectory="$(ArtifactsObjDir)wasm/data/output" />
   </Target>
