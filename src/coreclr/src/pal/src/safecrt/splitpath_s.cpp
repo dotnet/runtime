@@ -25,6 +25,4 @@
 #define _TCSNCPY_S strncpy_s
 #define _T(_Character) _Character
 
-#define _MBS_SUPPORT 0
-
 #include "tsplitpath_s.inl"

@@ -500,13 +500,13 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe short HalfToInt16Bits(Half value)
+        public static unsafe short HalfToInt16Bits(Half value)
         {
             return *((short*)&value);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe Half Int16BitsToHalf(short value)
+        public static unsafe Half Int16BitsToHalf(short value)
         {
             return *(Half*)&value;
         }

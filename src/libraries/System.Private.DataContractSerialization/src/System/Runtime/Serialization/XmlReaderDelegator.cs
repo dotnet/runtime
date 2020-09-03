@@ -5,7 +5,7 @@ using System.Xml;
 using System.Globalization;
 using System.Collections.Generic;
 using System.Xml.Serialization;
-
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Runtime.Serialization
 {
@@ -16,7 +16,7 @@ namespace System.Runtime.Serialization
 #endif
     {
         protected XmlReader reader;
-        protected XmlDictionaryReader dictionaryReader;
+        protected XmlDictionaryReader? dictionaryReader;
         protected bool isEndOfEmptyElement;
 
         public XmlReaderDelegator(XmlReader reader)
@@ -31,7 +31,7 @@ namespace System.Runtime.Serialization
             get { return reader; }
         }
 
-        internal ExtensionDataReader UnderlyingExtensionDataReader
+        internal ExtensionDataReader? UnderlyingExtensionDataReader
         {
             get { return reader as ExtensionDataReader; }
         }
@@ -41,12 +41,12 @@ namespace System.Runtime.Serialization
             get { return isEndOfEmptyElement ? 0 : reader.AttributeCount; }
         }
 
-        internal string GetAttribute(string name)
+        internal string? GetAttribute(string name)
         {
             return isEndOfEmptyElement ? null : reader.GetAttribute(name);
         }
 
-        internal string GetAttribute(string name, string namespaceUri)
+        internal string? GetAttribute(string name, string namespaceUri)
         {
             return isEndOfEmptyElement ? null : reader.GetAttribute(name, namespaceUri);
         }
@@ -349,11 +349,13 @@ namespace System.Runtime.Serialization
             throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(CreateInvalidPrimitiveTypeException(valueType));
         }
 
+        [DoesNotReturn]
         private void ThrowConversionException(string value, string type)
         {
             throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new XmlException(XmlObjectSerializer.TryAddLineInfo(this, SR.Format(SR.XmlInvalidConversion, value, type))));
         }
 
+        [DoesNotReturn]
         private void ThrowNotAtElement()
         {
             throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new XmlException(SR.Format(SR.XmlStartElementExpected, "EndElement")));
@@ -513,7 +515,8 @@ namespace System.Runtime.Serialization
             }
         }
 
-        internal byte[] ReadContentAsBase64(string str)
+        [return: NotNullIfNotNull("str")]
+        internal byte[]? ReadContentAsBase64(string? str)
         {
             if (str == null)
                 return null;
@@ -869,7 +872,8 @@ namespace System.Runtime.Serialization
 
         private XmlQualifiedName ParseQualifiedName(string str)
         {
-            string name, ns, prefix;
+            string name, prefix;
+            string? ns;
             if (str == null || str.Length == 0)
                 name = ns = string.Empty;
             else
@@ -899,7 +903,7 @@ namespace System.Runtime.Serialization
         internal bool TryReadBooleanArray(XmlObjectSerializerReadContext context,
 #endif
             XmlDictionaryString itemName, XmlDictionaryString itemNamespace,
-            int arrayLength, out bool[] array)
+            int arrayLength, [NotNullWhen(true)] out bool[]? array)
         {
             if (dictionaryReader == null)
             {
@@ -933,7 +937,7 @@ namespace System.Runtime.Serialization
         internal virtual bool TryReadDateTimeArray(XmlObjectSerializerReadContext context,
 #endif
             XmlDictionaryString itemName, XmlDictionaryString itemNamespace,
-            int arrayLength, out DateTime[] array)
+            int arrayLength, [NotNullWhen(true)] out DateTime[]? array)
         {
             if (dictionaryReader == null)
             {
@@ -967,7 +971,7 @@ namespace System.Runtime.Serialization
         internal bool TryReadDecimalArray(XmlObjectSerializerReadContext context,
 #endif
             XmlDictionaryString itemName, XmlDictionaryString itemNamespace,
-            int arrayLength, out decimal[] array)
+            int arrayLength, [NotNullWhen(true)] out decimal[]? array)
         {
             if (dictionaryReader == null)
             {
@@ -1001,7 +1005,7 @@ namespace System.Runtime.Serialization
         internal bool TryReadInt32Array(XmlObjectSerializerReadContext context,
 #endif
             XmlDictionaryString itemName, XmlDictionaryString itemNamespace,
-            int arrayLength, out int[] array)
+            int arrayLength, [NotNullWhen(true)] out int[]? array)
         {
             if (dictionaryReader == null)
             {
@@ -1035,7 +1039,7 @@ namespace System.Runtime.Serialization
         internal bool TryReadInt64Array(XmlObjectSerializerReadContext context,
 #endif
             XmlDictionaryString itemName, XmlDictionaryString itemNamespace,
-            int arrayLength, out long[] array)
+            int arrayLength, [NotNullWhen(true)] out long[]? array)
         {
             if (dictionaryReader == null)
             {
@@ -1069,7 +1073,7 @@ namespace System.Runtime.Serialization
         internal bool TryReadSingleArray(XmlObjectSerializerReadContext context,
 #endif
         XmlDictionaryString itemName, XmlDictionaryString itemNamespace,
-            int arrayLength, out float[] array)
+            int arrayLength, [NotNullWhen(true)] out float[]? array)
         {
             if (dictionaryReader == null)
             {
@@ -1103,7 +1107,7 @@ namespace System.Runtime.Serialization
         internal bool TryReadDoubleArray(XmlObjectSerializerReadContext context,
 #endif
             XmlDictionaryString itemName, XmlDictionaryString itemNamespace,
-            int arrayLength, out double[] array)
+            int arrayLength, [NotNullWhen(true)] out double[]? array)
         {
             if (dictionaryReader == null)
             {
@@ -1131,7 +1135,7 @@ namespace System.Runtime.Serialization
             return true;
         }
 
-        internal IDictionary<string, string> GetNamespacesInScope(XmlNamespaceScope scope)
+        internal IDictionary<string, string>? GetNamespacesInScope(XmlNamespaceScope scope)
         {
             return (reader is IXmlNamespaceResolver) ? ((IXmlNamespaceResolver)reader).GetNamespacesInScope(scope) : null;
         }
@@ -1139,7 +1143,7 @@ namespace System.Runtime.Serialization
         // IXmlLineInfo members
         internal bool HasLineInfo()
         {
-            IXmlLineInfo iXmlLineInfo = reader as IXmlLineInfo;
+            IXmlLineInfo? iXmlLineInfo = reader as IXmlLineInfo;
             return (iXmlLineInfo == null) ? false : iXmlLineInfo.HasLineInfo();
         }
 
@@ -1147,7 +1151,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                IXmlLineInfo iXmlLineInfo = reader as IXmlLineInfo;
+                IXmlLineInfo? iXmlLineInfo = reader as IXmlLineInfo;
                 return (iXmlLineInfo == null) ? 0 : iXmlLineInfo.LineNumber;
             }
         }
@@ -1156,7 +1160,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                IXmlLineInfo iXmlLineInfo = reader as IXmlLineInfo;
+                IXmlLineInfo? iXmlLineInfo = reader as IXmlLineInfo;
                 return (iXmlLineInfo == null) ? 0 : iXmlLineInfo.LinePosition;
             }
         }
@@ -1166,10 +1170,10 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                XmlTextReader xmlTextReader = reader as XmlTextReader;
+                XmlTextReader? xmlTextReader = reader as XmlTextReader;
                 if (xmlTextReader == null)
                 {
-                    IXmlTextParser xmlTextParser = reader as IXmlTextParser;
+                    IXmlTextParser? xmlTextParser = reader as IXmlTextParser;
                     return (xmlTextParser == null) ? false : xmlTextParser.Normalized;
                 }
                 else
@@ -1177,10 +1181,10 @@ namespace System.Runtime.Serialization
             }
             set
             {
-                XmlTextReader xmlTextReader = reader as XmlTextReader;
+                XmlTextReader? xmlTextReader = reader as XmlTextReader;
                 if (xmlTextReader == null)
                 {
-                    IXmlTextParser xmlTextParser = reader as IXmlTextParser;
+                    IXmlTextParser? xmlTextParser = reader as IXmlTextParser;
                     if (xmlTextParser != null)
                         xmlTextParser.Normalized = value;
                 }
@@ -1193,10 +1197,10 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                XmlTextReader xmlTextReader = reader as XmlTextReader;
+                XmlTextReader? xmlTextReader = reader as XmlTextReader;
                 if (xmlTextReader == null)
                 {
-                    IXmlTextParser xmlTextParser = reader as IXmlTextParser;
+                    IXmlTextParser? xmlTextParser = reader as IXmlTextParser;
                     return (xmlTextParser == null) ? WhitespaceHandling.None : xmlTextParser.WhitespaceHandling;
                 }
                 else
@@ -1204,10 +1208,10 @@ namespace System.Runtime.Serialization
             }
             set
             {
-                XmlTextReader xmlTextReader = reader as XmlTextReader;
+                XmlTextReader? xmlTextReader = reader as XmlTextReader;
                 if (xmlTextReader == null)
                 {
-                    IXmlTextParser xmlTextParser = reader as IXmlTextParser;
+                    IXmlTextParser? xmlTextParser = reader as IXmlTextParser;
                     if (xmlTextParser != null)
                         xmlTextParser.WhitespaceHandling = value;
                 }
@@ -1223,7 +1227,7 @@ namespace System.Runtime.Serialization
         internal string Value { get { return reader.Value; } }
         internal Type ValueType { get { return reader.ValueType; } }
         internal int Depth { get { return reader.Depth; } }
-        internal string LookupNamespace(string prefix) { return reader.LookupNamespace(prefix); }
+        internal string? LookupNamespace(string prefix) { return reader.LookupNamespace(prefix); }
         internal bool EOF { get { return reader.EOF; } }
 
         internal void Skip()

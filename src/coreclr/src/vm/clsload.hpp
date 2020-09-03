@@ -943,6 +943,8 @@ public:
     TypeHandle LoadTypeHandleThrowing(NameHandle* pName, ClassLoadLevel level = CLASS_LOADED,
                                       Module* pLookInThisModuleOnly=NULL);
 
+    static void ValidateMethodsWithCovariantReturnTypes(MethodTable* pMT);
+
 private:
 
 #ifndef DACCESS_COMPILE
@@ -968,8 +970,6 @@ private:
     static void LoadExactParents(MethodTable* pMT);
 
     static void LoadExactParentAndInterfacesTransitively(MethodTable *pMT);
-
-    static void ValidateMethodsWithCovariantReturnTypes(MethodTable* pMT);
 
     static bool IsCompatibleWith(TypeHandle hType1, TypeHandle hType2);
     static CorElementType GetReducedTypeElementType(TypeHandle hType);

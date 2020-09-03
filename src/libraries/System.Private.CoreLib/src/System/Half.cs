@@ -422,11 +422,9 @@ namespace System
         /// </summary>
         public bool Equals(Half other)
         {
-            if (this == other)
-            {
-                return true;
-            }
-            return IsNaN(this) && IsNaN(other);
+            return _value == other._value
+                || AreZero(this, other)
+                || (IsNaN(this) && IsNaN(other));
         }
 
         /// <summary>

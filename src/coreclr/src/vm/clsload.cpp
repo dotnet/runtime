@@ -3519,11 +3519,15 @@ static void PushFinalLevels(TypeHandle typeHnd, ClassLoadLevel targetLevel, cons
     }
     CONTRACTL_END
 
-
     // This phase brings the type and all its transitive dependencies to their
     // final state, sans the IsFullyLoaded bit.
     if (targetLevel >= CLASS_DEPENDENCIES_LOADED)
     {
+        if (!typeHnd.IsTypeDesc())
+        {
+            ClassLoader::ValidateMethodsWithCovariantReturnTypes(typeHnd.AsMethodTable());
+        }
+
         BOOL fBailed = FALSE;
         typeHnd.DoFullyLoad(NULL, CLASS_DEPENDENCIES_LOADED, NULL, &fBailed, pInstContext);
     }

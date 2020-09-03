@@ -5,6 +5,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.Hashing.Algorithms.Tests
 {
+    [SkipOnMono("Not supported on Browser", TestPlatforms.Browser)]
     public class MD5Tests : HashAlgorithmTest
     {
         protected override HashAlgorithm Create()

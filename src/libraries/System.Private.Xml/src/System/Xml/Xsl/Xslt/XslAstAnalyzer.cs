@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -215,7 +214,7 @@ namespace System.Xml.Xsl.Xslt
             // dependency graph with fwdApplyImportsGraph
             foreach (KeyValuePair<Template, Stylesheet> pair in _fwdApplyImportsGraph!)
             {
-                foreach (Stylesheet import in pair.Value.Imports)
+                foreach (Stylesheet import in pair.Value.Imports!)
                 {
                     AddImportDependencies(import, /*focusDonor:*/pair.Key);
                 }
@@ -244,7 +243,7 @@ namespace System.Xml.Xsl.Xslt
 
             // We can do this only after all flags were propagated.
             // Otherwise we can miss case when flag comes to template from attribute-set
-            FillModeFlags(compiler.Root!.ModeFlags, compiler.Root.Imports[0]);
+            FillModeFlags(compiler.Root!.ModeFlags, compiler.Root.Imports![0]);
 
             return result;
         }
@@ -258,7 +257,7 @@ namespace System.Xml.Xsl.Xslt
                     _revCall0Graph!.AddEdge(tmpl, focusDonor);
                 }
             }
-            foreach (Stylesheet import in sheet.Imports)
+            foreach (Stylesheet import in sheet.Imports!)
             {
                 AddImportDependencies(import, focusDonor);
             }
@@ -267,7 +266,7 @@ namespace System.Xml.Xsl.Xslt
         private void FillModeFlags(Dictionary<QilName, XslFlags> parentModeFlags, Stylesheet sheet)
         {
             // Recursion: Process all imports to calculate ModeFlags for apply-import in this sheet
-            foreach (Stylesheet import in sheet.Imports)
+            foreach (Stylesheet import in sheet.Imports!)
             {
                 FillModeFlags(sheet.ModeFlags, import);
             }

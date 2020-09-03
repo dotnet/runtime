@@ -2668,6 +2668,13 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
 
             pCode = pMD->GetMethodEntryPoint();
 
+#if _DEBUG
+            if (pEMFrame->GetGCRefMap() != NULL)
+            {
+                _ASSERTE(CheckGCRefMapEqual(pEMFrame->GetGCRefMap(), pMD, false));
+            }
+#endif // _DEBUG
+
             //
             // Note that we do not want to call code:MethodDesc::IsPointingToPrestub() here. It does not take remoting
             // interception into account and so it would cause otherwise intercepted methods to be JITed. It is a compat
