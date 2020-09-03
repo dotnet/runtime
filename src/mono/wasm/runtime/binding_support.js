@@ -74,10 +74,11 @@ var BindingSupportLib = {
 			if (!this.binding_module)
 				throw "Can't find bindings module assembly: " + binding_fqn_asm;
 
+			var namespace = null, classname = null;
 			if (binding_fqn_class !== null && typeof binding_fqn_class !== "undefined")
 			{
-				var namespace = "System.Runtime.InteropServices.JavaScript";
-				var classname = binding_fqn_class.length > 0 ? binding_fqn_class : "Runtime";
+				namespace = "System.Runtime.InteropServices.JavaScript";
+				classname = binding_fqn_class.length > 0 ? binding_fqn_class : "Runtime";
 				if (binding_fqn_class.indexOf(".") != -1) {
 					var idx = binding_fqn_class.lastIndexOf(".");
 					namespace = binding_fqn_class.substring (0, idx);
@@ -85,16 +86,17 @@ var BindingSupportLib = {
 				}
 			}
 
-			var wasm_runtime_class = this.find_class (this.binding_module, namespace, classname)
+			var wasm_runtime_class = this.find_class (this.binding_module, namespace, classname);
 			if (!wasm_runtime_class)
 				throw "Can't find " + binding_fqn_class + " class";
 
 			var get_method = function(method_name) {
-				var res = BINDING.find_method (wasm_runtime_class, method_name, -1)
+				var res = BINDING.find_method (wasm_runtime_class, method_name, -1);
 				if (!res)
 					throw "Can't find method " + namespace + "." + classname + ":" + method_name;
 				return res;
-			}
+			};
+
 			this.bind_js_obj = get_method ("BindJSObject");
 			this.bind_core_clr_obj = get_method ("BindCoreCLRObject");
 			this.bind_existing_obj = get_method ("BindExistingObject");
@@ -677,12 +679,64 @@ var BindingSupportLib = {
 			return js_obj;
 		},
 
+		_createNamedFunction: function (name, argumentNames, body, closure) {
+			var result = null, keys = null, closureArgumentList = null, closureArgumentNames = null;
+
+			if (closure) {
+				closureArgumentNames = Object.keys (closure);
+				closureArgumentList = new Array (closureArgumentNames.length);
+				for (var i = 0, l = closureArgumentNames.length; i < l; i++)
+					closureArgumentList[i] = closure[closureArgumentNames[i]];
+			}
+
+			var constructor = this._createRebindableNamedFunction (name, argumentNames, body, closureArgumentNames);
+			result = constructor.apply (null, closureArgumentList);
+
+			return result;
+		},
+
+		_createRebindableNamedFunction: function (name, argumentNames, body, closureArgNames) {
+			var strictPrefix = "\"use strict\";\r\n";
+			var uriPrefix = "", escapedFunctionIdentifier = "";
+
+			if (name) {
+				uriPrefix = "//# sourceURL=closure://" + name + "\r\n";
+				escapedFunctionIdentifier = name;
+			} else {
+				escapedFunctionIdentifier = "unnamed";
+			}
+
+			var rawFunctionText = "function " + escapedFunctionIdentifier + "(" +
+				argumentNames.join(", ") +
+				") {\r\n" +
+				body +
+				"\r\n};\r\n";
+
+			var lineBreakRE = /\r(\n?)/g;
+
+			rawFunctionText = 
+				uriPrefix + strictPrefix + 
+				rawFunctionText.replace(lineBreakRE, "\r\n    ") + 
+				"    return " + escapedFunctionIdentifier + ";\r\n";
+
+			var result = null, keys = null;
+
+			if (closureArgNames) {
+				keys = closureArgNames.concat ([rawFunctionText]);
+			} else {
+				keys = [rawFunctionText];
+			}
+
+			result = Function.apply (Function, keys);
+			return result;
+		},
+
 		_create_default_converters: function () {
 			var converters = new Map ();
-			converters.set ('m', { steps: [{ raw: true }], size: 0});
-			converters.set ('s', { steps: [{ convert: this.js_string_to_mono_string.bind (this)}], size: 0});
-			converters.set ('o', { steps: [{ convert: this.js_to_mono_obj.bind (this)}], size: 0});
-			converters.set ('u', { steps: [{ convert: this.js_to_mono_uri.bind (this)}], size: 0});
+			converters.set ('m', { steps: [{ }], size: 0});
+			converters.set ('s', { steps: [{ convert: this.js_string_to_mono_string.bind (this)}], size: 0, needsRoot: true });
+			converters.set ('o', { steps: [{ convert: this.js_to_mono_obj.bind (this)}], size: 0, needsRoot: true });
+			converters.set ('u', { steps: [{ convert: this.js_to_mono_uri.bind (this)}], size: 0, needsRoot: true });
 			converters.set ('k', { steps: [{ convert: this.js_to_mono_enum.bind (this), indirect: 'i64'}], size: 8});
 			converters.set ('j', { steps: [{ convert: this.js_to_mono_enum.bind (this), indirect: 'i32'}], size: 8});
 			converters.set ('i', { steps: [{ indirect: 'i32'}], size: 8});
@@ -723,6 +777,51 @@ var BindingSupportLib = {
 			return converter;
 		},
 
+		_compile_converter_for_marshal_string: function (args_marshal) {
+			var converter = this._get_converter_for_marshal_string (args_marshal);
+			var body = [];
+			var argumentNames = ["args", "method"];
+
+			// worst-case allocation size instead of allocating dynamically
+			var bufferSizeBytes = converter.size + (args_marshal.length * 4);
+			var bufferSizeElements = (bufferSizeBytes / 4) | 0;
+
+			/*
+
+					// assume at least 8 byte alignment from malloc
+					var bufferSizeBytes = converter.size + (args.length * 4);
+					var bufferSizeElements = (bufferSizeBytes / 4) | 0;
+					argsRootBuffer = MONO.mono_wasm_new_root_buffer (bufferSizeElements);
+					buffer = Module._malloc (bufferSizeBytes);
+					var indirect_start = buffer; // buffer + buffer % 8
+					args_start = indirect_start + converter.size;
+
+					var slot = (args_start / 4) | 0;
+					var indirect_value = indirect_start;
+					for (var i = 0; i < args.length; ++i) {
+						var handler = converter.steps[i];
+						var obj = handler.convert ? handler.convert (args[i], method, i) : args[i];
+
+						if (handler.indirect) {
+							Module.setValue (indirect_value, obj, handler.indirect);
+							obj = indirect_value;
+							indirect_value += 8;
+						} else if (handler.needsRoot) {
+							argsRootBuffer.set (i, obj);
+						}
+
+						Module.HEAP32[slot] = obj;
+						slot++;
+					}
+			*/
+
+			for (var i = 0; i < converter.steps.length; i++) {
+				body.push("");
+			}
+
+			var bodyJs = body.join("\r\n");
+		},
+
 		/*
 		args_marshal is a string with one character per parameter that tells how to marshal it, here are the valid values:
 
@@ -760,42 +859,43 @@ var BindingSupportLib = {
 
 			// check if the method signature needs argument mashalling
 			if (has_args_marshal && has_args) {
-				converter = this._get_converter_for_marshal_string (args_marshal);
+				var useCompiledConverter = false;
+				if (useCompiledConverter) {
+					converter = this._compile_converter_for_marshal_string (args_marshal);
+					[buffer, argsRootBuffer] = converter (args, method);
+				} else {
+					converter = this._get_converter_for_marshal_string (args_marshal);
 
-				// assume at least 8 byte alignment from malloc
-				var bufferSizeBytes = converter.size + (args.length * 4);
-				var bufferSizeElements = (bufferSizeBytes / 4) | 0;
-				argsRootBuffer = MONO.mono_wasm_new_root_buffer (bufferSizeElements);
-				buffer = Module._malloc (bufferSizeBytes);
-				var indirect_start = buffer; // buffer + buffer % 8
-				args_start = indirect_start + converter.size;
+					// assume at least 8 byte alignment from malloc
+					var bufferSizeBytes = converter.size + (args.length * 4);
+					var bufferSizeElements = (bufferSizeBytes / 4) | 0;
+					argsRootBuffer = MONO.mono_wasm_new_root_buffer (bufferSizeElements);
+					buffer = Module._malloc (bufferSizeBytes);
+					var indirect_start = buffer; // buffer + buffer % 8
+					args_start = indirect_start + converter.size;
 
-				var slot = args_start;
-				var indirect_value = indirect_start;
-				for (var i = 0; i < args.length; ++i) {
-					var handler = converter.steps[i];
-					var obj = handler.convert ? handler.convert (args[i], method, i) : args[i];
+					var slot = (args_start / 4) | 0;
+					var indirect_value = indirect_start;
+					for (var i = 0; i < args.length; ++i) {
+						var handler = converter.steps[i];
+						var obj = handler.convert ? handler.convert (args[i], method, i) : args[i];
 
-					if (handler.indirect) {
-						Module.setValue (indirect_value, obj, handler.indirect);
-						obj = indirect_value;
-						indirect_value += 8;
-					} else {
-						argsRootBuffer.set (i, obj);
+						if (handler.indirect) {
+							Module.setValue (indirect_value, obj, handler.indirect);
+							obj = indirect_value;
+							indirect_value += 8;
+						} else if (handler.needsRoot) {
+							argsRootBuffer.set (i, obj);
+						}
+
+						Module.HEAP32[slot] = obj;
+						slot++;
 					}
-
-					Module.setValue (slot, obj, "*");
-					slot += 4;
-
-					/*
-					Module.HEAP32[slot] = obj;
-					slot++;
-					*/
 				}
 			}
 			
 			if (has_args_marshal && has_args)
-				if (args_marshal.length >= args.length && args_marshal [args.length] === "m")
+				if (args_marshal.length > args.length && args_marshal [args.length] === "m")
 					is_result_marshaled = false;
 
 			try {

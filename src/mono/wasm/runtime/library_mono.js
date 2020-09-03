@@ -82,6 +82,7 @@ var MonoSupportLib = {
 			module ["mono_wasm_globalization_init"] = MONO.mono_wasm_globalization_init;
 			module ["mono_wasm_get_loaded_files"] = MONO.mono_wasm_get_loaded_files;
 			module ["mono_wasm_new_root_buffer"] = MONO.mono_wasm_new_root_buffer;
+			module ["mono_wasm_new_root_buffer_from_pointer"] = MONO.mono_wasm_new_root_buffer_from_pointer;
 			module ["mono_wasm_new_root"] = MONO.mono_wasm_new_root;
 			module ["mono_wasm_new_roots"] = MONO.mono_wasm_new_roots;
 			module ["mono_wasm_release_roots"] = MONO.mono_wasm_release_roots;
@@ -220,7 +221,7 @@ var MonoSupportLib = {
 				return value;
 			},
 			release: function () {
-				if (this.__offset) {
+				if (this.__offset && this.__ownsAllocation) {
 					MONO.mono_wasm_deregister_root (this.__offset);
 					MONO._zero_region (this.__offset, this.__count * 4);
 					Module._free (this.__offset);
@@ -331,6 +332,43 @@ var MonoSupportLib = {
 			result.__count = capacity;
 			result.length = capacity;
 			result.__handle = this.mono_wasm_register_root (offset, capacityBytes, msg || 0);
+			result.__ownsAllocation = true;
+
+			return result;
+		},
+
+		/**
+		 * Creates a root buffer object representing an existing allocation in the native heap and registers
+		 *  the allocation with the GC. The caller is responsible for managing the lifetime of the allocation.
+		 * @param {NativePointer} offset - the offset of the root buffer in the native heap.
+		 * @param {number} capacity - the maximum number of elements the buffer can hold.
+		 * @param {string} [msg] - a description of the root buffer (for debugging)
+		 * @returns {WasmRootBuffer}
+		 */
+		mono_wasm_new_root_buffer_from_pointer: function (offset, capacity, msg) {
+			if (!this.mono_wasm_register_root || !this.mono_wasm_deregister_root) {
+				this.mono_wasm_register_root = Module.cwrap ("mono_wasm_register_root", "number", ["number", "number", "string"]);
+				this.mono_wasm_deregister_root = Module.cwrap ("mono_wasm_deregister_root", null, ["number"]);
+			}
+
+			if (capacity <= 0)
+				throw new Error ("capacity >= 1");
+
+			capacity = capacity | 0;
+				
+			var capacityBytes = capacity * 4;
+			if ((offset % 4) !== 0)
+				throw new Error ("Unaligned offset");
+
+			this._zero_region (offset, capacityBytes);
+
+			var result = Object.create (this._mono_wasm_root_buffer_prototype);
+			result.__offset = offset;
+			result.__offset32 = (offset / 4) | 0;
+			result.__count = capacity;	
+			result.length = capacity;
+			result.__handle = this.mono_wasm_register_root (offset, capacityBytes, msg || 0);
+			result.__ownsAllocation = false;
 
 			return result;
 		},
