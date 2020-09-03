@@ -479,6 +479,11 @@ MethodDesc* TailCallHelp::CreateCallTargetStub(const TailCallInfo& info)
         pCode->EmitADD();
     };
 
+    // *pTailCallAwareRetAddr = NextCallReturnAddress();
+    pCode->EmitLDARG(ARG_PTR_TAILCALL_AWARE_RET_ADDR);
+    pCode->EmitCALL(METHOD__STUBHELPERS__NEXT_CALL_RETURN_ADDRESS, 0, 1);
+    pCode->EmitSTIND_I();
+
     for (COUNT_T i = 0; i < info.ArgBufLayout.Values.GetCount(); i++)
     {
         const ArgBufferValue& arg = info.ArgBufLayout.Values[i];
@@ -495,11 +500,6 @@ MethodDesc* TailCallHelp::CreateCallTargetStub(const TailCallInfo& info)
     // takes over.
     pCode->EmitLDARG(ARG_ARG_BUFFER);
     pCode->EmitLDC(info.ArgBufLayout.HasInstArg ? TAILCALLARGBUFFER_INSTARG_ONLY : TAILCALLARGBUFFER_ABANDONED);
-    pCode->EmitSTIND_I();
-
-    // *pTailCallAwareRetAddr = NextCallReturnAddress();
-    pCode->EmitLDARG(ARG_PTR_TAILCALL_AWARE_RET_ADDR);
-    pCode->EmitCALL(METHOD__STUBHELPERS__NEXT_CALL_RETURN_ADDRESS, 0, 1);
     pCode->EmitSTIND_I();
 
     int numRetVals = info.CallSiteSig->IsReturnTypeVoid() ? 0 : 1;
