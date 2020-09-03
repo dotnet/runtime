@@ -6,6 +6,7 @@
 
   <PropertyGroup>
     <SuppressFinalPackageVersion>true</SuppressFinalPackageVersion>
+    <PublishFlatContainer>true</PublishFlatContainer>
   </PropertyGroup>
 
   <!-- Pulled from arcade's publish.proj see https://github.com/dotnet/arcade/issues/5790 for
