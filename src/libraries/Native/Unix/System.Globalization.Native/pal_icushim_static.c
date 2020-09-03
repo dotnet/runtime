@@ -11,6 +11,13 @@
 #include <unicode/localpointer.h>
 #include <unicode/utrace.h>
 
+#if defined(TARGET_UNIX)
+#include <strings.h>
+#elif defined(TARGET_WINDOWS)
+#define strcasecmp _stricmp
+#define strncasecmp _strnicmp
+#endif
+
 static int32_t isLoaded = 0;
 static int32_t isDataSet = 0;
 
@@ -29,6 +36,36 @@ static void U_CALLCONV icu_trace_data(const void* context, int32_t fnNumber, int
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
+
+EMSCRIPTEN_KEEPALIVE const char* mono_wasm_get_icudt_name(const char* culture);
+
+EMSCRIPTEN_KEEPALIVE const char* mono_wasm_get_icudt_name(const char* culture)
+{
+    // Based on https://github.com/dotnet/icu/tree/maint/maint-67/icu-filters
+
+    // Use full one if culture is null or empty
+    if (!culture || strlen(culture) == 0)
+        return "icudt.dat";
+
+    // CJK: starts with "ja", "ko" or "zh"
+    if (!strncasecmp("ja", culture, 2) || 
+        !strncasecmp("ko", culture, 2) || 
+        !strncasecmp("zh", culture, 2))
+        return "icudt_CJK.dat";
+
+    // EFIGS
+    const char efigsCultures[] { 
+        "de_DE", "en_US", "es_ES", "fr_FR", "it_IT",
+        "en-US", "es-ES", "fr-FR", "it-IT", "de-DE",
+        "en",    "es",    "fr",    "it",    "de"
+    };
+    for (int i = 0; i < sizeof(efigsCultures)/sizeof(*efigsCultures); i++)
+        if (!strcasecmp(culture, efigsCultures[i]))
+            return "icudt_EFIGS.dat";
+
+    // full except CJK cultures
+    return "icudt_no_CJK.dat";
+}
 
 EMSCRIPTEN_KEEPALIVE int32_t mono_wasm_load_icu_data(void * pData);
 
