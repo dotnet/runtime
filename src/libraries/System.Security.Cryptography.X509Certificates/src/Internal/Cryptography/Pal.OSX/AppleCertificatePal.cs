@@ -111,7 +111,7 @@ namespace Internal.Cryptography.Pal
 
                 using (keychain)
                 {
-                    var  ret = ImportPkcs12(rawData, password, exportable, keychain);
+                    AppleCertificatePal ret = ImportPkcs12(rawData, password, exportable, keychain);
                     if (!persist)
                     {
                         // If we used temporary keychain we need to prevent deletion.
@@ -120,7 +120,7 @@ namespace Internal.Cryptography.Pal
                         keychain.DangerousAddRef(ref success);
                         if (success)
                         {
-                            ((AppleCertificatePal)ret)._tempKeychain = keychain;
+                            ret._tempKeychain = keychain;
                         }
                     }
 
