@@ -15,6 +15,10 @@
       $(DownloadDirectory)IntermediateUnsignedArtifacts\Windows_x64\Shipping\a.nupkg
   -->
   <Target Name="FindDownloadedArtifacts">
+    <PropertyGroup>
+      <PublishFlatContainer>true</PublishFlatContainer>
+    </PropertyGroup>
+
     <ItemGroup>
       <DownloadedArtifactFile Include="$(DownloadDirectory)**" />
 
