@@ -1000,7 +1000,7 @@ var BindingSupportLib = {
 
 			var klass = this.find_class(asm, namespace, classname);
 			if (!klass)
-				throw new Error ("Could not find class: " + namespace + ":" +classname);
+				throw new Error ("Could not find class: " + namespace + ":" + classname + " in assembly " + assembly);
 
 			var method = this.find_method (klass, methodname, -1);
 			if (!method)

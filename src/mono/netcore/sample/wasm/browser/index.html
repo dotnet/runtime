@@ -13,10 +13,28 @@
     <script type='text/javascript'>
       var App = {
         init: function () {
-          var ret = BINDING.call_static_method("[WasmSample] Sample.Test:TestMeaning", []);
+          var ret = BINDING.call_static_method("[WasmSample]Sample.Test:TestMeaning", []);
           document.getElementById("out").innerHTML = ret;
           console.log ("ready");
+          console.log ("starting benchmark in 1 second");
+          window.setTimeout(App.runBenchmark, 1000);
         },
+
+        runBenchmark: function () {
+          var method = BINDING.bind_static_method("[WasmSample]Sample.Test.BenchmarkMethod", "ifd");
+
+          var iterationCount = 5000;
+          var started = performance.now ();
+          for (var i = 0; i < iterationCount; i++) {
+            var expected = i + i + i + 0.03;
+            var res = method(i, i + 0.01, i + 0.02);
+            if (Math.abs(expected - res) >= 0.001)
+              throw new Error("Result mismatch, expected " + expected + " but got " + res);            
+          }
+          var ended = performance.now();
+          console.log("ran", iterationCount, "iterations in", ended - started);
+          console.log((ended - started) / iterationCount, "ms/iter");
+        }
       };
     </script>
     <script type="text/javascript" src="mono-config.js"></script>
