@@ -329,10 +329,23 @@ namespace System
             return true;
         }
 
-        // Converts an array of bytes into a char.
+        /// <summary>
+        /// Returns a Unicode character converted from two bytes at a specified position in a byte array.
+        /// </summary>
+        /// <param name="value">An array.</param>
+        /// <param name="startIndex">The starting position within <paramref name="value"/>.</param>
+        /// <returns>A character formed by two bytes beginning at <paramref name="startIndex"/>.</returns>
+        /// <exception cref="ArgumentException"><paramref name="startIndex"/> equals the length of <paramref name="value"/> minus 1.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="value"/> is null.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="startIndex"/> is less than zero or greater than the length of <paramref name="value"/> minus 1.</exception>
         public static char ToChar(byte[] value, int startIndex) => unchecked((char)ToInt16(value, startIndex));
 
-        // Converts a Span into a char
+        /// <summary>
+        /// Converts a read-only byte span into a character.
+        /// </summary>
+        /// <param name="value">A read-only span containing the bytes to convert.</param>
+        /// <returns>A character representing the converted bytes.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">The length of <paramref name="value"/> is less than the length of a <see cref="char"/>.</exception>
         public static char ToChar(ReadOnlySpan<byte> value)
         {
             if (value.Length < sizeof(char))
@@ -340,7 +353,15 @@ namespace System
             return Unsafe.ReadUnaligned<char>(ref MemoryMarshal.GetReference(value));
         }
 
-        // Converts an array of bytes into a short.
+        /// <summary>
+        /// Returns a 16-bit signed integer converted from two bytes at a specified position in a byte array.
+        /// </summary>
+        /// <param name="value">An array of bytes.</param>
+        /// <param name="startIndex">The starting position within <paramref name="value"/>.</param>
+        /// <returns>A 16-bit signed integer formed by two bytes beginning at <paramref name="startIndex"/>.</returns>
+        /// <exception cref="ArgumentException"><paramref name="startIndex"/> equals the length of <paramref name="value"/> minus 1.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="value"/> is null.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="startIndex"/> is less than zero or greater than the length of <paramref name="value"/> minus 1.</exception>
         public static short ToInt16(byte[] value, int startIndex)
         {
             if (value == null)
@@ -353,7 +374,12 @@ namespace System
             return Unsafe.ReadUnaligned<short>(ref value[startIndex]);
         }
 
-        // Converts a Span into a short
+        /// <summary>
+        /// Converts a read-only byte span into a 16-bit signed integer.
+        /// </summary>
+        /// <param name="value">A read-only span containing the bytes to convert.</param>
+        /// <returns>A 16-bit signed integer representing the converted bytes.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">The length of <paramref name="value"/> is less than 2.</exception>
         public static short ToInt16(ReadOnlySpan<byte> value)
         {
             if (value.Length < sizeof(short))
@@ -361,7 +387,18 @@ namespace System
             return Unsafe.ReadUnaligned<short>(ref MemoryMarshal.GetReference(value));
         }
 
-        // Converts an array of bytes into an int.
+        /// <summary>
+        /// Returns a 32-bit signed integer converted from four bytes at a specified position in a byte array.
+        /// </summary>
+        /// <param name="value">An array of bytes.</param>
+        /// <param name="startIndex">The starting position within <paramref name="value"/>.</param>
+        /// <returns>A 32-bit signed integer formed by four bytes beginning at <paramref name="startIndex"/>.</returns>
+        /// <exception cref="ArgumentException">
+        /// <paramref name="startIndex"/> is greater than or equal to the length of <paramref name="value"/> minus 3,
+        /// and is less than or equal to the length of <paramref name="value"/> minus 1.
+        /// </exception>
+        /// <exception cref="ArgumentNullException"><paramref name="value"/> is null.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="startIndex"/> is less than zero or greater than the length of <paramref name="value"/> minus 1.</exception>
         public static int ToInt32(byte[] value, int startIndex)
         {
             if (value == null)
@@ -374,7 +411,12 @@ namespace System
             return Unsafe.ReadUnaligned<int>(ref value[startIndex]);
         }
 
-        // Converts a Span into an int
+        /// <summary>
+        /// Converts a read-only byte span into a 32-bit signed integer.
+        /// </summary>
+        /// <param name="value">A read-only span containing the bytes to convert.</param>
+        /// <returns>A 32-bit signed integer representing the converted bytes.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">The length of <paramref name="value"/> is less than 4.</exception>
         public static int ToInt32(ReadOnlySpan<byte> value)
         {
             if (value.Length < sizeof(int))
@@ -382,7 +424,18 @@ namespace System
             return Unsafe.ReadUnaligned<int>(ref MemoryMarshal.GetReference(value));
         }
 
-        // Converts an array of bytes into a long.
+        /// <summary>
+        /// Returns a 64-bit signed integer converted from eight bytes at a specified position in a byte array.
+        /// </summary>
+        /// <param name="value">An array of bytes.</param>
+        /// <param name="startIndex">The starting position within <paramref name="value"/>.</param>
+        /// <returns>A 64-bit signed integer formed by eight bytes beginning at <paramref name="startIndex"/>.</returns>
+        /// <exception cref="ArgumentException">
+        /// <paramref name="startIndex"/> is greater than or equal to the length of <paramref name="value"/> minus 7,
+        /// and is less than or equal to the length of <paramref name="value"/> minus 1.
+        /// </exception>
+        /// <exception cref="ArgumentNullException"><paramref name="value"/> is null.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="startIndex"/> is less than zero or greater than the length of <paramref name="value"/> minus 1.</exception>
         public static long ToInt64(byte[] value, int startIndex)
         {
             if (value == null)
@@ -395,7 +448,12 @@ namespace System
             return Unsafe.ReadUnaligned<long>(ref value[startIndex]);
         }
 
-        // Converts a Span into a long
+        /// <summary>
+        /// Converts a read-only byte span into a 64-bit signed integer.
+        /// </summary>
+        /// <param name="value">A read-only span containing the bytes to convert.</param>
+        /// <returns>A 64-bit signed integer representing the converted bytes.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">The length of <paramref name="value"/> is less than 8.</exception>
         public static long ToInt64(ReadOnlySpan<byte> value)
         {
             if (value.Length < sizeof(long))
@@ -403,12 +461,24 @@ namespace System
             return Unsafe.ReadUnaligned<long>(ref MemoryMarshal.GetReference(value));
         }
 
-        // Converts an array of bytes into an ushort.
-        //
+        /// <summary>
+        /// Returns a 16-bit unsigned integer converted from two bytes at a specified position in a byte array.
+        /// </summary>
+        /// <param name="value">An array of bytes.</param>
+        /// <param name="startIndex">The starting position within <paramref name="value"/>.</param>
+        /// <returns>A 16-bit unsigned integer formed by two bytes beginning at <paramref name="startIndex"/>.</returns>
+        /// <exception cref="ArgumentException"><paramref name="startIndex"/> equals the length of <paramref name="value"/> minus 1.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="value"/> is null.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="startIndex"/> is less than zero or greater than the length of <paramref name="value"/> minus 1.</exception>
         [CLSCompliant(false)]
         public static ushort ToUInt16(byte[] value, int startIndex) => unchecked((ushort)ToInt16(value, startIndex));
 
-        // Converts a Span into a ushort
+        /// <summary>
+        /// Converts a read-only byte span into a 16-bit unsigned integer.
+        /// </summary>
+        /// <param name="value">A read-only span containing the bytes to convert.</param>
+        /// <returns>A 16-bit unsigned integer representing the converted bytes.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">The length of <paramref name="value"/> is less than 2.</exception>
         [CLSCompliant(false)]
         public static ushort ToUInt16(ReadOnlySpan<byte> value)
         {
@@ -417,12 +487,27 @@ namespace System
             return Unsafe.ReadUnaligned<ushort>(ref MemoryMarshal.GetReference(value));
         }
 
-        // Converts an array of bytes into an uint.
-        //
+        /// <summary>
+        /// Returns a 32-bit unsigned integer converted from four bytes at a specified position in a byte array.
+        /// </summary>
+        /// <param name="value">An array of bytes.</param>
+        /// <param name="startIndex">The starting position within <paramref name="value"/>.</param>
+        /// <returns>A 32-bit unsigned integer formed by four bytes beginning at <paramref name="startIndex"/>.</returns>
+        /// <exception cref="ArgumentException">
+        /// <paramref name="startIndex"/> is greater than or equal to the length of <paramref name="value"/> minus 3,
+        /// and is less than or equal to the length of <paramref name="value"/> minus 1.
+        /// </exception>
+        /// <exception cref="ArgumentNullException"><paramref name="value"/> is null.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="startIndex"/> is less than zero or greater than the length of <paramref name="value"/> minus 1.</exception>
         [CLSCompliant(false)]
         public static uint ToUInt32(byte[] value, int startIndex) => unchecked((uint)ToInt32(value, startIndex));
 
-        // Convert a Span into a uint
+        /// <summary>
+        /// Converts a read-only byte span into a 32-bit unsigned integer.
+        /// </summary>
+        /// <param name="value">A read-only span containing the bytes to convert.</param>
+        /// <returns>A 32-bit unsigned integer representing the converted bytes.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">The length of <paramref name="value"/> is less than 4.</exception>
         [CLSCompliant(false)]
         public static uint ToUInt32(ReadOnlySpan<byte> value)
         {
@@ -431,12 +516,27 @@ namespace System
             return Unsafe.ReadUnaligned<uint>(ref MemoryMarshal.GetReference(value));
         }
 
-        // Converts an array of bytes into an unsigned long.
-        //
+        /// <summary>
+        /// Returns a 64-bit unsigned integer converted from four bytes at a specified position in a byte array.
+        /// </summary>
+        /// <param name="value">An array of bytes.</param>
+        /// <param name="startIndex">The starting position within <paramref name="value"/>.</param>
+        /// <returns>A 64-bit unsigned integer formed by eight bytes beginning at <paramref name="startIndex"/>.</returns>
+        /// <exception cref="ArgumentException">
+        /// <paramref name="startIndex"/> is greater than or equal to the length of <paramref name="value"/> minus 7,
+        /// and is less than or equal to the length of <paramref name="value"/> minus 1.
+        /// </exception>
+        /// <exception cref="ArgumentNullException"><paramref name="value"/> is null.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="startIndex"/> is less than zero or greater than the length of <paramref name="value"/> minus 1.</exception>
         [CLSCompliant(false)]
         public static ulong ToUInt64(byte[] value, int startIndex) => unchecked((ulong)ToInt64(value, startIndex));
 
-        // Converts a Span into an unsigned long
+        /// <summary>
+        /// Converts a read-only byte span into a 64-bit unsigned integer.
+        /// </summary>
+        /// <param name="value">A read-only span containing the bytes to convert.</param>
+        /// <returns>A 64-bit unsigned integer representing the converted bytes.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">The length of <paramref name="value"/> is less than 8.</exception>
         [CLSCompliant(false)]
         public static ulong ToUInt64(ReadOnlySpan<byte> value)
         {
@@ -445,10 +545,23 @@ namespace System
             return Unsafe.ReadUnaligned<ulong>(ref MemoryMarshal.GetReference(value));
         }
 
-        // Converts an array of bytes into a half.
+        /// <summary>
+        /// Returns a half-precision floating point number converted from two bytes at a specified position in a byte array.
+        /// </summary>
+        /// <param name="value">An array of bytes.</param>
+        /// <param name="startIndex">The starting position within <paramref name="value"/>.</param>
+        /// <returns>A half-precision floating point number signed integer formed by two bytes beginning at <paramref name="startIndex"/>.</returns>
+        /// <exception cref="ArgumentException"><paramref name="startIndex"/> equals the length of <paramref name="value"/> minus 1.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="value"/> is null.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="startIndex"/> is less than zero or greater than the length of <paramref name="value"/> minus 1.</exception>
         public static Half ToHalf(byte[] value, int startIndex) => Int16BitsToHalf(ToInt16(value, startIndex));
 
-        // Converts a Span into a half
+        /// <summary>
+        /// Converts a read-only byte span into a half-precision floating-point value.
+        /// </summary>
+        /// <param name="value">A read-only span containing the bytes to convert.</param>
+        /// <returns>A half-precision floating-point value representing the converted bytes.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">The length of <paramref name="value"/> is less than 2.</exception>
         public static unsafe Half ToHalf(ReadOnlySpan<byte> value)
         {
             if (value.Length < sizeof(Half))
@@ -456,10 +569,26 @@ namespace System
             return Unsafe.ReadUnaligned<Half>(ref MemoryMarshal.GetReference(value));
         }
 
-        // Converts an array of bytes into a float.
+        /// <summary>
+        /// Returns a single-precision floating point number converted from four bytes at a specified position in a byte array.
+        /// </summary>
+        /// <param name="value">An array of bytes.</param>
+        /// <param name="startIndex">The starting position within <paramref name="value"/>.</param>
+        /// <returns>A single-precision floating point number formed by four bytes beginning at <paramref name="startIndex"/>.</returns>
+        /// <exception cref="ArgumentException">
+        /// <paramref name="startIndex"/> is greater than or equal to the length of <paramref name="value"/> minus 3,
+        /// and is less than or equal to the length of <paramref name="value"/> minus 1.
+        /// </exception>
+        /// <exception cref="ArgumentNullException"><paramref name="value"/> is null.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="startIndex"/> is less than zero or greater than the length of <paramref name="value"/> minus 1.</exception>
         public static float ToSingle(byte[] value, int startIndex) => Int32BitsToSingle(ToInt32(value, startIndex));
 
-        // Converts a Span into a float
+        /// <summary>
+        /// Converts a read-only byte span into a single-precision floating-point value.
+        /// </summary>
+        /// <param name="value">A read-only span containing the bytes to convert.</param>
+        /// <returns>A single-precision floating-point value representing the converted bytes.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">The length of <paramref name="value"/> is less than 4.</exception>
         public static float ToSingle(ReadOnlySpan<byte> value)
         {
             if (value.Length < sizeof(float))
@@ -467,10 +596,26 @@ namespace System
             return Unsafe.ReadUnaligned<float>(ref MemoryMarshal.GetReference(value));
         }
 
-        // Converts an array of bytes into a double.
+        /// <summary>
+        /// Returns a double-precision floating point number converted from four bytes at a specified position in a byte array.
+        /// </summary>
+        /// <param name="value">An array of bytes.</param>
+        /// <param name="startIndex">The starting position within <paramref name="value"/>.</param>
+        /// <returns>A double-precision floating point number formed by eight bytes beginning at <paramref name="startIndex"/>.</returns>
+        /// <exception cref="ArgumentException">
+        /// <paramref name="startIndex"/> is greater than or equal to the length of <paramref name="value"/> minus 7,
+        /// and is less than or equal to the length of <paramref name="value"/> minus 1.
+        /// </exception>
+        /// <exception cref="ArgumentNullException"><paramref name="value"/> is null.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="startIndex"/> is less than zero or greater than the length of <paramref name="value"/> minus 1.</exception>
         public static double ToDouble(byte[] value, int startIndex) => Int64BitsToDouble(ToInt64(value, startIndex));
 
-        // Converts a Span into a double
+        /// <summary>
+        /// Converts a read-only byte span into a double-precision floating-point value.
+        /// </summary>
+        /// <param name="value">A read-only span containing the bytes to convert.</param>
+        /// <returns>A double-precision floating-point value representing the converted bytes.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">The length of <paramref name="value"/> is less than 8.</exception>
         public static double ToDouble(ReadOnlySpan<byte> value)
         {
             if (value.Length < sizeof(double))
@@ -478,7 +623,26 @@ namespace System
             return Unsafe.ReadUnaligned<double>(ref MemoryMarshal.GetReference(value));
         }
 
-        // Converts an array of bytes into a String.
+        /// <summary>
+        /// Converts the numeric value of each element of a specified array of bytes
+        /// to its equivalent hexadecimal string representation.
+        /// </summary>
+        /// <param name="value">An array of bytes.</param>
+        /// <param name="startIndex">The starting position within <paramref name="value"/>.</param>
+        /// <param name="length">The number of array elements in <paramref name="value"/> to convert.</param>
+        /// <returns>A string of hexadecimal pairs separated by hyphens,
+        /// where each pair represents the corresponding element in a subarray of <paramref name="value"/>;
+        /// for example, "7F-2C-4A-00".</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="value"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="startIndex"/> or <paramref name="length"/> is less than zero.
+        /// <para>-or-</para>
+        /// <paramref name="startIndex"/> is greater than zero and is greater than or equal to the length of <paramref name="value"/>.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        /// The combination of <paramref name="startIndex"/> and <paramref name="length"/> does not specify a position within <paramref name="value"/>;
+        /// that is, the <paramref name="startIndex"/> parameter is greater than the length of <paramref name="value"/> minus the <paramref name="length"/> parameter.
+        /// </exception>
         public static string ToString(byte[] value, int startIndex, int length)
         {
             if (value == null)
@@ -522,7 +686,15 @@ namespace System
             });
         }
 
-        // Converts an array of bytes into a String.
+        /// <summary>
+        /// Converts the numeric value of each element of a specified array of bytes
+        /// to its equivalent hexadecimal string representation.
+        /// </summary>
+        /// <param name="value">An array of bytes.</param>
+        /// <returns>A string of hexadecimal pairs separated by hyphens,
+        /// where each pair represents the corresponding element in <paramref name="value"/>;
+        /// for example, "7F-2C-4A-00".</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="value"/> is <see langword="null"/>.</exception>
         public static string ToString(byte[] value)
         {
             if (value == null)
@@ -530,7 +702,17 @@ namespace System
             return ToString(value, 0, value.Length);
         }
 
-        // Converts an array of bytes into a String.
+        /// <summary>
+        /// Converts the numeric value of each element of a specified array of bytes
+        /// to its equivalent hexadecimal string representation.
+        /// </summary>
+        /// <param name="value">An array of bytes.</param>
+        /// <param name="startIndex">The starting position within <paramref name="value"/>.</param>
+        /// <returns>A string of hexadecimal pairs separated by hyphens,
+        /// where each pair represents the corresponding element in a subarray of <paramref name="value"/>;
+        /// for example, "7F-2C-4A-00".</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="value"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="startIndex"/> is less than zero or greater than the length of <paramref name="value"/> minus 1.</exception>
         public static string ToString(byte[] value, int startIndex)
         {
             if (value == null)
@@ -538,15 +720,14 @@ namespace System
             return ToString(value, startIndex, value.Length - startIndex);
         }
 
-        /*==================================ToBoolean===================================
-        **Action:  Convert an array of bytes to a boolean value.  We treat this array
-        **         as if the first 4 bytes were an Int4 an operate on this value.
-        **Returns: True if the Int4 value of the first 4 bytes is non-zero.
-        **Arguments: value -- The byte array
-        **           startIndex -- The position within the array.
-        **Exceptions: See ToInt4.
-        ==============================================================================*/
-        // Converts an array of bytes into a boolean.
+        /// <summary>
+        /// Returns a Boolean value converted from two bytes at a specified position in a byte array.
+        /// </summary>
+        /// <param name="value">A byte array.</param>
+        /// <param name="startIndex">The index of the byte within <paramref name="value"/>.</param>
+        /// <returns><see langword="true"/> if the byte at <paramref name="startIndex"/> is nonzero; otherwise <see langword="false"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="value"/> is null.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="startIndex"/> is less than zero or greater than the length of <paramref name="value"/> minus 1.</exception>
         public static bool ToBoolean(byte[] value, int startIndex)
         {
             if (value == null)
@@ -559,6 +740,12 @@ namespace System
             return value[startIndex] != 0;
         }
 
+        /// <summary>
+        /// Converts a read-only byte span into a Boolean value.
+        /// </summary>
+        /// <param name="value">A read-only span containing the bytes to convert.</param>
+        /// <returns>A Boolean representing the converted bytes.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">The length of <paramref name="value"/> is less than 1.</exception>
         public static bool ToBoolean(ReadOnlySpan<byte> value)
         {
             if (value.Length < sizeof(byte))
