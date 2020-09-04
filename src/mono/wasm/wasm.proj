@@ -35,7 +35,7 @@
     <ItemGroup>
       <WasmPInvokeModule Include="libSystem.Native" />
       <WasmPInvokeModule Include="libSystem.IO.Compression.Native" />
-      <WasmPInvokeAssembly Include="@(LibrariesRuntimeFiles->WithMetadataValue('Extension', '.dll'))" Condition="'%(IsNative)' != 'true'" />
+      <WasmPInvokeAssembly Include="@(LibrariesRuntimeFiles)" Condition="'%(Extension)' == '.dll' and '%(IsNative)' != 'true'" />
     </ItemGroup>
 
     <!-- Retrieve CoreLib's targetpath via GetTargetPath as it isn't binplaced yet. -->
