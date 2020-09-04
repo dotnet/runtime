@@ -71,7 +71,11 @@ namespace bundle
         int64_t m_size;
         file_type_t m_type;
         pal::string_t m_relative_path; // Path of an embedded file, relative to the extraction directory.
-        bool m_disabled; // Whether this entry is disabled, because an overriding hammer servicing entry exists.
+        // If the file represented by this entry is also found in a servicing location, the servicing location must take precedence.
+        // But in general, bundle will take precedence over on-disk locations everywhere.
+        // So in order to make sure that the servicing location is used, the file entry in the bundle is marked as "disabled"
+        // in such case, and the lookup logic will behave as if the file is not present in the bundle.
+        bool m_disabled;
         bool is_valid() const;
     };
 }
