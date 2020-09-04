@@ -4087,13 +4087,13 @@ void CodeGen::genCodeForShift(GenTree* tree)
             int shiftByValue = (int)shiftBy->AsIntConCommon()->IconValue();
 
             // Try to emit rorx if BMI is available instead of rol
-            if (compiler->compOpportunisticallyDependsOn(InstructionSet_BMI2) && tree->OperIs(GT_ROL) &&
+            if (compiler->compOpportunisticallyDependsOn(InstructionSet_BMI2) && tree->OperIs(GT_ROL, GT_ROR) &&
                 (shiftByValue > 0) && (shiftByValue < typeWidth))
             {
                 assert((typeWidth == 32) || (typeWidth == 64));
 
-                int reversedValue = typeWidth - shiftByValue;
-                GetEmitter()->emitIns_R_R_I(INS_rorx, size, tree->GetRegNum(), operandReg, reversedValue);
+                int value = tree->OperIs(GT_ROL) ? typeWidth - shiftByValue : shiftByValue;
+                GetEmitter()->emitIns_R_R_I(INS_rorx, size, tree->GetRegNum(), operandReg, value);
             }
             else
             {
