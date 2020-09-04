@@ -221,4 +221,22 @@ mono_memory_manager_unlock (MonoMemoryManager *memory_manager)
 	mono_coop_mutex_unlock (&memory_manager->lock);
 }
 
+void *
+mono_memory_manager_alloc (MonoMemoryManager *memory_manager, guint size);
+
+void *
+mono_memory_manager_alloc0 (MonoMemoryManager *memory_manager, guint size);
+
+void *
+mono_memory_manager_code_reserve (MonoMemoryManager *memory_manager, int size);
+
+void *
+mono_memory_manager_code_reserve_align (MonoMemoryManager *memory_manager, int size, int newsize);
+
+void
+mono_memory_manager_code_commit (MonoMemoryManager *memory_manager, void *data, int size, int newsize);
+
+void
+mono_memory_manager_code_foreach (MonoMemoryManager *memory_manager, MonoCodeManagerFunc func, void *user_data);
+
 #endif

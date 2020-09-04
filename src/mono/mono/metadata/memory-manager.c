@@ -95,3 +95,73 @@ mono_memory_manager_free_singleton (MonoSingletonMemoryManager *memory_manager, 
 	memory_manager_delete ((MonoMemoryManager *)memory_manager, debug_unload);
 	g_free (memory_manager);
 }
+
+void *
+mono_memory_manager_alloc (MonoMemoryManager *memory_manager, guint size)
+{
+	void *res;
+
+	mono_memory_manager_lock (memory_manager);
+#ifndef DISABLE_PERFCOUNTERS
+	mono_atomic_fetch_add_i32 (&mono_perfcounters->loader_bytes, size);
+#endif
+	res = mono_mempool_alloc (memory_manager->mp, size);
+	mono_memory_manager_unlock (memory_manager);
+
+	return res;
+}
+
+void *
+mono_memory_manager_alloc0 (MonoMemoryManager *memory_manager, guint size)
+{
+	void *res;
+
+	mono_memory_manager_lock (memory_manager);
+#ifndef DISABLE_PERFCOUNTERS
+	mono_atomic_fetch_add_i32 (&mono_perfcounters->loader_bytes, size);
+#endif
+	res = mono_mempool_alloc0 (memory_manager->mp, size);
+	mono_memory_manager_unlock (memory_manager);
+
+	return res;
+}
+
+void *
+mono_memory_manager_code_reserve (MonoMemoryManager *memory_manager, int size)
+{
+	void *res;
+
+	mono_memory_manager_lock (memory_manager);
+	res = mono_code_manager_reserve (memory_manager->code_mp, size);
+	mono_memory_manager_unlock (memory_manager);
+
+	return res;
+}
+
+void *
+mono_memory_manager_code_reserve_align (MonoMemoryManager *memory_manager, int size, int alignment)
+{
+	void *res;
+
+	mono_memory_manager_lock (memory_manager);
+	res = mono_code_manager_reserve_align (memory_manager->code_mp, size, alignment);
+	mono_memory_manager_unlock (memory_manager);
+
+	return res;
+}
+
+void
+mono_memory_manager_code_commit (MonoMemoryManager *memory_manager, void *data, int size, int newsize)
+{
+	mono_memory_manager_lock (memory_manager);
+	mono_code_manager_commit (memory_manager->code_mp, data, size, newsize);
+	mono_memory_manager_unlock (memory_manager);
+}
+
+void
+mono_memory_manager_code_foreach (MonoMemoryManager *memory_manager, MonoCodeManagerFunc func, void *user_data)
+{
+	mono_memory_manager_lock (memory_manager);
+	mono_code_manager_foreach (memory_manager->code_mp, func, user_data);
+	mono_memory_manager_unlock (memory_manager);
+}

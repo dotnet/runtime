@@ -1328,42 +1328,27 @@ mono_domain_get_friendly_name (MonoDomain *domain)
 /*
  * mono_domain_alloc:
  *
- * LOCKING: Acquires the domain lock.
+ * LOCKING: Acquires the default memory manager lock.
  */
 gpointer
 (mono_domain_alloc) (MonoDomain *domain, guint size)
 {
-	gpointer res;
 	MonoMemoryManager *memory_manager = mono_domain_default_memory_manager (domain);
 
-	mono_memory_manager_lock (memory_manager);
-#ifndef DISABLE_PERFCOUNTERS
-	mono_atomic_fetch_add_i32 (&mono_perfcounters->loader_bytes, size);
-#endif
-	res = mono_mempool_alloc (mono_domain_default_memory_manager (domain)->mp, size);
-	mono_memory_manager_unlock (memory_manager);
-
-	return res;
+	return mono_memory_manager_alloc (memory_manager, size);
 }
 
 /*
  * mono_domain_alloc0:
  *
- * LOCKING: Acquires the domain lock.
+ * LOCKING: Acquires the default memory manager lock.
  */
 gpointer
 (mono_domain_alloc0) (MonoDomain *domain, guint size)
 {
-	gpointer res;
 	MonoMemoryManager *memory_manager = mono_domain_default_memory_manager (domain);
 
-	mono_memory_manager_lock (memory_manager);
-#ifndef DISABLE_PERFCOUNTERS
-	mono_atomic_fetch_add_i32 (&mono_perfcounters->loader_bytes, size);
-#endif
-	res = mono_mempool_alloc0 (mono_domain_default_memory_manager (domain)->mp, size);
-	mono_memory_manager_unlock (memory_manager);
-	return res;
+	return mono_memory_manager_alloc0 (memory_manager, size);
 }
 
 gpointer
@@ -1375,52 +1360,40 @@ gpointer
 /*
  * mono_domain_code_reserve:
  *
- * LOCKING: Acquires the domain lock.
+ * LOCKING: Acquires the default memory manager lock.
  */
 void*
 (mono_domain_code_reserve) (MonoDomain *domain, int size)
 {
-	gpointer res;
 	MonoMemoryManager *memory_manager = mono_domain_default_memory_manager (domain);
 
-	mono_memory_manager_lock (memory_manager);
-	res = mono_code_manager_reserve (mono_domain_default_memory_manager (domain)->code_mp, size);
-	mono_memory_manager_unlock (memory_manager);
-
-	return res;
+	return mono_memory_manager_code_reserve (memory_manager, size);
 }
 
 /*
  * mono_domain_code_reserve_align:
  *
- * LOCKING: Acquires the domain lock.
+ * LOCKING: Acquires the default memory manager lock.
  */
 void*
 (mono_domain_code_reserve_align) (MonoDomain *domain, int size, int alignment)
 {
-	gpointer res;
 	MonoMemoryManager *memory_manager = mono_domain_default_memory_manager (domain);
 
-	mono_memory_manager_lock (memory_manager);
-	res = mono_code_manager_reserve_align (mono_domain_default_memory_manager (domain)->code_mp, size, alignment);
-	mono_memory_manager_unlock (memory_manager);
-
-	return res;
+	return mono_memory_manager_code_reserve_align (memory_manager, size, alignment);
 }
 
 /*
  * mono_domain_code_commit:
  *
- * LOCKING: Acquires the domain lock.
+ * LOCKING: Acquires the default memory manager lock.
  */
 void
 mono_domain_code_commit (MonoDomain *domain, void *data, int size, int newsize)
 {
 	MonoMemoryManager *memory_manager = mono_domain_default_memory_manager (domain);
 
-	mono_memory_manager_lock (memory_manager);
-	mono_code_manager_commit (mono_domain_default_memory_manager (domain)->code_mp, data, size, newsize);
-	mono_memory_manager_unlock (memory_manager);
+	return mono_memory_manager_code_commit (memory_manager, data, size, newsize);
 }
 
 /*
@@ -1429,7 +1402,7 @@ mono_domain_code_commit (MonoDomain *domain, void *data, int size, int newsize)
  * 
  * The @func callback MUST not take any locks. If it really needs to, it must respect
  * the locking rules of the runtime: http://www.mono-project.com/Mono:Runtime:Documentation:ThreadSafety 
- * LOCKING: Acquires the domain lock.
+ * LOCKING: Acquires the default memory manager lock.
  */
 
 void
@@ -1437,9 +1410,7 @@ mono_domain_code_foreach (MonoDomain *domain, MonoCodeManagerFunc func, void *us
 {
 	MonoMemoryManager *memory_manager = mono_domain_default_memory_manager (domain);
 
-	mono_memory_manager_lock (memory_manager);
-	mono_code_manager_foreach (mono_domain_default_memory_manager (domain)->code_mp, func, user_data);
-	mono_memory_manager_unlock (memory_manager);
+	return mono_memory_manager_code_foreach (memory_manager, func, user_data);
 }
 
 /**
