@@ -1391,7 +1391,7 @@ mono_domain_code_commit (MonoDomain *domain, void *data, int size, int newsize)
 {
 	MonoMemoryManager *memory_manager = mono_domain_memory_manager (domain);
 
-	return mono_mem_manager_code_commit (memory_manager, data, size, newsize);
+	mono_mem_manager_code_commit (memory_manager, data, size, newsize);
 }
 
 /*
@@ -1408,7 +1408,7 @@ mono_domain_code_foreach (MonoDomain *domain, MonoCodeManagerFunc func, void *us
 {
 	MonoMemoryManager *memory_manager = mono_domain_memory_manager (domain);
 
-	return mono_mem_manager_code_foreach (memory_manager, func, user_data);
+	mono_mem_manager_code_foreach (memory_manager, func, user_data);
 }
 
 /**
