@@ -12,7 +12,7 @@ runtimepack:
 
 run: clean appbuilder
 	$(DOTNET) publish -c $(MONO_CONFIG) -r android-$(MONO_ARCH) \
-	/p:Platform=$(MONO_ARCH) /p:DeployAndRun=true
+	/p:Platform=$(MONO_ARCH) /p:DeployAndRun=true /p:TargetArchitecture=$(MONO_ARCH)
 
 clean:
 	rm -rf bin
