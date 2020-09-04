@@ -109,6 +109,7 @@
     <SystemIOPackagingTestDataVersion>5.0.0-beta.20451.1</SystemIOPackagingTestDataVersion>
     <SystemNetTestDataVersion>5.0.0-beta.20451.1</SystemNetTestDataVersion>
     <SystemPrivateRuntimeUnicodeDataVersion>5.0.0-beta.20451.1</SystemPrivateRuntimeUnicodeDataVersion>
+    <SystemRuntimeTimeZoneDataVersion>5.0.0-beta.20451.1</SystemRuntimeTimeZoneDataVersion>
     <SystemSecurityCryptographyX509CertificatesTestDataVersion>5.0.0-beta.20451.1</SystemSecurityCryptographyX509CertificatesTestDataVersion>
     <SystemWindowsExtensionsTestDataVersion>5.0.0-beta.20451.1</SystemWindowsExtensionsTestDataVersion>
     <!-- Standard dependencies -->

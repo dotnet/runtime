@@ -10,6 +10,7 @@ using System.Security.Cryptography;
 using System.Security.Cryptography.Apple;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using System.Threading;
 using Microsoft.Win32.SafeHandles;
 
 namespace Internal.Cryptography.Pal
@@ -20,6 +21,7 @@ namespace Internal.Cryptography.Pal
         private SafeSecCertificateHandle _certHandle;
         private CertificateData _certData;
         private bool _readCertData;
+        private SafeKeychainHandle? _tempKeychain;
 
         public static ICertificatePal? FromHandle(IntPtr handle)
         {
@@ -109,7 +111,20 @@ namespace Internal.Cryptography.Pal
 
                 using (keychain)
                 {
-                    return ImportPkcs12(rawData, password, exportable, keychain);
+                    AppleCertificatePal ret = ImportPkcs12(rawData, password, exportable, keychain);
+                    if (!persist)
+                    {
+                        // If we used temporary keychain we need to prevent deletion.
+                        // on 10.15+ if keychain is unlinked, certain certificate operations may fail.
+                        bool success = false;
+                        keychain.DangerousAddRef(ref success);
+                        if (success)
+                        {
+                            ret._tempKeychain = keychain;
+                        }
+                    }
+
+                    return ret;
                 }
             }
 
@@ -165,6 +180,12 @@ namespace Internal.Cryptography.Pal
 
             _certHandle = null!;
             _identityHandle = null;
+
+            SafeKeychainHandle? tempKeychain = Interlocked.Exchange(ref _tempKeychain, null);
+            if (tempKeychain != null)
+            {
+                tempKeychain.Dispose();
+            }
         }
 
         internal SafeSecCertificateHandle CertificateHandle => _certHandle;

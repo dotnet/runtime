@@ -380,25 +380,70 @@ var MonoSupportLib = {
 			return out_list;
 		},
 
-		_filter_automatic_properties: function (props) {
-			let names_found = {};
-			let final_var_list = [];
+		_filter_automatic_properties: function (props, accessors_only=false) {
+			// Note: members in @props, have derived class members, followed by
+			//       those from parent classes
 
-			for (var i in props) {
-				var p = props [i];
-				if (p.name in names_found)
-					continue;
+			// Note: Auto-properties have backing fields, named with a special suffix.
+			//       @props here will have the backing field, *and* the getter.
+			//
+			//       But we want to return only one name/value pair:
+			//          [name of the auto-property] = value of the backing field
 
-				if (p.name.endsWith ("k__BackingField"))
-					p.name = p.name.replace ("k__BackingField", "")
-							.replace ('<', '')
-							.replace ('>', '');
+			let getters = {};
+			let all_fields_except_backing_fields = {};
+			let backing_fields = {};
 
-				names_found [p.name] = p.name;
-				final_var_list.push (p);
-			}
+			// Split props into the 3 groups - backing_fields, getters, and all_fields_except_backing_fields
+			props.forEach(p => {
+				if (p.name.endsWith('k__BackingField')) {
+					const auto_prop_name = p.name.replace ('k__BackingField', '')
+						.replace ('<', '')
+						.replace ('>', '');
 
-			return final_var_list;
+					// Only take the first one, as that is overriding others
+					if (!(auto_prop_name in backing_fields))
+						backing_fields[auto_prop_name] = Object.assign(p, { name: auto_prop_name });
+
+				} else if (p.get !== undefined) {
+					// if p wasn't overridden by a getter or a field,
+					// from a more derived class
+					if (!(p.name in getters) && !(p.name in all_fields_except_backing_fields))
+						getters[p.name] = p;
+
+				} else if (!(p.name in all_fields_except_backing_fields)) {
+					all_fields_except_backing_fields[p.name] = p;
+				}
+			});
+
+			// Filter/merge backing fields, and getters
+			Object.values(backing_fields).forEach(backing_field => {
+				const auto_prop_name = backing_field.name;
+				const getter = getters[auto_prop_name];
+
+				if (getter === undefined) {
+					// backing field with no getter
+					// eg. when a field overrides/`new string foo=..`
+					//     an autoproperty
+					return;
+				}
+
+				if (auto_prop_name in all_fields_except_backing_fields) {
+					delete getters[auto_prop_name];
+				} else if (getter.__args.owner_class === backing_field.__args.owner_class) {
+					// getter+backing_field are from the same class.
+					// Add the backing_field value as a field
+					all_fields_except_backing_fields[auto_prop_name] = backing_field;
+
+					// .. and drop the auto-prop getter
+					delete getters[auto_prop_name];
+				}
+			});
+
+			if (accessors_only)
+				return Object.values(getters);
+
+			return Object.values(all_fields_except_backing_fields).concat(Object.values(getters));
 		},
 
 		/** Given `dotnet:object:foo:bar`,
@@ -507,23 +552,32 @@ var MonoSupportLib = {
 		 * @param  {WasmId} id
 		 * @returns {object[]}
 		 */
-		_get_vt_properties: function (id) {
-			let entry = this._id_table [id.idStr];
-			if (entry !== undefined && entry.members !== undefined)
-				return entry.members;
+		_get_vt_properties: function (id, args={}) {
+			let entry = this._get_id_props (id.idStr);
 
-			if (!isNaN (id.o.containerId))
-				this._get_object_properties (id.o.containerId, true);
-			else if (!isNaN (id.o.arrayId))
-				this._get_array_values (id, Number (id.o.arrayIdx), 1, true);
-			else
-				throw new Error (`Invalid valuetype id (${id.idStr}). Can't get properties for it.`);
+			if (entry === undefined || entry.members === undefined) {
+				if (!isNaN (id.o.containerId)) {
+					// We are expanding, so get *all* the members.
+					// Which ones to return based on @args, can be determined
+					// at the time of return
+					this._get_object_properties (id.o.containerId, { expandValueTypes: true });
+				} else if (!isNaN (id.o.arrayId))
+					this._get_array_values (id, Number (id.o.arrayIdx), 1, true);
+				else
+					throw new Error (`Invalid valuetype id (${id.idStr}). Can't get properties for it.`);
+			}
 
+			// Let's try again
 			entry = this._get_id_props (id.idStr);
-			if (entry !== undefined && entry.members !== undefined)
-				return entry.members;
 
-			throw new Error (`Unknown valuetype id: ${id.idStr}`);
+			if (entry !== undefined && entry.members !== undefined) {
+				if (args.accessorPropertiesOnly === true)
+					return entry.accessors;
+
+				return entry.members;
+			}
+
+			throw new Error (`Unknown valuetype id: ${id.idStr}. Failed to get properties for it.`);
 		},
 
 		/**
@@ -597,17 +651,37 @@ var MonoSupportLib = {
 			return res;
 		},
 
+		// Keep in sync with the flags in mini-wasm-debugger.c
+		_get_properties_args_to_gpflags: function (args) {
+			let gpflags =0;
+			/*
+				Disabled for now. Instead, we ask debugger.c to return
+				~all~ the members, and then handle the filtering in mono.js .
+
+			if (args.ownProperties)
+				gpflags |= 1;
+			if (args.accessorPropertiesOnly)
+				gpflags |= 2;
+			*/
+			if (args.expandValueTypes)
+				gpflags |= 4;
+
+			return gpflags;
+		},
+
 		/**
 		 * @param  {number} idNum
 		 * @param  {boolean} expandValueTypes
 		 * @returns {object}
 		 */
-		_get_object_properties: function(idNum, expandValueTypes) {
-			let { res_ok, res } = this.mono_wasm_get_object_properties_info (idNum, expandValueTypes);
+		_get_object_properties: function(idNum, args={}) {
+			let gpflags = this._get_properties_args_to_gpflags (args);
+
+			let { res_ok, res } = this.mono_wasm_get_object_properties_info (idNum, gpflags);
 			if (!res_ok)
 				throw new Error (`Failed to get properties for ${idNum}`);
 
-			res = MONO._filter_automatic_properties (res);
+			res = MONO._filter_automatic_properties (res, args.accessorPropertiesOnly === true);
 			res = this._assign_vt_ids (res, v => ({ containerId: idNum, fieldOffset: v.fieldOffset }));
 			res = this._post_process_details (res);
 
@@ -625,7 +699,8 @@ var MonoSupportLib = {
 			if (isNaN (id.o.arrayId) || isNaN (startIdx))
 				throw new Error (`Invalid array id: ${id.idStr}`);
 
-			let { res_ok, res } = this.mono_wasm_get_array_values_info (id.o.arrayId, startIdx, count, expandValueTypes);
+			let gpflags = this._get_properties_args_to_gpflags({ expandValueTypes });
+			let { res_ok, res } = this.mono_wasm_get_array_values_info (id.o.arrayId, startIdx, count, gpflags);
 			if (!res_ok)
 				throw new Error (`Failed to get properties for array id ${id.idStr}`);
 
@@ -647,6 +722,8 @@ var MonoSupportLib = {
 			if (details.length > 0)
 				this._extract_and_cache_value_types(details);
 
+			// remove __args added by add_properties_var
+			details.forEach(d => delete d.__args);
 			return details;
 		},
 
@@ -687,7 +764,8 @@ var MonoSupportLib = {
 
 				this._extract_and_cache_value_types (value.members);
 
-				const new_props = Object.assign ({ members: value.members }, value.__extra_vt_props);
+				const accessors = value.members.filter(m => m.get !== undefined);
+				const new_props = Object.assign ({ members: value.members, accessors }, value.__extra_vt_props);
 
 				this._new_or_add_id_props ({ objectId: value.objectId, props: new_props });
 				delete value.members;
@@ -837,7 +915,7 @@ var MonoSupportLib = {
 			return res;
 		},
 
-		mono_wasm_get_details: function (objectId, args) {
+		mono_wasm_get_details: function (objectId, args={}) {
 			let id = this._parse_object_id (objectId, true);
 
 			switch (id.scheme) {
@@ -845,14 +923,15 @@ var MonoSupportLib = {
 					if (isNaN (id.value))
 						throw new Error (`Invalid objectId: ${objectId}. Expected a numeric id.`);
 
-					return this._get_object_properties(id.value, false);
+					args.expandValueTypes = false;
+					return this._get_object_properties(id.value, args);
 				}
 
 				case "array":
 					return this._get_array_values (id);
 
 				case "valuetype":
-					return this._get_vt_properties(id);
+					return this._get_vt_properties(id, args);
 
 				case "cfo_res":
 					return this._get_cfo_res_details (objectId, args);
@@ -1082,8 +1161,8 @@ var MonoSupportLib = {
 			this._call_function_res_cache = {};
 
 			this._c_fn_table = {};
-			this._register_c_var_fn ('mono_wasm_get_object_properties',   'bool', [ 'number', 'bool' ]);
-			this._register_c_var_fn ('mono_wasm_get_array_values',        'bool', [ 'number', 'number', 'number', 'bool' ]);
+			this._register_c_var_fn ('mono_wasm_get_object_properties',   'bool', [ 'number', 'number' ]);
+			this._register_c_var_fn ('mono_wasm_get_array_values',        'bool', [ 'number', 'number', 'number', 'number' ]);
 			this._register_c_var_fn ('mono_wasm_invoke_getter_on_object', 'bool', [ 'number', 'string' ]);
 			this._register_c_var_fn ('mono_wasm_invoke_getter_on_value',  'bool', [ 'number', 'number', 'string' ]);
 			this._register_c_var_fn ('mono_wasm_get_local_vars',          'bool', [ 'number', 'number', 'number']);
@@ -1623,31 +1702,20 @@ var MonoSupportLib = {
 			});
 		},
 
-		_mono_wasm_add_getter_var: function(className, invokable) {
+		_mono_wasm_add_getter_var: function(className) {
 			const fixed_class_name = MONO._mono_csharp_fixup_class_name (className);
-			if (invokable != 0) {
-				var name;
-				if (MONO.var_info.length > 0)
-					name = MONO.var_info [MONO.var_info.length - 1].name;
-				name = (name === undefined) ? "" : name;
+			var name;
+			if (MONO.var_info.length > 0)
+				name = MONO.var_info [MONO.var_info.length - 1].name;
+			name = (name === undefined) ? "" : name;
 
-				MONO.var_info.push({
-					get: {
-						className: "Function",
-						description: `get ${name} () {}`,
-						type: "function",
-					}
-				});
-			} else {
-				var value = `${fixed_class_name} { get; }`;
-				MONO.var_info.push({
-					value: {
-						type: "symbol",
-						description: value,
-						value: value,
-					}
-				});
-			}
+			MONO.var_info.push({
+				get: {
+					className: "Function",
+					description: `get ${name} () {}`,
+					type: "function",
+				}
+			});
 		},
 
 		_mono_wasm_add_array_var: function(className, objectId, length) {
@@ -1740,6 +1808,23 @@ var MonoSupportLib = {
 			});
 		},
 
+		mono_wasm_add_properties_var: function (name, args) {
+			if (typeof args !== 'object')
+				args = { field_offset: args };
+
+			if (args.owner_class !== undefined && args.owner_class !== 0)
+				args.owner_class = Module.UTF8ToString(args.owner_class);
+
+			let name_obj = {
+				name: Module.UTF8ToString (name),
+				fieldOffset: args.field_offset,
+				__args: args
+			};
+			if (args.is_own)
+				name_obj.isOwn = true;
+
+			MONO.var_info.push(name_obj);
+		},
 
 		mono_wasm_add_typed_value: function (type, str_value, value) {
 			let type_str = type;
@@ -1789,7 +1874,7 @@ var MonoSupportLib = {
 				break;
 
 			case "getter":
-				MONO._mono_wasm_add_getter_var (str_value, value);
+				MONO._mono_wasm_add_getter_var (str_value);
 				break;
 
 			case "array":
@@ -1912,11 +1997,8 @@ var MonoSupportLib = {
 		MONO.mono_wasm_add_typed_value (type, str_value, value);
 	},
 
-	mono_wasm_add_properties_var: function(name, field_offset) {
-		MONO.var_info.push({
-			name: Module.UTF8ToString (name),
-			fieldOffset: field_offset
-		});
+	mono_wasm_add_properties_var: function(name, args) {
+		MONO.mono_wasm_add_properties_var (name, args);
 	},
 
 	mono_wasm_set_is_async_method: function(objectId) {

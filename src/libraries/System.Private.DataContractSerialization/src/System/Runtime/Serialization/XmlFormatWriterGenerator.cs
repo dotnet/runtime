@@ -43,7 +43,6 @@ namespace System.Runtime.Serialization
         /// </SecurityNote>
         private class CriticalHelper
         {
-#if !USE_REFEMIT
             private CodeGenerator _ilg = null!; // initialized in GenerateXXXWriter
             private ArgBuilder _xmlWriterArg = null!; // initialized in InitArgs
             private ArgBuilder _contextArg = null!; // initialized in InitArgs
@@ -56,7 +55,6 @@ namespace System.Runtime.Serialization
             private LocalBuilder? _childElementNamespacesLocal;
             private int _typeIndex = 1;
             private int _childElementIndex;
-#endif
 
             private XmlFormatClassWriterDelegate CreateReflectionXmlFormatClassWriterDelegate()
             {
@@ -130,7 +128,6 @@ namespace System.Runtime.Serialization
                 }
             }
 
-#if !USE_REFEMIT
             private void InitArgs(Type objType)
             {
                 _xmlWriterArg = _ilg.GetArg(0);
@@ -763,7 +760,6 @@ namespace System.Runtime.Serialization
                 }
                 return false;
             }
-#endif
         }
     }
 }
