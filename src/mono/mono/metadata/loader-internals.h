@@ -80,6 +80,7 @@ struct _MonoAssemblyLoadContext {
 #endif /* ENABLE_NETCORE */
 
 struct _MonoMemoryManager {
+	MonoDomain *domain;
 	// Whether the MemoryManager can be unloaded on netcore; should only be set at creation
 	gboolean collectible;
 	// Whether this is a singleton or generic MemoryManager
@@ -90,7 +91,7 @@ struct _MonoMemoryManager {
 	// Entries moved over from the domain:
 
 	// If taking this with the loader lock, always take this second
-	// On legacy, this does _not_ protect mp/code_mp, which are covered by the domain lock
+	// Currently unused, we take the domain lock instead
 	MonoCoopMutex lock;
 
 	MonoMemPool *mp;
@@ -212,13 +213,15 @@ mono_mem_manager_free_singleton (MonoSingletonMemoryManager *memory_manager, gbo
 static inline void
 mono_mem_manager_lock (MonoMemoryManager *memory_manager)
 {
-	mono_coop_mutex_lock (&memory_manager->lock);
+	//mono_coop_mutex_lock (&memory_manager->lock);
+	mono_domain_lock (memory_manager->domain);
 }
 
 static inline void
 mono_mem_manager_unlock (MonoMemoryManager *memory_manager)
 {
-	mono_coop_mutex_unlock (&memory_manager->lock);
+	//mono_coop_mutex_unlock (&memory_manager->lock);
+	mono_domain_unlock (memory_manager->domain);
 }
 
 void *

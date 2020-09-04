@@ -433,7 +433,7 @@ mono_domain_create (void)
 	MONO_PROFILER_RAISE (domain_loading, (domain));
 
 #ifndef ENABLE_NETCORE
-	domain->memory_manager = (MonoMemoryManager *)mono_mem_manager_create_singleton (NULL, TRUE);
+	domain->memory_manager = (MonoMemoryManager *)mono_mem_manager_create_singleton (NULL, domain, TRUE);
 #endif
 
 	domain->lock_free_mp = lock_free_mempool_new ();

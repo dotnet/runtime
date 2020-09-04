@@ -4,10 +4,9 @@
 #include <mono/metadata/mono-hash-internals.h>
 
 static void
-memory_manager_init (MonoMemoryManager *memory_manager, gboolean collectible)
+memory_manager_init (MonoMemoryManager *memory_manager, MonoDomain *domain, gboolean collectible)
 {
-	MonoDomain *domain = mono_domain_get (); // this is quite possibly wrong on legacy?
-
+	memory_manager->domain = domain;
 	memory_manager->freeing = FALSE;
 
 	mono_coop_mutex_init_recursive (&memory_manager->lock);
@@ -24,10 +23,10 @@ memory_manager_init (MonoMemoryManager *memory_manager, gboolean collectible)
 }
 
 MonoSingletonMemoryManager *
-mono_mem_manager_create_singleton (MonoAssemblyLoadContext *alc, gboolean collectible)
+mono_mem_manager_create_singleton (MonoAssemblyLoadContext *alc, MonoDomain *domain, gboolean collectible)
 {
 	MonoSingletonMemoryManager *mem_manager = g_new0 (MonoSingletonMemoryManager, 1);
-	memory_manager_init ((MonoMemoryManager *)mem_manager, collectible);
+	memory_manager_init ((MonoMemoryManager *)mem_manager, domain, collectible);
 
 	mem_manager->memory_manager.is_generic = FALSE;
 	mem_manager->alc = alc;
