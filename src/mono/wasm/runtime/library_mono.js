@@ -1325,7 +1325,7 @@ var MonoSupportLib = {
 		//        behavior: (required) determines how the asset will be handled once loaded:
 		//          "heap": store asset into the native heap
 		//          "assembly": load asset as a managed assembly (or debugging information)
-		//			"resource": load asset as a managed resource assembly
+		//          "resource": load asset as a managed resource assembly
 		//          "icu": load asset as an ICU data archive
 		//          "vfs": load asset into the virtual filesystem (for fopen, File.Open, etc)
 		//        load_remote: (optional) if true, an attempt will be made to load the asset
