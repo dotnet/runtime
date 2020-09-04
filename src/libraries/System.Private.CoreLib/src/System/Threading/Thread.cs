@@ -131,7 +131,6 @@ namespace System.Threading
 
         public static IPrincipal? CurrentPrincipal
         {
-            [UnsupportedOSPlatform("browser")]
             get
             {
                 IPrincipal? principal = s_asyncLocalPrincipal?.Value;

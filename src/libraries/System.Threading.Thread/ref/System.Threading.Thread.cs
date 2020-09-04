@@ -39,7 +39,7 @@ namespace System.Threading
         [System.ObsoleteAttribute("The ApartmentState property has been deprecated.  Use GetApartmentState, SetApartmentState or TrySetApartmentState instead.", false)]
         public System.Threading.ApartmentState ApartmentState { get { throw null; } set { } }
         public System.Globalization.CultureInfo CurrentCulture { get { throw null; } set { } }
-        public static System.Security.Principal.IPrincipal? CurrentPrincipal { [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")] get { throw null; } set { } }
+        public static System.Security.Principal.IPrincipal? CurrentPrincipal { get { throw null; } set { } }
         public static System.Threading.Thread CurrentThread { get { throw null; } }
         public System.Globalization.CultureInfo CurrentUICulture { get { throw null; } set { } }
         public System.Threading.ExecutionContext? ExecutionContext { get { throw null; } }
