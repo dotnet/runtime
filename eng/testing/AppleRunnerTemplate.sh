@@ -46,6 +46,6 @@ dotnet xharness ios test  \
 
 _exitCode=$?
 
-echo "XHarness artifacts: `ls -lh $XHARNESS_OUT`"
+echo "XHarness artifacts: $XHARNESS_OUT"
 
 exit $_exitCode
