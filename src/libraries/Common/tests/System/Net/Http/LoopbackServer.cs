@@ -379,7 +379,6 @@ namespace System.Net.Test.Common
             public string Domain { get; set; }
             public string Password { get; set; }
             public bool IsProxy { get; set; } = false;
-            public X509Certificate2 Certificate { get; set; }
 
             public Options()
             {
