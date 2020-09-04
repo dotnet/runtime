@@ -3,6 +3,7 @@
 EXECUTION_DIR=$(dirname $0)
 [[RunCommands]]
 
+# "Release" in SCHEME_SDK is what xcode produces (see "bool Optimized" property in AppleAppBuilderTask)
 if [ "$TARGET_ARCH" == "arm" ]; then
     TARGET=ios-device
     SCHEME_SDK=Release-iphoneos
@@ -20,8 +21,6 @@ else
     exit 1
 fi
 
-# "Release" in SCHEME_SDK is what xcode produces (see "bool Optimized" property in AppleAppBuilderTask)
-
 APP_BUNDLE=$EXECUTION_DIR/$TEST_NAME/$SCHEME_SDK/$TEST_NAME.app
 
 # it doesn't support parallel execution yet, so, here is a hand-made semaphore:
@@ -36,7 +35,6 @@ while true; do
     fi
 done
 
-# Restart the simulator to make sure it is tied to the right user session
 XCODE_PATH="`xcode-select -p`/../.."
 export XHARNESS_OUT="$EXECUTION_DIR/xharness-output"
 
