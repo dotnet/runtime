@@ -2,12 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Globalization;
+using System.Runtime.CompilerServices;
 
 namespace System.Numerics
 {
     /// <summary>
     /// A structure encapsulating a 3x2 matrix.
     /// </summary>
+    [Intrinsic]
     public struct Matrix3x2 : IEquatable<Matrix3x2>
     {
         private const float RotationEpsilon = 0.001f * MathF.PI / 180f;     // 0.1% of a degree
