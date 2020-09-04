@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Globalization;
+using System.Runtime.CompilerServices;
 
 namespace System.Numerics
 {
@@ -9,6 +10,7 @@ namespace System.Numerics
     /// A structure encapsulating a four-dimensional vector (x,y,z,w),
     /// which is used to efficiently rotate an object about the (x,y,z) vector by the angle theta, where w = cos(theta/2).
     /// </summary>
+    [Intrinsic]
     public struct Quaternion : IEquatable<Quaternion>
     {
         private const float SlerpEpsilon = 1e-6f;

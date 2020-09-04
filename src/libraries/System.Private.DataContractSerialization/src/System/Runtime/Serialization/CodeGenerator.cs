@@ -89,13 +89,6 @@ namespace System.Runtime.Serialization
 
         private Type _delegateType = null!; // initialized in BeginMethod
 
-#if USE_REFEMIT
-        AssemblyBuilder assemblyBuilder;
-        ModuleBuilder moduleBuilder;
-        TypeBuilder typeBuilder;
-        static int typeCounter;
-        MethodBuilder methodBuilder;
-#else
         private static Module? s_serializationModule;
         private static Module SerializationModule
         {
@@ -109,7 +102,6 @@ namespace System.Runtime.Serialization
             }
         }
         private DynamicMethod _dynamicMethod = null!; // initialized in BeginMethod
-#endif
 
         private ILGenerator _ilGen = null!; // initialized in BeginMethod
         private List<ArgBuilder> _argList = null!; // initialized in BeginMethod
@@ -128,7 +120,6 @@ namespace System.Runtime.Serialization
             _codeGenTrace = CodeGenTrace.None;
         }
 
-#if !USE_REFEMIT
         internal void BeginMethod(DynamicMethod dynamicMethod, Type delegateType, string methodName, Type[] argTypes, bool allowPrivateMemberAccess)
         {
             _dynamicMethod = dynamicMethod;
@@ -137,7 +128,6 @@ namespace System.Runtime.Serialization
 
             InitILGeneration(methodName, argTypes);
         }
-#endif
 
         internal void BeginMethod(string methodName, Type delegateType, bool allowPrivateMemberAccess)
         {
@@ -152,17 +142,9 @@ namespace System.Runtime.Serialization
 
         private void BeginMethod(Type returnType, string methodName, Type[] argTypes, bool allowPrivateMemberAccess)
         {
-#if USE_REFEMIT
-            string typeName = "Type" + (typeCounter++);
-            InitAssemblyBuilder(typeName + "." + methodName);
-            this.typeBuilder = moduleBuilder.DefineType(typeName, TypeAttributes.Public);
-            this.methodBuilder = typeBuilder.DefineMethod(methodName, MethodAttributes.Public|MethodAttributes.Static, returnType, argTypes);
-            this.ilGen = this.methodBuilder.GetILGenerator();
-#else
             _dynamicMethod = new DynamicMethod(methodName, returnType, argTypes, SerializationModule, allowPrivateMemberAccess);
 
             _ilGen = _dynamicMethod.GetILGenerator();
-#endif
 
             InitILGeneration(methodName, argTypes);
         }
@@ -186,15 +168,8 @@ namespace System.Runtime.Serialization
             Ret();
 
             Delegate? retVal = null;
-#if USE_REFEMIT
-            Type type = typeBuilder.CreateType();
-            MethodInfo method = type.GetMethod(methodBuilder.Name);
-            retVal = Delegate.CreateDelegate(delegateType, method);
-            methodBuilder = null;
-#else
             retVal = _dynamicMethod.CreateDelegate(_delegateType);
             _dynamicMethod = null!;
-#endif
             _delegateType = null!;
 
             _ilGen = null!;
@@ -207,11 +182,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-#if USE_REFEMIT
-                return methodBuilder;
-#else
                 return _dynamicMethod;
-#endif
             }
         }
 
@@ -1384,17 +1355,6 @@ namespace System.Runtime.Serialization
                 ThrowMismatchException(stackTop);
             return ifState;
         }
-
-#if USE_REFEMIT
-        void InitAssemblyBuilder(string methodName)
-        {
-            AssemblyName name = new AssemblyName();
-            name.Name = "Microsoft.GeneratedCode."+methodName;
-            //Add SecurityCritical and SecurityTreatAsSafe attributes to the generated method
-            assemblyBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(name, AssemblyBuilderAccess.Run);
-            moduleBuilder = assemblyBuilder.DefineDynamicModule(name.Name + ".dll", false);
-        }
-#endif
 
         [DoesNotReturn]
         private void ThrowMismatchException(object expected)

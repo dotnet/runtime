@@ -39,23 +39,19 @@ namespace System.IO
         internal bool IsReadOnly(ReadOnlySpan<char> path, bool continueOnError = false)
         {
             EnsureStatInitialized(path, continueOnError);
-            return IsReadOnly(_fileStatus);
-        }
-
-        internal static bool IsReadOnly(Interop.Sys.FileStatus fileStatus)
-        {
 #if TARGET_BROWSER
             const Interop.Sys.Permissions readBit = Interop.Sys.Permissions.S_IRUSR;
             const Interop.Sys.Permissions writeBit = Interop.Sys.Permissions.S_IWUSR;
 #else
             Interop.Sys.Permissions readBit, writeBit;
-            if (fileStatus.Uid == Interop.Sys.GetEUid())
+
+            if (_fileStatus.Uid == Interop.Sys.GetEUid())
             {
                 // User effectively owns the file
                 readBit = Interop.Sys.Permissions.S_IRUSR;
                 writeBit = Interop.Sys.Permissions.S_IWUSR;
             }
-            else if (fileStatus.Gid == Interop.Sys.GetEGid())
+            else if (_fileStatus.Gid == Interop.Sys.GetEGid())
             {
                 // User belongs to a group that effectively owns the file
                 readBit = Interop.Sys.Permissions.S_IRGRP;
@@ -69,39 +65,8 @@ namespace System.IO
             }
 #endif
 
-            return (fileStatus.Mode & (int)readBit) != 0 && // has read permission
-                (fileStatus.Mode & (int)writeBit) == 0;     // but not write permission
-        }
-
-        internal static bool IsDirectory(Interop.Sys.FileStatus fileStatus)
-        {
-            return (fileStatus.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR;
-        }
-
-        internal static bool IsHidden(Interop.Sys.FileStatus fileStatus)
-        {
-            return (fileStatus.UserFlags & (uint)Interop.Sys.UserFlags.UF_HIDDEN) == (uint)Interop.Sys.UserFlags.UF_HIDDEN;
-        }
-
-        internal static bool IsSymLink(Interop.Sys.FileStatus fileStatus)
-        {
-            return (fileStatus.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFLNK;
-        }
-
-        internal static FileAttributes GetAttributes(bool isReadOnly, bool isSymlink, bool isDirectory, bool isHidden)
-        {
-            FileAttributes attributes = default;
-
-            if (isReadOnly)
-                attributes |= FileAttributes.ReadOnly;
-            if (isSymlink)
-                attributes |= FileAttributes.ReparsePoint;
-            if (isDirectory)
-                attributes |= FileAttributes.Directory;
-            if (isHidden)
-                attributes |= FileAttributes.Hidden;
-
-            return attributes != default ? attributes : FileAttributes.Normal;
+            return ((_fileStatus.Mode & (int)readBit) != 0 && // has read permission
+                (_fileStatus.Mode & (int)writeBit) == 0);     // but not write permission
         }
 
         public FileAttributes GetAttributes(ReadOnlySpan<char> path, ReadOnlySpan<char> fileName)
@@ -113,11 +78,22 @@ namespace System.IO
             if (!_exists)
                 return (FileAttributes)(-1);
 
-            return GetAttributes(
-                IsReadOnly(path),
-                IsSymLink(_fileStatus),
-                _isDirectory,
-                (fileName.Length > 0 && fileName[0] == '.') || IsHidden(_fileStatus));
+            FileAttributes attributes = default;
+
+            if (IsReadOnly(path))
+                attributes |= FileAttributes.ReadOnly;
+
+            if ((_fileStatus.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFLNK)
+                attributes |= FileAttributes.ReparsePoint;
+
+            if (_isDirectory)
+                attributes |= FileAttributes.Directory;
+
+            // If the filename starts with a period or has UF_HIDDEN flag set, it's hidden.
+            if (fileName.Length > 0 && (fileName[0] == '.' || (_fileStatus.UserFlags & (uint)Interop.Sys.UserFlags.UF_HIDDEN) == (uint)Interop.Sys.UserFlags.UF_HIDDEN))
+                attributes |= FileAttributes.Hidden;
+
+            return attributes != default ? attributes : FileAttributes.Normal;
         }
 
         public void SetAttributes(string path, FileAttributes attributes)
@@ -330,13 +306,13 @@ namespace System.IO
             _exists = true;
 
             // IMPORTANT: Is directory logic must match the logic in FileSystemEntry
-            _isDirectory = IsDirectory(_fileStatus);
+            _isDirectory = (_fileStatus.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR;
 
             // If we're a symlink, attempt to check the target to see if it is a directory
             if ((_fileStatus.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFLNK &&
                 Interop.Sys.Stat(path, out Interop.Sys.FileStatus targetStatus) >= 0)
             {
-                _isDirectory = IsDirectory(targetStatus);
+                _isDirectory = (targetStatus.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR;
             }
 
             _fileStatusInitialized = 0;
