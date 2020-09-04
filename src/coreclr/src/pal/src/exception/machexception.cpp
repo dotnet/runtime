@@ -1492,10 +1492,6 @@ InjectActivationInternal(CPalThread* pThread)
         static const int MaxHardwareExceptionVector = 31;
         if (ExceptionState.__trapno > MaxHardwareExceptionVector)
 #elif defined(HOST_ARM64)
-        NONPAL_TRACE("InjectActivationInternal IsHardwareException? far %016llx esr %08x exception %08x\n",
-            ExceptionState.__far,
-            ExceptionState.__esr,
-            ExceptionState.__exception);
         // Inject the activation only if the last ESR.EC was an SVC and therefore the thread doesn't have
         // a pending hardware exception
         if ((ExceptionState.__esr >> 26) == 0x15)
