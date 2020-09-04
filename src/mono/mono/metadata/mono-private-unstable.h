@@ -30,7 +30,7 @@ mono_alc_get_default_gchandle (void);
 typedef struct _MonoBundledSatelliteAssembly MonoBundledSatelliteAssembly;
 
 MONO_API void
-mono_register_bundled_satellite_assemblies_internal (const MonoBundledSatelliteAssembly **assemblies);
+mono_register_bundled_satellite_assemblies (const MonoBundledSatelliteAssembly **assemblies);
 
 MONO_API MonoBundledSatelliteAssembly *
 mono_create_new_bundled_satellite_assembly (const char *name, const char *culture, const unsigned char *data, unsigned int size);

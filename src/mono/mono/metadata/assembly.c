@@ -5353,10 +5353,10 @@ mono_create_new_bundled_satellite_assembly (const char *name, const char *cultur
 }
 
 /**
- * mono_register_bundled_satellite_assemblies_internal:
+ * mono_register_bundled_satellite_assemblies:
  */
 void
-mono_register_bundled_satellite_assemblies_internal (const MonoBundledSatelliteAssembly **assemblies)
+mono_register_bundled_satellite_assemblies (const MonoBundledSatelliteAssembly **assemblies)
 {
 #ifdef ENABLE_NETCORE
 	satellite_bundles = assemblies;

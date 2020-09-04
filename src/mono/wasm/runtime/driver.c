@@ -419,7 +419,7 @@ mono_wasm_register_bundled_satellite_assemblies ()
 			cur = cur->next;
 			++i;
 		}
-		mono_register_bundled_satellite_assemblies_internal ((const MonoBundledSatelliteAssembly **)satellite_bundle_array);
+		mono_register_bundled_satellite_assemblies ((const MonoBundledSatelliteAssembly **)satellite_bundle_array);
 	}
 }
 
