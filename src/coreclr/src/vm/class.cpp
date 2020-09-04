@@ -1283,7 +1283,7 @@ void ClassLoader::PropagateCovariantReturnMethodImplSlots(MethodTable* pMT)
 
             // If the bit is not set on this method, but we reach here because it's been set on the method at the same slot on
             // the base type, set the bit for the current method to ensure any future overriding method down the chain gets checked.
-            if (!pMD->RequiresCovariantReturnTypeChecking())
+            if (!pMD->RequiresCovariantReturnTypeChecking() && pParentMD->RequiresCovariantReturnTypeChecking())
                 pMD->SetRequiresCovariantReturnTypeChecking();
 
             // The attribute is only applicable to MethodImpls. For anything else, it will be treated as a no-op
