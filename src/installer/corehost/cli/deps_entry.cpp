@@ -32,11 +32,14 @@ static pal::string_t normalize_dir_separator(const pal::string_t& path)
 //    ietf_dir - If this is a resource asset, the IETF intermediate directory
 //    look_in_base - Whether to search as a relative path
 //    look_in_bundle - Whether to look within the single-file bundle
-//    str  - If the method returns true, contains the file path for this deps entry
+//    is_servicing - Whether the base directory is the core-servicing directory
+//    str  - (out parameter) If the method returns true, contains the file path for this deps entry
+//    found_in_bundle - (out parameter) True if the candidate is located within the single-file bundle.
 //    
 // Returns:
 //    If the file exists in the path relative to the "base" directory within the 
 //    single-file or on disk.
+
 bool deps_entry_t::to_path(const pal::string_t& base, const pal::string_t& ietf_dir, bool look_in_base, bool look_in_bundle, bool is_servicing, pal::string_t* str, bool &found_in_bundle) const
 {
     pal::string_t& candidate = *str;
@@ -59,8 +62,9 @@ bool deps_entry_t::to_path(const pal::string_t& base, const pal::string_t& ietf_
     pal::string_t sub_path = ietf_dir;
     append_path(&sub_path, file_path.c_str());
 
-    // Don't look_in_bundle while probing a servicing location, because hammer servicing takes highest priority.
-    if (!is_servicing && look_in_bundle && bundle::info_t::is_single_file_bundle())
+    assert(!is_servicing || !look_in_bundle);
+
+    if (look_in_bundle && bundle::info_t::is_single_file_bundle())
     {
         const bundle::runner_t* app = bundle::runner_t::app();
 
@@ -128,11 +132,12 @@ bool deps_entry_t::to_path(const pal::string_t& base, const pal::string_t& ietf_
 // Parameters:
 //    base - The base directory to look for the relative path of this entry
 //    str  - If the method returns true, contains the file path for this deps entry 
+//    look_in_bundle - Whether to look within the single-file bundle
 //
 // Returns:
 //    If the file exists in the path relative to the "base" directory.
 //
-bool deps_entry_t::to_dir_path(const pal::string_t& base, bool look_in_bundle, bool is_servicing, pal::string_t* str, bool& found_in_bundle) const
+bool deps_entry_t::to_dir_path(const pal::string_t& base, bool look_in_bundle, pal::string_t* str, bool& found_in_bundle) const
 {
     pal::string_t ietf_dir;
 
@@ -154,16 +159,18 @@ bool deps_entry_t::to_dir_path(const pal::string_t& base, bool look_in_bundle, b
                         base.c_str(), ietf_dir.c_str(), asset.name.c_str());
     }
 
-    return to_path(base, ietf_dir, true, look_in_bundle, is_servicing, str, found_in_bundle);
+    return to_path(base, ietf_dir, true, look_in_bundle, false, str, found_in_bundle);
 }
 
 // -----------------------------------------------------------------------------
 // Given a "base" directory, yield the relative path of this file in the package
-// layout.
+// layout or servicing location.
 //
 // Parameters:
 //    base - The base directory to look for the relative path of this entry
 //    str  - If the method returns true, contains the file path for this deps entry 
+//    look_in_bundle - Whether to look within the single-file bundle
+//    is_servicing - Whether the base directory is the core-servicing directory
 //
 // Returns:
 //    If the file exists in the path relative to the "base" directory.
@@ -183,6 +190,7 @@ bool deps_entry_t::to_rel_path(const pal::string_t& base, bool look_in_bundle, b
 // Parameters:
 //    base - The base directory to look for the relative path of this entry
 //    str  - If the method returns true, contains the file path for this deps entry 
+//    is_servicing - Whether the base directory is the core-servicing directory
 //
 // Returns:
 //    If the file exists in the path relative to the "base" directory.

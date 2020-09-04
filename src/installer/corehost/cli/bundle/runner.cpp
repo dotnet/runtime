@@ -53,6 +53,7 @@ const file_entry_t*  runner_t::probe(const pal::string_t &relative_path) const
     {
         if (entry.matches(relative_path))
         {
+            assert(!entry.is_disabled());
             return &entry;
         }
     }
@@ -69,6 +70,7 @@ bool runner_t::probe(const pal::string_t& relative_path, int64_t* offset, int64_
         return false;
     }
 
+    assert(!entry->is_disabled());
     assert(entry->offset() != 0);
 
     *offset = entry->offset();
@@ -86,6 +88,8 @@ bool runner_t::locate(const pal::string_t& relative_path, pal::string_t& full_pa
         full_path.clear();
         return false;
     }
+
+    assert(!entry->is_disabled());
 
     extracted_to_disk = entry->needs_extraction();
     full_path.assign(extracted_to_disk ? extraction_path() : base_path());

@@ -83,7 +83,7 @@ namespace AppHost.Bundle.Tests
                     .PublishProject(runtime: TestFixture.CurrentRid, 
                                     outputDirectory: BundleHelper.GetPublishPath(TestFixture));
 
-                ServiceFixture = new TestProjectFixture("HammerServiceHelper", RepoDirectories, assemblyName: "Location");
+                ServiceFixture = new TestProjectFixture("ServicedLocation", RepoDirectories, assemblyName: "Location");
                 ServiceFixture
                     .EnsureRestored(RepoDirectories.CorehostPackages)
                     .PublishProject(outputDirectory: BundleHelper.GetPublishPath(ServiceFixture));
