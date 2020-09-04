@@ -3098,8 +3098,35 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         }
         else
         {
-            size     = 1; // Otherwise, all primitive types fit in a single (64-bit) 'slot'
+            size = 1; // Otherwise, all primitive types fit in a single (64-bit) 'slot'
+#if defined(HELLO_APPLE)
+            // TODO-seandree: it is a temporatry solution to pass some tests.
+            CORINFO_SIG_INFO* sig = call->callSig;
+            if (sig != nullptr)
+            {
+                CORINFO_ARG_LIST_HANDLE argLst = sig->args;
+                CORINFO_CLASS_HANDLE    argClass;
+                GenTreeCall::Use*       arg;
+                unsigned                count;
+
+                for (arg = call->gtCallArgs, count = sig->numArgs; count > 0; arg = arg->GetNext(), count--)
+                {
+                    PREFIX_ASSUME(arg != nullptr);
+                    if (arg->GetNode() == argx)
+                    {
+                        CorInfoType corType     = strip(info.compCompHnd->getArgType(sig, argLst, &argClass));
+                        var_types   realArgType = JITtype2varType(corType);
+                        byteSize                = genTypeSize(realArgType);
+                    }
+                }
+            }
+            if (byteSize == 0)
+            {
+                byteSize = genTypeSize(argx);
+            }
+#else
             byteSize = genTypeSize(argx);
+#endif
         }
 #elif defined(TARGET_ARM) || defined(TARGET_X86)
         if (isStructArg)
