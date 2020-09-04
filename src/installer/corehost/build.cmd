@@ -18,6 +18,7 @@ set "__LinkArgs= "
 set "__LinkLibraries= "
 set __PortableBuild=0
 set __IncrementalNativeBuild=0
+set __Ninja=0
 
 :Arg_Loop
 if [%1] == [] goto :ToolsVersion
@@ -44,6 +45,7 @@ if /i [%1] == [incremental-native-build] ( set __IncrementalNativeBuild=1&&shift
 if /i [%1] == [rootDir]     ( set __rootDir=%2&&shift&&shift&goto Arg_Loop)
 if /i [%1] == [coreclrartifacts]  (set __CoreClrArtifacts=%2&&shift&&shift&goto Arg_Loop)
 if /i [%1] == [nativelibsartifacts]  (set __NativeLibsArtifacts=%2&&shift&&shift&goto Arg_Loop)
+if /i [%1] == [ninja] (set __Ninja=1)
 
 
 shift
