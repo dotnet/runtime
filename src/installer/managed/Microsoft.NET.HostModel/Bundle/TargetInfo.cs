@@ -14,8 +14,10 @@ namespace Microsoft.NET.HostModel.Bundle
     /// 
     /// Currently the TargetInfo only tracks:
     ///   - the target operating system
-    ///   - The target framework
-    /// If necessary, the target architecture may be tracked in future.
+    ///   - the target architecture
+    ///   - the target framework
+    ///   - the default options for this target
+    ///   - the assembly alignment for this target
     /// </summary>
 
     public class TargetInfo
