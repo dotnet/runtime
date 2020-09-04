@@ -1316,8 +1316,6 @@ describe_non_async_this (InterpFrame *frame, MonoMethod *method)
 static gboolean
 describe_variable (InterpFrame *frame, MonoMethod *method, MonoMethodHeader *header, int pos, int gpflags)
 {
-	ERROR_DECL (error);
-
 	MonoType *type = NULL;
 	gpointer addr = NULL;
 	if (pos < 0) {
