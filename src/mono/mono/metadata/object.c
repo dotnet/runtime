@@ -596,7 +596,7 @@ mono_runtime_class_init_full (MonoVTable *vtable, MonoError *error)
 			 */
 			mono_mem_manager_lock (memory_manager);
 			mono_g_hash_table_insert_internal (memory_manager->type_init_exception_hash, klass, exc_to_throw);
-			mono_domain_unlock (domain);
+			mono_mem_manager_unlock (memory_manager);
 		}
 
 		if (last_domain)
