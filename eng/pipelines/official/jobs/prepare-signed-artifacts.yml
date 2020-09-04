@@ -21,7 +21,7 @@ jobs:
     value: $[ coalesce(variables.OfficialSignType, 'real') ]
 
   steps:
-  # - template: /eng/pipelines/common/clone-checkout-bundle-step.yml
+  - template: /eng/pipelines/common/clone-checkout-bundle-step.yml
 
   - ${{ if eq(parameters.isOfficialBuild, true) }}:
     - task: NuGetAuthenticate@0
@@ -37,16 +37,11 @@ jobs:
                 in(variables['SignType'], 'real', 'test'),
                 ne(variables['PostBuildSign'], 'true'))
 
-  # - task: DownloadBuildArtifacts@0
-  #   displayName: Download IntermediateUnsignedArtifacts
-  #   inputs:
-  #     artifactName: IntermediateUnsignedArtifacts
-  #     downloadPath: $(Build.SourcesDirectory)\artifacts\PackageDownload
-
-  - task: PowerShell@2
-    inputs:
-      filePath: $(Build.SourcesDirectory)\eng\pipelines\download-artifacts.ps1
+  - task: DownloadBuildArtifacts@0
     displayName: Download IntermediateUnsignedArtifacts
+    inputs:
+      artifactName: IntermediateUnsignedArtifacts
+      downloadPath: $(Build.SourcesDirectory)\artifacts\PackageDownload
 
   - script: >-
       build.cmd -ci
