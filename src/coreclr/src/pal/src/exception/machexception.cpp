@@ -1422,6 +1422,9 @@ ActivationHandler(CONTEXT* context)
 {
     if (g_activationFunction != NULL)
     {
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+        auto jitWriteEnableHolder = PAL_JITWriteEnable(false);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
         g_activationFunction(context);
     }
 
