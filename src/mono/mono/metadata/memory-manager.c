@@ -102,13 +102,19 @@ mono_memory_manager_alloc (MonoMemoryManager *memory_manager, guint size)
 	void *res;
 
 	mono_memory_manager_lock (memory_manager);
-#ifndef DISABLE_PERFCOUNTERS
-	mono_atomic_fetch_add_i32 (&mono_perfcounters->loader_bytes, size);
-#endif
-	res = mono_mempool_alloc (memory_manager->mp, size);
+	res = mono_memory_manager_alloc_nolock (memory_manager, size);
 	mono_memory_manager_unlock (memory_manager);
 
 	return res;
+}
+
+void *
+mono_memory_manager_alloc_nolock (MonoMemoryManager *memory_manager, guint size)
+{
+#ifndef DISABLE_PERFCOUNTERS
+	mono_atomic_fetch_add_i32 (&mono_perfcounters->loader_bytes, size);
+#endif
+	return mono_mempool_alloc (memory_manager->mp, size);
 }
 
 void *
@@ -117,14 +123,21 @@ mono_memory_manager_alloc0 (MonoMemoryManager *memory_manager, guint size)
 	void *res;
 
 	mono_memory_manager_lock (memory_manager);
-#ifndef DISABLE_PERFCOUNTERS
-	mono_atomic_fetch_add_i32 (&mono_perfcounters->loader_bytes, size);
-#endif
-	res = mono_mempool_alloc0 (memory_manager->mp, size);
+	res = mono_memory_manager_alloc0_nolock (memory_manager, size);
 	mono_memory_manager_unlock (memory_manager);
 
 	return res;
 }
+
+void *
+mono_memory_manager_alloc0_nolock (MonoMemoryManager *memory_manager, guint size)
+{
+#ifndef DISABLE_PERFCOUNTERS
+	mono_atomic_fetch_add_i32 (&mono_perfcounters->loader_bytes, size);
+#endif
+	return mono_mempool_alloc0 (memory_manager->mp, size);
+}
+
 
 void *
 mono_memory_manager_code_reserve (MonoMemoryManager *memory_manager, int size)

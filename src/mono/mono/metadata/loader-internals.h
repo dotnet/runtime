@@ -225,7 +225,13 @@ void *
 mono_memory_manager_alloc (MonoMemoryManager *memory_manager, guint size);
 
 void *
+mono_memory_manager_alloc_nolock (MonoMemoryManager *memory_manager, guint size);
+
+void *
 mono_memory_manager_alloc0 (MonoMemoryManager *memory_manager, guint size);
+
+void *
+mono_memory_manager_alloc0_nolock (MonoMemoryManager *memory_manager, guint size);
 
 void *
 mono_memory_manager_code_reserve (MonoMemoryManager *memory_manager, int size);
