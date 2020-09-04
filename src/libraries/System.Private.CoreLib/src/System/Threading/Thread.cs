@@ -189,7 +189,7 @@ namespace System.Threading
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ThreadAbort);
         }
 
-        [UnsupportedOSPlatform("browser")]
+        [Obsolete("Thread.ResetAbort is not supported and throws PlatformNotSupportedException.")]
         public static void ResetAbort()
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ThreadAbort);
