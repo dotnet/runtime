@@ -73,6 +73,11 @@
 		function invoke_run_all () {
 			return App.run_all ();
 		}
+
+		function invoke_load_lazy_assembly() {
+			const files_to_load = ['http://localhost:9400/lazy-debugger-test.dll', 'http://localhost:9400/lazy-debugger-test.pdb'];
+			MONO.mono_wasm_add_lazy_load_files(files_to_load);
+		}
       </script>
       <script type="text/javascript" src="mono-config.js"></script>
       <script type="text/javascript" src="runtime-debugger.js"></script>
