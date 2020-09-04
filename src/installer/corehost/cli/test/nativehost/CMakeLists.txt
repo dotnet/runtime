@@ -48,7 +48,11 @@ include(../../hostmisc/hostmisc.cmake)
 
 include(../testexe.cmake)
 
-target_link_libraries(${DOTNET_PROJECT_NAME} nethost delayimp.lib)
+target_link_libraries(${DOTNET_PROJECT_NAME} nethost)
+
+if (CLR_CMAKE_TARGET_WIN32)
+    target_link_libraries(${DOTNET_PROJECT_NAME} delayimp.lib)
+endif()
 
 # Specify non-default Windows libs to be used for Arm/Arm64 builds
 if (CLR_CMAKE_TARGET_WIN32 AND (CLR_CMAKE_TARGET_ARCH_ARM OR CLR_CMAKE_TARGET_ARCH_ARM64))
