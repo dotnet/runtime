@@ -7,7 +7,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
-using System.Linq;
 using System.Xml.Linq;
 
 namespace BundleTests.Helpers
@@ -100,7 +99,7 @@ namespace BundleTests.Helpers
 
         public static OSPlatform GetTargetOS(string runtimeIdentifier)
         {
-            return runtimeIdentifier.Split('-').First() switch {
+            return runtimeIdentifier.Split('-')[0] switch {
                 "win" => OSPlatform.Windows,
                 "osx" => OSPlatform.OSX,
                 "linux" => OSPlatform.Linux,
@@ -110,13 +109,11 @@ namespace BundleTests.Helpers
 
         public static Architecture GetTargetArch(string runtimeIdentifier)
         {
-            return runtimeIdentifier.Split('-').Last() switch {
-                "x64" => Architecture.X64,
-                "x86" => Architecture.X86,
-                "arm64" => Architecture.Arm64,
-                "arm" => Architecture.Arm,
-                _ => throw new ArgumentException(nameof (runtimeIdentifier))
-            };
+            return runtimeIdentifier.EndsWith("-x64") || runtimeIdentifier.Contains("-x64-") ? Architecture.X64 :
+                   runtimeIdentifier.EndsWith("-x86") || runtimeIdentifier.Contains("-x86-") ? Architecture.X86 :
+                   runtimeIdentifier.EndsWith("-arm64") || runtimeIdentifier.Contains("-arm64-") ? Architecture.Arm64 :
+                   runtimeIdentifier.EndsWith("-arm") || runtimeIdentifier.Contains("-arm-") ? Architecture.Arm :
+                   throw new ArgumentException(nameof (runtimeIdentifier));
         }
 
         /// Generate a bundle containind the (embeddable) files in sourceDir
