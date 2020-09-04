@@ -558,12 +558,12 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                         Log("info", $"frame il offset: {il_pos} method token: {method_token} assembly name: {assembly_name}");
                         Log("info", $"\tmethod {method_name} location: {location}");
-                        frames.Add(new Frame(method, location, frame_id - 1));
+                        frames.Add(new Frame(method, location, frame_id));
 
                         callFrames.Add(new
                         {
                             functionName = method_name,
-                            callFrameId = $"dotnet:scope:{frame_id - 1}",
+                            callFrameId = $"dotnet:scope:{frame_id}",
                             functionLocation = method.StartLocation.AsLocation(),
 
                             location = location.AsLocation(),
@@ -580,7 +580,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                                                 @type = "object",
                                                     className = "Object",
                                                     description = "Object",
-                                                    objectId = $"dotnet:scope:{frame_id-1}",
+                                                    objectId = $"dotnet:scope:{frame_id}",
                                             },
                                             name = method_name,
                                             startLocation = method.StartLocation.AsLocation(),

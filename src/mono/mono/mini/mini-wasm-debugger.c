@@ -695,7 +695,7 @@ list_frames (MonoStackFrameInfo *info, MonoContext *ctx, gpointer data)
 EMSCRIPTEN_KEEPALIVE void
 mono_wasm_enum_frames (void)
 {
-	int frame_id = 0;
+	int frame_id = -1;
 	mono_walk_stack_with_ctx (list_frames, NULL, MONO_UNWIND_NONE, &frame_id);
 }
 
@@ -1357,7 +1357,7 @@ describe_variables_on_frame (MonoStackFrameInfo *info, MonoContext *ctx, gpointe
 		return FALSE;
 	}
 
-	if ((data->cur_frame - 1) != data->target_frame)
+	if (data->cur_frame != data->target_frame)
 		return FALSE;
 
 	data->found = TRUE;
@@ -1405,7 +1405,7 @@ mono_wasm_get_local_vars (int scope, int* pos, int len)
 
 	FrameDescData data;
 	data.target_frame = scope;
-	data.cur_frame = 0;
+	data.cur_frame = -1;
 	data.len = len;
 	data.pos = pos;
 	data.found = FALSE;
