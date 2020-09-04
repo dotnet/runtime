@@ -1496,7 +1496,7 @@ InjectActivationInternal(CPalThread* pThread)
             ExceptionState.__far,
             ExceptionState.__esr,
             ExceptionState.__exception);
-        // Inject the activation only if the last ESR was an SVC and therefore the thread doesn't have
+        // Inject the activation only if the last ESR.EC was an SVC and therefore the thread doesn't have
         // a pending hardware exception
         if ((ExceptionState.__esr >> 26) == 0x15)
 #else
