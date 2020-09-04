@@ -285,7 +285,8 @@ function(strip_symbols targetName outputFilename)
 
     set(${outputFilename} ${strip_destination_file} PARENT_SCOPE)
   else(CLR_CMAKE_HOST_UNIX)
-    if(GENERATOR_IS_MULTI_CONFIG)
+    get_property(_isMultiConfig GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
+    if(_isMultiConfig)
       # We can't use the $<TARGET_PDB_FILE> generator expression here since
       # the generator expression isn't supported on resource DLLs.
       set(${outputFilename} ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/${targetName}.pdb PARENT_SCOPE)
@@ -346,7 +347,8 @@ function(install_clr)
           install_symbols(${symbol_file} ${destination})
 
           if(CLR_CMAKE_PGO_INSTRUMENT)
-              if(GENERATOR_IS_MULTI_CONFIG AND WIN32)
+              get_property(_isMultiConfig GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
+              if(_isMultiConfig AND WIN32)
                 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/${targetName}.pgd DESTINATION ${destination}/PGD OPTIONAL)
               else()
                 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${targetName}.pgd DESTINATION ${destination}/PGD OPTIONAL)
