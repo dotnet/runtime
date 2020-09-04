@@ -120,7 +120,7 @@ jobs:
         displayName: Disk Usage before Build
     
     # Build managed test components
-    - script: $(coreClrRepoRootDir)build-test$(scriptExt) allTargets skipstressdependencies skipnative skipgeneratelayout skiptestwrappers $(buildConfig) $(archType) $(crossArg) $(priorityArg) ci $(librariesOverrideArg)
+    - script: $(Build.SourcesDirectory)/src/coreclr/build-test$(scriptExt) allTargets skipstressdependencies skipnative skipgeneratelayout skiptestwrappers $(buildConfig) $(archType) $(crossArg) $(priorityArg) ci $(librariesOverrideArg)
       displayName: Build managed test components
 
     - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}: 

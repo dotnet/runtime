@@ -28,6 +28,13 @@
 
       <!-- apphost and comhost template files are not signed, by design. -->
       <FileSignInfo Include="apphost.exe;singlefilehost.exe;comhost.dll" CertificateName="None" />
+
+      <!-- Third-party components which should be signed.  -->
+      <FileSignInfo Include="Newtonsoft.Json.dll" CertificateName="3PartySHA2" />
+      <FileSignInfo Include="Mono.Cecil.dll" CertificateName="3PartySHA2" />
+      <FileSignInfo Include="Mono.Cecil.Mdb.dll" CertificateName="3PartySHA2" />
+      <FileSignInfo Include="Mono.Cecil.Pdb.dll" CertificateName="3PartySHA2" />
+      <FileSignInfo Include="Mono.Cecil.Rocks.dll" CertificateName="3PartySHA2" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(CrossTargetComponentFolder)' != ''">
@@ -104,13 +111,13 @@
       <DownloadedSymbolPackages Include="$(DownloadDirectory)**\*.symbols.nupkg" />
       <ItemsToSign Include="$(DownloadDirectory)**\*.nupkg" Exclude="@(DownloadedSymbolPackages)" />
 
+      <!-- The cross OS diagnostics symbol packages need to be signed as they are the only packages
+      that have a specific version of assets that are only meant to be indexed in symbol servers.
+      Since only *symbols.nupkg get indexed, and installer doesn't produce these, we need to glob them for signing. -->
+      <ItemsToSign Include="$(DownloadDirectory)**\*CrossOsDiag*.symbols.nupkg" />
+
       <ItemsToSign Include="$(DownloadDirectory)**\*.deb" />
       <ItemsToSign Include="$(DownloadDirectory)**\*.rpm" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <!-- External files -->
-      <ItemsToSign Remove="@(ItemsToSign->WithMetadataValue('Filename', 'Newtonsoft.Json'))" />
     </ItemGroup>
 
     <ItemGroup>

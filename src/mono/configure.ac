@@ -888,7 +888,7 @@ AC_ARG_ENABLE(visibility-hidden,
 WARN=''
 if test x"$GCC" = xyes; then
 		WARN='-Wall -Wunused -Wmissing-declarations -Wpointer-arith -Wno-cast-qual -Wwrite-strings -Wno-switch -Wno-switch-enum -Wno-unused-value -Wno-attributes'
-		CFLAGS="$CFLAGS -Wmissing-prototypes -Wstrict-prototypes -Wnested-externs -Wno-format-zero-length"
+		CFLAGS="$CFLAGS -Wmissing-prototypes -Wstrict-prototypes -Wnested-externs -Wno-format-zero-length -Wc++-compat"
 
 		# We require C99 with some GNU extensions, e.g. `linux` macro
 		CFLAGS="$CFLAGS -std=gnu99"
@@ -1418,7 +1418,7 @@ if test x$with_runtime_preset = xnetcore; then
    mono_feature_disable_perfcounters='yes'
    mono_feature_disable_attach='yes'
    mono_feature_disable_cfgdir_config='yes'
-   if test "x$enable_monodroid" = "x" -a "x$enable_monotouch" = "x"; then
+   if test "x$enable_monodroid" = "xno" -a "x$enable_monotouch" = "xno"; then
      mono_feature_disable_dllmap='yes' # FIXME: the mobile products use this
    fi
    disable_mono_native=yes

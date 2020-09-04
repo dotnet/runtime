@@ -542,4 +542,16 @@
   <data name="NumberHandlingOnPropertyTypeMustBeNumberOrCollection" xml:space="preserve">
     <value>When 'JsonNumberHandlingAttribute' is placed on a property or field, the property or field must be a number or a collection. See member '{0}' on type '{1}'.</value>
   </data>
+  <data name="ConverterCanConvertNullableRedundant" xml:space="preserve">
+    <value>The converter '{0}' handles type '{1}' but is being asked to convert type '{2}'. Either create a separate converter for type '{2}' or change the converter's 'CanConvert' method to only return 'true' for a single type.</value>
+  </data>
+  <data name="MetadataReferenceOfTypeCannotBeAssignedToType" xml:space="preserve">
+    <value>The object with reference id '{0}' of type '{1}' cannot be assigned to the type '{2}'.</value>
+  </data>
+  <data name="DeserializeUnableToAssignValue" xml:space="preserve">
+    <value>Unable to cast object of type '{0}' to type '{1}'.</value>
+  </data>
+  <data name="DeserializeUnableToAssignNull" xml:space="preserve">
+    <value>Unable to assign 'null' to the property or field of type '{0}'.</value>
+  </data>
 </root>

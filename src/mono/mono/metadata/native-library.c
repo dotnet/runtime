@@ -28,8 +28,10 @@ typedef enum
 	DLLIMPORTSEARCHPATH_SAFE_DIRECTORIES = 0x1000,
 	DLLIMPORTSEARCHPATH_ASSEMBLY_DIRECTORY = 0x2, // search the assembly directory first regardless of platform, not passed on to LoadLibraryEx
 } DllImportSearchPath;
-//static const int DLLIMPORTSEARCHPATH_LOADLIBRARY_FLAG_MASK = DLLIMPORTSEARCHPATH_USE_DLL_DIRECTORY_FOR_DEPENDENCIES | DLLIMPORTSEARCHPATH_APPLICATION_DIRECTORY |
-//                                                             DLLIMPORTSEARCHPATH_USER_DIRECTORIES | DLLIMPORTSEARCHPATH_SYSTEM32 | DLLIMPORTSEARCHPATH_SAFE_DIRECTORIES;
+#ifdef HOST_WIN32
+static const int DLLIMPORTSEARCHPATH_LOADLIBRARY_FLAG_MASK = DLLIMPORTSEARCHPATH_USE_DLL_DIRECTORY_FOR_DEPENDENCIES | DLLIMPORTSEARCHPATH_APPLICATION_DIRECTORY |
+                                                             DLLIMPORTSEARCHPATH_USER_DIRECTORIES | DLLIMPORTSEARCHPATH_SYSTEM32 | DLLIMPORTSEARCHPATH_SAFE_DIRECTORIES;
+#endif
 
 // This lock may be taken within an ALC lock, and should never be the other way around.
 static MonoCoopMutex native_library_module_lock;
@@ -490,18 +492,28 @@ netcore_check_blocklist (MonoDl *module)
 	return g_hash_table_contains (native_library_module_blocklist, module);
 }
 
+static int
+convert_dllimport_flags (int flags)
+{
+#ifdef HOST_WIN32
+	return flags & DLLIMPORTSEARCHPATH_LOADLIBRARY_FLAG_MASK;
+#else
+	// DllImportSearchPath is Windows-only, other than DLLIMPORTSEARCHPATH_ASSEMBLY_DIRECTORY
+	return 0;
+#endif
+}
+
 static MonoDl *
-netcore_probe_for_module_variations (const char *mdirname, const char *file_name)
+netcore_probe_for_module_variations (const char *mdirname, const char *file_name, int raw_flags)
 {
 	void *iter = NULL;
 	char *full_name;
 	MonoDl *module = NULL;
 
-	// This does not actually mirror CoreCLR's algorithm; if that becomes a problem, potentially use theirs
 	// FIXME: this appears to search *.dylib twice for some reason
 	while ((full_name = mono_dl_build_path (mdirname, file_name, &iter)) && module == NULL) {
 		char *error_msg;
-		module = mono_dl_open (full_name, MONO_DL_LAZY, &error_msg);
+		module = mono_dl_open_full (full_name, MONO_DL_LAZY, raw_flags, &error_msg);
 		if (!module) {
 			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT, "DllImport error loading library '%s': '%s'.", full_name, error_msg);
 			g_free (error_msg);
@@ -517,19 +529,23 @@ static MonoDl *
 netcore_probe_for_module (MonoImage *image, const char *file_name, int flags)
 {
 	MonoDl *module = NULL;
+	int lflags = convert_dllimport_flags (flags);
+
+	// TODO: this algorithm doesn't quite match CoreCLR, so respecting DLLIMPORTSEARCHPATH_LEGACY_BEHAVIOR makes little sense
+	// If the difference becomes a problem, overhaul this algorithm to match theirs exactly
 
 	// Try without any path additions
-	module = netcore_probe_for_module_variations (NULL, file_name);
+	module = netcore_probe_for_module_variations (NULL, file_name, lflags);
 
 	// Check the NATIVE_DLL_SEARCH_DIRECTORIES
 	for (int i = 0; i < pinvoke_search_directories_count && module == NULL; ++i)
-		module = netcore_probe_for_module_variations (pinvoke_search_directories[i], file_name);
+		module = netcore_probe_for_module_variations (pinvoke_search_directories[i], file_name, lflags);
 
 	// Check the assembly directory if the search flag is set and the image exists
 	if (flags & DLLIMPORTSEARCHPATH_ASSEMBLY_DIRECTORY && image != NULL && module == NULL) {
 		char *mdirname = g_path_get_dirname (image->filename);
 		if (mdirname)
-			module = netcore_probe_for_module_variations (mdirname, file_name);
+			module = netcore_probe_for_module_variations (mdirname, file_name, lflags);
 		g_free (mdirname);
 	}
 
@@ -772,6 +788,8 @@ netcore_lookup_native_library (MonoAssemblyLoadContext *alc, MonoImage *image, c
 			g_free (error_msg);
 		}
 
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT, "Native library found via __Internal: '%s'.", scope);
+
 		return module;
 	}
 
@@ -796,16 +814,22 @@ netcore_lookup_native_library (MonoAssemblyLoadContext *alc, MonoImage *image, c
 	alc_pinvoke_lock (alc);
 	module = netcore_check_alc_cache (alc, scope);
 	alc_pinvoke_unlock (alc);
-	if (module)
+	if (module) {
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT, "Native library found in the active ALC cache: '%s'.", scope);
 		goto leave;
+	}
 
 	module = (MonoDl *)netcore_resolve_with_dll_import_resolver_nofail (alc, assembly, scope, flags);
-	if (module)
+	if (module) {
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT, "Native library found via DllImportResolver: '%s'.", scope);
 		goto add_to_alc_cache;
+	}
 
 	module = (MonoDl *)netcore_resolve_with_load_nofail (alc, scope);
-	if (module)
+	if (module) {
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT, "Native library found via LoadUnmanagedDll: '%s'.", scope);
 		goto add_to_alc_cache;
+	}
 
 	MONO_ENTER_GC_SAFE;
 	mono_global_loader_data_lock ();
@@ -814,18 +838,24 @@ netcore_lookup_native_library (MonoAssemblyLoadContext *alc, MonoImage *image, c
 	MONO_ENTER_GC_SAFE;
 	mono_global_loader_data_unlock ();
 	MONO_EXIT_GC_SAFE;
-	if (module)
+	if (module) {
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT, "Native library found in the global cache: '%s'.", scope);
 		goto add_to_alc_cache;
+	}
 
 	module = netcore_probe_for_module (image, scope, flags);
-	if (module)
+	if (module) {
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT, "Native library found via filesystem probing: '%s'.", scope);
 		goto add_to_global_cache;
+	}
 
 	/* As this is last chance, I've opted not to put it in a cache, but that is not necessarily the correct decision.
 	 * It is rather convenient here, however, because it means the global cache will only be populated by libraries
 	 * resolved via netcore_probe_for_module and not NativeLibrary, eliminating potential races/conflicts.
 	 */
 	module = netcore_resolve_with_resolving_event_nofail (alc, assembly, scope);
+	if (module)
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT, "Native library found via the Resolving event: '%s'.", scope);
 	goto leave;
 
 add_to_global_cache:
@@ -1293,6 +1323,13 @@ lookup_pinvoke_call_impl (MonoMethod *method, MonoLookupPInvokeStatus *status_ou
 
 	if (strcmp (new_scope, "QCall") == 0) {
 		piinfo->addr = mono_lookup_pinvoke_qcall_internal (method, status_out);
+		if (!piinfo->addr) {
+			mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_DLLIMPORT,
+						"Unable to find qcall for '%s'.",
+						new_import);
+			status_out->err_code = LOOKUP_PINVOKE_ERR_NO_SYM;
+			status_out->err_arg = g_strdup (new_import);
+		}
 		return piinfo->addr;
 	}
 

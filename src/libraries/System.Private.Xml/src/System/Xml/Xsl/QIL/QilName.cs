@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml.Xsl.Qil
 {
@@ -42,18 +43,21 @@ namespace System.Xml.Xsl.Qil
         public string LocalName
         {
             get { return _local; }
+            [MemberNotNull(nameof(_local))]
             set { _local = value; }
         }
 
         public string NamespaceUri
         {
             get { return _uri; }
+            [MemberNotNull(nameof(_uri))]
             set { _uri = value; }
         }
 
         public string Prefix
         {
             get { return _prefix; }
+            [MemberNotNull(nameof(_prefix))]
             set { _prefix = value; }
         }
 
@@ -88,9 +92,9 @@ namespace System.Xml.Xsl.Qil
         /// Override Equals() so that the QilName can be used as a key in the hashtable.
         /// </summary>
         /// <remarks>Does not compare their prefixes (if any).</remarks>
-        public override bool Equals(object other)
+        public override bool Equals(object? other)
         {
-            QilName name = other as QilName;
+            QilName? name = other as QilName;
             if (name == null)
                 return false;
 
@@ -101,13 +105,13 @@ namespace System.Xml.Xsl.Qil
         /// Implement operator == to prevent accidental referential comparison
         /// </summary>
         /// <remarks>Does not compare their prefixes (if any).</remarks>
-        public static bool operator ==(QilName a, QilName b)
+        public static bool operator ==(QilName? a, QilName? b)
         {
-            if ((object)a == (object)b)
+            if ((object?)a == (object?)b)
             {
                 return true;
             }
-            if ((object)a == null || (object)b == null)
+            if ((object?)a == null || (object?)b == null)
             {
                 return false;
             }
@@ -118,7 +122,7 @@ namespace System.Xml.Xsl.Qil
         /// Implement operator != to prevent accidental referential comparison
         /// </summary>
         /// <remarks>Does not compare their prefixes (if any).</remarks>
-        public static bool operator !=(QilName a, QilName b)
+        public static bool operator !=(QilName? a, QilName? b)
         {
             return !(a == b);
         }

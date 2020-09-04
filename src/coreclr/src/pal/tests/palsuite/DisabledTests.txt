@@ -48,4 +48,4 @@ This test case should be run manually.  Requires user input.
 
 filemapping_memmgt\MapViewOfFile\test1
 =======================================
-Refer this github issue https://github.com/dotnet/coreclr/issues/5176
+Refer this github issue https://github.com/dotnet/runtime/issues/5924

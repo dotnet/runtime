@@ -139,7 +139,8 @@ stages:
         buildConfig: release
         runtimeFlavor: mono
         jobParameters:
-          buildArgs: -s mono+libs+installer -c $(_BuildConfig) /p:MonoEnableLLVM=true
+          buildArgs: -s mono+libs+installer -c $(_BuildConfig)
+                     /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=false
           nameSuffix: AllSubsets_Mono_LLVMJIT
           runtimeVariant: LLVMJIT
           isOfficialBuild: ${{ variables.isOfficialBuild }}

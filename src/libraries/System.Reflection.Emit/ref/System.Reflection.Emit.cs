@@ -9,7 +9,7 @@ namespace System.Reflection.Emit
     public sealed partial class AssemblyBuilder : System.Reflection.Assembly
     {
         internal AssemblyBuilder() { }
-        [System.ObsoleteAttribute("CodeBase and EscapedCodeBase are only included for .NET Framework compatibility. Use Location instead.", DiagnosticId = "SYSLIB0012", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("Assembly.CodeBase and Assembly.EscapedCodeBase are only included for .NET Framework compatibility. Use Assembly.Location instead.", DiagnosticId = "SYSLIB0012", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public override string? CodeBase { get { throw null; } }
         public override System.Reflection.MethodInfo? EntryPoint { get { throw null; } }
         public override string? FullName { get { throw null; } }

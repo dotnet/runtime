@@ -4,6 +4,7 @@
 // WARNING: This file is generated and should not be modified directly.
 // Instead, modify TextRawTextWriterGenerator.ttinclude
 
+#nullable disable
 using System;
 using System.IO;
 using System.Text;

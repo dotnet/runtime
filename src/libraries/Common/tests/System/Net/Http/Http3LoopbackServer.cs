@@ -28,7 +28,7 @@ namespace System.Net.Test.Common
             var sslOpts = new SslServerAuthenticationOptions
             {
                 EnabledSslProtocols = options.SslProtocols,
-                ApplicationProtocols = new List<SslApplicationProtocol> { new SslApplicationProtocol("h3") },
+                ApplicationProtocols = new List<SslApplicationProtocol> { new SslApplicationProtocol("h3-29") },
                 //ServerCertificate = _cert,
                 ClientCertificateRequired = false
             };
@@ -85,5 +85,10 @@ namespace System.Net.Test.Common
             // This method is always unacceptable to call for HTTP/3.
             throw new NotImplementedException("HTTP/3 does not operate over a Socket.");
         }
+    }
+
+    public static class HttpVersion30
+    {
+        public static readonly Version Value = new Version(3, 0);
     }
 }

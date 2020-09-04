@@ -73,7 +73,21 @@ namespace Internal.Cryptography
                 rgbKey = newkey;
             }
 
-            return CreateTransformCore(Mode, Padding, rgbKey, rgbIV, BlockSize / BitsPerByte, encrypting);
+            if (Mode == CipherMode.CFB)
+            {
+                ValidateCFBFeedbackSize(FeedbackSize);
+            }
+
+            return CreateTransformCore(Mode, Padding, rgbKey, rgbIV, BlockSize / BitsPerByte, this.GetPaddingSize(), FeedbackSize / BitsPerByte, encrypting);
+        }
+
+        private static void ValidateCFBFeedbackSize(int feedback)
+        {
+            // only 8bits/64bits feedback would be valid.
+            if (feedback != 8 && feedback != 64)
+            {
+                throw new CryptographicException(string.Format(SR.Cryptography_CipherModeFeedbackNotSupported, feedback, CipherMode.CFB));
+            }
         }
     }
 }

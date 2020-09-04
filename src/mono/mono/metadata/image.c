@@ -47,6 +47,7 @@
 #include <mono/metadata/loaded-images-internals.h>
 #include <mono/metadata/w32process-internals.h>
 #include <mono/metadata/debug-internals.h>
+#include <mono/metadata/mono-private-unstable.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #ifdef HAVE_UNISTD_H
@@ -1878,7 +1879,7 @@ register_image (MonoLoadedImages *li, MonoImage *image, gboolean *problematic)
 }
 
 MonoImage *
-mono_image_open_from_data_internal (MonoAssemblyLoadContext *alc, char *data, guint32 data_len, gboolean need_copy, MonoImageOpenStatus *status, gboolean refonly, gboolean metadata_only, const char *name)
+mono_image_open_from_data_internal (MonoAssemblyLoadContext *alc, char *data, guint32 data_len, gboolean need_copy, MonoImageOpenStatus *status, gboolean refonly, gboolean metadata_only, const char *name, const char *filename)
 {
 	MonoCLIImageInfo *iinfo;
 	MonoImage *image;
@@ -1900,12 +1901,12 @@ mono_image_open_from_data_internal (MonoAssemblyLoadContext *alc, char *data, gu
 		memcpy (datac, data, data_len);
 	}
 
-	MonoImageStorage *storage = mono_image_storage_new_raw_data (datac, data_len, need_copy, name);
+	MonoImageStorage *storage = mono_image_storage_new_raw_data (datac, data_len, need_copy, filename);
 	image = g_new0 (MonoImage, 1);
 	image->storage = storage;
 	mono_image_init_raw_data (image, storage);
-	image->name = (name == NULL) ? g_strdup_printf ("data-%p", datac) : g_strdup(name);
-	image->filename = name ? g_strdup (name) : NULL;
+	image->name = (name == NULL) ? g_strdup_printf ("data-%p", datac) : g_strdup (name);
+	image->filename = filename ? g_strdup (filename) : NULL;
 	iinfo = g_new0 (MonoCLIImageInfo, 1);
 	image->image_info = iinfo;
 	image->ref_only = refonly;
@@ -1922,6 +1923,21 @@ mono_image_open_from_data_internal (MonoAssemblyLoadContext *alc, char *data, gu
 	return register_image (mono_alc_get_loaded_images (alc), image, NULL);
 }
 
+MonoImage *
+mono_image_open_from_data_alc (MonoAssemblyLoadContextGCHandle alc_gchandle, char *data, uint32_t data_len, mono_bool need_copy, MonoImageOpenStatus *status, const char *name)
+{
+	MonoImage *result;
+	MONO_ENTER_GC_UNSAFE;
+#ifdef ENABLE_NETCORE
+	MonoAssemblyLoadContext *alc = mono_alc_from_gchandle (alc_gchandle);
+#else
+	MonoAssemblyLoadContext *alc = mono_domain_default_alc (mono_domain_get ());
+#endif
+	result = mono_image_open_from_data_internal (alc, data, data_len, need_copy, status, FALSE, FALSE, name, name);
+	MONO_EXIT_GC_UNSAFE;
+	return result;
+}
+
 /**
  * mono_image_open_from_data_with_name:
  */
@@ -1931,7 +1947,7 @@ mono_image_open_from_data_with_name (char *data, guint32 data_len, gboolean need
 	MonoImage *result;
 	MONO_ENTER_GC_UNSAFE;
 	MonoDomain *domain = mono_domain_get ();
-	result = mono_image_open_from_data_internal (mono_domain_default_alc (domain), data, data_len, need_copy, status, refonly, FALSE, name);
+	result = mono_image_open_from_data_internal (mono_domain_default_alc (domain), data, data_len, need_copy, status, refonly, FALSE, name, name);
 	MONO_EXIT_GC_UNSAFE;
 	return result;
 }
@@ -1945,7 +1961,7 @@ mono_image_open_from_data_full (char *data, guint32 data_len, gboolean need_copy
 	MonoImage *result;
 	MONO_ENTER_GC_UNSAFE;
 	MonoDomain *domain = mono_domain_get ();
-	result = mono_image_open_from_data_internal (mono_domain_default_alc (domain), data, data_len, need_copy, status, refonly, FALSE, NULL);
+	result = mono_image_open_from_data_internal (mono_domain_default_alc (domain), data, data_len, need_copy, status, refonly, FALSE, NULL, NULL);
 	MONO_EXIT_GC_UNSAFE;
 	return result;
 }
@@ -1959,7 +1975,7 @@ mono_image_open_from_data (char *data, guint32 data_len, gboolean need_copy, Mon
 	MonoImage *result;
 	MONO_ENTER_GC_UNSAFE;
 	MonoDomain *domain = mono_domain_get ();
-	result = mono_image_open_from_data_internal (mono_domain_default_alc (domain), data, data_len, need_copy, status, FALSE, FALSE, NULL);
+	result = mono_image_open_from_data_internal (mono_domain_default_alc (domain), data, data_len, need_copy, status, FALSE, FALSE, NULL, NULL);
 	MONO_EXIT_GC_UNSAFE;
 	return result;
 }

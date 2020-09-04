@@ -12,20 +12,20 @@ namespace System.Xml.Xsl.XsltOld
     internal class SortAction : CompiledAction
     {
         private int _selectKey = Compiler.InvalidQueryKey;
-        private Avt _langAvt;
-        private Avt _dataTypeAvt;
-        private Avt _orderAvt;
-        private Avt _caseOrderAvt;
+        private Avt? _langAvt;
+        private Avt? _dataTypeAvt;
+        private Avt? _orderAvt;
+        private Avt? _caseOrderAvt;
         // Compile time precalculated AVTs
-        private string _lang;
+        private string? _lang;
         private XmlDataType _dataType = XmlDataType.Text;
         private XmlSortOrder _order = XmlSortOrder.Ascending;
         private XmlCaseOrder _caseOrder = XmlCaseOrder.None;
-        private Sort _sort; //When we not have AVTs at all we can do this. null otherwise.
+        private Sort? _sort; //When we not have AVTs at all we can do this. null otherwise.
         private bool _forwardCompatibility;
-        private InputScopeManager _manager;
+        private InputScopeManager? _manager;
 
-        private string ParseLang(string value)
+        private string? ParseLang(string? value)
         {
             if (value == null)
             { // Avt is not constant, or attribute wasn't defined
@@ -48,7 +48,7 @@ namespace System.Xml.Xsl.XsltOld
             return value;
         }
 
-        private XmlDataType ParseDataType(string value, InputScopeManager manager)
+        private XmlDataType ParseDataType(string? value, InputScopeManager manager)
         {
             if (value == null)
             { // Avt is not constant, or attribute wasn't defined
@@ -72,7 +72,7 @@ namespace System.Xml.Xsl.XsltOld
             return XmlDataType.Text;
         }
 
-        private XmlSortOrder ParseOrder(string value)
+        private XmlSortOrder ParseOrder(string? value)
         {
             if (value == null)
             { // Avt is not constant, or attribute wasn't defined
@@ -93,7 +93,7 @@ namespace System.Xml.Xsl.XsltOld
             throw XsltException.Create(SR.Xslt_InvalidAttrValue, "order", value);
         }
 
-        private XmlCaseOrder ParseCaseOrder(string value)
+        private XmlCaseOrder ParseCaseOrder(string? value)
         {
             if (value == null)
             { // Avt is not constant, or attribute wasn't defined
@@ -179,7 +179,7 @@ namespace System.Xml.Xsl.XsltOld
                 new Sort(
                     _selectKey,
                     _langAvt == null ? _lang : ParseLang(_langAvt.Evaluate(processor, frame)),
-                    _dataTypeAvt == null ? _dataType : ParseDataType(_dataTypeAvt.Evaluate(processor, frame), _manager),
+                    _dataTypeAvt == null ? _dataType : ParseDataType(_dataTypeAvt.Evaluate(processor, frame), _manager!),
                     _orderAvt == null ? _order : ParseOrder(_orderAvt.Evaluate(processor, frame)),
                     _caseOrderAvt == null ? _caseOrder : ParseCaseOrder(_caseOrderAvt.Evaluate(processor, frame))
                 )

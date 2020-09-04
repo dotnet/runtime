@@ -169,6 +169,9 @@ internal static partial class Interop
     [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_memfree", CharSet = CharSet.Ansi)]
     public static extern void ldap_memfree([In] IntPtr value);
 
+    [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_msgfree", CharSet = CharSet.Ansi)]
+    public static extern void ldap_msgfree([In] IntPtr value);
+
     [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_modify_ext", CharSet = CharSet.Ansi)]
     public static extern int ldap_modify([In] ConnectionHandle ldapHandle, string dn, IntPtr attrs, IntPtr servercontrol, IntPtr clientcontrol, ref int messageNumber);
 

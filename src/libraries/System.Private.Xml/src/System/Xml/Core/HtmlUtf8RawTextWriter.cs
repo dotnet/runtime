@@ -4,6 +4,7 @@
 // WARNING: This file is generated and should not be modified directly.
 // Instead, modify HtmlRawTextWriterGenerator.ttinclude
 
+#nullable disable
 using System;
 using System.IO;
 using System.Text;
@@ -779,7 +780,6 @@ namespace System.Xml
         //
         // Constructors
         //
-
         public HtmlUtf8RawTextWriterIndent(Stream stream, XmlWriterSettings settings) : base(stream, settings)
         {
             Init(settings);

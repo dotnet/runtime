@@ -12,8 +12,8 @@
   // --- The following custom attribute is added automatically, do not uncomment -------
   //  .custom instance void [CORE_ASSEMBLY]System.Diagnostics.DebuggableAttribute::.ctor(valuetype [CORE_ASSEMBLY]System.Diagnostics.DebuggableAttribute/DebuggingModes) = ( 01 00 02 00 00 00 00 00 )
 
-  .custom instance void [CORE_ASSEMBLY]System.Reflection.AssemblyFileVersionAttribute::.ctor(string) = ( 01 00 07 35 2E 30 2E 30 2E 30 00 00 )             // ...5.0.0.0..
-  .custom instance void [CORE_ASSEMBLY]System.Reflection.AssemblyInformationalVersionAttribute::.ctor(string) = ( 01 00 07 35 2E 30 2E 30 2E 30 00 00 )             // ...5.0.0.0..
+  .custom instance void [CORE_ASSEMBLY]System.Reflection.AssemblyFileVersionAttribute::.ctor(string) = FILE_VERSION
+  .custom instance void [CORE_ASSEMBLY]System.Reflection.AssemblyInformationalVersionAttribute::.ctor(string) = INFORMATIONAL_VERSION
   .custom instance void [CORE_ASSEMBLY]System.Reflection.AssemblyTitleAttribute::.ctor(string) = ( 01 00 26 53 79 73 74 65 6D 2E 52 75 6E 74 69 6D   // ..&System.Runtim
                                                                                               65 2E 43 6F 6D 70 69 6C 65 72 53 65 72 76 69 63   // e.CompilerServic
                                                                                               65 73 2E 55 6E 73 61 66 65 00 00 )                // es.Unsafe..
@@ -273,7 +273,7 @@
   {
         .custom instance void System.Runtime.Versioning.NonVersionableAttribute::.ctor() = ( 01 00 00 00 )
 // For .NET Core the roundtrip via a local is no longer needed see:
-// https://github.com/dotnet/coreclr/issues/13341
+// https://github.com/dotnet/runtime/issues/8730
 // and
 // https://github.com/dotnet/coreclr/pull/11218
 #ifdef netcoreapp

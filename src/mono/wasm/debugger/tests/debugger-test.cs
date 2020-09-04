@@ -161,7 +161,7 @@ public partial class Math
         Func<Math, GenericStruct<GenericStruct<int[]>>, GenericStruct<bool[]>> fn_func = (m, gs) => new GenericStruct<bool[]>();
         Func<Math, GenericStruct<GenericStruct<int[]>>, GenericStruct<bool[]>> fn_func_del = GenericStruct<int>.DelegateTargetForSignatureTest;
         Func<Math, GenericStruct<GenericStruct<int[]>>, GenericStruct<bool[]>> fn_func_null = null;
-        Func<bool> fn_func_only_ret = () => { Console.WriteLine ($"hello"); return true; };
+        Func<bool> fn_func_only_ret = () => { Console.WriteLine($"hello"); return true; };
         var fn_func_arr = new Func<Math, GenericStruct<GenericStruct<int[]>>, GenericStruct<bool[]>>[] {
                 (m, gs) => new GenericStruct<bool[]> () };
 
@@ -300,6 +300,23 @@ public partial class Math
         public string StringField;
 
         public static GenericStruct<bool[]> DelegateTargetForSignatureTest(Math m, GenericStruct<GenericStruct<T[]>> gs) => new GenericStruct<bool[]>();
+    }
+
+    public static void TestSimpleStrings()
+    {
+        string str_null = null;
+        string str_empty = String.Empty;
+        string str_spaces = " ";
+        string str_esc = "\\";
+
+        var strings = new[]
+        {
+            str_null,
+            str_empty,
+            str_spaces,
+            str_esc
+        };
+        Console.WriteLine ($"break here");
     }
 
 }

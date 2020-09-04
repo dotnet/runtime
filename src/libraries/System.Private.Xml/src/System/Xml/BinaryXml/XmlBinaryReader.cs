@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -1784,7 +1783,7 @@ namespace System.Xml
             return base.ReadContentAsObject();
         }
 
-        public override object ReadContentAs(Type returnType, IXmlNamespaceResolver namespaceResolver)
+        public override object ReadContentAs(Type returnType, IXmlNamespaceResolver? namespaceResolver)
         {
             int origPos = _pos;
             try
@@ -4229,7 +4228,7 @@ namespace System.Xml
             return xsst.ValueConverter;
         }
 
-        private object ValueAs(BinXmlToken token, Type returnType, IXmlNamespaceResolver namespaceResolver)
+        private object ValueAs(BinXmlToken token, Type returnType, IXmlNamespaceResolver? namespaceResolver)
         {
             object value;
             CheckValueTokenBounds();

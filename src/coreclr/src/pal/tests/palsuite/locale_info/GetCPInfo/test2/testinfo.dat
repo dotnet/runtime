@@ -1,9 +1,0 @@
-Version = 1.0
-Section = Locale Information
-Function = GetCPInfo
-Name = Test #2 for GetCPInfo
-TYPE = DEFAULT
-EXE1 = test2
-Description
-=Tests that GetCPInfo gives the correct information for codepage 0x4E4 
-=(the default).

@@ -220,6 +220,8 @@
 #include "gdbjit.h"
 #endif // FEATURE_GDBJIT
 
+#include "genanalysis.h"
+
 #ifndef CROSSGEN_COMPILE
 static int GetThreadUICultureId(__out LocaleIDValue* pLocale);  // TODO: This shouldn't use the LCID.  We should rely on name instead
 
@@ -399,7 +401,7 @@ static BOOL WINAPI DbgCtrlCHandler(DWORD dwCtrlType)
     else
 #endif // DEBUGGING_SUPPORTED
     {
-        if (dwCtrlType == CTRL_CLOSE_EVENT)
+        if (dwCtrlType == CTRL_CLOSE_EVENT || dwCtrlType == CTRL_SHUTDOWN_EVENT)
         {
             // Initiate shutdown so the ProcessExit handlers run
             ForceEEShutdown(SCA_ReturnWhenShutdownComplete);
@@ -676,6 +678,7 @@ void EEStartupHelper()
         // Initialize the event pipe.
         EventPipe::Initialize();
 #endif // FEATURE_PERFTRACING
+        GenAnalysis::Initialize();
 
 #ifdef TARGET_UNIX
         PAL_SetShutdownCallback(EESocketCleanupHelper);
@@ -1372,7 +1375,7 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
 
         // NOTE: We haven't stopped other threads at this point and nothing is stopping
         // callbacks from coming into the profiler even after Shutdown() has been called.
-        // See https://github.com/dotnet/coreclr/issues/22176 for an example of how that
+        // See https://github.com/dotnet/runtime/issues/11885 for an example of how that
         // happens.
         //
         // To prevent issues when profilers are attached we intentionally skip freeing the

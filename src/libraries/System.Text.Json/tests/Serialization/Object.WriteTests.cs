@@ -127,7 +127,7 @@ namespace System.Text.Json.Serialization.Tests
             public object P3 => "";
         }
 
-        // https://github.com/dotnet/corefx/issues/40979
+        // https://github.com/dotnet/runtime/issues/30814
         [Fact]
         public static void EscapingShouldntStackOverflow()
         {

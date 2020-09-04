@@ -5,6 +5,7 @@ namespace System.Xml.Xsl.XsltOld
 {
     using System;
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
     using System.Xml;
 
     internal class OutputScope : DocumentScope
@@ -16,7 +17,7 @@ namespace System.Xml.Xsl.XsltOld
         private string _lang;
         private bool _mixed;
         private bool _toCData;
-        private HtmlElementProps _htmlElementProps; // in HTML output -- atomized name of element
+        private HtmlElementProps? _htmlElementProps; // in HTML output -- atomized name of element
 
         internal string Name
         {
@@ -51,7 +52,7 @@ namespace System.Xml.Xsl.XsltOld
             get { return _toCData; }
             set { _toCData = value; }
         }
-        internal HtmlElementProps HtmlElementProps
+        internal HtmlElementProps? HtmlElementProps
         {
             get { return _htmlElementProps; }
             set { _htmlElementProps = value; }
@@ -62,6 +63,10 @@ namespace System.Xml.Xsl.XsltOld
             Init(string.Empty, string.Empty, string.Empty, XmlSpace.None, string.Empty, false);
         }
 
+        [MemberNotNull(nameof(_name))]
+        [MemberNotNull(nameof(_nsUri))]
+        [MemberNotNull(nameof(_prefix))]
+        [MemberNotNull(nameof(_lang))]
         internal void Init(string name, string nspace, string prefix, XmlSpace space, string lang, bool mixed)
         {
             this.scopes = null;
@@ -79,7 +84,7 @@ namespace System.Xml.Xsl.XsltOld
         {
             Debug.Assert(urn != null);
 
-            for (NamespaceDecl scope = this.scopes; scope != null; scope = scope.Next)
+            for (NamespaceDecl? scope = this.scopes; scope != null; scope = scope.Next)
             {
                 if (Ref.Equal(scope.Uri, urn) &&
                     scope.Prefix != null &&

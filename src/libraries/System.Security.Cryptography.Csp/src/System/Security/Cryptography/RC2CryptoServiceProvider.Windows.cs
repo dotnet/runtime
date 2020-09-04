@@ -106,7 +106,7 @@ namespace System.Security.Cryptography
             }
 
             int effectiveKeySize = EffectiveKeySizeValue == 0 ? (int)keySize : EffectiveKeySize;
-            BasicSymmetricCipher cipher = new BasicSymmetricCipherCsp(CapiHelper.CALG_RC2, Mode, BlockSize / BitsPerByte, rgbKey, effectiveKeySize, !UseSalt, rgbIV, encrypting);
+            BasicSymmetricCipher cipher = new BasicSymmetricCipherCsp(CapiHelper.CALG_RC2, Mode, BlockSize / BitsPerByte, rgbKey, effectiveKeySize, !UseSalt, rgbIV, encrypting, 0, 0);
             return UniversalCryptoTransform.Create(Padding, cipher, encrypting);
         }
     }

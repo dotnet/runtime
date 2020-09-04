@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Net.Http.Headers;
+using System.Net.Http.HPack;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Text;
@@ -193,6 +194,8 @@ namespace System.Net.Http
                     {
                         using var writeStream = new Http2WriteStream(this);
 
+                        if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestContentStart();
+
                         ValueTask vt = _request.Content.InternalCopyToAsync(writeStream, context: null, _requestBodyCancellationSource.Token);
                         if (vt.IsCompleted)
                         {
@@ -207,6 +210,8 @@ namespace System.Net.Http
 
                             await vt.ConfigureAwait(false);
                         }
+
+                        if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestContentStop(writeStream.BytesWritten);
                     }
 
                     if (NetEventSource.Log.IsEnabled()) Trace($"Finished sending request body.");
@@ -350,8 +355,6 @@ namespace System.Net.Http
                     w.Dispose();
                     _creditWaiter = null;
                 }
-
-                if (HttpTelemetry.Log.IsEnabled()) _request.OnStopped();
             }
 
             private void Cancel()
@@ -386,8 +389,6 @@ namespace System.Net.Http
                 {
                     _waitSource.SetResult(true);
                 }
-
-                if (HttpTelemetry.Log.IsEnabled()) _request.OnAborted();
             }
 
             // Returns whether the waiter should be signalled or not.
@@ -440,13 +441,14 @@ namespace System.Net.Http
             void IHttpHeadersHandler.OnStaticIndexedHeader(int index)
             {
                 // TODO: https://github.com/dotnet/runtime/issues/1505
-                Debug.Fail("Currently unused by HPACK, this should never be called.");
+                ref readonly HeaderField entry = ref H2StaticTable.Get(index - 1);
+                OnHeader(entry.Name, entry.Value);
             }
 
             void IHttpHeadersHandler.OnStaticIndexedHeader(int index, ReadOnlySpan<byte> value)
             {
                 // TODO: https://github.com/dotnet/runtime/issues/1505
-                Debug.Fail("Currently unused by HPACK, this should never be called.");
+                OnHeader(H2StaticTable.Get(index - 1).Name, value);
             }
 
             public void OnHeader(ReadOnlySpan<byte> name, ReadOnlySpan<byte> value)
@@ -839,6 +841,8 @@ namespace System.Net.Http
                 bool emptyResponse;
                 try
                 {
+                    if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.ResponseHeadersStart();
+
                     // Wait for response headers to be read.
                     bool wait;
 
@@ -851,6 +855,8 @@ namespace System.Net.Http
                         (wait, emptyResponse) = TryEnsureHeaders();
                         Debug.Assert(!wait);
                     }
+
+                    if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.ResponseHeadersStop();
                 }
                 catch
                 {
@@ -1147,10 +1153,6 @@ namespace System.Net.Http
                 {
                     Cancel();
                 }
-                else
-                {
-                    _request.OnStopped();
-                }
 
                 _responseBuffer.Dispose();
             }
@@ -1348,6 +1350,8 @@ namespace System.Net.Http
             {
                 private Http2Stream? _http2Stream;
 
+                public long BytesWritten { get; private set; }
+
                 public Http2WriteStream(Http2Stream http2Stream)
                 {
                     Debug.Assert(http2Stream != null);
@@ -1374,6 +1378,8 @@ namespace System.Net.Http
 
                 public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
                 {
+                    BytesWritten += buffer.Length;
+
                     Http2Stream? http2Stream = _http2Stream;
 
                     if (http2Stream == null)

@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
-using System.Net.Connections;
 using System.Net.Http.Headers;
 using System.Net.Http.HPack;
 using System.Net.Http.QPack;
@@ -20,6 +19,7 @@ using System.Security.Authentication;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Internal;
 
 namespace System.Net.Http
 {
@@ -83,6 +83,7 @@ namespace System.Net.Http
         /// <summary>Options specialized and cached for this pool and its key.</summary>
         private readonly SslClientAuthenticationOptions? _sslOptionsHttp11;
         private readonly SslClientAuthenticationOptions? _sslOptionsHttp2;
+        private readonly SslClientAuthenticationOptions? _sslOptionsHttp2Only;
         private readonly SslClientAuthenticationOptions? _sslOptionsHttp3;
 
         /// <summary>Queue of waiters waiting for a connection.  Created on demand.</summary>
@@ -116,11 +117,6 @@ namespace System.Net.Http
             if (host != null)
             {
                 _originAuthority = new HttpAuthority(host, port);
-
-                if (_poolManager.Settings._assumePrenegotiatedHttp3ForTesting)
-                {
-                    _http3Authority = _originAuthority;
-                }
             }
 
             _http2Enabled = _poolManager.Settings._maxHttpVersion >= HttpVersion.Version20;
@@ -133,7 +129,7 @@ namespace System.Net.Http
                     Debug.Assert(port != 0);
                     Debug.Assert(sslHostName == null);
                     Debug.Assert(proxyUri == null);
-                    _http2Enabled = _poolManager.Settings._allowUnencryptedHttp2;
+
                     _http3Enabled = false;
                     break;
 
@@ -169,6 +165,7 @@ namespace System.Net.Http
                     Debug.Assert(port != 0);
                     Debug.Assert(sslHostName != null);
                     Debug.Assert(proxyUri != null);
+
                     _http3Enabled = false; // TODO: how do we tunnel HTTP3?
                     break;
 
@@ -222,6 +219,8 @@ namespace System.Net.Http
                 {
                     _sslOptionsHttp2 = ConstructSslOptions(poolManager, sslHostName);
                     _sslOptionsHttp2.ApplicationProtocols = s_http2ApplicationProtocols;
+                    _sslOptionsHttp2Only = ConstructSslOptions(poolManager, sslHostName);
+                    _sslOptionsHttp2Only.ApplicationProtocols = s_http2OnlyApplicationProtocols;
 
                     // Note:
                     // The HTTP/2 specification states:
@@ -240,7 +239,6 @@ namespace System.Net.Http
                     Debug.Assert(hostHeader != null);
                     _http2EncodedAuthorityHostHeader = HPackEncoder.EncodeLiteralHeaderFieldWithoutIndexingToAllocatedArray(H2StaticTable.Authority, hostHeader);
                     _http3EncodedAuthorityHostHeader = QPackEncoder.EncodeLiteralHeaderFieldWithStaticNameReferenceToArray(H3StaticTable.Authority, hostHeader);
-
                 }
 
                 if (_http3Enabled)
@@ -261,6 +259,7 @@ namespace System.Net.Http
 
         private static readonly List<SslApplicationProtocol> s_http3ApplicationProtocols = new List<SslApplicationProtocol>() { Http3Connection.Http3ApplicationProtocol };
         private static readonly List<SslApplicationProtocol> s_http2ApplicationProtocols = new List<SslApplicationProtocol>() { SslApplicationProtocol.Http2, SslApplicationProtocol.Http11 };
+        private static readonly List<SslApplicationProtocol> s_http2OnlyApplicationProtocols = new List<SslApplicationProtocol>() { SslApplicationProtocol.Http2 };
 
         private static SslClientAuthenticationOptions ConstructSslOptions(HttpConnectionPoolManager poolManager, string sslHostName)
         {
@@ -290,8 +289,8 @@ namespace System.Net.Http
 
         public HttpAuthority? OriginAuthority => _originAuthority;
         public HttpConnectionSettings Settings => _poolManager.Settings;
-        public bool IsSecure => _sslOptionsHttp11 != null;
         public HttpConnectionKind Kind => _kind;
+        public bool IsSecure => _kind == HttpConnectionKind.Https || _kind == HttpConnectionKind.SslProxyTunnel;
         public bool AnyProxyKind => (_proxyUri != null);
         public Uri? ProxyUri => _proxyUri;
         public ICredentials? ProxyCredentials => _poolManager.ProxyCredentials;
@@ -339,18 +338,59 @@ namespace System.Net.Http
         private ValueTask<(HttpConnectionBase? connection, bool isNewConnection, HttpResponseMessage? failureResponse)>
             GetConnectionAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
-            if (_http3Enabled && request.Version.Major >= 3)
+            // Do not even attempt at getting/creating a connection if it's already obvious we cannot provided the one requested.
+            if (request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
             {
-                HttpAuthority? authority = _http3Authority;
-                if (authority != null)
+                if (request.Version.Major == 3 && !_http3Enabled)
                 {
-                    return GetHttp3ConnectionAsync(request, authority, cancellationToken);
+                    return ValueTask.FromException<(HttpConnectionBase? connection, bool isNewConnection, HttpResponseMessage? failureResponse)>(
+                        new HttpRequestException(SR.Format(SR.net_http_requested_version_not_enabled, request.Version, request.VersionPolicy, 3)));
+                }
+                if (request.Version.Major == 2 && !_http2Enabled)
+                {
+                    return ValueTask.FromException<(HttpConnectionBase? connection, bool isNewConnection, HttpResponseMessage? failureResponse)>(
+                        new HttpRequestException(SR.Format(SR.net_http_requested_version_not_enabled, request.Version, request.VersionPolicy, 2)));
                 }
             }
 
-            if (_http2Enabled && request.Version.Major >= 2)
+            // Either H3 explicitly requested or secured upgraded allowed.
+            if (_http3Enabled && (request.Version.Major >= 3 || (request.VersionPolicy == HttpVersionPolicy.RequestVersionOrHigher && IsSecure)))
+            {
+                HttpAuthority? authority = _http3Authority;
+                // H3 is explicitly requested, assume prenegotiated H3.
+                if (request.Version.Major >= 3 && request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
+                {
+                    authority = authority ?? _originAuthority;
+                }
+                if (authority != null)
+                {
+                    if (IsAltSvcBlocked(authority))
+                    {
+                        return ValueTask.FromException<(HttpConnectionBase? connection, bool isNewConnection, HttpResponseMessage? failureResponse)>(
+                            new HttpRequestException(SR.Format(SR.net_http_requested_version_cannot_establish, request.Version, request.VersionPolicy, 3)));
+                    }
+
+                    return GetHttp3ConnectionAsync(request, authority, cancellationToken);
+                }
+            }
+            // If we got here, we cannot provide HTTP/3 connection. Do not continue if downgrade is not allowed.
+            if (request.Version.Major >= 3 && request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
+            {
+                return ValueTask.FromException<(HttpConnectionBase? connection, bool isNewConnection, HttpResponseMessage? failureResponse)>(
+                    new HttpRequestException(SR.Format(SR.net_http_requested_version_cannot_establish, request.Version, request.VersionPolicy, 3)));
+            }
+
+            if (_http2Enabled && (request.Version.Major >= 2 || (request.VersionPolicy == HttpVersionPolicy.RequestVersionOrHigher && IsSecure)) &&
+               // If the connection is not secured and downgrade is possible, prefer HTTP/1.1.
+               (request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower || IsSecure))
             {
                 return GetHttp2ConnectionAsync(request, async, cancellationToken);
+            }
+            // If we got here, we cannot provide HTTP/2 connection. Do not continue if downgrade is not allowed.
+            if (request.Version.Major >= 2 && request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
+            {
+                return ValueTask.FromException<(HttpConnectionBase? connection, bool isNewConnection, HttpResponseMessage? failureResponse)>(
+                    new HttpRequestException(SR.Format(SR.net_http_requested_version_cannot_establish, request.Version, request.VersionPolicy, 2)));
             }
 
             return GetHttpConnectionAsync(request, async, cancellationToken);
@@ -447,9 +487,35 @@ namespace System.Net.Http
 
             // We are at the connection limit. Wait for an available connection or connection count (indicated by null).
             if (NetEventSource.Log.IsEnabled()) Trace("Connection limit reached, waiting for available connection.");
-            return async ?
-                waiter.WaitWithCancellationAsync(cancellationToken) :
-                new ValueTask<HttpConnection?>(waiter.Task.GetAwaiter().GetResult());
+
+            if (HttpTelemetry.Log.IsEnabled())
+            {
+                return WaitOnWaiterWithTelemetryAsync(waiter, async, cancellationToken);
+            }
+            else
+            {
+                return async ?
+                    waiter.WaitWithCancellationAsync(cancellationToken) :
+                    new ValueTask<HttpConnection?>(waiter.Task.GetAwaiter().GetResult());
+            }
+
+            static async ValueTask<HttpConnection?> WaitOnWaiterWithTelemetryAsync(TaskCompletionSourceWithCancellation<HttpConnection?> waiter, bool async, CancellationToken cancellationToken)
+            {
+                ValueStopwatch stopwatch = ValueStopwatch.StartNew();
+                HttpConnection? connection;
+
+                if (async)
+                {
+                    connection = await waiter.WaitWithCancellationAsync(cancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
+                    connection = waiter.Task.GetAwaiter().GetResult();
+                }
+
+                HttpTelemetry.Log.Http11RequestLeftQueue(stopwatch.GetElapsedTime().TotalMilliseconds);
+                return connection;
+            }
         }
 
         private async ValueTask<(HttpConnectionBase? connection, bool isNewConnection, HttpResponseMessage? failureResponse)>
@@ -510,7 +576,7 @@ namespace System.Net.Http
             }
 
             // Try to establish an HTTP2 connection
-            Connection? connection = null;
+            Stream? stream = null;
             SslStream? sslStream = null;
             TransportContext? transportContext = null;
 
@@ -534,26 +600,21 @@ namespace System.Net.Http
 
                     HttpResponseMessage? failureResponse;
 
-                    (connection, transportContext, failureResponse) =
-                        await ConnectAsync(request, async, true, cancellationToken).ConfigureAwait(false);
+                    (stream, transportContext, failureResponse) =
+                        await ConnectAsync(request, async, cancellationToken).ConfigureAwait(false);
 
                     if (failureResponse != null)
                     {
                         return (null, true, failureResponse);
                     }
 
-                    Debug.Assert(connection != null);
+                    Debug.Assert(stream != null);
 
-                    sslStream = connection.Stream as SslStream;
-
-                    if (Settings._plaintextFilter != null)
-                    {
-                        connection = await Settings._plaintextFilter(request, connection, cancellationToken).ConfigureAwait(false);
-                    }
+                    sslStream = stream as SslStream;
 
                     if (_kind == HttpConnectionKind.Http)
                     {
-                        http2Connection = new Http2Connection(this, connection);
+                        http2Connection = new Http2Connection(this, stream);
                         await http2Connection.SetupAsync().ConfigureAwait(false);
 
                         AddHttp2Connection(http2Connection);
@@ -577,7 +638,7 @@ namespace System.Net.Http
                             throw new HttpRequestException(SR.Format(SR.net_ssl_http2_requires_tls12, sslStream.SslProtocol));
                         }
 
-                        http2Connection = new Http2Connection(this, connection);
+                        http2Connection = new Http2Connection(this, stream);
                         await http2Connection.SetupAsync().ConfigureAwait(false);
 
                         AddHttp2Connection(http2Connection);
@@ -610,6 +671,12 @@ namespace System.Net.Http
                 {
                     _http2Enabled = false;
 
+                    if (request.Version.Major >= 2 && request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
+                    {
+                        sslStream.Close();
+                        throw new HttpRequestException(SR.Format(SR.net_http_requested_version_server_refused, request.Version, request.VersionPolicy));
+                    }
+
                     if (_associatedConnectionCount < _maxConnections)
                     {
                         IncrementConnectionCountNoLock();
@@ -628,7 +695,7 @@ namespace System.Net.Http
 
                 if (canUse)
                 {
-                    return (ConstructHttp11Connection(connection!, transportContext), true, null);
+                    return (ConstructHttp11Connection(stream!, transportContext), true, null);
                 }
                 else
                 {
@@ -637,7 +704,7 @@ namespace System.Net.Http
                         Trace("Discarding downgraded HTTP/1.1 connection because connection limit is exceeded");
                     }
 
-                    await connection!.CloseAsync(ConnectionCloseMethod.GracefulShutdown, cancellationToken).ConfigureAwait(false);
+                    stream!.Dispose();
                 }
             }
 
@@ -750,7 +817,17 @@ namespace System.Net.Http
                     Trace("Attempting new HTTP3 connection.");
                 }
 
-                QuicConnection quicConnection = await ConnectHelper.ConnectQuicAsync(authority.IdnHost, authority.Port, _sslOptionsHttp3, cancellationToken).ConfigureAwait(false);
+                QuicConnection quicConnection;
+                try
+                {
+                    quicConnection = await ConnectHelper.ConnectQuicAsync(new DnsEndPoint(authority.IdnHost, authority.Port), _sslOptionsHttp3, cancellationToken).ConfigureAwait(false);
+                }
+                catch
+                {
+                    // Disables HTTP/3 until server announces it can handle it via Alt-Svc.
+                    BlocklistAuthority(authority);
+                    throw;
+                }
 
                 //TODO: NegotiatedApplicationProtocol not yet implemented.
 #if false
@@ -817,13 +894,18 @@ namespace System.Net.Http
                 }
                 catch (HttpRequestException e) when (e.AllowRetry == RequestRetryType.RetryOnLowerHttpVersion)
                 {
+                    // Throw since fallback is not allowed by the version policy.
+                    if (request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
+                    {
+                        throw new HttpRequestException(SR.Format(SR.net_http_requested_version_server_refused, request.Version, request.VersionPolicy), e);
+                    }
+
                     if (NetEventSource.Log.IsEnabled())
                     {
                         Trace($"Retrying request after exception on existing connection: {e}");
                     }
 
                     // Eat exception and try again on a lower protocol version.
-
                     Debug.Assert(connection is HttpConnection == false, $"{nameof(RequestRetryType.RetryOnLowerHttpVersion)} should not be thrown by HTTP/1 connections.");
                     request.Version = HttpVersion.Version11;
                     continue;
@@ -900,16 +982,10 @@ namespace System.Net.Http
                     {
                         var authority = new HttpAuthority(value.Host!, value.Port);
 
-                        if (_altSvcBlocklist != null)
+                        if (IsAltSvcBlocked(authority))
                         {
-                            lock (_altSvcBlocklist)
-                            {
-                                if (_altSvcBlocklist.Contains(authority))
-                                {
-                                    // Skip authorities in our blocklist.
-                                    continue;
-                                }
-                            }
+                            // Skip authorities in our blocklist.
+                            continue;
                         }
 
                         TimeSpan authorityMaxAge = value.MaxAge;
@@ -994,6 +1070,22 @@ namespace System.Net.Http
         }
 
         /// <summary>
+        /// Checks whether the given <paramref name="authority"/> is on the currext Alt-Svc blocklist.
+        /// </summary>
+        /// <seealso cref="BlocklistAuthority" />
+        private bool IsAltSvcBlocked(HttpAuthority authority)
+        {
+            if (_altSvcBlocklist != null)
+            {
+                lock (_altSvcBlocklist)
+                {
+                    return _altSvcBlocklist.Contains(authority);
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
         /// Blocklists an authority and resets the current authority back to origin.
         /// If the number of blocklisted authorities exceeds <see cref="MaxAltSvcIgnoreListSize"/>,
         /// Alt-Svc will be disabled entirely for a period of time.
@@ -1009,7 +1101,6 @@ namespace System.Net.Http
         internal void BlocklistAuthority(HttpAuthority badAuthority)
         {
             Debug.Assert(badAuthority != null);
-            Debug.Assert(badAuthority != _originAuthority);
 
             HashSet<HttpAuthority>? altSvcBlocklist = _altSvcBlocklist;
 
@@ -1136,7 +1227,7 @@ namespace System.Net.Http
             return SendWithProxyAuthAsync(request, async, doRequestAuth, cancellationToken);
         }
 
-        private async ValueTask<(Connection?, TransportContext?, HttpResponseMessage?)> ConnectAsync(HttpRequestMessage request, bool async, bool allowHttp2, CancellationToken cancellationToken)
+        private async ValueTask<(Stream?, TransportContext?, HttpResponseMessage?)> ConnectAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
             // If a non-infinite connect timeout has been set, create and use a new CancellationToken that will be canceled
             // when either the original token is canceled or a connect timeout occurs.
@@ -1150,24 +1241,24 @@ namespace System.Net.Http
 
             try
             {
-                Connection? connection = null;
+                Stream? stream = null;
                 switch (_kind)
                 {
                     case HttpConnectionKind.Http:
                     case HttpConnectionKind.Https:
                     case HttpConnectionKind.ProxyConnect:
                         Debug.Assert(_originAuthority != null);
-                        connection = await ConnectToTcpHostAsync(_originAuthority.IdnHost, _originAuthority.Port, request, async, cancellationToken).ConfigureAwait(false);
+                        stream = await ConnectToTcpHostAsync(_originAuthority.IdnHost, _originAuthority.Port, request, async, cancellationToken).ConfigureAwait(false);
                         break;
 
                     case HttpConnectionKind.Proxy:
-                        connection = await ConnectToTcpHostAsync(_proxyUri!.IdnHost, _proxyUri.Port, request, async, cancellationToken).ConfigureAwait(false);
+                        stream = await ConnectToTcpHostAsync(_proxyUri!.IdnHost, _proxyUri.Port, request, async, cancellationToken).ConfigureAwait(false);
                         break;
 
                     case HttpConnectionKind.ProxyTunnel:
                     case HttpConnectionKind.SslProxyTunnel:
                         HttpResponseMessage? response;
-                        (connection, response) = await EstablishProxyTunnel(async, request.HasHeaders ? request.Headers : null, cancellationToken).ConfigureAwait(false);
+                        (stream, response) = await EstablishProxyTunnel(async, request.HasHeaders ? request.Headers : null, cancellationToken).ConfigureAwait(false);
                         if (response != null)
                         {
                             // Return non-success response from proxy.
@@ -1177,17 +1268,17 @@ namespace System.Net.Http
                         break;
                 }
 
-                Debug.Assert(connection != null);
+                Debug.Assert(stream != null);
 
                 TransportContext? transportContext = null;
-                if (_kind == HttpConnectionKind.Https || _kind == HttpConnectionKind.SslProxyTunnel)
+                if (IsSecure)
                 {
-                    SslStream sslStream = await ConnectHelper.EstablishSslConnectionAsync(allowHttp2 ? _sslOptionsHttp2! : _sslOptionsHttp11!, request, async, connection.Stream, cancellationToken).ConfigureAwait(false);
-                    connection = Connection.FromStream(sslStream, leaveOpen: false, connection.ConnectionProperties, connection.LocalEndPoint, connection.RemoteEndPoint);
+                    SslStream sslStream = await ConnectHelper.EstablishSslConnectionAsync(GetSslOptionsForRequest(request), request, async, stream, cancellationToken).ConfigureAwait(false);
                     transportContext = sslStream.TransportContext;
+                    stream = sslStream;
                 }
 
-                return (connection, transportContext, null);
+                return (stream, transportContext, null);
             }
             finally
             {
@@ -1195,54 +1286,67 @@ namespace System.Net.Http
             }
         }
 
-        private ValueTask<Connection> ConnectToTcpHostAsync(string host, int port, HttpRequestMessage initialRequest, bool async, CancellationToken cancellationToken)
+        private static readonly SocketsConnectionFactory s_defaultConnectionFactory = new SocketsConnectionFactory(SocketType.Stream, ProtocolType.Tcp);
+
+        private ValueTask<Stream> ConnectToTcpHostAsync(string host, int port, HttpRequestMessage initialRequest, bool async, CancellationToken cancellationToken)
         {
             if (async)
             {
-                ConnectionFactory connectionFactory = Settings._connectionFactory ?? SocketsHttpConnectionFactory.Default;
+                SocketsConnectionFactory connectionFactory = s_defaultConnectionFactory;
 
-                var endPoint = new DnsEndPointWithProperties(host, port, initialRequest);
-                return ConnectHelper.ConnectAsync(connectionFactory, endPoint, endPoint, cancellationToken);
+                var endPoint = new DnsEndPoint(host, port);
+                return ConnectHelper.ConnectAsync(connectionFactory, endPoint, cancellationToken);
             }
 
             // Synchronous path.
 
-            if (Settings._connectionFactory != null)
-            {
-                // connection factories only support async.
-                throw new HttpRequestException();
-            }
-
             try
             {
-                return new ValueTask<Connection>(ConnectHelper.Connect(host, port, cancellationToken));
+                return new ValueTask<Stream>(ConnectHelper.Connect(host, port, cancellationToken));
             }
             catch (Exception ex)
             {
-                return ValueTask.FromException<Connection>(ex);
+                return ValueTask.FromException<Stream>(ex);
             }
         }
 
         internal async ValueTask<(HttpConnection?, HttpResponseMessage?)> CreateHttp11ConnectionAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
-            (Connection? connection, TransportContext? transportContext, HttpResponseMessage? failureResponse) =
-                await ConnectAsync(request, async, false, cancellationToken).ConfigureAwait(false);
+            (Stream? stream, TransportContext? transportContext, HttpResponseMessage? failureResponse) =
+                await ConnectAsync(request, async, cancellationToken).ConfigureAwait(false);
 
             if (failureResponse != null)
             {
                 return (null, failureResponse);
             }
 
-            return (ConstructHttp11Connection(connection!, transportContext), null);
+            return (ConstructHttp11Connection(stream!, transportContext), null);
         }
 
-        private HttpConnection ConstructHttp11Connection(Connection connection, TransportContext? transportContext)
+        private SslClientAuthenticationOptions GetSslOptionsForRequest(HttpRequestMessage request)
         {
-            return new HttpConnection(this, connection, transportContext);
+            if (_http2Enabled)
+            {
+                if (request.Version.Major >= 2 && request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
+                {
+                    return _sslOptionsHttp2Only!;
+                }
+
+                if (request.Version.Major >= 2 || request.VersionPolicy == HttpVersionPolicy.RequestVersionOrHigher)
+                {
+                    return _sslOptionsHttp2!;
+                }
+            }
+            return _sslOptionsHttp11!;
+        }
+
+        private HttpConnection ConstructHttp11Connection(Stream stream, TransportContext? transportContext)
+        {
+            return new HttpConnection(this, stream, transportContext);
         }
 
         // Returns the established stream or an HttpResponseMessage from the proxy indicating failure.
-        private async ValueTask<(Connection?, HttpResponseMessage?)> EstablishProxyTunnel(bool async, HttpRequestHeaders? headers, CancellationToken cancellationToken)
+        private async ValueTask<(Stream?, HttpResponseMessage?)> EstablishProxyTunnel(bool async, HttpRequestHeaders? headers, CancellationToken cancellationToken)
         {
             Debug.Assert(_originAuthority != null);
             // Send a CONNECT request to the proxy server to establish a tunnel.
@@ -1264,9 +1368,7 @@ namespace System.Net.Http
             Stream stream = tunnelResponse.Content.ReadAsStream(cancellationToken);
             EndPoint remoteEndPoint = new DnsEndPoint(_originAuthority.IdnHost, _originAuthority.Port);
 
-            // TODO: the Socket from the response can be funneled into a connection property here.
-
-            return (Connection.FromStream(stream, remoteEndPoint: remoteEndPoint), null);
+            return (stream, null);
         }
 
         /// <summary>Enqueues a waiter to the waiters list.</summary>
@@ -1686,6 +1788,19 @@ namespace System.Net.Http
             }
             return false;
         }
+
+        internal void HeartBeat()
+        {
+            Http2Connection[]? localHttp2Connections = _http2Connections;
+            if (localHttp2Connections != null)
+            {
+                foreach (Http2Connection http2Connection in localHttp2Connections)
+                {
+                    http2Connection.HeartBeat();
+                }
+            }
+        }
+
 
         // For diagnostic purposes
         public override string ToString() =>

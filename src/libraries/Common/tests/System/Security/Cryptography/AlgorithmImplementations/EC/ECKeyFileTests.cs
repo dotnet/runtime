@@ -7,6 +7,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
+    [SkipOnMono("Not supported on Browser", TestPlatforms.Browser)]
     public abstract partial class ECKeyFileTests<T> where T : AsymmetricAlgorithm
     {
         protected abstract T CreateKey();

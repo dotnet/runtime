@@ -236,7 +236,7 @@ namespace System.Xml.Xsl.Qil
             return n;
         }
 
-        public QilParameter Parameter(QilNode defaultValue, QilNode name, XmlQueryType xmlType)
+        public QilParameter Parameter(QilNode? defaultValue, QilNode? name, XmlQueryType xmlType)
         {
             QilParameter n = new QilParameter(QilNodeType.Parameter, defaultValue, name, xmlType);
             n.XmlType = _typeCheck.CheckParameter(n);
@@ -274,7 +274,7 @@ namespace System.Xml.Xsl.Qil
             return n;
         }
 
-        public QilLiteral LiteralString(string value)
+        public QilLiteral LiteralString(string? value)
         {
             QilLiteral n = new QilLiteral(QilNodeType.LiteralString, value);
             n.XmlType = _typeCheck.CheckLiteralString(n);

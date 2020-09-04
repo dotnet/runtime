@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.ComponentModel;
 using System.IO;
 using System.Collections;
@@ -1186,7 +1185,7 @@ namespace System.Xml.XPath
             return this.Select(XPathExpression.Compile(xpath));
         }
 
-        public virtual XPathNodeIterator Select(string xpath, IXmlNamespaceResolver resolver)
+        public virtual XPathNodeIterator Select(string xpath, IXmlNamespaceResolver? resolver)
         {
             return this.Select(XPathExpression.Compile(xpath, resolver));
         }
@@ -1206,7 +1205,7 @@ namespace System.Xml.XPath
             return Evaluate(XPathExpression.Compile(xpath), null);
         }
 
-        public virtual object Evaluate(string xpath, IXmlNamespaceResolver resolver)
+        public virtual object Evaluate(string xpath, IXmlNamespaceResolver? resolver)
         {
             return this.Evaluate(XPathExpression.Compile(xpath, resolver));
         }

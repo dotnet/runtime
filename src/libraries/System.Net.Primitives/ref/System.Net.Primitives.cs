@@ -322,23 +322,6 @@ namespace System.Net
         protected TransportContext() { }
         public abstract System.Security.Authentication.ExtendedProtection.ChannelBinding? GetChannelBinding(System.Security.Authentication.ExtendedProtection.ChannelBindingKind kind);
     }
-    public enum NetworkError : int
-    {
-        Unknown = 0,
-        EndPointInUse,
-        HostNotFound,
-        ConnectionRefused,
-        OperationAborted,
-        ConnectionAborted,
-        ConnectionReset,
-    }
-    public class NetworkException : System.IO.IOException
-    {
-        public NetworkException(NetworkError error, Exception? innerException = null) { }
-        public NetworkException(string message, NetworkError error, Exception? innerException = null) { }
-        protected NetworkException(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
-        public NetworkError NetworkError { get { throw null; } }
-    }
 }
 namespace System.Net.Cache
 {

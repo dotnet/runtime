@@ -3,6 +3,7 @@
     <OutputType>Exe</OutputType>
     <DebugType>None</DebugType>
     <Optimize />
+    <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' == 'wasm'" >True</CLRTestTargetUnsupported>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="TypeIntrinsics.cs" />

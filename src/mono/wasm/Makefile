@@ -17,7 +17,7 @@ NATIVE_DIR?=$(OBJDIR)/native/net5.0-Browser-$(CONFIG)-wasm
 BUILDS_BIN_DIR?=$(BINDIR)/native/net5.0-Browser-$(CONFIG)-wasm
 ICU_LIBDIR?=
 
-all: build-native timezone-data icu-data
+all: build-native icu-data
 
 #
 # EMSCRIPTEN SETUP
@@ -25,7 +25,7 @@ all: build-native timezone-data icu-data
 #  If EMSDK_PATH is not set by the caller, download and setup a local emsdk install.
 #
 
-EMSCRIPTEN_VERSION=1.39.16
+EMSCRIPTEN_VERSION=2.0.1
 EMSDK_LOCAL_PATH=emsdk
 EMCC=source $(EMSDK_PATH)/emsdk_env.sh && emcc
 
@@ -34,7 +34,7 @@ EMCC=source $(EMSDK_PATH)/emsdk_env.sh && emcc
 	git clone https://github.com/emscripten-core/emsdk.git $(EMSDK_LOCAL_PATH)
 	cd $(EMSDK_LOCAL_PATH) && git checkout $(EMSCRIPTEN_VERSION)
 	cd $(EMSDK_LOCAL_PATH) && ./emsdk install $(EMSCRIPTEN_VERSION)
-	cd $(EMSDK_LOCAL_PATH) && ./emsdk activate --embedded $(EMSCRIPTEN_VERSION)
+	cd $(EMSDK_LOCAL_PATH) && ./emsdk activate $(EMSCRIPTEN_VERSION)
 	touch $@
 
 ifeq ($(EMSDK_PATH),emsdk)
@@ -112,14 +112,17 @@ clean:
 # Helper targets
 .PHONY: runtime
 
-timezone-data:
-	cp runtime/dotnet.timezones.blat $(BUILDS_BIN_DIR)
-
 icu-data:
-	cp $(ICU_LIBDIR)/icudt.dat $(BUILDS_BIN_DIR)
+	cp $(ICU_LIBDIR)/*.dat $(BUILDS_BIN_DIR)
 
 runtime:
 	EMSDK_PATH=$(TOP)/src/mono/wasm/emsdk $(TOP)/build.sh --subset mono --arch wasm --os Browser -c $(CONFIG) /p:ContinueOnError=false  /p:StopOnFirstFailure=true
+	cp $(TOP)/artifacts/bin/mono/Browser.wasm.$(CONFIG)/IL/System.Private.CoreLib.* $(TOP)/artifacts/bin/microsoft.netcore.app.runtime.browser-wasm/$(CONFIG)/runtimes/browser-wasm/native/
+	$(MAKE) build
+
+corlib:
+	EMSDK_PATH=$(TOP)/src/mono/wasm/emsdk $(TOP)/build.sh --subset mono.corelib --arch wasm --os Browser -c $(CONFIG)
+	cp $(TOP)/artifacts/bin/mono/Browser.wasm.$(CONFIG)/IL/System.Private.CoreLib.* $(TOP)/artifacts/bin/microsoft.netcore.app.runtime.browser-wasm/$(CONFIG)/runtimes/browser-wasm/native/
 
 build-all:
 	EMSDK_PATH=$(TOP)/src/mono/wasm/emsdk $(TOP)/build.sh --subset mono+libs --arch wasm --os Browser -c $(CONFIG)
@@ -129,6 +132,9 @@ test-runner:
 
 app-builder:
 	$(DOTNET) build $(TOP)/tools-local/tasks/mobile.tasks/WasmAppBuilder
+
+bundle-task:
+	$(DOTNET) build $(TOP)/tools-local/tasks/mobile.tasks/GenerateWasmBundle
 
 run-tests-v8-%:
 	PATH="$(JSVU):$(PATH)" $(DOTNET) build $(TOP)/src/libraries/$*/tests/ /t:Test /p:TargetOS=Browser /p:TargetArchitecture=wasm /p:Configuration=$(CONFIG) /p:JSEngine=V8 $(MSBUILD_ARGS)

@@ -10,7 +10,6 @@ using System.IO;
 using System.Net.Http.Headers;
 using System.Net.Security;
 using System.Net.Sockets;
-using System.Net.Connections;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
@@ -46,7 +45,6 @@ namespace System.Net.Http
         private readonly HttpConnectionPool _pool;
         private readonly Socket? _socket; // used for polling; _stream should be used for all reading/writing. _stream owns disposal.
         private readonly Stream _stream;
-        private readonly Connection _connection;
         private readonly TransportContext? _transportContext;
         private readonly WeakReference<HttpConnection> _weakThisRef;
 
@@ -66,26 +64,38 @@ namespace System.Net.Http
         private bool _inUse;
         private bool _canRetry;
         private bool _connectionClose; // Connection: close was seen on last response
-        private int _disposed; // 1 yes, 0 no
+
+        private const int Status_Disposed = 1;
+        private const int Status_NotDisposedAndTrackedByTelemetry = 2;
+        private int _disposed;
 
         public HttpConnection(
             HttpConnectionPool pool,
-            Connection connection,
+            Stream stream,
             TransportContext? transportContext)
         {
             Debug.Assert(pool != null);
-            Debug.Assert(connection != null);
+            Debug.Assert(stream != null);
 
             _pool = pool;
-            connection.ConnectionProperties.TryGet(out _socket); // may be null in cases where we couldn't easily get the underlying socket
-            _stream = connection.Stream;
-            _connection = connection;
+            _stream = stream;
+            if (stream is NetworkStream networkStream)
+            {
+                _socket = networkStream.Socket;
+            }
+
             _transportContext = transportContext;
 
             _writeBuffer = new byte[InitialWriteBufferSize];
             _readBuffer = new byte[InitialReadBufferSize];
 
             _weakThisRef = new WeakReference<HttpConnection>(this);
+
+            if (HttpTelemetry.Log.IsEnabled())
+            {
+                HttpTelemetry.Log.Http11ConnectionEstablished();
+                _disposed = Status_NotDisposedAndTrackedByTelemetry;
+            }
 
             if (NetEventSource.Log.IsEnabled()) TraceConnection(_stream);
         }
@@ -98,17 +108,23 @@ namespace System.Net.Http
         {
             // Ensure we're only disposed once.  Dispose could be called concurrently, for example,
             // if the request and the response were running concurrently and both incurred an exception.
-            if (Interlocked.Exchange(ref _disposed, 1) == 0)
+            int previousValue = Interlocked.Exchange(ref _disposed, Status_Disposed);
+            if (previousValue != Status_Disposed)
             {
                 if (NetEventSource.Log.IsEnabled()) Trace("Connection closing.");
-                _pool.DecrementConnectionCount();
 
-                if (HttpTelemetry.Log.IsEnabled()) _currentRequest?.OnAborted();
+                // Only decrement the connection count if we counted this connection
+                if (HttpTelemetry.Log.IsEnabled() && previousValue == Status_NotDisposedAndTrackedByTelemetry)
+                {
+                    HttpTelemetry.Log.Http11ConnectionClosed();
+                }
+
+                _pool.DecrementConnectionCount();
 
                 if (disposing)
                 {
                     GC.SuppressFinalize(this);
-                    _connection.Dispose();
+                    _stream.Dispose();
 
                     // Eat any exceptions from the read-ahead task.  We don't need to log, as we expect
                     // failures from this task due to closing the connection while a read is in progress.
@@ -349,6 +365,8 @@ namespace System.Net.Http
             CancellationTokenRegistration cancellationRegistration = RegisterCancellation(cancellationToken);
             try
             {
+                if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestHeadersStart();
+
                 Debug.Assert(request.RequestUri != null);
                 // Write request line
                 await WriteStringAsync(normalizedMethod.Method, async).ConfigureAwait(false);
@@ -442,6 +460,8 @@ namespace System.Net.Http
                 // CRLF for end of headers.
                 await WriteTwoBytesAsync((byte)'\r', (byte)'\n', async).ConfigureAwait(false);
 
+                if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestHeadersStop();
+
                 if (request.Content == null)
                 {
                     // We have nothing more to send, so flush out any headers we haven't yet sent.
@@ -520,6 +540,8 @@ namespace System.Net.Http
                 var response = new HttpResponseMessage() { RequestMessage = request, Content = new HttpConnectionResponseContent() };
                 ParseStatusLine(await ReadNextResponseHeaderLineAsync(async).ConfigureAwait(false), response);
 
+                if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.ResponseHeadersStart();
+
                 // Multiple 1xx responses handling.
                 // RFC 7231: A client MUST be able to parse one or more 1xx responses received prior to a final response,
                 // even if the client does not expect one. A user agent MAY ignore unexpected 1xx responses.
@@ -566,6 +588,8 @@ namespace System.Net.Http
                     }
                     ParseHeaderNameValue(this, line, response);
                 }
+
+                if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.ResponseHeadersStop();
 
                 if (allowExpect100ToContinue != null)
                 {
@@ -707,7 +731,7 @@ namespace System.Net.Http
                     // In case the connection is disposed, it's most probable that
                     // expect100Continue timer expired and request content sending failed.
                     // We're awaiting the task to propagate the exception in this case.
-                    if (Volatile.Read(ref _disposed) == 1)
+                    if (Volatile.Read(ref _disposed) == Status_Disposed)
                     {
                         if (async)
                         {
@@ -800,6 +824,9 @@ namespace System.Net.Http
             // Now that we're sending content, prohibit retries on this connection.
             _canRetry = false;
 
+            Debug.Assert(stream.BytesWritten == 0);
+            if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestContentStart();
+
             // Copy all of the data to the server.
             if (async)
             {
@@ -815,6 +842,8 @@ namespace System.Net.Http
 
             // Flush any content that might still be buffered.
             await FlushAsync(async).ConfigureAwait(false);
+
+            if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestContentStop(stream.BytesWritten);
 
             if (NetEventSource.Log.IsEnabled()) Trace("Finished sending request content.");
         }
@@ -1852,8 +1881,6 @@ namespace System.Net.Http
         {
             Debug.Assert(_currentRequest != null, "Expected the connection to be associated with a request.");
             Debug.Assert(_writeOffset == 0, "Everything in write buffer should have been flushed.");
-
-            if (HttpTelemetry.Log.IsEnabled()) _currentRequest.OnStopped();
 
             // Disassociate the connection from a request.
             _currentRequest = null;

@@ -6,7 +6,6 @@ using System.Net.Security;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Diagnostics.CodeAnalysis;
-using System.Net.Connections;
 
 namespace System.Net.Http
 {
@@ -130,13 +129,20 @@ namespace System.Net.Http
             set => throw new PlatformNotSupportedException();
         }
 
-        public ConnectionFactory? ConnectionFactory
+        public TimeSpan KeepAlivePingDelay
         {
             get => throw new PlatformNotSupportedException();
             set => throw new PlatformNotSupportedException();
         }
 
-        public Func<HttpRequestMessage, Connection, CancellationToken, ValueTask<Connection>>? PlaintextFilter
+        public TimeSpan KeepAlivePingTimeout
+        {
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
+        }
+
+
+        public HttpKeepAlivePingPolicy KeepAlivePingPolicy
         {
             get => throw new PlatformNotSupportedException();
             set => throw new PlatformNotSupportedException();

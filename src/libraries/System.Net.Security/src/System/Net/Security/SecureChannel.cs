@@ -925,7 +925,13 @@ namespace System.Net.Security
                 throw new ArgumentOutOfRangeException(nameof(count));
             }
 
-            return SslStreamPal.DecryptMessage(_securityContext!, payload!, ref offset, ref count);
+            SecurityStatusPal status = SslStreamPal.DecryptMessage(_securityContext!, payload!, ref offset, ref count);
+            if (NetEventSource.Log.IsEnabled() && status.ErrorCode == SecurityStatusPalErrorCode.OK)
+            {
+                NetEventSource.DumpBuffer(this, payload!, offset, count);
+            }
+
+            return status;
         }
 
         /*++

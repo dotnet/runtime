@@ -24,7 +24,7 @@
 
   <PropertyGroup>
     <!-- Central place to set the versions of all nuget packages produced in the repo -->
-    <PackageVersion Condition="'$(PackageVersion)' == ''">5.0.0</PackageVersion>
+    <PackageVersion Condition="'$(PackageVersion)' == ''">6.0.0</PackageVersion>
 
     <!-- Set the boolean below to true to generate packages with stabilized versions -->
     <StabilizePackageVersion Condition="'$(StabilizePackageVersion)' == ''">false</StabilizePackageVersion>

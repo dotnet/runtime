@@ -7,7 +7,7 @@ namespace System.Xml
     {
         private long _idLow;
         private long _idHigh;
-        private string _s;
+        private string? _s;
         private const int guidLength = 16;
         private const int uuidLength = 45;
 
@@ -310,7 +310,7 @@ namespace System.Xml
             return _s;
         }
 
-        public static bool operator ==(UniqueId id1, UniqueId id2)
+        public static bool operator ==(UniqueId? id1, UniqueId? id2)
         {
             if (object.ReferenceEquals(id1, id2))
                 return true;
@@ -327,12 +327,12 @@ namespace System.Xml
             return id1.ToString() == id2.ToString();
         }
 
-        public static bool operator !=(UniqueId id1, UniqueId id2)
+        public static bool operator !=(UniqueId? id1, UniqueId? id2)
         {
             return !(id1 == id2);
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return this == (obj as UniqueId);
         }

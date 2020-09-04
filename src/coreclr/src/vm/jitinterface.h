@@ -225,9 +225,8 @@ EXTERN_C FCDECL2(void*, JIT_GetSharedGCStaticBase_Helper, DomainLocalModule *pLo
 
 EXTERN_C void DoJITFailFast ();
 EXTERN_C FCDECL0(void, JIT_FailFast);
-extern FCDECL3(void, JIT_ThrowAccessException, RuntimeExceptionKind, CORINFO_METHOD_HANDLE caller, void * callee);
 
-FCDECL1(void*, JIT_SafeReturnableByref, void* byref);
+FCDECL0(int, JIT_GetCurrentManagedThreadId);
 
 #if !defined(FEATURE_USE_ASM_GC_WRITE_BARRIERS) && defined(FEATURE_COUNT_GC_WRITE_BARRIERS)
 // Extra argument for the classification of the checked barriers.

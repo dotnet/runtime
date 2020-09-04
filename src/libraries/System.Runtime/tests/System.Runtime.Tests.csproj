@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <NoWarn>$(NoWarn),1718</NoWarn>
+    <NoWarn>$(NoWarn),1718,SYSLIB0013</NoWarn>
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
@@ -196,6 +196,7 @@
     <Compile Include="System\Reflection\CustomAttribute_Named_Typed_ArgumentTests.cs" />
     <Compile Include="System\Reflection\DefaultMemberAttributeTests.cs" />
     <Compile Include="System\Reflection\InvokeRefReturn.cs" />
+    <Compile Include="System\Reflection\InvokeWithRefLikeArgs.cs" />
     <Compile Include="System\Reflection\IsCollectibleTests.cs" />
     <Compile Include="System\Reflection\MethodBaseTests.cs" />
     <Compile Include="System\Reflection\MethodBodyTests.cs" />
