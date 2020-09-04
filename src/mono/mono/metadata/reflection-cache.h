@@ -35,7 +35,8 @@ alloc_reflected_entry (MonoDomain *domain)
 {
 	if (!mono_gc_is_moving ())
 		return g_new0 (ReflectedEntry, 1);
-	return (ReflectedEntry *)mono_mempool_alloc (mono_domain_ambient_memory_manager (domain)->mp, sizeof (ReflectedEntry));
+	MonoMemoryManager *memory_manager = mono_domain_ambient_memory_manager (domain);
+	return (ReflectedEntry *)mono_memory_manager_alloc_nolock (memory_manager, sizeof (ReflectedEntry));
 }
 
 static inline void

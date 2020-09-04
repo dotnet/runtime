@@ -678,7 +678,7 @@ append_imethod (MonoMemoryManager *memory_manager, GSList *list, InterpMethod *i
 	GSList *ret;
 	InterpVTableEntry *entry;
 
-	entry = (InterpVTableEntry*) mono_mempool_alloc (memory_manager->mp, sizeof (InterpVTableEntry));
+	entry = (InterpVTableEntry*) mono_memory_manager_alloc_nolock (memory_manager, sizeof (InterpVTableEntry));
 	entry->imethod = imethod;
 	entry->target_imethod = target_imethod;
 	ret = g_slist_append_mempool (memory_manager->mp, list, entry);
