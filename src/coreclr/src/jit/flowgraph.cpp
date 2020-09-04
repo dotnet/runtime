@@ -21623,6 +21623,10 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
                 chkFlags |= GTF_GLOB_REF | GTF_ASG;
                 break;
 
+            case GT_LCL_VAR:
+                assert((tree->gtFlags & GTF_VAR_FOLDED_IND) == 0);
+                break;
+
             default:
                 break;
         }

@@ -963,8 +963,6 @@ void ClassLoader::LoadExactParents(MethodTable *pMT)
 
     MethodTableBuilder::CopyExactParentSlots(pMT, pApproxParentMT);
 
-    ValidateMethodsWithCovariantReturnTypes(pMT);
-
     // We can now mark this type as having exact parents
     pMT->SetHasExactParent();
 

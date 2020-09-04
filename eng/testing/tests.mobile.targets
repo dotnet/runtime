@@ -151,22 +151,20 @@
       AssemblySearchPaths="@(AssemblySearchPaths)" />
   </Target>
 
-  <UsingTask TaskName="DownloadTimeZoneData"
-             AssemblyFile="$(CreateCreateWasmBundlesAssemblyPath)" />
+  <Import Project="$(MonoProjectRoot)wasm\timezones.props" Condition="'$(TargetOS)' == 'Browser'" />
+  <UsingTask TaskName="CompileTimeZoneData"
+             AssemblyFile="$(GenerateWasmBundlesAssemblyPath)" />
   <Target Condition="'$(TargetOS)' == 'Browser'" Name="LoadTimeZone" >
-    <PropertyGroup>
-      <TimeZoneDataVersion>2020a</TimeZoneDataVersion>
-    </PropertyGroup>
-    <DownloadTimeZoneData
-      InputDirectory="$(BundleDir)obj/data/input"
-      OutputDirectory="$(BundleDir)obj/data/output"
-      Version="$(TimeZoneDataVersion)"/>
+    <CompileTimeZoneData 
+      TimeZones="@(TimeZoneToBundle)"
+      InputDirectory="$([MSBuild]::NormalizePath('$(GenerateWasmBundleDir)', '..', 'data'))"
+      OutputDirectory="$(BundleDir)obj/data/output"/>
   </Target>
 
-  <UsingTask TaskName="CreateWasmBundle"
-             AssemblyFile="$(CreateCreateWasmBundlesAssemblyPath)" />
+  <UsingTask TaskName="GenerateWasmBundle"
+             AssemblyFile="$(GenerateWasmBundlesAssemblyPath)" />
   <Target Condition="'$(TargetOS)' == 'Browser'" Name="BundleWasmTestData" DependsOnTargets="LoadTimeZone">
-    <CreateWasmBundle
+    <GenerateWasmBundle
       InputDirectory="$(BundleDir)obj/data/output"
       OutputFileName="$(MicrosoftNetCoreAppRuntimePackRidDir)dotnet.timezones.blat" />
   </Target>

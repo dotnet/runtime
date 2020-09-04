@@ -19,8 +19,6 @@ namespace DebuggerTests
             var insp = new Inspector();
             //Collect events
             var scripts = SubscribeToScripts(insp);
-            int line = 15;
-            int col = 20;
             string entry_method_name = "[debugger-test] DebuggerTests.ExceptionTestsClass:TestExceptions";
 
             await Ready();
