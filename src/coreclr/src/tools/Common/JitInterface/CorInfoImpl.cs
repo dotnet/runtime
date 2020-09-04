@@ -209,11 +209,11 @@ namespace Internal.JitInterface
 #endif
             }
 
-            PublishCode(codeSize);
+            PublishCode();
             PublishROData();
         }
 
-        private void PublishCode(uint codeSize)
+        private void PublishCode()
         {
             var relocs = _codeRelocs.ToArray();
             Array.Sort(relocs, (x, y) => (x.Offset - y.Offset));
@@ -224,10 +224,7 @@ namespace Internal.JitInterface
 
             alignment = Math.Max(alignment, _codeAlignment);
 
-            byte[] actualCodeBytes = _code;
-            Array.Resize(ref actualCodeBytes, (int)codeSize);
-
-            var objectData = new ObjectNode.ObjectData(actualCodeBytes,
+            var objectData = new ObjectNode.ObjectData(_code,
                                                        relocs,
                                                        alignment,
                                                        new ISymbolDefinitionNode[] { _methodCodeNode });
