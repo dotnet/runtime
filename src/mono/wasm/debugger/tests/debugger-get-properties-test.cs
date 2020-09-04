@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Threading.Tasks;
 using System.Reflection;
+using System.Threading.Tasks;
 
 namespace DebuggerTests.GetPropertiesTests
 {
@@ -19,7 +19,7 @@ namespace DebuggerTests.GetPropertiesTests
     }
 
     public interface IName : IFirstName, ILastName
-    {}
+    { }
 
     public class BaseBaseClass
     {
@@ -93,20 +93,20 @@ namespace DebuggerTests.GetPropertiesTests
 
         public static void run()
         {
-            new DerivedClass().InstanceMethod ();
-            new DerivedClass().InstanceMethodAsync ().Wait();
+            new DerivedClass().InstanceMethod();
+            new DerivedClass().InstanceMethodAsync().Wait();
         }
 
         public string GetStringField() => _stringField;
 
         public void InstanceMethod()
         {
-            Console.WriteLine ($"break here");
+            Console.WriteLine($"break here");
         }
 
         public async Task InstanceMethodAsync()
         {
-            Console.WriteLine ($"break here");
+            Console.WriteLine($"break here");
             await Task.CompletedTask;
         }
     }
@@ -140,26 +140,26 @@ namespace DebuggerTests.GetPropertiesTests
 
         public static void run()
         {
-            new CloneableStruct(3).InstanceMethod ();
-            new CloneableStruct(3).InstanceMethodAsync ().Wait();
+            new CloneableStruct(3).InstanceMethod();
+            new CloneableStruct(3).InstanceMethodAsync().Wait();
         }
 
         public string GetStringField() => _stringField;
 
         public void InstanceMethod()
         {
-            Console.WriteLine ($"break here");
+            Console.WriteLine($"break here");
         }
 
         public async Task InstanceMethodAsync()
         {
-            Console.WriteLine ($"break here");
+            Console.WriteLine($"break here");
             await Task.CompletedTask;
         }
 
         public static void SimpleStaticMethod(DateTime dateTimeArg, string stringArg)
         {
-            Console.WriteLine ($"break here");
+            Console.WriteLine($"break here");
         }
 
     }
@@ -182,13 +182,13 @@ namespace DebuggerTests.GetPropertiesTests
         public static void TestNestedStructStatic()
         {
             var ns = new NestedStruct(3);
-            Console.WriteLine ($"break here");
+            Console.WriteLine($"break here");
         }
 
         public static async Task TestNestedStructStaticAsync()
         {
             var ns = new NestedStruct(3);
-            Console.WriteLine ($"break here");
+            Console.WriteLine($"break here");
             await Task.CompletedTask;
         }
     }
@@ -208,7 +208,7 @@ namespace DebuggerTests.GetPropertiesTests
         public static void run()
         {
             var obj = new DerivedClassForJSTest();
-            Console.WriteLine ($"break here");
+            Console.WriteLine($"break here");
         }
     }
 
@@ -225,11 +225,11 @@ namespace DebuggerTests.GetPropertiesTests
             var dt = new DateTime(4210, 3, 4, 5, 6, 7);
             int i = 4;
 
-            string[] strings = new[]{ "abc" };
+            string[] strings = new[] { "abc" };
             CloneableStruct cs = new CloneableStruct();
 
             // var cs = new CloneableStruct();
-            mi.Invoke(null, new object[]{ dt, "called from run" });
+            mi.Invoke(null, new object[] { dt, "called from run" });
         }
     }
 }

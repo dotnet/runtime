@@ -1632,13 +1632,13 @@ namespace DebuggerTests
             "window.setTimeout(function() { invoke_static_method('[debugger-test] MulticastDelegateTestClass:run'); })",
             wait_for_event_fn: async (pause_location) =>
             {
-               var frame_locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
-               var this_props = await GetObjectOnLocals(frame_locals, "this");
-               await CheckProps(this_props, new
-               {
-                   TestEvent = TSymbol("System.EventHandler<string>"),
-                   Delegate = TSymbol("System.MulticastDelegate")
-               }, "this_props");
+                var frame_locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
+                var this_props = await GetObjectOnLocals(frame_locals, "this");
+                await CheckProps(this_props, new
+                {
+                    TestEvent = TSymbol("System.EventHandler<string>"),
+                    Delegate = TSymbol("System.MulticastDelegate")
+                }, "this_props");
             });
 
         [Theory]
@@ -1686,27 +1686,27 @@ namespace DebuggerTests
              "window.setTimeout(function() { invoke_static_method('[debugger-test] DebuggerTests.GetPropertiesTests.TestWithReflection:run'); })",
              wait_for_event_fn: async (pause_location) =>
              {
-                var frame = FindFrame(pause_location, "InvokeReflectedStaticMethod");
-                Assert.NotNull(frame);
+                 var frame = FindFrame(pause_location, "InvokeReflectedStaticMethod");
+                 Assert.NotNull(frame);
 
-                var frame_locals = await GetProperties(frame["callFrameId"].Value<string>());
+                 var frame_locals = await GetProperties(frame["callFrameId"].Value<string>());
 
-                await CheckProps(frame_locals, new
-                {
-                    mi        = TObject("System.Reflection.MethodInfo"),
-                    dt        = TDateTime(new DateTime(4210, 3, 4, 5, 6, 7)),
-                    i         = TNumber(4),
-                    strings   = TArray("string[]", 1),
-                    cs        = TValueType("DebuggerTests.GetPropertiesTests.CloneableStruct"),
+                 await CheckProps(frame_locals, new
+                 {
+                     mi = TObject("System.Reflection.MethodInfo"),
+                     dt = TDateTime(new DateTime(4210, 3, 4, 5, 6, 7)),
+                     i = TNumber(4),
+                     strings = TArray("string[]", 1),
+                     cs = TValueType("DebuggerTests.GetPropertiesTests.CloneableStruct"),
 
-                    num       = TNumber(10),
-                    name      = TString("foobar"),
-                    some_date = TDateTime(new DateTime(1234, 6, 7, 8, 9, 10)),
-                    num1      = TNumber(100),
-                    str2      = TString("xyz"),
-                    num3      = TNumber(345),
-                    str3      = TString("abc")
-                }, "InvokeReflectedStaticMethod#locals");
+                     num = TNumber(10),
+                     name = TString("foobar"),
+                     some_date = TDateTime(new DateTime(1234, 6, 7, 8, 9, 10)),
+                     num1 = TNumber(100),
+                     str2 = TString("xyz"),
+                     num3 = TNumber(345),
+                     str3 = TString("abc")
+                 }, "InvokeReflectedStaticMethod#locals");
              });
 
         JObject FindFrame(JObject pause_location, string function_name)

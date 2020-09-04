@@ -316,7 +316,7 @@ public partial class Math
             str_spaces,
             str_esc
         };
-        Console.WriteLine ($"break here");
+        Console.WriteLine($"break here");
     }
 
 }
@@ -355,8 +355,8 @@ public class MulticastDelegateTestClass
 
     public void Test()
     {
-        TestEvent += (_, s) => Console.WriteLine (s);
-        TestEvent += (_, s) => Console.WriteLine (s + "qwe");
+        TestEvent += (_, s) => Console.WriteLine(s);
+        TestEvent += (_, s) => Console.WriteLine(s + "qwe");
         Delegate = TestEvent;
 
         TestEvent?.Invoke(this, Delegate?.ToString());
@@ -364,8 +364,8 @@ public class MulticastDelegateTestClass
 
     public async Task TestAsync()
     {
-        TestEvent += (_, s) => Console.WriteLine (s);
-        TestEvent += (_, s) => Console.WriteLine (s + "qwe");
+        TestEvent += (_, s) => Console.WriteLine(s);
+        TestEvent += (_, s) => Console.WriteLine(s + "qwe");
         Delegate = TestEvent;
 
         TestEvent?.Invoke(this, Delegate?.ToString());
@@ -377,12 +377,12 @@ public class EmptyClass
 {
     public static void StaticMethodWithNoLocals()
     {
-        Console.WriteLine ($"break here");
+        Console.WriteLine($"break here");
     }
 
     public static async Task StaticMethodWithNoLocalsAsync()
     {
-        Console.WriteLine ($"break here");
+        Console.WriteLine($"break here");
         await Task.CompletedTask;
     }
 
@@ -397,25 +397,25 @@ public struct EmptyStruct
 {
     public static void StaticMethodWithNoLocals()
     {
-        Console.WriteLine ($"break here");
+        Console.WriteLine($"break here");
     }
 
     public static async Task StaticMethodWithNoLocalsAsync()
     {
-        Console.WriteLine ($"break here");
+        Console.WriteLine($"break here");
         await Task.CompletedTask;
     }
 
     public static void StaticMethodWithLocalEmptyStruct()
     {
         var es = new EmptyStruct();
-        Console.WriteLine ($"break here");
+        Console.WriteLine($"break here");
     }
 
     public static async Task StaticMethodWithLocalEmptyStructAsync()
     {
         var es = new EmptyStruct();
-        Console.WriteLine ($"break here");
+        Console.WriteLine($"break here");
         await Task.CompletedTask;
     }
 
