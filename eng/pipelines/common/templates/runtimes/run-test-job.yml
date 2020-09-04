@@ -274,7 +274,7 @@ jobs:
         displayName: "Patch dotnet with mono"
 
     - ${{ if and(eq(parameters.runtimeFlavor, 'mono'), eq(parameters.runtimeVariant, 'llvmaot')) }}:
-      - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) mono_aot $(buildConfig)
+      - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) mono_aot $(buildConfig) $(archType)
         displayName: "LLVM AOT compile CoreCLR tests"
 
     # Send tests to Helix
