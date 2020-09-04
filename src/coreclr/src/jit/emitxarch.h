@@ -424,12 +424,12 @@ void emitIns_I_ARX(instruction ins, emitAttr attr, int val, regNumber reg, regNu
 void emitIns_R_ARX(
     instruction ins, emitAttr attr, regNumber reg, regNumber base, regNumber index, unsigned scale, int disp);
 
-void emitIns_ARX_R(instruction ins,
-                   emitAttr attr,
-                   regNumber reg,
-                   regNumber base,
-                   regNumber index,
-                   unsigned scale,
+void emitIns_ARX_R(instruction    ins,
+                   emitAttr       attr,
+                   regNumber      reg,
+                   regNumber      base,
+                   regNumber      index,
+                   unsigned       scale,
                    cnsval_ssize_t disp);
 
 void emitIns_I_AX(instruction ins, emitAttr attr, int val, regNumber reg, unsigned mul, int disp);
