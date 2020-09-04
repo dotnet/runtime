@@ -8,6 +8,7 @@ using System.Runtime.Versioning;
 
 namespace System.Threading
 {
+    [UnsupportedOSPlatform("browser")]
     public partial class EventWaitHandle : WaitHandle
     {
         public EventWaitHandle(bool initialState, EventResetMode mode) :

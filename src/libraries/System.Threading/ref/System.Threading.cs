@@ -46,6 +46,7 @@ namespace System.Threading
         [System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
         public T Value { get { throw null; } set { } }
     }
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     public sealed partial class AutoResetEvent : System.Threading.EventWaitHandle
     {
         public AutoResetEvent(bool initialState) : base (default(bool), default(System.Threading.EventResetMode)) { }
@@ -108,6 +109,7 @@ namespace System.Threading
         AutoReset = 0,
         ManualReset = 1,
     }
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     public partial class EventWaitHandle : System.Threading.WaitHandle
     {
         public EventWaitHandle(bool initialState, System.Threading.EventResetMode mode) { }
@@ -242,6 +244,7 @@ namespace System.Threading
         NoRecursion = 0,
         SupportsRecursion = 1,
     }
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     public sealed partial class ManualResetEvent : System.Threading.EventWaitHandle
     {
         public ManualResetEvent(bool initialState) : base (default(bool), default(System.Threading.EventResetMode)) { }
