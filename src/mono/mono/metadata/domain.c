@@ -1210,8 +1210,6 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 
 	g_free (domain->friendly_name);
 	domain->friendly_name = NULL;
-	g_ptr_array_free (domain->class_vtable_array, TRUE);
-	domain->class_vtable_array = NULL;
 	g_hash_table_destroy (domain->proxy_vtable_hash);
 	domain->proxy_vtable_hash = NULL;
 	mono_internal_hash_table_destroy (&domain->jit_code_hash);
