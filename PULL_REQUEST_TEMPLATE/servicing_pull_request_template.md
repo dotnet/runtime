@@ -16,7 +16,7 @@ Master PR <!-- PR Number if the fix has already been merged in master branch. --
 
 # Testing
 
-<!-- What kiind of testing has been done with the fix. -->
+<!-- What kind of testing has been done with the fix. -->
 
 # Risk
 
