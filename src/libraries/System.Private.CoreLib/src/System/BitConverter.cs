@@ -10,10 +10,9 @@ using Internal.Runtime.CompilerServices;
 
 namespace System
 {
-    // The BitConverter class contains methods for
-    // converting an array of bytes to one of the base data
-    // types, as well as for converting a base data type to an
-    // array of bytes.
+    /// <summary>
+    /// Converts base data types to an array of bytes, and an array of bytes to base data types.
+    /// </summary>
     public static class BitConverter
     {
         // This field indicates the "endianess" of the architecture.
@@ -27,7 +26,11 @@ namespace System
         public static readonly bool IsLittleEndian = true;
 #endif
 
-        // Converts a Boolean into an array of bytes with length one.
+        /// <summary>
+        /// Returns the specified Boolean value as a byte array.
+        /// </summary>
+        /// <param name="value">A Boolean value.</param>
+        /// <returns>A byte array with length 1.</returns>
         public static byte[] GetBytes(bool value)
         {
             byte[] r = new byte[1];
@@ -35,7 +38,12 @@ namespace System
             return r;
         }
 
-        // Converts a Boolean into a Span of bytes with length one.
+        /// <summary>
+        /// Converts a Boolean into a span of bytes.
+        /// </summary>
+        /// <param name="destination">When this method returns, the bytes representing the converted Boolean.</param>
+        /// <param name="value">The Boolean to convert.</param>
+        /// <returns><see langword="true"/> if the conversion was successful; <see langword="false"/> otherwise.</returns>
         public static bool TryWriteBytes(Span<byte> destination, bool value)
         {
             if (destination.Length < sizeof(byte))
@@ -45,7 +53,11 @@ namespace System
             return true;
         }
 
-        // Converts a char into an array of bytes with length two.
+        /// <summary>
+        /// Returns the specified Unicode character value as a byte array.
+        /// </summary>
+        /// <param name="value">A Char value.</param>
+        /// <returns>An array of bytes with length 2.</returns>
         public static byte[] GetBytes(char value)
         {
             byte[] bytes = new byte[sizeof(char)];
@@ -53,7 +65,12 @@ namespace System
             return bytes;
         }
 
-        // Converts a char into a Span
+        /// <summary>
+        /// Converts a character into a span of bytes.
+        /// </summary>
+        /// <param name="destination">When this method returns, the bytes representing the converted character.</param>
+        /// <param name="value">The character to convert.</param>
+        /// <returns><see langword="true"/> if the conversion was successful; <see langword="false"/> otherwise.</returns>
         public static bool TryWriteBytes(Span<byte> destination, char value)
         {
             if (destination.Length < sizeof(char))
@@ -63,8 +80,11 @@ namespace System
             return true;
         }
 
-        // Converts a short into an array of bytes with length
-        // two.
+        /// <summary>
+        /// Returns the specified 16-bit signed integer value as an array of bytes.
+        /// </summary>
+        /// <param name="value">The number to convert.</param>
+        /// <returns>An array of bytes with length 2.</returns>
         public static byte[] GetBytes(short value)
         {
             byte[] bytes = new byte[sizeof(short)];
@@ -72,7 +92,12 @@ namespace System
             return bytes;
         }
 
-        // Converts a short into a Span
+        /// <summary>
+        /// Converts a 16-bit signed integer into a span of bytes.
+        /// </summary>
+        /// <param name="destination">When this method returns, the bytes representing the converted 16-bit signed integer.</param>
+        /// <param name="value">The 16-bit signed integer to convert.</param>
+        /// <returns><see langword="true"/> if the conversion was successful; <see langword="false"/> otherwise.</returns>
         public static bool TryWriteBytes(Span<byte> destination, short value)
         {
             if (destination.Length < sizeof(short))
@@ -82,8 +107,11 @@ namespace System
             return true;
         }
 
-        // Converts an int into an array of bytes with length
-        // four.
+        /// <summary>
+        /// Returns the specified 32-bit signed integer value as an array of bytes.
+        /// </summary>
+        /// <param name="value">The number to convert.</param>
+        /// <returns>An array of bytes with length 4.</returns>
         public static byte[] GetBytes(int value)
         {
             byte[] bytes = new byte[sizeof(int)];
@@ -91,7 +119,12 @@ namespace System
             return bytes;
         }
 
-        // Converts an int into a Span
+        /// <summary>
+        /// Converts a 32-bit signed integer into a span of bytes.
+        /// </summary>
+        /// <param name="destination">When this method returns, the bytes representing the converted 32-bit signed integer.</param>
+        /// <param name="value">The 32-bit signed integer to convert.</param>
+        /// <returns><see langword="true"/> if the conversion was successful; <see langword="false"/> otherwise.</returns>
         public static bool TryWriteBytes(Span<byte> destination, int value)
         {
             if (destination.Length < sizeof(int))
@@ -101,8 +134,11 @@ namespace System
             return true;
         }
 
-        // Converts a long into an array of bytes with length
-        // eight.
+        /// <summary>
+        /// Returns the specified 64-bit signed integer value as an array of bytes.
+        /// </summary>
+        /// <param name="value">The number to convert.</param>
+        /// <returns>An array of bytes with length 8.</returns>
         public static byte[] GetBytes(long value)
         {
             byte[] bytes = new byte[sizeof(long)];
@@ -110,7 +146,12 @@ namespace System
             return bytes;
         }
 
-        // Converts a long into a Span
+        /// <summary>
+        /// Converts a 64-bit signed integer into a span of bytes.
+        /// </summary>
+        /// <param name="destination">When this method returns, the bytes representing the converted 64-bit signed integer.</param>
+        /// <param name="value">The 64-bit signed integer to convert.</param>
+        /// <returns><see langword="true"/> if the conversion was successful; <see langword="false"/> otherwise.</returns>
         public static bool TryWriteBytes(Span<byte> destination, long value)
         {
             if (destination.Length < sizeof(long))
@@ -120,8 +161,11 @@ namespace System
             return true;
         }
 
-        // Converts an ushort into an array of bytes with
-        // length two.
+        /// <summary>
+        /// Returns the specified 16-bit unsigned integer value as an array of bytes.
+        /// </summary>
+        /// <param name="value">The number to convert.</param>
+        /// <returns>An array of bytes with length 2.</returns>
         [CLSCompliant(false)]
         public static byte[] GetBytes(ushort value)
         {
@@ -130,7 +174,12 @@ namespace System
             return bytes;
         }
 
-        // Converts a ushort into a Span
+        /// <summary>
+        /// Converts a 16-bit unsigned integer into a span of bytes.
+        /// </summary>
+        /// <param name="destination">When this method returns, the bytes representing the converted 16-bit unsigned integer.</param>
+        /// <param name="value">The 16-bit unsigned integer to convert.</param>
+        /// <returns><see langword="true"/> if the conversion was successful; <see langword="false"/> otherwise.</returns>
         [CLSCompliant(false)]
         public static bool TryWriteBytes(Span<byte> destination, ushort value)
         {
@@ -141,8 +190,11 @@ namespace System
             return true;
         }
 
-        // Converts an uint into an array of bytes with
-        // length four.
+        /// <summary>
+        /// Returns the specified 32-bit unsigned integer value as an array of bytes.
+        /// </summary>
+        /// <param name="value">The number to convert.</param>
+        /// <returns>An array of bytes with length 4.</returns>
         [CLSCompliant(false)]
         public static byte[] GetBytes(uint value)
         {
@@ -151,7 +203,12 @@ namespace System
             return bytes;
         }
 
-        // Converts a uint into a Span
+        /// <summary>
+        /// Converts a 32-bit unsigned integer into a span of bytes.
+        /// </summary>
+        /// <param name="destination">When this method returns, the bytes representing the converted 32-bit unsigned integer.</param>
+        /// <param name="value">The 32-bit unsigned integer to convert.</param>
+        /// <returns><see langword="true"/> if the conversion was successful; <see langword="false"/> otherwise.</returns>
         [CLSCompliant(false)]
         public static bool TryWriteBytes(Span<byte> destination, uint value)
         {
@@ -162,8 +219,11 @@ namespace System
             return true;
         }
 
-        // Converts an unsigned long into an array of bytes with
-        // length eight.
+        /// <summary>
+        /// Returns the specified 64-bit signed integer value as an array of bytes.
+        /// </summary>
+        /// <param name="value">The number to convert.</param>
+        /// <returns>An array of bytes with length 8.</returns>
         [CLSCompliant(false)]
         public static byte[] GetBytes(ulong value)
         {
@@ -172,7 +232,12 @@ namespace System
             return bytes;
         }
 
-        // Converts a ulong into a Span
+        /// <summary>
+        /// Converts a 64-bit unsigned integer into a span of bytes.
+        /// </summary>
+        /// <param name="destination">When this method returns, the bytes representing the converted 64-bit unsigned integer.</param>
+        /// <param name="value">The 64-bit unsigned integer to convert.</param>
+        /// <returns><see langword="true"/> if the conversion was successful; <see langword="false"/> otherwise.</returns>
         [CLSCompliant(false)]
         public static bool TryWriteBytes(Span<byte> destination, ulong value)
         {
@@ -183,8 +248,11 @@ namespace System
             return true;
         }
 
-        // Converts a half into an array of bytes with length
-        // two.
+        /// <summary>
+        /// Returns the specified half-precision floating point value as an array of bytes.
+        /// </summary>
+        /// <param name="value">The number to convert.</param>
+        /// <returns>An array of bytes with length 2.</returns>
         public static unsafe byte[] GetBytes(Half value)
         {
             byte[] bytes = new byte[sizeof(Half)];
@@ -192,7 +260,12 @@ namespace System
             return bytes;
         }
 
-        // Converts a half into a Span
+        /// <summary>
+        /// Converts a half-precision floating-point value into a span of bytes.
+        /// </summary>
+        /// <param name="destination">When this method returns, the bytes representing the converted half-precision floating-point value.</param>
+        /// <param name="value">The half-precision floating-point value to convert.</param>
+        /// <returns><see langword="true"/> if the conversion was successful; <see langword="false"/> otherwise.</returns>
         public static unsafe bool TryWriteBytes(Span<byte> destination, Half value)
         {
             if (destination.Length < sizeof(Half))
@@ -202,8 +275,11 @@ namespace System
             return true;
         }
 
-        // Converts a float into an array of bytes with length
-        // four.
+        /// <summary>
+        /// Returns the specified single-precision floating point value as an array of bytes.
+        /// </summary>
+        /// <param name="value">The number to convert.</param>
+        /// <returns>An array of bytes with length 4.</returns>
         public static byte[] GetBytes(float value)
         {
             byte[] bytes = new byte[sizeof(float)];
@@ -211,7 +287,12 @@ namespace System
             return bytes;
         }
 
-        // Converts a float into a Span
+        /// <summary>
+        /// Converts a single-precision floating-point value into a span of bytes.
+        /// </summary>
+        /// <param name="destination">When this method returns, the bytes representing the converted single-precision floating-point value.</param>
+        /// <param name="value">The single-precision floating-point value to convert.</param>
+        /// <returns><see langword="true"/> if the conversion was successful; <see langword="false"/> otherwise.</returns>
         public static bool TryWriteBytes(Span<byte> destination, float value)
         {
             if (destination.Length < sizeof(float))
@@ -221,8 +302,11 @@ namespace System
             return true;
         }
 
-        // Converts a double into an array of bytes with length
-        // eight.
+        /// <summary>
+        /// Returns the specified double-precision floating point value as an array of bytes.
+        /// </summary>
+        /// <param name="value">The number to convert.</param>
+        /// <returns>An array of bytes with length 8.</returns>
         public static byte[] GetBytes(double value)
         {
             byte[] bytes = new byte[sizeof(double)];
@@ -230,7 +314,12 @@ namespace System
             return bytes;
         }
 
-        // Converts a double into a Span
+        /// <summary>
+        /// Converts a double-precision floating-point value into a span of bytes.
+        /// </summary>
+        /// <param name="destination">When this method returns, the bytes representing the converted double-precision floating-point value.</param>
+        /// <param name="value">The double-precision floating-point value to convert.</param>
+        /// <returns><see langword="true"/> if the conversion was successful; <see langword="false"/> otherwise.</returns>
         public static bool TryWriteBytes(Span<byte> destination, double value)
         {
             if (destination.Length < sizeof(double))
