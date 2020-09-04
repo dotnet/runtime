@@ -40,7 +40,7 @@
     AssemblyFile="$(GenerateWasmBundlesAssemblyPath)"/>
   <Target Name="LoadTimeZones" DependsOnTargets="CheckEnv">
     <CompileTimeZoneData
-      TimeZones="@(TimeZoneToBundle )" 
+      TimeZones="@(TimeZoneToBundle)" 
       InputDirectory="$([MSBuild]::NormalizePath('$(GenerateWasmBundleDir)', '..', 'data'))"
       OutputDirectory="$(ArtifactsObjDir)wasm/data/output" />
   </Target>

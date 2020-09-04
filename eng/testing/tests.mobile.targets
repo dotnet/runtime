@@ -156,7 +156,7 @@
              AssemblyFile="$(GenerateWasmBundlesAssemblyPath)" />
   <Target Condition="'$(TargetOS)' == 'Browser'" Name="LoadTimeZone" >
     <CompileTimeZoneData 
-      TimeZones="@(TimeZoneToBundle )"
+      TimeZones="@(TimeZoneToBundle)"
       InputDirectory="$([MSBuild]::NormalizePath('$(GenerateWasmBundleDir)', '..', 'data'))"
       OutputDirectory="$(BundleDir)obj/data/output"/>
   </Target>
