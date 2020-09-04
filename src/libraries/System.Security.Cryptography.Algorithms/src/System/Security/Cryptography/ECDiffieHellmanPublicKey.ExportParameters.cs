@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Formats.Asn1;
+
 namespace System.Security.Cryptography
 {
     /// <summary>
@@ -26,6 +28,20 @@ namespace System.Security.Cryptography
         public virtual ECParameters ExportExplicitParameters()
         {
             throw new NotSupportedException(SR.NotSupported_SubclassOverride);
+        }
+
+        public virtual bool TryExportSubjectPublicKeyInfo(Span<byte> destination, out int bytesWritten)
+        {
+            ECParameters ecParameters = ExportParameters();
+            AsnWriter writer = EccKeyFormatHelper.WriteSubjectPublicKeyInfo(ecParameters);
+            return writer.TryEncode(destination, out bytesWritten);
+        }
+
+        public virtual byte[] ExportSubjectPublicKeyInfo()
+        {
+            ECParameters ecParameters = ExportParameters();
+            AsnWriter writer = EccKeyFormatHelper.WriteSubjectPublicKeyInfo(ecParameters);
+            return writer.Encode();
         }
     }
 }
