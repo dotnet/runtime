@@ -434,7 +434,12 @@ if (MSVC)
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/Gm->) # disable minimal rebuild
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/Zp8>) # pack structs on 8-byte boundary
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/Gy>) # separate functions for linker
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /GR-") # disable C++ RTTI
+
+  # disable C++ RTTI
+  # /GR is added by default by CMake, so remove it manually.
+  string(REPLACE "/GR" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /GR-")
+
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/FC>) # use full pathnames in diagnostics
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/MP>) # Build with Multiple Processes (number of processes equal to the number of processors)
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/Zm200>) # Specify Precompiled Header Memory Allocation Limit of 150MB
@@ -520,9 +525,7 @@ if (MSVC)
   # For Release builds, we shall dynamically link into uCRT [ucrtbase.dll] (which is pushed down as a Windows Update on downlevel OS) but
   # wont do the same for debug/checked builds since ucrtbased.dll is not redistributable and Debug/Checked builds are not
   # production-time scenarios.
-
-  add_compile_options($<$<OR:$<OR:$<CONFIG:Release>,$<CONFIG:Relwithdebinfo>>,$<BOOL:$<TARGET_PROPERTY:DAC_COMPONENT>>>:/MT>)
-  add_compile_options($<$<AND:$<OR:$<CONFIG:Debug>,$<CONFIG:Checked>>,$<NOT:$<BOOL:$<TARGET_PROPERTY:DAC_COMPONENT>>>>:/MTd>)
+  set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreaded$<$<AND:$<OR:$<CONFIG:Debug>,$<CONFIG:Checked>>,$<NOT:$<BOOL:$<TARGET_PROPERTY:DAC_COMPONENT>>>>:Debug>)
 
   add_compile_options($<$<COMPILE_LANGUAGE:ASM_MASM>:/ZH:SHA_256>)
 

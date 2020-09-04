@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.6.2)
 
 cmake_policy(SET CMP0042 NEW)
+if (CMAKE_VERSION VERSION_GREATER 3.15 OR CMAKE_VERSION VERSION_EQUAL 3.15)
+  cmake_policy(SET CMP0091 NEW)
+endif()
 
 # Set the project name
 project(CoreCLR)
@@ -13,6 +16,7 @@ if (CLR_CMAKE_HOST_WIN32)
 endif (CLR_CMAKE_HOST_WIN32)
 
 if(MSVC)
+  string(REPLACE "/EHsc" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
   add_compile_options(/EHa) # enable C++ EH (w/ SEH exceptions)
   set(CMAKE_CXX_STANDARD_LIBRARIES "") # do not link against standard win32 libs i.e. kernel32, uuid, user32, etc.
 endif (MSVC)
