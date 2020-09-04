@@ -11,11 +11,7 @@ namespace System.Runtime.Serialization
     using System.Xml;
     using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, DataContract>;
 
-#if USE_REFEMIT
-    public class XmlObjectSerializerContext
-#else
     internal class XmlObjectSerializerContext
-#endif
     {
         protected XmlObjectSerializer serializer;
         protected DataContract? rootTypeDataContract;
@@ -71,21 +67,12 @@ namespace System.Runtime.Serialization
         }
 
 
-
-#if USE_REFEMIT
-        public StreamingContext GetStreamingContext()
-#else
         internal StreamingContext GetStreamingContext()
-#endif
         {
             return _streamingContext;
         }
 
-#if USE_REFEMIT
-        public void IncrementItemCount(int count)
-#else
         internal void IncrementItemCount(int count)
-#endif
         {
             if (count > _maxItemsInObjectGraph - _itemCount)
                 throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.ExceededMaxItemsQuota, _maxItemsInObjectGraph)));
