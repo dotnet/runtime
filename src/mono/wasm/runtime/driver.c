@@ -511,7 +511,6 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 	}
 
 	mono_wasm_register_bundled_satellite_assemblies ();
-
 	mono_trace_init ();
 	mono_trace_set_log_handler (wasm_logger, NULL);
 	root_domain = mono_jit_init_version ("mono", "v4.0.30319");
