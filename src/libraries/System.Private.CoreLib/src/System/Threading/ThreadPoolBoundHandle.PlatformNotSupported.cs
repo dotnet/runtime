@@ -2,9 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 
 namespace System.Threading
 {
+    [UnsupportedOSPlatform("browser")]
     public sealed class ThreadPoolBoundHandle : IDisposable
     {
         public SafeHandle Handle => null!;

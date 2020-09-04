@@ -50,6 +50,7 @@ namespace System.Threading
         public void Dispose() { }
         ~PreAllocatedOverlapped() { }
     }
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     public sealed partial class ThreadPoolBoundHandle : System.IDisposable
     {
         internal ThreadPoolBoundHandle() { }
