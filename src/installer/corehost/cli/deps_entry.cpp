@@ -101,9 +101,10 @@ bool deps_entry_t::to_path(const pal::string_t& base, const pal::string_t& ietf_
     {
         trace::verbose(_X("    %s path query exists %s"), query_type, candidate.c_str());
 
-        // If a file is resolved to the servicing directory, disable it in the bundle directory.
-        // This step is necessary because runtime resolves assemblies in the bundle even before
-        // attempting to resolve using the TPA. Disabling the file's entry in the bundle
+        // If a file is resolved to the servicing directory, mark it as disabled in the bundle.
+        // This step is necessary because runtime will try to resolve assemblies from the bundle 
+        // before it uses the TPA. So putting the servicing entry into TPA is not enough, since runtime would
+        // resolve it from the bundle first anyway. Disabling the file's entry in the bundle
         // ensures that the servicing entry in the TPA gets priority.
         if (is_servicing && bundle::info_t::is_single_file_bundle())
         {
