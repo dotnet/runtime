@@ -5,6 +5,7 @@ using System;
 using System.Net.WebSockets;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Primitives;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
@@ -16,9 +17,9 @@ namespace Microsoft.WebAssembly.Diagnostics
     {
         private readonly MonoProxy proxy;
 
-        public DebuggerProxy(ILoggerFactory loggerFactory)
+        public DebuggerProxy(ILoggerFactory loggerFactory, StringValues urlSymbolServerList)
         {
-            proxy = new MonoProxy(loggerFactory);
+            proxy = new MonoProxy(loggerFactory, urlSymbolServerList);
         }
 
         public Task Run(Uri browserUri, WebSocket ideSocket)

@@ -15,21 +15,22 @@ using Mono.Cecil.Cil;
 using Mono.Cecil.Pdb;
 using Mono.Cecil;
 using System.Net.Http;
+using Microsoft.Extensions.Primitives;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
 
     internal class MonoProxy : DevToolsProxy
     {
-        List<string> urlSymbolServerList = new List<string> ();
+        StringValues urlSymbolServerList;
         static HttpClient client = new HttpClient();
         HashSet<SessionId> sessions = new HashSet<SessionId>();
         Dictionary<SessionId, ExecutionContext> contexts = new Dictionary<SessionId, ExecutionContext>();
 
-        public MonoProxy(ILoggerFactory loggerFactory, bool hideWebDriver = true) : base(loggerFactory) 
+        public MonoProxy(ILoggerFactory loggerFactory, StringValues urlSymbolServerList, bool hideWebDriver = true) : base(loggerFactory) 
         { 
-            this.hideWebDriver = hideWebDriver; 
-            urlSymbolServerList.Add("http://msdl.microsoft.com/download/symbols");
+            this.hideWebDriver = hideWebDriver;
+            this.urlSymbolServerList = urlSymbolServerList;
         }
 
         readonly bool hideWebDriver;
@@ -352,7 +353,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         string url = args["url"]?.Value<string>();
                         if (!String.IsNullOrEmpty(url) && !urlSymbolServerList.Contains(url))
-                            urlSymbolServerList.Add(url);
+                            urlSymbolServerList += url;
                         return true;
                     }
                 case "DotnetDebugger.getMethodLocation":
