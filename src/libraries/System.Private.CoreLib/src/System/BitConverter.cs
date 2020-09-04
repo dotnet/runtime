@@ -753,6 +753,11 @@ namespace System
             return Unsafe.ReadUnaligned<byte>(ref MemoryMarshal.GetReference(value)) != 0;
         }
 
+        /// <summary>
+        /// Converts the specified double-precision floating point number to a 64-bit signed integer.
+        /// </summary>
+        /// <param name="value">The number to convert.</param>
+        /// <returns>A 64-bit signed integer whose bits are identical to <paramref name="value"/>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe long DoubleToInt64Bits(double value)
         {
@@ -766,6 +771,11 @@ namespace System
             return *((long*)&value);
         }
 
+        /// <summary>
+        /// Converts the specified 64-bit signed integer to a double-precision floating point number.
+        /// </summary>
+        /// <param name="value">The number to convert.</param>
+        /// <returns>A double-precision floating point number whose bits are identical to <paramref name="value"/>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe double Int64BitsToDouble(long value)
         {
@@ -779,6 +789,11 @@ namespace System
             return *((double*)&value);
         }
 
+        /// <summary>
+        /// Converts the specified single-precision floating point number to a 32-bit signed integer.
+        /// </summary>
+        /// <param name="value">The number to convert.</param>
+        /// <returns>A 32-bit signed integer whose bits are identical to <paramref name="value"/>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe int SingleToInt32Bits(float value)
         {
@@ -792,6 +807,11 @@ namespace System
             return *((int*)&value);
         }
 
+        /// <summary>
+        /// Converts the specified 32-bit signed integer to a single-precision floating point number.
+        /// </summary>
+        /// <param name="value">The number to convert.</param>
+        /// <returns>A single-precision floating point number whose bits are identical to <paramref name="value"/>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe float Int32BitsToSingle(int value)
         {
@@ -805,12 +825,22 @@ namespace System
             return *((float*)&value);
         }
 
+        /// <summary>
+        /// Converts the specified half-precision floating point number to a 16-bit signed integer.
+        /// </summary>
+        /// <param name="value">The number to convert.</param>
+        /// <returns>A 16-bit signed integer whose bits are identical to <paramref name="value"/>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe short HalfToInt16Bits(Half value)
         {
             return *((short*)&value);
         }
 
+        /// <summary>
+        /// Converts the specified 16-bit signed integer to a half-precision floating point number.
+        /// </summary>
+        /// <param name="value">The number to convert.</param>
+        /// <returns>A half-precision floating point number whose bits are identical to <paramref name="value"/>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Half Int16BitsToHalf(short value)
         {
