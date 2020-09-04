@@ -8,7 +8,7 @@ namespace DebuggerTests
 {
     public class NullableTests
     {
-        public static void TestNullableLocal ()
+        public static void TestNullableLocal()
         {
             int? n_int = 5;
             int? n_int_null = null;
@@ -19,10 +19,10 @@ namespace DebuggerTests
             ValueTypesTest.GenericStruct<int>? n_gs = new ValueTypesTest.GenericStruct<int> { StringField = "n_gs#StringField" };
             ValueTypesTest.GenericStruct<int>? n_gs_null = null;
 
-            Console.WriteLine ($"break here");
+            Console.WriteLine($"break here");
         }
 
-        public static async Task TestNullableLocalAsync ()
+        public static async Task TestNullableLocalAsync()
         {
             int? n_int = 5;
             int? n_int_null = null;
@@ -33,7 +33,7 @@ namespace DebuggerTests
             ValueTypesTest.GenericStruct<int>? n_gs = new ValueTypesTest.GenericStruct<int> { StringField = "n_gs#StringField" };
             ValueTypesTest.GenericStruct<int>? n_gs_null = null;
 
-            Console.WriteLine ($"break here");
+            Console.WriteLine($"break here");
             await Task.CompletedTask;
         }
     }
