@@ -33,6 +33,7 @@ namespace System
         private static ConsoleCancelEventHandler? s_cancelCallbacks;
         private static ConsolePal.ControlCHandlerRegistrar? s_registrar;
 
+        [UnsupportedOSPlatform("browser")]
         public static TextReader In
         {
             get
@@ -56,6 +57,7 @@ namespace System
             }
         }
 
+        [UnsupportedOSPlatform("browser")]
         public static Encoding InputEncoding
         {
             get
@@ -152,11 +154,13 @@ namespace System
             }
         }
 
+        [UnsupportedOSPlatform("browser")]
         public static ConsoleKeyInfo ReadKey()
         {
             return ConsolePal.ReadKey(false);
         }
 
+        [UnsupportedOSPlatform("browser")]
         public static ConsoleKeyInfo ReadKey(bool intercept)
         {
             return ConsolePal.ReadKey(intercept);
@@ -276,6 +280,7 @@ namespace System
 
         public static int CursorSize
         {
+            [UnsupportedOSPlatform("browser")]
             get { return ConsolePal.CursorSize; }
             [SupportedOSPlatform("windows")]
             set { ConsolePal.CursorSize = value; }
@@ -295,18 +300,21 @@ namespace System
 
         internal const ConsoleColor UnknownColor = (ConsoleColor)(-1);
 
+        [UnsupportedOSPlatform("browser")]
         public static ConsoleColor BackgroundColor
         {
             get { return ConsolePal.BackgroundColor; }
             set { ConsolePal.BackgroundColor = value; }
         }
 
+        [UnsupportedOSPlatform("browser")]
         public static ConsoleColor ForegroundColor
         {
             get { return ConsolePal.ForegroundColor; }
             set { ConsolePal.ForegroundColor = value; }
         }
 
+        [UnsupportedOSPlatform("browser")]
         public static void ResetColor()
         {
             ConsolePal.ResetColor();
@@ -314,6 +322,7 @@ namespace System
 
         public static int BufferWidth
         {
+            [UnsupportedOSPlatform("browser")]
             get { return ConsolePal.BufferWidth; }
             [SupportedOSPlatform("windows")]
             set { ConsolePal.BufferWidth = value; }
@@ -321,6 +330,7 @@ namespace System
 
         public static int BufferHeight
         {
+            [UnsupportedOSPlatform("browser")]
             get { return ConsolePal.BufferHeight; }
             [SupportedOSPlatform("windows")]
             set { ConsolePal.BufferHeight = value; }
@@ -348,6 +358,7 @@ namespace System
 
         public static int WindowWidth
         {
+            [UnsupportedOSPlatform("browser")]
             get { return ConsolePal.WindowWidth; }
             [SupportedOSPlatform("windows")]
             set { ConsolePal.WindowWidth = value; }
@@ -355,6 +366,7 @@ namespace System
 
         public static int WindowHeight
         {
+            [UnsupportedOSPlatform("browser")]
             get { return ConsolePal.WindowHeight; }
             [SupportedOSPlatform("windows")]
             set { ConsolePal.WindowHeight = value; }
@@ -372,11 +384,13 @@ namespace System
             ConsolePal.SetWindowSize(width, height);
         }
 
+        [UnsupportedOSPlatform("browser")]
         public static int LargestWindowWidth
         {
             get { return ConsolePal.LargestWindowWidth; }
         }
 
+        [UnsupportedOSPlatform("browser")]
         public static int LargestWindowHeight
         {
             get { return ConsolePal.LargestWindowHeight; }
@@ -386,15 +400,18 @@ namespace System
         {
             [SupportedOSPlatform("windows")]
             get { return ConsolePal.CursorVisible; }
+            [UnsupportedOSPlatform("browser")]
             set { ConsolePal.CursorVisible = value; }
         }
 
+        [UnsupportedOSPlatform("browser")]
         public static int CursorLeft
         {
             get { return ConsolePal.GetCursorPosition().Left; }
             set { SetCursorPosition(value, CursorTop); }
         }
 
+        [UnsupportedOSPlatform("browser")]
         public static int CursorTop
         {
             get { return ConsolePal.GetCursorPosition().Top; }
@@ -406,6 +423,7 @@ namespace System
         /// <remarks>
         /// Columns are numbered from left to right starting at 0. Rows are numbered from top to bottom starting at 0.
         /// </remarks>
+        [UnsupportedOSPlatform("browser")]
         public static (int Left, int Top) GetCursorPosition()
         {
             return ConsolePal.GetCursorPosition();
@@ -415,12 +433,14 @@ namespace System
         {
             [SupportedOSPlatform("windows")]
             get { return ConsolePal.Title; }
+            [UnsupportedOSPlatform("browser")]
             set
             {
                 ConsolePal.Title = value ?? throw new ArgumentNullException(nameof(value));
             }
         }
 
+        [UnsupportedOSPlatform("browser")]
         public static void Beep()
         {
             ConsolePal.Beep();
@@ -449,6 +469,7 @@ namespace System
             ConsolePal.Clear();
         }
 
+        [UnsupportedOSPlatform("browser")]
         public static void SetCursorPosition(int left, int top)
         {
             // Basic argument validation.  The PAL implementation may provide further validation.
@@ -460,6 +481,7 @@ namespace System
             ConsolePal.SetCursorPosition(left, top);
         }
 
+        [UnsupportedOSPlatform("browser")]
         public static event ConsoleCancelEventHandler? CancelKeyPress
         {
             add
@@ -493,17 +515,20 @@ namespace System
             }
         }
 
+        [UnsupportedOSPlatform("browser")]
         public static bool TreatControlCAsInput
         {
             get { return ConsolePal.TreatControlCAsInput; }
             set { ConsolePal.TreatControlCAsInput = value; }
         }
 
+        [UnsupportedOSPlatform("browser")]
         public static Stream OpenStandardInput()
         {
             return ConsolePal.OpenStandardInput();
         }
 
+        [UnsupportedOSPlatform("browser")]
         public static Stream OpenStandardInput(int bufferSize)
         {
             // bufferSize is ignored, other than in argument validation, even in the .NET Framework
@@ -544,6 +569,7 @@ namespace System
             return OpenStandardError();
         }
 
+        [UnsupportedOSPlatform("browser")]
         public static void SetIn(TextReader newIn)
         {
             CheckNonNull(newIn, nameof(newIn));
@@ -590,12 +616,14 @@ namespace System
         // the inlined console writelines from them.
         //
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        [UnsupportedOSPlatform("browser")]
         public static int Read()
         {
             return In.Read();
         }
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        [UnsupportedOSPlatform("browser")]
         public static string? ReadLine()
         {
             return In.ReadLine();
