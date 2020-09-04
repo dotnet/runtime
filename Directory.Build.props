@@ -44,7 +44,11 @@
 
     <DocsDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'docs'))</DocsDir>
     <ManPagesDir>$([MSBuild]::NormalizeDirectory('$(DocsDir)', 'manpages'))</ManPagesDir>
+
+    <!-- System.Private.CoreLib -->
     <CoreLibSharedDir>$([MSBuild]::NormalizeDirectory('$(LibrariesProjectRoot)', 'System.Private.CoreLib', 'src'))</CoreLibSharedDir>
+    <CoreLibProject Condition="'$(RuntimeFlavor)' == 'CoreCLR'">$([MSBuild]::NormalizePath('$(CoreClrProjectRoot)', 'src', 'System.Private.CoreLib', 'System.Private.CoreLib.csproj'))</CoreLibProject>
+    <CoreLibProject Condition="'$(RuntimeFlavor)' == 'Mono'">$([MSBuild]::NormalizePath('$(MonoProjectRoot)', 'netcore', 'System.Private.CoreLib', 'System.Private.CoreLib.csproj'))</CoreLibProject>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetsMobile)' == 'true'">

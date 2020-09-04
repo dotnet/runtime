@@ -6,9 +6,7 @@
 
   <PropertyGroup>
     <!-- FIXME: clean up the duplication with libraries Directory.Build.props -->
-    <CoreLibProject>$([MSBuild]::NormalizePath('$(MonoProjectRoot)', 'netcore', 'System.Private.CoreLib', 'System.Private.CoreLib.csproj'))</CoreLibProject>
     <PackageRID>browser-wasm</PackageRID>
-    
     <NativeBinDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'native', '$(NetCoreAppCurrent)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)'))</NativeBinDir>
     <MicrosoftNetCoreAppRuntimePackDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'microsoft.netcore.app.runtime.$(PackageRID)', '$(Configuration)'))</MicrosoftNetCoreAppRuntimePackDir>
     <MicrosoftNetCoreAppRuntimePackRidDir>$([MSBuild]::NormalizeDirectory('$(MicrosoftNetCoreAppRuntimePackDir)', 'runtimes', '$(PackageRID)'))</MicrosoftNetCoreAppRuntimePackRidDir>
