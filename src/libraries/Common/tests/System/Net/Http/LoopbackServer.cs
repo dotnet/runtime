@@ -379,6 +379,7 @@ namespace System.Net.Test.Common
             public string Domain { get; set; }
             public string Password { get; set; }
             public bool IsProxy { get; set; } = false;
+            public X509Certificate2 Certificate { get; set; }
 
             public Options()
             {
@@ -424,7 +425,7 @@ namespace System.Net.Test.Common
                 if (httpOptions.UseSsl)
                 {
                     var sslStream = new SslStream(stream, false, delegate { return true; });
-                    using (X509Certificate2 cert = Configuration.Certificates.GetServerCertificate())
+                    using (X509Certificate2 cert = httpOptions.Certificate ?? Configuration.Certificates.GetServerCertificate())
                     {
                         await sslStream.AuthenticateAsServerAsync(
                             cert,
