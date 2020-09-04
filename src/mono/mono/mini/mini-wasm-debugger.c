@@ -829,40 +829,24 @@ read_enum_value (const char *mem, int type)
 	return 0;
 }
 
-static MonoClassField*
-nullable_class_get_value_field (MonoClass *klass)
-{
-	mono_class_setup_fields (klass);
-	g_assert (m_class_is_fields_inited (klass));
-
-	MonoClassField *klass_fields = m_class_get_fields (klass);
-	return &klass_fields [1];
-}
-
-static MonoClassField*
-nullable_class_get_has_value_field (MonoClass *klass)
-{
-	mono_class_setup_fields (klass);
-	g_assert (m_class_is_fields_inited (klass));
-
-	MonoClassField *klass_fields = m_class_get_fields (klass);
-	return &klass_fields [0];
-}
-
 static gpointer
 nullable_get_has_value_field_addr (guint8 *nullable, MonoClass *klass)
 {
-	MonoClassField *has_value_field = nullable_class_get_has_value_field (klass);
+	mono_class_setup_fields (klass);
+	g_assert (m_class_is_fields_inited (klass));
 
-	return mono_vtype_get_field_addr (nullable, has_value_field);
+	MonoClassField *klass_fields = m_class_get_fields (klass);
+	return mono_vtype_get_field_addr (nullable, &klass_fields[0]);
 }
 
 static gpointer
 nullable_get_value_field_addr (guint8 *nullable, MonoClass *klass)
 {
-	MonoClassField *has_value_field = nullable_class_get_value_field (klass);
+	mono_class_setup_fields (klass);
+	g_assert (m_class_is_fields_inited (klass));
 
-	return mono_vtype_get_field_addr (nullable, has_value_field);
+	MonoClassField *klass_fields = m_class_get_fields (klass);
+	return mono_vtype_get_field_addr (nullable, &klass_fields[1]);
 }
 
 static gboolean
@@ -948,7 +932,7 @@ describe_value(MonoType * type, gpointer addr, int gpflags)
 					g_free (class_name);
 					break;
 				} else {
-					gpointer value_addr = nullable_get_value_field_addr(addr, klass);
+					gpointer value_addr = nullable_get_value_field_addr (addr, klass);
 					return describe_value(targ, value_addr, gpflags);
 				}
 			}
