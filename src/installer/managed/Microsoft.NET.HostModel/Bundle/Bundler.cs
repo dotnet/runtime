@@ -29,24 +29,6 @@ namespace Microsoft.NET.HostModel.Bundle
         readonly TargetInfo Target;
         readonly BundleOptions Options;
 
-        // Temporary overload to avoid breaking the SDK build.
-        // This can be removed once the SDK is updated to call the other overload.
-        public Bundler(string hostName,
-                       string outputDir,
-                       BundleOptions options,
-                       OSPlatform? targetOS,
-                       Version targetFrameworkVersion,
-                       bool diagnosticOutput)
-            : this(hostName,
-                   outputDir,
-                   options,
-                   targetOS,
-                   null,
-                   targetFrameworkVersion,
-                   diagnosticOutput)
-        {
-        }
-
         public Bundler(string hostName,
                        string outputDir,
                        BundleOptions options = BundleOptions.None,
