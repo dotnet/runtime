@@ -10,6 +10,7 @@
     <PackageReference Include="Microsoft.Build.Tasks.Core" Version="$(RefOnlyMicrosoftBuildTasksCoreVersion)" />
     <PackageReference Include="Microsoft.Build.Utilities.Core" Version="$(RefOnlyMicrosoftBuildUtilitiesCoreVersion)" />
   </ItemGroup>
+
   <Target Name="PublishBuilder"
           AfterTargets="Build"
           DependsOnTargets="Publish" />
