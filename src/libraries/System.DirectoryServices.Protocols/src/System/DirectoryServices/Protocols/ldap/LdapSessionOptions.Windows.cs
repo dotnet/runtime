@@ -5,7 +5,7 @@ namespace System.DirectoryServices.Protocols
 {
     public partial class LdapSessionOptions
     {
-        private static void PALCertFreeCRLContext(IntPtr certPtr) => Interop.CertFreeCRLContext(certPtr);
+        private static void PALCertFreeCRLContext(IntPtr certPtr) => Interop.Ldap.CertFreeCRLContext(certPtr);
 
         public bool SecureSocketLayer
         {
