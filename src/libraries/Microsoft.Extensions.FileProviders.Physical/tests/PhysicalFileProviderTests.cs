@@ -91,14 +91,20 @@ namespace Microsoft.Extensions.FileProviders
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Linux)] 
-        public async void PollingFileProviderShouldntConsumeINotifyInstances()
+        public void PollingFileProviderShouldntConsumeINotifyInstances()
         {
             List<IDisposable> disposables = new List<IDisposable>();
             using var root = new DisposableFileSystem();
 
-            int callbacks = 0;
-            int maxInstances = int.Parse(File.ReadAllText("/proc/sys/fs/inotify/max_user_instances"));
+            string maxInstancesFile = "/proc/sys/fs/inotify/max_user_instances";
+            Assert.True(File.Exists(maxInstancesFile));
+            int maxInstances = int.Parse(File.ReadAllText(maxInstancesFile));
+
+            // choose an arbitrary number that exceeds max
             int instances = maxInstances + 16;
+
+
+            AutoResetEvent are = new AutoResetEvent(false);
             try
             {
                 for (int i = 0; i < instances; i++)
@@ -110,17 +116,15 @@ namespace Microsoft.Extensions.FileProviders
                     };
                     disposables.Add(pfp);
                     disposables.Add(pfp.Watch("*").RegisterChangeCallback(
-                        o => Interlocked.Increment(ref callbacks),
+                        o => are.Set(),
                         i));
                 }
 
                 // trigger an event
                 root.CreateFile("test.txt");
 
-                // let some events fire
-                await Task.Delay(WaitTimeForTokenToFire * 16);
-
-                Assert.NotEqual(0, callbacks);
+                // wait for at least one event.
+                Assert.True(are.WaitOne(WaitTimeForTokenToFire));
             }
             finally
             {
