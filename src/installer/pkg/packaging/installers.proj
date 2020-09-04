@@ -94,7 +94,7 @@
     <Copy SourceFiles="$(SharedFrameworkPublishDir)dotnet$(ExeSuffix)"
           DestinationFolder="$(SharedHostPublishRoot)" />
 
-    <Copy SourceFiles="$(RepoRoot)THIRD-PARTY-NOTICES.TXT"
+    <Copy SourceFiles="$(InstallerProjectRoot)pkg\THIRD-PARTY-NOTICES.TXT"
           DestinationFiles="$(SharedHostPublishRoot)ThirdPartyNotices.txt" />
 
     <Copy SourceFiles="$(RepoRoot)LICENSE.TXT"
