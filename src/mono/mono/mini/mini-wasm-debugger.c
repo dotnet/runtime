@@ -829,14 +829,15 @@ read_enum_value (const char *mem, int type)
 	return 0;
 }
 
-static gpointer
-nullable_get_has_value_field_addr (guint8 *nullable, MonoClass *klass)
+static gboolean
+nullable_get_has_value (guint8 *nullable, MonoClass *klass)
 {
 	mono_class_setup_fields (klass);
 	g_assert (m_class_is_fields_inited (klass));
 
 	MonoClassField *klass_fields = m_class_get_fields (klass);
-	return mono_vtype_get_field_addr (nullable, &klass_fields[0]);
+	gpointer addr = mono_vtype_get_field_addr (nullable, &klass_fields[0]);
+	return *(guint8*)addr != 0;
 }
 
 static gpointer
@@ -924,9 +925,7 @@ describe_value(MonoType * type, gpointer addr, int gpflags)
 			if (mono_class_is_nullable (klass)) {
 				MonoType *targ = type->data.generic_class->context.class_inst->type_argv [0];
 
-				gpointer has_value_addr = nullable_get_has_value_field_addr (addr, klass);
-				gboolean has_value = *(guint8*)has_value_addr;
-				if (!has_value) {
+				if (!nullable_get_has_value (addr, klass)) {
 					char* class_name = mono_type_full_name (type);
 					mono_wasm_add_obj_var (class_name, NULL, 0);
 					g_free (class_name);
