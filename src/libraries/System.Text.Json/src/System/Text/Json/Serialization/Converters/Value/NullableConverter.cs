@@ -11,11 +11,10 @@ namespace System.Text.Json.Serialization.Converters
         // an instance is created only once for each JsonSerializerOptions instance.
         private readonly JsonConverter<T> _converter;
 
-        internal override bool IsInternalConverterForNumberType => true;
-
         public NullableConverter(JsonConverter<T> converter)
         {
             _converter = converter;
+            IsInternalConverterForNumberType = converter.IsInternalConverterForNumberType;
         }
 
         public override T? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)

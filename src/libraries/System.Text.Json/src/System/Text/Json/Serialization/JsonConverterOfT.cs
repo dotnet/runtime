@@ -356,7 +356,7 @@ namespace System.Text.Json.Serialization
 
                 int originalPropertyDepth = writer.CurrentDepth;
 
-                if (state.Current.NumberHandling != null)
+                if (state.Current.NumberHandling != null && IsInternalConverterForNumberType)
                 {
                     WriteNumberWithCustomHandling(writer, value, state.Current.NumberHandling.Value);
                 }

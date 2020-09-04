@@ -5,7 +5,10 @@ namespace System.Text.Json.Serialization.Converters
 {
     internal sealed class SByteConverter : JsonConverter<sbyte>
     {
-        internal override bool IsInternalConverterForNumberType => true;
+        public SByteConverter()
+        {
+            IsInternalConverterForNumberType = true;
+        }
 
         public override sbyte Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {

@@ -5,7 +5,10 @@ namespace System.Text.Json.Serialization.Converters
 {
     internal sealed class ByteConverter : JsonConverter<byte>
     {
-        internal override bool IsInternalConverterForNumberType => true;
+        public ByteConverter()
+        {
+            IsInternalConverterForNumberType = true;
+        }
 
         public override byte Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
