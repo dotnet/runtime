@@ -10,20 +10,16 @@ namespace System
     {
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static System.ConsoleColor BackgroundColor { get { throw null; } set { } }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
-        public static int BufferHeight { get { throw null; } [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")] set { } }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
-        public static int BufferWidth { get { throw null; } [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")] set { } }
+        public static int BufferHeight { [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")] get { throw null; } [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")] set { } }
+        public static int BufferWidth { [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")] get { throw null; } [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")] set { } }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static bool CapsLock { get { throw null; } }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static int CursorLeft { get { throw null; } set { } }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
-        public static int CursorSize { get { throw null; } [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")] set { } }
+        public static int CursorSize { [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")] get { throw null; } [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")] set { } }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static int CursorTop { get { throw null; } set { } }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
-        public static bool CursorVisible { [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")] get { throw null; } set { } }
+        public static bool CursorVisible { [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")] get { throw null; } [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")] set { } }
         public static System.IO.TextWriter Error { get { throw null; } }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static System.ConsoleColor ForegroundColor { get { throw null; } set { } }
@@ -43,16 +39,13 @@ namespace System
         public static bool NumberLock { get { throw null; } }
         public static System.IO.TextWriter Out { get { throw null; } }
         public static System.Text.Encoding OutputEncoding { get { throw null; } set { } }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
-        public static string Title { [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")] get { throw null; } set { } }
+        public static string Title { [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")] get { throw null; } [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")] set { } }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static bool TreatControlCAsInput { get { throw null; } set { } }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
-        public static int WindowHeight { get { throw null; } [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")] set { } }
+        public static int WindowHeight { [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")] get { throw null; } [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")] set { } }
         public static int WindowLeft { get { throw null; } [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")] set { } }
         public static int WindowTop { get { throw null; } [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")] set { } }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
-        public static int WindowWidth { get { throw null; } [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")] set { } }
+        public static int WindowWidth { [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")] get { throw null; } [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")] set { } }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static event System.ConsoleCancelEventHandler? CancelKeyPress { add { } remove { } }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]

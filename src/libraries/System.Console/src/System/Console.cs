@@ -278,9 +278,9 @@ namespace System
             }
         }
 
-        [UnsupportedOSPlatform("browser")]
         public static int CursorSize
         {
+            [UnsupportedOSPlatform("browser")]
             get { return ConsolePal.CursorSize; }
             [SupportedOSPlatform("windows")]
             set { ConsolePal.CursorSize = value; }
@@ -320,17 +320,17 @@ namespace System
             ConsolePal.ResetColor();
         }
 
-        [UnsupportedOSPlatform("browser")]
         public static int BufferWidth
         {
+            [UnsupportedOSPlatform("browser")]
             get { return ConsolePal.BufferWidth; }
             [SupportedOSPlatform("windows")]
             set { ConsolePal.BufferWidth = value; }
         }
 
-        [UnsupportedOSPlatform("browser")]
         public static int BufferHeight
         {
+            [UnsupportedOSPlatform("browser")]
             get { return ConsolePal.BufferHeight; }
             [SupportedOSPlatform("windows")]
             set { ConsolePal.BufferHeight = value; }
@@ -356,17 +356,17 @@ namespace System
             set { ConsolePal.WindowTop = value; }
         }
 
-        [UnsupportedOSPlatform("browser")]
         public static int WindowWidth
         {
+            [UnsupportedOSPlatform("browser")]
             get { return ConsolePal.WindowWidth; }
             [SupportedOSPlatform("windows")]
             set { ConsolePal.WindowWidth = value; }
         }
 
-        [UnsupportedOSPlatform("browser")]
         public static int WindowHeight
         {
+            [UnsupportedOSPlatform("browser")]
             get { return ConsolePal.WindowHeight; }
             [SupportedOSPlatform("windows")]
             set { ConsolePal.WindowHeight = value; }
@@ -396,11 +396,11 @@ namespace System
             get { return ConsolePal.LargestWindowHeight; }
         }
 
-        [UnsupportedOSPlatform("browser")]
         public static bool CursorVisible
         {
             [SupportedOSPlatform("windows")]
             get { return ConsolePal.CursorVisible; }
+            [UnsupportedOSPlatform("browser")]
             set { ConsolePal.CursorVisible = value; }
         }
 
@@ -429,11 +429,11 @@ namespace System
             return ConsolePal.GetCursorPosition();
         }
 
-        [UnsupportedOSPlatform("browser")]
         public static string Title
         {
             [SupportedOSPlatform("windows")]
             get { return ConsolePal.Title; }
+            [UnsupportedOSPlatform("browser")]
             set
             {
                 ConsolePal.Title = value ?? throw new ArgumentNullException(nameof(value));
