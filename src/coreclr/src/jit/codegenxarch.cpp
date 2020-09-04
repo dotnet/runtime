@@ -4092,7 +4092,7 @@ void CodeGen::genCodeForShift(GenTree* tree)
             {
                 assert((typeWidth == 32) || (typeWidth == 64));
 
-                int value = tree->OperIs(GT_ROL) ? typeWidth - shiftByValue : shiftByValue;
+                int value = tree->OperIs(GT_ROL) ? (typeWidth - shiftByValue) : shiftByValue;
                 GetEmitter()->emitIns_R_R_I(INS_rorx, size, tree->GetRegNum(), operandReg, value);
             }
             else
