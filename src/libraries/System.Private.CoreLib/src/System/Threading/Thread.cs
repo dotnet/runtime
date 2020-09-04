@@ -131,6 +131,7 @@ namespace System.Threading
 
         public static IPrincipal? CurrentPrincipal
         {
+            [UnsupportedOSPlatform("browser")]
             get
             {
                 IPrincipal? principal = s_asyncLocalPrincipal?.Value;
@@ -189,6 +190,7 @@ namespace System.Threading
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ThreadAbort);
         }
 
+        [UnsupportedOSPlatform("browser")]
         public static void ResetAbort()
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ThreadAbort);

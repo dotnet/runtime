@@ -39,7 +39,7 @@ namespace System.Threading
         [System.ObsoleteAttribute("The ApartmentState property has been deprecated.  Use GetApartmentState, SetApartmentState or TrySetApartmentState instead.", false)]
         public System.Threading.ApartmentState ApartmentState { get { throw null; } set { } }
         public System.Globalization.CultureInfo CurrentCulture { get { throw null; } set { } }
-        public static System.Security.Principal.IPrincipal? CurrentPrincipal { get { throw null; } set { } }
+        public static System.Security.Principal.IPrincipal? CurrentPrincipal { [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")] get { throw null; } set { } }
         public static System.Threading.Thread CurrentThread { get { throw null; } }
         public System.Globalization.CultureInfo CurrentUICulture { get { throw null; } set { } }
         public System.Threading.ExecutionContext? ExecutionContext { get { throw null; } }
@@ -77,6 +77,7 @@ namespace System.Threading
         public bool Join(int millisecondsTimeout) { throw null; }
         public bool Join(System.TimeSpan timeout) { throw null; }
         public static void MemoryBarrier() { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static void ResetAbort() { }
         [System.ObsoleteAttribute("Thread.Resume has been deprecated.  Please use other classes in System.Threading, such as Monitor, Mutex, Event, and Semaphore, to synchronize Threads or protect resources.  https://go.microsoft.com/fwlink/?linkid=14202", false)]
         public void Resume() { }
