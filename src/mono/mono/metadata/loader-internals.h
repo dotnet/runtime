@@ -205,24 +205,16 @@ MONO_API void
 mono_loader_save_bundled_library (int fd, uint64_t offset, uint64_t size, const char *destfname);
 
 MonoSingletonMemoryManager *
-mono_mem_manager_create_singleton (MonoAssemblyLoadContext *alc, gboolean collectible);
+mono_mem_manager_create_singleton (MonoAssemblyLoadContext *alc, MonoDomain *domain, gboolean collectible);
 
 void
 mono_mem_manager_free_singleton (MonoSingletonMemoryManager *memory_manager, gboolean debug_unload);
 
-static inline void
-mono_mem_manager_lock (MonoMemoryManager *memory_manager)
-{
-	//mono_coop_mutex_lock (&memory_manager->lock);
-	mono_domain_lock (memory_manager->domain);
-}
+void
+mono_mem_manager_lock (MonoMemoryManager *memory_manager);
 
-static inline void
-mono_mem_manager_unlock (MonoMemoryManager *memory_manager)
-{
-	//mono_coop_mutex_unlock (&memory_manager->lock);
-	mono_domain_unlock (memory_manager->domain);
-}
+void
+mono_mem_manager_unlock (MonoMemoryManager *memory_manager);
 
 void *
 mono_mem_manager_alloc (MonoMemoryManager *memory_manager, guint size);

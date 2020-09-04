@@ -95,6 +95,20 @@ mono_mem_manager_free_singleton (MonoSingletonMemoryManager *memory_manager, gbo
 	g_free (memory_manager);
 }
 
+void
+mono_mem_manager_lock (MonoMemoryManager *memory_manager)
+{
+	//mono_coop_mutex_lock (&memory_manager->lock);
+	mono_domain_lock (memory_manager->domain);
+}
+
+void
+mono_mem_manager_unlock (MonoMemoryManager *memory_manager)
+{
+	//mono_coop_mutex_unlock (&memory_manager->lock);
+	mono_domain_unlock (memory_manager->domain);
+}
+
 void *
 mono_mem_manager_alloc (MonoMemoryManager *memory_manager, guint size)
 {
