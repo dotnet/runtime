@@ -146,6 +146,15 @@
   </Target>
 
   <!--
+    Ensures package reports dir exists, to work around the issue in VerifyClosure task:
+    https://github.com/dotnet/arcade/issues/6090
+    Remove this target, once the issue is fixed.
+  -->
+  <Target Name="EnsureDepenedencyGraphDir" BeforeTargets="VerifyClosure">
+    <MakeDir Directories="$(PackageReportDir)" />
+  </Target>
+
+  <!--
     Finds symbol files and injects them into the package build.
   -->
   <Target Name="GetSymbolPackageFiles"
