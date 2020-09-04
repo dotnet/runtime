@@ -24,7 +24,7 @@ memory_manager_init (MonoMemoryManager *memory_manager, gboolean collectible)
 }
 
 MonoSingletonMemoryManager *
-mono_memory_manager_create_singleton (MonoAssemblyLoadContext *alc, gboolean collectible)
+mono_mem_manager_create_singleton (MonoAssemblyLoadContext *alc, gboolean collectible)
 {
 	MonoSingletonMemoryManager *mem_manager = g_new0 (MonoSingletonMemoryManager, 1);
 	memory_manager_init ((MonoMemoryManager *)mem_manager, collectible);
@@ -88,7 +88,7 @@ memory_manager_delete (MonoMemoryManager *memory_manager, gboolean debug_unload)
 }
 
 void
-mono_memory_manager_free_singleton (MonoSingletonMemoryManager *memory_manager, gboolean debug_unload)
+mono_mem_manager_free_singleton (MonoSingletonMemoryManager *memory_manager, gboolean debug_unload)
 {
 	g_assert (!memory_manager->memory_manager.is_generic);
 
@@ -97,19 +97,19 @@ mono_memory_manager_free_singleton (MonoSingletonMemoryManager *memory_manager, 
 }
 
 void *
-mono_memory_manager_alloc (MonoMemoryManager *memory_manager, guint size)
+mono_mem_manager_alloc (MonoMemoryManager *memory_manager, guint size)
 {
 	void *res;
 
-	mono_memory_manager_lock (memory_manager);
-	res = mono_memory_manager_alloc_nolock (memory_manager, size);
-	mono_memory_manager_unlock (memory_manager);
+	mono_mem_manager_lock (memory_manager);
+	res = mono_mem_manager_alloc_nolock (memory_manager, size);
+	mono_mem_manager_unlock (memory_manager);
 
 	return res;
 }
 
 void *
-mono_memory_manager_alloc_nolock (MonoMemoryManager *memory_manager, guint size)
+mono_mem_manager_alloc_nolock (MonoMemoryManager *memory_manager, guint size)
 {
 #ifndef DISABLE_PERFCOUNTERS
 	mono_atomic_fetch_add_i32 (&mono_perfcounters->loader_bytes, size);
@@ -118,19 +118,19 @@ mono_memory_manager_alloc_nolock (MonoMemoryManager *memory_manager, guint size)
 }
 
 void *
-mono_memory_manager_alloc0 (MonoMemoryManager *memory_manager, guint size)
+mono_mem_manager_alloc0 (MonoMemoryManager *memory_manager, guint size)
 {
 	void *res;
 
-	mono_memory_manager_lock (memory_manager);
-	res = mono_memory_manager_alloc0_nolock (memory_manager, size);
-	mono_memory_manager_unlock (memory_manager);
+	mono_mem_manager_lock (memory_manager);
+	res = mono_mem_manager_alloc0_nolock (memory_manager, size);
+	mono_mem_manager_unlock (memory_manager);
 
 	return res;
 }
 
 void *
-mono_memory_manager_alloc0_nolock (MonoMemoryManager *memory_manager, guint size)
+mono_mem_manager_alloc0_nolock (MonoMemoryManager *memory_manager, guint size)
 {
 #ifndef DISABLE_PERFCOUNTERS
 	mono_atomic_fetch_add_i32 (&mono_perfcounters->loader_bytes, size);
@@ -140,41 +140,41 @@ mono_memory_manager_alloc0_nolock (MonoMemoryManager *memory_manager, guint size
 
 
 void *
-mono_memory_manager_code_reserve (MonoMemoryManager *memory_manager, int size)
+mono_mem_manager_code_reserve (MonoMemoryManager *memory_manager, int size)
 {
 	void *res;
 
-	mono_memory_manager_lock (memory_manager);
+	mono_mem_manager_lock (memory_manager);
 	res = mono_code_manager_reserve (memory_manager->code_mp, size);
-	mono_memory_manager_unlock (memory_manager);
+	mono_mem_manager_unlock (memory_manager);
 
 	return res;
 }
 
 void *
-mono_memory_manager_code_reserve_align (MonoMemoryManager *memory_manager, int size, int alignment)
+mono_mem_manager_code_reserve_align (MonoMemoryManager *memory_manager, int size, int alignment)
 {
 	void *res;
 
-	mono_memory_manager_lock (memory_manager);
+	mono_mem_manager_lock (memory_manager);
 	res = mono_code_manager_reserve_align (memory_manager->code_mp, size, alignment);
-	mono_memory_manager_unlock (memory_manager);
+	mono_mem_manager_unlock (memory_manager);
 
 	return res;
 }
 
 void
-mono_memory_manager_code_commit (MonoMemoryManager *memory_manager, void *data, int size, int newsize)
+mono_mem_manager_code_commit (MonoMemoryManager *memory_manager, void *data, int size, int newsize)
 {
-	mono_memory_manager_lock (memory_manager);
+	mono_mem_manager_lock (memory_manager);
 	mono_code_manager_commit (memory_manager->code_mp, data, size, newsize);
-	mono_memory_manager_unlock (memory_manager);
+	mono_mem_manager_unlock (memory_manager);
 }
 
 void
-mono_memory_manager_code_foreach (MonoMemoryManager *memory_manager, MonoCodeManagerFunc func, void *user_data)
+mono_mem_manager_code_foreach (MonoMemoryManager *memory_manager, MonoCodeManagerFunc func, void *user_data)
 {
-	mono_memory_manager_lock (memory_manager);
+	mono_mem_manager_lock (memory_manager);
 	mono_code_manager_foreach (memory_manager->code_mp, func, user_data);
-	mono_memory_manager_unlock (memory_manager);
+	mono_mem_manager_unlock (memory_manager);
 }

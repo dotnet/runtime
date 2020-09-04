@@ -1054,9 +1054,9 @@ mono_domain_owns_vtable_slot (MonoDomain *domain, gpointer vtable_slot)
 	gboolean res;
 	MonoMemoryManager *memory_manager = mono_domain_ambient_memory_manager (domain);
 
-	mono_memory_manager_lock (memory_manager);
+	mono_mem_manager_lock (memory_manager);
 	res = mono_mempool_contains_addr (memory_manager->mp, vtable_slot);
-	mono_memory_manager_unlock (memory_manager);
+	mono_mem_manager_unlock (memory_manager);
 	return res;
 }
 
@@ -3263,7 +3263,7 @@ unload_thread_main (void *arg)
 
 	mono_loader_lock ();
 	mono_domain_lock (domain);
-	mono_memory_manager_lock (memory_manager);
+	mono_mem_manager_lock (memory_manager);
 	/*
 	 * We need to make sure that we don't have any remsets
 	 * pointing into static data of the to-be-freed domain because
@@ -3284,7 +3284,7 @@ unload_thread_main (void *arg)
 
 	mono_assembly_cleanup_domain_bindings (domain->domain_id);
 
-	mono_memory_manager_unlock (memory_manager);
+	mono_mem_manager_unlock (memory_manager);
 	mono_domain_unlock (domain);
 	mono_loader_unlock ();
 

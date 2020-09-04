@@ -433,7 +433,7 @@ mono_domain_create (void)
 	MONO_PROFILER_RAISE (domain_loading, (domain));
 
 #ifndef ENABLE_NETCORE
-	domain->memory_manager = (MonoMemoryManager *)mono_memory_manager_create_singleton (NULL, TRUE);
+	domain->memory_manager = (MonoMemoryManager *)mono_mem_manager_create_singleton (NULL, TRUE);
 #endif
 
 	domain->lock_free_mp = lock_free_mempool_new ();
@@ -1335,7 +1335,7 @@ gpointer
 {
 	MonoMemoryManager *memory_manager = mono_domain_memory_manager (domain);
 
-	return mono_memory_manager_alloc (memory_manager, size);
+	return mono_mem_manager_alloc (memory_manager, size);
 }
 
 /*
@@ -1348,7 +1348,7 @@ gpointer
 {
 	MonoMemoryManager *memory_manager = mono_domain_memory_manager (domain);
 
-	return mono_memory_manager_alloc0 (memory_manager, size);
+	return mono_mem_manager_alloc0 (memory_manager, size);
 }
 
 gpointer
@@ -1367,7 +1367,7 @@ void*
 {
 	MonoMemoryManager *memory_manager = mono_domain_memory_manager (domain);
 
-	return mono_memory_manager_code_reserve (memory_manager, size);
+	return mono_mem_manager_code_reserve (memory_manager, size);
 }
 
 /*
@@ -1380,7 +1380,7 @@ void*
 {
 	MonoMemoryManager *memory_manager = mono_domain_memory_manager (domain);
 
-	return mono_memory_manager_code_reserve_align (memory_manager, size, alignment);
+	return mono_mem_manager_code_reserve_align (memory_manager, size, alignment);
 }
 
 /*
@@ -1393,7 +1393,7 @@ mono_domain_code_commit (MonoDomain *domain, void *data, int size, int newsize)
 {
 	MonoMemoryManager *memory_manager = mono_domain_memory_manager (domain);
 
-	return mono_memory_manager_code_commit (memory_manager, data, size, newsize);
+	return mono_mem_manager_code_commit (memory_manager, data, size, newsize);
 }
 
 /*
@@ -1410,7 +1410,7 @@ mono_domain_code_foreach (MonoDomain *domain, MonoCodeManagerFunc func, void *us
 {
 	MonoMemoryManager *memory_manager = mono_domain_memory_manager (domain);
 
-	return mono_memory_manager_code_foreach (memory_manager, func, user_data);
+	return mono_mem_manager_code_foreach (memory_manager, func, user_data);
 }
 
 /**

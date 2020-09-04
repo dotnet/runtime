@@ -343,9 +343,9 @@ get_type_init_exception_for_vtable (MonoVTable *vtable)
 	 * in the hash.
 	 */
 	ex = NULL;
-	mono_memory_manager_lock (memory_manager);
+	mono_mem_manager_lock (memory_manager);
 	ex = (MonoException *)mono_g_hash_table_lookup (memory_manager->type_init_exception_hash, klass);
-	mono_memory_manager_unlock (memory_manager);
+	mono_mem_manager_unlock (memory_manager);
 
 	if (!ex) {
 		const char *klass_name_space = m_class_get_name_space (klass);
@@ -594,7 +594,7 @@ mono_runtime_class_init_full (MonoVTable *vtable, MonoError *error)
 			 * Store the exception object so it could be thrown on subsequent
 			 * accesses.
 			 */
-			mono_memory_manager_lock (memory_manager);
+			mono_mem_manager_lock (memory_manager);
 			mono_g_hash_table_insert_internal (memory_manager->type_init_exception_hash, klass, exc_to_throw);
 			mono_domain_unlock (domain);
 		}
@@ -2283,9 +2283,9 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *klass, MonoErro
 	/*  class_vtable_array keeps an array of created vtables
 	 */
 	MonoMemoryManager *memory_manager = mono_domain_ambient_memory_manager (domain);
-	mono_memory_manager_lock (memory_manager);
+	mono_mem_manager_lock (memory_manager);
 	g_ptr_array_add (memory_manager->class_vtable_array, vt);
-	mono_memory_manager_unlock (memory_manager);
+	mono_mem_manager_unlock (memory_manager);
 	/* klass->runtime_info is protected by the loader lock, both when
 	 * it it enlarged and when it is stored info.
 	 */
@@ -2722,9 +2722,9 @@ mono_remote_class (MonoDomain *domain, MonoStringHandle class_name, MonoClass *p
 		return rc;
 	}
 
-	mono_memory_manager_lock (memory_manager);
+	mono_mem_manager_lock (memory_manager);
 	name = mono_string_to_utf8_mp (memory_manager->mp, MONO_HANDLE_RAW (class_name), error);
-	mono_memory_manager_unlock (memory_manager);
+	mono_mem_manager_unlock (memory_manager);
 	if (!is_ok (error)) {
 		g_free (key);
 		mono_domain_unlock (domain);

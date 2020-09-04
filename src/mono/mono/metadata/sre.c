@@ -4092,9 +4092,9 @@ ves_icall_TypeBuilder_create_runtime_class (MonoReflectionTypeBuilderHandle ref_
 		data.klass = klass;
 		data.error = error;
 		mono_error_assert_ok (error);
-		mono_memory_manager_lock (memory_manager);
+		mono_mem_manager_lock (memory_manager);
 		mono_g_hash_table_foreach_remove (memory_manager->type_hash, remove_instantiations_of_and_ensure_contents, &data);
-		mono_memory_manager_unlock (memory_manager);
+		mono_mem_manager_unlock (memory_manager);
 		goto_if_nok (error, failure);
 	}
 

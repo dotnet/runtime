@@ -186,7 +186,7 @@ clear_cached_object (MonoDomain *domain, gpointer o, MonoClass *klass)
 {
 	MonoMemoryManager *memory_manager = mono_domain_ambient_memory_manager (domain);
 
-	mono_memory_manager_lock (memory_manager);
+	mono_mem_manager_lock (memory_manager);
 
 	gpointer orig_pe, orig_value;
 	ReflectedEntry pe = { .item = o, .refclass = klass };
@@ -197,7 +197,7 @@ clear_cached_object (MonoDomain *domain, gpointer o, MonoClass *klass)
 		free_reflected_entry ((ReflectedEntry *)orig_pe);
 	}
 
-	mono_memory_manager_unlock (memory_manager);
+	mono_mem_manager_unlock (memory_manager);
 }
 
 /**
@@ -485,7 +485,7 @@ mono_type_get_object_checked (MonoDomain *domain, MonoType *type, MonoError *err
 	}
 
 	mono_loader_lock (); /*FIXME mono_class_init_internal and mono_class_vtable acquire it*/
-	mono_memory_manager_lock (memory_manager);
+	mono_mem_manager_lock (memory_manager);
 	if ((res = (MonoReflectionType *)mono_g_hash_table_lookup (memory_manager->type_hash, type)))
 		goto leave;
 
@@ -542,7 +542,7 @@ mono_type_get_object_checked (MonoDomain *domain, MonoType *type, MonoError *err
 		domain->typeof_void = (MonoObject*)res;
 
 leave:
-	mono_memory_manager_unlock (memory_manager);
+	mono_mem_manager_unlock (memory_manager);
 	mono_loader_unlock ();
 	return res;
 }

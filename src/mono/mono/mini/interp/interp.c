@@ -678,7 +678,7 @@ append_imethod (MonoMemoryManager *memory_manager, GSList *list, InterpMethod *i
 	GSList *ret;
 	InterpVTableEntry *entry;
 
-	entry = (InterpVTableEntry*) mono_memory_manager_alloc_nolock (memory_manager, sizeof (InterpVTableEntry));
+	entry = (InterpVTableEntry*) mono_mem_manager_alloc_nolock (memory_manager, sizeof (InterpVTableEntry));
 	entry->imethod = imethod;
 	entry->target_imethod = target_imethod;
 	ret = g_slist_append_mempool (memory_manager->mp, list, entry);
@@ -748,14 +748,14 @@ get_virtual_method_fast (InterpMethod *imethod, MonoVTable *vtable, int offset)
 	if (!table [offset]) {
 		InterpMethod *target_imethod = get_virtual_method (imethod, vtable);
 		/* Lazily initialize the method table slot */
-		mono_memory_manager_lock (memory_manager);
+		mono_mem_manager_lock (memory_manager);
 		if (!table [offset]) {
 			if (imethod->method->is_inflated || offset < 0)
 				table [offset] = append_imethod (memory_manager, NULL, imethod, target_imethod);
 			else
 				table [offset] = (gpointer) ((gsize)target_imethod | 0x1);
 		}
-		mono_memory_manager_unlock (memory_manager);
+		mono_mem_manager_unlock (memory_manager);
 	}
 
 	if ((gsize)table [offset] & 0x1) {
@@ -767,10 +767,10 @@ get_virtual_method_fast (InterpMethod *imethod, MonoVTable *vtable, int offset)
 
 		if (!target_imethod) {
 			target_imethod = get_virtual_method (imethod, vtable);
-			mono_memory_manager_lock (memory_manager);
+			mono_mem_manager_lock (memory_manager);
 			if (!get_target_imethod ((GSList*)table [offset], imethod))
 				table [offset] = append_imethod (memory_manager, (GSList*)table [offset], imethod, target_imethod);
-			mono_memory_manager_unlock (memory_manager);
+			mono_mem_manager_unlock (memory_manager);
 		}
 		return target_imethod;
 	}

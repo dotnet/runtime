@@ -204,45 +204,45 @@ MONO_API void
 mono_loader_save_bundled_library (int fd, uint64_t offset, uint64_t size, const char *destfname);
 
 MonoSingletonMemoryManager *
-mono_memory_manager_create_singleton (MonoAssemblyLoadContext *alc, gboolean collectible);
+mono_mem_manager_create_singleton (MonoAssemblyLoadContext *alc, gboolean collectible);
 
 void
-mono_memory_manager_free_singleton (MonoSingletonMemoryManager *memory_manager, gboolean debug_unload);
+mono_mem_manager_free_singleton (MonoSingletonMemoryManager *memory_manager, gboolean debug_unload);
 
 static inline void
-mono_memory_manager_lock (MonoMemoryManager *memory_manager)
+mono_mem_manager_lock (MonoMemoryManager *memory_manager)
 {
 	mono_coop_mutex_lock (&memory_manager->lock);
 }
 
 static inline void
-mono_memory_manager_unlock (MonoMemoryManager *memory_manager)
+mono_mem_manager_unlock (MonoMemoryManager *memory_manager)
 {
 	mono_coop_mutex_unlock (&memory_manager->lock);
 }
 
 void *
-mono_memory_manager_alloc (MonoMemoryManager *memory_manager, guint size);
+mono_mem_manager_alloc (MonoMemoryManager *memory_manager, guint size);
 
 void *
-mono_memory_manager_alloc_nolock (MonoMemoryManager *memory_manager, guint size);
+mono_mem_manager_alloc_nolock (MonoMemoryManager *memory_manager, guint size);
 
 void *
-mono_memory_manager_alloc0 (MonoMemoryManager *memory_manager, guint size);
+mono_mem_manager_alloc0 (MonoMemoryManager *memory_manager, guint size);
 
 void *
-mono_memory_manager_alloc0_nolock (MonoMemoryManager *memory_manager, guint size);
+mono_mem_manager_alloc0_nolock (MonoMemoryManager *memory_manager, guint size);
 
 void *
-mono_memory_manager_code_reserve (MonoMemoryManager *memory_manager, int size);
+mono_mem_manager_code_reserve (MonoMemoryManager *memory_manager, int size);
 
 void *
-mono_memory_manager_code_reserve_align (MonoMemoryManager *memory_manager, int size, int newsize);
+mono_mem_manager_code_reserve_align (MonoMemoryManager *memory_manager, int size, int newsize);
 
 void
-mono_memory_manager_code_commit (MonoMemoryManager *memory_manager, void *data, int size, int newsize);
+mono_mem_manager_code_commit (MonoMemoryManager *memory_manager, void *data, int size, int newsize);
 
 void
-mono_memory_manager_code_foreach (MonoMemoryManager *memory_manager, MonoCodeManagerFunc func, void *user_data);
+mono_mem_manager_code_foreach (MonoMemoryManager *memory_manager, MonoCodeManagerFunc func, void *user_data);
 
 #endif
