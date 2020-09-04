@@ -564,8 +564,8 @@ void RangeCheck::MergeEdgeAssertions(ValueNum normalLclVN, ASSERT_VALARG_TP asse
         Compiler::AssertionDsc* curAssertion = m_pCompiler->optGetAssertion(assertionIndex);
 
         Limit      limit(Limit::keUndef);
-        genTreeOps cmpOper = GT_NONE;
-        bool isConstantAssertion = false;
+        genTreeOps cmpOper             = GT_NONE;
+        bool       isConstantAssertion = false;
 
         // Current assertion is of the form (i < len - cns) != 0
         if (curAssertion->IsCheckedBoundArithBound())
@@ -646,11 +646,12 @@ void RangeCheck::MergeEdgeAssertions(ValueNum normalLclVN, ASSERT_VALARG_TP asse
             }
 
             int cnstLimit = m_pCompiler->vnStore->ConstantValue<int>(curAssertion->op2.vn);
-            
-            if ((cnstLimit == 0) && (curAssertion->assertionKind == Compiler::OAK_NOT_EQUAL) && m_pCompiler->vnStore->IsVNCheckedBound(curAssertion->op1.vn))
+
+            if ((cnstLimit == 0) && (curAssertion->assertionKind == Compiler::OAK_NOT_EQUAL) &&
+                m_pCompiler->vnStore->IsVNCheckedBound(curAssertion->op1.vn))
             {
                 // we have arr.Len != 0, so the length must be atleast one
-                limit = Limit(Limit::keConstant, 1);
+                limit   = Limit(Limit::keConstant, 1);
                 cmpOper = GT_GE;
             }
             else

@@ -8,7 +8,7 @@ class Program
 {
     private static int returnCode = 100;
 
-    private readonly static int[] arr = new int[6];
+    private static int[] arr = new int[6];
 
     public static int Main(string[] args)
     {
@@ -33,14 +33,24 @@ class Program
         RunTestNoThrow(Tests.LessEqualsInBound);
         RunTestNoThrow(Tests.EqualsInBound);
         RunTestNoThrow(Tests.EqualsReversedInBound);
+        RunTestNoThrow(Tests.ZeroInBounds);
         RunTestNoThrow(TestsEarlyReturn.GreaterInBound);
         RunTestNoThrow(TestsEarlyReturn.GreaterEqualInBound);
         RunTestNoThrow(TestsEarlyReturn.LessInBound);
         RunTestNoThrow(TestsEarlyReturn.LessEqualsInBound);
         RunTestNoThrow(TestsEarlyReturn.NotEqualsInBound);
+        RunTestNoThrow(TestsEarlyReturn.ZeroInBounds);
 
         Tests.ModInBounds(arr, 11);
-        try { Tests.ModOutOfBounds(arr, 6); returnCode--; } catch {} 
+        try { Tests.ModOutOfBounds(arr, 6); returnCode--; } catch {}
+
+        arr = new int[0];
+        RunTestThrows(Tests.ZeroOutOfBounds);
+        RunTestThrows(TestsEarlyReturn.ZeroOutOfBounds);
+
+        arr = new int[1];
+        RunTestThrows(Tests.OneOutOfBounds);
+        RunTestThrows(Tests.OneEqualsOutOfBounds);
 
         return returnCode;
     }
@@ -141,8 +151,6 @@ public static class Tests
 
     public static void EqualsInBound(int[] arr)
     {
-        arr[0] = 1;
-
         if (arr.Length == 6)
         {
             arr[5] = 1;
@@ -151,8 +159,6 @@ public static class Tests
 
     public static void EqualsReversedInBound(int[] arr)
     {
-        arr[0] = 1;
-
         if (6 == arr.Length)
         {
             arr[5] = 1;
@@ -161,8 +167,6 @@ public static class Tests
 
     public static void EqualsOutOfBound(int[] arr)
     {
-        arr[0] = 1;
-
         if (arr.Length == 6)
         {
             arr[6] = 1;
@@ -171,8 +175,6 @@ public static class Tests
 
     public static void EqualsReversedOutOfBound(int[] arr)
     {
-        arr[0] = 1;
-
         if (6 == arr.Length)
         {
             arr[6] = 1;
@@ -181,8 +183,6 @@ public static class Tests
 
     public static void NotEqualsOutOfBound(int[] arr)
     {
-        arr[0] = 1;
-
         if (arr.Length != 5)
         {
             arr[6] = 1;
@@ -199,19 +199,35 @@ public static class Tests
 
     public static void ZeroOutOfBounds(int[] arr)
     {
-        if (arr.Length != 0)
+        if (arr.Length == 0)
         {
-            arr[1] = 0;
+            arr[0] = 0;
         }
 
         return;
     }
 
+    public static void OneOutOfBounds(int[] arr)
+    {
+        if (arr.Length != 0)
+        {
+            arr[1] = 0;
+        }
+    }
+
+    public static void OneEqualsOutOfBounds(int[] arr)
+    {
+        if (arr.Length == 0)
+        {
+            return;
+        }
+
+        arr[1] = 0;
+    }
+
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static void ModInBounds(int[] arr, uint i)
     {
-        arr[0] = 1; //needed to signal that arr isn't null
-
         if (arr.Length == 6)
         {
             arr[(int)(i % 6)] = 0;
@@ -221,8 +237,6 @@ public static class Tests
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static void ModOutOfBounds(int[] arr, uint i)
     {
-        arr[0] = 1;
-
         if (arr.Length == 6)
         {
             arr[(int)(i % 7)] = 0;
@@ -314,8 +328,6 @@ public static class TestsEarlyReturn
 
     public static void NotEqualsInBound(int[] arr)
     {
-        arr[0] = 1;
-
         if (arr.Length != 6)
         {
             return;
@@ -326,8 +338,6 @@ public static class TestsEarlyReturn
 
     public static void NotEqualsOutOfBound(int[] arr)
     {
-        arr[0] = 1;
-
         if (arr.Length != 6)
         {
             return;
@@ -338,8 +348,6 @@ public static class TestsEarlyReturn
 
     public static void EqualsOutOfBound(int[] arr)
     {
-        arr[0] = 1;
-        
         if (arr.Length == 5)
         {
             return;
@@ -360,31 +368,11 @@ public static class TestsEarlyReturn
 
     public static void ZeroOutOfBounds(int[] arr)
     {
-        if (arr.Length == 0)
-        {
-            arr[0] = 0;
-        }
-
-        return;
-    }
-
-    public static void ZeroInBounds(int[] arr)
-    {
-        if (arr.Length == 0)
-        {
-            return;
-        }
-
-        arr[0] = 0;
-    }
-
-    public static void ZeroOutOfBounds(int[] arr)
-    {
         if (arr.Length != 0)
         {
             return;
         }
 
-        arr[1] = 0;
+        arr[0] = 0;
     }
 }

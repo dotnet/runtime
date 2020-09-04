@@ -1976,12 +1976,12 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
             if (con == 0)
             {
                 dsc.assertionKind = OAK_NOT_EQUAL;
-                dsc.op1.bnd.vnIdx    = vnStore->VNForIntCon(0);
+                dsc.op1.bnd.vnIdx = vnStore->VNForIntCon(0);
             }
-            else 
+            else
             {
                 dsc.assertionKind = OAK_EQUAL;
-                dsc.op1.bnd.vnIdx    = vnStore->VNForIntCon(con - 1);
+                dsc.op1.bnd.vnIdx = vnStore->VNForIntCon(con - 1);
             }
 
             dsc.op1.vn           = op1VN;
