@@ -176,6 +176,9 @@ IF ERRORLEVEL 1 (
     goto :Failure
 )
 
+echo Done building Native components
+exit /B 0
+
 :Failure
 :: Build failed
 echo Failed to generate native component build project!
