@@ -3230,7 +3230,7 @@ unload_thread_main (void *arg)
 {
 	unload_data *data = (unload_data*)arg;
 	MonoDomain *domain = data->domain;
-	MonoMemoryManager *memory_manager = mono_domain_default_memory_manager (domain);
+	MonoMemoryManager *memory_manager = mono_domain_memory_manager (domain);
 	int i;
 	gsize result = 1; // failure
 

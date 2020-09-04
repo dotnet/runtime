@@ -1333,7 +1333,7 @@ mono_domain_get_friendly_name (MonoDomain *domain)
 gpointer
 (mono_domain_alloc) (MonoDomain *domain, guint size)
 {
-	MonoMemoryManager *memory_manager = mono_domain_default_memory_manager (domain);
+	MonoMemoryManager *memory_manager = mono_domain_memory_manager (domain);
 
 	return mono_memory_manager_alloc (memory_manager, size);
 }
@@ -1346,7 +1346,7 @@ gpointer
 gpointer
 (mono_domain_alloc0) (MonoDomain *domain, guint size)
 {
-	MonoMemoryManager *memory_manager = mono_domain_default_memory_manager (domain);
+	MonoMemoryManager *memory_manager = mono_domain_memory_manager (domain);
 
 	return mono_memory_manager_alloc0 (memory_manager, size);
 }
@@ -1365,7 +1365,7 @@ gpointer
 void*
 (mono_domain_code_reserve) (MonoDomain *domain, int size)
 {
-	MonoMemoryManager *memory_manager = mono_domain_default_memory_manager (domain);
+	MonoMemoryManager *memory_manager = mono_domain_memory_manager (domain);
 
 	return mono_memory_manager_code_reserve (memory_manager, size);
 }
@@ -1378,7 +1378,7 @@ void*
 void*
 (mono_domain_code_reserve_align) (MonoDomain *domain, int size, int alignment)
 {
-	MonoMemoryManager *memory_manager = mono_domain_default_memory_manager (domain);
+	MonoMemoryManager *memory_manager = mono_domain_memory_manager (domain);
 
 	return mono_memory_manager_code_reserve_align (memory_manager, size, alignment);
 }
@@ -1391,7 +1391,7 @@ void*
 void
 mono_domain_code_commit (MonoDomain *domain, void *data, int size, int newsize)
 {
-	MonoMemoryManager *memory_manager = mono_domain_default_memory_manager (domain);
+	MonoMemoryManager *memory_manager = mono_domain_memory_manager (domain);
 
 	return mono_memory_manager_code_commit (memory_manager, data, size, newsize);
 }
@@ -1408,7 +1408,7 @@ mono_domain_code_commit (MonoDomain *domain, void *data, int size, int newsize)
 void
 mono_domain_code_foreach (MonoDomain *domain, MonoCodeManagerFunc func, void *user_data)
 {
-	MonoMemoryManager *memory_manager = mono_domain_default_memory_manager (domain);
+	MonoMemoryManager *memory_manager = mono_domain_memory_manager (domain);
 
 	return mono_memory_manager_code_foreach (memory_manager, func, user_data);
 }
