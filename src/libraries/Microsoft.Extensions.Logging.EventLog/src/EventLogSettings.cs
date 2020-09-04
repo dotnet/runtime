@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace Microsoft.Extensions.Logging.EventLog
 {
@@ -53,6 +55,8 @@ namespace Microsoft.Extensions.Logging.EventLog
                 defaultEventId = 1000;
             }
 
+
+            Debug.Assert(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
             return new WindowsEventLog(logName, machineName, sourceName) { DefaultEventId = defaultEventId };
         }
     }

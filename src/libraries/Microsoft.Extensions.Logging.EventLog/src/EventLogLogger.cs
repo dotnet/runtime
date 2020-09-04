@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace Microsoft.Extensions.Logging.EventLog
@@ -164,10 +165,10 @@ namespace Microsoft.Extensions.Logging.EventLog
             }
         }
 
-#pragma warning disable CA1416 // Debug.Assert(OperatingSystem.IsWindows()) is not available
-
         private EventLogEntryType GetEventLogEntryType(LogLevel level)
         {
+            Debug.Assert(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
+
             switch (level)
             {
                 case LogLevel.Information:
@@ -183,7 +184,5 @@ namespace Microsoft.Extensions.Logging.EventLog
                     return EventLogEntryType.Information;
             }
         }
-
-#pragma warning restore CA1416 // Debug.Assert(OperatingSystem.IsWindows()) is not available
     }
 }
