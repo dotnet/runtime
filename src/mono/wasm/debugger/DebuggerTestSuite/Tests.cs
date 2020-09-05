@@ -235,7 +235,6 @@ namespace DebuggerTests
                         Assert.Equal("IntAdd", scope["name"]);
 
                         Assert.Equal("object", scope["object"]["type"]);
-                        Assert.Equal("dotnet:scope:0", scope["object"]["objectId"]);
                         CheckLocation("dotnet://debugger-test.dll/debugger-test.cs", 8, 4, scripts, scope["startLocation"]);
                         CheckLocation("dotnet://debugger-test.dll/debugger-test.cs", 14, 4, scripts, scope["endLocation"]);
                         return Task.CompletedTask;
@@ -482,7 +481,6 @@ namespace DebuggerTests
                        var top_frame = pause_location["callFrames"][0];
 
                        var scope = top_frame["scopeChain"][0];
-                       Assert.Equal("dotnet:scope:0", scope["object"]["objectId"]);
 
                        // Try to get an invalid scope!
                        var get_prop_req = JObject.FromObject(new
@@ -1711,6 +1709,96 @@ namespace DebuggerTests
 
             });
         }
+
+        [Fact]
+        public async Task MulticastDelegateTest() => await CheckInspectLocalsAtBreakpointSite(
+            "MulticastDelegateTestClass", "Test", 5, "Test",
+            "window.setTimeout(function() { invoke_static_method('[debugger-test] MulticastDelegateTestClass:run'); })",
+            wait_for_event_fn: async (pause_location) =>
+            {
+                var frame_locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
+                var this_props = await GetObjectOnLocals(frame_locals, "this");
+                await CheckProps(this_props, new
+                {
+                    TestEvent = TSymbol("System.EventHandler<string>"),
+                    Delegate = TSymbol("System.MulticastDelegate")
+                }, "this_props");
+            });
+
+        [Theory]
+        [InlineData("EmptyClass", false)]
+        [InlineData("EmptyClass", true)]
+        [InlineData("EmptyStruct", false)]
+        [InlineData("EmptyStruct", true)]
+        public async Task EmptyTypeWithNoLocalsOrParams(string type_name, bool is_async) => await CheckInspectLocalsAtBreakpointSite(
+            type_name,
+            $"StaticMethodWithNoLocals{ (is_async ? "Async" : "") }",
+            1,
+            is_async ? "MoveNext" : "StaticMethodWithNoLocals",
+            $"window.setTimeout(function() {{ invoke_static_method('[debugger-test] {type_name}:run'); }})",
+            wait_for_event_fn: async (pause_location) =>
+            {
+                var frame_locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
+                AssertEqual(0, frame_locals.Values<JToken>().Count(), "locals");
+            });
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task StaticMethodWithLocalEmptyStructThatWillGetExpanded(bool is_async) => await CheckInspectLocalsAtBreakpointSite(
+            "EmptyStruct",
+            $"StaticMethodWithLocalEmptyStruct{ (is_async ? "Async" : "") }",
+            1,
+            is_async ? "MoveNext" : "StaticMethodWithLocalEmptyStruct",
+            $"window.setTimeout(function() {{ invoke_static_method('[debugger-test] EmptyStruct:run'); }})",
+            wait_for_event_fn: async (pause_location) =>
+            {
+                var frame_locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
+                await CheckProps(frame_locals, new
+                {
+                    es = TValueType("EmptyStruct")
+                }, "locals");
+
+                var es = GetAndAssertObjectWithName(frame_locals, "es");
+                var es_props = await GetProperties(es["value"]["objectId"]?.Value<string>());
+                AssertEqual(0, es_props.Values<JToken>().Count(), "es_props");
+            });
+
+        [Fact]
+        public async Task PreviousFrameForAReflectedCall() => await CheckInspectLocalsAtBreakpointSite(
+             "DebuggerTests.GetPropertiesTests.CloneableStruct", "SimpleStaticMethod", 1, "SimpleStaticMethod",
+             "window.setTimeout(function() { invoke_static_method('[debugger-test] DebuggerTests.GetPropertiesTests.TestWithReflection:run'); })",
+             wait_for_event_fn: async (pause_location) =>
+             {
+                 var frame = FindFrame(pause_location, "InvokeReflectedStaticMethod");
+                 Assert.NotNull(frame);
+
+                 var frame_locals = await GetProperties(frame["callFrameId"].Value<string>());
+
+                 await CheckProps(frame_locals, new
+                 {
+                     mi = TObject("System.Reflection.MethodInfo"),
+                     dt = TDateTime(new DateTime(4210, 3, 4, 5, 6, 7)),
+                     i = TNumber(4),
+                     strings = TArray("string[]", 1),
+                     cs = TValueType("DebuggerTests.GetPropertiesTests.CloneableStruct"),
+
+                     num = TNumber(10),
+                     name = TString("foobar"),
+                     some_date = TDateTime(new DateTime(1234, 6, 7, 8, 9, 10)),
+                     num1 = TNumber(100),
+                     str2 = TString("xyz"),
+                     num3 = TNumber(345),
+                     str3 = TString("abc")
+                 }, "InvokeReflectedStaticMethod#locals");
+             });
+
+        JObject FindFrame(JObject pause_location, string function_name)
+            => pause_location["callFrames"]
+                    ?.Values<JObject>()
+                    ?.Where(f => f["functionName"]?.Value<string>() == function_name)
+                    ?.FirstOrDefault();
+
         //TODO add tests covering basic stepping behavior as step in/out/over
     }
 }

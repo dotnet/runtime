@@ -54,7 +54,7 @@ EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_invoke_getter_on_value (void *value, Mon
 EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_get_deref_ptr_value (void *value_addr, MonoClass *klass);
 
 //JS functions imported that we use
-extern void mono_wasm_add_frame (int il_offset, int method_token, const char *assembly_name, const char *method_name);
+extern void mono_wasm_add_frame (int il_offset, int method_token, int frame_id, const char *assembly_name, const char *method_name);
 extern void mono_wasm_fire_bp (void);
 extern void mono_wasm_fire_exception (int exception_obj_id, const char* message, const char* class_name, gboolean uncaught);
 extern void mono_wasm_add_obj_var (const char*, const char*, guint64);
@@ -143,7 +143,7 @@ collect_frames (MonoStackFrameInfo *info, MonoContext *ctx, gpointer data)
 	if (!method)
 		return FALSE;
 
-	DEBUG_PRINTF (2, "Reporting method %s native_offset %d\n", method->name, info->native_offset);
+	DEBUG_PRINTF (2, "collect_frames: Reporting method %s native_offset %d, wrapper_type: %d\n", method->name, info->native_offset, method->wrapper_type);
 
 	if (!mono_find_prev_seq_point_for_native_offset (mono_get_root_domain (), method, info->native_offset, NULL, &sp))
 		DEBUG_PRINTF (2, "collect_frames: Failed to lookup sequence point. method: %s, native_offset: %d \n", method->name, info->native_offset);
@@ -657,20 +657,22 @@ list_frames (MonoStackFrameInfo *info, MonoContext *ctx, gpointer data)
 	MonoMethod *method;
 	char *method_full_name;
 
+	int* frame_id_p = (int*)data;
+	(*frame_id_p)++;
+
 	//skip wrappers
 	if (info->type != FRAME_TYPE_MANAGED && info->type != FRAME_TYPE_INTERP)
 		return FALSE;
-
 
 	if (info->ji)
 		method = jinfo_get_method (info->ji);
 	else
 		method = info->method;
 
-	if (!method)
+	if (!method || method->wrapper_type != MONO_WRAPPER_NONE)
 		return FALSE;
 
-	DEBUG_PRINTF (2, "Reporting method %s native_offset %d\n", method->name, info->native_offset);
+	DEBUG_PRINTF (2, "list_frames: Reporting method %s native_offset %d, wrapper_type: %d\n", method->name, info->native_offset, method->wrapper_type);
 
 	if (!mono_find_prev_seq_point_for_native_offset (mono_get_root_domain (), method, info->native_offset, NULL, &sp))
 		DEBUG_PRINTF (2, "list_frames: Failed to lookup sequence point. method: %s, native_offset: %d\n", method->name, info->native_offset);
@@ -682,10 +684,8 @@ list_frames (MonoStackFrameInfo *info, MonoContext *ctx, gpointer data)
 	char *assembly_name = g_strdup (m_class_get_image (method->klass)->module_name);
 	inplace_tolower (assembly_name);
 
-	if (method->wrapper_type == MONO_WRAPPER_NONE) {
-		DEBUG_PRINTF (2, "adding off %d token %d assembly name %s\n", sp.il_offset, mono_metadata_token_index (method->token), assembly_name);
-		mono_wasm_add_frame (sp.il_offset, mono_metadata_token_index (method->token), assembly_name, method_full_name);
-	}
+	DEBUG_PRINTF (2, "adding off %d token %d assembly name %s\n", sp.il_offset, mono_metadata_token_index (method->token), assembly_name);
+	mono_wasm_add_frame (sp.il_offset, mono_metadata_token_index (method->token), *frame_id_p, assembly_name, method_full_name);
 
 	g_free (assembly_name);
 
@@ -695,7 +695,8 @@ list_frames (MonoStackFrameInfo *info, MonoContext *ctx, gpointer data)
 EMSCRIPTEN_KEEPALIVE void
 mono_wasm_enum_frames (void)
 {
-	mono_walk_stack_with_ctx (list_frames, NULL, MONO_UNWIND_NONE, NULL);
+	int frame_id = -1;
+	mono_walk_stack_with_ctx (list_frames, NULL, MONO_UNWIND_NONE, &frame_id);
 }
 
 static char*
@@ -769,6 +770,7 @@ typedef struct {
 	int target_frame;
 	int len;
 	int *pos;
+	gboolean found;
 } FrameDescData;
 
 /*
@@ -979,17 +981,16 @@ describe_value(MonoType * type, gpointer addr, int gpflags)
 
 				method = mono_get_delegate_invoke_internal (klass);
 				if (!method) {
-					DEBUG_PRINTF (2, "Could not get a method for the delegate for %s\n", class_name);
-					break;
+					mono_wasm_add_func_var (class_name, NULL, -1);
+				} else {
+					MonoMethod *tm = ((MonoDelegate *)obj)->method;
+					char *tm_desc = NULL;
+					if (tm)
+						tm_desc = mono_method_to_desc_for_js (tm, FALSE);
+
+					mono_wasm_add_func_var (class_name, tm_desc, obj_id);
+					g_free (tm_desc);
 				}
-
-				MonoMethod *tm = ((MonoDelegate *)obj)->method;
-				char *tm_desc = NULL;
-				if (tm)
-					tm_desc = mono_method_to_desc_for_js (tm, FALSE);
-
-				mono_wasm_add_func_var (class_name, tm_desc, obj_id);
-				g_free (tm_desc);
 			} else {
 				char *to_string_val = get_to_string_description (class_name, klass, addr);
 				mono_wasm_add_obj_var (class_name, to_string_val, obj_id);
@@ -1086,7 +1087,7 @@ are_getters_allowed (const char *class_name)
 	return FALSE;
 }
 
-static void
+static gboolean
 invoke_and_describe_getter_value (MonoObject *obj, MonoProperty *p)
 {
 	ERROR_DECL (error);
@@ -1099,11 +1100,11 @@ invoke_and_describe_getter_value (MonoObject *obj, MonoProperty *p)
 	if (!is_ok (error) && exc == NULL)
 		exc = (MonoObject*) mono_error_convert_to_exception (error);
 	if (exc)
-		describe_value (mono_get_object_type (), &exc, GPFLAG_EXPAND_VALUETYPES);
+		return describe_value (mono_get_object_type (), &exc, GPFLAG_EXPAND_VALUETYPES);
 	else if (!res || !m_class_is_valuetype (mono_object_class (res)))
-		describe_value (sig->ret, &res, GPFLAG_EXPAND_VALUETYPES);
+		return describe_value (sig->ret, &res, GPFLAG_EXPAND_VALUETYPES);
 	else
-		describe_value (sig->ret, mono_object_unbox_internal (res), GPFLAG_EXPAND_VALUETYPES);
+		return describe_value (sig->ret, mono_object_unbox_internal (res), GPFLAG_EXPAND_VALUETYPES);
 }
 
 static void
@@ -1362,20 +1363,26 @@ describe_non_async_this (InterpFrame *frame, MonoMethod *method)
 }
 
 static gboolean
-describe_variable (InterpFrame *frame, MonoMethod *method, int pos, int gpflags)
+describe_variable (InterpFrame *frame, MonoMethod *method, MonoMethodHeader *header, int pos, int gpflags)
 {
-	ERROR_DECL (error);
-	MonoMethodHeader *header = NULL;
-
 	MonoType *type = NULL;
 	gpointer addr = NULL;
 	if (pos < 0) {
+		MonoMethodSignature *sig = mono_method_signature_internal (method);
 		pos = -pos - 1;
-		type = mono_method_signature_internal (method)->params [pos];
+
+		if (pos >= sig->param_count) {
+			DEBUG_PRINTF(1, "BUG: describe_variable, trying to access param indexed %d, but the method (%s) has only %d params\n", pos, method->name, sig->param_count);
+			return FALSE;
+		}
+
+		type = sig->params [pos];
 		addr = mini_get_interp_callbacks ()->frame_get_arg (frame, pos);
 	} else {
-		header = mono_method_get_header_checked (method, error);
-		mono_error_assert_ok (error); /* FIXME report error */
+		if (pos >= header->num_locals) {
+			DEBUG_PRINTF(1, "BUG: describe_variable, trying to access local indexed %d, but the method (%s) has only %d locals\n", pos, method->name, header->num_locals);
+			return FALSE;
+		}
 
 		type = header->locals [pos];
 		addr = mini_get_interp_callbacks ()->frame_get_local (frame, pos);
@@ -1383,41 +1390,45 @@ describe_variable (InterpFrame *frame, MonoMethod *method, int pos, int gpflags)
 
 	DEBUG_PRINTF (2, "adding val %p type [%p] %s\n", addr, type, mono_type_full_name (type));
 
-	describe_value(type, addr, gpflags);
-	if (header)
-		mono_metadata_free_mh (header);
-
-	return TRUE;
+	return describe_value(type, addr, gpflags);
 }
 
 static gboolean
 describe_variables_on_frame (MonoStackFrameInfo *info, MonoContext *ctx, gpointer ud)
 {
+	ERROR_DECL (error);
 	FrameDescData *data = (FrameDescData*)ud;
+
+	++data->cur_frame;
 
 	//skip wrappers
 	if (info->type != FRAME_TYPE_MANAGED && info->type != FRAME_TYPE_INTERP) {
 		return FALSE;
 	}
 
-	if (data->cur_frame < data->target_frame) {
-		++data->cur_frame;
+	if (data->cur_frame != data->target_frame)
 		return FALSE;
-	}
+
+	data->found = TRUE;
 
 	InterpFrame *frame = (InterpFrame*)info->interp_frame;
 	g_assert (frame);
 	MonoMethod *method = frame->imethod->method;
 	g_assert (method);
 
+	MonoMethodHeader *header = mono_method_get_header_checked (method, error);
+	mono_error_assert_ok (error); /* FIXME report error */
+
 	for (int i = 0; i < data->len; i++)
 	{
-		describe_variable (frame, method, data->pos[i], GPFLAG_EXPAND_VALUETYPES);
+		if (!describe_variable (frame, method, header, data->pos[i], GPFLAG_EXPAND_VALUETYPES))
+			mono_wasm_add_typed_value("symbol", "<unreadable value>", 0);
 	}
 
 	describe_async_method_locals (frame, method);
 	describe_non_async_this (frame, method);
 
+	mono_metadata_free_mh (header);
 	return TRUE;
 }
 
@@ -1431,23 +1442,26 @@ mono_wasm_get_deref_ptr_value (void *value_addr, MonoClass *klass)
 	}
 
 	mono_wasm_add_properties_var ("deref", -1);
-	describe_value (type->data.type, value_addr, GPFLAG_EXPAND_VALUETYPES);
-	return TRUE;
+	return describe_value (type->data.type, value_addr, GPFLAG_EXPAND_VALUETYPES);
 }
 
 //FIXME this doesn't support getting the return value pseudo-var
 EMSCRIPTEN_KEEPALIVE gboolean
 mono_wasm_get_local_vars (int scope, int* pos, int len)
 {
+	if (scope < 0)
+		return FALSE;
+
 	FrameDescData data;
 	data.target_frame = scope;
-	data.cur_frame = 0;
+	data.cur_frame = -1;
 	data.len = len;
 	data.pos = pos;
+	data.found = FALSE;
 
 	mono_walk_stack_with_ctx (describe_variables_on_frame, NULL, MONO_UNWIND_NONE, &data);
 
-	return TRUE;
+	return data.found;
 }
 
 EMSCRIPTEN_KEEPALIVE gboolean

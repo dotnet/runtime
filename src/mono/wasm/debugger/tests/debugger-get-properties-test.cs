@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Reflection;
 using System.Threading.Tasks;
+
 namespace DebuggerTests.GetPropertiesTests
 {
 
@@ -154,6 +156,12 @@ namespace DebuggerTests.GetPropertiesTests
             Console.WriteLine($"break here");
             await Task.CompletedTask;
         }
+
+        public static void SimpleStaticMethod(DateTime dateTimeArg, string stringArg)
+        {
+            Console.WriteLine($"break here");
+        }
+
     }
 
     public struct NestedStruct
@@ -201,6 +209,27 @@ namespace DebuggerTests.GetPropertiesTests
         {
             var obj = new DerivedClassForJSTest();
             Console.WriteLine($"break here");
+        }
+    }
+
+    public class TestWithReflection
+    {
+        public static void run()
+        {
+            InvokeReflectedStaticMethod(10, "foobar", new DateTime(1234, 6, 7, 8, 9, 10), 100, "xyz", 345, "abc");
+        }
+
+        public static void InvokeReflectedStaticMethod(int num, string name, DateTime some_date, int num1, string str2, int num3, string str3)
+        {
+            var mi = typeof(CloneableStruct).GetMethod("SimpleStaticMethod");
+            var dt = new DateTime(4210, 3, 4, 5, 6, 7);
+            int i = 4;
+
+            string[] strings = new[] { "abc" };
+            CloneableStruct cs = new CloneableStruct();
+
+            // var cs = new CloneableStruct();
+            mi.Invoke(null, new object[] { dt, "called from run" });
         }
     }
 }
