@@ -250,52 +250,6 @@ namespace System.Runtime.InteropServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern Exception GetExceptionForHRInternal(int errorCode, IntPtr errorInfo);
 
-        public static IntPtr AllocHGlobal(IntPtr cb)
-        {
-            // For backwards compatibility on 32 bit platforms, ensure we pass values between
-            // int.MaxValue and uint.MaxValue to Windows.  If the binary has had the
-            // LARGEADDRESSAWARE bit set in the PE header, it may get 3 or 4 GB of user mode
-            // address space.  It is remotely that those allocations could have succeeded,
-            // though I couldn't reproduce that.  In either case, that means we should continue
-            // throwing an OOM instead of an ArgumentOutOfRangeException for "negative" amounts of memory.
-            UIntPtr numBytes;
-#if TARGET_64BIT
-            numBytes = new UIntPtr(unchecked((ulong)cb.ToInt64()));
-#else // 32
-            numBytes = new UIntPtr(unchecked((uint)cb.ToInt32()));
-#endif
-
-            IntPtr pNewMem = Interop.Kernel32.LocalAlloc(Interop.Kernel32.LMEM_FIXED, unchecked(numBytes));
-            if (pNewMem == IntPtr.Zero)
-            {
-                throw new OutOfMemoryException();
-            }
-
-            return pNewMem;
-        }
-
-        public static void FreeHGlobal(IntPtr hglobal)
-        {
-            if (!IsNullOrWin32Atom(hglobal))
-            {
-                if (IntPtr.Zero != Interop.Kernel32.LocalFree(hglobal))
-                {
-                    ThrowExceptionForHR(GetHRForLastWin32Error());
-                }
-            }
-        }
-
-        public static IntPtr ReAllocHGlobal(IntPtr pv, IntPtr cb)
-        {
-            IntPtr pNewMem = Interop.Kernel32.LocalReAlloc(pv, cb, Interop.Kernel32.LMEM_MOVEABLE);
-            if (pNewMem == IntPtr.Zero)
-            {
-                throw new OutOfMemoryException();
-            }
-
-            return pNewMem;
-        }
-
 #if FEATURE_COMINTEROP
         /// <summary>
         /// Converts the CLR exception to an HRESULT. This function also sets
@@ -481,83 +435,6 @@ namespace System.Runtime.InteropServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern bool IsComObject(object o);
 
-#endif // FEATURE_COMINTEROP
-
-        public static IntPtr AllocCoTaskMem(int cb)
-        {
-            IntPtr pNewMem = Interop.Ole32.CoTaskMemAlloc(new UIntPtr((uint)cb));
-            if (pNewMem == IntPtr.Zero)
-            {
-                throw new OutOfMemoryException();
-            }
-
-            return pNewMem;
-        }
-
-        public static void FreeCoTaskMem(IntPtr ptr)
-        {
-            if (!IsNullOrWin32Atom(ptr))
-            {
-                Interop.Ole32.CoTaskMemFree(ptr);
-            }
-        }
-
-        public static IntPtr ReAllocCoTaskMem(IntPtr pv, int cb)
-        {
-            IntPtr pNewMem = Interop.Ole32.CoTaskMemRealloc(pv, new UIntPtr((uint)cb));
-            if (pNewMem == IntPtr.Zero && cb != 0)
-            {
-                throw new OutOfMemoryException();
-            }
-
-            return pNewMem;
-        }
-
-        internal static IntPtr AllocBSTR(int length)
-        {
-            IntPtr bstr = Interop.OleAut32.SysAllocStringLen(null, length);
-            if (bstr == IntPtr.Zero)
-            {
-                throw new OutOfMemoryException();
-            }
-            return bstr;
-        }
-
-        public static void FreeBSTR(IntPtr ptr)
-        {
-            if (!IsNullOrWin32Atom(ptr))
-            {
-                Interop.OleAut32.SysFreeString(ptr);
-            }
-        }
-
-        public static IntPtr StringToBSTR(string? s)
-        {
-            if (s is null)
-            {
-                return IntPtr.Zero;
-            }
-
-            IntPtr bstr = Interop.OleAut32.SysAllocStringLen(s, s.Length);
-            if (bstr == IntPtr.Zero)
-            {
-                throw new OutOfMemoryException();
-            }
-
-            return bstr;
-        }
-
-        public static string PtrToStringBSTR(IntPtr ptr)
-        {
-            if (ptr == IntPtr.Zero)
-            {
-                throw new ArgumentNullException(nameof(ptr));
-            }
-
-            return PtrToStringUni(ptr, (int)(SysStringByteLen(ptr) / sizeof(char)));
-        }
-
-#if FEATURE_COMINTEROP
         /// <summary>
         /// Release the COM component and if the reference hits 0 zombie this object.
         /// Further usage of this Object might throw an exception
