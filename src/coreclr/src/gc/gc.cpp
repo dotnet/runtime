@@ -5854,7 +5854,7 @@ bool gc_heap::virtual_commit (void* address, size_t size, gc_oh_num oh, int h_nu
     }
 #else
     committed_by_oh_per_heap[oh] += size;
-    dprintf (COMMIT_ACCOUNTING_LOG, ("%d += %d\n", oh, size));
+    dprintf (COMMIT_ACCOUNTING_LOG, ("%d += %d", oh, size));
 #endif
 #endif
     if (heap_hard_limit)
@@ -5915,7 +5915,7 @@ bool gc_heap::virtual_commit (void* address, size_t size, gc_oh_num oh, int h_nu
         }
 #else
         committed_by_oh_per_heap[oh] -= size;
-        dprintf (COMMIT_ACCOUNTING_LOG, ("%d -= %d\n", oh, size));
+        dprintf (COMMIT_ACCOUNTING_LOG, ("%d -= %d", oh, size));
 #endif
 #endif
         if (heap_hard_limit)
@@ -5953,7 +5953,7 @@ bool gc_heap::virtual_decommit (void* address, size_t size, gc_oh_num oh, int h_
         }
 #else
         committed_by_oh_per_heap[oh] -= size;
-        dprintf (COMMIT_ACCOUNTING_LOG, ("%d -= %d\n", oh, size));
+        dprintf (COMMIT_ACCOUNTING_LOG, ("%d -= %d", oh, size));
 #endif
 #endif
         if (heap_hard_limit)
@@ -5982,7 +5982,7 @@ void gc_heap::virtual_free (void* add, size_t allocated_size, heap_segment* sg)
         heap_segment_heap (sg)->committed_by_oh_per_heap[oh] -= committed_size;
 #else
         committed_by_oh_per_heap[oh] -= committed_size;
-        dprintf (COMMIT_ACCOUNTING_LOG, ("%d -= %d\n", oh, committed_size));
+        dprintf (COMMIT_ACCOUNTING_LOG, ("%d -= %d", oh, committed_size));
 #endif
     }
 #endif
@@ -9845,8 +9845,7 @@ void gc_heap::reset_heap_segment_pages (heap_segment* seg)
 }
 
 void gc_heap::decommit_heap_segment_pages (heap_segment* seg,
-                                           size_t extra_space
-                                           VERIFY_COMMITTED_BY_OH_ARG (bool skip_commit_verification))
+                                           size_t extra_space)
 {
     if (use_large_pages_p)
         return;
@@ -9856,13 +9855,12 @@ void gc_heap::decommit_heap_segment_pages (heap_segment* seg,
     if (size >= max ((extra_space + 2*OS_PAGE_SIZE), MIN_DECOMMIT_SIZE))
     {
         page_start += max(extra_space, 32*OS_PAGE_SIZE);
-        decommit_heap_segment_pages_worker (seg, page_start VERIFY_COMMITTED_BY_OH_ARG (skip_commit_verification));
+        decommit_heap_segment_pages_worker (seg, page_start);
     }
 }
 
 size_t gc_heap::decommit_heap_segment_pages_worker (heap_segment* seg,
-                                                    uint8_t* new_committed
-                                                    VERIFY_COMMITTED_BY_OH_ARG (bool skip_commit_verification))
+                                                    uint8_t* new_committed)
 {
     assert (!use_large_pages_p);
     uint8_t* page_start = align_on_page (new_committed);
@@ -9878,10 +9876,7 @@ size_t gc_heap::decommit_heap_segment_pages_worker (heap_segment* seg,
                 size));
             heap_segment_committed (seg) = page_start;
 #ifdef VERIFY_COMMITTED_BY_OH
-            if (!skip_commit_verification)
-            {
-                verify_committed_by_oh_per_heap (seg);
-            }
+            verify_committed_by_oh_per_heap (seg);
 #endif
             if (heap_segment_used (seg) > heap_segment_committed (seg))
             {
@@ -20352,10 +20347,19 @@ void gc_heap::verify_committed_by_oh_per_heap(heap_segment* inst)
     generation* gen = generation_of (oh + max_generation);
     heap_segment* seg = heap_segment_rw (generation_start_segment (gen));        
     size_t recorded_committed = 0;
+    bool ephemeral_heap_segment_found = false;
     while (seg)
     {
+        if (seg == ephemeral_heap_segment)
+        {
+            ephemeral_heap_segment_found = true;
+        }
         recorded_committed += heap_segment_committed (seg) - (uint8_t*)seg;
         seg = heap_segment_next (seg);
+    }
+    if (oh == gc_oh_num::soh && !ephemeral_heap_segment_found)
+    {
+        recorded_committed += heap_segment_committed (ephemeral_heap_segment) - (uint8_t*)ephemeral_heap_segment;
     }
     seg = freeable_soh_segment;
     while (seg)
@@ -20369,7 +20373,7 @@ void gc_heap::verify_committed_by_oh_per_heap(heap_segment* inst)
         recorded_committed += heap_segment_committed (seg) - (uint8_t*)seg;
         seg = heap_segment_next (seg);
     }
-    dprintf (COMMIT_ACCOUNTING_LOG, ("check %d %d==%d\n", oh, committed_by_oh_per_heap[oh], recorded_committed));
+    dprintf (COMMIT_ACCOUNTING_LOG, ("check %d %d==%d", oh, committed_by_oh_per_heap[oh], recorded_committed));
     assert((committed_by_oh_per_heap[oh] == recorded_committed) || (oh != gc_oh_num::soh && committed_by_oh_per_heap[oh] <= recorded_committed + outstanding_uoh_segment_count * 8192));
 }
 #endif
@@ -34069,6 +34073,9 @@ void gc_heap::background_sweep()
 
             if (delete_p)
             {
+                // TODO, andrewau, 
+                // Some other virtual_commit could be made concurrently with these decommits
+                // :(
                 generation_delete_heap_segment (gen, seg, prev_seg, next_seg);
             }
             else

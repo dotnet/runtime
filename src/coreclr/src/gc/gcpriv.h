@@ -1716,11 +1716,11 @@ protected:
     PER_HEAP
     void reset_heap_segment_pages (heap_segment* seg);
     PER_HEAP
-    void decommit_heap_segment_pages (heap_segment* seg, size_t extra_space VERIFY_COMMITTED_BY_OH_ARG(bool skip_commit_verification = false));
+    void decommit_heap_segment_pages (heap_segment* seg, size_t extra_space);
     PER_HEAP
     size_t decommit_ephemeral_segment_pages_step ();
     PER_HEAP
-    size_t decommit_heap_segment_pages_worker (heap_segment* seg, uint8_t *new_committed VERIFY_COMMITTED_BY_OH_ARG(bool skip_commit_verification = false));
+    size_t decommit_heap_segment_pages_worker (heap_segment* seg, uint8_t *new_committed);
     PER_HEAP_ISOLATED
     bool decommit_step ();
     PER_HEAP
