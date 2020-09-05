@@ -17,7 +17,7 @@ namespace DebuggerTests.GetPropertiesTests
     }
 
     public interface IName : IFirstName, ILastName
-    {}
+    { }
 
     public class BaseBaseClass
     {
@@ -91,20 +91,20 @@ namespace DebuggerTests.GetPropertiesTests
 
         public static void run()
         {
-            new DerivedClass().InstanceMethod ();
-            new DerivedClass().InstanceMethodAsync ().Wait();
+            new DerivedClass().InstanceMethod();
+            new DerivedClass().InstanceMethodAsync().Wait();
         }
 
         public string GetStringField() => _stringField;
 
         public void InstanceMethod()
         {
-            Console.WriteLine ($"break here");
+            Console.WriteLine($"break here");
         }
 
         public async Task InstanceMethodAsync()
         {
-            Console.WriteLine ($"break here");
+            Console.WriteLine($"break here");
             await Task.CompletedTask;
         }
     }
@@ -138,20 +138,20 @@ namespace DebuggerTests.GetPropertiesTests
 
         public static void run()
         {
-            new CloneableStruct(3).InstanceMethod ();
-            new CloneableStruct(3).InstanceMethodAsync ().Wait();
+            new CloneableStruct(3).InstanceMethod();
+            new CloneableStruct(3).InstanceMethodAsync().Wait();
         }
 
         public string GetStringField() => _stringField;
 
         public void InstanceMethod()
         {
-            Console.WriteLine ($"break here");
+            Console.WriteLine($"break here");
         }
 
         public async Task InstanceMethodAsync()
         {
-            Console.WriteLine ($"break here");
+            Console.WriteLine($"break here");
             await Task.CompletedTask;
         }
     }
@@ -174,13 +174,13 @@ namespace DebuggerTests.GetPropertiesTests
         public static void TestNestedStructStatic()
         {
             var ns = new NestedStruct(3);
-            Console.WriteLine ($"break here");
+            Console.WriteLine($"break here");
         }
 
         public static async Task TestNestedStructStaticAsync()
         {
             var ns = new NestedStruct(3);
-            Console.WriteLine ($"break here");
+            Console.WriteLine($"break here");
             await Task.CompletedTask;
         }
     }
@@ -200,7 +200,7 @@ namespace DebuggerTests.GetPropertiesTests
         public static void run()
         {
             var obj = new DerivedClassForJSTest();
-            Console.WriteLine ($"break here");
+            Console.WriteLine($"break here");
         }
     }
 }

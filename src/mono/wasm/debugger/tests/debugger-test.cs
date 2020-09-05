@@ -316,7 +316,7 @@ public partial class Math
             str_spaces,
             str_esc
         };
-        Console.WriteLine ($"break here");
+        Console.WriteLine($"break here");
     }
 
 }

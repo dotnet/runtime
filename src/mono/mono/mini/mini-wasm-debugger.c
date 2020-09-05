@@ -830,6 +830,22 @@ read_enum_value (const char *mem, int type)
 }
 
 static gboolean
+nullable_try_get_value (guint8 *nullable, MonoClass *klass, gpointer* out_value)
+{
+	mono_class_setup_fields (klass);
+	g_assert (m_class_is_fields_inited (klass));
+
+	*out_value = NULL;
+	MonoClassField *klass_fields = m_class_get_fields (klass);
+	gpointer addr_for_has_value = mono_vtype_get_field_addr (nullable, &klass_fields[0]);
+	if (0 == *(guint8*)addr_for_has_value)
+		return FALSE;
+
+	*out_value = mono_vtype_get_field_addr (nullable, &klass_fields[1]);
+	return TRUE;
+}
+
+static gboolean
 describe_value(MonoType * type, gpointer addr, int gpflags)
 {
 	ERROR_DECL (error);
@@ -900,6 +916,21 @@ describe_value(MonoType * type, gpointer addr, int gpflags)
 			break;
 		}
 		case MONO_TYPE_GENERICINST: {
+			MonoClass *klass = mono_class_from_mono_type_internal (type);
+			if (mono_class_is_nullable (klass)) {
+				MonoType *targ = type->data.generic_class->context.class_inst->type_argv [0];
+
+				gpointer nullable_value = NULL;
+				if (nullable_try_get_value (addr, klass, &nullable_value)) {
+					return describe_value (targ, nullable_value, gpflags);
+				} else {
+					char* class_name = mono_type_full_name (type);
+					mono_wasm_add_obj_var (class_name, NULL, 0);
+					g_free (class_name);
+					break;
+				}
+			}
+
 			if (mono_type_generic_inst_is_valuetype (type))
 				goto handle_vtype;
 			/*
