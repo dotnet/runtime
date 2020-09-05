@@ -1422,15 +1422,25 @@ ActivationHandler(CONTEXT* context)
 {
     if (g_activationFunction != NULL)
     {
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-        auto jitWriteEnableHolder = PAL_JITWriteEnable(false);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
         g_activationFunction(context);
     }
 
     RtlRestoreContext(context, NULL);
     DebugBreak();
 }
+
+#if defined(TARGET_ARM64)
+extern "C"
+void
+RtlRestoreContext(CONTEXT* context, PEXCEPTION_RECORD ExceptionRecord)
+{
+    // RtlRestoreContext assembly corrupts X16 & X17, so it cannot be
+    // used in thread hijacking situations
+    // Since we have the higher fidelity MachSetThreadContext, use it in
+    // all situations
+    MachSetThreadContext(context);
+}
+#endif
 
 extern "C" void ActivationHandlerWrapper();
 extern "C" int ActivationHandlerReturnOffset;
