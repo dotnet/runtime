@@ -14,7 +14,7 @@ namespace System.Numerics
     /// <summary>
     /// A structure encapsulating a 4x4 matrix.
     /// </summary>
-    [StructLayout(LayoutKind.Sequential)]
+    [Intrinsic]
     public struct Matrix4x4 : IEquatable<Matrix4x4>
     {
         private const float BillboardEpsilon = 1e-4f;

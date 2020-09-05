@@ -19,11 +19,7 @@ namespace System.Runtime.Serialization
     using System.Linq;
     using System.Diagnostics.CodeAnalysis;
 
-#if USE_REFEMIT
-    public sealed class ClassDataContract : DataContract
-#else
     internal sealed class ClassDataContract : DataContract
-#endif
     {
         public XmlDictionaryString[]? ContractNamespaces;
 

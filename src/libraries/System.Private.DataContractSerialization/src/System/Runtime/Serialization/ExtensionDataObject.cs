@@ -12,30 +12,18 @@ namespace System.Runtime.Serialization
     {
         private IList<ExtensionDataMember>? _members;
 
-#if USE_REFEMIT
-        public ExtensionDataObject()
-#else
         internal ExtensionDataObject()
-#endif
         {
         }
 
-#if USE_REFEMIT
-        public IList<ExtensionDataMember>? Members
-#else
         internal IList<ExtensionDataMember>? Members
-#endif
         {
             get { return _members; }
             set { _members = value; }
         }
     }
 
-#if USE_REFEMIT
-    public class ExtensionDataMember
-#else
     internal class ExtensionDataMember
-#endif
     {
         private IDataNode? _value;
         private int _memberIndex;
@@ -63,11 +51,7 @@ namespace System.Runtime.Serialization
         }
     }
 
-#if USE_REFEMIT
-    public interface IDataNode
-#else
     internal interface IDataNode
-#endif
     {
         Type DataType { get; }
         object? Value { get; set; }  // boxes for primitives
@@ -128,13 +112,6 @@ namespace System.Runtime.Serialization
         {
             return _value;
         }
-
-#if NotUsed
-        public void SetValue(T value)
-        {
-            this.value = value;
-        }
-#endif
 
         public string? DataContractName
         {

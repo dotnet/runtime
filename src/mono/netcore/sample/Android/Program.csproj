@@ -9,6 +9,7 @@
     <EnableTargetingPackDownload>false</EnableTargetingPackDownload>
     <PublishTrimmed>true</PublishTrimmed>
     <_TrimmerDefaultAction>link</_TrimmerDefaultAction>
+    <InvariantGlobalization>true</InvariantGlobalization> <!-- workaround for https://github.com/dotnet/runtime/issues/41866 -->
   </PropertyGroup>
 
   <!-- Redirect 'dotnet publish' to in-tree runtime pack -->

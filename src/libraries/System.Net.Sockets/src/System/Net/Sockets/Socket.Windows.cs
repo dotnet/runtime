@@ -232,7 +232,7 @@ namespace System.Net.Sockets
             switch (addressFamily)
             {
                 case AddressFamily.InterNetwork:
-                    address = IsDualMode ? IPAddress.Any.MapToIPv6() : IPAddress.Any;
+                    address = IsDualMode ? s_IPAddressAnyMapToIPv6 : IPAddress.Any;
                     break;
 
                 case AddressFamily.InterNetworkV6:

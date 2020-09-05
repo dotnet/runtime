@@ -31,7 +31,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 {
                     config.AddCommandLine(args);
                 })
-                .UseUrls("http://localhost:9300")
+                .UseUrls("http://127.0.0.1:0")
                 .Build();
 
             host.Run();
