@@ -119,6 +119,7 @@ setenv = {};
 runtime_args = [];
 enable_gc = true;
 enable_zoneinfo = false;
+working_dir = "net5.0-Browser-debug";
 while (args !== undefined && args.length > 0) {
 	if (args [0].startsWith ("--profile=")) {
 		var arg = args [0].substring ("--profile=".length);
@@ -140,6 +141,9 @@ while (args !== undefined && args.length > 0) {
 	} else if (args [0] == "--disable-on-demand-gc") {
 		enable_gc = false;
 		args = args.slice (1);
+	} else if (args [0] == "--working-dir=") {
+		var arg = args [0].substring ("--working-dir=".length);
+		working_dir = arg.split ('=') [1];
 	} else {
 		break;
 	}
@@ -191,6 +195,8 @@ var Module = {
 		}
 
 		config.loaded_cb = function () {
+			FS.mkdir(working_dir);
+			FS.chdir(working_dir);
 			App.init ();
 		};
 		config.fetch_file_cb = function (asset) {
