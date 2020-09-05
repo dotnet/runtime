@@ -42,6 +42,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
         private bool _timerInitialzed;
         private object _timerLock = new object();
         private Func<Timer> _timerFactory;
+        private bool _disposed;
 
         /// <summary>
         /// Initializes an instance of <see cref="PhysicalFilesWatcher" /> that watches files in <paramref name="root" />.
@@ -231,7 +232,11 @@ namespace Microsoft.Extensions.FileProviders.Physical
         /// <summary>
         /// Disposes the provider. Change tokens may not trigger after the provider is disposed.
         /// </summary>
-        public void Dispose() => Dispose(true);
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
 
         /// <summary>
         /// Disposes the provider.
@@ -239,8 +244,15 @@ namespace Microsoft.Extensions.FileProviders.Physical
         /// <param name="disposing"><c>true</c> is invoked from <see cref="IDisposable.Dispose"/>.</param>
         protected virtual void Dispose(bool disposing)
         {
-            _fileWatcher.Dispose();
-            _timer?.Dispose();
+            if (!_disposed)
+            {
+                if (disposing)
+                {
+                    _fileWatcher?.Dispose();
+                    _timer?.Dispose();
+                }
+                _disposed = true;
+            }
         }
 
         /// <summary>
