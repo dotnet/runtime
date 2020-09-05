@@ -4086,9 +4086,9 @@ void CodeGen::genCodeForShift(GenTree* tree)
             int typeWidth    = genTypeSize(genActualType(targetType)) * 8;
             int shiftByValue = (int)shiftBy->AsIntConCommon()->IconValue();
 
-            // Try to emit rorx if BMI is available instead of rol
-            if (compiler->compOpportunisticallyDependsOn(InstructionSet_BMI2) && tree->OperIs(GT_ROL, GT_ROR) &&
-                (shiftByValue > 0) && (shiftByValue < typeWidth))
+            // Try to emit rorx if BMI2 is available instead of mov+rol
+            if (compiler->compOpportunisticallyDependsOn(InstructionSet_BMI2) && (tree->GetRegNum() != operandReg) &&
+                tree->OperIs(GT_ROL, GT_ROR) && (shiftByValue > 0) && (shiftByValue < typeWidth))
             {
                 assert((typeWidth == 32) || (typeWidth == 64));
 
