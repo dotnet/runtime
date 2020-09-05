@@ -494,7 +494,7 @@ namespace System.Configuration
     public sealed partial class ConfigurationSettings
     {
         internal ConfigurationSettings() { }
-        [System.ObsoleteAttribute("This method is obsolete, it has been replaced by System.Configuration.ConfigurationManager.AppSettings")]
+        [System.ObsoleteAttribute("This property is obsolete, it has been replaced by System.Configuration.ConfigurationManager.AppSettings")]
         public static System.Collections.Specialized.NameValueCollection AppSettings { get { throw null; } }
         [System.ObsoleteAttribute("This method is obsolete, it has been replaced by System.Configuration.ConfigurationManager.GetSection")]
         public static object GetConfig(string sectionName) { throw null; }
