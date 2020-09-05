@@ -4,8 +4,6 @@
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
-using System.Diagnostics.CodeAnalysis;
-
 namespace System.Diagnostics
 {
     public partial class Activity : IDisposable
