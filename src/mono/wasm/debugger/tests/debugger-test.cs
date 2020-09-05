@@ -383,3 +383,91 @@ public class DebuggerTest
         await Task.CompletedTask;
     }
 }
+
+public class MulticastDelegateTestClass
+{
+    event EventHandler<string> TestEvent;
+    MulticastDelegate Delegate;
+
+    public static void run()
+    {
+        var obj = new MulticastDelegateTestClass();
+        obj.Test();
+        obj.TestAsync().Wait();
+    }
+
+    public void Test()
+    {
+        TestEvent += (_, s) => Console.WriteLine(s);
+        TestEvent += (_, s) => Console.WriteLine(s + "qwe");
+        Delegate = TestEvent;
+
+        TestEvent?.Invoke(this, Delegate?.ToString());
+    }
+
+    public async Task TestAsync()
+    {
+        TestEvent += (_, s) => Console.WriteLine(s);
+        TestEvent += (_, s) => Console.WriteLine(s + "qwe");
+        Delegate = TestEvent;
+
+        TestEvent?.Invoke(this, Delegate?.ToString());
+        await Task.CompletedTask;
+    }
+}
+
+public class EmptyClass
+{
+    public static void StaticMethodWithNoLocals()
+    {
+        Console.WriteLine($"break here");
+    }
+
+    public static async Task StaticMethodWithNoLocalsAsync()
+    {
+        Console.WriteLine($"break here");
+        await Task.CompletedTask;
+    }
+
+    public static void run()
+    {
+        StaticMethodWithNoLocals();
+        StaticMethodWithNoLocalsAsync().Wait();
+    }
+}
+
+public struct EmptyStruct
+{
+    public static void StaticMethodWithNoLocals()
+    {
+        Console.WriteLine($"break here");
+    }
+
+    public static async Task StaticMethodWithNoLocalsAsync()
+    {
+        Console.WriteLine($"break here");
+        await Task.CompletedTask;
+    }
+
+    public static void StaticMethodWithLocalEmptyStruct()
+    {
+        var es = new EmptyStruct();
+        Console.WriteLine($"break here");
+    }
+
+    public static async Task StaticMethodWithLocalEmptyStructAsync()
+    {
+        var es = new EmptyStruct();
+        Console.WriteLine($"break here");
+        await Task.CompletedTask;
+    }
+
+    public static void run()
+    {
+        StaticMethodWithNoLocals();
+        StaticMethodWithNoLocalsAsync().Wait();
+
+        StaticMethodWithLocalEmptyStruct();
+        StaticMethodWithLocalEmptyStructAsync().Wait();
+    }
+}
