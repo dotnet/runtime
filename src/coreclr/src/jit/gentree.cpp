@@ -6083,7 +6083,7 @@ GenTree* Compiler::gtNewStringLiteralNode(InfoAccessType iat, void* pValue)
 
         case IAT_PPVALUE: // The value needs to be accessed via a double indirection
             // Create the first indirection
-            tree = gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)pValue, GTF_ICON_PSTR_HDL, true);
+            tree = gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)pValue, GTF_ICON_CONST_PTR, true);
 #ifdef DEBUG
             tree->gtGetOp1()->AsIntCon()->gtTargetHandle = (size_t)pValue;
 #endif
@@ -10941,8 +10941,8 @@ void Compiler::gtDispConst(GenTree* tree)
                         case GTF_ICON_STR_HDL:
                             unreached(); // This case is handled above
                             break;
-                        case GTF_ICON_PSTR_HDL:
-                            printf(" pstr");
+                        case GTF_ICON_CONST_PTR:
+                            printf(" const ptr");
                             break;
                         case GTF_ICON_PTR_GLOBAL:
                             printf(" ptr global");
