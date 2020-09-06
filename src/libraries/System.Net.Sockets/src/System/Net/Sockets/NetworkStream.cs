@@ -50,15 +50,15 @@ namespace System.Net.Sockets
                 // allowing non-blocking sockets could result in non-deterministic failures from those
                 // operations. A developer that requires using NetworkStream with a non-blocking socket can
                 // temporarily flip Socket.Blocking as a workaround.
-                throw GetCustomNetworkException(SR.net_sockets_blocking);
+                throw GetCustomException(SR.net_sockets_blocking);
             }
             if (!socket.Connected)
             {
-                throw GetCustomNetworkException(SR.net_notconnected);
+                throw GetCustomException(SR.net_notconnected);
             }
             if (socket.SocketType != SocketType.Stream)
             {
-                throw GetCustomNetworkException(SR.net_notstream);
+                throw GetCustomException(SR.net_notstream);
             }
 
             _streamSocket = socket;
@@ -243,11 +243,11 @@ namespace System.Net.Sockets
             }
             catch (SocketException socketException)
             {
-                throw NetworkErrorHelper.MapSocketException(socketException);
+                throw GetExceptionFromSocketException(SR.Format(SR.net_io_readfailure, socketException.Message), socketException);
             }
             catch (Exception exception) when (!(exception is OutOfMemoryException))
             {
-                throw GetCustomNetworkException(SR.Format(SR.net_io_readfailure, exception.Message), exception);
+                throw GetCustomException(SR.Format(SR.net_io_readfailure, exception.Message), exception);
             }
         }
 
@@ -267,8 +267,8 @@ namespace System.Net.Sockets
             int bytesRead = _streamSocket.Receive(buffer, SocketFlags.None, out SocketError errorCode);
             if (errorCode != SocketError.Success)
             {
-                var exception = new SocketException((int)errorCode);
-                throw NetworkErrorHelper.MapSocketException(exception);
+                var socketException = new SocketException((int)errorCode);
+                throw GetExceptionFromSocketException(SR.Format(SR.net_io_readfailure, socketException.Message), socketException);
             }
             return bytesRead;
         }
@@ -326,11 +326,11 @@ namespace System.Net.Sockets
             }
             catch (SocketException socketException)
             {
-                throw NetworkErrorHelper.MapSocketException(socketException);
+                throw GetExceptionFromSocketException(SR.Format(SR.net_io_writefailure, socketException.Message), socketException);
             }
             catch (Exception exception) when (!(exception is OutOfMemoryException))
             {
-                throw GetCustomNetworkException(SR.Format(SR.net_io_writefailure, exception.Message), exception);
+                throw GetCustomException(SR.Format(SR.net_io_writefailure, exception.Message), exception);
             }
         }
 
@@ -351,8 +351,8 @@ namespace System.Net.Sockets
             _streamSocket.Send(buffer, SocketFlags.None, out SocketError errorCode);
             if (errorCode != SocketError.Success)
             {
-                var exception = new SocketException((int)errorCode);
-                throw NetworkErrorHelper.MapSocketException(exception);
+                var socketException = new SocketException((int)errorCode);
+                throw GetExceptionFromSocketException(SR.Format(SR.net_io_writefailure, socketException.Message), socketException);
             }
         }
 
@@ -449,11 +449,11 @@ namespace System.Net.Sockets
             }
             catch (SocketException socketException)
             {
-                throw NetworkErrorHelper.MapSocketException(socketException);
+                throw GetExceptionFromSocketException(SR.Format(SR.net_io_readfailure, socketException.Message), socketException);
             }
             catch (Exception exception) when (!(exception is OutOfMemoryException))
             {
-                throw GetCustomNetworkException(SR.Format(SR.net_io_readfailure, exception.Message), exception);
+                throw GetCustomException(SR.Format(SR.net_io_readfailure, exception.Message), exception);
             }
         }
 
@@ -481,11 +481,11 @@ namespace System.Net.Sockets
             }
             catch (SocketException socketException)
             {
-                throw NetworkErrorHelper.MapSocketException(socketException);
+                throw GetExceptionFromSocketException(SR.Format(SR.net_io_readfailure, socketException.Message), socketException);
             }
             catch (Exception exception) when (!(exception is OutOfMemoryException))
             {
-                throw GetCustomNetworkException(SR.Format(SR.net_io_readfailure, exception.Message), exception);
+                throw GetCustomException(SR.Format(SR.net_io_readfailure, exception.Message), exception);
             }
         }
 
@@ -539,11 +539,11 @@ namespace System.Net.Sockets
             }
             catch (SocketException socketException)
             {
-                throw NetworkErrorHelper.MapSocketException(socketException);
+                throw GetExceptionFromSocketException(SR.Format(SR.net_io_writefailure, socketException.Message), socketException);
             }
             catch (Exception exception) when (!(exception is OutOfMemoryException))
             {
-                throw GetCustomNetworkException(SR.Format(SR.net_io_writefailure, exception.Message), exception);
+                throw GetCustomException(SR.Format(SR.net_io_writefailure, exception.Message), exception);
             }
         }
 
@@ -567,11 +567,11 @@ namespace System.Net.Sockets
             }
             catch (SocketException socketException)
             {
-                throw NetworkErrorHelper.MapSocketException(socketException);
+                throw GetExceptionFromSocketException(SR.Format(SR.net_io_writefailure, socketException.Message), socketException);
             }
             catch (Exception exception) when (!(exception is OutOfMemoryException))
             {
-                throw GetCustomNetworkException(SR.Format(SR.net_io_writefailure, exception.Message), exception);
+                throw GetCustomException(SR.Format(SR.net_io_writefailure, exception.Message), exception);
             }
         }
 
@@ -623,11 +623,11 @@ namespace System.Net.Sockets
             }
             catch (SocketException socketException)
             {
-                throw NetworkErrorHelper.MapSocketException(socketException);
+                throw GetExceptionFromSocketException(SR.Format(SR.net_io_readfailure, socketException.Message), socketException);
             }
             catch (Exception exception) when (!(exception is OutOfMemoryException))
             {
-                throw GetCustomNetworkException(SR.Format(SR.net_io_readfailure, exception.Message), exception);
+                throw GetCustomException(SR.Format(SR.net_io_readfailure, exception.Message), exception);
             }
         }
 
@@ -650,11 +650,11 @@ namespace System.Net.Sockets
             }
             catch (SocketException socketException)
             {
-                throw NetworkErrorHelper.MapSocketException(socketException);
+                throw GetExceptionFromSocketException(SR.Format(SR.net_io_readfailure, socketException.Message), socketException);
             }
             catch (Exception exception) when (!(exception is OutOfMemoryException))
             {
-                throw GetCustomNetworkException(SR.Format(SR.net_io_readfailure, exception.Message), exception);
+                throw GetCustomException(SR.Format(SR.net_io_readfailure, exception.Message), exception);
             }
         }
 
@@ -705,11 +705,11 @@ namespace System.Net.Sockets
             }
             catch (SocketException socketException)
             {
-                throw NetworkErrorHelper.MapSocketException(socketException);
+                throw GetExceptionFromSocketException(SR.Format(SR.net_io_writefailure, socketException.Message), socketException);
             }
             catch (Exception exception) when (!(exception is OutOfMemoryException))
             {
-                throw GetCustomNetworkException(SR.Format(SR.net_io_writefailure, exception.Message), exception);
+                throw GetCustomException(SR.Format(SR.net_io_writefailure, exception.Message), exception);
             }
         }
 
@@ -731,11 +731,11 @@ namespace System.Net.Sockets
             }
             catch (SocketException socketException)
             {
-                throw NetworkErrorHelper.MapSocketException(socketException);
+                throw GetExceptionFromSocketException(SR.Format(SR.net_io_writefailure, socketException.Message), socketException);
             }
             catch (Exception exception) when (!(exception is OutOfMemoryException))
             {
-                throw GetCustomNetworkException(SR.Format(SR.net_io_writefailure, exception.Message), exception);
+                throw GetCustomException(SR.Format(SR.net_io_writefailure, exception.Message), exception);
             }
         }
 
@@ -793,9 +793,14 @@ namespace System.Net.Sockets
             void ThrowObjectDisposedException() => throw new ObjectDisposedException(GetType().FullName);
         }
 
-        private static NetworkException GetCustomNetworkException(string message, Exception? innerException = null)
+        private static IOException GetExceptionFromSocketException(string message, SocketException innerException)
         {
-            return new NetworkException(message, NetworkError.Unknown, innerException);
+            return new IOException(message, innerException);
+        }
+
+        private static IOException GetCustomException(string message, Exception? innerException = null)
+        {
+            return new IOException(message, innerException);
         }
     }
 }

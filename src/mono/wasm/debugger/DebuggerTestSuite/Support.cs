@@ -14,6 +14,7 @@ using Microsoft.WebAssembly.Diagnostics;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Xunit;
+using Xunit.Sdk;
 
 namespace DebuggerTests
 {
@@ -214,14 +215,13 @@ namespace DebuggerTests
                     function_name,
                     wait_for_event_fn: async (pause_location) =>
                    {
-                        //make sure we're on the right bp
+                       //make sure we're on the right bp
 
-                        Assert.Equal(bp.Value["breakpointId"]?.ToString(), pause_location["hitBreakpoints"]?[0]?.Value<string>());
+                       Assert.Equal(bp.Value["breakpointId"]?.ToString(), pause_location["hitBreakpoints"]?[0]?.Value<string>());
 
                        var top_frame = pause_location["callFrames"][0];
 
                        var scope = top_frame["scopeChain"][0];
-                       Assert.Equal("dotnet:scope:0", scope["object"]["objectId"]);
                        if (wait_for_event_fn != null)
                            await wait_for_event_fn(pause_location);
                        else
@@ -270,7 +270,6 @@ namespace DebuggerTests
                 var top_frame = pause_location["callFrames"][0];
 
                 var scope = top_frame["scopeChain"][0];
-                Assert.Equal("dotnet:scope:0", scope["object"]["objectId"]);
 
                 if (wait_for_event_fn != null)
                     await wait_for_event_fn(pause_location);
@@ -338,25 +337,31 @@ namespace DebuggerTests
             return l;
         }
 
-        internal async Task CheckDateTime(JToken locals, string name, DateTime expected)
+        internal async Task CheckDateTime(JToken value, DateTime expected, string label = "")
         {
-            var obj = GetAndAssertObjectWithName(locals, name);
-            await CheckDateTimeValue(obj["value"], expected);
+            await CheckValue(value, TValueType("System.DateTime", expected.ToString()), label);
+            await CheckDateTimeValue(value, expected, label);
         }
 
-        internal async Task CheckDateTimeValue(JToken value, DateTime expected)
+        internal async Task CheckDateTime(JToken locals, string name, DateTime expected, string label="")
         {
-            await CheckDateTimeMembers(value, expected);
+            var obj = GetAndAssertObjectWithName(locals, name, label);
+            await CheckDateTimeValue(obj["value"], expected, label);
+        }
+
+        internal async Task CheckDateTimeValue(JToken value, DateTime expected, string label="")
+        {
+            await CheckDateTimeMembers(value, expected, label);
 
             var res = await InvokeGetter(JObject.FromObject(new { value = value }), "Date");
-            await CheckDateTimeMembers(res.Value["result"], expected.Date);
+            await CheckDateTimeMembers(res.Value["result"], expected.Date, label);
 
             // FIXME: check some float properties too
 
-            async Task CheckDateTimeMembers(JToken v, DateTime exp_dt)
+            async Task CheckDateTimeMembers(JToken v, DateTime exp_dt, string label="")
             {
-                AssertEqual("System.DateTime", v["className"]?.Value<string>(), "className");
-                AssertEqual(exp_dt.ToString(), v["description"]?.Value<string>(), "description");
+                AssertEqual("System.DateTime", v["className"]?.Value<string>(), $"{label}#className");
+                AssertEqual(exp_dt.ToString(), v["description"]?.Value<string>(), $"{label}#description");
 
                 var members = await GetProperties(v["objectId"]?.Value<string>());
 
@@ -402,11 +407,11 @@ namespace DebuggerTests
                 GetAndAssertObjectWithName(locals, name)["value"],
                 TArray(class_name, length), name).Wait();
 
-        internal JToken GetAndAssertObjectWithName(JToken obj, string name)
+        internal JToken GetAndAssertObjectWithName(JToken obj, string name, string label="")
         {
             var l = obj.FirstOrDefault(jt => jt["name"]?.Value<string>() == name);
             if (l == null)
-                Assert.True(false, $"Could not find variable '{name}'");
+                Assert.True(false, $"[{label}] Could not find variable '{name}'");
             return l;
         }
 
@@ -606,13 +611,20 @@ namespace DebuggerTests
                     {
                         // For getter, `actual_val` is not `.value`, instead it's the container object
                         // which has a `.get` instead of a `.value`
-                        var get = actual_val["get"];
+                        var get = actual_val?["get"];
                         Assert.True(get != null, $"[{label}] No `get` found. {(actual_val != null ? "Make sure to pass the container object for testing getters, and not the ['value']" : String.Empty)}");
 
                         AssertEqual("Function", get["className"]?.Value<string>(), $"{label}-className");
                         AssertStartsWith($"get {exp_val["type_name"]?.Value<string>()} ()", get["description"]?.Value<string>(), $"{label}-description");
                         AssertEqual("function", get["type"]?.Value<string>(), $"{label}-type");
 
+                        break;
+                    }
+
+                case "datetime":
+                    {
+                        var dateTime = DateTime.FromBinary(exp_val["binary"].Value<long>());
+                        await CheckDateTime(actual_val, dateTime, label);
                         break;
                     }
 
@@ -705,30 +717,34 @@ namespace DebuggerTests
                 return;
             }
 
-            foreach (var jp in exp_val.Values<JProperty>())
+            try
             {
-                if (jp.Value.Type == JTokenType.Object)
+                foreach (var jp in exp_val.Values<JProperty>())
                 {
-                    var new_val = await GetProperties(actual_val["objectId"].Value<string>());
-                    await CheckProps(new_val, jp.Value, $"{label}-{actual_val["objectId"]?.Value<string>()}");
+                    if (jp.Value.Type == JTokenType.Object)
+                    {
+                        var new_val = await GetProperties(actual_val["objectId"].Value<string>());
+                        await CheckProps(new_val, jp.Value, $"{label}-{actual_val["objectId"]?.Value<string>()}");
 
-                    continue;
+                        continue;
+                    }
+
+                    var exp_val_str = jp.Value.Value<string>();
+                    bool null_or_empty_exp_val = String.IsNullOrEmpty(exp_val_str);
+
+                    var actual_field_val = actual_val?.Values<JProperty>()?.FirstOrDefault(a_jp => a_jp.Name == jp.Name);
+                    var actual_field_val_str = actual_field_val?.Value?.Value<string>();
+                    if (null_or_empty_exp_val && String.IsNullOrEmpty(actual_field_val_str))
+                        continue;
+
+                    Assert.True(actual_field_val != null, $"[{label}] Could not find value field named {jp.Name}");
+                    AssertEqual(exp_val_str, actual_field_val_str, $"[{label}] Value for json property named {jp.Name} didn't match.");
                 }
-
-                var exp_val_str = jp.Value.Value<string>();
-                bool null_or_empty_exp_val = String.IsNullOrEmpty(exp_val_str);
-
-                var actual_field_val = actual_val.Values<JProperty>().FirstOrDefault(a_jp => a_jp.Name == jp.Name);
-                var actual_field_val_str = actual_field_val?.Value?.Value<string>();
-                if (null_or_empty_exp_val && String.IsNullOrEmpty(actual_field_val_str))
-                    continue;
-
-                Assert.True(actual_field_val != null, $"[{label}] Could not find value field named {jp.Name}");
-
-                Assert.True(exp_val_str == actual_field_val_str,
-                    $"[{label}] Value for json property named {jp.Name} didn't match.\n" +
-                    $"Expected: {jp.Value.Value<string>()}\n" +
-                    $"Actual:   {actual_field_val.Value.Value<string>()}");
+            }
+            catch
+            {
+                Console.WriteLine ($"Expected: {exp_val}. Actual: {actual_val}");
+                throw;
             }
         }
 
@@ -774,7 +790,7 @@ namespace DebuggerTests
         }
 
         /* @fn_args is for use with `Runtime.callFunctionOn` only */
-        internal async Task<JToken> GetProperties(string id, JToken fn_args = null, bool expect_ok = true)
+        internal async Task<JToken> GetProperties(string id, JToken fn_args = null, bool? own_properties = null, bool? accessors_only = null, bool expect_ok = true)
         {
             if (ctx.UseCallFunctionOnBeforeGetProperties && !id.StartsWith("dotnet:scope:"))
             {
@@ -798,6 +814,14 @@ namespace DebuggerTests
             {
                 objectId = id
             });
+            if (own_properties.HasValue)
+            {
+                get_prop_req["ownProperties"] = own_properties.Value;
+            }
+            if (accessors_only.HasValue)
+            {
+                get_prop_req["accessorPropertiesOnly"] = accessors_only.Value;
+            }
 
             var frame_props = await ctx.cli.SendCommand("Runtime.getProperties", get_prop_req, ctx.token);
             AssertEqual(expect_ok, frame_props.IsOk, $"Runtime.getProperties returned {frame_props.IsOk} instead of {expect_ok}, for {get_prop_req}, with Result: {frame_props}");
@@ -822,7 +846,7 @@ namespace DebuggerTests
             return locals;
         }
 
-        internal async Task<JToken> EvaluateOnCallFrame(string id, string expression)
+        internal async Task<(JToken, Result)> EvaluateOnCallFrame(string id, string expression, bool expect_ok = true)
         {
             var evaluate_req = JObject.FromObject(new
             {
@@ -830,12 +854,25 @@ namespace DebuggerTests
                 expression = expression
             });
 
-            var frame_evaluate = await ctx.cli.SendCommand("Debugger.evaluateOnCallFrame", evaluate_req, ctx.token);
-            if (!frame_evaluate.IsOk)
-                Assert.True(false, $"Debugger.evaluateOnCallFrame failed for {evaluate_req.ToString()}, with Result: {frame_evaluate}");
+            var res = await ctx.cli.SendCommand("Debugger.evaluateOnCallFrame", evaluate_req, ctx.token);
+            AssertEqual(expect_ok, res.IsOk, $"Debugger.evaluateOnCallFrame ('{expression}', scope: {id}) returned {res.IsOk} instead of {expect_ok}, with Result: {res}");
+            if (res.IsOk)
+                return (res.Value["result"], res);
 
-            var evaluate_result = frame_evaluate.Value["result"];
-            return evaluate_result;
+            return (null, res);
+        }
+
+        internal async Task<Result> RemoveBreakpoint(string id, bool expect_ok = true)
+        {
+            var remove_bp = JObject.FromObject(new
+            {
+                breakpointId = id
+            });
+
+            var res = await ctx.cli.SendCommand("Debugger.removeBreakpoint", remove_bp, ctx.token);
+            Assert.True(expect_ok ? res.IsOk : res.IsErr);
+
+            return res;
         }
 
         internal async Task<Result> SetBreakpoint(string url_key, int line, int column, bool expect_ok = true, bool use_regex = false)
@@ -880,10 +917,15 @@ namespace DebuggerTests
             return res;
         }
 
-        internal void AssertEqual(object expected, object actual, string label) => Assert.True(expected?.Equals(actual),
-            $"[{label}]\n" +
-            $"Expected: {expected?.ToString()}\n" +
-            $"Actual:   {actual?.ToString()}\n");
+        internal void AssertEqual(object expected, object actual, string label)
+        {
+            if (expected?.Equals(actual) == true)
+                return;
+
+            throw new AssertActualExpectedException(
+                expected, actual,
+                $"[{label}]\n");
+        }
 
         internal void AssertStartsWith(string expected, string actual, string label) => Assert.True(actual?.StartsWith(expected), $"[{label}] Does not start with the expected string\nExpected: {expected}\nActual:   {actual}");
 
@@ -907,7 +949,7 @@ namespace DebuggerTests
         //FIXME: um maybe we don't need to convert jobject right here!
         internal static JObject TString(string value) =>
             value == null ?
-            TObject("string", is_null: true) :
+            JObject.FromObject(new { type = "object", className = "string", subtype = "null" }) :
             JObject.FromObject(new { type = "string", value = @value });
 
         internal static JObject TNumber(int value) =>
@@ -951,6 +993,12 @@ namespace DebuggerTests
         internal static JObject TIgnore() => JObject.FromObject(new { __custom_type = "ignore_me" });
 
         internal static JObject TGetter(string type) => JObject.FromObject(new { __custom_type = "getter", type_name = type });
+
+        internal static JObject TDateTime(DateTime dt) => JObject.FromObject(new
+        {
+            __custom_type = "datetime",
+            binary = dt.ToBinary()
+        });
     }
 
     class DebugTestContext

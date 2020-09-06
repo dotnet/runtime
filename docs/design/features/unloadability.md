@@ -1,4 +1,4 @@
-﻿# `AssemblyLoadContext` unloadability
+# `AssemblyLoadContext` unloadability
 ## Goals
 * Provide a building block for unloadable plug-ins
 * Users can load an assembly and its dependencies into an unloadable `AssemblyLoadContext`.
@@ -100,7 +100,7 @@ Unloading is initialized by the user code calling `AssemblyLoadContext.Unload` m
 * The `AssemblyLoadContext` fires the `Unloading` event to allow the user code to perform cleanup if required (e.g. stop threads running inside of the context, remove references and destroy handles, etc.)
 * The `AssemblyLoadContext.InitiateUnload` method is called. It creates a strong GC handle referring to the `AssemblyLoadContext` to keep it around until the unload is complete. For example, finalizers of types that are loaded into the `AssemblyLoadContext` may need access to the `AssemblyLoadContext`.
 * Then it calls `AssemblyNative::PrepareForAssemblyLoadContextRelease` method with that strong handle as an argument, which in turn calls `CLRPrivBinderAssemblyLoadContext::PrepareForLoadContextRelease`
-* That method stores the passed in strong GC handle in `CLRPrivBinderAssemblyLoadContext::m_ptrManagedStrongAssemblyLoadContext`. 
+* That method stores the passed in strong GC handle in `CLRPrivBinderAssemblyLoadContext::m_ptrManagedStrongAssemblyLoadContext`.
 * Then it decrements refcount of the `AssemblyLoaderAllocator` the `CLRPrivBinderAssemblyLoadContext` points to.
 * Finally, it destroys the strong handle to the managed `LoaderAllocator`. That allows the `LoaderAllocator` to be collected.
 ### Second phase of unloading

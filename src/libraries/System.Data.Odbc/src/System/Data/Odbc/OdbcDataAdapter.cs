@@ -7,6 +7,7 @@ using System.Data.Common;
 namespace System.Data.Odbc
 {
     [Designer("Microsoft.VSDesigner.Data.VS.OdbcDataAdapterDesigner, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
+    [ToolboxItem("Microsoft.VSDesigner.Data.VS.OdbcDataAdapterToolboxItem, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public sealed class OdbcDataAdapter : DbDataAdapter, IDbDataAdapter, ICloneable
     {
         private static readonly object s_eventRowUpdated = new object();
@@ -40,6 +41,8 @@ namespace System.Data.Odbc
             GC.SuppressFinalize(this);
         }
 
+        [Editor("Microsoft.VSDesigner.Data.Design.DBCommandEditor, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
+                "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
         public new OdbcCommand? DeleteCommand
         {
             get { return _deleteCommand; }
@@ -52,6 +55,8 @@ namespace System.Data.Odbc
             set { _deleteCommand = (OdbcCommand?)value; }
         }
 
+        [Editor("Microsoft.VSDesigner.Data.Design.DBCommandEditor, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
+                "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
         public new OdbcCommand? InsertCommand
         {
             get { return _insertCommand; }
@@ -64,6 +69,8 @@ namespace System.Data.Odbc
             set { _insertCommand = (OdbcCommand?)value; }
         }
 
+        [Editor("Microsoft.VSDesigner.Data.Design.DBCommandEditor, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
+                "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
         public new OdbcCommand? SelectCommand
         {
             get { return _selectCommand; }
@@ -76,6 +83,8 @@ namespace System.Data.Odbc
             set { _selectCommand = (OdbcCommand?)value; }
         }
 
+        [Editor("Microsoft.VSDesigner.Data.Design.DBCommandEditor, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
+                "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
         public new OdbcCommand? UpdateCommand
         {
             get { return _updateCommand; }

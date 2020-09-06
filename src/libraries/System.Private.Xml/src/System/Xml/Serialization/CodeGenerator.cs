@@ -32,14 +32,14 @@ namespace System.Xml.Serialization
         internal static MethodAttributes PrivateMethodAttributes = MethodAttributes.Private | MethodAttributes.HideBySig;
 
         private readonly TypeBuilder _typeBuilder;
-        private MethodBuilder _methodBuilder;
-        private ILGenerator _ilGen;
-        private Dictionary<string, ArgBuilder> _argList;
-        private LocalScope _currentScope;
+        private MethodBuilder? _methodBuilder;
+        private ILGenerator? _ilGen;
+        private Dictionary<string, ArgBuilder>? _argList;
+        private LocalScope? _currentScope;
         // Stores a queue of free locals available in the context of the method, keyed by
         // type and name of the local
-        private Dictionary<Tuple<Type, string>, Queue<LocalBuilder>> _freeLocals;
-        private Stack<object> _blockStack;
+        private Dictionary<Tuple<Type, string>, Queue<LocalBuilder>>? _freeLocals;
+        private Stack<object>? _blockStack;
         private Label _methodEndLabel;
 
         internal CodeGenerator(TypeBuilder typeBuilder)
@@ -85,7 +85,7 @@ namespace System.Xml.Serialization
 
         private void InitILGeneration(Type[] argTypes, string[] argNames, bool isStatic)
         {
-            _methodEndLabel = _ilGen.DefineLabel();
+            _methodEndLabel = _ilGen!.DefineLabel();
             this.retLabel = _ilGen.DefineLabel();
             _blockStack = new Stack<object>();
             _whileStack = new Stack<WhileState>();
@@ -94,21 +94,21 @@ namespace System.Xml.Serialization
             _argList = new Dictionary<string, ArgBuilder>();
             // this ptr is arg 0 for non static, assuming ref type (not value type)
             if (!isStatic)
-                _argList.Add("this", new ArgBuilder("this", 0, _typeBuilder.BaseType));
+                _argList.Add("this", new ArgBuilder("this", 0, _typeBuilder.BaseType!));
             for (int i = 0; i < argTypes.Length; i++)
             {
                 ArgBuilder arg = new ArgBuilder(argNames[i], _argList.Count, argTypes[i]);
                 _argList.Add(arg.Name, arg);
-                _methodBuilder.DefineParameter(arg.Index, ParameterAttributes.None, arg.Name);
+                _methodBuilder!.DefineParameter(arg.Index, ParameterAttributes.None, arg.Name);
             }
         }
 
-        internal MethodBuilder EndMethod()
+        internal MethodBuilder? EndMethod()
         {
             MarkLabel(_methodEndLabel);
             Ret();
 
-            MethodBuilder retVal = null;
+            MethodBuilder? retVal = null;
             retVal = _methodBuilder;
             _methodBuilder = null;
             _ilGen = null;
@@ -121,7 +121,7 @@ namespace System.Xml.Serialization
             return retVal;
         }
 
-        internal MethodBuilder MethodBuilder
+        internal MethodBuilder? MethodBuilder
         {
             get { return _methodBuilder; }
         }
@@ -135,17 +135,17 @@ namespace System.Xml.Serialization
         internal LocalBuilder GetLocal(string name)
         {
             System.Diagnostics.Debug.Assert(_currentScope != null && _currentScope.ContainsKey(name));
-            return _currentScope[name];
+            return _currentScope[name]!;
         }
 
-        internal LocalBuilder retLocal;
+        internal LocalBuilder? retLocal;
         internal Label retLabel;
         internal LocalBuilder ReturnLocal
         {
             get
             {
                 if (retLocal == null)
-                    retLocal = DeclareLocal(_methodBuilder.ReturnType, "_ret");
+                    retLocal = DeclareLocal(_methodBuilder!.ReturnType, "_ret");
                 return retLocal;
             }
         }
@@ -157,7 +157,7 @@ namespace System.Xml.Serialization
         private readonly Dictionary<Type, LocalBuilder> _tmpLocals = new Dictionary<Type, LocalBuilder>();
         internal LocalBuilder GetTempLocal(Type type)
         {
-            LocalBuilder localTmp;
+            LocalBuilder? localTmp;
             if (!_tmpLocals.TryGetValue(type, out localTmp))
             {
                 localTmp = DeclareLocal(type, "_tmp" + _tmpLocals.Count);
@@ -178,22 +178,22 @@ namespace System.Xml.Serialization
 
         internal object GetVariable(string name)
         {
-            object var;
+            object? var;
             if (TryGetVariable(name, out var))
                 return var;
             System.Diagnostics.Debug.Fail("Variable not found");
             return null;
         }
 
-        internal bool TryGetVariable(string name, out object variable)
+        internal bool TryGetVariable(string name, [NotNullWhen(true)] out object? variable)
         {
-            LocalBuilder loc;
+            LocalBuilder? loc;
             if (_currentScope != null && _currentScope.TryGetValue(name, out loc))
             {
                 variable = loc;
                 return true;
             }
-            ArgBuilder arg;
+            ArgBuilder? arg;
             if (_argList != null && _argList.TryGetValue(name, out arg))
             {
                 variable = arg;
@@ -217,18 +217,18 @@ namespace System.Xml.Serialization
 
         internal void ExitScope()
         {
-            Debug.Assert(_currentScope.parent != null);
-            _currentScope.AddToFreeLocals(_freeLocals);
+            Debug.Assert(_currentScope!.parent != null);
+            _currentScope.AddToFreeLocals(_freeLocals!);
             _currentScope = _currentScope.parent;
         }
 
-        private bool TryDequeueLocal(Type type, string name, out LocalBuilder local)
+        private bool TryDequeueLocal(Type type, string name, [NotNullWhen(true)] out LocalBuilder? local)
         {
             // This method can only be called between BeginMethod and EndMethod (i.e.
             // while we are emitting code for a method
             Debug.Assert(_freeLocals != null);
 
-            Queue<LocalBuilder> freeLocalQueue;
+            Queue<LocalBuilder>? freeLocalQueue;
             Tuple<Type, string> key = new Tuple<Type, string>(type, name);
             if (_freeLocals.TryGetValue(key, out freeLocalQueue))
             {
@@ -248,11 +248,11 @@ namespace System.Xml.Serialization
 
         internal LocalBuilder DeclareLocal(Type type, string name)
         {
-            Debug.Assert(!_currentScope.ContainsKey(name));
-            LocalBuilder local;
+            Debug.Assert(!_currentScope!.ContainsKey(name));
+            LocalBuilder? local;
             if (!TryDequeueLocal(type, name, out local))
             {
-                local = _ilGen.DeclareLocal(type, false);
+                local = _ilGen!.DeclareLocal(type, false);
             }
             _currentScope[name] = local;
             return local;
@@ -260,8 +260,8 @@ namespace System.Xml.Serialization
 
         internal LocalBuilder DeclareOrGetLocal(Type type, string name)
         {
-            LocalBuilder local;
-            if (!_currentScope.TryGetValue(name, out local))
+            LocalBuilder? local;
+            if (!_currentScope!.TryGetValue(name, out local))
                 local = DeclareLocal(type, name);
             else
                 Debug.Assert(local.LocalType == type);
@@ -278,14 +278,14 @@ namespace System.Xml.Serialization
                 Br(forState.TestLabel);
             }
             MarkLabel(forState.BeginLabel);
-            _blockStack.Push(forState);
+            _blockStack!.Push(forState);
             return forState;
         }
 
         internal void EndFor()
         {
-            object stackTop = _blockStack.Pop();
-            ForState forState = stackTop as ForState;
+            object stackTop = _blockStack!.Pop();
+            ForState? forState = stackTop as ForState;
             Debug.Assert(forState != null);
             if (forState.Index != null)
             {
@@ -310,7 +310,7 @@ namespace System.Xml.Serialization
                           "get_Count",
                           CodeGenerator.InstanceBindingFlags,
                           Array.Empty<Type>()
-                          );
+                          )!;
                     Call(ICollection_get_Count);
                 }
                 Blt(forState.BeginLabel);
@@ -348,11 +348,11 @@ namespace System.Xml.Serialization
             IfState ifState = new IfState();
             ifState.EndIf = DefineLabel();
             ifState.ElseBegin = DefineLabel();
-            _ilGen.Emit(GetBranchCode(cmpOp), ifState.ElseBegin);
-            _blockStack.Push(ifState);
+            _ilGen!.Emit(GetBranchCode(cmpOp), ifState.ElseBegin);
+            _blockStack!.Push(ifState);
         }
 
-        internal void If(object value1, Cmp cmpOp, object value2)
+        internal void If(object value1, Cmp cmpOp, object? value2)
         {
             Load(value1);
             Load(value2);
@@ -366,7 +366,7 @@ namespace System.Xml.Serialization
             MarkLabel(ifState.ElseBegin);
 
             ifState.ElseBegin = ifState.EndIf;
-            _blockStack.Push(ifState);
+            _blockStack!.Push(ifState);
         }
 
         internal void EndIf()
@@ -381,60 +381,60 @@ namespace System.Xml.Serialization
         internal void BeginExceptionBlock()
         {
             _leaveLabels.Push(DefineLabel());
-            _ilGen.BeginExceptionBlock();
+            _ilGen!.BeginExceptionBlock();
         }
 
         internal void BeginCatchBlock(Type exception)
         {
-            _ilGen.BeginCatchBlock(exception);
+            _ilGen!.BeginCatchBlock(exception);
         }
 
         internal void EndExceptionBlock()
         {
-            _ilGen.EndExceptionBlock();
+            _ilGen!.EndExceptionBlock();
             _ilGen.MarkLabel(_leaveLabels.Pop());
         }
 
         internal void Leave()
         {
-            _ilGen.Emit(OpCodes.Leave, _leaveLabels.Peek());
+            _ilGen!.Emit(OpCodes.Leave, _leaveLabels.Peek());
         }
 
         internal void Call(MethodInfo methodInfo)
         {
             Debug.Assert(methodInfo != null);
-            if (methodInfo.IsVirtual && !methodInfo.DeclaringType.IsValueType)
-                _ilGen.Emit(OpCodes.Callvirt, methodInfo);
+            if (methodInfo.IsVirtual && !methodInfo.DeclaringType!.IsValueType)
+                _ilGen!.Emit(OpCodes.Callvirt, methodInfo);
             else
-                _ilGen.Emit(OpCodes.Call, methodInfo);
+                _ilGen!.Emit(OpCodes.Call, methodInfo);
         }
 
         internal void Call(ConstructorInfo ctor)
         {
             Debug.Assert(ctor != null);
-            _ilGen.Emit(OpCodes.Call, ctor);
+            _ilGen!.Emit(OpCodes.Call, ctor);
         }
 
         internal void New(ConstructorInfo constructorInfo)
         {
             Debug.Assert(constructorInfo != null);
-            _ilGen.Emit(OpCodes.Newobj, constructorInfo);
+            _ilGen!.Emit(OpCodes.Newobj, constructorInfo);
         }
 
         internal void InitObj(Type valueType)
         {
-            _ilGen.Emit(OpCodes.Initobj, valueType);
+            _ilGen!.Emit(OpCodes.Initobj, valueType);
         }
 
         internal void NewArray(Type elementType, object len)
         {
             Load(len);
-            _ilGen.Emit(OpCodes.Newarr, elementType);
+            _ilGen!.Emit(OpCodes.Newarr, elementType);
         }
 
         internal void LoadArrayElement(object obj, object arrayIndex)
         {
-            Type objType = GetVariableType(obj).GetElementType();
+            Type objType = GetVariableType(obj).GetElementType()!;
             Load(obj);
             Load(arrayIndex);
             if (IsStruct(objType))
@@ -452,11 +452,11 @@ namespace System.Xml.Serialization
             if (arrayType == typeof(Array))
             {
                 Load(obj);
-                Call(typeof(Array).GetMethod("SetValue", new Type[] { typeof(object), typeof(int) }));
+                Call(typeof(Array).GetMethod("SetValue", new Type[] { typeof(object), typeof(int) })!);
             }
             else
             {
-                Type objType = arrayType.GetElementType();
+                Type objType = arrayType.GetElementType()!;
                 Load(obj);
                 Load(arrayIndex);
                 if (IsStruct(objType))
@@ -484,14 +484,14 @@ namespace System.Xml.Serialization
             return LoadMember(memberInfo);
         }
 
-        private static MethodInfo GetPropertyMethodFromBaseType(PropertyInfo propertyInfo, bool isGetter)
+        private static MethodInfo? GetPropertyMethodFromBaseType(PropertyInfo propertyInfo, bool isGetter)
         {
             // we only invoke this when the propertyInfo does not have a GET or SET method on it
 
-            Type currentType = propertyInfo.DeclaringType.BaseType;
-            PropertyInfo currentProperty;
+            Type? currentType = propertyInfo.DeclaringType!.BaseType;
+            PropertyInfo? currentProperty;
             string propertyName = propertyInfo.Name;
-            MethodInfo result = null;
+            MethodInfo? result = null;
 
             while (currentType != null)
             {
@@ -524,18 +524,18 @@ namespace System.Xml.Serialization
 
         internal Type LoadMember(MemberInfo memberInfo)
         {
-            Type memberType = null;
+            Type? memberType = null;
             if (memberInfo is FieldInfo)
             {
                 FieldInfo fieldInfo = (FieldInfo)memberInfo;
                 memberType = fieldInfo.FieldType;
                 if (fieldInfo.IsStatic)
                 {
-                    _ilGen.Emit(OpCodes.Ldsfld, fieldInfo);
+                    _ilGen!.Emit(OpCodes.Ldsfld, fieldInfo);
                 }
                 else
                 {
-                    _ilGen.Emit(OpCodes.Ldfld, fieldInfo);
+                    _ilGen!.Emit(OpCodes.Ldfld, fieldInfo);
                 }
             }
             else
@@ -545,7 +545,7 @@ namespace System.Xml.Serialization
                 memberType = property.PropertyType;
                 if (property != null)
                 {
-                    MethodInfo getMethod = property.GetMethod;
+                    MethodInfo? getMethod = property.GetMethod;
 
                     if (getMethod == null)
                     {
@@ -562,18 +562,18 @@ namespace System.Xml.Serialization
 
         internal Type LoadMemberAddress(MemberInfo memberInfo)
         {
-            Type memberType = null;
+            Type? memberType = null;
             if (memberInfo is FieldInfo)
             {
                 FieldInfo fieldInfo = (FieldInfo)memberInfo;
                 memberType = fieldInfo.FieldType;
                 if (fieldInfo.IsStatic)
                 {
-                    _ilGen.Emit(OpCodes.Ldsflda, fieldInfo);
+                    _ilGen!.Emit(OpCodes.Ldsflda, fieldInfo);
                 }
                 else
                 {
-                    _ilGen.Emit(OpCodes.Ldflda, fieldInfo);
+                    _ilGen!.Emit(OpCodes.Ldflda, fieldInfo);
                 }
             }
             else
@@ -583,7 +583,7 @@ namespace System.Xml.Serialization
                 memberType = property.PropertyType;
                 if (property != null)
                 {
-                    MethodInfo getMethod = property.GetMethod;
+                    MethodInfo? getMethod = property.GetMethod;
 
                     if (getMethod == null)
                     {
@@ -609,11 +609,11 @@ namespace System.Xml.Serialization
                 FieldInfo fieldInfo = (FieldInfo)memberInfo;
                 if (fieldInfo.IsStatic)
                 {
-                    _ilGen.Emit(OpCodes.Stsfld, fieldInfo);
+                    _ilGen!.Emit(OpCodes.Stsfld, fieldInfo);
                 }
                 else
                 {
-                    _ilGen.Emit(OpCodes.Stfld, fieldInfo);
+                    _ilGen!.Emit(OpCodes.Stfld, fieldInfo);
                 }
             }
             else
@@ -622,7 +622,7 @@ namespace System.Xml.Serialization
                 PropertyInfo property = (PropertyInfo)memberInfo;
                 if (property != null)
                 {
-                    MethodInfo setMethod = property.SetMethod;
+                    MethodInfo? setMethod = property.SetMethod;
 
                     if (setMethod == null)
                     {
@@ -635,10 +635,10 @@ namespace System.Xml.Serialization
             }
         }
 
-        internal void Load(object obj)
+        internal void Load(object? obj)
         {
             if (obj == null)
-                _ilGen.Emit(OpCodes.Ldnull);
+                _ilGen!.Emit(OpCodes.Ldnull);
             else if (obj is ArgBuilder)
                 Ldarg((ArgBuilder)obj);
             else if (obj is LocalBuilder)
@@ -670,17 +670,17 @@ namespace System.Xml.Serialization
 
         internal void Castclass(Type target)
         {
-            _ilGen.Emit(OpCodes.Castclass, target);
+            _ilGen!.Emit(OpCodes.Castclass, target);
         }
 
         internal void Box(Type type)
         {
-            _ilGen.Emit(OpCodes.Box, type);
+            _ilGen!.Emit(OpCodes.Box, type);
         }
 
         internal void Unbox(Type type)
         {
-            _ilGen.Emit(OpCodes.Unbox, type);
+            _ilGen!.Emit(OpCodes.Unbox, type);
         }
 
         private static readonly OpCode[] s_ldindOpCodes = new OpCode[] {
@@ -716,27 +716,27 @@ namespace System.Xml.Serialization
             OpCode opCode = GetLdindOpCode(type.GetTypeCode());
             if (!opCode.Equals(OpCodes.Nop))
             {
-                _ilGen.Emit(opCode);
+                _ilGen!.Emit(opCode);
             }
             else
             {
-                _ilGen.Emit(OpCodes.Ldobj, type);
+                _ilGen!.Emit(OpCodes.Ldobj, type);
             }
         }
 
         internal void Stobj(Type type)
         {
-            _ilGen.Emit(OpCodes.Stobj, type);
+            _ilGen!.Emit(OpCodes.Stobj, type);
         }
 
         internal void Ceq()
         {
-            _ilGen.Emit(OpCodes.Ceq);
+            _ilGen!.Emit(OpCodes.Ceq);
         }
 
         internal void Clt()
         {
-            _ilGen.Emit(OpCodes.Clt);
+            _ilGen!.Emit(OpCodes.Clt);
         }
 
         internal void Cne()
@@ -748,17 +748,17 @@ namespace System.Xml.Serialization
 
         internal void Ble(Label label)
         {
-            _ilGen.Emit(OpCodes.Ble, label);
+            _ilGen!.Emit(OpCodes.Ble, label);
         }
 
         internal void Throw()
         {
-            _ilGen.Emit(OpCodes.Throw);
+            _ilGen!.Emit(OpCodes.Throw);
         }
 
         internal void Ldtoken(Type t)
         {
-            _ilGen.Emit(OpCodes.Ldtoken, t);
+            _ilGen!.Emit(OpCodes.Ldtoken, t);
         }
 
         internal void Ldc(object o)
@@ -767,7 +767,7 @@ namespace System.Xml.Serialization
             if (o is Type)
             {
                 Ldtoken((Type)o);
-                Call(typeof(Type).GetMethod("GetTypeFromHandle", BindingFlags.Static | BindingFlags.Public, new Type[] { typeof(RuntimeTypeHandle) }));
+                Call(typeof(Type).GetMethod("GetTypeFromHandle", BindingFlags.Static | BindingFlags.Public, new Type[] { typeof(RuntimeTypeHandle) })!);
             }
             else if (valueType.IsEnum)
             {
@@ -814,7 +814,7 @@ namespace System.Xml.Serialization
                         ConstructorInfo Decimal_ctor = typeof(decimal).GetConstructor(
                              CodeGenerator.InstanceBindingFlags,
                              new Type[] { typeof(int), typeof(int), typeof(int), typeof(bool), typeof(byte) }
-                             );
+                             )!;
                         int[] bits = decimal.GetBits((decimal)o);
                         Ldc(bits[0]); // digit
                         Ldc(bits[1]); // digit
@@ -827,7 +827,7 @@ namespace System.Xml.Serialization
                         ConstructorInfo DateTime_ctor = typeof(DateTime).GetConstructor(
                             CodeGenerator.InstanceBindingFlags,
                             new Type[] { typeof(long) }
-                            );
+                            )!;
                         Ldc(((DateTime)o).Ticks); // ticks
                         New(DateTime_ctor);
                         break;
@@ -842,7 +842,7 @@ namespace System.Xml.Serialization
                             null,
                             new Type[] { typeof(long) },
                             null
-                            );
+                            )!;
                             Ldc(((TimeSpan)o).Ticks); // ticks
                             New(TimeSpan_ctor);
                             break;
@@ -859,40 +859,40 @@ namespace System.Xml.Serialization
         {
             if (boolVar)
             {
-                _ilGen.Emit(OpCodes.Ldc_I4_1);
+                _ilGen!.Emit(OpCodes.Ldc_I4_1);
             }
             else
             {
-                _ilGen.Emit(OpCodes.Ldc_I4_0);
+                _ilGen!.Emit(OpCodes.Ldc_I4_0);
             }
         }
 
         internal void Ldc(int intVar)
         {
-            _ilGen.Emit(OpCodes.Ldc_I4, intVar);
+            _ilGen!.Emit(OpCodes.Ldc_I4, intVar);
         }
 
         internal void Ldc(long l)
         {
-            _ilGen.Emit(OpCodes.Ldc_I8, l);
+            _ilGen!.Emit(OpCodes.Ldc_I8, l);
         }
 
         internal void Ldc(float f)
         {
-            _ilGen.Emit(OpCodes.Ldc_R4, f);
+            _ilGen!.Emit(OpCodes.Ldc_R4, f);
         }
 
         internal void Ldc(double d)
         {
-            _ilGen.Emit(OpCodes.Ldc_R8, d);
+            _ilGen!.Emit(OpCodes.Ldc_R8, d);
         }
 
-        internal void Ldstr(string strVar)
+        internal void Ldstr(string? strVar)
         {
             if (strVar == null)
-                _ilGen.Emit(OpCodes.Ldnull);
+                _ilGen!.Emit(OpCodes.Ldnull);
             else
-                _ilGen.Emit(OpCodes.Ldstr, strVar);
+                _ilGen!.Emit(OpCodes.Ldstr, strVar);
         }
 
         internal void LdlocAddress(LocalBuilder localBuilder)
@@ -905,20 +905,20 @@ namespace System.Xml.Serialization
 
         internal void Ldloc(LocalBuilder localBuilder)
         {
-            _ilGen.Emit(OpCodes.Ldloc, localBuilder);
+            _ilGen!.Emit(OpCodes.Ldloc, localBuilder);
         }
 
         internal void Ldloc(string name)
         {
-            Debug.Assert(_currentScope.ContainsKey(name));
-            LocalBuilder local = _currentScope[name];
+            Debug.Assert(_currentScope!.ContainsKey(name));
+            LocalBuilder local = _currentScope[name]!;
             Ldloc(local);
         }
 
         internal void Stloc(Type type, string name)
         {
-            LocalBuilder local = null;
-            if (!_currentScope.TryGetValue(name, out local))
+            LocalBuilder? local = null;
+            if (!_currentScope!.TryGetValue(name, out local))
             {
                 local = DeclareLocal(type, name);
             }
@@ -928,20 +928,20 @@ namespace System.Xml.Serialization
 
         internal void Stloc(LocalBuilder local)
         {
-            _ilGen.Emit(OpCodes.Stloc, local);
+            _ilGen!.Emit(OpCodes.Stloc, local);
         }
 
         internal void Ldloc(Type type, string name)
         {
-            Debug.Assert(_currentScope.ContainsKey(name));
-            LocalBuilder local = _currentScope[name];
+            Debug.Assert(_currentScope!.ContainsKey(name));
+            LocalBuilder local = _currentScope[name]!;
             Debug.Assert(local.LocalType == type);
             Ldloc(local);
         }
 
         internal void Ldloca(LocalBuilder localBuilder)
         {
-            _ilGen.Emit(OpCodes.Ldloca, localBuilder);
+            _ilGen!.Emit(OpCodes.Ldloca, localBuilder);
         }
 
         internal void LdargAddress(ArgBuilder argBuilder)
@@ -964,7 +964,7 @@ namespace System.Xml.Serialization
 
         internal void Ldarg(int slot)
         {
-            _ilGen.Emit(OpCodes.Ldarg, slot);
+            _ilGen!.Emit(OpCodes.Ldarg, slot);
         }
 
         internal void Ldarga(ArgBuilder argBuilder)
@@ -974,12 +974,12 @@ namespace System.Xml.Serialization
 
         internal void Ldarga(int slot)
         {
-            _ilGen.Emit(OpCodes.Ldarga, slot);
+            _ilGen!.Emit(OpCodes.Ldarga, slot);
         }
 
         internal void Ldlen()
         {
-            _ilGen.Emit(OpCodes.Ldlen);
+            _ilGen!.Emit(OpCodes.Ldlen);
             _ilGen.Emit(OpCodes.Conv_I4);
         }
 
@@ -1022,13 +1022,13 @@ namespace System.Xml.Serialization
                 Debug.Assert(!opCode.Equals(OpCodes.Nop));
                 if (opCode.Equals(OpCodes.Nop))
                     throw new InvalidOperationException(SR.Format(SR.ArrayTypeIsNotSupported, arrayElementType.AssemblyQualifiedName));
-                _ilGen.Emit(opCode);
+                _ilGen!.Emit(opCode);
             }
         }
         internal void Ldelema(Type arrayElementType)
         {
             OpCode opCode = OpCodes.Ldelema;
-            _ilGen.Emit(opCode, arrayElementType);
+            _ilGen!.Emit(opCode, arrayElementType);
         }
 
         private static readonly OpCode[] s_stelemOpCodes = new OpCode[] {
@@ -1067,68 +1067,68 @@ namespace System.Xml.Serialization
                 OpCode opCode = GetStelemOpCode(arrayElementType.GetTypeCode());
                 if (opCode.Equals(OpCodes.Nop))
                     throw new InvalidOperationException(SR.Format(SR.ArrayTypeIsNotSupported, arrayElementType.AssemblyQualifiedName));
-                _ilGen.Emit(opCode);
+                _ilGen!.Emit(opCode);
             }
         }
 
         internal Label DefineLabel()
         {
-            return _ilGen.DefineLabel();
+            return _ilGen!.DefineLabel();
         }
 
         internal void MarkLabel(Label label)
         {
-            _ilGen.MarkLabel(label);
+            _ilGen!.MarkLabel(label);
         }
 
         internal void Nop()
         {
-            _ilGen.Emit(OpCodes.Nop);
+            _ilGen!.Emit(OpCodes.Nop);
         }
 
         internal void Add()
         {
-            _ilGen.Emit(OpCodes.Add);
+            _ilGen!.Emit(OpCodes.Add);
         }
 
         internal void Ret()
         {
-            _ilGen.Emit(OpCodes.Ret);
+            _ilGen!.Emit(OpCodes.Ret);
         }
 
         internal void Br(Label label)
         {
-            _ilGen.Emit(OpCodes.Br, label);
+            _ilGen!.Emit(OpCodes.Br, label);
         }
 
         internal void Br_S(Label label)
         {
-            _ilGen.Emit(OpCodes.Br_S, label);
+            _ilGen!.Emit(OpCodes.Br_S, label);
         }
 
         internal void Blt(Label label)
         {
-            _ilGen.Emit(OpCodes.Blt, label);
+            _ilGen!.Emit(OpCodes.Blt, label);
         }
 
         internal void Brfalse(Label label)
         {
-            _ilGen.Emit(OpCodes.Brfalse, label);
+            _ilGen!.Emit(OpCodes.Brfalse, label);
         }
 
         internal void Brtrue(Label label)
         {
-            _ilGen.Emit(OpCodes.Brtrue, label);
+            _ilGen!.Emit(OpCodes.Brtrue, label);
         }
 
         internal void Pop()
         {
-            _ilGen.Emit(OpCodes.Pop);
+            _ilGen!.Emit(OpCodes.Pop);
         }
 
         internal void Dup()
         {
-            _ilGen.Emit(OpCodes.Dup);
+            _ilGen!.Emit(OpCodes.Dup);
         }
 
         private void InternalIf(bool negate)
@@ -1140,7 +1140,7 @@ namespace System.Xml.Serialization
                 Brtrue(ifState.ElseBegin);
             else
                 Brfalse(ifState.ElseBegin);
-            _blockStack.Push(ifState);
+            _blockStack!.Push(ifState);
         }
 
         private static readonly OpCode[] s_convOpCodes = new OpCode[] {
@@ -1185,7 +1185,7 @@ namespace System.Xml.Serialization
                     }
                     else
                     {
-                        _ilGen.Emit(opCode);
+                        _ilGen!.Emit(opCode);
                     }
                 }
                 else if (source.IsAssignableFrom(target))
@@ -1224,8 +1224,8 @@ namespace System.Xml.Serialization
 
         private IfState PopIfState()
         {
-            object stackTop = _blockStack.Pop();
-            IfState ifState = stackTop as IfState;
+            object stackTop = _blockStack!.Pop();
+            IfState? ifState = stackTop as IfState;
             Debug.Assert(ifState != null);
             return ifState;
         }
@@ -1250,11 +1250,11 @@ namespace System.Xml.Serialization
         }
 
         private int _initElseIfStack = -1;
-        private IfState _elseIfState;
+        private IfState? _elseIfState;
         internal void InitElseIf()
         {
             Debug.Assert(_initElseIfStack == -1);
-            _elseIfState = (IfState)_blockStack.Pop();
+            _elseIfState = (IfState)_blockStack!.Pop();
             _initElseIfStack = _blockStack.Count;
             Br(_elseIfState.EndIf);
             MarkLabel(_elseIfState.ElseBegin);
@@ -1264,12 +1264,12 @@ namespace System.Xml.Serialization
         internal void InitIf()
         {
             Debug.Assert(_initIfStack == -1);
-            _initIfStack = _blockStack.Count;
+            _initIfStack = _blockStack!.Count;
         }
 
         internal void AndIf(Cmp cmpOp)
         {
-            if (_initIfStack == _blockStack.Count)
+            if (_initIfStack == _blockStack!.Count)
             {
                 _initIfStack = -1;
                 If(cmpOp);
@@ -1278,19 +1278,19 @@ namespace System.Xml.Serialization
             if (_initElseIfStack == _blockStack.Count)
             {
                 _initElseIfStack = -1;
-                _elseIfState.ElseBegin = DefineLabel();
-                _ilGen.Emit(GetBranchCode(cmpOp), _elseIfState.ElseBegin);
+                _elseIfState!.ElseBegin = DefineLabel();
+                _ilGen!.Emit(GetBranchCode(cmpOp), _elseIfState.ElseBegin);
                 _blockStack.Push(_elseIfState);
                 return;
             }
             Debug.Assert(_initIfStack == -1 && _initElseIfStack == -1);
             IfState ifState = (IfState)_blockStack.Peek();
-            _ilGen.Emit(GetBranchCode(cmpOp), ifState.ElseBegin);
+            _ilGen!.Emit(GetBranchCode(cmpOp), ifState.ElseBegin);
         }
 
         internal void AndIf()
         {
-            if (_initIfStack == _blockStack.Count)
+            if (_initIfStack == _blockStack!.Count)
             {
                 _initIfStack = -1;
                 If();
@@ -1299,7 +1299,7 @@ namespace System.Xml.Serialization
             if (_initElseIfStack == _blockStack.Count)
             {
                 _initElseIfStack = -1;
-                _elseIfState.ElseBegin = DefineLabel();
+                _elseIfState!.ElseBegin = DefineLabel();
                 Brfalse(_elseIfState.ElseBegin);
                 _blockStack.Push(_elseIfState);
                 return;
@@ -1311,17 +1311,17 @@ namespace System.Xml.Serialization
 
         internal void IsInst(Type type)
         {
-            _ilGen.Emit(OpCodes.Isinst, type);
+            _ilGen!.Emit(OpCodes.Isinst, type);
         }
 
         internal void Beq(Label label)
         {
-            _ilGen.Emit(OpCodes.Beq, label);
+            _ilGen!.Emit(OpCodes.Beq, label);
         }
 
         internal void Bne(Label label)
         {
-            _ilGen.Emit(OpCodes.Bne_Un, label);
+            _ilGen!.Emit(OpCodes.Bne_Un, label);
         }
 
         internal void GotoMethodEnd()
@@ -1352,7 +1352,7 @@ namespace System.Xml.Serialization
         // (bool on stack)
         // WhileEndCondition()
         // WhileEnd()
-        private Stack<WhileState> _whileStack;
+        private Stack<WhileState>? _whileStack;
         internal void WhileBegin()
         {
             WhileState whileState = new WhileState(this);
@@ -1366,24 +1366,24 @@ namespace System.Xml.Serialization
             Ldc(true);
             Brtrue(whileState.CondLabel);
             MarkLabel(whileState.StartLabel);
-            _whileStack.Push(whileState);
+            _whileStack!.Push(whileState);
         }
 
         internal void WhileEnd()
         {
-            WhileState whileState = _whileStack.Pop();
+            WhileState whileState = _whileStack!.Pop();
             MarkLabel(whileState.EndLabel);
         }
 
         internal void WhileContinue()
         {
-            WhileState whileState = _whileStack.Peek();
+            WhileState whileState = _whileStack!.Peek();
             Br(whileState.CondLabel);
         }
 
         internal void WhileBeginCondition()
         {
-            WhileState whileState = _whileStack.Peek();
+            WhileState whileState = _whileStack!.Peek();
             // If there are two MarkLabel ILs consecutively, Labels will converge to one label.
             // This could cause the code to look different.  We insert Nop here specifically
             // that the While label stands out.
@@ -1393,7 +1393,7 @@ namespace System.Xml.Serialization
 
         internal void WhileEndCondition()
         {
-            WhileState whileState = _whileStack.Peek();
+            WhileState whileState = _whileStack!.Peek();
             Brtrue(whileState.StartLabel);
         }
     }
@@ -1502,7 +1502,7 @@ namespace System.Xml.Serialization
 
     internal class LocalScope
     {
-        public readonly LocalScope parent;
+        public readonly LocalScope? parent;
         private readonly Dictionary<string, LocalBuilder> _locals;
 
         // Root scope
@@ -1511,7 +1511,7 @@ namespace System.Xml.Serialization
             _locals = new Dictionary<string, LocalBuilder>();
         }
 
-        public LocalScope(LocalScope parent) : this()
+        public LocalScope(LocalScope? parent) : this()
         {
             this.parent = parent;
         }
@@ -1521,7 +1521,7 @@ namespace System.Xml.Serialization
             return _locals.ContainsKey(key) || (parent != null && parent.ContainsKey(key));
         }
 
-        public bool TryGetValue(string key, out LocalBuilder value)
+        public bool TryGetValue(string key, [NotNullWhen(true)] out LocalBuilder? value)
         {
             if (_locals.TryGetValue(key, out value))
             {
@@ -1538,11 +1538,12 @@ namespace System.Xml.Serialization
             }
         }
 
-        public LocalBuilder this[string key]
+        [DisallowNull]
+        public LocalBuilder? this[string key]
         {
             get
             {
-                LocalBuilder value;
+                LocalBuilder? value;
                 TryGetValue(key, out value);
                 return value;
             }
@@ -1557,7 +1558,7 @@ namespace System.Xml.Serialization
             foreach (var item in _locals)
             {
                 Tuple<Type, string> key = new Tuple<Type, string>(item.Value.LocalType, item.Key);
-                Queue<LocalBuilder> freeLocalQueue;
+                Queue<LocalBuilder>? freeLocalQueue;
                 if (freeLocals.TryGetValue(key, out freeLocalQueue))
                 {
                     // Add to end of the queue so that it will be re-used in
@@ -1584,7 +1585,7 @@ namespace System.Xml.Serialization
             this.ParameterTypes = parameterTypes;
         }
 
-        public void Validate(Type returnType, Type[] parameterTypes, MethodAttributes attributes)
+        public void Validate(Type? returnType, Type[] parameterTypes, MethodAttributes attributes)
         {
 #if DEBUG
             Debug.Assert(this.MethodBuilder.ReturnType == returnType);

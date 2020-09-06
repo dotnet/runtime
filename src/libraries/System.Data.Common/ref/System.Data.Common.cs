@@ -61,6 +61,7 @@ namespace System.Data
         public override string ToString() { throw null; }
     }
     [System.ComponentModel.DefaultEventAttribute("CollectionChanged")]
+    [System.ComponentModel.EditorAttribute("Microsoft.VSDesigner.Data.Design.ConstraintsCollectionEditor, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public sealed partial class ConstraintCollection : System.Data.InternalDataCollectionBase
     {
         internal ConstraintCollection() { }
@@ -93,6 +94,7 @@ namespace System.Data
     }
     [System.ComponentModel.DefaultPropertyAttribute("ColumnName")]
     [System.ComponentModel.DesignTimeVisibleAttribute(false)]
+    [System.ComponentModel.EditorAttribute("Microsoft.VSDesigner.Data.Design.DataColumnEditor, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     [System.ComponentModel.ToolboxItemAttribute(false)]
     public partial class DataColumn : System.ComponentModel.MarshalByValueComponent
     {
@@ -161,6 +163,7 @@ namespace System.Data
     }
     public delegate void DataColumnChangeEventHandler(object sender, System.Data.DataColumnChangeEventArgs e);
     [System.ComponentModel.DefaultEventAttribute("CollectionChanged")]
+    [System.ComponentModel.EditorAttribute("Microsoft.VSDesigner.Data.Design.ColumnsCollectionEditor, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public sealed partial class DataColumnCollection : System.Data.InternalDataCollectionBase
     {
         internal DataColumnCollection() { }
@@ -224,6 +227,7 @@ namespace System.Data
         public static System.Threading.Tasks.Task<bool> IsDBNullAsync(this System.Data.Common.DbDataReader reader, string name, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
     }
     [System.ComponentModel.DefaultPropertyAttribute("RelationName")]
+    [System.ComponentModel.EditorAttribute("Microsoft.VSDesigner.Data.Design.DataRelationEditor, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public partial class DataRelation
     {
         public DataRelation(string? relationName, System.Data.DataColumn parentColumn, System.Data.DataColumn childColumn) { }
@@ -257,6 +261,7 @@ namespace System.Data
     }
     [System.ComponentModel.DefaultEventAttribute("CollectionChanged")]
     [System.ComponentModel.DefaultPropertyAttribute("Table")]
+    [System.ComponentModel.EditorAttribute("Microsoft.VSDesigner.Data.Design.DataRelationCollectionEditor, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public abstract partial class DataRelationCollection : System.Data.InternalDataCollectionBase
     {
         protected DataRelationCollection() { }
@@ -471,8 +476,9 @@ namespace System.Data
         object System.ComponentModel.ICustomTypeDescriptor.GetPropertyOwner(System.ComponentModel.PropertyDescriptor pd) { throw null; }
 #nullable enable
     }
-    [System.ComponentModel.DesignerAttribute("Microsoft.VSDesigner.Data.VS.DataSetDesigner, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     [System.ComponentModel.DefaultPropertyAttribute("DataSetName")]
+    [System.ComponentModel.DesignerAttribute("Microsoft.VSDesigner.Data.VS.DataSetDesigner, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
+    [System.ComponentModel.ToolboxItemAttribute("Microsoft.VSDesigner.Data.VS.DataSetToolboxItem, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     [System.Xml.Serialization.XmlRootAttribute("DataSet")]
     [System.Xml.Serialization.XmlSchemaProviderAttribute("GetDataSetSchema")]
     public partial class DataSet : System.ComponentModel.MarshalByValueComponent, System.ComponentModel.IListSource, System.ComponentModel.ISupportInitialize, System.ComponentModel.ISupportInitializeNotification, System.Runtime.Serialization.ISerializable, System.Xml.Serialization.IXmlSerializable
@@ -617,6 +623,7 @@ namespace System.Data
     [System.ComponentModel.DefaultEventAttribute("RowChanging")]
     [System.ComponentModel.DefaultPropertyAttribute("TableName")]
     [System.ComponentModel.DesignTimeVisibleAttribute(false)]
+    [System.ComponentModel.EditorAttribute("Microsoft.VSDesigner.Data.Design.DataTableEditor, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     [System.ComponentModel.ToolboxItemAttribute(false)]
     [System.Xml.Serialization.XmlSchemaProviderAttribute("GetDataTableSchema")]
     public partial class DataTable : System.ComponentModel.MarshalByValueComponent, System.ComponentModel.IListSource, System.ComponentModel.ISupportInitialize, System.ComponentModel.ISupportInitializeNotification, System.Runtime.Serialization.ISerializable, System.Xml.Serialization.IXmlSerializable
@@ -779,6 +786,7 @@ namespace System.Data
     }
     public delegate void DataTableClearEventHandler(object sender, System.Data.DataTableClearEventArgs e);
     [System.ComponentModel.DefaultEventAttribute("CollectionChanged")]
+    [System.ComponentModel.EditorAttribute("Microsoft.VSDesigner.Data.Design.TablesCollectionEditor, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     [System.ComponentModel.ListBindableAttribute(false)]
     public sealed partial class DataTableCollection : System.Data.InternalDataCollectionBase
     {
@@ -855,7 +863,7 @@ namespace System.Data
         public override System.Type GetProviderSpecificFieldType(int ordinal) { throw null; }
         public override object GetProviderSpecificValue(int ordinal) { throw null; }
         public override int GetProviderSpecificValues(object[] values) { throw null; }
-        public override System.Data.DataTable GetSchemaTable() { throw null; }
+        public override System.Data.DataTable? GetSchemaTable() { throw null; }
         public override string GetString(int ordinal) { throw null; }
         public override object GetValue(int ordinal) { throw null; }
         public override int GetValues(object[] values) { throw null; }
@@ -866,6 +874,7 @@ namespace System.Data
     [System.ComponentModel.DesignerAttribute("Microsoft.VSDesigner.Data.VS.DataViewDesigner, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     [System.ComponentModel.DefaultEventAttribute("PositionChanged")]
     [System.ComponentModel.DefaultPropertyAttribute("Table")]
+    [System.ComponentModel.EditorAttribute("Microsoft.VSDesigner.Data.Design.DataSourceEditor, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public partial class DataView : System.ComponentModel.MarshalByValueComponent, System.Collections.ICollection, System.Collections.IEnumerable, System.Collections.IList, System.ComponentModel.IBindingList, System.ComponentModel.IBindingListView, System.ComponentModel.ISupportInitialize, System.ComponentModel.ISupportInitializeNotification, System.ComponentModel.ITypedList
     {
         public DataView() { }
@@ -1014,6 +1023,7 @@ namespace System.Data
 #nullable enable
         protected virtual void TableCollectionChanged(object sender, System.ComponentModel.CollectionChangeEventArgs e) { }
     }
+    [System.ComponentModel.EditorAttribute("Microsoft.VSDesigner.Data.Design.DataViewRowStateEditor, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     [System.FlagsAttribute]
     public enum DataViewRowState
     {
@@ -1041,6 +1051,7 @@ namespace System.Data
         [System.ComponentModel.BrowsableAttribute(false)]
         public System.Data.DataTable? Table { get { throw null; } }
     }
+    [System.ComponentModel.EditorAttribute("Microsoft.VSDesigner.Data.Design.DataViewSettingsCollectionEditor, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public partial class DataViewSettingCollection : System.Collections.ICollection, System.Collections.IEnumerable
     {
         internal DataViewSettingCollection() { }
@@ -1159,6 +1170,7 @@ namespace System.Data
     }
     public delegate void FillErrorEventHandler(object sender, System.Data.FillErrorEventArgs e);
     [System.ComponentModel.DefaultPropertyAttribute("ConstraintName")]
+    [System.ComponentModel.EditorAttribute("Microsoft.VSDesigner.Data.Design.ForeignKeyConstraintEditor, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public partial class ForeignKeyConstraint : System.Data.Constraint
     {
         public ForeignKeyConstraint(System.Data.DataColumn parentColumn, System.Data.DataColumn childColumn) { }
@@ -1235,7 +1247,7 @@ namespace System.Data
         bool IsClosed { get; }
         int RecordsAffected { get; }
         void Close();
-        System.Data.DataTable GetSchemaTable();
+        System.Data.DataTable? GetSchemaTable();
         bool NextResult();
         bool Read();
     }
@@ -1574,6 +1586,7 @@ namespace System.Data
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
     }
     [System.ComponentModel.DefaultPropertyAttribute("ConstraintName")]
+    [System.ComponentModel.EditorAttribute("Microsoft.VSDesigner.Data.Design.UniqueConstraintEditor, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public partial class UniqueConstraint : System.Data.Constraint
     {
         public UniqueConstraint(System.Data.DataColumn column) { }
@@ -1770,6 +1783,7 @@ namespace System.Data.Common
         object System.ICloneable.Clone() { throw null; }
         public override string ToString() { throw null; }
     }
+    [System.ComponentModel.EditorAttribute("Microsoft.VSDesigner.Data.Design.DataTableMappingCollectionEditor, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     [System.ComponentModel.ListBindableAttribute(false)]
     public sealed partial class DataTableMappingCollection : System.MarshalByRefObject, System.Collections.ICollection, System.Collections.IEnumerable, System.Collections.IList, System.Data.ITableMappingCollection
     {
@@ -1934,7 +1948,7 @@ namespace System.Data.Common
         protected abstract string GetParameterName(int parameterOrdinal);
         protected abstract string GetParameterName(string parameterName);
         protected abstract string GetParameterPlaceholder(int parameterOrdinal);
-        protected virtual System.Data.DataTable GetSchemaTable(System.Data.Common.DbCommand sourceCommand) { throw null; }
+        protected virtual System.Data.DataTable? GetSchemaTable(System.Data.Common.DbCommand sourceCommand) { throw null; }
         public System.Data.Common.DbCommand GetUpdateCommand() { throw null; }
         public System.Data.Common.DbCommand GetUpdateCommand(bool useColumnsForParameterNames) { throw null; }
         protected virtual System.Data.Common.DbCommand InitializeCommand(System.Data.Common.DbCommand? command) { throw null; }
@@ -2155,8 +2169,8 @@ namespace System.Data.Common
         public virtual object GetProviderSpecificValue(int ordinal) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public virtual int GetProviderSpecificValues(object[] values) { throw null; }
-        public virtual System.Data.DataTable GetSchemaTable() { throw null; }
-        public virtual System.Threading.Tasks.Task<System.Data.DataTable> GetSchemaTableAsync(System.Threading.CancellationToken cancellationToken = default) { throw null; }
+        public virtual System.Data.DataTable? GetSchemaTable() { throw null; }
+        public virtual System.Threading.Tasks.Task<System.Data.DataTable?> GetSchemaTableAsync(System.Threading.CancellationToken cancellationToken = default) { throw null; }
         public virtual System.Threading.Tasks.Task<System.Collections.ObjectModel.ReadOnlyCollection<System.Data.Common.DbColumn>> GetColumnSchemaAsync(System.Threading.CancellationToken cancellationToken = default) { throw null; }
         public virtual System.IO.Stream GetStream(int ordinal) { throw null; }
         public abstract string GetString(int ordinal);
@@ -3522,7 +3536,6 @@ namespace System.Data.SqlTypes
         UnmanagedBuffer = 2,
     }
 }
-#nullable disable
 namespace System.Xml
 {
     [System.ObsoleteAttribute("XmlDataDocument class will be removed in a future release.")]
@@ -3532,17 +3545,16 @@ namespace System.Xml
         public XmlDataDocument(System.Data.DataSet dataset) { }
         public System.Data.DataSet DataSet { get { throw null; } }
         public override System.Xml.XmlNode CloneNode(bool deep) { throw null; }
-        public override System.Xml.XmlElement CreateElement(string prefix, string localName, string namespaceURI) { throw null; }
+        public override System.Xml.XmlElement CreateElement(string? prefix, string localName, string? namespaceURI) { throw null; }
         public override System.Xml.XmlEntityReference CreateEntityReference(string name) { throw null; }
-        protected override System.Xml.XPath.XPathNavigator CreateNavigator(System.Xml.XmlNode node) { throw null; }
-        public override System.Xml.XmlElement GetElementById(string elemId) { throw null; }
+        protected override System.Xml.XPath.XPathNavigator? CreateNavigator(System.Xml.XmlNode node) { throw null; }
+        public override System.Xml.XmlElement? GetElementById(string elemId) { throw null; }
         public System.Xml.XmlElement GetElementFromRow(System.Data.DataRow r) { throw null; }
         public override System.Xml.XmlNodeList GetElementsByTagName(string name) { throw null; }
-        public System.Data.DataRow GetRowFromElement(System.Xml.XmlElement e) { throw null; }
+        public System.Data.DataRow? GetRowFromElement(System.Xml.XmlElement? e) { throw null; }
         public override void Load(System.IO.Stream inStream) { }
         public override void Load(System.IO.TextReader txtReader) { }
         public override void Load(string filename) { }
         public override void Load(System.Xml.XmlReader reader) { }
     }
 }
-#nullable enable

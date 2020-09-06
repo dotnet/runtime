@@ -2482,7 +2482,7 @@ unsigned Compiler::gtSetListOrder(GenTree* list, bool isListCallArgs, bool callA
 
         // TODO: Do we have to compute costs differently for argument lists and
         // all other lists?
-        // https://github.com/dotnet/coreclr/issues/7095
+        // https://github.com/dotnet/runtime/issues/6622
         unsigned costSz = (isListCallArgs || (next == nullptr)) ? 0 : 1;
         unsigned costEx = (isListCallArgs || (next == nullptr)) ? 0 : 1;
 
@@ -2514,7 +2514,7 @@ unsigned Compiler::gtSetListOrder(GenTree* list, bool isListCallArgs, bool callA
 
         // TODO: Do we have to compute levels differently for argument lists and
         // all other lists?
-        // https://github.com/dotnet/coreclr/issues/7095
+        // https://github.com/dotnet/runtime/issues/6622
         if (isListCallArgs)
         {
             if (level < lvl)
@@ -6076,7 +6076,7 @@ GenTree* Compiler::gtNewStringLiteralNode(InfoAccessType iat, void* pValue)
 
         case IAT_PVALUE: // The value needs to be accessed via an indirection
             // Create an indirection
-            tree = gtNewIndOfIconHandleNode(TYP_REF, (size_t)pValue, GTF_ICON_STR_HDL, false);
+            tree = gtNewIndOfIconHandleNode(TYP_REF, (size_t)pValue, GTF_ICON_STR_HDL, true);
 #ifdef DEBUG
             tree->gtGetOp1()->AsIntCon()->gtTargetHandle = (size_t)pValue;
 #endif

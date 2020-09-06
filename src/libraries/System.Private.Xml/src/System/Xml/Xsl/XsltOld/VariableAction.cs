@@ -20,9 +20,9 @@ namespace System.Xml.Xsl.XsltOld
         public static object BeingComputedMark = new object();
         private const int ValueCalculated = 2;
 
-        protected XmlQualifiedName name;
-        protected string nameStr;
-        protected string baseUri;
+        protected XmlQualifiedName? name;
+        protected string? nameStr;
+        protected string? baseUri;
         protected int selectKey = Compiler.InvalidQueryKey;
         protected int stylesheetid;
         protected VariableType varType;
@@ -32,11 +32,11 @@ namespace System.Xml.Xsl.XsltOld
         {
             get { return this.stylesheetid; }
         }
-        internal XmlQualifiedName Name
+        internal XmlQualifiedName? Name
         {
             get { return this.name; }
         }
-        internal string NameStr
+        internal string? NameStr
         {
             get { return this.nameStr; }
         }
@@ -114,7 +114,7 @@ namespace System.Xml.Xsl.XsltOld
         internal override void Execute(Processor processor, ActionFrame frame)
         {
             Debug.Assert(processor != null && frame != null && frame.State != ValueCalculated);
-            object value = null;
+            object? value = null;
 
             switch (frame.State)
             {
@@ -132,11 +132,11 @@ namespace System.Xml.Xsl.XsltOld
                     // If this is a parameter, check whether the caller has passed the value
                     if (this.varType == VariableType.GlobalParameter)
                     {
-                        value = processor.GetGlobalParameter(this.name);
+                        value = processor.GetGlobalParameter(this.name!);
                     }
                     else if (this.varType == VariableType.LocalParameter)
                     {
-                        value = processor.GetParameter(this.name);
+                        value = processor.GetParameter(this.name!);
                     }
                     if (value != null)
                     {
@@ -158,7 +158,7 @@ namespace System.Xml.Xsl.XsltOld
                     }
 
                     // RTF case
-                    NavigatorOutput output = new NavigatorOutput(this.baseUri);
+                    NavigatorOutput output = new NavigatorOutput(this.baseUri!);
                     processor.PushOutput(output);
                     processor.PushActionFrame(frame);
                     frame.State = ProcessingChildren;

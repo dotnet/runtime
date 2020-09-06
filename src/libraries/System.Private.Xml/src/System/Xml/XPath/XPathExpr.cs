@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using MS.Internal.Xml.XPath;
 using System.Collections;
 
@@ -51,7 +50,7 @@ namespace System.Xml.XPath
 
         public abstract void SetContext(XmlNamespaceManager nsManager);
 
-        public abstract void SetContext(IXmlNamespaceResolver nsResolver);
+        public abstract void SetContext(IXmlNamespaceResolver? nsResolver);
 
         public abstract XPathResultType ReturnType { get; }
 

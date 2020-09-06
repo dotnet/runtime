@@ -5597,3 +5597,10 @@ mono_arch_load_function (MonoJitICallId jit_icall_id)
 {
 	return NULL;
 }
+
+GSList*
+mono_arch_get_cie_program (void)
+{
+	NOT_IMPLEMENTED;
+	return NULL;
+}

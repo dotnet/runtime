@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.Diagnostics;
 using System.Xml.Schema;
 using System.Xml.Xsl.Qil;
@@ -24,7 +23,7 @@ namespace System.Xml.Xsl.XPath
             return Error(InvokeFormatMessage(String(res), args));
         }
 
-        public QilNode Error(ISourceLineInfo lineInfo, string res, params string[] args)
+        public QilNode Error(ISourceLineInfo? lineInfo, string res, params string[] args)
         {
             return Error(String(XslLoadException.CreateMessage(lineInfo, res, args)));
         }
@@ -38,8 +37,8 @@ namespace System.Xml.Xsl.XPath
 
         public bool IsAnyType(QilNode n)
         {
-            XmlQueryType xt = n.XmlType;
-            bool result = !(xt.IsStrict || xt.IsNode);
+            XmlQueryType? xt = n.XmlType;
+            bool result = !(xt!.IsStrict || xt.IsNode);
             Debug.Assert(result == (xt.TypeCode == XmlTypeCode.Item || xt.TypeCode == XmlTypeCode.AnyAtomicType), "What else can it be?");
             return result;
         }
@@ -47,56 +46,56 @@ namespace System.Xml.Xsl.XPath
         [Conditional("DEBUG")]
         public void CheckNode(QilNode n)
         {
-            Debug.Assert(n != null && n.XmlType.IsSingleton && n.XmlType.IsNode, "Must be a singleton node");
+            Debug.Assert(n != null && n.XmlType!.IsSingleton && n.XmlType.IsNode, "Must be a singleton node");
         }
 
         [Conditional("DEBUG")]
         public void CheckNodeSet(QilNode n)
         {
-            Debug.Assert(n != null && n.XmlType.IsNode, "Must be a node-set");
+            Debug.Assert(n != null && n.XmlType!.IsNode, "Must be a node-set");
         }
 
         [Conditional("DEBUG")]
         public void CheckNodeNotRtf(QilNode n)
         {
-            Debug.Assert(n != null && n.XmlType.IsSingleton && n.XmlType.IsNode && n.XmlType.IsNotRtf, "Must be a singleton node and not an Rtf");
+            Debug.Assert(n != null && n.XmlType!.IsSingleton && n.XmlType.IsNode && n.XmlType.IsNotRtf, "Must be a singleton node and not an Rtf");
         }
 
         [Conditional("DEBUG")]
         public void CheckString(QilNode n)
         {
-            Debug.Assert(n != null && n.XmlType.IsSubtypeOf(T.StringX), "Must be a singleton string");
+            Debug.Assert(n != null && n.XmlType!.IsSubtypeOf(T.StringX), "Must be a singleton string");
         }
 
         [Conditional("DEBUG")]
         public void CheckStringS(QilNode n)
         {
-            Debug.Assert(n != null && n.XmlType.IsSubtypeOf(T.StringXS), "Must be a sequence of strings");
+            Debug.Assert(n != null && n.XmlType!.IsSubtypeOf(T.StringXS), "Must be a sequence of strings");
         }
 
         [Conditional("DEBUG")]
         public void CheckDouble(QilNode n)
         {
-            Debug.Assert(n != null && n.XmlType.IsSubtypeOf(T.DoubleX), "Must be a singleton Double");
+            Debug.Assert(n != null && n.XmlType!.IsSubtypeOf(T.DoubleX), "Must be a singleton Double");
         }
 
         [Conditional("DEBUG")]
         public void CheckBool(QilNode n)
         {
-            Debug.Assert(n != null && n.XmlType.IsSubtypeOf(T.BooleanX), "Must be a singleton Bool");
+            Debug.Assert(n != null && n.XmlType!.IsSubtypeOf(T.BooleanX), "Must be a singleton Bool");
         }
 
         // Return true if inferred type of the given expression is never a subtype of T.NodeS
         public bool CannotBeNodeSet(QilNode n)
         {
-            XmlQueryType xt = n.XmlType;
+            XmlQueryType xt = n.XmlType!;
             // Do not report compile error if n is a VarPar, whose inferred type forbids nodes (SQLBUDT 339398)
             return xt.IsAtomicValue && !xt.IsEmpty && !(n is QilIterator);
         }
 
         public QilNode SafeDocOrderDistinct(QilNode n)
         {
-            XmlQueryType xt = n.XmlType;
+            XmlQueryType xt = n.XmlType!;
 
             if (xt.MaybeMany)
             {
@@ -169,7 +168,7 @@ namespace System.Xml.Xsl.XPath
         [Conditional("DEBUG")]
         private void ExpectAny(QilNode n)
         {
-            Debug.Assert(IsAnyType(n), "Unexpected expression type: " + n.XmlType.ToString());
+            Debug.Assert(IsAnyType(n), "Unexpected expression type: " + n.XmlType!.ToString());
         }
 
         public QilNode ConvertToType(XmlTypeCode requiredType, QilNode n)
@@ -188,7 +187,7 @@ namespace System.Xml.Xsl.XPath
         // XPath spec $4.2, string()
         public QilNode ConvertToString(QilNode n)
         {
-            switch (n.XmlType.TypeCode)
+            switch (n.XmlType!.TypeCode)
             {
                 case XmlTypeCode.Boolean:
                     return (
@@ -217,7 +216,7 @@ namespace System.Xml.Xsl.XPath
         // XPath spec $4.3, boolean()
         public QilNode ConvertToBoolean(QilNode n)
         {
-            switch (n.XmlType.TypeCode)
+            switch (n.XmlType!.TypeCode)
             {
                 case XmlTypeCode.Boolean:
                     return n;
@@ -247,7 +246,7 @@ namespace System.Xml.Xsl.XPath
         // XPath spec $4.4, number()
         public QilNode ConvertToNumber(QilNode n)
         {
-            switch (n.XmlType.TypeCode)
+            switch (n.XmlType!.TypeCode)
             {
                 case XmlTypeCode.Boolean:
                     return (
@@ -272,7 +271,7 @@ namespace System.Xml.Xsl.XPath
 
         public QilNode ConvertToNode(QilNode n)
         {
-            if (n.XmlType.IsNode && n.XmlType.IsNotRtf && n.XmlType.IsSingleton)
+            if (n.XmlType!.IsNode && n.XmlType.IsNotRtf && n.XmlType.IsSingleton)
             {
                 return n;
             }
@@ -281,7 +280,7 @@ namespace System.Xml.Xsl.XPath
 
         public QilNode ConvertToNodeSet(QilNode n)
         {
-            if (n.XmlType.IsNode && n.XmlType.IsNotRtf)
+            if (n.XmlType!.IsNode && n.XmlType.IsNotRtf)
             {
                 return n;
             }
@@ -292,7 +291,7 @@ namespace System.Xml.Xsl.XPath
         // Returns null if the given expression is never a node-set
         public QilNode? TryEnsureNodeSet(QilNode n)
         {
-            if (n.XmlType.IsNode && n.XmlType.IsNotRtf)
+            if (n.XmlType!.IsNode && n.XmlType.IsNotRtf)
             {
                 return n;
             }
@@ -329,7 +328,7 @@ namespace System.Xml.Xsl.XPath
         {
             CheckNodeNotRtf(context);
 
-            if (id.XmlType.IsSingleton)
+            if (id.XmlType!.IsSingleton)
             {
                 return Deref(context, ConvertToString(id));
             }

@@ -574,6 +574,7 @@ namespace System
         public static byte[] GetBytes(bool value) { throw null; }
         public static byte[] GetBytes(char value) { throw null; }
         public static byte[] GetBytes(double value) { throw null; }
+        public static byte[] GetBytes(System.Half value) { throw null; }
         public static byte[] GetBytes(short value) { throw null; }
         public static byte[] GetBytes(int value) { throw null; }
         public static byte[] GetBytes(long value) { throw null; }
@@ -584,6 +585,8 @@ namespace System
         public static byte[] GetBytes(uint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static byte[] GetBytes(ulong value) { throw null; }
+        public static short HalfToInt16Bits(System.Half value) { throw null; }
+        public static System.Half Int16BitsToHalf(short value) { throw null; }
         public static float Int32BitsToSingle(int value) { throw null; }
         public static double Int64BitsToDouble(long value) { throw null; }
         public static int SingleToInt32Bits(float value) { throw null; }
@@ -593,6 +596,8 @@ namespace System
         public static char ToChar(System.ReadOnlySpan<byte> value) { throw null; }
         public static double ToDouble(byte[] value, int startIndex) { throw null; }
         public static double ToDouble(System.ReadOnlySpan<byte> value) { throw null; }
+        public static System.Half ToHalf(byte[] value, int startIndex) { throw null; }
+        public static System.Half ToHalf(System.ReadOnlySpan<byte> value) { throw null; }
         public static short ToInt16(byte[] value, int startIndex) { throw null; }
         public static short ToInt16(System.ReadOnlySpan<byte> value) { throw null; }
         public static int ToInt32(byte[] value, int startIndex) { throw null; }
@@ -619,6 +624,7 @@ namespace System
         public static bool TryWriteBytes(System.Span<byte> destination, bool value) { throw null; }
         public static bool TryWriteBytes(System.Span<byte> destination, char value) { throw null; }
         public static bool TryWriteBytes(System.Span<byte> destination, double value) { throw null; }
+        public static bool TryWriteBytes(System.Span<byte> destination, System.Half value) { throw null; }
         public static bool TryWriteBytes(System.Span<byte> destination, short value) { throw null; }
         public static bool TryWriteBytes(System.Span<byte> destination, int value) { throw null; }
         public static bool TryWriteBytes(System.Span<byte> destination, long value) { throw null; }
@@ -728,6 +734,7 @@ namespace System
         private readonly char _dummyPrimitive;
         public const char MaxValue = '\uFFFF';
         public const char MinValue = '\0';
+        public static bool IsAscii(System.Char c) { throw null; }
         public int CompareTo(System.Char value) { throw null; }
         public int CompareTo(object? value) { throw null; }
         public static string ConvertFromUtf32(int utf32) { throw null; }
@@ -4663,8 +4670,9 @@ namespace System
         [System.ObsoleteAttribute("The method has been deprecated. It is not used by the system. https://go.microsoft.com/fwlink/?linkid=14202")]
         protected virtual void Escape() { }
         public static string EscapeDataString(string stringToEscape) { throw null; }
-        [System.ObsoleteAttribute("The method has been deprecated. Please use GetComponents() or static EscapeUriString() to escape a Uri component or a string. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("The method has been deprecated. Please use GetComponents() or static EscapeDataString() to escape a Uri component or a string. https://go.microsoft.com/fwlink/?linkid=14202")]
         protected static string EscapeString(string? str) { throw null; }
+        [System.ObsoleteAttribute("Uri.EscapeUriString can corrupt the Uri string in some cases. Consider using Uri.EscapeDataString for query string components instead.", DiagnosticId = "SYSLIB0013", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static string EscapeUriString(string stringToEscape) { throw null; }
         public static int FromHex(char digit) { throw null; }
         public string GetComponents(System.UriComponents components, System.UriFormat format) { throw null; }
@@ -6044,6 +6052,7 @@ namespace System.Globalization
         public System.Globalization.SortKey GetSortKey(string source, System.Globalization.CompareOptions options) { throw null; }
         public int GetSortKeyLength(System.ReadOnlySpan<char> source, System.Globalization.CompareOptions options = System.Globalization.CompareOptions.None) { throw null; }
         public int IndexOf(System.ReadOnlySpan<char> source, System.ReadOnlySpan<char> value, System.Globalization.CompareOptions options = System.Globalization.CompareOptions.None) { throw null; }
+        public int IndexOf(System.ReadOnlySpan<char> source, System.ReadOnlySpan<char> value, System.Globalization.CompareOptions options, out int matchLength) { throw null; }
         public int IndexOf(System.ReadOnlySpan<char> source, System.Text.Rune value, System.Globalization.CompareOptions options = System.Globalization.CompareOptions.None) { throw null; }
         public int IndexOf(string source, char value) { throw null; }
         public int IndexOf(string source, char value, System.Globalization.CompareOptions options) { throw null; }
@@ -6058,6 +6067,7 @@ namespace System.Globalization
         public int IndexOf(string source, string value, int startIndex, int count) { throw null; }
         public int IndexOf(string source, string value, int startIndex, int count, System.Globalization.CompareOptions options) { throw null; }
         public bool IsPrefix(System.ReadOnlySpan<char> source, System.ReadOnlySpan<char> prefix, System.Globalization.CompareOptions options = System.Globalization.CompareOptions.None) { throw null; }
+        public bool IsPrefix(System.ReadOnlySpan<char> source, System.ReadOnlySpan<char> prefix, System.Globalization.CompareOptions options, out int matchLength) { throw null; }
         public bool IsPrefix(string source, string prefix) { throw null; }
         public bool IsPrefix(string source, string prefix, System.Globalization.CompareOptions options) { throw null; }
         public static bool IsSortable(char ch) { throw null; }
@@ -6065,9 +6075,11 @@ namespace System.Globalization
         public static bool IsSortable(string text) { throw null; }
         public static bool IsSortable(System.Text.Rune value) { throw null; }
         public bool IsSuffix(System.ReadOnlySpan<char> source, System.ReadOnlySpan<char> suffix, System.Globalization.CompareOptions options = System.Globalization.CompareOptions.None) { throw null; }
+        public bool IsSuffix(System.ReadOnlySpan<char> source, System.ReadOnlySpan<char> suffix, System.Globalization.CompareOptions options, out int matchLength) { throw null; }
         public bool IsSuffix(string source, string suffix) { throw null; }
         public bool IsSuffix(string source, string suffix, System.Globalization.CompareOptions options) { throw null; }
         public int LastIndexOf(System.ReadOnlySpan<char> source, System.ReadOnlySpan<char> value, System.Globalization.CompareOptions options = System.Globalization.CompareOptions.None) { throw null; }
+        public int LastIndexOf(System.ReadOnlySpan<char> source, System.ReadOnlySpan<char> value, System.Globalization.CompareOptions options, out int matchLength) { throw null; }
         public int LastIndexOf(System.ReadOnlySpan<char> source, System.Text.Rune value, System.Globalization.CompareOptions options = System.Globalization.CompareOptions.None) { throw null; }
         public int LastIndexOf(string source, char value) { throw null; }
         public int LastIndexOf(string source, char value, System.Globalization.CompareOptions options) { throw null; }
@@ -6835,6 +6847,7 @@ namespace System.IO
         public virtual char[] ReadChars(int count) { throw null; }
         public virtual decimal ReadDecimal() { throw null; }
         public virtual double ReadDouble() { throw null; }
+        public virtual System.Half ReadHalf() { throw null; }
         public virtual short ReadInt16() { throw null; }
         public virtual int ReadInt32() { throw null; }
         public virtual long ReadInt64() { throw null; }
@@ -6873,6 +6886,7 @@ namespace System.IO
         public virtual void Write(char[] chars, int index, int count) { }
         public virtual void Write(decimal value) { }
         public virtual void Write(double value) { }
+        public virtual void Write(System.Half value) { }
         public virtual void Write(short value) { }
         public virtual void Write(int value) { }
         public virtual void Write(long value) { }
@@ -7581,12 +7595,12 @@ namespace System.Reflection
     public abstract partial class Assembly : System.Reflection.ICustomAttributeProvider, System.Runtime.Serialization.ISerializable
     {
         protected Assembly() { }
-        [System.ObsoleteAttribute("CodeBase and EscapedCodeBase are only included for .NET Framework compatibility. Use Location instead.", DiagnosticId = "SYSLIB0012", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("Assembly.CodeBase and Assembly.EscapedCodeBase are only included for .NET Framework compatibility. Use Assembly.Location instead.", DiagnosticId = "SYSLIB0012", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public virtual string? CodeBase { get { throw null; } }
         public virtual System.Collections.Generic.IEnumerable<System.Reflection.CustomAttributeData> CustomAttributes { get { throw null; } }
         public virtual System.Collections.Generic.IEnumerable<System.Reflection.TypeInfo> DefinedTypes { [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Types might be removed")] get { throw null; } }
         public virtual System.Reflection.MethodInfo? EntryPoint { get { throw null; } }
-        [System.ObsoleteAttribute("CodeBase and EscapedCodeBase are only included for .NET Framework compatibility. Use Location instead.", DiagnosticId = "SYSLIB0012", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("Assembly.CodeBase and Assembly.EscapedCodeBase are only included for .NET Framework compatibility. Use Assembly.Location instead.", DiagnosticId = "SYSLIB0012", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public virtual string EscapedCodeBase { get { throw null; } }
         public virtual System.Collections.Generic.IEnumerable<System.Type> ExportedTypes { [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Types might be removed")] get { throw null; } }
         public virtual string? FullName { get { throw null; } }
@@ -9732,10 +9746,14 @@ namespace System.Runtime.InteropServices
         [System.CLSCompliantAttribute(false)]
         public void ReadArray<T>(ulong byteOffset, T[] array, int index, int count) where T : struct { }
         [System.CLSCompliantAttribute(false)]
+        public void ReadSpan<T>(ulong byteOffset, System.Span<T> buffer) where T : struct { }
+        [System.CLSCompliantAttribute(false)]
         public T Read<T>(ulong byteOffset) where T : struct { throw null; }
         public void ReleasePointer() { }
         [System.CLSCompliantAttribute(false)]
         public void WriteArray<T>(ulong byteOffset, T[] array, int index, int count) where T : struct { }
+        [System.CLSCompliantAttribute(false)]
+        public void WriteSpan<T>(ulong byteOffset, System.ReadOnlySpan<T> data) where T : struct { }
         [System.CLSCompliantAttribute(false)]
         public void Write<T>(ulong byteOffset, T value) where T : struct { }
     }
@@ -9993,14 +10011,6 @@ namespace System.Runtime.Versioning
     public sealed class SupportedOSPlatformAttribute : System.Runtime.Versioning.OSPlatformAttribute
     {
         public SupportedOSPlatformAttribute(string platformName) : base(platformName) { }
-    }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Enum | System.AttributeTargets.Event | System.AttributeTargets.Field | System.AttributeTargets.Method | System.AttributeTargets.Module | System.AttributeTargets.Property | System.AttributeTargets.Struct, AllowMultiple = true, Inherited = false)]
-    public sealed class ObsoletedInOSPlatformAttribute : System.Runtime.Versioning.OSPlatformAttribute
-    {
-        public ObsoletedInOSPlatformAttribute(string platformName) : base(platformName) { }
-        public ObsoletedInOSPlatformAttribute(string platformName, string message) : base(platformName) { }
-        public string? Message { get; }
-        public string? Url { get; set; }
     }
     public abstract class OSPlatformAttribute : System.Attribute
     {

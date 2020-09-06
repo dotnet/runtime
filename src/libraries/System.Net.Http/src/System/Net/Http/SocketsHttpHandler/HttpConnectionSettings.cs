@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Net.Connections;
 using System.Net.Security;
 using System.Threading;
 using System.Threading.Tasks;
@@ -42,6 +41,9 @@ namespace System.Net.Http
         internal TimeSpan _pooledConnectionLifetime = HttpHandlerDefaults.DefaultPooledConnectionLifetime;
         internal TimeSpan _pooledConnectionIdleTimeout = HttpHandlerDefaults.DefaultPooledConnectionIdleTimeout;
         internal TimeSpan _expect100ContinueTimeout = HttpHandlerDefaults.DefaultExpect100ContinueTimeout;
+        internal TimeSpan _keepAlivePingTimeout = HttpHandlerDefaults.DefaultKeepAlivePingTimeout;
+        internal TimeSpan _keepAlivePingDelay = HttpHandlerDefaults.DefaultKeepAlivePingDelay;
+        internal HttpKeepAlivePingPolicy _keepAlivePingPolicy = HttpHandlerDefaults.DefaultKeepAlivePingPolicy;
         internal TimeSpan _connectTimeout = HttpHandlerDefaults.DefaultConnectTimeout;
 
         internal HeaderEncodingSelector<HttpRequestMessage>? _requestHeaderEncodingSelector;
@@ -52,9 +54,6 @@ namespace System.Net.Http
         internal SslClientAuthenticationOptions? _sslOptions;
 
         internal bool _enableMultipleHttp2Connections;
-
-        internal ConnectionFactory? _connectionFactory;
-        internal Func<HttpRequestMessage, Connection, CancellationToken, ValueTask<Connection>>? _plaintextFilter;
 
         internal IDictionary<string, object?>? _properties;
 
@@ -103,11 +102,12 @@ namespace System.Net.Http
                 _sslOptions = _sslOptions?.ShallowClone(), // shallow clone the options for basic prevention of mutation issues while processing
                 _useCookies = _useCookies,
                 _useProxy = _useProxy,
+                _keepAlivePingTimeout = _keepAlivePingTimeout,
+                _keepAlivePingDelay = _keepAlivePingDelay,
+                _keepAlivePingPolicy = _keepAlivePingPolicy,
                 _requestHeaderEncodingSelector = _requestHeaderEncodingSelector,
                 _responseHeaderEncodingSelector = _responseHeaderEncodingSelector,
                 _enableMultipleHttp2Connections = _enableMultipleHttp2Connections,
-                _connectionFactory = _connectionFactory,
-                _plaintextFilter = _plaintextFilter
             };
         }
 

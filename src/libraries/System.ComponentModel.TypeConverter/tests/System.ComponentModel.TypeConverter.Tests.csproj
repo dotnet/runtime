@@ -68,7 +68,6 @@
     <Compile Include="DateTimeOffsetConverterTests.cs" />
     <Compile Include="DecimalConverterTests.cs" />
     <Compile Include="DefaultEventAttributeTests.cs" />
-    <Compile Include="EditorAttributeTests.cs" />
     <Compile Include="DesignTimeVisibleAttributeTests.cs" />
     <Compile Include="DefaultPropertyAttributeTests.cs" />
     <Compile Include="Design\DesignerTransactionCloseEventArgsTests.cs" />
@@ -83,7 +82,6 @@
     <Compile Include="Design\Serialization\RootDesignerSerializerAttributeTests.cs" />
     <Compile Include="Design\Serialization\ResolveNameEventArgsTests.cs" />
     <Compile Include="Design\Serialization\MemberRelationshipTests.cs" />
-    <Compile Include="Design\Serialization\DesignerSerializerAttributeTests.cs" />
     <Compile Include="Design\Serialization\DesignerLoaderTests.cs" />
     <Compile Include="Design\Serialization\DefaultSerializationProviderAttributeTests.cs" />
     <Compile Include="Design\MenuCommandTests.cs" />

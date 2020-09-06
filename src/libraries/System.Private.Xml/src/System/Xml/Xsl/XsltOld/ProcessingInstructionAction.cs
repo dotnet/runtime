@@ -12,9 +12,9 @@ namespace System.Xml.Xsl.XsltOld
     {
         private const int NameReady = 3;
 
-        private Avt _nameAvt;
+        private Avt? _nameAvt;
         // Compile time precalculated AVT
-        private string _name;
+        private string? _name;
 
         private const char CharX = 'X';
         private const char Charx = 'x';
@@ -30,7 +30,7 @@ namespace System.Xml.Xsl.XsltOld
             CompileAttributes(compiler);
             CheckRequiredAttribute(compiler, _nameAvt, "name");
 
-            if (_nameAvt.IsConstant)
+            if (_nameAvt!.IsConstant)
             {
                 _name = _nameAvt.Evaluate(null, null);
                 _nameAvt = null;
@@ -120,7 +120,7 @@ namespace System.Xml.Xsl.XsltOld
         }
 
 
-        internal static bool IsProcessingInstructionName(string name)
+        internal static bool IsProcessingInstructionName(string? name)
         {
             if (name == null)
             {

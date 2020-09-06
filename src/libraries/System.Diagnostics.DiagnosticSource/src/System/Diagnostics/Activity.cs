@@ -80,7 +80,7 @@ namespace System.Diagnostics
         private LinkedList<KeyValuePair<string, string?>>? _baggage;
         private LinkedList<ActivityLink>? _links;
         private LinkedList<ActivityEvent>? _events;
-        private ConcurrentDictionary<string, object>? _customProperties;
+        private Dictionary<string, object>? _customProperties;
         private string? _displayName;
 
         /// <summary>
@@ -255,9 +255,6 @@ namespace System.Diagnostics
         /// </summary>
         public IEnumerable<KeyValuePair<string, object?>> TagObjects
         {
-#if ALLOW_PARTIALLY_TRUSTED_CALLERS
-        [System.Security.SecuritySafeCriticalAttribute]
-#endif
             get => _tags ?? s_emptyTagObjects;
         }
 
@@ -897,16 +894,19 @@ namespace System.Diagnostics
         {
             if (_customProperties == null)
             {
-                Interlocked.CompareExchange(ref _customProperties, new ConcurrentDictionary<string, object>(), null);
+                Interlocked.CompareExchange(ref _customProperties, new Dictionary<string, object>(), null);
             }
 
-            if (propertyValue == null)
+            lock (_customProperties)
             {
-                _customProperties.TryRemove(propertyName, out object _);
-            }
-            else
-            {
-                _customProperties[propertyName] = propertyValue!;
+                if (propertyValue == null)
+                {
+                    _customProperties.Remove(propertyName);
+                }
+                else
+                {
+                    _customProperties[propertyName] = propertyValue!;
+                }
             }
         }
 
@@ -924,7 +924,13 @@ namespace System.Diagnostics
                 return null;
             }
 
-            return _customProperties.TryGetValue(propertyName, out object? o) ? o! : null;
+            object? ret;
+            lock (_customProperties)
+            {
+                ret = _customProperties.TryGetValue(propertyName, out object? o) ? o! : null;
+            }
+
+            return ret;
         }
 
         internal static Activity CreateAndStart(ActivitySource source, string name, ActivityKind kind, string? parentId, ActivityContext parentContext,
@@ -1284,9 +1290,10 @@ namespace System.Diagnostics
                 }
             }
 
+            // Note: Some customers use this GetEnumerator dynamically to avoid allocations.
             public Enumerator<T> GetEnumerator() => new Enumerator<T>(_first);
-            IEnumerator<T> IEnumerable<T>.GetEnumerator() => new Enumerator<T>(_first);
-            IEnumerator IEnumerable.GetEnumerator() => new Enumerator<T>(_first);
+            IEnumerator<T> IEnumerable<T>.GetEnumerator() => GetEnumerator();
+            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
         }
 
         private class TagsLinkedList : IEnumerable<KeyValuePair<string, object?>>
@@ -1419,9 +1426,10 @@ namespace System.Diagnostics
                 }
             }
 
+            // Note: Some customers use this GetEnumerator dynamically to avoid allocations.
             public Enumerator<KeyValuePair<string, object?>> GetEnumerator() => new Enumerator<KeyValuePair<string, object?>>(_first);
-            IEnumerator<KeyValuePair<string, object?>> IEnumerable<KeyValuePair<string, object?>>.GetEnumerator() => new Enumerator<KeyValuePair<string, object?>>(_first);
-            IEnumerator IEnumerable.GetEnumerator() => new Enumerator<KeyValuePair<string, object?>>(_first);
+            IEnumerator<KeyValuePair<string, object?>> IEnumerable<KeyValuePair<string, object?>>.GetEnumerator() => GetEnumerator();
+            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
             public IEnumerable<KeyValuePair<string, string?>> EnumerateStringValues()
             {
@@ -1439,15 +1447,15 @@ namespace System.Diagnostics
             }
         }
 
+        // Note: Some customers use this Enumerator dynamically to avoid allocations.
         private struct Enumerator<T> : IEnumerator<T>
         {
-            private readonly LinkedListNode<T>? _head;
             private LinkedListNode<T>? _nextNode;
             [AllowNull, MaybeNull] private T _currentItem;
 
             public Enumerator(LinkedListNode<T>? head)
             {
-                _nextNode = _head = head;
+                _nextNode = head;
                 _currentItem = default;
             }
 
@@ -1468,7 +1476,7 @@ namespace System.Diagnostics
                 return true;
             }
 
-            public void Reset() => _nextNode = _head;
+            public void Reset() => throw new NotSupportedException();
 
             public void Dispose()
             {

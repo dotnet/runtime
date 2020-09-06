@@ -17,6 +17,7 @@ using System.Diagnostics;
 using System.Xml.Xsl.Qil;
 using System.Xml.Xsl.Runtime;
 using System.Runtime.Versioning;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml.Xsl.IlGen
 {
@@ -26,16 +27,16 @@ namespace System.Xml.Xsl.IlGen
     internal class XmlILStorageMethods
     {
         // Aggregates
-        public MethodInfo AggAvg;
-        public MethodInfo AggAvgResult;
-        public MethodInfo AggCreate;
-        public MethodInfo AggIsEmpty;
-        public MethodInfo AggMax;
-        public MethodInfo AggMaxResult;
-        public MethodInfo AggMin;
-        public MethodInfo AggMinResult;
-        public MethodInfo AggSum;
-        public MethodInfo AggSumResult;
+        public MethodInfo? AggAvg;
+        public MethodInfo? AggAvgResult;
+        public MethodInfo? AggCreate;
+        public MethodInfo? AggIsEmpty;
+        public MethodInfo? AggMax;
+        public MethodInfo? AggMaxResult;
+        public MethodInfo? AggMin;
+        public MethodInfo? AggMinResult;
+        public MethodInfo? AggSum;
+        public MethodInfo? AggSumResult;
 
         // Sequences
         public Type SeqType;
@@ -51,10 +52,10 @@ namespace System.Xml.Xsl.IlGen
         public MethodInfo IListItem;
 
         // XPathItem
-        public MethodInfo ValueAs;
+        public MethodInfo? ValueAs;
 
         // ToAtomicValue
-        public MethodInfo ToAtomicValue;
+        public MethodInfo? ToAtomicValue;
 
         public XmlILStorageMethods(Type storageType)
         {
@@ -62,7 +63,9 @@ namespace System.Xml.Xsl.IlGen
             if (storageType == typeof(int) || storageType == typeof(long) ||
                 storageType == typeof(decimal) || storageType == typeof(double))
             {
-                Type aggType = Type.GetType("System.Xml.Xsl.Runtime." + storageType.Name + "Aggregator");
+                string aggTypeName = "System.Xml.Xsl.Runtime." + storageType.Name + "Aggregator";
+                Type? aggType = Type.GetType(aggTypeName);
+                Debug.Assert(aggType != null, $"Could not find type `{aggTypeName}`");
                 AggAvg = XmlILMethods.GetMethod(aggType, "Average");
                 AggAvgResult = XmlILMethods.GetMethod(aggType, "get_AverageResult");
                 AggCreate = XmlILMethods.GetMethod(aggType, "Create");
@@ -92,7 +95,9 @@ namespace System.Xml.Xsl.IlGen
                 SeqAdd = XmlILMethods.GetMethod(SeqType, "Add");
             }
 
-            SeqEmpty = SeqType.GetField("Empty");
+            FieldInfo? seqEmpty = SeqType.GetField("Empty");
+            Debug.Assert(seqEmpty != null, "Field `Empty` could not be found");
+            SeqEmpty = seqEmpty;
             SeqReuse = XmlILMethods.GetMethod(SeqType, "CreateOrReuse", SeqType);
             SeqReuseSgl = XmlILMethods.GetMethod(SeqType, "CreateOrReuse", SeqType, storageType);
             SeqSortByKeys = XmlILMethods.GetMethod(SeqType, "SortByKeys");
@@ -140,14 +145,14 @@ namespace System.Xml.Xsl.IlGen
 
         private static ConstructorInfo GetConstructor(Type className)
         {
-            ConstructorInfo constrInfo = className.GetConstructor(Array.Empty<Type>());
+            ConstructorInfo constrInfo = className.GetConstructor(Array.Empty<Type>())!;
             Debug.Assert(constrInfo != null, "Constructor " + className + " cannot be null.");
             return constrInfo;
         }
 
         private static ConstructorInfo GetConstructor(Type className, params Type[] args)
         {
-            ConstructorInfo constrInfo = className.GetConstructor(args);
+            ConstructorInfo constrInfo = className.GetConstructor(args)!;
             Debug.Assert(constrInfo != null, "Constructor " + className + " cannot be null.");
             return constrInfo;
         }
@@ -415,14 +420,14 @@ namespace System.Xml.Xsl.IlGen
 
         public static MethodInfo GetMethod(Type className, string methName)
         {
-            MethodInfo methInfo = className.GetMethod(methName);
+            MethodInfo? methInfo = className.GetMethod(methName);
             Debug.Assert(methInfo != null, "Method " + className.Name + "." + methName + " cannot be null.");
             return methInfo;
         }
 
         public static MethodInfo GetMethod(Type className, string methName, params Type[] args)
         {
-            MethodInfo methInfo = className.GetMethod(methName, args);
+            MethodInfo? methInfo = className.GetMethod(methName, args);
             Debug.Assert(methInfo != null, "Method " + methName + " cannot be null.");
             return methInfo;
         }
@@ -448,22 +453,22 @@ namespace System.Xml.Xsl.IlGen
     /// </summary>
     internal class GenerateHelper
     {
-        private MethodBase _methInfo;
-        private ILGenerator _ilgen;
-        private LocalBuilder _locXOut;
+        private MethodBase? _methInfo;
+        private ILGenerator? _ilgen;
+        private LocalBuilder? _locXOut;
         private readonly XmlILModule _module;
         private readonly bool _isDebug;
         private bool _initWriters;
         private readonly StaticDataManager _staticData;
-        private ISourceLineInfo _lastSourceInfo;
-        private MethodInfo _methSyncToNav;
+        private ISourceLineInfo? _lastSourceInfo;
+        private MethodInfo? _methSyncToNav;
 
 #if DEBUG
         private int _lblNum;
-        private Hashtable _symbols;
+        private Hashtable? _symbols;
         private int _numLocals;
-        private string _sourceFile;
-        private TextWriter _writerDump;
+        private string? _sourceFile;
+        private TextWriter? _writerDump;
 #endif
 
         /// <summary>
@@ -490,7 +495,7 @@ namespace System.Xml.Xsl.IlGen
         // SxS note: Using hardcoded "dump.il" is an SxS issue. Since we are doing this ONLY in debug builds
         // and only for tracing purposes and MakeVersionSafeName does not seem to be able to handle file
         // extensions correctly I decided to suppress the SxS message (as advised by SxS guys).
-        public void MethodBegin(MethodBase methInfo, ISourceLineInfo sourceInfo, bool initWriters)
+        public void MethodBegin(MethodBase methInfo, ISourceLineInfo? sourceInfo, bool initWriters)
         {
             _methInfo = methInfo;
             _ilgen = XmlILModule.DefineMethodBody(methInfo);
@@ -505,7 +510,7 @@ namespace System.Xml.Xsl.IlGen
                 _sourceFile = null;
 
                 _writerDump = XmlILTrace.GetTraceWriter("dump.il");
-                _writerDump.WriteLine(".method {0}()", methInfo.Name);
+                _writerDump!.WriteLine(".method {0}()", methInfo.Name);
                 _writerDump.WriteLine("{");
             }
 #endif
@@ -559,7 +564,7 @@ namespace System.Xml.Xsl.IlGen
 #if DEBUG
             if (XmlILTrace.IsEnabled)
             {
-                _writerDump.WriteLine("}");
+                _writerDump!.WriteLine("}");
                 _writerDump.WriteLine("");
                 _writerDump.Close();
             }
@@ -583,7 +588,7 @@ namespace System.Xml.Xsl.IlGen
             if (_methSyncToNav == null)
                 _methSyncToNav = _module.FindMethod("SyncToNavigator");
 
-            Call(_methSyncToNav);
+            Call(_methSyncToNav!);
         }
 
         //-----------------------------------------------
@@ -633,11 +638,11 @@ namespace System.Xml.Xsl.IlGen
         /// </summary>
         public LocalBuilder DeclareLocal(string name, Type type)
         {
-            LocalBuilder locBldr = _ilgen.DeclareLocal(type);
+            LocalBuilder locBldr = _ilgen!.DeclareLocal(type);
 #if DEBUG
             if (XmlILTrace.IsEnabled)
             {
-                _symbols.Add(locBldr, name + _numLocals.ToString(CultureInfo.InvariantCulture));
+                _symbols!.Add(locBldr, name + _numLocals.ToString(CultureInfo.InvariantCulture));
                 _numLocals++;
             }
 #endif
@@ -663,7 +668,7 @@ namespace System.Xml.Xsl.IlGen
 
         public void LoadQueryOutput()
         {
-            Emit(OpCodes.Ldloc, _locXOut);
+            Emit(OpCodes.Ldloc, _locXOut!);
         }
 
 
@@ -801,7 +806,7 @@ namespace System.Xml.Xsl.IlGen
                     retType = meth.ReturnType.Name;
                 }
 
-                _writerDump.WriteLine("  {0, -10} {1} {2}({3})", new object[] { opcode.Name, retType, meth.Name, strBldr.ToString() });
+                _writerDump!.WriteLine("  {0, -10} {1} {2}({3})", new object?[] { opcode.Name, retType, meth.Name, strBldr.ToString() });
             }
 #endif
         }
@@ -811,7 +816,7 @@ namespace System.Xml.Xsl.IlGen
             OpCode opcode = meth.IsVirtual || meth.IsAbstract ? OpCodes.Callvirt : OpCodes.Call;
 
             TraceCall(opcode, meth);
-            _ilgen.Emit(opcode, meth);
+            _ilgen!.Emit(opcode, meth);
 
             if (_lastSourceInfo != null)
             {
@@ -919,7 +924,7 @@ namespace System.Xml.Xsl.IlGen
 
         public void CallArithmeticOp(QilNodeType opType, XmlTypeCode code)
         {
-            MethodInfo meth = null;
+            MethodInfo? meth = null;
 
             switch (code)
             {
@@ -962,7 +967,7 @@ namespace System.Xml.Xsl.IlGen
 
         public void CallCompareEquals(XmlTypeCode code)
         {
-            MethodInfo meth = null;
+            MethodInfo? meth = null;
 
             switch (code)
             {
@@ -979,7 +984,7 @@ namespace System.Xml.Xsl.IlGen
 
         public void CallCompare(XmlTypeCode code)
         {
-            MethodInfo meth = null;
+            MethodInfo? meth = null;
 
             switch (code)
             {
@@ -1010,7 +1015,7 @@ namespace System.Xml.Xsl.IlGen
         public void CallEndRtfConstruction()
         {
             LoadQueryRuntime();
-            Emit(OpCodes.Ldloca, _locXOut);
+            Emit(OpCodes.Ldloca, _locXOut!);
             Call(XmlILMethods.EndRtfConstr);
         }
 
@@ -1025,7 +1030,7 @@ namespace System.Xml.Xsl.IlGen
         public void CallEndSequenceConstruction()
         {
             LoadQueryRuntime();
-            Emit(OpCodes.Ldloca, _locXOut);
+            Emit(OpCodes.Ldloca, _locXOut!);
             Call(XmlILMethods.EndSeqConstr);
         }
 
@@ -1092,6 +1097,7 @@ namespace System.Xml.Xsl.IlGen
             Call(XmlILMethods.GetCollation);
         }
 
+        [MemberNotNull(nameof(_locXOut))]
         private void EnsureWriter()
         {
             // If write variable has not yet been initialized, do it now
@@ -1100,6 +1106,8 @@ namespace System.Xml.Xsl.IlGen
                 _locXOut = DeclareLocal("$$$xwrtChk", typeof(XmlQueryOutput));
                 _initWriters = true;
             }
+
+            Debug.Assert(_locXOut != null);
         }
 
 
@@ -1148,7 +1156,7 @@ namespace System.Xml.Xsl.IlGen
 
         public void CallWriteStartElement(GenerateNameType nameType, bool callChk)
         {
-            MethodInfo meth = null;
+            MethodInfo? meth = null;
 
             // If runtime checks need to be made,
             if (callChk)
@@ -1181,7 +1189,7 @@ namespace System.Xml.Xsl.IlGen
 
         public void CallWriteEndElement(GenerateNameType nameType, bool callChk)
         {
-            MethodInfo meth = null;
+            MethodInfo? meth = null;
 
             // If runtime checks need to be made,
             if (callChk)
@@ -1211,7 +1219,7 @@ namespace System.Xml.Xsl.IlGen
 
         public void CallWriteStartAttribute(GenerateNameType nameType, bool callChk)
         {
-            MethodInfo meth = null;
+            MethodInfo? meth = null;
 
             // If runtime checks need to be made,
             if (callChk)
@@ -1341,7 +1349,7 @@ namespace System.Xml.Xsl.IlGen
 
         public void CallValueAs(Type clrType)
         {
-            MethodInfo meth;
+            MethodInfo? meth;
 
             meth = XmlILMethods.StorageMethods[clrType].ValueAs;
             if (meth == null)
@@ -1366,9 +1374,9 @@ namespace System.Xml.Xsl.IlGen
         // XmlSortKeyAccumulator methods
         //-----------------------------------------------
 
-        public void AddSortKey(XmlQueryType keyType)
+        public void AddSortKey(XmlQueryType? keyType)
         {
-            MethodInfo meth = null;
+            MethodInfo? meth = null;
 
             if (keyType == null)
             {
@@ -1417,7 +1425,7 @@ namespace System.Xml.Xsl.IlGen
         /// </summary>
         public void DebugStartScope()
         {
-            _ilgen.BeginScope();
+            _ilgen!.BeginScope();
         }
 
         /// <summary>
@@ -1425,7 +1433,7 @@ namespace System.Xml.Xsl.IlGen
         /// </summary>
         public void DebugEndScope()
         {
-            _ilgen.EndScope();
+            _ilgen!.EndScope();
         }
 
         /// <summary>
@@ -1447,16 +1455,16 @@ namespace System.Xml.Xsl.IlGen
             MarkSequencePoint(sourceInfo);
         }
 
-        private string _lastUriString;
-        private string _lastFileName;
+        private string? _lastUriString;
+        private string? _lastFileName;
 
         // SQLBUDT 278010: debugger does not work with network paths in uri format, like file://server/share/dir/file
         private string GetFileName(ISourceLineInfo sourceInfo)
         {
-            string uriString = sourceInfo.Uri;
-            if ((object)uriString == (object)_lastUriString)
+            string uriString = sourceInfo.Uri!;
+            if ((object)uriString == (object?)_lastUriString)
             {
-                return _lastFileName;
+                return _lastFileName!;
             }
 
             _lastUriString = uriString;
@@ -1480,15 +1488,15 @@ namespace System.Xml.Xsl.IlGen
             if (XmlILTrace.IsEnabled)
             {
                 if (sourceInfo.IsNoSource)
-                    _writerDump.WriteLine("//[no source]");
+                    _writerDump!.WriteLine("//[no source]");
                 else
                 {
                     if (sourceFile != _sourceFile)
                     {
                         _sourceFile = sourceFile;
-                        _writerDump.WriteLine("// Source File '{0}'", _sourceFile);
+                        _writerDump!.WriteLine("// Source File '{0}'", _sourceFile);
                     }
-                    _writerDump.WriteLine("//[{0},{1} -- {2},{3}]", sourceInfo.Start.Line, sourceInfo.Start.Pos, sourceInfo.End.Line, sourceInfo.End.Pos);
+                    _writerDump!.WriteLine("//[{0},{1} -- {2},{3}]", sourceInfo.Start.Line, sourceInfo.Start.Pos, sourceInfo.End.Line, sourceInfo.End.Pos);
                 }
             }
 #endif
@@ -1504,11 +1512,11 @@ namespace System.Xml.Xsl.IlGen
 
         public Label DefineLabel()
         {
-            Label lbl = _ilgen.DefineLabel();
+            Label lbl = _ilgen!.DefineLabel();
 
 #if DEBUG
             if (XmlILTrace.IsEnabled)
-                _symbols.Add(lbl, ++_lblNum);
+                _symbols!.Add(lbl, ++_lblNum);
 #endif
 
             return lbl;
@@ -1525,55 +1533,55 @@ namespace System.Xml.Xsl.IlGen
 
 #if DEBUG
             if (XmlILTrace.IsEnabled)
-                _writerDump.WriteLine("Label {0}:", _symbols[lbl]);
+                _writerDump!.WriteLine("Label {0}:", _symbols![lbl]);
 #endif
 
-            _ilgen.MarkLabel(lbl);
+            _ilgen!.MarkLabel(lbl);
         }
 
         public void Emit(OpCode opcode)
         {
 #if DEBUG
             if (XmlILTrace.IsEnabled)
-                _writerDump.WriteLine("  {0}", opcode.Name);
+                _writerDump!.WriteLine("  {0}", opcode.Name);
 #endif
-            _ilgen.Emit(opcode);
+            _ilgen!.Emit(opcode);
         }
 
         public void Emit(OpCode opcode, byte byteVal)
         {
 #if DEBUG
             if (XmlILTrace.IsEnabled)
-                _writerDump.WriteLine("  {0, -10} {1}", opcode.Name, byteVal);
+                _writerDump!.WriteLine("  {0, -10} {1}", opcode.Name, byteVal);
 #endif
-            _ilgen.Emit(opcode, byteVal);
+            _ilgen!.Emit(opcode, byteVal);
         }
 
         public void Emit(OpCode opcode, ConstructorInfo constrInfo)
         {
 #if DEBUG
             if (XmlILTrace.IsEnabled)
-                _writerDump.WriteLine("  {0, -10} {1}", opcode.Name, constrInfo);
+                _writerDump!.WriteLine("  {0, -10} {1}", opcode.Name, constrInfo);
 #endif
-            _ilgen.Emit(opcode, constrInfo);
+            _ilgen!.Emit(opcode, constrInfo);
         }
 
         public void Emit(OpCode opcode, double dblVal)
         {
 #if DEBUG
             if (XmlILTrace.IsEnabled)
-                _writerDump.WriteLine("  {0, -10} {1}", opcode.Name, dblVal);
+                _writerDump!.WriteLine("  {0, -10} {1}", opcode.Name, dblVal);
 #endif
-            _ilgen.Emit(opcode, dblVal);
+            _ilgen!.Emit(opcode, dblVal);
         }
 
         public void Emit(OpCode opcode, FieldInfo fldInfo)
         {
 #if DEBUG
             if (XmlILTrace.IsEnabled)
-                _writerDump.WriteLine("  {0, -10} {1}", opcode.Name, fldInfo.Name);
+                _writerDump!.WriteLine("  {0, -10} {1}", opcode.Name, fldInfo.Name);
 #endif
-            _ilgen.Emit(opcode, fldInfo);
+            _ilgen!.Emit(opcode, fldInfo);
         }
 
         public void Emit(OpCode opcode, int intVal)
@@ -1581,9 +1589,9 @@ namespace System.Xml.Xsl.IlGen
             Debug.Assert(opcode.OperandType == OperandType.InlineI || opcode.OperandType == OperandType.InlineVar);
 #if DEBUG
             if (XmlILTrace.IsEnabled)
-                _writerDump.WriteLine("  {0, -10} {1}", opcode.Name, intVal);
+                _writerDump!.WriteLine("  {0, -10} {1}", opcode.Name, intVal);
 #endif
-            _ilgen.Emit(opcode, intVal);
+            _ilgen!.Emit(opcode, intVal);
         }
 
         public void Emit(OpCode opcode, long longVal)
@@ -1591,9 +1599,9 @@ namespace System.Xml.Xsl.IlGen
             Debug.Assert(opcode.OperandType == OperandType.InlineI8);
 #if DEBUG
             if (XmlILTrace.IsEnabled)
-                _writerDump.WriteLine("  {0, -10} {1}", opcode.Name, longVal);
+                _writerDump!.WriteLine("  {0, -10} {1}", opcode.Name, longVal);
 #endif
-            _ilgen.Emit(opcode, longVal);
+            _ilgen!.Emit(opcode, longVal);
         }
 
         public void Emit(OpCode opcode, Label lblVal)
@@ -1601,9 +1609,9 @@ namespace System.Xml.Xsl.IlGen
             Debug.Assert(!opcode.Equals(OpCodes.Br) && !opcode.Equals(OpCodes.Br_S), "Use EmitUnconditionalBranch and be careful not to emit unverifiable code.");
 #if DEBUG
             if (XmlILTrace.IsEnabled)
-                _writerDump.WriteLine("  {0, -10} Label {1}", opcode.Name, _symbols[lblVal]);
+                _writerDump!.WriteLine("  {0, -10} Label {1}", opcode.Name, _symbols![lblVal]);
 #endif
-            _ilgen.Emit(opcode, lblVal);
+            _ilgen!.Emit(opcode, lblVal);
         }
 
         public void Emit(OpCode opcode, Label[] arrLabels)
@@ -1611,51 +1619,51 @@ namespace System.Xml.Xsl.IlGen
 #if DEBUG
             if (XmlILTrace.IsEnabled)
             {
-                _writerDump.Write("  {0, -10} (Label {1}", opcode.Name, arrLabels.Length != 0 ? _symbols[arrLabels[0]].ToString() : "");
+                _writerDump!.Write("  {0, -10} (Label {1}", opcode.Name, arrLabels.Length != 0 ? _symbols![arrLabels[0]]!.ToString() : "");
                 for (int i = 1; i < arrLabels.Length; i++)
                 {
-                    _writerDump.Write(", Label {0}", _symbols[arrLabels[i]]);
+                    _writerDump.Write(", Label {0}", _symbols![arrLabels[i]]);
                 }
                 _writerDump.WriteLine(")");
             }
 #endif
-            _ilgen.Emit(opcode, arrLabels);
+            _ilgen!.Emit(opcode, arrLabels);
         }
 
         public void Emit(OpCode opcode, LocalBuilder locBldr)
         {
 #if DEBUG
             if (XmlILTrace.IsEnabled)
-                _writerDump.WriteLine("  {0, -10} {1} ({2})", opcode.Name, _symbols[locBldr], locBldr.LocalType.Name);
+                _writerDump!.WriteLine("  {0, -10} {1} ({2})", opcode.Name, _symbols![locBldr], locBldr.LocalType.Name);
 #endif
-            _ilgen.Emit(opcode, locBldr);
+            _ilgen!.Emit(opcode, locBldr);
         }
 
         public void Emit(OpCode opcode, sbyte sbyteVal)
         {
 #if DEBUG
             if (XmlILTrace.IsEnabled)
-                _writerDump.WriteLine("  {0, -10} {1}", opcode.Name, sbyteVal);
+                _writerDump!.WriteLine("  {0, -10} {1}", opcode.Name, sbyteVal);
 #endif
-            _ilgen.Emit(opcode, sbyteVal);
+            _ilgen!.Emit(opcode, sbyteVal);
         }
 
         public void Emit(OpCode opcode, string strVal)
         {
 #if DEBUG
             if (XmlILTrace.IsEnabled)
-                _writerDump.WriteLine("  {0, -10} \"{1}\"", opcode.Name, strVal);
+                _writerDump!.WriteLine("  {0, -10} \"{1}\"", opcode.Name, strVal);
 #endif
-            _ilgen.Emit(opcode, strVal);
+            _ilgen!.Emit(opcode, strVal);
         }
 
         public void Emit(OpCode opcode, Type typVal)
         {
 #if DEBUG
             if (XmlILTrace.IsEnabled)
-                _writerDump.WriteLine("  {0, -10} {1}", opcode.Name, typVal);
+                _writerDump!.WriteLine("  {0, -10} {1}", opcode.Name, typVal);
 #endif
-            _ilgen.Emit(opcode, typVal);
+            _ilgen!.Emit(opcode, typVal);
         }
 
         /// <summary>
@@ -1706,9 +1714,9 @@ namespace System.Xml.Xsl.IlGen
 
 #if DEBUG
             if (XmlILTrace.IsEnabled)
-                _writerDump.WriteLine("  {0, -10} Label {1}", opcode.Name, _symbols[lblTarget]);
+                _writerDump!.WriteLine("  {0, -10} Label {1}", opcode.Name, _symbols![lblTarget]);
 #endif
-            _ilgen.Emit(opcode, lblTarget);
+            _ilgen!.Emit(opcode, lblTarget);
 
             if (_lastSourceInfo != null && (opcode.Equals(OpCodes.Br) || opcode.Equals(OpCodes.Br_S)))
             {

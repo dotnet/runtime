@@ -8942,7 +8942,7 @@ CORINFO_METHOD_HANDLE CEEInfo::resolveVirtualMethodHelper(CORINFO_METHOD_HANDLE 
 
         // If we devirtualized into a default interface method on a generic type, we should actually return an
         // instantiating stub but this is not happening.
-        // Making this work is tracked by https://github.com/dotnet/coreclr/issues/15977
+        // Making this work is tracked by https://github.com/dotnet/runtime/issues/9588
         if (pDevirtMD->GetMethodTable()->IsInterface() && pDevirtMD->HasClassInstantiation())
         {
             return nullptr;
@@ -13952,7 +13952,7 @@ bool CEEInfo::getTailCallHelpersInternal(CORINFO_RESOLVED_TOKEN* callToken,
 
     TailCallHelp::CreateTailCallHelperStubs(
         m_pMethodBeingCompiled, pTargetMD,
-        msig, isCallvirt, isThisArgByRef,
+        msig, isCallvirt, isThisArgByRef, sig->hasTypeArg(),
         &pStoreArgsMD, &needsTarget,
         &pCallTargetMD);
 

@@ -8,7 +8,7 @@ using System.IO;
 
 namespace Microsoft.Extensions.DependencyModel
 {
-    // TODO: Remove once we have https://github.com/dotnet/corefx/issues/34894
+    // TODO: Remove once we have https://github.com/dotnet/runtime/issues/28538
     internal class ArrayBufferWriter : IBufferWriter<byte>, IDisposable
     {
         private byte[] _rentedBuffer;

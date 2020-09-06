@@ -55,6 +55,7 @@ add_library(eventprovider
 add_library(coreclrtraceptprovider
   SHARED
   ${TRACEPOINT_PROVIDER_SOURCES}
+  ${VERSION_FILE_PATH}
 )
 
 add_dependencies(eventprovider generated_eventing_headers)

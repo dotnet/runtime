@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.Collections.Generic;
 using System.Xml.Xsl.Qil;
 
@@ -11,7 +10,7 @@ namespace System.Xml.Xsl.XPath
     internal interface IFocus
     {
         // The context item:     the item currently being processed
-        QilNode GetCurrent();
+        QilNode? GetCurrent();
 
         // The context position: the position of the context item within the sequence of items
         // currently being processed

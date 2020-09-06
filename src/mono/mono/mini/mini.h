@@ -2261,7 +2261,7 @@ void              mini_emit_stobj (MonoCompile *cfg, MonoInst *dest, MonoInst *s
 void              mini_emit_initobj (MonoCompile *cfg, MonoInst *dest, const guchar *ip, MonoClass *klass);
 void              mini_emit_init_rvar (MonoCompile *cfg, int dreg, MonoType *rtype);
 int               mini_emit_sext_index_reg (MonoCompile *cfg, MonoInst *index);
-MonoInst*         mini_emit_ldelema_1_ins (MonoCompile *cfg, MonoClass *klass, MonoInst *arr, MonoInst *index, gboolean bcheck);
+MonoInst*         mini_emit_ldelema_1_ins (MonoCompile *cfg, MonoClass *klass, MonoInst *arr, MonoInst *index, gboolean bcheck, gboolean bounded);
 MonoInst*         mini_emit_get_gsharedvt_info_klass (MonoCompile *cfg, MonoClass *klass, MonoRgctxInfoType rgctx_type);
 MonoInst*         mini_emit_get_rgctx_method (MonoCompile *cfg, int context_used,
 											  MonoMethod *cmethod, MonoRgctxInfoType rgctx_type);
@@ -2520,7 +2520,7 @@ typedef gboolean (*MonoJitStackWalk)            (StackFrameInfo *frame, MonoCont
 
 void     mono_exceptions_init                   (void);
 gboolean mono_handle_exception                  (MonoContext *ctx, gpointer obj);
-void     mono_handle_native_crash               (const char *signal, MonoContext *mctx, MONO_SIG_HANDLER_INFO_TYPE *siginfo, void *context);
+void     mono_handle_native_crash               (const char *signal, MonoContext *mctx, MONO_SIG_HANDLER_INFO_TYPE *siginfo);
 MONO_API void     mono_print_thread_dump                 (void *sigctx);
 MONO_API void     mono_print_thread_dump_from_ctx        (MonoContext *ctx);
 void     mono_walk_stack_with_ctx               (MonoJitStackWalk func, MonoContext *start_ctx, MonoUnwindOptions unwind_options, void *user_data);
@@ -2718,6 +2718,9 @@ mono_is_partially_sharable_inst (MonoGenericInst *inst);
 
 gboolean
 mini_is_gsharedvt_gparam (MonoType *t);
+
+gboolean
+mini_is_gsharedvt_inst (MonoGenericInst *inst);
 
 MonoGenericContext* mini_method_get_context (MonoMethod *method);
 

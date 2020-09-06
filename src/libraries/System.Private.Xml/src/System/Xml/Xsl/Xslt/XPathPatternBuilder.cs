@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -52,9 +51,9 @@ namespace System.Xml.Xsl.Xslt
         public void AssertFilter(QilLoop filter)
         {
             Debug.Assert(filter.NodeType == QilNodeType.Filter, "XPathPatternBuilder expected to generate list of Filters on top level");
-            Debug.Assert(filter.Variable.XmlType.IsSubtypeOf(T.NodeNotRtf));
-            Debug.Assert(filter.Variable.Binding.NodeType == QilNodeType.Unknown);  // fixupNode
-            Debug.Assert(filter.Body.XmlType.IsSubtypeOf(T.Boolean));
+            Debug.Assert(filter.Variable.XmlType!.IsSubtypeOf(T.NodeNotRtf));
+            Debug.Assert(filter.Variable.Binding!.NodeType == QilNodeType.Unknown);  // fixupNode
+            Debug.Assert(filter.Body.XmlType!.IsSubtypeOf(T.Boolean));
         }
 
         private void FixupFilterBinding(QilLoop filter, QilNode newBinding)
@@ -109,7 +108,7 @@ namespace System.Xml.Xsl.Xslt
                                                                           /*name  == nsUri == null*/       f.True()                                       // *
             );
 
-            XmlNodeKindFlags intersection = XPathBuilder.AxisTypeMask(itr.XmlType.NodeKinds, nodeType, xpathAxis);
+            XmlNodeKindFlags intersection = XPathBuilder.AxisTypeMask(itr.XmlType!.NodeKinds, nodeType, xpathAxis);
 
             QilNode typeTest = (
                 intersection == 0 ? f.False() :  // input & required doesn't intersect
@@ -118,7 +117,7 @@ namespace System.Xml.Xsl.Xslt
             );
 
             QilLoop filter = f.BaseFactory.Filter(itr, f.And(typeTest, nameTest));
-            filter.XmlType = T.PrimeProduct(T.NodeChoice(intersection), filter.XmlType.Cardinality);
+            filter.XmlType = T.PrimeProduct(T.NodeChoice(intersection), filter.XmlType!.Cardinality);
 
             return filter;
         }
@@ -285,7 +284,7 @@ namespace System.Xml.Xsl.Xslt
                 QilNode filterCurrent = _f.Filter(matchNodeIter, _f.Is(matchNodeIter, current));
                 nodeFilter.Body = _f.Not(_f.IsEmpty(filterCurrent));
                 //for passing type check, explicit say the result is target type
-                nodeFilter.Body = _f.And(_f.IsType(current, nodeFilter.XmlType), nodeFilter.Body);
+                nodeFilter.Body = _f.And(_f.IsType(current, nodeFilter.XmlType!), nodeFilter.Body);
             }
 
             SetPriority(nodeset, 0.5);
@@ -346,27 +345,27 @@ namespace System.Xml.Xsl.Xslt
 
         public static void SetPriority(QilNode node, double priority)
         {
-            Annotation ann = (Annotation)node.Annotation ?? new Annotation();
+            Annotation ann = (Annotation?)node.Annotation ?? new Annotation();
             ann.Priority = priority;
             node.Annotation = ann;
         }
 
         public static double GetPriority(QilNode node)
         {
-            return ((Annotation)node.Annotation).Priority;
+            return ((Annotation)node.Annotation!).Priority;
         }
 
         private static void SetLastParent(QilNode node, QilLoop parent)
         {
             Debug.Assert(parent.NodeType == QilNodeType.Filter);
-            Annotation ann = (Annotation)node.Annotation ?? new Annotation();
+            Annotation ann = (Annotation?)node.Annotation ?? new Annotation();
             ann.Parent = parent;
             node.Annotation = ann;
         }
 
         private static QilLoop? GetLastParent(QilNode node)
         {
-            return ((Annotation)node.Annotation).Parent;
+            return ((Annotation)node.Annotation!).Parent;
         }
 
         public static void CleanAnnotation(QilNode node)

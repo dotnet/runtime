@@ -6,11 +6,7 @@ using System.Reflection;
 
 namespace System.Runtime.Serialization
 {
-#if USE_REFEMIT
-    public sealed class KnownTypeDataContractResolver : DataContractResolver
-#else
     internal sealed class KnownTypeDataContractResolver : DataContractResolver
-#endif
     {
         private readonly XmlObjectSerializerContext _context;
 
@@ -20,7 +16,7 @@ namespace System.Runtime.Serialization
             _context = context;
         }
 
-        public override bool TryResolveType(Type type, Type declaredType, DataContractResolver knownTypeResolver, out XmlDictionaryString typeName, out XmlDictionaryString typeNamespace)
+        public override bool TryResolveType(Type type, Type? declaredType, DataContractResolver knownTypeResolver, out XmlDictionaryString? typeName, out XmlDictionaryString? typeNamespace)
         {
             if (type == null)
             {
@@ -50,7 +46,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        public override Type ResolveName(string typeName, string typeNamespace, Type declaredType, DataContractResolver knownTypeResolver)
+        public override Type? ResolveName(string typeName, string? typeNamespace, Type? declaredType, DataContractResolver knownTypeResolver)
         {
             if (typeName == null || typeNamespace == null)
                 return null;

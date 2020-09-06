@@ -47,7 +47,7 @@ This feature is currently only supported for instantiations over reference types
 
 The dictionary used by any given generic method is pointed at by the `m_pPerInstInfo` field on the `InstantiatedMethodDesc` structure of that method. It's a direct pointer to the contents of the generic dictionary data.
 
-On generic types, there's an extra level of indirection: the `m_pPerInstInfo` field on the `MethodTable` structure is a pointer to a table of dictionaries, and each entry in that table is a pointer to the actual generic dictionary data. This is because types have inheritance, and derived generic types inherit the dictionaries of their base types. 
+On generic types, there's an extra level of indirection: the `m_pPerInstInfo` field on the `MethodTable` structure is a pointer to a table of dictionaries, and each entry in that table is a pointer to the actual generic dictionary data. This is because types have inheritance, and derived generic types inherit the dictionaries of their base types.
 
 Here's an example:
 ```c#

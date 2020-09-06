@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Resources;
 using System.Runtime.Serialization;
@@ -13,30 +14,30 @@ namespace System.Xml.Xsl
     public class XsltException : SystemException
     {
         private readonly string _res;
-        private readonly string[] _args;
-        private readonly string _sourceUri;
+        private readonly string[]? _args;
+        private readonly string? _sourceUri;
         private readonly int _lineNumber;
         private readonly int _linePosition;
 
         // message != null for V1 & V2 exceptions deserialized in Whidbey
         // message == null for created V2 exceptions; the exception message is stored in Exception._message
-        private readonly string _message;
+        private readonly string? _message;
 
         protected XsltException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
-            _res = (string)info.GetValue("res", typeof(string));
-            _args = (string[])info.GetValue("args", typeof(string[]));
-            _sourceUri = (string)info.GetValue("sourceUri", typeof(string));
-            _lineNumber = (int)info.GetValue("lineNumber", typeof(int));
-            _linePosition = (int)info.GetValue("linePosition", typeof(int));
+            _res = (string)info.GetValue("res", typeof(string))!;
+            _args = (string[]?)info.GetValue("args", typeof(string[]));
+            _sourceUri = (string?)info.GetValue("sourceUri", typeof(string));
+            _lineNumber = (int)info.GetValue("lineNumber", typeof(int))!;
+            _linePosition = (int)info.GetValue("linePosition", typeof(int))!;
 
             // deserialize optional members
-            string version = null;
+            string? version = null;
             foreach (SerializationEntry e in info)
             {
                 if (e.Name == "version")
                 {
-                    version = (string)e.Value;
+                    version = (string?)e.Value;
                 }
             }
 
@@ -63,26 +64,26 @@ namespace System.Xml.Xsl
             info.AddValue("version", "2.0");
         }
 
-        public XsltException() : this(string.Empty, (Exception)null) { }
+        public XsltException() : this(string.Empty, (Exception?)null) { }
 
-        public XsltException(string message) : this(message, (Exception)null) { }
+        public XsltException(string message) : this(message, (Exception?)null) { }
 
-        public XsltException(string message, Exception innerException) :
-            this(SR.Xml_UserException, new string[] { message }, null, 0, 0, innerException)
+        public XsltException(string message, Exception? innerException) :
+            this(SR.Xml_UserException, new string?[] { message }, null, 0, 0, innerException)
         {
         }
 
-        internal static XsltException Create(string res, params string[] args)
+        internal static XsltException Create(string res, params string?[] args)
         {
             return new XsltException(res, args, null, 0, 0, null);
         }
 
-        internal static XsltException Create(string res, string[] args, Exception inner)
+        internal static XsltException Create(string res, string?[] args, Exception inner)
         {
             return new XsltException(res, args, null, 0, 0, inner);
         }
 
-        internal XsltException(string res, string[] args, string sourceUri, int lineNumber, int linePosition, Exception inner)
+        internal XsltException(string res, string?[] args, string? sourceUri, int lineNumber, int linePosition, Exception? inner)
             : base(CreateMessage(res, args, sourceUri, lineNumber, linePosition), inner)
         {
             HResult = HResults.XmlXslt;
@@ -92,7 +93,7 @@ namespace System.Xml.Xsl
             _linePosition = linePosition;
         }
 
-        public virtual string SourceUri
+        public virtual string? SourceUri
         {
             get { return _sourceUri; }
         }
@@ -115,7 +116,7 @@ namespace System.Xml.Xsl
             }
         }
 
-        private static string CreateMessage(string res, string[] args, string sourceUri, int lineNumber, int linePosition)
+        private static string CreateMessage(string res, string?[]? args, string? sourceUri, int lineNumber, int linePosition)
         {
             try
             {
@@ -132,9 +133,10 @@ namespace System.Xml.Xsl
             }
         }
 
-        private static string FormatMessage(string key, params string[] args)
+        [return: NotNullIfNotNull("key")]
+        private static string? FormatMessage(string? key, params string?[]? args)
         {
-            string message = key;
+            string? message = key;
             if (message != null && args != null)
             {
                 message = string.Format(CultureInfo.InvariantCulture, message, args);

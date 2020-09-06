@@ -61,12 +61,10 @@ TailCallTls::TailCallTls()
     // so casting away const is ok here.
     : m_frame(const_cast<PortableTailCallFrame*>(&g_sentinelTailCallFrame))
     , m_argBuffer(NULL)
-    , m_argBufferSize(0)
-    , m_argBufferGCDesc(NULL)
 {
 }
 
-void* TailCallTls::AllocArgBuffer(size_t size, void* gcDesc)
+TailCallArgBuffer* TailCallTls::AllocArgBuffer(int size, void* gcDesc)
 {
     CONTRACTL
     {
@@ -75,42 +73,30 @@ void* TailCallTls::AllocArgBuffer(size_t size, void* gcDesc)
     }
     CONTRACTL_END
 
-    _ASSERTE(m_argBuffer == NULL);
+    _ASSERTE(size >= (int)offsetof(TailCallArgBuffer, Args));
 
-    if (size > sizeof(m_argBufferInline))
+    if (m_argBuffer != NULL && m_argBuffer->Size < size)
     {
-        m_argBuffer = new (nothrow) char[size];
+        FreeArgBuffer();
+    }
+
+    if (m_argBuffer == NULL)
+    {
+        m_argBuffer = (TailCallArgBuffer*)new (nothrow) BYTE[size];
         if (m_argBuffer == NULL)
             return NULL;
+        m_argBuffer->Size = size;
     }
-    else
-        m_argBuffer = m_argBufferInline;
 
+    m_argBuffer->State = TAILCALLARGBUFFER_ACTIVE;
+
+    m_argBuffer->GCDesc = gcDesc;
     if (gcDesc != NULL)
     {
-        memset(m_argBuffer, 0, size);
-        m_argBufferGCDesc = gcDesc;
+        memset(m_argBuffer->Args, 0, size - offsetof(TailCallArgBuffer, Args));
     }
-
-    m_argBufferSize = size;
 
     return m_argBuffer;
-}
-
-void TailCallTls::FreeArgBuffer()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END
-
-    if (m_argBufferSize > sizeof(m_argBufferInline))
-        delete[] m_argBuffer;
-
-    m_argBufferGCDesc = NULL;
-    m_argBuffer = NULL;
 }
 
 #if defined (_DEBUG_IMPL) || defined(_PREFAST_)
@@ -693,7 +679,7 @@ void EnsurePreemptive()
 
 typedef StateHolder<DoNothing, EnsurePreemptive> EnsurePreemptiveModeIfException;
 
-Thread* SetupThread(BOOL fInternal)
+Thread* SetupThread()
 {
     CONTRACTL {
         THROWS;
@@ -781,17 +767,7 @@ Thread* SetupThread(BOOL fInternal)
 
     SetupTLSForThread(pThread);
 
-    // A host can deny a thread entering runtime by returning a NULL IHostTask.
-    // But we do want threads used by threadpool.
-    if (IsThreadPoolWorkerSpecialThread() ||
-        IsThreadPoolIOCompletionSpecialThread() ||
-        IsTimerSpecialThread() ||
-        IsWaitSpecialThread())
-    {
-        fInternal = TRUE;
-    }
-
-    if (!pThread->InitThread(fInternal) ||
+    if (!pThread->InitThread() ||
         !pThread->PrepareApartmentAndContext())
         ThrowOutOfMemory();
 
@@ -1616,7 +1592,7 @@ Thread::Thread()
 //--------------------------------------------------------------------
 // Failable initialization occurs here.
 //--------------------------------------------------------------------
-BOOL Thread::InitThread(BOOL fInternal)
+BOOL Thread::InitThread()
 {
     CONTRACTL {
         THROWS;
@@ -1841,7 +1817,7 @@ BOOL Thread::HasStarted(BOOL bRequiresTSL)
             ThrowOutOfMemory();
         }
 
-        InitThread(FALSE);
+        InitThread();
 
         SetThread(this);
         SetAppDomain(m_pDomain);
@@ -2655,6 +2631,8 @@ Thread::~Thread()
     if (m_pIBCInfo) {
         delete m_pIBCInfo;
     }
+
+    m_tailCallTls.FreeArgBuffer();
 
 #ifdef FEATURE_EVENT_TRACE
     // Destruct the thread local type cache for allocation sampling

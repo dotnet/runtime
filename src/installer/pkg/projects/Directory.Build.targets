@@ -27,6 +27,17 @@
     </PropertyGroup>
   </Target>
 
+  <!--
+    We should not build some pkgproj in source-build (i.e. targeting-pack).
+  -->
+  <Target Name="GetSourceBuildSkipBuildProps"
+          Condition="'$(DotNetBuildFromSource)' == 'true' and '$(AlwaysBuildEvenInSourceBuild)' != 'true'"
+          BeforeTargets="GetSkipBuildProps">
+    <PropertyGroup Condition="'$(FrameworkPackType)' == 'targeting'">
+      <SkipBuild>true</SkipBuild>
+    </PropertyGroup>
+  </Target>
+
   <PropertyGroup Condition="'$(RuntimeFlavor)' == 'Mono' and '$(TargetsMobile)' != 'true'">
     <RuntimeSpecificFrameworkSuffix>.Mono</RuntimeSpecificFrameworkSuffix>
   </PropertyGroup>
@@ -132,6 +143,15 @@
     <ItemGroup>
       <FindSiblingSymbolsForFile Include="@(File)" />
     </ItemGroup>
+  </Target>
+
+  <!--
+    Ensures package reports dir exists, to work around the issue in VerifyClosure task:
+    https://github.com/dotnet/arcade/issues/6090
+    Remove this target, once the issue is fixed.
+  -->
+  <Target Name="EnsureDepenedencyGraphDir" BeforeTargets="VerifyClosure">
+    <MakeDir Directories="$(PackageReportDir)" />
   </Target>
 
   <!--

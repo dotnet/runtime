@@ -34,8 +34,8 @@ namespace System.Net.Http.Functional.Tests
 #endif
 
         [Theory]
-        [InlineData(SslProtocols.Tls, false)] // try various protocols to ensure we correctly set versions even when accepting all certs
-        [InlineData(SslProtocols.Tls, true)]
+        [InlineData(SslProtocols.Tls12, false)] // try various protocols to ensure we correctly set versions even when accepting all certs
+        [InlineData(SslProtocols.Tls12, true)]
         [InlineData(SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls, false)]
         [InlineData(SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls, true)]
 #if !NETFRAMEWORK

@@ -815,6 +815,9 @@ public:
 #define GTF_VAR_ITERATOR    0x00800000 // GT_LCL_VAR -- this is a iterator reference in the loop condition
 #define GTF_VAR_CLONED      0x00400000 // GT_LCL_VAR -- this node has been cloned or is a clone
 #define GTF_VAR_CONTEXT     0x00200000 // GT_LCL_VAR -- this node is part of a runtime lookup
+#define GTF_VAR_FOLDED_IND  0x00100000 // GT_LCL_VAR -- this node was folded from *(typ*)&lclVar expression tree in fgMorphSmpOp()
+// where 'typ' is a small type and 'lclVar' corresponds to a normalized-on-store local variable.
+// This flag identifies such nodes in order to make sure that fgDoNormalizeOnStore() is called on their parents in post-order morph.
 
                                        // Relevant for inlining optimizations (see fgInlinePrependStatements)
 
@@ -4201,6 +4204,7 @@ struct GenTreeCall final : public GenTree
 #define GTF_CALL_M_ALLOC_SIDE_EFFECTS      0x00400000 // GT_CALL -- this is a call to an allocator with side effects
 #define GTF_CALL_M_SUPPRESS_GC_TRANSITION  0x00800000 // GT_CALL -- suppress the GC transition (i.e. during a pinvoke) but a separate GC safe point is required.
 #define GTF_CALL_M_EXP_RUNTIME_LOOKUP      0x01000000 // GT_CALL -- this call needs to be tranformed into CFG for the dynamic dictionary expansion feature.
+#define GTF_CALL_M_STRESS_TAILCALL         0x02000000 // GT_CALL -- the call is NOT "tail" prefixed but GTF_CALL_M_EXPLICIT_TAILCALL was added because of tail call stress mode
 
     // clang-format on
 
@@ -4313,6 +4317,13 @@ struct GenTreeCall final : public GenTree
     bool IsTailPrefixedCall() const
     {
         return (gtCallMoreFlags & GTF_CALL_M_EXPLICIT_TAILCALL) != 0;
+    }
+
+    // Returns true if this call didn't have an explicit tail. prefix in the IL
+    // but was marked as an explicit tail call because of tail call stress mode.
+    bool IsStressTailCall() const
+    {
+        return (gtCallMoreFlags & GTF_CALL_M_STRESS_TAILCALL) != 0;
     }
 
     // This method returning "true" implies that tail call flowgraph morhphing has

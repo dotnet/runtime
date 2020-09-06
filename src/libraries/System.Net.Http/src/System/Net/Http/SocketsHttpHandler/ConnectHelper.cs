@@ -3,7 +3,6 @@
 
 using System.Diagnostics;
 using System.IO;
-using System.Net.Connections;
 using System.Net.Quic;
 using System.Net.Security;
 using System.Net.Sockets;
@@ -32,11 +31,11 @@ namespace System.Net.Http
             }
         }
 
-        public static async ValueTask<Connection> ConnectAsync(ConnectionFactory factory, DnsEndPoint endPoint, IConnectionProperties? options, CancellationToken cancellationToken)
+        public static async ValueTask<Stream> ConnectAsync(SocketsConnectionFactory factory, DnsEndPoint endPoint, CancellationToken cancellationToken)
         {
             try
             {
-                return await factory.ConnectAsync(endPoint, options, cancellationToken).ConfigureAwait(false);
+                return await factory.ConnectAsync(endPoint, cancellationToken).ConfigureAwait(false);
             }
             catch (OperationCanceledException ex) when (ex.CancellationToken == cancellationToken)
             {
@@ -48,7 +47,7 @@ namespace System.Net.Http
             }
         }
 
-        public static Connection Connect(string host, int port, CancellationToken cancellationToken)
+        public static Stream Connect(string host, int port, CancellationToken cancellationToken)
         {
             // For synchronous connections, we can just create a socket and make the connection.
             cancellationToken.ThrowIfCancellationRequested();
@@ -60,23 +59,14 @@ namespace System.Net.Http
                 {
                     socket.Connect(new DnsEndPoint(host, port));
                 }
-            }
-            catch (SocketException se)
-            {
-                socket.Dispose();
 
-                // SocketConnectionFactory wraps SocketException in NetworkException. Do the same here.
-                NetworkException ne = NetworkErrorHelper.MapSocketException(se);
-
-                throw CreateWrappedException(ne, host, port, cancellationToken);
+                return new NetworkStream(socket, ownsSocket: true);
             }
             catch (Exception e)
             {
                 socket.Dispose();
                 throw CreateWrappedException(e, host, port, cancellationToken);
             }
-
-            return new SocketConnection(socket);
         }
 
         public static ValueTask<SslStream> EstablishSslConnectionAsync(SslClientAuthenticationOptions sslOptions, HttpRequestMessage request, bool async, Stream stream, CancellationToken cancellationToken)
@@ -147,34 +137,19 @@ namespace System.Net.Http
             return sslStream;
         }
 
-        public static async ValueTask<QuicConnection> ConnectQuicAsync(string host, int port, SslClientAuthenticationOptions? clientAuthenticationOptions, CancellationToken cancellationToken)
+        public static async ValueTask<QuicConnection> ConnectQuicAsync(DnsEndPoint endPoint, SslClientAuthenticationOptions? clientAuthenticationOptions, CancellationToken cancellationToken)
         {
-            IPAddress[] addresses = await Dns.GetHostAddressesAsync(host).ConfigureAwait(false);
-            Exception? lastException = null;
-
-            foreach (IPAddress address in addresses)
+            QuicConnection con = new QuicConnection(endPoint, clientAuthenticationOptions);
+            try
             {
-                QuicConnection con = new QuicConnection(new IPEndPoint(address, port), clientAuthenticationOptions);
-                try
-                {
-                    await con.ConnectAsync(cancellationToken).ConfigureAwait(false);
-                    return con;
-                }
-                // TODO: it would be great to catch a specific exception here... QUIC implementation dependent.
-                catch (Exception ex) when (!(ex is OperationCanceledException))
-                {
-                    con.Dispose();
-                    lastException = ex;
-                }
+                await con.ConnectAsync(cancellationToken).ConfigureAwait(false);
+                return con;
             }
-
-            if (lastException != null)
+            catch (Exception ex)
             {
-                throw CreateWrappedException(lastException, host, port, cancellationToken);
+                con.Dispose();
+                throw CreateWrappedException(ex, endPoint.Host, endPoint.Port, cancellationToken);
             }
-
-            // TODO: find correct exception to throw here.
-            throw new HttpRequestException("No host found.");
         }
 
         private static Exception CreateWrappedException(Exception error, string host, int port, CancellationToken cancellationToken)

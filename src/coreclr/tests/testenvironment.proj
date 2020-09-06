@@ -140,6 +140,7 @@
     <TestEnvironment Include="gcstress0xc_zapdisable_heapverify1" GCStress="0xC" ZapDisable="1" ReadyToRun="0" HeapVerify="1" />
     <TestEnvironment Include="gcstress0xc_jitstress1" GCStress="0xC" JitStress="1" />
     <TestEnvironment Include="gcstress0xc_jitstress2" GCStress="0xC" JitStress="2" />
+    <TestEnvironment Include="gcstress0xc_tailcallstress" GCStress="0xC" TailcallStress="1" />
     <TestEnvironment Include="gcstress0xc_jitminopts_heapverify1" GCStress="0xC" JITMinOpts="1" HeapVerify="1" />
     <TestEnvironment Include="jitosr" TC_OnStackReplacement="1" TC_QuickJitForLoops="1" TieredCompilation="1" />
     <TestEnvironment Include="jitosr_stress" TC_OnStackReplacement="1" TC_QuickJitForLoops="1" TC_OnStackReplacement_InitialCounter="1" OSR_HitLimit="1" TieredCompilation="1" />

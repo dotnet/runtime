@@ -396,7 +396,7 @@ set _C=
 set /p PYTHON=<%TEMP%\pythonlocation.txt
 
 if NOT DEFINED PYTHON (
-    echo %__ErrMsgPrefix%%__MsgPrefix%Error: Could not find a python installation
+    echo %__ErrMsgPrefix%%__MsgPrefix%Error: Could not find a Python installation.
     goto ExitWithError
 )
 
@@ -550,17 +550,17 @@ if %__BuildNative% EQU 1 (
 
     if /i "%__BuildArch%" == "arm64" goto SkipCopyUcrt
 
-    set "__UCRTDir=%UniversalCRTSDKDIR%Redist\ucrt\DLLs\%__BuildArch%\"
-    if not exist "!__UCRTDir!" set "__UCRTDir=%UniversalCRTSDKDIR%Redist\%UCRTVersion%\ucrt\DLLs\%__BuildArch%\"
-    if not exist "!__UCRTDir!" (
-        echo %__ErrMsgPrefix%%__MsgPrefix%Error: Please install the Redistributable Universal C Runtime.
+    if not defined UCRTVersion (
+        echo %__ErrMsgPrefix%%__MsgPrefix%Error: Please install Windows 10 SDK.
         goto ExitWithError
     )
+
+    set "__UCRTDir=%UniversalCRTSdkDir%Redist\%UCRTVersion%\ucrt\DLLs\%__BuildArch%\"
 
     xcopy /Y/I/E/D/F "!__UCRTDir!*.dll" "%__BinDir%\Redist\ucrt\DLLs\%__BuildArch%"
     if not !errorlevel! == 0 (
         set __exitCode=!errorlevel!
-        echo %__ErrMsgPrefix%%__MsgPrefix%Error: Failed to copy the CRT to the output.
+        echo %__ErrMsgPrefix%%__MsgPrefix%Error: Failed to copy the Universal CRT to the artifacts directory.
         goto ExitWithCode
     )
 

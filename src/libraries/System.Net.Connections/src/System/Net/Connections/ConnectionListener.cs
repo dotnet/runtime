@@ -27,7 +27,7 @@ namespace System.Net.Connections
         /// <param name="options">Options used to create the connection, if any.</param>
         /// <param name="cancellationToken">A token used to cancel the asynchronous operation.</param>
         /// <returns>A <see cref="ValueTask{TResult}"/> for the <see cref="Connection"/>.</returns>
-        public abstract ValueTask<Connection> AcceptAsync(IConnectionProperties? options = null, CancellationToken cancellationToken = default);
+        public abstract ValueTask<Connection?> AcceptAsync(IConnectionProperties? options = null, CancellationToken cancellationToken = default);
 
         public void Dispose()
         {

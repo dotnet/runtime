@@ -27,6 +27,15 @@ public class WasmAppBuilder : Task
     public string? MainAssembly { get; set; }
     [Required]
     public string? MainJS { get; set; }
+
+    // If true, continue when a referenced assembly cannot be found.
+    // If false, throw an exception.
+    public bool SkipMissingAssemblies { get; set; } 
+
+    // full list of ICU data files we produce can be found here:
+    // https://github.com/dotnet/icu/tree/maint/maint-67/icu-filters
+    public string? IcuDataFileName { get; set; } = "icudt.dat";
+
     [Required]
     public ITaskItem[]? AssemblySearchPaths { get; set; }
     public int DebugLevel { get; set; }
@@ -74,7 +83,7 @@ public class WasmAppBuilder : Task
     }
 
     private class IcuData : AssetEntry {
-        public IcuData(string name = "icudt.dat") : base(name, "icu") {}
+        public IcuData(string name) : base(name, "icu") {}
         [JsonPropertyName("load_remote")]
         public bool LoadRemote { get; set; }
     }
@@ -85,6 +94,8 @@ public class WasmAppBuilder : Task
             throw new ArgumentException($"File MainAssembly='{MainAssembly}' doesn't exist.");
         if (!File.Exists(MainJS))
             throw new ArgumentException($"File MainJS='{MainJS}' doesn't exist.");
+        if (!InvariantGlobalization && string.IsNullOrEmpty(IcuDataFileName))
+            throw new ArgumentException("IcuDataFileName property shouldn't be empty if InvariantGlobalization=false");
 
         var paths = new List<string>();
         _assemblies = new SortedDictionary<string, Assembly>();
@@ -107,8 +118,18 @@ public class WasmAppBuilder : Task
         {
             foreach (var item in ExtraAssemblies)
             {
-                var refAssembly = mlc.LoadFromAssemblyPath(item.ItemSpec);
-                Add(mlc, refAssembly);
+		try
+	        {
+                	var refAssembly = mlc.LoadFromAssemblyPath(item.ItemSpec);
+                	Add(mlc, refAssembly);
+		}
+		catch (System.IO.FileLoadException)
+		{
+			if (!SkipMissingAssemblies)
+			{
+				throw;
+			}
+		}
             }
         }
 
@@ -130,13 +151,14 @@ public class WasmAppBuilder : Task
         List<string> nativeAssets = new List<string>() { "dotnet.wasm", "dotnet.js", "dotnet.timezones.blat" };
 
         if (!InvariantGlobalization)
-        {
-            nativeAssets.Add("icudt.dat");
-        }
+            nativeAssets.Add(IcuDataFileName!);
 
         foreach (var f in nativeAssets)
             File.Copy(Path.Join (MicrosoftNetCoreAppRuntimePackDir, "native", f), Path.Join(AppDir, f), true);
         File.Copy(MainJS!, Path.Join(AppDir, "runtime.js"),  true);
+
+        var html = @"<html><body><script type=""text/javascript"" src=""runtime.js""></script></body></html>";
+        File.WriteAllText(Path.Join(AppDir, "index.html"), html);
 
         foreach (var assembly in _assemblies.Values) {
             config.Assets.Add(new AssemblyEntry (Path.GetFileName(assembly.Location)));
@@ -179,7 +201,7 @@ public class WasmAppBuilder : Task
         }
 
         if (!InvariantGlobalization)
-            config.Assets.Add(new IcuData { LoadRemote = RemoteSources?.Length > 0 });
+            config.Assets.Add(new IcuData(IcuDataFileName!) { LoadRemote = RemoteSources?.Length > 0 });
             
         config.Assets.Add(new VfsEntry ("dotnet.timezones.blat") { VirtualPath = "/usr/share/zoneinfo/"});
 

@@ -12,6 +12,7 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Xml.Xsl.Runtime;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml.Xsl.IlGen
 {
@@ -107,7 +108,7 @@ namespace System.Xml.Xsl.IlGen
         /// </summary>
         public static StorageDescriptor Current(LocalBuilder locIter, Type itemStorageType)
         {
-            Debug.Assert(locIter.LocalType.GetMethod("get_Current").ReturnType == itemStorageType,
+            Debug.Assert(locIter.LocalType.GetMethod("get_Current")!.ReturnType == itemStorageType,
                          "Type " + itemStorageType + " does not match type of Current property.");
 
             StorageDescriptor storage = default;
@@ -184,7 +185,7 @@ namespace System.Xml.Xsl.IlGen
         /// <summary>
         /// Return the LocalBuilder that stores this iterator's values.
         /// </summary>
-        public LocalBuilder LocalLocation
+        public LocalBuilder? LocalLocation
         {
             get { return _locationObject as LocalBuilder; }
         }
@@ -193,7 +194,7 @@ namespace System.Xml.Xsl.IlGen
         /// Return the LocalBuilder that will store this iterator's helper class.  The Current property
         /// on this iterator can be accessed to get the current iteration value.
         /// </summary>
-        public LocalBuilder CurrentLocation
+        public LocalBuilder? CurrentLocation
         {
             get { return _locationObject as LocalBuilder; }
         }
@@ -201,7 +202,7 @@ namespace System.Xml.Xsl.IlGen
         /// <summary>
         /// Return the MethodInfo for the method that computes this global value.
         /// </summary>
-        public MethodInfo GlobalLocation
+        public MethodInfo? GlobalLocation
         {
             get { return _locationObject as MethodInfo; }
         }
@@ -232,12 +233,12 @@ namespace System.Xml.Xsl.IlGen
         private GenerateHelper _helper;
 
         // Related iterators
-        private IteratorDescriptor _iterParent;
+        private IteratorDescriptor? _iterParent;
 
         // Iteration
         private Label _lblNext;
         private bool _hasNext;
-        private LocalBuilder _locPos;
+        private LocalBuilder? _locPos;
 
         // Branching
         private BranchingContext _brctxt;
@@ -270,7 +271,8 @@ namespace System.Xml.Xsl.IlGen
         /// <summary>
         /// Internal helper initializor.
         /// </summary>
-        private void Init(IteratorDescriptor iterParent, GenerateHelper helper)
+        [MemberNotNull(nameof(_helper))]
+        private void Init(IteratorDescriptor? iterParent, GenerateHelper helper)
         {
             _helper = helper;
             _iterParent = iterParent;
@@ -284,7 +286,7 @@ namespace System.Xml.Xsl.IlGen
         /// <summary>
         /// Return the iterator in which this iterator is nested.
         /// </summary>
-        public IteratorDescriptor ParentIterator
+        public IteratorDescriptor? ParentIterator
         {
             get { return _iterParent; }
         }
@@ -361,7 +363,7 @@ namespace System.Xml.Xsl.IlGen
         /// This location is only defined on iterators, and then only if they might be
         /// referenced by a PositionOf operator.
         /// </summary>
-        public LocalBuilder LocalPosition
+        public LocalBuilder? LocalPosition
         {
             get { return _locPos; }
             set { _locPos = value; }
@@ -509,12 +511,12 @@ namespace System.Xml.Xsl.IlGen
                     break;
 
                 case ItemLocation.Local:
-                    _helper.Emit(OpCodes.Ldloc, _storage.LocalLocation);
+                    _helper.Emit(OpCodes.Ldloc, _storage.LocalLocation!);
                     break;
 
                 case ItemLocation.Current:
-                    _helper.Emit(OpCodes.Ldloca, _storage.CurrentLocation);
-                    _helper.Call(_storage.CurrentLocation.LocalType.GetMethod("get_Current"));
+                    _helper.Emit(OpCodes.Ldloca, _storage.CurrentLocation!);
+                    _helper.Call(_storage.CurrentLocation!.LocalType.GetMethod("get_Current")!);
                     break;
 
                 default:
@@ -543,7 +545,7 @@ namespace System.Xml.Xsl.IlGen
                 case ItemLocation.Global:
                     // Call method that computes the value of this global value
                     _helper.LoadQueryRuntime();
-                    _helper.Call(_storage.GlobalLocation);
+                    _helper.Call(_storage.GlobalLocation!);
                     break;
 
                 default:
@@ -702,7 +704,7 @@ namespace System.Xml.Xsl.IlGen
             // Destination type must be item, so generate code to create an XmlAtomicValue
             _helper.LoadInteger(_helper.StaticData.DeclareXmlType(xmlType));
             _helper.LoadQueryRuntime();
-            _helper.Call(XmlILMethods.StorageMethods[_storage.ItemStorageType].ToAtomicValue);
+            _helper.Call(XmlILMethods.StorageMethods[_storage.ItemStorageType].ToAtomicValue!);
 
         SetStorageType:
             _storage = _storage.ToStorageType(storageTypeDest);

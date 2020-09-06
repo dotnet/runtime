@@ -17,10 +17,11 @@ namespace System.Diagnostics.Tests
         protected Process _process;
         protected readonly List<Process> _processes = new List<Process>();
 
-        protected void CreateDefaultProcess()
+        protected Process CreateDefaultProcess()
         {
             _process = CreateProcessLong();
             _process.Start();
+            return _process;
         }
 
         protected override void Dispose(bool disposing)
