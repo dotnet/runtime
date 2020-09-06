@@ -1,6 +1,6 @@
 Fixes Issue <!-- Issue Number -->
 
-Master PR <!-- PR Number if the fix has already been merged in master branch. -->
+Master PR <!-- Link to PR if any that fixed this in the master branch. -->
 
 # Description
 
@@ -8,11 +8,11 @@ Master PR <!-- PR Number if the fix has already been merged in master branch. --
 
 # Customer Impact
 
-<!-- Describe the impact of the issue as well as the pull request. -->
+<!-- What is the impact to customers of not taking this fix? -->
 
 # Regression
 
-<!-- Mention if its  a new bug or a regression. -->
+<!-- Is this fixing a problem that was introduced in the most recent release, ie., fixing a regression? -->
 
 # Testing
 
@@ -20,4 +20,4 @@ Master PR <!-- PR Number if the fix has already been merged in master branch. --
 
 # Risk
 
-<!-- Risks associated with the change. -->
+<!-- Please assess the risk of taking this fix. Provide details backing up your assessment. -->
