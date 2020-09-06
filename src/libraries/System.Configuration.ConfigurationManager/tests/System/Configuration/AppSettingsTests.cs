@@ -90,12 +90,12 @@ namespace System.ConfigurationTests
         {
             using (var temp = new TempConfig(TestData.EmptyConfig))
             {
-                var config = ConfigurationManager.OpenExeConfiguration(temp.ExePath);    
+                var config = ConfigurationManager.OpenExeConfiguration(temp.ExePath);
                 Assert.NotNull(config.AppSettings);
                 Assert.Empty(config.AppSettings.Settings);
-           
-                config.AppSettings.Settings.Add("A", "1"); 
-                Assert.NotEmpty(config.AppSettings.Settings); 
+
+                config.AppSettings.Settings.Add("A", "1");
+                Assert.NotEmpty(config.AppSettings.Settings);
                 Assert.NotNull(config.AppSettings.Settings["A"]);
                 Assert.Equal("1", config.AppSettings.Settings["A"].Value);
 
