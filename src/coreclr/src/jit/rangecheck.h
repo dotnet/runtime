@@ -376,21 +376,6 @@ struct RangeOps
                 result.uLimit = r2hi;
             }
         }
-        if (r1lo.IsBinOpArray() && r2lo.IsBinOpArray() && r1lo.vn == r2lo.vn)
-        {
-            result.lLimit = r2lo.GetConstant() < r1lo.GetConstant() ? r2lo : r1lo;
-        }
-
-        if (r1lo.IsConstant() && r1lo.GetConstant() >= 0 && r2lo.IsBinOpArray() &&
-            r2lo.GetConstant() >= r1lo.GetConstant())
-        {
-            result.lLimit = r1lo;
-        }
-        else if (r2lo.IsConstant() && r2lo.GetConstant() >= 0 && r1lo.IsBinOpArray() &&
-                 r1lo.GetConstant() >= r2lo.GetConstant())
-        {
-            result.lLimit = r2lo;
-        }
         return result;
     }
 };
