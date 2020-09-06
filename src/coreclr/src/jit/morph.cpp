@@ -12657,6 +12657,13 @@ DONE_MORPHING_CHILDREN:
     {
         case GT_ASG:
 
+            if (op1->OperIs(GT_LCL_VAR) && ((op1->gtFlags & GTF_VAR_FOLDED_IND) != 0))
+            {
+                op1->gtFlags &= ~GTF_VAR_FOLDED_IND;
+                tree = fgDoNormalizeOnStore(tree);
+                op2  = tree->gtGetOp2();
+            }
+
             lclVarTree = fgIsIndirOfAddrOfLocal(op1);
             if (lclVarTree != nullptr)
             {
@@ -13615,17 +13622,16 @@ DONE_MORPHING_CHILDREN:
             break;
 
         case GT_IND:
-
+        {
             // Can not remove a GT_IND if it is currently a CSE candidate.
             if (gtIsActiveCSE_Candidate(tree))
             {
                 break;
             }
 
-            bool foldAndReturnTemp;
-            foldAndReturnTemp = false;
-            temp              = nullptr;
-            ival1             = 0;
+            bool foldAndReturnTemp = false;
+            temp                   = nullptr;
+            ival1                  = 0;
 
             // Don't remove a volatile GT_IND, even if the address points to a local variable.
             if ((tree->gtFlags & GTF_IND_VOLATILE) == 0)
@@ -13654,11 +13660,6 @@ DONE_MORPHING_CHILDREN:
                     {
                         unsigned   lclNum = temp->AsLclVarCommon()->GetLclNum();
                         LclVarDsc* varDsc = &lvaTable[lclNum];
-
-                        // Note that fgMorph uses GTF_DONT_CSE to mark the left side of an assignment
-                        // Thus stores have this flag and load do not have this flag
-                        //
-                        bool isLoad = (tree->gtFlags & GTF_DONT_CSE) == 0;
 
                         // We will try to optimize when we have a promoted struct promoted with a zero lvFldOffset
                         if (varDsc->lvPromoted && (varDsc->lvFldOffset == 0))
@@ -13689,25 +13690,25 @@ DONE_MORPHING_CHILDREN:
                         // correctly normalized.
                         //
                         // The below transformation cannot be applied if the local var needs to be normalized on load.
-                        else if (varTypeIsSmall(typ) && (genTypeSize(lvaTable[lclNum].lvType) == genTypeSize(typ)) &&
+                        else if (varTypeIsSmall(typ) && (genTypeSize(varDsc) == genTypeSize(typ)) &&
                                  !lvaTable[lclNum].lvNormalizeOnLoad())
                         {
-                            // For any stores of small types, we will force loads to be normalized
-                            // this is necessary as we need to zero/sign extend any load
-                            // after this kind of store.
-                            //
-                            if (!isLoad)
+                            const bool definitelyLoad = (tree->gtFlags & GTF_DONT_CSE) == 0;
+                            const bool possiblyStore  = !definitelyLoad;
+
+                            if (possiblyStore || (varTypeIsUnsigned(varDsc) == varTypeIsUnsigned(typ)))
                             {
-                                varDsc->lvForceLoadNormalize = true;
-                            }
-                            // otherwise we have a load operation
-                            //
-                            // And for loads signed/unsigned differences do matter.
-                            //
-                            else if (varTypeIsUnsigned(lvaTable[lclNum].lvType) == varTypeIsUnsigned(typ))
-                            {
-                                tree->gtType = typ = temp->TypeGet();
-                                foldAndReturnTemp  = true;
+                                typ               = temp->TypeGet();
+                                tree->gtType      = typ;
+                                foldAndReturnTemp = true;
+
+                                if (possiblyStore)
+                                {
+                                    // This node can be on the left-hand-side of an assignment node.
+                                    // Mark this node with GTF_VAR_FOLDED_IND to make sure that fgDoNormalizeOnStore()
+                                    // is called on its parent in post-order morph.
+                                    temp->gtFlags |= GTF_VAR_FOLDED_IND;
+                                }
                             }
                         }
                         // For matching types we can fold
@@ -13984,6 +13985,7 @@ DONE_MORPHING_CHILDREN:
             }
 
             break;
+        }
 
         case GT_ADDR:
 

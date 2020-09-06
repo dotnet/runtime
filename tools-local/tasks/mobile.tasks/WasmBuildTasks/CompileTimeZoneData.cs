@@ -12,7 +12,7 @@ using System.Diagnostics;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 
-public class DownloadTimeZoneData : Task
+public class CompileTimeZoneData : Task
 {
     [Required]
     public string? InputDirectory { get; set; }
@@ -21,51 +21,39 @@ public class DownloadTimeZoneData : Task
     public string? OutputDirectory { get; set; }
 
     [Required]
-    public string? Version { get; set; }
+    public string[]? TimeZones { get; set; }
 
-    private void DownloadTimeZoneDataSource() 
+    private const string ZoneTabFileName = "zone1970.tab";
+
+    private void CompileTimeZoneDataSource() 
     {
-        List<string> files = new List<string>() {"africa", "antarctica", "asia", "australasia", "etcetera", "europe", "northamerica", "southamerica", "zone1970.tab"};
-        using (var client = new WebClient())
-        {
-            Console.WriteLine("Downloading TimeZone data files");
-            foreach (var file in files) 
-            {
-                client.DownloadFile($"https://data.iana.org/time-zones/tzdb-{Version}/{file}", $"{Path.Combine(InputDirectory!, file)}");
-            }
-        }
-
-        files.Remove("zone1970.tab");        
-
         using (Process process = new Process()) 
         {
             process.StartInfo.UseShellExecute = false;
             process.StartInfo.FileName = "zic";
-            foreach (var f in files) 
+            foreach (var f in TimeZones!) 
             {
                 process.StartInfo.Arguments = $"-d \"{OutputDirectory}\" \"{Path.Combine(InputDirectory!, f)}\"";
                 process.Start();
                 process.WaitForExit();
             }
         }
-        File.Copy(Path.Combine(InputDirectory!,"zone1970.tab"), Path.Combine(OutputDirectory!,"zone1970.tab"));
     }
 
     private void FilterTimeZoneData() 
     {
-        //  Remove unnecessary timezone files 
+        //  Remove unnecessary timezone files in the root dir 
+        //  for ex: `CST6CDT`, `MST`, etc. 
         foreach (var entry in new DirectoryInfo (OutputDirectory!).EnumerateFiles()) 
         {
-            if (entry.Name != "zone1970.tab")
-                File.Delete(entry.FullName);
+            File.Delete(entry.FullName);
         }
     }
 
-    private void FilterZoneTab(string[] filters) 
+    private void FilterZoneTab(string[] filters, string ZoneTabFile) 
     {
-        var oldPath = Path.Combine(OutputDirectory!, "zone1970.tab");
         var path = Path.Combine(OutputDirectory!, "zone.tab");
-        using (StreamReader sr = new StreamReader(oldPath))
+        using (StreamReader sr = new StreamReader(ZoneTabFile))
         using (StreamWriter sw = new StreamWriter(path))
         {
             string? line;
@@ -76,19 +64,22 @@ public class DownloadTimeZoneData : Task
                 }
             }
         }
-        File.Delete(oldPath);
     }
 
     public override bool Execute() 
     {
+        string ZoneTabFile = Path.Combine(InputDirectory!, ZoneTabFileName);
 
-        if (!Directory.Exists(InputDirectory))
-            Directory.CreateDirectory(InputDirectory!);
-        
         if (!Directory.Exists(OutputDirectory))
             Directory.CreateDirectory(OutputDirectory!);
 
-        DownloadTimeZoneDataSource();
+        if (!File.Exists(ZoneTabFile)) 
+        {
+            Log.LogError($"Could not find required file {ZoneTabFile}"); 
+            return false;
+        }
+
+        CompileTimeZoneDataSource();
         
         string[] filtered = new string[] { "America/Los_Angeles", "Australia/Sydney", "Europe/London", "Pacific/Tongatapu", 
                                 "America/Sao_Paulo", "Australia/Perth", "Africa/Nairobi", "Europe/Berlin",
@@ -96,8 +87,8 @@ public class DownloadTimeZoneData : Task
                                 "America/St_Johns"};
         
         FilterTimeZoneData();
-        FilterZoneTab(filtered);
+        FilterZoneTab(filtered, ZoneTabFile);
 
-        return true;
+        return !Log.HasLoggedErrors;
     }
 }

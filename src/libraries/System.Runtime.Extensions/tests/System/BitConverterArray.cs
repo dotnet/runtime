@@ -47,6 +47,11 @@ namespace System.Tests
             Assert.Equal(expected, BitConverter.GetBytes(num));
         }
 
+        public override void ConvertFromHalf(Half num, byte[] expected)
+        {
+            Assert.Equal(expected, BitConverter.GetBytes(num));
+        }
+
         public override void ConvertFromFloat(float num, byte[] expected)
         {
             Assert.Equal(expected, BitConverter.GetBytes(num));
@@ -90,6 +95,11 @@ namespace System.Tests
         public override void ToUInt64(int index, ulong expected, byte[] byteArray)
         {
             Assert.Equal(expected, BitConverter.ToUInt64(byteArray, index));
+        }
+
+        public override void ToHalf(int index, Half expected, byte[] byteArray)
+        {
+            Assert.Equal(expected, BitConverter.ToHalf(byteArray, index));
         }
 
         public override void ToSingle(int index, float expected, byte[] byteArray)

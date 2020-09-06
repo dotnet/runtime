@@ -76,3 +76,20 @@ function eval_call_on_frame_test () {
 	let obj_undefined = undefined;
 	console.log(`break here`);
 }
+
+function get_properties_test () {
+	let vehicle = {
+		kind: "car",
+		make: "mini",
+		get available () { return true; }
+	};
+
+	let obj = {
+		owner_name: "foo",
+		get owner_last_name () { return "bar"; },
+	}
+	// obj.prototype.this_vehicle = vehicle;
+	Object.setPrototypeOf(obj, vehicle);
+
+	console.log(`break here`);
+}

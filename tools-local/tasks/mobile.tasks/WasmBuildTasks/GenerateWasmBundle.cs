@@ -12,7 +12,7 @@ using System.Reflection;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 
-public class CreateWasmBundle : Task
+public class GenerateWasmBundle : Task
 {
     [Required]
     public string? InputDirectory { get; set; }
