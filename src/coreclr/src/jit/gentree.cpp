@@ -10944,8 +10944,8 @@ void Compiler::gtDispConst(GenTree* tree)
                         case GTF_ICON_PSTR_HDL:
                             printf(" pstr");
                             break;
-                        case GTF_ICON_PTR_HDL:
-                            printf(" ptr");
+                        case GTF_ICON_PTR_GLOBAL:
+                            printf(" ptr global");
                             break;
                         case GTF_ICON_VARG_HDL:
                             printf(" vararg");

@@ -905,7 +905,7 @@ public:
 #define GTF_ICON_STATIC_HDL         0x50000000 // GT_CNS_INT -- constant is a handle to static data
 #define GTF_ICON_STR_HDL            0x60000000 // GT_CNS_INT -- constant is a string handle
 #define GTF_ICON_PSTR_HDL           0x70000000 // GT_CNS_INT -- constant is a ptr to a string handle
-#define GTF_ICON_PTR_HDL            0x80000000 // GT_CNS_INT -- constant is a ldptr handle
+#define GTF_ICON_PTR_GLOBAL         0x80000000 // GT_CNS_INT -- constant is a pointer to mutable data from the VM state
 #define GTF_ICON_VARG_HDL           0x90000000 // GT_CNS_INT -- constant is a var arg cookie handle
 #define GTF_ICON_PINVKI_HDL         0xA0000000 // GT_CNS_INT -- constant is a pinvoke calli handle
 #define GTF_ICON_TOKEN_HDL          0xB0000000 // GT_CNS_INT -- constant is a token handle

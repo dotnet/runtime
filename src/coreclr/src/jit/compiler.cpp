@@ -8895,9 +8895,9 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                         chars += printf("[ICON_PSTR_HDL]");
                         break;
 
-                    case GTF_ICON_PTR_HDL:
+                    case GTF_ICON_PTR_GLOBAL:
 
-                        chars += printf("[ICON_PTR_HDL]");
+                        chars += printf("[ICON_PTR_GLOBAL]");
                         break;
 
                     case GTF_ICON_VARG_HDL:
