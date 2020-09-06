@@ -367,7 +367,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
       <AotEnvVars>@(AotEnvVar)</AotEnvVars>
     </PropertyGroup>
     <ItemGroup>
-      <AotProject Include="../../../mono/msbuild/aot-compile.proj">
+      <AotProject Include="../mono/msbuild/aot-compile.proj">
         <Properties>_CorerunExecutable=$(CorerunExecutable);_TestDll=%(TestDlls.Identity);AotEnvVars=@(AotEnvVar)</Properties>
       </AotProject>
     </ItemGroup>
