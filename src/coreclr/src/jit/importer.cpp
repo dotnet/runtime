@@ -7354,7 +7354,8 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
 
                     var_types handleTyp = (var_types)(varTypeIsGC(lclTyp) ? TYP_BYREF : TYP_I_IMPL);
                     op1                 = gtNewOperNode(GT_IND, handleTyp, op1);
-                    op1->gtFlags |= GTF_IND_INVARIANT | GTF_IND_NONFAULTING;
+                    op1->gtFlags |= GTF_IND_NONFAULTING;
+                    assert(!"Check this");
                 }
             }
             break;

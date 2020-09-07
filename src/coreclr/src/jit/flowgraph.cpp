@@ -21867,18 +21867,29 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
                     {
                         // Is the GTF_IND_INVARIANT flag set or unset?
                         //
-                        bool invariantFlag = (tree->gtFlags & GTF_IND_INVARIANT);
+                        bool invariantFlag = (tree->gtFlags & GTF_IND_INVARIANT) != 0;
                         if (invariantFlag)
                         {
                             // Record the state of the GTF_IND_INVARIANT flags into 'chkFlags'
                             chkFlags |= GTF_IND_INVARIANT;
                         }
 
+                        // Is the GTF_IND_NONFAULTING flag set or unset?
+                        //
+                        bool nonFaultingFlag = (tree->gtFlags & GTF_IND_NONFAULTING) != 0;
+                        if (nonFaultingFlag)
+                        {
+                            // Record the state of the GTF_IND_NONFAULTING flags into 'chkFlags'
+                            chkFlags |= GTF_IND_NONFAULTING;
+                        }
+                        assert(nonFaultingFlag);  // Currently this should always be set for all handle kinds
+
                         // Some of these aren't handles to invariant data...
                         //
-                        if ((handleKind == GTF_ICON_STATIC_HDL) || // Pointer to a mutable class Static variable
-                            (handleKind == GTF_ICON_BBC_PTR) ||    // Pointer to a mutable basic block count value
-                            (handleKind == GTF_ICON_PTR_GLOBAL))   // Pointer to mutable data from the VM state
+                        if ((handleKind == GTF_ICON_STATIC_HDL) ||  // Pointer to a mutable class Static variable
+                            (handleKind == GTF_ICON_BBC_PTR)    ||  // Pointer to a mutable basic block count value
+                            (handleKind == GTF_ICON_PTR_GLOBAL) ||  // Pointer to mutable data from the VM state
+                            (handleKind == GTF_ICON_PINVKI_HDL)   ) // Eventually remove, as this is immutable 
                         {
                             // We expect the Invariant flag to be unset for this handleKind
                             // If it is set then we will assert with "unexpected GTF_IND_INVARIANT flag set ...
@@ -21891,27 +21902,31 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
                             //
                             treeFlags |= GTF_IND_INVARIANT;
                         }
+
+                        // We currently expect all handle kinds to be nonFaulting
+                        //
+                        treeFlags |= GTF_IND_NONFAULTING;
 #if 1
-                        if ((handleKind == GTF_ICON_CLASS_HDL)  ||
-                            (handleKind == GTF_ICON_METHOD_HDL) ||
-                            (handleKind == GTF_ICON_FIELD_HDL)  ||
-                            (handleKind == GTF_ICON_TOKEN_HDL)  ||
-                            (handleKind == GTF_ICON_FTN_ADDR)    )
+                        if ((handleKind == GTF_ICON_CLASS_HDL) || (handleKind == GTF_ICON_METHOD_HDL) ||
+                            (handleKind == GTF_ICON_FIELD_HDL) || (handleKind == GTF_ICON_TOKEN_HDL) ||
+                            (handleKind == GTF_ICON_FTN_ADDR))
                         {
-                            // ToDo:  Fix all occurences to properly set GTF_IND_INVARIANT
-                            treeFlags &= ~GTF_IND_INVARIANT;
-                            chkFlags  &= ~GTF_IND_INVARIANT;
+                            if ((chkFlags & GTF_IND_INVARIANT) == 0)
+                            {
+                                // ToDo:  Fix all occurences to properly set GTF_IND_INVARIANT
+                                treeFlags &= ~GTF_IND_INVARIANT;
+                            }
                         }
 #endif
-                        // Matrix for (treeFlags and chkFlags)
+                        // Matrix for GTF_IND_INVARIANT (treeFlags and chkFlags)
                         //
-                        //                      chkFlags GTF_IND_INVARIANT value
-                        //                           0                 1
-                        //                      +--------------+----------------+
-                        //  treeFlags        0  |    OK        |  Missing Flag  |
-                        //  _INVARIANT          +--------------+----------------+
-                        //  value:           1  |  Extra Flag  |       OK       |
-                        //                      +--------------+----------------+
+                        //                    chkFlags INVARIANT value
+                        //                       0                 1
+                        //                 +--------------+----------------+
+                        //  treeFlags   0  |    OK        |  Missing Flag  |
+                        //  INVARIANT      +--------------+----------------+
+                        //  value:      1  |  Extra Flag  |       OK       |
+                        //                 +--------------+----------------+
                     }
                 }
 
@@ -22173,6 +22188,7 @@ void Compiler::fgDebugCheckDispFlags(GenTree* tree, unsigned dispFlags, unsigned
     if (tree->OperGet() == GT_IND)
     {
         printf("%c", (dispFlags & GTF_IND_INVARIANT) ? '#' : '-');
+        printf("%c", (dispFlags & GTF_IND_NONFAULTING) ? 'n' : '-');
     }
     GenTree::gtDispFlags(dispFlags, debugFlags);
 }
