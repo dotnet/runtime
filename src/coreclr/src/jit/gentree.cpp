@@ -6064,7 +6064,14 @@ GenTree* Compiler::gtNewStringLiteralNode(InfoAccessType iat, void* pValue)
 
     switch (iat)
     {
-        case IAT_VALUE: // constructStringLiteral in CoreRT case can return IAT_VALUE
+        case IAT_VALUE:
+            // For CoreRT only - Constant object can be a frozen string.
+            if (!IsTargetAbi(CORINFO_CORERT_ABI))
+            {
+                // Non CoreRT - This case is illegal, creating a TYP_REF from an INT_CNS
+                assert(!"unreached IAT_VALUE case in gtNewStringLiteralNode");
+            }
+
             tree         = gtNewIconEmbHndNode(pValue, nullptr, GTF_ICON_STR_HDL, nullptr);
             tree->gtType = TYP_REF;
 #ifdef DEBUG
@@ -10304,6 +10311,31 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, __in __in_z _
                 printf((tree->gtFlags & GTF_JCMP_EQ) ? "EQ" : "NE");
                 goto DASH;
 
+            case GT_CNS_INT:
+                if (tree->IsIconHandle())
+                {
+                    if ((tree->gtFlags & GTF_ICON_INITCLASS) != 0)
+                    {
+                        printf("I"); // Static Field handle with INITCLASS requirement
+                        --msgLength;
+                        break;
+                    }
+                    else if ((tree->gtFlags & GTF_ICON_FIELD_OFF) != 0)
+                    {
+                        printf("O");
+                        --msgLength;
+                        break;
+                    }
+                    else
+                    {
+                        // Some other handle
+                        printf("H");
+                        --msgLength;
+                        break;
+                    }
+                }
+                goto DASH;
+
             default:
             DASH:
                 printf("-");
@@ -10869,13 +10901,14 @@ void Compiler::gtDispConst(GenTree* tree)
             if (tree->IsIconHandle(GTF_ICON_STR_HDL))
             {
                 const WCHAR* str = eeGetCPString(tree->AsIntCon()->gtIconVal);
-                if (str != nullptr)
+                // If *str points to a '\0' then don't print the string's values
+                if ((str != nullptr) && (*str != '\0'))
                 {
                     printf(" 0x%X \"%S\"", dspPtr(tree->AsIntCon()->gtIconVal), str);
                 }
-                else
+                else // We can't print the value of the string
                 {
-                    // Note that eGetCPString isn't currently implemented on Linux/ARM
+                    // Note that eeGetCPString isn't currently implemented on Linux/ARM
                     // and instead always returns nullptr
                     printf(" 0x%X [ICON_STR_HDL]", dspPtr(tree->AsIntCon()->gtIconVal));
                 }
