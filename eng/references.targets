@@ -6,6 +6,7 @@
     -->
     <_FindDependencies>false</_FindDependencies>
   </PropertyGroup>
+
   <!-- netstandard is a default reference whenever building an implementation assembly for .NETCoreApp. -->
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
                         '$(IsSourceProject)' == 'true' and
