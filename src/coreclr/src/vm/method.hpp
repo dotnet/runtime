@@ -2026,7 +2026,7 @@ private:
     PCODE GetPrecompiledCode(PrepareCodeConfig* pConfig);
     PCODE GetPrecompiledNgenCode(PrepareCodeConfig* pConfig);
     PCODE GetPrecompiledR2RCode(PrepareCodeConfig* pConfig);
-    PCODE GetMulticoreJitCode();
+    PCODE GetMulticoreJitCode(PrepareCodeConfig* pConfig, bool* pWasTier0Jit);
     COR_ILMETHOD_DECODER* GetAndVerifyILHeader(PrepareCodeConfig* pConfig, COR_ILMETHOD_DECODER* pIlDecoderMemory);
     COR_ILMETHOD_DECODER* GetAndVerifyMetadataILHeader(PrepareCodeConfig* pConfig, COR_ILMETHOD_DECODER* pIlDecoderMemory);
     COR_ILMETHOD_DECODER* GetAndVerifyNoMetadataILHeader();
@@ -2050,8 +2050,19 @@ class PrepareCodeConfig
 public:
     PrepareCodeConfig();
     PrepareCodeConfig(NativeCodeVersion nativeCodeVersion, BOOL needsMulticoreJitNotification, BOOL mayUsePrecompiledCode);
-    MethodDesc* GetMethodDesc();
-    NativeCodeVersion GetCodeVersion();
+
+    MethodDesc* GetMethodDesc() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_pMethodDesc;
+    }
+
+    NativeCodeVersion GetCodeVersion() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_nativeCodeVersion;
+    }
+
     BOOL NeedsMulticoreJitNotification();
     BOOL MayUsePrecompiledCode();
     virtual PCODE IsJitCancellationRequested();
@@ -2067,6 +2078,27 @@ public:
     void SetReadyToRunRejectedPrecompiledCode();
     CallerGCMode GetCallerGCMode();
     void SetCallerGCMode(CallerGCMode mode);
+
+public:
+    bool IsForMulticoreJit() const
+    {
+        WRAPPER_NO_CONTRACT;
+
+    #ifdef FEATURE_MULTICOREJIT
+        return m_isForMulticoreJit;
+    #else
+        return false;
+    #endif
+    }
+
+#ifdef FEATURE_MULTICOREJIT
+protected:
+    void SetIsForMulticoreJit()
+    {
+        WRAPPER_NO_CONTRACT;
+        m_isForMulticoreJit = true;
+    }
+#endif
 
 #ifdef FEATURE_CODE_VERSIONING
 public:
@@ -2164,6 +2196,8 @@ public:
             m_jitSwitchedToOptimized = true;
         }
     }
+
+    bool FinalizeOptimizationTierForTier0Jit();
 #endif
 
 public:
@@ -2190,6 +2224,11 @@ protected:
     BOOL m_ProfilerRejectedPrecompiledCode;
     BOOL m_ReadyToRunRejectedPrecompiledCode;
     CallerGCMode m_callerGCMode;
+
+#ifdef FEATURE_MULTICOREJIT
+private:
+    bool m_isForMulticoreJit;
+#endif
 
 #ifdef FEATURE_CODE_VERSIONING
 private:
@@ -2245,6 +2284,29 @@ public:
     PrepareCodeConfigBuffer &operator =(const PrepareCodeConfigBuffer &) = delete;
 };
 #endif // FEATURE_CODE_VERSIONING
+
+class MulticoreJitPrepareCodeConfig : public PrepareCodeConfig
+{
+private:
+    bool m_wasTier0Jit;
+
+public:
+    MulticoreJitPrepareCodeConfig(MethodDesc* pMethod);
+
+    bool WasTier0Jit() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_wasTier0Jit;
+    }
+
+    void SetWasTier0Jit()
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_wasTier0Jit = true;
+    }
+
+    virtual BOOL SetNativeCode(PCODE pCode, PCODE * ppAlternateCodeToUse) override;
+};
 #endif // DACCESS_COMPILE
 
 /******************************************************************/

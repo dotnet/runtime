@@ -360,8 +360,38 @@
         ret
   } // end of method Unsafe::Add
 
+  .method public hidebysig static !!T& Add<T>(!!T& source, native uint elementOffset) cil managed aggressiveinlining
+  {
+        .param [2]
+            .custom instance void System.Runtime.CompilerServices.NativeIntegerAttribute::.ctor() = (
+                01 00 00 00
+            )
+        .custom instance void System.Runtime.Versioning.NonVersionableAttribute::.ctor() = ( 01 00 00 00 )
+        .maxstack 3
+        ldarg.0
+        ldarg.1
+        sizeof !!T
+        mul
+        add
+        ret
+  } // end of method Unsafe::Add
+
   .method public hidebysig static !!T& AddByteOffset<T>(!!T& source, native int byteOffset) cil managed aggressiveinlining
   {
+        .custom instance void System.Runtime.Versioning.NonVersionableAttribute::.ctor() = ( 01 00 00 00 )
+        .maxstack 2
+        ldarg.0
+        ldarg.1
+        add
+        ret
+  } // end of method Unsafe::AddByteOffset
+
+  .method public hidebysig static !!T& AddByteOffset<T>(!!T& source, native uint byteOffset) cil managed aggressiveinlining
+  {
+        .param [2]
+            .custom instance void System.Runtime.CompilerServices.NativeIntegerAttribute::.ctor() = (
+                01 00 00 00
+            )
         .custom instance void System.Runtime.Versioning.NonVersionableAttribute::.ctor() = ( 01 00 00 00 )
         .maxstack 2
         ldarg.0
@@ -408,8 +438,38 @@
         ret
   } // end of method Unsafe::Subtract
 
+  .method public hidebysig static !!T& Subtract<T>(!!T& source, native uint elementOffset) cil managed aggressiveinlining
+  {
+        .param [2]
+            .custom instance void System.Runtime.CompilerServices.NativeIntegerAttribute::.ctor() = (
+                01 00 00 00
+            )
+        .custom instance void System.Runtime.Versioning.NonVersionableAttribute::.ctor() = ( 01 00 00 00 )
+        .maxstack 3
+        ldarg.0
+        ldarg.1
+        sizeof !!T
+        mul
+        sub
+        ret
+  } // end of method Unsafe::Subtract
+
   .method public hidebysig static !!T& SubtractByteOffset<T>(!!T& source, native int byteOffset) cil managed aggressiveinlining
   {
+        .custom instance void System.Runtime.Versioning.NonVersionableAttribute::.ctor() = ( 01 00 00 00 )
+        .maxstack 2
+        ldarg.0
+        ldarg.1
+        sub
+        ret
+  } // end of method Unsafe::SubtractByteOffset
+
+  .method public hidebysig static !!T& SubtractByteOffset<T>(!!T& source, native uint byteOffset) cil managed aggressiveinlining
+  {
+        .param [2]
+            .custom instance void System.Runtime.CompilerServices.NativeIntegerAttribute::.ctor() = (
+                01 00 00 00
+            )
         .custom instance void System.Runtime.Versioning.NonVersionableAttribute::.ctor() = ( 01 00 00 00 )
         .maxstack 2
         ldarg.0
@@ -513,3 +573,72 @@
 
 } // end of class System.Runtime.CompilerServices.IsReadOnlyAttribute
 #endif
+
+.class private auto ansi sealed beforefieldinit Microsoft.CodeAnalysis.EmbeddedAttribute
+    extends [CORE_ASSEMBLY]System.Attribute
+{
+    .custom instance void [CORE_ASSEMBLY]System.Runtime.CompilerServices.CompilerGeneratedAttribute::.ctor() = (
+        01 00 00 00
+    )
+    .custom instance void Microsoft.CodeAnalysis.EmbeddedAttribute::.ctor() = (
+        01 00 00 00
+    )
+    .method public hidebysig specialname rtspecialname 
+        instance void .ctor () cil managed 
+    {
+        .maxstack 8
+        IL_0000: ldarg.0
+        IL_0001: call instance void [CORE_ASSEMBLY]System.Attribute::.ctor()
+        IL_0006: ret
+    } // end of method EmbeddedAttribute::.ctor
+
+} // end of class Microsoft.CodeAnalysis.EmbeddedAttribute
+
+.class private auto ansi sealed beforefieldinit System.Runtime.CompilerServices.NativeIntegerAttribute
+    extends [CORE_ASSEMBLY]System.Attribute
+{
+    .custom instance void [CORE_ASSEMBLY]System.Runtime.CompilerServices.CompilerGeneratedAttribute::.ctor() = (
+        01 00 00 00
+    )
+    .custom instance void Microsoft.CodeAnalysis.EmbeddedAttribute::.ctor() = (
+        01 00 00 00
+    )
+    .custom instance void [CORE_ASSEMBLY]System.AttributeUsageAttribute::.ctor(valuetype [CORE_ASSEMBLY]System.AttributeTargets) = (
+        01 00 84 6b 00 00 02 00 54 02 0d 41 6c 6c 6f 77
+        4d 75 6c 74 69 70 6c 65 00 54 02 09 49 6e 68 65
+        72 69 74 65 64 00
+    )
+    .field public initonly bool[] TransformFlags
+
+    .method public hidebysig specialname rtspecialname 
+        instance void .ctor () cil managed 
+    {
+        .maxstack 8
+        IL_0000: ldarg.0
+        IL_0001: call instance void [CORE_ASSEMBLY]System.Attribute::.ctor()
+        IL_0006: ldarg.0
+        IL_0007: ldc.i4.1
+        IL_0008: newarr [CORE_ASSEMBLY]System.Boolean
+        IL_000d: dup
+        IL_000e: ldc.i4.0
+        IL_000f: ldc.i4.1
+        IL_0010: stelem.i1
+        IL_0011: stfld bool[] System.Runtime.CompilerServices.NativeIntegerAttribute::TransformFlags
+        IL_0016: ret
+    } // end of method NativeIntegerAttribute::.ctor
+
+    .method public hidebysig specialname rtspecialname 
+        instance void .ctor (
+            bool[] ''
+        ) cil managed 
+    {
+        .maxstack 8
+        IL_0000: ldarg.0
+        IL_0001: call instance void [CORE_ASSEMBLY]System.Attribute::.ctor()
+        IL_0006: ldarg.0
+        IL_0007: ldarg.1
+        IL_0008: stfld bool[] System.Runtime.CompilerServices.NativeIntegerAttribute::TransformFlags
+        IL_000d: ret
+    } // end of method NativeIntegerAttribute::.ctor
+
+} // end of class System.Runtime.CompilerServices.NativeIntegerAttribute

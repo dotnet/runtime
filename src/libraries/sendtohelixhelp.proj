@@ -127,6 +127,7 @@
 
   <PropertyGroup>
     <HelixPreCommands>@(HelixPreCommand)</HelixPreCommands>
+    <IncludeHelixCorrelationPayload Condition="'$(HelixCorrelationPayload)' != '' and '$(TargetOS)' != 'Browser'">true</IncludeHelixCorrelationPayload>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(HelixCommand)' == ''">
@@ -136,9 +137,9 @@
       so if we don't use "call", then we cause the parent script to exit, and anything after will not be executed.
     -->
     <HelixCommand Condition="'$(TargetsWindows)' == 'true'">call RunTests.cmd</HelixCommand>
-    <HelixCommand Condition="'$(TargetsWindows)' == 'true' and '$(HelixCorrelationPayload)' != ''">$(HelixCommand) --runtime-path %HELIX_CORRELATION_PAYLOAD%</HelixCommand>
+    <HelixCommand Condition="'$(TargetsWindows)' == 'true' and '$(IncludeHelixCorrelationPayload)' == 'true'">$(HelixCommand) --runtime-path %HELIX_CORRELATION_PAYLOAD%</HelixCommand>
     <HelixCommand Condition="'$(TargetsWindows)' != 'true'">./RunTests.sh</HelixCommand>
-    <HelixCommand Condition="'$(TargetsWindows)' != 'true' and '$(HelixCorrelationPayload)' != ''">$(HelixCommand) --runtime-path "$HELIX_CORRELATION_PAYLOAD"</HelixCommand>
+    <HelixCommand Condition="'$(TargetsWindows)' != 'true' and '$(IncludeHelixCorrelationPayload)' == 'true'">$(HelixCommand) --runtime-path "$HELIX_CORRELATION_PAYLOAD"</HelixCommand>
   </PropertyGroup>
 
   <ItemGroup>
@@ -165,7 +166,7 @@
 
     <ItemGroup>
       <HelixCorrelationPayload Include="$(HelixCorrelationPayload)"
-                               Condition="'$(TargetOS)' != 'Browser' or '$(HelixCorrelationPayload)' != ''" />
+                               Condition="'$(IncludeHelixCorrelationPayload)' == 'true'" />
 
       <_WorkItem Include="$(WorkItemArchiveWildCard)" Exclude="$(HelixCorrelationPayload)" />
 

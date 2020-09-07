@@ -222,7 +222,6 @@ namespace DebuggerTests
                        var top_frame = pause_location["callFrames"][0];
 
                        var scope = top_frame["scopeChain"][0];
-                       Assert.Equal("dotnet:scope:0", scope["object"]["objectId"]);
                        if (wait_for_event_fn != null)
                            await wait_for_event_fn(pause_location);
                        else
@@ -271,7 +270,6 @@ namespace DebuggerTests
                 var top_frame = pause_location["callFrames"][0];
 
                 var scope = top_frame["scopeChain"][0];
-                Assert.Equal("dotnet:scope:0", scope["object"]["objectId"]);
 
                 if (wait_for_event_fn != null)
                     await wait_for_event_fn(pause_location);
@@ -342,28 +340,28 @@ namespace DebuggerTests
         internal async Task CheckDateTime(JToken value, DateTime expected, string label = "")
         {
             await CheckValue(value, TValueType("System.DateTime", expected.ToString()), label);
-            await CheckDateTimeValue(value, expected);
+            await CheckDateTimeValue(value, expected, label);
         }
 
-        internal async Task CheckDateTime(JToken locals, string name, DateTime expected)
+        internal async Task CheckDateTime(JToken locals, string name, DateTime expected, string label="")
         {
-            var obj = GetAndAssertObjectWithName(locals, name);
-            await CheckDateTimeValue(obj["value"], expected);
+            var obj = GetAndAssertObjectWithName(locals, name, label);
+            await CheckDateTimeValue(obj["value"], expected, label);
         }
 
-        internal async Task CheckDateTimeValue(JToken value, DateTime expected)
+        internal async Task CheckDateTimeValue(JToken value, DateTime expected, string label="")
         {
-            await CheckDateTimeMembers(value, expected);
+            await CheckDateTimeMembers(value, expected, label);
 
             var res = await InvokeGetter(JObject.FromObject(new { value = value }), "Date");
-            await CheckDateTimeMembers(res.Value["result"], expected.Date);
+            await CheckDateTimeMembers(res.Value["result"], expected.Date, label);
 
             // FIXME: check some float properties too
 
-            async Task CheckDateTimeMembers(JToken v, DateTime exp_dt)
+            async Task CheckDateTimeMembers(JToken v, DateTime exp_dt, string label="")
             {
-                AssertEqual("System.DateTime", v["className"]?.Value<string>(), "className");
-                AssertEqual(exp_dt.ToString(), v["description"]?.Value<string>(), "description");
+                AssertEqual("System.DateTime", v["className"]?.Value<string>(), $"{label}#className");
+                AssertEqual(exp_dt.ToString(), v["description"]?.Value<string>(), $"{label}#description");
 
                 var members = await GetProperties(v["objectId"]?.Value<string>());
 
@@ -409,11 +407,11 @@ namespace DebuggerTests
                 GetAndAssertObjectWithName(locals, name)["value"],
                 TArray(class_name, length), name).Wait();
 
-        internal JToken GetAndAssertObjectWithName(JToken obj, string name)
+        internal JToken GetAndAssertObjectWithName(JToken obj, string name, string label="")
         {
             var l = obj.FirstOrDefault(jt => jt["name"]?.Value<string>() == name);
             if (l == null)
-                Assert.True(false, $"Could not find variable '{name}'");
+                Assert.True(false, $"[{label}] Could not find variable '{name}'");
             return l;
         }
 
@@ -613,7 +611,7 @@ namespace DebuggerTests
                     {
                         // For getter, `actual_val` is not `.value`, instead it's the container object
                         // which has a `.get` instead of a `.value`
-                        var get = actual_val["get"];
+                        var get = actual_val?["get"];
                         Assert.True(get != null, $"[{label}] No `get` found. {(actual_val != null ? "Make sure to pass the container object for testing getters, and not the ['value']" : String.Empty)}");
 
                         AssertEqual("Function", get["className"]?.Value<string>(), $"{label}-className");
@@ -719,30 +717,34 @@ namespace DebuggerTests
                 return;
             }
 
-            foreach (var jp in exp_val.Values<JProperty>())
+            try
             {
-                if (jp.Value.Type == JTokenType.Object)
+                foreach (var jp in exp_val.Values<JProperty>())
                 {
-                    var new_val = await GetProperties(actual_val["objectId"].Value<string>());
-                    await CheckProps(new_val, jp.Value, $"{label}-{actual_val["objectId"]?.Value<string>()}");
+                    if (jp.Value.Type == JTokenType.Object)
+                    {
+                        var new_val = await GetProperties(actual_val["objectId"].Value<string>());
+                        await CheckProps(new_val, jp.Value, $"{label}-{actual_val["objectId"]?.Value<string>()}");
 
-                    continue;
+                        continue;
+                    }
+
+                    var exp_val_str = jp.Value.Value<string>();
+                    bool null_or_empty_exp_val = String.IsNullOrEmpty(exp_val_str);
+
+                    var actual_field_val = actual_val?.Values<JProperty>()?.FirstOrDefault(a_jp => a_jp.Name == jp.Name);
+                    var actual_field_val_str = actual_field_val?.Value?.Value<string>();
+                    if (null_or_empty_exp_val && String.IsNullOrEmpty(actual_field_val_str))
+                        continue;
+
+                    Assert.True(actual_field_val != null, $"[{label}] Could not find value field named {jp.Name}");
+                    AssertEqual(exp_val_str, actual_field_val_str, $"[{label}] Value for json property named {jp.Name} didn't match.");
                 }
-
-                var exp_val_str = jp.Value.Value<string>();
-                bool null_or_empty_exp_val = String.IsNullOrEmpty(exp_val_str);
-
-                var actual_field_val = actual_val.Values<JProperty>().FirstOrDefault(a_jp => a_jp.Name == jp.Name);
-                var actual_field_val_str = actual_field_val?.Value?.Value<string>();
-                if (null_or_empty_exp_val && String.IsNullOrEmpty(actual_field_val_str))
-                    continue;
-
-                Assert.True(actual_field_val != null, $"[{label}] Could not find value field named {jp.Name}");
-
-                Assert.True(exp_val_str == actual_field_val_str,
-                    $"[{label}] Value for json property named {jp.Name} didn't match.\n" +
-                    $"Expected: {jp.Value.Value<string>()}\n" +
-                    $"Actual:   {actual_field_val.Value.Value<string>()}");
+            }
+            catch
+            {
+                Console.WriteLine ($"Expected: {exp_val}. Actual: {actual_val}");
+                throw;
             }
         }
 
@@ -788,7 +790,7 @@ namespace DebuggerTests
         }
 
         /* @fn_args is for use with `Runtime.callFunctionOn` only */
-        internal async Task<JToken> GetProperties(string id, JToken fn_args = null, bool expect_ok = true)
+        internal async Task<JToken> GetProperties(string id, JToken fn_args = null, bool? own_properties = null, bool? accessors_only = null, bool expect_ok = true)
         {
             if (ctx.UseCallFunctionOnBeforeGetProperties && !id.StartsWith("dotnet:scope:"))
             {
@@ -812,6 +814,14 @@ namespace DebuggerTests
             {
                 objectId = id
             });
+            if (own_properties.HasValue)
+            {
+                get_prop_req["ownProperties"] = own_properties.Value;
+            }
+            if (accessors_only.HasValue)
+            {
+                get_prop_req["accessorPropertiesOnly"] = accessors_only.Value;
+            }
 
             var frame_props = await ctx.cli.SendCommand("Runtime.getProperties", get_prop_req, ctx.token);
             AssertEqual(expect_ok, frame_props.IsOk, $"Runtime.getProperties returned {frame_props.IsOk} instead of {expect_ok}, for {get_prop_req}, with Result: {frame_props}");

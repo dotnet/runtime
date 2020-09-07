@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using Internal.IL;
 using Internal.IL.Stubs;
 using Internal.JitInterface;
+using Internal.ReadyToRunConstants;
 using Internal.TypeSystem;
 
 using ILCompiler.DependencyAnalysis;
@@ -328,6 +329,15 @@ namespace ILCompiler
 
             Directory.CreateDirectory(Path.GetDirectoryName(outputFile));
 
+            ReadyToRunFlags flags =
+                ReadyToRunFlags.READYTORUN_FLAG_Component |
+                ReadyToRunFlags.READYTORUN_FLAG_NonSharedPInvokeStubs;
+
+            if (inputModule.IsPlatformNeutral)
+            {
+                flags |= ReadyToRunFlags.READYTORUN_FLAG_PlatformNeutralSource;
+            }
+
             CopiedCorHeaderNode copiedCorHeader = new CopiedCorHeaderNode(inputModule);
             DebugDirectoryNode debugDirectory = new DebugDirectoryNode(inputModule, outputFile);
             NodeFactory componentFactory = new NodeFactory(
@@ -337,8 +347,7 @@ namespace ILCompiler
                 copiedCorHeader,
                 debugDirectory,
                 win32Resources: new Win32Resources.ResourceData(inputModule),
-                Internal.ReadyToRunConstants.ReadyToRunFlags.READYTORUN_FLAG_Component |
-                Internal.ReadyToRunConstants.ReadyToRunFlags.READYTORUN_FLAG_NonSharedPInvokeStubs);
+                flags);
 
             IComparer<DependencyNodeCore<NodeFactory>> comparer = new SortableDependencyNode.ObjectNodeComparer(new CompilerComparer());
             DependencyAnalyzerBase<NodeFactory> componentGraph = new DependencyAnalyzer<NoLogStrategy<NodeFactory>, NodeFactory>(componentFactory, comparer);

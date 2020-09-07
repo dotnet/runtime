@@ -14,20 +14,25 @@ namespace Microsoft.NET.HostModel.Bundle
     /// 
     /// Currently the TargetInfo only tracks:
     ///   - the target operating system
-    ///   - The target framework
-    /// If necessary, the target architecture may be tracked in future.
+    ///   - the target architecture
+    ///   - the target framework
+    ///   - the default options for this target
+    ///   - the assembly alignment for this target
     /// </summary>
 
     public class TargetInfo
     {
         public readonly OSPlatform OS;
+        public readonly Architecture Arch;
         public readonly Version FrameworkVersion;
         public readonly uint BundleVersion;
         public readonly BundleOptions DefaultOptions;
+        public readonly int AssemblyAlignment;
 
-        public TargetInfo(OSPlatform? os, Version targetFrameworkVersion)
+        public TargetInfo(OSPlatform? os, Architecture? arch, Version targetFrameworkVersion)
         {
             OS = os ?? HostOS;
+            Arch = arch ?? RuntimeInformation.OSArchitecture;
             FrameworkVersion = targetFrameworkVersion ?? net50;
 
             Debug.Assert(IsLinux || IsOSX || IsWindows);
@@ -46,6 +51,19 @@ namespace Microsoft.NET.HostModel.Bundle
             {
                 throw new ArgumentException($"Invalid input: Unsupported Target Framework Version {targetFrameworkVersion}");
             }
+
+            if (IsLinux && Arch == Architecture.Arm64)
+            {
+                // We align assemblies in the bundle at 4K so that we can use mmap on Linux without changing the page alignment of ARM64 R2R code.
+                // This is only necessary for R2R assemblies, but we do it for all assemblies for simplicity.
+                // See https://github.com/dotnet/runtime/issues/41832.
+                AssemblyAlignment = 4096;
+            }
+            else
+            {
+                // Otherwise, assemblies are 16 bytes aligned, so that their sections can be memory-mapped cache aligned.
+                AssemblyAlignment = 16;
+            }
         }
 
         public bool IsNativeBinary(string filePath)
@@ -63,7 +81,8 @@ namespace Microsoft.NET.HostModel.Bundle
         public override string ToString()
         {
             string os = IsWindows ? "win" : IsLinux ? "linux" : "osx";
-            return $"OS: {os} FrameworkVersion: {FrameworkVersion}";
+            string arch = Arch.ToString().ToLowerInvariant();
+            return $"OS: {os} Arch: {arch} FrameworkVersion: {FrameworkVersion}";
         }
 
         static OSPlatform HostOS => RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? OSPlatform.Linux :
