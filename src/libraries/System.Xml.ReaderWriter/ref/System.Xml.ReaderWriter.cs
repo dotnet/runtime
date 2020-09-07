@@ -1534,7 +1534,7 @@ namespace System.Xml.Schema
         public XmlSchemaAppInfo() { }
         [System.Xml.Serialization.XmlAnyElementAttribute]
         [System.Xml.Serialization.XmlTextAttribute]
-        public System.Xml.XmlNode[]? Markup { get { throw null; } set { } }
+        public System.Xml.XmlNode?[]? Markup { get { throw null; } set { } }
         [System.Xml.Serialization.XmlAttributeAttribute("source", DataType="anyURI")]
         public string? Source { get { throw null; } set { } }
     }
@@ -1791,7 +1791,7 @@ namespace System.Xml.Schema
         public string? Language { get { throw null; } set { } }
         [System.Xml.Serialization.XmlAnyElementAttribute]
         [System.Xml.Serialization.XmlTextAttribute]
-        public System.Xml.XmlNode[]? Markup { get { throw null; } set { } }
+        public System.Xml.XmlNode?[]? Markup { get { throw null; } set { } }
         [System.Xml.Serialization.XmlAttributeAttribute("source", DataType="anyURI")]
         public string? Source { get { throw null; } set { } }
     }

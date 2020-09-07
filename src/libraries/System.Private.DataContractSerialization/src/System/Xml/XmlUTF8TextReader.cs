@@ -17,8 +17,8 @@ namespace System.Xml
 {
     public interface IXmlTextReaderInitializer
     {
-        void SetInput(byte[] buffer, int offset, int count, Encoding encoding, XmlDictionaryReaderQuotas quotas, OnXmlDictionaryReaderClose onClose);
-        void SetInput(Stream stream, Encoding encoding, XmlDictionaryReaderQuotas quotas, OnXmlDictionaryReaderClose onClose);
+        void SetInput(byte[] buffer, int offset, int count, Encoding? encoding, XmlDictionaryReaderQuotas quotas, OnXmlDictionaryReaderClose? onClose);
+        void SetInput(Stream stream, Encoding? encoding, XmlDictionaryReaderQuotas quotas, OnXmlDictionaryReaderClose? onClose);
     }
 
     internal class XmlUTF8TextReader : XmlBaseReader, IXmlLineInfo, IXmlTextReaderInitializer
@@ -27,8 +27,8 @@ namespace System.Xml
 
         private readonly PrefixHandle _prefix;
         private readonly StringHandle _localName;
-        private int[] _rowOffsets;
-        private OnXmlDictionaryReaderClose _onClose;
+        private int[]? _rowOffsets;
+        private OnXmlDictionaryReaderClose? _onClose;
         private bool _buffered;
         private int _maxBytesPerRead;
         private static readonly byte[] s_charType = new byte[256]
@@ -553,7 +553,7 @@ namespace System.Xml
             _localName = new StringHandle(BufferReader);
         }
 
-        public void SetInput(byte[] buffer, int offset, int count, Encoding encoding, XmlDictionaryReaderQuotas quotas, OnXmlDictionaryReaderClose onClose)
+        public void SetInput(byte[] buffer, int offset, int count, Encoding? encoding, XmlDictionaryReaderQuotas quotas, OnXmlDictionaryReaderClose? onClose)
         {
             if (buffer == null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(buffer)));
@@ -567,11 +567,11 @@ namespace System.Xml
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(count), SR.Format(SR.SizeExceedsRemainingBufferSpace, buffer.Length - offset)));
             MoveToInitial(quotas, onClose);
             ArraySegment<byte> seg = EncodingStreamWrapper.ProcessBuffer(buffer, offset, count, encoding);
-            BufferReader.SetBuffer(seg.Array, seg.Offset, seg.Count, null, null);
+            BufferReader.SetBuffer(seg.Array!, seg.Offset, seg.Count, null, null);
             _buffered = true;
         }
 
-        public void SetInput(Stream stream, Encoding encoding, XmlDictionaryReaderQuotas quotas, OnXmlDictionaryReaderClose onClose)
+        public void SetInput(Stream stream, Encoding? encoding, XmlDictionaryReaderQuotas quotas, OnXmlDictionaryReaderClose? onClose)
         {
             if (stream == null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(stream));
@@ -581,7 +581,7 @@ namespace System.Xml
             _buffered = false;
         }
 
-        private void MoveToInitial(XmlDictionaryReaderQuotas quotas, OnXmlDictionaryReaderClose onClose)
+        private void MoveToInitial(XmlDictionaryReaderQuotas quotas, OnXmlDictionaryReaderClose? onClose)
         {
             MoveToInitial(quotas);
             _maxBytesPerRead = quotas.MaxBytesPerRead;
@@ -592,7 +592,7 @@ namespace System.Xml
         {
             _rowOffsets = null;
             base.Close();
-            OnXmlDictionaryReaderClose onClose = _onClose;
+            OnXmlDictionaryReaderClose? onClose = _onClose;
             _onClose = null;
             if (onClose != null)
             {
@@ -602,8 +602,6 @@ namespace System.Xml
                 }
                 catch (Exception e)
                 {
-                    if (DiagnosticUtility.IsFatal(e)) throw;
-
                     throw DiagnosticUtility.ExceptionUtility.ThrowHelperCallback(e);
                 }
             }

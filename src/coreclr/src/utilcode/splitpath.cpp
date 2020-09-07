@@ -144,19 +144,11 @@ void    SplitPathInterior(
      */
 
     for (last_slash = NULL, p = (WCHAR *)wszPath; *p; p++) {
-#ifdef _MBCS
-        if (_ISLEADBYTE (*p))
-            p++;
-        else {
-#endif  /* _MBCS */
         if (*p == _T('/') || *p == _T('\\'))
             /* point to one beyond for later copy */
             last_slash = p + 1;
         else if (*p == _T('.'))
             dot = p;
-#ifdef _MBCS
-        }
-#endif  /* _MBCS */
     }
 
     if (last_slash) {

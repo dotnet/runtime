@@ -10,19 +10,19 @@ namespace System.Runtime.Serialization
 {
     internal class HybridObjectCache
     {
-        private Dictionary<string, object> _objectDictionary;
-        private Dictionary<string, object> _referencedObjectDictionary;
+        private Dictionary<string, object?>? _objectDictionary;
+        private Dictionary<string, object?>? _referencedObjectDictionary;
 
         internal HybridObjectCache()
         {
         }
 
-        internal void Add(string id, object obj)
+        internal void Add(string id, object? obj)
         {
             if (_objectDictionary == null)
-                _objectDictionary = new Dictionary<string, object>();
+                _objectDictionary = new Dictionary<string, object?>();
 
-            object existingObject;
+            object? existingObject;
             if (_objectDictionary.TryGetValue(id, out existingObject))
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.MultipleIdDefinition, id)));
             _objectDictionary.Add(id, obj);
@@ -34,11 +34,11 @@ namespace System.Runtime.Serialization
                 _objectDictionary.Remove(id);
         }
 
-        internal object GetObject(string id)
+        internal object? GetObject(string id)
         {
             if (_referencedObjectDictionary == null)
             {
-                _referencedObjectDictionary = new Dictionary<string, object>();
+                _referencedObjectDictionary = new Dictionary<string, object?>();
                 _referencedObjectDictionary.Add(id, null);
             }
             else
@@ -48,7 +48,7 @@ namespace System.Runtime.Serialization
 
             if (_objectDictionary != null)
             {
-                object obj;
+                object? obj;
                 _objectDictionary.TryGetValue(id, out obj);
                 return obj;
             }

@@ -111,6 +111,11 @@
       <DownloadedSymbolPackages Include="$(DownloadDirectory)**\*.symbols.nupkg" />
       <ItemsToSign Include="$(DownloadDirectory)**\*.nupkg" Exclude="@(DownloadedSymbolPackages)" />
 
+      <!-- The cross OS diagnostics symbol packages need to be signed as they are the only packages
+      that have a specific version of assets that are only meant to be indexed in symbol servers.
+      Since only *symbols.nupkg get indexed, and installer doesn't produce these, we need to glob them for signing. -->
+      <ItemsToSign Include="$(DownloadDirectory)**\*CrossOsDiag*.symbols.nupkg" />
+
       <ItemsToSign Include="$(DownloadDirectory)**\*.deb" />
       <ItemsToSign Include="$(DownloadDirectory)**\*.rpm" />
     </ItemGroup>

@@ -152,7 +152,7 @@ int hostpolicy_context_t::initialize(hostpolicy_init_t &hostpolicy_init, const a
 
     fx_definition_vector_t::iterator fx_begin;
     fx_definition_vector_t::iterator fx_end;
-    resolver.get_app_fx_definition_range(&fx_begin, &fx_end);
+    resolver.get_app_context_deps_files_range(&fx_begin, &fx_end);
 
     pal::string_t app_context_deps_str;
     fx_definition_vector_t::iterator fx_curr = fx_begin;

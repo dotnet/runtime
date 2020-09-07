@@ -54,11 +54,6 @@ if ($Internal) {
     $HelixSourcePrefix = "official"
 }
 
-if($Architecture -eq "arm64")
-{
-    $ExtraBenchmarkDotNetArguments = "--exclusion-filter *FannkuchRedux_9.FannkuchRedux_9*"
-}
-
 if($MonoInterpreter)
 {
     $ExtraBenchmarkDotNetArguments = "--category-exclusion-filter NoInterpreter"

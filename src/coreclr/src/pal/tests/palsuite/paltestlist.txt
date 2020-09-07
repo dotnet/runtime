@@ -348,9 +348,6 @@ c_runtime/_finitef/test1/paltest_finitef_test1
 c_runtime/_isnan/test1/paltest_isnan_test1
 c_runtime/_isnanf/test1/paltest_isnanf_test1
 c_runtime/_itow/test1/paltest_itow_test1
-c_runtime/_mbsdec/test1/paltest_mbsdec_test1
-c_runtime/_mbsinc/test1/paltest_mbsinc_test1
-c_runtime/_mbsninc/test1/paltest_mbsninc_test1
 c_runtime/_putenv/test1/paltest_putenv_test1
 c_runtime/_putenv/test2/paltest_putenv_test2
 c_runtime/_putenv/test3/paltest_putenv_test3
@@ -569,10 +566,6 @@ loader/LoadLibraryW/test2/paltest_loadlibraryw_test2
 loader/LoadLibraryW/test3/paltest_loadlibraryw_test3
 loader/LoadLibraryW/test5/paltest_loadlibraryw_test5
 locale_info/GetACP/test1/paltest_getacp_test1
-locale_info/GetCPInfo/test1/paltest_getcpinfo_test1
-locale_info/GetCPInfo/test3/paltest_getcpinfo_test3
-locale_info/IsDBCSLeadByte/test1/paltest_isdbcsleadbyte_test1
-locale_info/IsDBCSLeadByteEx/test1/paltest_isdbcsleadbyteex_test1
 locale_info/MultiByteToWideChar/test1/paltest_multibytetowidechar_test1
 locale_info/MultiByteToWideChar/test2/paltest_multibytetowidechar_test2
 locale_info/MultiByteToWideChar/test3/paltest_multibytetowidechar_test3

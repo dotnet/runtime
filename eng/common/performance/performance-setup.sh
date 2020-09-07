@@ -195,7 +195,6 @@ if [[ "$internal" == true ]]; then
     
     if [[ "$architecture" = "arm64" ]]; then
         queue=Ubuntu.1804.Arm64.Perf
-        extra_benchmark_dotnet_arguments="--exclusion-filter *FannkuchRedux_9.FannkuchRedux_9*"
     else
         queue=Ubuntu.1804.Amd64.Tiger.Perf
     fi

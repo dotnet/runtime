@@ -53,12 +53,7 @@ namespace System.Text
             }
             return byteCount;
         }
-#if NO
-        public override Encoder GetEncoder()
-        {
-            return new BufferedEncoder(this, 2);
-        }
-#endif
+
         public override int GetMaxCharCount(int byteCount)
         {
             if (byteCount < 0 || byteCount > int.MaxValue / 2)

@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
-using System.Net.Connections;
 using System.Net.Http.Headers;
 using System.Net.Http.HPack;
 using System.Net.Security;
@@ -16,6 +15,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Internal;
 
 namespace System.Net.Http
 {
@@ -23,7 +23,6 @@ namespace System.Net.Http
     {
         private readonly HttpConnectionPool _pool;
         private readonly Stream _stream;
-        private readonly Connection _connection;
 
         // NOTE: These are mutable structs; do not make these readonly.
         private ArrayBuffer _incomingBuffer;
@@ -118,11 +117,10 @@ namespace System.Net.Http
         private long _keepAlivePingTimeoutTimestamp;
         private volatile KeepAliveState _keepAliveState;
 
-        public Http2Connection(HttpConnectionPool pool, Connection connection)
+        public Http2Connection(HttpConnectionPool pool, Stream stream)
         {
             _pool = pool;
-            _stream = connection.Stream;
-            _connection = connection;
+            _stream = stream;
             _incomingBuffer = new ArrayBuffer(InitialConnectionBufferSize);
             _outgoingBuffer = new ArrayBuffer(InitialConnectionBufferSize);
 
@@ -1308,16 +1306,24 @@ namespace System.Net.Http
             // in order to avoid consuming resources in potentially many requests waiting for access.
             try
             {
-                if (_pool.EnableMultipleHttp2Connections)
+                if (!_concurrentStreams.TryRequestCreditNoWait(1))
                 {
-                    if (!_concurrentStreams.TryRequestCreditNoWait(1))
+                    if (_pool.EnableMultipleHttp2Connections)
                     {
                         throw new HttpRequestException(null, null, RequestRetryType.RetryOnNextConnection);
                     }
-                }
-                else
-                {
-                    await _concurrentStreams.RequestCreditAsync(1, cancellationToken).ConfigureAwait(false);
+
+                    if (HttpTelemetry.Log.IsEnabled())
+                    {
+                        // Only log Http20RequestLeftQueue if we spent time waiting on the queue
+                        ValueStopwatch stopwatch = ValueStopwatch.StartNew();
+                        await _concurrentStreams.RequestCreditAsync(1, cancellationToken).ConfigureAwait(false);
+                        HttpTelemetry.Log.Http20RequestLeftQueue(stopwatch.GetElapsedTime().TotalMilliseconds);
+                    }
+                    else
+                    {
+                        await _concurrentStreams.RequestCreditAsync(1, cancellationToken).ConfigureAwait(false);
+                    }
                 }
             }
             catch (ObjectDisposedException)
@@ -1345,6 +1351,8 @@ namespace System.Net.Http
             ArrayBuffer headerBuffer = default;
             try
             {
+                if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestHeadersStart();
+
                 // Serialize headers to a temporary buffer, and do as much work to prepare to send the headers as we can
                 // before taking the write lock.
                 headerBuffer = new ArrayBuffer(InitialConnectionBufferSize, usePool: true);
@@ -1425,6 +1433,9 @@ namespace System.Net.Http
 
                     return s.mustFlush || s.endStream;
                 }, cancellationToken).ConfigureAwait(false);
+
+                if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestHeadersStop();
+
                 return http2Stream;
             }
             catch
@@ -1689,7 +1700,7 @@ namespace System.Net.Http
             GC.SuppressFinalize(this);
 
             // Do shutdown.
-            _connection.Dispose();
+            _stream.Dispose();
 
             _connectionWindow.Dispose();
             _concurrentStreams.Dispose();

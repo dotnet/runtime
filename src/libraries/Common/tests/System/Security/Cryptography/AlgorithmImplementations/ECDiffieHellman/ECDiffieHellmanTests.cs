@@ -9,6 +9,7 @@ using Test.Cryptography;
 
 namespace System.Security.Cryptography.EcDiffieHellman.Tests
 {
+    [SkipOnMono("Not supported on Browser", TestPlatforms.Browser)]
     public partial class ECDiffieHellmanTests : EccTestBase
     {
         private static List<object[]> s_everyKeysize;
