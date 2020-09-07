@@ -147,6 +147,13 @@ namespace System.Runtime.InteropServices
 
         public static IntPtr ReAllocHGlobal(IntPtr pv, IntPtr cb)
         {
+            if (pv == IntPtr.Zero)
+            {
+                // LocalReAlloc fails for pv == IntPtr.Zero. Call AllocHGlobal instead for better fidelity
+                // with standard C/C++ realloc behavior.
+                return AllocHGlobal(cb);
+            }
+
             IntPtr pNewMem = Interop.Kernel32.LocalReAlloc(pv, (nuint)(nint)cb, Interop.Kernel32.LMEM_MOVEABLE);
             if (pNewMem == IntPtr.Zero)
             {

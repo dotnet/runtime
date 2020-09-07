@@ -88,8 +88,15 @@ namespace System.Runtime.InteropServices
         {
             nuint cbNative = (nuint)(nint)cb;
 
-            // Match Windows behavior by always allocating at least one byte and only when the original pointer is non-zero
-            IntPtr pNewMem = (pv != IntPtr.Zero) ? Interop.Sys.MemReAlloc(pv, (cbNative != 0) ? cbNative : 1) : IntPtr.Zero;
+            if (cbNative == 0)
+            {
+                // ReAllocHGlobal never returns null, even for 0 size (different from standard C/C++ realloc)
+
+                // Avoid undefined realloc behavior by always allocating at least one byte
+                cbNative = 1;
+            }
+
+            IntPtr pNewMem = Interop.Sys.MemReAlloc(pv, cbNative);
             if (pNewMem == IntPtr.Zero)
             {
                 throw new OutOfMemoryException();
