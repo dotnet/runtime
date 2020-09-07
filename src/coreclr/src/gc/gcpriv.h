@@ -1720,7 +1720,7 @@ protected:
     PER_HEAP
     size_t decommit_ephemeral_segment_pages_step ();
     PER_HEAP
-    size_t decommit_heap_segment_pages_worker (heap_segment* seg, uint8_t *new_committed);
+    size_t decommit_heap_segment_pages_worker (heap_segment* seg, uint8_t *new_committed, bool synchronized);
     PER_HEAP_ISOLATED
     bool decommit_step ();
     PER_HEAP
