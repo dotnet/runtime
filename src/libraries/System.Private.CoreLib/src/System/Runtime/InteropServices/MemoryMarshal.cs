@@ -350,8 +350,9 @@ namespace System.Runtime.InteropServices
         /// <returns>An <see cref="IEnumerable{T}"/> view of the given <paramref name="memory" /></returns>
         public static IEnumerable<T> ToEnumerable<T>(ReadOnlyMemory<T> memory)
         {
-            for (int i = 0; i < memory.Length; i++)
-                yield return memory.Span[i];
+            ReadOnlySpan<T> span = memory.Span;
+            for (int i = 0; i < span.Length; i++)
+                yield return span[i];
         }
 
         /// <summary>Attempts to get the underlying <see cref="string"/> from a <see cref="ReadOnlyMemory{T}"/>.</summary>
