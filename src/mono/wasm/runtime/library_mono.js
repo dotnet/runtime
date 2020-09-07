@@ -362,19 +362,34 @@ var MonoSupportLib = {
 			var i = 0;
 			while (i < var_list.length) {
 				let o = var_list [i];
-				const name = o.name;
-				if (name == null || name == undefined) {
-					i ++;
-					out_list.push (o);
-					continue;
-				}
+				const this_has_name = o.name !== undefined;
+				let next_has_value_or_get_set = false;
 
 				if (i + 1 < var_list.length) {
+					const next = var_list [i+1];
+					next_has_value_or_get_set = next.value !== undefined || next.get !== undefined || next.set !== undefined;
+				}
+
+				if (!this_has_name) {
+					// insert the object as-is
+					// Eg. in case of locals, the names are added
+					// later
+					i ++;
+				} else if (next_has_value_or_get_set) {
+					// found a {name} followed by a {value/get}
 					o = Object.assign (o, var_list [i + 1]);
+					i += 2;
+				} else {
+					// missing value/get, so add a placeholder one
+					o.value = {
+						type: "symbol",
+						value: "<unreadable value>",
+						description: "<unreadable value>"
+					};
+					i ++;
 				}
 
 				out_list.push (o);
-				i += 2;
 			}
 
 			return out_list;
@@ -396,6 +411,11 @@ var MonoSupportLib = {
 
 			// Split props into the 3 groups - backing_fields, getters, and all_fields_except_backing_fields
 			props.forEach(p => {
+				if (p.name === undefined) {
+					console.debug(`Bug: Found a member with no name. Skipping it. p: ${JSON.stringify(p)}`);
+					return;
+				}
+
 				if (p.name.endsWith('k__BackingField')) {
 					const auto_prop_name = p.name.replace ('k__BackingField', '')
 						.replace ('<', '')
@@ -758,6 +778,13 @@ var MonoSupportLib = {
 
 				if (value.type != "object" || value.isValueType != true || value.expanded != true) // undefined would also give us false
 					continue;
+
+				if (value.members === undefined) {
+					// this could happen for valuetypes that maybe
+					// we were not able to describe, like `ref` parameters
+					// So, skip that
+					continue;
+				}
 
 				// Generate objectId for expanded valuetypes
 				value.objectId = value.objectId || this._new_or_add_id_props ({ scheme: 'valuetype' });
@@ -1917,6 +1944,20 @@ var MonoSupportLib = {
 				}
 				break;
 
+			case "symbol": {
+				if (typeof value === 'object' && value.isClassName)
+					str_value = MONO._mono_csharp_fixup_class_name (str_value);
+
+				MONO.var_info.push ({
+					value: {
+						type: "symbol",
+						value: str_value,
+						description: str_value
+					}
+				});
+				}
+				break;
+
 			default: {
 				const msg = `'${str_value}' ${value}`;
 
@@ -2077,14 +2118,15 @@ var MonoSupportLib = {
 			var args_sig = parts.splice (1).join (', ');
 			return `${ret_sig} ${method_name} (${args_sig})`;
 		}
-
 		let tgt_sig;
 		if (targetName != 0)
 			tgt_sig = args_to_sig (Module.UTF8ToString (targetName));
 
 		const type_name = MONO._mono_csharp_fixup_class_name (Module.UTF8ToString (className));
+		if (tgt_sig === undefined)
+			tgt_sig = type_name;
 
-		if (objectId == -1) {
+		if (objectId == -1 || targetName === 0) {
 			// Target property
 			MONO.var_info.push ({
 				value: {
@@ -2105,14 +2147,15 @@ var MonoSupportLib = {
 		}
 	},
 
-	mono_wasm_add_frame: function(il, method, assembly_name, method_full_name) {
+	mono_wasm_add_frame: function(il, method, frame_id, assembly_name, method_full_name) {
 		var parts = Module.UTF8ToString (method_full_name).split (":", 2);
 		MONO.active_frames.push( {
 			il_pos: il,
 			method_token: method,
 			assembly_name: Module.UTF8ToString (assembly_name),
 			// Extract just the method name from `{class_name}:{method_name}`
-			method_name: parts [parts.length - 1]
+			method_name: parts [parts.length - 1],
+			frame_id
 		});
 	},
 
