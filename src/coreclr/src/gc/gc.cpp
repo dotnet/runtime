@@ -9797,12 +9797,13 @@ void gc_heap::decommit_heap_segment_pages (heap_segment* seg,
     if (size >= max ((extra_space + 2*OS_PAGE_SIZE), MIN_DECOMMIT_SIZE))
     {
         page_start += max(extra_space, 32*OS_PAGE_SIZE);
-        decommit_heap_segment_pages_worker (seg, page_start);
+        decommit_heap_segment_pages_worker (seg, page_start, true);
     }
 }
 
 size_t gc_heap::decommit_heap_segment_pages_worker (heap_segment* seg,
-                                                    uint8_t* new_committed)
+                                                    uint8_t* new_committed,
+                                                    bool synchronized)
 {
     assert (!use_large_pages_p);
     uint8_t* page_start = align_on_page (new_committed);
@@ -9816,10 +9817,20 @@ size_t gc_heap::decommit_heap_segment_pages_worker (heap_segment* seg,
                 (size_t)page_start,
                 (size_t)(page_start + size),
                 size));
+            bool uoh_p = heap_segment_oh(seg) != gc_oh_num::soh;
+            GCSpinLock* msl = uoh_p ? &more_space_lock_uoh : &more_space_lock_soh;
+            if (!synchronized)
+            {
+                enter_spin_lock(msl);
+            }
             heap_segment_committed (seg) = page_start;
             if (heap_segment_used (seg) > heap_segment_committed (seg))
             {
                 heap_segment_used (seg) = heap_segment_committed (seg);
+            }
+            if (!synchronized)
+            {
+                leave_spin_lock(msl);
             }
         }
         else
@@ -32583,7 +32594,7 @@ size_t gc_heap::decommit_ephemeral_segment_pages_step ()
 
         // figure out where the new committed should be
         uint8_t* new_committed = (committed - decommit_size);
-        size_t size = decommit_heap_segment_pages_worker (ephemeral_heap_segment, new_committed);
+        size_t size = decommit_heap_segment_pages_worker (ephemeral_heap_segment, new_committed, false);
 
 #ifdef _DEBUG
         ephemeral_heap_segment->saved_committed = committed - size;
