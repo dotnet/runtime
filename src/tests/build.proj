@@ -3,7 +3,7 @@
   <Import Project="Directory.Build.props" />
 
   <ItemGroup>
-    <Project Include="$(RepoRoot)\src\coreclr\tests\src\dirs.proj" />
+    <Project Include="$(CoreClrProjectRoot)tests\src\dirs.proj" />
   </ItemGroup>
 
   <Import Project="$(RepoRoot)\src\coreclr\tests\Directory.Build.targets" />
@@ -21,7 +21,7 @@
     <RestoreProjects Include="$(RepoRoot)src\coreclr\tests\scripts\scripts.csproj" />
     <RestoreProjects Include="$(RepoRoot)src\coreclr\tests\src\Common\test_dependencies_fs\test_dependencies.fsproj" />
     <RestoreProjects Include="$(RepoRoot)src\coreclr\tests\src\Common\test_dependencies\test_dependencies.csproj" />
-    <RestoreProjects Include="$(RepoRoot)src\tests\Common\CoreCLRTestLibrary\CoreCLRTestLibrary.csproj" />
+    <RestoreProjects Include="$(MSBuildThisFileDirectory)Common\CoreCLRTestLibrary\CoreCLRTestLibrary.csproj" />
     <RestoreProjects Include="$(RepoRoot)src\coreclr\tests\external\external.csproj" />
     <RestoreProjects Include="$(RepoRoot)src\coreclr\tests\src\Common\ilasm\ilasm.ilproj" />
   </ItemGroup>
