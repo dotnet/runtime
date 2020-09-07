@@ -31,3 +31,7 @@ add_subdirectory(SetEnvironmentVariableW)
 add_subdirectory(SetLastError)
 add_subdirectory(_i64tow)
 
+#add_subdirectory(IsBadCodePtr)
+#add_subdirectory(IsBadWritePtr)
+#add_subdirectory(IsBadReadPtr)
+#add_subdirectory(MessageBoxW)

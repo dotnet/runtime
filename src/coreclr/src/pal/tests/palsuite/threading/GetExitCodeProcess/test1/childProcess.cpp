@@ -16,6 +16,7 @@
 
 #include <pal.h>
 #include "myexitcode.h"
+#include <palsuite.h>
 
 int __cdecl main( int argc, char **argv ) 
 {

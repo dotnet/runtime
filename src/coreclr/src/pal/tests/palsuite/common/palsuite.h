@@ -57,6 +57,23 @@ void Fail(const char *format, ...)
     PAL_TerminateEx(FAIL);
 }
 
+typedef int __cdecl(*PALTestEntrypoint)(int argc, char*[]);
+
+struct PALTest
+{
+    static PALTest* s_tests;
+    PALTest *_next;
+    PALTestEntrypoint _entrypoint;
+    const char *_name;
+    PALTest(PALTestEntrypoint entrypoint, const char *entrypointName)
+    {
+        _entrypoint = entrypoint;
+        _name = entrypointName;
+        _next = s_tests;
+        s_tests = this;
+    }
+};
+
 #ifdef PAL_PERF
 
 int __cdecl Test_Main(int argc, char **argv);
