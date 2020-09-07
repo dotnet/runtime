@@ -13,7 +13,7 @@ namespace System.Runtime.InteropServices.JavaScript
         Numeric
     }
 
-    [AttributeUsage(AttributeTargets.Field, AllowMultiple = false, Inherited = false)]
+    [AttributeUsage(AttributeTargets.Field, Inherited = false)]
     public class EnumExportAttribute : Attribute
     {
         public EnumExportAttribute()
