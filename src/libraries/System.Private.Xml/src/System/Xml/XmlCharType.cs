@@ -3,6 +3,8 @@
 
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Threading;
 
 namespace System.Xml
@@ -42,33 +44,39 @@ namespace System.Xml
 
         public static XmlCharType Instance => default;
 
-        public bool IsWhiteSpace(char ch)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public readonly bool IsWhiteSpace(char ch)
         {
-            return (CharProperties[ch] & fWhitespace) != 0;
+            return (Unsafe.Add(ref MemoryMarshal.GetReference(CharProperties), ch) & fWhitespace) != 0;
         }
 
-        public bool IsNCNameSingleChar(char ch)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public readonly bool IsNCNameSingleChar(char ch)
         {
-            return (CharProperties[ch] & fNCNameSC) != 0;
+            return (Unsafe.Add(ref MemoryMarshal.GetReference(CharProperties), ch) & fNCNameSC) != 0;
         }
 
-        public bool IsStartNCNameSingleChar(char ch)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public readonly bool IsStartNCNameSingleChar(char ch)
         {
-            return (CharProperties[ch] & fNCStartNameSC) != 0;
+            return (Unsafe.Add(ref MemoryMarshal.GetReference(CharProperties), ch) & fNCStartNameSC) != 0;
         }
 
-        public bool IsNameSingleChar(char ch)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public readonly bool IsNameSingleChar(char ch)
         {
             return IsNCNameSingleChar(ch) || ch == ':';
         }
 
-        public bool IsCharData(char ch)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public readonly bool IsCharData(char ch)
         {
-            return (CharProperties[ch] & fCharData) != 0;
+            return (Unsafe.Add(ref MemoryMarshal.GetReference(CharProperties), ch) & fCharData) != 0;
         }
 
         // [13] PubidChar ::=  #x20 | #xD | #xA | [a-zA-Z0-9] | [-'()+,./:=?;!*#@$_%] Section 2.3 of spec
-        public bool IsPubidChar(char ch)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public readonly bool IsPubidChar(char ch)
         {
             if (ch < (char)0x80)
             {
@@ -78,37 +86,43 @@ namespace System.Xml
         }
 
         // TextChar = CharData - { 0xA, 0xD, '<', '&', ']' }
-        internal bool IsTextChar(char ch)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal readonly bool IsTextChar(char ch)
         {
-            return (CharProperties[ch] & fText) != 0;
+            return (Unsafe.Add(ref MemoryMarshal.GetReference(CharProperties), ch) & fText) != 0;
         }
 
         // AttrValueChar = CharData - { 0xA, 0xD, 0x9, '<', '>', '&', '\'', '"' }
-        internal bool IsAttributeValueChar(char ch)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal readonly bool IsAttributeValueChar(char ch)
         {
-            return (CharProperties[ch] & fAttrValue) != 0;
+            return (Unsafe.Add(ref MemoryMarshal.GetReference(CharProperties), ch) & fAttrValue) != 0;
         }
 
         // XML 1.0 Fourth Edition definitions
-        public bool IsLetter(char ch)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public readonly bool IsLetter(char ch)
         {
-            return (CharProperties[ch] & fLetter) != 0;
+            return (Unsafe.Add(ref MemoryMarshal.GetReference(CharProperties), ch) & fLetter) != 0;
         }
 
         // This method uses the XML 4th edition name character ranges
-        public bool IsNCNameCharXml4e(char ch)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public readonly bool IsNCNameCharXml4e(char ch)
         {
-            return (CharProperties[ch] & fNCNameXml4e) != 0;
+            return (Unsafe.Add(ref MemoryMarshal.GetReference(CharProperties), ch) & fNCNameXml4e) != 0;
         }
 
         // This method uses the XML 4th edition name character ranges
-        public bool IsStartNCNameCharXml4e(char ch)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public readonly bool IsStartNCNameCharXml4e(char ch)
         {
             return IsLetter(ch) || ch == '_';
         }
 
         // This method uses the XML 4th edition name character ranges
-        public bool IsNameCharXml4e(char ch)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public readonly bool IsNameCharXml4e(char ch)
         {
             return IsNCNameCharXml4e(ch) || ch == ':';
         }
@@ -147,19 +161,19 @@ namespace System.Xml
             highChar = (char)(SurHighStart + v / 1024);
         }
 
-        internal bool IsOnlyWhitespace(string? str)
+        internal readonly bool IsOnlyWhitespace(string? str)
         {
             return IsOnlyWhitespaceWithPos(str) == -1;
         }
 
         // Character checking on strings
-        internal int IsOnlyWhitespaceWithPos(string? str)
+        internal readonly int IsOnlyWhitespaceWithPos(string? str)
         {
             if (str != null)
             {
                 for (int i = 0; i < str.Length; i++)
                 {
-                    if ((CharProperties[str[i]] & fWhitespace) == 0)
+                    if ((Unsafe.Add(ref MemoryMarshal.GetReference(CharProperties), str[i]) & fWhitespace) == 0)
                     {
                         return i;
                     }
@@ -168,13 +182,13 @@ namespace System.Xml
             return -1;
         }
 
-        internal int IsOnlyCharData(string str)
+        internal readonly int IsOnlyCharData(string str)
         {
             if (str != null)
             {
                 for (int i = 0; i < str.Length; i++)
                 {
-                    if ((CharProperties[str[i]] & fCharData) == 0)
+                    if ((Unsafe.Add(ref MemoryMarshal.GetReference(CharProperties), str[i]) & fCharData) == 0)
                     {
                         if (i + 1 >= str.Length || !(XmlCharType.IsHighSurrogate(str[i]) && XmlCharType.IsLowSurrogate(str[i + 1])))
                         {
@@ -206,7 +220,7 @@ namespace System.Xml
             return true;
         }
 
-        internal int IsPublicId(string str)
+        internal readonly int IsPublicId(string str)
         {
             if (str != null)
             {
