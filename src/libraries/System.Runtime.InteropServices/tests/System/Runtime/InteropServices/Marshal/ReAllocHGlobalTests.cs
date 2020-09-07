@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Microsoft.Win32.SafeHandles;
 using Xunit;
 
 namespace System.Runtime.InteropServices.Tests
@@ -37,6 +38,53 @@ namespace System.Runtime.InteropServices.Tests
             {
                 Marshal.FreeHGlobal(p2);
             }
+        }
+
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(100)]
+        [Theory]
+        [SkipOnMono("Behavior differences on Mono")]
+        public void ReAllocHGlobal_PositiveSize(int size)
+        {
+            IntPtr p;
+            // TODO: Behavior differs between platforms currently
+            if (PlatformDetection.IsWindows)
+            {
+                p = Marshal.AllocHGlobal(size);
+            }
+            else
+            {
+                p = Marshal.ReAllocHGlobal(IntPtr.Zero, (IntPtr)size);
+            }
+            Assert.NotEqual(IntPtr.Zero, p);
+
+            IntPtr p1 = Marshal.ReAllocHGlobal(p, (IntPtr)(size + 1));
+            Assert.NotEqual(IntPtr.Zero, p1);
+
+            // ReAllocHGlobal never returns null, even for 0 size (different from standard C/C++ realloc)
+            IntPtr p2 = Marshal.ReAllocHGlobal(p1, IntPtr.Zero);
+            Assert.NotEqual(IntPtr.Zero, p2);
+
+            Marshal.FreeHGlobal(p2);
+        }
+
+        [Fact]
+        [SkipOnMono("Behavior differences on Mono")]
+        public void ReAllocHGlobal_NegativeSize_ThrowsOutOfMemoryException()
+        {
+            // TODO: Behavior differs between platforms currently
+            if (PlatformDetection.IsWindows)
+            {
+                // ReAllocHGlobal always throws when the original pointer is null (different from standard C/C++ realloc)
+                Assert.Throws<OutOfMemoryException>(() => Marshal.ReAllocHGlobal(IntPtr.Zero, IntPtr.Zero));
+                Assert.Throws<OutOfMemoryException>(() => Marshal.ReAllocHGlobal(IntPtr.Zero, (IntPtr)1));
+            }
+            Assert.Throws<OutOfMemoryException>(() => Marshal.ReAllocHGlobal(IntPtr.Zero, (IntPtr)(-1)));
+
+            IntPtr p = Marshal.AllocHGlobal((IntPtr)1);
+            Assert.Throws<OutOfMemoryException>(() => Marshal.ReAllocHGlobal(p, (IntPtr)(-1)));
+            Marshal.FreeHGlobal(p);
         }
     }
 }
