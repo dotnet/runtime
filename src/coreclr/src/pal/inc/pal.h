@@ -376,7 +376,7 @@ PALIMPORT
 DWORD
 PALAPI
 PAL_InitializeCoreCLR(
-    const char *szExePath, bool runningInExe);
+    const char *szExePath, BOOL runningInExe);
 
 /// <summary>
 /// This function shuts down PAL WITHOUT exiting the current process.
@@ -2812,26 +2812,6 @@ typedef struct _cpinfo {
     BYTE LeadByte[MAX_LEADBYTES];
 } CPINFO, *LPCPINFO;
 
-PALIMPORT
-BOOL
-PALAPI
-GetCPInfo(
-      IN UINT CodePage,
-      OUT LPCPINFO lpCPInfo);
-
-PALIMPORT
-BOOL
-PALAPI
-IsDBCSLeadByteEx(
-         IN UINT CodePage,
-         IN BYTE TestChar);
-
-PALIMPORT
-BOOL
-PALAPI
-IsDBCSLeadByte(
-        IN BYTE TestChar);
-
 #define MB_PRECOMPOSED            0x00000001
 #define MB_ERR_INVALID_CHARS      0x00000008
 
@@ -4021,9 +4001,6 @@ PALIMPORT DLLEXPORT int __cdecl _stricmp(const char *, const char *);
 PALIMPORT DLLEXPORT int __cdecl vsprintf_s(char *, size_t, const char *, va_list);
 PALIMPORT char * __cdecl _gcvt_s(char *, int, double, int);
 PALIMPORT int __cdecl __iscsym(int);
-PALIMPORT unsigned char * __cdecl _mbsinc(const unsigned char *);
-PALIMPORT unsigned char * __cdecl _mbsninc(const unsigned char *, size_t);
-PALIMPORT unsigned char * __cdecl _mbsdec(const unsigned char *, const unsigned char *);
 PALIMPORT DLLEXPORT int __cdecl _wcsicmp(const WCHAR *, const WCHAR*);
 PALIMPORT int __cdecl _wcsnicmp(const WCHAR *, const WCHAR *, size_t);
 PALIMPORT int __cdecl _vsnprintf(char *, size_t, const char *, va_list);

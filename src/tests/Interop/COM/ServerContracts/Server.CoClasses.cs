@@ -207,6 +207,19 @@ namespace Server.Contract.Servers
     internal class ConsumeNETServerTestingClass
     {
     }
+
+    [ComImport]
+    [CoClass(typeof(InspectableTestingClass))]
+    [Guid("3021236a-2a9e-4a29-bf14-533842c55262")]
+    internal interface InspectableTesting : Server.Contract.IInspectableTesting
+    {
+    }
+
+    [ComImport]
+    [Guid(Server.Contract.Guids.InspectableTesting)]
+    internal class InspectableTestingClass
+    {
+    }
 }
 
 #pragma warning restore 618 // Must test deprecated features

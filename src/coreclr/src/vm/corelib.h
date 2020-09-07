@@ -589,6 +589,8 @@ DEFINE_FIELD(NULL,                  VALUE,          Value)
 DEFINE_CLASS(NULLABLE,              System,                 Nullable`1)
 
 DEFINE_CLASS(BYREFERENCE,           System,                 ByReference`1)
+DEFINE_METHOD(BYREFERENCE,          CTOR,                   .ctor, NoSig)
+DEFINE_METHOD(BYREFERENCE,          GET_VALUE,              get_Value, NoSig)
 DEFINE_CLASS(SPAN,                  System,                 Span`1)
 DEFINE_METHOD(SPAN,                 GET_ITEM,               get_Item, IM_Int_RetRefT)
 DEFINE_CLASS(READONLY_SPAN,         System,                 ReadOnlySpan`1)

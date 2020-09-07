@@ -19,7 +19,7 @@ set(EXPORTS_FILE1 ${CMAKE_CURRENT_BINARY_DIR}/dlltest1.exports)
 generate_exports_file(${DEF_SOURCES1} ${EXPORTS_FILE1})
 
 if(CLR_CMAKE_HOST_UNIX)
-  set_exports_linker_option(${EXPORTS_FILE})
+  set_exports_linker_option(${EXPORTS_FILE1})
 endif(CLR_CMAKE_HOST_UNIX)
 
 set(DLL1SOURCES dlltest1.cpp)

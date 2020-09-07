@@ -12,73 +12,73 @@ namespace System.Runtime.Serialization
 {
     public static class JsonFormatGeneratorStatics
     {
-        private static PropertyInfo s_collectionItemNameProperty;
+        private static PropertyInfo? s_collectionItemNameProperty;
 
-        private static ConstructorInfo s_extensionDataObjectCtor;
+        private static ConstructorInfo? s_extensionDataObjectCtor;
 
-        private static PropertyInfo s_extensionDataProperty;
+        private static PropertyInfo? s_extensionDataProperty;
 
-        private static MethodInfo s_getItemContractMethod;
+        private static MethodInfo? s_getItemContractMethod;
 
-        private static MethodInfo s_getJsonDataContractMethod;
+        private static MethodInfo? s_getJsonDataContractMethod;
 
-        private static MethodInfo s_getJsonMemberIndexMethod;
+        private static MethodInfo? s_getJsonMemberIndexMethod;
 
-        private static MethodInfo s_getRevisedItemContractMethod;
+        private static MethodInfo? s_getRevisedItemContractMethod;
 
-        private static MethodInfo s_getUninitializedObjectMethod;
+        private static MethodInfo? s_getUninitializedObjectMethod;
 
-        private static MethodInfo s_ienumeratorGetCurrentMethod;
+        private static MethodInfo? s_ienumeratorGetCurrentMethod;
 
-        private static MethodInfo s_ienumeratorMoveNextMethod;
+        private static MethodInfo? s_ienumeratorMoveNextMethod;
 
-        private static MethodInfo s_isStartElementMethod0;
+        private static MethodInfo? s_isStartElementMethod0;
 
-        private static MethodInfo s_isStartElementMethod2;
+        private static MethodInfo? s_isStartElementMethod2;
 
-        private static PropertyInfo s_localNameProperty;
+        private static PropertyInfo? s_localNameProperty;
 
-        private static PropertyInfo s_namespaceProperty;
+        private static PropertyInfo? s_namespaceProperty;
 
-        private static MethodInfo s_moveToContentMethod;
+        private static MethodInfo? s_moveToContentMethod;
 
-        private static PropertyInfo s_nodeTypeProperty;
+        private static PropertyInfo? s_nodeTypeProperty;
 
-        private static MethodInfo s_onDeserializationMethod;
+        private static MethodInfo? s_onDeserializationMethod;
 
-        private static MethodInfo s_readJsonValueMethod;
+        private static MethodInfo? s_readJsonValueMethod;
 
-        private static ConstructorInfo s_serializationExceptionCtor;
+        private static ConstructorInfo? s_serializationExceptionCtor;
 
-        private static Type[] s_serInfoCtorArgs;
+        private static Type[]? s_serInfoCtorArgs;
 
-        private static MethodInfo s_throwDuplicateMemberExceptionMethod;
+        private static MethodInfo? s_throwDuplicateMemberExceptionMethod;
 
-        private static MethodInfo s_throwMissingRequiredMembersMethod;
+        private static MethodInfo? s_throwMissingRequiredMembersMethod;
 
-        private static PropertyInfo s_typeHandleProperty;
+        private static PropertyInfo? s_typeHandleProperty;
 
-        private static PropertyInfo s_useSimpleDictionaryFormatReadProperty;
+        private static PropertyInfo? s_useSimpleDictionaryFormatReadProperty;
 
-        private static PropertyInfo s_useSimpleDictionaryFormatWriteProperty;
+        private static PropertyInfo? s_useSimpleDictionaryFormatWriteProperty;
 
-        private static MethodInfo s_writeAttributeStringMethod;
+        private static MethodInfo? s_writeAttributeStringMethod;
 
-        private static MethodInfo s_writeEndElementMethod;
+        private static MethodInfo? s_writeEndElementMethod;
 
-        private static MethodInfo s_writeJsonISerializableMethod;
+        private static MethodInfo? s_writeJsonISerializableMethod;
 
-        private static MethodInfo s_writeJsonNameWithMappingMethod;
+        private static MethodInfo? s_writeJsonNameWithMappingMethod;
 
-        private static MethodInfo s_writeJsonValueMethod;
+        private static MethodInfo? s_writeJsonValueMethod;
 
-        private static MethodInfo s_writeStartElementMethod;
+        private static MethodInfo? s_writeStartElementMethod;
 
-        private static MethodInfo s_writeStartElementStringMethod;
+        private static MethodInfo? s_writeStartElementStringMethod;
 
-        private static MethodInfo s_parseEnumMethod;
+        private static MethodInfo? s_parseEnumMethod;
 
-        private static MethodInfo s_getJsonMemberNameMethod;
+        private static MethodInfo? s_getJsonMemberNameMethod;
 
         public static PropertyInfo CollectionItemNameProperty
         {
@@ -96,10 +96,10 @@ namespace System.Runtime.Serialization
 
         public static ConstructorInfo ExtensionDataObjectCtor => s_extensionDataObjectCtor ??
                                                                  (s_extensionDataObjectCtor =
-                                                                     typeof(ExtensionDataObject).GetConstructor(Globals.ScanAllMembers, null, Array.Empty<Type>(), null));
+                                                                     typeof(ExtensionDataObject).GetConstructor(Globals.ScanAllMembers, null, Array.Empty<Type>(), null))!;
 
         public static PropertyInfo ExtensionDataProperty => s_extensionDataProperty ??
-                                                            (s_extensionDataProperty = typeof(IExtensibleDataObject).GetProperty("ExtensionData"));
+                                                            (s_extensionDataProperty = typeof(IExtensibleDataObject).GetProperty("ExtensionData")!);
 
         public static MethodInfo GetCurrentMethod
         {
@@ -107,7 +107,7 @@ namespace System.Runtime.Serialization
             {
                 if (s_ienumeratorGetCurrentMethod == null)
                 {
-                    s_ienumeratorGetCurrentMethod = typeof(IEnumerator).GetProperty("Current").GetGetMethod();
+                    s_ienumeratorGetCurrentMethod = typeof(IEnumerator).GetProperty("Current")!.GetGetMethod();
                     Debug.Assert(s_ienumeratorGetCurrentMethod != null);
                 }
                 return s_ienumeratorGetCurrentMethod;
@@ -119,7 +119,7 @@ namespace System.Runtime.Serialization
             {
                 if (s_getItemContractMethod == null)
                 {
-                    s_getItemContractMethod = typeof(CollectionDataContract).GetProperty("ItemContract", Globals.ScanAllMembers).GetGetMethod(true); // nonPublic
+                    s_getItemContractMethod = typeof(CollectionDataContract).GetProperty("ItemContract", Globals.ScanAllMembers)!.GetGetMethod(nonPublic: true);
                     Debug.Assert(s_getItemContractMethod != null);
                 }
                 return s_getItemContractMethod;
@@ -265,6 +265,7 @@ namespace System.Runtime.Serialization
                 if (s_onDeserializationMethod == null)
                 {
                     s_onDeserializationMethod = typeof(IDeserializationCallback).GetMethod("OnDeserialization");
+                    Debug.Assert(s_onDeserializationMethod != null);
                 }
                 return s_onDeserializationMethod;
             }
@@ -288,6 +289,7 @@ namespace System.Runtime.Serialization
                 if (s_serializationExceptionCtor == null)
                 {
                     s_serializationExceptionCtor = typeof(SerializationException).GetConstructor(new Type[] { typeof(string) });
+                    Debug.Assert(s_serializationExceptionCtor != null);
                 }
                 return s_serializationExceptionCtor;
             }
@@ -394,6 +396,7 @@ namespace System.Runtime.Serialization
                 if (s_writeJsonISerializableMethod == null)
                 {
                     s_writeJsonISerializableMethod = typeof(XmlObjectSerializerWriteContextComplexJson).GetMethod("WriteJsonISerializable", Globals.ScanAllMembers);
+                    Debug.Assert(s_writeJsonISerializableMethod != null);
                 }
                 return s_writeJsonISerializableMethod;
             }
@@ -455,6 +458,7 @@ namespace System.Runtime.Serialization
                 if (s_parseEnumMethod == null)
                 {
                     s_parseEnumMethod = typeof(Enum).GetMethod("Parse", BindingFlags.Static | BindingFlags.Public, new Type[] { typeof(Type), typeof(string) });
+                    Debug.Assert(s_parseEnumMethod != null);
                 }
                 return s_parseEnumMethod;
             }

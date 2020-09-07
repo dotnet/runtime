@@ -359,53 +359,6 @@ namespace System.Net.Http
 
         public ValueTask<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async, bool doRequestAuth, CancellationToken cancellationToken)
         {
-            if (HttpTelemetry.Log.IsEnabled())
-            {
-                // [ActiveIssue("https://github.com/dotnet/runtime/issues/40896")]
-                if (request.Version.Major < 3 && request.RequestUri != null)
-                {
-                    return SendAsyncWithLogging(request, async, doRequestAuth, cancellationToken);
-                }
-            }
-
-            return SendAsyncHelper(request, async, doRequestAuth, cancellationToken);
-        }
-
-        private async ValueTask<HttpResponseMessage> SendAsyncWithLogging(HttpRequestMessage request, bool async, bool doRequestAuth, CancellationToken cancellationToken)
-        {
-            Debug.Assert(request.RequestUri != null);
-            HttpTelemetry.Log.RequestStart(
-                request.RequestUri.Scheme,
-                request.RequestUri.IdnHost,
-                request.RequestUri.Port,
-                request.RequestUri.PathAndQuery,
-                request.Version.Major,
-                request.Version.Minor);
-
-            request.MarkAsTrackedByTelemetry();
-
-            try
-            {
-                return await SendAsyncHelper(request, async, doRequestAuth, cancellationToken).ConfigureAwait(false);
-            }
-            catch when (LogException(request))
-            {
-                // This code should never run.
-                throw;
-            }
-
-            static bool LogException(HttpRequestMessage request)
-            {
-                request.OnAborted();
-
-                // Returning false means the catch handler isn't run.
-                // So the exception isn't considered to be caught so it will now propagate up the stack.
-                return false;
-            }
-        }
-
-        private ValueTask<HttpResponseMessage> SendAsyncHelper(HttpRequestMessage request, bool async, bool doRequestAuth, CancellationToken cancellationToken)
-        {
             if (_proxy == null)
             {
                 return SendAsyncCore(request, null, async, doRequestAuth, isProxyConnect: false, cancellationToken);
