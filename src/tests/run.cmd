@@ -5,14 +5,13 @@ setlocal EnableDelayedExpansion EnableExtensions
 :: it easier to see where these are coming from. Note that there is a trailing space here.
 set "__MsgPrefix=RUNTEST: "
 
-set __ThisScriptDir="%~dp0"
-
 :: Set the default arguments
 set __BuildArch=x64
 set __BuildType=Debug
 set __TargetOS=Windows_NT
 
 set "__ProjectDir=%~dp0"
+set "__RepoRootDir=%~dp0\..\.."
 :: remove trailing slash
 if %__ProjectDir:~-1%==\ set "__ProjectDir=%__ProjectDir:~0,-1%"
 set "__ProjectFilesDir=%__ProjectDir%"
@@ -177,7 +176,7 @@ if defined RunInUnloadableContext (
     set __RuntestPyArgs=%__RuntestPyArgs% --run_in_context
 )
 
-set NEXTCMD=python "%__ProjectDir%\runtest.py" %__RuntestPyArgs%
+set NEXTCMD=python "%__RepoRootDir%\src\coreclr\tests\runtest.py" %__RuntestPyArgs%
 echo !NEXTCMD!
 !NEXTCMD!
 

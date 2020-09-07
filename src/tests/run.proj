@@ -20,7 +20,7 @@
   <Target Name="FindCmdDirectories" DependsOnTargets="GetListOfTestCmds">
 
     <Error Condition="!Exists('$(XunitTestBinBase)')"
-           Text="$(XunitTestBinBase) does not exist. Please run build-test.cmd from the repo root at least once to get the tests built." />
+           Text="$(XunitTestBinBase) does not exist. Please run src\tests\build / src/tests/build.sh from the repo root at least once to get the tests built." />
 
     <ItemGroup>
 
@@ -57,7 +57,7 @@
   -->
   <Target Name="CheckTestBuild" DependsOnTargets="GetListOfTestCmds">
     <Error Condition="!Exists('$(XunitTestBinBase)')"
-        Text="$(XunitTestBinBase) does not exist. Please run build-test.cmd from the repo root at least once to get the tests built." />
+        Text="$(XunitTestBinBase) does not exist. Please run src\tests\build / src/tests/build.sh from the repo root at least once to get the tests built." />
 
     <PropertyGroup>
         <TestCount>@(AllRunnableTestPaths->Count())</TestCount>
@@ -144,7 +144,7 @@ $(_XunitEpilog)
     <MSBuild Projects="$(XunitWrapperSrcDir)\$(XunitWrapper).csproj" Targets="Restore;Build" />
   </Target>
 
-  <Import Project="$(MSBuildThisFileDirectory)../testgrouping.proj" />
+  <Import Project="$(RepoRoot)/src/coreclr/tests/testgrouping.proj" />
 
   <Target Name="CreateXunitFacts">
     <!-- NOTE! semicolons must be escaped with %3B boooo -->
@@ -367,7 +367,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
       <AotEnvVars>@(AotEnvVar)</AotEnvVars>
     </PropertyGroup>
     <ItemGroup>
-      <AotProject Include="../../../mono/msbuild/aot-compile.proj">
+      <AotProject Include="../mono/msbuild/aot-compile.proj">
         <Properties>_CorerunExecutable=$(CorerunExecutable);_TestDll=%(TestDlls.Identity);AotEnvVars=@(AotEnvVar)</Properties>
       </AotProject>
     </ItemGroup>
@@ -391,8 +391,8 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
     </ItemGroup>
   </Target>
 
-  <Import Project="$(MSBuildThisFileDirectory)../tests.targets" />
-  <Import Project="$(MSBuildThisFileDirectory)../publishdependency.targets" />
+  <Import Project="$(RepoRoot)/src/coreclr/tests/tests.targets" />
+  <Import Project="$(RepoRoot)/src/coreclr/tests/publishdependency.targets" />
 
   <Target Name="CreateTestOverlay">
     <MSBuild Projects="$(MSBuildProjectFile)"
@@ -403,10 +403,10 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
   <Target Name="Build">
 
     <!-- generate project.lock.json file corresponding to above json file -->
-    <MSBuild Projects="$(MSBuildThisFileDirectory)Common\test_dependencies\test_dependencies.csproj"
+    <MSBuild Projects="$(RepoRoot)/src/coreclr/tests/src/Common/test_dependencies/test_dependencies.csproj"
              Condition=" '$(BuildWrappers)'=='true' " />
 
-    <MSBuild Projects="$(MSBuildThisFileDirectory)Common\test_dependencies_fs\test_dependencies.fsproj"
+    <MSBuild Projects="$(RepoRoot)/src/coreclr/tests/src/Common/test_dependencies_fs/test_dependencies.fsproj"
              Condition=" '$(BuildWrappers)'=='true' " />
 
     <MSBuild Projects="$(MSBuildProjectFile)"
