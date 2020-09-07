@@ -21855,6 +21855,66 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
             case GT_ADDR:
                 assert(!op1->CanCSE());
 
+            case GT_IND:
+                // Do we have a constant integer address as op1?
+                //
+                if (op1->OperGet() == GT_CNS_INT)
+                {
+                    // Is this constant a handle of some kind?
+                    //
+                    unsigned handleKind = (op1->gtFlags & GTF_ICON_HDL_MASK);
+                    if (handleKind != 0)
+                    {
+                        // Is the GTF_IND_INVARIANT flag set or unset?
+                        //
+                        bool invariantFlag = (tree->gtFlags & GTF_IND_INVARIANT);
+                        if (invariantFlag)
+                        {
+                            // Record the state of the GTF_IND_INVARIANT flags into 'chkFlags'
+                            chkFlags |= GTF_IND_INVARIANT;
+                        }
+
+                        // Some of these aren't handles to invariant data...
+                        //
+                        if ((handleKind == GTF_ICON_STATIC_HDL) || // Pointer to a mutable class Static variable
+                            (handleKind == GTF_ICON_BBC_PTR) ||    // Pointer to a mutable basic block count value
+                            (handleKind == GTF_ICON_PTR_GLOBAL))   // Pointer to mutable data from the VM state
+                        {
+                            // We expect the Invariant flag to be unset for this handleKind
+                            // If it is set then we will assert with "unexpected GTF_IND_INVARIANT flag set ...
+                            //
+                        }
+                        else // All the other handle indirections are considered invariant
+                        {
+                            // We expect the Invariant flag to be set for this handleKind
+                            // If it is not set then we will assert with "Missing flags on tree"
+                            //
+                            treeFlags |= GTF_IND_INVARIANT;
+                        }
+#if 1
+                        if ((handleKind == GTF_ICON_CLASS_HDL)  ||
+                            (handleKind == GTF_ICON_METHOD_HDL) ||
+                            (handleKind == GTF_ICON_FIELD_HDL)  ||
+                            (handleKind == GTF_ICON_TOKEN_HDL)  ||
+                            (handleKind == GTF_ICON_FTN_ADDR)    )
+                        {
+                            // ToDo:  Fix all occurences to properly set GTF_IND_INVARIANT
+                            treeFlags &= ~GTF_IND_INVARIANT;
+                            chkFlags  &= ~GTF_IND_INVARIANT;
+                        }
+#endif
+                        // Matrix for (treeFlags and chkFlags)
+                        //
+                        //                      chkFlags GTF_IND_INVARIANT value
+                        //                           0                 1
+                        //                      +--------------+----------------+
+                        //  treeFlags        0  |    OK        |  Missing Flag  |
+                        //  _INVARIANT          +--------------+----------------+
+                        //  value:           1  |  Extra Flag  |       OK       |
+                        //                      +--------------+----------------+
+                    }
+                }
+
             default:
                 break;
         }
@@ -22104,6 +22164,20 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
 }
 
 //------------------------------------------------------------------------------
+// fgDebugCheckDispFlags : Display the flags that we are checking
+//
+// Arguments:
+//
+void Compiler::fgDebugCheckDispFlags(GenTree* tree, unsigned dispFlags, unsigned debugFlags)
+{
+    if (tree->OperGet() == GT_IND)
+    {
+        printf("%c", (dispFlags & GTF_IND_INVARIANT) ? '#' : '-');
+    }
+    GenTree::gtDispFlags(dispFlags, debugFlags);
+}
+
+//------------------------------------------------------------------------------
 // fgDebugCheckFlagsHelper : Check if all bits that are set in chkFlags are also set in treeFlags.
 //
 //
@@ -22121,7 +22195,7 @@ void Compiler::fgDebugCheckFlagsHelper(GenTree* tree, unsigned treeFlags, unsign
     {
         // Print the tree so we can see it in the log.
         printf("Missing flags on tree [%06d]: ", dspTreeID(tree));
-        GenTree::gtDispFlags(chkFlags & ~treeFlags, GTF_DEBUG_NONE);
+        Compiler::fgDebugCheckDispFlags(tree, chkFlags & ~treeFlags, GTF_DEBUG_NONE);
         printf("\n");
         gtDispTree(tree);
 
@@ -22129,26 +22203,28 @@ void Compiler::fgDebugCheckFlagsHelper(GenTree* tree, unsigned treeFlags, unsign
 
         // Print the tree again so we can see it right after we hook up the debugger.
         printf("Missing flags on tree [%06d]: ", dspTreeID(tree));
-        GenTree::gtDispFlags(chkFlags & ~treeFlags, GTF_DEBUG_NONE);
+        Compiler::fgDebugCheckDispFlags(tree, chkFlags & ~treeFlags, GTF_DEBUG_NONE);
         printf("\n");
         gtDispTree(tree);
     }
     else if (treeFlags & ~chkFlags)
     {
         // TODO: We are currently only checking extra GTF_EXCEPT, GTF_ASG, and GTF_CALL flags.
-        if ((treeFlags & ~chkFlags & ~GTF_GLOB_REF & ~GTF_ORDER_SIDEEFF) != 0)
+        unsigned flagsToCheck = ~GTF_GLOB_REF & ~GTF_ORDER_SIDEEFF;
+
+        if ((treeFlags & ~chkFlags & flagsToCheck) != 0)
         {
             // Print the tree so we can see it in the log.
-            printf("Extra flags on parent tree [%X]: ", tree);
-            GenTree::gtDispFlags(treeFlags & ~chkFlags, GTF_DEBUG_NONE);
+            printf("Extra flags on tree [%06d]: ", dspTreeID(tree));
+            Compiler::fgDebugCheckDispFlags(tree, treeFlags & ~chkFlags, GTF_DEBUG_NONE);
             printf("\n");
             gtDispTree(tree);
 
             noway_assert(!"Extra flags on tree");
 
             // Print the tree again so we can see it right after we hook up the debugger.
-            printf("Extra flags on parent tree [%X]: ", tree);
-            GenTree::gtDispFlags(treeFlags & ~chkFlags, GTF_DEBUG_NONE);
+            printf("Extra flags on tree [%06d]: ", dspTreeID(tree));
+            Compiler::fgDebugCheckDispFlags(tree, treeFlags & ~chkFlags, GTF_DEBUG_NONE);
             printf("\n");
             gtDispTree(tree);
         }
