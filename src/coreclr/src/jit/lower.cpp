@@ -3691,10 +3691,17 @@ GenTree* Lowering::LowerDirectCall(GenTreeCall* call)
             // Non-virtual direct calls to addresses accessed by
             // a double indirection.
             //
-            // Double-indirection. Load the address into a register
-            // and call indirectly through the register
+
+            // Expanding an IAT_PPVALUE here, will lose the opportunity
+            // to Hoist/CSE the first indirection as it is an invariant load
+            //
+            assert(!"IAT_PPVALUE case in LowerDirectCall");
+
             noway_assert(helperNum == CORINFO_HELP_UNDEF);
             result = AddrGen(addr);
+            // Double-indirection. Load the address into a register
+            // and call indirectly through the register
+            //
             result = Ind(Ind(result));
             break;
 
@@ -4488,10 +4495,20 @@ GenTree* Lowering::LowerNonvirtPinvokeCall(GenTreeCall* call)
                 break;
 
             case IAT_PPVALUE:
+                // ToDo:  Expanding an IAT_PPVALUE here, loses the opportunity
+                // to Hoist/CSE the first indirection as it is an invariant load
+                //
+                // This case currently occurs today when we make PInvoke calls in crossgen
+                //
+                // assert(!"IAT_PPVALUE in Lowering::LowerNonvirtPinvokeCall");
+
                 addrTree = AddrGen(addr);
 #ifdef DEBUG
                 addrTree->AsIntCon()->gtTargetHandle = (size_t)methHnd;
 #endif
+                // Double-indirection. Load the address into a register
+                // and call indirectly through the register
+                //
                 result = Ind(Ind(addrTree));
                 break;
 
