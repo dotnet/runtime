@@ -71,6 +71,7 @@ var MonoSupportLib = {
 			module ["mono_load_runtime_and_bcl_args"] = MONO.mono_load_runtime_and_bcl_args;
 			module ["mono_wasm_load_bytes_into_heap"] = MONO.mono_wasm_load_bytes_into_heap;
 			module ["mono_wasm_load_icu_data"] = MONO.mono_wasm_load_icu_data;
+			module ["mono_wasm_get_icudt_name"] = MONO.mono_wasm_get_icudt_name;
 			module ["mono_wasm_globalization_init"] = MONO.mono_wasm_globalization_init;
 			module ["mono_wasm_get_loaded_files"] = MONO.mono_wasm_get_loaded_files;
 			module ["mono_wasm_new_root_buffer"] = MONO.mono_wasm_new_root_buffer;
@@ -1483,6 +1484,14 @@ var MonoSupportLib = {
 			if (ok)
 				this.num_icu_assets_loaded_successfully++;
 			return ok;
+		},
+
+		// Get icudt.dat exact filename that matches given culture, examples:
+		//   "ja" -> "icudt_CJK.dat"
+		//   "en_US" (or "en-US" or just "en") -> "icudt_EFIGS.dat"
+		// etc, see "mono_wasm_get_icudt_name" implementation in pal_icushim_static.c
+		mono_wasm_get_icudt_name: function (culture) {
+			return Module.ccall ('mono_wasm_get_icudt_name', 'string', ['string'], [culture]);
 		},
 
 		_finalize_startup: function (args, ctx) {
