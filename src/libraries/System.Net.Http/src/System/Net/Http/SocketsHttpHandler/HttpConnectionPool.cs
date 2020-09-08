@@ -1286,14 +1286,29 @@ namespace System.Net.Http
             }
         }
 
-        private static readonly SocketsConnectionFactory s_connectionFactoryInstance = new SocketsConnectionFactory(SocketType.Stream, ProtocolType.Tcp);
-        private static readonly Func<DnsEndPoint, HttpRequestMessage, CancellationToken, ValueTask<Stream>> s_defaultConnectionCallback = (ep, r, token) => s_connectionFactoryInstance.ConnectAsync(ep, token);
+        private static async ValueTask<Stream> DefaultConnectAsync(SocketsHttpConnectionContext context, CancellationToken cancellationToken)
+        {
+            Socket socket = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp);
+            socket.NoDelay = true;
+            socket.DualMode = true;
+
+            try
+            {
+                await socket.ConnectAsync(context.DnsEndPoint, cancellationToken).ConfigureAwait(false);
+                return new NetworkStream(socket, true);
+            }
+            catch
+            {
+                socket.Dispose();
+                throw;
+            }
+        }
 
         private ValueTask<Stream> ConnectToTcpHostAsync(string host, int port, HttpRequestMessage initialRequest, bool async, CancellationToken cancellationToken)
         {
             if (async)
             {
-                Func<DnsEndPoint, HttpRequestMessage, CancellationToken, ValueTask<Stream>> connectionCallback = Settings._connectionCallback ?? s_defaultConnectionCallback;
+                Func<SocketsHttpConnectionContext, CancellationToken, ValueTask<Stream>> connectionCallback = Settings._connectionCallback ?? DefaultConnectAsync;
 
                 var endPoint = new DnsEndPoint(host, port);
                 return ConnectHelper.ConnectAsync(connectionCallback, endPoint, initialRequest, cancellationToken);

@@ -1843,7 +1843,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 Assert.Null(handler.ConnectCallback);
 
-                Func<DnsEndPoint, HttpRequestMessage, CancellationToken, ValueTask<Stream>> f = (ep, req, token) => default;
+                Func<SocketsHttpConnectionContext, CancellationToken, ValueTask<Stream>> f = (context, token) => default;
 
                 handler.ConnectCallback = f;
                 Assert.Equal(f, handler.ConnectCallback);
@@ -1910,7 +1910,7 @@ namespace System.Net.Http.Functional.Tests
                 Assert.Throws(expectedExceptionType, () => handler.KeepAlivePingTimeout = TimeSpan.FromSeconds(5));
                 Assert.Throws(expectedExceptionType, () => handler.KeepAlivePingDelay = TimeSpan.FromSeconds(5));
                 Assert.Throws(expectedExceptionType, () => handler.KeepAlivePingPolicy = HttpKeepAlivePingPolicy.WithActiveRequests);
-                Assert.Throws(expectedExceptionType, () => handler.ConnectCallback = (ep, req, token) => default);
+                Assert.Throws(expectedExceptionType, () => handler.ConnectCallback = (context, token) => default);
             }
         }
     }
@@ -2280,7 +2280,7 @@ namespace System.Net.Http.Functional.Tests
         {
             using SocketsHttpHandler handler = new SocketsHttpHandler
             {
-                ConnectCallback = (ep, req, token) => default,
+                ConnectCallback = (context, token) => default,
             };
 
             using HttpClient client = CreateHttpClient(handler);
@@ -2297,11 +2297,11 @@ namespace System.Net.Http.Functional.Tests
                     using HttpClientHandler handler = CreateHttpClientHandler();
                     handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
                     var socketsHandler = (SocketsHttpHandler)GetUnderlyingSocketsHttpHandler(handler);
-                    socketsHandler.ConnectCallback = async (ep, req, token) =>
+                    socketsHandler.ConnectCallback = async (context, token) =>
                     {
                         Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
                         s.Bind(new IPEndPoint(IPAddress.Loopback, 0));
-                        await s.ConnectAsync(ep, token);
+                        await s.ConnectAsync(context.DnsEndPoint, token);
                         s.NoDelay = true;
                         return new NetworkStream(s, ownsSocket: true);
                     };
@@ -2344,7 +2344,7 @@ namespace System.Net.Http.Functional.Tests
                 using HttpClientHandler handler = CreateHttpClientHandler();
                 handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
                 var socketsHandler = (SocketsHttpHandler)GetUnderlyingSocketsHttpHandler(handler);
-                socketsHandler.ConnectCallback = (ep, req, token) => new ValueTask<Stream>(clientStream);
+                socketsHandler.ConnectCallback = (context, token) => new ValueTask<Stream>(clientStream);
 
                 using HttpClient client = CreateHttpClient(handler);
 
@@ -2371,9 +2371,9 @@ namespace System.Net.Http.Functional.Tests
             using HttpClientHandler handler = CreateHttpClientHandler();
             handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
             var socketsHandler = (SocketsHttpHandler)GetUnderlyingSocketsHttpHandler(handler);
-            socketsHandler.ConnectCallback = async (ep, req, token) =>
+            socketsHandler.ConnectCallback = async (context, token) =>
             {
-                string hostname = ep.Host;
+                string hostname = context.DnsEndPoint.Host;
                 UnixDomainSocketEndPoint clientEP = new UnixDomainSocketEndPoint(Path.Combine(Path.GetTempPath(), hostname));
 
                 Socket clientSocket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
@@ -2411,7 +2411,7 @@ namespace System.Net.Http.Functional.Tests
 
             using HttpClientHandler handler = CreateHttpClientHandler();
             var socketsHandler = (SocketsHttpHandler)GetUnderlyingSocketsHttpHandler(handler);
-            socketsHandler.ConnectCallback = async (ep, req, token) =>
+            socketsHandler.ConnectCallback = async (context, token) =>
             {
                 Socket clientSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
                 await clientSocket.ConnectAsync(listenSocket.LocalEndPoint);
