@@ -362,6 +362,13 @@ namespace System.Net.Http
         public bool EnableMultipleHttp2Connections { get { throw null; } set { } }
         public Func<System.Net.DnsEndPoint, System.Net.Http.HttpRequestMessage, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<System.IO.Stream>>? ConnectCallback { get { throw null; } set { } }
     }
+    public sealed class SocketsHttpConnectionContext
+    {
+        internal SocketsHttpConnectionContext() { }
+        public DnsEndPoint DnsEndPoint { get { throw null; } }
+        public HttpRequestMessage HttpRequestMessage { get { throw null; } }
+    }
+
     public enum HttpKeepAlivePingPolicy
     {
         WithActiveRequests,
