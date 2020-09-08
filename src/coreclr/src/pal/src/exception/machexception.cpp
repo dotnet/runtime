@@ -1428,7 +1428,13 @@ ActivationHandler(CONTEXT* context)
         g_activationFunction(context);
     }
 
+#ifdef TARGET_ARM64
+    // RtlRestoreContext assembly corrupts X16 & X17, so it cannot be
+    // used for Activation restore
+    MachSetThreadContext(context);
+#else
     RtlRestoreContext(context, NULL);
+#endif
     DebugBreak();
 }
 
