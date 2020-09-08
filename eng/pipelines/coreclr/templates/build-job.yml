@@ -164,7 +164,7 @@ jobs:
 
     # Build native test components
     - ${{ if ne(parameters.isOfficialBuild, true) }}:
-      - script: $(Build.SourcesDirectory)/src/coreclr/build-test$(scriptExt) skipstressdependencies skipmanaged skipgeneratelayout $(buildConfig) $(archType) $(crossArg) $(osArg) $(priorityArg) $(compilerArg)
+      - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) skipstressdependencies skipmanaged skipgeneratelayout $(buildConfig) $(archType) $(crossArg) $(osArg) $(priorityArg) $(compilerArg)
         displayName: Build native test components
 
     # Sign and add entitlements to these MacOS binaries

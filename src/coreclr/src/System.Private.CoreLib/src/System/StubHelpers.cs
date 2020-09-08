@@ -127,7 +127,7 @@ namespace System.StubHelpers
 
         internal static void ClearNative(IntPtr pNative)
         {
-            Interop.Ole32.CoTaskMemFree(pNative);
+            Marshal.FreeCoTaskMem(pNative);
         }
 
         internal static unsafe void ConvertFixedToNative(int flags, string strManaged, IntPtr pNativeBuffer, int length)
@@ -257,10 +257,7 @@ namespace System.StubHelpers
 
         internal static void ClearNative(IntPtr pNative)
         {
-            if (pNative != IntPtr.Zero)
-            {
-                Interop.Ole32.CoTaskMemFree(pNative);
-            }
+            Marshal.FreeCoTaskMem(pNative);
         }
     }
 
@@ -412,10 +409,7 @@ namespace System.StubHelpers
 
         internal static void ClearNative(IntPtr pNative)
         {
-            if (IntPtr.Zero != pNative)
-            {
-                Interop.OleAut32.SysFreeString(pNative);
-            }
+            Marshal.FreeBSTR(pNative);
         }
     }  // class BSTRMarshaler
 
@@ -476,7 +470,7 @@ namespace System.StubHelpers
         {
             if (IntPtr.Zero != pNative)
             {
-                Interop.Ole32.CoTaskMemFree((IntPtr)(((long)pNative) - sizeof(uint)));
+                Marshal.FreeCoTaskMem((IntPtr)(((long)pNative) - sizeof(uint)));
             }
         }
     }  // class VBByValStrMarshaler
@@ -518,10 +512,7 @@ namespace System.StubHelpers
 
         internal static void ClearNative(IntPtr pNative)
         {
-            if (IntPtr.Zero != pNative)
-            {
-                Interop.OleAut32.SysFreeString(pNative);
-            }
+            Marshal.FreeBSTR(pNative);
         }
     }  // class AnsiBSTRMarshaler
 
@@ -1067,7 +1058,7 @@ namespace System.StubHelpers
                     // this must happen regardless of BackPropAction
                     Marshal.DestroyStructure(pNativeHome, layoutType);
                 }
-                Interop.Ole32.CoTaskMemFree(pNativeHome);
+                Marshal.FreeCoTaskMem(pNativeHome);
             }
             StubHelpers.DestroyCleanupList(ref cleanupWorkList);
         }

@@ -3,12 +3,12 @@
   <Import Project="Directory.Build.props" />
 
   <ItemGroup>
-    <Project Include="src\dirs.proj" />
+    <Project Include="$(CoreClrProjectRoot)tests\src\dirs.proj" />
   </ItemGroup>
 
-  <Import Project="Directory.Build.targets" />
+  <Import Project="$(RepoRoot)\src\coreclr\tests\Directory.Build.targets" />
 
-  <Import Project="dir.traversal.targets" />
+  <Import Project="$(RepoRoot)\src\coreclr\tests\dir.traversal.targets" />
 
   <PropertyGroup>
     <TraversalBuildDependsOn>
@@ -18,18 +18,18 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <RestoreProjects Include="$(MSBuildThisFileDirectory)scripts\scripts.csproj" />
-    <RestoreProjects Include="$(MSBuildThisFileDirectory)src\Common\test_dependencies_fs\test_dependencies.fsproj" />
-    <RestoreProjects Include="$(MSBuildThisFileDirectory)src\Common\test_dependencies\test_dependencies.csproj" />
-    <RestoreProjects Include="$(RepoRoot)src\tests\Common\CoreCLRTestLibrary\CoreCLRTestLibrary.csproj" />
-    <RestoreProjects Include="$(MSBuildThisFileDirectory)external\external.csproj" />
-    <RestoreProjects Include="$(MSBuildThisFileDirectory)src\Common\ilasm\ilasm.ilproj" />
+    <RestoreProjects Include="$(RepoRoot)src\coreclr\tests\scripts\scripts.csproj" />
+    <RestoreProjects Include="$(RepoRoot)src\coreclr\tests\src\Common\test_dependencies_fs\test_dependencies.fsproj" />
+    <RestoreProjects Include="$(RepoRoot)src\coreclr\tests\src\Common\test_dependencies\test_dependencies.csproj" />
+    <RestoreProjects Include="$(MSBuildThisFileDirectory)Common\CoreCLRTestLibrary\CoreCLRTestLibrary.csproj" />
+    <RestoreProjects Include="$(RepoRoot)src\coreclr\tests\external\external.csproj" />
+    <RestoreProjects Include="$(RepoRoot)src\coreclr\tests\src\Common\ilasm\ilasm.ilproj" />
   </ItemGroup>
 
   <Target Name="BuildTargetingPack" AfterTargets="BatchRestorePackages" Condition="$(__SkipTargetingPackBuild) != 'true'">
     <Message Text="Building Targeting Pack" Importance="High" />
     <Error  Text="TargetOS has not been specified. Please do that then run build again."  Condition="'$(TargetOS)' == 'AnyOS'" />
-    <MSBuild Projects="$(MSBuildThisFileDirectory)external\external.csproj"
+    <MSBuild Projects="$(RepoRoot)src\coreclr\tests\external\external.csproj"
              Targets="Build" />
   </Target>
 
