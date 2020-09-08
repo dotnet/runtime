@@ -11,13 +11,13 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
     {
         public enum RequestCache
         {
-            [EnumExport(EnumValue = ConvertEnum.Default)]
+            //[EnumExport()]
             Default = -1,
             [EnumExport("no-store")]
             NoStore,
-            [EnumExport(EnumValue = ConvertEnum.ToUpper)]
+            [EnumExport("RELOAD")]
             Reload,
-            [EnumExport(EnumValue = ConvertEnum.ToLower)]
+            [EnumExport("nocache")]
             NoCache,
             [EnumExport("force-cache")]
             ForceCache,
@@ -27,13 +27,12 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public enum StyleColor : uint
         {
             RedNoExport,
-            [EnumExport(EnumValue = ConvertEnum.Default)]
+            [EnumExport("Red")]
             Red = 0xff0000ff,
-            [EnumExport(EnumValue = ConvertEnum.Numeric)]
             GreenNumeric = 0x00ff00ff,
-            [EnumExport("red", EnumValue = ConvertEnum.ToUpper)]
+            [EnumExport("RED")]
             RedUpperCase,
-            [EnumExport("RED", EnumValue = ConvertEnum.ToLower)]
+            [EnumExport("red")]
             RedLowerCase,
             [EnumExport("#ff0000")]
             RedHex
@@ -81,6 +80,8 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Runtime.InvokeJS(@"
                 var color = {};
                 App.call_test_method  (""SetColorEnumsProperties"", [ color ]);
+                //let str = JSON.stringify(color, null, 4);
+                //console.log(str);
                 App.call_test_method  (""SetStyleColorEnums"", [ color.Red, color.GreenNumeric, color.RedUpperCase, color.RedLowerCase, color.RedHex, color.RedNoExport ]);
             ");
             Assert.Equal(StyleColor.Red, HelperMarshal.styleColorEnums[0]);

@@ -5,14 +5,6 @@ using System;
 
 namespace System.Runtime.InteropServices.JavaScript
 {
-    public enum ConvertEnum
-    {
-        Default,
-        ToLower,
-        ToUpper,
-        Numeric
-    }
-
     [AttributeUsage(AttributeTargets.Field, Inherited = false)]
     public class EnumExportAttribute : Attribute
     {
@@ -25,6 +17,5 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
         public string? ContractName { get; }
-        public ConvertEnum EnumValue { get; set; }
     }
 }

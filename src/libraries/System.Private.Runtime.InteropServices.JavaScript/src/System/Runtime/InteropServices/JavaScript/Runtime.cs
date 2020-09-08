@@ -439,37 +439,22 @@ namespace System.Runtime.InteropServices.JavaScript
                     EnumExportAttribute[] attributes =
                         (EnumExportAttribute[])fi.GetCustomAttributes(typeof(EnumExportAttribute), false);
 
-                    ConvertEnum enumConversionType = ConvertEnum.Default;
-
                     object? contractName = null;
 
-                    if (attributes != null && attributes.Length > 0)
+                    if (attributes?.Length > 0)
                     {
-                        enumConversionType = attributes[0].EnumValue;
-                        if (enumConversionType != ConvertEnum.Numeric)
-                            contractName = attributes[0].ContractName;
+                        contractName = attributes[0].ContractName;
+                    }
+                    else
+                    {
+                        if (Enum.TryParse(enumType, value!.ToString() ?? string.Empty, out object? enumAsNumeric))
+                        {
+                            if (enumAsNumeric is Enum valueAsEnum)
+                                return (Enum)valueAsEnum;
+                        }
                     }
 
                     contractName = contractName ?? fi.Name;
-                    switch (enumConversionType)
-                    {
-                        case ConvertEnum.ToLower:
-                            contractName = contractName!.ToString()!.ToLower();
-                            break;
-                        case ConvertEnum.ToUpper:
-                            contractName = contractName!.ToString()!.ToUpper();
-                            break;
-                        case ConvertEnum.Numeric:
-                            if (Enum.TryParse(enumType, value!.ToString() ?? string.Empty, out object? enumAsNumeric))
-                            {
-                                if (enumAsNumeric is Enum valueAsEnum)
-                                    return (Enum)valueAsEnum;
-                            }
-                            break;
-                        default:
-                            contractName = contractName!.ToString();
-                            break;
-                    }
 
                     if (contractName!.ToString() == value.ToString())
                     {
@@ -495,33 +480,15 @@ namespace System.Runtime.InteropServices.JavaScript
             EnumExportAttribute[] attributes =
                 (EnumExportAttribute[])fi.GetCustomAttributes(typeof(EnumExportAttribute), false);
 
-            ConvertEnum enumConversionType = ConvertEnum.Default;
-
             object? contractName = value;
 
-            if (attributes != null && attributes.Length > 0)
+            if (attributes?.Length > 0)
             {
-                enumConversionType = attributes[0].EnumValue;
-                if (enumConversionType != ConvertEnum.Numeric)
-                    contractName = attributes[0].ContractName;
+                contractName = attributes[0].ContractName;
             }
-
-            contractName = contractName ?? value;
-
-            switch (enumConversionType)
+            else
             {
-                case ConvertEnum.ToLower:
-                    contractName = contractName!.ToString()!.ToLower();
-                    break;
-                case ConvertEnum.ToUpper:
-                    contractName = contractName!.ToString()!.ToUpper();
-                    break;
-                case ConvertEnum.Numeric:
-                    contractName = Convert.ToDouble(Enum.Parse(value!.GetType(), contractName!.ToString() ?? string.Empty));
-                    break;
-                default:
-                    contractName = contractName!.ToString();
-                    break;
+                contractName = Convert.ToDouble(Enum.Parse(value!.GetType(), contractName!.ToString() ?? string.Empty));
             }
 
             return contractName ?? string.Empty;

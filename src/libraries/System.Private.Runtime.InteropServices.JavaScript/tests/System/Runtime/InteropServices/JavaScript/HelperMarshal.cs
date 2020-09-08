@@ -370,7 +370,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         internal static EnumMarshalTests.StyleColor[] styleColorEnums;
         public static void SetStyleColorEnums(EnumMarshalTests.StyleColor red, EnumMarshalTests.StyleColor greenNumeric, EnumMarshalTests.StyleColor redUpperCase, EnumMarshalTests.StyleColor redLowerCase, EnumMarshalTests.StyleColor redHex, EnumMarshalTests.StyleColor redNoExport)
         {
-            Console.WriteLine(greenNumeric);
             styleColorEnums = new EnumMarshalTests.StyleColor[6];
             styleColorEnums[0] = red;
             styleColorEnums[1] = greenNumeric;
