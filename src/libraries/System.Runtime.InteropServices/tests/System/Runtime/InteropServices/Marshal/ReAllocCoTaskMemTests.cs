@@ -43,7 +43,6 @@ namespace System.Runtime.InteropServices.Tests
         [InlineData(1)]
         [InlineData(100)]
         [Theory]
-        [SkipOnMono("Behavior differences on Mono")]
         public void ReAllocCoTaskMem_PositiveSize(int size)
         {
             IntPtr p = Marshal.ReAllocCoTaskMem(IntPtr.Zero, size);
@@ -53,22 +52,11 @@ namespace System.Runtime.InteropServices.Tests
             Assert.NotEqual(IntPtr.Zero, p1);
 
             IntPtr p2 = Marshal.ReAllocCoTaskMem(p1, 0);
-
-            // TODO: Behavior differs between platforms currently
-            if (PlatformDetection.IsWindows)
-            {
-                Assert.Equal(IntPtr.Zero, p2);
-            }
-            else
-            {
-                Assert.NotEqual(IntPtr.Zero, p2);
-                Marshal.FreeCoTaskMem(p2);
-            }
+            Assert.Equal(IntPtr.Zero, p2);
         }
 
         [Fact]
         [OuterLoop]
-        [SkipOnMono("Behavior differences on Mono")]
         public void ReAllocCoTaskMem_NegativeSize_ThrowsOutOfMemoryException()
         {
             // -1 is treated as (uint)-1 by ReAllocCoTaskMem. The allocation may succeed on 64-bit machines.

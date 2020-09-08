@@ -44,19 +44,9 @@ namespace System.Runtime.InteropServices.Tests
         [InlineData(1)]
         [InlineData(100)]
         [Theory]
-        [SkipOnMono("Behavior differences on Mono")]
         public void ReAllocHGlobal_PositiveSize(int size)
         {
-            IntPtr p;
-            // TODO: Behavior differs between platforms currently
-            if (PlatformDetection.IsWindows)
-            {
-                p = Marshal.AllocHGlobal(size);
-            }
-            else
-            {
-                p = Marshal.ReAllocHGlobal(IntPtr.Zero, (IntPtr)size);
-            }
+            IntPtr p = Marshal.ReAllocHGlobal(IntPtr.Zero, (IntPtr)size);
             Assert.NotEqual(IntPtr.Zero, p);
 
             IntPtr p1 = Marshal.ReAllocHGlobal(p, (IntPtr)(size + 1));
@@ -70,16 +60,8 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
-        [SkipOnMono("Behavior differences on Mono")]
         public void ReAllocHGlobal_NegativeSize_ThrowsOutOfMemoryException()
         {
-            // TODO: Behavior differs between platforms currently
-            if (PlatformDetection.IsWindows)
-            {
-                // ReAllocHGlobal always throws when the original pointer is null (different from standard C/C++ realloc)
-                Assert.Throws<OutOfMemoryException>(() => Marshal.ReAllocHGlobal(IntPtr.Zero, IntPtr.Zero));
-                Assert.Throws<OutOfMemoryException>(() => Marshal.ReAllocHGlobal(IntPtr.Zero, (IntPtr)1));
-            }
             Assert.Throws<OutOfMemoryException>(() => Marshal.ReAllocHGlobal(IntPtr.Zero, (IntPtr)(-1)));
 
             IntPtr p = Marshal.AllocHGlobal((IntPtr)1);
