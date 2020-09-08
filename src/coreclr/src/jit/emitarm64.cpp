@@ -5541,6 +5541,9 @@ void emitter::emitIns_R_R_I(
         }
 
         // Is the ldr/str even necessary?
+        // For volatile load/store, there will be memory barrier instruction before/after the load/store
+        // and in such case, IsRedundantLdStr() returns false, because the method just checks for load/store
+        // pair next to each other.
         if (emitComp->opts.OptimizationEnabled() && IsRedundantLdStr(ins, reg1, reg2, imm, size, fmt))
         {
             return;
@@ -15538,7 +15541,7 @@ bool emitter::IsRedundantLdStr(
         // If reg1 is of size less than 8-bytes, then eliminating the 'ldr'
         // will not zero the upper bits of reg1.
 
-        // Make sure operand size is not 4-bytes
+        // Make sure operand size is 8-bytes
         //  str w0, [x1, #4]
         //  ldr w0, [x1, #4]  <-- can't eliminate because upper-bits of x0 won't get set.
         if (size != EA_8BYTE)
