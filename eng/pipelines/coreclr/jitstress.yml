@@ -9,8 +9,8 @@ schedules:
     include:
     - master
   always: true
-- cron: "0 4 * * 2,4,6"
-  displayName: Tue, Thu, Sat at 8:00 PM (UTC-8:00)
+- cron: "0 4 * * 0,2,4,6"
+  displayName: Sun, Tue, Thu, Sat at 8:00 PM (UTC-8:00)
   branches:
     include:
     - release/*.*
