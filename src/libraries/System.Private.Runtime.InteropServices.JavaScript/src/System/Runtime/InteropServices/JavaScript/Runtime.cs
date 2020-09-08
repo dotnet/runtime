@@ -470,7 +470,7 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
-        private static object EnumToExportContract(Enum value)
+        private static string EnumToExportContract(Enum value)
         {
             FieldInfo? fi = value?.GetType()?.GetField(value.ToString());
 
@@ -488,10 +488,10 @@ namespace System.Runtime.InteropServices.JavaScript
             }
             else
             {
-                contractName = Convert.ToDouble(Enum.Parse(value!.GetType(), contractName!.ToString() ?? string.Empty));
+                contractName = Convert.ToDouble(Enum.Parse(value!.GetType(), contractName!.ToString() ?? string.Empty)).ToString();
             }
 
-            return contractName ?? string.Empty;
+            return contractName?.ToString() ?? string.Empty;
         }
 
         private static Uri CreateUri(string uri)
