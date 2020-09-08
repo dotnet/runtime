@@ -9,8 +9,7 @@ add_compile_definitions($<$<BOOL:$<TARGET_PROPERTY:DBI_COMPONENT>>:FEATURE_METAD
 add_compile_definitions($<$<NOT:$<OR:$<BOOL:$<TARGET_PROPERTY:DAC_COMPONENT>>,$<BOOL:$<TARGET_PROPERTY:DBI_COMPONENT>>>>:FEATURE_METADATA_VERIFY_LAYOUTS>)
 
 if (CLR_CMAKE_HOST_WIN32)
-    add_compile_options($<$<AND:$<BOOL:$<TARGET_PROPERTY:DBI_COMPONENT>>,$<CONFIG:DEBUG>>:-MTd>)
-    add_compile_options($<$<AND:$<BOOL:$<TARGET_PROPERTY:DBI_COMPONENT>>,$<NOT:$<CONFIG:DEBUG>>>:-MT>)
+    set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreaded$<$<AND:$<BOOL:$<TARGET_PROPERTY:DBI_COMPONENT>>,$<CONFIG:DEBUG>>:Debug>)
 endif()
 
 add_subdirectory(compiler)

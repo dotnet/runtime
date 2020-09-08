@@ -9,7 +9,7 @@ add_definitions(-DUSE_COREDISTOOLS)
 
 if(CLR_CMAKE_HOST_WIN32)
   #use static crt
-  add_compile_options(/MT)
+  set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreaded)
 endif(CLR_CMAKE_HOST_WIN32)
 
 include_directories(.)
