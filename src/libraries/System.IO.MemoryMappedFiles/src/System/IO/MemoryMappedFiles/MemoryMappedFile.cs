@@ -92,25 +92,30 @@ namespace System.IO.MemoryMappedFiles
         // page size.  One can use FileStream.SetLength to bring the length back to a desirable size. By default,
         // the MemoryMappedFile will close the FileStream object when it is disposed.  This behavior can be
         // changed by the leaveOpen boolean argument.
+        [UnsupportedOSPlatform("browser")]
         public static MemoryMappedFile CreateFromFile(string path)
         {
             return CreateFromFile(path, FileMode.Open, null, DefaultSize, MemoryMappedFileAccess.ReadWrite);
         }
+        [UnsupportedOSPlatform("browser")]
         public static MemoryMappedFile CreateFromFile(string path, FileMode mode)
         {
             return CreateFromFile(path, mode, null, DefaultSize, MemoryMappedFileAccess.ReadWrite);
         }
 
+        [UnsupportedOSPlatform("browser")]
         public static MemoryMappedFile CreateFromFile(string path, FileMode mode, string? mapName)
         {
             return CreateFromFile(path, mode, mapName, DefaultSize, MemoryMappedFileAccess.ReadWrite);
         }
 
+        [UnsupportedOSPlatform("browser")]
         public static MemoryMappedFile CreateFromFile(string path, FileMode mode, string? mapName, long capacity)
         {
             return CreateFromFile(path, mode, mapName, capacity, MemoryMappedFileAccess.ReadWrite);
         }
 
+        [UnsupportedOSPlatform("browser")]
         public static MemoryMappedFile CreateFromFile(string path, FileMode mode, string? mapName, long capacity,
                                                                         MemoryMappedFileAccess access)
         {
@@ -179,6 +184,7 @@ namespace System.IO.MemoryMappedFiles
             return new MemoryMappedFile(handle, fileStream, false);
         }
 
+        [UnsupportedOSPlatform("browser")]
         public static MemoryMappedFile CreateFromFile(FileStream fileStream, string? mapName, long capacity,
                                                         MemoryMappedFileAccess access,
                                                         HandleInheritability inheritability, bool leaveOpen)
@@ -235,18 +241,21 @@ namespace System.IO.MemoryMappedFiles
 
         // Factory Method Group #3: Creates a new empty memory mapped file.  Such memory mapped files are ideal
         // for IPC, when mapName != null.
+        [UnsupportedOSPlatform("browser")]
         public static MemoryMappedFile CreateNew(string? mapName, long capacity)
         {
             return CreateNew(mapName, capacity, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None,
                    HandleInheritability.None);
         }
 
+        [UnsupportedOSPlatform("browser")]
         public static MemoryMappedFile CreateNew(string? mapName, long capacity, MemoryMappedFileAccess access)
         {
             return CreateNew(mapName, capacity, access, MemoryMappedFileOptions.None,
                    HandleInheritability.None);
         }
 
+        [UnsupportedOSPlatform("browser")]
         public static MemoryMappedFile CreateNew(string? mapName, long capacity, MemoryMappedFileAccess access,
                                                     MemoryMappedFileOptions options,
                                                     HandleInheritability inheritability)
