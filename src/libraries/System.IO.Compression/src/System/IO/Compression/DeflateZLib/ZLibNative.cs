@@ -63,13 +63,13 @@ namespace System.IO.Compression
         ///    <code>int windowBits = 15;  // or -15 if no headers required</code> <br />
         ///    <code>int memLevel = 7;</code> <br />
         ///    <code>ZLibNative.CompressionStrategy strategy = ZLibNative.CompressionStrategy.DefaultStrategy;</code> </p>
-        /// </summary>
         ///
         /// <p><em>Smallest Size Compression:</em></p>
         /// <p><code>ZLibNative.CompressionLevel compressionLevel = ZLibNative.CompressionLevel.BestCompression;</code> <br />
         ///    <code>int windowBits = 15;  // or -15 if no headers required</code> <br />
         ///    <code>int memLevel = 8;</code> <br />
         ///    <code>ZLibNative.CompressionStrategy strategy = ZLibNative.CompressionStrategy.DefaultStrategy;</code> </p>
+        /// </summary>
         public enum CompressionLevel : int
         {
             NoCompression = 0,
