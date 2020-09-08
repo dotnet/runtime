@@ -354,7 +354,6 @@ namespace System.Threading
             return BindIOCompletionCallbackNative(osHandle);
         }
 
-        [UnsupportedOSPlatform("browser")]
         public static bool BindHandle(SafeHandle osHandle)
         {
             if (osHandle == null)
