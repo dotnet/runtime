@@ -2,10 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Net.WebSockets;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Primitives;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
@@ -17,7 +17,7 @@ namespace Microsoft.WebAssembly.Diagnostics
     {
         private readonly MonoProxy proxy;
 
-        public DebuggerProxy(ILoggerFactory loggerFactory, StringValues urlSymbolServerList)
+        public DebuggerProxy(ILoggerFactory loggerFactory, IList<string> urlSymbolServerList)
         {
             proxy = new MonoProxy(loggerFactory, urlSymbolServerList);
         }

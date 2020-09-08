@@ -145,7 +145,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         if (!context.Request.Query.TryGetValue("urlSymbolServer", out urlSymbolServerList))
                             urlSymbolServerList += "http://msdl.microsoft.com/download/symbols";
 
-                        var proxy = new DebuggerProxy(loggerFactory, urlSymbolServerList);
+                        var proxy = new DebuggerProxy(loggerFactory, urlSymbolServerList.ToList());
                         
                         var ideSocket = await context.WebSockets.AcceptWebSocketAsync();
 
