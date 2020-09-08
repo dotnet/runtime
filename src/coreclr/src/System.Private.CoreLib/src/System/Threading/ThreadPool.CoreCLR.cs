@@ -354,6 +354,7 @@ namespace System.Threading
             return BindIOCompletionCallbackNative(osHandle);
         }
 
+        [SupportedOSPlatform("windows")]
         public static bool BindHandle(SafeHandle osHandle)
         {
             if (osHandle == null)
