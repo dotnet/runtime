@@ -2289,6 +2289,39 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        public async void ConnectCallback_ContextHasCorrectProperties_Success()
+        {
+            await LoopbackServerFactory.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Get, uri);
+
+                    using HttpClientHandler handler = CreateHttpClientHandler();
+                    handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+                    var socketsHandler = (SocketsHttpHandler)GetUnderlyingSocketsHttpHandler(handler);
+                    socketsHandler.ConnectCallback = async (context, token) =>
+                    {
+                        Assert.Equal(uri.Host, context.DnsEndPoint.Host);
+                        Assert.Equal(uri.Port, context.DnsEndPoint.Port);
+                        Assert.Equal(requestMessage, context.HttpRequestMessage);
+
+                        Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                        await s.ConnectAsync(context.DnsEndPoint, token);
+                        return new NetworkStream(s, ownsSocket: true);
+                    };
+
+                    using HttpClient client = CreateHttpClient(handler);
+
+                    HttpResponseMessage response = await client.SendAsync(requestMessage);
+                    Assert.Equal("foo", await response.Content.ReadAsStringAsync());
+                },
+                async server =>
+                {
+                    await server.AcceptConnectionSendResponseAndCloseAsync(content: "foo");
+                });
+        }
+
+        [Fact]
         public async Task ConnectCallback_BindLocalAddress_Success()
         {
             await LoopbackServerFactory.CreateClientAndServerAsync(
