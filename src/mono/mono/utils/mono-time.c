@@ -325,6 +325,7 @@ guint64
 mono_clock_get_time_ns (mono_clock_id_t clk_id)
 {
 	// TODO: need to implement time stamp function for Windows
+	return 0;
 }
 
 #endif
