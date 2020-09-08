@@ -207,6 +207,7 @@ namespace System.Runtime.Loader.Tests
         }
         
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
+        //[ActiveIssue("https://github.com/dotnet/runtime/issues/41997", TestPlatforms.Browser)]
         [MemberData(nameof(SatelliteLoadsCorrectly_TestData))]
         public void SatelliteLoadsCorrectly_FromPath(string alc, string assemblyName, string culture)
         {
@@ -221,6 +222,9 @@ namespace System.Runtime.Loader.Tests
 
             AssemblyName parentAssemblyName = new AssemblyName(assemblyName);
             Assembly parentAssembly = assemblyLoadContext.LoadFromAssemblyName(parentAssemblyName);
+
+            if (AssemblyLoadContext.GetLoadContext(parentAssembly) != AssemblyLoadContext.Default)
+                Assert.Equal(AssemblyLoadContext.GetLoadContext(parentAssembly), AssemblyLoadContext.GetLoadContext(satelliteAssembly));
 
             Assert.Equal(culture, satelliteAssembly.GetName().CultureName);
         }
