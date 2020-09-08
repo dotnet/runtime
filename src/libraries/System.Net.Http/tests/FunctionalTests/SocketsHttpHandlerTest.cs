@@ -2304,7 +2304,7 @@ namespace System.Net.Http.Functional.Tests
                     {
                         Assert.Equal(uri.Host, context.DnsEndPoint.Host);
                         Assert.Equal(uri.Port, context.DnsEndPoint.Port);
-                        Assert.Equal(requestMessage, context.HttpRequestMessage);
+                        Assert.Equal(requestMessage, context.RequestMessage);
 
                         Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
                         await s.ConnectAsync(context.DnsEndPoint, token);
