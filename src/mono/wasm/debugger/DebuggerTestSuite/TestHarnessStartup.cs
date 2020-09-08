@@ -19,7 +19,7 @@ using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json.Linq;
-using Microsoft.Extensions.Primitives;
+using System.Collections.Generic;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
@@ -124,7 +124,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                 using var loggerFactory = LoggerFactory.Create(
                     builder => builder.AddConsole().AddFilter(null, LogLevel.Information));
 
-                StringValues urlSymbolServerList = new StringValues("http://msdl.microsoft.com/download/symbols");
+                List<String> urlSymbolServerList = new List<String>();
+                urlSymbolServerList.Add("http://msdl.microsoft.com/download/symbols");
                 
                 var proxy = new DebuggerProxy(loggerFactory, urlSymbolServerList);
                 var browserUri = new Uri(con_str);
