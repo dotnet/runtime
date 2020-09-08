@@ -950,7 +950,6 @@ namespace System.Runtime.Serialization
         /// Safe - marked as such so that it's callable from transparent generated IL. Takes id as parameter which
         ///        is guaranteed to be in internal serialization cache.
         /// </SecurityNote>
-
         internal static object UnsafeGetUninitializedObject(int id)
         {
             var type = DataContract.GetDataContractForInitialization(id).TypeForInitialization;

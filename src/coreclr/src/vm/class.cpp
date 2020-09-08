@@ -963,6 +963,8 @@ void ClassLoader::LoadExactParents(MethodTable *pMT)
 
     MethodTableBuilder::CopyExactParentSlots(pMT, pApproxParentMT);
 
+    PropagateCovariantReturnMethodImplSlots(pMT);
+
     // We can now mark this type as having exact parents
     pMT->SetHasExactParent();
 
@@ -1133,14 +1135,91 @@ void ClassLoader::ValidateMethodsWithCovariantReturnTypes(MethodTable* pMT)
     }
     CONTRACTL_END;
 
-    //
-    // Validation for methods with covariant return types is a two step process.
-    //
-    // The first step is to validate that the return types on overriding methods with covariant return types are
+    // Validate that the return types on overriding methods with covariant return types are
     // compatible with the return type of the method being overridden. Compatibility rules are defined by
     // ECMA I.8.7.1, which is what the CanCastTo() API checks.
     //
-    // The second step is to propagate an overriding MethodImpl to all applicable vtable slots if the MethodImpl
+
+    // Validation not applicable to interface types and value types, since these are not currently
+    // supported with the covariant return feature
+
+    if (pMT->IsInterface() || pMT->IsValueType())
+        return;
+
+    MethodTable* pParentMT = pMT->GetParentMethodTable();
+    if (pParentMT == NULL)
+        return;
+
+    // Step 1: Validate compatibility of return types on overriding methods
+    if (pMT->GetClass()->HasCovariantOverride() && (!pMT->GetModule()->IsReadyToRun() || !pMT->GetModule()->GetReadyToRunInfo()->SkipTypeValidation()))
+    {
+        for (WORD i = 0; i < pParentMT->GetNumVirtuals(); i++)
+        {
+            if (pMT->GetRestoredSlot(i) == pParentMT->GetRestoredSlot(i))
+            {
+                // The real check is that the MethodDesc's must not match, but a simple VTable check will
+                // work most of the time, and is far faster than the GetMethodDescForSlot method.
+                _ASSERTE(pMT->GetMethodDescForSlot(i) == pParentMT->GetMethodDescForSlot(i));
+                continue;
+            }
+            MethodDesc* pMD = pMT->GetMethodDescForSlot(i);
+            MethodDesc* pParentMD = pParentMT->GetMethodDescForSlot(i);
+
+            if (pMD == pParentMD)
+                continue;
+
+            if (!pMD->RequiresCovariantReturnTypeChecking() && !pParentMD->RequiresCovariantReturnTypeChecking())
+                continue;
+
+            // The context used to load the return type of the parent method has to use the generic method arguments
+            // of the overriding method, otherwise the type comparison below will not work correctly
+            SigTypeContext context1(pParentMD->GetClassInstantiation(), pMD->GetMethodInstantiation());
+            MetaSig methodSig1(pParentMD);
+            TypeHandle hType1 = methodSig1.GetReturnProps().GetTypeHandleThrowing(pParentMD->GetModule(), &context1, ClassLoader::LoadTypesFlag::LoadTypes, CLASS_LOAD_EXACTPARENTS);
+
+            SigTypeContext context2(pMD);
+            MetaSig methodSig2(pMD);
+            TypeHandle hType2 = methodSig2.GetReturnProps().GetTypeHandleThrowing(pMD->GetModule(), &context2, ClassLoader::LoadTypesFlag::LoadTypes, CLASS_LOAD_EXACTPARENTS);
+
+            if (!IsCompatibleWith(hType1, hType2))
+            {
+                SString strAssemblyName;
+                pMD->GetAssembly()->GetDisplayName(strAssemblyName);
+
+                SString strInvalidTypeName;
+                TypeString::AppendType(strInvalidTypeName, TypeHandle(pMD->GetMethodTable()));
+
+                SString strInvalidMethodName;
+                SString strParentMethodName;
+                {
+                    CONTRACT_VIOLATION(LoadsTypeViolation);
+                    TypeString::AppendMethod(strInvalidMethodName, pMD, pMD->GetMethodInstantiation());
+                    TypeString::AppendMethod(strParentMethodName, pParentMD, pParentMD->GetMethodInstantiation());
+                }
+
+                COMPlusThrow(
+                    kTypeLoadException,
+                    IDS_CLASSLOAD_MI_BADRETURNTYPE,
+                    strInvalidMethodName,
+                    strInvalidTypeName,
+                    strAssemblyName,
+                    strParentMethodName);
+            }
+        }
+    }
+}
+
+/*static*/
+void ClassLoader::PropagateCovariantReturnMethodImplSlots(MethodTable* pMT)
+{
+    CONTRACTL
+    {
+        STANDARD_VM_CHECK;
+        PRECONDITION(CheckPointer(pMT));
+    }
+    CONTRACTL_END;
+
+    // Propagate an overriding MethodImpl to all applicable vtable slots if the MethodImpl
     // has the PreserveBaseOverrides attribute. This is to ensure that if we use the signature of one of
     // the base type methods to call the overriding method, we still execute the overriding method.
     //
@@ -1181,70 +1260,7 @@ void ClassLoader::ValidateMethodsWithCovariantReturnTypes(MethodTable* pMT)
     if (pParentMT == NULL)
         return;
 
-    // Step 1: Validate compatibility of return types on overriding methods
-    if (pMT->GetClass()->HasCovariantOverride() && (!pMT->GetModule()->IsReadyToRun() || !pMT->GetModule()->GetReadyToRunInfo()->SkipTypeValidation()))
-    {
-        for (WORD i = 0; i < pParentMT->GetNumVirtuals(); i++)
-        {
-            if (pMT->GetRestoredSlot(i) == pParentMT->GetRestoredSlot(i))
-            {
-                // The real check is that the MethodDesc's must not match, but a simple VTable check will
-                // work most of the time, and is far faster than the GetMethodDescForSlot method.
-                _ASSERTE(pMT->GetMethodDescForSlot(i) == pParentMT->GetMethodDescForSlot(i));
-                continue;
-            }
-            MethodDesc* pMD = pMT->GetMethodDescForSlot(i);
-            MethodDesc* pParentMD = pParentMT->GetMethodDescForSlot(i);
-
-            if (pMD == pParentMD)
-                continue;
-
-            if (!pMD->RequiresCovariantReturnTypeChecking() && !pParentMD->RequiresCovariantReturnTypeChecking())
-                continue;
-
-            // If the bit is not set on this method, but we reach here because it's been set on the method at the same slot on
-            // the base type, set the bit for the current method to ensure any future overriding method down the chain gets checked.
-            if (!pMD->RequiresCovariantReturnTypeChecking())
-                pMD->SetRequiresCovariantReturnTypeChecking();
-
-            // The context used to load the return type of the parent method has to use the generic method arguments
-            // of the overriding method, otherwise the type comparison below will not work correctly
-            SigTypeContext context1(pParentMD->GetClassInstantiation(), pMD->GetMethodInstantiation());
-            MetaSig methodSig1(pParentMD);
-            TypeHandle hType1 = methodSig1.GetReturnProps().GetTypeHandleThrowing(pParentMD->GetModule(), &context1, ClassLoader::LoadTypesFlag::LoadTypes, CLASS_LOAD_EXACTPARENTS);
-
-            SigTypeContext context2(pMD);
-            MetaSig methodSig2(pMD);
-            TypeHandle hType2 = methodSig2.GetReturnProps().GetTypeHandleThrowing(pMD->GetModule(), &context2, ClassLoader::LoadTypesFlag::LoadTypes, CLASS_LOAD_EXACTPARENTS);
-
-            if (!IsCompatibleWith(hType1, hType2))
-            {
-                SString strAssemblyName;
-                pMD->GetAssembly()->GetDisplayName(strAssemblyName);
-
-                SString strInvalidTypeName;
-                TypeString::AppendType(strInvalidTypeName, TypeHandle(pMD->GetMethodTable()));
-
-                SString strInvalidMethodName;
-                SString strParentMethodName;
-                {
-                    CONTRACT_VIOLATION(LoadsTypeViolation);
-                    TypeString::AppendMethod(strInvalidMethodName, pMD, pMD->GetMethodInstantiation());
-                    TypeString::AppendMethod(strParentMethodName, pParentMD, pParentMD->GetMethodInstantiation());
-                }
-
-                COMPlusThrow(
-                    kTypeLoadException,
-                    IDS_CLASSLOAD_MI_BADRETURNTYPE,
-                    strInvalidMethodName,
-                    strInvalidTypeName,
-                    strAssemblyName,
-                    strParentMethodName);
-            }
-        }
-    }
-
-    // Step 2: propate overriding MethodImpls to applicable vtable slots if the declaring method has the attribute
+    // Propagate overriding MethodImpls to applicable vtable slots if the declaring method has the attribute
 
     if (pMT->GetClass()->HasVTableMethodImpl())
     {
@@ -1264,6 +1280,11 @@ void ClassLoader::ValidateMethodsWithCovariantReturnTypes(MethodTable* pMT)
             MethodDesc* pParentMD = pParentMT->GetMethodDescForSlot(i);
             if (pMD == pParentMD)
                 continue;
+
+            // If the bit is not set on this method, but we reach here because it's been set on the method at the same slot on
+            // the base type, set the bit for the current method to ensure any future overriding method down the chain gets checked.
+            if (!pMD->RequiresCovariantReturnTypeChecking() && pParentMD->RequiresCovariantReturnTypeChecking())
+                pMD->SetRequiresCovariantReturnTypeChecking();
 
             // The attribute is only applicable to MethodImpls. For anything else, it will be treated as a no-op
             if (!pMD->IsMethodImpl())
@@ -1309,6 +1330,7 @@ void ClassLoader::ValidateMethodsWithCovariantReturnTypes(MethodTable* pMT)
         }
     }
 }
+
 
 //*******************************************************************************
 // This is the routine that computes the internal type of a given type.  It normalizes

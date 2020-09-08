@@ -971,6 +971,8 @@ private:
 
     static void LoadExactParentAndInterfacesTransitively(MethodTable *pMT);
 
+    static void PropagateCovariantReturnMethodImplSlots(MethodTable* pMT);
+
     static bool IsCompatibleWith(TypeHandle hType1, TypeHandle hType2);
     static CorElementType GetReducedTypeElementType(TypeHandle hType);
     static CorElementType GetVerificationTypeElementType(TypeHandle hType);

@@ -444,10 +444,6 @@ namespace System.Runtime.Serialization
                         }
                         catch (Exception ex)
                         {
-                            if (DiagnosticUtility.IsFatal(ex))
-                            {
-                                throw;
-                            }
                             throw DiagnosticUtility.ExceptionUtility.ThrowHelperFatal(ex.Message, ex);
                         }
                     }
@@ -931,10 +927,6 @@ namespace System.Runtime.Serialization
                     }
                     catch (Exception ex)
                     {
-                        if (DiagnosticUtility.IsFatal(ex))
-                        {
-                            throw;
-                        }
                         throw DiagnosticUtility.ExceptionUtility.ThrowHelperFatal(ex.Message, ex);
                     }
                     return key;
@@ -955,10 +947,6 @@ namespace System.Runtime.Serialization
                         }
                         catch (Exception ex)
                         {
-                            if (DiagnosticUtility.IsFatal(ex))
-                            {
-                                throw;
-                            }
                             throw DiagnosticUtility.ExceptionUtility.ThrowHelperFatal(ex.Message, ex);
                         }
                     }
@@ -972,10 +960,6 @@ namespace System.Runtime.Serialization
                     }
                     catch (Exception ex)
                     {
-                        if (DiagnosticUtility.IsFatal(ex))
-                        {
-                            throw;
-                        }
                         throw DiagnosticUtility.ExceptionUtility.ThrowHelperFatal(ex.Message, ex);
                     }
                     return value;
@@ -996,10 +980,6 @@ namespace System.Runtime.Serialization
                         }
                         catch (Exception ex)
                         {
-                            if (DiagnosticUtility.IsFatal(ex))
-                            {
-                                throw;
-                            }
                             throw DiagnosticUtility.ExceptionUtility.ThrowHelperFatal(ex.Message, ex);
                         }
                     }
@@ -1290,12 +1270,8 @@ namespace System.Runtime.Serialization
             {
                 return false;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                if (DiagnosticUtility.IsFatal(ex))
-                {
-                    throw;
-                }
                 return false;
             }
         }
