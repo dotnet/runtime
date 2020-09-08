@@ -56,7 +56,7 @@ namespace System.Net.Http
 
         internal bool _enableMultipleHttp2Connections;
 
-        internal Func<DnsEndPoint, HttpRequestMessage, CancellationToken, ValueTask<Stream>>? _connectionCallback;
+        internal Func<SocketsHttpConnectionContext, CancellationToken, ValueTask<Stream>>? _connectionCallback;
 
         internal IDictionary<string, object?>? _properties;
 

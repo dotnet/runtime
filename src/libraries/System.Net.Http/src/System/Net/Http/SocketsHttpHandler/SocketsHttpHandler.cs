@@ -366,7 +366,7 @@ namespace System.Net.Http
         /// <summary>
         /// When non-null, a custom callback used to open new connections.
         /// </summary>
-        public Func<DnsEndPoint, HttpRequestMessage, CancellationToken, ValueTask<Stream>>? ConnectCallback
+        public Func<SocketsHttpConnectionContext, CancellationToken, ValueTask<Stream>>? ConnectCallback
         {
             get => _settings._connectionCallback;
             set
