@@ -505,13 +505,11 @@ if (MSVC)
     add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/Gz>)
   endif (CLR_CMAKE_HOST_ARCH_I386)
 
-  add_compile_options($<$<OR:$<CONFIG:Release>,$<CONFIG:Relwithdebinfo>>:/GL>)
-  add_compile_options($<$<CONFIG:Checked>:/O1>)
-  add_compile_options($<$<OR:$<CONFIG:Release>,$<CONFIG:Relwithdebinfo>>:/Ob2iy->)
+  add_compile_options($<$<AND:$<COMPILE_LANGUAGE:C,CXX>,$<OR:$<CONFIG:Release>,$<CONFIG:Relwithdebinfo>>>:/GL>)
 
   if (CLR_CMAKE_HOST_ARCH_AMD64)
-  # The generator expression in the following command means that the /homeparams option is added only for debug builds
-  add_compile_options($<$<CONFIG:Debug>:/homeparams>) # Force parameters passed in registers to be written to the stack
+    # The generator expression in the following command means that the /homeparams option is added only for debug builds for C and C++ source files
+    add_compile_options($<$<AND:$<CONFIG:Debug>,$<COMPILE_LANGUAGE:C,CXX>>:/homeparams>) # Force parameters passed in registers to be written to the stack
   endif (CLR_CMAKE_HOST_ARCH_AMD64)
 
   # enable control-flow-guard support for native components for non-Arm64 builds

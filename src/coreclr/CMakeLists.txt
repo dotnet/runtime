@@ -17,7 +17,7 @@ endif (CLR_CMAKE_HOST_WIN32)
 
 if(MSVC)
   string(REPLACE "/EHsc" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-  add_compile_options(/EHa) # enable C++ EH (w/ SEH exceptions)
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/EHa>) # enable C++ EH (w/ SEH exceptions)
   set(CMAKE_CXX_STANDARD_LIBRARIES "") # do not link against standard win32 libs i.e. kernel32, uuid, user32, etc.
 endif (MSVC)
 
@@ -100,7 +100,7 @@ add_subdirectory(src/tools/aot/jitinterface)
 # All of the compiler options are specified in file compileoptions.cmake
 # Do not add any new options here. They should be added in compileoptions.cmake
 if(CLR_CMAKE_HOST_WIN32)
-  add_compile_options(/Zl) # omit default library name in .OBJ
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/Zl>) # omit default library name in .OBJ
 endif(CLR_CMAKE_HOST_WIN32)
 
 #--------------------------------
