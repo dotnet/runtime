@@ -2452,26 +2452,8 @@ namespace System.Net.Http.Functional.Tests
             Assert.Equal("foo", response);
         }
 
-        private static bool PlatformSupportsUnixDomainSockets
-        {
-            get
-            {
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                {
-                    try
-                    {
-                        using var socket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Tcp);
-                    }
-                    catch (SocketException se)
-                    {
-                        return se.SocketErrorCode != SocketError.AddressFamilyNotSupported;
-                    }
-                }
-
-                return true;
-            }
-        }
-    }
+        private static bool PlatformSupportsUnixDomainSockets => Socket.OSSupportsUnixDomainSockets;
+   }
 
     public sealed class SocketsHttpHandlerTest_ConnectCallback_Http11 : SocketsHttpHandlerTest_ConnectCallback
     {
