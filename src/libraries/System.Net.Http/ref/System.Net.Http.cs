@@ -366,7 +366,7 @@ namespace System.Net.Http
     {
         internal SocketsHttpConnectionContext() { }
         public DnsEndPoint DnsEndPoint { get { throw null; } }
-        public HttpRequestMessage HttpRequestMessage { get { throw null; } }
+        public HttpRequestMessage RequestMessage { get { throw null; } }
     }
 
     public enum HttpKeepAlivePingPolicy

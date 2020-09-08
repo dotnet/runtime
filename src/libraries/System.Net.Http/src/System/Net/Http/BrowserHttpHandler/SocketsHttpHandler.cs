@@ -172,7 +172,7 @@ namespace System.Net.Http
             set => throw new PlatformNotSupportedException();
         }
 
-        public Func<DnsEndPoint, HttpRequestMessage, CancellationToken, ValueTask<Stream>>? ConnectCallback
+        public Func<SocketsHttpConnectionContext, CancellationToken, ValueTask<Stream>>? ConnectCallback
         {
             get => throw new PlatformNotSupportedException();
             set => throw new PlatformNotSupportedException();

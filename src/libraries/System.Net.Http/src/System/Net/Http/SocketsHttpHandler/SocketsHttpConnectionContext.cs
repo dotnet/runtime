@@ -16,6 +16,6 @@ namespace System.Net.Http
 
         public DnsEndPoint DnsEndPoint => _dnsEndPoint;
 
-        public HttpRequestMessage HttpRequestMessage => _requestMessage;
+        public HttpRequestMessage RequestMessage => _requestMessage;
     }
 }
