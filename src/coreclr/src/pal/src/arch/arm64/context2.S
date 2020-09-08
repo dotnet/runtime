@@ -111,6 +111,7 @@ LEAF_END CONTEXT_CaptureContext, _TEXT
 
 // Incoming:
 //  x0: Context*
+
 LEAF_ENTRY RtlCaptureContext, _TEXT
     PROLOG_STACK_ALLOC 16
     .cfi_adjust_cfa_offset 16
@@ -128,7 +129,6 @@ LEAF_ENTRY RtlCaptureContext, _TEXT
     b C_FUNC(CONTEXT_CaptureContext)
 LEAF_END RtlCaptureContext, _TEXT
 
-#ifndef HOST_OSX
 // Incoming:
 //  x0: Context*
 //  x1: Exception*
@@ -213,4 +213,3 @@ LOCAL_LABEL(No_Restore_CONTEXT_CONTROL):
    ret
 
 LEAF_END RtlRestoreContext, _TEXT
-#endif // !HOST_OSX
