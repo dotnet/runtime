@@ -372,7 +372,7 @@ if (CLR_CMAKE_HOST_UNIX)
       # 'pthread_jit_write_protect_np' is only available on macOS 11.0 or newer
       set(MACOS_VERSION_MIN_FLAGS -mmacosx-version-min=11.0)
       add_compile_options(-arch arm64)
-    elseif(CLR_CMAKE_HOST_ARCH_X64)
+    elseif(CLR_CMAKE_HOST_ARCH_AMD64)
       set(MACOS_VERSION_MIN_FLAGS -mmacosx-version-min=10.13)
       add_compile_options(-arch x86_64)
     else()
