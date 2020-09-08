@@ -5,6 +5,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Net.Sockets;
+using System.Runtime.Versioning;
 
 namespace System.Net
 {
@@ -154,6 +155,7 @@ namespace System.Net
 
         public override SocketAddress Serialize() => new SocketAddress(Address, Port);
 
+        [UnsupportedOSPlatform("browser")]
         public override EndPoint Create(SocketAddress socketAddress)
         {
             if (socketAddress == null)

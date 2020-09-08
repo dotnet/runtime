@@ -269,6 +269,7 @@ namespace System.Net
         public System.Net.IPAddress Address { get { throw null; } set { } }
         public override System.Net.Sockets.AddressFamily AddressFamily { get { throw null; } }
         public int Port { get { throw null; } set { } }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public override System.Net.EndPoint Create(System.Net.SocketAddress socketAddress) { throw null; }
         public override bool Equals(object? comparand) { throw null; }
         public override int GetHashCode() { throw null; }
@@ -308,13 +309,17 @@ namespace System.Net
     }
     public partial class SocketAddress
     {
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public SocketAddress(System.Net.Sockets.AddressFamily family) { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public SocketAddress(System.Net.Sockets.AddressFamily family, int size) { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public System.Net.Sockets.AddressFamily Family { get { throw null; } }
         public byte this[int offset] { get { throw null; } set { } }
         public int Size { get { throw null; } }
         public override bool Equals(object? comparand) { throw null; }
         public override int GetHashCode() { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public override string ToString() { throw null; }
     }
     public abstract partial class TransportContext
