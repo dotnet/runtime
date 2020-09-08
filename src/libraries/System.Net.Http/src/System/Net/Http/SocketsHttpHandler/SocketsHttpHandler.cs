@@ -364,7 +364,7 @@ namespace System.Net.Http
         internal bool SupportsRedirectConfiguration => true;
 
         /// <summary>
-        /// When non-null, a custom factory used to open new connections.
+        /// When non-null, a custom callback used to open new connections.
         /// </summary>
         public Func<DnsEndPoint, HttpRequestMessage, CancellationToken, ValueTask<Stream>>? ConnectCallback
         {
