@@ -2806,14 +2806,6 @@ LocalAlloc(
 PALIMPORT
 HLOCAL
 PALAPI
-LocalReAlloc(
-       IN HLOCAL hMem,
-       IN SIZE_T uBytes,
-       IN UINT   uFlags);
-
-PALIMPORT
-HLOCAL
-PALAPI
 LocalFree(
       IN HLOCAL hMem);
 

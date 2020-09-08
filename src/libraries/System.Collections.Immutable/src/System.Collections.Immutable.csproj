@@ -108,9 +108,12 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="System.Diagnostics.Contracts" Condition="$(TargetFramework.StartsWith('netstandard1.'))" Version="$(SystemDiagnosticsContractsVersion)" />
-    <PackageReference Include="System.Memory" Condition="'$(TargetFramework)' == 'netstandard1.3' or
-                                                         '$(TargetFramework)' == 'netstandard2.0' or
-                                                         $(TargetFramework.StartsWith('net4'))" Version="$(SystemMemoryVersion)" />
     <PackageReference Include="System.Runtime.InteropServices" Condition="'$(TargetFramework)' == 'netstandard1.3'" Version="$(SystemRuntimeInteropServicesVersion)" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.3' or
+                        '$(TargetFramework)' == 'netstandard2.0' or
+                        $(TargetFramework.StartsWith('net4'))">
+    <PackageReference Include="System.Memory"  Version="$(SystemMemoryVersion)" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.CompilerServices.Unsafe\src\System.Runtime.CompilerServices.Unsafe.ilproj" />
   </ItemGroup>
 </Project>

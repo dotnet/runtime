@@ -104,7 +104,7 @@ jobs:
           displayName: 'live-built libraries'
 
     # Populate Core_Root
-    - script: $(Build.SourcesDirectory)/src/coreclr/build-test$(scriptExt) $(buildConfig) $(archType) $(crossArg) generatelayoutonly
+    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(buildConfig) $(archType) $(crossArg) generatelayoutonly
       displayName: Populate Core_Root
 
     # Create directories and ensure crossgen is executable

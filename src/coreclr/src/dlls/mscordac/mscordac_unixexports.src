@@ -138,7 +138,6 @@ nativeStringResourceTable_mscorrc
 #LoadLibraryW
 #LoadLibraryExW
 #LocalAlloc
-#LocalReAlloc
 #LocalFree
 #MapViewOfFile
 #MoveFileExW

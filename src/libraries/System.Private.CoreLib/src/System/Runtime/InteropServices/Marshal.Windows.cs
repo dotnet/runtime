@@ -126,5 +126,86 @@ namespace System.Runtime.InteropServices
 
             bytes[byteLength] = 0;
         }
+
+        public static IntPtr AllocHGlobal(IntPtr cb)
+        {
+            IntPtr pNewMem = Interop.Kernel32.LocalAlloc(Interop.Kernel32.LMEM_FIXED, (nuint)(nint)cb);
+            if (pNewMem == IntPtr.Zero)
+            {
+                throw new OutOfMemoryException();
+            }
+            return pNewMem;
+        }
+
+        public static void FreeHGlobal(IntPtr hglobal)
+        {
+            if (!IsNullOrWin32Atom(hglobal))
+            {
+                Interop.Kernel32.LocalFree(hglobal);
+            }
+        }
+
+        public static IntPtr ReAllocHGlobal(IntPtr pv, IntPtr cb)
+        {
+            if (pv == IntPtr.Zero)
+            {
+                // LocalReAlloc fails for pv == IntPtr.Zero. Call AllocHGlobal instead for better fidelity
+                // with standard C/C++ realloc behavior.
+                return AllocHGlobal(cb);
+            }
+
+            IntPtr pNewMem = Interop.Kernel32.LocalReAlloc(pv, (nuint)(nint)cb, Interop.Kernel32.LMEM_MOVEABLE);
+            if (pNewMem == IntPtr.Zero)
+            {
+                throw new OutOfMemoryException();
+            }
+            return pNewMem;
+        }
+
+        public static IntPtr AllocCoTaskMem(int cb)
+        {
+            IntPtr pNewMem = Interop.Ole32.CoTaskMemAlloc((uint)cb);
+            if (pNewMem == IntPtr.Zero)
+            {
+                throw new OutOfMemoryException();
+            }
+            return pNewMem;
+        }
+
+        public static void FreeCoTaskMem(IntPtr ptr)
+        {
+            if (!IsNullOrWin32Atom(ptr))
+            {
+                Interop.Ole32.CoTaskMemFree(ptr);
+            }
+        }
+
+        public static IntPtr ReAllocCoTaskMem(IntPtr pv, int cb)
+        {
+            IntPtr pNewMem = Interop.Ole32.CoTaskMemRealloc(pv, (uint)cb);
+            if (pNewMem == IntPtr.Zero && cb != 0)
+            {
+                throw new OutOfMemoryException();
+            }
+            return pNewMem;
+        }
+
+        internal static IntPtr AllocBSTR(int length)
+        {
+            IntPtr bstr = Interop.OleAut32.SysAllocStringLen(IntPtr.Zero, (uint)length);
+            if (bstr == IntPtr.Zero)
+            {
+                throw new OutOfMemoryException();
+            }
+            return bstr;
+        }
+
+        public static void FreeBSTR(IntPtr ptr)
+        {
+            if (!IsNullOrWin32Atom(ptr))
+            {
+                Interop.OleAut32.SysFreeString(ptr);
+            }
+        }
     }
 }

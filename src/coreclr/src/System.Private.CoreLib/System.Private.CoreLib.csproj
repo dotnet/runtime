@@ -250,12 +250,6 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.HandleTypes.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.HandleTypes.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.LocalAlloc.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.LocalAlloc.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Ole32\Interop.CoTaskMemAlloc.cs">
-      <Link>Common\Interop\Windows\Ole32\Interop.CoTaskMemAlloc.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\OleAut32\Interop.SysAllocStringByteLen.cs">
       <Link>Common\Interop\Windows\OleAut32\Interop.SysAllocStringByteLen.cs</Link>
     </Compile>

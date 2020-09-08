@@ -314,6 +314,7 @@ export COMPlus_gcServer="$serverGC"
 
 runtestPyArguments=("-arch" "${buildArch}" "-build_type" "${buildConfiguration}")
 scriptPath="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
+repoRootDir=$scriptPath/../..
 
 if [ -z "$testRootDir" ]; then
     echo "testRootDir and other existing arguments is no longer required. If the "
@@ -415,6 +416,6 @@ __Python=python
 fi
 
 # Run the tests using cross platform runtest.py
-echo "python ${scriptPath}/runtest.py ${runtestPyArguments[@]}"
-$__Python "${scriptPath}/runtest.py" "${runtestPyArguments[@]}"
+echo "python $repoRootDir/src/coreclr/tests/runtest.py ${runtestPyArguments[@]}"
+$__Python "$repoRootDir/src/coreclr/tests/runtest.py" "${runtestPyArguments[@]}"
 exit "$?"
