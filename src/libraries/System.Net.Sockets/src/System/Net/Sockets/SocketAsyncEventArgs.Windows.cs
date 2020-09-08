@@ -1223,10 +1223,8 @@ namespace System.Net.Sockets
 
         private static readonly unsafe IOCompletionCallback s_completionPortCallback = delegate (uint errorCode, uint numBytes, NativeOverlapped* nativeOverlapped)
         {
-#pragma warning disable CA1416 // https://github.com/dotnet/roslyn-analyzers/issues/4090
             Debug.Assert(OperatingSystem.IsWindows());
             var saeaBox = (StrongBox<SocketAsyncEventArgs>)(ThreadPoolBoundHandle.GetNativeOverlappedState(nativeOverlapped)!);
-#pragma warning restore CA1416 // https://github.com/dotnet/roslyn-analyzers/issues/4090
 
             Debug.Assert(saeaBox.Value != null);
             SocketAsyncEventArgs saea = saeaBox.Value;
