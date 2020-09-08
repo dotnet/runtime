@@ -928,6 +928,10 @@ describe_value(MonoType * type, gpointer addr, int gpflags)
 			}
 
 			type = m_class_get_byval_arg (klass);
+			if (type->type == MONO_TYPE_OBJECT) {
+				mono_wasm_add_obj_var ("object", "object", get_object_id (obj));
+				break;
+			}
 
 			// Boxed valuetype
 			if (m_class_is_valuetype (klass))
