@@ -2,10 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Threading;
 
 namespace System.Xml
 {
@@ -13,7 +11,7 @@ namespace System.Xml
     ///  The XmlCharType class is used for quick character type recognition
     ///  which is optimized for the first 127 ascii characters.
     /// </summary>
-    internal struct XmlCharType
+    internal static class XmlCharType
     {
         // Surrogate constants
         internal const int SurHighStart = 0xd800;    // 1101 10xx
@@ -29,125 +27,78 @@ namespace System.Xml
         // NCName characters -- Section 2.3 [4]          (Name characters without ':')
         // Character data characters -- Section 2.2 [2]
         // PubidChar ::=  #x20 | #xD | #xA | [a-zA-Z0-9] | [-'()+,./:=?;!*#@$_%] Section 2.3 of spec
-        internal const int fWhitespace = 1;
-        internal const int fLetter = 2;
-        internal const int fNCStartNameSC = 4;
-        internal const int fNCNameSC = 8;
-        internal const int fCharData = 16;
-        internal const int fNCNameXml4e = 32;
-        internal const int fText = 64;
-        internal const int fAttrValue = 128;
+        internal const uint Whitespace = 1;
+        internal const uint Letter = 2;
+        internal const uint NCStartNameSC = 4;
+        internal const uint NCNameSC = 8;
+        internal const uint CharData = 16;
+        internal const uint NCNameXml4e = 32;
+        internal const uint Text = 64;
+        internal const uint AttrValue = 128;
 
         // bitmap for public ID characters - 1 bit per character 0x0 - 0x80; no character > 0x80 is a PUBLIC ID char
-        private const string s_PublicIdBitmap = "\u2400\u0000\uffbb\uafff\uffff\u87ff\ufffe\u07ff";
+        private const string PublicIdBitmap = "\u2400\u0000\uffbb\uafff\uffff\u87ff\ufffe\u07ff";
 
-
-        public static XmlCharType Instance => default;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public readonly bool IsWhiteSpace(char ch)
-        {
-            return (Unsafe.Add(ref MemoryMarshal.GetReference(CharProperties), ch) & fWhitespace) != 0;
-        }
+        public static bool IsWhiteSpace(char ch) => (GetCharProperties(ch) & Whitespace) != 0u;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public readonly bool IsNCNameSingleChar(char ch)
-        {
-            return (Unsafe.Add(ref MemoryMarshal.GetReference(CharProperties), ch) & fNCNameSC) != 0;
-        }
+        public static bool IsNCNameSingleChar(char ch) => (GetCharProperties(ch) & NCNameSC) != 0u;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public readonly bool IsStartNCNameSingleChar(char ch)
-        {
-            return (Unsafe.Add(ref MemoryMarshal.GetReference(CharProperties), ch) & fNCStartNameSC) != 0;
-        }
+        public static bool IsStartNCNameSingleChar(char ch) => (GetCharProperties(ch) & NCStartNameSC) != 0u;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public readonly bool IsNameSingleChar(char ch)
-        {
-            return IsNCNameSingleChar(ch) || ch == ':';
-        }
+        public static bool IsNameSingleChar(char ch) => IsNCNameSingleChar(ch) || ch == ':';
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public readonly bool IsCharData(char ch)
-        {
-            return (Unsafe.Add(ref MemoryMarshal.GetReference(CharProperties), ch) & fCharData) != 0;
-        }
+        public static bool IsCharData(char ch) => (GetCharProperties(ch) & CharData) != 0u;
 
         // [13] PubidChar ::=  #x20 | #xD | #xA | [a-zA-Z0-9] | [-'()+,./:=?;!*#@$_%] Section 2.3 of spec
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public readonly bool IsPubidChar(char ch)
+        public static bool IsPubidChar(char ch)
         {
             if (ch < (char)0x80)
             {
-                return (s_PublicIdBitmap[ch >> 4] & (1 << (ch & 0xF))) != 0;
+                return (PublicIdBitmap[ch >> 4] & (1 << (ch & 0xF))) != 0;
             }
             return false;
         }
 
         // TextChar = CharData - { 0xA, 0xD, '<', '&', ']' }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal readonly bool IsTextChar(char ch)
-        {
-            return (Unsafe.Add(ref MemoryMarshal.GetReference(CharProperties), ch) & fText) != 0;
-        }
+        internal static bool IsTextChar(char ch) => (GetCharProperties(ch) & Text) != 0u;
 
         // AttrValueChar = CharData - { 0xA, 0xD, 0x9, '<', '>', '&', '\'', '"' }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal readonly bool IsAttributeValueChar(char ch)
-        {
-            return (Unsafe.Add(ref MemoryMarshal.GetReference(CharProperties), ch) & fAttrValue) != 0;
-        }
+        internal static bool IsAttributeValueChar(char ch) => (GetCharProperties(ch) & AttrValue) != 0u;
 
         // XML 1.0 Fourth Edition definitions
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public readonly bool IsLetter(char ch)
-        {
-            return (Unsafe.Add(ref MemoryMarshal.GetReference(CharProperties), ch) & fLetter) != 0;
-        }
+        public static bool IsLetter(char ch) => (GetCharProperties(ch) & Letter) != 0u;
 
         // This method uses the XML 4th edition name character ranges
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public readonly bool IsNCNameCharXml4e(char ch)
-        {
-            return (Unsafe.Add(ref MemoryMarshal.GetReference(CharProperties), ch) & fNCNameXml4e) != 0;
-        }
+        public static bool IsNCNameCharXml4e(char ch) => (GetCharProperties(ch) & NCNameXml4e) != 0u;
 
         // This method uses the XML 4th edition name character ranges
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public readonly bool IsStartNCNameCharXml4e(char ch)
-        {
-            return IsLetter(ch) || ch == '_';
-        }
+        public static bool IsStartNCNameCharXml4e(char ch) => IsLetter(ch) || ch == '_';
 
         // This method uses the XML 4th edition name character ranges
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public readonly bool IsNameCharXml4e(char ch)
-        {
-            return IsNCNameCharXml4e(ch) || ch == ':';
-        }
+        public static bool IsNameCharXml4e(char ch) => IsNCNameCharXml4e(ch) || ch == ':';
 
         // Digit methods
-        public static bool IsDigit(char ch)
-        {
-            return InRange(ch, 0x30, 0x39);
-        }
+        public static bool IsDigit(char ch) => InRange(ch, 0x30, 0x39);
 
         // Surrogate methods
-        internal static bool IsHighSurrogate(int ch)
-        {
-            return InRange(ch, SurHighStart, SurHighEnd);
-        }
+        internal static bool IsHighSurrogate(int ch) => InRange(ch, SurHighStart, SurHighEnd);
 
-        internal static bool IsLowSurrogate(int ch)
-        {
-            return InRange(ch, SurLowStart, SurLowEnd);
-        }
+        internal static bool IsLowSurrogate(int ch) => InRange(ch, SurLowStart, SurLowEnd);
 
-        internal static bool IsSurrogate(int ch)
-        {
-            return InRange(ch, SurHighStart, SurLowEnd);
-        }
+        internal static bool IsSurrogate(int ch) => InRange(ch, SurHighStart, SurLowEnd);
 
         internal static int CombineSurrogateChar(int lowChar, int highChar)
         {
@@ -161,19 +112,19 @@ namespace System.Xml
             highChar = (char)(SurHighStart + v / 1024);
         }
 
-        internal readonly bool IsOnlyWhitespace(string? str)
+        internal static bool IsOnlyWhitespace(string? str)
         {
             return IsOnlyWhitespaceWithPos(str) == -1;
         }
 
         // Character checking on strings
-        internal readonly int IsOnlyWhitespaceWithPos(string? str)
+        internal static int IsOnlyWhitespaceWithPos(string? str)
         {
             if (str != null)
             {
                 for (int i = 0; i < str.Length; i++)
                 {
-                    if ((Unsafe.Add(ref MemoryMarshal.GetReference(CharProperties), str[i]) & fWhitespace) == 0)
+                    if ((GetCharProperties(str[i]) & Whitespace) == 0u)
                     {
                         return i;
                     }
@@ -182,13 +133,13 @@ namespace System.Xml
             return -1;
         }
 
-        internal readonly int IsOnlyCharData(string str)
+        internal static int IsOnlyCharData(string str)
         {
             if (str != null)
             {
                 for (int i = 0; i < str.Length; i++)
                 {
-                    if ((Unsafe.Add(ref MemoryMarshal.GetReference(CharProperties), str[i]) & fCharData) == 0)
+                    if ((GetCharProperties(str[i]) & CharData) == 0u)
                     {
                         if (i + 1 >= str.Length || !(XmlCharType.IsHighSurrogate(str[i]) && XmlCharType.IsLowSurrogate(str[i + 1])))
                         {
@@ -220,7 +171,7 @@ namespace System.Xml
             return true;
         }
 
-        internal readonly int IsPublicId(string str)
+        internal static int IsPublicId(string str)
         {
             if (str != null)
             {
@@ -241,6 +192,9 @@ namespace System.Xml
             Debug.Assert(start <= end);
             return (uint)(value - start) <= (uint)(end - start);
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static uint GetCharProperties(char ch) => Unsafe.Add(ref MemoryMarshal.GetReference(CharProperties), ch);
 
         private static ReadOnlySpan<byte> CharProperties => new byte[]
         {
