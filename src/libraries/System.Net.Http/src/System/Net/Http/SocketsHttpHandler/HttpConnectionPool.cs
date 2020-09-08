@@ -1303,7 +1303,7 @@ namespace System.Net.Http
 
             if (Settings._connectionCallback is not null)
             {
-                throw new InvalidOperationException(SR.net_http_sync_operations_not_allowed_with_connect_callback);
+                throw new NotSupportedException(SR.net_http_sync_operations_not_allowed_with_connect_callback);
             }
 
             try
