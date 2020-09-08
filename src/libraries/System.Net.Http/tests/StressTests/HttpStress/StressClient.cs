@@ -185,7 +185,7 @@ namespace HttpStress
                     }
                     catch (Exception e)
                     {
-                        _aggregator.RecordFailure(e, opIndex, stopwatch.Elapsed, taskNum: taskNum, iteration: i);
+                        _aggregator.RecordFailure(e, opIndex, stopwatch.Elapsed, requestContext.IsCancellationRequested, taskNum: taskNum, iteration: i);
                     }
                 }
 
@@ -222,12 +222,12 @@ namespace HttpStress
             // Representative error text of stress failure
             public string ErrorText { get; }
             // Operation id => failure timestamps
-            public Dictionary<int, List<(DateTime timestamp, TimeSpan duration)>> Failures { get; }
+            public Dictionary<int, List<(DateTime timestamp, TimeSpan duration, bool isCancelled)>> Failures { get; }
 
             public StressFailureType(string errorText)
             {
                 ErrorText = errorText;
-                Failures = new Dictionary<int, List<(DateTime timestamp, TimeSpan duration)>>();
+                Failures = new Dictionary<int, List<(DateTime timestamp, TimeSpan duration, bool isCancelled)>>();
             }
 
             public int FailureCount => Failures.Values.Select(x => x.Count).Sum();
@@ -272,7 +272,7 @@ namespace HttpStress
                 _latencies.Add(elapsed.TotalMilliseconds);
             }
 
-            public void RecordFailure(Exception exn, int operationIndex, TimeSpan elapsed, int taskNum, long iteration)
+            public void RecordFailure(Exception exn, int operationIndex, TimeSpan elapsed, bool isCancelled, int taskNum, long iteration)
             {
                 DateTime timestamp = DateTime.Now;
                 
@@ -293,13 +293,13 @@ namespace HttpStress
 
                     lock (failureType)
                     {
-                        if(!failureType.Failures.TryGetValue(operationIndex, out List<(DateTime timestamp, TimeSpan duration)>? timestamps))
+                        if(!failureType.Failures.TryGetValue(operationIndex, out List<(DateTime timestamp, TimeSpan duration, bool isCancelled)>? details))
                         {
-                            timestamps = new List<(DateTime timestamp, TimeSpan duration)>();
-                            failureType.Failures.Add(operationIndex, timestamps);
+                            details = new List<(DateTime timestamp, TimeSpan duration, bool isCancelled)>();
+                            failureType.Failures.Add(operationIndex, details);
                         }
 
-                        timestamps.Add((timestamp, elapsed));
+                        details.Add((timestamp, elapsed, isCancelled));
                     }
 
                     (Type exception, string message, string callSite)[] ClassifyFailure(Exception exn)
@@ -439,7 +439,7 @@ namespace HttpStress
                     Console.WriteLine(failure.ErrorText);
                     Console.WriteLine();
                     Console.ForegroundColor = ConsoleColor.Yellow;
-                    foreach (KeyValuePair<int, List<(DateTime timestamp, TimeSpan duration)>> operation in failure.Failures)
+                    foreach (KeyValuePair<int, List<(DateTime timestamp, TimeSpan duration, bool isCancelled)>> operation in failure.Failures)
                     {
                         Console.ForegroundColor = ConsoleColor.Cyan;
                         Console.Write($"\t{_operationNames[operation.Key].PadRight(30)}");
@@ -448,7 +448,7 @@ namespace HttpStress
                         Console.Write("Fail: ");
                         Console.ResetColor();
                         Console.Write(operation.Value.Count);
-                        Console.WriteLine($"\tTimestamps: {string.Join(", ", operation.Value.Select(x => $"{x.timestamp:HH:mm:ss.fffffff} in {x.duration}"))}");
+                        Console.WriteLine($"\t{string.Join(", ", operation.Value.Select(x => $"Timestamps: {x.timestamp:HH:mm:ss.fffffff}, Duration: {x.duration}, Cancelled: {x.isCancelled}"))}");
                     }
 
                     Console.ForegroundColor = ConsoleColor.Cyan;
@@ -466,7 +466,7 @@ namespace HttpStress
 
         private class StructuralEqualityComparer<T> : IEqualityComparer<T> where T : IStructuralEquatable
         {
-            public bool Equals([AllowNull] T left, [AllowNull] T right) => left != null && left.Equals(right, StructuralComparisons.StructuralEqualityComparer);
+            public bool Equals(T? left, T? right) => left != null && left.Equals(right, StructuralComparisons.StructuralEqualityComparer);
             public int GetHashCode([DisallowNull] T value) => value.GetHashCode(StructuralComparisons.StructuralEqualityComparer);
         }
     }

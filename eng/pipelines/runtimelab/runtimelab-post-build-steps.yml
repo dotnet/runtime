@@ -7,7 +7,7 @@ parameters:
 
 steps:
   # Build coreclr native test output
-  - script: $(Build.SourcesDirectory)/src/coreclr/build-test$(scriptExt) skipstressdependencies skipmanaged skipgeneratelayout $(buildConfigUpper) ${{ parameters.archType }}
+  - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) skipstressdependencies skipmanaged skipgeneratelayout $(buildConfigUpper) ${{ parameters.archType }}
     displayName: Build native test components
 
   # Copy all build output into artifacts staging directory
