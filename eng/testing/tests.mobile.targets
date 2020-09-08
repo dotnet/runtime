@@ -147,6 +147,7 @@
       MainAssembly="$(PublishDir)WasmTestRunner.dll"
       MainJS="$(MonoProjectRoot)\wasm\runtime-test.js"
       ExtraAssemblies="@(ExtraAssemblies)"
+      SatelliteAssemblies="@(WasmSatelliteAssemblies)"
       FilesToIncludeInFileSystem="@(WasmFilesToIncludeInFileSystem)"
       AssemblySearchPaths="@(AssemblySearchPaths)" />
   </Target>
