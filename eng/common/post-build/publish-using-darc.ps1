@@ -58,7 +58,6 @@ try {
   --azdev-pat $AzdoToken `
   --bar-uri $MaestroApiEndPoint `
   --password $MaestroToken `
-  --publish-installers-and-checksums `
 	@optionalParams
 
   if ($LastExitCode -ne 0) {
@@ -67,7 +66,7 @@ try {
   }
 
   Write-Host 'done.'
-}
+} 
 catch {
   Write-Host $_
   Write-PipelineTelemetryError -Category 'PromoteBuild' -Message "There was an error while trying to publish build '$BuildId' to default channels."
