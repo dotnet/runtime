@@ -4083,7 +4083,8 @@ void CodeGen::genCodeForShift(GenTree* tree)
         }
         else
         {
-            int shiftByValue = (int)shiftBy->AsIntConCommon()->IconValue();
+#if defined(TARGET_64BIT)
+            const int shiftByValue = (int)shiftBy->AsIntConCommon()->IconValue();
 
             // Try to emit rorx if BMI2 is available instead of mov+rol
             // it makes sense only for 64bit integers
@@ -4093,18 +4094,18 @@ void CodeGen::genCodeForShift(GenTree* tree)
             {
                 const int value = tree->OperIs(GT_ROL) ? (64 - shiftByValue) : shiftByValue;
                 GetEmitter()->emitIns_R_R_I(INS_rorx, size, tree->GetRegNum(), operandReg, value);
+                genProduceReg(tree);
+                return;
             }
-            else
+#endif
+            // First, move the operand to the destination register and
+            // later on perform the shift in-place.
+            // (LSRA will try to avoid this situation through preferencing.)
+            if (tree->GetRegNum() != operandReg)
             {
-                // First, move the operand to the destination register and
-                // later on perform the shift in-place.
-                // (LSRA will try to avoid this situation through preferencing.)
-                if (tree->GetRegNum() != operandReg)
-                {
-                    inst_RV_RV(INS_mov, tree->GetRegNum(), operandReg, targetType);
-                }
-                inst_RV_SH(ins, size, tree->GetRegNum(), shiftByValue);
+                inst_RV_RV(INS_mov, tree->GetRegNum(), operandReg, targetType);
             }
+            inst_RV_SH(ins, size, tree->GetRegNum(), shiftByValue);
         }
     }
     else
