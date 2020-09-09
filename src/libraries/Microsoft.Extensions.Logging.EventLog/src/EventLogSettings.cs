@@ -55,8 +55,9 @@ namespace Microsoft.Extensions.Logging.EventLog
                 defaultEventId = 1000;
             }
 
-
+#if NETSTANDARD
             Debug.Assert(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
+#endif
             return new WindowsEventLog(logName, machineName, sourceName) { DefaultEventId = defaultEventId };
         }
     }

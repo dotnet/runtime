@@ -56,7 +56,9 @@ internal static partial class Interop
             {
                 fixed (int* pResult = &result)
                 {
+#if NETSTANDARD || NETCOREAPP
                     Debug.Assert(OperatingSystem.IsWindows());
+#endif
 
                     errorCode = Interop.NCrypt.NCryptGetProperty(
                         hObject,
