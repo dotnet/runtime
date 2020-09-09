@@ -4083,16 +4083,15 @@ void CodeGen::genCodeForShift(GenTree* tree)
         }
         else
         {
-            int typeWidth    = genTypeSize(genActualType(targetType)) * 8;
             int shiftByValue = (int)shiftBy->AsIntConCommon()->IconValue();
 
             // Try to emit rorx if BMI2 is available instead of mov+rol
-            if (compiler->compOpportunisticallyDependsOn(InstructionSet_BMI2) && (tree->GetRegNum() != operandReg) &&
-                tree->OperIs(GT_ROL, GT_ROR) && (shiftByValue > 0) && (shiftByValue < typeWidth))
+            // it makes sense only for 64bit integers
+            if ((genActualType(targetType) == TYP_LONG) && (tree->GetRegNum() != operandReg) &&
+                compiler->compOpportunisticallyDependsOn(InstructionSet_BMI2) && tree->OperIs(GT_ROL, GT_ROR) &&
+                (shiftByValue > 0) && (shiftByValue < 64))
             {
-                assert((typeWidth == 32) || (typeWidth == 64));
-
-                int value = tree->OperIs(GT_ROL) ? (typeWidth - shiftByValue) : shiftByValue;
+                const int value = tree->OperIs(GT_ROL) ? (64 - shiftByValue) : shiftByValue;
                 GetEmitter()->emitIns_R_R_I(INS_rorx, size, tree->GetRegNum(), operandReg, value);
             }
             else
