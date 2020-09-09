@@ -308,8 +308,10 @@ namespace System.Security.Cryptography
         protected virtual void Dispose(bool disposing) { }
         public virtual System.Security.Cryptography.ECParameters ExportExplicitParameters() { throw null; }
         public virtual System.Security.Cryptography.ECParameters ExportParameters() { throw null; }
+        public virtual byte[] ExportSubjectPublicKeyInfo() { throw null; }
         public virtual byte[] ToByteArray() { throw null; }
         public virtual string ToXmlString() { throw null; }
+        public virtual bool TryExportSubjectPublicKeyInfo(System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
     public abstract partial class ECDsa : System.Security.Cryptography.AsymmetricAlgorithm
     {
