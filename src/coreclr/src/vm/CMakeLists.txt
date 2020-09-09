@@ -9,18 +9,12 @@ add_definitions(-DUNICODE)
 add_definitions(-D_UNICODE)
 
 if(FEATURE_AUTO_TRACE)
-  add_definitions(-DFEATURE_AUTO_TRACE)
+    add_definitions(-DFEATURE_AUTO_TRACE)
 endif(FEATURE_AUTO_TRACE)
 
-if(CMAKE_CONFIGURATION_TYPES) # multi-configuration generator?
-  foreach (Config DEBUG CHECKED)
-    set_property(DIRECTORY APPEND PROPERTY COMPILE_DEFINITIONS $<$<CONFIG:${Config}>:WRITE_BARRIER_CHECK=1>)
-  endforeach (Config)
-else()
-  if(UPPERCASE_CMAKE_BUILD_TYPE STREQUAL DEBUG OR UPPERCASE_CMAKE_BUILD_TYPE STREQUAL CHECKED)
-    add_definitions(-DWRITE_BARRIER_CHECK)
-  endif(UPPERCASE_CMAKE_BUILD_TYPE STREQUAL DEBUG OR UPPERCASE_CMAKE_BUILD_TYPE STREQUAL CHECKED)
-endif(CMAKE_CONFIGURATION_TYPES)
+foreach (Config DEBUG CHECKED)
+    add_compile_definitions($<$<CONFIG:${Config}>:WRITE_BARRIER_CHECK>)
+endforeach (Config)
 
 if(FEATURE_GDBJIT)
     set(VM_SOURCES_GDBJIT
