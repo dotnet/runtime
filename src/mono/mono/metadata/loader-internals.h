@@ -88,8 +88,6 @@ struct _MonoMemoryManager {
 	// Whether the MemoryManager is in the process of being freed
 	gboolean freeing;
 
-	// Entries moved over from the domain:
-
 	// If taking this with the loader lock, always take this second
 	// Currently unused, we take the domain lock instead
 	MonoCoopMutex lock;
