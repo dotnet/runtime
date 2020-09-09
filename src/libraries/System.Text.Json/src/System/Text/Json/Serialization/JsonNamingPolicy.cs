@@ -25,6 +25,10 @@ namespace System.Text.Json
         /// </summary>
         public static JsonNamingPolicy SnakeCase { get; } = new JsonSnakeCaseNamingPolicy();
 
+        // KebabCase was added together with SnakeCase because sharing implementation.
+        // Once approved it can be made public.
+        internal static JsonNamingPolicy KebabCase { get; } = new JsonKebabCaseNamingPolicy();
+
         /// <summary>
         /// When overridden in a derived class, converts the specified name according to the policy.
         /// </summary>
