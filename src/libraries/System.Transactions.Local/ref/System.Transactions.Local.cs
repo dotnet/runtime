@@ -173,6 +173,7 @@ namespace System.Transactions
         public string LocalIdentifier { get { throw null; } }
         public System.Transactions.TransactionStatus Status { get { throw null; } }
     }
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     public static partial class TransactionInterop
     {
         public static readonly System.Guid PromoterTypeDtc;
@@ -191,7 +192,9 @@ namespace System.Transactions
         public static System.Transactions.HostCurrentTransactionCallback? HostCurrentCallback { get { throw null; } set { } }
         public static System.TimeSpan MaximumTimeout { get { throw null; } }
         public static event System.Transactions.TransactionStartedEventHandler? DistributedTransactionStarted { add { } remove { } }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static void RecoveryComplete(System.Guid resourceManagerIdentifier) { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static System.Transactions.Enlistment Reenlist(System.Guid resourceManagerIdentifier, byte[] recoveryInformation, System.Transactions.IEnlistmentNotification enlistmentNotification) { throw null; }
     }
     public partial class TransactionManagerCommunicationException : System.Transactions.TransactionException

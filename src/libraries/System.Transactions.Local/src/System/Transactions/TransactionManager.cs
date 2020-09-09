@@ -4,6 +4,7 @@
 using System.Collections;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Runtime.Versioning;
 using System.Threading;
 using System.Transactions.Configuration;
 using System.Transactions.Distributed;
@@ -128,6 +129,7 @@ namespace System.Transactions
             }
         }
 
+        [UnsupportedOSPlatform("browser")]
         public static Enlistment Reenlist(
             Guid resourceManagerIdentifier,
             byte[] recoveryInformation,
@@ -237,6 +239,7 @@ namespace System.Transactions
             return tm;
         }
 
+        [UnsupportedOSPlatform("browser")]
         public static void RecoveryComplete(Guid resourceManagerIdentifier)
         {
             if (resourceManagerIdentifier == Guid.Empty)

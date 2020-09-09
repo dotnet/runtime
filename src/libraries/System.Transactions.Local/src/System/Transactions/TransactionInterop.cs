@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Transactions.Distributed;
 
 namespace System.Transactions
@@ -18,6 +19,7 @@ namespace System.Transactions
         void GetTransactionInfo(IntPtr transactionInformation);
     }
 
+    [UnsupportedOSPlatform("browser")]
     public static class TransactionInterop
     {
         internal static DistributedTransaction ConvertToDistributedTransaction(Transaction transaction)
