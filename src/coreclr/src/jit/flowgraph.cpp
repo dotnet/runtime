@@ -21882,14 +21882,14 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
                             // Record the state of the GTF_IND_NONFAULTING flags into 'chkFlags'
                             chkFlags |= GTF_IND_NONFAULTING;
                         }
-                        assert(nonFaultingFlag);  // Currently this should always be set for all handle kinds
+                        assert(nonFaultingFlag); // Currently this should always be set for all handle kinds
 
                         // Some of these aren't handles to invariant data...
                         //
-                        if ((handleKind == GTF_ICON_STATIC_HDL) ||  // Pointer to a mutable class Static variable
-                            (handleKind == GTF_ICON_BBC_PTR)    ||  // Pointer to a mutable basic block count value
-                            (handleKind == GTF_ICON_PTR_GLOBAL) ||  // Pointer to mutable data from the VM state
-                            (handleKind == GTF_ICON_PINVKI_HDL)   ) // Eventually remove, as this is immutable 
+                        if ((handleKind == GTF_ICON_STATIC_HDL) || // Pointer to a mutable class Static variable
+                            (handleKind == GTF_ICON_BBC_PTR) ||    // Pointer to a mutable basic block count value
+                            (handleKind == GTF_ICON_PTR_GLOBAL) || // Pointer to mutable data from the VM state
+                            (handleKind == GTF_ICON_PINVKI_HDL))   // Eventually remove, as this is immutable
                         {
                             // We expect the Invariant flag to be unset for this handleKind
                             // If it is set then we will assert with "unexpected GTF_IND_INVARIANT flag set ...

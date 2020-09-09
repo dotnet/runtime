@@ -6044,12 +6044,9 @@ GenTree* Compiler::gtNewIconEmbHndNode(void* value, void* pValue, unsigned iconF
 
         // This indirection won't cause an exception.
         handleNode->gtFlags |= GTF_IND_NONFAULTING;
-#if 0
-        // It should also be invariant, but marking it as such leads to bad diffs.
 
         // This indirection also is invariant.
         handleNode->gtFlags |= GTF_IND_INVARIANT;
-#endif
     }
 
     iconNode->AsIntCon()->gtCompileTimeHandle = (size_t)compileTimeHandle;

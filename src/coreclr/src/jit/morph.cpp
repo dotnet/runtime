@@ -9297,7 +9297,7 @@ GenTree* Compiler::fgMorphLeaf(GenTree* tree)
         {
             DEBUG_DESTROY_NODE(tree);
             tree = indNode;
-        }                           
+        }
 
         return fgMorphTree(tree);
     }
