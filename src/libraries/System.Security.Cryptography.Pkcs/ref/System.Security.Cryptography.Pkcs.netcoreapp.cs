@@ -10,12 +10,12 @@ namespace System.Security.Cryptography.Pkcs
     {
         public CmsRecipient(System.Security.Cryptography.X509Certificates.X509Certificate2 certificate, System.Security.Cryptography.RSAEncryptionPadding rsaEncryptionPadding) { }
         public CmsRecipient(System.Security.Cryptography.Pkcs.SubjectIdentifierType recipientIdentifierType, System.Security.Cryptography.X509Certificates.X509Certificate2 certificate, System.Security.Cryptography.RSAEncryptionPadding rsaEncryptionPadding) { }
-        public System.Security.Cryptography.RSAEncryptionPadding RSAEncryptionPadding { get { throw null; } }
+        public System.Security.Cryptography.RSAEncryptionPadding? RSAEncryptionPadding { get { throw null; } }
     }
     public sealed partial class CmsSigner
     {
-        public CmsSigner(System.Security.Cryptography.Pkcs.SubjectIdentifierType signerIdentifierType, System.Security.Cryptography.X509Certificates.X509Certificate2 certificate, System.Security.Cryptography.AsymmetricAlgorithm privateKey) { }
-        public System.Security.Cryptography.AsymmetricAlgorithm PrivateKey { get { throw null; } set { } }
+        public CmsSigner(System.Security.Cryptography.Pkcs.SubjectIdentifierType signerIdentifierType, System.Security.Cryptography.X509Certificates.X509Certificate2? certificate, System.Security.Cryptography.AsymmetricAlgorithm? privateKey) { }
+        public System.Security.Cryptography.AsymmetricAlgorithm? PrivateKey { get { throw null; } set { } }
     }
     public sealed partial class ContentInfo
     {
@@ -24,20 +24,20 @@ namespace System.Security.Cryptography.Pkcs
     public sealed partial class EnvelopedCms
     {
         public void Decode(System.ReadOnlySpan<byte> encodedMessage) { }
-        public void Decrypt(System.Security.Cryptography.Pkcs.RecipientInfo recipientInfo, System.Security.Cryptography.AsymmetricAlgorithm privateKey) { }
+        public void Decrypt(System.Security.Cryptography.Pkcs.RecipientInfo recipientInfo, System.Security.Cryptography.AsymmetricAlgorithm? privateKey) { }
     }
     public sealed partial class Pkcs12Builder
     {
         public Pkcs12Builder() { }
         public bool IsSealed { get { throw null; } }
-        public void AddSafeContentsEncrypted(System.Security.Cryptography.Pkcs.Pkcs12SafeContents safeContents, byte[] passwordBytes, System.Security.Cryptography.PbeParameters pbeParameters) { }
+        public void AddSafeContentsEncrypted(System.Security.Cryptography.Pkcs.Pkcs12SafeContents safeContents, byte[]? passwordBytes, System.Security.Cryptography.PbeParameters pbeParameters) { }
         public void AddSafeContentsEncrypted(System.Security.Cryptography.Pkcs.Pkcs12SafeContents safeContents, System.ReadOnlySpan<byte> passwordBytes, System.Security.Cryptography.PbeParameters pbeParameters) { }
         public void AddSafeContentsEncrypted(System.Security.Cryptography.Pkcs.Pkcs12SafeContents safeContents, System.ReadOnlySpan<char> password, System.Security.Cryptography.PbeParameters pbeParameters) { }
-        public void AddSafeContentsEncrypted(System.Security.Cryptography.Pkcs.Pkcs12SafeContents safeContents, string password, System.Security.Cryptography.PbeParameters pbeParameters) { }
+        public void AddSafeContentsEncrypted(System.Security.Cryptography.Pkcs.Pkcs12SafeContents safeContents, string? password, System.Security.Cryptography.PbeParameters pbeParameters) { }
         public void AddSafeContentsUnencrypted(System.Security.Cryptography.Pkcs.Pkcs12SafeContents safeContents) { }
         public byte[] Encode() { throw null; }
         public void SealWithMac(System.ReadOnlySpan<char> password, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, int iterationCount) { }
-        public void SealWithMac(string password, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, int iterationCount) { }
+        public void SealWithMac(string? password, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, int iterationCount) { }
         public void SealWithoutIntegrity() { }
         public bool TryEncode(System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
@@ -63,7 +63,7 @@ namespace System.Security.Cryptography.Pkcs
         public System.Security.Cryptography.Pkcs.Pkcs12IntegrityMode IntegrityMode { get { throw null; } }
         public static System.Security.Cryptography.Pkcs.Pkcs12Info Decode(System.ReadOnlyMemory<byte> encodedBytes, out int bytesConsumed, bool skipCopy = false) { throw null; }
         public bool VerifyMac(System.ReadOnlySpan<char> password) { throw null; }
-        public bool VerifyMac(string password) { throw null; }
+        public bool VerifyMac(string? password) { throw null; }
     }
     public enum Pkcs12IntegrityMode
     {
@@ -96,20 +96,20 @@ namespace System.Security.Cryptography.Pkcs
         public System.Security.Cryptography.Pkcs.Pkcs12SafeContentsBag AddNestedContents(System.Security.Cryptography.Pkcs.Pkcs12SafeContents safeContents) { throw null; }
         public void AddSafeBag(System.Security.Cryptography.Pkcs.Pkcs12SafeBag safeBag) { }
         public System.Security.Cryptography.Pkcs.Pkcs12SecretBag AddSecret(System.Security.Cryptography.Oid secretType, System.ReadOnlyMemory<byte> secretValue) { throw null; }
-        public System.Security.Cryptography.Pkcs.Pkcs12ShroudedKeyBag AddShroudedKey(System.Security.Cryptography.AsymmetricAlgorithm key, byte[] passwordBytes, System.Security.Cryptography.PbeParameters pbeParameters) { throw null; }
+        public System.Security.Cryptography.Pkcs.Pkcs12ShroudedKeyBag AddShroudedKey(System.Security.Cryptography.AsymmetricAlgorithm key, byte[]? passwordBytes, System.Security.Cryptography.PbeParameters pbeParameters) { throw null; }
         public System.Security.Cryptography.Pkcs.Pkcs12ShroudedKeyBag AddShroudedKey(System.Security.Cryptography.AsymmetricAlgorithm key, System.ReadOnlySpan<byte> passwordBytes, System.Security.Cryptography.PbeParameters pbeParameters) { throw null; }
         public System.Security.Cryptography.Pkcs.Pkcs12ShroudedKeyBag AddShroudedKey(System.Security.Cryptography.AsymmetricAlgorithm key, System.ReadOnlySpan<char> password, System.Security.Cryptography.PbeParameters pbeParameters) { throw null; }
-        public System.Security.Cryptography.Pkcs.Pkcs12ShroudedKeyBag AddShroudedKey(System.Security.Cryptography.AsymmetricAlgorithm key, string password, System.Security.Cryptography.PbeParameters pbeParameters) { throw null; }
-        public void Decrypt(byte[] passwordBytes) { }
+        public System.Security.Cryptography.Pkcs.Pkcs12ShroudedKeyBag AddShroudedKey(System.Security.Cryptography.AsymmetricAlgorithm key, string? password, System.Security.Cryptography.PbeParameters pbeParameters) { throw null; }
+        public void Decrypt(byte[]? passwordBytes) { }
         public void Decrypt(System.ReadOnlySpan<byte> passwordBytes) { }
         public void Decrypt(System.ReadOnlySpan<char> password) { }
-        public void Decrypt(string password) { }
+        public void Decrypt(string? password) { }
         public System.Collections.Generic.IEnumerable<System.Security.Cryptography.Pkcs.Pkcs12SafeBag> GetBags() { throw null; }
     }
     public sealed partial class Pkcs12SafeContentsBag : System.Security.Cryptography.Pkcs.Pkcs12SafeBag
     {
         internal Pkcs12SafeContentsBag() : base (default(string), default(System.ReadOnlyMemory<byte>), default(bool)) { }
-        public System.Security.Cryptography.Pkcs.Pkcs12SafeContents SafeContents { get { throw null; } }
+        public System.Security.Cryptography.Pkcs.Pkcs12SafeContents? SafeContents { get { throw null; } }
     }
     public sealed partial class Pkcs12SecretBag : System.Security.Cryptography.Pkcs.Pkcs12SafeBag
     {
@@ -152,19 +152,19 @@ namespace System.Security.Cryptography.Pkcs
         internal Rfc3161TimestampRequest() { }
         public bool HasExtensions { get { throw null; } }
         public System.Security.Cryptography.Oid HashAlgorithmId { get { throw null; } }
-        public System.Security.Cryptography.Oid RequestedPolicyId { get { throw null; } }
+        public System.Security.Cryptography.Oid? RequestedPolicyId { get { throw null; } }
         public bool RequestSignerCertificate { get { throw null; } }
         public int Version { get { throw null; } }
-        public static System.Security.Cryptography.Pkcs.Rfc3161TimestampRequest CreateFromData(System.ReadOnlySpan<byte> data, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.Security.Cryptography.Oid requestedPolicyId = null, System.ReadOnlyMemory<byte>? nonce = default(System.ReadOnlyMemory<byte>?), bool requestSignerCertificates = false, System.Security.Cryptography.X509Certificates.X509ExtensionCollection extensions = null) { throw null; }
-        public static System.Security.Cryptography.Pkcs.Rfc3161TimestampRequest CreateFromHash(System.ReadOnlyMemory<byte> hash, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.Security.Cryptography.Oid requestedPolicyId = null, System.ReadOnlyMemory<byte>? nonce = default(System.ReadOnlyMemory<byte>?), bool requestSignerCertificates = false, System.Security.Cryptography.X509Certificates.X509ExtensionCollection extensions = null) { throw null; }
-        public static System.Security.Cryptography.Pkcs.Rfc3161TimestampRequest CreateFromHash(System.ReadOnlyMemory<byte> hash, System.Security.Cryptography.Oid hashAlgorithmId, System.Security.Cryptography.Oid requestedPolicyId = null, System.ReadOnlyMemory<byte>? nonce = default(System.ReadOnlyMemory<byte>?), bool requestSignerCertificates = false, System.Security.Cryptography.X509Certificates.X509ExtensionCollection extensions = null) { throw null; }
-        public static System.Security.Cryptography.Pkcs.Rfc3161TimestampRequest CreateFromSignerInfo(System.Security.Cryptography.Pkcs.SignerInfo signerInfo, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.Security.Cryptography.Oid requestedPolicyId = null, System.ReadOnlyMemory<byte>? nonce = default(System.ReadOnlyMemory<byte>?), bool requestSignerCertificates = false, System.Security.Cryptography.X509Certificates.X509ExtensionCollection extensions = null) { throw null; }
+        public static System.Security.Cryptography.Pkcs.Rfc3161TimestampRequest CreateFromData(System.ReadOnlySpan<byte> data, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.Security.Cryptography.Oid? requestedPolicyId = null, System.ReadOnlyMemory<byte>? nonce = default(System.ReadOnlyMemory<byte>?), bool requestSignerCertificates = false, System.Security.Cryptography.X509Certificates.X509ExtensionCollection? extensions = null) { throw null; }
+        public static System.Security.Cryptography.Pkcs.Rfc3161TimestampRequest CreateFromHash(System.ReadOnlyMemory<byte> hash, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.Security.Cryptography.Oid? requestedPolicyId = null, System.ReadOnlyMemory<byte>? nonce = default(System.ReadOnlyMemory<byte>?), bool requestSignerCertificates = false, System.Security.Cryptography.X509Certificates.X509ExtensionCollection? extensions = null) { throw null; }
+        public static System.Security.Cryptography.Pkcs.Rfc3161TimestampRequest CreateFromHash(System.ReadOnlyMemory<byte> hash, System.Security.Cryptography.Oid hashAlgorithmId, System.Security.Cryptography.Oid? requestedPolicyId = null, System.ReadOnlyMemory<byte>? nonce = default(System.ReadOnlyMemory<byte>?), bool requestSignerCertificates = false, System.Security.Cryptography.X509Certificates.X509ExtensionCollection? extensions = null) { throw null; }
+        public static System.Security.Cryptography.Pkcs.Rfc3161TimestampRequest CreateFromSignerInfo(System.Security.Cryptography.Pkcs.SignerInfo signerInfo, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.Security.Cryptography.Oid? requestedPolicyId = null, System.ReadOnlyMemory<byte>? nonce = default(System.ReadOnlyMemory<byte>?), bool requestSignerCertificates = false, System.Security.Cryptography.X509Certificates.X509ExtensionCollection? extensions = null) { throw null; }
         public byte[] Encode() { throw null; }
         public System.Security.Cryptography.X509Certificates.X509ExtensionCollection GetExtensions() { throw null; }
         public System.ReadOnlyMemory<byte> GetMessageHash() { throw null; }
         public System.ReadOnlyMemory<byte>? GetNonce() { throw null; }
         public System.Security.Cryptography.Pkcs.Rfc3161TimestampToken ProcessResponse(System.ReadOnlyMemory<byte> responseBytes, out int bytesConsumed) { throw null; }
-        public static bool TryDecode(System.ReadOnlyMemory<byte> encodedBytes, out System.Security.Cryptography.Pkcs.Rfc3161TimestampRequest request, out int bytesConsumed) { throw null; }
+        public static bool TryDecode(System.ReadOnlyMemory<byte> encodedBytes, out System.Security.Cryptography.Pkcs.Rfc3161TimestampRequest? request, out int bytesConsumed) { throw null; }
         public bool TryEncode(System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
     public sealed partial class Rfc3161TimestampToken
@@ -172,15 +172,15 @@ namespace System.Security.Cryptography.Pkcs
         internal Rfc3161TimestampToken() { }
         public System.Security.Cryptography.Pkcs.Rfc3161TimestampTokenInfo TokenInfo { get { throw null; } }
         public System.Security.Cryptography.Pkcs.SignedCms AsSignedCms() { throw null; }
-        public static bool TryDecode(System.ReadOnlyMemory<byte> encodedBytes, out System.Security.Cryptography.Pkcs.Rfc3161TimestampToken token, out int bytesConsumed) { throw null; }
-        public bool VerifySignatureForData(System.ReadOnlySpan<byte> data, out System.Security.Cryptography.X509Certificates.X509Certificate2 signerCertificate, System.Security.Cryptography.X509Certificates.X509Certificate2Collection extraCandidates = null) { throw null; }
-        public bool VerifySignatureForHash(System.ReadOnlySpan<byte> hash, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, out System.Security.Cryptography.X509Certificates.X509Certificate2 signerCertificate, System.Security.Cryptography.X509Certificates.X509Certificate2Collection extraCandidates = null) { throw null; }
-        public bool VerifySignatureForHash(System.ReadOnlySpan<byte> hash, System.Security.Cryptography.Oid hashAlgorithmId, out System.Security.Cryptography.X509Certificates.X509Certificate2 signerCertificate, System.Security.Cryptography.X509Certificates.X509Certificate2Collection extraCandidates = null) { throw null; }
-        public bool VerifySignatureForSignerInfo(System.Security.Cryptography.Pkcs.SignerInfo signerInfo, out System.Security.Cryptography.X509Certificates.X509Certificate2 signerCertificate, System.Security.Cryptography.X509Certificates.X509Certificate2Collection extraCandidates = null) { throw null; }
+        public static bool TryDecode(System.ReadOnlyMemory<byte> encodedBytes, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Security.Cryptography.Pkcs.Rfc3161TimestampToken? token, out int bytesConsumed) { throw null; }
+        public bool VerifySignatureForData(System.ReadOnlySpan<byte> data, out System.Security.Cryptography.X509Certificates.X509Certificate2? signerCertificate, System.Security.Cryptography.X509Certificates.X509Certificate2Collection? extraCandidates = null) { throw null; }
+        public bool VerifySignatureForHash(System.ReadOnlySpan<byte> hash, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, out System.Security.Cryptography.X509Certificates.X509Certificate2? signerCertificate, System.Security.Cryptography.X509Certificates.X509Certificate2Collection? extraCandidates = null) { throw null; }
+        public bool VerifySignatureForHash(System.ReadOnlySpan<byte> hash, System.Security.Cryptography.Oid hashAlgorithmId, out System.Security.Cryptography.X509Certificates.X509Certificate2? signerCertificate, System.Security.Cryptography.X509Certificates.X509Certificate2Collection? extraCandidates = null) { throw null; }
+        public bool VerifySignatureForSignerInfo(System.Security.Cryptography.Pkcs.SignerInfo signerInfo, out System.Security.Cryptography.X509Certificates.X509Certificate2? signerCertificate, System.Security.Cryptography.X509Certificates.X509Certificate2Collection? extraCandidates = null) { throw null; }
     }
     public sealed partial class Rfc3161TimestampTokenInfo
     {
-        public Rfc3161TimestampTokenInfo(System.Security.Cryptography.Oid policyId, System.Security.Cryptography.Oid hashAlgorithmId, System.ReadOnlyMemory<byte> messageHash, System.ReadOnlyMemory<byte> serialNumber, System.DateTimeOffset timestamp, long? accuracyInMicroseconds = default(long?), bool isOrdering = false, System.ReadOnlyMemory<byte>? nonce = default(System.ReadOnlyMemory<byte>?), System.ReadOnlyMemory<byte>? timestampAuthorityName = default(System.ReadOnlyMemory<byte>?), System.Security.Cryptography.X509Certificates.X509ExtensionCollection extensions = null) { }
+        public Rfc3161TimestampTokenInfo(System.Security.Cryptography.Oid policyId, System.Security.Cryptography.Oid hashAlgorithmId, System.ReadOnlyMemory<byte> messageHash, System.ReadOnlyMemory<byte> serialNumber, System.DateTimeOffset timestamp, long? accuracyInMicroseconds = default(long?), bool isOrdering = false, System.ReadOnlyMemory<byte>? nonce = default(System.ReadOnlyMemory<byte>?), System.ReadOnlyMemory<byte>? timestampAuthorityName = default(System.ReadOnlyMemory<byte>?), System.Security.Cryptography.X509Certificates.X509ExtensionCollection? extensions = null) { }
         public long? AccuracyInMicroseconds { get { throw null; } }
         public bool HasExtensions { get { throw null; } }
         public System.Security.Cryptography.Oid HashAlgorithmId { get { throw null; } }
@@ -194,7 +194,7 @@ namespace System.Security.Cryptography.Pkcs
         public System.ReadOnlyMemory<byte>? GetNonce() { throw null; }
         public System.ReadOnlyMemory<byte> GetSerialNumber() { throw null; }
         public System.ReadOnlyMemory<byte>? GetTimestampAuthorityName() { throw null; }
-        public static bool TryDecode(System.ReadOnlyMemory<byte> encodedBytes, out System.Security.Cryptography.Pkcs.Rfc3161TimestampTokenInfo timestampTokenInfo, out int bytesConsumed) { throw null; }
+        public static bool TryDecode(System.ReadOnlyMemory<byte> encodedBytes, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Security.Cryptography.Pkcs.Rfc3161TimestampTokenInfo? timestampTokenInfo, out int bytesConsumed) { throw null; }
         public bool TryEncode(System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
     public sealed partial class SignedCms
