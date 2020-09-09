@@ -56,7 +56,7 @@ namespace System.Net.Http
 
         internal bool _enableMultipleHttp2Connections;
 
-        internal Func<SocketsHttpConnectionContext, CancellationToken, ValueTask<Stream>>? _connectionCallback;
+        internal Func<SocketsHttpConnectionContext, CancellationToken, ValueTask<Stream>>? _connectCallback;
 
         internal IDictionary<string, object?>? _properties;
 
@@ -111,7 +111,7 @@ namespace System.Net.Http
                 _requestHeaderEncodingSelector = _requestHeaderEncodingSelector,
                 _responseHeaderEncodingSelector = _responseHeaderEncodingSelector,
                 _enableMultipleHttp2Connections = _enableMultipleHttp2Connections,
-                _connectionCallback = _connectionCallback,
+                _connectCallback = _connectCallback,
             };
         }
 
