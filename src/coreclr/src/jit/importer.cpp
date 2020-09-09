@@ -7175,6 +7175,14 @@ GenTree* Compiler::impImportStaticReadOnlyField(void* fldAddr, var_types lclTyp)
             op1  = gtNewDconNode(dval);
             break;
 
+        case TYP_REF:
+            if (*(intptr_t*)fldAddr == 0)
+            {
+                // for reference types we only detect null values
+                op1 = gtNewIconNode(0, TYP_REF);
+            }
+            break;
+
         default:
             assert(!"Unexpected lclTyp");
             break;
@@ -14569,7 +14577,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         // Replace static read-only fields with constant if possible
                         if ((aflags & CORINFO_ACCESS_GET) && (fieldInfo.fieldFlags & CORINFO_FLG_FIELD_FINAL) &&
                             !(fieldInfo.fieldFlags & CORINFO_FLG_FIELD_STATIC_IN_HEAP) &&
-                            (varTypeIsIntegral(lclTyp) || varTypeIsFloating(lclTyp)))
+                            (varTypeIsIntegral(lclTyp) || varTypeIsFloating(lclTyp) || (lclTyp == TYP_REF)))
                         {
                             CorInfoInitClassResult initClassResult =
                                 info.compCompHnd->initClass(resolvedToken.hField, info.compMethodHnd,
@@ -14585,13 +14593,15 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                                 assert(pFldAddr == nullptr);
 
                                 op1 = impImportStaticReadOnlyField(fldAddr, lclTyp);
+                                if (op1 != nullptr)
+                                {
+                                    // Widen small types since we're propagating the value
+                                    // instead of producing an indir.
+                                    //
+                                    op1->gtType = genActualType(lclTyp);
 
-                                // Widen small types since we're propagating the value
-                                // instead of producing an indir.
-                                //
-                                op1->gtType = genActualType(lclTyp);
-
-                                goto FIELD_DONE;
+                                    goto FIELD_DONE;
+                                }
                             }
                         }
 
