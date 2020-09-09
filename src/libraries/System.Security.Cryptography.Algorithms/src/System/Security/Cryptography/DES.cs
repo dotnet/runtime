@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Internal.Cryptography;
-using System.ComponentModel;
 using System.Buffers.Binary;
+using System.ComponentModel;
 using System.Runtime.Versioning;
 
 namespace System.Security.Cryptography
