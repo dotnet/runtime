@@ -3,6 +3,7 @@
 namespace Mono.Linker.Tests
 {
 	[TestFixture]
+	[Parallelizable]
 	public class TypeNameParserTests
 	{
 		[Test]

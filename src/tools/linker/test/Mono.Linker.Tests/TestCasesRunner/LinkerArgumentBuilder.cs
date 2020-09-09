@@ -184,6 +184,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		{
 			if (options.CoreAssembliesAction != null)
 				AddCoreLink (options.CoreAssembliesAction);
+			else
+				AddCoreLink ("skip");
 
 			if (options.UserAssembliesAction != null)
 				AddUserLink (options.UserAssembliesAction);
@@ -231,6 +233,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 			foreach (var attributeDefinition in options.LinkAttributes)
 				AddLinkAttributes (attributeDefinition);
+
+			// A list of expensive optimizations which should not run by default
+			AddAdditionalArgument ("--disable-opt", new[] { "ipconstprop" });
 
 			// Unity uses different argument format and needs to be able to translate to their format.  In order to make that easier
 			// we keep the information in flag + values format for as long as we can so that this information doesn't have to be parsed out of a single string

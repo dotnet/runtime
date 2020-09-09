@@ -4,7 +4,6 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Attributes.Debugger.KeepDebugMembers
 {
-	[SetupLinkerCoreAction ("link")]
 #if !NETCOREAPP
 	[SetupLinkerKeepDebugMembers ("true")]
 #endif

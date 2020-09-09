@@ -9,6 +9,7 @@ using Mono.Linker.Tests.TestCasesRunner;
 namespace Mono.Linker.Tests
 {
 	[TestFixture]
+	[Parallelizable]
 	public class GetDisplayNameTests
 	{
 		[TestCaseSource (nameof (GetMemberAssertionsAsArray), new object[] { typeof (GetDisplayNameTests) })]

@@ -15,6 +15,9 @@ namespace Mono.Linker.Steps
 	{
 		protected override void ProcessAssembly (AssemblyDefinition assembly)
 		{
+			if (Annotations.GetAction (assembly) == AssemblyAction.Skip)
+				return;
+
 			var module = assembly.MainModule;
 
 			foreach (var type in module.Types) {
