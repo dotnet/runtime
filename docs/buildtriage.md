@@ -21,16 +21,7 @@ Contact @Chrisboh if you don't have the calendar invite for the CI Council meeti
 
 All the issues causing the builds to fail should be marked with `blocking-clean-ci` label. Any issues causing build breaks in the official build should be marked with
 `blocking-clean-official`.
-
-It helps in tracking issues effectively. There are some issues that are reproduced more often than others and should be fixed with a higher priority in the next rotation. Such issues are mentioned in the following table.
-
-| Issue | Comments  | 
-|-------|-----------|
-| https://github.com/dotnet/runtime/issues/35101| |
-| https://github.com/dotnet/runtime/issues/41078| |
-| https://github.com/dotnet/runtime/issues/35916| |
-| https://github.com/dotnet/runtime/issues/41494| |
-
+It helps in tracking issues effectively. 
 
 ## Some helpful resources
 - [runfo Website](https://runfo.azurewebsites.net/)
