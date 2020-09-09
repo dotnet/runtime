@@ -4,6 +4,7 @@
 using System.IO;
 using System.Text;
 using Microsoft.DotNet.RemoteExecutor;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Diagnostics.Tests
@@ -15,6 +16,11 @@ namespace System.Diagnostics.Tests
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestChangesInConsoleEncoding()
         {
+            if (PlatformDetection.IsWindowsServerCore)
+            {
+                throw new SkipTestException("ActiveIssue: https://github.com/dotnet/runtime/issues/42000");
+            }
+
             Action<int> run = expectedCodePage =>
             {
                 Process p = CreateProcessLong();
