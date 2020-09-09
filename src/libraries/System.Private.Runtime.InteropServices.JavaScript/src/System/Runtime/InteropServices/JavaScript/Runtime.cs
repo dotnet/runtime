@@ -379,9 +379,9 @@ namespace System.Runtime.InteropServices.JavaScript
 
         private static string ObjectToString(object o)
         {
-            if (o is Enum oIsAnEnum)
+            if (o is Enum oAsAnEnum)
             {
-                return EnumToExportContract(oIsAnEnum)?.ToString() ?? string.Empty;
+                return EnumToExportContract(oAsAnEnum)?.ToString() ?? string.Empty;
             }
 
             return o.ToString() ?? string.Empty;
@@ -406,7 +406,7 @@ namespace System.Runtime.InteropServices.JavaScript
             return unixTime.DateTime;
         }
 
-        private static object? ObjectToEnum(IntPtr methodHandle, int parm, object obj)
+        private static object? ObjectToEnum(IntPtr methodHandle, int paramIdx, object obj)
         {
             IntPtrAndHandle tmp = default(IntPtrAndHandle);
             tmp.ptr = methodHandle;
@@ -414,7 +414,7 @@ namespace System.Runtime.InteropServices.JavaScript
             MethodBase? mb = MethodBase.GetMethodFromHandle(tmp.handle);
             if (mb == null)
                 return null;
-            Type? parmType = mb.GetParameters()[parm]?.ParameterType;
+            Type? parmType = mb.GetParameters()[paramIdx]?.ParameterType;
             if (parmType == null)
                 return null;
             if (parmType.IsEnum)
