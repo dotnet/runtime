@@ -513,6 +513,7 @@ namespace System.Security.Cryptography
         protected MaskGenerationMethod() { }
         public abstract byte[] GenerateMask(byte[] rgbSeed, int cbReturn);
     }
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     public abstract partial class MD5 : System.Security.Cryptography.HashAlgorithm
     {
         protected MD5() { }

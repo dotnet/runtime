@@ -12,6 +12,7 @@ namespace System.Security.Cryptography
     // it can't be helped.
     //
 
+    [UnsupportedOSPlatform("browser")]
     public abstract class MD5 : HashAlgorithm
     {
         private const int HashSizeBits = 128;
