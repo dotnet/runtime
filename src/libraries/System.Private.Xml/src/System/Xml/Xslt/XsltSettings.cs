@@ -4,7 +4,6 @@
 // <spec>http://webdata/xml/specs/XslCompiledTransform.xml</spec>
 //------------------------------------------------------------------------------
 
-#nullable enable
 namespace System.Xml.Xsl
 {
     public sealed class XsltSettings

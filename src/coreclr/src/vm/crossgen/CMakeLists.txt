@@ -39,6 +39,7 @@ set(VM_CROSSGEN_SOURCES
   ../field.cpp
   ../fieldmarshaler.cpp
   ../formattype.cpp
+  ../frames.cpp
   ../gcinfodecoder.cpp
   ../genericdict.cpp
   ../generics.cpp

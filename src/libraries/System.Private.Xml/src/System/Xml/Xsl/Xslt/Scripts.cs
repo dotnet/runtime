@@ -4,7 +4,6 @@
 // <spec>http://devdiv/Documents/Whidbey/CLR/CurrentSpecs/BCL/CodeDom%20Activation.doc</spec>
 //------------------------------------------------------------------------------
 
-#nullable enable
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Configuration;

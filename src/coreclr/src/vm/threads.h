@@ -239,6 +239,19 @@ public:
 #endif
 };
 
+// TailCallArgBuffer states
+#define TAILCALLARGBUFFER_ACTIVE       0
+#define TAILCALLARGBUFFER_INSTARG_ONLY 1
+#define TAILCALLARGBUFFER_ABANDONED    2
+
+struct TailCallArgBuffer
+{
+    int State;
+    int Size;
+    void* GCDesc;
+    BYTE Args[1];
+};
+
 #ifdef CROSSGEN_COMPILE
 
 #include "asmconstants.h"
@@ -968,18 +981,14 @@ class TailCallTls
     friend class CoreLibBinder;
 
     PortableTailCallFrame* m_frame;
-    char* m_argBuffer;
-    size_t m_argBufferSize;
-    void* m_argBufferGCDesc;
-    char m_argBufferInline[64];
+    TailCallArgBuffer* m_argBuffer;
 
 public:
     TailCallTls();
-    void* AllocArgBuffer(size_t size, void* gcDesc);
-    void FreeArgBuffer();
-    char* GetArgBuffer(void** gcDesc)
+    TailCallArgBuffer* AllocArgBuffer(int size, void* gcDesc);
+    void FreeArgBuffer() { delete[] (BYTE*)m_argBuffer; m_argBuffer = NULL; }
+    TailCallArgBuffer* GetArgBuffer()
     {
-        *gcDesc = m_argBufferGCDesc;
         return m_argBuffer;
     }
     const PortableTailCallFrame* GetFrame() { return m_frame; }
@@ -3213,16 +3222,6 @@ public:
     static UINT_PTR GetLastNormalStackAddress(UINT_PTR stackBase);
     UINT_PTR GetLastNormalStackAddress();
 
-    UINT_PTR GetLastAllowableStackAddress()
-    {
-        return m_LastAllowableStackAddress;
-    }
-
-    UINT_PTR GetProbeLimit()
-    {
-        return m_ProbeLimit;
-    }
-
     void ResetStackLimits()
     {
         CONTRACTL
@@ -3238,8 +3237,6 @@ public:
         }
         SetStackLimits(fAllowableOnly);
     }
-
-    BOOL IsSPBeyondLimit();
 
     INDEBUG(static void DebugLogStackMBIs());
 
@@ -3649,16 +3646,6 @@ private:
     void SetLastThrownObjectHandle(OBJECTHANDLE h);
 
     ThreadExceptionState  m_ExceptionState;
-
-    //-----------------------------------------------------------
-    // For stack probing.  These are the last allowable addresses that a thread
-    // can touch.  Going beyond is a stack overflow.  The ProbeLimit will be
-    // set based on whether SO probing is enabled.  The LastAllowableAddress
-    // will always represent the true stack limit.
-    //-----------------------------------------------------------
-    UINT_PTR             m_ProbeLimit;
-
-    UINT_PTR             m_LastAllowableStackAddress;
 
 private:
     //---------------------------------------------------------------

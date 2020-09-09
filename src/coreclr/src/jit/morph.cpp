@@ -7700,6 +7700,8 @@ GenTree* Compiler::fgMorphTailCallViaHelpers(GenTreeCall* call, CORINFO_TAILCALL
     assert(!call->IsImplicitTailCall());
     assert(!fgCanFastTailCall(call, nullptr));
 
+    bool virtualCall = call->IsVirtual();
+
     // If VSD then get rid of arg to VSD since we turn this into a direct call.
     // The extra arg will be the first arg so this needs to be done before we
     // handle the retbuf below.
@@ -7734,41 +7736,39 @@ GenTree* Compiler::fgMorphTailCallViaHelpers(GenTreeCall* call, CORINFO_TAILCALL
     // where we pass instantiating stub.
     if ((help.flags & CORINFO_TAILCALL_STORE_TARGET) != 0)
     {
-        // If asked to store target and we have a type arg we will store
-        // instantiating stub, so in that case we should not pass the type arg.
-        if (call->tailCallInfo->GetSig()->hasTypeArg())
+        JITDUMP("Adding target since VM requested it\n");
+        GenTree* target;
+        if (!virtualCall)
         {
-            JITDUMP("Removing type arg");
-
-            assert(call->gtCallArgs != nullptr);
-            if (Target::g_tgtArgOrder == Target::ARG_ORDER_R2L)
+            if (call->gtCallType == CT_INDIRECT)
             {
-                // Generic context is first arg
-                call->gtCallArgs = call->gtCallArgs->GetNext();
+                noway_assert(call->gtCallAddr != nullptr);
+                target = call->gtCallAddr;
             }
             else
             {
-                // Generic context is last arg
-                GenTreeCall::Use** lastArgSlot = &call->gtCallArgs;
-                while ((*lastArgSlot)->GetNext() != nullptr)
+                CORINFO_CONST_LOOKUP addrInfo;
+                info.compCompHnd->getFunctionEntryPoint(call->gtCallMethHnd, &addrInfo);
+
+                CORINFO_GENERIC_HANDLE handle       = nullptr;
+                void*                  pIndirection = nullptr;
+                assert(addrInfo.accessType != IAT_PPVALUE && addrInfo.accessType != IAT_RELPVALUE);
+
+                if (addrInfo.accessType == IAT_VALUE)
                 {
-                    lastArgSlot = &(*lastArgSlot)->NextRef();
+                    handle = addrInfo.handle;
                 }
-
-                *lastArgSlot = nullptr;
+                else if (addrInfo.accessType == IAT_PVALUE)
+                {
+                    pIndirection = addrInfo.addr;
+                }
+                target = gtNewIconEmbHndNode(handle, pIndirection, GTF_ICON_FTN_ADDR, call->gtCallMethHnd);
             }
-            call->fgArgInfo = nullptr;
-        }
-
-        JITDUMP("Adding target since VM requested it\n");
-        GenTree* target;
-        if (call->tailCallInfo->IsCalli())
-        {
-            noway_assert(call->gtCallType == CT_INDIRECT && call->gtCallAddr != nullptr);
-            target = call->gtCallAddr;
         }
         else
         {
+            assert(!call->tailCallInfo->GetSig()->hasTypeArg());
+
             CORINFO_CALL_INFO callInfo;
             unsigned          flags = CORINFO_CALLINFO_LDFTN;
             if (call->tailCallInfo->IsCallvirt())
@@ -7778,19 +7778,10 @@ GenTree* Compiler::fgMorphTailCallViaHelpers(GenTreeCall* call, CORINFO_TAILCALL
 
             eeGetCallInfo(call->tailCallInfo->GetToken(), nullptr, (CORINFO_CALLINFO_FLAGS)flags, &callInfo);
 
-            if (!call->tailCallInfo->IsCallvirt() ||
-                ((callInfo.methodFlags & (CORINFO_FLG_FINAL | CORINFO_FLG_STATIC)) != 0) ||
-                ((callInfo.methodFlags & CORINFO_FLG_VIRTUAL) == 0))
-            {
-                target = getMethodPointerTree(call->tailCallInfo->GetToken(), &callInfo);
-            }
-            else
-            {
-                assert(call->gtCallThisArg != nullptr);
-                // TODO: Proper cloning of the this pointer.
-                target = getVirtMethodPointerTree(gtCloneExpr(call->gtCallThisArg->GetNode()),
-                                                  call->tailCallInfo->GetToken(), &callInfo);
-            }
+            assert(call->gtCallThisArg != nullptr);
+            // TODO: Proper cloning of the this pointer.
+            target = getVirtMethodPointerTree(gtCloneExpr(call->gtCallThisArg->GetNode()),
+                                              call->tailCallInfo->GetToken(), &callInfo);
         }
 
         // Insert target as last arg
@@ -8042,30 +8033,6 @@ GenTree* Compiler::fgCreateCallDispatcherAndGetResult(GenTreeCall*          orig
     }
 
     return finalTree;
-}
-
-//------------------------------------------------------------------------
-// getMethodPointerTree: get a method pointer tree
-//
-// Arguments:
-//    pResolvedToken - resolved token of the call
-//    pCallInfo - the call info of the call
-//
-// Return Value:
-//    A node representing the method pointer
-//
-GenTree* Compiler::getMethodPointerTree(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_CALL_INFO* pCallInfo)
-{
-    switch (pCallInfo->kind)
-    {
-        case CORINFO_CALL:
-            return new (this, GT_FTN_ADDR) GenTreeFptrVal(TYP_I_IMPL, pCallInfo->hMethod);
-        case CORINFO_CALL_CODE_POINTER:
-            return getLookupTree(pResolvedToken, &pCallInfo->codePointerLookup, GTF_ICON_FTN_ADDR, pCallInfo->hMethod);
-        default:
-            noway_assert(!"unknown call kind");
-            return nullptr;
-    }
 }
 
 //------------------------------------------------------------------------
@@ -12690,6 +12657,13 @@ DONE_MORPHING_CHILDREN:
     {
         case GT_ASG:
 
+            if (op1->OperIs(GT_LCL_VAR) && ((op1->gtFlags & GTF_VAR_FOLDED_IND) != 0))
+            {
+                op1->gtFlags &= ~GTF_VAR_FOLDED_IND;
+                tree = fgDoNormalizeOnStore(tree);
+                op2  = tree->gtGetOp2();
+            }
+
             lclVarTree = fgIsIndirOfAddrOfLocal(op1);
             if (lclVarTree != nullptr)
             {
@@ -13648,17 +13622,16 @@ DONE_MORPHING_CHILDREN:
             break;
 
         case GT_IND:
-
+        {
             // Can not remove a GT_IND if it is currently a CSE candidate.
             if (gtIsActiveCSE_Candidate(tree))
             {
                 break;
             }
 
-            bool foldAndReturnTemp;
-            foldAndReturnTemp = false;
-            temp              = nullptr;
-            ival1             = 0;
+            bool foldAndReturnTemp = false;
+            temp                   = nullptr;
+            ival1                  = 0;
 
             // Don't remove a volatile GT_IND, even if the address points to a local variable.
             if ((tree->gtFlags & GTF_IND_VOLATILE) == 0)
@@ -13687,11 +13660,6 @@ DONE_MORPHING_CHILDREN:
                     {
                         unsigned   lclNum = temp->AsLclVarCommon()->GetLclNum();
                         LclVarDsc* varDsc = &lvaTable[lclNum];
-
-                        // Note that fgMorph uses GTF_DONT_CSE to mark the left side of an assignment
-                        // Thus stores have this flag and load do not have this flag
-                        //
-                        bool isLoad = (tree->gtFlags & GTF_DONT_CSE) == 0;
 
                         // We will try to optimize when we have a promoted struct promoted with a zero lvFldOffset
                         if (varDsc->lvPromoted && (varDsc->lvFldOffset == 0))
@@ -13722,25 +13690,25 @@ DONE_MORPHING_CHILDREN:
                         // correctly normalized.
                         //
                         // The below transformation cannot be applied if the local var needs to be normalized on load.
-                        else if (varTypeIsSmall(typ) && (genTypeSize(lvaTable[lclNum].lvType) == genTypeSize(typ)) &&
+                        else if (varTypeIsSmall(typ) && (genTypeSize(varDsc) == genTypeSize(typ)) &&
                                  !lvaTable[lclNum].lvNormalizeOnLoad())
                         {
-                            // For any stores of small types, we will force loads to be normalized
-                            // this is necessary as we need to zero/sign extend any load
-                            // after this kind of store.
-                            //
-                            if (!isLoad)
+                            const bool definitelyLoad = (tree->gtFlags & GTF_DONT_CSE) == 0;
+                            const bool possiblyStore  = !definitelyLoad;
+
+                            if (possiblyStore || (varTypeIsUnsigned(varDsc) == varTypeIsUnsigned(typ)))
                             {
-                                varDsc->lvForceLoadNormalize = true;
-                            }
-                            // otherwise we have a load operation
-                            //
-                            // And for loads signed/unsigned differences do matter.
-                            //
-                            else if (varTypeIsUnsigned(lvaTable[lclNum].lvType) == varTypeIsUnsigned(typ))
-                            {
-                                tree->gtType = typ = temp->TypeGet();
-                                foldAndReturnTemp  = true;
+                                typ               = temp->TypeGet();
+                                tree->gtType      = typ;
+                                foldAndReturnTemp = true;
+
+                                if (possiblyStore)
+                                {
+                                    // This node can be on the left-hand-side of an assignment node.
+                                    // Mark this node with GTF_VAR_FOLDED_IND to make sure that fgDoNormalizeOnStore()
+                                    // is called on its parent in post-order morph.
+                                    temp->gtFlags |= GTF_VAR_FOLDED_IND;
+                                }
                             }
                         }
                         // For matching types we can fold
@@ -14017,6 +13985,7 @@ DONE_MORPHING_CHILDREN:
             }
 
             break;
+        }
 
         case GT_ADDR:
 

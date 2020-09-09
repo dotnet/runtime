@@ -476,8 +476,6 @@ public:
     unsigned char lvContainsHoles : 1;     // True when we have a promoted struct that contains holes
     unsigned char lvCustomLayout : 1;      // True when this struct has "CustomLayout"
 
-    unsigned char lvForceLoadNormalize : 1; // True when this local had a cast on the LHS of an assignment
-
     unsigned char lvIsMultiRegArg : 1; // true if this is a multireg LclVar struct used in an argument context
     unsigned char lvIsMultiRegRet : 1; // true if this is a multireg LclVar struct assigned from a multireg call
 
@@ -886,14 +884,14 @@ public:
     {
         return varTypeIsSmall(TypeGet()) &&
                // lvIsStructField is treated the same as the aliased local, see fgDoNormalizeOnStore.
-               (lvIsParam || lvAddrExposed || lvIsStructField || lvForceLoadNormalize);
+               (lvIsParam || lvAddrExposed || lvIsStructField);
     }
 
     bool lvNormalizeOnStore() const
     {
         return varTypeIsSmall(TypeGet()) &&
                // lvIsStructField is treated the same as the aliased local, see fgDoNormalizeOnStore.
-               !(lvIsParam || lvAddrExposed || lvIsStructField || lvForceLoadNormalize);
+               !(lvIsParam || lvAddrExposed || lvIsStructField);
     }
 
     void incRefCnts(BasicBlock::weight_t weight,
@@ -5579,7 +5577,6 @@ private:
     GenTree* fgCreateCallDispatcherAndGetResult(GenTreeCall*          origCall,
                                                 CORINFO_METHOD_HANDLE callTargetStubHnd,
                                                 CORINFO_METHOD_HANDLE dispatcherHnd);
-    GenTree* getMethodPointerTree(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_CALL_INFO* pCallInfo);
     GenTree* getLookupTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                            CORINFO_LOOKUP*         pLookup,
                            unsigned                handleFlags,

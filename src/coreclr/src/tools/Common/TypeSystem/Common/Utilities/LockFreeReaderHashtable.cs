@@ -64,14 +64,14 @@ namespace Internal.TypeSystem
         /// _count is used in combination with _resizeCount to control when the 
         /// hashtable should expand
         /// </summary>
-        private volatile int _count = 0;
+        private volatile int _count;
 
         /// <summary>
         /// Represents _count plus the number of potential adds currently happening.
         /// If this reaches _hashTable.Length-1, an expansion is required (because
         /// one slot must always be null for seeks to complete).
         /// </summary>
-        private int _reserve = 0;
+        private int _reserve;
 
         /// <summary>
         /// _resizeCount represents the size at which the hashtable should resize.

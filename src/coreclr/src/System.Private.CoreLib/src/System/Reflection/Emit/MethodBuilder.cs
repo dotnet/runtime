@@ -98,20 +98,6 @@ namespace System.Reflection.Emit
                 throw new ArgumentException(SR.Arg_NoStaticVirtual);
             }
 
-#if !FEATURE_DEFAULT_INTERFACES
-            if ((attributes & MethodAttributes.SpecialName) != MethodAttributes.SpecialName)
-            {
-                if ((type.Attributes & TypeAttributes.Interface) == TypeAttributes.Interface)
-                {
-                    // methods on interface have to be abstract + virtual except special name methods such as type initializer
-                    if ((attributes & (MethodAttributes.Abstract | MethodAttributes.Virtual)) !=
-                        (MethodAttributes.Abstract | MethodAttributes.Virtual) &&
-                        (attributes & MethodAttributes.Static) == 0)
-                        throw new ArgumentException(SR.Argument_BadAttributeOnInterfaceMethod);
-                }
-            }
-#endif
-
             m_callingConvention = callingConvention;
 
             if (parameterTypes != null)

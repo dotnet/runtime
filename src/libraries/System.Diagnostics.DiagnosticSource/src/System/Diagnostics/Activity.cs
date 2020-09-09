@@ -80,7 +80,7 @@ namespace System.Diagnostics
         private LinkedList<KeyValuePair<string, string?>>? _baggage;
         private LinkedList<ActivityLink>? _links;
         private LinkedList<ActivityEvent>? _events;
-        private ConcurrentDictionary<string, object>? _customProperties;
+        private Dictionary<string, object>? _customProperties;
         private string? _displayName;
 
         /// <summary>
@@ -392,7 +392,7 @@ namespace System.Diagnostics
         /// <param name="key">The tag key name</param>
         /// <param name="value">The tag value mapped to the input key</param>
         /// <returns>'this' for convenient chaining</returns>
-        public Activity SetTag(string key, object value)
+        public Activity SetTag(string key, object? value)
         {
             KeyValuePair<string, object?> kvp = new KeyValuePair<string, object?>(key, value);
 
@@ -894,16 +894,19 @@ namespace System.Diagnostics
         {
             if (_customProperties == null)
             {
-                Interlocked.CompareExchange(ref _customProperties, new ConcurrentDictionary<string, object>(), null);
+                Interlocked.CompareExchange(ref _customProperties, new Dictionary<string, object>(), null);
             }
 
-            if (propertyValue == null)
+            lock (_customProperties)
             {
-                _customProperties.TryRemove(propertyName, out object _);
-            }
-            else
-            {
-                _customProperties[propertyName] = propertyValue!;
+                if (propertyValue == null)
+                {
+                    _customProperties.Remove(propertyName);
+                }
+                else
+                {
+                    _customProperties[propertyName] = propertyValue!;
+                }
             }
         }
 
@@ -921,7 +924,13 @@ namespace System.Diagnostics
                 return null;
             }
 
-            return _customProperties.TryGetValue(propertyName, out object? o) ? o! : null;
+            object? ret;
+            lock (_customProperties)
+            {
+                ret = _customProperties.TryGetValue(propertyName, out object? o) ? o! : null;
+            }
+
+            return ret;
         }
 
         internal static Activity CreateAndStart(ActivitySource source, string name, ActivityKind kind, string? parentId, ActivityContext parentContext,

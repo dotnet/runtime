@@ -9,6 +9,7 @@ namespace System.Numerics
     /// <summary>
     /// A structure encapsulating a 3D Plane
     /// </summary>
+    [Intrinsic]
     public struct Plane : IEquatable<Plane>
     {
         private const float NormalizeEpsilon = 1.192092896e-07f; // smallest such that 1.0+NormalizeEpsilon != 1.0

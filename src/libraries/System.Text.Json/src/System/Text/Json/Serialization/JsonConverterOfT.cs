@@ -163,7 +163,7 @@ namespace System.Text.Json.Serialization
                 // For performance, only perform validation on internal converters on debug builds.
                 if (IsInternalConverter)
                 {
-                    if (IsInternalConverterForNumberType && state.Current.NumberHandling != null)
+                    if (state.Current.NumberHandling != null)
                     {
                         value = ReadNumberWithCustomHandling(ref reader, state.Current.NumberHandling.Value);
                     }
@@ -179,7 +179,7 @@ namespace System.Text.Json.Serialization
                     int originalPropertyDepth = reader.CurrentDepth;
                     long originalPropertyBytesConsumed = reader.BytesConsumed;
 
-                    if (IsInternalConverterForNumberType && state.Current.NumberHandling != null)
+                    if (state.Current.NumberHandling != null)
                     {
                         value = ReadNumberWithCustomHandling(ref reader, state.Current.NumberHandling.Value);
                     }
@@ -330,9 +330,10 @@ namespace System.Text.Json.Serialization
                     return true;
                 }
 
-                if (type != TypeToConvert)
+                if (type != TypeToConvert && IsInternalConverter)
                 {
-                    // Handle polymorphic case and get the new converter.
+                    // For internal converter only: Handle polymorphic case and get the new converter.
+                    // Custom converter, even though polymorphic converter, get called for reading AND writing.
                     JsonConverter jsonConverter = state.Current.InitializeReEntry(type, options);
                     if (jsonConverter != this)
                     {
@@ -355,7 +356,7 @@ namespace System.Text.Json.Serialization
 
                 int originalPropertyDepth = writer.CurrentDepth;
 
-                if (IsInternalConverterForNumberType && state.Current.NumberHandling != null)
+                if (state.Current.NumberHandling != null && IsInternalConverterForNumberType)
                 {
                     WriteNumberWithCustomHandling(writer, value, state.Current.NumberHandling.Value);
                 }

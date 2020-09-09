@@ -12,8 +12,8 @@ namespace Internal.TypeSystem
         /// Stores a cached version of the canonicalized form of this method since
         /// calculating it is a recursive operation
         /// </summary>
-        InstantiatedMethod _specificCanonCache = null;
-        InstantiatedMethod _universalCanonCache = null;
+        InstantiatedMethod _specificCanonCache;
+        InstantiatedMethod _universalCanonCache;
 
         /// <summary>
         /// Returns the result of canonicalizing this method over the given kind of Canon

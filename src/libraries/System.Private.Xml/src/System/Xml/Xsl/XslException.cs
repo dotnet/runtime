@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.Diagnostics;
 using System.Globalization;
 using System.Resources;
@@ -200,7 +199,7 @@ namespace System.Xml.Xsl
                 string lineInfoMessage = CreateMessage(SR.Xml_ErrorFilePosition, fileName, lineInfo.Start.Line.ToString(CultureInfo.InvariantCulture), lineInfo.Start.Pos.ToString(CultureInfo.InvariantCulture));
                 if (lineInfoMessage != null && lineInfoMessage.Length > 0)
                 {
-                    if (message.Length > 0 && !XmlCharType.Instance.IsWhiteSpace(message[message.Length - 1]))
+                    if (message.Length > 0 && !XmlCharType.IsWhiteSpace(message[message.Length - 1]))
                     {
                         message += " ";
                     }

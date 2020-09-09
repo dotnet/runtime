@@ -73,6 +73,9 @@ namespace ILCompiler
                 builder.Add(new KeyValuePair<string, string>(name, value));
             }
 
+            // As we always use an AltJit to compile, tell the jit to always generate code
+            builder.Add(new KeyValuePair<string, string>("AltJitNgen", "*"));
+
             _ryujitOptions = builder.ToArray();
 
             return this;

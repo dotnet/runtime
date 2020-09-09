@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "common.h"
 #include "fastserializer.h"
@@ -278,14 +277,7 @@ void ProcessDiagnosticsProtocolHelper::GetProcessInfo(DiagnosticsIpc::IpcMessage
     struct ProcessInfoPayload payload = {};
 
     // Get cmdline
-    payload.CommandLine = GetManagedCommandLine();
-
-    // Checkout https://github.com/dotnet/coreclr/pull/24433 for more information about this fall back.
-    if (payload.CommandLine == nullptr)
-    {
-        // Use the result from GetCommandLineW() instead
-        payload.CommandLine = GetCommandLineW();
-    }
+    payload.CommandLine = GetCommandLineForDiagnostics();
 
     // get OS + Arch info
     payload.OS = EventPipeEventSource::s_pOSInformation;

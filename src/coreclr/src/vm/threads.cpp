@@ -61,12 +61,10 @@ TailCallTls::TailCallTls()
     // so casting away const is ok here.
     : m_frame(const_cast<PortableTailCallFrame*>(&g_sentinelTailCallFrame))
     , m_argBuffer(NULL)
-    , m_argBufferSize(0)
-    , m_argBufferGCDesc(NULL)
 {
 }
 
-void* TailCallTls::AllocArgBuffer(size_t size, void* gcDesc)
+TailCallArgBuffer* TailCallTls::AllocArgBuffer(int size, void* gcDesc)
 {
     CONTRACTL
     {
@@ -75,42 +73,30 @@ void* TailCallTls::AllocArgBuffer(size_t size, void* gcDesc)
     }
     CONTRACTL_END
 
-    _ASSERTE(m_argBuffer == NULL);
+    _ASSERTE(size >= (int)offsetof(TailCallArgBuffer, Args));
 
-    if (size > sizeof(m_argBufferInline))
+    if (m_argBuffer != NULL && m_argBuffer->Size < size)
     {
-        m_argBuffer = new (nothrow) char[size];
+        FreeArgBuffer();
+    }
+
+    if (m_argBuffer == NULL)
+    {
+        m_argBuffer = (TailCallArgBuffer*)new (nothrow) BYTE[size];
         if (m_argBuffer == NULL)
             return NULL;
+        m_argBuffer->Size = size;
     }
-    else
-        m_argBuffer = m_argBufferInline;
 
+    m_argBuffer->State = TAILCALLARGBUFFER_ACTIVE;
+
+    m_argBuffer->GCDesc = gcDesc;
     if (gcDesc != NULL)
     {
-        memset(m_argBuffer, 0, size);
-        m_argBufferGCDesc = gcDesc;
+        memset(m_argBuffer->Args, 0, size - offsetof(TailCallArgBuffer, Args));
     }
-
-    m_argBufferSize = size;
 
     return m_argBuffer;
-}
-
-void TailCallTls::FreeArgBuffer()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END
-
-    if (m_argBufferSize > sizeof(m_argBufferInline))
-        delete[] m_argBuffer;
-
-    m_argBufferGCDesc = NULL;
-    m_argBuffer = NULL;
 }
 
 #if defined (_DEBUG_IMPL) || defined(_PREFAST_)
@@ -1432,9 +1418,6 @@ Thread::Thread()
     m_CacheStackSufficientExecutionLimit = 0;
     m_CacheStackStackAllocNonRiskyExecutionLimit = 0;
 
-    m_LastAllowableStackAddress= 0;
-    m_ProbeLimit = 0;
-
 #ifdef _DEBUG
     m_pCleanedStackBase = NULL;
 #endif
@@ -1721,8 +1704,6 @@ BOOL Thread::InitThread()
     if (m_CacheStackBase == 0)
     {
         _ASSERTE(m_CacheStackLimit == 0);
-        _ASSERTE(m_LastAllowableStackAddress == 0);
-        _ASSERTE(m_ProbeLimit == 0);
         ret = SetStackLimits(fAll);
         if (ret == FALSE)
         {
@@ -2645,6 +2626,8 @@ Thread::~Thread()
     if (m_pIBCInfo) {
         delete m_pIBCInfo;
     }
+
+    m_tailCallTls.FreeArgBuffer();
 
 #ifdef FEATURE_EVENT_TRACE
     // Destruct the thread local type cache for allocation sampling
@@ -6427,24 +6410,6 @@ BOOL Thread::SetStackLimits(SetStackLimitScope scope)
     if (FAILED(CLRSetThreadStackGuarantee()))
         return FALSE;
 
-    // Cache the last stack addresses that we are allowed to touch.  We throw a stack overflow
-    // if we cross that line.  Note that we ignore any subsequent calls to STSG for Whidbey until
-    // we see an exception and recache the values.  We use the LastAllowableAddresses to
-    // determine if we've taken a hard SO and the ProbeLimits on the probes themselves.
-
-    m_LastAllowableStackAddress = GetLastNormalStackAddress();
-
-    if (g_pConfig->ProbeForStackOverflow())
-    {
-        m_ProbeLimit = m_LastAllowableStackAddress;
-    }
-    else
-    {
-        // If we have stack probing disabled, set the probeLimit to 0 so that all probes will pass.  This
-        // way we don't have to do an extra check in the probe code.
-        m_ProbeLimit = 0;
-    }
-
     return TRUE;
 }
 
@@ -6696,34 +6661,6 @@ void Thread::DebugLogStackMBIs()
     DebugLogStackRegionMBIs(uStackLimit, uStackBase);
 }
 #endif // _DEBUG
-
-//
-// IsSPBeyondLimit
-//
-// Determines if the stack pointer is beyond the stack limit, in which case
-// we can assume we've taken a hard SO.
-//
-// Parameters: none
-//
-// Returns: bool indicating if SP is beyond the limit or not
-//
-BOOL Thread::IsSPBeyondLimit()
-{
-    WRAPPER_NO_CONTRACT;
-
-    // Reset the stack limits if necessary.
-    // @todo .  Add a vectored handler for X86 so that we reset the stack limits
-    // there, as anything that supports SetThreadStackGuarantee will support vectored handlers.
-    // Then we can always assume during EH processing that our stack limits are good and we
-    // don't have to call ResetStackLimits.
-    ResetStackLimits();
-    char *approxSP = (char *)GetCurrentSP();
-    if  (approxSP < (char *)(GetLastAllowableStackAddress()))
-    {
-        return TRUE;
-    }
-    return FALSE;
-}
 
 NOINLINE void AllocateSomeStack(){
     LIMITED_METHOD_CONTRACT;

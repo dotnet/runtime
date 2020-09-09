@@ -107,6 +107,7 @@ namespace DebuggerTests
 
                var dt = new DateTime(2025, 3, 5, 7, 9, 11);
                await EvaluateOnCallFrameAndCheck(id,
+                   ("  d ", TNumber(401)),
                    ("d", TNumber(401)),
                    (" d", TNumber(401)),
                    ("e", TNumber(402)),
@@ -171,6 +172,9 @@ namespace DebuggerTests
                    var (local_gs, _) = await EvaluateOnCallFrame(id, "local_gs");
                    await CheckValue(local_gs, TValueType("DebuggerTests.SimpleGenericStruct<int>"), nameof(local_gs));
 
+                   (local_gs, _) = await EvaluateOnCallFrame(id, "  local_gs");
+                   await CheckValue(local_gs, TValueType("DebuggerTests.SimpleGenericStruct<int>"), nameof(local_gs));
+
                    var local_gs_props = await GetProperties(local_gs["objectId"]?.Value<string>());
                    await CheckProps(local_gs_props, new
                    {
@@ -204,6 +208,41 @@ namespace DebuggerTests
 
                    // local_dt is not live yet
                    ($"local_dt.Date.Year * 10", TNumber(10)));
+           });
+
+        [Theory]
+        [InlineData("")]
+        [InlineData("this.")]
+        public async Task InheritedAndPrivateMembersInAClass(string prefix)
+        => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.GetPropertiesTests.DerivedClass", "InstanceMethod", 1, "InstanceMethod",
+            $"window.setTimeout(function() {{ invoke_static_method_async('[debugger-test] DebuggerTests.GetPropertiesTests.DerivedClass:run');}}, 1);",
+            wait_for_event_fn: async (pause_location) =>
+           {
+               var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+
+                foreach(var pad in new [] { String.Empty, "  "})
+                {
+                    var padded_prefix = pad + prefix;
+                    await EvaluateOnCallFrameAndCheck(id,
+                        // overridden
+                        ($"{padded_prefix}FirstName + \"_foo\"", TString("DerivedClass#FirstName_foo")),
+                        ($"{padded_prefix}DateTimeForOverride.Date.Year", TNumber(2190)),
+                        ($"{padded_prefix}DateTimeForOverride.Date.Year - 10", TNumber(2180)),
+                        ($"\"foo_\" + {padded_prefix}StringPropertyForOverrideWithAutoProperty", TString("foo_DerivedClass#StringPropertyForOverrideWithAutoProperty")),
+
+                        // private
+                        ($"{padded_prefix}_stringField + \"_foo\"", TString("DerivedClass#_stringField_foo")),
+                        ($"{padded_prefix}_stringField", TString("DerivedClass#_stringField")),
+                        ($"{padded_prefix}_dateTime.Second + 4", TNumber(7)),
+                        ($"{padded_prefix}_DTProp.Second + 4", TNumber(13)),
+
+                        // inherited public
+                        ($"\"foo_\" + {padded_prefix}Base_AutoStringProperty", TString("foo_base#Base_AutoStringProperty")),
+                        // inherited private
+                        ($"{padded_prefix}_base_dateTime.Date.Year - 10", TNumber(2124))
+                    );
+                }
            });
 
         [Fact]

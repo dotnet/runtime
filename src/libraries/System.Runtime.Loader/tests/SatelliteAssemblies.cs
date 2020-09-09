@@ -189,8 +189,7 @@ namespace System.Runtime.Loader.Tests
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         [MemberData(nameof(SatelliteLoadsCorrectly_TestData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/39379", TestPlatforms.Browser)]
-        public void SatelliteLoadsCorrectly(string alc, string assemblyName, string culture)
+        public void SatelliteLoadsCorrectly_FromName(string alc, string assemblyName, string culture)
         {
             AssemblyName satelliteAssemblyName = new AssemblyName(assemblyName + ".resources");
             satelliteAssemblyName.CultureInfo = new CultureInfo(culture);
@@ -205,6 +204,25 @@ namespace System.Runtime.Loader.Tests
             Assembly parentAssembly = assemblyLoadContext.LoadFromAssemblyName(parentAssemblyName);
 
             Assert.Equal(AssemblyLoadContext.GetLoadContext(parentAssembly), AssemblyLoadContext.GetLoadContext(satelliteAssembly));
+        }
+        
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
+        [MemberData(nameof(SatelliteLoadsCorrectly_TestData))]
+        public void SatelliteLoadsCorrectly_FromPath(string alc, string assemblyName, string culture)
+        {
+            string satelliteAssemblyName = assemblyName + ".resources.dll";
+
+            AssemblyLoadContext assemblyLoadContext = contexts[alc];
+
+            string assemblyPath = Path.Join(AppDomain.CurrentDomain.BaseDirectory, culture, satelliteAssemblyName);
+            Assembly satelliteAssembly = assemblyLoadContext.LoadFromAssemblyPath(assemblyPath);
+
+            Assert.NotNull(satelliteAssembly);
+
+            AssemblyName parentAssemblyName = new AssemblyName(assemblyName);
+            Assembly parentAssembly = assemblyLoadContext.LoadFromAssemblyName(parentAssemblyName);
+
+            Assert.Equal(culture, satelliteAssembly.GetName().CultureName);
         }
     }
 }

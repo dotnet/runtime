@@ -51,7 +51,13 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                 chain.ChainPolicy.DisableCertificateDownloads = true;
 
                 Stopwatch watch = Stopwatch.StartNew();
-                Assert.True(chain.Build(endEntityCert), $"chain.Build; Chain status: {chain.AllStatusFlags()}");
+                Assert.True(
+                    Retry(() =>
+                    {
+                        watch.Restart();
+                        return chain.Build(endEntityCert);
+                    }),
+                    $"chain.Build; Chain status: {chain.AllStatusFlags()}");
                 watch.Stop();
 
                 // There should be two network fetches, OCSP/CRL to intermediate to get leaf status,
@@ -208,7 +214,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
                 chain.ChainPolicy.DisableCertificateDownloads = true;
 
-                Assert.True(chain.Build(endEntityCert), $"chain.Build; Chain status: {chain.AllStatusFlags()}");
+                Assert.True(Retry(() => chain.Build(endEntityCert)), $"chain.Build; Chain status: {chain.AllStatusFlags()}");
             }
         }
 
@@ -244,7 +250,13 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                 chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
 
                 Stopwatch watch = Stopwatch.StartNew();
-                Assert.True(chain.Build(endEntityCert), GetFlags(chain, endEntityCert.Thumbprint).ToString());
+                Assert.True(
+                    Retry(() =>
+                    {
+                        watch.Restart();
+                        return chain.Build(endEntityCert);
+                    }),
+                    GetFlags(chain, endEntityCert.Thumbprint).ToString());
                 watch.Stop();
 
                 Assert.True(watch.Elapsed >= delay, $"watch.Elapsed: {watch.Elapsed}");
@@ -296,5 +308,18 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
             chain.ChainElements.OfType<X509ChainElement>().
                 Single(e => e.Certificate.Thumbprint == thumbprint).
                 ChainElementStatus.Aggregate((X509ChainStatusFlags)0, (a, e) => a | e.Status);
+
+        private static bool Retry(Func<bool> body, int times = 3)
+        {
+            for (int attempt = 0; attempt < times; attempt++)
+            {
+                if (body())
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
     }
 }

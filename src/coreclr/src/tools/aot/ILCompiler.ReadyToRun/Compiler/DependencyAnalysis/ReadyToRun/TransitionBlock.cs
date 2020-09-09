@@ -366,6 +366,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 }
             }
 
+            public override bool IsArgPassedByRef(TypeHandle th) => false;
+
             /// <summary>
             /// x86 is special as always
             /// DESKTOP BEHAVIOR            ret += this.HasThis() ? ArgumentRegisters.GetOffsetOfEdx() : ArgumentRegisters.GetOffsetOfEcx();

@@ -8,6 +8,17 @@
 // Unified method of accessing configuration values from environment variables,
 // registry and config file.
 //
+// Given any config knob below that looks like this example:
+//    RETAIL_CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_LogEnable, W("LogEnable"), "Turns on the traditional CLR log.")
+//                                                                  ---------
+//                                                                     |
+//                                                 --------------------
+//                                                 |
+//                                                 V
+// You can set an environment variable COMPlus_LogEnable=1 to enable it.
+//
+// See below for more details
+//
 //*****************************************************************************
 
 // IMPORTANT: Before adding a new config value, please read up on naming conventions (see
@@ -715,6 +726,7 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_EventPipeProcNumbers, W("EventPipeProcNumbers"
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_GCGenAnalysisGen, W("GCGenAnalysisGen"), 0, "The generation to trigger generational aware analysis")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_GCGenAnalysisBytes, W("GCGenAnalysisBytes"), 0, "The number of bytes to trigger generational aware analysis")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_GCGenAnalysisIndex, W("GCGenAnalysisIndex"), 0, "The gc index to trigger generational aware analysis")
+RETAIL_CONFIG_STRING_INFO(INTERNAL_GCGenAnalysisCmd, W("GCGenAnalysisCmd"), "An optional filter to match with the command line used to spawn the process")
 
 //
 // Diagnostics Ports

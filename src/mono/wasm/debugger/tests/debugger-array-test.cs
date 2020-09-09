@@ -168,7 +168,7 @@ namespace DebuggerTests
             var point = new Point { X = 45, Y = 51, Id = "point#Id", Color = RGB.Green };
 
             Console.WriteLine($"point_arr: {point_arr.Length}, T: {t1}, point: {point}");
-            return (t1, new Point[] { point_arr[0], point_arr[1], point });
+            return await Task.FromResult((t1, new Point[] { point_arr[0], point_arr[1], point }));
         }
 
         // A workaround for method invocations on structs not working right now
@@ -249,7 +249,7 @@ namespace DebuggerTests
         {
             var local_gs = new SimpleGenericStruct<int> { Id = "local_gs#Id", Color = RGB.Green, Value = 4 };
             sc_arg.Id = "sc_arg#Id";
-            Console.WriteLine($"AsyncInstanceMethod sc_arg: {sc_arg.Id}, local_gs: {local_gs.Id}");
+            Console.WriteLine($"AsyncInstanceMethod sc_arg: {sc_arg.Id}, local_gs: {local_gs.Id}"); await Task.CompletedTask;
         }
 
         public void GenericInstanceMethod<T>(T sc_arg) where T : SimpleClass

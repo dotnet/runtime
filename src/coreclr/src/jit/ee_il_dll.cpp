@@ -1317,7 +1317,7 @@ const char* Compiler::eeGetClassName(CORINFO_CLASS_HANDLE clsHnd)
 
 const WCHAR* Compiler::eeGetCPString(size_t strHandle)
 {
-#ifdef TARGET_UNIX
+#ifdef HOST_UNIX
     return nullptr;
 #else
     char buff[512 + sizeof(CORINFO_String)];
@@ -1341,7 +1341,7 @@ const WCHAR* Compiler::eeGetCPString(size_t strHandle)
     }
 
     return (asString->chars);
-#endif // TARGET_UNIX
+#endif // HOST_UNIX
 }
 
 #endif // DEBUG

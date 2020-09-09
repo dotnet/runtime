@@ -5304,9 +5304,9 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
             compJitFuncInfoFile = _wfopen(compJitFuncInfoFilename, W("a"));
             if (compJitFuncInfoFile == nullptr)
             {
-#if defined(DEBUG) && !defined(TARGET_UNIX) // no 'perror' in the PAL
+#if defined(DEBUG) && !defined(HOST_UNIX) // no 'perror' in the PAL
                 perror("Failed to open JitFuncInfoLogFile");
-#endif // defined(DEBUG) && !defined(TARGET_UNIX)
+#endif // defined(DEBUG) && !defined(HOST_UNIX)
             }
         }
     }
