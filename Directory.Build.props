@@ -86,6 +86,7 @@
 
     <!-- We don't want Private packages to be shipped to NuGet.org -->
     <IsShippingPackage Condition="($(MSBuildProjectName.Contains('Private')) or $(IsExperimentalAssembly)) and '$(MSBuildProjectExtension)' == '.pkgproj'">false</IsShippingPackage>
+    <StabilizePackageVersion Condition="'$(IsShippingPackage)' == 'false'">false</StabilizePackageVersion>
 
     <!-- By default the SDK produces ref assembly for 5.0 or later -->
     <ProduceReferenceAssembly>false</ProduceReferenceAssembly>

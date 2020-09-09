@@ -46,7 +46,7 @@
     <PackageVersion Condition="'$(PackageVersion)' == ''">5.0.0</PackageVersion>
 
     <!-- Set the boolean below to true to generate packages with stabilized versions -->
-    <StabilizePackageVersion Condition="'$(StabilizePackageVersion)' == ''">false</StabilizePackageVersion>
+    <StabilizePackageVersion Condition="'$(StabilizePackageVersion)' == ''">true</StabilizePackageVersion>
     <StableVersion Condition="'$(StabilizePackageVersion)' == 'true' and '$(StableVersion)' == ''">$(PackageVersion)</StableVersion>
   </PropertyGroup>
 
