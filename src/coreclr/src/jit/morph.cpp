@@ -9286,7 +9286,12 @@ GenTree* Compiler::fgMorphLeaf(GenTree* tree)
                 break;
 
             case IAT_VALUE:
-                tree = gtNewOperNode(GT_NOP, tree->TypeGet(), tree); // prevents constant folding
+                // Refer to gtNewIconHandleNode() as the template for constructing a constant handle
+                //
+                tree->SetOper(GT_CNS_INT);
+                tree->AsIntConCommon()->SetIconValue(ssize_t(addrInfo.handle));
+                tree->gtFlags |= GTF_ICON_FTN_ADDR;
+                // tree = gtNewOperNode(GT_NOP, tree->TypeGet(), tree); // prevents constant folding
                 break;
 
             default:
@@ -9296,10 +9301,8 @@ GenTree* Compiler::fgMorphLeaf(GenTree* tree)
         if (indNode != nullptr)
         {
             DEBUG_DESTROY_NODE(tree);
-            tree = indNode;
+            tree = fgMorphTree(indNode);
         }
-
-        return fgMorphTree(tree);
     }
 
     return tree;
