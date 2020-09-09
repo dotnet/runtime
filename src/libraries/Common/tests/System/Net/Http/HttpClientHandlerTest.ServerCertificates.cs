@@ -387,12 +387,9 @@ namespace System.Net.Http.Functional.Tests
 
                 await LoopbackServer.CreateServerAsync(async (server, url) =>
                 {
-                    var request = new HttpRequestMessage(HttpMethod.Get, url);
-                    request.Headers.Add("Host", certificate.GetNameInfo(X509NameType.SimpleName, false));
-
                     await TestHelper.WhenAllCompletedOrAnyFailed(
                         server.AcceptConnectionSendResponseAndCloseAsync(),
-                        client.SendAsync(request));
+                        client.GetAsync($"https://{certificate.GetNameInfo(X509NameType.SimpleName, false)}:{url.Port}/"));
                 }, options);
 
                 Assert.True(callbackCalled);
