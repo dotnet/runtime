@@ -30,7 +30,7 @@ parameters:
   continueOnError: false                 # optional -- determines whether to continue the build if the step errors; defaults to false
 
 steps:
-- template: send-to-helix-inner-step.yml
+- template: /eng/pipelines/common/templates/runtimes/send-to-helix-inner-step.yml
   parameters:
     osGroup: ${{ variables['Agent.Os'] }}
     sendParams: $(Build.SourcesDirectory)\eng\common\helixpublish.proj /restore /t:Test /bl:$(Build.SourcesDirectory)\artifacts\log\$(_BuildConfig)\SendToHelix.binlog"'
