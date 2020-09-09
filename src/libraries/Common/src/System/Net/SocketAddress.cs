@@ -5,6 +5,7 @@
 using System.Diagnostics;
 using System.Globalization;
 using System.Net.Sockets;
+using System.Runtime.Versioning;
 using System.Text;
 
 #if SYSTEM_NET_PRIMITIVES_DLL
@@ -36,6 +37,7 @@ namespace System.Net.Internals
         private bool _changed = true;
         private int _hash;
 
+        [UnsupportedOSPlatform("browser")]
         public AddressFamily Family
         {
             get
@@ -80,10 +82,12 @@ namespace System.Net.Internals
             }
         }
 
+        [UnsupportedOSPlatform("browser")]
         public SocketAddress(AddressFamily family) : this(family, MaxSize)
         {
         }
 
+        [UnsupportedOSPlatform("browser")]
         public SocketAddress(AddressFamily family, int size)
         {
             if (size < MinSize)
@@ -235,6 +239,7 @@ namespace System.Net.Internals
             return _hash;
         }
 
+        [UnsupportedOSPlatform("browser")]
         public override string ToString()
         {
             // Get the address family string.  In almost all cases, this should be a cached string
