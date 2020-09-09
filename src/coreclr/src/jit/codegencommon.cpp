@@ -2271,6 +2271,7 @@ void CodeGen::genEmitMachineCode()
     GetEmitter()->emitComputeCodeSizes();
 
 #ifdef DEBUG
+    unsigned instrCount;
 
     // Code to test or stress our ability to run a fallback compile.
     // We trigger the fallback here, before asking the VM for any memory,
