@@ -19,9 +19,9 @@ namespace System.Diagnostics
     ///         - Otherwise, the item will be added to the collection.
     ///     - Add method will add a new item to the collection if an item doesn't already exist with the same key. Otherwise, it will throw an exception.
     /// </summary>
-    public class ActivityTagsCollection : IDictionary<string, object>
+    public class ActivityTagsCollection : IDictionary<string, object?>
     {
-        private List<KeyValuePair<string, object>> _list = new List<KeyValuePair<string, object>>();
+        private List<KeyValuePair<string, object?>> _list = new List<KeyValuePair<string, object?>>();
 
         /// <summary>
         /// Create a new instance of the collection.
@@ -34,14 +34,14 @@ namespace System.Diagnostics
         /// Create a new instance of the collection and store the input list items in the collection.
         /// </summary>
         /// <param name="list">Initial list to store in the collection.</param>
-        public ActivityTagsCollection(IEnumerable<KeyValuePair<string, object>> list)
+        public ActivityTagsCollection(IEnumerable<KeyValuePair<string, object?>> list)
         {
             if (list == null)
             {
                 throw new ArgumentNullException(nameof(list));
             }
 
-            foreach (KeyValuePair<string, object> kvp in list)
+            foreach (KeyValuePair<string, object?> kvp in list)
             {
                 if (kvp.Key != null)
                 {
@@ -58,12 +58,12 @@ namespace System.Diagnostics
         ///     - Otherwise, a new item will get added to the collection.
         /// </summary>
         /// <value>Object mapped to the key</value>
-        public object this[string key]
+        public object? this[string key]
         {
             get
             {
                 int index = _list.FindIndex(kvp => kvp.Key == key);
-                return index < 0 ? null! : _list[index].Value;
+                return index < 0 ? null : _list[index].Value;
             }
 
             set
@@ -85,11 +85,11 @@ namespace System.Diagnostics
 
                 if (index >= 0)
                 {
-                    _list[index] = new KeyValuePair<string, object>(key, value);
+                    _list[index] = new KeyValuePair<string, object?>(key, value);
                 }
                 else
                 {
-                    _list.Add(new KeyValuePair<string, object>(key, value));
+                    _list.Add(new KeyValuePair<string, object?>(key, value));
                 }
             }
         }
@@ -102,7 +102,7 @@ namespace System.Diagnostics
             get
             {
                 List<string> list = new List<string>(_list.Count);
-                foreach (KeyValuePair<string, object> kvp in _list)
+                foreach (KeyValuePair<string, object?> kvp in _list)
                 {
                     list.Add(kvp.Key);
                 }
@@ -113,12 +113,12 @@ namespace System.Diagnostics
         /// <summary>
         /// Get the list of the values of all stored tags.
         /// </summary>
-        public ICollection<object> Values
+        public ICollection<object?> Values
         {
             get
             {
-                List<object> list = new List<object>(_list.Count);
-                foreach (KeyValuePair<string, object> kvp in _list)
+                List<object?> list = new List<object?>(_list.Count);
+                foreach (KeyValuePair<string, object?> kvp in _list)
                 {
                     list.Add(kvp.Value);
                 }
@@ -142,7 +142,7 @@ namespace System.Diagnostics
         /// </summary>
         /// <param name="key">The tag key.</param>
         /// <param name="value">The tag value.</param>
-        public void Add(string key, object value)
+        public void Add(string key, object? value)
         {
             if (key == null)
             {
@@ -155,14 +155,14 @@ namespace System.Diagnostics
                 throw new InvalidOperationException(SR.Format(SR.KeyAlreadyExist, key));
             }
 
-            _list.Add(new KeyValuePair<string, object>(key, value));
+            _list.Add(new KeyValuePair<string, object?>(key, value));
         }
 
         /// <summary>
         /// Adds an item to the collection
         /// </summary>
         /// <param name="item">Key and value pair of the tag to add to the collection.</param>
-        public void Add(KeyValuePair<string, object> item)
+        public void Add(KeyValuePair<string, object?> item)
         {
             if (item.Key == null)
             {
@@ -183,7 +183,7 @@ namespace System.Diagnostics
         /// </summary>
         public void Clear() => _list.Clear();
 
-        public bool Contains(KeyValuePair<string, object> item) => _list.Contains(item);
+        public bool Contains(KeyValuePair<string, object?> item) => _list.Contains(item);
 
         /// <summary>
         /// Determines whether the collection contains an element with the specified key.
@@ -197,12 +197,12 @@ namespace System.Diagnostics
         /// </summary>
         /// <param name="array">The array that is the destination of the elements copied from collection.</param>
         /// <param name="arrayIndex">The zero-based index in array at which copying begins.</param>
-        public void CopyTo(KeyValuePair<string, object>[] array, int arrayIndex) => _list.CopyTo(array, arrayIndex);
+        public void CopyTo(KeyValuePair<string, object?>[] array, int arrayIndex) => _list.CopyTo(array, arrayIndex);
 
         /// <summary>
         /// Returns an enumerator that iterates through the collection.
         /// </summary>
-        IEnumerator<KeyValuePair<string, object>> IEnumerable<KeyValuePair<string, object>>.GetEnumerator() => new Enumerator(_list);
+        IEnumerator<KeyValuePair<string, object?>> IEnumerable<KeyValuePair<string, object?>>.GetEnumerator() => new Enumerator(_list);
 
         /// <summary>
         /// Returns an enumerator that iterates through the collection.
@@ -241,7 +241,7 @@ namespace System.Diagnostics
         /// </summary>
         /// <param name="item">The tag key value pair to remove.</param>
         /// <returns>True if item was successfully removed from the collection; otherwise, false. This method also returns false if item is not found in the original collection.</returns>
-        public bool Remove(KeyValuePair<string, object> item) => _list.Remove(item);
+        public bool Remove(KeyValuePair<string, object?> item) => _list.Remove(item);
 
         /// <summary>
         /// Gets the value associated with the specified key.
@@ -249,7 +249,7 @@ namespace System.Diagnostics
         /// <param name="key">The tag key.</param>
         /// <param name="value">The tag value.</param>
         /// <returns>When this method returns, the value associated with the specified key, if the key is found; otherwise, the default value for the type of the value parameter. This parameter is passed uninitialized.</returns>
-        public bool TryGetValue(string key, [MaybeNullWhen(false)] out object value)
+        public bool TryGetValue(string key, out object? value)
         {
             int index = _list.FindIndex(kvp => kvp.Key == key);
             if (index >= 0)
@@ -262,12 +262,12 @@ namespace System.Diagnostics
             return false;
         }
 
-        public struct Enumerator : IEnumerator<KeyValuePair<string, object>>, IEnumerator
+        public struct Enumerator : IEnumerator<KeyValuePair<string, object?>>, IEnumerator
         {
-            private List<KeyValuePair<string, object>>.Enumerator _enumerator;
-            internal Enumerator(List<KeyValuePair<string, object>> list) => _enumerator = list.GetEnumerator();
+            private List<KeyValuePair<string, object?>>.Enumerator _enumerator;
+            internal Enumerator(List<KeyValuePair<string, object?>> list) => _enumerator = list.GetEnumerator();
 
-            public KeyValuePair<string, object> Current => _enumerator.Current;
+            public KeyValuePair<string, object?> Current => _enumerator.Current;
             object IEnumerator.Current => ((IEnumerator)_enumerator).Current;
             public void Dispose() => _enumerator.Dispose();
             public bool MoveNext() => _enumerator.MoveNext();

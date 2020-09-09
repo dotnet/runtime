@@ -109,9 +109,7 @@
     <!-- Used for launchSettings.json and runtime config files. -->
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <!-- Determine what architecture we are building on. -->
-    <BuildArchitecture>$([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant())</BuildArchitecture>
-    <!-- Determine what host architecture our build will run on. -->
-    <HostArchitecture Condition="'$(HostArchitecture)' == ''">$(BuildArchitecture)</HostArchitecture>
+    <BuildArchitecture Condition="'$(BuildArchitecture)' == ''">$([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant())</BuildArchitecture>
     
     <!-- Turn off end of life target framework check as we still build for nca2.0 and nca3.0 some OOB libraries -->
     <CheckEolTargetFramework>false</CheckEolTargetFramework>

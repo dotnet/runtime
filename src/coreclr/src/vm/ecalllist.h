@@ -1068,9 +1068,6 @@ FCFuncStart(gPalKernel32Funcs)
     QCFuncElement("SetEvent", SetEvent)
     QCFuncElement("WriteFile", WriteFile)
 FCFuncEnd()
-FCFuncStart(gPalOleAut32Funcs)
-    QCFuncElement("SysAllocStringByteLen", SysAllocStringByteLen)
-FCFuncEnd()
 #endif
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
@@ -1182,9 +1179,6 @@ FCClassElement("OAVariantLib", "Microsoft.Win32", gOAVariantFuncs)
 FCClassElement("Object", "System", gObjectFuncs)
 #ifdef FEATURE_COMINTEROP
 FCClassElement("ObjectMarshaler", "System.StubHelpers", gObjectMarshalerFuncs)
-#endif
-#ifdef TARGET_UNIX
-FCClassElement("OleAut32", "", gPalOleAut32Funcs)
 #endif
 FCClassElement("OverlappedData", "System.Threading", gOverlappedFuncs)
 
