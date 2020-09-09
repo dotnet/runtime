@@ -532,6 +532,8 @@ if (MSVC)
     add_definitions(-DDISABLE_CONTRACTS)
   endif (CLR_CMAKE_TARGET_ARCH_ARM OR CLR_CMAKE_TARGET_ARCH_ARM64)
 
+  # Don't display the output header when building RC files.
+  add_compile_options($<$<COMPILE_LANGUAGE:RC>:/nologo>)
 endif (MSVC)
 
 if(CLR_CMAKE_ENABLE_CODE_COVERAGE)

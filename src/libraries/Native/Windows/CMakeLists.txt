@@ -50,14 +50,6 @@ if ($ENV{__BuildArch} STREQUAL "x86")
     add_compile_options(/Gz)
 endif ()
 
-if (($ENV{__BuildArch} STREQUAL "arm") OR ($ENV{__BuildArch} STREQUAL "arm64"))
-    if(NOT DEFINED CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION OR CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION STREQUAL "" )
-          message(FATAL_ERROR "Windows SDK is required for the ARM32 or ARM64 build.")
-      else()
-          message("Using Windows SDK version ${CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION}")
-      endif()
-endif ()
-
 # enable control-flow-guard support for native components
 add_compile_options(/guard:cf) 
 set(__LinkArgs "${__LinkArgs} /GUARD:CF")

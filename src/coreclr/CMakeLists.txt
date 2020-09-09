@@ -10,11 +10,6 @@ project(CoreCLR)
 
 include(${CLR_ENG_NATIVE_DIR}/configurecompiler.cmake)
 
-if (CLR_CMAKE_HOST_WIN32)
-  message(STATUS "VS_PLATFORM_TOOLSET is ${CMAKE_VS_PLATFORM_TOOLSET}")
-  message(STATUS "VS_PLATFORM_NAME is ${CMAKE_VS_PLATFORM_NAME}")
-endif (CLR_CMAKE_HOST_WIN32)
-
 if(MSVC)
   string(REPLACE "/EHsc" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/EHa>) # enable C++ EH (w/ SEH exceptions)
