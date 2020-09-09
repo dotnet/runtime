@@ -8,6 +8,11 @@
     <AllowEmptySignList Condition="'$(SignFinalPackages)' != 'true'">true</AllowEmptySignList>
   </PropertyGroup>
 
+  <!-- Get artifact locations to sign. -->
+  <!-- When we do post build signing, we want all relative paths -->
+  <Import Project="$(RepositoryEngineeringDir)Configurations.props" Condition="'$(PostBuildSign)' != 'true'" />
+  <Import Project="$(RepositoryEngineeringDir)liveBuilds.targets" Condition="'$(PostBuildSign)' != 'true'" />
+
   <!-- We need  this to be inside a target to workaround: https://github.com/microsoft/msbuild/issues/5445 -->
   <Target Name="PrepareItemsToSign" BeforeTargets="Sign">
 
