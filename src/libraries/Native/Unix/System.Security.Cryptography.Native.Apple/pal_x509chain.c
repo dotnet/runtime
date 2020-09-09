@@ -192,14 +192,34 @@ static void MergeStatusCodes(CFTypeRef key, CFTypeRef value, void* context)
         // just ignore it for now.
     }
     else if (CFEqual(keyString, CFSTR("NonEmptySubject")) || CFEqual(keyString, CFSTR("GrayListedKey")) ||
-             CFEqual(keyString, CFSTR("CTRequired")) || CFEqual(keyString, CFSTR("GrayListedLeaf")))
+             CFEqual(keyString, CFSTR("CTRequired")) || CFEqual(keyString, CFSTR("GrayListedLeaf")) ||
+             CFEqual(keyString, CFSTR("IdLinkage")))
     {
         // Not a "problem" that we report.
     }
     else
     {
 #if defined DEBUG || defined DEBUGGING_UNKNOWN_VALUE
-        printf("Unknown Chain Status: %s\n", CFStringGetCStringPtr(keyString, CFStringGetSystemEncoding()));
+        CFIndex keyStringLength = CFStringGetLength(keyString);
+        CFIndex maxEncodedLength = CFStringGetMaximumSizeForEncoding(keyStringLength, kCFStringEncodingUTF8) + 1;
+        char* keyStringBuffer = malloc(maxEncodedLength);
+
+        if (keyStringBuffer)
+        {
+            if (CFStringGetCString(keyString, keyStringBuffer, maxEncodedLength, kCFStringEncodingUTF8))
+            {
+                printf("Unknown Chain Status: %s\n", keyStringBuffer);
+            }
+            else
+            {
+                printf("Unknown Chain Status. Could not get string.");
+            }
+            free(keyStringBuffer);
+        }
+        else
+        {
+            printf("Unknown Chain Status. Could not allocate string.");
+        }
 #endif
         *pStatus |= PAL_X509ChainErrorUnknownValue;
     }

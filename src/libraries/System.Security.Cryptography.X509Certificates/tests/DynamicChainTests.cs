@@ -513,6 +513,65 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             });
         }
 
+        [Fact]
+        public static void MismatchKeyIdentifiers()
+        {
+            X509Extension[] intermediateExtensions = new [] {
+                new X509BasicConstraintsExtension(
+                    certificateAuthority: true,
+                    hasPathLengthConstraint: false,
+                    pathLengthConstraint: 0,
+                    critical: true),
+                new X509Extension(
+                    "2.5.29.14",
+                    "0414C7AC28EFB300F46F9406ED155628A123633E556F".HexToByteArray(),
+                    critical: false)
+            };
+
+            X509Extension[] endEntityExtensions = new [] {
+                new X509BasicConstraintsExtension(
+                    certificateAuthority: false,
+                    hasPathLengthConstraint: false,
+                    pathLengthConstraint: 0,
+                    critical: true),
+                new X509Extension(
+                    "2.5.29.35",
+                    "30168014A84A6A63047DDDBAE6D139B7A64565EFF3A8ECA1".HexToByteArray(),
+                    critical: false)
+            };
+
+            TestDataGenerator.MakeTestChain3(
+                out X509Certificate2 endEntityCert,
+                out X509Certificate2 intermediateCert,
+                out X509Certificate2 rootCert,
+                intermediateExtensions: intermediateExtensions,
+                endEntityExtensions: endEntityExtensions);
+
+            using (endEntityCert)
+            using (intermediateCert)
+            using (rootCert)
+            using (ChainHolder chainHolder = new ChainHolder())
+            {
+                X509Chain chain = chainHolder.Chain;
+                chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+                chain.ChainPolicy.VerificationTime = endEntityCert.NotBefore.AddSeconds(1);
+                chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
+                chain.ChainPolicy.CustomTrustStore.Add(rootCert);
+                chain.ChainPolicy.ExtraStore.Add(intermediateCert);
+
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                {
+                    Assert.False(chain.Build(endEntityCert), "chain.Build");
+                    Assert.Equal(X509ChainStatusFlags.PartialChain, chain.AllStatusFlags());
+                }
+                else
+                {
+                    Assert.True(chain.Build(endEntityCert), "chain.Build");
+                    Assert.Equal(3, chain.ChainElements.Count);
+                }
+            }
+        }
+
         private static X509ChainStatusFlags PlatformNameConstraints(X509ChainStatusFlags flags)
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
