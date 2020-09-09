@@ -5,6 +5,8 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
@@ -654,6 +656,59 @@ namespace System.Text.Json.Serialization.Tests
             catch (JsonException) { }
 
             Assert.Equal(0, reader.BytesConsumed);
+        }
+
+        [Fact]
+        [OuterLoop]
+        public static async Task RoundtripHumongousJsonPayload()
+        {
+            string logPayload = @"{
+""ID"": 0,
+""DateTime"": ""2018-08-09T08:57:34"",
+""Site"": null,
+""SiteID"": 1,
+""Lev"": [
+    80.3,
+    0,
+    75.9,
+    69.6,
+    59.5
+]
+}";
+
+            int logCount = 604621;
+
+            string payload = "[\n" + string.Join(",\n", Enumerable.Repeat(logPayload, logCount)) + "\n]";
+            byte[] payloadBytes = Encoding.UTF8.GetBytes(payload);
+
+            List<SiteLog> list = JsonSerializer.Deserialize<List<SiteLog>>(payloadBytes);
+            Assert.Equal(logCount, list.Count);
+            JsonTestHelper.AssertJsonEqual(payloadBytes, JsonSerializer.SerializeToUtf8Bytes(list));
+
+            using (var stream = new MemoryStream(payloadBytes))
+            {
+                list = await JsonSerializer.DeserializeAsync<List<SiteLog>>(stream);
+                Assert.Equal(logCount, list.Count);
+            }
+
+            using (var stream = new MemoryStream())
+            {
+                await JsonSerializer.SerializeAsync(stream, list);
+                JsonTestHelper.AssertJsonEqual(payloadBytes, stream.ToArray());
+            }
+        }
+
+        public class SiteLog
+        {
+            public int ID { get; set; }
+            public DateTime DateTime { get; set; }
+            public Site Site { get; set; }
+            public int SiteID { get; set; }
+            public double[] Lev { get; set; }
+        }
+
+        public class Site
+        {
         }
     }
 }
