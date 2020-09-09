@@ -41,7 +41,6 @@ It helps in tracking issues effectively. There are some issues that are reproduc
 | Month | Alias  | 
 |-------|-----------|
 | September |  @directhex  |
-| Octorber  | @jkoritzinsky |
+| October  | @jkoritzinsky |
 | November  | @aik-jahoda  |
 | December  | @akoeplinger   |
-
