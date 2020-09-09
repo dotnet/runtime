@@ -39,7 +39,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Fact]
-        public static void MarshalRequestEnums()
+        public static void MarshalStringFromJSToManagedEnum()
         {
             Runtime.InvokeJS(@"
                 var dflt = ""Default"";
@@ -59,7 +59,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Fact]
-        public static void MarshalRequestEnumProps()
+        public static void SetPropertiesOnJSObjectFromManaged()
         {
             Runtime.InvokeJS(@"
                 var obj = {};
