@@ -1996,6 +1996,7 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *klass, MonoErro
 	MonoVTable *vt;
 	MonoClassRuntimeInfo *runtime_info;
 	MonoClassField *field;
+	MonoMemoryManager *memory_manager;
 	char *t;
 	int i, vtable_slots;
 	size_t imt_table_bytes;
@@ -2282,7 +2283,7 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *klass, MonoErro
 
 	/*  class_vtable_array keeps an array of created vtables
 	 */
-	MonoMemoryManager *memory_manager = mono_domain_ambient_memory_manager (domain);
+	memory_manager = mono_domain_ambient_memory_manager (domain);
 	mono_mem_manager_lock (memory_manager);
 	g_ptr_array_add (memory_manager->class_vtable_array, vt);
 	mono_mem_manager_unlock (memory_manager);
