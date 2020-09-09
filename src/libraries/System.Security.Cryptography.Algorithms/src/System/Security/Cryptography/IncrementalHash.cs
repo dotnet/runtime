@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using Internal.Cryptography;
+using System.Runtime.Versioning;
 
 namespace System.Security.Cryptography
 {
@@ -346,6 +347,7 @@ namespace System.Security.Cryptography
         ///     the empty string.
         /// </exception>
         /// <exception cref="CryptographicException"><paramref name="hashAlgorithm"/> is not a known hash algorithm.</exception>
+        [UnsupportedOSPlatform("browser")]
         public static IncrementalHash CreateHMAC(HashAlgorithmName hashAlgorithm, byte[] key)
         {
             if (key == null)
@@ -376,6 +378,7 @@ namespace System.Security.Cryptography
         ///     the empty string.
         /// </exception>
         /// <exception cref="CryptographicException"><paramref name="hashAlgorithm"/> is not a known hash algorithm.</exception>
+        [UnsupportedOSPlatform("browser")]
         public static IncrementalHash CreateHMAC(HashAlgorithmName hashAlgorithm, ReadOnlySpan<byte> key)
         {
             if (string.IsNullOrEmpty(hashAlgorithm.Name))
