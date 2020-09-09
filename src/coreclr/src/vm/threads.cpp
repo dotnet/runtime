@@ -707,6 +707,11 @@ Thread* SetupThread()
     }
 #endif
 
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+    // Initialize new threads to JIT Write disabled
+    auto jitWriteEnableHolder = PAL_JITWriteEnable(false);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
+
     // Normally, HasStarted is called from the thread's entrypoint to introduce it to
     // the runtime.  But sometimes that thread is used for DLL_THREAD_ATTACH notifications
     // that call into managed code.  In that case, a call to SetupThread here must
