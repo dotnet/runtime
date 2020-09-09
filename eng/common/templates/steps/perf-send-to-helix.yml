@@ -22,28 +22,28 @@ parameters:
             
 
 steps:
-  - template: send-to-helix-inner-step.yml
-    parameters:
-      osGroup: ${{ variables['Agent.Os'] }}
-      sendParams: $(Build.SourcesDirectory)\eng\common\performance\${{ parameters.ProjectFile }} /restore /t:Test /bl:$(Build.SourcesDirectory)\artifacts\log\$(_BuildConfig)\SendToHelix.binlog
-      displayName: ${{ parameters.DisplayNamePrefix }}
-      condition: ${{ parameters.condition }}
-      continueOnError: ${{ parameters.continueOnError }}
-      environment:
-        BuildConfig: $(_BuildConfig)
-        HelixSource: ${{ parameters.HelixSource }}
-        HelixType: ${{ parameters.HelixType }}
-        HelixBuild: ${{ parameters.HelixBuild }}
-        HelixTargetQueues: ${{ parameters.HelixTargetQueues }}
-        HelixAccessToken: ${{ parameters.HelixAccessToken }}
-        HelixPreCommands: ${{ parameters.HelixPreCommands }}
-        HelixPostCommands: ${{ parameters.HelixPostCommands }}
-        WorkItemDirectory: ${{ parameters.WorkItemDirectory }}
-        CorrelationPayloadDirectory: ${{ parameters.CorrelationPayloadDirectory }}
-        IncludeDotNetCli: ${{ parameters.IncludeDotNetCli }}
-        DotNetCliPackageType: ${{ parameters.DotNetCliPackageType }}
-        DotNetCliVersion: ${{ parameters.DotNetCliVersion }}
-        EnableXUnitReporter: ${{ parameters.EnableXUnitReporter }}
-        WaitForWorkItemCompletion: ${{ parameters.WaitForWorkItemCompletion }}
-        Creator: ${{ parameters.Creator }}
-        SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+- template: send-to-helix-inner-step.yml
+  parameters:
+    osGroup: ${{ variables['Agent.Os'] }}
+    sendParams: $(Build.SourcesDirectory)\eng\common\performance\${{ parameters.ProjectFile }} /restore /t:Test /bl:$(Build.SourcesDirectory)\artifacts\log\$(_BuildConfig)\SendToHelix.binlog
+    displayName: ${{ parameters.DisplayNamePrefix }}
+    condition: ${{ parameters.condition }}
+    continueOnError: ${{ parameters.continueOnError }}
+    environment:
+      BuildConfig: $(_BuildConfig)
+      HelixSource: ${{ parameters.HelixSource }}
+      HelixType: ${{ parameters.HelixType }}
+      HelixBuild: ${{ parameters.HelixBuild }}
+      HelixTargetQueues: ${{ parameters.HelixTargetQueues }}
+      HelixAccessToken: ${{ parameters.HelixAccessToken }}
+      HelixPreCommands: ${{ parameters.HelixPreCommands }}
+      HelixPostCommands: ${{ parameters.HelixPostCommands }}
+      WorkItemDirectory: ${{ parameters.WorkItemDirectory }}
+      CorrelationPayloadDirectory: ${{ parameters.CorrelationPayloadDirectory }}
+      IncludeDotNetCli: ${{ parameters.IncludeDotNetCli }}
+      DotNetCliPackageType: ${{ parameters.DotNetCliPackageType }}
+      DotNetCliVersion: ${{ parameters.DotNetCliVersion }}
+      EnableXUnitReporter: ${{ parameters.EnableXUnitReporter }}
+      WaitForWorkItemCompletion: ${{ parameters.WaitForWorkItemCompletion }}
+      Creator: ${{ parameters.Creator }}
+      SYSTEM_ACCESSTOKEN: $(System.AccessToken)
