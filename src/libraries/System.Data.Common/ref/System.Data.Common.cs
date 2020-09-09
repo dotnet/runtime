@@ -863,7 +863,7 @@ namespace System.Data
         public override System.Type GetProviderSpecificFieldType(int ordinal) { throw null; }
         public override object GetProviderSpecificValue(int ordinal) { throw null; }
         public override int GetProviderSpecificValues(object[] values) { throw null; }
-        public override System.Data.DataTable? GetSchemaTable() { throw null; }
+        public override System.Data.DataTable GetSchemaTable() { throw null; }
         public override string GetString(int ordinal) { throw null; }
         public override object GetValue(int ordinal) { throw null; }
         public override int GetValues(object[] values) { throw null; }
