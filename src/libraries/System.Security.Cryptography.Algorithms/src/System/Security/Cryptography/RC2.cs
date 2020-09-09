@@ -3,10 +3,12 @@
 
 using Internal.Cryptography;
 using System.ComponentModel;
+using System.Runtime.Versioning;
 
 namespace System.Security.Cryptography
 {
     [EditorBrowsable(EditorBrowsableState.Never)]
+    [UnsupportedOSPlatform("browser")]
     public abstract class RC2 : SymmetricAlgorithm
     {
         protected int EffectiveKeySizeValue;

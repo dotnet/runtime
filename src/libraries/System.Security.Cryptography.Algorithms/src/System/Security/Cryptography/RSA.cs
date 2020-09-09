@@ -7,9 +7,11 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.Asn1;
 using Internal.Cryptography;
+using System.Runtime.Versioning;
 
 namespace System.Security.Cryptography
 {
+    [UnsupportedOSPlatform("browser")]
     public abstract partial class RSA : AsymmetricAlgorithm
     {
         public static new RSA? Create(string algName)

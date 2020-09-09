@@ -4,9 +4,11 @@
 using Internal.Cryptography;
 using System.ComponentModel;
 using System.Buffers.Binary;
+using System.Runtime.Versioning;
 
 namespace System.Security.Cryptography
 {
+    [UnsupportedOSPlatform("browser")]
     [EditorBrowsable(EditorBrowsableState.Never)]
     public abstract class DES : SymmetricAlgorithm
     {

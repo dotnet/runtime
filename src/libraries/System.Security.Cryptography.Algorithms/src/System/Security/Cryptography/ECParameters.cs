@@ -4,12 +4,14 @@
 using System.Buffers;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.Asn1;
+using System.Runtime.Versioning;
 
 namespace System.Security.Cryptography
 {
     /// <summary>
     /// Represents the public and private key of the specified elliptic curve.
     /// </summary>
+    [UnsupportedOSPlatform("browser")]
     public struct ECParameters
     {
         /// <summary>

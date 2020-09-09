@@ -2,9 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Internal.Cryptography;
+using System.Runtime.Versioning;
 
 namespace System.Security.Cryptography
 {
+    [UnsupportedOSPlatform("browser")]
     public sealed partial class AesCcm : IDisposable
     {
         public static KeySizes NonceByteSizes { get; } = new KeySizes(7, 13, 1);

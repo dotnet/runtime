@@ -7,9 +7,11 @@ using System.Diagnostics;
 using System.Formats.Asn1;
 using System.IO;
 using System.Security.Cryptography.Asn1;
+using System.Runtime.Versioning;
 
 namespace System.Security.Cryptography
 {
+    [UnsupportedOSPlatform("browser")]
     public abstract partial class ECDsa : AsymmetricAlgorithm
     {
         // secp521r1 maxes out at 139 bytes in the DER format, so 256 should always be enough

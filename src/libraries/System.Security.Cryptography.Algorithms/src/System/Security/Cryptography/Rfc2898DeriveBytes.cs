@@ -6,11 +6,12 @@ using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
-
 using Internal.Cryptography;
+using System.Runtime.Versioning;
 
 namespace System.Security.Cryptography
 {
+    [UnsupportedOSPlatform("browser")]
     public class Rfc2898DeriveBytes : DeriveBytes
     {
         private const int MinimumSaltSize = 8;

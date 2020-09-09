@@ -3,9 +3,11 @@
 
 using System.Diagnostics;
 using Internal.Cryptography;
+using System.Runtime.Versioning;
 
 namespace System.Security.Cryptography
 {
+    [UnsupportedOSPlatform("browser")]
     public abstract class AsymmetricSignatureFormatter
     {
         protected AsymmetricSignatureFormatter() { }
