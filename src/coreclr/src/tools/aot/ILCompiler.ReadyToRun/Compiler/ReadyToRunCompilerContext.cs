@@ -116,7 +116,7 @@ namespace ILCompiler
         private DefType _similarVectorOpenType;
         private bool _vectorAbiIsStable;
 
-        public VectorOfTFieldLayoutAlgorithm(FieldLayoutAlgorithm fallbackAlgorithm, FieldLayoutAlgorithm vectorFallbackAlgorithm, string similarVector, bool vectorAbiIsStable)
+        public VectorOfTFieldLayoutAlgorithm(FieldLayoutAlgorithm fallbackAlgorithm, FieldLayoutAlgorithm vectorFallbackAlgorithm, string similarVector, bool vectorAbiIsStable = true)
         {
             _fallbackAlgorithm = fallbackAlgorithm;
             _vectorFallbackAlgorithm = vectorFallbackAlgorithm;

@@ -15,7 +15,7 @@ namespace ILCompiler
         private readonly FieldLayoutAlgorithm _fallbackAlgorithm;
         private readonly bool _vectorAbiIsStable;
 
-        public VectorFieldLayoutAlgorithm(FieldLayoutAlgorithm fallbackAlgorithm, bool vectorAbiIsStable)
+        public VectorFieldLayoutAlgorithm(FieldLayoutAlgorithm fallbackAlgorithm, bool vectorAbiIsStable = true)
         {
             _vectorAbiIsStable = vectorAbiIsStable;
             _fallbackAlgorithm = fallbackAlgorithm;

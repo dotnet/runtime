@@ -11,7 +11,7 @@ namespace Internal.TypeSystem
     // Includes canonicalization objects local to a particular context
     public partial class TypeSystemContext
     {
-        private CanonType _canonType = null;
+        private CanonType _canonType;
         /// <summary>
         /// Instance of System.__Canon for this context
         /// </summary>
@@ -27,7 +27,7 @@ namespace Internal.TypeSystem
             }
         }
 
-        private UniversalCanonType _universalCanonType = null;
+        private UniversalCanonType _universalCanonType;
         /// <summary>
         /// Instance of System.__UniversalCanon for this context
         /// </summary>
