@@ -1326,6 +1326,7 @@ var MonoSupportLib = {
 			var offset = null;
 
 			switch (asset.behavior) {
+				case "resource":
 				case "assembly":
 					ctx.loaded_files.push ({ url: url, file: virtualName});
 				case "heap":
@@ -1385,6 +1386,9 @@ var MonoSupportLib = {
 				else
 					console.error ("Error loading ICU asset", asset.name);
 			}
+			else if (asset.behavior === "resource") {
+				ctx.mono_wasm_add_satellite_assembly (virtualName, asset.culture, offset, bytes.length);
+			}
 		},
 
 		// deprecated
@@ -1428,6 +1432,7 @@ var MonoSupportLib = {
 		//        behavior: (required) determines how the asset will be handled once loaded:
 		//          "heap": store asset into the native heap
 		//          "assembly": load asset as a managed assembly (or debugging information)
+		//          "resource": load asset as a managed resource assembly
 		//          "icu": load asset as an ICU data archive
 		//          "vfs": load asset into the virtual filesystem (for fopen, File.Open, etc)
 		//        load_remote: (optional) if true, an attempt will be made to load the asset
@@ -1546,6 +1551,7 @@ var MonoSupportLib = {
 				tracing: args.diagnostic_tracing || false,
 				pending_count: args.assets.length,
 				mono_wasm_add_assembly: Module.cwrap ('mono_wasm_add_assembly', 'number', ['string', 'number', 'number']),
+				mono_wasm_add_satellite_assembly: Module.cwrap ('mono_wasm_add_satellite_assembly', 'void', ['string', 'string', 'number', 'number']),
 				loaded_assets: Object.create (null),
 				// dlls and pdbs, used by blazor and the debugger
 				loaded_files: [],
@@ -1638,6 +1644,10 @@ var MonoSupportLib = {
 					if (sourcePrefix.trim() === "") {
 						if (asset.behavior === "assembly")
 							attemptUrl = locateFile (args.assembly_root + "/" + asset.name);
+						else if (asset.behavior === "resource") {
+							var path = asset.culture !== '' ? `${asset.culture}/${asset.name}` : asset.name;
+							attemptUrl = locateFile (args.assembly_root + "/" + path);
+						}
 						else
 							attemptUrl = asset.name;
 					} else {

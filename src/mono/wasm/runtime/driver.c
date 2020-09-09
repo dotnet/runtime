@@ -15,6 +15,9 @@
 #include <mono/metadata/mono-gc.h>
 // FIXME: unavailable in emscripten
 // #include <mono/metadata/gc-internals.h>
+
+#include <mono/metadata/mono-private-unstable.h>
+
 #include <mono/utils/mono-logger.h>
 #include <mono/utils/mono-dl-fallback.h>
 #include <mono/jit/jit.h>
@@ -200,6 +203,26 @@ mono_wasm_add_assembly (const char *name, const unsigned char *data, unsigned in
 	assemblies = entry;
 	++assembly_count;
 	return mono_has_pdb_checksum (data, size);
+}
+
+typedef struct WasmSatelliteAssembly_ WasmSatelliteAssembly;
+
+struct WasmSatelliteAssembly_ {
+	MonoBundledSatelliteAssembly *assembly;
+	WasmSatelliteAssembly *next;
+};
+
+static WasmSatelliteAssembly *satellite_assemblies;
+static int satellite_assembly_count;
+
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_add_satellite_assembly (const char *name, const char *culture, const unsigned char *data, unsigned int size)
+{
+	WasmSatelliteAssembly *entry = g_new0 (WasmSatelliteAssembly, 1);
+	entry->assembly = mono_create_new_bundled_satellite_assembly (name, culture, data, size);
+	entry->next = satellite_assemblies;
+	satellite_assemblies = entry;
+	++satellite_assembly_count;
 }
 
 EMSCRIPTEN_KEEPALIVE void
@@ -390,6 +413,23 @@ void mono_initialize_internals ()
 }
 
 EMSCRIPTEN_KEEPALIVE void
+mono_wasm_register_bundled_satellite_assemblies ()
+{
+	/* In legacy satellite_assembly_count is always false */
+	if (satellite_assembly_count) {
+		MonoBundledSatelliteAssembly **satellite_bundle_array =  g_new0 (MonoBundledSatelliteAssembly *, satellite_assembly_count + 1);
+		WasmSatelliteAssembly *cur = satellite_assemblies;
+		int i = 0;
+		while (cur) {
+			satellite_bundle_array [i] = cur->assembly;
+			cur = cur->next;
+			++i;
+		}
+		mono_register_bundled_satellite_assemblies ((const MonoBundledSatelliteAssembly **)satellite_bundle_array);
+	}
+}
+
+EMSCRIPTEN_KEEPALIVE void
 mono_wasm_load_runtime (const char *unused, int debug_level)
 {
 	const char *interp_opts = "";
@@ -476,6 +516,7 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 		mono_register_bundled_assemblies ((const MonoBundledAssembly **)bundle_array);
 	}
 
+	mono_wasm_register_bundled_satellite_assemblies ();
 	mono_trace_init ();
 	mono_trace_set_log_handler (wasm_logger, NULL);
 	root_domain = mono_jit_init_version ("mono", "v4.0.30319");

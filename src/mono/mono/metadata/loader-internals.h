@@ -26,6 +26,13 @@
 typedef struct _MonoLoadedImages MonoLoadedImages;
 typedef struct _MonoAssemblyLoadContext MonoAssemblyLoadContext;
 
+struct _MonoBundledSatelliteAssembly {
+	const char *name;
+	const char *culture;
+	const unsigned char *data;
+	unsigned int size;
+};
+
 #ifndef DISABLE_DLLMAP
 typedef struct _MonoDllMap MonoDllMap;
 struct _MonoDllMap {
