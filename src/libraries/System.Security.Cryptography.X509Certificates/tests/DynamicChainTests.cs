@@ -452,6 +452,68 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        public static void NameConstraintViolation_PermittedTree_Dns()
+        {
+            SubjectAlternativeNameBuilder builder = new SubjectAlternativeNameBuilder();
+            builder.AddDnsName("microsoft.com");
+
+            // permitted DNS name constraint for .example.com
+            string nameConstraints = "3012A010300E820C2E6578616D706C652E636F6D";
+
+            TestNameConstrainedChain(nameConstraints, builder, (bool result, X509Chain chain) => {
+                Assert.False(result, "chain.Build");
+                Assert.Equal(PlatformNameConstraints(X509ChainStatusFlags.HasNotPermittedNameConstraint), chain.AllStatusFlags());
+            });
+        }
+
+        [Fact]
+        public static void NameConstraintViolation_ExcludedTree_Dns()
+        {
+            SubjectAlternativeNameBuilder builder = new SubjectAlternativeNameBuilder();
+            builder.AddDnsName("www.example.com");
+
+            // excluded DNS name constraint for example.com.
+            string nameConstraints = "3012A110300E820C2E6578616D706C652E636F6D";
+
+            TestNameConstrainedChain(nameConstraints, builder, (bool result, X509Chain chain) => {
+                Assert.False(result, "chain.Build");
+                Assert.Equal(PlatformNameConstraints(X509ChainStatusFlags.HasExcludedNameConstraint), chain.AllStatusFlags());
+            });
+        }
+
+        [Fact]
+        [PlatformSpecific(~TestPlatforms.OSX)] // macOS appears to just completely ignore min/max.
+        public static void NameConstraintViolation_PermittedTree_HasMin()
+        {
+            SubjectAlternativeNameBuilder builder = new SubjectAlternativeNameBuilder();
+            builder.AddDnsName("example.com");
+
+            // permitted DNS name constraint for example.com with a MIN of 9.
+            string nameConstraints = "3015A0133011820C2E6578616D706C652E636F6D800109";
+
+            TestNameConstrainedChain(nameConstraints, builder, (bool result, X509Chain chain) => {
+                Assert.False(result, "chain.Build");
+                Assert.Equal(PlatformNameConstraints(X509ChainStatusFlags.HasNotSupportedNameConstraint), chain.AllStatusFlags());
+            });
+        }
+
+        [Fact]
+        [PlatformSpecific(~TestPlatforms.Windows)] // Windows seems to skip over nonsense GeneralNames.
+        public static void NameConstraintViolation_InvalidGeneralNames()
+        {
+            SubjectAlternativeNameBuilder builder = new SubjectAlternativeNameBuilder();
+            builder.AddEmailAddress("///");
+
+            // permitted RFC822 name constraint with GeneralName of ///.
+            string nameConstraints = "3009A007300581032F2F2F";
+
+            TestNameConstrainedChain(nameConstraints, builder, (bool result, X509Chain chain) => {
+                Assert.False(result, "chain.Build");
+                Assert.Equal(PlatformNameConstraints(X509ChainStatusFlags.InvalidNameConstraints), chain.AllStatusFlags());
+            });
+        }
+
+        [Fact]
         public static void MismatchKeyIdentifiers()
         {
             X509Extension[] intermediateExtensions = new [] {
@@ -507,6 +569,77 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     Assert.True(chain.Build(endEntityCert), "chain.Build");
                     Assert.Equal(3, chain.ChainElements.Count);
                 }
+            }
+        }
+
+        private static X509ChainStatusFlags PlatformNameConstraints(X509ChainStatusFlags flags)
+        {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                const X509ChainStatusFlags AnyNameConstraintFlags =
+                    X509ChainStatusFlags.HasExcludedNameConstraint |
+                    X509ChainStatusFlags.HasNotDefinedNameConstraint |
+                    X509ChainStatusFlags.HasNotPermittedNameConstraint |
+                    X509ChainStatusFlags.HasNotSupportedNameConstraint |
+                    X509ChainStatusFlags.InvalidNameConstraints;
+
+                if ((flags & AnyNameConstraintFlags) != 0)
+                {
+                    flags &= ~AnyNameConstraintFlags;
+                    flags |= X509ChainStatusFlags.InvalidNameConstraints;
+                }
+            }
+
+            return flags;
+        }
+
+        private static void TestNameConstrainedChain(
+            string intermediateNameConstraints,
+            SubjectAlternativeNameBuilder endEntitySanBuilder,
+            Action<bool, X509Chain> body)
+        {
+            X509Extension[] endEntityExtensions = new [] {
+                new X509BasicConstraintsExtension(
+                    certificateAuthority: false,
+                    hasPathLengthConstraint: false,
+                    pathLengthConstraint: 0,
+                    critical: true),
+                endEntitySanBuilder.Build()
+            };
+
+            X509Extension[] intermediateExtensions = new [] {
+                new X509BasicConstraintsExtension(
+                    certificateAuthority: true,
+                    hasPathLengthConstraint: false,
+                    pathLengthConstraint: 0,
+                    critical: true),
+                new X509Extension(
+                    "2.5.29.30",
+                    intermediateNameConstraints.HexToByteArray(),
+                    critical: true)
+            };
+
+            TestDataGenerator.MakeTestChain3(
+                out X509Certificate2 endEntityCert,
+                out X509Certificate2 intermediateCert,
+                out X509Certificate2 rootCert,
+                intermediateExtensions: intermediateExtensions,
+                endEntityExtensions: endEntityExtensions);
+
+            using (endEntityCert)
+            using (intermediateCert)
+            using (rootCert)
+            using (ChainHolder chainHolder = new ChainHolder())
+            {
+                X509Chain chain = chainHolder.Chain;
+                chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+                chain.ChainPolicy.VerificationTime = endEntityCert.NotBefore.AddSeconds(1);
+                chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
+                chain.ChainPolicy.CustomTrustStore.Add(rootCert);
+                chain.ChainPolicy.ExtraStore.Add(intermediateCert);
+
+                bool result = chain.Build(endEntityCert);
+                body(result, chain);
             }
         }
 

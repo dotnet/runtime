@@ -27,16 +27,26 @@ namespace System.Net.WebSockets
     public sealed partial class ClientWebSocketOptions
     {
         internal ClientWebSocketOptions() { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public System.Security.Cryptography.X509Certificates.X509CertificateCollection ClientCertificates { get { throw null; } set { } }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public System.Net.CookieContainer? Cookies { get { throw null; } set { } }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public System.Net.ICredentials? Credentials { get { throw null; } set { } }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public System.TimeSpan KeepAliveInterval { get { throw null; } set { } }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public System.Net.IWebProxy? Proxy { get { throw null; } set { } }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public System.Net.Security.RemoteCertificateValidationCallback? RemoteCertificateValidationCallback { get { throw null; } set { } }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public bool UseDefaultCredentials { get { throw null; } set { } }
         public void AddSubProtocol(string subProtocol) { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public void SetBuffer(int receiveBufferSize, int sendBufferSize) { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public void SetBuffer(int receiveBufferSize, int sendBufferSize, System.ArraySegment<byte> buffer) { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public void SetRequestHeader(string headerName, string? headerValue) { }
     }
 }

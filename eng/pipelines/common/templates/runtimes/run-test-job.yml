@@ -244,24 +244,24 @@ jobs:
     # and directly unzip them there after download). Unfortunately the logic to copy
     # the native artifacts to the final test folders is dependent on availability of the
     # managed test artifacts.
-    - script: $(Build.SourcesDirectory)/src/coreclr/build-test$(scriptExt) skipstressdependencies copynativeonly $(crossgenArg) $(buildConfig) $(archType) $(priorityArg) $(librariesOverrideArg)
+    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) skipstressdependencies copynativeonly $(crossgenArg) $(buildConfig) $(archType) $(priorityArg) $(librariesOverrideArg)
       displayName: Copy native test components to test output folder
 
 
     # Generate test wrappers. This is the step that examines issues.targets to exclude tests.
-    - script: $(Build.SourcesDirectory)/src/coreclr/build-test$(scriptExt) buildtestwrappersonly $(runtimeFlavorArgs) $(crossgenArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(librariesOverrideArg)
+    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) buildtestwrappersonly $(runtimeFlavorArgs) $(crossgenArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(librariesOverrideArg)
       displayName: Generate test wrappers
 
 
     # Compose the Core_Root folder containing all artifacts needed for running
     # CoreCLR tests.
-    - script: $(Build.SourcesDirectory)/src/coreclr/build-test$(scriptExt) generatelayoutonly $(runtimeFlavorArgs) $(crossgenArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(librariesOverrideArg)
+    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) generatelayoutonly $(runtimeFlavorArgs) $(crossgenArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(librariesOverrideArg)
       displayName: Generate CORE_ROOT
 
 
     # Crossgen framework assemblies prior to triggering readyToRun execution runs.
     - ${{ if eq(parameters.readyToRun, true) }}:
-      - script: $(Build.SourcesDirectory)/src/coreclr/build-test$(scriptExt) crossgenframeworkonly $(crossgenArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(librariesOverrideArg)
+      - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) crossgenframeworkonly $(crossgenArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(librariesOverrideArg)
         displayName: Crossgen framework assemblies
 
     # Overwrite coreclr runtime binaries with mono ones
@@ -274,7 +274,7 @@ jobs:
         displayName: "Patch dotnet with mono"
 
     - ${{ if and(eq(parameters.runtimeFlavor, 'mono'), eq(parameters.runtimeVariant, 'llvmaot')) }}:
-      - script: $(Build.SourcesDirectory)/src/coreclr/build-test$(scriptExt) mono_aot $(buildConfig)
+      - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) mono_aot $(buildConfig)
         displayName: "LLVM AOT compile CoreCLR tests"
 
     # Send tests to Helix
@@ -410,6 +410,7 @@ jobs:
           - gcstress0xc_zapdisable_heapverify1
           - gcstress0xc_jitstress1
           - gcstress0xc_jitstress2
+          - gcstress0xc_tailcallstress
           - gcstress0xc_jitminopts_heapverify1
         ${{ if in(parameters.testGroup, 'r2r-extra') }}:
           scenarios:

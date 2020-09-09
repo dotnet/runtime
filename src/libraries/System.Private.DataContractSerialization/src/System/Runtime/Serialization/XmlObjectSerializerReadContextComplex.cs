@@ -211,11 +211,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-#if USE_REFEMIT
-        public override int GetArraySize()
-#else
         internal override int GetArraySize()
-#endif
         {
             Debug.Assert(attributes != null);
 

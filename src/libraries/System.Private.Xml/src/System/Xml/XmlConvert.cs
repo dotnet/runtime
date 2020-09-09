@@ -36,7 +36,6 @@ namespace System.Xml
         //
         // Static fields with implicit initialization
         //
-        private static XmlCharType s_xmlCharType = XmlCharType.Instance;
         private static readonly CultureInfo s_invariantCultureInfo = CultureInfo.InvariantCulture;
 
         internal static char[] crt = new char[] { '\n', '\r', '\t' };
@@ -224,7 +223,7 @@ namespace System.Xml
 
             if (first)
             {
-                if ((!s_xmlCharType.IsStartNCNameCharXml4e(name[0]) && (local || (!local && name[0] != ':'))) ||
+                if ((!XmlCharType.IsStartNCNameCharXml4e(name[0]) && (local || (!local && name[0] != ':'))) ||
                      matchPos == 0)
                 {
                     if (bufBld == null)
@@ -261,8 +260,8 @@ namespace System.Xml
             }
             for (; position < length; position++)
             {
-                if ((local && !s_xmlCharType.IsNCNameCharXml4e(name[position])) ||
-                    (!local && !s_xmlCharType.IsNameCharXml4e(name[position])) ||
+                if ((local && !XmlCharType.IsNCNameCharXml4e(name[position])) ||
+                    (!local && !XmlCharType.IsNameCharXml4e(name[position])) ||
                     (matchPos == position))
                 {
                     if (bufBld == null)
@@ -566,7 +565,7 @@ namespace System.Xml
             }
 
             // returns the position of invalid character or -1
-            int pos = s_xmlCharType.IsPublicId(publicId);
+            int pos = XmlCharType.IsPublicId(publicId);
             if (pos != -1)
             {
                 throw CreateInvalidCharException(publicId, pos, ExceptionType.XmlException);
@@ -585,7 +584,7 @@ namespace System.Xml
             }
 
             // returns the position of invalid character or -1
-            int pos = s_xmlCharType.IsOnlyWhitespaceWithPos(content);
+            int pos = XmlCharType.IsOnlyWhitespaceWithPos(content);
             if (pos != -1)
             {
                 throw new XmlException(SR.Xml_InvalidWhitespaceCharacter, XmlException.BuildCharExceptionArgs(content, pos), 0, pos + 1);
@@ -605,20 +604,20 @@ namespace System.Xml
         //                              combined with the production [4] NameStartChar of XML 1.0 spec
         public static bool IsStartNCNameChar(char ch)
         {
-            return s_xmlCharType.IsStartNCNameSingleChar(ch);
+            return XmlCharType.IsStartNCNameSingleChar(ch);
         }
 
         // Name character types - as defined in Namespaces XML 1.0 spec (second edition) production [6] NCNameStartChar
         //                        combined with the production [4] NameChar of XML 1.0 spec
         public static bool IsNCNameChar(char ch)
         {
-            return s_xmlCharType.IsNCNameSingleChar(ch);
+            return XmlCharType.IsNCNameSingleChar(ch);
         }
 
         // Valid XML character - as defined in XML 1.0 spec (fifth edition) production [2] Char
         public static bool IsXmlChar(char ch)
         {
-            return s_xmlCharType.IsCharData(ch);
+            return XmlCharType.IsCharData(ch);
         }
 
         public static bool IsXmlSurrogatePair(char lowChar, char highChar)
@@ -629,13 +628,13 @@ namespace System.Xml
         // Valid PUBLIC ID character - as defined in XML 1.0 spec (fifth edition) production [13] PublidChar
         public static bool IsPublicIdChar(char ch)
         {
-            return s_xmlCharType.IsPubidChar(ch);
+            return XmlCharType.IsPubidChar(ch);
         }
 
         // Valid Xml whitespace - as defined in XML 1.0 spec (fifth edition) production [3] S
         public static bool IsWhitespaceChar(char ch)
         {
-            return s_xmlCharType.IsWhiteSpace(ch);
+            return XmlCharType.IsWhiteSpace(ch);
         }
 
         // Value convertors:
@@ -1489,7 +1488,7 @@ namespace System.Xml
             int len = data.Length;
             while (true)
             {
-                while (i < len && s_xmlCharType.IsCharData(data[i]))
+                while (i < len && XmlCharType.IsCharData(data[i]))
                 {
                     i++;
                 }
@@ -1531,7 +1530,7 @@ namespace System.Xml
             int endPos = offset + len;
             while (true)
             {
-                while (i < endPos && s_xmlCharType.IsCharData(data[i]))
+                while (i < endPos && XmlCharType.IsCharData(data[i]))
                 {
                     i++;
                 }

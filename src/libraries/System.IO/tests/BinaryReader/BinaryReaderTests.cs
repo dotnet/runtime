@@ -90,6 +90,7 @@ namespace System.IO.Tests
 
             // test non-integer numeric types
 
+            RunTest(writer => writer.Write((Half)0.1234), reader => reader.ReadHalf());
             RunTest(writer => writer.Write((float)0.1234), reader => reader.ReadSingle());
             RunTest(writer => writer.Write((double)0.1234), reader => reader.ReadDouble());
             RunTest(writer => writer.Write((decimal)0.1234), reader => reader.ReadDecimal());
@@ -201,6 +202,7 @@ namespace System.IO.Tests
             Assert.Throws<ObjectDisposedException>(() => binaryReader.ReadChars(1));
             Assert.Throws<ObjectDisposedException>(() => binaryReader.ReadDecimal());
             Assert.Throws<ObjectDisposedException>(() => binaryReader.ReadDouble());
+            Assert.Throws<ObjectDisposedException>(() => binaryReader.ReadHalf());
             Assert.Throws<ObjectDisposedException>(() => binaryReader.ReadInt16());
             Assert.Throws<ObjectDisposedException>(() => binaryReader.ReadInt32());
             Assert.Throws<ObjectDisposedException>(() => binaryReader.ReadInt64());

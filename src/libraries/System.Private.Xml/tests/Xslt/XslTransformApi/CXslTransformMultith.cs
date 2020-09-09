@@ -76,7 +76,6 @@ namespace System.Xml.Tests
         //[Variation("Local and global variables", Params = new object[] { "xslt_mutith_variable_local_and_global.xsl", "xslt_mutith_variable_local_and_global.xsl" })]
         [InlineData("xslt_mutith_variable_local_and_global.xsl", "xslt_mutith_variable_local_and_global.xsl")]
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/40607", RuntimeTestModes.JitStress)]
         public void Variations(object param0, object param1)
         {
             string xslFile = (string)param0;

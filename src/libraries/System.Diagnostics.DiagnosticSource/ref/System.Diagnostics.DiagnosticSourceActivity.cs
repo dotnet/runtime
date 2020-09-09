@@ -204,7 +204,7 @@ namespace System.Diagnostics
     }
     public readonly struct ActivityContext : System.IEquatable<System.Diagnostics.ActivityContext>
     {
-        public ActivityContext(System.Diagnostics.ActivityTraceId traceId, System.Diagnostics.ActivitySpanId spanId, System.Diagnostics.ActivityTraceFlags traceOptions, string? traceState = null, bool isRemote = false) { throw null; }
+        public ActivityContext(System.Diagnostics.ActivityTraceId traceId, System.Diagnostics.ActivitySpanId spanId, System.Diagnostics.ActivityTraceFlags traceFlags, string? traceState = null, bool isRemote = false) { throw null; }
         public System.Diagnostics.ActivityTraceId TraceId  { get { throw null; } }
         public System.Diagnostics.ActivitySpanId SpanId  { get { throw null; } }
         public System.Diagnostics.ActivityTraceFlags TraceFlags  { get { throw null; } }

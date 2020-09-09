@@ -14,6 +14,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.ConstrainedExecution;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 
 namespace System.Threading
 {
@@ -159,6 +160,7 @@ namespace System.Threading
         private static extern bool UnregisterWaitNative(IntPtr handle, SafeHandle? waitObject);
     }
 
+    [UnsupportedOSPlatform("browser")]
     public sealed class RegisteredWaitHandle : MarshalByRefObject
     {
         private readonly RegisteredWaitHandleSafe internalRegisteredWait;
@@ -352,6 +354,7 @@ namespace System.Threading
             return BindIOCompletionCallbackNative(osHandle);
         }
 
+        [SupportedOSPlatform("windows")]
         public static bool BindHandle(SafeHandle osHandle)
         {
             if (osHandle == null)

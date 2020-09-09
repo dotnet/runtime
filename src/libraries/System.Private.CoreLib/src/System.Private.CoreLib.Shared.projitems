@@ -255,6 +255,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\DebuggerVisualizerAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\DebugProvider.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\StackFrame.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\StackFrameExtensions.cs" Condition="'$(TargetsCoreRT)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\StackTrace.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\StackTraceHiddenAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Stopwatch.cs" />
@@ -967,6 +968,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LazyInitializer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LazyThreadSafetyMode.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LockRecursionException.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelMonitor.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ManualResetEvent.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ManualResetEventSlim.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Mutex.cs" />
@@ -1337,8 +1339,14 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CompletionPort.cs" Condition="'$(FeaturePortableThreadPool)' == 'true'">
       <Link>Common\Interop\Windows\Kernel32\Interop.CompletionPort.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.ConditionVariable.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.ConditionVariable.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CreateFile.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.CreateFile.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CriticalSection.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.CriticalSection.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.ExpandEnvironmentStrings.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.ExpandEnvironmentStrings.cs</Link>
@@ -1448,6 +1456,9 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.LoadLibraryEx_IntPtr.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.LoadLibraryEx_IntPtr.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.LocalAlloc.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.LocalAlloc.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.LockFile.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.LockFile.cs</Link>
     </Compile>
@@ -1468,6 +1479,9 @@
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.MultiByteToWideChar.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.MultiByteToWideChar.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.OSVERSIONINFOEX.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.OSVERSIONINFOEX.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.OutputDebugString.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.OutputDebugString.cs</Link>
@@ -1559,11 +1573,20 @@
     <Compile Include="$(CommonPath)Interop\Windows\NtDll\Interop.SYSTEM_LEAP_SECOND_INFORMATION.cs">
       <Link>Common\Interop\Windows\NtDll\Interop.SYSTEM_LEAP_SECOND_INFORMATION.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\OleAut32\Interop.SysAllocStringLen.cs">
+      <Link>Common\Interop\Windows\OleAut32\Interop.SysAllocStringLen.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\OleAut32\Interop.SysFreeString.cs">
+      <Link>Common\Interop\Windows\OleAut32\Interop.SysFreeString.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Ole32\Interop.CoCreateGuid.cs">
       <Link>Common\Interop\Windows\Ole32\Interop.CoCreateGuid.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Ole32\Interop.CoGetStandardMarshal.cs">
       <Link>Common\Interop\Windows\Ole32\Interop.CoGetStandardMarshal.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Ole32\Interop.CoTaskMemAlloc.cs">
+      <Link>Common\Interop\Windows\Ole32\Interop.CoTaskMemAlloc.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Secur32\Interop.GetUserNameExW.cs">
       <Link>Common\Interop\Windows\Secur32\Interop.GetUserNameExW.cs</Link>
@@ -1625,6 +1648,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\StandardOleMarshalObject.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Security\SecureString.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Thread.Windows.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelMonitor.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\TimerQueue.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\TimeZoneInfo.Win32.cs" />
   </ItemGroup>
@@ -1638,12 +1662,6 @@
   <!-- CoreCLR uses PAL layer that emulates Windows API on Unix. This is bridge for that PAL layer. See issue dotnet/runtime/#31721. -->
   <ItemGroup Condition="'$(TargetsWindows)' == 'true' or '$(FeatureCoreCLR)'=='true'">
     <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeWaitHandle.Windows.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\OleAut32\Interop.SysAllocStringLen.cs">
-      <Link>Common\Interop\Windows\OleAut32\Interop.SysAllocStringLen.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\OleAut32\Interop.SysFreeString.cs">
-      <Link>Common\Interop\Windows\OleAut32\Interop.SysFreeString.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CloseHandle.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.CloseHandle.cs</Link>
     </Compile>
@@ -1667,9 +1685,6 @@
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.Mutex.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.Mutex.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.OSVERSIONINFOEX.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.OSVERSIONINFOEX.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.Semaphore.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.Semaphore.cs</Link>
@@ -1743,8 +1758,14 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.LockFileRegion.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.LockFileRegion.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.LowLevelMonitor.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.LowLevelMonitor.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.LSeek.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.LSeek.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MemAlloc.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.MemAlloc.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MksTemps.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.MksTemps.cs</Link>
@@ -1821,6 +1842,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\Marshal.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\StandardOleMarshalObject.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Security\SecureString.Unix.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelMonitor.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Thread.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\TimerQueue.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\TimeZoneInfo.Unix.cs" />

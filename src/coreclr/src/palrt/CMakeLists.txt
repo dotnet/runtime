@@ -8,7 +8,6 @@ set(PALRT_SOURCES
     guid.cpp
     memorystream.cpp
     path.cpp
-    unicode.cpp
     variant.cpp
 )
 
