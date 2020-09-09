@@ -487,7 +487,7 @@ namespace System.StubHelpers
                 bytes = AnsiCharMarshaler.DoAnsiConversion(strManaged, 0 != (flags & 0xFF), 0 != (flags >> 8), out nb);
             }
 
-            var length = (uint)nb;
+            uint length = (uint)nb;
             IntPtr bstr = Marshal.AllocBSTRByteLen(length);
             fixed (byte* firstByte = bytes)
             {
