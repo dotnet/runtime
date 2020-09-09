@@ -20,12 +20,13 @@ namespace System.Net.NetworkInformation
         private const int MaxIpHeaderLengthInBytes = 60;
         private static bool SendIpHeader => OperatingSystem.IsMacOS();
         private static bool NeedsConnect => OperatingSystem.IsLinux();
+        private static bool IsOSXLike = OperatingSystem.IsMacOS() || OperatingSystem.IsIOS() || OperatingSystem.IsTvOS() || OperatingSystem.IsWatchOS();
         [ThreadStatic]
         private static Random? t_idGenerator;
 
         private PingReply SendPingCore(IPAddress address, byte[] buffer, int timeout, PingOptions? options)
         {
-            PingReply reply = RawSocketPermissions.CanUseRawSockets(address.AddressFamily) ?
+            PingReply reply = RawSocketPermissions.CanUseRawSockets(address.AddressFamily) || IsOSXLike ?
                     SendIcmpEchoRequestOverRawSocket(address, buffer, timeout, options) :
                     SendWithPingUtility(address, buffer, timeout, options);
             return reply;
@@ -33,7 +34,7 @@ namespace System.Net.NetworkInformation
 
         private async Task<PingReply> SendPingAsyncCore(IPAddress address, byte[] buffer, int timeout, PingOptions? options)
         {
-            Task<PingReply> t = RawSocketPermissions.CanUseRawSockets(address.AddressFamily) ?
+            Task<PingReply> t = RawSocketPermissions.CanUseRawSockets(address.AddressFamily) || IsOSXLike ?
                     SendIcmpEchoRequestOverRawSocketAsync(address, buffer, timeout, options) :
                     SendWithPingUtilityAsync(address, buffer, timeout, options);
 
@@ -87,8 +88,18 @@ namespace System.Net.NetworkInformation
         {
             IPEndPoint ep = (IPEndPoint)socketConfig.EndPoint;
             AddressFamily addrFamily = ep.Address.AddressFamily;
+            Socket socket;
 
-            Socket socket = new Socket(addrFamily, SocketType.Raw, socketConfig.ProtocolType);
+            if (!RawSocketPermissions.CanUseRawSockets(addrFamily))
+            {
+                // macOS has ability to send ICMP echo without RAW socket.
+                socket = new Socket(addrFamily, SocketType.Dgram, socketConfig.ProtocolType);
+            }
+            else
+            {
+                socket = new Socket(addrFamily, SocketType.Raw, socketConfig.ProtocolType);
+            }
+
             socket.ReceiveTimeout = socketConfig.Timeout;
             socket.SendTimeout = socketConfig.Timeout;
             if (addrFamily == AddressFamily.InterNetworkV6 && OperatingSystem.IsMacOS())

@@ -53,12 +53,6 @@ namespace System.Net.NetworkInformation.Tests
 
         private static void PingResultValidator(PingReply pingReply, IPAddress[] localIpAddresses, ITestOutputHelper output)
         {
-            if (pingReply.Status == IPStatus.TimedOut && pingReply.Address.AddressFamily == AddressFamily.InterNetworkV6 && PlatformDetection.IsOSXLike)
-            {
-                // Workaround OSX ping6 bug, see https://github.com/dotnet/runtime/issues/19861
-                return;
-            }
-
             Assert.Equal(IPStatus.Success, pingReply.Status);
             if (localIpAddresses.Any(addr => pingReply.Address.Equals(addr)))
             {
@@ -271,7 +265,7 @@ namespace System.Net.NetworkInformation.Tests
                     PingResultValidator(pingReply, localIpAddress);
 
                     // Non-root pings cannot send arbitrary data in the buffer, and do not receive it back in the PingReply.
-                    if (Capability.CanUseRawSockets(localIpAddress.AddressFamily))
+                    if (Capability.CanUseRawSockets(localIpAddress.AddressFamily) || PlatformDetection.IsOSXLike)
                     {
                         Assert.Equal(buffer, pingReply.Buffer);
                     }
@@ -296,7 +290,7 @@ namespace System.Net.NetworkInformation.Tests
                     PingResultValidator(pingReply, localIpAddress);
 
                     // Non-root pings cannot send arbitrary data in the buffer, and do not receive it back in the PingReply.
-                    if (Capability.CanUseRawSockets(localIpAddress.AddressFamily))
+                    if (Capability.CanUseRawSockets(localIpAddress.AddressFamily) || PlatformDetection.IsOSXLike)
                     {
                         Assert.Equal(buffer, pingReply.Buffer);
                     }
@@ -364,7 +358,7 @@ namespace System.Net.NetworkInformation.Tests
                     PingResultValidator(pingReply, localIpAddress);
 
                     // Non-root pings cannot send arbitrary data in the buffer, and do not receive it back in the PingReply.
-                    if (Capability.CanUseRawSockets(localIpAddress.AddressFamily))
+                    if (Capability.CanUseRawSockets(localIpAddress.AddressFamily) || PlatformDetection.IsOSXLike)
                     {
                         Assert.Equal(buffer, pingReply.Buffer);
                     }
@@ -396,7 +390,7 @@ namespace System.Net.NetworkInformation.Tests
                     PingResultValidator(pingReply, localIpAddress);
 
                     // Non-root pings cannot send arbitrary data in the buffer, and do not receive it back in the PingReply.
-                    if (Capability.CanUseRawSockets(localIpAddress.AddressFamily))
+                    if (Capability.CanUseRawSockets(localIpAddress.AddressFamily) || PlatformDetection.IsOSXLike)
                     {
                         Assert.Equal(buffer, pingReply.Buffer);
                     }
@@ -505,7 +499,7 @@ namespace System.Net.NetworkInformation.Tests
                     PingResultValidator(pingReply, localIpAddresses);
 
                     // Non-root pings cannot send arbitrary data in the buffer, and do not receive it back in the PingReply.
-                    if (Capability.CanUseRawSockets(pingReply.Address.AddressFamily))
+                    if (Capability.CanUseRawSockets(pingReply.Address.AddressFamily) || PlatformDetection.IsOSXLike)
                     {
                         Assert.Equal(buffer, pingReply.Buffer);
                     }
@@ -530,7 +524,7 @@ namespace System.Net.NetworkInformation.Tests
                     PingResultValidator(pingReply, localIpAddresses);
 
                     // Non-root pings cannot send arbitrary data in the buffer, and do not receive it back in the PingReply.
-                    if (Capability.CanUseRawSockets(pingReply.Address.AddressFamily))
+                    if (Capability.CanUseRawSockets(pingReply.Address.AddressFamily) || PlatformDetection.IsOSXLike)
                     {
                         Assert.Equal(buffer, pingReply.Buffer);
                     }
@@ -589,7 +583,7 @@ namespace System.Net.NetworkInformation.Tests
                     PingResultValidator(pingReply, localIpAddresses);
 
                     // Non-root pings cannot send arbitrary data in the buffer, and do not receive it back in the PingReply.
-                    if (Capability.CanUseRawSockets(pingReply.Address.AddressFamily))
+                    if (Capability.CanUseRawSockets(pingReply.Address.AddressFamily) || PlatformDetection.IsOSXLike)
                     {
                         Assert.Equal(buffer, pingReply.Buffer);
                     }
@@ -614,7 +608,7 @@ namespace System.Net.NetworkInformation.Tests
                     PingResultValidator(pingReply, localIpAddresses);
 
                     // Non-root pings cannot send arbitrary data in the buffer, and do not receive it back in the PingReply.
-                    if (Capability.CanUseRawSockets(pingReply.Address.AddressFamily))
+                    if (Capability.CanUseRawSockets(pingReply.Address.AddressFamily) || PlatformDetection.IsOSXLike)
                     {
                         Assert.Equal(buffer, pingReply.Buffer);
                     }
