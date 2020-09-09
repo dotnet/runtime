@@ -226,6 +226,7 @@ protected:
 
 #ifdef DEBUG
     static const char* genSizeStr(emitAttr size);
+    unsigned instrCount;
 #endif // DEBUG
 
     void genInitialize();
