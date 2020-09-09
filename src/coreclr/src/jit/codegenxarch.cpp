@@ -4084,8 +4084,8 @@ void CodeGen::genCodeForShift(GenTree* tree)
         else
         {
             int shiftByValue = (int)shiftBy->AsIntConCommon()->IconValue();
-#if defined(TARGET_64BIT)
 
+#if defined(TARGET_64BIT)
             // Try to emit rorx if BMI2 is available instead of mov+rol
             // it makes sense only for 64bit integers
             if ((genActualType(targetType) == TYP_LONG) && (tree->GetRegNum() != operandReg) &&
