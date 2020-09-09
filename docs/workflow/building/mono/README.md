@@ -51,31 +51,7 @@ The build has a number of options that you can learn about using build -?.
 
 ### WebAssembly
 
-In addition to the normal build requirements, WebAssembly builds require a local emsdk to be downloaded. This can either be external or acquired via a make target.
-
-To acquire it externally, move to a directory outside of the runtime repository and run:
-```bash
-git clone https://github.com/emscripten-core/emsdk.git
-```
-
-To use the make target, from the root of the runtime repo:
-```bash
-cd src/mono/wasm
-make provision-wasm
-cd ../../..
-```
-
-When building for WebAssembly, regardless of the machine architecture, you must set the `EMSDK_PATH` environmental variable and architecture/os, calling build.sh like so:
-```bash
-EMSDK_PATH={path to emsdk repo} ./build.sh --subset mono+libs --arch wasm --os browser -c release
-```
-
-If using the locally provisioned emsdk, this will be:
-```bash
-EMSDK_PATH={path to runtime repo}/src/mono/wasm/emsdk ./build.sh --subset mono+libs --arch wasm --os browser -c release
-```
-
-Artifacts will be placed in `artifacts/bin/microsoft.netcore.app.runtime.browser-wasm/Release/`. When rebuilding with `build.sh`, you _must_ rebuild with `mono+libs` even for mono-only changes, or this directory will not be updated. Alternative, you can rebuild just the runtime-specific bits from the `src/mono/wasm` directory by running either `make runtime` or `make corlib` when modifying Mono or System.Private.CoreLib respectively.
+See the instructions in [../libraries/webassembly-instructions.md].
 
 ## Packages
 

@@ -9,7 +9,7 @@ namespace System.Configuration
     {
         internal ConfigurationSettings() { }
 
-        [Obsolete("This method is obsolete, it has been replaced by System.Configuration.ConfigurationManager.AppSettings")]
+        [Obsolete("This property is obsolete, it has been replaced by System.Configuration.ConfigurationManager.AppSettings")]
         public static NameValueCollection AppSettings
         {
             get

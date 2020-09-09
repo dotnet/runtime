@@ -7,10 +7,15 @@ set "__MsgPrefix=BUILDTEST: "
 
 echo %__MsgPrefix%Starting Build at %TIME%
 
+set "__ProjectDir=%~dp0"
+:: remove trailing slash
+if %__ProjectDir:~-1%==\ set "__ProjectDir=%__ProjectDir:~0,-1%"
+set "__RepoRootDir=%__ProjectDir%\..\.."
+for %%i in ("%__RepoRootDir%") do SET "__RepoRootDir=%%~fi"
 
-set __ThisScriptDir="%~dp0"
+set "__TestDir=%__RepoRootDir%\src\tests"
 
-call "%__ThisScriptDir%"\setup_vs_tools.cmd
+call %__RepoRootDir%\src\coreclr\setup_vs_tools.cmd
 if NOT '%ERRORLEVEL%' == '0' exit /b 1
 
 if defined VS160COMNTOOLS (
@@ -28,21 +33,14 @@ set __BuildArch=x64
 set __BuildType=Debug
 set __TargetOS=Windows_NT
 
-set "__ProjectDir=%~dp0"
-:: remove trailing slash
-if %__ProjectDir:~-1%==\ set "__ProjectDir=%__ProjectDir:~0,-1%"
-set "__RepoRootDir=%__ProjectDir%\..\.."
-for %%i in ("%__RepoRootDir%") do SET "__RepoRootDir=%%~fi"
-
-set "__TestDir=%__RepoRootDir%\src\tests"
 set "__ProjectFilesDir=%__TestDir%"
-set "__SourceDir=%__ProjectDir%\src"
+set "__SourceDir=%__RepoRootDir%\src\coreclr\src"
 set "__RootBinDir=%__RepoRootDir%\artifacts"
 set "__LogsDir=%__RootBinDir%\log"
 set "__MsbuildDebugLogsDir=%__LogsDir%\MsbuildDebugLogs"
 
 :: Default __Exclude to issues.targets
-set __Exclude=%__ProjectDir%\tests\issues.targets
+set __Exclude=%__RepoRootDir%\src\tests\issues.targets
 
 REM __UnprocessedBuildArgs are args that we pass to msbuild (e.g. /p:TargetArchitecture=x64)
 set "__args= %*"
@@ -204,7 +202,7 @@ REM ============================================================================
 
 if defined __SkipStressDependencies goto skipstressdependencies
 
-call "%__ProjectDir%\tests\setup-stress-dependencies.cmd" /arch %__BuildArch% /outputdir %__BinDir%
+call "%__RepoRootDir%\src\coreclr\tests\setup-stress-dependencies.cmd" /arch %__BuildArch% /outputdir %__BinDir%
 if errorlevel 1 (
     echo %__ErrMsgPrefix%%__MsgPrefix%Error: setup-stress-dependencies failed.
     goto     :Exit_Failure
@@ -312,7 +310,7 @@ set __MsbuildErr=/flp2:ErrorsOnly;LogFile="%__BuildErr%"
 set __Logging='!__MsbuildLog!' '!__MsbuildWrn!' '!__MsbuildErr!'
 
 powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -Command "%__RepoRootDir%\eng\common\msbuild.ps1" %__ArcadeScriptArgs%^
-  %__ProjectDir%\tests\build.proj -warnAsError:0 /t:BatchRestorePackages /nodeReuse:false^
+  %__RepoRootDir%\src\tests\build.proj -warnAsError:0 /t:BatchRestorePackages /nodeReuse:false^
   /p:RestoreDefaultOptimizationDataPackage=false /p:PortableBuild=true^
   /p:UsePartialNGENOptimization=false /maxcpucount^
   %__SkipFXRestoreArg%^
@@ -339,7 +337,7 @@ if defined __SkipManaged goto SkipManagedBuild
 echo %__MsgPrefix%Starting the Managed Tests Build
 
 if not defined VSINSTALLDIR (
-    echo %__ErrMsgPrefix%%__MsgPrefix%Error: build-test.cmd should be run from a Visual Studio Command Prompt.  Please see https://github.com/dotnet/runtime/tree/master/docs/workflow for build instructions.
+    echo %__ErrMsgPrefix%%__MsgPrefix%Error: build.cmd should be run from a Visual Studio Command Prompt.  Please see https://github.com/dotnet/runtime/tree/master/docs/workflow for build instructions.
     exit /b 1
 )
 set __AppendToLog=false
@@ -370,7 +368,7 @@ for /l %%G in (1, 1, %__NumberOfTestGroups%) do (
     set __TestGroupToBuild=%%G
 
     if not "%__CopyNativeTestBinaries%" == "1" (
-        set __MSBuildBuildArgs=!__ProjectDir!\tests\build.proj
+        set __MSBuildBuildArgs=!__RepoRootDir!\src\tests\build.proj
         set __MSBuildBuildArgs=!__MSBuildBuildArgs! -warnAsError:0
         set __MSBuildBuildArgs=!__MSBuildBuildArgs! /nodeReuse:false
         set __MSBuildBuildArgs=!__MSBuildBuildArgs! !__Logging!
@@ -390,12 +388,12 @@ for /l %%G in (1, 1, %__NumberOfTestGroups%) do (
             echo     %__BuildWrn%
             echo     %__BuildErr%
             REM This is necessary because of a(n apparent) bug in the FOR /L command.  Under certain circumstances,
-            REM such as when this script is invoke with CMD /C "build-test.cmd", a non-zero exit directly from
+            REM such as when this script is invoke with CMD /C "build.cmd", a non-zero exit directly from
             REM within the loop body will not propagate to the caller.  For some reason, goto works around it.
             goto     :Exit_Failure
         )
     ) else (
-        set __MSBuildBuildArgs=!__ProjectDir!\tests\build.proj -warnAsError:0 /nodeReuse:false !__Logging! !TargetsWindowsMsbuildArg! !__msbuildArgs!  !__PriorityArg! !__BuildNeedTargetArg! !__SkipFXRestoreArg! !__UnprocessedBuildArgs! "/t:CopyAllNativeProjectReferenceBinaries"
+        set __MSBuildBuildArgs=!__RepoRootDir!\src\tests\build.proj -warnAsError:0 /nodeReuse:false !__Logging! !TargetsWindowsMsbuildArg! !__msbuildArgs!  !__PriorityArg! !__BuildNeedTargetArg! !__SkipFXRestoreArg! !__UnprocessedBuildArgs! "/t:CopyAllNativeProjectReferenceBinaries"
         echo Running: msbuild !__MSBuildBuildArgs!
         !__CommonMSBuildCmdPrefix! !__MSBuildBuildArgs!
 
@@ -405,7 +403,7 @@ for /l %%G in (1, 1, %__NumberOfTestGroups%) do (
             echo     %__BuildWrn%
             echo     %__BuildErr%
             REM This is necessary because of a(n apparent) bug in the FOR /L command.  Under certain circumstances,
-            REM such as when this script is invoke with CMD /C "build-test.cmd", a non-zero exit directly from
+            REM such as when this script is invoke with CMD /C "build.cmd", a non-zero exit directly from
             REM within the loop body will not propagate to the caller.  For some reason, goto works around it.
             goto     :Exit_Failure
         )
@@ -421,9 +419,9 @@ if "%__CopyNativeTestBinaries%" == "1" goto :SkipManagedBuild
 REM Check that we've built about as many tests as we expect. This is primarily intended to prevent accidental changes that cause us to build
 REM drastically fewer Pri-1 tests than expected.
 echo %__MsgPrefix%Check the managed tests build
-echo Running: dotnet msbuild %__ProjectDir%\tests\src\runtest.proj /t:CheckTestBuild /nodeReuse:false /p:CLRTestPriorityToBuild=%__Priority% %__SkipFXRestoreArg% %__msbuildArgs% %__unprocessedBuildArgs%
+echo Running: dotnet msbuild %__RepoRootDir%\src\tests\run.proj /t:CheckTestBuild /nodeReuse:false /p:CLRTestPriorityToBuild=%__Priority% %__SkipFXRestoreArg% %__msbuildArgs% %__unprocessedBuildArgs%
 powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\msbuild.ps1" %__ArcadeScriptArgs%^
-    %__ProjectDir%\tests\src\runtest.proj /t:CheckTestBuild /nodeReuse:false /p:CLRTestPriorityToBuild=%__Priority% %__msbuildArgs% %__unprocessedBuildArgs%
+    %__RepoRootDir%\src\tests\run.proj /t:CheckTestBuild /nodeReuse:false /p:CLRTestPriorityToBuild=%__Priority% %__msbuildArgs% %__unprocessedBuildArgs%
 if errorlevel 1 (
     echo %__ErrMsgPrefix%%__MsgPrefix%Error: Check Test Build failed.
     exit /b 1
@@ -472,7 +470,7 @@ set __MsbuildErr=/flp2:ErrorsOnly;LogFile="%__BuildErr%"
 set __Logging=!__MsbuildLog! !__MsbuildWrn! !__MsbuildErr!
 
 powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\msbuild.ps1" %__ArcadeScriptArgs%^
-  %__ProjectDir%\tests\src\runtest.proj /t:CreateTestOverlay /nodeReuse:false^
+  %__RepoRootDir%\src\tests\run.proj /t:CreateTestOverlay /nodeReuse:false^
   /p:RestoreDefaultOptimizationDataPackage=false /p:PortableBuild=true^
   /p:UsePartialNGENOptimization=false /maxcpucount^
   %__SkipFXRestoreArg%^
@@ -517,7 +515,7 @@ if %%__Mono%%==1 (
 )
 
 REM Build wrappers using the local SDK's msbuild. As we move to arcade, the other builds should be moved away from run.exe as well.
-call "%__RepoRootDir%\dotnet.cmd" msbuild %__ProjectDir%\tests\src\runtest.proj /nodereuse:false /p:BuildWrappers=true /p:TestBuildMode=%__TestBuildMode% !__Logging! %__msbuildArgs% %TargetsWindowsMsbuildArg% %__SkipFXRestoreArg% %__UnprocessedBuildArgs% /p:RuntimeFlavor=%RuntimeFlavor%
+call "%__RepoRootDir%\dotnet.cmd" msbuild %__RepoRootDir%\src\tests\run.proj /nodereuse:false /p:BuildWrappers=true /p:TestBuildMode=%__TestBuildMode% !__Logging! %__msbuildArgs% %TargetsWindowsMsbuildArg% %__SkipFXRestoreArg% %__UnprocessedBuildArgs% /p:RuntimeFlavor=%RuntimeFlavor%
 if errorlevel 1 (
     echo %__ErrMsgPrefix%%__MsgPrefix%Error: XUnit wrapper build failed. Refer to the build log files for details:
     echo     %__BuildLog%

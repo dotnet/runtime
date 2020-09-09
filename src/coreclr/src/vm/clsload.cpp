@@ -3523,11 +3523,6 @@ static void PushFinalLevels(TypeHandle typeHnd, ClassLoadLevel targetLevel, cons
     // final state, sans the IsFullyLoaded bit.
     if (targetLevel >= CLASS_DEPENDENCIES_LOADED)
     {
-        if (!typeHnd.IsTypeDesc())
-        {
-            ClassLoader::ValidateMethodsWithCovariantReturnTypes(typeHnd.AsMethodTable());
-        }
-
         BOOL fBailed = FALSE;
         typeHnd.DoFullyLoad(NULL, CLASS_DEPENDENCIES_LOADED, NULL, &fBailed, pInstContext);
     }
@@ -3536,6 +3531,11 @@ static void PushFinalLevels(TypeHandle typeHnd, ClassLoadLevel targetLevel, cons
     // and on its transitive dependencies.
     if (targetLevel == CLASS_LOADED)
     {
+        if (!typeHnd.IsTypeDesc())
+        {
+            ClassLoader::ValidateMethodsWithCovariantReturnTypes(typeHnd.AsMethodTable());
+        }
+
         DFLPendingList pendingList;
         BOOL           fBailed = FALSE;
 
