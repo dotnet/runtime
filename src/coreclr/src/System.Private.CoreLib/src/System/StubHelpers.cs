@@ -333,14 +333,9 @@ namespace System.StubHelpers
                 }
                 else
                 {
-                    // If not provided, allocate the buffer using SysAllocStringByteLen so
+                    // If not provided, allocate the buffer using Marshal.AllocBSTRByteLen so
                     // that odd-sized strings will be handled as well.
-                    ptrToFirstChar = (byte*)Interop.OleAut32.SysAllocStringByteLen(null, lengthInBytes);
-
-                    if (ptrToFirstChar == null)
-                    {
-                        throw new OutOfMemoryException();
-                    }
+                    ptrToFirstChar = (byte*)Marshal.AllocBSTRByteLen(lengthInBytes);
                 }
 
                 // copy characters from the managed string
@@ -477,7 +472,7 @@ namespace System.StubHelpers
 
     internal static class AnsiBSTRMarshaler
     {
-        internal static IntPtr ConvertToNative(int flags, string strManaged)
+        internal static unsafe IntPtr ConvertToNative(int flags, string strManaged)
         {
             if (null == strManaged)
             {
@@ -492,7 +487,13 @@ namespace System.StubHelpers
                 bytes = AnsiCharMarshaler.DoAnsiConversion(strManaged, 0 != (flags & 0xFF), 0 != (flags >> 8), out nb);
             }
 
-            return Interop.OleAut32.SysAllocStringByteLen(bytes, (uint)nb);
+            uint length = (uint)nb;
+            IntPtr bstr = Marshal.AllocBSTRByteLen(length);
+            fixed (byte* firstByte = bytes)
+            {
+                Buffer.Memmove((byte*)bstr, firstByte, length);
+            }
+            return bstr;
         }
 
         internal static unsafe string? ConvertToManaged(IntPtr bstr)

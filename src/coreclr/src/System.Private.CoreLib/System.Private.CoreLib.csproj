@@ -250,9 +250,6 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.HandleTypes.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.HandleTypes.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\OleAut32\Interop.SysAllocStringByteLen.cs">
-      <Link>Common\Interop\Windows\OleAut32\Interop.SysAllocStringByteLen.cs</Link>
-    </Compile>
   </ItemGroup>
   <!-- These classes are only used for FeatureCominterop, but they are referenced by tests
        in order to allow tests to be built on all platforms, these classes are included for all

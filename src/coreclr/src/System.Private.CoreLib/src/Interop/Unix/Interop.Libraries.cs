@@ -8,6 +8,5 @@ internal static partial class Interop
     internal static partial class Libraries
     {
         internal const string Kernel32 = RuntimeHelpers.QCall;
-        internal const string OleAut32 = RuntimeHelpers.QCall;
     }
 }
