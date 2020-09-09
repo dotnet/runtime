@@ -93,6 +93,17 @@ __CMakeArgs="-DCLI_CMAKE_HOST_VER=\"$__host_ver\" -DCLI_CMAKE_COMMON_HOST_VER=\"
 __CMakeArgs="-DCLI_CMAKE_HOST_POLICY_VER=\"$__policy_ver\" -DCLI_CMAKE_PKG_RID=\"$__DistroRid\" -DCLI_CMAKE_COMMIT_HASH=\"$__commit_hash\" $__CMakeArgs"
 __CMakeArgs="-DCORECLR_ARTIFACTS=\"$__CoreClrArtifacts\" -DNATIVE_LIBS_ARTIFACTS=\"$__NativeLibsArtifacts\" $__CMakeArgs"
 
+if [[ "$__TargetOS" == OSX ]]; then
+    if [[ "$__BuildArch" == x64 ]]; then
+        __CMakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"x86_64\" $__CMakeArgs"
+    elif [[ "$__BuildArch" == arm64 ]]; then
+        __CMakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"arm64\" $__CMakeArgs"
+    else
+        echo "Error: Unknown OSX architecture $__BuildArch."
+        exit 1
+    fi
+fi
+
 if [[ "$__PortableBuild" == 1 ]]; then
     __CMakeArgs="-DCLI_CMAKE_PORTABLE_BUILD=1 $__CMakeArgs"
 fi
