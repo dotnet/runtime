@@ -201,11 +201,6 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         /// <summary>
-        /// Destructor for <see cref="PhysicalFileProvider"/>.
-        /// </summary>
-        ~PhysicalFileProvider() => Dispose(false);
-
-        /// <summary>
         /// The root directory for this instance.
         /// </summary>
         public string Root { get; }

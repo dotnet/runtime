@@ -255,11 +255,6 @@ namespace Microsoft.Extensions.FileProviders.Physical
             }
         }
 
-        /// <summary>
-        /// Destructor for <see cref="PhysicalFilesWatcher"/>.
-        /// </summary>
-        ~PhysicalFilesWatcher() => Dispose(false);
-
         private void OnRenamed(object sender, RenamedEventArgs e)
         {
             // For a file name change or a directory's name change notify registered tokens.
