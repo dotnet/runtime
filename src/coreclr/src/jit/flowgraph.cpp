@@ -21888,8 +21888,8 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
                         //
                         if ((handleKind == GTF_ICON_STATIC_HDL) || // Pointer to a mutable class Static variable
                             (handleKind == GTF_ICON_BBC_PTR) ||    // Pointer to a mutable basic block count value
-                            (handleKind == GTF_ICON_PTR_GLOBAL) || // Pointer to mutable data from the VM state
-                            (handleKind == GTF_ICON_PINVKI_HDL))   // Eventually remove, as this is immutable
+                            (handleKind == GTF_ICON_PTR_GLOBAL))   // Pointer to mutable data from the VM state
+                            
                         {
                             // We expect the Invariant flag to be unset for this handleKind
                             // If it is set then we will assert with "unexpected GTF_IND_INVARIANT flag set ...
@@ -21906,7 +21906,7 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
                         // We currently expect all handle kinds to be nonFaulting
                         //
                         treeFlags |= GTF_IND_NONFAULTING;
-#if 1
+#if 0
                         if ((handleKind == GTF_ICON_CLASS_HDL) || (handleKind == GTF_ICON_METHOD_HDL) ||
                             (handleKind == GTF_ICON_FIELD_HDL) || (handleKind == GTF_ICON_TOKEN_HDL) ||
                             (handleKind == GTF_ICON_FTN_ADDR))
