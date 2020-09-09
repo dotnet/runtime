@@ -104,13 +104,12 @@ namespace System.Xml.Xsl.Runtime
 
         public static string NormalizeSpace(string value)
         {
-            XmlCharType xmlCharType = XmlCharType.Instance;
             StringBuilder sb = null;
             int idx, idxStart = 0, idxSpace = 0;
 
             for (idx = 0; idx < value.Length; idx++)
             {
-                if (xmlCharType.IsWhiteSpace(value[idx]))
+                if (XmlCharType.IsWhiteSpace(value[idx]))
                 {
                     if (idx == idxStart)
                     {

@@ -126,7 +126,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void Number_AsBoxedRootType()
+        public static void Number_AsBoxed_RootType()
         {
             string numberAsString = @"""2""";
 
@@ -144,6 +144,216 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(2, (float)JsonSerializer.Deserialize(numberAsString, typeof(float), s_optionReadAndWriteFromStr));
             Assert.Equal(2, (int?)JsonSerializer.Deserialize(numberAsString, typeof(int?), s_optionReadAndWriteFromStr));
             Assert.Equal(2, (float?)JsonSerializer.Deserialize(numberAsString, typeof(float?), s_optionReadAndWriteFromStr));
+        }
+
+        [Fact]
+        public static void Number_AsBoxed_Property()
+        {
+            int @int = 1;
+            float? nullableFloat = 2;
+
+            string expected = @"{""MyInt"":""1"",""MyNullableFloat"":""2""}";
+
+            var obj = new Class_With_BoxedNumbers
+            {
+                MyInt = @int,
+                MyNullableFloat = nullableFloat
+            };
+
+            string serialized = JsonSerializer.Serialize(obj);
+            JsonTestHelper.AssertJsonEqual(expected, serialized);
+
+            obj = JsonSerializer.Deserialize<Class_With_BoxedNumbers>(serialized);
+
+            JsonElement el = Assert.IsType<JsonElement>(obj.MyInt);
+            Assert.Equal(JsonValueKind.String, el.ValueKind);
+            Assert.Equal("1", el.GetString());
+
+            el = Assert.IsType<JsonElement>(obj.MyNullableFloat);
+            Assert.Equal(JsonValueKind.String, el.ValueKind);
+            Assert.Equal("2", el.GetString());
+        }
+
+        public class Class_With_BoxedNumbers
+        {
+            [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString | JsonNumberHandling.WriteAsString)]
+            public object MyInt { get; set; }
+
+            [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString | JsonNumberHandling.WriteAsString)]
+            public object MyNullableFloat { get; set; }
+        }
+
+        [Fact]
+        public static void Number_AsBoxed_CollectionRootType_Element()
+        {
+            int @int = 1;
+            float? nullableFloat = 2;
+
+            string expected = @"[""1""]";
+
+            var obj = new List<object> { @int };
+            string serialized = JsonSerializer.Serialize(obj, s_optionReadAndWriteFromStr);
+            Assert.Equal(expected, serialized);
+
+            obj = JsonSerializer.Deserialize<List<object>>(serialized, s_optionReadAndWriteFromStr);
+
+            JsonElement el = Assert.IsType<JsonElement>(obj[0]);
+            Assert.Equal(JsonValueKind.String, el.ValueKind);
+            Assert.Equal("1", el.GetString());
+
+            expected = @"[""2""]";
+
+            IList obj2 = new object[] { nullableFloat };
+            serialized = JsonSerializer.Serialize(obj2, s_optionReadAndWriteFromStr);
+            Assert.Equal(expected, serialized);
+
+            obj2 = JsonSerializer.Deserialize<IList>(serialized, s_optionReadAndWriteFromStr);
+
+            el = Assert.IsType<JsonElement>(obj2[0]);
+            Assert.Equal(JsonValueKind.String, el.ValueKind);
+            Assert.Equal("2", el.GetString());
+        }
+
+        [Fact]
+        public static void Number_AsBoxed_CollectionProperty_Element()
+        {
+            int @int = 2;
+            float? nullableFloat = 2;
+
+            string expected = @"{""MyInts"":[""2""],""MyNullableFloats"":[""2""]}";
+
+            var obj = new Class_With_ListsOfBoxedNumbers
+            {
+                MyInts = new List<object> { @int },
+                MyNullableFloats = new object[] { nullableFloat }
+            };
+
+            string serialized = JsonSerializer.Serialize(obj);
+            JsonTestHelper.AssertJsonEqual(expected, serialized);
+
+            obj = JsonSerializer.Deserialize<Class_With_ListsOfBoxedNumbers>(serialized);
+
+            JsonElement el = Assert.IsType<JsonElement>(obj.MyInts[0]);
+            Assert.Equal(JsonValueKind.String, el.ValueKind);
+            Assert.Equal("2", el.GetString());
+
+            el = Assert.IsType<JsonElement>(obj.MyNullableFloats[0]);
+            Assert.Equal(JsonValueKind.String, el.ValueKind);
+            Assert.Equal("2", el.GetString());
+        }
+
+        public class Class_With_ListsOfBoxedNumbers
+        {
+            [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString | JsonNumberHandling.WriteAsString)]
+            public List<object> MyInts { get; set; }
+
+            [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString | JsonNumberHandling.WriteAsString)]
+            public IList MyNullableFloats { get; set; }
+        }
+
+        [Fact]
+        public static void NonNumber_AsBoxed_Property()
+        {
+            DateTime dateTime = DateTime.Now;
+            Guid? nullableGuid = Guid.NewGuid();
+
+            string expected = @$"{{""MyDateTime"":{JsonSerializer.Serialize(dateTime)},""MyNullableGuid"":{JsonSerializer.Serialize(nullableGuid)}}}";
+
+            var obj = new Class_With_BoxedNonNumbers
+            {
+                MyDateTime = dateTime,
+                MyNullableGuid = nullableGuid
+            };
+
+            string serialized = JsonSerializer.Serialize(obj);
+            JsonTestHelper.AssertJsonEqual(expected, serialized);
+
+            obj = JsonSerializer.Deserialize<Class_With_BoxedNonNumbers>(serialized);
+
+            JsonElement el = Assert.IsType<JsonElement>(obj.MyDateTime);
+            Assert.Equal(JsonValueKind.String, el.ValueKind);
+            Assert.Equal(dateTime, el.GetDateTime());
+
+            el = Assert.IsType<JsonElement>(obj.MyNullableGuid);
+            Assert.Equal(JsonValueKind.String, el.ValueKind);
+            Assert.Equal(nullableGuid.Value, el.GetGuid());
+        }
+
+        public class Class_With_BoxedNonNumbers
+        {
+            [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString | JsonNumberHandling.WriteAsString)]
+            public object MyDateTime { get; set; }
+
+            [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString | JsonNumberHandling.WriteAsString)]
+            public object MyNullableGuid { get; set; }
+        }
+
+        [Fact]
+        public static void NonNumber_AsBoxed_CollectionRootType_Element()
+        {
+            DateTime dateTime = DateTime.Now;
+            Guid? nullableGuid = Guid.NewGuid();
+
+            string expected = @$"[{JsonSerializer.Serialize(dateTime)}]";
+
+            var obj = new List<object> { dateTime };
+            string serialized = JsonSerializer.Serialize(obj, s_optionReadAndWriteFromStr);
+            Assert.Equal(expected, serialized);
+
+            obj = JsonSerializer.Deserialize<List<object>>(serialized, s_optionReadAndWriteFromStr);
+
+            JsonElement el = Assert.IsType<JsonElement>(obj[0]);
+            Assert.Equal(JsonValueKind.String, el.ValueKind);
+            Assert.Equal(dateTime, el.GetDateTime());
+
+            expected = @$"[{JsonSerializer.Serialize(nullableGuid)}]";
+
+            IList obj2 = new object[] { nullableGuid };
+            serialized = JsonSerializer.Serialize(obj2, s_optionReadAndWriteFromStr);
+            Assert.Equal(expected, serialized);
+
+            obj2 = JsonSerializer.Deserialize<IList>(serialized, s_optionReadAndWriteFromStr);
+
+            el = Assert.IsType<JsonElement>(obj2[0]);
+            Assert.Equal(JsonValueKind.String, el.ValueKind);
+            Assert.Equal(nullableGuid.Value, el.GetGuid());
+        }
+
+        [Fact]
+        public static void NonNumber_AsBoxed_CollectionProperty_Element()
+        {
+            DateTime dateTime = DateTime.Now;
+            Guid? nullableGuid = Guid.NewGuid();
+
+            string expected = @$"{{""MyDateTimes"":[{JsonSerializer.Serialize(dateTime)}],""MyNullableGuids"":[{JsonSerializer.Serialize(nullableGuid)}]}}";
+
+            var obj = new Class_With_ListsOfBoxedNonNumbers
+            {
+                MyDateTimes = new List<object> { dateTime },
+                MyNullableGuids = new object[] { nullableGuid }
+            };
+
+            string serialized = JsonSerializer.Serialize(obj);
+            JsonTestHelper.AssertJsonEqual(expected, serialized);
+
+            obj = JsonSerializer.Deserialize<Class_With_ListsOfBoxedNonNumbers>(serialized);
+
+            JsonElement el = Assert.IsType<JsonElement>(obj.MyDateTimes[0]);
+            Assert.Equal(JsonValueKind.String, el.ValueKind);
+            Assert.Equal(dateTime, el.GetDateTime());
+
+            el = Assert.IsType<JsonElement>(obj.MyNullableGuids[0]);
+            Assert.Equal(JsonValueKind.String, el.ValueKind);
+            Assert.Equal(nullableGuid, el.GetGuid());
+        }
+
+        public class Class_With_ListsOfBoxedNonNumbers
+        {
+            [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString | JsonNumberHandling.WriteAsString)]
+            public List<object> MyDateTimes { get; set; }
+
+            [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString | JsonNumberHandling.WriteAsString)]
+            public IList MyNullableGuids { get; set; }
         }
 
         [Fact]
@@ -1102,24 +1312,44 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void NestedCollectionElementTypeHandling_Overrides_ParentPropertyHandling()
+        public static void NestedCollectionElementTypeHandling_Overrides_GlobalOption()
         {
             // Strict policy on the collection element type overrides read-as-string on the collection property
             string json = @"{""MyList"":[{""Float"":""1""}]}";
-            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<ClassWithComplexListProperty>(json));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<ClassWithComplexListProperty>(json, s_optionReadAndWriteFromStr));
 
             // Strict policy on the collection element type overrides write-as-string on the collection property
             var obj = new ClassWithComplexListProperty
             {
                 MyList = new List<ClassWith_StrictAttribute> { new ClassWith_StrictAttribute { Float = 1 } }
             };
-            Assert.Equal(@"{""MyList"":[{""Float"":1}]}", JsonSerializer.Serialize(obj));
+            Assert.Equal(@"{""MyList"":[{""Float"":1}]}", JsonSerializer.Serialize(obj, s_optionReadAndWriteFromStr));
         }
 
         public class ClassWithComplexListProperty
         {
+            public List<ClassWith_StrictAttribute> MyList { get; set; }
+        }
+
+        [Fact]
+        public static void NumberHandlingAttribute_NotAllowedOn_CollectionOfNonNumbers()
+        {
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<ClassWith_AttributeOnComplexListProperty>(""));
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(new ClassWith_AttributeOnComplexListProperty()));
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<ClassWith_AttributeOnComplexDictionaryProperty>(""));
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(new ClassWith_AttributeOnComplexDictionaryProperty()));
+        }
+
+        public class ClassWith_AttributeOnComplexListProperty
+        {
             [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString | JsonNumberHandling.WriteAsString)]
             public List<ClassWith_StrictAttribute> MyList { get; set; }
+        }
+
+        public class ClassWith_AttributeOnComplexDictionaryProperty
+        {
+            [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)]
+            public Dictionary<string, ClassWith_StrictAttribute> MyDictionary { get; set; }
         }
 
         [Fact]
@@ -1136,23 +1366,22 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void NestedDictionaryElementTypeHandling_Overrides_ParentPropertyHandling()
+        public static void NestedDictionaryElementTypeHandling_Overrides_GlobalOption()
         {
             // Strict policy on the dictionary element type overrides read-as-string on the collection property.
             string json = @"{""MyDictionary"":{""Key"":{""Float"":""1""}}}";
-            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<ClassWithComplexDictionaryProperty>(json));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<ClassWithComplexDictionaryProperty>(json, s_optionReadFromStr));
 
             // Strict policy on the collection element type overrides write-as-string on the collection property
             var obj = new ClassWithComplexDictionaryProperty
             {
                 MyDictionary = new Dictionary<string, ClassWith_StrictAttribute> { ["Key"] = new ClassWith_StrictAttribute { Float = 1 } }
             };
-            Assert.Equal(@"{""MyDictionary"":{""Key"":{""Float"":1}}}", JsonSerializer.Serialize(obj));
+            Assert.Equal(@"{""MyDictionary"":{""Key"":{""Float"":1}}}", JsonSerializer.Serialize(obj, s_optionReadFromStr));
         }
 
         public class ClassWithComplexDictionaryProperty
         {
-            [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)]
             public Dictionary<string, ClassWith_StrictAttribute> MyDictionary { get; set; }
         }
 

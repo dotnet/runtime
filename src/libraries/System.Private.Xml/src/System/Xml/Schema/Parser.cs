@@ -35,9 +35,6 @@ namespace System.Xml.Schema
         private XmlNamespaceManager? _annotationNSManager;
         private string? _xmlns;
 
-        //Whitespace check for text nodes
-        private XmlCharType _xmlCharType = XmlCharType.Instance;
-
         public Parser(SchemaType schemaType, XmlNameTable nameTable, SchemaNames schemaNames, ValidationEventHandler? eventHandler)
         {
             _schemaType = schemaType;
@@ -224,7 +221,7 @@ namespace System.Xml.Schema
             }
             else if (_reader.NodeType == XmlNodeType.Text)
             { //Check for whitespace
-                if (!_xmlCharType.IsOnlyWhitespace(_reader.Value))
+                if (!XmlCharType.IsOnlyWhitespace(_reader.Value))
                 {
                     _builder!.ProcessCData(_reader.Value);
                 }
