@@ -16,11 +16,6 @@ namespace System.Diagnostics.Tests
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestChangesInConsoleEncoding()
         {
-            if (PlatformDetection.IsWindowsServerCore)
-            {
-                throw new SkipTestException("ActiveIssue: https://github.com/dotnet/runtime/issues/42000");
-            }
-
             Action<int> run = expectedCodePage =>
             {
                 Process p = CreateProcessLong();
@@ -48,8 +43,8 @@ namespace System.Diagnostics.Tests
 
             try
             {
-                // Don't test this on Windows Nano, Windows Nano only supports UTF8.
-                if (File.Exists(Path.Combine(Environment.GetEnvironmentVariable("windir"), "regedit.exe")))
+                // Don't test this on Windows Nano or Windows Server Core, they only support UTF8.
+                if (PlatformDetection.IsNotWindowsNanoNorServerCore)
                 {
                     Interop.SetConsoleCP(s_ConsoleEncoding);
                     Interop.SetConsoleOutputCP(s_ConsoleEncoding);

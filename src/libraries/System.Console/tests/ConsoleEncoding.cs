@@ -95,7 +95,7 @@ public partial class ConsoleEncoding
         check(Encoding.Unicode);
 
         // On full Windows, ASCII is available also
-        if (PlatformDetection.IsNotWindowsNanoAndServerCore)
+        if (PlatformDetection.IsNotWindowsNanoNorServerCore)
         {
             check(Encoding.ASCII);
         }
