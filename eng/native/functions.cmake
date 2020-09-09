@@ -126,7 +126,7 @@ function(preprocess_file inputFilename outputFilename)
   if (MSVC)
     add_custom_command(
         OUTPUT ${outputFilename}
-        COMMAND ${CMAKE_CXX_COMPILER} ${PREPROCESS_INCLUDE_DIRECTORIES} /P /EP /TC ${PREPROCESS_DEFINITIONS}  /Fi${outputFilename}  ${inputFilename}
+        COMMAND ${CMAKE_CXX_COMPILER} ${PREPROCESS_INCLUDE_DIRECTORIES} /P /EP /TC ${PREPROCESS_DEFINITIONS}  /Fi${outputFilename}  ${inputFilename} /nologo
         DEPENDS ${inputFilename}
         COMMENT "Preprocessing ${inputFilename}. Outputting to ${outputFilename}"
     )
@@ -143,41 +143,17 @@ function(preprocess_file inputFilename outputFilename)
                               PROPERTIES GENERATED TRUE)
 endfunction()
 
-# preprocess_compile_asm(TARGET target ASM_FILES file1 [file2 ...] OUTPUT_OBJECTS [variableName])
-function(preprocess_compile_asm)
-  set(options "")
-  set(oneValueArgs TARGET OUTPUT_OBJECTS)
-  set(multiValueArgs ASM_FILES)
-  cmake_parse_arguments(COMPILE_ASM "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGV})
-
-  get_include_directories_asm(ASM_INCLUDE_DIRECTORIES)
-
-  set (ASSEMBLED_OBJECTS "")
-
-  foreach(ASM_FILE ${COMPILE_ASM_ASM_FILES})
+# preprocess_files(PreprocessedFilesList [fileToPreprocess1 [fileToPreprocess2 ...]])
+function(preprocess_files PreprocessedFilesList)
+  set(FilesToPreprocess ${ARGN})
+  foreach(ASM_FILE IN LISTS FilesToPreprocess)
     # Inserts a custom command in CMake build to preprocess each asm source file
     get_filename_component(name ${ASM_FILE} NAME_WE)
     file(TO_CMAKE_PATH "${CMAKE_CURRENT_BINARY_DIR}/${name}.asm" ASM_PREPROCESSED_FILE)
     preprocess_file(${ASM_FILE} ${ASM_PREPROCESSED_FILE})
-
-    # Produce object file where CMake would store .obj files for an OBJECT library.
-    # ex: artifacts\obj\coreclr\Windows_NT.arm64.Debug\src\vm\wks\cee_wks.dir\Debug\AsmHelpers.obj
-    set (OBJ_FILE "${CMAKE_CURRENT_BINARY_DIR}/${COMPILE_ASM_TARGET}.dir/${CMAKE_CFG_INTDIR}/${name}.obj")
-
-    # Need to compile asm file using custom command as include directories are not provided to asm compiler
-    add_custom_command(OUTPUT ${OBJ_FILE}
-                        COMMAND "${CMAKE_ASM_MASM_COMPILER}" -g ${ASM_INCLUDE_DIRECTORIES} -o ${OBJ_FILE} ${ASM_PREPROCESSED_FILE}
-                        DEPENDS ${ASM_PREPROCESSED_FILE}
-                        COMMENT "Assembling ${ASM_PREPROCESSED_FILE} ---> \"${CMAKE_ASM_MASM_COMPILER}\" -g ${ASM_INCLUDE_DIRECTORIES} -o ${OBJ_FILE} ${ASM_PREPROCESSED_FILE}")
-
-    # mark obj as source that does not require compile
-    set_source_files_properties(${OBJ_FILE} PROPERTIES EXTERNAL_OBJECT TRUE)
-
-    # Add the generated OBJ in the dependency list so that it gets consumed during linkage
-    list(APPEND ASSEMBLED_OBJECTS ${OBJ_FILE})
+    list(APPEND PreprocessedFiles ${ASM_PREPROCESSED_FILE})
   endforeach()
-
-  set(${COMPILE_ASM_OUTPUT_OBJECTS} ${ASSEMBLED_OBJECTS} PARENT_SCOPE)
+  set(${PreprocessedFilesList} ${PreprocessedFiles} PARENT_SCOPE)
 endfunction()
 
 function(set_exports_linker_option exports_filename)
@@ -410,7 +386,7 @@ function(_add_executable)
     endif()
 endfunction()
 
-function(_add_library)
+function(_add_library)    
     if(NOT WIN32)
       add_library(${ARGV} ${VERSION_FILE_PATH})
     else()
