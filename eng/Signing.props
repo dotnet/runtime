@@ -13,9 +13,6 @@
   <Import Project="$(RepositoryEngineeringDir)Configurations.props" Condition="'$(PostBuildSign)' != 'true'" />
   <Import Project="$(RepositoryEngineeringDir)liveBuilds.targets" Condition="'$(PostBuildSign)' != 'true'" />
 
-  <!-- We need  this to be inside a target to workaround: https://github.com/microsoft/msbuild/issues/5445 -->
-  <Target Name="PrepareItemsToSign" BeforeTargets="Sign">
-
     <ItemGroup>
       <!--
         Replace the default items to sign with the specific set we want. This allows the build to call
@@ -124,8 +121,6 @@
     <ItemGroup>
       <ItemsToSign Update="@(ItemsToSign)" Authenticode="$(CertificateId)" />
     </ItemGroup>
-
-  </Target>
 
   <ItemGroup>
     <FileExtensionSignInfo Include=".msi" CertificateName="Microsoft400" />
