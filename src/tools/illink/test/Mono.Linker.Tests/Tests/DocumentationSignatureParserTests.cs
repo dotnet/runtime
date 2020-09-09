@@ -10,6 +10,7 @@ using Mono.Linker.Tests.TestCasesRunner;
 namespace Mono.Linker.Tests
 {
 	[TestFixture]
+	[Parallelizable]
 	public class DocumentationSignatureParserTests
 	{
 		[TestCaseSource (nameof (GetMemberAssertionsAsArray), new object[] { typeof (DocumentationSignatureParserTests) })]

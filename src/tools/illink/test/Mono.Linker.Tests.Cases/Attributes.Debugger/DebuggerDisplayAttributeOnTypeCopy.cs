@@ -7,7 +7,6 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 namespace Mono.Linker.Tests.Cases.Attributes.Debugger
 {
 	[SetupLinkAttributesFile ("DebuggerAttributesRemoved.xml")]
-	[SetupLinkerCoreAction ("copy")]
 	[SetupLinkerAction ("copy", "test")]
 	public static class DebuggerDisplayAttributeOnTypeCopy
 	{

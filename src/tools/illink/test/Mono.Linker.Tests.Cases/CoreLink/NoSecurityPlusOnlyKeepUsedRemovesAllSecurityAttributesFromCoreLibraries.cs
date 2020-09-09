@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿#if !NETCOREAPP
+using System.Diagnostics;
 using System.Security;
 using System.Security.Permissions;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
@@ -41,3 +42,4 @@ namespace Mono.Linker.Tests.Cases.CoreLink
 		}
 	}
 }
+#endif

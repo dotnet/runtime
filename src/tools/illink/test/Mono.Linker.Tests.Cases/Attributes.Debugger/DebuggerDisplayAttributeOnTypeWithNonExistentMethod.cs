@@ -6,9 +6,7 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Attributes.Debugger
 {
-#if NETCOREAPP
-	[SetupLinkerCoreAction ("copy")]
-#else
+#if !NETCOREAPP
 	[SetupLinkerCoreAction ("link")]
 	[SetupLinkerKeepDebugMembers ("false")]
 

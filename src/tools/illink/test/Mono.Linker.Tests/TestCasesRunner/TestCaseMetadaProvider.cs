@@ -127,27 +127,20 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			return false;
 		}
 
-#if NETCOREAPP
-		public static IEnumerable<string> GetTrustedPlatformAssemblies ()
-		{
-			if (AppContext.GetData ("TRUSTED_PLATFORM_ASSEMBLIES") is string tpaPaths) {
-				foreach (var path in tpaPaths.Split (Path.PathSeparator)) {
-					if (Path.GetExtension (path) == ".dll")
-						yield return path;
-				}
-			}
-		}
-#endif
-
 		public virtual IEnumerable<string> GetCommonReferencedAssemblies (NPath workingDirectory)
 		{
 			yield return workingDirectory.Combine ("Mono.Linker.Tests.Cases.Expectations.dll").ToString ();
 #if NETCOREAPP
-			foreach (var path in GetTrustedPlatformAssemblies ()) {
-				// Don't reference testcases dll, as these will be compiled dynamically.
-				if (Path.GetFileName (path) != "Mono.Linker.Tests.Cases.dll")
-					yield return path;
-			}
+			string frameworkDir = Path.GetDirectoryName (typeof (object).Assembly.Location);
+
+			yield return typeof (object).Assembly.Location;
+			yield return Path.Combine (frameworkDir, "System.Runtime.dll");
+			yield return Path.Combine (frameworkDir, "System.Linq.Expressions.dll");
+			yield return Path.Combine (frameworkDir, "System.ComponentModel.TypeConverter.dll");
+			yield return Path.Combine (frameworkDir, "System.Console.dll");
+			yield return Path.Combine (frameworkDir, "mscorlib.dll");
+			yield return Path.Combine (frameworkDir, "System.ObjectModel.dll");
+			yield return Path.Combine (frameworkDir, "System.Runtime.Extensions.dll");
 #else
 			yield return "mscorlib.dll";
 #endif
@@ -156,11 +149,13 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		public virtual IEnumerable<string> GetReferencedAssemblies (NPath workingDirectory)
 		{
 			foreach (var fileName in GetReferenceValues ()) {
+
 				if (fileName.StartsWith ("System.", StringComparison.Ordinal) || fileName.StartsWith ("Mono.", StringComparison.Ordinal) || fileName.StartsWith ("Microsoft.", StringComparison.Ordinal)) {
 #if NETCOREAPP
 					// Try to find the assembly alongside the host's framework dependencies
-					var frameworkDir = Path.GetDirectoryName (typeof (object).Assembly.Location);
+					var frameworkDir = Path.GetFullPath (Path.GetDirectoryName (typeof (object).Assembly.Location));
 					var filePath = Path.Combine (frameworkDir, fileName);
+
 					if (File.Exists (filePath)) {
 						yield return filePath;
 					} else {
@@ -227,9 +222,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		public virtual IEnumerable<NPath> GetExtraLinkerSearchDirectories ()
 		{
 #if NETCOREAPP
-			var tpaDirs = GetTrustedPlatformAssemblies ().Select (p => Path.GetDirectoryName (p)).Distinct ();
-			foreach (var dir in tpaDirs)
-				yield return dir.ToNPath ();
+			yield return Path.GetDirectoryName (typeof (object).Assembly.Location).ToNPath ();
 #else
 			yield break;
 #endif

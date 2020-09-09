@@ -4,7 +4,6 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Resources
 {
-	[SetupLinkerCoreAction ("link")]
 	[IgnoreDescriptors (false)]
 
 	// Rename the resource so that it matches the name of an assembly being processed.

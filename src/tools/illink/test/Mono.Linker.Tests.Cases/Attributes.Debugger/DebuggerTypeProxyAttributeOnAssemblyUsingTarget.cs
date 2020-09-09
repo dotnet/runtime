@@ -13,7 +13,6 @@ namespace Mono.Linker.Tests.Cases.Attributes.Debugger
 {
 #if NETCOREAPP
 	[SetupLinkAttributesFile ("DebuggerAttributesRemoved.xml")]
-	[SetupLinkerCoreAction ("copy")]
 #else
 	[SetupLinkerCoreAction ("link")]
 	[SetupLinkerKeepDebugMembers ("false")]
