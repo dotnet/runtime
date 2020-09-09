@@ -5812,6 +5812,11 @@ if test x$enable_cooperative_suspend_default != xyes; then
 			enable_hybrid_suspend_default=yes
 		fi
 		;;
+	ARM64)
+		if test x$target_osx = xyes -o x$host_linux = xyes; then
+			enable_hybrid_suspend_default=yes
+		fi
+		;;
 	esac
 fi
 
