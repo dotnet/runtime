@@ -659,7 +659,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        [OuterLoop]
+        //[OuterLoop]
         public static async Task RoundtripHumongousJsonPayload()
         {
             string logPayload = @"{
