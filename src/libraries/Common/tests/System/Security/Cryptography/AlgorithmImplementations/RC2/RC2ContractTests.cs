@@ -12,6 +12,7 @@ namespace System.Security.Cryptography.Encryption.RC2.Tests
 {
     using RC2 = System.Security.Cryptography.RC2;
 
+    [SkipOnMono("Not supported on Browser", TestPlatforms.Browser)]
     public static class RC2ContractTests
     {
         [Theory]

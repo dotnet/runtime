@@ -61,21 +61,15 @@
     <Error Condition="'$(PackagesUrl)'==''" Text="Missing property PackagesUrl" />
 
     <PropertyGroup>
-      <ExpectedFeedUrl>$(PackagesUrl)</ExpectedFeedUrl>
       <AssetManifestFilename>Manifest.xml</AssetManifestFilename>
       <AssetManifestFile>$(ArtifactsLogDir)AssetManifest/$(AssetManifestFilename)</AssetManifestFile>
 
       <!-- Create temp dir to store generated asset manifest, per Arcade guidance. -->
       <TempWorkingDir>$(ArtifactsObjDir)TempWorkingDir\$([System.Guid]::NewGuid())\</TempWorkingDir>
+      
+      <ProductVersionTxtContents Condition="'$(StabilizePackageVersion)'=='true'">$(ProductionVersion)</ProductVersionTxtContents>
+      <ProductVersionTxtContents Condition="'$(StabilizePackageVersion)'!='true'">$(ProductVersion)</ProductVersionTxtContents>
     </PropertyGroup>
-
-    <ItemGroup>
-      <ItemsToPush Remove="@(ItemsToPush)" />
-
-      <ItemsToPush Include="@(ShippingNupkgToPublishFile)" />
-      <ItemsToPush Include="@(NonShippingNupkgToPublishFile)" ManifestArtifactData="NonShipping=true" />
-      <ItemsToPush Include="@(SymbolNupkgToPublishFile)" />
-    </ItemGroup>
 
     <!-- Generate productVersion.txt containing the value of $(PackageVersion) -->
     <WriteLinesToFile
@@ -83,8 +77,14 @@
       Lines="$(ProductVersionTxtContents)"
       Overwrite="true"
       Encoding="ASCII" />
-
+      
     <ItemGroup>
+      <ItemsToPush Remove="@(ItemsToPush)" />
+
+      <ItemsToPush Include="@(ShippingNupkgToPublishFile)" />
+      <ItemsToPush Include="@(NonShippingNupkgToPublishFile)" ManifestArtifactData="NonShipping=true" />
+      <ItemsToPush Include="@(SymbolNupkgToPublishFile)" />
+      
       <ItemsToPush
         Include="@(UploadToBlobStorageFile)"
         Exclude="@(NupkgToPublishFile);@(SymbolNupkgToPublishFile)">
@@ -119,11 +119,14 @@
       FileExtensionSignInfo="@(FileExtensionSignInfo)"
       ItemsToPush="@(ItemsToPush)"
       ManifestBuildData="@(ManifestBuildData)"
-      ManifestRepoUri="$(BUILD_REPOSITORY_URI)"
+      ManifestRepoUri="$(BUILD_REPOSITORY_NAME)"
       ManifestBranch="$(BUILD_SOURCEBRANCH)"
       ManifestBuildId="$(BUILD_BUILDNUMBER)"
       ManifestCommit="$(BUILD_SOURCEVERSION)"
-      AssetManifestPath="$(AssetManifestFile)"  />
+      IsStableBuild="$(IsStableBuild)"
+      AssetManifestPath="$(AssetManifestFile)"
+      AssetsTemporaryDirectory="$(TempWorkingDir)"
+      PublishingVersion ="3" />
 
     <!-- Copy the generated manifest to the build's artifacts -->
     <Copy SourceFiles="$(AssetManifestFile)" DestinationFolder="$(TempWorkingDir)" />
