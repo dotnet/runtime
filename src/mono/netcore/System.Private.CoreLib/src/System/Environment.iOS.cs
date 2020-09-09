@@ -78,7 +78,7 @@ namespace System
                     return CombineSearchPath(NSSearchPathDirectory.NSLibraryDirectory, "Favorites");
 
                 case SpecialFolder.ProgramFiles:
-                    return "/Applications";
+                    return Interop.Sys.SearchPath(NSSearchPathDirectory.NSApplicationDirectory);
 
                 case SpecialFolder.InternetCache:
                     return Interop.Sys.SearchPath(NSSearchPathDirectory.NSCachesDirectory);
