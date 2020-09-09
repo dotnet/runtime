@@ -368,11 +368,11 @@ namespace System.Net.Http
         /// </summary>
         public Func<SocketsHttpConnectionContext, CancellationToken, ValueTask<Stream>>? ConnectCallback
         {
-            get => _settings._connectionCallback;
+            get => _settings._connectCallback;
             set
             {
                 CheckDisposedOrStarted();
-                _settings._connectionCallback = value;
+                _settings._connectCallback = value;
             }
         }
 

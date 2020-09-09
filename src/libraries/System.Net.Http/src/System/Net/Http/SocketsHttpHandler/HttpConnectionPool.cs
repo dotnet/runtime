@@ -1288,14 +1288,13 @@ namespace System.Net.Http
 
         private static async ValueTask<Stream> DefaultConnectAsync(SocketsHttpConnectionContext context, CancellationToken cancellationToken)
         {
-            Socket socket = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp);
+            Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
             socket.NoDelay = true;
-            socket.DualMode = true;
 
             try
             {
                 await socket.ConnectAsync(context.DnsEndPoint, cancellationToken).ConfigureAwait(false);
-                return new NetworkStream(socket, true);
+                return new NetworkStream(socket, ownsSocket: true);
             }
             catch
             {
@@ -1304,19 +1303,21 @@ namespace System.Net.Http
             }
         }
 
+        private static readonly Func<SocketsHttpConnectionContext, CancellationToken, ValueTask<Stream>> s_defaultConnectCallback = DefaultConnectAsync;
+
         private ValueTask<Stream> ConnectToTcpHostAsync(string host, int port, HttpRequestMessage initialRequest, bool async, CancellationToken cancellationToken)
         {
             if (async)
             {
-                Func<SocketsHttpConnectionContext, CancellationToken, ValueTask<Stream>> connectionCallback = Settings._connectionCallback ?? DefaultConnectAsync;
+                Func<SocketsHttpConnectionContext, CancellationToken, ValueTask<Stream>> connectCallback = Settings._connectCallback ?? s_defaultConnectCallback;
 
                 var endPoint = new DnsEndPoint(host, port);
-                return ConnectHelper.ConnectAsync(connectionCallback, endPoint, initialRequest, cancellationToken);
+                return ConnectHelper.ConnectAsync(connectCallback, endPoint, initialRequest, cancellationToken);
             }
 
             // Synchronous path.
 
-            if (Settings._connectionCallback is not null)
+            if (Settings._connectCallback is not null)
             {
                 throw new NotSupportedException(SR.net_http_sync_operations_not_allowed_with_connect_callback);
             }
