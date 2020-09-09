@@ -745,14 +745,10 @@ namespace System.Net.Http
                                 sendRequestContentTask.GetAwaiter().GetResult();
                             }
                         }
-                        catch (Exception ex)
+                        // Map the exception the same way as we normally do.
+                        catch (Exception ex) when (MapSendException(ex, cancellationToken, out Exception mappedEx))
                         {
-                            // Map the exception the same way as we normally do.
-                            if (MapSendException(ex, cancellationToken, out Exception mappedEx))
-                            {
-                                throw mappedEx;
-                            }
-                            throw;
+                            throw mappedEx;
                         }
                     }
                     LogExceptions(sendRequestContentTask);
