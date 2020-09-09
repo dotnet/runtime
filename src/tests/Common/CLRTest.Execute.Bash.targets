@@ -272,7 +272,22 @@ $__Command msbuild $CORE_ROOT/wasm-test-runner/WasmTestRunner.proj /p:NetCoreApp
    ]]>
       </BashCLRTestPreCommands>
 
-      <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And $(TargetArchitecture) != 'wasm' ">
+      <BashCLRTestPreCommands Condition="'$(TargetOS)' == 'Android'">
+   <![CDATA[
+# Build Android app containing the test dll
+__Command=""
+if [ ! -z ${__TestDotNetCmd+x} ] %3B then
+  __Command+=" $__TestDotNetCmd"
+else
+  __Command+=" dotnet"
+fi
+
+$__Command publish $CORE_ROOT/android-test-runner/AndroidTestRunner.proj -c $(Configuration) -r android-$(TargetArchitecture) /p:Platform=$(TargetArchitecture) /p:TargetArchitecture=$(TargetArchitecture) /p:NetCoreAppCurrent=$(NetCoreAppCurrent) /p:TestAssembly=`pwd`/$(MsBuildProjectName).dll /p:TestBinDir=`pwd`
+
+   ]]>
+      </BashCLRTestPreCommands>
+
+      <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And $(TargetArchitecture) != 'wasm' And '$(TargetOS)' != 'Android'">
     <![CDATA[
 $(BashLinkerTestLaunchCmds)
 
@@ -304,6 +319,13 @@ $(BashLinkerTestCleanupCmds)
       <![CDATA[
 cd WasmApp
 ./run-v8.sh
+CLRTestExitCode=$?
+      ]]>
+      </BashCLRTestLaunchCmds>
+      <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And $(TargetOS) == 'Android' ">
+      <![CDATA[
+cd apk
+# run Android app
 CLRTestExitCode=$?
       ]]>
       </BashCLRTestLaunchCmds>

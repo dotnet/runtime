@@ -129,6 +129,31 @@
           TargetDir="runtime-test/"/>
     </ItemGroup>
 
+    <ItemGroup Condition="'$(TargetOS)' == 'Android'">
+        <RunTimeDependencyCopyLocal
+          Include="@(RuntimeFiles)"
+          TargetDir="runtimepack/native/"/>
+
+        <!-- This throws everything in 'native', include many non-native assemblies.
+             This is done because LibrariesRuntimeFiles includes some .js files that
+             WasmAppBuilder expects in native/-->
+        <RunTimeDependencyCopyLocal
+          Include="@(LibrariesRuntimeFiles)"
+          TargetDir="runtimepack/native/"/>
+
+       <RunTimeDependencyCopyLocal
+          Include="$(ArtifactsDir)\TargetingPack\**"
+          TargetDir="TargetingPack/"/>
+
+        <RunTimeDependencyCopyLocal
+          Include="$(ArtifactsBinDir)AndroidAppBuilder\$(Configuration)\$(NetCoreAppCurrent)\**"
+          TargetDir="AndroidAppBuilder/"/>
+
+        <RunTimeDependencyCopyLocal
+          Include="$(RepoRoot)\src\tests\Common\android-test-runner\AndroidTestRunner.proj"
+          TargetDir="android-test-runner/"/>
+    </ItemGroup>
+
     <Copy
       SourceFiles="@(RunTimeDependencyCopyLocal)"
       DestinationFiles="@(RunTimeDependencyCopyLocal -> '$(CORE_ROOT)/%(TargetDir)%(RecursiveDir)%(Filename)%(Extension)')"

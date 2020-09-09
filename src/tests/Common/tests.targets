@@ -24,7 +24,7 @@
     <Message Text= "_SkipTestAssemblies= @(_SkipTestAssemblies -> '$(TestAssemblyDir)%(Identity)\%(Identity).XUnitWrapper.dll')"/>
   </Target>
 
-   <Target Name="RunTests"
+  <Target Name="RunTests"
           DependsOnTargets="FindTestDirectories"
           Condition="'$(SkipTests)' != 'True'">
 
@@ -54,7 +54,7 @@
 
       <CorerunExecutable Condition="'$(RunningOnUnix)' == 'true'"  >$(CORE_ROOT)\corerun</CorerunExecutable>
       <CorerunExecutable Condition="'$(RunningOnUnix)' != 'true'">$(CORE_ROOT)\corerun.exe</CorerunExecutable>
-      <CorerunExecutable Condition="'$(TargetArchitecture)' == 'wasm'"> $(DotnetRoot)/dotnet</CorerunExecutable>
+      <CorerunExecutable Condition="'$(TargetArchitecture)' == 'wasm' Or '$(TargetOS)' == 'Android'"> $(DotnetRoot)/dotnet</CorerunExecutable>
     </PropertyGroup>
 
     <!-- Work around cmd command length limit by using relative paths

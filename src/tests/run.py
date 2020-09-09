@@ -937,7 +937,7 @@ def run_tests(args,
 
     # Set __TestDotNetCmd so tests which need to run dotnet can use the repo-local script on dev boxes
     os.environ["__TestDotNetCmd"] = args.dotnetcli_script_path
-
+    
     # Set test env script path if it is set.
     if test_env_script_path is not None:
         print("Setting __TestEnv=%s" % test_env_script_path)
@@ -978,16 +978,17 @@ def run_tests(args,
 
     print("Download and overwrite xunit.console.dll in Core_Root")
 
-    urlretrieve = urllib.urlretrieve if sys.version_info.major < 3 else urllib.request.urlretrieve
-    zipfilename = os.path.join(tempfile.gettempdir(), "xunit.console.dll.zip")
-    url = r"https://clrjit.blob.core.windows.net/xunit-console/xunit.console.dll-v2.4.1.zip"
-    urlretrieve(url, zipfilename)
+ #   urlretrieve = urllib.urlretrieve if sys.version_info.major < 3 else urllib.request.urlretrieve
+ #   zipfilename = os.path.join(tempfile.gettempdir(), "xunit.console.dll.zip")
+ #   url = r"https://clrjit.blob.core.windows.net/xunit-console/xunit.console.dll-v2.4.1.zip"
+#    urlretrieve(url, zipfilename)
 
+    zipfilename = "/Users/fanyang/Downloads/xunit.console.dll-v2.4.1.zip"
     with zipfile.ZipFile(zipfilename,"r") as ziparch:
         ziparch.extractall(args.core_root)
 
-    os.remove(zipfilename)
-    assert not os.path.isfile(zipfilename)
+ #   os.remove(zipfilename)
+ #   assert not os.path.isfile(zipfilename)
 
     return call_msbuild(args)
 
@@ -1002,7 +1003,7 @@ def setup_args(args):
         location using the build type and the arch.
     """
 
-    requires_coreroot = args.arch.lower() != "wasm"
+    requires_coreroot = args.arch.lower() != "wasm" and args.host_os.lower() != "android"
     coreclr_setup_args = CoreclrArguments(args, 
                                           require_built_test_dir=True,
                                           require_built_core_root=requires_coreroot, 
