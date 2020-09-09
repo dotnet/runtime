@@ -49,10 +49,35 @@ unregister_vtable_reflection_type (MonoVTable *vtable)
 		MONO_GC_UNREGISTER_ROOT_IF_MOVING (vtable->type);
 }
 
+// First phase of deletion
+static void
+memory_manager_delete_objects (MonoMemoryManager *memory_manager)
+{
+	memory_manager->freeing = TRUE;
+
+	// Must be done before type_hash is freed
+	for (int i = 0; i < memory_manager->class_vtable_array->len; i++)
+		unregister_vtable_reflection_type ((MonoVTable *)g_ptr_array_index (memory_manager->class_vtable_array, i));
+
+	g_ptr_array_free (memory_manager->class_vtable_array, TRUE);
+	memory_manager->class_vtable_array = NULL;
+	mono_g_hash_table_destroy (memory_manager->type_hash);
+	memory_manager->type_hash = NULL;
+	mono_conc_g_hash_table_foreach (memory_manager->refobject_hash, cleanup_refobject_hash, NULL);
+	mono_conc_g_hash_table_destroy (memory_manager->refobject_hash);
+	memory_manager->refobject_hash = NULL;
+	mono_g_hash_table_destroy (memory_manager->type_init_exception_hash);
+	memory_manager->type_init_exception_hash = NULL;
+}
+
+// Full deletion
 static void
 memory_manager_delete (MonoMemoryManager *memory_manager, gboolean debug_unload)
 {
 	// Scan here to assert no lingering references in vtables?
+
+	if (!memory_manager->freeing)
+		memory_manager_delete_objects (memory_manager);
 
 	mono_coop_mutex_destroy (&memory_manager->lock);
 
@@ -70,20 +95,15 @@ memory_manager_delete (MonoMemoryManager *memory_manager, gboolean debug_unload)
 		memory_manager->code_mp = NULL;
 	}
 
-	g_ptr_array_free (memory_manager->class_vtable_array, TRUE);
-	memory_manager->class_vtable_array = NULL;
+	g_free (memory_manager);
+}
 
-	// Must be done before type_hash is freed
-	for (int i = 0; i < memory_manager->class_vtable_array->len; i++)
-		unregister_vtable_reflection_type ((MonoVTable *)g_ptr_array_index (memory_manager->class_vtable_array, i));
+void
+mono_mem_manager_free_objects_singleton (MonoSingletonMemoryManager *memory_manager)
+{
+	g_assert (!memory_manager->memory_manager.freeing);
 
-	mono_g_hash_table_destroy (memory_manager->type_hash);
-	memory_manager->type_hash = NULL;
-	mono_conc_g_hash_table_foreach (memory_manager->refobject_hash, cleanup_refobject_hash, NULL);
-	mono_conc_g_hash_table_destroy (memory_manager->refobject_hash);
-	memory_manager->refobject_hash = NULL;
-	mono_g_hash_table_destroy (memory_manager->type_init_exception_hash);
-	memory_manager->type_init_exception_hash = NULL;
+	memory_manager_delete_objects (&memory_manager->memory_manager);
 }
 
 void
@@ -91,7 +111,7 @@ mono_mem_manager_free_singleton (MonoSingletonMemoryManager *memory_manager, gbo
 {
 	g_assert (!memory_manager->memory_manager.is_generic);
 
-	memory_manager_delete ((MonoMemoryManager *)memory_manager, debug_unload);
+	memory_manager_delete (&memory_manager->memory_manager, debug_unload);
 	g_free (memory_manager);
 }
 

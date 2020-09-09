@@ -209,6 +209,9 @@ void
 mono_mem_manager_free_singleton (MonoSingletonMemoryManager *memory_manager, gboolean debug_unload);
 
 void
+mono_mem_manager_free_objects_singleton (MonoSingletonMemoryManager *memory_manager);
+
+void
 mono_mem_manager_lock (MonoMemoryManager *memory_manager);
 
 void

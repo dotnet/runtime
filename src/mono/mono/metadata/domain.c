@@ -1138,11 +1138,7 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 	mono_g_hash_table_destroy (domain->env);
 	domain->env = NULL;
 
-	// Collect statistics
-	code_alloc = mono_code_manager_size (domain->memory_manager->code_mp, &code_size);
-	total_domain_code_alloc += code_alloc;
-	max_domain_code_alloc = MAX (max_domain_code_alloc, code_alloc);
-	max_domain_code_size = MAX (max_domain_code_size, code_size);
+	mono_mem_manager_free_objects_singleton ((MonoSingletonMemoryManager *)domain->memory_manager);
 
 	for (tmp = domain->domain_assemblies; tmp; tmp = tmp->next) {
 		MonoAssembly *ass = (MonoAssembly *)tmp->data;
@@ -1226,6 +1222,15 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 	mono_jit_info_table_free (domain->jit_info_table);
 	domain->jit_info_table = NULL;
 	g_assert (!domain->jit_info_free_queue);
+
+	// Collect statistics
+	code_alloc = mono_code_manager_size (domain->memory_manager->code_mp, &code_size);
+	total_domain_code_alloc += code_alloc;
+	max_domain_code_alloc = MAX (max_domain_code_alloc, code_alloc);
+	max_domain_code_size = MAX (max_domain_code_size, code_size);
+
+	mono_mem_manager_free_singleton ((MonoSingletonMemoryManager *)domain->memory_manager, debug_domain_unload);
+	domain->memory_manager = NULL;
 
 	lock_free_mempool_free (domain->lock_free_mp);
 	domain->lock_free_mp = NULL;
