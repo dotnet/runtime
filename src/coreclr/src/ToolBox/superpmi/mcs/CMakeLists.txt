@@ -48,7 +48,7 @@ set(MCS_SOURCES
 _add_executable(mcs
     ${MCS_SOURCES}
 )
-target_precompile_headers(mcs PRIVATE [["standardpch.h"]])
+target_precompile_headers(mcs PRIVATE "$<$<COMPILE_LANGUAGE:CXX>:standardpch.h>")
 
 if(CLR_CMAKE_HOST_UNIX)
     target_link_libraries(mcs
