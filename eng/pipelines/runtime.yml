@@ -25,27 +25,27 @@ trigger:
     - SECURITY.md
     - THIRD-PARTY-NOTICES.TXT
 
-pr:
-  branches:
-    include:
-    - master
-    - dev/infrastructure
-    - release/*.*
-  paths:
-    include:
-    - '*'
-    - docs/manpages/*
-    exclude:
-    - eng/Version.Details.xml
-    - .github/*
-    - docs/*
-    - CODE-OF-CONDUCT.md
-    - CONTRIBUTING.md
-    - LICENSE.TXT
-    - PATENTS.TXT
-    - README.md
-    - SECURITY.md
-    - THIRD-PARTY-NOTICES.TXT
+#pr:
+#  branches:
+#    include:
+#    - master
+#    - dev/infrastructure
+#    - release/*.*
+#  paths:
+#    include:
+#    - '*'
+#    - docs/manpages/*
+#    exclude:
+#    - eng/Version.Details.xml
+#    - .github/*
+#    - docs/*
+#    - CODE-OF-CONDUCT.md
+#    - CONTRIBUTING.md
+#    - LICENSE.TXT
+#    - PATENTS.TXT
+#    - README.md
+#    - SECURITY.md
+#    - THIRD-PARTY-NOTICES.TXT
 
 variables:
   - template: /eng/pipelines/common/variables.yml
