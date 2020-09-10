@@ -1,5 +1,6 @@
 <Project DefaultTargets="Build">
   <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
+  <Import Project="../tools/Sign.props" Sdk="Microsoft.DotNet.Arcade.Sdk" />
 
   <UsingTask TaskName="GenerateChecksums" AssemblyFile="$(InstallerTasksAssemblyPath)" />
 
