@@ -408,6 +408,9 @@ namespace System.Runtime.InteropServices.JavaScript
 
         private static object? ObjectToEnum(IntPtr methodHandle, int paramIdx, object obj)
         {
+            if (obj == null)
+                return null;
+
             IntPtrAndHandle tmp = default(IntPtrAndHandle);
             tmp.ptr = methodHandle;
 
