@@ -3,7 +3,6 @@
 
 using System.Diagnostics;
 using Microsoft.Win32.SafeHandles;
-using System.Runtime.Versioning;
 
 namespace System.Threading
 {
@@ -14,7 +13,6 @@ namespace System.Threading
     /// <summary>
     /// An object representing the registration of a <see cref="WaitHandle"/> via <see cref="ThreadPool.RegisterWaitForSingleObject"/>.
     /// </summary>
-    [UnsupportedOSPlatform("browser")]
     public sealed class RegisteredWaitHandle : MarshalByRefObject
     {
         internal RegisteredWaitHandle(WaitHandle waitHandle, _ThreadPoolWaitOrTimerCallback callbackHelper,

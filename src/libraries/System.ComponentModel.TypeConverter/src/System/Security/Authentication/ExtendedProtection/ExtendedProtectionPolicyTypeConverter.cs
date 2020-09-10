@@ -6,7 +6,6 @@ using System.ComponentModel;
 using System.ComponentModel.Design.Serialization;
 using System.Globalization;
 using System.Reflection;
-using System.Runtime.Versioning;
 
 namespace System.Security.Authentication.ExtendedProtection
 {
@@ -17,7 +16,6 @@ namespace System.Security.Authentication.ExtendedProtection
             return destinationType == typeof(InstanceDescriptor) || base.CanConvertTo(context, destinationType);
         }
 
-        [UnsupportedOSPlatform("browser")]
         public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
         {
             if (destinationType == typeof(InstanceDescriptor))

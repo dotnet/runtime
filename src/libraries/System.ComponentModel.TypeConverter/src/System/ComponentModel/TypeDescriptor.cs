@@ -8,7 +8,6 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
-using System.Runtime.Versioning;
 using System.Threading;
 
 namespace System.ComponentModel
@@ -429,7 +428,6 @@ namespace System.ComponentModel
         /// a TypeDescriptionProvider object that is associated with the given
         /// data type. If it finds one, it will delegate the call to that object.
         /// </summary>
-        [UnsupportedOSPlatform("browser")]
         public static object CreateInstance(IServiceProvider provider, Type objectType, Type[] argTypes, object[] args)
         {
             if (objectType == null)
