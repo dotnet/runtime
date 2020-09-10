@@ -372,7 +372,6 @@ MethodDesc* TailCallHelp::CreateStoreArgsStub(TailCallInfo& info)
     for (COUNT_T i = 0; i < info.ArgBufLayout.Values.GetCount(); i++)
     {
         const ArgBufferValue& arg = info.ArgBufLayout.Values[i];
-        CorElementType ty = arg.TyHnd.GetSignatureCorElementType();
 
         emitOffs(arg.Offset);
         pCode->EmitLDARG(i);
@@ -629,35 +628,63 @@ void TailCallHelp::CreateCallTargetStubSig(const TailCallInfo& info, SigBuilder*
 #endif // _DEBUG
 }
 
+// Get TypeHandle for ByReference<System.Byte>
+static TypeHandle GetByReferenceOfByteType()
+{
+    TypeHandle byteTH(CoreLibBinder::GetElementType(ELEMENT_TYPE_U1));
+    Instantiation byteInst(&byteTH, 1);
+    TypeHandle th = TypeHandle(CoreLibBinder::GetClass(CLASS__BYREFERENCE)).Instantiate(byteInst);
+    return th;
+}
+
+// Get MethodDesc* for ByReference<System.Byte>::get_Value
+static MethodDesc* GetByReferenceOfByteValueGetter()
+{
+    MethodDesc* getter = CoreLibBinder::GetMethod(METHOD__BYREFERENCE__GET_VALUE);
+    getter =
+        MethodDesc::FindOrCreateAssociatedMethodDesc(
+                getter,
+                GetByReferenceOfByteType().GetMethodTable(),
+                false,
+                Instantiation(),
+                TRUE);
+
+    return getter;
+}
+
+// Get MethodDesc* for ByReference<System.Byte>::.ctor
+static MethodDesc* GetByReferenceOfByteCtor()
+{
+    MethodDesc* ctor = CoreLibBinder::GetMethod(METHOD__BYREFERENCE__CTOR);
+    ctor =
+        MethodDesc::FindOrCreateAssociatedMethodDesc(
+                ctor,
+                GetByReferenceOfByteType().GetMethodTable(),
+                false,
+                Instantiation(),
+                TRUE);
+
+    return ctor;
+}
+
 void TailCallHelp::EmitLoadTyHnd(ILCodeStream* stream, TypeHandle tyHnd)
 {
-    CorElementType ty = tyHnd.GetSignatureCorElementType();
     if (tyHnd.IsByRef())
-    {
-        // Note: we can use an "untracked" ldind.i here even with byrefs because
-        // we are loading between two tracked positions.
-        stream->EmitLDIND_I();
-    }
+        stream->EmitCALL(stream->GetToken(GetByReferenceOfByteValueGetter()), 1, 1);
     else
-    {
-        int token = stream->GetToken(tyHnd);
-        stream->EmitLDOBJ(token);
-    }
+        stream->EmitLDOBJ(stream->GetToken(tyHnd));
 }
 
 void TailCallHelp::EmitStoreTyHnd(ILCodeStream* stream, TypeHandle tyHnd)
 {
-    CorElementType ty = tyHnd.GetSignatureCorElementType();
     if (tyHnd.IsByRef())
     {
-        // Note: we can use an "untracked" stind.i here even with byrefs because
-        // we are storing between two tracked positions.
-        stream->EmitSTIND_I();
+        stream->EmitNEWOBJ(stream->GetToken(GetByReferenceOfByteCtor()), 1);
+        stream->EmitSTOBJ(stream->GetToken(GetByReferenceOfByteType()));
     }
     else
     {
-        int token = stream->GetToken(tyHnd);
-        stream->EmitSTOBJ(token);
+        stream->EmitSTOBJ(stream->GetToken(tyHnd));
     }
 }
 

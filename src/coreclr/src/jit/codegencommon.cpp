@@ -2271,6 +2271,7 @@ void CodeGen::genEmitMachineCode()
     GetEmitter()->emitComputeCodeSizes();
 
 #ifdef DEBUG
+    unsigned instrCount;
 
     // Code to test or stress our ability to run a fallback compile.
     // We trigger the fallback here, before asking the VM for any memory,
@@ -2319,7 +2320,7 @@ void CodeGen::genEmitMachineCode()
 
     codeSize = GetEmitter()->emitEndCodeGen(compiler, trackedStackPtrsContig, GetInterruptible(),
                                             IsFullPtrRegMapRequired(), compiler->compHndBBtabCount, &prologSize,
-                                            &epilogSize, codePtr, &coldCodePtr, &consPtr);
+                                            &epilogSize, codePtr, &coldCodePtr, &consPtr DEBUGARG(&instrCount));
 
 #ifdef DEBUG
     assert(compiler->compCodeGenDone == false);
@@ -2339,8 +2340,9 @@ void CodeGen::genEmitMachineCode()
 #ifdef DEBUG
     if (compiler->opts.disAsm || verbose)
     {
-        printf("\n; Total bytes of code %d, prolog size %d, PerfScore %.2f, (MethodHash=%08x) for method %s\n",
-               codeSize, prologSize, compiler->info.compPerfScore, compiler->info.compMethodHash(),
+        printf("\n; Total bytes of code %d, prolog size %d, PerfScore %.2f, instruction count %d (MethodHash=%08x) for "
+               "method %s\n",
+               codeSize, prologSize, compiler->info.compPerfScore, instrCount, compiler->info.compMethodHash(),
                compiler->info.compFullName);
         printf("; ============================================================\n\n");
         printf(""); // in our logic this causes a flush

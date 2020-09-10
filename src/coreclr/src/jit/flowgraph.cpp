@@ -21623,6 +21623,10 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
                 chkFlags |= GTF_GLOB_REF | GTF_ASG;
                 break;
 
+            case GT_LCL_VAR:
+                assert((tree->gtFlags & GTF_VAR_FOLDED_IND) == 0);
+                break;
+
             default:
                 break;
         }
@@ -24896,7 +24900,7 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
                 GenTree* expr = stmt->GetRootNode();
                 if (expr->gtOper == GT_END_LFIN)
                 {
-                    const unsigned nestLevel = expr->AsVal()->gtVal1;
+                    const size_t nestLevel = expr->AsVal()->gtVal1;
                     assert(nestLevel > 0);
                     expr->AsVal()->gtVal1 = nestLevel - 1;
                 }

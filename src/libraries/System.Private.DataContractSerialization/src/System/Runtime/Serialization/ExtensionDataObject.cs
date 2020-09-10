@@ -23,7 +23,6 @@ namespace System.Runtime.Serialization
         }
     }
 
-
     internal class ExtensionDataMember
     {
         private IDataNode? _value;
@@ -113,13 +112,6 @@ namespace System.Runtime.Serialization
         {
             return _value;
         }
-
-#if NotUsed
-        public void SetValue(T value)
-        {
-            this.value = value;
-        }
-#endif
 
         public string? DataContractName
         {

@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Optimize>true</Optimize>
+    <CLRTestPriority>0</CLRTestPriority>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="BasicTestWithMcj.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="RunBasicTestWithMcj.cmd">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="RunBasicTestWithMcj.sh">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+  <PropertyGroup>
+    <CLRTestBatchPreCommands><![CDATA[
+$(CLRTestBatchPreCommands)
+mkdir r2r
+"%CORE_ROOT%\crossgen" -ReadyToRun -Platform_Assemblies_Paths "%CORE_ROOT%" -out r2r\$(MSBuildProjectName).dll $(MSBuildProjectName).dll
+set CLRCustomTestLauncher=RunBasicTestWithMcj.cmd --runCustomTest
+]]></CLRTestBatchPreCommands>
+    <BashCLRTestPreCommands><![CDATA[
+$(BashCLRTestPreCommands)
+mkdir r2r
+"$CORE_ROOT/crossgen" -ReadyToRun -Platform_Assemblies_Paths "$CORE_ROOT" -out r2r/$(MSBuildProjectName).dll $(MSBuildProjectName).dll
+chmod +x ./RunBasicTestWithMcj.sh
+export CLRCustomTestLauncher="./RunBasicTestWithMcj.sh --runCustomTest"
+]]></BashCLRTestPreCommands>
+  </PropertyGroup>
+</Project>

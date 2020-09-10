@@ -51,8 +51,9 @@ const file_entry_t*  runner_t::probe(const pal::string_t &relative_path) const
 {
     for (const file_entry_t& entry : m_manifest.files)
     {
-        if (pal::pathcmp(entry.relative_path(), relative_path) == 0)
+        if (entry.matches(relative_path))
         {
+            assert(!entry.is_disabled());
             return &entry;
         }
     }
@@ -69,11 +70,11 @@ bool runner_t::probe(const pal::string_t& relative_path, int64_t* offset, int64_
         return false;
     }
 
+    assert(!entry->is_disabled());
     assert(entry->offset() != 0);
 
     *offset = entry->offset();
     *size = entry->size();
-
 
     return true;
 }
@@ -88,11 +89,27 @@ bool runner_t::locate(const pal::string_t& relative_path, pal::string_t& full_pa
         return false;
     }
 
+    assert(!entry->is_disabled());
+
     extracted_to_disk = entry->needs_extraction();
     full_path.assign(extracted_to_disk ? extraction_path() : base_path());
 
     append_path(&full_path, relative_path.c_str());
 
     return true;
+}
+
+bool runner_t::disable(const pal::string_t& relative_path)
+{
+    for (file_entry_t& entry : m_manifest.files)
+    {
+        if (entry.matches(relative_path))
+        {
+            entry.disable();
+            return true;
+        }
+    }
+
+    return false;
 }
 

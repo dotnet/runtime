@@ -571,7 +571,7 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 		runtimes = get_runtimes_from_exe (exe_filename, &exe_image);
 #ifdef HOST_WIN32
 		if (!exe_image) {
-			exe_image = mono_assembly_open_from_bundle (mono_domain_default_alc (domain), exe_filename, NULL, FALSE);
+			exe_image = mono_assembly_open_from_bundle (mono_domain_default_alc (domain), exe_filename, NULL, FALSE, NULL);
 			if (!exe_image)
 				exe_image = mono_image_open (exe_filename, NULL);
 		}
@@ -1963,7 +1963,7 @@ get_runtimes_from_exe (const char *file, MonoImage **out_image)
 	}
 	
 	/* Look for a runtime with the exact version */
-	image = mono_assembly_open_from_bundle (mono_domain_default_alc (mono_domain_get ()), file, NULL, FALSE);
+	image = mono_assembly_open_from_bundle (mono_domain_default_alc (mono_domain_get ()), file, NULL, FALSE, NULL);
 
 	if (image == NULL)
 		image = mono_image_open (file, NULL);

@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-
+using System.Threading.Tasks;
 public partial class Math
 { //Only append content to this class as the test suite depends on line info
     public static int IntAdd(int a, int b)
@@ -285,7 +285,7 @@ public partial class Math
     public delegate void DelegateWithVoidReturn(GenericStruct<int[]> gs);
     public static void DelegateTargetWithVoidReturn(GenericStruct<int[]> gs) { }
 
-    delegate GenericStruct<bool[]> DelegateForSignatureTest(Math m, GenericStruct<GenericStruct<int[]>> gs);
+    public delegate GenericStruct<bool[]> DelegateForSignatureTest(Math m, GenericStruct<GenericStruct<int[]>> gs);
     static bool DelegateTargetForNestedFunc<T>(T arg) => true;
 
     public struct SimpleStruct
@@ -316,7 +316,7 @@ public partial class Math
             str_spaces,
             str_esc
         };
-        Console.WriteLine ($"break here");
+        Console.WriteLine($"break here");
     }
 
 }
@@ -339,4 +339,135 @@ public class DebuggerTest
     }
 
     static void locals_inner() { }
+
+    public static void BoxingTest()
+    {
+        int? n_i = 5;
+        object o_i = n_i.Value;
+        object o_n_i = n_i;
+
+        object o_s = "foobar";
+        object o_obj = new Math();
+        DebuggerTests.ValueTypesTest.GenericStruct<int>? n_gs = new DebuggerTests.ValueTypesTest.GenericStruct<int> { StringField = "n_gs#StringField" };
+        object o_gs = n_gs.Value;
+        object o_n_gs = n_gs;
+
+        DateTime? n_dt = new DateTime(2310, 1, 2, 3, 4, 5);
+        object o_dt = n_dt.Value;
+        object o_n_dt = n_dt;
+        object o_null = null;
+        object o_ia = new int[] {918, 58971};
+
+        Console.WriteLine ($"break here");
+    }
+
+    public static async Task BoxingTestAsync()
+    {
+        int? n_i = 5;
+        object o_i = n_i.Value;
+        object o_n_i = n_i;
+
+        object o_s = "foobar";
+        object o_obj = new Math();
+        DebuggerTests.ValueTypesTest.GenericStruct<int>? n_gs = new DebuggerTests.ValueTypesTest.GenericStruct<int> { StringField = "n_gs#StringField" };
+        object o_gs = n_gs.Value;
+        object o_n_gs = n_gs;
+
+        DateTime? n_dt = new DateTime(2310, 1, 2, 3, 4, 5);
+        object o_dt = n_dt.Value;
+        object o_n_dt = n_dt;
+        object o_null = null;
+        object o_ia = new int[] {918, 58971};
+
+        Console.WriteLine ($"break here");
+        await Task.CompletedTask;
+    }
+}
+
+public class MulticastDelegateTestClass
+{
+    event EventHandler<string> TestEvent;
+    MulticastDelegate Delegate;
+
+    public static void run()
+    {
+        var obj = new MulticastDelegateTestClass();
+        obj.Test();
+        obj.TestAsync().Wait();
+    }
+
+    public void Test()
+    {
+        TestEvent += (_, s) => Console.WriteLine(s);
+        TestEvent += (_, s) => Console.WriteLine(s + "qwe");
+        Delegate = TestEvent;
+
+        TestEvent?.Invoke(this, Delegate?.ToString());
+    }
+
+    public async Task TestAsync()
+    {
+        TestEvent += (_, s) => Console.WriteLine(s);
+        TestEvent += (_, s) => Console.WriteLine(s + "qwe");
+        Delegate = TestEvent;
+
+        TestEvent?.Invoke(this, Delegate?.ToString());
+        await Task.CompletedTask;
+    }
+}
+
+public class EmptyClass
+{
+    public static void StaticMethodWithNoLocals()
+    {
+        Console.WriteLine($"break here");
+    }
+
+    public static async Task StaticMethodWithNoLocalsAsync()
+    {
+        Console.WriteLine($"break here");
+        await Task.CompletedTask;
+    }
+
+    public static void run()
+    {
+        StaticMethodWithNoLocals();
+        StaticMethodWithNoLocalsAsync().Wait();
+    }
+}
+
+public struct EmptyStruct
+{
+    public static void StaticMethodWithNoLocals()
+    {
+        Console.WriteLine($"break here");
+    }
+
+    public static async Task StaticMethodWithNoLocalsAsync()
+    {
+        Console.WriteLine($"break here");
+        await Task.CompletedTask;
+    }
+
+    public static void StaticMethodWithLocalEmptyStruct()
+    {
+        var es = new EmptyStruct();
+        Console.WriteLine($"break here");
+    }
+
+    public static async Task StaticMethodWithLocalEmptyStructAsync()
+    {
+        var es = new EmptyStruct();
+        Console.WriteLine($"break here");
+        await Task.CompletedTask;
+    }
+
+    public static void run()
+    {
+        StaticMethodWithNoLocals();
+        StaticMethodWithNoLocalsAsync().Wait();
+
+        StaticMethodWithLocalEmptyStruct();
+        StaticMethodWithLocalEmptyStructAsync().Wait();
+    }
 }

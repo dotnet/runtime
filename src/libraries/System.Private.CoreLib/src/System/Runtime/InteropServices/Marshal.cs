@@ -28,7 +28,7 @@ namespace System.Runtime.InteropServices
         /// </summary>
         public static readonly int SystemMaxDBCSCharSize = GetSystemMaxDBCSCharSize();
 
-        public static IntPtr AllocHGlobal(int cb) => AllocHGlobal((IntPtr)cb);
+        public static IntPtr AllocHGlobal(int cb) => AllocHGlobal((nint)cb);
 
         public static unsafe string? PtrToStringAnsi(IntPtr ptr)
         {
@@ -964,6 +964,32 @@ namespace System.Runtime.InteropServices
             }
             Buffer.ZeroMemory((byte*)s, (nuint)string.wcslen((char*)s) * sizeof(char));
             FreeHGlobal(s);
+        }
+
+        public static unsafe IntPtr StringToBSTR(string? s)
+        {
+            if (s is null)
+            {
+                return IntPtr.Zero;
+            }
+
+            IntPtr bstr = AllocBSTR(s.Length);
+
+            fixed (char* firstChar = s)
+            {
+                string.wstrcpy((char*)bstr, firstChar, s.Length + 1);
+            }
+            return bstr;
+        }
+
+        public static string PtrToStringBSTR(IntPtr ptr)
+        {
+            if (ptr == IntPtr.Zero)
+            {
+                throw new ArgumentNullException(nameof(ptr));
+            }
+
+            return PtrToStringUni(ptr, (int)(SysStringByteLen(ptr) / sizeof(char)));
         }
 
         internal static unsafe uint SysStringByteLen(IntPtr s)

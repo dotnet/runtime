@@ -3222,16 +3222,6 @@ public:
     static UINT_PTR GetLastNormalStackAddress(UINT_PTR stackBase);
     UINT_PTR GetLastNormalStackAddress();
 
-    UINT_PTR GetLastAllowableStackAddress()
-    {
-        return m_LastAllowableStackAddress;
-    }
-
-    UINT_PTR GetProbeLimit()
-    {
-        return m_ProbeLimit;
-    }
-
     void ResetStackLimits()
     {
         CONTRACTL
@@ -3247,8 +3237,6 @@ public:
         }
         SetStackLimits(fAllowableOnly);
     }
-
-    BOOL IsSPBeyondLimit();
 
     INDEBUG(static void DebugLogStackMBIs());
 
@@ -3658,16 +3646,6 @@ private:
     void SetLastThrownObjectHandle(OBJECTHANDLE h);
 
     ThreadExceptionState  m_ExceptionState;
-
-    //-----------------------------------------------------------
-    // For stack probing.  These are the last allowable addresses that a thread
-    // can touch.  Going beyond is a stack overflow.  The ProbeLimit will be
-    // set based on whether SO probing is enabled.  The LastAllowableAddress
-    // will always represent the true stack limit.
-    //-----------------------------------------------------------
-    UINT_PTR             m_ProbeLimit;
-
-    UINT_PTR             m_LastAllowableStackAddress;
 
 private:
     //---------------------------------------------------------------

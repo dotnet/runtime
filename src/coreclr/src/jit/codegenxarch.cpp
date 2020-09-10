@@ -1770,7 +1770,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             // Have to clear the ShadowSP of the nesting level which encloses the finally. Generates:
             //     mov dword ptr [ebp-0xC], 0  // for some slot of the ShadowSP local var
 
-            unsigned finallyNesting;
+            size_t finallyNesting;
             finallyNesting = treeNode->AsVal()->gtVal1;
             noway_assert(treeNode->AsVal()->gtVal1 < compiler->compHndBBtabCount);
             noway_assert(finallyNesting < compiler->compHndBBtabCount);
@@ -1782,9 +1782,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             filterEndOffsetSlotOffs =
                 (unsigned)(compiler->lvaLclSize(compiler->lvaShadowSPslotsVar) - TARGET_POINTER_SIZE);
 
-            unsigned curNestingSlotOffs;
+            size_t curNestingSlotOffs;
             curNestingSlotOffs = filterEndOffsetSlotOffs - ((finallyNesting + 1) * TARGET_POINTER_SIZE);
-            GetEmitter()->emitIns_S_I(INS_mov, EA_PTRSIZE, compiler->lvaShadowSPslotsVar, curNestingSlotOffs, 0);
+            GetEmitter()->emitIns_S_I(INS_mov, EA_PTRSIZE, compiler->lvaShadowSPslotsVar, (unsigned)curNestingSlotOffs,
+                                      0);
             break;
 #endif // !FEATURE_EH_FUNCLETS
 
@@ -2107,13 +2108,13 @@ void CodeGen::genStackPointerConstantAdjustment(ssize_t spDelta, regNumber regTm
         // creating a way to temporarily turn off the emitter's tracking of ESP, maybe marking instrDescs as "don't
         // track".
         inst_RV_RV(INS_mov, regTmp, REG_SPBASE, TYP_I_IMPL);
-        inst_RV_IV(INS_sub, regTmp, -spDelta, EA_PTRSIZE);
+        inst_RV_IV(INS_sub, regTmp, (target_ssize_t)-spDelta, EA_PTRSIZE);
         inst_RV_RV(INS_mov, REG_SPBASE, regTmp, TYP_I_IMPL);
     }
     else
 #endif // TARGET_X86
     {
-        inst_RV_IV(INS_sub, REG_SPBASE, -spDelta, EA_PTRSIZE);
+        inst_RV_IV(INS_sub, REG_SPBASE, (target_ssize_t)-spDelta, EA_PTRSIZE);
     }
 }
 
@@ -4157,7 +4158,7 @@ void CodeGen::genCodeForShiftLong(GenTree* tree)
 
     assert(shiftBy->isContainedIntOrIImmed());
 
-    unsigned int count = shiftBy->AsIntConCommon()->IconValue();
+    unsigned int count = (unsigned int)shiftBy->AsIntConCommon()->IconValue();
 
     regNumber regResult = (oper == GT_LSH_HI) ? regHi : regLo;
 
@@ -5015,7 +5016,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
 #if defined(TARGET_X86) || defined(UNIX_AMD64_ABI)
     // The call will pop its arguments.
     // for each putarg_stk:
-    ssize_t stackArgBytes = 0;
+    target_ssize_t stackArgBytes = 0;
     for (GenTreeCall::Use& use : call->Args())
     {
         GenTree* arg = use.GetNode();
@@ -5161,7 +5162,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
     // adjust its stack level accordingly.
     // If the caller needs to explicitly pop its arguments, we must pass a negative value, and then do the
     // pop when we're done.
-    ssize_t argSizeForEmitter = stackArgBytes;
+    target_ssize_t argSizeForEmitter = stackArgBytes;
     if (fCallerPop)
     {
         argSizeForEmitter = -stackArgBytes;
@@ -8121,13 +8122,13 @@ void* CodeGen::genCreateAndStoreGCInfoJIT32(unsigned codeSize,
 
     if (0)
     {
-        BYTE*    temp = (BYTE*)infoPtr;
-        unsigned size = compiler->compInfoBlkAddr - temp;
-        BYTE*    ptab = temp + headerSize;
+        BYTE*  temp = (BYTE*)infoPtr;
+        size_t size = compiler->compInfoBlkAddr - temp;
+        BYTE*  ptab = temp + headerSize;
 
         noway_assert(size == headerSize + ptrMapSize);
 
-        printf("Method info block - header [%u bytes]:", headerSize);
+        printf("Method info block - header [%zu bytes]:", headerSize);
 
         for (unsigned i = 0; i < size; i++)
         {
@@ -8155,7 +8156,7 @@ void* CodeGen::genCreateAndStoreGCInfoJIT32(unsigned codeSize,
     if (compiler->opts.dspGCtbls)
     {
         const BYTE* base = (BYTE*)infoPtr;
-        unsigned    size;
+        size_t      size;
         unsigned    methodSize;
         InfoHdr     dumpHeader;
 

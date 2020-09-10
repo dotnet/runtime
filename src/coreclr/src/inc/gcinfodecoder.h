@@ -42,8 +42,6 @@ typedef ArrayDPTR(const uint8_t) PTR_CBYTE;
 
 #define VALIDATE_ROOT(isInterior, hCallBack, pObjRef)
 
-#define _ASSERTE(x) assert(x)
-
 #define UINT32 UInt32
 #define INT32 Int32
 #define UINT16 UInt16
@@ -55,6 +53,18 @@ typedef ArrayDPTR(const uint8_t) PTR_CBYTE;
 typedef void * OBJECTREF;
 
 #define GET_CALLER_SP(pREGDISPLAY) ((TADDR)0)
+
+struct GCInfoToken
+{
+    PTR_VOID Info;
+    UINT32 Version;
+
+    GCInfoToken(PTR_VOID info)
+    {
+        Info = info;
+        Version = 2;
+    }
+};
 
 #else // FEATURE_REDHAWK
 
