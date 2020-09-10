@@ -700,7 +700,7 @@ var BindingSupportLib = {
 			var uriPrefix = "", escapedFunctionIdentifier = "";
 
 			if (name) {
-				uriPrefix = "//# sourceURL=closure://" + name + "\r\n";
+				uriPrefix = "//# sourceURL=https://closure.invalid/" + name + "\r\n";
 				escapedFunctionIdentifier = name;
 			} else {
 				escapedFunctionIdentifier = "unnamed";
@@ -801,37 +801,66 @@ var BindingSupportLib = {
 			var indirectLocalOffset = 0;
 
 			body.push ("var buffer = Module._malloc (" + bufferSizeBytes + ");");
+			body.push ("var argc = args.length;");
 			body.push ("var indirectStart = buffer + " + indirectBaseOffset + ";");
-			body.push ("var bufferElements = (buffer / 4) | 0;");
-			body.push ("var obj;");
+			body.push ("var indirect32 = (indirectStart / 4) | 0, indirect64 = (indirectStart / 8) | 0;");
+			body.push ("var buffer32 = (buffer / 4) | 0;");
+			body.push ("var valueAddress = 0;");
+			body.push ("");
 
 			for (var i = 0; i < converter.steps.length; i++) {
 				var step = converter.steps[i];
 				var closureKey = "step" + i;
 				var argKey = "args[" + i + "]";
+				var valueKey = "value" + i;
+				var hasAssignedAddress = false;
 
-				body.push ("if (args.length <= " + i + ") return buffer;");
+				body.push ("if (argc <= " + i + ") return buffer;");
 
 				if (step.convert) {
 					closure[closureKey] = step.convert;
 					// body.push ("console.log('calling converter '" + step.key + ", " + closureKey + ", 'with value', obj);"); 
-					body.push ("obj = " + closureKey + "(" + argKey + ", method, " + i + ");");
-					// body.push ("console.log('converter result', obj);"); 
+					body.push ("var " + valueKey + " = " + closureKey + "(" + argKey + ", method, " + i + ");");
+					// body.push ("console.log('converter result', obj);");
 				} else {
-					body.push ("obj = " + argKey + ";");
+					body.push ("var " + valueKey + " = " + argKey + ";");
 				}
 
 				if (step.indirect) {
-					body.push ("Module.setValue (indirectStart + " + indirectLocalOffset + ", obj, '" + step.indirect + "');");
-					body.push ("obj = indirectStart + " + indirectLocalOffset + ";");
-					
+					hasAssignedAddress = true;
+
+					switch (step.indirect) {
+						case "u32":
+							body.push ("Module.HEAPU32[indirect32 + " + (indirectLocalOffset / 4) + "] = " + valueKey + ";");
+							break;
+						case "i32":
+							body.push ("Module.HEAP32[indirect32 + " + (indirectLocalOffset / 4) + "] = " + valueKey + ";");
+							break;
+						case "float":
+							body.push ("Module.HEAPF32[indirect32 + " + (indirectLocalOffset / 4) + "] = " + valueKey + ";");
+							break;
+						case "double":
+							body.push ("Module.HEAPF64[indirect64 + " + (indirectLocalOffset / 8) + "] = " + valueKey + ";");
+							break;
+						case "i64":
+							body.push ("Module.setValue (indirectStart + " + indirectLocalOffset + ", " + valueKey + ", 'i64');");					
+							break;
+						default:
+							throw new Error ("Unimplemented indirect type: " + step.indirect);
+					}
+
+					body.push ("valueAddress = indirectStart + " + indirectLocalOffset + ";");
 					indirectLocalOffset += step.size;
 				}
-				
-				if (step.needsRoot)
-					body.push ("rootBuffer.set (" + i + ", obj);");
 
-				body.push ("Module.HEAP32[bufferElements + " + i + "] = obj;");
+				if (!step.convert && !step.indirect)
+					body.push ("valueAddress = " + valueKey + " | 0;");
+
+				if (step.needsRoot)
+					body.push ("rootBuffer.set (" + i + ", valueAddress);");
+
+				body.push ("Module.HEAP32[buffer32 + " + i + "] = valueAddress;");
+				body.push ("");
 			}
 
 			body.push ("return buffer;");
