@@ -270,20 +270,28 @@ namespace Mono.Linker.Steps
 
 		internal void MarkEntireType (TypeDefinition type, bool includeBaseTypes, in DependencyInfo reason, IMemberDefinition sourceLocationMember)
 		{
+			MarkEntireTypeInternal (type, includeBaseTypes, reason, sourceLocationMember, new HashSet<TypeDefinition> ());
+		}
+
+		private void MarkEntireTypeInternal (TypeDefinition type, bool includeBaseTypes, in DependencyInfo reason, IMemberDefinition sourceLocationMember, HashSet<TypeDefinition> typesAlreadyVisited)
+		{
 #if DEBUG
 			if (!_entireTypeReasons.Contains (reason.Kind))
 				throw new ArgumentOutOfRangeException ($"Internal error: unsupported type dependency {reason.Kind}");
 #endif
 
+			if (!typesAlreadyVisited.Add (type))
+				return;
+
 			if (type.HasNestedTypes) {
 				foreach (TypeDefinition nested in type.NestedTypes)
-					MarkEntireType (nested, includeBaseTypes, new DependencyInfo (DependencyKind.NestedType, type), type);
+					MarkEntireTypeInternal (nested, includeBaseTypes, new DependencyInfo (DependencyKind.NestedType, type), type, typesAlreadyVisited);
 			}
 
 			Annotations.Mark (type, reason);
 			var baseTypeDefinition = type.BaseType?.Resolve ();
 			if (includeBaseTypes && baseTypeDefinition != null) {
-				MarkEntireType (baseTypeDefinition, includeBaseTypes: true, new DependencyInfo (DependencyKind.BaseType, type), type);
+				MarkEntireTypeInternal (baseTypeDefinition, includeBaseTypes: true, new DependencyInfo (DependencyKind.BaseType, type), type, typesAlreadyVisited);
 			}
 			MarkCustomAttributes (type, new DependencyInfo (DependencyKind.CustomAttribute, type), type);
 			MarkTypeSpecialCustomAttributes (type);
