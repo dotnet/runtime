@@ -36,7 +36,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        private static PublicKey GetTestEcDhKey()
+        private static PublicKey GetTestECDHKey()
         {
             using (X509Certificate2 cert = new X509Certificate2(TestData.EcDh256Certificate))
             {
@@ -85,7 +85,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Fact]
         public static void TestOid_ECDH()
         {
-            PublicKey pk = GetTestEcDhKey();
+            PublicKey pk = GetTestECDHKey();
             Assert.Equal("1.2.840.10045.2.1", pk.Oid.Value);
         }
 
@@ -123,6 +123,14 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         public static void TestPublicKey_Key_ECDSA()
         {
             PublicKey pk = GetTestECDsaKey();
+
+            Assert.Throws<NotSupportedException>(() => pk.Key);
+        }
+
+        [Fact]
+        public static void TestPublicKey_Key_ECDH()
+        {
+            PublicKey pk = GetTestECDHKey();
 
             Assert.Throws<NotSupportedException>(() => pk.Key);
         }
@@ -203,6 +211,20 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        public static void TestEncodedKeyValue_ECDH()
+        {
+            // Uncompressed key (04), then the X coord, then the Y coord.
+            string expectedPublicKeyHex =
+                "04" +
+                "4337F39C7AB746015018DE0E23F94A802EAE96ADE89858CFE482E813CD2BDF40" +
+                "A1AC886F2C1D6135C7DEC49EC1EE892D1F8F96E75CAFF8420D2EFED269629E78";
+
+            PublicKey pk = GetTestECDHKey();
+
+            Assert.Equal(expectedPublicKeyHex, pk.EncodedKeyValue.RawData.ByteArrayToHex());
+        }
+
+        [Fact]
         public static void TestEncodedParameters_RSA()
         {
             PublicKey pk = GetTestRsaKey();
@@ -238,6 +260,16 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             string expectedParametersHex = "06082A8648CE3D030107";
 
             PublicKey pk = GetTestECDsaKey();
+            Assert.Equal(expectedParametersHex, pk.EncodedParameters.RawData.ByteArrayToHex());
+        }
+
+        [Fact]
+        public static void TestEncodedParameters_ECDH()
+        {
+            // OID: 1.2.840.10045.3.1.7
+            string expectedParametersHex = "06082A8648CE3D030107";
+
+            PublicKey pk = GetTestECDHKey();
             Assert.Equal(expectedParametersHex, pk.EncodedParameters.RawData.ByteArrayToHex());
         }
 
@@ -362,6 +394,23 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                 // The public key should be unable to sign.
                 Assert.ThrowsAny<CryptographicException>(() => publicKey.SignData(helloBytes, HashAlgorithmName.SHA256));
+            }
+        }
+
+        [Fact]
+        public static void TestECDHPublicKey()
+        {
+            byte[] helloBytes = Encoding.ASCII.GetBytes("Hello");
+
+            using (var cert = new X509Certificate2(TestData.EcDh256Certificate))
+            using (ECDiffieHellman publicKey = cert.GetECDiffieHellmanPublicKey())
+            using (ECDiffieHellman otherParty = ECDiffieHellman.Create())
+            {
+                Assert.Equal(256, publicKey.KeySize);
+
+                // The public key should be unable to export private parameters.
+                publicKey.DeriveKeyFromHash(otherParty.PublicKey, HashAlgorithmName.SHA256);
+                Assert.ThrowsAny<CryptographicException>(() => publicKey.DeriveKeyFromHash(otherParty.PublicKey, HashAlgorithmName.SHA256));
             }
         }
 
