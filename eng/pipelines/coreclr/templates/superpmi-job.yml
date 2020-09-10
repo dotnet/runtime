@@ -1,0 +1,83 @@
+parameters:
+  buildConfig: ''
+  archType: ''
+  osGroup: ''
+  osSubgroup: ''
+  container: ''
+  runtimeVariant: ''
+  framework: net5.0 # Specify the appropriate framework when running release branches (ie netcoreapp3.0 for release/3.0)
+  liveLibrariesBuildConfig: ''
+  variables: {}
+  runtimeType: 'coreclr'
+  pool: ''
+  codeGenType: 'JIT'
+  projetFile: ''
+  runKind: ''
+  runJobTemplate: '/eng/pipelines/coreclr/templates/run-superpmi-job.yml'
+  additionalSetupParameters: ''
+
+### SuperPMI job
+
+### Each superpmi job depends on a corresponding build job with the same
+### buildConfig and archType.
+
+jobs:
+- template: ${{ parameters.runJobTemplate }}
+  parameters:
+    # Compute job name from template parameters
+    jobName: ${{ format('superpmibuild_{0}{1}_{2}_{3}_{4}_{5}_{6}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.runtimeType, parameters.codeGenType, parameters.runKind) }}
+    displayName: ${{ format('SuperPMI {0}{1} {2} {3} {4} {5} {6}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.runtimeType, parameters.codeGenType, parameters.runKind) }}
+    pool: ${{ parameters.pool }}
+    buildConfig: ${{ parameters.buildConfig }}
+    archType: ${{ parameters.archType }}
+    osGroup: ${{ parameters.osGroup }}
+    osSubgroup: ${{ parameters.osSubgroup }}
+    runtimeVariant: ${{ parameters.runtimeVariant }}
+    liveLibrariesBuildConfig: ${{ parameters.liveLibrariesBuildConfig }}
+    runtimeType: ${{ parameters.runtimeType }}
+    codeGenType: ${{ parameters.codeGenType }}
+    projectFile: ${{ parameters.projectFile }}
+    runKind: ${{ parameters.runKind }}
+    additionalSetupParameters: ${{ parameters.additionalSetupParameters }}
+    # Test job depends on the corresponding build job
+    dependsOn:
+    - ${{ format('coreclr_{0}_product_build_{1}{2}_{3}_{4}', parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+    - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
+      - ${{ format('libraries_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveLibrariesBuildConfig) }}
+
+    ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+      ${{ if eq(parameters.runtimeType, 'coreclr') }}:
+        extraSetupParameters: -CoreRootDirectory $(Build.SourcesDirectory)\artifacts\tests\coreclr\${{ parameters.osGroup }}.${{ parameters.archType }}.Release\Tests\Core_Root -Architecture ${{ parameters.archType }}
+    ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+      ${{ if eq(parameters.runtimeType, 'coreclr') }}:
+        extraSetupParameters: --corerootdirectory $(Build.SourcesDirectory)/artifacts/tests/coreclr/${{ parameters.osGroup }}.${{ parameters.archType }}.Release/Tests/Core_Root --architecture ${{ parameters.archType }}
+    
+    variables: ${{ parameters.variables }}
+
+    frameworks:
+      - ${{ parameters.framework }}
+    steps:
+    # Extra steps that will be passed to the superpmi template and run before sending the job to helix (all of which is done in the template)
+
+    # Optionally download live-built libraries
+    - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
+      - template: /eng/pipelines/common/download-artifact-step.yml
+        parameters:
+          unpackFolder: $(librariesDownloadDir)
+          cleanUnpackFolder: false
+          artifactFileName: '$(librariesBuildArtifactName)$(archiveExtension)'
+          artifactName: '$(librariesBuildArtifactName)'
+          displayName: 'live-built libraries'
+
+    # Download coreclr
+    - template: /eng/pipelines/common/download-artifact-step.yml
+      parameters:
+        unpackFolder: $(buildProductRootFolderPath)
+        artifactFileName: '$(buildProductArtifactName)$(archiveExtension)'
+        artifactName: '$(buildProductArtifactName)'
+        displayName: 'Coreclr product build'
+
+    # Create Core_Root
+    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(buildConfig) $(archType) generatelayoutonly $(librariesOverrideArg)
+      displayName: Create Core_Root
+      condition: and(succeeded(), ne(variables.runtimeFlavorName, 'Mono'))
