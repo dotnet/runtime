@@ -35,7 +35,9 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             [EnumExport("red")]
             RedLowerCase,
             [EnumExport("#ff0000")]
-            RedHex
+            RedHex,
+            [EnumExport]
+            RedWithJustExport
         }
 
         [Fact]
@@ -82,7 +84,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 App.call_test_method  (""SetColorEnumsProperties"", [ color ]);
                 //let str = JSON.stringify(color, null, 4);
                 //console.log(str);
-                App.call_test_method  (""SetStyleColorEnums"", [ color.Red, color.GreenNumeric, color.RedUpperCase, color.RedLowerCase, color.RedHex, color.RedNoExport ]);
+                App.call_test_method  (""SetStyleColorEnums"", [ color.Red, color.GreenNumeric, color.RedUpperCase, color.RedLowerCase, color.RedHex, color.RedNoExport, color.RedWithJustExport ]);
             ");
             Assert.Equal(StyleColor.Red, HelperMarshal.styleColorEnums[0]);
             Assert.Equal(StyleColor.GreenNumeric, HelperMarshal.styleColorEnums[1]);
@@ -90,6 +92,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal(StyleColor.RedLowerCase, HelperMarshal.styleColorEnums[3]);
             Assert.Equal(StyleColor.RedHex, HelperMarshal.styleColorEnums[4]);
             Assert.Equal(StyleColor.RedNoExport, HelperMarshal.styleColorEnums[5]);
+            Assert.Equal(StyleColor.RedWithJustExport, HelperMarshal.styleColorEnums[6]);
         }
     }
 }

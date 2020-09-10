@@ -482,7 +482,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
             if (attributes.Length > 0)
             {
-                return attributes[0].ContractName!;
+                return attributes[0].ContractName ?? fi.Name;
             }
             else
             {
