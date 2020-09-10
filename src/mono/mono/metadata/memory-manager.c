@@ -94,8 +94,6 @@ memory_manager_delete (MonoMemoryManager *memory_manager, gboolean debug_unload)
 		mono_code_manager_destroy (memory_manager->code_mp);
 		memory_manager->code_mp = NULL;
 	}
-
-	g_free (memory_manager);
 }
 
 void
