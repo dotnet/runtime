@@ -37,13 +37,3 @@ It helps in tracking issues effectively.
 | October  | @jkoritzinsky |
 | November  | @aik-jahoda  |
 | December  | @akoeplinger   |
-
-
-## Pass Rate
-
-| Build | Pass %  | 
-|-------|-----------|
-| Internal | 63.64  |
-| Public  | 24.77 |
-
-Last Updated Date:- 9 September, 2020
