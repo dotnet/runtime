@@ -585,4 +585,7 @@
   <data name="net_http_requested_version_server_refused" xml:space="preserve">
     <value>Requesting HTTP version {0} with version policy {1} while server offers only version fallback.</value>
   </data>
+  <data name="net_http_sync_operations_not_allowed_with_connect_callback" xml:space="preserve">
+    <value>Synchronous operation is not supported when a ConnectCallback is specified on the SocketsHttpHandler instance.</value>
+  </data>
 </root>
