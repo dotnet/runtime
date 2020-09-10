@@ -19,8 +19,8 @@ Contact @Chrisboh if you don't have the calendar invite for the CI Council meeti
 
 ## Ongoing Issues
 
-All the issues causing the builds to fail should be marked with `blocking-clean-ci` label. Any issues causing build breaks in the official build should be marked with
-`blocking-clean-official`.
+All the issues causing the builds to fail should be marked with [`blocking-clean-ci`](https://github.com/dotnet/runtime/issues?q=is%3Aissue+is%3Aopen+label%3Ablocking-clean-ci) label. 
+Any issues causing build breaks in the official build should be marked with [`blocking-clean-official`](https://github.com/dotnet/runtime/issues?q=is%3Aissue+is%3Aopen+label%3Ablocking-clean-official).
 It helps in tracking issues effectively. 
 
 ## Some helpful resources
