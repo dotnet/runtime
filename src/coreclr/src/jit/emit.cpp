@@ -4470,7 +4470,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
                                  unsigned* epilogSize,
                                  void**    codeAddr,
                                  void**    coldCodeAddr,
-                                 void**    consAddr)
+                                 void** consAddr DEBUGARG(unsigned* instrCount))
 {
 #ifdef DEBUG
     if (emitComp->verbose)
@@ -4874,6 +4874,9 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
 
 #define DEFAULT_CODE_BUFFER_INIT 0xcc
 
+#ifdef DEBUG
+    *instrCount = 0;
+#endif
     for (insGroup* ig = emitIGlist; ig != nullptr; ig = ig->igNext)
     {
         assert(!(ig->igFlags & IGF_PLACEHOLDER)); // There better not be any placeholder groups left
@@ -5014,6 +5017,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
         {
             printf("\t\t\t\t\t\t;; bbWeight=%s PerfScore %.2f", refCntWtd2str(ig->igWeight), ig->igPerfScore);
         }
+        *instrCount += ig->igInsCnt;
 #endif // DEBUG
 
         emitCurIG = nullptr;
