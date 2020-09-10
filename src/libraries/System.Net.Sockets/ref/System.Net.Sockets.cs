@@ -688,7 +688,7 @@ namespace System.Net.Sockets
         protected virtual void Dispose(bool disposing) { }
         public void DropMulticastGroup(System.Net.IPAddress multicastAddr) { }
         public void DropMulticastGroup(System.Net.IPAddress multicastAddr, int ifindex) { }
-        public byte[] EndReceive(System.IAsyncResult asyncResult, ref System.Net.IPEndPoint remoteEP) { throw null; }
+        public byte[] EndReceive(System.IAsyncResult asyncResult, ref System.Net.IPEndPoint? remoteEP) { throw null; }
         public int EndSend(System.IAsyncResult asyncResult) { throw null; }
         public void JoinMulticastGroup(int ifindex, System.Net.IPAddress multicastAddr) { }
         public void JoinMulticastGroup(System.Net.IPAddress multicastAddr) { }
