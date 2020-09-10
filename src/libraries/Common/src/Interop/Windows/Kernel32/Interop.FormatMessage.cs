@@ -6,6 +6,7 @@ using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
+    // only used by WinHttpException.cs (Windows only) in .NET Core.
     internal static partial class Kernel32
     {
         private const int FORMAT_MESSAGE_IGNORE_INSERTS = 0x00000200;
@@ -24,12 +25,6 @@ internal static partial class Interop
             void* lpBuffer,
             int nSize,
             IntPtr arguments);
-
-        /// <summary>
-        ///     Returns a string message for the specified Win32 error code.
-        /// </summary>
-        internal static string GetMessage(int errorCode) =>
-            GetMessage(errorCode, IntPtr.Zero);
 
         internal static unsafe string GetMessage(int errorCode, IntPtr moduleHandle)
         {

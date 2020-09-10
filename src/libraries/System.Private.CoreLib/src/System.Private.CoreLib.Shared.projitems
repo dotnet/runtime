@@ -1683,8 +1683,8 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FreeEnvironmentStrings.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.FreeEnvironmentStrings.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FormatMessage.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.FormatMessage.cs</Link>
+    <Compile Include="$(CommonPath)Internal\Win32Error.cs">
+      <Link>Common\Internal\Win32Error.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.Mutex.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.Mutex.cs</Link>

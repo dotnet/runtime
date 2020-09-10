@@ -11,7 +11,7 @@ namespace Internal.Cryptography
     {
         public static CryptographicException ToCryptographicException(this int hr)
         {
-            string message = Interop.Kernel32.GetMessage(hr);
+            string message = Win32Error.GetMessage(hr);
 
             if ((hr & 0x80000000) != 0x80000000)
                 hr = (hr & 0x0000FFFF) | unchecked((int)0x80070000);

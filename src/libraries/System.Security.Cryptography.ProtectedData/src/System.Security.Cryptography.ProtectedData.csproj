@@ -25,8 +25,8 @@
              Link="Common\Interop\Windows\Interop.Errors.cs" />
     <Compile Include="$(CommonPath)Internal\Cryptography\Windows\CryptoThrowHelper.cs"
              Link="Internal\Cryptography\Windows\CryptoThrowHelper.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FormatMessage.cs"
-             Link="Internal\Windows\kernel32\Interop.FormatMessage.cs" />
+    <Compile Include="$(CommonPath)Internal\Win32Error.cs"
+             Link="Internal\Win32Error.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
              Link="Common\Interop\Windows\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)System\HResults.cs"

@@ -14,6 +14,8 @@
              Link="Interop\Windows\Kernel32\Interop.MAX_PATH.cs" />
   </ItemGroup>
   <ItemGroup Condition="$(TargetFramework.StartsWith('netstandard')) and '$(TargetsWindows)' == 'true'">
+    <Compile Include="$(CommonPath)Internal\Win32Error.cs"
+             Link="Internal\Win32Error.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Errors.cs"
              Link="Common\Interop\Windows\Interop.Errors.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOL.cs"
@@ -24,8 +26,6 @@
              Link="Interop\Windows\Kernel32\Interop.EventWaitHandle.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.Constants.cs"
              Link="Interop\Windows\Kernel32\Interop.Constants.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FormatMessage.cs"
-             Link="Interop\Windows\Kernel32\Interop.FormatMessage.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.Mutex.cs"
              Link="Interop\Windows\Kernel32\Interop.Mutex.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SECURITY_ATTRIBUTES.cs"

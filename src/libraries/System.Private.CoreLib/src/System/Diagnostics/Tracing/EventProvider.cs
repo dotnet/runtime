@@ -147,7 +147,7 @@ namespace System.Diagnostics.Tracing
             if (status != 0)
             {
 #if TARGET_WINDOWS && !ES_BUILD_STANDALONE
-                throw new ArgumentException(Interop.Kernel32.GetMessage(unchecked((int)status)));
+                throw new ArgumentException(Win32Error.GetMessage(unchecked((int)status)));
 #else
                 throw new ArgumentException(Convert.ToString(unchecked((int)status)));
 #endif

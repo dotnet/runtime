@@ -126,7 +126,7 @@ namespace System.Diagnostics
                 throw new UnauthorizedAccessException(SR.Format(SR.UnauthorizedAccess_RegistryKeyGeneric_Key, name));
             }
 
-            throw new IOException(Interop.Kernel32.GetMessage(errorCode), errorCode);
+            throw new IOException(global::Win32Error.GetMessage(errorCode), errorCode);
         }
 
     }

@@ -95,6 +95,6 @@ namespace System.IO
         /// <summary>
         /// Returns a string message for the specified Win32 error code.
         /// </summary>
-        internal static string GetMessage(int errorCode) => Interop.Kernel32.GetMessage(errorCode);
+        internal static string GetMessage(int errorCode) => Win32Error.GetMessage(errorCode);
     }
 }

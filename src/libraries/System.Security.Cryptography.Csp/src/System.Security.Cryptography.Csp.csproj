@@ -66,6 +66,8 @@
              Link="Internal\Cryptography\UniversalCryptoDecryptor.cs" />
     <Compile Include="$(CommonPath)Internal\Cryptography\Windows\CryptoThrowHelper.cs"
              Link="Internal\Cryptography\Windows\CryptoThrowHelper.cs" />
+    <Compile Include="$(CommonPath)Internal\Win32Error.cs"
+             Link="Common\Internal\Win32Error.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.CryptAcquireContext.cs"
              Link="Common\Interop\Windows\Advapi32\Interop.CryptAcquireContext.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.CryptCreateHash.cs"
@@ -112,8 +114,6 @@
              Link="Common\Interop\Windows\Advapi32\SafeProvHandle.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.FindOidInfo.cs"
              Link="Common\Interop\Windows\Crypt32\Interop.FindOidInfo.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FormatMessage.cs"
-             Link="Common\Interop\Windows\kernel32\Interop.FormatMessage.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
              Link="Common\Interop\Windows\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeHandleCache.cs"

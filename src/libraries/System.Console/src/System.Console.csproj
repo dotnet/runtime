@@ -61,6 +61,8 @@
              Link="Common\System\Text\OSEncoder.cs" />
     <Compile Include="$(CommonPath)System\Text\DBCSDecoder.cs"
              Link="Common\System\Text\DBCSDecoder.cs" />
+    <Compile Include="$(CommonPath)Internal\Win32Error.cs"
+             Link="Common\Internal\Win32Error.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetCPInfoEx.cs"
              Link="Common\Interop\Windows\Interop.GetCPInfoEx.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.MAX_PATH.cs"
@@ -71,8 +73,6 @@
              Link="Common\Interop\Windows\Interop.BOOL.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.Beep.cs"
              Link="Common\Interop\Windows\Interop.Beep.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FormatMessage.cs"
-             Link="Common\Interop\Windows\Interop.FormatMessage.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.ConsoleCursorInfo.cs"
              Link="Common\Interop\Windows\Interop.ConsoleCursorInfo.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.ConsoleScreenBufferInfo.cs"

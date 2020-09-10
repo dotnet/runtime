@@ -346,7 +346,7 @@ namespace Microsoft.Win32
                 else
                 {
                     Win32Error(ret, null);
-                    throw new IOException(Interop.Kernel32.GetMessage(ret), ret);
+                    throw new IOException(global::Win32Error.GetMessage(ret), ret);
                 }
             }
         }
@@ -944,7 +944,7 @@ namespace Microsoft.Win32
                     throw new IOException(SR.Arg_RegKeyNotFound, errorCode);
 
                 default:
-                    throw new IOException(Interop.Kernel32.GetMessage(errorCode), errorCode);
+                    throw new IOException(global::Win32Error.GetMessage(errorCode), errorCode);
             }
         }
 
@@ -955,7 +955,7 @@ namespace Microsoft.Win32
                        new UnauthorizedAccessException(SR.Format(SR.UnauthorizedAccess_RegistryKeyGeneric_Key, str)) :
                        new UnauthorizedAccessException(),
 
-                _ => new IOException(Interop.Kernel32.GetMessage(errorCode), errorCode),
+                _ => new IOException(global::Win32Error.GetMessage(errorCode), errorCode),
             };
 
         private static int GetRegistryKeyAccess(bool isWritable)

@@ -162,6 +162,8 @@
   </ItemGroup>
   <!-- Interop types (platform: Windows) -->
   <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(IsPartialFacadeAssembly)' != 'true'">
+    <Compile Include="$(CommonPath)Internal\Win32Error.cs"
+             Link="Common\Internal\Win32Error.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.CryptAcquireContext.cs"
              Link="Common\Interop\Windows\Advapi32\Interop.CryptAcquireContext.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.CryptDestroyHash.cs"
@@ -290,8 +292,6 @@
              Link="Common\Interop\Windows\Crypt32\Interop.MsgControlType.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.MsgEncodingType.cs"
              Link="Common\Interop\Windows\Crypt32\Interop.MsgEncodingType.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FormatMessage.cs"
-             Link="Common\Interop\Windows\kernel32\Interop.FormatMessage.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.Heap.cs"
              Link="Common\Interop\Windows\kernel32\Interop.Heap.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\NCrypt\Interop.ErrorCode.cs"

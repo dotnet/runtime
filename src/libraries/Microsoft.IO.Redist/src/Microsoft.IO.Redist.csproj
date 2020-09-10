@@ -56,6 +56,8 @@
              Link="Microsoft\IO\SearchOption.cs" />
     <Compile Include="..\..\System.IO.FileSystem\src\System\IO\SearchTarget.cs"
              Link="Microsoft\IO\SearchTarget.cs" />
+    <Compile Include="$(CommonPath)Internal\Win32Error.cs"
+             Link="Internal\Win32Error.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptGenRandom.cs"
              Link="Interop\Windows\BCrypt\Interop.BCryptGenRandom.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptGenRandom.GetRandomBytes.cs"
@@ -78,8 +80,6 @@
              Link="Interop\Windows\Interop.FindClose.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FindFirstFileEx.cs"
              Link="Interop\Windows\Interop.FindFirstFileEx.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FormatMessage.cs"
-             Link="Interop\Windows\Interop.FormatMessage.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GenericOperations.cs"
              Link="Interop\Windows\Interop.GenericOperations.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GET_FILEEX_INFO_LEVELS.cs"

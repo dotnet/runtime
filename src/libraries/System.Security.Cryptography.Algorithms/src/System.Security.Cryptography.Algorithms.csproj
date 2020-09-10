@@ -385,8 +385,8 @@
              Link="Internal\Cryptography\Windows\CryptoThrowHelper.cs" />
     <Compile Include="$(CommonPath)Internal\Cryptography\Windows\ErrorCodeHelper.cs"
              Link="Internal\Cryptography\Windows\ErrorCodeHelper.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FormatMessage.cs"
-             Link="Internal\Windows\kernel32\Interop.FormatMessage.cs" />
+    <Compile Include="$(CommonPath)Internal\Win32Error.cs"
+             Link="Internal\Win32Error.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CngPkcs8.cs"
              Link="Common\System\Security\Cryptography\CngPkcs8.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\DSACng.cs"

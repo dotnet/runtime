@@ -470,7 +470,11 @@ namespace Internal.Win32
                     throw new IOException(SR.Arg_RegKeyNotFound, errorCode);
 
                 default:
+#if NET46
                     throw new IOException(Interop.Kernel32.GetMessage(errorCode), errorCode);
+#else
+                    throw new IOException(global::Win32Error.GetMessage(errorCode), errorCode);
+#endif
             }
         }
     }

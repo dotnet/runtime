@@ -71,7 +71,7 @@ namespace Internal.Cryptography.Pal
                 Win32Flag = win32Flag;
                 Win32ErrorCode = win32ErrorCode;
                 ChainStatusFlag = chainStatusFlag;
-                Message = Interop.Kernel32.GetMessage(win32ErrorCode);
+                Message = Win32Error.GetMessage(win32ErrorCode);
             }
         }
 
