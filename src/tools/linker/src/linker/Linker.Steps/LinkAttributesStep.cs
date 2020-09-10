@@ -12,7 +12,7 @@ using Mono.Cecil;
 
 namespace Mono.Linker.Steps
 {
-	class LinkAttributesStep : ProcessLinkerXmlStepBase
+	public class LinkAttributesStep : ProcessLinkerXmlStepBase
 	{
 		public LinkAttributesStep (XPathDocument document, string xmlDocumentLocation)
 			: base (document, xmlDocumentLocation)
