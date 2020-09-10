@@ -41,6 +41,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			RequireNonPublicEvents (typeof (NonPublicEventsType));
 			RequireAllEvents (typeof (AllEventsType));
 			RequireAll (typeof (AllType));
+			RequireAll (typeof (RequireAllWithRecursiveTypeReferences));
 		}
 
 
@@ -1845,6 +1846,53 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[Kept]
 			[KeptMember (".ctor()")]
 			public class HideNestedType { }
+		}
+
+		[Kept]
+		class RequireAllWithRecursiveTypeReferences
+		{
+			[Kept]
+			RequireAllWithRecursiveTypeReferences ()
+			{
+			}
+
+			[Kept]
+			class NestedType
+			{
+				[Kept]
+				NestedType ()
+				{
+				}
+
+				[Kept]
+				RequireAllWithRecursiveTypeReferences parent;
+			}
+
+			[Kept]
+			[KeptMember (".ctor()")]
+			[KeptBaseType (typeof (RequireAllWithRecursiveTypeReferences))]
+			class NestedTypeWithRecursiveBase : RequireAllWithRecursiveTypeReferences
+			{
+			}
+
+			[Kept]
+			[KeptInterface (typeof (IEquatable<RequireAllWithRecursiveTypeReferences>))]
+			[KeptMember (".ctor()")]
+			class NestedTypeWithRecursiveGenericInterface : IEquatable<RequireAllWithRecursiveTypeReferences>
+			{
+				[Kept]
+				public bool Equals (RequireAllWithRecursiveTypeReferences other)
+				{
+					throw new NotImplementedException ();
+				}
+			}
+
+			[Kept]
+			[KeptMember (".ctor()")]
+			[KeptBaseType (typeof (List<RequireAllWithRecursiveTypeReferences>))]
+			class NestedTypeWithRecursiveGenericBaseClass : List<RequireAllWithRecursiveTypeReferences>
+			{
+			}
 		}
 	}
 }
