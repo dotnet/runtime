@@ -381,7 +381,7 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             if (o is Enum oAsAnEnum)
             {
-                return EnumToExportContract(oAsAnEnum)?.ToString() ?? string.Empty;
+                return EnumToExportContract(oAsAnEnum);
             }
 
             return o.ToString() ?? string.Empty;
@@ -427,7 +427,7 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             System.Diagnostics.Debug.Assert(enumType.IsEnum, $"Type provided for parameter `{nameof(enumType)}` must be an Enum. Instead the following type was found: {enumType}.");
 
-            if (value is string)
+            if (value is string vs)
             {
                 FieldInfo[] fields = enumType.GetFields();
                 foreach (FieldInfo fi in fields)
@@ -441,22 +441,22 @@ namespace System.Runtime.InteropServices.JavaScript
 
                     object? contractName = null;
 
-                    if (attributes?.Length > 0)
+                    if (attributes.Length > 0)
                     {
                         contractName = attributes[0].ContractName;
                     }
                     else
                     {
-                        if (Enum.TryParse(enumType, value!.ToString() ?? string.Empty, out object? enumAsNumeric))
+                        if (Enum.TryParse(enumType, vs, out object? e))
                         {
-                            if (enumAsNumeric is Enum valueAsEnum)
+                            if (e is Enum valueAsEnum)
                                 return (Enum)valueAsEnum;
                         }
                     }
 
                     contractName = contractName ?? fi.Name;
 
-                    if (contractName!.ToString() == value.ToString())
+                    if (contractName!.ToString() == vs.ToString())
                     {
                         return (Enum)Enum.Parse(enumType, fi.Name);
                     }
@@ -480,18 +480,14 @@ namespace System.Runtime.InteropServices.JavaScript
             EnumExportAttribute[] attributes =
                 (EnumExportAttribute[])fi.GetCustomAttributes(typeof(EnumExportAttribute), false);
 
-            object? contractName = value;
-
-            if (attributes?.Length > 0)
+            if (attributes.Length > 0)
             {
-                contractName = attributes[0].ContractName;
+                return attributes[0].ContractName!;
             }
             else
             {
-                contractName = Convert.ToDouble(Enum.Parse(value!.GetType(), contractName!.ToString() ?? string.Empty)).ToString();
+                return value!.ToString();
             }
-
-            return contractName?.ToString() ?? string.Empty;
         }
 
         private static Uri CreateUri(string uri)
