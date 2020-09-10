@@ -77,6 +77,7 @@ namespace System.Net
         // request, it resets the timer to give the connection another interval.
         //
         // Use TimeSpan.Zero to indiate that system defaults should be used.
+        [UnsupportedOSPlatform("browser")]
         public TimeSpan EntityBody
         {
             get
@@ -115,6 +116,7 @@ namespace System.Net
         // it up.  The default timer is 2 minutes.
         //
         // Use TimeSpan.Zero to indiate that system defaults should be used.
+        [UnsupportedOSPlatform("browser")]
         public TimeSpan RequestQueue
         {
             get
@@ -151,6 +153,7 @@ namespace System.Net
         // This timeout is only enforced after the first request on the connection is routed to the application.
         //
         // Use TimeSpan.Zero to indiate that system defaults should be used.
+        [UnsupportedOSPlatform("browser")]
         public TimeSpan HeaderWait
         {
             get
@@ -168,6 +171,7 @@ namespace System.Net
         // bytes-per-second.
         //
         // To disable this timer set it to UInt32.MaxValue
+        [UnsupportedOSPlatform("browser")]
         public long MinSendBytesPerSecond
         {
             get
