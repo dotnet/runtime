@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System;
 using System.Diagnostics;
 
@@ -193,7 +192,6 @@ namespace System.Xml
 
             char* pChar = pChars;
             byte* pByte = pBytes;
-            XmlCharType xmlCharType = XmlCharType.Instance;
             while (pChar < pCharsEndPos && pByte < pBytesEndPos)
             {
                 byte halfByte;
@@ -204,7 +202,7 @@ namespace System.Xml
                 {
                     halfByte = (byte)val;
                 }
-                else if (xmlCharType.IsWhiteSpace(ch))
+                else if (XmlCharType.IsWhiteSpace(ch))
                 {
                     continue;
                 }

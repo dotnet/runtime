@@ -12,7 +12,7 @@ namespace System.Xml.Serialization
     /// </devdoc>
     public interface IXmlSerializable
     {
-        XmlSchema GetSchema();
+        XmlSchema? GetSchema();
         void ReadXml(XmlReader reader);
         void WriteXml(XmlWriter writer);
     }

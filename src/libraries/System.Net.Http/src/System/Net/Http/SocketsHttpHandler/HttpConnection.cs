@@ -10,7 +10,6 @@ using System.IO;
 using System.Net.Http.Headers;
 using System.Net.Security;
 using System.Net.Sockets;
-using System.Net.Connections;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
@@ -46,7 +45,6 @@ namespace System.Net.Http
         private readonly HttpConnectionPool _pool;
         private readonly Socket? _socket; // used for polling; _stream should be used for all reading/writing. _stream owns disposal.
         private readonly Stream _stream;
-        private readonly Connection _connection;
         private readonly TransportContext? _transportContext;
         private readonly WeakReference<HttpConnection> _weakThisRef;
 
@@ -73,16 +71,19 @@ namespace System.Net.Http
 
         public HttpConnection(
             HttpConnectionPool pool,
-            Connection connection,
+            Stream stream,
             TransportContext? transportContext)
         {
             Debug.Assert(pool != null);
-            Debug.Assert(connection != null);
+            Debug.Assert(stream != null);
 
             _pool = pool;
-            connection.ConnectionProperties.TryGet(out _socket); // may be null in cases where we couldn't easily get the underlying socket
-            _stream = connection.Stream;
-            _connection = connection;
+            _stream = stream;
+            if (stream is NetworkStream networkStream)
+            {
+                _socket = networkStream.Socket;
+            }
+
             _transportContext = transportContext;
 
             _writeBuffer = new byte[InitialWriteBufferSize];
@@ -120,12 +121,10 @@ namespace System.Net.Http
 
                 _pool.DecrementConnectionCount();
 
-                if (HttpTelemetry.Log.IsEnabled()) _currentRequest?.OnAborted();
-
                 if (disposing)
                 {
                     GC.SuppressFinalize(this);
-                    _connection.Dispose();
+                    _stream.Dispose();
 
                     // Eat any exceptions from the read-ahead task.  We don't need to log, as we expect
                     // failures from this task due to closing the connection while a read is in progress.
@@ -366,6 +365,8 @@ namespace System.Net.Http
             CancellationTokenRegistration cancellationRegistration = RegisterCancellation(cancellationToken);
             try
             {
+                if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestHeadersStart();
+
                 Debug.Assert(request.RequestUri != null);
                 // Write request line
                 await WriteStringAsync(normalizedMethod.Method, async).ConfigureAwait(false);
@@ -459,6 +460,8 @@ namespace System.Net.Http
                 // CRLF for end of headers.
                 await WriteTwoBytesAsync((byte)'\r', (byte)'\n', async).ConfigureAwait(false);
 
+                if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestHeadersStop();
+
                 if (request.Content == null)
                 {
                     // We have nothing more to send, so flush out any headers we haven't yet sent.
@@ -537,7 +540,7 @@ namespace System.Net.Http
                 var response = new HttpResponseMessage() { RequestMessage = request, Content = new HttpConnectionResponseContent() };
                 ParseStatusLine(await ReadNextResponseHeaderLineAsync(async).ConfigureAwait(false), response);
 
-                if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.ResponseHeadersBegin();
+                if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.ResponseHeadersStart();
 
                 // Multiple 1xx responses handling.
                 // RFC 7231: A client MUST be able to parse one or more 1xx responses received prior to a final response,
@@ -585,6 +588,8 @@ namespace System.Net.Http
                     }
                     ParseHeaderNameValue(this, line, response);
                 }
+
+                if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.ResponseHeadersStop();
 
                 if (allowExpect100ToContinue != null)
                 {
@@ -728,14 +733,22 @@ namespace System.Net.Http
                     // We're awaiting the task to propagate the exception in this case.
                     if (Volatile.Read(ref _disposed) == Status_Disposed)
                     {
-                        if (async)
+                        try
                         {
-                            await sendRequestContentTask.ConfigureAwait(false);
+                            if (async)
+                            {
+                                await sendRequestContentTask.ConfigureAwait(false);
+                            }
+                            else
+                            {
+                                // No way around it here if we want to get the exception from the task.
+                                sendRequestContentTask.GetAwaiter().GetResult();
+                            }
                         }
-                        else
+                        // Map the exception the same way as we normally do.
+                        catch (Exception ex) when (MapSendException(ex, cancellationToken, out Exception mappedEx))
                         {
-                            // No way around it here if we want to get the exception from the task.
-                            sendRequestContentTask.GetAwaiter().GetResult();
+                            throw mappedEx;
                         }
                     }
                     LogExceptions(sendRequestContentTask);
@@ -746,41 +759,51 @@ namespace System.Net.Http
 
                 // At this point, we're going to throw an exception; we just need to
                 // determine which exception to throw.
-
-                if (CancellationHelper.ShouldWrapInOperationCanceledException(error, cancellationToken))
+                if (MapSendException(error, cancellationToken, out Exception mappedException))
                 {
-                    // Cancellation was requested, so assume that the failure is due to
-                    // the cancellation request. This is a bit unorthodox, as usually we'd
-                    // prioritize a non-OperationCanceledException over a cancellation
-                    // request to avoid losing potentially pertinent information.  But given
-                    // the cancellation design where we tear down the underlying connection upon
-                    // a cancellation request, which can then result in a myriad of different
-                    // exceptions (argument exceptions, object disposed exceptions, socket exceptions,
-                    // etc.), as a middle ground we treat it as cancellation, but still propagate the
-                    // original information as the inner exception, for diagnostic purposes.
-                    throw CancellationHelper.CreateOperationCanceledException(error, cancellationToken);
+                    throw mappedException;
                 }
-                else if (error is InvalidOperationException)
-                {
-                    // For consistency with other handlers we wrap the exception in an HttpRequestException.
-                    throw new HttpRequestException(SR.net_http_client_execution_error, error);
-                }
-                else if (error is IOException ioe)
-                {
-                    // For consistency with other handlers we wrap the exception in an HttpRequestException.
-                    // If the request is retryable, indicate that on the exception.
-                    throw new HttpRequestException(SR.net_http_client_execution_error, ioe, _canRetry ? RequestRetryType.RetryOnSameOrNextProxy : RequestRetryType.NoRetry);
-                }
-                else
-                {
-                    // Otherwise, just allow the original exception to propagate.
-                    throw;
-                }
+                // Otherwise, just allow the original exception to propagate.
+                throw;
             }
         }
 
         public sealed override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken) =>
             SendAsyncCore(request, async, cancellationToken);
+
+        private bool MapSendException(Exception exception, CancellationToken cancellationToken, out Exception mappedException)
+        {
+            if (CancellationHelper.ShouldWrapInOperationCanceledException(exception, cancellationToken))
+            {
+                // Cancellation was requested, so assume that the failure is due to
+                // the cancellation request. This is a bit unorthodox, as usually we'd
+                // prioritize a non-OperationCanceledException over a cancellation
+                // request to avoid losing potentially pertinent information.  But given
+                // the cancellation design where we tear down the underlying connection upon
+                // a cancellation request, which can then result in a myriad of different
+                // exceptions (argument exceptions, object disposed exceptions, socket exceptions,
+                // etc.), as a middle ground we treat it as cancellation, but still propagate the
+                // original information as the inner exception, for diagnostic purposes.
+                mappedException = CancellationHelper.CreateOperationCanceledException(exception, cancellationToken);
+                return true;
+            }
+            if (exception is InvalidOperationException)
+            {
+                // For consistency with other handlers we wrap the exception in an HttpRequestException.
+                mappedException = new HttpRequestException(SR.net_http_client_execution_error, exception);
+                return true;
+            }
+            if (exception is IOException ioe)
+            {
+                // For consistency with other handlers we wrap the exception in an HttpRequestException.
+                // If the request is retryable, indicate that on the exception.
+                mappedException = new HttpRequestException(SR.net_http_client_execution_error, ioe, _canRetry ? RequestRetryType.RetryOnSameOrNextProxy : RequestRetryType.NoRetry);
+                return true;
+            }
+            // Otherwise, just allow the original exception to propagate.
+            mappedException = exception;
+            return false;
+        }
 
         private HttpContentWriteStream CreateRequestContentStream(HttpRequestMessage request)
         {
@@ -819,6 +842,9 @@ namespace System.Net.Http
             // Now that we're sending content, prohibit retries on this connection.
             _canRetry = false;
 
+            Debug.Assert(stream.BytesWritten == 0);
+            if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestContentStart();
+
             // Copy all of the data to the server.
             if (async)
             {
@@ -834,6 +860,8 @@ namespace System.Net.Http
 
             // Flush any content that might still be buffered.
             await FlushAsync(async).ConfigureAwait(false);
+
+            if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestContentStop(stream.BytesWritten);
 
             if (NetEventSource.Log.IsEnabled()) Trace("Finished sending request content.");
         }
@@ -1871,8 +1899,6 @@ namespace System.Net.Http
         {
             Debug.Assert(_currentRequest != null, "Expected the connection to be associated with a request.");
             Debug.Assert(_writeOffset == 0, "Everything in write buffer should have been flushed.");
-
-            if (HttpTelemetry.Log.IsEnabled()) _currentRequest.OnStopped();
 
             // Disassociate the connection from a request.
             _currentRequest = null;

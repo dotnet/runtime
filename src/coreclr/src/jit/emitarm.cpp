@@ -6111,7 +6111,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             if (!id->idIsReloc())
             {
                 assert(sizeof(size_t) == sizeof(target_size_t));
-                imm = (target_size_t)addr;
+                imm = (target_size_t)(size_t)addr;
                 if (ins == INS_movw)
                 {
                     imm &= 0xffff;

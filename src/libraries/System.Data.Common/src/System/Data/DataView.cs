@@ -5,6 +5,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -414,6 +415,7 @@ namespace System.Data
         /// <summary>
         /// Gets or sets the sort column or columns, and sort order for the table.
         /// </summary>
+        [AllowNull]
         [DefaultValue("")]
         public string Sort
         {
@@ -722,11 +724,11 @@ namespace System.Data
         /// <summary>
         /// Finds a row in the <see cref='System.Data.DataView'/> by the specified primary key value.
         /// </summary>
-        public int Find(object key) => FindByKey(key);
+        public int Find(object? key) => FindByKey(key);
 
         /// <summary>Find index of a DataRowView instance that matches the specified primary key value.</summary>
         // TODO: This will throw NRE if _index isn't set (e.g. default ctor)
-        internal virtual int FindByKey(object key) => _index!.FindRecordByKey(key);
+        internal virtual int FindByKey(object? key) => _index!.FindRecordByKey(key);
 
         /// <summary>
         /// Finds a row in the <see cref='System.Data.DataView'/> by the specified primary key values.

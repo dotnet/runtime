@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 namespace System.Xml.Xsl.XsltOld
 {
     using System;
@@ -83,7 +82,7 @@ namespace System.Xml.Xsl.XsltOld
         {
             BuilderInfo info = new BuilderInfo();
             info.Initialize(this);
-            Debug.Assert(info.NodeType != XmlNodeType.Text || XmlCharType.Instance.IsOnlyWhitespace(info.Value));
+            Debug.Assert(info.NodeType != XmlNodeType.Text || XmlCharType.IsOnlyWhitespace(info.Value));
             return info;
         }
 

@@ -26,6 +26,13 @@
 typedef struct _MonoLoadedImages MonoLoadedImages;
 typedef struct _MonoAssemblyLoadContext MonoAssemblyLoadContext;
 
+struct _MonoBundledSatelliteAssembly {
+	const char *name;
+	const char *culture;
+	const unsigned char *data;
+	unsigned int size;
+};
+
 #ifndef DISABLE_DLLMAP
 typedef struct _MonoDllMap MonoDllMap;
 struct _MonoDllMap {
@@ -90,10 +97,10 @@ void
 mono_set_pinvoke_search_directories (int dir_count, char **dirs);
 
 void
-mono_alc_init (MonoAssemblyLoadContext *alc, MonoDomain *domain, gboolean collectible);
+mono_alc_create_default (MonoDomain *domain);
 
-void
-mono_alc_cleanup (MonoAssemblyLoadContext *alc);
+MonoAssemblyLoadContext *
+mono_alc_create_individual (MonoDomain *domain, MonoGCHandle this_gchandle, gboolean collectible, MonoError *error);
 
 void
 mono_alc_assemblies_lock (MonoAssemblyLoadContext *alc);
@@ -115,7 +122,6 @@ mono_alc_invoke_resolve_using_resolve_satellite_nofail (MonoAssemblyLoadContext 
 
 MonoAssemblyLoadContext *
 mono_alc_from_gchandle (MonoGCHandle alc_gchandle);
-
 #endif /* ENABLE_NETCORE */
 
 static inline MonoDomain *

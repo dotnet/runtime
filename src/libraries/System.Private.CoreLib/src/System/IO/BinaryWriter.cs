@@ -304,14 +304,25 @@ namespace System.IO
         // Writes a float to this stream. The current position of the stream is
         // advanced by four.
         //
-        public virtual unsafe void Write(float value)
+        public virtual void Write(float value)
         {
-            uint TmpValue = *(uint*)&value;
-            _buffer[0] = (byte)TmpValue;
-            _buffer[1] = (byte)(TmpValue >> 8);
-            _buffer[2] = (byte)(TmpValue >> 16);
-            _buffer[3] = (byte)(TmpValue >> 24);
+            uint tmpValue = (uint)BitConverter.SingleToInt32Bits(value);
+            _buffer[0] = (byte)tmpValue;
+            _buffer[1] = (byte)(tmpValue >> 8);
+            _buffer[2] = (byte)(tmpValue >> 16);
+            _buffer[3] = (byte)(tmpValue >> 24);
             OutStream.Write(_buffer, 0, 4);
+        }
+
+        // Writes a half to this stream. The current position of the stream is
+        // advanced by two.
+        //
+        public virtual void Write(Half value)
+        {
+            ushort tmpValue = (ushort)BitConverter.HalfToInt16Bits(value);
+            _buffer[0] = (byte)tmpValue;
+            _buffer[1] = (byte)(tmpValue >> 8);
+            OutStream.Write(_buffer, 0, 2);
         }
 
         // Writes a length-prefixed string to this stream in the BinaryWriter's

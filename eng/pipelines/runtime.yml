@@ -17,6 +17,8 @@ trigger:
     - eng/Version.Details.xml
     - .github/*
     - docs/*
+    - ISSUE_TEMPLATE/*
+    - PULL_REQUEST_TEMPLATE/*
     - CODE-OF-CONDUCT.md
     - CONTRIBUTING.md
     - LICENSE.TXT
@@ -39,6 +41,8 @@ pr:
     - eng/Version.Details.xml
     - .github/*
     - docs/*
+    - ISSUE_TEMPLATE/*
+    - PULL_REQUEST_TEMPLATE/*
     - CODE-OF-CONDUCT.md
     - CONTRIBUTING.md
     - LICENSE.TXT
@@ -111,8 +115,6 @@ jobs:
       include:
       - src/tests/*
       - src/coreclr/tests/*
-      - src/coreclr/build-test.cmd
-      - src/coreclr/build-test.sh
     - subset: installer
       include:
       - docs/manpages/*
@@ -302,7 +304,7 @@ jobs:
           eq(variables['isFullMatrix'], true))
 
 #
-# Build the whole product using Mono and run tests
+# Build the whole product using Mono and run libraries tests
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:

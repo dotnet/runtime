@@ -76,11 +76,6 @@ static Keywords keywords[] = {
 /********************************************************************************/
 /* File encoding-dependent functions */
 /*--------------------------------------------------------------------------*/
-char* nextcharA(__in __nullterminated char* pos)
-{
-    return (*pos > 0) ? ++pos : (char *)_mbsinc((const unsigned char *)pos);
-}
-
 char* nextcharU(__in __nullterminated char* pos)
 {
     return ++pos;
@@ -929,14 +924,6 @@ Its_An_Id:
                                     tok = parse_literal(curSym, curPos, FALSE);
                                     if(tok == QSTRING)
                                     {
-                                        // if not ANSI, then string is in UTF-8,
-                                        // insert prefix
-                                        if(nextchar != nextcharA)
-                                        {
-                                            yylval.binstr->insertInt8(0xEF);
-                                            yylval.binstr->insertInt8(0xBB);
-                                            yylval.binstr->insertInt8(0xBF);
-                                        }
                                         yylval.binstr->appendInt8(' ');
                                         DefineVar(newstr, yylval.binstr);
                                     }
@@ -1488,12 +1475,6 @@ AsmParse::~AsmParse()
 }
 
 /**************************************************************************/
-DWORD AsmParse::IsItUnicode(CONST LPVOID pBuff, int cb, LPINT lpi)
-{
-    return IsTextUnicode(pBuff,cb,lpi);
-}
-
-/**************************************************************************/
 void AsmParse::CreateEnvironment(ReadStream* stream)
 {
     penv = new PARSING_ENVIRONMENT;
@@ -1520,19 +1501,21 @@ void AsmParse::ParseFile(ReadStream* stream)
 char* AsmParse::fillBuff(__in_opt __nullterminated char* pos)
 {
     int iPutToBuffer;
-    int iOptions = IS_TEXT_UNICODE_UNICODE_MASK;
-    g_uCodePage = CP_ACP;
+    g_uCodePage = CP_UTF8;
     iPutToBuffer = (int)penv->in->getAll(&(penv->curPos));
 
     penv->endPos = penv->curPos + iPutToBuffer;
     if(iPutToBuffer > 128) iPutToBuffer = 128;
-    if(IsItUnicode(penv->curPos,iPutToBuffer,&iOptions))
+    if(iPutToBuffer >= 4 && (penv->curPos[0] & 0xFF) == 0xFF && (penv->curPos[1] & 0xFF) == 0xFE)
     {
-        g_uCodePage = CP_UTF8;
-        if(iOptions & IS_TEXT_UNICODE_SIGNATURE)
+        // U+FFFE followed by U+0000 is UTF-32 LE, any other value than 0 is a true UTF-16 LE
+        if((penv->curPos[2] & 0xFF) == 0x00 && (penv->curPos[3] & 0xFF) == 0x00)
         {
-            penv->curPos += 2;
+            error("UTF-32 LE is not supported\n\n");
+            return NULL;
         }
+
+        penv->curPos += 2; // skip signature
         if(assem->m_fReportProgress) printf("Source file is UNICODE\n\n");
         penv->pfn_Sym = SymW;
         penv->pfn_nextchar = nextcharW;
@@ -1542,18 +1525,13 @@ char* AsmParse::fillBuff(__in_opt __nullterminated char* pos)
     }
     else
     {
-        if(((penv->curPos[0]&0xFF)==0xEF)&&((penv->curPos[1]&0xFF)==0xBB)&&((penv->curPos[2]&0xFF)==0xBF))
+        if((penv->curPos[0] & 0xFF) == 0xEF && (penv->curPos[1] & 0xFF) == 0xBB && (penv->curPos[2] & 0xFF) == 0xBF)
         {
-            g_uCodePage = CP_UTF8;
             penv->curPos += 3;
-            if(assem->m_fReportProgress) printf("Source file is UTF-8\n\n");
-            penv->pfn_nextchar = nextcharU;
         }
-        else
-        {
-            if(assem->m_fReportProgress) printf("Source file is ANSI\n\n");
-            penv->pfn_nextchar = nextcharA;
-        }
+
+        if(assem->m_fReportProgress) printf("Source file is UTF-8\n\n");
+        penv->pfn_nextchar = nextcharU;
         penv->pfn_Sym = SymAU;
         penv->pfn_NewStrFromToken = NewStrFromTokenAU;
         penv->pfn_NewStaticStrFromToken = NewStaticStrFromTokenAU;

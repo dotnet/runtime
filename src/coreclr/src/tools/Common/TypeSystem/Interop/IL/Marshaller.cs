@@ -1084,7 +1084,7 @@ namespace Internal.TypeSystem.Interop
             codeStream.Emit(ILOpcode.brfalse, lNullArray);
 
             // allocate memory
-            // nativeParameter = (byte**)CoTaskMemAllocAndZeroMemory((IntPtr)(checked(managedParameter.Length * sizeof(byte*))));
+            // nativeParameter = AllocCoTaskMem(checked(managedParameter.Length * sizeof(NativeElementType)));
 
             // loads the number of elements
             EmitElementCount(codeStream, MarshalDirection.Forward);

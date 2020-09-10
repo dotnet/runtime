@@ -1189,7 +1189,7 @@ namespace System.Data
 
         private static XmlElement? FindSimpleType(XmlElement schema, string name)
         {
-            for (XmlNode n = schema.FirstChild; n != null; n = n.NextSibling)
+            for (XmlNode? n = schema.FirstChild; n != null; n = n.NextSibling)
             {
                 if (n is XmlElement)
                 {
@@ -1558,7 +1558,7 @@ namespace System.Data
             if (node == null)
                 return null;
 
-            for (XmlNode n = node.FirstChild; n != null; n = n.NextSibling)
+            for (XmlNode? n = node.FirstChild; n != null; n = n.NextSibling)
             {
                 if (!(n is XmlElement))
                     continue;
@@ -3134,12 +3134,12 @@ namespace System.Data
             _xmltextWriter.WriteEndDocument();
         }
 
-        public override void WriteDocType(string name, string pubid, string sysid, string subset)
+        public override void WriteDocType(string name, string? pubid, string? sysid, string? subset)
         {
             _xmltextWriter.WriteDocType(name, pubid, sysid, subset);
         }
 
-        public override void WriteStartElement(string prefix, string localName, string ns)
+        public override void WriteStartElement(string? prefix, string localName, string? ns)
         {
             _xmltextWriter.WriteStartElement(prefix, localName, ns);
         }
@@ -3154,7 +3154,7 @@ namespace System.Data
             _xmltextWriter.WriteFullEndElement();
         }
 
-        public override void WriteStartAttribute(string prefix, string localName, string ns)
+        public override void WriteStartAttribute(string? prefix, string localName, string? ns)
         {
             _xmltextWriter.WriteStartAttribute(prefix, localName, ns);
         }
@@ -3164,17 +3164,17 @@ namespace System.Data
             _xmltextWriter.WriteEndAttribute();
         }
 
-        public override void WriteCData(string text)
+        public override void WriteCData(string? text)
         {
             _xmltextWriter.WriteCData(text);
         }
 
-        public override void WriteComment(string text)
+        public override void WriteComment(string? text)
         {
             _xmltextWriter.WriteComment(text);
         }
 
-        public override void WriteProcessingInstruction(string name, string text)
+        public override void WriteProcessingInstruction(string name, string? text)
         {
             _xmltextWriter.WriteProcessingInstruction(name, text);
         }
@@ -3189,12 +3189,12 @@ namespace System.Data
             _xmltextWriter.WriteCharEntity(ch);
         }
 
-        public override void WriteWhitespace(string ws)
+        public override void WriteWhitespace(string? ws)
         {
             _xmltextWriter.WriteWhitespace(ws);
         }
 
-        public override void WriteString(string text)
+        public override void WriteString(string? text)
         {
             _xmltextWriter.WriteString(text);
         }
@@ -3252,12 +3252,12 @@ namespace System.Data
             _xmltextWriter.WriteName(name);
         }
 
-        public override void WriteQualifiedName(string localName, string ns)
+        public override void WriteQualifiedName(string localName, string? ns)
         {
             _xmltextWriter.WriteQualifiedName(localName, ns);
         }
 
-        public override string LookupPrefix(string ns)
+        public override string? LookupPrefix(string ns)
         {
             return _xmltextWriter.LookupPrefix(ns);
         }
@@ -3270,7 +3270,7 @@ namespace System.Data
             }
         }
 
-        public override string XmlLang
+        public override string? XmlLang
         {
             get
             {
@@ -3300,7 +3300,7 @@ namespace System.Data
             _xmlreader = input;
         }
 
-        public override XmlReaderSettings Settings
+        public override XmlReaderSettings? Settings
         {
             get
             {
@@ -3360,7 +3360,7 @@ namespace System.Data
             get { return _xmlreader.Depth; }
         }
 
-        public override string BaseURI
+        public override string? BaseURI
         {
             get { return _xmlreader.BaseURI; }
         }
@@ -3392,12 +3392,12 @@ namespace System.Data
 
         public override int AttributeCount { get { return _xmlreader.AttributeCount; } }
 
-        public override string GetAttribute(string name)
+        public override string? GetAttribute(string name)
         {
             return _xmlreader.GetAttribute(name);
         }
 
-        public override string GetAttribute(string localName, string namespaceURI)
+        public override string? GetAttribute(string localName, string? namespaceURI)
         {
             return _xmlreader.GetAttribute(localName, namespaceURI);
         }
@@ -3412,7 +3412,7 @@ namespace System.Data
             return _xmlreader.MoveToAttribute(name);
         }
 
-        public override bool MoveToAttribute(string localName, string namespaceURI)
+        public override bool MoveToAttribute(string localName, string? namespaceURI)
         {
             return _xmlreader.MoveToAttribute(localName, namespaceURI);
         }
@@ -3472,7 +3472,7 @@ namespace System.Data
             get { return _xmlreader.NameTable; }
         }
 
-        public override string LookupNamespace(string prefix)
+        public override string? LookupNamespace(string prefix)
         {
             return _xmlreader.LookupNamespace(prefix);
         }

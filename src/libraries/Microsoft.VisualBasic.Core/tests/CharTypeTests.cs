@@ -26,31 +26,10 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
         }
 
         [Theory]
-        [MemberData(nameof(FromObject_Overflow_TestData))]
-        public void FromObject_ThrowsOverflowException(object value)
-        {
-            Assert.Throws<OverflowException>(() => CharType.FromObject(value));
-        }
-
-        [Theory]
         [MemberData(nameof(FromString_TestData))]
         public void FromString(string value, char expected)
         {
             Assert.Equal(expected, CharType.FromString(value));
-        }
-
-        [Theory]
-        [MemberData(nameof(FromString_Invalid_TestData))]
-        public void FromString_ThrowsInvalidCastException(string value)
-        {
-            Assert.Throws<InvalidCastException>(() => CharType.FromString(value));
-        }
-
-        [Theory]
-        [MemberData(nameof(FromString_Overflow_TestData))]
-        public void FromString_ThrowsOverflowException(string value)
-        {
-            Assert.Throws<OverflowException>(() => CharType.FromString(value));
         }
 
         public static IEnumerable<object[]> FromObject_TestData()
@@ -159,11 +138,6 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             yield return new object[] { new object() };
         }
 
-        public static IEnumerable<object[]> FromObject_Overflow_TestData()
-        {
-            yield break;
-        }
-
         public static IEnumerable<object[]> FromString_TestData()
         {
             yield return new object[] { null, char.MinValue };
@@ -185,16 +159,6 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             yield return new object[] { "invalid", 'i' };
             yield return new object[] { "18446744073709551616", '1' };
             yield return new object[] { "1844674407370955161618446744073709551616", '1' };
-        }
-
-        public static IEnumerable<object[]> FromString_Invalid_TestData()
-        {
-            yield break;
-        }
-
-        public static IEnumerable<object[]> FromString_Overflow_TestData()
-        {
-            yield break;
         }
     }
 }

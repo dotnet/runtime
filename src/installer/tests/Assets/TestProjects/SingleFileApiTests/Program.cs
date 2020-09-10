@@ -31,6 +31,11 @@ namespace SingleFileApiTests
                         return;
                     }
                     break;
+
+                case "appcontext":
+                    var deps_files = AppContext.GetData("APP_CONTEXT_DEPS_FILES");
+                    Console.WriteLine("APP_CONTEXT_DEPS_FILES: " + deps_files);
+                    return;
             }
 
             Console.WriteLine("test failure");

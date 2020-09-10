@@ -5851,7 +5851,7 @@ namespace System.Data
 
                                 if (!fSchemaFound && Columns.Count == 0)
                                 {
-                                    XmlNode node = xdoc.ReadNode(reader);
+                                    XmlNode node = xdoc.ReadNode(reader)!;
                                     topNode.AppendChild(node);
                                 }
                                 else
@@ -5966,7 +5966,7 @@ namespace System.Data
                     if (mode == XmlReadMode.Fragment)
                     {
                         xdoc.AppendChild(xdoc.CreateElement("ds_sqlXmlWraPPeR"));
-                        topNode = xdoc.DocumentElement;
+                        topNode = xdoc.DocumentElement!;
                     }
                     else
                     {
@@ -6147,7 +6147,7 @@ namespace System.Data
                         if (mode == XmlReadMode.InferSchema)
                         {
                             //save the node in DOM until the end;
-                            XmlNode node = xdoc.ReadNode(reader);
+                            XmlNode node = xdoc.ReadNode(reader)!;
                             topNode.AppendChild(node);
                         }
                         else
@@ -6347,7 +6347,7 @@ namespace System.Data
             XmlSchemaSet sSet = new XmlSchemaSet();
             while (reader.LocalName == Keywords.XSD_SCHEMA && reader.NamespaceURI == Keywords.XSDNS)
             {
-                XmlSchema s = XmlSchema.Read(reader, null);
+                XmlSchema s = XmlSchema.Read(reader, null)!;
                 sSet.Add(s);
                 //read the end tag
                 ReadEndElement(reader);

@@ -67,13 +67,6 @@ using namespace CorUnix;
 /* get the full name of a module if available, and the short name otherwise*/
 #define MODNAME(x) ((x)->lib_name)
 
-/* Which path should FindLibrary search? */
-#if defined(__APPLE__)
-#define LIBSEARCHPATH "DYLD_LIBRARY_PATH"
-#else
-#define LIBSEARCHPATH "LD_LIBRARY_PATH"
-#endif
-
 #define LIBC_NAME_WITHOUT_EXTENSION "libc"
 
 /* static variables ***********************************************************/

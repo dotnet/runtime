@@ -200,6 +200,15 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void IsAscii_Char()
+        {
+            Assert.True(char.IsAscii(char.MinValue));
+            Assert.True(char.IsAscii('\x007f'));
+            Assert.False(char.IsAscii('\x0080'));
+            Assert.False(char.IsAscii(char.MaxValue));
+        }
+
+        [Fact]
         public static void IsControl_Char()
         {
             foreach (char c in GetTestChars(UnicodeCategory.Control))
