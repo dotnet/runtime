@@ -33,7 +33,7 @@ namespace System.Diagnostics.Tests
 
             // Don't test this on Windows containers, as the test is currently failing
             // cf. https://github.com/dotnet/runtime/issues/42000
-            if (!OperatingSystem.IsWindows() || IsRunningInWindowsContainer())
+            if (!OperatingSystem.IsWindows() || PlatformDetection.IsInContainer)
             {
                 RunWithExpectedCodePage(Encoding.UTF8.CodePage);
                 return;
@@ -54,12 +54,6 @@ namespace System.Diagnostics.Tests
                 Interop.SetConsoleCP(inputEncoding);
                 Interop.SetConsoleOutputCP(outputEncoding);
             }
-        }
-
-        private static bool IsRunningInWindowsContainer()
-        {
-            RegistryKey key = Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Control");
-            return key?.GetValue("ContainerType") is not null;
         }
     }
 }
