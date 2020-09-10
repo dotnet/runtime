@@ -171,6 +171,10 @@ if(GCC)
   append("${WARNINGS} ${WERROR}" CMAKE_C_FLAGS CMAKE_CXX_FLAGS)
 
   set(MONO_ZERO_LEN_ARRAY 0)
+
+  if(ENABLE_WERROR)
+	append("-Werror" CMAKE_C_FLAGS CMAKE_CXX_FLAGS)
+  endif()
 endif()
 
 ######################################
