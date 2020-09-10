@@ -662,19 +662,19 @@ namespace System.Text.Json.Serialization.Tests
         //[OuterLoop]
         public static async Task RoundtripHumongousJsonPayload()
         {
-            string logPayload = @"{
-""ID"": 0,
-""DateTime"": ""2018-08-09T08:57:34"",
-""Site"": null,
-""SiteID"": 1,
-""Lev"": [
-    80.3,
-    0,
-    75.9,
-    69.6,
-    59.5
-]
-}";
+            string logPayload = @"  {
+    ""ID"": 0,
+    ""DateTime"": ""2018-08-09T08:57:34"",
+    ""Site"": null,
+    ""SiteID"": 1,
+    ""Lev"": [
+        80.3,
+        0,
+        75.9,
+        69.6,
+        59.5
+    ]
+  }";
 
             int logCount = 604621;
 
