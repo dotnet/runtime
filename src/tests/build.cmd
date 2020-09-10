@@ -34,7 +34,6 @@ set __BuildType=Debug
 set __TargetOS=Windows_NT
 
 set "__ProjectFilesDir=%__TestDir%"
-set "__SourceDir=%__RepoRootDir%\src\coreclr\src"
 set "__RootBinDir=%__RepoRootDir%\artifacts"
 set "__LogsDir=%__RootBinDir%\log"
 set "__MsbuildDebugLogsDir=%__LogsDir%\MsbuildDebugLogs"
@@ -255,7 +254,7 @@ if not defined VSINSTALLDIR (
 if not exist "%VSINSTALLDIR%DIA SDK" goto NoDIA
 
 set __ExtraCmakeArgs="-DCMAKE_SYSTEM_VERSION=10.0" "-DCLR_ENG_NATIVE_DIR=%__RepoRootDir%/eng/native"
-call "%__SourceDir%\pal\tools\gen-buildsys.cmd" "%__ProjectFilesDir%" "%__NativeTestIntermediatesDir%" %__VSVersion% %__BuildArch% !__ExtraCmakeArgs!
+call "%__RepoRootDir%\eng\native\gen-buildsys.cmd" "%__ProjectFilesDir%" "%__NativeTestIntermediatesDir%" %__VSVersion% %__BuildArch% !__ExtraCmakeArgs!
 
 if not !errorlevel! == 0 (
     echo %__ErrMsgPrefix%%__MsgPrefix%Error: failed to generate native component build project!
