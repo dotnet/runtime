@@ -6,7 +6,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.Numerics
 {
-    /// <summary>A structure encapsulating a four-dimensional vector (x,y,z,w), which is used to efficiently rotate an object about the (x,y,z) vector by the angle theta, where w = cos(theta/2).</summary>
+    /// <summary>Represents a vector that is used to encode three-dimensional physical rotations.</summary>
     [Intrinsic]
     public struct Quaternion : IEquatable<Quaternion>
     {
