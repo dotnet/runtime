@@ -3,6 +3,7 @@
 
 using System.Collections;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.Versioning;
 using System.Security.Authentication.ExtendedProtection;
 using System.Text;
 using System.Threading.Tasks;
@@ -78,6 +79,7 @@ namespace System.Net
             }
         }
 
+        [UnsupportedOSPlatform("browser")]
         public ExtendedProtectionPolicy ExtendedProtectionPolicy
         {
             get => _extendedProtectionPolicy;
