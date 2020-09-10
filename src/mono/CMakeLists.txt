@@ -44,18 +44,6 @@ if(ENABLE_MINIMAL)
   process_enable_minimal()
 endif()
 
-if(ENABLE_INTERP_LIB)
-  set(DISABLE_INTERPRETER 1)
-endif()
-
-if(NOT DISABLE_INTERPRETER AND NOT DISABLE_JIT)
-  set(ENABLE_ILGEN 1)
-endif()
-
-if(NOT DISABLE_EVENTPIPE)
-  set(ENABLE_PERFTRACING 1)
-endif()
-
 execute_process(
   COMMAND grep ^MONO_CORLIB_VERSION= ${CMAKE_SOURCE_DIR}/configure.ac
   COMMAND cut -d = -f  2
@@ -91,8 +79,21 @@ else()
   message(FATAL_ERROR "Building without -DENABLE_NETCORE=1 is not supported.")
 endif()
 
+# Dependencies between options
 if(DISABLE_ASSEMBLY_REMAPPING)
   set(DISABLE_DESKTOP_LOADER 1)
+endif()
+if(ENABLE_INTERP_LIB)
+  set(DISABLE_INTERPRETER 1)
+endif()
+if(NOT DISABLE_INTERPRETER AND NOT DISABLE_JIT)
+  set(ENABLE_ILGEN 1)
+endif()
+if(NOT DISABLE_EVENTPIPE)
+  set(ENABLE_PERFTRACING 1)
+endif()
+if(ENABLE_LAZY_GC_THREAD_CREATION)
+  set(LAZY_GC_THREAD_CREATION 1)
 endif()
 
 #FIXME:
@@ -121,13 +122,10 @@ set(MONO_INSIDE_RUNTIME 1)
 # FIXME:
 set(NAME_DEV_RANDOM "/dev/random")
 
-if(ENABLE_LAZY_GC_THREAD_CREATION)
-  set(LAZY_GC_THREAD_CREATION 1)
-endif()
-
 ######################################
 # AOT CROSS COMPILER SUPPORT
 ######################################
+
 if(NOT AOT_TARGET_TRIPLE STREQUAL "")
   set(MONO_CROSS_COMPILE 1)
   add_definitions(-DNO_GLOBALIZATION_SHIM)
@@ -146,6 +144,9 @@ if(NOT AOT_TARGET_TRIPLE STREQUAL "")
   elseif(AOT_TARGET_TRIPLE STREQUAL "arm-apple-darwin10")
 	set(TARGET_SYSTEM_NAME "iOS")
 	set(TARGET_ARCH "arm")
+  elseif(AOT_TARGET_TRIPLE STREQUAL "wasm32-unknown-none")
+	set(TARGET_SYSTEM_NAME "Emscripten")
+	set(TARGET_ARCH "wasm")
   else()
 	message(FATAL_ERROR "AOT target '${AOT_TARGET_TRIPLE}' not supported.")
   endif()
@@ -154,6 +155,7 @@ endif()
 ######################################
 # GCC CHECKS
 ######################################
+
 if(GCC)
   # We require C99 with some GNU extensions, e.g. `linux` macro
   set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
@@ -169,6 +171,10 @@ if(GCC)
   append("${WARNINGS} ${WERROR}" CMAKE_C_FLAGS CMAKE_CXX_FLAGS)
 
   set(MONO_ZERO_LEN_ARRAY 0)
+
+  if(ENABLE_WERROR)
+	append("-Werror" CMAKE_C_FLAGS CMAKE_CXX_FLAGS)
+  endif()
 endif()
 
 ######################################
@@ -180,12 +186,16 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
   set(HOST_DARWIN 1)
   set(PTHREAD_POINTER_ID 1)
   set(USE_MACH_SEMA 1)
+  if (GC_SUSPEND STREQUAL "default")
+	set(GC_SUSPEND "hybrid")
+  endif()
 elseif(CMAKE_SYSTEM_NAME STREQUAL "iOS")
   # See man cmake-toolchains(7) on which variables
   # control cross-compiling to ios
   add_definitions(-DNO_GLOBALIZATION_SHIM)
   add_definitions(-D_THREAD_SAFE)
   set(HOST_DARWIN 1)
+  set(HOST_IOS 1)
   set(PTHREAD_POINTER_ID 1)
   set(USE_MACH_SEMA 1)
   set(DISABLE_EXECUTABLES 1)
@@ -195,6 +205,11 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "iOS")
   add_definitions(-DHOST_IOS=1)
   set(HAVE_SYSTEM 0)
   set(MONO_DL_NEED_USCORE 1)
+
+  # Force some defines
+  set(HAVE_GETPWUID_R 0)
+  set(HAVE_SYS_USER_H 0)
+  set(HAVE_GETENTROPY 0)
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
   set(HOST_WASM 1)
   set(DISABLE_EXECUTABLES 1)
@@ -272,11 +287,13 @@ elseif(TARGET_ARCH STREQUAL "arm64")
 elseif(TARGET_ARCH STREQUAL "arm")
   set(TARGET_ARM 1)
   set(MONO_ARCHITECTURE "\"arm\"")
+elseif(TARGET_ARCH STREQUAL "wasm")
+  set(MONO_ARCHITECTURE "\"wasm\"")
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
   # CMAKE_SYSTEM_PROCESSOR is set to x86
   set(MONO_ARCHITECTURE "\"wasm\"")
 else()
-  message(FATAL_ERROR "CMAKE_SYSTEM_PROCESSOR='${CMAKE_SYSTEM_PROCESSOR}' not supported.")
+  message(FATAL_ERROR "TARGET_ARCH='${TARGET_ARCH}' not supported.")
 endif()
 
 
@@ -299,6 +316,8 @@ if(LLVM_PREFIX)
 	set(llvm_codegen_libs "aarch64codegen")
   elseif(TARGET_ARCH STREQUAL "arm")
 	set(llvm_codegen_libs "armcodegen")
+  elseif(TARGET_ARCH STREQUAL "wasm")
+	set(llvm_codegen_libs "")
   else()
 	message(FATAL_ERROR "FIXME")
   endif()
@@ -329,7 +348,8 @@ endif()
 # ICU CHECKS
 ######################################
 set(ICU_SHIM_PATH "../../../libraries/Native/Unix/System.Globalization.Native")
-if(TARGET_OSX)
+if(MONO_CROSS_COMPILE)
+elseif(TARGET_OSX)
   # FIXME: Handle errors
   # Defines ICU_INCLUDEDIR/ICU_LIBDIR
   set(ENV{PKG_CONFIG_PATH} "{$PKG_CONFIG_PATH}:/usr/local/lib/pkgconfig:/usr/local/opt/icu4c/lib/pkgconfig")
@@ -346,6 +366,16 @@ elseif(TARGET_IOS)
   # FIXME:
 else()
   message(FATAL_ERROR "")
+endif()
+
+######################################
+# GC CHECKS
+######################################
+
+if (GC_SUSPEND STREQUAL "coop")
+  set(ENABLE_COOP_SUSPEND 1)
+elseif(GC_SUSPEND STREQUAL "hybrid")
+  set(ENABLE_HYBRID_SUSPEND 1)
 endif()
 
 ######################################
