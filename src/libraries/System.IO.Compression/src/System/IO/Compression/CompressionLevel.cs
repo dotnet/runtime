@@ -12,7 +12,7 @@ namespace System.IO.Compression
     public enum CompressionLevel
     {
         /// <summary>
-        /// The compression operation should take a balance between consumed time and output size.
+        /// The compression operation should balance compression speed and output size.
         /// </summary>
         Optimal = 0,
 
