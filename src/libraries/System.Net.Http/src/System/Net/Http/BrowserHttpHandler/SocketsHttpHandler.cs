@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.IO;
 using System.Net.Security;
 using System.Threading;
 using System.Threading.Tasks;
@@ -166,6 +167,12 @@ namespace System.Net.Http
             HttpRequestMessage request, CancellationToken cancellationToken) => throw new PlatformNotSupportedException();
 
         public bool EnableMultipleHttp2Connections
+        {
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
+        }
+
+        public Func<SocketsHttpConnectionContext, CancellationToken, ValueTask<Stream>>? ConnectCallback
         {
             get => throw new PlatformNotSupportedException();
             set => throw new PlatformNotSupportedException();
