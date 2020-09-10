@@ -290,7 +290,6 @@ jobs:
     - Android_arm
     - tvOS_arm64
     - iOS_arm
-    - iOS_x64
     - Linux_musl_x64
     jobParameters:
       testGroup: innerloop
@@ -313,6 +312,7 @@ jobs:
     buildConfig: Release
     runtimeFlavor: mono
     platforms:
+    - iOS_x64
     - Browser_wasm
     variables:
       # map dependencies variables to local variables
