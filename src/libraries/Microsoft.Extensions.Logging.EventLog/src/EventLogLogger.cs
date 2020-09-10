@@ -167,7 +167,9 @@ namespace Microsoft.Extensions.Logging.EventLog
 
         private EventLogEntryType GetEventLogEntryType(LogLevel level)
         {
+#if NETSTANDARD
             Debug.Assert(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
+#endif
 
             switch (level)
             {
