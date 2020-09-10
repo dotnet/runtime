@@ -4,7 +4,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net.Security;
-using System.Runtime.Versioning;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 
@@ -30,7 +29,6 @@ namespace System.Net.WebSockets
 
         #region HTTP Settings
 
-        [UnsupportedOSPlatform("browser")]
         // Note that some headers are restricted like Host.
         public void SetRequestHeader(string headerName, string? headerValue)
         {
@@ -44,7 +42,6 @@ namespace System.Net.WebSockets
 
         internal List<string> RequestedSubProtocols => _requestedSubProtocols ??= new List<string>();
 
-        [UnsupportedOSPlatform("browser")]
         public bool UseDefaultCredentials
         {
             get => _useDefaultCredentials;
@@ -55,7 +52,6 @@ namespace System.Net.WebSockets
             }
         }
 
-        [UnsupportedOSPlatform("browser")]
         public ICredentials? Credentials
         {
             get => _credentials;
@@ -66,7 +62,6 @@ namespace System.Net.WebSockets
             }
         }
 
-        [UnsupportedOSPlatform("browser")]
         public IWebProxy? Proxy
         {
             get => _proxy;
@@ -77,7 +72,6 @@ namespace System.Net.WebSockets
             }
         }
 
-        [UnsupportedOSPlatform("browser")]
         public X509CertificateCollection ClientCertificates
         {
             get => _clientCertificates ??= new X509CertificateCollection();
@@ -88,7 +82,6 @@ namespace System.Net.WebSockets
             }
         }
 
-        [UnsupportedOSPlatform("browser")]
         public RemoteCertificateValidationCallback? RemoteCertificateValidationCallback
         {
             get => _remoteCertificateValidationCallback;
@@ -99,7 +92,6 @@ namespace System.Net.WebSockets
             }
         }
 
-        [UnsupportedOSPlatform("browser")]
         public CookieContainer? Cookies
         {
             get => _cookies;
@@ -131,7 +123,6 @@ namespace System.Net.WebSockets
             subprotocols.Add(subProtocol);
         }
 
-        [UnsupportedOSPlatform("browser")]
         public TimeSpan KeepAliveInterval
         {
             get => _keepAliveInterval;
@@ -151,7 +142,6 @@ namespace System.Net.WebSockets
         internal int ReceiveBufferSize => _receiveBufferSize;
         internal ArraySegment<byte>? Buffer => _buffer;
 
-        [UnsupportedOSPlatform("browser")]
         public void SetBuffer(int receiveBufferSize, int sendBufferSize)
         {
             ThrowIfReadOnly();
@@ -169,7 +159,6 @@ namespace System.Net.WebSockets
             _buffer = null;
         }
 
-        [UnsupportedOSPlatform("browser")]
         public void SetBuffer(int receiveBufferSize, int sendBufferSize, ArraySegment<byte> buffer)
         {
             ThrowIfReadOnly();

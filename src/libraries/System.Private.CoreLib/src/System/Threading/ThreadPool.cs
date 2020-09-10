@@ -17,7 +17,6 @@ using System.Diagnostics.Tracing;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
-using System.Runtime.Versioning;
 using Internal.Runtime.CompilerServices;
 
 namespace System.Threading
@@ -951,7 +950,6 @@ namespace System.Threading
         };
 
         [CLSCompliant(false)]
-        [UnsupportedOSPlatform("browser")]
         public static RegisteredWaitHandle RegisterWaitForSingleObject(
              WaitHandle waitObject,
              WaitOrTimerCallback callBack,
@@ -966,7 +964,6 @@ namespace System.Threading
         }
 
         [CLSCompliant(false)]
-        [UnsupportedOSPlatform("browser")]
         public static RegisteredWaitHandle UnsafeRegisterWaitForSingleObject(
              WaitHandle waitObject,
              WaitOrTimerCallback callBack,
@@ -980,7 +977,6 @@ namespace System.Threading
             return RegisterWaitForSingleObject(waitObject, callBack, state, millisecondsTimeOutInterval, executeOnlyOnce, false);
         }
 
-        [UnsupportedOSPlatform("browser")]
         public static RegisteredWaitHandle RegisterWaitForSingleObject(
              WaitHandle waitObject,
              WaitOrTimerCallback callBack,
@@ -994,7 +990,6 @@ namespace System.Threading
             return RegisterWaitForSingleObject(waitObject, callBack, state, (uint)millisecondsTimeOutInterval, executeOnlyOnce, true);
         }
 
-        [UnsupportedOSPlatform("browser")]
         public static RegisteredWaitHandle UnsafeRegisterWaitForSingleObject(
              WaitHandle waitObject,
              WaitOrTimerCallback callBack,
@@ -1008,7 +1003,6 @@ namespace System.Threading
             return RegisterWaitForSingleObject(waitObject, callBack, state, (uint)millisecondsTimeOutInterval, executeOnlyOnce, false);
         }
 
-        [UnsupportedOSPlatform("browser")]
         public static RegisteredWaitHandle RegisterWaitForSingleObject(
             WaitHandle waitObject,
             WaitOrTimerCallback callBack,
@@ -1024,7 +1018,6 @@ namespace System.Threading
             return RegisterWaitForSingleObject(waitObject, callBack, state, (uint)millisecondsTimeOutInterval, executeOnlyOnce, true);
         }
 
-        [UnsupportedOSPlatform("browser")]
         public static RegisteredWaitHandle UnsafeRegisterWaitForSingleObject(
             WaitHandle waitObject,
             WaitOrTimerCallback callBack,
@@ -1040,7 +1033,6 @@ namespace System.Threading
             return RegisterWaitForSingleObject(waitObject, callBack, state, (uint)millisecondsTimeOutInterval, executeOnlyOnce, false);
         }
 
-        [UnsupportedOSPlatform("browser")]
         public static RegisteredWaitHandle RegisterWaitForSingleObject(
                           WaitHandle waitObject,
                           WaitOrTimerCallback callBack,
@@ -1057,7 +1049,6 @@ namespace System.Threading
             return RegisterWaitForSingleObject(waitObject, callBack, state, (uint)tm, executeOnlyOnce, true);
         }
 
-        [UnsupportedOSPlatform("browser")]
         public static RegisteredWaitHandle UnsafeRegisterWaitForSingleObject(
                           WaitHandle waitObject,
                           WaitOrTimerCallback callBack,
