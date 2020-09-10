@@ -118,5 +118,45 @@ namespace System.Net.Http.Functional.Tests
             new Random(42).NextBytes(data);
             return data;
         }
+
+        public static X509Certificate2 CreateServerSelfSignedCertificate(string name = "localhost")
+        {
+            using (RSA root = RSA.Create())
+            {
+                CertificateRequest req = new CertificateRequest(
+                    $"CN={name}",
+                    root,
+                    HashAlgorithmName.SHA256,
+                    RSASignaturePadding.Pkcs1);
+
+                req.CertificateExtensions.Add(new X509BasicConstraintsExtension(true, false, 0, true));
+                req.CertificateExtensions.Add(new X509SubjectKeyIdentifierExtension(req.PublicKey, false));
+                req.CertificateExtensions.Add(new X509KeyUsageExtension(X509KeyUsageFlags.DigitalSignature | X509KeyUsageFlags.KeyEncipherment | X509KeyUsageFlags.DataEncipherment, false));
+                req.CertificateExtensions.Add(
+                    new X509EnhancedKeyUsageExtension(
+                            new OidCollection()
+                                {
+                                    new Oid("1.3.6.1.5.5.7.3.1", null),
+                                }, false));
+
+
+                SubjectAlternativeNameBuilder builder = new SubjectAlternativeNameBuilder();
+                builder.AddDnsName(name);
+                builder.AddIpAddress(IPAddress.Loopback);
+                builder.AddIpAddress(IPAddress.IPv6Loopback);
+                req.CertificateExtensions.Add(builder.Build());
+
+                DateTimeOffset start = DateTimeOffset.UtcNow.AddMinutes(-5);
+                DateTimeOffset end = start.AddMonths(1);
+
+                X509Certificate2 cert = req.CreateSelfSigned(start, end);
+                if (PlatformDetection.IsWindows)
+                {
+                    cert = new X509Certificate2(cert.Export(X509ContentType.Pfx));
+                }
+
+                return cert;
+            }
+        }
     }
 }

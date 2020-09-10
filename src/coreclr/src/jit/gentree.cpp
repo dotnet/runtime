@@ -3302,7 +3302,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 // Any constant that requires a reloc must use the movw/movt sequence
                 //
                 GenTreeIntConCommon* con    = tree->AsIntConCommon();
-                INT32                conVal = con->IconValue();
+                target_ssize_t       conVal = (target_ssize_t)con->IconValue();
 
                 if (con->ImmedValNeedsReloc(this))
                 {
@@ -3310,14 +3310,13 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     costSz = 8;
                     costEx = 2;
                 }
-                else if (codeGen->validImmForInstr(INS_add, (target_ssize_t)conVal))
+                else if (codeGen->validImmForInstr(INS_add, conVal))
                 {
                     // Typically included with parent oper
                     costSz = 2;
                     costEx = 1;
                 }
-                else if (codeGen->validImmForInstr(INS_mov, (target_ssize_t)conVal) &&
-                         codeGen->validImmForInstr(INS_mvn, (target_ssize_t)conVal))
+                else if (codeGen->validImmForInstr(INS_mov, conVal) && codeGen->validImmForInstr(INS_mvn, conVal))
                 {
                     // Uses mov or mvn
                     costSz = 4;
@@ -18464,7 +18463,7 @@ void GenTree::ParseArrayAddressWork(Compiler*       comp,
                     assert(!AsOp()->gtOp2->AsIntCon()->ImmedValNeedsReloc(comp));
                     // TODO-CrossBitness: we wouldn't need the cast below if GenTreeIntCon::gtIconVal had target_ssize_t
                     // type.
-                    target_ssize_t shiftVal = AsOp()->gtOp2->AsIntConCommon()->IconValue();
+                    target_ssize_t shiftVal = (target_ssize_t)AsOp()->gtOp2->AsIntConCommon()->IconValue();
                     target_ssize_t subMul   = target_ssize_t{1} << shiftVal;
                     AsOp()->gtOp1->ParseArrayAddressWork(comp, inputMul * subMul, pArr, pInxVN, pOffset, pFldSeq);
                     return;

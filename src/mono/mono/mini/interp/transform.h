@@ -93,9 +93,15 @@ struct _InterpBasicBlock {
 	StackInfo *stack_state;
 	int vt_stack_size;
 
+	int index;
+
 	// This will hold a list of last sequence points of incoming basic blocks
 	SeqPoint **pred_seq_points;
 	guint num_pred_seq_points;
+
+	// This block has special semantics and it shouldn't be optimized away
+	int eh_block : 1;
+	int dead: 1;
 };
 
 typedef enum {
@@ -159,6 +165,7 @@ typedef struct
 	GPtrArray *seq_points;
 	InterpBasicBlock **offset_to_bb;
 	InterpBasicBlock *entry_bb, *cbb;
+	int bb_count;
 	MonoMemPool     *mempool;
 	GList *basic_blocks;
 	GPtrArray *relocs;

@@ -3945,7 +3945,7 @@ void emitter::emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, ssize_t
  *  Add an instruction referencing an integer constant.
  */
 
-void emitter::emitIns_I(instruction ins, emitAttr attr, int val)
+void emitter::emitIns_I(instruction ins, emitAttr attr, cnsval_ssize_t val)
 {
     UNATIVE_OFFSET sz;
     instrDesc*     id;
@@ -5349,7 +5349,7 @@ void emitter::emitIns_R_AI(instruction ins, emitAttr attr, regNumber ireg, ssize
     emitCurIGsize += sz;
 }
 
-void emitter::emitIns_AR_R(instruction ins, emitAttr attr, regNumber reg, regNumber base, int disp)
+void emitter::emitIns_AR_R(instruction ins, emitAttr attr, regNumber reg, regNumber base, cnsval_ssize_t disp)
 {
     emitIns_ARX_R(ins, attr, reg, base, REG_NA, 1, disp);
 }
@@ -5587,7 +5587,7 @@ void emitter::emitIns_R_ARX(
 }
 
 void emitter::emitIns_ARX_R(
-    instruction ins, emitAttr attr, regNumber reg, regNumber base, regNumber index, unsigned scale, int disp)
+    instruction ins, emitAttr attr, regNumber reg, regNumber base, regNumber index, unsigned scale, cnsval_ssize_t disp)
 {
     UNATIVE_OFFSET sz;
     instrDesc*     id = emitNewInstrAmd(attr, disp);
@@ -8263,11 +8263,11 @@ void emitter::emitDispIns(
     {
         printf(" %-9s", sstr);
     }
-#ifndef TARGET_UNIX
+#ifndef HOST_UNIX
     if (strnlen_s(sstr, 10) >= 8)
-#else  // TARGET_UNIX
+#else  // HOST_UNIX
     if (strnlen(sstr, 10) >= 8)
-#endif // TARGET_UNIX
+#endif // HOST_UNIX
     {
         printf(" ");
     }
@@ -10928,7 +10928,7 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         noway_assert(id->idIsDspReloc());
         dst += emitOutputLong(dst, 0);
 #else  // TARGET_X86
-        dst += emitOutputLong(dst, (int)target);
+        dst += emitOutputLong(dst, (int)(ssize_t)target);
 #endif // TARGET_X86
 
         if (id->idIsDspReloc())
@@ -12720,7 +12720,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 #ifdef TARGET_AMD64
                     dst += emitOutputLong(dst, 0);
 #else
-                    dst += emitOutputLong(dst, (int)addr);
+                    dst += emitOutputLong(dst, (int)(ssize_t)addr);
 #endif
                     emitRecordRelocation((void*)(dst - sizeof(int)), addr, IMAGE_REL_BASED_DISP32);
                 }

@@ -30,7 +30,7 @@ namespace System.ComponentModel.DataAnnotations
         /// </summary>
         /// <param name="uiHint">The name of the control to use</param>
         /// <param name="presentationLayer">The name of the presentation layer that supports this control</param>
-        public UIHintAttribute(string uiHint, string presentationLayer)
+        public UIHintAttribute(string uiHint, string? presentationLayer)
             : this(uiHint, presentationLayer, Array.Empty<object>())
         {
         }
