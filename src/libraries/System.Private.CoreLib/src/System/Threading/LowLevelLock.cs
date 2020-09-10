@@ -36,27 +36,22 @@ namespace System.Threading
 
         private LowLevelSpinWaiter _spinWaiter;
         private readonly Func<bool> _spinWaitTryAcquireCallback;
-        private readonly LowLevelMonitor _monitor;
+        private LowLevelMonitor _monitor;
 
         public LowLevelLock()
         {
             _spinWaiter = default(LowLevelSpinWaiter);
             _spinWaitTryAcquireCallback = SpinWaitTryAcquireCallback;
-            _monitor = new LowLevelMonitor();
+            _monitor.Initialize();
         }
 
-        ~LowLevelLock() => Dispose(false);
-        public void Dispose() => Dispose(true);
+        ~LowLevelLock() => Dispose();
 
-        private void Dispose(bool disposing)
+        public void Dispose()
         {
             VerifyIsNotLockedByAnyThread();
 
-            if (disposing && _monitor != null)
-            {
-                _monitor.Dispose();
-            }
-
+            _monitor.Dispose();
             GC.SuppressFinalize(this);
         }
 
