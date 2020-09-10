@@ -417,9 +417,10 @@ namespace System.Runtime.InteropServices.JavaScript
             MethodBase? mb = MethodBase.GetMethodFromHandle(tmp.handle);
             if (mb == null)
                 return null;
-            Type? parmType = mb.GetParameters()[paramIdx]?.ParameterType;
-            if (parmType == null)
-                return null;
+            ParameterInfo[] pars = mb.GetParameters();
+            if (paramIdx >= pars.Length)
+                throw new System.IndexOutOfRangeException("Index was outside the bounds of the number of parameters.");
+            Type parmType = pars[paramIdx].ParameterType;
             if (parmType.IsEnum)
                 return Runtime.EnumFromExportContract(parmType, obj);
             else
