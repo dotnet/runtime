@@ -1,4 +1,3 @@
-
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
@@ -16,7 +15,6 @@ using System.Configuration;
 using System.Configuration.Provider;
 using System.Data;
 using System.Data.Odbc;
-using System.Data.SqlClient;
 using System.Data.SqlTypes;
 using System.Diagnostics.Contracts;
 using System.Diagnostics.Tracing;
