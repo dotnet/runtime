@@ -79,9 +79,10 @@ namespace System.Numerics
 
         /// <summary>Constructs a vector whose components are all <paramref name="value" />.</summary>
         [Intrinsic]
-        public unsafe Vector(T value) : this()
+        public unsafe Vector(T value)
         {
             ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            Unsafe.SkipInit(out this);
 
             for (nint index = 0; index < Count; index++)
             {
@@ -98,7 +99,7 @@ namespace System.Numerics
         /// The array must contain at least <see cref="Count" /> from the given index.
         /// </summary>
         [Intrinsic]
-        public unsafe Vector(T[] values, int index) : this(values.AsSpan(index))
+        public unsafe Vector(T[] values, int index)
         {
             ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
 
