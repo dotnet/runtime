@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.IO;
 using System.Net.Test.Common;
 using System.Threading;
 using System.Threading.Tasks;
@@ -277,10 +278,18 @@ namespace System.Net.WebSockets.Client.Tests
                     releaseServer.SetResult();
                     clientSocket.Dispose();
                 }
-            }, server => server.AcceptConnectionAsync(async connection =>
+            }, async server =>
             {
-                await releaseServer.Task;
-            }), new LoopbackServer.Options { WebSocketEndpoint = true });
+                try
+                {
+                    await server.AcceptConnectionAsync(async connection =>
+                    {
+                        await releaseServer.Task;
+                    });
+                }
+                // Ignore IO exception on server as there are race conditions when client is cancelling.
+                catch (IOException) { }
+            }, new LoopbackServer.Options { WebSocketEndpoint = true });
         }
     }
 }
