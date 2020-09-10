@@ -928,7 +928,12 @@ var BindingSupportLib = {
 				if (buffer)
 					Module._free (buffer);
 
-				MONO.mono_wasm_release_roots (resultRoot, exceptionRoot, argsRootBuffer);
+				if (resultRoot)
+					resultRoot.release ();
+				if (exceptionRoot)
+					exceptionRoot.release ();
+				if (argsRootBuffer)
+					argsRootBuffer.release ();
 			}
 		},
 
