@@ -243,6 +243,7 @@ var MonoSupportLib = {
 
 		_scratch_root_buffer: null,
 		_scratch_root_free_indices: null,
+		_scratch_root_free_instances: [],
 
 		_mono_wasm_root_prototype: {
 			/** @returns {NativePointer} */
@@ -270,9 +271,15 @@ var MonoSupportLib = {
 				this.set (0);
 			},
 			release: function () {
-				MONO._mono_wasm_release_scratch_index (this.__index);
-				this.__buffer = 0;
-				this.__index = 0;
+				const maxPooledInstances = 128;
+				if (MONO._scratch_root_free_instances.length > maxPooledInstances) {
+					MONO._mono_wasm_release_scratch_index (this.__index);
+					this.__buffer = 0;
+					this.__index = 0;
+				} else {
+					this.set (0);
+					MONO._scratch_root_free_instances.push (this);
+				}
 			},
 			toString: function () {
 				return "[root @" + this.get_address () + "]";
@@ -422,6 +429,9 @@ var MonoSupportLib = {
 		 * @returns {WasmRoot}
 		 */
 		mono_wasm_new_root: function (value) {
+			if (this._scratch_root_free_instances.length > 0)
+				return this._scratch_root_free_instances.pop ();
+
 			var index = this._mono_wasm_claim_scratch_index ();
 			var buffer = this._scratch_root_buffer;
 
