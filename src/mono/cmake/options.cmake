@@ -58,7 +58,7 @@ option (ENABLE_PERFTRACING "Enables support for eventpipe library")
 option (ENABLE_INTERP_LIB "Enable separate interpreter library")
 option (ENABLE_LAZY_GC_THREAD_CREATION "Enable lazy runtime thread creation, embedding host must do it explicitly")
 
-set (GC_SUSPEND "default" CACHE STRING "GC suspend method (default, coop, hybrid)")
+set (GC_SUSPEND "default" CACHE STRING "GC suspend method (default, preemptive, coop, hybrid)")
 set (ENABLE_MINIMAL "" CACHE STRING "Set many DISABLE_ options at once. Comma-separated list of lowercase DISABLE_ options ie. 'jit,simd' etc.")
 set (AOT_TARGET_TRIPLE "" CACHE STRING "Target triple for AOT cross compiler")
 set (AOT_OFFSETS_FILE "" CACHE STRING "Offsets file for AOT cross compiler")
