@@ -7,6 +7,4 @@
     <RuntimeIdentifier>$(TargetRid)</RuntimeIdentifier>
     <ProjectAssetsFile>$(TestSourceDir)Common\ilasm\obj\project.assets.json</ProjectAssetsFile>
   </PropertyGroup>
-
-  <Import Project="$(RepositoryEngineeringDir)liveBuilds.targets" />
 </Project>
