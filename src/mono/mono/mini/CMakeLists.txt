@@ -907,7 +907,8 @@ set(wasm_sources
     exceptions-wasm.c
     aot-runtime-wasm.c
     mini-wasm-debugger.c
-    wasm_m2n_invoke.g.h)
+    wasm_m2n_invoke.g.h
+    cpu-wasm.h)
 
 if(TARGET_AMD64)
 set(arch_sources ${amd64_sources})
@@ -990,6 +991,10 @@ if(HOST_DARWIN)
 set(OS_LIBS "-framework CoreFoundation" "-framework Foundation")
 endif()
 
+if(HOST_IOS)
+set(OS_LIBS "-framework CoreFoundation" "-lobjc" "-lc++")
+endif()
+
 add_library(monosgen-objects OBJECT "${eglib_sources};${metadata_sources};${utils_sources};${sgen_sources};${icu_shim_sources};${eventpipe_sources};${mini_sources}")
 add_library(monosgen-static STATIC $<TARGET_OBJECTS:monosgen-objects>)
 set_target_properties(monosgen-static PROPERTIES OUTPUT_NAME monosgen-2.0)
@@ -1003,11 +1008,14 @@ if(NOT DISABLE_LIBS)
 	DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/mono-2.0/mono/jit)
 endif()
 if(NOT DISABLE_SHARED_LIBS)
-   add_library(monosgen SHARED $<TARGET_OBJECTS:monosgen-objects>)
-   set_target_properties(monosgen PROPERTIES OUTPUT_NAME monosgen-2.0)
-   set_target_properties(monosgen PROPERTIES LIBRARY_OUTPUT_DIRECTORY .libs)
-   target_link_libraries(monosgen ${OS_LIBS} "iconv" ${LLVM_LIBS} ${ICU_LIBS})
-   install(TARGETS monosgen LIBRARY)
+  add_library(monosgen SHARED $<TARGET_OBJECTS:monosgen-objects>)
+  set_target_properties(monosgen PROPERTIES OUTPUT_NAME monosgen-2.0)
+  set_target_properties(monosgen PROPERTIES LIBRARY_OUTPUT_DIRECTORY .libs)
+  target_link_libraries(monosgen ${OS_LIBS} "iconv" ${LLVM_LIBS} ${ICU_LIBS})
+  if(ICU_LDFLAGS)
+    set_target_properties(monosgen PROPERTIES LINK_FLAGS ${ICU_LDFLAGS})
+  endif()
+  install(TARGETS monosgen LIBRARY)
 endif()
 
 # FIXME: Always rebuilds, creates non-deterministic builds
@@ -1055,12 +1063,18 @@ add_custom_command(
   VERBATIM
 )
 
+add_custom_command(
+  OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cpu-wasm.h
+  COMMAND python ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py TARGET_WASM ${CMAKE_CURRENT_SOURCE_DIR} cpu-wasm.h wasm_desc ${CMAKE_CURRENT_SOURCE_DIR}/cpu-wasm.md
+  VERBATIM
+)
+
 if(NOT DISABLE_EXECUTABLES)
 set(CMAKE_SKIP_RPATH 1)
 add_executable(mono-sgen "main-sgen.c")
 target_link_libraries(mono-sgen monosgen-static ${OS_LIBS} "iconv" ${LLVM_LIBS} ${ICU_LIBS})
 if(ICU_LDFLAGS)
-  set_target_properties(mono-sgen monosgen PROPERTIES LINK_FLAGS ${ICU_LDFLAGS})
+  set_target_properties(mono-sgen PROPERTIES LINK_FLAGS ${ICU_LDFLAGS})
 endif()
 install(TARGETS mono-sgen RUNTIME)
 endif()
