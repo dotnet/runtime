@@ -65,6 +65,14 @@ namespace Internal.Cryptography.Pal
             );
         }
 
+        public ECDiffieHellman? GetECDiffieHellmanPrivateKey()
+        {
+            return GetPrivateKey<ECDiffieHellman>(
+                csp => throw new NotSupportedException(SR.NotSupported_ECDiffieHellman_Csp),
+                cngKey => new ECDiffieHellmanCng(cngKey)
+            );
+        }
+
         public ICertificatePal CopyWithPrivateKey(DSA dsa)
         {
             DSACng? dsaCng = dsa as DSACng;

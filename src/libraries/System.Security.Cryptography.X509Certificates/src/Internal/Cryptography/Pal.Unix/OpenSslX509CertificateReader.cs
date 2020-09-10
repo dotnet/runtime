@@ -593,6 +593,16 @@ namespace Internal.Cryptography.Pal
             return new ECDsaOpenSsl(_privateKey);
         }
 
+        public ECDiffieHellman? GetECDiffieHellmanPrivateKey()
+        {
+            if (_privateKey == null || _privateKey.IsInvalid)
+            {
+                return null;
+            }
+
+            return new ECDiffieHellmanOpenSsl(_privateKey);
+        }
+
         private ICertificatePal CopyWithPrivateKey(SafeEvpPKeyHandle privateKey)
         {
             // This could be X509Duplicate for a full clone, but since OpenSSL certificates

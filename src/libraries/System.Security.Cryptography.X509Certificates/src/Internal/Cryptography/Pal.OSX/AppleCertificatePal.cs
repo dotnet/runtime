@@ -489,6 +489,19 @@ namespace Internal.Cryptography.Pal
             return new ECDsaImplementation.ECDsaSecurityTransforms(publicKey, privateKey);
         }
 
+        public ECDiffieHellman? GetECDiffieHellmanPrivateKey()
+        {
+            if (_identityHandle == null)
+                return null;
+
+            Debug.Assert(!_identityHandle.IsInvalid);
+            SafeSecKeyRefHandle publicKey = Interop.AppleCrypto.X509GetPublicKey(_certHandle);
+            SafeSecKeyRefHandle privateKey = Interop.AppleCrypto.X509GetPrivateKeyFromIdentity(_identityHandle);
+            Debug.Assert(!publicKey.IsInvalid);
+
+            return new ECDiffieHellmanImplementation.ECDiffieHellmanSecurityTransforms(publicKey, privateKey);
+        }
+
         public ICertificatePal CopyWithPrivateKey(DSA privateKey)
         {
             var typedKey = privateKey as DSAImplementation.DSASecurityTransforms;

@@ -72,6 +72,9 @@ namespace Internal.Cryptography.Pal
             if (typeof(T) == typeof(DSA))
                 return (T?)(object?)certificate.Pal.GetDSAPrivateKey();
 
+            if (typeof(T) == typeof(ECDiffieHellman))
+                return (T?)(object?)certificate.Pal.GetECDiffieHellmanPrivateKey();
+
             Debug.Fail("Expected GetExpectedOidValue() to have thrown before we got here.");
             throw new NotSupportedException(SR.NotSupported_KeyAlgorithm);
         }

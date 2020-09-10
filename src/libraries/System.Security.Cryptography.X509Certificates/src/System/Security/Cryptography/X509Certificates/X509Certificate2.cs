@@ -691,6 +691,11 @@ namespace System.Security.Cryptography.X509Certificates
             return this.GetPublicKey<ECDiffieHellman>(cert => HasECDiffieHellmanKeyUsage(cert));
         }
 
+        public ECDiffieHellman? GetECDiffieHellmanPrivateKey()
+        {
+            return this.GetPrivateKey<ECDiffieHellman>(cert => HasECDiffieHellmanKeyUsage(cert));
+        }
+
         /// <summary>
         /// Creates a new X509 certificate from the file contents of an RFC 7468 PEM-encoded
         /// certificate and private key.
