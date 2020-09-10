@@ -24,13 +24,34 @@ namespace Internal.Cryptography.Pal
         private const string BCRYPT_ECC_CURVE_NAME_PROPERTY = "ECCCurveName";
         private const string BCRYPT_ECC_PARAMETERS_PROPERTY = "ECCParameters";
 
-        public AsymmetricAlgorithm DecodePublicKey(Oid oid, byte[] encodedKeyValue, byte[] encodedParameters, ICertificatePal? certificatePal)
+        public ECDsa DecodeECDsaPublicKey(ICertificatePal? certificatePal)
         {
-            if (oid.Value == Oids.EcPublicKey && certificatePal != null)
+            if (certificatePal is CertificatePal pal)
             {
-                return DecodeECDsaPublicKey((CertificatePal)certificatePal);
+                return DecodeECPublicKey(
+                    pal,
+                    factory: cngKey => new ECDsaCng(cngKey),
+                    import: (algorithm, ecParams) => algorithm.ImportParameters(ecParams));
             }
 
+            throw new NotSupportedException(SR.NotSupported_KeyAlgorithm);
+        }
+
+        public ECDiffieHellman DecodeECDiffieHellmanPublicKey(ICertificatePal? certificatePal)
+        {
+            if (certificatePal is CertificatePal pal)
+            {
+                return DecodeECPublicKey(
+                    pal,
+                    factory: cngKey => new ECDiffieHellmanCng(cngKey),
+                    import: (algorithm, ecParams) => algorithm.ImportParameters(ecParams));
+            }
+
+            throw new NotSupportedException(SR.NotSupported_KeyAlgorithm);
+        }
+
+        public AsymmetricAlgorithm DecodePublicKey(Oid oid, byte[] encodedKeyValue, byte[] encodedParameters, ICertificatePal? certificatePal)
+        {
             int algId = Interop.Crypt32.FindOidInfo(CryptOidInfoKeyType.CRYPT_OID_INFO_OID_KEY, oid.Value!, OidGroup.PublicKeyAlgorithm, fallBackToAllGroups: true).AlgId;
             switch (algId)
             {
@@ -53,9 +74,13 @@ namespace Internal.Cryptography.Pal
             }
         }
 
-        private static ECDsa DecodeECDsaPublicKey(CertificatePal certificatePal)
+        private static TAlgorithm DecodeECPublicKey<TAlgorithm>(
+            CertificatePal certificatePal,
+            Func<CngKey, TAlgorithm> factory,
+            Action<TAlgorithm, ECParameters> import)
+                where TAlgorithm : AsymmetricAlgorithm, new()
         {
-            ECDsa ecdsa;
+            TAlgorithm ecdsa;
             using (SafeBCryptKeyHandle bCryptKeyHandle = ImportPublicKeyInfo(certificatePal.CertContext))
             {
                 CngKeyBlobFormat blobFormat;
@@ -76,7 +101,7 @@ namespace Internal.Cryptography.Pal
                     keyBlob = ExportKeyBlob(bCryptKeyHandle, blobFormat);
                     using (CngKey cngKey = CngKey.Import(keyBlob, blobFormat))
                     {
-                        ecdsa = new ECDsaCng(cngKey);
+                        ecdsa = factory(cngKey);
                     }
                 }
                 else
@@ -86,8 +111,8 @@ namespace Internal.Cryptography.Pal
                     ECParameters ecparams = default;
                     ExportNamedCurveParameters(ref ecparams, keyBlob, false);
                     ecparams.Curve = ECCurve.CreateFromFriendlyName(curveName);
-                    ecdsa = new ECDsaCng();
-                    ecdsa.ImportParameters(ecparams);
+                    ecdsa = new TAlgorithm();
+                    import(ecdsa, ecparams);
                 }
             }
 

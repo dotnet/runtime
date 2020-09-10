@@ -686,6 +686,11 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
+        public ECDiffieHellman? GetECDiffieHellmanPublicKey()
+        {
+            return this.GetPublicKey<ECDiffieHellman>(cert => HasECDiffieHellmanKeyUsage(cert));
+        }
+
         /// <summary>
         /// Creates a new X509 certificate from the file contents of an RFC 7468 PEM-encoded
         /// certificate and private key.
@@ -1045,5 +1050,22 @@ namespace System.Security.Cryptography.X509Certificates
                 Oids.SubjectKeyIdentifier => new X509SubjectKeyIdentifierExtension(),
                 _ => null,
             };
+
+        private static bool HasECDiffieHellmanKeyUsage(X509Certificate2 certificate)
+        {
+            foreach (X509Extension extension in certificate.Extensions)
+            {
+                if (extension.Oid?.Value == Oids.KeyUsage && extension is X509KeyUsageExtension ext)
+                {
+                    // keyAgreement is mandatory for id-ecPublicKey certificates
+                    // when used with ECDH.
+                    return ((ext.KeyUsages & X509KeyUsageFlags.KeyAgreement) != 0);
+                }
+            }
+
+            // If the key usage extension is not present in the certificate it is
+            // considered valid for all usages, so we can use it for ECDH.
+            return true;
+        }
     }
 }

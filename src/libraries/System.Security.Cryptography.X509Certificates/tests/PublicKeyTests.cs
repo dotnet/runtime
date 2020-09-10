@@ -36,6 +36,14 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
+        private static PublicKey GetTestEcDhKey()
+        {
+            using (X509Certificate2 cert = new X509Certificate2(TestData.EcDh256Certificate))
+            {
+                return cert.PublicKey;
+            }
+        }
+
         /// <summary>
         /// First parameter is the cert, the second is a hash of "Hello"
         /// </summary>
@@ -71,6 +79,13 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         public static void TestOid_ECDSA()
         {
             PublicKey pk = GetTestECDsaKey();
+            Assert.Equal("1.2.840.10045.2.1", pk.Oid.Value);
+        }
+
+        [Fact]
+        public static void TestOid_ECDH()
+        {
+            PublicKey pk = GetTestEcDhKey();
             Assert.Equal("1.2.840.10045.2.1", pk.Oid.Value);
         }
 

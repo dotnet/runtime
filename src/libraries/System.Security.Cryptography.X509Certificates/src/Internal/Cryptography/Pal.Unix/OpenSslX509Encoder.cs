@@ -14,13 +14,29 @@ namespace Internal.Cryptography.Pal
 {
     internal sealed class OpenSslX509Encoder : ManagedX509ExtensionProcessor, IX509Pal
     {
-        public AsymmetricAlgorithm DecodePublicKey(Oid oid, byte[] encodedKeyValue, byte[] encodedParameters, ICertificatePal? certificatePal)
+        public ECDsa DecodeECDsaPublicKey(ICertificatePal? certificatePal)
         {
-            if (oid.Value == Oids.EcPublicKey && certificatePal != null)
+            if (certificatePal is OpenSslX509CertificateReader reader)
             {
-                return ((OpenSslX509CertificateReader)certificatePal).GetECDsaPublicKey();
+                return reader.GetECDsaPublicKey();
             }
 
+            throw new NotSupportedException(SR.NotSupported_KeyAlgorithm);
+        }
+
+        public ECDiffieHellman DecodeECDiffieHellmanPublicKey(ICertificatePal? certificatePal)
+        {
+            if (certificatePal is OpenSslX509CertificateReader reader)
+            {
+                return reader.GetECDiffieHellmanPublicKey();
+            }
+
+            throw new NotSupportedException(SR.NotSupported_KeyAlgorithm);
+        }
+
+
+        public AsymmetricAlgorithm DecodePublicKey(Oid oid, byte[] encodedKeyValue, byte[] encodedParameters, ICertificatePal? certificatePal)
+        {
             switch (oid.Value)
             {
                 case Oids.Rsa:

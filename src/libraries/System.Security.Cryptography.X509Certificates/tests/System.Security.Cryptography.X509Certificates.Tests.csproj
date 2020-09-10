@@ -21,6 +21,7 @@
     <Compile Include="CollectionTests.cs" />
     <Compile Include="ContentTypeTests.cs" />
     <Compile Include="CtorTests.cs" />
+    <Compile Include="EcDhKeyTests.cs" />
     <Compile Include="ExportTests.cs" />
     <Compile Include="ExtensionsTests.cs" />
     <Compile Include="FindTests.cs" />

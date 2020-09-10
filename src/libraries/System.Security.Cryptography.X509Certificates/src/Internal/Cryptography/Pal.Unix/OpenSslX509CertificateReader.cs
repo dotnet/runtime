@@ -573,6 +573,16 @@ namespace Internal.Cryptography.Pal
             }
         }
 
+        public ECDiffieHellman GetECDiffieHellmanPublicKey()
+        {
+            using (SafeEvpPKeyHandle publicKeyHandle = Interop.Crypto.GetX509EvpPublicKey(_cert))
+            {
+                Interop.Crypto.CheckValidOpenSslHandle(publicKeyHandle);
+
+                return new ECDiffieHellmanOpenSsl(publicKeyHandle);
+            }
+        }
+
         public ECDsa? GetECDsaPrivateKey()
         {
             if (_privateKey == null || _privateKey.IsInvalid)
