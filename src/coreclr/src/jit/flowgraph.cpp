@@ -24900,7 +24900,7 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
                 GenTree* expr = stmt->GetRootNode();
                 if (expr->gtOper == GT_END_LFIN)
                 {
-                    const unsigned nestLevel = expr->AsVal()->gtVal1;
+                    const size_t nestLevel = expr->AsVal()->gtVal1;
                     assert(nestLevel > 0);
                     expr->AsVal()->gtVal1 = nestLevel - 1;
                 }

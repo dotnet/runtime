@@ -540,7 +540,7 @@
     <value>'JsonNumberHandlingAttribute' cannot be placed on a property, field, or type that is handled by a custom converter. See usage(s) of converter '{0}' on type '{1}'.</value>
   </data>
   <data name="NumberHandlingOnPropertyTypeMustBeNumberOrCollection" xml:space="preserve">
-    <value>When 'JsonNumberHandlingAttribute' is placed on a property or field, the property or field must be a number or a collection. See member '{0}' on type '{1}'.</value>
+    <value>When 'JsonNumberHandlingAttribute' is placed on a property or field, the property or field must be a number or a collection of numbers. See member '{0}' on type '{1}'.</value>
   </data>
   <data name="ConverterCanConvertNullableRedundant" xml:space="preserve">
     <value>The converter '{0}' handles type '{1}' but is being asked to convert type '{2}'. Either create a separate converter for type '{2}' or change the converter's 'CanConvert' method to only return 'true' for a single type.</value>

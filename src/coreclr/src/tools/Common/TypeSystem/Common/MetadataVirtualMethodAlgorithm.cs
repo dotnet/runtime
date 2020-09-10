@@ -42,10 +42,10 @@ namespace Internal.TypeSystem
         private class UnificationGroup
         {
             private MethodDesc[] _members = MethodDesc.EmptyMethods;
-            private int _memberCount = 0;
+            private int _memberCount;
 
             private MethodDesc[] _methodsRequiringSlotUnification = MethodDesc.EmptyMethods;
-            private int _methodsRequiringSlotUnificationCount = 0;
+            private int _methodsRequiringSlotUnificationCount;
 
             /// <summary>
             /// Custom enumerator struct for Unification group. Makes enumeration require 0 allocations.

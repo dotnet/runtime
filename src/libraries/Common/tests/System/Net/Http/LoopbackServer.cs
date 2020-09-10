@@ -424,7 +424,7 @@ namespace System.Net.Test.Common
                 if (httpOptions.UseSsl)
                 {
                     var sslStream = new SslStream(stream, false, delegate { return true; });
-                    using (X509Certificate2 cert = Configuration.Certificates.GetServerCertificate())
+                    using (X509Certificate2 cert = httpOptions.Certificate ?? Configuration.Certificates.GetServerCertificate())
                     {
                         await sslStream.AuthenticateAsServerAsync(
                             cert,

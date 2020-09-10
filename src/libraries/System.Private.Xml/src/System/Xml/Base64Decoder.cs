@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Diagnostics;
 
 namespace System.Xml
@@ -166,7 +165,6 @@ namespace System.Xml
             char* pChar = pChars;
             int b = _bits;
             int bFilled = _bitsFilled;
-            XmlCharType xmlCharType = XmlCharType.Instance;
             while (pChar < pCharsEndPos && pByte < pBytesEndPos)
             {
                 char ch = *pChar;
@@ -178,7 +176,7 @@ namespace System.Xml
                 pChar++;
 
                 // ignore whitespace
-                if (xmlCharType.IsWhiteSpace(ch))
+                if (XmlCharType.IsWhiteSpace(ch))
                 {
                     continue;
                 }
@@ -219,7 +217,7 @@ namespace System.Xml
                 {
                     do
                     {
-                        if (!(xmlCharType.IsWhiteSpace(*pChar++)))
+                        if (!XmlCharType.IsWhiteSpace(*pChar++))
                         {
                             throw new XmlException(SR.Xml_InvalidBase64Value, new string(pChars, 0, (int)(pCharsEndPos - pChars)));
                         }
