@@ -298,7 +298,7 @@ while [[ $# > 0 ]]; do
       ;;
 
      -coverage)
-      arguments="$arguments /p:Coverage=true"
+      arguments="$arguments /p:VSTestCollect='XPlat Code Coverage'"
       shift 1
       ;;
 

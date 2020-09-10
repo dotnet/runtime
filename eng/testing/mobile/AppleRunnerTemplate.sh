@@ -1,7 +1,8 @@
 ﻿#!/usr/bin/env bash
 
 EXECUTION_DIR=$(dirname $0)
-[[RunCommands]]
+TEST_NAME=$1
+TARGET_ARCH=$2
 
 # "Release" in SCHEME_SDK is what xcode produces (see "bool Optimized" property in AppleAppBuilderTask)
 if [ "$TARGET_ARCH" == "arm" ]; then

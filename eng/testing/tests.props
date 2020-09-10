@@ -9,7 +9,6 @@
   
   <ItemGroup>
     <PackageReference Condition="'$(IncludeRemoteExecutor)' == 'true'" Include="Microsoft.DotNet.RemoteExecutor" Version="$(MicrosoftDotNetRemoteExecutorVersion)" />
-    <!-- Microsoft.Net.Test.Sdk brings a lot of assemblies with it. To reduce helix payload submission size we disable it on CI. -->
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="$(MicrosoftNETTestSdkVersion)" />
     <!--
       Microsoft.Net.Test.Sdk has a dependency on Newtonsoft.Json v9.0.1. We upgrade the dependency version

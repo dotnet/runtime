@@ -209,7 +209,6 @@
       <RunTestsCommand Condition="'$(TargetOS)' != 'Browser'">$(RunTestsCommand) $(AssemblyName) $(TargetArchitecture)</RunTestsCommand>
       <RunTestsCommand Condition="'$(TargetOS)' == 'Browser'">$(RunTestsCommand) $(AssemblyName) "$(JSEngine)" "$(JSEngineArgs)"</RunTestsCommand>
 
-      <RunTestsEnvironmentVariables>TARGET_ARCH=$(TargetArchitecture)</RunTestsEnvironmentVariables>
       <RunTestsEnvironmentVariables Condition="'$(MonoEnvOptions)' != ''">$(RunTestsEnvironmentVariables);MONO_ENV_OPTIONS=$(MonoEnvOptions)</RunTestsEnvironmentVariables>
     </PropertyGroup>
 

@@ -10,19 +10,23 @@
     <ContinueOnError Condition="'$(TestTrimming)' == 'true'">true</ContinueOnError>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Coverage)' == 'true'">
-    <TestInParallel>false</TestInParallel>
-    <CoverageReportInputPath>$(ArtifactsBinDir)\*.Tests\**\coverage.opencover.xml</CoverageReportInputPath>
-    <CoverageReportDir>$(ArtifactsDir)coverage</CoverageReportDir>
-    <EnableCoverageSupport>true</EnableCoverageSupport>
-  </PropertyGroup>
-  
-  <!-- Projects that don't support code coverage measurement. -->
-  <ItemGroup Condition="'$(Coverage)' == 'true'">
-    <ProjectExclusions Include="$(CommonTestPath)Common.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.XmlSerializer.Generator\tests\Microsoft.XmlSerializer.Generator.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Transactions.Local\tests\System.Transactions.Local.Tests.csproj" />
-  </ItemGroup>
+  <Choose>
+    <When Condition="'$(VSTestCollect.ToLower())' == 'xplat code coverage'">
+      <PropertyGroup>
+        <TestInParallel>false</TestInParallel>
+        <CoverageReportInputPath>$(ArtifactsBinDir)\*.Tests\**\coverage.opencover.xml</CoverageReportInputPath>
+        <CoverageReportDir>$(ArtifactsDir)coverage</CoverageReportDir>
+        <EnableCoverageSupport>true</EnableCoverageSupport>
+      </PropertyGroup>
+
+      <!-- Projects that don't support code coverage measurement. -->
+      <ItemGroup>
+        <ProjectExclusions Include="$(CommonTestPath)Common.Tests.csproj" />
+        <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.XmlSerializer.Generator\tests\Microsoft.XmlSerializer.Generator.Tests.csproj" />
+        <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Transactions.Local\tests\System.Transactions.Local.Tests.csproj" />
+      </ItemGroup>
+    </When>
+  </Choose>
 
   <ItemGroup Condition="('$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS') and '$(RunDisablediOSTests)' != 'true'">
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.FileProviders.Composite\tests\Microsoft.Extensions.FileProviders.Composite.Tests.csproj" />
@@ -134,5 +138,5 @@
           AfterTargets="Test"
           DependsOnTargets="GenerateCoverageReport"
           Condition="'$(TestAssemblies)' == 'true' and
-                     '$(Coverage)' == 'true'" />
+                     '$(VSTestCollect.ToLower())' == 'xplat code coverage'" />
 </Project>

@@ -2,7 +2,7 @@
   <PropertyGroup>
     <!-- Set the RuntimeIdentifier so that the DotNetHost and DotNetHostPolicy packages resolve for the corresponding runtime. -->
     <RuntimeIdentifier>$(PackageRID)</RuntimeIdentifier>
-    <SwapNativeForIL Condition="'$(SwapNativeForIL)' == '' and ('$(Configuration)' == 'Debug' or '$(Coverage)' == 'true') and '$(RuntimeFlavor)' != 'Mono'">true</SwapNativeForIL>
+    <SwapNativeForIL Condition="'$(SwapNativeForIL)' == '' and ('$(Configuration)' == 'Debug' or '$(VSTestCollect.ToLower())' == 'xplat code coverage') and '$(RuntimeFlavor)' != 'Mono'">true</SwapNativeForIL>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <!-- Binplace properties -->
     <BinPlaceForTargetVertical>false</BinPlaceForTargetVertical>
