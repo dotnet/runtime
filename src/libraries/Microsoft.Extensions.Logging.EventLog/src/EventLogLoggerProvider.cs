@@ -55,7 +55,9 @@ namespace Microsoft.Extensions.Logging.EventLog
         {
             if (_settings.EventLog is WindowsEventLog windowsEventLog)
             {
+#if NETSTANDARD
                 Debug.Assert(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
+#endif
                 windowsEventLog.DiagnosticsEventLog.Dispose();
             }
         }
