@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net.Security;
+using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Diagnostics.CodeAnalysis;
@@ -11,6 +12,7 @@ using System.Text;
 
 namespace System.Net.Http
 {
+    [UnsupportedOSPlatform("browser")]
     public sealed class SocketsHttpHandler : HttpMessageHandler
     {
         private readonly HttpConnectionSettings _settings = new HttpConnectionSettings();
