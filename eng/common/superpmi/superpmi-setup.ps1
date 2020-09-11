@@ -21,6 +21,7 @@ Param(
 $RunFromPerformanceRepo = ($Repository -eq "dotnet/jitutils") -or ($Repository -eq "dotnet-jitutils")
 $PayloadDirectory = (Join-Path $SourceDirectory "Payload")
 $SuperPmiDirectory = (Join-Path $PayloadDirectory "superpmi")
+$JitUtilsDirectory = (Join-Path $PayloadDirectory "jitutils")
 $WorkItemDirectory = (Join-Path $SourceDirectory "workitem")
 $Queue = "Windows.10.Amd64.ClientRS4.DevEx.15.8.Open"
 $HelixSourcePrefix = "official"
@@ -85,8 +86,10 @@ New-Item -Path $WorkItemDirectory -Name "placeholder.txt" -ItemType "file" -Valu
 #     robocopy $SourceDirectory $PerformanceDirectory /E /XD $PayloadDirectory $SourceDirectory\artifacts $SourceDirectory\.git
 # }
 # else {
-#     git clone --branch master --depth 1 --quiet https://github.com/kunalspathak/jitutils $PerformanceDirectory
+#
 # }
+
+git clone --branch dotnet_cmd --depth 1 --quiet https://github.com/kunalspathak/jitutils $JitUtilsDirectory
 
 # if($MonoDotnet -ne "")
 # {
@@ -115,6 +118,7 @@ $ci = $true
 # Directories
 Write-PipelineSetVariable -Name 'PayloadDirectory' -Value "$PayloadDirectory" -IsMultiJobVariable $false
 Write-PipelineSetVariable -Name 'SuperPMIDirectory' -Value "$SuperPMIDirectory" -IsMultiJobVariable $false
+Write-PipelineSetVariable -Name 'JitUtilsDirectory' -Value "$JitUtilsDirectory" -IsMultiJobVariable $false
 Write-PipelineSetVariable -Name 'WorkItemDirectory' -Value "$WorkItemDirectory" -IsMultiJobVariable $false
 
 # Script Arguments

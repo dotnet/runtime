@@ -1,14 +1,14 @@
 <Project Sdk="Microsoft.DotNet.Helix.Sdk" DefaultTargets="Test">
 
   <PropertyGroup Condition="'$(AGENT_OS)' == 'Windows_NT'">
-    <WorkItemCommand>%HELIX_CORRELATION_PAYLOAD%\superpmi\superpmi.py collect </WorkItemCommand>
     <Python>py -3</Python>
     <CoreRoot>%HELIX_CORRELATION_PAYLOAD%\Core_Root</CoreRoot>
     <CoreRun>%HELIX_CORRELATION_PAYLOAD%\Core_Root\CoreRun.exe</CoreRun>
+    <WorkItemCommand>%HELIX_CORRELATION_PAYLOAD%\superpmi\superpmi.py collect -pmi_location $(CoreRoot)</WorkItemCommand>
 
-    <!-- <HelixPreCommands>$(HelixPreCommands);call %HELIX_CORRELATION_PAYLOAD%\performance\tools\machine-setup.cmd;set PYTHONPATH=%HELIX_WORKITEM_PAYLOAD%\scripts%3B%HELIX_WORKITEM_PAYLOAD%</HelixPreCommands> -->
-    <ArtifactsDirectory>%HELIX_CORRELATION_PAYLOAD%\artifacts\BenchmarkDotNet.Artifacts</ArtifactsDirectory>
-    <DotnetExe>%HELIX_CORRELATION_PAYLOAD%\performance\tools\dotnet\$(Architecture)\dotnet.exe</DotnetExe>
+    <HelixPreCommands>$(HelixPreCommands);call %HELIX_CORRELATION_PAYLOAD%\jitutils\bootstrap.cmd;copy %HELIX_CORRELATION_PAYLOAD%\jitutils\bin\pmi.dll $(CoreRoot)</HelixPreCommands>
+    <!-- <ArtifactsDirectory>%HELIX_CORRELATION_PAYLOAD%\artifacts\BenchmarkDotNet.Artifacts</ArtifactsDirectory>
+    <DotnetExe>%HELIX_CORRELATION_PAYLOAD%\performance\tools\dotnet\$(Architecture)\dotnet.exe</DotnetExe> -->
     <Percent>%25%25</Percent>
     <XMLResults>%HELIX_WORKITEM_ROOT%\testResults.xml</XMLResults>
   </PropertyGroup>
@@ -16,6 +16,7 @@
   <PropertyGroup>
     <BaseDirectory>$HELIX_CORRELATION_PAYLOAD</BaseDirectory>
     <SuperPMIDirectory>$(BaseDirectory)/superpmi</SuperPMIDirectory>
+    <JitUtilsDirectory>$(BaseDirectory)/jitutils</JitUtilsDirectory>
   </PropertyGroup>
 
 
