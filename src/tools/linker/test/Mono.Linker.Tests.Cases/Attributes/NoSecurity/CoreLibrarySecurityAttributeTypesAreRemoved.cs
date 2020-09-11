@@ -1,5 +1,4 @@
-﻿#if !NETCOREAPP
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Security;
 using System.Security.Permissions;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
@@ -7,6 +6,9 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Attributes.NoSecurity
 {
+#if NETCOREAPP
+	[IgnoreTestCase ("Not important for .NET Core build")]
+#endif
 	[SetupLinkerCoreAction ("link")]
 	[SetupLinkerArgument ("--strip-security", "true")]
 	[Reference ("System.dll")]
@@ -44,5 +46,3 @@ namespace Mono.Linker.Tests.Cases.Attributes.NoSecurity
 		}
 	}
 }
-
-#endif

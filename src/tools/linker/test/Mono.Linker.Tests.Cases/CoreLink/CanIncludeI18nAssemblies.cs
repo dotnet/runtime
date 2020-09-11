@@ -1,10 +1,11 @@
-﻿#if !NETCOREAPP
-
-using Mono.Linker.Tests.Cases.Expectations.Assertions;
+﻿using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.CoreLink
 {
+#if NETCOREAPP
+	[IgnoreTestCase ("Not important for .NET Core build")]
+#endif
 	[SetupLinkerCoreAction ("link")]
 	[Il8n ("all")]
 
@@ -27,5 +28,3 @@ namespace Mono.Linker.Tests.Cases.CoreLink
 		}
 	}
 }
-
-#endif
