@@ -761,8 +761,8 @@ var BindingSupportLib = {
 					if (i !== args_marshal.length - 1)
 						throw new Error ("! must be at the end of the signature");
 					else {
-						key = "m";
 						is_result_definitely_unmarshaled = true;
+						continue;
 					}
 				}
 
@@ -930,7 +930,7 @@ var BindingSupportLib = {
 		_handle_possible_exception_for_method_call: function (result, exception) {
 			if (exception === 0)
 				return;
-				
+
 			var msg = this.conv_string (result);
 			var err = new Error (msg); //the convention is that invoke_method ToString () any outgoing exception
 			// console.log(err, err.stack);
@@ -1006,12 +1006,49 @@ var BindingSupportLib = {
 			}
 		},
 
-		_call_method_fast: function (method, this_arg, args_marshal, converter, args) {
+		_call_method_fast: function (method, this_arg, converter, args) {
+			if (args.length !== converter.steps.length)
+				throw new Error ("Expected " + converter.steps.length + " argument(s) but got " + args.length);
+
+			this_arg = this_arg | 0;
+
+			var buffer = 0;
+			var is_result_marshaled = !converter.is_result_definitely_unmarshaled;
+			var argsRootBuffer = this._get_args_root_buffer_for_method_call (converter);
+			var buffer = converter.compiled_function (argsRootBuffer, method, args);
+
+			var resultRoot = MONO.mono_wasm_new_root (), exceptionRoot = MONO.mono_wasm_new_root ();
+			try {
+				resultRoot.value = this.invoke_method (method, this_arg, buffer, exceptionRoot.get_address ());
+
+				this._handle_possible_exception_for_method_call (resultRoot.value, exceptionRoot.value);
+
+				if (is_result_marshaled)
+					return this._unbox_mono_obj_rooted (resultRoot);
+				else
+					return resultRoot.value;
+			} finally {
+				this._release_args_root_buffer_from_method_call (converter, argsRootBuffer);
+
+				if (buffer)
+					Module._free (buffer);
+
+				if (resultRoot)
+					resultRoot.release ();
+				if (exceptionRoot)
+					exceptionRoot.release ();
+			}
 		},
 
 		bind_method: function (method, this_arg, args_marshal) {
+			this.bindings_lazy_init ();
+
+			var converter = null;
+			if (typeof (args_marshal) === "string")
+				converter = this._compile_converter_for_marshal_string (args_marshal);
+
 			return function bound_method () {
-				return BINDING.call_method (method, this_arg, args_marshal, arguments);
+				return BINDING._call_method_fast (method, this_arg, converter, arguments);
 			};
 		},
 
