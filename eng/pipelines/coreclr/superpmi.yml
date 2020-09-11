@@ -10,6 +10,21 @@ pr: none
 #    - master
 #  always: true
 
+  # Top job that does the following:
+  # - Build job
+  #   - Trigger build coreclr and libraries and upload them.
+  # - Setup Jitutls
+  #   - Setup JitUtils to build and upload them.
+  # - Prepare payload
+  #   - Download cloned repo
+  #   - Download coreclr and libraries
+  #   - Create CORE_ROOT
+  #   - Download jitutils *.dlls
+  #   - Put it in payload folder or like that
+  # - Send job to helix
+  #   - Trigger msbuild superpmi.proj
+  #       - Invoke python superpmi.py --core_root %PAYLOAD_DOWNLOAD_FOLDER_ON_HELIX%\Core_root ...
+
 jobs:
 #
 # Checkout repository
@@ -66,7 +81,7 @@ jobs:
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
-    jobTemplate: /eng/pipelines/common/templates/runtimes/run-superpmi-job.yml
+    jobTemplate: /eng/pipelines/coreclr/templates/superpmi-job.yml
     buildConfig: checked
     platforms:
     # Linux tests are built on the OSX machines.

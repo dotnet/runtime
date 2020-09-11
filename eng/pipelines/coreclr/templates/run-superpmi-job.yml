@@ -1,5 +1,5 @@
 parameters:
-  steps: []                       # optional -- any additional steps that need to happen before pulling down the performance repo and sending the performance benchmarks to helix (ie building your repo)
+  steps: []                       # optional -- any additional steps that need to happen before pulling down the jitutils repo and sending the jitutils to helix (ie building your repo)
   variables: []                   # optional -- list of additional variables to send to the template
   jobName: ''                     # required -- job name
   displayName: ''                 # optional -- display name for the job. Will use jobName if not passed
@@ -91,10 +91,10 @@ jobs:
       displayName: SuperPMI Setup (Windows)
       condition: and(succeeded(), eq(variables['Agent.Os'], 'Windows_NT'))
       continueOnError: ${{ parameters.continueOnError }}
-    - script: $(Build.SourcesDirectory)/eng/common/superpmi/superpmi-setup.sh $(IsInternal)$(Interpreter) --framework $(_Framework) --kind ${{ parameters.runKind }} ${{ parameters.extraSetupParameters }}
-      displayName: SuperPMI Setup (Unix)
-      condition: and(succeeded(), ne(variables['Agent.Os'], 'Windows_NT'))
-      continueOnError: ${{ parameters.continueOnError }}
+    # - script: $(Build.SourcesDirectory)/eng/common/superpmi/superpmi-setup.sh $(IsInternal)$(Interpreter) --framework $(_Framework) --kind ${{ parameters.runKind }} ${{ parameters.extraSetupParameters }}
+    #   displayName: SuperPMI Setup (Unix)
+    #   condition: and(succeeded(), ne(variables['Agent.Os'], 'Windows_NT'))
+    #   continueOnError: ${{ parameters.continueOnError }}
     #   # call bootstrap.cmd or something of dotnet/jitutils
     # - script: $(Python) $(JitUtils)/scripts/ci_setup.py $(SetupArguments)
     #   displayName: Run bootstrap setup script
@@ -102,10 +102,10 @@ jobs:
     - template: /eng/common/templates/steps/superpmi-send-to-helix.yml
       parameters:
         HelixSource: '$(HelixSourcePrefix)/$(Build.Repository.Name)/$(Build.SourceBranch)' # sources must start with pr/, official/, prodcon/, or agent/
-        HelixType: 'test/performance/$(Kind)/$(_Framework)/$(Architecture)'
+        HelixType: 'test/superpmi/$(Kind)/$(_Framework)/$(Architecture)'
         HelixAccessToken: $(HelixApiAccessToken)
         HelixTargetQueues: $(Queue)
-        # might need this to upload?
+        # might need azure storage account setup inside precommand to upload the .mch files to azure blog?
         HelixPreCommands: $(HelixPreCommand)
         Creator: $(Creator)
         WorkItemTimeout: 4:00 # 4 hours
@@ -116,6 +116,6 @@ jobs:
       displayName: Publish Logs
       inputs:
         targetPath: $(Build.SourcesDirectory)/artifacts/log
-        artifactName: 'Performance_Run_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.runtimeType }}_${{ parameters.codeGenType }}_${{ parameters.runKind }}'
+        artifactName: 'SuperPMI_Run_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.runtimeType }}_${{ parameters.codeGenType }}_${{ parameters.runKind }}'
       continueOnError: true
       condition: always()
