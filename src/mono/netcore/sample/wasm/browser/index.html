@@ -10,7 +10,7 @@
   <body>
     <h3 id="header">Wasm Browser Sample</h3>
     Result from Sample.Test.TestMeaning: <span id="out"></span><br>
-    Progress: <span id="progress"></span><br>
+    Progress: <span id="progress">Starting...</span><br>
     Avg. Speed: <span id="speed"></span>
     <script type='text/javascript'>
       var App = {
@@ -74,7 +74,7 @@
             if (i && ((i % 5000) === 0)) {
               console.log(i);
               document.querySelector("#progress").innerHTML = String(i) + " / " + iterationCount;
-              document.querySelector("#speed").innerHTML = (elapsed / i).toFixed(1) + "ms/iter";
+              document.querySelector("#speed").innerHTML = (elapsed / i).toFixed(3) + "ms/iter";
             }
 
             if (i < iterationCount) {
@@ -82,6 +82,8 @@
             } else {
               console.log("ran", i, "iterations in", elapsed);
               console.log(elapsed / i, "ms/iter");
+              document.querySelector("#progress").innerHTML = String(i);
+              document.querySelector("#speed").innerHTML = (elapsed / i).toFixed(3) + "ms/iter";
             }
           }).bind(this);
 
