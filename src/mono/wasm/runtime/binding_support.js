@@ -939,6 +939,9 @@ var BindingSupportLib = {
 		},
 
 		_get_args_root_buffer_for_method_call: function (converter) {
+			if (!converter)
+				return null;
+
 			var result;
 			if (converter.scratchRootBuffer) {
 				result = converter.scratchRootBuffer;
@@ -1029,48 +1032,76 @@ var BindingSupportLib = {
 
 			this_arg = this_arg | 0;
 
-			var buffer = 0;
 			var is_result_marshaled = !converter.is_result_definitely_unmarshaled;
 			var argsRootBuffer = this._get_args_root_buffer_for_method_call (converter);
-			var buffer = converter.compiled_variadic_function (argsRootBuffer, method, args);
+			var buffer = 0;
+			if (converter)
+				buffer = converter.compiled_variadic_function (argsRootBuffer, method, args);
 
 			return this._call_method_with_converted_args (method, this_arg, buffer, is_result_marshaled, argsRootBuffer);
+		},
+
+		_handle_exception_and_produce_result_for_call: function (resultRoot, exceptionRoot, is_result_marshaled) {
+			this._handle_possible_exception_for_method_call (resultRoot.value, exceptionRoot.value);
+
+			if (is_result_marshaled)
+				return this._unbox_mono_obj_rooted (resultRoot);
+			else
+				return resultRoot.value;
+		},
+
+		_teardown_after_call: function (buffer, resultRoot, exceptionRoot, argsRootBuffer) {
+			this._release_args_root_buffer_from_method_call (argsRootBuffer);
+
+			if (buffer)
+				Module._free (buffer);
+
+			if (resultRoot)
+				resultRoot.release ();
+			if (exceptionRoot)
+				exceptionRoot.release ();
 		},
 
 		_call_method_with_converted_args: function (method, this_arg, buffer, is_result_marshaled, argsRootBuffer) {
 			var resultRoot = MONO.mono_wasm_new_root (), exceptionRoot = MONO.mono_wasm_new_root ();
 			try {
 				resultRoot.value = this.invoke_method (method, this_arg, buffer, exceptionRoot.get_address ());
-
-				this._handle_possible_exception_for_method_call (resultRoot.value, exceptionRoot.value);
-
-				if (is_result_marshaled)
-					return this._unbox_mono_obj_rooted (resultRoot);
-				else
-					return resultRoot.value;
+				return this._handle_exception_and_produce_result_for_call (resultRoot, exceptionRoot, is_result_marshaled);
 			} finally {
-				this._release_args_root_buffer_from_method_call (argsRootBuffer);
-
-				if (buffer)
-					Module._free (buffer);
-
-				if (resultRoot)
-					resultRoot.release ();
-				if (exceptionRoot)
-					exceptionRoot.release ();
+				this._teardown_after_call (buffer, resultRoot, exceptionRoot, argsRootBuffer);
 			}
 		},
 
 		bind_method: function (method, this_arg, args_marshal) {
-			this.bindings_lazy_init ();
+			this.bindings_lazy_init ();			
+
+			this_arg = this_arg | 0;
 
 			var converter = null;
 			if (typeof (args_marshal) === "string")
 				converter = this._compile_converter_for_marshal_string (args_marshal);
+			
+			var is_result_marshaled = !converter.is_result_definitely_unmarshaled;
 
-			return function bound_method () {
-				return BINDING._call_method_fast (method, this_arg, converter, arguments);
+			if (true)
+				return function bound_method () {
+					var argsRootBuffer = this._get_args_root_buffer_for_method_call (converter);
+					var buffer = 0;
+					if (converter)
+						buffer = converter.compiled_variadic_function (argsRootBuffer, method, arguments);
+		
+					return this._call_method_with_converted_args (method, this_arg, buffer, is_result_marshaled, argsRootBuffer);
+				};
+
+			/*
+			var closure = {
+				converter: converter,
+				method: method,
+				this_arg: this_arg				
 			};
+			var argumentNames = [];
+			var body =
+			*/
 		},
 
 		invoke_delegate: function (delegate_obj, js_args) {
