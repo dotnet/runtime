@@ -610,6 +610,30 @@ namespace System.Runtime.InteropServices.JavaScript.Http.Tests
             Assert.Equal(new Uri("blob:https://mdn.mozillademos.org/ca45b575-6348-4d3e-908a-3dbf3d146ea7"), rm.RequestUri);
         }
 
+        [Fact]
+        public void BlobUri_Marshal_CorrectValues()
+        {
+            Runtime.InvokeJS(@"
+                function typedArrayToURL(typedArray, mimeType) {
+                    //return URL.createObjectURL(new Blob([typedArray.buffer], {type: mimeType}))
+                    return 'blob:https://mdn.mozillademos.org/ca45b575-6348-4d3e-908a-3dbf3d146ea7';
+                }
+                const bytes = new Uint8Array(59);
+                for(let i = 0; i < 59; i++) {
+                    bytes[i] = 32 + i;
+                }
+                const url = typedArrayToURL(bytes, 'text/plain');
+                App.call_test_method  (""SetBlobUri"", [ url ]);
+            ");
+
+            var rm = new HttpRequestMessage(HttpMethod.Post, HelperMarshal._blobURI);
+
+            Assert.Equal(HttpMethod.Post, rm.Method);
+            Assert.Equal(_expectedRequestMessageVersion, rm.Version);
+            Assert.Null(rm.Content);
+            Assert.Equal(new Uri("blob:https://mdn.mozillademos.org/ca45b575-6348-4d3e-908a-3dbf3d146ea7"), rm.RequestUri);
+        }
+
         #region Helper methods
 
         private class MockContent : HttpContent
