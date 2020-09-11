@@ -80,10 +80,12 @@
     Partition the Microbenchmarks project, but nothing else
   -->
 
-  <HelixWorkItem Include="@(Partition)">
-    <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
-    <Command>$(WorkItemCommand)</Command>
-    <Timeout>$(WorkItemTimeout)</Timeout>
-  </HelixWorkItem>
+  <ItemGroup>
+    <HelixWorkItem Include="@(Partition)">
+      <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
+      <Command>$(WorkItemCommand)</Command>
+      <Timeout>$(WorkItemTimeout)</Timeout>
+    </HelixWorkItem>
+  </ItemGroup>
 
 </Project>
