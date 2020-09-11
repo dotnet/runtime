@@ -31,7 +31,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		public TestCase Collect (NPath sourceFile)
 		{
-			return Collect (new[] { sourceFile }).First ();
+			return Collect (new[] { sourceFile }).FirstOrDefault ();
 		}
 
 		public IEnumerable<TestCase> Collect (IEnumerable<NPath> sourceFiles)

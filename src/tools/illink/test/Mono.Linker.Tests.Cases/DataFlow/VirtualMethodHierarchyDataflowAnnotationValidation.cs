@@ -7,10 +7,12 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
+using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
 	[SkipKeptItemsValidation]
+	[SandboxDependency ("Dependencies/TestSystemTypeBase.cs")]
 	class VirtualMethodHierarchyDataflowAnnotationValidation
 	{
 		public static void Main ()

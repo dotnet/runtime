@@ -1,6 +1,4 @@
-﻿#if !NETCOREAPP
-
-using System;
+﻿using System;
 using System.Collections;
 using System.IO;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
@@ -8,6 +6,9 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.CoreLink
 {
+#if NETCOREAPP
+	[IgnoreTestCase("Not important for .NET Core build")]
+#endif
 	[SetupLinkerCoreAction ("link")]
 
 	[KeptAssembly (PlatformAssemblies.CoreLib)]
@@ -28,4 +29,3 @@ namespace Mono.Linker.Tests.Cases.CoreLink
 		}
 	}
 }
-#endif
