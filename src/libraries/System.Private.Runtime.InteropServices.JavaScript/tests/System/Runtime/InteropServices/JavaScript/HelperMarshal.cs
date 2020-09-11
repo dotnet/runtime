@@ -332,5 +332,11 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             _minValue = (int)_mathMinFunction.Apply(null, new object[] { 5, 6, 2, 3, 7 });
         }
+
+        internal static Uri _blobURL;
+        public static void SetBlobUrl(string blobUrl)
+        {
+            _blobURL = new Uri(blobUrl);
+        }
     }
 }
