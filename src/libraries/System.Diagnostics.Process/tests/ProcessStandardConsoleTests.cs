@@ -10,11 +10,11 @@ namespace System.Diagnostics.Tests
 {
     public class ProcessStandardConsoleTests : ProcessTestBase
     {
-        private const int ConsoleEncoding = 437;
-
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestChangesInConsoleEncoding()
         {
+            const int ConsoleEncoding = 437;
+
             void RunWithExpectedCodePage(int expectedCodePage)
             {
                 Process p = CreateProcessLong();
