@@ -31,23 +31,23 @@ jobs:
 #
 - template: /eng/pipelines/common/checkout-job.yml
 
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
-    buildConfig: checked
-    platforms:
-    # Linux tests are built on the OSX machines.
-    # For now, lets try it on Windows_NT_x64
-    # - OSX_x64
-    # - Linux_arm
-    # - Linux_arm64
-    # - Linux_x64
-    - Windows_NT_x64
-    # - Windows_NT_x86
-    # - Windows_NT_arm64
-    # - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
-    jobParameters:
-      testGroup: outerloop
+# - template: /eng/pipelines/common/platform-matrix.yml
+#   parameters:
+#     jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
+#     buildConfig: checked
+#     platforms:
+#     # Linux tests are built on the OSX machines.
+#     # For now, lets try it on Windows_NT_x64
+#     # - OSX_x64
+#     # - Linux_arm
+#     # - Linux_arm64
+#     # - Linux_x64
+#     - Windows_NT_x64
+#     # - Windows_NT_x86
+#     # - Windows_NT_arm64
+#     # - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
+#     jobParameters:
+#       testGroup: outerloop
 
 # For now, lets not build and run test
 # - template: /eng/pipelines/common/platform-matrix.yml
