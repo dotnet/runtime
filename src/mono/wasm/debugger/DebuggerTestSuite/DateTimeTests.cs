@@ -12,15 +12,11 @@ namespace DebuggerTests
     {
 
         [Theory]
-        [InlineData("en-US")]
-
-        // Currently not passing tests. Issue #19743
-        // [InlineData ("ja-JP")]
-        // [InlineData ("es-ES")]
-        //[InlineData ("de-DE")]
-        //[InlineData ("ka-GE")]
-        //[InlineData ("hu-HU")]
-        public async Task CheckDateTimeLocale(string locale)
+        [InlineData("en-US", "dddd, MMMM d, yyyy h:mm:ss tt", "dddd, MMMM d, yyyy", "h:mm:ss tt", "M/d/yyyy", "h:mm tt")]
+        [InlineData ("ja-JP", "yyyy年M月d日dddd H:mm:ss", "yyyy年M月d日dddd", "H:mm:ss", "yyyy/MM/dd", "H:mm")]
+        [InlineData ("es-ES", "dddd, d 'de' MMMM 'de' yyyy H:mm:ss", "dddd, d 'de' MMMM 'de' yyyy", "H:mm:ss", "d/M/yyyy", "H:mm")]
+        [InlineData ("de-DE", "dddd, d. MMMM yyyy HH:mm:ss", "dddd, d. MMMM yyyy", "HH:mm:ss", "dd.MM.yyyy", "HH:mm")]
+        public async Task CheckDateTimeLocale(string locale, string fdtp, string ldp, string ltp, string sdp, string stp)
         {
             var insp = new Inspector();
             var scripts = SubscribeToScripts(insp);
@@ -42,13 +38,6 @@ namespace DebuggerTests
                        DateTimeFormatInfo dtfi = CultureInfo.GetCultureInfo(locale).DateTimeFormat;
                        CultureInfo.CurrentCulture = new CultureInfo(locale, false);
                        DateTime dt = new DateTime(2020, 1, 2, 3, 4, 5);
-                       string dt_str = dt.ToString();
-
-                       var fdtp = dtfi.FullDateTimePattern;
-                       var ldp = dtfi.LongDatePattern;
-                       var ltp = dtfi.LongTimePattern;
-                       var sdp = dtfi.ShortDatePattern;
-                       var stp = dtfi.ShortTimePattern;
 
                        CheckString(locals, "fdtp", fdtp);
                        CheckString(locals, "ldp", ldp);
@@ -56,7 +45,6 @@ namespace DebuggerTests
                        CheckString(locals, "sdp", sdp);
                        CheckString(locals, "stp", stp);
                        await CheckDateTime(locals, "dt", dt);
-                       CheckString(locals, "dt_str", dt_str);
                    }
                 );
 
