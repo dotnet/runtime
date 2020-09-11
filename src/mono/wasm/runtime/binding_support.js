@@ -845,6 +845,7 @@ var BindingSupportLib = {
 				return converter;
 
 			var converterName = args_marshal.replace("!", "_result_unmarshaled");
+			converter.name = converterName;
 			
 			var body = [];
 			var argumentNames = ["rootBuffer", "method"];
@@ -855,9 +856,7 @@ var BindingSupportLib = {
 			// ensure the indirect values are 8-byte aligned so that aligned loads and stores will work
 			var indirectBaseOffset = ((((args_marshal.length * 4) + 7) / 8) | 0) * 8;
 
-			var closure = {
-				converter: converter
-			};
+			var closure = {};
 			var indirectLocalOffset = 0;
 
 			body.push (
@@ -1179,17 +1178,20 @@ var BindingSupportLib = {
 
 			var closure = {
 				binding_support: this,
-				converter: converter,
 				method: method,
 				this_arg: this_arg
 			};
+
+			if (converter)
+				closure["converter_" + converter.name] = converter;
+
 			var argumentNames = [];
 			var body = [];
 
 			if (converter) {
 				body.push(
-					"var argsRootBuffer = binding_support._get_args_root_buffer_for_method_call (converter);",
-					"var buffer = converter.compiled_function (",
+					"var argsRootBuffer = binding_support._get_args_root_buffer_for_method_call (converter_" + converter.name + ");",
+					"var buffer = converter_" + converter.name + ".compiled_function (",
 					"  argsRootBuffer, method,"
 				);
 
@@ -1230,7 +1232,7 @@ var BindingSupportLib = {
 				friendly_name = friendly_name.replace(escapeRE, "_");
 			}
 
-			var displayName = "bound_method_" + (friendly_name || method);
+			var displayName = "managed_" + (friendly_name || method);
 			
 			if (this_arg)
 				displayName += "_with_this_" + this_arg;
