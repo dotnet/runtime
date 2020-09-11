@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.DotNet.Helix.Sdk" DefaultTargets="Test">
 
   <PropertyGroup Condition="'$(AGENT_OS)' == 'Windows_NT'">
-    <WorkItemCommand>%HELIX_CORRELATION_PAYLOAD%\superpmi\scripts\benchmarks_ci.py collect </WorkItemCommand>
+    <WorkItemCommand>%HELIX_CORRELATION_PAYLOAD%\superpmi\scripts\superpmi.py collect </WorkItemCommand>
     <CliArguments>--dotnet-versions %DOTNET_VERSION% --cli-source-info args --cli-branch %PERFLAB_BRANCH% --cli-commit-sha %PERFLAB_HASH% --cli-repository https://github.com/%PERFLAB_REPO% --cli-source-timestamp %PERFLAB_BUILDTIMESTAMP%</CliArguments>
     <Python>py -3</Python>
     <CoreRoot>%HELIX_CORRELATION_PAYLOAD%\Core_Root</CoreRoot>

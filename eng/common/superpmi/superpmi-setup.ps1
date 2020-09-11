@@ -27,7 +27,7 @@ $HelixSourcePrefix = "official"
 $Creator = $env:BUILD_DEFINITIONNAME
 robocopy $SourceDirectory\src\coreclr\scripts $SuperPmiDirectory /E /XD $PayloadDirectory $SourceDirectory\artifacts $SourceDirectory\.git
 
-New-Item -Path $WorkItemDirectory -Name "placeholder.txt" -ItemType "file" -Value "Placeholder file."
+New-Item -Path $WorkItemDirectory -Name "placeholder.txt" -ItemType "file" -Value "Placeholder file." -Force
 
 # # TODO: Implement a better logic to determine if Framework is .NET Core or >= .NET 5.
 # if ($Framework.StartsWith("netcoreapp") -or ($Framework -eq "net5.0")) {
