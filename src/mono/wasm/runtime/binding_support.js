@@ -906,6 +906,37 @@ var BindingSupportLib = {
 			return has_args_marshal && has_args;
 		},
 
+		_get_args_root_buffer_for_method_call: function (converter) {
+			var result;
+			if (converter.scratchRootBuffer) {
+				result = converter.scratchRootBuffer;
+				converter.scratchRootBuffer = null;
+			} else {
+				result = MONO.mono_wasm_new_root_buffer (converter.steps.length);
+			}
+			return result;
+		},
+
+		_release_args_root_buffer_from_method_call: function (converter, argsRootBuffer) {
+			// Store the arguments root buffer for re-use in later calls
+			if (converter && !converter.scratchRootBuffer && argsRootBuffer) {
+				argsRootBuffer.clear ();
+				converter.scratchRootBuffer = argsRootBuffer;
+			} else if (argsRootBuffer) {
+				argsRootBuffer.release ();
+			}
+		},
+
+		_handle_possible_exception_for_method_call: function (result, exception) {
+			if (exception === 0)
+				return;
+				
+			var msg = this.conv_string (result);
+			var err = new Error (msg); //the convention is that invoke_method ToString () any outgoing exception
+			// console.log(err, err.stack);
+			throw err;
+		},
+
 		/*
 		args_marshal is a string with one character per parameter that tells how to marshal it, here are the valid values:
 
@@ -927,14 +958,13 @@ var BindingSupportLib = {
 			// HACK: Sometimes callers pass null or undefined, coerce it to 0 since that's what wasm expects
 			this_arg = this_arg | 0;
 
-			var needs_marshaling = this._verify_args_for_method_call (args_marshal, args);
+			var needs_converter = this._verify_args_for_method_call (args_marshal, args);
 
 			var buffer = 0, converter = null, argsRootBuffer = null;
 			var is_result_marshaled = true;
-			var resultRoot = MONO.mono_wasm_new_root (), exceptionRoot = MONO.mono_wasm_new_root ();
 
 			// check if the method signature needs argument mashalling
-			if (needs_marshaling) {
+			if (needs_converter) {
 				converter = this._compile_converter_for_marshal_string (args_marshal);
 
 				if (args_marshal.length > args.length && args_marshal [args.length] === "m") {
@@ -948,37 +978,23 @@ var BindingSupportLib = {
 					is_result_marshaled = !converter.is_result_definitely_unmarshaled;
 				}
 
-				if (converter.scratchRootBuffer) {
-					argsRootBuffer = converter.scratchRootBuffer;
-					converter.scratchRootBuffer = null;
-				} else {
-					argsRootBuffer = MONO.mono_wasm_new_root_buffer (args_marshal.length);
-				}
+				argsRootBuffer = this._get_args_root_buffer_for_method_call (converter);
 
 				buffer = converter.compiled_function (argsRootBuffer, method, args);
 			}
 
+			var resultRoot = MONO.mono_wasm_new_root (), exceptionRoot = MONO.mono_wasm_new_root ();
 			try {
 				resultRoot.value = this.invoke_method (method, this_arg, buffer, exceptionRoot.get_address ());
 
-				if (exceptionRoot.value !== 0) {
-					var msg = this.conv_string (resultRoot.value);
-					var err = new Error (msg); //the convention is that invoke_method ToString () any outgoing exception
-					// console.log(err, err.stack);
-					throw err;
-				}
+				this._handle_possible_exception_for_method_call (resultRoot.value, exceptionRoot.value);
 
 				if (is_result_marshaled)
 					return this._unbox_mono_obj_rooted (resultRoot);
 				else
 					return resultRoot.value;
 			} finally {
-				// Store the arguments root buffer for re-use in later calls
-				if (converter && !converter.scratchRootBuffer && argsRootBuffer) {
-					argsRootBuffer.clear ();
-					converter.scratchRootBuffer = argsRootBuffer;
-					argsRootBuffer = undefined;
-				}
+				this._release_args_root_buffer_from_method_call (converter, argsRootBuffer);
 
 				if (buffer)
 					Module._free (buffer);
@@ -987,8 +1003,6 @@ var BindingSupportLib = {
 					resultRoot.release ();
 				if (exceptionRoot)
 					exceptionRoot.release ();
-				if (argsRootBuffer)
-					argsRootBuffer.release ();
 			}
 		},
 
