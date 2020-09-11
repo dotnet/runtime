@@ -3,13 +3,13 @@
   <ProductDependencies>
   </ProductDependencies>
   <ToolsetDependencies>
-    <Dependency Name="Microsoft.DotNet.Arcade.Sdk" Version="5.0.0-beta.20453.7">
+    <Dependency Name="Microsoft.DotNet.Arcade.Sdk" Version="5.0.0-beta.20459.8">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>16b71a2f216c3c5be5860977c4cb03a95ee2f0e3</Sha>
+      <Sha>91470b0b14ba016c1fb78211b12775287c17b34e</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.ApiCompat" Version="5.0.0-beta.20453.7">
+    <Dependency Name="Microsoft.DotNet.ApiCompat" Version="5.0.0-beta.20459.8">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>16b71a2f216c3c5be5860977c4cb03a95ee2f0e3</Sha>
+      <Sha>91470b0b14ba016c1fb78211b12775287c17b34e</Sha>
     </Dependency>
     <Dependency Name="Microsoft.NET.Sdk.IL" Version="6.0.0-alpha.1.20454.24">
       <Uri>https://github.com/dotnet/runtime</Uri>
