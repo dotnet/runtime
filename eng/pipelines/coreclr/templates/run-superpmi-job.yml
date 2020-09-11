@@ -87,7 +87,7 @@ jobs:
             _Framework: ${{ framework }}
     steps:
     - ${{ parameters.steps }}
-    - powershell: $(Build.SourcesDirectory)\eng\common\superpmi\superpmi-setup.ps1
+    - powershell: $(Build.SourcesDirectory)\eng\common\superpmi\superpmi-setup.ps1 -CoreRootDirectory $(Build.SourcesDirectory)\artifacts\tests\coreclr\${{ parameters.osGroup }}.${{ parameters.archType }}.${{ buildConfigUpper }}\Tests\Core_Root
       displayName: SuperPMI Setup (Windows)
       condition: and(succeeded(), eq(variables['Agent.Os'], 'Windows_NT'))
       continueOnError: ${{ parameters.continueOnError }}

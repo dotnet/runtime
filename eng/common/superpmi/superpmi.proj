@@ -2,8 +2,8 @@
 
   <PropertyGroup Condition="'$(AGENT_OS)' == 'Windows_NT'">
     <Python>py -3</Python>
-    <CoreRoot>%HELIX_CORRELATION_PAYLOAD%\Core_Root</CoreRoot>
-    <CoreRun>%HELIX_CORRELATION_PAYLOAD%\Core_Root\CoreRun.exe</CoreRun>
+    <CoreRoot>%HELIX_CORRELATION_PAYLOAD%\PmiAssembliesDirectory</CoreRoot>
+    <!-- <CoreRun>%HELIX_CORRELATION_PAYLOAD%\PmiAssembliesDirectory\CoreRun.exe</CoreRun> -->
     <WorkItemCommand>%HELIX_CORRELATION_PAYLOAD%\superpmi\superpmi.py collect -pmi_location $(CoreRoot)</WorkItemCommand>
 
     <HelixPreCommands>$(HelixPreCommands);call %HELIX_CORRELATION_PAYLOAD%\jitutils\bootstrap.cmd;copy %HELIX_CORRELATION_PAYLOAD%\jitutils\bin\pmi.dll $(CoreRoot)</HelixPreCommands>
