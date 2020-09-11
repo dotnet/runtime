@@ -796,11 +796,11 @@ var BindingSupportLib = {
 
 		_compile_converter_for_marshal_string: function (args_marshal) {
 			var converter = this._get_converter_for_marshal_string (args_marshal);
-			if (converter.compiled_function)
+			if (converter.compiled_function && converter.compiled_variadic_function)
 				return converter;
 			
 			var body = [];
-			var argumentNames = ["rootBuffer", "method", "args"];
+			var argumentNames = ["rootBuffer", "method"];
 
 			// worst-case allocation size instead of allocating dynamically, plus padding
 			var bufferSizeBytes = converter.size + (args_marshal.length * 4) + 16;
@@ -824,11 +824,11 @@ var BindingSupportLib = {
 			for (var i = 0; i < converter.steps.length; i++) {
 				var step = converter.steps[i];
 				var closureKey = "step" + i;
-				var argKey = "args[" + i + "]";
 				var valueKey = "value" + i;
 				var hasAssignedAddress = false;
 
-				body.push ("if (argc <= " + i + ") return buffer;");
+				var argKey = "arg" + i;
+				argumentNames.push (argKey);
 
 				if (step.convert) {
 					closure[closureKey] = step.convert;
@@ -878,13 +878,46 @@ var BindingSupportLib = {
 
 			body.push ("return buffer;");
 
-			var bodyJs = body.join ("\r\n");
+			var bodyJs = body.join ("\r\n"), compiledFunction = null, compiledVariadicFunction = null;
 			try {
-				var compiledFunction = this._createNamedFunction("converter_" + args_marshal, argumentNames, bodyJs, closure);
+				compiledFunction = this._createNamedFunction("converter_" + args_marshal, argumentNames, bodyJs, closure);
 				converter.compiled_function = compiledFunction;
 				// console.log("compiled converter", compiledFunction);
 			} catch (exc) {
 				converter.compiled_function = null;
+				console.log("compiling converter failed for", bodyJs, "with error", exc);
+				throw exc;
+			}
+
+			argumentNames = ["rootBuffer", "method", "args"];
+			closure = {
+				converter: compiledFunction
+			};
+			body = [
+				"return converter(",
+				"  rootBuffer, method,"
+			];
+
+			for (var i = 0; i < converter.steps.length; i++) {
+				body.push(
+					"  arg" + i + 
+					(
+						(i == converter.steps.length - 1) 
+							? "" 
+							: ","
+					)
+				);
+			}
+
+			body.push(");");
+
+			bodyJs = body.join ("\r\n");
+			try {
+				compiledVariadicFunction = this._createNamedFunction("converter_" + args_marshal, argumentNames, bodyJs, closure);
+				converter.compiled_variadic_function = compiledVariadicFunction;
+				// console.log("compiled converter", compiledFunction);
+			} catch (exc) {
+				converter.compiled_variadic_function = null;
 				console.log("compiling converter failed for", bodyJs, "with error", exc);
 				throw exc;
 			}
@@ -913,11 +946,13 @@ var BindingSupportLib = {
 				converter.scratchRootBuffer = null;
 			} else {
 				result = MONO.mono_wasm_new_root_buffer (converter.steps.length);
+				result.converter = converter;
 			}
 			return result;
 		},
 
-		_release_args_root_buffer_from_method_call: function (converter, argsRootBuffer) {
+		_release_args_root_buffer_from_method_call: function (argsRootBuffer) {
+			var converter = argsRootBuffer.converter;
 			// Store the arguments root buffer for re-use in later calls
 			if (converter && !converter.scratchRootBuffer && argsRootBuffer) {
 				argsRootBuffer.clear ();
@@ -980,7 +1015,7 @@ var BindingSupportLib = {
 
 				argsRootBuffer = this._get_args_root_buffer_for_method_call (converter);
 
-				buffer = converter.compiled_function (argsRootBuffer, method, args);
+				buffer = converter.compiled_variadic_function (argsRootBuffer, method, args);
 			}
 
 			var resultRoot = MONO.mono_wasm_new_root (), exceptionRoot = MONO.mono_wasm_new_root ();
@@ -1015,8 +1050,12 @@ var BindingSupportLib = {
 			var buffer = 0;
 			var is_result_marshaled = !converter.is_result_definitely_unmarshaled;
 			var argsRootBuffer = this._get_args_root_buffer_for_method_call (converter);
-			var buffer = converter.compiled_function (argsRootBuffer, method, args);
+			var buffer = converter.compiled_variadic_function (argsRootBuffer, method, args);
 
+			return this._call_method_with_converted_args (method, this_arg, buffer, is_result_marshaled, argsRootBuffer);
+		},
+
+		_call_method_with_converted_args: function (method, this_arg, buffer, is_result_marshaled, argsRootBuffer) {
 			var resultRoot = MONO.mono_wasm_new_root (), exceptionRoot = MONO.mono_wasm_new_root ();
 			try {
 				resultRoot.value = this.invoke_method (method, this_arg, buffer, exceptionRoot.get_address ());
@@ -1028,7 +1067,7 @@ var BindingSupportLib = {
 				else
 					return resultRoot.value;
 			} finally {
-				this._release_args_root_buffer_from_method_call (converter, argsRootBuffer);
+				this._release_args_root_buffer_from_method_call (argsRootBuffer);
 
 				if (buffer)
 					Module._free (buffer);
