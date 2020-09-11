@@ -32,7 +32,7 @@
     <XcodeDir Condition="'$(XcodeDir)' == ''">/Applications/Xcode.app/Contents/Developer</XcodeDir>
     <BuildMonoAOTCrossCompiler Condition="'$(TargetsiOS)' == 'true'">true</BuildMonoAOTCrossCompiler>
     <BuildMonoAOTCrossCompiler Condition="'$(TargetstvOS)' == 'true'">true</BuildMonoAOTCrossCompiler>
-    <BuildMonoAOTCrossCompiler Condition="'$(TargetsBrowser)' == 'true' and '$(MonoEnableCMake)' != 'true'">true</BuildMonoAOTCrossCompiler>
+    <BuildMonoAOTCrossCompiler Condition="'$(TargetsBrowser)' == 'true'">true</BuildMonoAOTCrossCompiler>
     <CrossConfigH Condition="'$(BuildMonoAOTCrossCompiler)' == 'true'">$(MonoObjDir)cross\config.h</CrossConfigH>
     <MonoBundleLLVMOptimizer Condition="'$(MonoEnableLLVM)' == 'true'">true</MonoBundleLLVMOptimizer>
     <MonoCCompiler>$(Compiler)</MonoCCompiler>
@@ -46,6 +46,10 @@
   <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
     <PackageReference Include="$(MicrosoftNETCoreRuntimeICUTransportPackage)" PrivateAssets="all" Version="$(MicrosoftNETCoreRuntimeICUTransportVersion)" GeneratePathProperty="true" />
   </ItemGroup>
+
+  <Target Name="CheckEnv">
+    <Error Condition="'$(TargetsBrowser)' == 'true' and '$(EMSDK_PATH)' == ''" Text="The EMSDK_PATH environment variable should be set pointing to the emscripten SDK root dir."/>
+  </Target>
 
   <!-- OSX/iOS/tvOS/Android/Linux Mono runtime build -->
   <Target Name="ConfigureMonoRuntimeUnix" Condition="'$(OS)' != 'Windows_NT'" Inputs="$(MonoProjectRoot)configure.ac;$(MonoProjectRoot)configure" Outputs="$(MonoObjDir)config.h;$(CrossConfigH)">
@@ -960,10 +964,13 @@
     <ItemGroup>
       <MonoCMakeArgs Condition="'$(MonoBuildTool)' == 'ninja'" Include="-G Ninja"/>
       <MonoCMakeArgs Include="-DCMAKE_INSTALL_PREFIX=$(MonoObjDir)out"/>
+      <MonoCMakeArgs Include="-DCMAKE_BUILD_TYPE=$(Configuration)"/>
     </ItemGroup>
+    <!-- OSX specific options -->
     <ItemGroup Condition="'$(TargetsOSX)' == 'true'">
       <MonoCMakeArgs Include="-DCMAKE_OSX_DEPLOYMENT_TARGET=$(macOSVersionMin)" />
     </ItemGroup>
+    <!-- WASM specific options -->
     <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
       <MonoCMakeArgs Include="-DENABLE_MINIMAL=ssa,com,jit,reflection_emit_save,portability,assembly_remapping,attach,verifier,full_messages,appdomains,shadowcopy,security,sgen_marksweep_conc,sgen_split_nursery,sgen_gc_bridge,sgen_toggleref,logging,remoting,shared_perfcounters,sgen_debug_helpers,sgen_binary_protocol,soft_debug,interpreter,assert_messages,cleanup,mdb,gac,threads,eventpipe,aot,interpreter"/>
       <MonoCMakeArgs Include="-DENABLE_INTERP_LIB=1"/>
@@ -971,11 +978,64 @@
       <MonoCMakeArgs Include="-DDISABLE_CRASH_REPORTING=1"/>
       <MonoCMakeArgs Include="-DENABLE_ICALL_EXPORT=1"/>
       <MonoCMakeArgs Include="-DENABLE_LAZY_GC_THREAD_CREATION=1"/>
-      <MonoCMakeArgs Include="-DCMAKE_C_FLAGS=-I$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)/runtimes/browser-wasm/native/include"/>
-      <MonoCMakeArgs Include="-DCMAKE_BUILD_TYPE=$(Configuration)"/>
+      <MonoCFLAGS Include="-I$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)/runtimes/browser-wasm/native/include"/>
+    </ItemGroup>
+    <!-- iOS/tvOS specific options -->
+    <PropertyGroup>
+      <MonoCMakeSysroot Condition="'$(TargetsiOS)' == 'true' and '$(TargetsiOSSimulator)' != 'true'">$(XcodeDir)/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS$(iOSVersion).sdk</MonoCMakeSysroot>
+      <MonoCMakeSysroot Condition="'$(TargetsiOS)' == 'true' and '$(TargetsiOSSimulator)' == 'true'">$(XcodeDir)/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator$(iOSVersion).sdk</MonoCMakeSysroot>
+      <MonoCMakeSysroot Condition="'$(TargetstvOS)' == 'true' and '$(TargetstvOSSimulator)' != 'true'">$(XcodeDir)/Platforms/AppleTVOS.platform/Developer/SDKs/AppleTVOS$(tvOSVersion).sdk</MonoCMakeSysroot>
+      <MonoCMakeSysroot Condition="'$(TargetstvOS)' == 'true' and '$(TargetstvOSSimulator)' == 'true'">$(XcodeDir)/Platforms/AppleTVOSSimulator.platform/Developer/SDKs/AppleTVOSSimulator$(tvOSVersion).sdk</MonoCMakeSysroot>
+      <MonoCMakeSystemName Condition="'$(TargetsiOS)' == 'true'">iOS</MonoCMakeSystemName>
+      <MonoCMakeSystemName Condition="'$(TargetstvOS)' == 'true'">tvOS</MonoCMakeSystemName>
+      <MonoCMakeVersionMin Condition="'$(TargetstvOS)' == 'true'">$(tvOSVersionMin)</MonoCMakeVersionMin>
+      <MonoCMakeVersionMin Condition="'$(TargetsiOS)' == 'true'">$(iOSVersionMin)</MonoCMakeVersionMin>
+      <MonoCMakeVersionMin Condition="'$(TargetstvOS)' == 'true'">$(tvOSVersionMin)</MonoCMakeVersionMin>
+    </PropertyGroup>
+    <ItemGroup Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">
+      <MonoCMakeArgs Include="-DCMAKE_SYSTEM_NAME=$(MonoCMakeSystemName)"/>
+      <MonoCMakeArgs Include="-DCMAKE_OSX_DEPLOYMENT_TARGET=$(MonoCMakeVersionMin)" />
+      <MonoCMakeArgs Include="-DCMAKE_OSX_SYSROOT='$(MonoCMakeSysroot)'" />
+      <MonoCMakeArgs Condition="'$(Platform)' == 'x64'" Include="-DCMAKE_OSX_ARCHITECTURES=x86_64"/>
+      <MonoCMakeArgs Condition="'$(Platform)' == 'x86'" Include="-DCMAKE_OSX_ARCHITECTURES=i386"/>
+      <MonoCMakeArgs Condition="'$(Platform)' == 'arm64'" Include="-DCMAKE_OSX_ARCHITECTURES=arm64"/>
+      <MonoCMakeArgs Condition="'$(Platform)' == 'arm'" Include="-DCMAKE_OSX_ARCHITECTURES=arm"/>
+      <MonoCFLAGS Include="-Wl,-application_extension" />
+      <MonoCXXFLAGS Include="-Wl,-application_extension" />
+    </ItemGroup>
+    <!-- iOS simulator specific options -->
+    <ItemGroup Condition="'$(TargetsiOS)' == 'true' and '$(TargetsiOSSimulator)' == 'true'">
+      <MonoCMakeArgs Include="-DENABLE_MINIMAL=com,remoting,shared_perfcounters,gac"/>
+    </ItemGroup>
+    <!-- iOS device specific options -->
+    <ItemGroup Condition="'$(TargetsiOS)' == 'true' and '$(TargetsiOSSimulator)' != 'true'">
+      <MonoCMakeArgs Include="-DMINIMAL=ssa,com,interpreter,jit,portability,assembly_remapping,attach,verifier,full_messages,appdomains,security,sgen_remset,sgen_marksweep_par,sgen_marksweep_fixed,sgen_marksweep_fixed_par,sgen_copying,logging,remoting,shared_perfcounters,gac" />
+      <MonoCMakeArgs Include="-DDISABLE_ICALL_TABLES=1"/>
+      <MonoCMakeArgs Include="-DENABLE_ICALL_EXPORT=0"/>
+      <MonoCMakeArgs Include="-DENABLE_VISIBILITY_HIDDEN=1"/>
+      <MonoCMakeArgs Include="-DENABLE_LAZY_GC_THREAD_CREATION=1"/>
+      <MonoCMakeArgs Include="-DENABLE_SIGALTSTACK=0"/>
+      <MonoCFLAGS Include="-Werror=partial-availability" />
+      <MonoCFLAGS Include="-fexceptions" />
+      <MonoCPPFLAGS Include="-DSMALL_CONFIG" />
+      <MonoCPPFLAGS Include="-D_XOPEN_SOURCE" />
+      <MonoCPPFLAGS Include="-DHAVE_LARGE_FILE_SUPPORT=1" />
+      <MonoCXXFLAGS Include="-Werror=partial-availability" />
+    </ItemGroup>
+    <PropertyGroup>
+      <MonoCMakeSupported Condition="'$(TargetsOSX)' == 'true' or '$(TargetsBrowser)' == 'true' or '$(TargetsiOS)' == 'true'">true</MonoCMakeSupported>
+    </PropertyGroup>
+    <Error Condition="'$(MonoCMakeSupported)' != 'true'" Text="Building with cmake is not supported in this configuration."/>
+    <PropertyGroup>
+      <MonoCFLAGSOption>-DCMAKE_C_FLAGS="@(MonoCFLAGS, ' ')"</MonoCFLAGSOption>
+      <MonoCXXFLAGSOption>-DCMAKE_CXX_FLAGS="@(MonoCXXFLAGS, ' ')"</MonoCXXFLAGSOption>
+    </PropertyGroup>
+    <ItemGroup>
+      <MonoCMakeArgs Include="$(MonoCFLAGSOption)"/>
+      <MonoCMakeArgs Include="$(MonoCXXFLAGSOption)"/>
     </ItemGroup>
     <MakeDir Directories="$(MonoObjDir)" />
-    <Message Text="Running cmake with arguments: @(MonoCMakeArgs, ' ') $(MonoProjectRoot)" Importance="High"/>
+    <Message Text="Running 'cmake @(MonoCMakeArgs, ' ') $(MonoProjectRoot)' in '$(MonoObjDir)'" Importance="High"/>
     <!-- cmake -->
     <Exec Condition="'$(TargetsBrowser)' != 'true'" Command="cmake @(MonoCMakeArgs, ' ') $(MonoProjectRoot)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)"/>
     <Exec Condition="'$(TargetsBrowser)' == 'true'" Command="bash -c 'source $(EMSDK_PATH)/emsdk_env.sh &amp;&amp; emcmake cmake @(MonoCMakeArgs, ' ') $(MonoProjectRoot)'" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)" />
@@ -984,8 +1044,79 @@
     <Exec Condition="'$(TargetsBrowser)' == 'true'" Command="bash -c 'source $(EMSDK_PATH)/emsdk_env.sh &amp;&amp; $(MonoBuildTool) all install'" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)" />
   </Target>
 
+  <!-- Build AOT cross compiler (if available) -->
+  <Target Name="BuildMonoCrossCMake" Condition="'$(MonoEnableCMake)' == 'true' and '$(BuildMonoAOTCrossCompiler)' == 'true'" DependsOnTargets="BuildMonoRuntimeCMake">
+    <Exec Command="which ninja" IgnoreExitCode="true" IgnoreStandardErrorWarningFormat="true">
+      <Output TaskParameter="ExitCode" PropertyName="MonoNinjaFound"/>
+    </Exec>
+    <PropertyGroup>
+      <MonoBuildTool Condition="'$(MonoNinjaFound)' == '0'">ninja</MonoBuildTool>
+      <MonoBuildTool Condition="'$(MonoNinjaFound)' != '0'">make -j$([System.Environment]::ProcessorCount)</MonoBuildTool>
+    </PropertyGroup>
+
+    <!-- iOS specific options -->
+    <PropertyGroup Condition="'$(TargetstvOS)' == 'true' or '$(TargetsiOS)' == 'true'">
+      <!-- FIXME: Disable for simulator -->
+      <MonoUseCrossTool>true</MonoUseCrossTool>
+      <MonoAotSysroot Condition="'$(TargetsiOSSimulator)' != 'true'">$(XcodeDir)/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS$(iOSVersion).sdk</MonoAotSysroot>
+      <MonoAotSysroot Condition="'$(TargetsiOSSimulator)' == 'true'">$(XcodeDir)/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator$(iOSVersion).sdk</MonoAotSysroot>
+      <MonoAotSysroot Condition="'$(TargetstvOS)' == 'true'">$(XcodeDir)/Platforms/AppleTVOS.platform/Developer/SDKs/AppleTVOS$(tvOSVersion).sdk</MonoAotSysroot>
+      <MonoAotOffsetsFile>$(MonoObjDir)cross/offsets-$(Platform)-darwin.h</MonoAotOffsetsFile>
+      <MonoAotAbi Condition="'$(Platform)' == 'arm64'">aarch64-apple-darwin10</MonoAotAbi>
+      <MonoAotAbi Condition="'$(Platform)' == 'arm'">arm-apple-darwin10</MonoAotAbi>
+      <MonoAotAbi Condition="'$(Platform)' == 'x86'">i386-apple-darwin10</MonoAotAbi>
+      <MonoAotAbi Condition="'$(Platform)' == 'x64'">x86_64-apple-darwin10</MonoAotAbi>
+    </PropertyGroup>
+
+    <!-- WASM specific options -->
+    <PropertyGroup Condition="'$(TargetsBrowser)' == 'true'">
+      <MonoUseCrossTool>true</MonoUseCrossTool>
+      <MonoAotAbi>wasm32-unknown-none</MonoAotAbi>
+      <MonoAotOffsetsFile>$(MonoObjDir)cross/offsets-wasm32-unknown-none.h</MonoAotOffsetsFile>
+    </PropertyGroup>
+
+    <ItemGroup Condition="'$(MonoUseCrossTool)' == 'true'">
+      <MonoAotCrossOffsetsToolParams Include="--abi=$(MonoAotAbi)" />
+      <MonoAotCrossOffsetsToolParams Include="--netcore" />
+      <MonoAotCrossOffsetsToolParams Include="--targetdir=&quot;$(MonoObjDir)&quot;" />
+      <MonoAotCrossOffsetsToolParams Include="--monodir=&quot;$(MonoProjectRoot)&quot;" />
+      <MonoAotCrossOffsetsToolParams Include="--outfile=&quot;$(MonoAotOffsetsFile)&quot;" />
+      <MonoAotCrossOffsetsToolParams Include="--libclang=&quot;$(XcodeDir)/Toolchains/XcodeDefault.xctoolchain/usr/lib/libclang.dylib&quot;" />
+      <MonoAotCrossOffsetsToolParams Condition="'$(MonoAotSysroot)' != ''" Include="--sysroot=&quot;$(MonoAotSysroot)&quot;" />
+      <MonoAotCrossOffsetsToolParams Condition="'$(TargetsBrowser)' == 'true'" Include="--emscripten-sdk=&quot;$(EMSDK_PATH)/upstream/emscripten&quot;" />
+    </ItemGroup>
+
+    <PropertyGroup Condition="'$(MonoUseCrossTool)' == 'true'">
+      <MonoAotCrossOffsetsCommand>python3 $(MonoProjectRoot)mono/tools/offsets-tool/offsets-tool.py @(MonoAotCrossOffsetsToolParams, ' ')</MonoAotCrossOffsetsCommand>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <MonoAOTCMakeArgs Include="-DAOT_TARGET_TRIPLE=$(MonoAotAbi)"/>
+      <MonoAOTCMakeArgs Condition="'$(MonoBuildTool)' == 'ninja'" Include="-G Ninja"/>
+      <MonoAOTCMakeArgs Include="-DCMAKE_INSTALL_PREFIX=$(MonoObjDir)cross/out"/>
+      <MonoAOTCMakeArgs Include="-DCMAKE_BUILD_TYPE=$(Configuration)"/>
+      <!-- FIXME: Disable more -->
+      <MonoAOTCMakeArgs Include="-DENABLE_MINIMAL=com,remoting" />
+      <MonoAOTCMakeArgs Include="-DENABLE_ICALL_SYMBOL_MAP=1" />
+      <MonoAOTCMakeArgs Include="-DDISABLE_SHARED_LIBS=1" />
+      <MonoAOTCMakeArgs Include="-DDISABLE_LIBS=1" />
+      <MonoAOTCMakeArgs Condition="'$(MonoAotOffsetsFile)' != ''" Include="-DAOT_OFFSETS_FILE=&quot;$(MonoAotOffsetsFile)&quot;" />
+      <MonoAOTCMakeArgs Include="-DLLVM_PREFIX=$(MonoLLVMDir)" />
+    </ItemGroup>
+
+    <MakeDir Directories="$(MonoObjDir)/cross" />
+    <!-- offsets tool -->
+    <Message Condition="'$(MonoUseCrossTool)' == 'true' and !Exists('$(MonoAotOffsetsFile)')" Text="Running '$(MonoAotCrossOffsetsCommand)'" Importance="High" />
+    <Exec Condition="'$(MonoUseCrossTool)' == 'true' and !Exists('$(MonoAotOffsetsFile)')" Command="$(MonoAotCrossOffsetsCommand)" IgnoreStandardErrorWarningFormat="true" />
+    <!-- cmake -->
+    <Message Text="Running 'cmake @(MonoAOTCMakeArgs, ' ') $(MonoProjectRoot)" Importance="High" />
+    <Exec Command="cmake @(MonoAOTCMakeArgs, ' ') $(MonoProjectRoot)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)/cross"/>
+    <!-- ninja/make -->
+    <Exec Command="$(MonoBuildTool) all install" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)/cross"/>
+  </Target>
+
   <!-- General targets -->
-  <Target Name="BuildMono" AfterTargets="Build" DependsOnTargets="BuildMonoRuntimeUnix;BuildMonoRuntimeWindows;BuildMonoRuntimeCMake">
+  <Target Name="BuildMono" AfterTargets="Build" DependsOnTargets="CheckEnv;BuildMonoRuntimeUnix;BuildMonoRuntimeWindows;BuildMonoRuntimeCMake;BuildMonoCrossCMake">
     <PropertyGroup>
       <_MonoRuntimeFilePath Condition="'$(TargetsWindows)' == 'true' and '$(Platform)' == 'x64'">$(MonoObjDir)x64\Bin\$(Configuration)\mono-2.0-sgen.dll</_MonoRuntimeFilePath>
       <_MonoRuntimeFilePath Condition="'$(TargetsWindows)' == 'true' and '$(Platform)' == 'x86'">$(MonoObjDir)Win32\Bin\$(Configuration)\mono-2.0-sgen.dll</_MonoRuntimeFilePath>
@@ -998,12 +1129,13 @@
       <_MonoRuntimeFilePath Condition="'$(TargetsBrowser)' == 'true' and '$(MonoEnableCMake)' == 'true'">$(MonoObjDir)out\lib\libmonosgen-2.0.a</_MonoRuntimeFilePath>
       <_MonoRuntimeFilePath Condition="'$(_MonoRuntimeFilePath)' == ''">$(MonoObjDir)mono\mini\.libs\libmonosgen-2.0.so</_MonoRuntimeFilePath>
       <_MonoRuntimeStaticFilePath Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsAndroid)' == 'true'">$(MonoObjDir)out\lib\libmonosgen-2.0.a</_MonoRuntimeStaticFilePath>
-      <_MonoAotCrossFilePath Condition="'$(TargetsiOS)' == 'true' and '$(Platform)' == 'arm64'">$(MonoObjDir)cross\out\bin\aarch64-apple-darwin10-mono-sgen</_MonoAotCrossFilePath>
-      <_MonoAotCrossFilePath Condition="'$(TargetsiOS)' == 'true' and '$(Platform)' == 'arm'">$(MonoObjDir)cross\out\bin\arm-apple-darwin10-mono-sgen</_MonoAotCrossFilePath>
-      <_MonoAotCrossFilePath Condition="'$(TargetsiOS)' == 'true' and '$(Platform)' == 'x86'">$(MonoObjDir)cross\out\bin\i386-apple-darwin10-mono-sgen</_MonoAotCrossFilePath>
-      <_MonoAotCrossFilePath Condition="'$(TargetsiOS)' == 'true' and '$(Platform)' == 'x64'">$(MonoObjDir)cross\out\bin\mono-sgen</_MonoAotCrossFilePath>
-      <_MonoAotCrossFilePath Condition="'$(TargetstvOS)' == 'true' and '$(Platform)' == 'arm64'">$(MonoObjDir)cross\out\bin\aarch64-apple-darwin10-mono-sgen</_MonoAotCrossFilePath>
-      <_MonoAotCrossFilePath Condition="'$(TargetstvOS)' == 'true' and '$(Platform)' == 'x64'">$(MonoObjDir)cross\out\bin\mono-sgen</_MonoAotCrossFilePath>
+      <_MonoAotCrossFilePath Condition="'$(MonoEnableCMake)' == 'true'">$(MonoObjDir)cross\out\bin\mono-sgen</_MonoAotCrossFilePath>
+      <_MonoAotCrossFilePath Condition="'$(TargetsiOS)' == 'true' and '$(Platform)' == 'arm64' and '$(MonoEnableCMake)' != 'true'">$(MonoObjDir)cross\out\bin\aarch64-apple-darwin10-mono-sgen</_MonoAotCrossFilePath>
+      <_MonoAotCrossFilePath Condition="'$(TargetsiOS)' == 'true' and '$(Platform)' == 'arm' and '$(MonoEnableCMake)' != 'true'">$(MonoObjDir)cross\out\bin\arm-apple-darwin10-mono-sgen</_MonoAotCrossFilePath>
+      <_MonoAotCrossFilePath Condition="'$(TargetsiOS)' == 'true' and '$(Platform)' == 'x86' and '$(MonoEnableCMake)' != 'true'">$(MonoObjDir)cross\out\bin\i386-apple-darwin10-mono-sgen</_MonoAotCrossFilePath>
+      <_MonoAotCrossFilePath Condition="'$(TargetsiOS)' == 'true' and '$(Platform)' == 'x64' and '$(MonoEnableCMake)' != 'true'">$(MonoObjDir)cross\out\bin\mono-sgen</_MonoAotCrossFilePath>
+      <_MonoAotCrossFilePath Condition="'$(TargetstvOS)' == 'true' and '$(Platform)' == 'arm64' and '$(MonoEnableCMake)' != 'true'">$(MonoObjDir)cross\out\bin\aarch64-apple-darwin10-mono-sgen</_MonoAotCrossFilePath>
+      <_MonoAotCrossFilePath Condition="'$(TargetstvOS)' == 'true' and '$(Platform)' == 'x64' and '$(MonoEnableCMake)' != 'true'">$(MonoObjDir)cross\out\bin\mono-sgen</_MonoAotCrossFilePath>
       <_MonoAotCrossFilePath Condition="'$(TargetsBrowser)' == 'true' and '$(MonoEnableCMake)' != 'true'">$(MonoObjDir)cross\out\bin\wasm32-unknown-none-mono-sgen</_MonoAotCrossFilePath>
     </PropertyGroup>
 
