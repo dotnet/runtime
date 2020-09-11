@@ -20,7 +20,7 @@ namespace Microsoft.Win32.SystemEventsTests
             .Cast<SessionSwitchReason>()
             .Select(x => new object[] { x });
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))]
         [MemberData(nameof(SessionSwitchReasons))]
         public void SignalsSessionSwitch(SessionSwitchReason reason)
         {

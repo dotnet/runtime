@@ -504,7 +504,7 @@ namespace System.Tests
                 yield return new object[] { Environment.SpecialFolder.SystemX86 };
                 yield return new object[] { Environment.SpecialFolder.Windows };
 
-                if (!PlatformDetection.IsInContainer)
+                if (PlatformDetection.IsNotWindowsNanoNorServerCore)
                 {
                     // Our windows docker containers don't have these folders.
                     yield return new object[] { Environment.SpecialFolder.Startup };

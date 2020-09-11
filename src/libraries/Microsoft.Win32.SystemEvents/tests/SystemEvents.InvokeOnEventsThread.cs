@@ -14,7 +14,7 @@ namespace Microsoft.Win32.SystemEventsTests
     public class InvokeOnEventsThreadTests : SystemEventsTest
     {
         [ActiveIssue("https://github.com/dotnet/runtime/issues/29941", TargetFrameworkMonikers.NetFramework)]
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))]
         public void InvokeOnEventsThreadRunsAsynchronously()
         {
             var invoked = new AutoResetEvent(false);
@@ -22,7 +22,7 @@ namespace Microsoft.Win32.SystemEventsTests
             Assert.True(invoked.WaitOne(PostMessageWait));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))]
         public void InvokeOnEventsThreadRunsOnSameThreadAsOtherEvents()
         {
             int expectedThreadId = -1, actualThreadId = -1;
