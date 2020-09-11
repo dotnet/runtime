@@ -3,11 +3,9 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
-using System.Runtime.Loader;
 using System.Runtime.InteropServices;
 using System.Threading;
 using TestLibrary;
@@ -41,13 +39,13 @@ public class Program
 
     public static Type GetCallbacksType()
     {
-        var asm = AssemblyLoadContext.Default.LoadFromAssemblyPath(Path.Combine(Environment.CurrentDirectory, InvalidCSharpAssemblyName));
+        var asm = Assembly.Load("InvalidCSharp");
         return asm.GetType("InvalidCSharp.Callbacks");
     }
 
     public static Type GetGenericClassOfIntType()
     {
-        var asm = AssemblyLoadContext.Default.LoadFromAssemblyPath(Path.Combine(Environment.CurrentDirectory, InvalidCSharpAssemblyName));
+        var asm = Assembly.Load("InvalidCSharp");
         return asm.GetType("InvalidCSharp.GenericClass`1").MakeGenericType(typeof(int));
     }
 

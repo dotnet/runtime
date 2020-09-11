@@ -4,7 +4,7 @@
 .assembly extern System.Runtime { }
 .assembly extern System.Runtime.InteropServices { }
 
-.assembly InvalidCSharp.dll { }
+.assembly InvalidCSharp { }
 
 .class public auto ansi beforefieldinit InvalidCSharp.GenericClass`1<T>
     extends System.Object
