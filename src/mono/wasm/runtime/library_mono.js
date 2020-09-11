@@ -219,9 +219,14 @@ var MonoSupportLib = {
 				return Module.HEAP32[this.get_address_32 (index)];
 			},
 			set: function (index, value) {
-				this._check_in_range (index);
 				Module.HEAP32[this.get_address_32 (index)] = value;
 				return value;
+			},
+			_unsafe_get: function (index) {
+				return Module.HEAP32[this.__offset + (index * 4)];
+			},
+			_unsafe_set: function (index, value) {
+				Module.HEAP32[this.__offset + (index * 4)] = value;
 			},
 			clear: function () {
 				if (this.__offset)
@@ -256,11 +261,11 @@ var MonoSupportLib = {
 			},
 			/** @returns {ManagedPointer} */
 			get: function () {
-				var result = this.__buffer.get (this.__index);
+				var result = this.__buffer._unsafe_get (this.__index);
 				return result;
 			},
 			set: function (value) {
-				this.__buffer.set (this.__index, value);
+				this.__buffer._unsafe_set (this.__index, value);
 				return value;
 			},
 			/** @returns {ManagedPointer} */
