@@ -88,6 +88,7 @@ class Lowering; // defined in lower.h
 // The following are defined in this file, Compiler.h
 
 class Compiler;
+class NonStandardArgs;
 
 /*****************************************************************************
  *                  Unwind info
@@ -5562,7 +5563,7 @@ private:
     GenTree* fgMorphLocalVar(GenTree* tree, bool forceRemorph);
 
 private:
-    void fgInitArgInfoHelp(GenTreeCall* call);
+    void fgInitArgInfoHelp(GenTreeCall* call, NonStandardArgs* nonStandardArgs, unsigned* numArgs);
 
 public:
     bool fgAddrCouldBeNull(GenTree* addr);
@@ -10739,6 +10740,111 @@ public:
 
         static_cast<TVisitor*>(this)->End();
     }
+};
+
+// Data structure for keeping track of non-standard args. Non-standard args are those that are not passed
+// following the normal calling convention or in the normal argument registers. We either mark existing
+// arguments as non-standard (such as the x8 return buffer register on ARM64), or we manually insert the
+// non-standard arguments into the argument list, below.
+class NonStandardArgs
+{
+    struct NonStandardArg
+    {
+        regNumber reg;  // The register to be assigned to this non-standard argument.
+        GenTree*  node; // The tree node representing this non-standard argument.
+                        //   Note that this must be updated if the tree node changes due to morphing!
+    };
+
+    ArrayStack<NonStandardArg> args;
+
+public:
+    NonStandardArgs(CompAllocator alloc) : args(alloc, 3) // We will have at most 3 non-standard arguments
+    {
+    }
+
+    //-----------------------------------------------------------------------------
+    // Add: add a non-standard argument to the table of non-standard arguments
+    //
+    // Arguments:
+    //    node - a GenTree node that has a non-standard argument.
+    //    reg - the register to assign to this node.
+    //
+    // Return Value:
+    //    None.
+    //
+    void Add(GenTree* node, regNumber reg)
+    {
+        NonStandardArg nsa = {reg, node};
+        args.Push(nsa);
+    }
+
+    //-----------------------------------------------------------------------------
+    // Find: Look for a GenTree* in the set of non-standard args.
+    //
+    // Arguments:
+    //    node - a GenTree node to look for
+    //
+    // Return Value:
+    //    The index of the non-standard argument (a non-negative, unique, stable number).
+    //    If the node is not a non-standard argument, return -1.
+    //
+    int Find(GenTree* node)
+    {
+        for (int i = 0; i < args.Height(); i++)
+        {
+            if (node == args.Top(i).node)
+            {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    //-----------------------------------------------------------------------------
+    // FindReg: Look for a GenTree node in the non-standard arguments set. If found,
+    // set the register to use for the node.
+    //
+    // Arguments:
+    //    node - a GenTree node to look for
+    //    pReg - an OUT argument. *pReg is set to the non-standard register to use if
+    //           'node' is found in the non-standard argument set.
+    //
+    // Return Value:
+    //    'true' if 'node' is a non-standard argument. In this case, *pReg is set to the
+    //          register to use.
+    //    'false' otherwise (in this case, *pReg is unmodified).
+    //
+    bool FindReg(GenTree* node, regNumber* pReg)
+    {
+        for (int i = 0; i < args.Height(); i++)
+        {
+            NonStandardArg& nsa = args.TopRef(i);
+            if (node == nsa.node)
+            {
+                *pReg = nsa.reg;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    //-----------------------------------------------------------------------------
+    // Replace: Replace the non-standard argument node at a given index. This is done when
+    // the original node was replaced via morphing, but we need to continue to assign a
+    // particular non-standard arg to it.
+    //
+    // Arguments:
+    //    index - the index of the non-standard arg. It must exist.
+    //    node - the new GenTree node.
+    //
+    // Return Value:
+    //    None.
+    //
+    void Replace(int index, GenTree* node)
+    {
+        args.TopRef(index).node = node;
+    }
+
 };
 
 /*

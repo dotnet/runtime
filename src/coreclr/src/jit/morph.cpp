@@ -2422,112 +2422,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
     }
 #endif // TARGET_UNIX
 
-    fgInitArgInfoHelp(call);
-
-    // Data structure for keeping track of non-standard args. Non-standard args are those that are not passed
-    // following the normal calling convention or in the normal argument registers. We either mark existing
-    // arguments as non-standard (such as the x8 return buffer register on ARM64), or we manually insert the
-    // non-standard arguments into the argument list, below.
-    class NonStandardArgs
-    {
-        struct NonStandardArg
-        {
-            regNumber reg;  // The register to be assigned to this non-standard argument.
-            GenTree*  node; // The tree node representing this non-standard argument.
-                            //   Note that this must be updated if the tree node changes due to morphing!
-        };
-
-        ArrayStack<NonStandardArg> args;
-
-    public:
-        NonStandardArgs(CompAllocator alloc) : args(alloc, 3) // We will have at most 3 non-standard arguments
-        {
-        }
-
-        //-----------------------------------------------------------------------------
-        // Add: add a non-standard argument to the table of non-standard arguments
-        //
-        // Arguments:
-        //    node - a GenTree node that has a non-standard argument.
-        //    reg - the register to assign to this node.
-        //
-        // Return Value:
-        //    None.
-        //
-        void Add(GenTree* node, regNumber reg)
-        {
-            NonStandardArg nsa = {reg, node};
-            args.Push(nsa);
-        }
-
-        //-----------------------------------------------------------------------------
-        // Find: Look for a GenTree* in the set of non-standard args.
-        //
-        // Arguments:
-        //    node - a GenTree node to look for
-        //
-        // Return Value:
-        //    The index of the non-standard argument (a non-negative, unique, stable number).
-        //    If the node is not a non-standard argument, return -1.
-        //
-        int Find(GenTree* node)
-        {
-            for (int i = 0; i < args.Height(); i++)
-            {
-                if (node == args.Top(i).node)
-                {
-                    return i;
-                }
-            }
-            return -1;
-        }
-
-        //-----------------------------------------------------------------------------
-        // FindReg: Look for a GenTree node in the non-standard arguments set. If found,
-        // set the register to use for the node.
-        //
-        // Arguments:
-        //    node - a GenTree node to look for
-        //    pReg - an OUT argument. *pReg is set to the non-standard register to use if
-        //           'node' is found in the non-standard argument set.
-        //
-        // Return Value:
-        //    'true' if 'node' is a non-standard argument. In this case, *pReg is set to the
-        //          register to use.
-        //    'false' otherwise (in this case, *pReg is unmodified).
-        //
-        bool FindReg(GenTree* node, regNumber* pReg)
-        {
-            for (int i = 0; i < args.Height(); i++)
-            {
-                NonStandardArg& nsa = args.TopRef(i);
-                if (node == nsa.node)
-                {
-                    *pReg = nsa.reg;
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        //-----------------------------------------------------------------------------
-        // Replace: Replace the non-standard argument node at a given index. This is done when
-        // the original node was replaced via morphing, but we need to continue to assign a
-        // particular non-standard arg to it.
-        //
-        // Arguments:
-        //    index - the index of the non-standard arg. It must exist.
-        //    node - the new GenTree node.
-        //
-        // Return Value:
-        //    None.
-        //
-        void Replace(int index, GenTree* node)
-        {
-            args.TopRef(index).node = node;
-        }
-
-    } nonStandardArgs(getAllocator(CMK_ArrayStack));
+    NonStandardArgs nonStandardArgs(getAllocator(CMK_ArrayStack));
 
     // Count of args. On first morph, this is counted before we've filled in the arg table.
     // On remorph, we grab it from the arg table.
@@ -2553,71 +2448,10 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
     // *********** END NOTE *********
     CLANG_FORMAT_COMMENT_ANCHOR;
 
-#if defined(TARGET_X86) || defined(TARGET_ARM)
-    // The x86 and arm32 CORINFO_HELP_INIT_PINVOKE_FRAME helpers has a custom calling convention.
-    // Set the argument registers correctly here.
-    if (call->IsHelperCall(this, CORINFO_HELP_INIT_PINVOKE_FRAME))
-    {
-        GenTreeCall::Use* args = call->gtCallArgs;
-        GenTree*          arg1 = args->GetNode();
-        assert(arg1 != nullptr);
-        nonStandardArgs.Add(arg1, REG_PINVOKE_FRAME);
-    }
-#endif // defined(TARGET_X86) || defined(TARGET_ARM)
-#if defined(TARGET_ARM)
-    // A non-standard calling convention using wrapper delegate invoke is used on ARM, only, for wrapper
-    // delegates. It is used for VSD delegate calls where the VSD custom calling convention ABI requires passing
-    // R4, a callee-saved register, with a special value. Since R4 is a callee-saved register, its value needs
-    // to be preserved. Thus, the VM uses a wrapper delegate IL stub, which preserves R4 and also sets up R4
-    // correctly for the VSD call. The VM is simply reusing an existing mechanism (wrapper delegate IL stub)
-    // to achieve its goal for delegate VSD call. See COMDelegate::NeedsWrapperDelegate() in the VM for details.
-    else if (call->gtCallMoreFlags & GTF_CALL_M_WRAPPER_DELEGATE_INV)
-    {
-        GenTree* arg = call->gtCallThisArg->GetNode();
-        if (arg->OperIsLocal())
-        {
-            arg = gtClone(arg, true);
-        }
-        else
-        {
-            GenTree* tmp = fgInsertCommaFormTemp(&arg);
-            call->gtCallThisArg->SetNode(arg);
-            call->gtFlags |= GTF_ASG;
-            arg = tmp;
-        }
-        noway_assert(arg != nullptr);
+    // TODO: Refactory proposal
+    fgInitArgInfoHelp(call, &nonStandardArgs, &numArgs);
 
-        GenTree* newArg = new (this, GT_ADDR)
-            GenTreeAddrMode(TYP_BYREF, arg, nullptr, 0, eeGetEEInfo()->offsetOfWrapperDelegateIndirectCell);
-
-        // Append newArg as the last arg
-        GenTreeCall::Use** insertionPoint = &call->gtCallArgs;
-        for (; *insertionPoint != nullptr; insertionPoint = &((*insertionPoint)->NextRef()))
-        {
-        }
-        *insertionPoint = gtNewCallArgs(newArg);
-
-        numArgs++;
-        nonStandardArgs.Add(newArg, virtualStubParamInfo->GetReg());
-    }
-#endif // defined(TARGET_ARM)
-#if defined(TARGET_X86)
-    // The x86 shift helpers have custom calling conventions and expect the lo part of the long to be in EAX and the
-    // hi part to be in EDX. This sets the argument registers up correctly.
-    else if (call->IsHelperCall(this, CORINFO_HELP_LLSH) || call->IsHelperCall(this, CORINFO_HELP_LRSH) ||
-             call->IsHelperCall(this, CORINFO_HELP_LRSZ))
-    {
-        GenTreeCall::Use* args = call->gtCallArgs;
-        GenTree*          arg1 = args->GetNode();
-        assert(arg1 != nullptr);
-        nonStandardArgs.Add(arg1, REG_LNGARG_LO);
-
-        args          = args->GetNext();
-        GenTree* arg2 = args->GetNode();
-        assert(arg2 != nullptr);
-        nonStandardArgs.Add(arg2, REG_LNGARG_HI);
-    }
-#else  // !TARGET_X86
+#if !defined(TARGET_X86)
     // TODO-X86-CQ: Currently RyuJIT/x86 passes args on the stack, so this is not needed.
     // If/when we change that, the following code needs to be changed to correctly support the (TBD) managed calling
     // convention for x86/SSE.
@@ -2669,6 +2503,9 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         GenTree* arg = call->gtCallCookie;
         noway_assert(arg != nullptr);
         call->gtCallCookie = nullptr;
+
+	// TODO: Refactory proposal
+	// I am not good at naming.  The function name might be fgInitArgInfoHelpN.
 
 #if defined(TARGET_X86)
         // x86 passes the cookie on the stack as the final argument to the call.
