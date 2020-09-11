@@ -9,7 +9,9 @@
   </head>
   <body>
     <h3 id="header">Wasm Browser Sample</h3>
-    Result from Sample.Test.TestMeaning: <span id="out"></span>
+    Result from Sample.Test.TestMeaning: <span id="out"></span><br>
+    Progress: <span id="progress"></span><br>
+    Avg. Speed: <span id="speed"></span>
     <script type='text/javascript'>
       var App = {
         init: function () {
@@ -69,14 +71,17 @@
 
             i += callbackCount;
 
-            if (i && ((i % 5000) === 0))
+            if (i && ((i % 5000) === 0)) {
               console.log(i);
+              document.querySelector("#progress").innerHTML = String(i) + " / " + iterationCount;
+              document.querySelector("#speed").innerHTML = (elapsed / i).toFixed(1) + "ms/iter";
+            }
 
             if (i < iterationCount) {
               window.setTimeout(benchmarkCallback, 1);
             } else {
-              console.log("ran", iterationCount, "iterations in", elapsed);
-              console.log(elapsed / iterationCount, "ms/iter");
+              console.log("ran", i, "iterations in", elapsed);
+              console.log(elapsed / i, "ms/iter");
             }
           }).bind(this);
 

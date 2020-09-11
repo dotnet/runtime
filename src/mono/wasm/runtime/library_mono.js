@@ -223,10 +223,10 @@ var MonoSupportLib = {
 				return value;
 			},
 			_unsafe_get: function (index) {
-				return Module.HEAP32[this.__offset + (index * 4)];
+				return Module.HEAP32[this.__offset32 + index];
 			},
 			_unsafe_set: function (index, value) {
-				Module.HEAP32[this.__offset + (index * 4)] = value;
+				Module.HEAP32[this.__offset32 + index] = value;
 			},
 			clear: function () {
 				if (this.__offset)

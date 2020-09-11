@@ -951,13 +951,15 @@ var BindingSupportLib = {
 		},
 
 		_release_args_root_buffer_from_method_call: function (argsRootBuffer) {
+			if (!argsRootBuffer)
+				return;
+
 			var converter = argsRootBuffer.converter;
 			// Store the arguments root buffer for re-use in later calls
 			if (converter && !converter.scratchRootBuffer && argsRootBuffer) {
 				argsRootBuffer.clear ();
 				converter.scratchRootBuffer = argsRootBuffer;
-			} else if (argsRootBuffer) {
-				console.log (argsRootBuffer);
+			} else {
 				argsRootBuffer.release ();
 			}
 		},
