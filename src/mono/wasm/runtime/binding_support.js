@@ -103,7 +103,7 @@ var BindingSupportLib = {
 
 			var bind_runtime_method = function (method_name, signature) {
 				var method = get_method (method_name);
-				return BINDING.bind_method (method, 0, signature);
+				return BINDING.bind_method (method, 0, signature, "BINDINGS_" + method_name);
 			};
 
 			this.bind_js_obj = get_method ("BindJSObject");
@@ -845,6 +845,7 @@ var BindingSupportLib = {
 			var indirectLocalOffset = 0;
 
 			body.push (
+				"console.log ('conversion starting for " + args_marshal + "');",
 				"var buffer = Module._malloc (" + bufferSizeBytes + ");",
 				"var indirectStart = buffer + " + indirectBaseOffset + ";",
 				"var indirect32 = (indirectStart / 4) | 0, indirect64 = (indirectStart / 8) | 0;",
@@ -864,11 +865,12 @@ var BindingSupportLib = {
 
 				if (step.convert) {
 					closure[closureKey] = step.convert;
-					// body.push ("console.log('calling converter '" + step.key + ", " + closureKey + ", 'with value', obj);"); 
+					body.push ("console.log('calling converter '" + step.key + ", " + closureKey + ", 'with value', obj);"); 
 					body.push ("var " + valueKey + " = " + closureKey + "(" + argKey + ", method, " + i + ");");
-					// body.push ("console.log('converter result', obj);");
+					body.push ("console.log('converter result', " + valueKey + ");");
 				} else {
 					body.push ("var " + valueKey + " = " + argKey + ";");
+					body.push ("console.log('arg" + i + " value', " + valueKey + ");");
 				}
 
 				if (step.indirect) {
@@ -905,7 +907,11 @@ var BindingSupportLib = {
 					body.push ("rootBuffer.set (" + i + ", valueAddress);");
 
 				body.push ("Module.HEAP32[buffer32 + " + i + "] = valueAddress;", "");
+
+				body.push ("console.log ('wrote ptr', valueAddress, 'to address', (buffer32 + " + i + ") * 4);");
 			}
+
+			body.push ("console.log ('conversion finished');");
 
 			body.push ("return buffer;");
 
@@ -1005,7 +1011,7 @@ var BindingSupportLib = {
 
 			var msg = this.conv_string (result);
 			var err = new Error (msg); //the convention is that invoke_method ToString () any outgoing exception
-			// console.log(err, err.stack);
+			console.warn ("error", msg, "at location", err.stack);
 			throw err;
 		},
 
@@ -1070,7 +1076,7 @@ var BindingSupportLib = {
 
 				is_result_marshaled = this._decide_if_result_is_marshaled (converter, args.length);
 
-				console.log('is_result_marshaled=', is_result_marshaled, 'for argc', args.length, 'and signature ' + converter.args_marshal);
+				// console.log('is_result_marshaled=', is_result_marshaled, 'for argc', args.length, 'and signature ' + converter.args_marshal);
 	
 				argsRootBuffer = this._get_args_root_buffer_for_method_call (converter);
 
@@ -1084,9 +1090,13 @@ var BindingSupportLib = {
 			this._handle_possible_exception_for_method_call (resultRoot.value, exceptionRoot.value);
 
 			if (is_result_marshaled)
-				return this._unbox_mono_obj_rooted (resultRoot);
+				result = this._unbox_mono_obj_rooted (resultRoot);
 			else
-				return resultRoot.value;
+				result = resultRoot.value;
+
+			console.log ("call result:", result);
+
+			return result;
 		},
 
 		_teardown_after_call: function (buffer, resultRoot, exceptionRoot, argsRootBuffer) {
@@ -1111,18 +1121,18 @@ var BindingSupportLib = {
 			}
 		},
 
-		bind_method: function (method, this_arg, args_marshal) {
+		bind_method: function (method, this_arg, args_marshal, friendly_name) {
 			this.bindings_lazy_init ();
 
 			this_arg = this_arg | 0;
 
-			console.log ("bind_method", method, this_arg, args_marshal);
+			// console.log ("bind_method", method, this_arg, args_marshal);
 
 			var converter = null;
 			if (typeof (args_marshal) === "string")
 				converter = this._compile_converter_for_marshal_string (args_marshal);
 
-			if (true)
+			if (false)
 				return function bound_method () {
 					var argsRootBuffer = BINDING._get_args_root_buffer_for_method_call (converter);
 					var buffer = 0;
@@ -1131,7 +1141,7 @@ var BindingSupportLib = {
 		
 					var is_result_marshaled = BINDING._decide_if_result_is_marshaled (converter, arguments.length);
 
-					console.log('is_result_marshaled=', is_result_marshaled, 'for argc', args.length, 'and signature ' + converter.args_marshal + ' (bound)');
+					// console.log('is_result_marshaled=', is_result_marshaled, 'for argc', args.length, 'and signature ' + converter.args_marshal + ' (bound)');
 
 					return BINDING._call_method_with_converted_args (method, this_arg, buffer, is_result_marshaled, argsRootBuffer);
 				};
@@ -1183,7 +1193,14 @@ var BindingSupportLib = {
 			body.push ("return binding_support._call_method_with_converted_args (method, this_arg, buffer, is_result_marshaled, argsRootBuffer);");
 
 			bodyJs = body.join ("\r\n");
-			return this._createNamedFunction("bound_method_" + method + "_with_this_" + this_arg, argumentNames, bodyJs, closure);
+
+			if (friendly_name) {
+				friendly_name = friendly_name.replace(":", "_")
+					.replace(".", "_").replace("/", "_")
+					.replace("+", "_").replace(" ", "_");
+			}
+
+			return this._createNamedFunction("bound_method_" + (friendly_name || method) + "_with_this_" + this_arg, argumentNames, bodyJs, closure);
 		},
 
 		invoke_delegate: function (delegate_obj, js_args) {
@@ -1269,7 +1286,7 @@ var BindingSupportLib = {
 			if (typeof signature === "undefined")
 				signature = Module.mono_method_get_call_signature (method);
 
-			return BINDING.bind_method (method, null, signature);
+			return BINDING.bind_method (method, null, signature, fqn);
 		},
 		
 		bind_assembly_entry_point: function (assembly) {
