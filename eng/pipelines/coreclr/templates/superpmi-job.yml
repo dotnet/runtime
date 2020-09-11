@@ -57,7 +57,8 @@ jobs:
     frameworks:
       - ${{ parameters.framework }}
     steps:
-      - message: Temporary skipping download of coreclr/libraries and creating core_root
+      - script: |
+          echo Temporary skipping download of coreclr/libraries and creating core_root
     # Extra steps that will be passed to the superpmi template and run before sending the job to helix (all of which is done in the template)
 
     # # Optionally download live-built libraries
