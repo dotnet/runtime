@@ -2422,6 +2422,8 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
     }
 #endif // TARGET_UNIX
 
+    fgInitArgInfoHelp(call);
+
     // Data structure for keeping track of non-standard args. Non-standard args are those that are not passed
     // following the normal calling convention or in the normal argument registers. We either mark existing
     // arguments as non-standard (such as the x8 return buffer register on ARM64), or we manually insert the

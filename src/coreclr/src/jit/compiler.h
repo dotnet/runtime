@@ -5561,6 +5561,9 @@ private:
     void fgFixupStructReturn(GenTree* call);
     GenTree* fgMorphLocalVar(GenTree* tree, bool forceRemorph);
 
+private:
+    void fgInitArgInfoHelp(GenTreeCall* call);
+
 public:
     bool fgAddrCouldBeNull(GenTree* addr);
 

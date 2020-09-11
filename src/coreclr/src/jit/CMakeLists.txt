@@ -271,6 +271,7 @@ set( JIT_AMD64_SOURCES
   emitxarch.cpp
   lowerxarch.cpp
   lsraxarch.cpp
+  morphxarch.cpp
   simd.cpp
   simdashwintrinsic.cpp
   simdcodegenxarch.cpp
@@ -288,6 +289,7 @@ set( JIT_ARM_SOURCES
   lowerarmarch.cpp
   lsraarmarch.cpp
   lsraarm.cpp
+  morpharmarch.cpp
   targetarm.cpp
   unwindarm.cpp
 )
@@ -298,6 +300,7 @@ set( JIT_I386_SOURCES
   emitxarch.cpp
   lowerxarch.cpp
   lsraxarch.cpp
+  morphxarch.cpp
   simd.cpp
   simdashwintrinsic.cpp
   simdcodegenxarch.cpp
@@ -314,6 +317,7 @@ set( JIT_ARM64_SOURCES
   lowerarmarch.cpp
   lsraarmarch.cpp
   lsraarm64.cpp
+  morpharmarch.cpp
   simd.cpp
   simdashwintrinsic.cpp
   targetarm64.cpp
