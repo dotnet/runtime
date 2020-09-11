@@ -5987,18 +5987,25 @@ GenTree* Compiler::gtNewIndOfIconHandleNode(var_types indType, size_t addr, unsi
     //
     indNode->gtFlags |= GTF_IND_NONFAULTING;
 
-    // String Literal handles are indirections that return a TYP_REF.
-    // They are pointers into the GC heap and they are not invariant
-    // as the address is a reportable GC-root and as such it can be
-    // modified during a GC collection
+    // String Literal handles are indirections that return a TYP_REF, and
+    // these are pointers into the GC heap.  We don't currently have any
+    // TYP_BYREF pointers, but if we did they also must be pointers into the GC heap.
     //
-    if (indType == TYP_REF)
+    // Also every GTF_ICON_STATIC_HDL also must be a pointer into the GC heap
+    // we will set GTF_GLOB_REF for these kinds of references.
+    //
+    if ((varTypeIsGC(indType)) || (iconFlags == GTF_ICON_STATIC_HDL))
     {
-        // This indirection points into the gloabal heap
+        // This indirection also points into the gloabal heap
         indNode->gtFlags |= GTF_GLOB_REF;
     }
+
     if (isInvariant)
     {
+        assert(iconFlags != GTF_ICON_STATIC_HDL); // Pointer to a mutable class Static variable
+        assert(iconFlags != GTF_ICON_BBC_PTR);    // Pointer to a mutable basic block count value
+        assert(iconFlags != GTF_ICON_PTR_GLOBAL); // Pointer to mutable data from the VM state
+
         // This indirection also is invariant.
         indNode->gtFlags |= GTF_IND_INVARIANT;
     }
@@ -6066,7 +6073,7 @@ GenTree* Compiler::gtNewStringLiteralNode(InfoAccessType iat, void* pValue)
             if (!IsTargetAbi(CORINFO_CORERT_ABI))
             {
                 // Non CoreRT - This case is illegal, creating a TYP_REF from an INT_CNS
-                assert(!"unreached IAT_VALUE case in gtNewStringLiteralNode");
+                noway_assert(!"unreachable IAT_VALUE case in gtNewStringLiteralNode");
             }
 
             tree         = gtNewIconEmbHndNode(pValue, nullptr, GTF_ICON_STR_HDL, nullptr);

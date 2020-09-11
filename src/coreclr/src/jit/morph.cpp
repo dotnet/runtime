@@ -6126,7 +6126,7 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
             if (tree->AsField()->gtFieldLookup.accessType == IAT_PVALUE)
             {
                 offsetNode = gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)tree->AsField()->gtFieldLookup.addr,
-                                                      GTF_ICON_FIELD_HDL, true);
+                                                      GTF_ICON_CONST_PTR, true);
 #ifdef DEBUG
                 offsetNode->gtGetOp1()->AsIntCon()->gtTargetHandle = (size_t)symHnd;
 #endif
@@ -9291,7 +9291,6 @@ GenTree* Compiler::fgMorphLeaf(GenTree* tree)
                 tree->SetOper(GT_CNS_INT);
                 tree->AsIntConCommon()->SetIconValue(ssize_t(addrInfo.handle));
                 tree->gtFlags |= GTF_ICON_FTN_ADDR;
-                // tree = gtNewOperNode(GT_NOP, tree->TypeGet(), tree); // prevents constant folding
                 break;
 
             default:

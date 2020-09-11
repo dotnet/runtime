@@ -21894,6 +21894,13 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
                             // We expect the Invariant flag to be unset for this handleKind
                             // If it is set then we will assert with "unexpected GTF_IND_INVARIANT flag set ...
                             //
+                            if (handleKind == GTF_ICON_STATIC_HDL)
+                            {
+                                // We expect the GTF_GLOB_REF flag to be set for this handleKind
+                                // If it is not set then we will assert with "Missing flags on tree"
+                                //
+                                treeFlags |= GTF_GLOB_REF;
+                            }
                         }
                         else // All the other handle indirections are considered invariant
                         {
@@ -22214,7 +22221,8 @@ void Compiler::fgDebugCheckFlagsHelper(GenTree* tree, unsigned treeFlags, unsign
     }
     else if (treeFlags & ~chkFlags)
     {
-        // TODO: We are currently only checking extra GTF_EXCEPT, GTF_ASG, and GTF_CALL flags.
+        // We can't/don't consider these flags (GTF_GLOB_REF or GTF_ORDER_SIDEEFF) as being "extra" flags
+        //
         unsigned flagsToCheck = ~GTF_GLOB_REF & ~GTF_ORDER_SIDEEFF;
 
         if ((treeFlags & ~chkFlags & flagsToCheck) != 0)
