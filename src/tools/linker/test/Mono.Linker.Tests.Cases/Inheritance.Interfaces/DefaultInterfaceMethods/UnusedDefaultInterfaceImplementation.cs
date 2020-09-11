@@ -5,14 +5,19 @@ using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
 namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.DefaultInterfaceMethods
 {
-#if NETCOREAPP
+#if !NETCOREAPP
+	[IgnoreTestCase ("Requires support for default interface methods")]
+#endif
 	class UnusedDefaultInterfaceImplementation
 	{
 		public static void Main ()
 		{
+#if NETCOREAPP
 			((IFoo) new Foo ()).InterfaceMethod ();
+#endif
 		}
 
+#if NETCOREAPP
 		[Kept]
 		interface IFoo
 		{
@@ -39,6 +44,6 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.DefaultInterfaceMethods
 			{
 			}
 		}
-	}
 #endif
+	}
 }
