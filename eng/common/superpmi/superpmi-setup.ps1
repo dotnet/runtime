@@ -25,7 +25,7 @@ $WorkItemDirectory = (Join-Path $SourceDirectory "workitem")
 $Queue = "Windows.10.Amd64.ClientRS4.DevEx.15.8.Open"
 $HelixSourcePrefix = "official"
 $Creator = $env:BUILD_DEFINITIONNAME
-robocopy $SourceDirectory $SuperPmiDirectory /E /XD $PayloadDirectory $SourceDirectory\artifacts $SourceDirectory\.git
+robocopy $SourceDirectory\src\coreclr\scripts $SuperPmiDirectory /E /XD $PayloadDirectory $SourceDirectory\artifacts $SourceDirectory\.git
 
 # # TODO: Implement a better logic to determine if Framework is .NET Core or >= .NET 5.
 # if ($Framework.StartsWith("netcoreapp") -or ($Framework -eq "net5.0")) {
@@ -105,10 +105,10 @@ robocopy $SourceDirectory $SuperPmiDirectory /E /XD $PayloadDirectory $SourceDir
 # $DocsDir = (Join-Path $PerformanceDirectory "docs")
 # robocopy $DocsDir $WorkItemDirectory
 
-# # Set variables that we will need to have in future steps
-# $ci = $true
+# Set variables that we will need to have in future steps
+$ci = $true
 
-# . "$PSScriptRoot\..\pipeline-logging-functions.ps1"
+. "$PSScriptRoot\..\pipeline-logging-functions.ps1"
 
 # Directories
 Write-PipelineSetVariable -Name 'PayloadDirectory' -Value "$PayloadDirectory" -IsMultiJobVariable $false
