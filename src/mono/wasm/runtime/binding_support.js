@@ -912,7 +912,7 @@ var BindingSupportLib = {
 
 			bodyJs = body.join ("\r\n");
 			try {
-				compiledVariadicFunction = this._createNamedFunction("converter_" + args_marshal, argumentNames, bodyJs, closure);
+				compiledVariadicFunction = this._createNamedFunction("variadic_converter_" + args_marshal, argumentNames, bodyJs, closure);
 				converter.compiled_variadic_function = compiledVariadicFunction;
 				// console.log("compiled converter", compiledFunction);
 			} catch (exc) {
@@ -1085,12 +1085,12 @@ var BindingSupportLib = {
 
 			if (true)
 				return function bound_method () {
-					var argsRootBuffer = this._get_args_root_buffer_for_method_call (converter);
+					var argsRootBuffer = BINDING._get_args_root_buffer_for_method_call (converter);
 					var buffer = 0;
 					if (converter)
 						buffer = converter.compiled_variadic_function (argsRootBuffer, method, arguments);
 		
-					return this._call_method_with_converted_args (method, this_arg, buffer, is_result_marshaled, argsRootBuffer);
+					return BINDING._call_method_with_converted_args (method, this_arg, buffer, is_result_marshaled, argsRootBuffer);
 				};
 
 			/*
