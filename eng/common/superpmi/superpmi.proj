@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.DotNet.Helix.Sdk" DefaultTargets="Test">
 
   <PropertyGroup Condition="'$(AGENT_OS)' == 'Windows_NT'">
-    <WorkItemCommand>%HELIX_CORRELATION_PAYLOAD%\superpmi\scripts\superpmi.py collect </WorkItemCommand>
+    <WorkItemCommand>%HELIX_CORRELATION_PAYLOAD%\superpmi\superpmi.py collect </WorkItemCommand>
     <Python>py -3</Python>
     <CoreRoot>%HELIX_CORRELATION_PAYLOAD%\Core_Root</CoreRoot>
     <CoreRun>%HELIX_CORRELATION_PAYLOAD%\Core_Root\CoreRun.exe</CoreRun>
