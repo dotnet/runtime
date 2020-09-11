@@ -20199,16 +20199,21 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, LPCWSTR typ
 
     ONE_FILE_PER_METHOD:;
 
-        escapedString     = fgProcessEscapes(info.compFullName, s_EscapeFileMapping);
-        size_t wCharCount = strlen(escapedString) + wcslen(phaseName) + 1 + strlen("~999") + wcslen(type) + 1;
+        escapedString = fgProcessEscapes(info.compFullName, s_EscapeFileMapping);
+
+        const char* tierName = compGetTieringName(true);
+        size_t      wCharCount =
+            strlen(escapedString) + wcslen(phaseName) + 1 + strlen("~999") + wcslen(type) + strlen(tierName) + 1;
         if (pathname != nullptr)
         {
             wCharCount += wcslen(pathname) + 1;
         }
         filename = (LPCWSTR)alloca(wCharCount * sizeof(WCHAR));
+
         if (pathname != nullptr)
         {
-            swprintf_s((LPWSTR)filename, wCharCount, W("%s\\%S-%s.%s"), pathname, escapedString, phaseName, type);
+            swprintf_s((LPWSTR)filename, wCharCount, W("%s\\%S-%s-%S.%s"), pathname, escapedString, phaseName, tierName,
+                       type);
         }
         else
         {
@@ -20357,7 +20362,8 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
     if (createDotFile)
     {
         fprintf(fgxFile, "digraph %s\n{\n", info.compMethodName);
-        fprintf(fgxFile, "/* Method %d, after phase %s */", Compiler::jitTotalMethodCompiled, PhaseNames[phase]);
+        fprintf(fgxFile, "/* Method %d, after phase %s */\n", Compiler::jitTotalMethodCompiled, PhaseNames[phase]);
+        fprintf(fgxFile, "    node [shape = \"Box\"];\n");
     }
     else
     {
@@ -20418,24 +20424,37 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
     {
         if (createDotFile)
         {
-            // Add constraint edges to try to keep nodes ordered.
-            // It seems to work best if these edges are all created first.
-            switch (block->bbJumpKind)
+            fprintf(fgxFile, "    BB%02u [label = \"BB%02u\\n\\n", block->bbNum, block->bbNum);
+
+            // "Raw" Profile weight
+            if (block->hasProfileWeight())
             {
-                case BBJ_COND:
-                case BBJ_NONE:
-                    assert(block->bbNext != nullptr);
-                    fprintf(fgxFile, "    " FMT_BB " -> " FMT_BB "\n", block->bbNum, block->bbNext->bbNum);
-                    break;
-                default:
-                    // These may or may not have an edge to the next block.
-                    // Add a transparent edge to keep nodes ordered.
-                    if (block->bbNext != nullptr)
-                    {
-                        fprintf(fgxFile, "    " FMT_BB " -> " FMT_BB " [arrowtail=none,color=transparent]\n",
-                                block->bbNum, block->bbNext->bbNum);
-                    }
+                fprintf(fgxFile, "%7.2f", ((double)block->getBBWeight(this)) / BB_UNITY_WEIGHT);
             }
+
+            // end of block label
+            fprintf(fgxFile, "\"");
+
+            // other node attributes
+            //
+            if (block == fgFirstBB)
+            {
+                fprintf(fgxFile, ", shape = \"house\"");
+            }
+            else if (block->bbJumpKind == BBJ_RETURN)
+            {
+                fprintf(fgxFile, ", shape = \"invhouse\"");
+            }
+            else if (block->bbJumpKind == BBJ_THROW)
+            {
+                fprintf(fgxFile, ", shape = \"trapezium\"");
+            }
+            else if (block->bbFlags & BBF_INTERNAL)
+            {
+                fprintf(fgxFile, ", shape = \"note\"");
+            }
+
+            fprintf(fgxFile, "];\n");
         }
         else
         {
@@ -20511,16 +20530,17 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
             }
             if (createDotFile)
             {
-                // Don't duplicate the edges we added above.
-                if ((bSource->bbNum == (bTarget->bbNum - 1)) &&
-                    ((bSource->bbJumpKind == BBJ_NONE) || (bSource->bbJumpKind == BBJ_COND)))
-                {
-                    continue;
-                }
                 fprintf(fgxFile, "    " FMT_BB " -> " FMT_BB, bSource->bbNum, bTarget->bbNum);
-                if ((bSource->bbNum > bTarget->bbNum))
+
+                if (bSource->bbNum > bTarget->bbNum)
                 {
-                    fprintf(fgxFile, "[arrowhead=normal,arrowtail=none,color=green]\n");
+                    // Lexical backedge
+                    fprintf(fgxFile, " [color=green]\n");
+                }
+                else if ((bSource->bbNum + 1) == bTarget->bbNum)
+                {
+                    // Lexical successor
+                    fprintf(fgxFile, " [color=blue, weight=20]\n");
                 }
                 else
                 {
