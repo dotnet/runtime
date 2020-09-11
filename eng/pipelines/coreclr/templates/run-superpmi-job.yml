@@ -24,7 +24,7 @@ parameters:
 jobs:
 - template: xplat-pipeline-job.yml
   parameters:
-    dependsOn: ${{ parameters.dependsOn }}
+    # dependsOn: ${{ parameters.dependsOn }}
     buildConfig: ${{ parameters.buildConfig }}
     archType: ${{ parameters.archType }}
     osGroup: ${{ parameters.osGroup }}
