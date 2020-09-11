@@ -1,6 +1,6 @@
 # Please remember to update the documentation if you make changes to these parameters!
 parameters:
-  ProjectFile: 'superpmi.proj'                        # required -- project file that specifies the helix workitems
+  ProjectFile: ''                        # required -- project file that specifies the helix workitems
   HelixSource: 'pr/default'              # required -- sources must start with pr/, official/, prodcon/, or agent/
   HelixType: 'tests/default/'            # required -- Helix telemetry which identifies what type of data this is; should include "test" for clarity and must end in '/'
   HelixBuild: $(Build.BuildNumber)       # required -- the build number Helix will use to identify this -- automatically set to the AzDO build number
@@ -22,8 +22,8 @@ parameters:
             
 
 steps:
-  - powershell: $(Build.SourcesDirectory)\eng\common\msbuild.ps1 $(Build.SourcesDirectory)\eng\common\superpmi\${{ parameters.ProjectFile }} /restore /t:Test /bl:$(Build.SourcesDirectory)\artifacts\log\$env:BuildConfig\SendToHelix.binlog
-    displayName: ${{ parameters.DisplayNamePrefix }} (Windows)
+  - powershell: $(Build.SourcesDirectory)\eng\common\msbuild.ps1 $(Build.SourcesDirectory)\eng\common\superpmi\superpmi.proj /restore /t:Test /bl:$(Build.SourcesDirectory)\artifacts\log\$env:BuildConfig\SendToHelix.binlog
+    displayName: ${{ parameters.DisplayNamePrefix }} (Windows <-- modified)
     env:
       BuildConfig: $(_BuildConfig)
       HelixSource: ${{ parameters.HelixSource }}
