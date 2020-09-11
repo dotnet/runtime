@@ -177,7 +177,7 @@ private:
 void TestCreateMutex(AutoCloseMutexHandle &m, const char *name, bool initiallyOwned = false)
 {
     m.Close();
-    m = CreateMutexA(nullptr, initiallyOwned, name);
+    m = CreateMutex(nullptr, initiallyOwned, convert(name));
 }
 
 HANDLE TestOpenMutex(const char *name)
