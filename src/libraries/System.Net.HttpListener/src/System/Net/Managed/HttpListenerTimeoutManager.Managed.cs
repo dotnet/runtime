@@ -72,7 +72,6 @@ namespace System.Net
             }
         }
 
-        [UnsupportedOSPlatform("browser")]
         public TimeSpan RequestQueue
         {
             get => TimeSpan.Zero;
