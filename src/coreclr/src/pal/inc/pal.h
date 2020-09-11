@@ -1082,15 +1082,6 @@ GetCurrentDirectoryW(
 PALIMPORT
 HANDLE
 PALAPI
-CreateSemaphoreW(
-         IN LPSECURITY_ATTRIBUTES lpSemaphoreAttributes,
-         IN LONG lInitialCount,
-         IN LONG lMaximumCount,
-         IN LPCWSTR lpName);
-
-PALIMPORT
-HANDLE
-PALAPI
 CreateSemaphoreExW(
         IN LPSECURITY_ATTRIBUTES lpSemaphoreAttributes,
         IN LONG lInitialCount,
@@ -1107,13 +1098,7 @@ OpenSemaphoreW(
     IN BOOL bInheritHandle,
     IN LPCWSTR lpName);
 
-#ifdef UNICODE
-#define CreateSemaphore CreateSemaphoreW
 #define CreateSemaphoreEx CreateSemaphoreExW
-#else
-#define CreateSemaphore CreateSemaphoreA
-#define CreateSemaphoreEx CreateSemaphoreExA
-#endif
 
 PALIMPORT
 BOOL
@@ -1145,11 +1130,7 @@ CreateEventExW(
 #define CREATE_EVENT_MANUAL_RESET ((DWORD)0x1)
 #define CREATE_EVENT_INITIAL_SET ((DWORD)0x2)
 
-#ifdef UNICODE
 #define CreateEvent CreateEventW
-#else
-#define CreateEvent CreateEventA
-#endif
 
 PALIMPORT
 BOOL
@@ -1195,11 +1176,7 @@ CreateMutexExW(
 // CreateMutexExW: dwFlags
 #define CREATE_MUTEX_INITIAL_OWNER ((DWORD)0x1)
 
-#ifdef UNICODE
 #define CreateMutex CreateMutexW
-#else
-#define CreateMutex CreateMutexA
-#endif
 
 PALIMPORT
 HANDLE
@@ -1209,12 +1186,9 @@ OpenMutexW(
        IN BOOL bInheritHandle,
        IN LPCWSTR lpName);
 
-
 #ifdef UNICODE
 #define OpenMutex  OpenMutexW
-#else
-#define OpenMutex  OpenMutexA
-#endif // UNICODE
+#endif
 
 PALIMPORT
 BOOL
