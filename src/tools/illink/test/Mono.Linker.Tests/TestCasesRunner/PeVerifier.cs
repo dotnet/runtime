@@ -1,3 +1,4 @@
+#if !NETCOREAPP
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -143,3 +144,4 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		}
 	}
 }
+#endif
