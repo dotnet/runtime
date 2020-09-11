@@ -27,7 +27,6 @@ namespace System.Runtime.Loader
         private readonly string[] _resourceSearchPaths;
         private readonly string[] _assemblyDirectorySearchPaths;
 
-
         public AssemblyDependencyResolver(string componentAssemblyPath)
         {
             if (componentAssemblyPath == null)
