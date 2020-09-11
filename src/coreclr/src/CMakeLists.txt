@@ -70,12 +70,12 @@ if(CLR_CMAKE_HOST_UNIX)
 endif(CLR_CMAKE_HOST_UNIX)
 
 add_subdirectory(vm)
-add_subdirectory(dlls)
 if (CLR_CMAKE_BUILD_SUBSET_RUNTIME)
   add_subdirectory(md)
   add_subdirectory(debug)
   add_subdirectory(binder)
   add_subdirectory(classlibnative)
+  add_subdirectory(dlls)
   add_subdirectory(ToolBox)
   add_subdirectory(tools)
   add_subdirectory(unwinder)
@@ -86,5 +86,12 @@ if (CLR_CMAKE_BUILD_SUBSET_RUNTIME)
   if(CLR_CMAKE_HOST_WIN32)
     add_subdirectory(hosts)
   endif(CLR_CMAKE_HOST_WIN32)
+else()
+  if(CLR_CMAKE_HOST_UNIX)
+    # this is needed to compile the jit on unix platforms.
+    # When the runtime subset is compiled, the add_subdirectory(dlls) above
+    # brings the mscorrc library into the build graph
+    add_subdirectory(dlls/mscorrc)
+  endif(CLR_CMAKE_HOST_UNIX)
 endif(CLR_CMAKE_BUILD_SUBSET_RUNTIME)
 
