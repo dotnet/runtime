@@ -53,7 +53,7 @@ var BindingSupportLib = {
 
 			this.assembly_load = Module.cwrap ('mono_wasm_assembly_load', 'number', ['string']);
 			this.find_class = Module.cwrap ('mono_wasm_assembly_find_class', 'number', ['number', 'string', 'string']);
-			this.find_method = Module.cwrap ('mono_wasm_assembly_find_method', 'number', ['number', 'string', 'number']);
+			this._find_method = Module.cwrap ('mono_wasm_assembly_find_method', 'number', ['number', 'string', 'number']);
 			this.invoke_method = Module.cwrap ('mono_wasm_invoke_method', 'number', ['number', 'number', 'number', 'number']);
 			this.mono_string_get_utf8 = Module.cwrap ('mono_wasm_string_get_utf8', 'number', ['number']);
 			this.mono_wasm_string_from_utf16 = Module.cwrap ('mono_wasm_string_from_utf16', 'number', ['number', 'number']);
@@ -134,6 +134,14 @@ var BindingSupportLib = {
 			this.safehandle_release = get_method ("SafeHandleRelease");
 			this.safehandle_get_handle = get_method ("SafeHandleGetHandle");
 			this.safehandle_release_by_handle = get_method ("SafeHandleReleaseByHandle");
+		},
+
+		find_method: function (klass, name, n) {
+			var result = this._find_method(klass, name, n);
+			if (!this._method_descriptions)
+				this._method_descriptions = new Map();
+			this._method_descriptions.set(result, name);
+			return result;
 		},
 
 		get_js_obj: function (js_handle) {
@@ -315,7 +323,7 @@ var BindingSupportLib = {
 				return uriValue;
 			case 23: // clr .NET SafeHandle
 				var addRef = true;
-				var js_handle = this.call_method(this.safehandle_get_handle, null, "mii", [ mono_obj, addRef ]);
+				var js_handle = this.call_method(this.safehandle_get_handle, null, "mi", [ mono_obj, addRef ]);
 				// FIXME: Is this a GC object that needs to be rooted?
 				var requiredObject = BINDING.mono_wasm_require_handle (js_handle);
 				if (addRef)
@@ -377,12 +385,20 @@ var BindingSupportLib = {
 				case js_obj === null:
 				case typeof js_obj === "undefined":
 					return 0;
-				case typeof js_obj === "number":
+				case typeof js_obj === "number": {
 					if (parseInt(js_obj) == js_obj)
-						return this.call_method (this.box_js_int, null, "i!", [ js_obj ]);
+						result = this.call_method (this.box_js_int, null, "i!", [ js_obj ]);
+					else
+						result = this.call_method (this.box_js_double, null, "d!", [ js_obj ]);
 
-					return this.call_method (this.box_js_double, null, "d!", [ js_obj ]);
-				case typeof js_obj === "string":
+					/*
+						var unboxed = this.unbox_mono_obj (result);
+						if (unboxed != js_obj)
+							console.warn ("box->unbox cycle failed", js_obj, unboxed);
+					*/
+					
+					return result;
+				} case typeof js_obj === "string":
 					return this.js_string_to_mono_string (js_obj);
 				case typeof js_obj === "boolean":
 					return this.call_method (this.box_js_bool, null, "i!", [ js_obj ]);
@@ -845,7 +861,6 @@ var BindingSupportLib = {
 			var indirectLocalOffset = 0;
 
 			body.push (
-				"console.log ('conversion starting for " + args_marshal + "');",
 				"var buffer = Module._malloc (" + bufferSizeBytes + ");",
 				"var indirectStart = buffer + " + indirectBaseOffset + ";",
 				"var indirect32 = (indirectStart / 4) | 0, indirect64 = (indirectStart / 8) | 0;",
@@ -1080,6 +1095,7 @@ var BindingSupportLib = {
 	
 				argsRootBuffer = this._get_args_root_buffer_for_method_call (converter);
 
+				console.log ("converting args for", this._get_method_description (method), args_marshal, ":", args);
 				buffer = converter.compiled_variadic_function (argsRootBuffer, method, args);
 			}
 
@@ -1093,8 +1109,6 @@ var BindingSupportLib = {
 				result = this._unbox_mono_obj_rooted (resultRoot);
 			else
 				result = resultRoot.value;
-
-			console.log ("call result:", result);
 
 			return result;
 		},
@@ -1111,11 +1125,26 @@ var BindingSupportLib = {
 				exceptionRoot.release ();
 		},
 
+		_get_method_description: function (method) {
+			if (!this._method_descriptions)
+				this._method_descriptions = new Map();
+
+			var result = this._method_descriptions.get (method);
+			if (!result)
+				result = "method#" + method;
+			return result;
+		},
+
 		_call_method_with_converted_args: function (method, this_arg, buffer, is_result_marshaled, argsRootBuffer) {
 			var resultRoot = MONO.mono_wasm_new_root (), exceptionRoot = MONO.mono_wasm_new_root ();
 			try {
 				resultRoot.value = this.invoke_method (method, this_arg, buffer, exceptionRoot.get_address ());
-				return this._handle_exception_and_produce_result_for_call (resultRoot, exceptionRoot, is_result_marshaled);
+				var result = this._handle_exception_and_produce_result_for_call (resultRoot, exceptionRoot, is_result_marshaled);
+				if (is_result_marshaled)
+					console.log(this._get_method_description(method) + " returned (boxed):", result);
+				else
+					console.log(this._get_method_description(method) + " returned ptr:", result);
+				return result;
 			} finally {
 				this._teardown_after_call (buffer, resultRoot, exceptionRoot, argsRootBuffer);
 			}
@@ -1195,9 +1224,8 @@ var BindingSupportLib = {
 			bodyJs = body.join ("\r\n");
 
 			if (friendly_name) {
-				friendly_name = friendly_name.replace(":", "_")
-					.replace(".", "_").replace("/", "_")
-					.replace("+", "_").replace(" ", "_");
+				var escapeRE = /[^A-Za-z0-9_]/g;
+				friendly_name = friendly_name.replace(escapeRE, "_");
 			}
 
 			return this._createNamedFunction("bound_method_" + (friendly_name || method) + "_with_this_" + this_arg, argumentNames, bodyJs, closure);

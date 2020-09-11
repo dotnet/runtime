@@ -434,15 +434,18 @@ var MonoSupportLib = {
 		 * @returns {WasmRoot}
 		 */
 		mono_wasm_new_root: function (value) {
-			if (this._scratch_root_free_instances.length > 0)
-				return this._scratch_root_free_instances.pop ();
+			var result;
 
-			var index = this._mono_wasm_claim_scratch_index ();
-			var buffer = this._scratch_root_buffer;
-
-			var result = Object.create (this._mono_wasm_root_prototype);
-			result.__buffer = buffer;
-			result.__index = index;
+			if (this._scratch_root_free_instances.length > 0) {
+				result = this._scratch_root_free_instances.pop ();
+			} else {
+				var index = this._mono_wasm_claim_scratch_index ();
+				var buffer = this._scratch_root_buffer;
+					
+				result = Object.create (this._mono_wasm_root_prototype);
+				result.__buffer = buffer;
+				result.__index = index;
+			}
 
 			if (value !== undefined) {
 				if (typeof (value) !== "number")
