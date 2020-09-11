@@ -814,7 +814,6 @@ var BindingSupportLib = {
 			var indirectLocalOffset = 0;
 
 			body.push ("var buffer = Module._malloc (" + bufferSizeBytes + ");");
-			body.push ("var argc = args.length;");
 			body.push ("var indirectStart = buffer + " + indirectBaseOffset + ";");
 			body.push ("var indirect32 = (indirectStart / 4) | 0, indirect64 = (indirectStart / 8) | 0;");
 			body.push ("var buffer32 = (buffer / 4) | 0;");
@@ -900,11 +899,11 @@ var BindingSupportLib = {
 
 			for (var i = 0; i < converter.steps.length; i++) {
 				body.push(
-					"  arg" + i + 
+					"  args[" + i + 
 					(
 						(i == converter.steps.length - 1) 
-							? "" 
-							: ","
+							? "]" 
+							: "], "
 					)
 				);
 			}
@@ -958,6 +957,7 @@ var BindingSupportLib = {
 				argsRootBuffer.clear ();
 				converter.scratchRootBuffer = argsRootBuffer;
 			} else if (argsRootBuffer) {
+				console.log (argsRootBuffer);
 				argsRootBuffer.release ();
 			}
 		},
@@ -1018,27 +1018,7 @@ var BindingSupportLib = {
 				buffer = converter.compiled_variadic_function (argsRootBuffer, method, args);
 			}
 
-			var resultRoot = MONO.mono_wasm_new_root (), exceptionRoot = MONO.mono_wasm_new_root ();
-			try {
-				resultRoot.value = this.invoke_method (method, this_arg, buffer, exceptionRoot.get_address ());
-
-				this._handle_possible_exception_for_method_call (resultRoot.value, exceptionRoot.value);
-
-				if (is_result_marshaled)
-					return this._unbox_mono_obj_rooted (resultRoot);
-				else
-					return resultRoot.value;
-			} finally {
-				this._release_args_root_buffer_from_method_call (converter, argsRootBuffer);
-
-				if (buffer)
-					Module._free (buffer);
-
-				if (resultRoot)
-					resultRoot.release ();
-				if (exceptionRoot)
-					exceptionRoot.release ();
-			}
+			return this._call_method_with_converted_args (method, this_arg, buffer, is_result_marshaled, argsRootBuffer);
 		},
 
 		_call_method_fast: function (method, this_arg, converter, args) {
