@@ -35,7 +35,7 @@ namespace System.Threading.ThreadPools.Tests
             select new object[] { b1, b2 };
 
         // Tests concurrent calls to ThreadPool.SetMinThreads. Invoked from the static constructor.
-        public static void ConcurrentInitializeTest()
+        private static void ConcurrentInitializeTest()
         {
             RemoteExecutor.Invoke(() =>
             {
