@@ -396,7 +396,7 @@ var BindingSupportLib = {
 						if (unboxed != js_obj)
 							console.warn ("box->unbox cycle failed", js_obj, unboxed);
 					*/
-					
+
 					return result;
 				} case typeof js_obj === "string":
 					return this.js_string_to_mono_string (js_obj);
@@ -880,12 +880,12 @@ var BindingSupportLib = {
 
 				if (step.convert) {
 					closure[closureKey] = step.convert;
-					body.push ("console.log('calling converter '" + step.key + ", " + closureKey + ", 'with value', obj);"); 
+					// body.push ("console.log('calling converter '" + step.key + ", " + closureKey + ", 'with value', obj);"); 
 					body.push ("var " + valueKey + " = " + closureKey + "(" + argKey + ", method, " + i + ");");
-					body.push ("console.log('converter result', " + valueKey + ");");
+					// body.push ("console.log('converter result', " + valueKey + ");");
 				} else {
 					body.push ("var " + valueKey + " = " + argKey + ";");
-					body.push ("console.log('arg" + i + " value', " + valueKey + ");");
+					// body.push ("console.log('arg" + i + " value', " + valueKey + ");");
 				}
 
 				if (step.indirect) {
@@ -923,10 +923,10 @@ var BindingSupportLib = {
 
 				body.push ("Module.HEAP32[buffer32 + " + i + "] = valueAddress;", "");
 
-				body.push ("console.log ('wrote ptr', valueAddress, 'to address', (buffer32 + " + i + ") * 4);");
+				// body.push ("console.log ('wrote ptr', valueAddress, 'to address', (buffer32 + " + i + ") * 4);");
 			}
 
-			body.push ("console.log ('conversion finished');");
+			// body.push ("console.log ('conversion finished');");
 
 			body.push ("return buffer;");
 
@@ -1095,7 +1095,7 @@ var BindingSupportLib = {
 	
 				argsRootBuffer = this._get_args_root_buffer_for_method_call (converter);
 
-				console.log ("converting args for", this._get_method_description (method), args_marshal, ":", args);
+				// console.log ("converting args for", this._get_method_description (method), args_marshal, ":", args);
 				buffer = converter.compiled_variadic_function (argsRootBuffer, method, args);
 			}
 
@@ -1140,10 +1140,12 @@ var BindingSupportLib = {
 			try {
 				resultRoot.value = this.invoke_method (method, this_arg, buffer, exceptionRoot.get_address ());
 				var result = this._handle_exception_and_produce_result_for_call (resultRoot, exceptionRoot, is_result_marshaled);
-				if (is_result_marshaled)
-					console.log(this._get_method_description(method) + " returned (boxed):", result);
-				else
-					console.log(this._get_method_description(method) + " returned ptr:", result);
+				/*
+					if (is_result_marshaled)
+						console.log(this._get_method_description(method) + " returned (boxed):", result);
+					else
+						console.log(this._get_method_description(method) + " returned ptr:", result);
+				*/
 				return result;
 			} finally {
 				this._teardown_after_call (buffer, resultRoot, exceptionRoot, argsRootBuffer);
