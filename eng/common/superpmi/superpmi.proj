@@ -2,26 +2,26 @@
 
   <PropertyGroup Condition="'$(AGENT_OS)' == 'Windows_NT'">
     <Python>py -3</Python>
-    <CoreRoot>%HELIX_CORRELATION_PAYLOAD%\PmiAssembliesDirectory</CoreRoot>
-    <!-- <CoreRun>%HELIX_CORRELATION_PAYLOAD%\PmiAssembliesDirectory\CoreRun.exe</CoreRun> -->
-    <WorkItemCommand>%HELIX_CORRELATION_PAYLOAD%\superpmi\superpmi.py collect -pmi_location $(CoreRoot)</WorkItemCommand>
+    <PmiAssembliesDirectory>%HELIX_CORRELATION_PAYLOAD%\PmiAssembliesDirectory</PmiAssembliesDirectory>
+    <SuperPMIDirectory>%HELIX_CORRELATION_PAYLOAD%\superpmi</SuperPMIDirectory>
+    <JitUtilsDirectory>%HELIX_CORRELATION_PAYLOAD%\jitutils\bin</JitUtilsDirectory>
 
-    <HelixPreCommands>$(HelixPreCommands);call %HELIX_CORRELATION_PAYLOAD%\jitutils\bootstrap.cmd;copy %HELIX_CORRELATION_PAYLOAD%\jitutils\bin\pmi.dll $(CoreRoot)</HelixPreCommands>
+    <!-- <CoreRun>%HELIX_CORRELATION_PAYLOAD%\PmiAssembliesDirectory\CoreRun.exe</CoreRun> -->
+    <WorkItemCommand>$(SuperPMIDirectory)\superpmi.py collect -pmi_location $(JitUtilsDirectory)</WorkItemCommand>
+
+    <!-- <HelixPreCommands>$(HelixPreCommands);call %HELIX_CORRELATION_PAYLOAD%\jitutils\bootstrap.cmd;copy %HELIX_CORRELATION_PAYLOAD%\jitutils\bin\pmi.dll $(CoreRoot)</HelixPreCommands> -->
     <!-- <ArtifactsDirectory>%HELIX_CORRELATION_PAYLOAD%\artifacts\BenchmarkDotNet.Artifacts</ArtifactsDirectory>
     <DotnetExe>%HELIX_CORRELATION_PAYLOAD%\performance\tools\dotnet\$(Architecture)\dotnet.exe</DotnetExe> -->
     <Percent>%25%25</Percent>
     <XMLResults>%HELIX_WORKITEM_ROOT%\testResults.xml</XMLResults>
+    
   </PropertyGroup>
 
-  <PropertyGroup>
-    <BaseDirectory>$HELIX_CORRELATION_PAYLOAD</BaseDirectory>
-    <SuperPMIDirectory>$(BaseDirectory)/superpmi</SuperPMIDirectory>
-    <JitUtilsDirectory>$(BaseDirectory)/jitutils</JitUtilsDirectory>
-  </PropertyGroup>
+  
 
 
   <PropertyGroup Condition="'$(WorkItemCommand)' != ''">
-    <WorkItemCommand>$(Python) $(WorkItemCommand) -arch $(Architecture) -build_type Checked -core_root $(CoreRoot)  --pmi -pmi_assemblies $(CoreRoot)</WorkItemCommand>
+    <WorkItemCommand>$(Python) $(WorkItemCommand) -arch $(Architecture) -build_type Checked -core_root $(PmiAssembliesDirectory) --pmi -pmi_assemblies $(PmiAssembliesDirectory)</WorkItemCommand>
   </PropertyGroup>
 
   <PropertyGroup>

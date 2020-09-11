@@ -96,7 +96,11 @@ New-Item -Path $WorkItemDirectory -Name "placeholder.txt" -ItemType "file" -Valu
 
 Write-Host "Cloning into JitUtilsDirectory"
 
-git clone --branch dotnet_cmd --depth 1 --quiet https://github.com/kunalspathak/jitutils $JitUtilsDirectory
+git clone --branch master --depth 1 --quiet https://github.com/dotnet/jitutils $JitUtilsDirectory
+pushd $JitUtilsDirectory
+$env:PATH = "$SourceDirectory\.dotnet;$env:PATH"
+Write-Host "dotnet PATH: $env:PATH"
+.\bootstrap.cmd
 
 # if($MonoDotnet -ne "")
 # {
