@@ -29,10 +29,10 @@ namespace System.Numerics
     /// large algorithms. This type is immutable, individual elements cannot be modified.
     /// </summary>
     [Intrinsic]
-    public struct Vector<T> : IEquatable<Vector<T>>, IFormattable where T : struct
+    public struct Vector<T> : IEquatable<Vector<T>>, IFormattable
+        where T : struct
     {
-        private ulong _00;
-        private ulong _01;
+        private Register register;
 
         /// <summary>Returns the number of elements stored in the vector. This value is hardware dependent.</summary>
         public static int Count
@@ -461,8 +461,8 @@ namespace System.Numerics
             ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
             Vector<T> result = default;
 
-            result._00 = left._00 & right._00;
-            result._01 = left._01 & right._01;
+            result.register.uint64_0 = left.register.uint64_0 & right.register.uint64_0;
+            result.register.uint64_1 = left.register.uint64_1 & right.register.uint64_1;
 
             return result;
         }
@@ -477,8 +477,8 @@ namespace System.Numerics
             ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
             Vector<T> result = default;
 
-            result._00 = left._00 | right._00;
-            result._01 = left._01 | right._01;
+            result.register.uint64_0 = left.register.uint64_0 | right.register.uint64_0;
+            result.register.uint64_1 = left.register.uint64_1 | right.register.uint64_1;
 
             return result;
         }
@@ -493,8 +493,8 @@ namespace System.Numerics
             ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
             Vector<T> result = default;
 
-            result._00 = left._00 ^ right._00;
-            result._01 = left._01 ^ right._01;
+            result.register.uint64_0 = left.register.uint64_0 ^ right.register.uint64_0;
+            result.register.uint64_1 = left.register.uint64_1 ^ right.register.uint64_1;
 
             return result;
         }
@@ -716,8 +716,8 @@ namespace System.Numerics
             ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
             Vector<T> result = default;
 
-            result._00 = (left._00 & condition._00) | (right._00 & ~condition._00);
-            result._01 = (left._01 & condition._01) | (right._01 & ~condition._01);
+            result.register.uint64_0 = (left.register.uint64_0 & condition.register.uint64_0) | (right.register.uint64_0 & ~condition.register.uint64_0);
+            result.register.uint64_1 = (left.register.uint64_1 & condition.register.uint64_1) | (right.register.uint64_1 & ~condition.register.uint64_1);
 
             return result;
         }
