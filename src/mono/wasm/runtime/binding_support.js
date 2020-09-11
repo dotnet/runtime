@@ -752,19 +752,22 @@ var BindingSupportLib = {
 		_create_converter_for_marshal_string: function (args_marshal) {
 			var steps = [];
 			var size = 0;
-			var is_result_definitely_unmarshaled = false;
+			var is_result_definitely_unmarshaled = false,
+				is_result_possibly_unmarshaled = false,
+				result_unmarshaled_if_argc = -1;
 
 			for (var i = 0; i < args_marshal.length; ++i) {
 				var key = args_marshal[i];
-				
-				if (key === "!") {
-					if (i !== args_marshal.length - 1)
-						throw new Error ("! must be at the end of the signature");
-					else {
+
+				if (i === args_marshal.length - 1) {
+					if (key === "!") {
 						is_result_definitely_unmarshaled = true;
-						continue;
+					} else if (key === "m") {
+						is_result_possibly_unmarshaled = true;
+						result_unmarshaled_if_argc = args_marshal.length - 1;
 					}
-				}
+				} else if (key === "!")
+					throw new Error ("! must be at the end of the signature");
 
 				var conv = this.converters.get (key);
 				if (!conv)
@@ -777,7 +780,12 @@ var BindingSupportLib = {
 				size += conv.size;
 			}
 
-			return { steps: steps, size: size, args_marshal: args_marshal, is_result_definitely_unmarshaled: is_result_definitely_unmarshaled };
+			return { 
+				steps: steps, size: size, args_marshal: args_marshal, 
+				is_result_definitely_unmarshaled: is_result_definitely_unmarshaled,
+				is_result_possibly_unmarshaled: is_result_possibly_unmarshaled,
+				result_unmarshaled_if_argc: result_unmarshaled_if_argc
+			};
 		},
 
 		_get_converter_for_marshal_string: function (args_marshal) {
@@ -978,6 +986,26 @@ var BindingSupportLib = {
 			throw err;
 		},
 
+		_maybe_produce_signature_warning: function (converter) {
+			if (converter.has_warned_about_signature)
+				return;
+
+			console.warn ("MONO_WASM: Deprecated raw return value signature: '" + converter.args_marshal + "'. End the signature with '!' instead of 'm'.");
+			converter.has_warned_about_signature = true;
+		},
+
+		_decide_if_result_is_marshaled: function (converter, argc) {
+			if (
+				converter.is_result_possibly_unmarshaled && 
+				(argc === converter.result_unmarshaled_if_argc)
+			) {
+				this._maybe_produce_signature_warning (converter);
+				return false;
+			} else {
+				return !converter.is_result_definitely_unmarshaled;
+			}
+		},
+
 		/*
 		args_marshal is a string with one character per parameter that tells how to marshal it, here are the valid values:
 
@@ -1008,16 +1036,7 @@ var BindingSupportLib = {
 			if (needs_converter) {
 				converter = this._compile_converter_for_marshal_string (args_marshal);
 
-				if (args_marshal.length > args.length && args_marshal [args.length] === "m") {
-					is_result_marshaled = false;
-
-					if (!converter.has_warned_about_signature) {
-						console.warn ("MONO_WASM: Deprecated raw return value signature: '" + args_marshal + "'. End the signature with '!' instead.");
-						converter.has_warned_about_signature = true;
-					}
-				} else {
-					is_result_marshaled = !converter.is_result_definitely_unmarshaled;
-				}
+				is_result_marshaled = this._decide_if_result_is_marshaled (converter, args.length);
 
 				argsRootBuffer = this._get_args_root_buffer_for_method_call (converter);
 
@@ -1033,7 +1052,7 @@ var BindingSupportLib = {
 
 			this_arg = this_arg | 0;
 
-			var is_result_marshaled = !converter.is_result_definitely_unmarshaled;
+			var is_result_marshaled = this._decide_if_result_is_marshaled (converter, args.length);
 			var argsRootBuffer = this._get_args_root_buffer_for_method_call (converter);
 			var buffer = 0;
 			if (converter)
@@ -1098,8 +1117,7 @@ var BindingSupportLib = {
 				binding_support: this,
 				converter: converter,
 				method: method,
-				this_arg: this_arg,
-				is_result_marshaled: is_result_marshaled
+				this_arg: this_arg
 			};
 			var argumentNames = [];
 			var body = [];
@@ -1128,6 +1146,14 @@ var BindingSupportLib = {
 	
 			} else {
 				body.push("var argsRootBuffer = null, buffer = 0;");
+			}
+
+			if (converter.is_result_definitely_unmarshaled) {
+				body.push ("var is_result_marshaled = false;");
+			} else if (converter.is_result_possibly_unmarshaled) {
+				body.push ("var is_result_marshaled = arguments.length !== " + converter.result_unmarshaled_if_argc + ";");
+			} else {
+				body.push ("var is_result_marshaled = true;");
 			}
 
 			body.push ("return binding_support._call_method_with_converted_args (method, this_arg, buffer, is_result_marshaled, argsRootBuffer);");
