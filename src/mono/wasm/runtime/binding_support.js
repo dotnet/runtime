@@ -761,9 +761,13 @@ var BindingSupportLib = {
 			result.set ('s', { steps: [{ convert: this.js_string_to_mono_string.bind (this)}], size: 0, needsRoot: true });
 			result.set ('o', { steps: [{ convert: this.js_to_mono_obj.bind (this)}], size: 0, needsRoot: true });
 			result.set ('u', { steps: [{ convert: this.js_to_mono_uri.bind (this)}], size: 0, needsRoot: true });
-			// FIXME: The signature of js_to_mono_enum is incompatible - it should be (obj, method, parmIdx);
-			result.set ('k', { steps: [{ convert: this.js_to_mono_enum.bind (this), indirect: 'i64'}], size: 8});
-			result.set ('j', { steps: [{ convert: this.js_to_mono_enum.bind (this), indirect: 'i32'}], size: 8});
+
+			var enumAdapter = (function js_to_mono_enum_adapter (obj, method, parmIdx) {
+				return this.js_to_mono_enum(method, parmIdx, obj);
+			}).bind(this);
+			result.set ('k', { steps: [{ convert: enumAdapter, indirect: 'i64'}], size: 8});
+			result.set ('j', { steps: [{ convert: enumAdapter, indirect: 'i32'}], size: 8});
+
 			result.set ('i', { steps: [{ indirect: 'i32'}], size: 8});
 			result.set ('l', { steps: [{ indirect: 'i64'}], size: 8});
 			result.set ('f', { steps: [{ indirect: 'float'}], size: 8});
