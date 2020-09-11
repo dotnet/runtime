@@ -1107,8 +1107,25 @@ var BindingSupportLib = {
 			if (converter) {
 				body.push(
 					"var argsRootBuffer = binding_support._get_args_root_buffer_for_method_call (converter);",
-					"var buffer = converter.compiled_variadic_function (argsRootBuffer, method, arguments);"
+					"var buffer = converter.compiled_function (",
+					"  argsRootBuffer, method,"
 				);
+
+				for (var i = 0; i < converter.steps.length; i++) {
+					var argName = "arg" + i;
+					argumentNames.push(argName);
+					body.push(
+						"  " + argName +
+						(
+							(i == converter.steps.length - 1) 
+								? "" 
+								: ", "
+						)
+					);
+				}
+
+				body.push(");");
+	
 			} else {
 				body.push("var argsRootBuffer = null, buffer = 0;");
 			}
