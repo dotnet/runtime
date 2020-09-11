@@ -87,7 +87,7 @@ jobs:
             _Framework: ${{ framework }}
     steps:
     - ${{ parameters.steps }}
-    - powershell: $(Build.SourcesDirectory)\eng\common\superpmi\superpmi-setup.ps1 $(IsInternal)$(Interpreter) -Framework $(_Framework) -Kind ${{ parameters.runKind }} ${{ parameters.extraSetupParameters }}
+    - powershell: $(Build.SourcesDirectory)\eng\common\superpmi\superpmi-setup.ps1
       displayName: SuperPMI Setup (Windows)
       condition: and(succeeded(), eq(variables['Agent.Os'], 'Windows_NT'))
       continueOnError: ${{ parameters.continueOnError }}

@@ -11,13 +11,6 @@ Param(
     [string] $BuildNumber=$env:BUILD_BUILDNUMBER,
     [string] $RunCategories="Libraries Runtime",
     [string] $Csproj="src\benchmarks\micro\MicroBenchmarks.csproj",
-    [string] $Kind="micro",
-    [switch] $LLVM,
-    [switch] $MonoInterpreter,
-    [switch] $MonoAOT, 
-    [switch] $Internal,
-    [switch] $Compare,
-    [string] $MonoDotnet="",
     [string] $Configurations="CompilationMode=$CompilationMode RunKind=$Kind"
 )
 
@@ -26,19 +19,12 @@ Param(
 # 3. copy 
 
 $RunFromPerformanceRepo = ($Repository -eq "dotnet/jitutils") -or ($Repository -eq "dotnet-jitutils")
-$UseCoreRun = ($CoreRootDirectory -ne [string]::Empty)
-$UseBaselineCoreRun = ($BaselineCoreRootDirectory -ne [string]::Empty)
-
 $PayloadDirectory = (Join-Path $SourceDirectory "Payload")
 $SuperPmiDirectory = (Join-Path $PayloadDirectory "superpmi")
 $WorkItemDirectory = (Join-Path $SourceDirectory "workitem")
-$ExtraBenchmarkDotNetArguments = "--iterationCount 1 --warmupCount 0 --invocationCount 1 --unrollFactor 1 --strategy ColdStart --stopOnFirstError true"
-$Creator = $env:BUILD_DEFINITIONNAME
-$PerfLabArguments = ""
-$HelixSourcePrefix = "pr"
-
 $Queue = "Windows.10.Amd64.ClientRS4.DevEx.15.8.Open"
-
+$HelixSourcePrefix = "official"
+$Creator = $env:BUILD_DEFINITIONNAME
 robocopy $SourceDirectory $SuperPmiDirectory /E /XD $PayloadDirectory $SourceDirectory\artifacts $SourceDirectory\.git
 
 # # TODO: Implement a better logic to determine if Framework is .NET Core or >= .NET 5.
@@ -131,23 +117,12 @@ Write-PipelineSetVariable -Name 'WorkItemDirectory' -Value "$WorkItemDirectory" 
 
 # Script Arguments
 Write-PipelineSetVariable -Name 'Python' -Value "py -3" -IsMultiJobVariable $false
-Write-PipelineSetVariable -Name 'ExtraBenchmarkDotNetArguments' -Value "$ExtraBenchmarkDotNetArguments" -IsMultiJobVariable $false
-Write-PipelineSetVariable -Name 'SetupArguments' -Value "$SetupArguments" -IsMultiJobVariable $false
-Write-PipelineSetVariable -Name 'PerfLabArguments' -Value "$PerfLabArguments" -IsMultiJobVariable $false
-Write-PipelineSetVariable -Name 'BDNCategories' -Value "$RunCategories" -IsMultiJobVariable $false
-Write-PipelineSetVariable -Name 'TargetCsproj' -Value "$Csproj" -IsMultiJobVariable $false
-Write-PipelineSetVariable -Name 'Kind' -Value "$Kind" -IsMultiJobVariable $false
 Write-PipelineSetVariable -Name 'Architecture' -Value "$Architecture" -IsMultiJobVariable $false
-Write-PipelineSetVariable -Name 'UseCoreRun' -Value "$UseCoreRun" -IsMultiJobVariable $false
-Write-PipelineSetVariable -Name 'UseBaselineCoreRun' -Value "$UseBaselineCoreRun" -IsMultiJobVariable $false
-Write-PipelineSetVariable -Name 'RunFromPerfRepo' -Value "$RunFromPerformanceRepo" -IsMultiJobVariable $false
-Write-PipelineSetVariable -Name 'Compare' -Value "$Compare" -IsMultiJobVariable $false
-Write-PipelineSetVariable -Name 'MonoDotnet' -Value "$UsingMono" -IsMultiJobVariable $false
 
 # Helix Arguments
 Write-PipelineSetVariable -Name 'Creator' -Value "$Creator" -IsMultiJobVariable $false
 Write-PipelineSetVariable -Name 'Queue' -Value "$Queue" -IsMultiJobVariable $false
 Write-PipelineSetVariable -Name 'HelixSourcePrefix' -Value "$HelixSourcePrefix" -IsMultiJobVariable $false
-Write-PipelineSetVariable -Name '_BuildConfig' -Value "$Architecture.$Kind.$Framework" -IsMultiJobVariable $false
+Write-PipelineSetVariable -Name '_BuildConfig' -Value "$Architecture.$Framework" -IsMultiJobVariable $false
 
 exit 0
