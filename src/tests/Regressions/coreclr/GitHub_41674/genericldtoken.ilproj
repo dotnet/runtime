@@ -5,6 +5,6 @@
     <CLRTestPriority>0</CLRTestPriority>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="genericiltoken.il" />
+    <Compile Include="genericldtoken.il" />
   </ItemGroup>
 </Project>
