@@ -1672,18 +1672,13 @@ def determine_jit_name(coreclr_args):
     # If `-altjit` is used, it must be given a full filename, not just a "base name", so use it without additional processing.
     if hasattr(coreclr_args, "altjit") and coreclr_args.altjit is not None:
         return coreclr_args.altjit
-        if coreclr_args.host_os == "Linux":
-           jit_base_name = "clrjit_unix_arm64_x64"
-        elif coreclr_args.host_os == "Windows_NT":
-           jit_base_name = "clrjit_win_arm64_x64"
 
     jit_base_name = "clrjit"
-    if coreclr_args.host_os == "OSX":
-        return "lib" + jit_base_name + ".dylib"
-    elif coreclr_args.host_os == "Linux":
-        return "lib" + jit_base_name + ".so"
-    elif coreclr_args.host_os == "Windows_NT":
+        jit_base_name = "clrjit_win_arm64_x64" if coreclr_args.altjit else jit_base_name
         return jit_base_name + ".dll"
+    elif coreclr_args.host_os == "Linux":
+        jit_base_name = "clrjit_unix_arm64_x64" if coreclr_args.altjit else jit_base_name
+        return "lib" + jit_base_name + ".so"
     else:
         raise RuntimeError("Unknown OS.")
 

@@ -180,7 +180,7 @@ def validate_args(args):
 
     coreclr_setup_args.verify(args,
                               "ci_arch",
-                              lambda ci_arch: ci_arch in coreclr_setup_args.valid_arches + ['clrjit_win_arm_x64', 'clrjit_win_arm64_x64'],
+                              lambda ci_arch: ci_arch in coreclr_setup_args.valid_arches + ['clrjit_win_arm_x86', 'clrjit_win_arm64_x64'],
                               "Error setting ci_arch")
 
     args = (
