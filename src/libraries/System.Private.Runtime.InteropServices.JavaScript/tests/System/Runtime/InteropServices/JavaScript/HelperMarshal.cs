@@ -338,5 +338,12 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             _blobURL = new Uri(blobUrl);
         }
+
+        internal static Uri _blobURI;
+        public static void SetBlobUri(Uri blobUri)
+        {
+            _blobURI = blobUri;
+        }
+
     }
 }
