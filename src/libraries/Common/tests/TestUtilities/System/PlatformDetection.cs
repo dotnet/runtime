@@ -226,17 +226,7 @@ namespace System
             if (IsWindows)
             {
                 string key = @"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control";
-                object value = null;
-
-                try
-                {
-                    value = Registry.GetValue(key, "ContainerType", defaultValue: null);
-                }
-                catch
-                {
-                }
-
-                return value != null;
+                return Registry.GetValue(key, "ContainerType", defaultValue: null) != null;
             }
 
             return (IsLinux && File.Exists("/.dockerenv"));
