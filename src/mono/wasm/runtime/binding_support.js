@@ -701,7 +701,7 @@ var BindingSupportLib = {
 			var uriPrefix = "", escapedFunctionIdentifier = "";
 
 			if (name) {
-				uriPrefix = "//# sourceURL=https://closure.invalid/" + name + "\r\n";
+				uriPrefix = "//# sourceURL=https://mono-wasm.invalid/" + name + "\r\n";
 				escapedFunctionIdentifier = name;
 			} else {
 				escapedFunctionIdentifier = "unnamed";
@@ -813,12 +813,14 @@ var BindingSupportLib = {
 			};
 			var indirectLocalOffset = 0;
 
-			body.push ("var buffer = Module._malloc (" + bufferSizeBytes + ");");
-			body.push ("var indirectStart = buffer + " + indirectBaseOffset + ";");
-			body.push ("var indirect32 = (indirectStart / 4) | 0, indirect64 = (indirectStart / 8) | 0;");
-			body.push ("var buffer32 = (buffer / 4) | 0;");
-			body.push ("var valueAddress = 0;");
-			body.push ("");
+			body.push (
+				"var buffer = Module._malloc (" + bufferSizeBytes + ");",
+				"var indirectStart = buffer + " + indirectBaseOffset + ";",
+				"var indirect32 = (indirectStart / 4) | 0, indirect64 = (indirectStart / 8) | 0;",
+				"var buffer32 = (buffer / 4) | 0;",
+				"var valueAddress = 0;",
+				""
+			);
 
 			for (var i = 0; i < converter.steps.length; i++) {
 				var step = converter.steps[i];
@@ -871,8 +873,7 @@ var BindingSupportLib = {
 				if (step.needsRoot)
 					body.push ("rootBuffer.set (" + i + ", valueAddress);");
 
-				body.push ("Module.HEAP32[buffer32 + " + i + "] = valueAddress;");
-				body.push ("");
+				body.push ("Module.HEAP32[buffer32 + " + i + "] = valueAddress;", "");
 			}
 
 			body.push ("return buffer;");
@@ -1083,7 +1084,7 @@ var BindingSupportLib = {
 			
 			var is_result_marshaled = !converter.is_result_definitely_unmarshaled;
 
-			if (true)
+			if (false)
 				return function bound_method () {
 					var argsRootBuffer = BINDING._get_args_root_buffer_for_method_call (converter);
 					var buffer = 0;
@@ -1093,15 +1094,29 @@ var BindingSupportLib = {
 					return BINDING._call_method_with_converted_args (method, this_arg, buffer, is_result_marshaled, argsRootBuffer);
 				};
 
-			/*
 			var closure = {
+				binding_support: this,
 				converter: converter,
 				method: method,
-				this_arg: this_arg				
+				this_arg: this_arg,
+				is_result_marshaled: is_result_marshaled
 			};
 			var argumentNames = [];
-			var body =
-			*/
+			var body = [];
+
+			if (converter) {
+				body.push(
+					"var argsRootBuffer = binding_support._get_args_root_buffer_for_method_call (converter);",
+					"var buffer = converter.compiled_variadic_function (argsRootBuffer, method, arguments);"
+				);
+			} else {
+				body.push("var argsRootBuffer = null, buffer = 0;");
+			}
+
+			body.push ("return binding_support._call_method_with_converted_args (method, this_arg, buffer, is_result_marshaled, argsRootBuffer);");
+
+			bodyJs = body.join ("\r\n");
+			return this._createNamedFunction("bound_method_" + method + "_with_this_" + this_arg, argumentNames, bodyJs, closure);
 		},
 
 		invoke_delegate: function (delegate_obj, js_args) {
