@@ -696,6 +696,29 @@ namespace System.Security.Cryptography.X509Certificates
             return this.GetPrivateKey<ECDiffieHellman>(cert => HasECDiffieHellmanKeyUsage(cert));
         }
 
+        public X509Certificate2 CopyWithPrivateKey(ECDiffieHellman privateKey)
+        {
+            if (privateKey == null)
+                throw new ArgumentNullException(nameof(privateKey));
+
+            if (HasPrivateKey)
+                throw new InvalidOperationException(SR.Cryptography_Cert_AlreadyHasPrivateKey);
+
+            using (ECDiffieHellman? publicKey = GetECDiffieHellmanPublicKey())
+            {
+                if (publicKey == null)
+                    throw new ArgumentException(SR.Cryptography_PrivateKey_WrongAlgorithm);
+
+                if (!Helpers.AreSamePublicECParameters(publicKey.ExportParameters(false), privateKey.ExportParameters(false)))
+                {
+                    throw new ArgumentException(SR.Cryptography_PrivateKey_DoesNotMatch, nameof(privateKey));
+                }
+            }
+
+            ICertificatePal pal = Pal.CopyWithPrivateKey(privateKey);
+            return new X509Certificate2(pal);
+        }
+
         /// <summary>
         /// Creates a new X509 certificate from the file contents of an RFC 7468 PEM-encoded
         /// certificate and private key.

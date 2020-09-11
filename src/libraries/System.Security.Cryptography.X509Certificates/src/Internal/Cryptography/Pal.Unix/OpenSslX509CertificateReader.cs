@@ -652,6 +652,26 @@ namespace Internal.Cryptography.Pal
             }
         }
 
+        public ICertificatePal CopyWithPrivateKey(ECDiffieHellman privateKey)
+        {
+            ECDiffieHellmanOpenSsl? typedKey = privateKey as ECDiffieHellmanOpenSsl;
+
+            if (typedKey != null)
+            {
+                return CopyWithPrivateKey((SafeEvpPKeyHandle)typedKey.DuplicateKeyHandle());
+            }
+
+            ECParameters ecParameters = privateKey.ExportParameters(true);
+
+            using (PinAndClear.Track(ecParameters.D!))
+            using (typedKey = new ECDiffieHellmanOpenSsl())
+            {
+                typedKey.ImportParameters(ecParameters);
+
+                return CopyWithPrivateKey((SafeEvpPKeyHandle)typedKey.DuplicateKeyHandle());
+            }
+        }
+
         public ICertificatePal CopyWithPrivateKey(RSA privateKey)
         {
             RSAOpenSsl? typedKey = privateKey as RSAOpenSsl;

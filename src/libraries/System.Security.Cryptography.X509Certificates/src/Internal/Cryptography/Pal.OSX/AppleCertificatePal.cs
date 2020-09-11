@@ -540,6 +540,25 @@ namespace Internal.Cryptography.Pal
             }
         }
 
+        public ICertificatePal CopyWithPrivateKey(ECDiffieHellman privateKey)
+        {
+            var typedKey = privateKey as ECDiffieHellmanImplementation.ECDiffieHellmanSecurityTransforms;
+
+            if (typedKey != null)
+            {
+                return CopyWithPrivateKey(typedKey.GetKeys());
+            }
+
+            ECParameters ecParameters = privateKey.ExportParameters(true);
+
+            using (PinAndClear.Track(ecParameters.D!))
+            using (typedKey = new ECDiffieHellmanImplementation.ECDiffieHellmanSecurityTransforms())
+            {
+                typedKey.ImportParameters(ecParameters);
+                return CopyWithPrivateKey(typedKey.GetKeys());
+            }
+        }
+
         public ICertificatePal CopyWithPrivateKey(RSA privateKey)
         {
             var typedKey = privateKey as RSAImplementation.RSASecurityTransforms;

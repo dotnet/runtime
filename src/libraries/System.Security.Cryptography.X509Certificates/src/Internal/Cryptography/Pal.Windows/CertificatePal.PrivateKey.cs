@@ -136,6 +136,31 @@ namespace Internal.Cryptography.Pal
             }
         }
 
+        public ICertificatePal CopyWithPrivateKey(ECDiffieHellman ecdh)
+        {
+            ECDiffieHellmanCng? ecdhCng = ecdh as ECDiffieHellmanCng;
+
+            if (ecdhCng != null)
+            {
+                ICertificatePal? clone = CopyWithPersistedCngKey(ecdhCng.Key);
+
+                if (clone != null)
+                {
+                    return clone;
+                }
+            }
+
+            ECParameters privateParameters = ecdh.ExportParameters(true);
+
+            using (PinAndClear.Track(privateParameters.D!))
+            using (ECDiffieHellmanCng clonedKey = new ECDiffieHellmanCng())
+            {
+                clonedKey.ImportParameters(privateParameters);
+
+                return CopyWithEphemeralKey(clonedKey.Key);
+            }
+        }
+
         public ICertificatePal CopyWithPrivateKey(RSA rsa)
         {
             RSACng? rsaCng = rsa as RSACng;

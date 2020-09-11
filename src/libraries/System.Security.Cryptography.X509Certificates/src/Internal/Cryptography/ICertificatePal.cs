@@ -39,6 +39,7 @@ namespace Internal.Cryptography
         ICertificatePal CopyWithPrivateKey(DSA privateKey);
         ICertificatePal CopyWithPrivateKey(ECDsa privateKey);
         ICertificatePal CopyWithPrivateKey(RSA privateKey);
+        ICertificatePal CopyWithPrivateKey(ECDiffieHellman privateKey);
         PolicyData GetPolicyData();
     }
 }
