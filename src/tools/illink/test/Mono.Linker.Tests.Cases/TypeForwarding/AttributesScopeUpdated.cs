@@ -21,23 +21,24 @@ namespace Mono.Linker.Tests.Cases.TypeForwarding
 
 	[RemovedAssembly ("Forwarder.dll")]
 	[KeptMemberInAssembly ("Implementation.dll", typeof (ImplementationLibrary))]
-	static class AttributeScopeUpdated
+	static class AttributesScopeUpdated
 	{
 		static void Main ()
 		{
 		}
 
 		[Kept]
-		public static void Test_1 ([TestType3 (typeof (ImplementationLibrary))] int arg)
+		public static void Test_1 ([KeptAttributeAttribute (typeof (TestType3Attribute))] [TestType3 (typeof (ImplementationLibrary))] int arg)
 		{
 		}
 
 		[Kept]
-		public static void Test_2<[TestType3 (typeof (ImplementationLibrary))] T> ()
+		public static void Test_2<[KeptAttributeAttribute (typeof (TestType3Attribute))] [TestType3 (typeof (ImplementationLibrary))] T> ()
 		{
 		}
 
 		[Kept]
+		[return: KeptAttributeAttribute (typeof (TestType3Attribute))]
 		[return: TestType3 (typeof (ImplementationLibrary))]
 		public static void Test_3 ()
 		{
