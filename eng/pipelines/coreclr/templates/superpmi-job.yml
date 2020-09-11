@@ -40,10 +40,10 @@ jobs:
     runKind: ${{ parameters.runKind }}
     additionalSetupParameters: ${{ parameters.additionalSetupParameters }}
     # Test job depends on the corresponding build job
-    # dependsOn:
-    # - ${{ format('coreclr_{0}_product_build_{1}{2}_{3}_{4}', parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-    # - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
-    #   - ${{ format('libraries_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveLibrariesBuildConfig) }}
+    dependsOn:
+    - ${{ format('coreclr_{0}_product_build_{1}{2}_{3}_{4}', parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+    - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
+      - ${{ format('libraries_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveLibrariesBuildConfig) }}
 
     ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
       ${{ if eq(parameters.runtimeType, 'coreclr') }}:
@@ -57,29 +57,27 @@ jobs:
     frameworks:
       - ${{ parameters.framework }}
     steps:
-      - script: |
-          echo Temporary skipping download of coreclr/libraries and creating core_root
     # Extra steps that will be passed to the superpmi template and run before sending the job to helix (all of which is done in the template)
 
-    # # Optionally download live-built libraries
-    # - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
-    #   - template: /eng/pipelines/common/download-artifact-step.yml
-    #     parameters:
-    #       unpackFolder: $(librariesDownloadDir)
-    #       cleanUnpackFolder: false
-    #       artifactFileName: '$(librariesBuildArtifactName)$(archiveExtension)'
-    #       artifactName: '$(librariesBuildArtifactName)'
-    #       displayName: 'live-built libraries'
+    # Optionally download live-built libraries
+    - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
+      - template: /eng/pipelines/common/download-artifact-step.yml
+        parameters:
+          unpackFolder: $(librariesDownloadDir)
+          cleanUnpackFolder: false
+          artifactFileName: '$(librariesBuildArtifactName)$(archiveExtension)'
+          artifactName: '$(librariesBuildArtifactName)'
+          displayName: 'live-built libraries'
 
-    # # Download coreclr
-    # - template: /eng/pipelines/common/download-artifact-step.yml
-    #   parameters:
-    #     unpackFolder: $(buildProductRootFolderPath)
-    #     artifactFileName: '$(buildProductArtifactName)$(archiveExtension)'
-    #     artifactName: '$(buildProductArtifactName)'
-    #     displayName: 'Coreclr product build'
+    # Download coreclr
+    - template: /eng/pipelines/common/download-artifact-step.yml
+      parameters:
+        unpackFolder: $(buildProductRootFolderPath)
+        artifactFileName: '$(buildProductArtifactName)$(archiveExtension)'
+        artifactName: '$(buildProductArtifactName)'
+        displayName: 'Coreclr product build'
 
-    # # Create Core_Root
-    # - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(buildConfig) $(archType) generatelayoutonly $(librariesOverrideArg)
-    #   displayName: Create Core_Root
-    #   condition: and(succeeded(), ne(variables.runtimeFlavorName, 'Mono'))
+    # Create Core_Root
+    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(buildConfig) $(archType) generatelayoutonly $(librariesOverrideArg)
+      displayName: Create Core_Root
+      condition: and(succeeded(), ne(variables.runtimeFlavorName, 'Mono'))
