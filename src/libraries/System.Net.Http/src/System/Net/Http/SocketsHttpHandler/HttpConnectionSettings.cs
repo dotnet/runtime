@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Net.Security;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -54,6 +55,8 @@ namespace System.Net.Http
         internal SslClientAuthenticationOptions? _sslOptions;
 
         internal bool _enableMultipleHttp2Connections;
+
+        internal Func<SocketsHttpConnectionContext, CancellationToken, ValueTask<Stream>>? _connectCallback;
 
         internal IDictionary<string, object?>? _properties;
 
@@ -108,6 +111,7 @@ namespace System.Net.Http
                 _requestHeaderEncodingSelector = _requestHeaderEncodingSelector,
                 _responseHeaderEncodingSelector = _responseHeaderEncodingSelector,
                 _enableMultipleHttp2Connections = _enableMultipleHttp2Connections,
+                _connectCallback = _connectCallback,
             };
         }
 
