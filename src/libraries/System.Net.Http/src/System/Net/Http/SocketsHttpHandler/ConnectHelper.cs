@@ -31,11 +31,11 @@ namespace System.Net.Http
             }
         }
 
-        public static async ValueTask<Stream> ConnectAsync(SocketsConnectionFactory factory, DnsEndPoint endPoint, CancellationToken cancellationToken)
+        public static async ValueTask<Stream> ConnectAsync(Func<SocketsHttpConnectionContext, CancellationToken, ValueTask<Stream>> callback, DnsEndPoint endPoint, HttpRequestMessage requestMessage, CancellationToken cancellationToken)
         {
             try
             {
-                return await factory.ConnectAsync(endPoint, cancellationToken).ConfigureAwait(false);
+                return await callback(new SocketsHttpConnectionContext(endPoint, requestMessage), cancellationToken).ConfigureAwait(false);
             }
             catch (OperationCanceledException ex) when (ex.CancellationToken == cancellationToken)
             {
