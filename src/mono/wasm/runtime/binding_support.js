@@ -30,6 +30,9 @@ var BindingSupportLib = {
 		bindings_lazy_init: function () {
 			if (this.init)
 				return;
+
+			// avoid infinite recursion
+			this.init = true;
 		
 			Array.prototype[Symbol.for("wasm type")] = 1;
 			ArrayBuffer.prototype[Symbol.for("wasm type")] = 2;
@@ -98,6 +101,11 @@ var BindingSupportLib = {
 				return res;
 			};
 
+			var bind_runtime_method = function (method_name, signature) {
+				var method = get_method (method_name);
+				return BINDING.bind_method (method, 0, signature);
+			};
+
 			this.bind_js_obj = get_method ("BindJSObject");
 			this.bind_core_clr_obj = get_method ("BindCoreCLRObject");
 			this.bind_existing_obj = get_method ("BindExistingObject");
@@ -108,7 +116,7 @@ var BindingSupportLib = {
 			this.box_js_int = get_method ("BoxInt");
 			this.box_js_double = get_method ("BoxDouble");
 			this.box_js_bool = get_method ("BoxBool");
-			this.is_simple_array = get_method ("IsSimpleArray");
+			this._is_simple_array = bind_runtime_method ("IsSimpleArray", "m");
 			this.setup_js_cont = get_method ("SetupJSContinuation");
 
 			this.create_tcs = get_method ("CreateTaskSource");
@@ -126,8 +134,6 @@ var BindingSupportLib = {
 			this.safehandle_release = get_method ("SafeHandleRelease");
 			this.safehandle_get_handle = get_method ("SafeHandleGetHandle");
 			this.safehandle_release_by_handle = get_method ("SafeHandleReleaseByHandle");
-
-			this.init = true;
 		},
 
 		get_js_obj: function (js_handle) {
@@ -141,7 +147,7 @@ var BindingSupportLib = {
 		},
 
 		is_nested_array: function (ele) {
-			return this.call_method (this.is_simple_array, null, "mi", [ ele ]);
+			return this._is_simple_array(ele);
 		},
 
 		js_string_to_mono_string: function (string) {
@@ -762,6 +768,7 @@ var BindingSupportLib = {
 				if (i === args_marshal.length - 1) {
 					if (key === "!") {
 						is_result_definitely_unmarshaled = true;
+						continue;
 					} else if (key === "m") {
 						is_result_possibly_unmarshaled = true;
 						result_unmarshaled_if_argc = args_marshal.length - 1;
@@ -995,13 +1002,22 @@ var BindingSupportLib = {
 		},
 
 		_decide_if_result_is_marshaled: function (converter, argc) {
+			if (!converter)
+				return true;
+
 			if (
 				converter.is_result_possibly_unmarshaled && 
 				(argc === converter.result_unmarshaled_if_argc)
 			) {
+				if (argc < converter.result_unmarshaled_if_argc)
+					throw new Error(["Expected >= ", converter.result_unmarshaled_if_argc, "argument(s) but got", argc, "for signature " + converter.args_marshal].join(" "));
+
 				this._maybe_produce_signature_warning (converter);
 				return false;
 			} else {
+				if (argc < converter.steps.length)
+					throw new Error(["Expected", converter.steps.length, "argument(s) but got", argc, "for signature " + converter.args_marshal].join(" "));
+
 				return !converter.is_result_definitely_unmarshaled;
 			}
 		},
@@ -1038,25 +1054,12 @@ var BindingSupportLib = {
 
 				is_result_marshaled = this._decide_if_result_is_marshaled (converter, args.length);
 
+				console.log('is_result_marshaled=', is_result_marshaled, 'for argc', args.length, 'and signature ' + converter.args_marshal);
+	
 				argsRootBuffer = this._get_args_root_buffer_for_method_call (converter);
 
 				buffer = converter.compiled_variadic_function (argsRootBuffer, method, args);
 			}
-
-			return this._call_method_with_converted_args (method, this_arg, buffer, is_result_marshaled, argsRootBuffer);
-		},
-
-		_call_method_fast: function (method, this_arg, converter, args) {
-			if (args.length !== converter.steps.length)
-				throw new Error ("Expected " + converter.steps.length + " argument(s) but got " + args.length);
-
-			this_arg = this_arg | 0;
-
-			var is_result_marshaled = this._decide_if_result_is_marshaled (converter, args.length);
-			var argsRootBuffer = this._get_args_root_buffer_for_method_call (converter);
-			var buffer = 0;
-			if (converter)
-				buffer = converter.compiled_variadic_function (argsRootBuffer, method, args);
 
 			return this._call_method_with_converted_args (method, this_arg, buffer, is_result_marshaled, argsRootBuffer);
 		},
@@ -1100,16 +1103,18 @@ var BindingSupportLib = {
 			var converter = null;
 			if (typeof (args_marshal) === "string")
 				converter = this._compile_converter_for_marshal_string (args_marshal);
-			
-			var is_result_marshaled = !converter.is_result_definitely_unmarshaled;
 
-			if (false)
+			if (true)
 				return function bound_method () {
 					var argsRootBuffer = BINDING._get_args_root_buffer_for_method_call (converter);
 					var buffer = 0;
 					if (converter)
 						buffer = converter.compiled_variadic_function (argsRootBuffer, method, arguments);
 		
+					var is_result_marshaled = BINDING._decide_if_result_is_marshaled (converter, arguments.length);
+
+					console.log('is_result_marshaled=', is_result_marshaled, 'for argc', args.length, 'and signature ' + converter.args_marshal + ' (bound)');
+
 					return BINDING._call_method_with_converted_args (method, this_arg, buffer, is_result_marshaled, argsRootBuffer);
 				};
 
@@ -1152,6 +1157,7 @@ var BindingSupportLib = {
 				body.push ("var is_result_marshaled = false;");
 			} else if (converter.is_result_possibly_unmarshaled) {
 				body.push ("var is_result_marshaled = arguments.length !== " + converter.result_unmarshaled_if_argc + ";");
+				// body.push ("console.log('is_result_marshaled=', is_result_marshaled, 'for argc', arguments.length, 'and signature " + converter.args_marshal + " (bound)');");
 			} else {
 				body.push ("var is_result_marshaled = true;");
 			}
