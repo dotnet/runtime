@@ -740,23 +740,23 @@ var BindingSupportLib = {
 		},
 
 		_create_primitive_converters: function () {
-			var primitiveConverters = new Map ();
-			converters.set ('m', { steps: [{ }], size: 0});
-			converters.set ('s', { steps: [{ convert: this.js_string_to_mono_string.bind (this)}], size: 0, needsRoot: true });
-			converters.set ('o', { steps: [{ convert: this.js_to_mono_obj.bind (this)}], size: 0, needsRoot: true });
-			converters.set ('u', { steps: [{ convert: this.js_to_mono_uri.bind (this)}], size: 0, needsRoot: true });
+			var result = new Map ();
+			result.set ('m', { steps: [{ }], size: 0});
+			result.set ('s', { steps: [{ convert: this.js_string_to_mono_string.bind (this)}], size: 0, needsRoot: true });
+			result.set ('o', { steps: [{ convert: this.js_to_mono_obj.bind (this)}], size: 0, needsRoot: true });
+			result.set ('u', { steps: [{ convert: this.js_to_mono_uri.bind (this)}], size: 0, needsRoot: true });
 			// FIXME: The signature of js_to_mono_enum is incompatible - it should be (obj, method, parmIdx);
-			converters.set ('k', { steps: [{ convert: this.js_to_mono_enum.bind (this), indirect: 'i64'}], size: 8});
-			converters.set ('j', { steps: [{ convert: this.js_to_mono_enum.bind (this), indirect: 'i32'}], size: 8});
-			converters.set ('i', { steps: [{ indirect: 'i32'}], size: 8});
-			converters.set ('l', { steps: [{ indirect: 'i64'}], size: 8});
-			converters.set ('f', { steps: [{ indirect: 'float'}], size: 8});
-			converters.set ('d', { steps: [{ indirect: 'double'}], size: 8});
-			return this._primitive_converters = primitiveConverters;
+			result.set ('k', { steps: [{ convert: this.js_to_mono_enum.bind (this), indirect: 'i64'}], size: 8});
+			result.set ('j', { steps: [{ convert: this.js_to_mono_enum.bind (this), indirect: 'i32'}], size: 8});
+			result.set ('i', { steps: [{ indirect: 'i32'}], size: 8});
+			result.set ('l', { steps: [{ indirect: 'i64'}], size: 8});
+			result.set ('f', { steps: [{ indirect: 'float'}], size: 8});
+			result.set ('d', { steps: [{ indirect: 'double'}], size: 8});
+			return this._primitive_converters = result;
 		},
 
 		_create_converter_for_marshal_string: function (args_marshal) {
-			console.log("_create_converter_for_marshal_string", args_marshal);
+			// console.log("_create_converter_for_marshal_string", args_marshal);
 
 			var primitiveConverters = this._primitive_converters;
 			if (!primitiveConverters)
@@ -782,7 +782,7 @@ var BindingSupportLib = {
 				} else if (key === "!")
 					throw new Error ("! must be at the end of the signature");
 
-				var conv = this.converters.get (key);
+				var conv = primitiveConverters.get (key);
 				if (!conv)
 					throw new Error ("Unknown parameter type " + type);
 
@@ -801,10 +801,11 @@ var BindingSupportLib = {
 			};
 		},
 
-		_signature_converters: new Map(),
-
 		_get_converter_for_marshal_string: function (args_marshal) {
-			console.log("_get_converter_for_marshal_string", args_marshal);
+			// console.log("_get_converter_for_marshal_string", args_marshal);
+
+			if (!this._signature_converters)
+				this._signature_converters = new Map();
 
 			var converter = this._signature_converters.get (args_marshal);
 			if (!converter) {
@@ -812,13 +813,13 @@ var BindingSupportLib = {
 				this._signature_converters.set (args_marshal, converter);
 			}
 
-			console.log("result.args_marshal", converter.args_marshal);
+			// console.log("result.args_marshal", converter.args_marshal);
 
 			return converter;
 		},
 
 		_compile_converter_for_marshal_string: function (args_marshal) {
-			console.log("_compile_converter_for_marshal_string", args_marshal);
+			// console.log("_compile_converter_for_marshal_string", args_marshal);
 
 			var converter = this._get_converter_for_marshal_string (args_marshal);
 			if (!converter.args_marshal)
@@ -915,7 +916,7 @@ var BindingSupportLib = {
 				// console.log("compiled converter", compiledFunction);
 			} catch (exc) {
 				converter.compiled_function = null;
-				console.log("compiling converter failed for", bodyJs, "with error", exc);
+				console.warn("compiling converter failed for", bodyJs, "with error", exc);
 				throw exc;
 			}
 
@@ -948,7 +949,7 @@ var BindingSupportLib = {
 				// console.log("compiled converter", compiledFunction);
 			} catch (exc) {
 				converter.compiled_variadic_function = null;
-				console.log("compiling converter failed for", bodyJs, "with error", exc);
+				console.warn("compiling converter failed for", bodyJs, "with error", exc);
 				throw exc;
 			}
 
