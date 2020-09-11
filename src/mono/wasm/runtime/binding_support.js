@@ -379,12 +379,13 @@ var BindingSupportLib = {
 					return 0;
 				case typeof js_obj === "number":
 					if (parseInt(js_obj) == js_obj)
-						return this.call_method (this.box_js_int, null, "im", [ js_obj ]);
-					return this.call_method (this.box_js_double, null, "dm", [ js_obj ]);
+						return this.call_method (this.box_js_int, null, "i!", [ js_obj ]);
+
+					return this.call_method (this.box_js_double, null, "d!", [ js_obj ]);
 				case typeof js_obj === "string":
 					return this.js_string_to_mono_string (js_obj);
 				case typeof js_obj === "boolean":
-					return this.call_method (this.box_js_bool, null, "im", [ js_obj ]);
+					return this.call_method (this.box_js_bool, null, "i!", [ js_obj ]);
 				case isThenable() === true:
 					var the_task = this.try_extract_mono_obj (js_obj);
 					if (the_task)
@@ -399,7 +400,7 @@ var BindingSupportLib = {
 					return this.get_task_and_bind (tcs, js_obj);
 				case js_obj.constructor.name === "Date":
 					// We may need to take into account the TimeZone Offset
-					return this.call_method(this.create_date_time, null, "dm", [ js_obj.getTime() ]);
+					return this.call_method(this.create_date_time, null, "d!", [ js_obj.getTime() ]);
 				default:
 					return this.extract_mono_obj (js_obj);
 			}
@@ -412,7 +413,7 @@ var BindingSupportLib = {
 				case typeof js_obj === "undefined":
 					return 0;
 				case typeof js_obj === "string":
-					return this.call_method(this.create_uri, null, "sm", [ js_obj ])
+					return this.call_method(this.create_uri, null, "s!", [ js_obj ])
 				default:
 					return this.extract_mono_obj (js_obj);
 			}
@@ -577,7 +578,7 @@ var BindingSupportLib = {
 			try {
 				monoObj = MONO.mono_wasm_new_root (this.js_to_mono_obj (js_obj));
 				// Check enum contract
-				monoEnum = MONO.mono_wasm_new_root (this.call_method (this.object_to_enum, null, "iimm", [ method, parmIdx, monoObj.value ]))
+				monoEnum = MONO.mono_wasm_new_root (this.call_method (this.object_to_enum, null, "iim!", [ method, parmIdx, monoObj.value ]))
 				// return the unboxed enum value.
 				return this.mono_unbox_enum (monoEnum.value);
 			} finally {
@@ -605,7 +606,7 @@ var BindingSupportLib = {
 
 		wasm_get_raw_obj: function (gchandle)
 		{
-			return this.call_method (this.get_raw_mono_obj, null, "im", [gchandle]);
+			return this.call_method (this.get_raw_mono_obj, null, "i!", [gchandle]);
 		},
 
 		try_extract_mono_obj:function (js_obj) {
@@ -738,8 +739,8 @@ var BindingSupportLib = {
 			return result;
 		},
 
-		_create_default_converters: function () {
-			var converters = new Map ();
+		_create_primitive_converters: function () {
+			var primitiveConverters = new Map ();
 			converters.set ('m', { steps: [{ }], size: 0});
 			converters.set ('s', { steps: [{ convert: this.js_string_to_mono_string.bind (this)}], size: 0, needsRoot: true });
 			converters.set ('o', { steps: [{ convert: this.js_to_mono_obj.bind (this)}], size: 0, needsRoot: true });
@@ -751,11 +752,16 @@ var BindingSupportLib = {
 			converters.set ('l', { steps: [{ indirect: 'i64'}], size: 8});
 			converters.set ('f', { steps: [{ indirect: 'float'}], size: 8});
 			converters.set ('d', { steps: [{ indirect: 'double'}], size: 8});
-			this.converters = converters;
-			return converters;
+			return this._primitive_converters = primitiveConverters;
 		},
 
 		_create_converter_for_marshal_string: function (args_marshal) {
+			console.log("_create_converter_for_marshal_string", args_marshal);
+
+			var primitiveConverters = this._primitive_converters;
+			if (!primitiveConverters)
+				primitiveConverters = this._create_primitive_converters ();
+
 			var steps = [];
 			var size = 0;
 			var is_result_definitely_unmarshaled = false,
@@ -795,24 +801,33 @@ var BindingSupportLib = {
 			};
 		},
 
-		_get_converter_for_marshal_string: function (args_marshal) {
-			var converters = this.converters;
-			if (!converters)
-				converters = this._create_default_converters ();
+		_signature_converters: new Map(),
 
-			var converter = converters.get (args_marshal);
+		_get_converter_for_marshal_string: function (args_marshal) {
+			console.log("_get_converter_for_marshal_string", args_marshal);
+
+			var converter = this._signature_converters.get (args_marshal);
 			if (!converter) {
 				converter = this._create_converter_for_marshal_string (args_marshal);
-				converters.set (args_marshal, converter);
+				this._signature_converters.set (args_marshal, converter);
 			}
+
+			console.log("result.args_marshal", converter.args_marshal);
 
 			return converter;
 		},
 
 		_compile_converter_for_marshal_string: function (args_marshal) {
+			console.log("_compile_converter_for_marshal_string", args_marshal);
+
 			var converter = this._get_converter_for_marshal_string (args_marshal);
+			if (!converter.args_marshal)
+				throw new Error ("Corrupt converter");
+
 			if (converter.compiled_function && converter.compiled_variadic_function)
 				return converter;
+
+			var converterName = args_marshal.replace("!", "_result_unmarshaled");
 			
 			var body = [];
 			var argumentNames = ["rootBuffer", "method"];
@@ -895,7 +910,7 @@ var BindingSupportLib = {
 
 			var bodyJs = body.join ("\r\n"), compiledFunction = null, compiledVariadicFunction = null;
 			try {
-				compiledFunction = this._createNamedFunction("converter_" + args_marshal, argumentNames, bodyJs, closure);
+				compiledFunction = this._createNamedFunction("converter_" + converterName, argumentNames, bodyJs, closure);
 				converter.compiled_function = compiledFunction;
 				// console.log("compiled converter", compiledFunction);
 			} catch (exc) {
@@ -928,7 +943,7 @@ var BindingSupportLib = {
 
 			bodyJs = body.join ("\r\n");
 			try {
-				compiledVariadicFunction = this._createNamedFunction("variadic_converter_" + args_marshal, argumentNames, bodyJs, closure);
+				compiledVariadicFunction = this._createNamedFunction("variadic_converter_" + converterName, argumentNames, bodyJs, closure);
 				converter.compiled_variadic_function = compiledVariadicFunction;
 				// console.log("compiled converter", compiledFunction);
 			} catch (exc) {
@@ -1096,9 +1111,11 @@ var BindingSupportLib = {
 		},
 
 		bind_method: function (method, this_arg, args_marshal) {
-			this.bindings_lazy_init ();			
+			this.bindings_lazy_init ();
 
 			this_arg = this_arg | 0;
+
+			console.log ("bind_method", method, this_arg, args_marshal);
 
 			var converter = null;
 			if (typeof (args_marshal) === "string")
