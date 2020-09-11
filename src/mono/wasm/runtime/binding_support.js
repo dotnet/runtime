@@ -1230,7 +1230,12 @@ var BindingSupportLib = {
 				friendly_name = friendly_name.replace(escapeRE, "_");
 			}
 
-			return this._createNamedFunction("bound_method_" + (friendly_name || method) + "_with_this_" + this_arg, argumentNames, bodyJs, closure);
+			var displayName = "bound_method_" + (friendly_name || method);
+			
+			if (this_arg)
+				displayName += "_with_this_" + this_arg;
+
+			return this._createNamedFunction(displayName, argumentNames, bodyJs, closure);
 		},
 
 		invoke_delegate: function (delegate_obj, js_args) {
