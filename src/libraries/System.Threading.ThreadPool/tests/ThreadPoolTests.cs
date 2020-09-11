@@ -19,7 +19,10 @@ namespace System.Threading.ThreadPools.Tests
         static ThreadPoolTests()
         {
             // Run the following tests before any others
-            ConcurrentInitializeTest();
+            if (IsThreadingAndRemoteExecutorSupported)
+            {
+                ConcurrentInitializeTest();
+            }
         }
 
         public static IEnumerable<object[]> OneBool() =>
@@ -31,8 +34,7 @@ namespace System.Threading.ThreadPools.Tests
             from b2 in new[] { true, false }
             select new object[] { b1, b2 };
 
-        // Tests concurrent calls to ThreadPool.SetMinThreads
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        // Tests concurrent calls to ThreadPool.SetMinThreads. Invoked from the static constructor.
         public static void ConcurrentInitializeTest()
         {
             RemoteExecutor.Invoke(() =>
@@ -90,7 +92,7 @@ namespace System.Threading.ThreadPools.Tests
             Assert.True(c <= maxc);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported))]
         [ActiveIssue("https://github.com/mono/mono/issues/15164", TestRuntimes.Mono)]
         public static void SetMinMaxThreadsTest()
         {
@@ -154,7 +156,7 @@ namespace System.Threading.ThreadPools.Tests
             }).Dispose();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported))]
         public static void SetMinMaxThreadsTest_ChangedInDotNetCore()
         {
             RemoteExecutor.Invoke(() =>
@@ -197,7 +199,7 @@ namespace System.Threading.ThreadPools.Tests
             Assert.Equal(expectedMaxc, maxc);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported))]
         public static void SetMinThreadsTo0Test()
         {
             RemoteExecutor.Invoke(() =>
@@ -406,7 +408,9 @@ namespace System.Threading.ThreadPools.Tests
             public void Execute() { }
         }
 
-        [ConditionalFact(nameof(HasAtLeastThreeProcessorsAndRemoteExecutorSupported))]
+        public static bool IsMetricsTestSupported => Environment.ProcessorCount >= 3 && IsThreadingAndRemoteExecutorSupported;
+
+        [ConditionalFact(nameof(IsMetricsTestSupported))]
         public void MetricsTest()
         {
             RemoteExecutor.Invoke(() =>
@@ -672,7 +676,7 @@ namespace System.Threading.ThreadPools.Tests
             done.CheckedWait();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported))]
         public static void WorkerThreadStateResetTest()
         {
             RemoteExecutor.Invoke(() =>
@@ -756,7 +760,7 @@ namespace System.Threading.ThreadPools.Tests
             }).Dispose();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported))]
         public static void SettingMinWorkerThreadsWillCreateThreadsUpToMinimum()
         {
             RemoteExecutor.Invoke(() =>
@@ -829,6 +833,7 @@ namespace System.Threading.ThreadPools.Tests
             done.CheckedWait();
         }
 
-        public static bool HasAtLeastThreeProcessorsAndRemoteExecutorSupported => Environment.ProcessorCount >= 3 && RemoteExecutor.IsSupported;
+        public static bool IsThreadingAndRemoteExecutorSupported =>
+            PlatformDetection.IsThreadingSupported && RemoteExecutor.IsSupported;
     }
 }
