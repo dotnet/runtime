@@ -79,10 +79,10 @@ namespace System.Net
             }
         }
 
-        [UnsupportedOSPlatform("browser")]
         public ExtendedProtectionPolicy ExtendedProtectionPolicy
         {
             get => _extendedProtectionPolicy;
+            [UnsupportedOSPlatform("browser")]
             set
             {
                 CheckDisposed();
