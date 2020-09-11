@@ -400,16 +400,13 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Fact]
         public static void TestECDHPublicKey()
         {
-            byte[] helloBytes = Encoding.ASCII.GetBytes("Hello");
-
             using (var cert = new X509Certificate2(TestData.EcDh256Certificate))
             using (ECDiffieHellman publicKey = cert.GetECDiffieHellmanPublicKey())
-            using (ECDiffieHellman otherParty = ECDiffieHellman.Create())
+            using (ECDiffieHellman otherParty = ECDiffieHellman.Create(ECCurve.NamedCurves.nistP256))
             {
                 Assert.Equal(256, publicKey.KeySize);
 
-                // The public key should be unable to export private parameters.
-                publicKey.DeriveKeyFromHash(otherParty.PublicKey, HashAlgorithmName.SHA256);
+                // The public key should be unable to derive a secret private parameters.
                 Assert.ThrowsAny<CryptographicException>(() => publicKey.DeriveKeyFromHash(otherParty.PublicKey, HashAlgorithmName.SHA256));
             }
         }
@@ -450,6 +447,27 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                 bool isSignatureValid = publicKey.VerifyData(helloBytes, existingSignature, HashAlgorithmName.SHA256);
                 Assert.True(isSignatureValid, "isSignatureValid");
+            }
+        }
+
+        [Fact]
+        public static void TestECDHPublicKey_DeriveSecret()
+        {
+            using (var publicEcdhCert = new X509Certificate2(TestData.EccCert_KeyAgreement))
+            using (ECDiffieHellman otherParty = ECDiffieHellman.Create())
+            using (ECDiffieHellman publicKey = publicEcdhCert.GetECDiffieHellmanPublicKey())
+            {
+                otherParty.ImportFromPem(TestData.EcDhPkcs8Key);
+                byte[] key = otherParty.DeriveKeyFromHash(publicKey.PublicKey, HashAlgorithmName.SHA256);
+
+                byte[] expectedKey = new byte[] {
+                    0x3f, 0x67, 0x8f, 0x51, 0xa0, 0x91, 0xfa, 0x5d,
+                    0x38, 0x00, 0x92, 0xd3, 0x5b, 0x29, 0xd4, 0x00,
+                    0x1c, 0x4a, 0x8f, 0x30, 0x7d, 0x78, 0xf4, 0x79,
+                    0xed, 0x3d, 0x0b, 0x23, 0xdc, 0xfa, 0x26, 0x57
+                };
+
+                Assert.Equal(expectedKey, key);
             }
         }
 
