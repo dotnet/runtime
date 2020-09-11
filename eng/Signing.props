@@ -1,5 +1,10 @@
 <Project>
 
+  <!-- When PostBuildSign is true, these ends up being pulled in through 
+       the import of arcade's Sign.props in prepare-artifacts.proj (via Directory.Build.props and targets) -->
+  <Import Project="$(RepositoryEngineeringDir)Configurations.props" Condition="'$(PostBuildSign)' != 'true'" />
+  <Import Project="$(RepositoryEngineeringDir)liveBuilds.targets" Condition="'$(PostBuildSign)' != 'true'" />
+
   <PropertyGroup>
     <!--
       Windows arm/arm64 jobs don't have MSIs to sign. Keep it simple: allow not finding any matches
