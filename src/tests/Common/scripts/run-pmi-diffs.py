@@ -180,7 +180,7 @@ def validate_args(args):
 
     coreclr_setup_args.verify(args,
                               "ci_arch",
-                              lambda ci_arch: ci_arch in coreclr_setup_args.valid_arches + ['clrjit_win_arm_x86', 'clrjit_win_arm64_x64'],
+                              lambda ci_arch: ci_arch in coreclr_setup_args.valid_arches + ['x86_arm_altjit', 'x64_arm64_altjit'],
                               "Error setting ci_arch")
 
     args = (
@@ -576,8 +576,8 @@ def do_pmi_diffs():
         # due to https://github.com/dotnet/jitutils/issues/175.
 
         altjit_args = []
-        if ci_arch is not None:
-            altjit_args = ["--altjit", ci_arch + ".dll"]
+        if ci_arch is not None and (ci_arch == 'x86_arm_altjit' or ci_arch == 'x64_arm64_altjit'):
+            altjit_args = ["--altjit", "protononjit.dll"]
 
         # Over which set of assemblies should we generate asm?
         # TODO: parameterize this
