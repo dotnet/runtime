@@ -17,6 +17,7 @@ var BindingSupportLib = {
 
 		export_functions: function (module) {
 			module ["mono_bindings_init"] = BINDING.mono_bindings_init.bind(BINDING);
+			module ["mono_bind_method"] = BINDING.bind_method.bind(BINDING);
 			module ["mono_method_invoke"] = BINDING.call_method.bind(BINDING);
 			module ["mono_method_get_call_signature"] = BINDING.mono_method_get_call_signature.bind(BINDING);
 			module ["mono_method_resolve"] = BINDING.resolve_method_fqn.bind(BINDING);
@@ -751,11 +752,23 @@ var BindingSupportLib = {
 		_create_converter_for_marshal_string: function (args_marshal) {
 			var steps = [];
 			var size = 0;
+			var is_result_definitely_marshaled = false;
 
 			for (var i = 0; i < args_marshal.length; ++i) {
-				var conv = this.converters.get (args_marshal[i]);
+				var key = args_marshal[i];
+				
+				if (key === "!") {
+					if (i !== args_marshal.length - 1)
+						throw new Error ("! must be at the end of the signature");
+					else {
+						key = "m";
+						is_result_definitely_marshaled = true;
+					}
+				}
+
+				var conv = this.converters.get (key);
 				if (!conv)
-					throw Error ("Unknown parameter type " + type);
+					throw new Error ("Unknown parameter type " + type);
 
 				var localStep = Object.create (conv.steps[0]);
 				localStep.size = conv.size;
@@ -764,7 +777,7 @@ var BindingSupportLib = {
 				size += conv.size;
 			}
 
-			return { steps: steps, size: size, args_marshal: args_marshal };
+			return { steps: steps, size: size, args_marshal: args_marshal, is_result_definitely_marshaled: is_result_definitely_marshaled };
 		},
 
 		_get_converter_for_marshal_string: function (args_marshal) {
@@ -783,7 +796,7 @@ var BindingSupportLib = {
 
 		_compile_converter_for_marshal_string: function (args_marshal) {
 			var converter = this._get_converter_for_marshal_string (args_marshal);
-			if (converter.compiledFunction)
+			if (converter.compiled_function)
 				return converter;
 			
 			var body = [];
@@ -868,15 +881,31 @@ var BindingSupportLib = {
 			var bodyJs = body.join ("\r\n");
 			try {
 				var compiledFunction = this._createNamedFunction("converter_" + args_marshal, argumentNames, bodyJs, closure);
-				converter.compiledFunction = compiledFunction;
+				converter.compiled_function = compiledFunction;
 				// console.log("compiled converter", compiledFunction);
 			} catch (exc) {
-				converter.compiledFunction = null;
+				converter.compiled_function = null;
 				console.log("compiling converter failed for", bodyJs, "with error", exc);
 				throw exc;
 			}
 
+			converter.is_result_marshaled = args_marshal.endsWith("!");
+
 			return converter;
+		},
+
+		_verify_args_for_method_call: function (args_marshal, args) {
+			var has_args = (typeof args === "object") && args.length > 0;
+			var has_args_marshal = typeof args_marshal === "string";
+
+			if (has_args) {
+				if (!has_args_marshal)
+					throw new Error ("No signature provided for method call.");
+				else if (args.length > args_marshal.length)
+					throw new Error ("Too many parameter values. Expected at most " + args_marshal.length + " value(s) for signature " + args_marshal);
+			}
+
+			return has_args_marshal && has_args;
 		},
 
 		/*
@@ -892,7 +921,7 @@ var BindingSupportLib = {
 		o: js object will be converted to a C# object (this will box numbers/bool/promises)
 		m: raw mono object. Don't use it unless you know what you're doing
 
-		additionally you can append 'm' to args_marshal beyond `args.length` if you don't want the return value marshaled
+		to suppress marshaling of the return value, place '!' at the end of args_marshal, i.e. 'ii!' instead of 'ii'
 		*/
 		call_method: function (method, this_arg, args_marshal, args) {
 			this.bindings_lazy_init ();
@@ -900,26 +929,26 @@ var BindingSupportLib = {
 			// HACK: Sometimes callers pass null or undefined, coerce it to 0 since that's what wasm expects
 			this_arg = this_arg | 0;
 
-			var has_args = (typeof args === "object") && args.length > 0;
-			var has_args_marshal = typeof args_marshal === "string";
+			var needs_marshaling = this._verify_args_for_method_call (args_marshal, args);
 
-			if (has_args) {
-				if (!has_args_marshal)
-					throw new Error ("No signature provided for method call.");
-				else if (args.length > args_marshal.length)
-					throw new Error ("Too many parameter values. Expected at most " + args_marshal.length + " value(s) for signature " + args_marshal);
-			}
-
-			var args_start = 0, buffer = 0, converter = null, argsRootBuffer = null;
+			var buffer = 0, converter = null, argsRootBuffer = null;
 			var is_result_marshaled = true;
 			var resultRoot = MONO.mono_wasm_new_root (), exceptionRoot = MONO.mono_wasm_new_root ();
 
 			// check if the method signature needs argument mashalling
-			if (has_args_marshal && has_args) {
-				if (args_marshal.length > args.length && args_marshal [args.length] === "m")
+			if (needs_marshaling) {
+				converter = this._compile_converter_for_marshal_string (args_marshal);
+
+				if (args_marshal.length > args.length && args_marshal [args.length] === "m") {
 					is_result_marshaled = false;
 
-				converter = this._compile_converter_for_marshal_string (args_marshal);
+					if (!converter.has_warned_about_signature) {
+						console.warn ("MONO_WASM: Deprecated raw return value signature: '" + args_marshal + "'. End the signature with '!' instead.");
+						converter.has_warned_about_signature = true;
+					}
+				} else {
+					is_result_marshaled = converter.is_result_marshaled;
+				}
 
 				if (converter.scratchRootBuffer) {
 					argsRootBuffer = converter.scratchRootBuffer;
@@ -928,12 +957,11 @@ var BindingSupportLib = {
 					argsRootBuffer = MONO.mono_wasm_new_root_buffer (args_marshal.length);
 				}
 
-				buffer = converter.compiledFunction (argsRootBuffer, method, args);
-				args_start = buffer;
+				buffer = converter.compiled_function (argsRootBuffer, method, args);
 			}
 
 			try {
-				resultRoot.value = this.invoke_method (method, this_arg, args_start, exceptionRoot.get_address ());
+				resultRoot.value = this.invoke_method (method, this_arg, buffer, exceptionRoot.get_address ());
 
 				if (exceptionRoot.value !== 0) {
 					var msg = this.conv_string (resultRoot.value);
@@ -964,6 +992,15 @@ var BindingSupportLib = {
 				if (argsRootBuffer)
 					argsRootBuffer.release ();
 			}
+		},
+
+		_call_method_fast: function (method, this_arg, args_marshal, converter, args) {
+		},
+
+		bind_method: function (method, this_arg, args_marshal) {
+			return function bound_method () {
+				return BINDING.call_method (method, this_arg, args_marshal, arguments);
+			};
 		},
 
 		invoke_delegate: function (delegate_obj, js_args) {
@@ -1049,10 +1086,9 @@ var BindingSupportLib = {
 			if (typeof signature === "undefined")
 				signature = Module.mono_method_get_call_signature (method);
 
-			return function() {
-				return BINDING.call_method (method, null, signature, arguments);
-			};
+			return BINDING.bind_method (method, null, signature);
 		},
+		
 		bind_assembly_entry_point: function (assembly) {
 			this.bindings_lazy_init ();
 

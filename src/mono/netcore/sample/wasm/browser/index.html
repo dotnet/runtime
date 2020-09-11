@@ -22,12 +22,17 @@
           var method = BINDING.bind_static_method("[WasmSample]Sample.Test:BenchmarkMethod", "ifd");
           method(0, 0, 0);
 
-          for (var i = 0; i < 100; i++)
+          var started = performance.now ();
+          for (var i = 0; i < 300; i++)
             App.benchmarkIter(method, i);
+          var ended = performance.now ();
+          var elapsed = ended - started;
 
-          console.log ("starting benchmark in 4 seconds");
+          var speedAdjustment = (Math.max(0, 110 - elapsed) / 50) + 1;
 
-          window.setTimeout(App.runBenchmark.bind(App, method), 4000);
+          console.log ("warming took", (ended - started), "starting benchmark in 4 seconds");
+
+          window.setTimeout(App.runBenchmark.bind(App, method, speedAdjustment), 4000);
         },
 
         iterFailed: function (expected, actual) {
@@ -44,8 +49,8 @@
           }
         },
 
-        runBenchmark: function (method, i) {
-          var iterationCount = 50000, callbackCount = 500;
+        runBenchmark: function (method, speedAdjustment) {
+          var iterationCount = ((50 * speedAdjustment) | 0) * 1000, callbackCount = 5000;
 
           var elapsed = 0;
           var i = 0;
