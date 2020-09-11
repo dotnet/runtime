@@ -189,7 +189,11 @@ namespace System.Net.Http
             }
             if ((requestUri != null) && (requestUri.IsAbsoluteUri) && (!HttpUtilities.IsHttpUri(requestUri)))
             {
+#if TARGETS_BROWSER
+                throw new ArgumentException(SR.net_http_client_http_browser_baseaddress_required, nameof(requestUri));
+#else
                 throw new ArgumentException(SR.net_http_client_http_baseaddress_required, nameof(requestUri));
+#endif
             }
 
             _method = method;
