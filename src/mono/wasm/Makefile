@@ -150,8 +150,7 @@ build-debugger-test-app:
 	cp $(TOP)/src/mono/wasm/debugger/tests/debugger-test/debugger-driver.html $(TOP)/src/mono/wasm/debugger/tests/debugger-test/bin/Debug/publish
 	cp $(TOP)/src/mono/wasm/debugger/tests/debugger-test/other.js $(TOP)/src/mono/wasm/debugger/tests/debugger-test/bin/Debug/publish
 	cp $(TOP)/src/mono/wasm/debugger/tests/debugger-test/runtime-debugger.js $(TOP)/src/mono/wasm/debugger/tests/debugger-test/bin/Debug/publish
-	cp $(TOP)/src/mono/wasm/debugger/tests/lazy-debugger-test/bin/Debug/publish/managed/lazy-debugger-test.dll $(TOP)/src/mono/wasm/debugger/tests/debugger-test/bin/Debug/publish
-	cp $(TOP)/src/mono/wasm/debugger/tests/lazy-debugger-test/bin/Debug/publish/managed/lazy-debugger-test.pdb $(TOP)/src/mono/wasm/debugger/tests/debugger-test/bin/Debug/publish
+	cp $(TOP)/src/mono/wasm/debugger/tests/lazy-debugger-test/bin/Debug/publish/managed/* $(TOP)/src/mono/wasm/debugger/tests/debugger-test/bin/Debug/publish
 
 run-debugger-tests: build-debugger-test-app build-dbg-testsuite
 	if [ ! -z "$(TEST_FILTER)" ]; then \

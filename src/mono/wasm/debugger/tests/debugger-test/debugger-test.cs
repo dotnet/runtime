@@ -328,6 +328,15 @@ public class DebuggerTest
         locals();
     }
 
+    public static void LoadLazyAssembly(string asm_base64, string pdb_base64)
+    {
+        byte[] asm_bytes = Convert.FromBase64String(asm_base64);
+        byte[] pdb_bytes = Convert.FromBase64String(pdb_base64);
+
+        var loadedAssembly = System.Runtime.Loader.AssemblyLoadContext.Default.LoadFromStream(new System.IO.MemoryStream(asm_bytes), new System.IO.MemoryStream(pdb_bytes));
+        Console.WriteLine($"Loaded - {loadedAssembly}");
+    }
+
     public static int locals()
     {
         int l_int = 1;

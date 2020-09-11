@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.WebAssembly.Diagnostics;
@@ -1799,6 +1800,7 @@ namespace DebuggerTests
                     ?.Where(f => f["functionName"]?.Value<string>() == function_name)
                     ?.FirstOrDefault();
 
+        [Fact]
         public async Task DebugLazyLoadedAssembly()
         {
             var insp = new Inspector();
@@ -1806,6 +1808,8 @@ namespace DebuggerTests
             await Ready();
             await insp.Ready(async (cli, token) =>
             {
+                var source_location = "dotnet://lazy-debugger-test.dll/lazy-debugger-test.cs";
+                // Make sure that we've processed the lazily-loaded assemblies into the debugger
                 var tcs = new TaskCompletionSource<bool>();
                 insp.On("Debugger.resumed", async (args, token) =>
                 {
@@ -1813,31 +1817,39 @@ namespace DebuggerTests
                 });
 
                 ctx = new DebugTestContext(cli, insp, token, scripts);
-                var eval_req = JObject.FromObject(new
+
+                // Simulate loading an assembly into the framework
+                byte[] bytes = File.ReadAllBytes("../../../lazy-debugger-test/wasm/Debug/lazy-debugger-test.dll");
+                string asm_base64 = Convert.ToBase64String(bytes);
+                bytes = File.ReadAllBytes("../../../lazy-debugger-test/wasm/Debug/lazy-debugger-test.pdb");
+                string pdb_base64 = Convert.ToBase64String(bytes);
+                var load_assemblies = JObject.FromObject(new
+                {
+                    expression = $"{{ let asm_b64 = '{asm_base64}'; let pdb_b64 = '{pdb_base64}'; invoke_static_method('[debugger-test] DebuggerTest:LoadLazyAssembly', asm_b64, pdb_b64); }}"
+                });
+                var load_assemblies_res = await cli.SendCommand("Runtime.evaluate", load_assemblies, token);
+                Assert.True(load_assemblies_res.IsOk);
+
+                // Simulate calling into lazy-loaded code
+                var load_pdbs = JObject.FromObject(new
                 {
                     expression = "window.setTimeout(function() { invoke_load_lazy_assembly(); }, 1);",
                 });
-                var eval_res = await cli.SendCommand("Runtime.evaluate", eval_req, token);
-                Assert.True(eval_res.IsOk);
+                var load_pdbs_res = await cli.SendCommand("Runtime.evaluate", load_pdbs, token);
+                Assert.True(load_pdbs_res.IsOk);
 
-                await Task.WhenAny(tcs.Task, Task.Delay(4000));
-                Assert.Contains("dotnet://lazy-debugger-test.dll/lazy-debugger-test.cs", scripts.Values);
+                await Task.WhenAny(tcs.Task, Task.Delay(2000));
+                Assert.Contains(source_location, scripts.Values);
 
-                // await EvaluateAndCheck(
-                //     "window.setTimeout(function() { invoke_static_method('[lazy-debugger-test] LazyMath:IntAdd', 5, 10); })",
-                //     "dotnet://lazy-debugger-test.dll/lazy-debugger-test.cs", 11, 8,
-                //     "IntAdd",
-                //     wait_for_event_fn: async (pause_location) =>
-                //     {
-                //         var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
-                //         await CheckProps(locals, new
-                //         {
-                //             a = TNumber(5),
-                //             b = TNumber(10),
-                //             c = TNumber(15)
-                //         }, "locals");
-                //     });
+                await SetBreakpoint(source_location, 9, 8);
 
+                var pause_location = await EvaluateAndCheck(
+                   "window.setTimeout(function () { invoke_static_method('[lazy-debugger-test] LazyMath:IntAdd', 5, 10); }, 1);",
+                   source_location, 9, 8,
+                   "IntAdd");
+                var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
+                CheckNumber(locals, "a", 5);
+                CheckNumber(locals, "b", 10);
             });
         }
 
