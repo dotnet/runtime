@@ -36,7 +36,6 @@ namespace System.Net
             }
         }
 
-        [UnsupportedOSPlatform("browser")]
         public TimeSpan EntityBody
         {
             get => TimeSpan.Zero;
@@ -48,7 +47,6 @@ namespace System.Net
             }
         }
 
-        [UnsupportedOSPlatform("browser")]
         public TimeSpan HeaderWait
         {
             get => TimeSpan.Zero;
@@ -60,7 +58,6 @@ namespace System.Net
             }
         }
 
-        [UnsupportedOSPlatform("browser")]
         public long MinSendBytesPerSecond
         {
             get => 0;

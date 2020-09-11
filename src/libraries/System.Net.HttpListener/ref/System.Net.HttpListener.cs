@@ -148,14 +148,10 @@ namespace System.Net
     {
         internal HttpListenerTimeoutManager() { }
         public System.TimeSpan DrainEntityBody { get { throw null; } set { } }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public System.TimeSpan EntityBody { get { throw null; } [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")] set { } }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public System.TimeSpan HeaderWait { get { throw null; } [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")] set { } }
         public System.TimeSpan IdleConnection { get { throw null; } set { } }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public long MinSendBytesPerSecond { get { throw null; } [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")] set { } }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public System.TimeSpan RequestQueue { get { throw null; } [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")] set { } }
     }
 }
