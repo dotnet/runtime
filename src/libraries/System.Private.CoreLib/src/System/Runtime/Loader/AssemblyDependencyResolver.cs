@@ -22,15 +22,6 @@ namespace System.Runtime.Loader
         /// </summary>
         private const string ResourceAssemblyExtension = ".dll";
 
-        /// <summary>
-        /// The comparison mode for path comparison mode for assembly paths
-        /// </summary>
-#if TARGET_WINDOWS
-        private const StringComparison StringComparisonMode = StringComparison.OrdinalIgnoreCase;
-#else
-        private const StringComparison StringComparisonMode = StringComparison.Ordinal;
-#endif
-
         private readonly Dictionary<string, string> _assemblyPaths;
         private readonly string[] _nativeSearchPaths;
         private readonly string[] _resourceSearchPaths;
@@ -105,16 +96,9 @@ namespace System.Runtime.Loader
             _assemblyPaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             foreach (string assemblyPath in assemblyPaths)
             {
-                // Check to see if we have the same managed assembly simple name in the dictionary.
-                // We compare the paths reported and if they're the same, simply ignore the duplicate entries. And only fail if the paths are different
-                // (since hostpolicy normalizes paths, the comparison should be sufficient to perform as simple string case sensitive/insensitive comparison)
-                // On Windows - OrdinalIgnoreCase comparison
-                // Elsewhere - Ordinal comparison
-                string assemblySimpleName = Path.GetFileNameWithoutExtension(assemblyPath);
-                if (!_assemblyPaths.ContainsKey(assemblySimpleName) || !_assemblyPaths[assemblySimpleName].Equals(assemblyPath, StringComparisonMode))
-                {
-                    _assemblyPaths.Add(assemblySimpleName, assemblyPath);
-                }
+                // Add the first entry with the same simple assembly name if there are multiples
+                // and ignore others
+                _assemblyPaths.TryAdd(Path.GetFileNameWithoutExtension(assemblyPath), assemblyPath);
             }
 
             _nativeSearchPaths = SplitPathsList(nativeSearchPathsList);
