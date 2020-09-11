@@ -531,7 +531,7 @@ jobs:
       continueOnError: true
       condition: succeededOrFailed()
 
-  - ${{ if and(eq(parameters.osGroup, 'Windows_NT'), eq(parameters.isOfficialBuild, true)) }}:
+  - ${{ if and(eq(parameters.osGroup, 'Windows_NT'), eq(parameters.isOfficialBuild, true), ne(variables['PostBuildSign'], 'true')) }}:
     - task: NuGetCommand@2
       displayName: Push Visual Studio NuPkgs
       inputs:
