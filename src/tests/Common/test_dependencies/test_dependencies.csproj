@@ -17,10 +17,8 @@
   <Target Name="Build" DependsOnTargets="$(TraversalBuildDependsOn)" />
 
   <PropertyGroup>
-    <ProjectAssetsFile>$(RepoRoot)src\coreclr\tests\src\Common\test_dependencies\obj\project.assets.json</ProjectAssetsFile>
+    <ProjectAssetsFile>$(RepoRoot)src\tests\Common\test_dependencies\obj\project.assets.json</ProjectAssetsFile>
   </PropertyGroup>
-
-  <Import Project="$(RepositoryEngineeringDir)liveBuilds.targets" />
 
   <Target Name="AddUcrtFilesToCoreRoot" BeforeTargets="CopyDependencyToCoreRoot" Condition="'$(TargetOS)' == 'Windows_NT'">
     <ItemGroup>
