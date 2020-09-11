@@ -19,6 +19,10 @@
     <ItemGroup>
       <DownloadedArtifactFile Include="$(DownloadDirectory)**" />
 
+      <Error
+        Condition="'@(DownloadedArtifactFile)' == ''"
+        Text="No downloaded artifacts found." />
+
       <DownloadedSymbolNupkgFile Include="$(DownloadDirectory)**\*.symbols.nupkg" />
       <DownloadedNupkgFile
         Include="$(DownloadDirectory)**\*.nupkg"
@@ -104,10 +108,6 @@
       <NonShippingNupkgToPublishFile
         Include="@(NupkgToPublishFile)"
         Exclude="@(ShippingNupkgToPublishFile)" />
-
-      <ItemsToSign Remove="@(ItemsToSign)" />
-      <ItemsToSign Include="@(DownloadedArtifactFile)"
-                   Exclude="@(DownloadedSymbolNupkgFile)" />
 
     </ItemGroup>
 

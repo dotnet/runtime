@@ -103,9 +103,6 @@
         <PublishFlatContainer>true</PublishFlatContainer>
       </ItemsToPush>
 
-      <ItemsToSign Remove="@(ItemsToSign)"
-                   Condition="'$(PostBuildSign)' != 'true'" />
-
     </ItemGroup>
 
     <!-- Push items to AzDO as build artifacts, generating the asset manifest as a side effect. -->
