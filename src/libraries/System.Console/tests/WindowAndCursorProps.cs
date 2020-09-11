@@ -226,7 +226,7 @@ public class WindowAndCursorProps
         Assert.NotNull(Console.Title);
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))]
     [PlatformSpecific(TestPlatforms.Windows)]
     public static void Title_Get_Windows_NoNulls()
     {
@@ -560,7 +560,7 @@ public class WindowAndCursorProps
     }
 
     [PlatformSpecific(TestPlatforms.Windows)]
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))]
     public void SetWindowSize_GetWindowSize_ReturnsExpected()
     {
         if (!Console.IsInputRedirected && !Console.IsOutputRedirected)
