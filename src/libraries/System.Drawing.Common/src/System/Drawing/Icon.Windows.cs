@@ -657,6 +657,7 @@ namespace System.Drawing
                     }
                     finally
                     {
+                        Debug.Assert(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
                         Marshal.ReleaseComObject(picture);
                     }
                 }

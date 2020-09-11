@@ -12,10 +12,10 @@
     <HelixBuild Condition="'$(HelixBuild)' == ''">$(BUILD_BUILDNUMBER)</HelixBuild>
     <HelixBuild Condition="'$(HelixBuild)' == ''">default</HelixBuild>
 
-    <!-- Normal jobs have a 30 minute (1800 sec.) timeout for arm/arm64, and 15 minute (900 sec.) timeout otherwise.
+    <!-- Normal jobs have a 30 minute timeout for arm/arm64, and 15 minute timeout otherwise.
          Stress modes can take considerably longer, so double those numbers. And GCStress is even slower.
     -->
-    <TimeoutInSeconds Condition="
+    <_workItemTimeout Condition="
         '$(Scenario)' == 'gcstress0x3' or
         '$(Scenario)' == 'gcstress0xc' or
         '$(Scenario)' == 'heapverify1' or
@@ -24,13 +24,12 @@
         '$(Scenario)' == 'gcstress0xc_zapdisable_heapverify1' or
         '$(Scenario)' == 'gcstress0xc_jitstress1' or
         '$(Scenario)' == 'gcstress0xc_jitstress2' or
-        '$(Scenario)' == 'gcstress0xc_jitminopts_heapverify1'">5400</TimeoutInSeconds>
-    <TimeoutInSeconds Condition="'$(Scenario)' == '' and '$(TimeoutInSeconds)' == '' and ('$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'arm')">1800</TimeoutInSeconds>
-    <TimeoutInSeconds Condition="'$(Scenario)' != '' and '$(TimeoutInSeconds)' == '' and ('$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'arm')">3600</TimeoutInSeconds>
-    <TimeoutInSeconds Condition="'$(Scenario)' == '' and '$(TimeoutInSeconds)' == ''">900</TimeoutInSeconds>
-    <TimeoutInSeconds Condition="'$(Scenario)' != '' and '$(TimeoutInSeconds)' == ''">1800</TimeoutInSeconds>
-
-    <_timeoutSpan>$([System.TimeSpan]::FromSeconds($(TimeoutInSeconds)))</_timeoutSpan>
+        '$(Scenario)' == 'gcstress0xc_jitminopts_heapverify1'">01:30:00</_workItemTimeout>
+    <_workItemTimeout Condition="'$(_workItemTimeout)' == '' and ('$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS')">00:30:00</_workItemTimeout>
+    <_workItemTimeout Condition="'$(Scenario)' == '' and '$(_workItemTimeout)' == '' and ('$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'arm')">00:45:00</_workItemTimeout>
+    <_workItemTimeout Condition="'$(Scenario)' != '' and '$(_workItemTimeout)' == '' and ('$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'arm')">01:00:00</_workItemTimeout>
+    <_workItemTimeout Condition="'$(Scenario)' == '' and '$(_workItemTimeout)' == ''">00:15:00</_workItemTimeout>
+    <_workItemTimeout Condition="'$(Scenario)' != '' and '$(_workItemTimeout)' == ''">00:30:00</_workItemTimeout>
 
     <!-- We need to enable xunit reporter so that it parses test results
          Package testing doesn't run on xunit. -->
@@ -73,7 +72,7 @@
     <HelixType Condition="'$(TestPackages)' == 'true'">test/functional/packaging/</HelixType>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
+  <PropertyGroup Condition="'$(TargetOS)' == 'Browser' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'">
     <IncludeXHarnessCli>true</IncludeXHarnessCli>
   </PropertyGroup>
 
@@ -162,9 +161,22 @@
     <Message Importance="High" Text="Using HelixCommand: $(HelixCommand)" />
     <Message Importance="High" Text="Using HelixType: $(HelixType)" />
     <Message Importance="High" Text="Using WorkItemArchiveWildCard: $(WorkItemArchiveWildCard)" />
-    <Message Importance="High" Text="Using Timeout: $(_timeoutSpan)" />
+    <Message Importance="High" Text="Using Timeout: $(_workItemTimeout)" />
 
-    <ItemGroup>
+    <ItemGroup Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'">
+      <!-- Find all directories named *.app -->
+      <XHarnessAppBundleToTest Include="$([System.IO.Directory]::GetDirectories('$(TestArchiveTestsRoot)', '*.app', System.IO.SearchOption.AllDirectories))">
+        <Targets Condition="'$(TargetArchitecture)' == 'arm'">ios-device</Targets>
+        <Targets Condition="'$(TargetArchitecture)' == 'arm64'">ios-device</Targets>
+        <Targets Condition="'$(TargetArchitecture)' == 'x64'">ios-simulator-64</Targets>
+        <Targets Condition="'$(TargetArchitecture)' == 'x86'">ios-simulator-32</Targets>
+
+        <TestTimeout>$(_workItemTimeout)</TestTimeout>
+        <LaunchTimeout>$(_workItemTimeout)</LaunchTimeout>
+      </XHarnessAppBundleToTest>
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(TargetOS)' != 'iOS' and '$(TargetOS)' != 'tvOS'">
       <HelixCorrelationPayload Include="$(HelixCorrelationPayload)"
                                Condition="'$(IncludeHelixCorrelationPayload)' == 'true'" />
 
@@ -173,12 +185,13 @@
       <HelixWorkItem Include="@(_WorkItem -> '%(FileName)')">
         <PayloadArchive>%(Identity)</PayloadArchive>
         <Command>$(HelixCommand)</Command>
-        <Timeout>$(_timeoutSpan)</Timeout>
+        <Timeout>$(_workItemTimeout)</Timeout>
       </HelixWorkItem>
     </ItemGroup>
 
     <Message Condition="'$(Scenario)' != ''" Importance="High" Text="Done building Helix work items for scenario $(Scenario). Work item count: @(_WorkItem->Count())" />
-    <Message Condition="'$(Scenario)' == ''" Importance="High" Text="Done building Helix work items. Work item count: @(_WorkItem->Count())" />
+    <Message Condition="'$(Scenario)' == '' and ('$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS')" Importance="High" Text="Done building Helix work items. Work item count: @(XHarnessAppBundleToTest->Count())" />
+    <Message Condition="'$(Scenario)' == '' and '$(TargetOS)' != 'iOS' and '$(TargetOS)' != 'tvOS'" Importance="High" Text="Done building Helix work items. Work item count: @(_WorkItem->Count())" />
 
   </Target>
 

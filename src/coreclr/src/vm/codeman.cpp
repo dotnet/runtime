@@ -1353,10 +1353,10 @@ void EEJitManager::SetCpuInfo()
 
     int cpuidInfo[4];
 
-    const int EAX = 0;
-    const int EBX = 1;
-    const int ECX = 2;
-    const int EDX = 3;
+    const int EAX = CPUID_EAX;
+    const int EBX = CPUID_EBX;
+    const int ECX = CPUID_ECX;
+    const int EDX = CPUID_EDX;
 
     __cpuid(cpuidInfo, 0x00000000);
     uint32_t maxCpuId = static_cast<uint32_t>(cpuidInfo[EAX]);
