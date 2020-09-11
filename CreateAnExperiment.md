@@ -4,7 +4,7 @@ Experiments should be contained within a branch in the dotnet/runtimelab reposit
 
 ## Steps to setup a new experiment
 
-- Pick a good name for your experiment and create branch for it in dotnet/runtimelab.
+- Pick a good name for your experiment and create branch for it in dotnet/runtimelab. Branch names should be prefixed with `feature/` in order to have official build support.
    - If the experiment is expected to require changes of .NET runtime itself, it should be branched off of [dotnet/runtimelab:runtime-master](https://github.com/dotnet/runtimelab/tree/runtime-master) that is a manually maitained mirror of [dotnet/runtime:master](https://github.com/dotnet/runtime/tree/master).
    - Otherwise, the experiment should be branched off of [dotnet/runtimelab:master](https://github.com/dotnet/runtimelab/tree/master) to get the required boilerplate such as LICENSE.TXT.
 - Submit a PR to update the [README.MD](https://github.com/dotnet/runtimelab/blob/master/README.md#active-experimental-projects) with the name of your branch and a brief description of the experiment. Example: [#19](https://github.com/dotnet/runtimelab/pull/19/files)
