@@ -1,5 +1,4 @@
-﻿
-using System.IO;
+﻿using System.IO;
 using System.Threading.Tasks;
 
 using Xunit;
@@ -27,8 +26,8 @@ namespace System.Text.Json.Tests.Serialization
                 };
                 await JsonSerializer.SerializeAsync(stream, obj);
             }
-            stream.Position = 0;
 
+            stream.Position = 0;
             {
                 // {"S":"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx","P":"","C":{"S":"","P":null,"C":null}}
                 //                                                                ^ continuation after 'u' (64 bytes)
