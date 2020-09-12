@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 using Xunit;
 
-namespace System.Text.Json.Tests.Serialization
+namespace System.Text.Json.Serialization.Tests
 {
     public static class ContinuationTests
     {
