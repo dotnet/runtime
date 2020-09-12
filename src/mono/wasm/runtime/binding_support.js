@@ -67,7 +67,7 @@ var BindingSupportLib = {
 			this.mono_obj_array_set = Module.cwrap ('mono_wasm_obj_array_set', 'void', ['number', 'number', 'number']);
 			this.mono_wasm_register_bundled_satellite_assemblies = Module.cwrap ('mono_wasm_register_bundled_satellite_assemblies', 'void', [ ]);
 			this.mono_unbox_enum = Module.cwrap ('mono_wasm_unbox_enum', 'number', ['number']);
-			this.mono_try_unbox_primitive_and_get_type = Module.cwrap ('mono_try_unbox_primitive_and_get_type', 'number', ['number', 'number']);
+			this.mono_wasm_try_unbox_primitive_and_get_type = Module.cwrap ('mono_wasm_try_unbox_primitive_and_get_type', 'number', ['number', 'number']);
 			this.assembly_get_entry_point = Module.cwrap ('mono_wasm_assembly_get_entry_point', 'number', ['number']);
 
 			// receives a byteoffset into allocated Heap with a size.
@@ -1271,9 +1271,9 @@ var BindingSupportLib = {
 				"else {",
 				// For the common scenario where the return type is a primitive, we want to try and unbox it directly
 				//  into our existing heap allocation and then read it out of the heap. Doing this all in one operation
-				//  means that we only need to enter a gc safe region once (instead of multiple times with the normal,
-				//  slower check-type-and-then-unbox flow which has to enter a safe region at least twice).
-				"    resultType = binding_support.mono_try_unbox_primitive_and_get_type (resultPtr, buffer);",
+				//  means that we only need to enter a gc safe region twice (instead of 3+ times with the normal,
+				//  slower check-type-and-then-unbox flow which has extra checks since unbox verifies the type).
+				"    resultType = binding_support.mono_wasm_try_unbox_primitive_and_get_type (resultPtr, buffer);",
 				"    switch (resultType) {",
 				"    case 1:", // int
 				"        result = Module.HEAP32[buffer / 4]; break;",
@@ -1285,6 +1285,8 @@ var BindingSupportLib = {
 				"        result = Module.HEAPF64[buffer / 8]; break;",
 				"    case 8:", // boolean
 				"        result = (Module.HEAP32[buffer / 4]) !== 0; break;",
+				"    default:",
+				"        result = binding_support._unbox_mono_obj_rooted (resultRoot); break;",
 				"    }",
 				"}",
 				"",

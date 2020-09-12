@@ -865,7 +865,7 @@ mono_wasm_get_obj_type (MonoObject *obj)
 }
 
 EMSCRIPTEN_KEEPALIVE int
-mono_try_unbox_primitive_and_get_type (MonoObject *obj, void *result)
+mono_wasm_try_unbox_primitive_and_get_type (MonoObject *obj, void *result)
 {
 	int *resultI = result;
 	int64_t *resultL = result;
@@ -880,51 +880,50 @@ mono_try_unbox_primitive_and_get_type (MonoObject *obj, void *result)
 	/* Process obj before calling into the runtime, class_from_name () can invoke managed code */
 	MonoClass *klass = mono_object_get_class (obj);
 	MonoType *type = mono_class_get_type (klass);
-	obj = NULL;
-
 	int mono_type = mono_type_get_type (type);
 	
-	void *ptr = mono_object_unbox (obj);
+	// FIXME: We would prefer to unbox once here but it will fail if the value isn't unboxable
 
 	switch (mono_type) {
 		case MONO_TYPE_I1:
 		case MONO_TYPE_BOOLEAN:
-			*resultI = *(signed char*)ptr;
+			*resultI = *(signed char*)mono_object_unbox (obj);
 			break;
 		case MONO_TYPE_U1:
-			*resultI = *(unsigned char*)ptr;
+			*resultI = *(unsigned char*)mono_object_unbox (obj);
 			break;
 		case MONO_TYPE_I2:
-			*resultI = *(short*)ptr;
+			*resultI = *(short*)mono_object_unbox (obj);
 			break;
 		case MONO_TYPE_U2:
-			*resultI = *(unsigned short*)ptr;
+			*resultI = *(unsigned short*)mono_object_unbox (obj);
 			break;
 		case MONO_TYPE_I4:
 		case MONO_TYPE_I:
-			*resultI = *(int*)ptr;
+			*resultI = *(int*)mono_object_unbox (obj);
 			break;
 		case MONO_TYPE_U4:
 			// FIXME: Will this behave the way we want for large unsigned values?
-			*resultI = *(int*)ptr;
+			*resultI = *(int*)mono_object_unbox (obj);
 			break;
 		case MONO_TYPE_R4:
-			*resultF = *(float*)ptr;
+			*resultF = *(float*)mono_object_unbox (obj);
 			break;
 		case MONO_TYPE_R8:
-			*resultD = *(double*)ptr;
+			*resultD = *(double*)mono_object_unbox (obj);
 			break;
 		case MONO_TYPE_I8:
 		case MONO_TYPE_U8:
 			// FIXME: At present the javascript side of things can't handle this,
 			//  but there's no reason not to future-proof this API
-			*resultL = *(int64_t*)ptr;
+			*resultL = *(int64_t*)mono_object_unbox (obj);
 			break;
 		default:
 			*resultL = 0;
 			break;
 	}
 
+	obj = NULL;
 	return mono_wasm_marshal_type_from_mono_type (mono_type, klass, type);
 }
 
