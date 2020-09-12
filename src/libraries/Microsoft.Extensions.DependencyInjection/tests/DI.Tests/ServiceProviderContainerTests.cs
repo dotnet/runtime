@@ -156,6 +156,53 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             }
         }
 
+        public enum TheEnum
+        {
+            HelloWorld = -1,
+            NiceWorld = 0,
+            GoodByeWorld = 1,
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void ResolvesConstantValueTypeServicesCorrectly(bool useScoped)
+        {
+            var serviceCollection = new ServiceCollection();
+            if (useScoped)
+            {
+                serviceCollection.AddScoped(typeof(int), _ => 4);
+                serviceCollection.AddScoped(typeof(DateTime), _ => new DateTime());
+                serviceCollection.AddScoped(typeof(TheEnum), _ => TheEnum.HelloWorld);
+
+                serviceCollection.AddScoped(typeof(TimeSpan), _ => TimeSpan.Zero);
+                serviceCollection.AddScoped(typeof(TimeSpan), _ => new TimeSpan(1, 2, 3));
+            }
+            else
+            {
+                serviceCollection.AddSingleton(typeof(int), 4);
+                serviceCollection.AddSingleton(typeof(DateTime), new DateTime());
+                serviceCollection.AddSingleton(typeof(TheEnum), TheEnum.HelloWorld);
+
+                serviceCollection.AddSingleton(typeof(TimeSpan), TimeSpan.Zero);
+                serviceCollection.AddSingleton(typeof(TimeSpan), _ => new TimeSpan(1, 2, 3));
+            }
+
+            var provider = CreateServiceProvider(serviceCollection);
+
+            int i = provider.GetService<int>();
+            Assert.Equal(4, i);
+
+            DateTime d = provider.GetService<DateTime>();
+            Assert.Equal(new DateTime(), d);
+
+            TheEnum e = provider.GetService<TheEnum>();
+            Assert.Equal(TheEnum.HelloWorld, e);
+
+            IEnumerable<TimeSpan> times = provider.GetServices<TimeSpan>();
+            Assert.Equal(new[] { TimeSpan.Zero, new TimeSpan(1, 2, 3) }, times);
+        }
+
         [Fact]
         public void RootProviderDispose_PreventsServiceResolution()
         {
