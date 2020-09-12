@@ -1,6 +1,5 @@
 add_subdirectory(CreateEventW)
 add_subdirectory(CreateMutexW_ReleaseMutex)
-add_subdirectory(CreateProcessA)
 add_subdirectory(CreateProcessW)
 add_subdirectory(CreateSemaphoreW_ReleaseSemaphore)
 add_subdirectory(CreateThread)

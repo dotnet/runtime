@@ -177,7 +177,9 @@ private:
 void TestCreateMutex(AutoCloseMutexHandle &m, const char *name, bool initiallyOwned = false)
 {
     m.Close();
-    m = CreateMutex(nullptr, initiallyOwned, convert(name));
+    LPWSTR nameW = convert(name);
+    m = CreateMutex(nullptr, initiallyOwned, nameW);
+    free(nameW);
 }
 
 HANDLE TestOpenMutex(const char *name)
@@ -211,10 +213,14 @@ bool StartProcess(const char *funcName)
     si.cb = sizeof(si);
     PROCESS_INFORMATION pi;
     memset(&pi, 0, sizeof(pi));
-    if (!CreateProcessA(nullptr, g_processCommandLinePath, nullptr, nullptr, false, 0, nullptr, nullptr, &si, &pi))
+    LPWSTR nameW = convert(g_processCommandLinePath);
+    if (!CreateProcessW(nullptr, nameW, nullptr, nullptr, false, 0, nullptr, nullptr, &si, &pi))
     {
+        free(nameW);
         return false;
     }
+
+    free(nameW);
     CloseHandle(pi.hProcess);
     CloseHandle(pi.hThread);
     return true;

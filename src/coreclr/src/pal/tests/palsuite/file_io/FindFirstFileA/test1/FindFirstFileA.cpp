@@ -36,23 +36,25 @@ BOOL CleanUp()
         if(!SetFileAttributesA (szFindName, FILE_ATTRIBUTE_NORMAL))
         {
             result = FALSE;
-            Trace("ERROR:%d: Error setting attributes [%s][%d]\n", szFindName, FILE_ATTRIBUTE_NORMAL); 
-        } 
+            Trace("ERROR:%d: Error setting attributes [%s][%d]\n", szFindName, FILE_ATTRIBUTE_NORMAL);
+        }
         if(!DeleteFileA (szFindName))
         {
             result = FALSE;
-            Trace("ERROR:%d: Error deleting file [%s][%d]\n", GetLastError(), szFindName, dwAtt);   
+            Trace("ERROR:%d: Error deleting file [%s][%d]\n", GetLastError(), szFindName, dwAtt);
         }
     }
 
     dwAtt = GetFileAttributesA(szDirName);
     if( dwAtt != INVALID_FILE_ATTRIBUTES )
     {
-        if(!RemoveDirectoryA (szDirName))
+        LPWSTR szDirNameW = convert(szDirName);
+        if(!RemoveDirectoryW (szDirNameW))
         {
             result = FALSE;
-            Trace("ERROR:%d: Error deleting file [%s][%d]\n", GetLastError(), szDirName, dwAtt);   
+            Trace("ERROR:%d: Error deleting file [%s][%d]\n", GetLastError(), szDirName, dwAtt);
         }
+        free(szDirNameW);
     }
 
     return result;
@@ -134,12 +136,12 @@ int __cdecl main(int argc, char *argv[])
     if (bRc == FALSE)
     {
         Fail("FindFirstFileA: ERROR -> Failed to create the directory "
-            "\"%s\"\n", 
+            "\"%s\"\n",
             szDirName);
     }
 
     hFind = FindFirstFileA(szDirName, &findFileData);
-    if (hFind == INVALID_HANDLE_VALUE) 
+    if (hFind == INVALID_HANDLE_VALUE)
     {
         Fail ("FindFirstFileA: ERROR. Unable to find \"%s\"\n", szDirName);
     }
@@ -157,23 +159,23 @@ int __cdecl main(int argc, char *argv[])
     // find a directory using a trailing '\' on the directory name: should fail
     //
     hFind = FindFirstFileA(szDirNameSlash, &findFileData);
-    if (hFind != INVALID_HANDLE_VALUE) 
+    if (hFind != INVALID_HANDLE_VALUE)
     {
         Fail ("FindFirstFileA: ERROR -> Able to find \"%s\": trailing "
-            "slash should have failed.\n", 
+            "slash should have failed.\n",
             szDirNameSlash);
     }
 
     // find a file using wild cards
     hFind = FindFirstFileA(szFindNameWldCard_01, &findFileData);
-    if (hFind == INVALID_HANDLE_VALUE) 
+    if (hFind == INVALID_HANDLE_VALUE)
     {
-        Fail ("FindFirstFileA: ERROR -> Unable to find \"%s\"\n", 
+        Fail ("FindFirstFileA: ERROR -> Unable to find \"%s\"\n",
             szFindNameWldCard_01);
     }
 
     hFind = FindFirstFileA(szFindNameWldCard_02, &findFileData);
-    if (hFind == INVALID_HANDLE_VALUE) 
+    if (hFind == INVALID_HANDLE_VALUE)
     {
         Fail ("FindFirstFileA: ERROR -> Unable to find \"%s\"\n", szFindNameWldCard_02);
     }
@@ -183,13 +185,13 @@ int __cdecl main(int argc, char *argv[])
     // find a directory using wild cards
     //
     hFind = FindFirstFileA(szDirNameWldCard_01, &findFileData);
-    if (hFind == INVALID_HANDLE_VALUE) 
+    if (hFind == INVALID_HANDLE_VALUE)
     {
         Fail ("FindFirstFileA: ERROR -> Unable to find \"%s\"\n", szDirNameWldCard_01);
     }
 
     hFind = FindFirstFileA(szDirNameWldCard_02, &findFileData);
-    if (hFind == INVALID_HANDLE_VALUE) 
+    if (hFind == INVALID_HANDLE_VALUE)
     {
         Fail ("FindFirstFileA: ERROR -> Unable to find \"%s\"\n", szDirNameWldCard_02);
     }
@@ -199,7 +201,7 @@ int __cdecl main(int argc, char *argv[])
         Fail("FindFirstFileW: ERROR : Final Clean Up failed\n");
     }
 
-    PAL_Terminate();  
+    PAL_Terminate();
 
     return PASS;
 }

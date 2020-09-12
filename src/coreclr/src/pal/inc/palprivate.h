@@ -154,40 +154,6 @@ OpenMutexA(
        IN LPCSTR lpName);
 
 PALIMPORT
-BOOL
-PALAPI
-CreateProcessA(
-           IN LPCSTR lpApplicationName,
-           IN LPSTR lpCommandLine,
-           IN LPSECURITY_ATTRIBUTES lpProcessAttributes,
-           IN LPSECURITY_ATTRIBUTES lpThreadAttributes,
-           IN BOOL bInheritHandles,
-           IN DWORD dwCreationFlags,
-           IN LPVOID lpEnvironment,
-           IN LPCSTR lpCurrentDirectory,
-           IN LPSTARTUPINFOA lpStartupInfo,
-           OUT LPPROCESS_INFORMATION lpProcessInformation);
-
-PALIMPORT
-HANDLE
-PALAPI
-CreateFileMappingA(
-           IN HANDLE hFile,
-           IN LPSECURITY_ATTRIBUTES lpFileMappingAttributes,
-           IN DWORD flProtect,
-           IN DWORD dwMaximumSizeHigh,
-           IN DWORD dwMaximumSizeLow,
-           IN LPCSTR lpName);
-
-PALIMPORT
-HANDLE
-PALAPI
-OpenFileMappingA(
-         IN DWORD dwDesiredAccess,
-         IN BOOL bInheritHandle,
-         IN LPCSTR lpName);
-
-PALIMPORT
 HMODULE
 PALAPI
 LoadLibraryA(
@@ -209,12 +175,6 @@ GetModuleFileNameA(
     OUT LPSTR lpFileName,
     IN DWORD nSize);
 
-
-PALIMPORT
-LPSTR
-PALAPI
-GetEnvironmentStringsA();
-
 PALIMPORT
 BOOL
 PALAPI
@@ -233,27 +193,8 @@ GetEnvironmentVariableA(
 PALIMPORT
 BOOL
 PALAPI
-FreeEnvironmentStringsA(
-            IN LPSTR);
-
-PALIMPORT
-BOOL
-PALAPI
-RemoveDirectoryA(
-                 IN LPCSTR lpPathName);
-
-PALIMPORT
-BOOL
-PALAPI
 RemoveDirectoryW(
                  IN LPCWSTR lpPathName);
-
-PALIMPORT
-BOOL
-PALAPI
-PAL_GetPALDirectoryA(
-    OUT LPSTR lpDirectoryName,
-    IN UINT* cchDirectoryName);
 
 PALIMPORT
 LONG
