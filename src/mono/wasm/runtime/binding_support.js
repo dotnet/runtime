@@ -237,106 +237,109 @@ var BindingSupportLib = {
 			}
 		},
 
+		_unbox_delegate_rooted: function (mono_obj) {
+			var obj = this.extract_js_obj (mono_obj);
+			obj.__mono_delegate_alive__ = true;
+			// FIXME: Should we root the object as long as this function has not been GCd?
+			return function () {
+				// FIXME: Just use Function.bind
+				return BINDING.invoke_delegate (obj, arguments);
+			};
+		},
+
+		_unbox_task_rooted: function (mono_obj) {
+			if (typeof Promise === "undefined" || typeof Promise.resolve === "undefined")
+			throw new Error ("Promises are not supported thus C# Tasks can not work in this context.");
+
+			var obj = this.extract_js_obj (mono_obj);
+			var cont_obj = null;
+			var promise = new Promise (function (resolve, reject) {
+				cont_obj = {
+					resolve: resolve,
+					reject: reject
+				};
+			});
+
+			this.call_method (this.setup_js_cont, null, "mo", [ mono_obj, cont_obj ]);
+			obj.__mono_js_cont__ = cont_obj.__mono_gchandle__;
+			cont_obj.__mono_js_task__ = obj.__mono_gchandle__;
+			return promise;
+		},
+
+		_unbox_safehandle_rooted: function (mono_obj) {
+			var addRef = true;
+			var js_handle = this.call_method(this.safehandle_get_handle, null, "mi", [ mono_obj, addRef ]);
+			// FIXME: Is this a GC object that needs to be rooted?
+			var requiredObject = BINDING.mono_wasm_require_handle (js_handle);
+			if (addRef)
+			{
+				if (typeof this.mono_wasm_owned_objects_LMF === "undefined")
+					this.mono_wasm_owned_objects_LMF = [];
+
+				this.mono_wasm_owned_objects_LMF.push(js_handle);
+			}
+			return requiredObject;
+		},
+
+		_unbox_mono_obj_rooted_with_known_type: function (mono_obj, type) {
+			//See MARSHAL_TYPE_ defines in driver.c
+			switch (type) {
+				case 1: // int
+					return this.mono_unbox_int (mono_obj);
+				case 2: // float
+					return this.mono_unbox_float (mono_obj);
+				case 3: //string
+					return this.conv_string (mono_obj);
+				case 4: //vts
+					throw new Error ("no idea on how to unbox value types");
+				case 5: // delegate
+					return this._unbox_delegate_rooted (mono_obj);
+				case 6: // Task
+					return this._unbox_task_rooted (mono_obj);
+				case 7: // ref type
+					return this.extract_js_obj (mono_obj);
+				case 8: // bool
+					return this.mono_unbox_int (mono_obj) !== 0;
+				case 9: { // enum
+					if(this.mono_wasm_marshal_enum_as_int)
+						return this.mono_unbox_enum (mono_obj);
+	
+					enumValue = this.call_method(this.object_to_string, null, "m", [ mono_obj ]);
+					return enumValue;
+				}
+				case 10: // arrays
+				case 11: 
+				case 12: 
+				case 13: 
+				case 14: 
+				case 15: 
+				case 16: 
+				case 17: 
+				case 18:
+					throw new Error ("Marshalling of primitive arrays are not supported.  Use the corresponding TypedArray instead.");	
+				case 20: // clr .NET DateTime
+					var dateValue = this.call_method(this.get_date_value, null, "md", [ mono_obj ]);
+					return new Date(dateValue);
+				case 21: // clr .NET DateTimeOffset
+					var dateoffsetValue = this.call_method(this.object_to_string, null, "m", [ mono_obj ]);
+					return dateoffsetValue;
+				case 22: // clr .NET Uri
+					var uriValue = this.call_method(this.object_to_string, null, "m", [ mono_obj ]);
+					return uriValue;
+				case 23: // clr .NET SafeHandle
+					return this._unbox_safehandle_rooted (mono_obj);
+				default:
+					throw new Error ("no idea on how to unbox object kind " + type + " at offset " + mono_obj);
+			}
+		},
+
 		_unbox_mono_obj_rooted: function (root) {
 			var mono_obj = root.value;
 			if (mono_obj === 0)
 				return undefined;
 			
 			var type = this.mono_get_obj_type (mono_obj);
-			//See MARSHAL_TYPE_ defines in driver.c
-			switch (type) {
-			case 1: // int
-				return this.mono_unbox_int (mono_obj);
-			case 2: // float
-				return this.mono_unbox_float (mono_obj);
-			case 3: //string
-				return this.conv_string (mono_obj);
-			case 4: //vts
-				throw new Error ("no idea on how to unbox value types");
-			case 5: { // delegate
-				var obj = this.extract_js_obj (mono_obj);
-				obj.__mono_delegate_alive__ = true;
-				// FIXME: Should we root the object as long as this function has not been GCd?
-				return function () {
-					return BINDING.invoke_delegate (obj, arguments);
-				};
-			}
-			case 6: {// Task
-
-				if (typeof Promise === "undefined" || typeof Promise.resolve === "undefined")
-					throw new Error ("Promises are not supported thus C# Tasks can not work in this context.");
-
-				var obj = this.extract_js_obj (mono_obj);
-				var cont_obj = null;
-				var promise = new Promise (function (resolve, reject) {
-					cont_obj = {
-						resolve: resolve,
-						reject: reject
-					};
-				});
-
-				this.call_method (this.setup_js_cont, null, "mo", [ mono_obj, cont_obj ]);
-				obj.__mono_js_cont__ = cont_obj.__mono_gchandle__;
-				cont_obj.__mono_js_task__ = obj.__mono_gchandle__;
-				return promise;
-			}
-
-			case 7: // ref type
-				return this.extract_js_obj (mono_obj);
-
-			case 8: // bool
-				return this.mono_unbox_int (mono_obj) != 0;
-
-			case 9: // enum
-
-				if(this.mono_wasm_marshal_enum_as_int)
-				{
-					return this.mono_unbox_enum (mono_obj);
-				}
-				else
-				{
-					enumValue = this.call_method(this.object_to_string, null, "m", [ mono_obj ]);
-				}
-
-				return enumValue;
-
-			case 10: // arrays
-			case 11: 
-			case 12: 
-			case 13: 
-			case 14: 
-			case 15: 
-			case 16: 
-			case 17: 
-			case 18:
-			{
-				throw new Error ("Marshalling of primitive arrays are not supported.  Use the corresponding TypedArray instead.");
-			}
-			case 20: // clr .NET DateTime
-				var dateValue = this.call_method(this.get_date_value, null, "md", [ mono_obj ]);
-				return new Date(dateValue);
-			case 21: // clr .NET DateTimeOffset
-				var dateoffsetValue = this.call_method(this.object_to_string, null, "m", [ mono_obj ]);
-				return dateoffsetValue;
-			case 22: // clr .NET Uri
-				var uriValue = this.call_method(this.object_to_string, null, "m", [ mono_obj ]);
-				return uriValue;
-			case 23: // clr .NET SafeHandle
-				var addRef = true;
-				var js_handle = this.call_method(this.safehandle_get_handle, null, "mi", [ mono_obj, addRef ]);
-				// FIXME: Is this a GC object that needs to be rooted?
-				var requiredObject = BINDING.mono_wasm_require_handle (js_handle);
-				if (addRef)
-				{
-					if (typeof this.mono_wasm_owned_objects_LMF === "undefined")
-						this.mono_wasm_owned_objects_LMF = [];
-
-					this.mono_wasm_owned_objects_LMF.push(js_handle);
-				}
-				return requiredObject;
-			default:
-				throw new Error ("no idea on how to unbox object kind " + type + " at offset " + mono_obj);
-			}
+			return this._unbox_mono_obj_rooted_with_known_type (mono_obj, type);
 		},
 
 		create_task_completion_source: function () {

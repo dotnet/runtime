@@ -248,6 +248,7 @@ var MonoSupportLib = {
 
 		_scratch_root_buffer: null,
 		_scratch_root_free_indices: null,
+		_scratch_root_free_indices_count: 0,
 		_scratch_root_free_instances: [],
 
 		_mono_wasm_root_prototype: {
@@ -296,7 +297,8 @@ var MonoSupportLib = {
 				return;
 
 			this._scratch_root_buffer.set (index, 0);
-			this._scratch_root_free_indices.push (index);
+			this._scratch_root_free_indices[this._scratch_root_free_indices_count] = index;
+			this._scratch_root_free_indices_count++;
 		},
 
 		_mono_wasm_claim_scratch_index: function () {
@@ -304,10 +306,10 @@ var MonoSupportLib = {
 				const maxScratchRoots = 8192;
 				this._scratch_root_buffer = this.mono_wasm_new_root_buffer (maxScratchRoots, "js roots");
 
-				this._scratch_root_free_indices = new Array (maxScratchRoots);
+				this._scratch_root_free_indices = new Int32Array (maxScratchRoots);
+				this._scratch_root_free_indices_count = maxScratchRoots;
 				for (var i = 0; i < maxScratchRoots; i++)
-					this._scratch_root_free_indices[i] = i;
-				this._scratch_root_free_indices.reverse ();
+					this._scratch_root_free_indices[i] = maxScratchRoots - i - 1;
 
 				Object.defineProperty (this._mono_wasm_root_prototype, "value", {
 					get: this._mono_wasm_root_prototype.get,
@@ -316,10 +318,11 @@ var MonoSupportLib = {
 				});
 			}
 
-			if (this._scratch_root_free_indices.length < 1)
+			if (this._scratch_root_free_indices_count < 1)
 				throw new Error ("Out of scratch root space");
 
-			var result = this._scratch_root_free_indices.pop ();
+			var result = this._scratch_root_free_indices[this._scratch_root_free_indices_count - 1];
+			this._scratch_root_free_indices_count--;
 			return result;
 		},
 
