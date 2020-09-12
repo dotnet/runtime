@@ -108,16 +108,20 @@ var BindingSupportLib = {
 				return BINDING.bind_method (method, 0, signature, "BINDINGS_" + method_name);
 			};
 
-			this.bind_js_obj = get_method ("BindJSObject");
-			this.bind_core_clr_obj = get_method ("BindCoreCLRObject");
-			this.bind_existing_obj = get_method ("BindExistingObject");
-			this.unbind_raw_obj_and_free = get_method ("UnBindRawJSObjectAndFree");			
-			this.get_js_id = get_method ("GetJSObjectId");
-			this.get_raw_mono_obj = get_method ("GetDotNetObject");
+			// FIXME: The bound methods have a _ prefix on their names to ensure
+			//  that any code relying on the old get_method/call_method pattern will
+			//  break in a more understandable way
 
-			this.box_js_int = get_method ("BoxInt");
-			this.box_js_double = get_method ("BoxDouble");
-			this.box_js_bool = get_method ("BoxBool");
+			this._bind_js_obj = bind_runtime_method ("BindJSObject", "iii");
+			this._bind_core_clr_obj = bind_runtime_method ("BindCoreCLRObject", "ii");
+			this._bind_existing_obj = bind_runtime_method ("BindExistingObject", "mi");
+			this._unbind_raw_obj_and_free = bind_runtime_method ("UnBindRawJSObjectAndFree", "ii");
+			this._get_js_id = bind_runtime_method ("GetJSObjectId", "m");
+			this._get_raw_mono_obj = bind_runtime_method ("GetDotNetObject", "i!");
+
+			this._box_js_int = bind_runtime_method ("BoxInt", "i!");
+			this._box_js_double = bind_runtime_method ("BoxDouble", "d!");
+			this._box_js_bool = bind_runtime_method ("BoxBool", "i!");
 			this._is_simple_array = bind_runtime_method ("IsSimpleArray", "m");
 			this.setup_js_cont = get_method ("SetupJSContinuation");
 
@@ -127,7 +131,7 @@ var BindingSupportLib = {
 			this.tcs_get_task_and_bind = get_method ("GetTaskAndBind");
 			this.get_call_sig = get_method ("GetCallSignature");
 
-			this.object_to_string = get_method ("ObjectToString");
+			this._object_to_string = bind_runtime_method ("ObjectToString", "m");
 			this.get_date_value = get_method ("GetDateValue");
 			this.create_date_time = get_method ("CreateDateTime");
 			this.create_uri = get_method ("CreateUri");
@@ -314,7 +318,7 @@ var BindingSupportLib = {
 					if(this.mono_wasm_marshal_enum_as_int)
 						return this.mono_unbox_enum (mono_obj);
 	
-					enumValue = this.call_method(this.object_to_string, null, "m", [ mono_obj ]);
+					enumValue = this._object_to_string (mono_obj);
 					return enumValue;
 				}
 				case 10: // arrays
@@ -331,10 +335,10 @@ var BindingSupportLib = {
 					var dateValue = this.call_method(this.get_date_value, null, "md", [ mono_obj ]);
 					return new Date(dateValue);
 				case 21: // clr .NET DateTimeOffset
-					var dateoffsetValue = this.call_method(this.object_to_string, null, "m", [ mono_obj ]);
+					var dateoffsetValue = this._object_to_string (mono_obj);
 					return dateoffsetValue;
 				case 22: // clr .NET Uri
-					var uriValue = this.call_method(this.object_to_string, null, "m", [ mono_obj ]);
+					var uriValue = this._object_to_string (mono_obj);
 					return uriValue;
 				case 23: // clr .NET SafeHandle
 					return this._unbox_safehandle_rooted (mono_obj);
@@ -400,9 +404,9 @@ var BindingSupportLib = {
 					return 0;
 				case typeof js_obj === "number": {
 					if (parseInt(js_obj) == js_obj)
-						result = this.call_method (this.box_js_int, null, "i!", [ js_obj ]);
+						result = this._box_js_int (js_obj);
 					else
-						result = this.call_method (this.box_js_double, null, "d!", [ js_obj ]);
+						result = this._box_js_double (js_obj);
 
 					/*
 						var unboxed = this.unbox_mono_obj (result);
@@ -414,7 +418,7 @@ var BindingSupportLib = {
 				} case typeof js_obj === "string":
 					return this.js_string_to_mono_string (js_obj);
 				case typeof js_obj === "boolean":
-					return this.call_method (this.box_js_bool, null, "i!", [ js_obj ]);
+					return this._box_js_bool (js_obj);
 				case isThenable() === true:
 					var the_task = this.try_extract_mono_obj (js_obj);
 					if (the_task)
@@ -616,26 +620,26 @@ var BindingSupportLib = {
 		},
 		wasm_binding_obj_new: function (js_obj_id, ownsHandle, type)
 		{
-			return this.call_method (this.bind_js_obj, null, "iii", [js_obj_id, ownsHandle, type]);
+			return this._bind_js_obj (js_obj_id, ownsHandle, type);
 		},
 		wasm_bind_existing: function (mono_obj, js_id)
 		{
-			return this.call_method (this.bind_existing_obj, null, "mi", [mono_obj, js_id]);
+			return this._bind_existing_obj (mono_obj, js_id);
 		},
 
 		wasm_bind_core_clr_obj: function (js_id, gc_handle)
 		{
-			return this.call_method (this.bind_core_clr_obj, null, "ii", [js_id, gc_handle]);
+			return this._bind_core_clr_obj (js_id, gc_handle);
 		},
 
 		wasm_get_js_id: function (mono_obj)
 		{
-			return this.call_method (this.get_js_id, null, "m", [mono_obj]);
+			return this._get_js_id (mono_obj);
 		},
 
 		wasm_get_raw_obj: function (gchandle)
 		{
-			return this.call_method (this.get_raw_mono_obj, null, "i!", [gchandle]);
+			return this._get_raw_mono_obj (gchandle);
 		},
 
 		try_extract_mono_obj:function (js_obj) {
@@ -665,11 +669,11 @@ var BindingSupportLib = {
 		free_task_completion_source: function (tcs) {
 			if (tcs.is_mono_tcs_result_set)
 			{
-				this.call_method (this.unbind_raw_obj_and_free, null, "ii", [ tcs.__mono_gchandle__ ]);
+				this._unbind_raw_obj_and_free (tcs.__mono_gchandle__);
 			}
 			if (tcs.__mono_bound_task__)
 			{
-				this.call_method (this.unbind_raw_obj_and_free, null, "ii", [ tcs.__mono_bound_task__ ]);
+				this._unbind_raw_obj_and_free (tcs.__mono_bound_task__);
 			}
 		},
 
@@ -1097,6 +1101,10 @@ var BindingSupportLib = {
 
 			// HACK: Sometimes callers pass null or undefined, coerce it to 0 since that's what wasm expects
 			this_arg = this_arg | 0;
+
+			// Detect someone accidentally passing the wrong type of value to method
+			if ((method | 0) !== method)
+				throw new Error ("method must be an address in the native heap");
 
 			var needs_converter = this._verify_args_for_method_call (args_marshal, args);
 
@@ -1647,7 +1655,7 @@ var BindingSupportLib = {
         
 		}
 		BINDING.mono_wasm_unwind_LMF();
-        return BINDING.call_method (BINDING.box_js_bool, null, "im", [ result ]);
+        return BINDING._box_js_bool (result);
 	},
 	mono_wasm_get_by_index: function(js_handle, property_index, is_exception) {
 		BINDING.bindings_lazy_init ();
