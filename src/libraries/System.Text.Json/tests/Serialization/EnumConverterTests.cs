@@ -233,6 +233,23 @@ namespace System.Text.Json.Serialization.Tests
             }
         }
 
+        [Fact]
+        public static void MoreThan64EnumValuesToSerializeWithNamingPolicy()
+        {
+            var options = new JsonSerializerOptions
+            {
+                Converters = { new JsonStringEnumConverter(new ToLower()) }
+            };
+
+            for (int i = 0; i < 128; i++)
+            {
+                MyEnum value = (MyEnum)i;
+                string asStr = value.ToString().ToLowerInvariant();
+                string expected = char.IsLetter(asStr[0]) ? $@"""{asStr}""" : asStr;
+                Assert.Equal(expected, JsonSerializer.Serialize(value, options));
+            }
+        }
+
         [Fact, OuterLoop]
         public static void VeryLargeAmountOfEnumsToSerialize()
         {
@@ -301,11 +318,6 @@ namespace System.Text.Json.Serialization.Tests
         {
             // Ensure we don't throw OutOfMemoryException.
 
-            var options = new JsonSerializerOptions
-            {
-                Converters = { new JsonStringEnumConverter() }
-            };
-
             const int MaxValue = (int)MyEnum.V;
 
             // Every value between 0 and MaxValue maps to a valid enum
@@ -316,7 +328,7 @@ namespace System.Text.Json.Serialization.Tests
             for (int i = 1; i < 46; i++)
             {
                 dictionary = new Dictionary<MyEnum, int> { { (MyEnum)i, i } };
-                JsonSerializer.Serialize(dictionary, options);
+                JsonSerializer.Serialize(dictionary);
             }
 
             // At this point, there are 60 values in the name cache;
@@ -330,7 +342,7 @@ namespace System.Text.Json.Serialization.Tests
                 i =>
                 {
                     dictionary = new Dictionary<MyEnum, int> { { (MyEnum)(46 + i), i } };
-                    JsonSerializer.Serialize(dictionary, options);
+                    JsonSerializer.Serialize(dictionary);
                 }
             );
 
@@ -339,7 +351,7 @@ namespace System.Text.Json.Serialization.Tests
             for (int i = 54; i <= MaxValue; i++)
             {
                 dictionary = new Dictionary<MyEnum, int> { { (MyEnum)i, i } };
-                JsonSerializer.Serialize(dictionary, options);
+                JsonSerializer.Serialize(dictionary);
             }
         }
 
