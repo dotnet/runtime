@@ -1019,6 +1019,10 @@ var BindingSupportLib = {
 				result = converter.scratchRootBuffer;
 				converter.scratchRootBuffer = null;
 			} else {
+				// FIXME: Expand the converter's heap allocation and then use
+				//  mono_wasm_new_root_buffer_from_pointer instead. Not that important
+				//  at present because the scratch buffer will be reused unless we are
+				//  recursing through a re-entrant call
 				result = MONO.mono_wasm_new_root_buffer (converter.steps.length);
 				result.converter = converter;
 			}
@@ -1188,20 +1192,6 @@ var BindingSupportLib = {
 			var converter = null;
 			if (typeof (args_marshal) === "string")
 				converter = this._compile_converter_for_marshal_string (args_marshal);
-
-			if (false)
-				return function bound_method () {
-					var argsRootBuffer = BINDING._get_args_root_buffer_for_method_call (converter);
-					var buffer = 0;
-					if (converter)
-						buffer = converter.compiled_variadic_function (argsRootBuffer, method, arguments);
-		
-					var is_result_marshaled = BINDING._decide_if_result_is_marshaled (converter, arguments.length);
-
-					// console.log('is_result_marshaled=', is_result_marshaled, 'for argc', args.length, 'and signature ' + converter.args_marshal + ' (bound)');
-
-					return BINDING._call_method_with_converted_args (method, this_arg, buffer, is_result_marshaled, argsRootBuffer);
-				};
 
 			var closure = {
 				library_mono: MONO,
