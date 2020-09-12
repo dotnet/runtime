@@ -19,15 +19,15 @@ echo "***** Testing PAL *****"
 echo
 
 # Store the location of the root of build directory
-BUILD_ROOD_DIR=$1
+BUILD_ROOT_DIR=$1
 
 # Create path to the compiled PAL tets in the build directory
-PAL_TEST_BUILD=$BUILD_ROOD_DIR
+PAL_TEST_BUILD=$BUILD_ROOT_DIR
 echo Running PAL tests from $PAL_TEST_BUILD
 
-OLDPWD=$PWD
+pushd $BUILD_ROOT_DIR
 
-export LD_LIBRARY_PATH=$BUILD_ROOD_DIR:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=$BUILD_ROOT_DIR:$LD_LIBRARY_PATH
 
 # Create absolute path to the file that contains a list of PAL tests to execute.
 # This file is located next to this script in the source tree
@@ -38,7 +38,7 @@ RELATIVE_PATH_TO_PAL_TESTS=${RELATIVE_PATH_TO_PAL_TESTS%/*.*}
 cd $RELATIVE_PATH_TO_PAL_TESTS
 # Environment variable PWD contains absolute path to the current folder
 # so use it to create absolute path to the file with a list of tests.
-PAL_TEST_LIST=$BUILD_ROOD_DIR/paltestlist.txt
+PAL_TEST_LIST=$BUILD_ROOT_DIR/paltestlist.txt
 # Change current directory back to the original location
 echo The list of PAL tests to run will be read from $PAL_TEST_LIST
 
@@ -227,7 +227,7 @@ if [ "$COPY_TO_TEST_OUTPUT_DIR" != "$PAL_TEST_OUTPUT_DIR" ]; then
   echo Copied PAL test output files to $COPY_TO_TEST_OUTPUT_DIR.
 fi
 
-cd $OLDPWD
+popd
 
 # Set exit code to be equal to the number PAL tests that have failed.
 # Exit code 0 indicates success.

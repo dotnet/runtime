@@ -13,25 +13,53 @@
 
 PALTest* PALTest::s_tests = 0;
 
+int PrintUsage(int argc, char *argv[])
+{
+    if (PAL_Initialize(argc, argv))
+    {
+        return FAIL;
+    }
+
+    printf("paltests <PrintPalTests|TestName>\n");
+    printf("Either print list of all paltests by passing PrintPalTests, or run a single PAL test.\n");
+
+    PAL_Terminate();
+    return FAIL;
+}
+
+int PrintTests(int argc, char *argv[])
+{
+    if (PAL_Initialize(argc, argv))
+    {
+        return FAIL;
+    }
+
+    PALTest *testCur = PALTest::s_tests;
+    for (;testCur != 0; testCur = testCur->_next)
+    {
+        printf("%s\n", testCur->_name);
+    }
+    PAL_Terminate();
+    return PASS;
+}
+
 int __cdecl main(int argc, char *argv[])
 {
     if (argc < 2)
-        return FAIL;
+    {
+        return PrintUsage(argc, argv);
+    }
+
+    if (strcmp(argv[1], "PrintPalTests") == 0)
+    {
+        return PrintTests(argc, argv);
+    }
     
     PALTest *testCur = PALTest::s_tests;
     for (;testCur != 0; testCur = testCur->_next)
     {
         int i = 0;
-        bool stringMatches = false;
-        while (testCur->_name[i] == argv[1][i])
-        {
-            if (testCur->_name[i] == '\0')
-            {
-                stringMatches = true;
-                break;
-            }
-            i++;
-        }
+        bool stringMatches = strcmp(testCur->_name, argv[1]) == 0;
         if (!stringMatches)
             continue;
 
@@ -43,5 +71,5 @@ int __cdecl main(int argc, char *argv[])
         return testCur->_entrypoint(argc - 1, argv);
     }
 
-    return FAIL;
+    return PrintUsage(argc, argv);
 }
