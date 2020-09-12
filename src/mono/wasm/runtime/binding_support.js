@@ -1023,14 +1023,14 @@ var BindingSupportLib = {
 			}
 		},
 
-		_handle_possible_exception_for_method_call: function (result, exception) {
+		_convert_exception_for_method_call: function (result, exception) {
 			if (exception === 0)
-				return;
+				return null;
 
 			var msg = this.conv_string (result);
 			var err = new Error (msg); //the convention is that invoke_method ToString () any outgoing exception
-			console.warn ("error", msg, "at location", err.stack);
-			throw err;
+			// console.warn ("error", msg, "at location", err.stack);
+			return err;
 		},
 
 		_maybe_produce_signature_warning: function (converter) {
@@ -1105,15 +1105,22 @@ var BindingSupportLib = {
 			return this._call_method_with_converted_args (method, this_arg, buffer, is_result_marshaled, argsRootBuffer);
 		},
 
-		_handle_exception_and_produce_result_for_call: function (resultRoot, exceptionRoot, is_result_marshaled) {
-			this._handle_possible_exception_for_method_call (resultRoot.value, exceptionRoot.value);
+		_handle_exception_and_produce_result_for_call: function (
+			buffer, resultRoot, exceptionRoot, argsRootBuffer, is_result_marshaled
+		) {
+			var exc = this._convert_exception_for_method_call (resultRoot.value, exceptionRoot.value);
+			if (exc) {
+				this._teardown_after_call (buffer, resultRoot, exceptionRoot, argsRootBuffer);
+				throw exc;
+			} else {
+				if (is_result_marshaled)
+					result = this._unbox_mono_obj_rooted (resultRoot);
+				else
+					result = resultRoot.value;
 
-			if (is_result_marshaled)
-				result = this._unbox_mono_obj_rooted (resultRoot);
-			else
-				result = resultRoot.value;
-
-			return result;
+				this._teardown_after_call (buffer, resultRoot, exceptionRoot, argsRootBuffer);
+				return result;
+			}
 		},
 
 		_teardown_after_call: function (buffer, resultRoot, exceptionRoot, argsRootBuffer) {
@@ -1140,19 +1147,8 @@ var BindingSupportLib = {
 
 		_call_method_with_converted_args: function (method, this_arg, buffer, is_result_marshaled, argsRootBuffer) {
 			var resultRoot = MONO.mono_wasm_new_root (), exceptionRoot = MONO.mono_wasm_new_root ();
-			try {
-				resultRoot.value = this.invoke_method (method, this_arg, buffer, exceptionRoot.get_address ());
-				var result = this._handle_exception_and_produce_result_for_call (resultRoot, exceptionRoot, is_result_marshaled);
-				/*
-					if (is_result_marshaled)
-						console.log(this._get_method_description(method) + " returned (boxed):", result);
-					else
-						console.log(this._get_method_description(method) + " returned ptr:", result);
-				*/
-				return result;
-			} finally {
-				this._teardown_after_call (buffer, resultRoot, exceptionRoot, argsRootBuffer);
-			}
+			resultRoot.value = this.invoke_method (method, this_arg, buffer, exceptionRoot.get_address ());
+			return this._handle_exception_and_produce_result_for_call (buffer, resultRoot, exceptionRoot, argsRootBuffer, is_result_marshaled);
 		},
 
 		bind_method: function (method, this_arg, args_marshal, friendly_name) {

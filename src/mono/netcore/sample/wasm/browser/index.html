@@ -52,7 +52,7 @@
         },
 
         runBenchmark: function (method, speedAdjustment) {
-          var iterationCount = ((50 * speedAdjustment) | 0) * 1000, callbackCount = 5000;
+          var iterationCount = ((50 * speedAdjustment) | 0) * 1000, callbackCount = 10000;
 
           var elapsed = 0;
           var i = 0;
@@ -62,20 +62,16 @@
           benchmarkCallback = (function () {
             var started = performance.now ();
 
-            for (var j = 0; j < callbackCount; j++) {
+            for (var j = 0; j < callbackCount; j++)
               this.benchmarkIter(method, i);
-            }
 
             var ended = performance.now();
             elapsed += (ended - started);
 
             i += callbackCount;
-
-            if (i && ((i % 5000) === 0)) {
-              console.log(i);
-              document.querySelector("#progress").innerHTML = String(i) + " / " + iterationCount;
-              document.querySelector("#speed").innerHTML = (elapsed / i).toFixed(3) + "ms/iter";
-            }
+            console.log(i);
+            document.querySelector("#progress").innerHTML = String(i) + " / " + iterationCount;
+            document.querySelector("#speed").innerHTML = (elapsed / i).toFixed(3) + "ms/iter";
 
             if (i < iterationCount) {
               window.setTimeout(benchmarkCallback, 1);
