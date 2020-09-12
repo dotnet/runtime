@@ -1879,12 +1879,24 @@ YV98jl/5auSR4u+J8K0v3fa9HbehRANCAARDN/OcerdGAVAY3g4j+UqALq6WreiY
 WM/kgugTzSvfQKGsiG8sHWE1x97EnsHuiS0fj5bnXK/4Qg0u/tJpYp54
 -----END PRIVATE KEY-----";
 
+        public const string EcDhPkcs8PublicKey = @"
+-----BEGIN PUBLIC KEY-----
+MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEQzfznHq3RgFQGN4OI/lKgC6ulq3o
+mFjP5ILoE80r30ChrIhvLB1hNcfexJ7B7oktH4+W51yv+EINLv7SaWKeeA==
+-----END PUBLIC KEY-----";
+
         public const string ECDsaPkcs8Key = @"
 -----BEGIN PRIVATE KEY-----
 MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgIg/wHlL4nNyuLFbK
 00Ga7N5LbP/2YCgEXqBiB3el8syhRANCAAQyB0wIKKfk5lmK4Z907qQnPsRRXh3T
 rU/VPMCTHxuBwoZqFBSE7gGmJWLTnGwZ0MGMACP+N1HK4dU1S9VNoNw9
 -----END PRIVATE KEY-----";
+
+        public const string ECDsaPkcs8PublicKey = @"
+-----BEGIN PUBLIC KEY-----
+MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEMgdMCCin5OZZiuGfdO6kJz7EUV4d
+061P1TzAkx8bgcKGahQUhO4BpiVi05xsGdDBjAAj/jdRyuHVNUvVTaDcPQ==
+-----END PUBLIC KEY-----";
 
         public const string ECDsaEncryptedPkcs8Key = @"
 -----BEGIN ENCRYPTED PRIVATE KEY-----
@@ -2031,7 +2043,6 @@ AtdSTqb1Oc6J2Pfvsk4bpjAPBgNVHRMBAf8EBTADAQH/MAUGAytlcANBAOjstGTq
 mf0l9zwCygC+aA8=
 -----END CERTIFICATE-----";
 
-
         public const string OtherRsaPkcs1Key = @"
 -----BEGIN RSA PRIVATE KEY-----
 MIIEowIBAAKCAQEA05yPUFo642M7gUYBYZgp9Itk/yPcrLcisUImPvQAsrrCeQDR
@@ -2138,5 +2149,19 @@ REPE0vT1aY+LYdJLV/Dax/l4lMvYmQYOWs9TCLPlI5RZQxxte6zbcA13ESg/qLE3
 a3+wyUWo58z5sOPNdJHIMV6qw6m3w+IQoCJC7EbV0+Pyo5eSU5zbgm7YWZ9Yx6l8
 g1mCP4Q6Tqe6LjKfBsZAmYWSfKqoTKRjC3ocJMt53tIDpB5jFw==
 -----END ENCRYPTED PRIVATE KEY-----";
+
+        public const string DsaPkcs8PublicKey = @"
+-----BEGIN PUBLIC KEY-----
+MIIBtjCCASsGByqGSM44BAEwggEeAoGBAJyiyioeXx1O98gRCMEjlPKMpr79KrcD
+koroghtuXO1U6Cx34pBRjOQmQLDPqSOriEo5VuG6SJc/ppfZx9TrSrzqB26hKTUm
+iaOKmwpfIfzpi72wgsZeMOtU7JQ+FThfGyS8VxGh6G0h7xw26B/9ALxRw25zO1cy
+9ZJs0EY3hsHzAhUA/4dpclsck8K+SkWBTcPfU+x7wTUCgYB4LP6UvrvIiiFPxhk7
+AEGMMr0MhcJ3hhsgKWukUqIYsJKBM5MpKCnej5BHvnLXdKodIxygcKR4dJX7BRv6
+9L+2RJk+UrYL1qBco5HpUslumA0e3gNdwRLoOoGD14dn1LD1LdESsyMgwfHHJ0RR
+kYwacgCVXsvHv/eAkA8qq136dwOBhAACgYAHltgzkK3zD8yGdcGY0YgvN5l3lna1
+voLmcK+XtmehjMVy7OSSFICNKybLBOvO8paydhCb1J0klkLPAoAjgP2cEd+KueeR
+yJpx+jD1MsjIEXIn5jtjXdUHd0JJmHWAyHdNzmhXrXC7JLnj4ri7xMAV3GZGDpAn
+YvvL0LiXzFyomg==
+-----END PUBLIC KEY-----";
     }
 }

@@ -57,11 +57,15 @@ namespace System.Security.Cryptography.X509Certificates
     }
     public sealed partial class PublicKey
     {
+        public PublicKey(System.Security.Cryptography.AsymmetricAlgorithm key) { }
         public PublicKey(System.Security.Cryptography.Oid oid, System.Security.Cryptography.AsnEncodedData parameters, System.Security.Cryptography.AsnEncodedData keyValue) { }
         public System.Security.Cryptography.AsnEncodedData EncodedKeyValue { get { throw null; } }
         public System.Security.Cryptography.AsnEncodedData EncodedParameters { get { throw null; } }
         public System.Security.Cryptography.AsymmetricAlgorithm Key { get { throw null; } }
         public System.Security.Cryptography.Oid Oid { get { throw null; } }
+        public static System.Security.Cryptography.X509Certificates.PublicKey CreateFromSubjectPublicKeyInfo(System.ReadOnlySpan<byte> source, out int bytesRead) { throw null; }
+        public byte[] ExportSubjectPublicKeyInfo() { throw null; }
+        public bool TryExportSubjectPublicKeyInfo(System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
     public static partial class RSACertificateExtensions
     {

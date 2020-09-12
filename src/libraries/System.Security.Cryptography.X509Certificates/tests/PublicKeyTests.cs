@@ -640,6 +640,149 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
+        [Fact]
+        public static void ExportSubjectPublicKeyInfo_RSA()
+        {
+            using RSA rsa = RSA.Create();
+            rsa.ImportFromPem(TestData.RsaPkcs8PublicKey);
+            PublicKey key = new PublicKey(rsa);
+
+            Span<byte> algSpki = rsa.ExportSubjectPublicKeyInfo();
+            Assert.True(algSpki.SequenceEqual(key.ExportSubjectPublicKeyInfo()), "SequenceEquals(ExportSubjectPublicKeyInfo)");
+
+            // Just right
+            Assert.True(key.TryExportSubjectPublicKeyInfo(algSpki, out int written), nameof(key.TryExportSubjectPublicKeyInfo));
+            Assert.Equal(algSpki.Length, written);
+
+            // Too small
+            Assert.False(key.TryExportSubjectPublicKeyInfo(algSpki.Slice(1), out written), nameof(key.TryExportSubjectPublicKeyInfo));
+            Assert.Equal(0, written);
+        }
+
+        [Fact]
+        public static void ExportSubjectPublicKeyInfo_DSA()
+        {
+            using DSA dsa = DSA.Create();
+            dsa.ImportFromPem(TestData.DsaPkcs8PublicKey);
+            PublicKey key = new PublicKey(dsa);
+
+            Span<byte> algSpki = dsa.ExportSubjectPublicKeyInfo();
+            Assert.True(algSpki.SequenceEqual(key.ExportSubjectPublicKeyInfo()), "SequenceEquals(ExportSubjectPublicKeyInfo)");
+
+            // Just right
+            Assert.True(key.TryExportSubjectPublicKeyInfo(algSpki, out int written), nameof(key.TryExportSubjectPublicKeyInfo));
+            Assert.Equal(algSpki.Length, written);
+
+            // Too small
+            Assert.False(key.TryExportSubjectPublicKeyInfo(algSpki.Slice(1), out written), nameof(key.TryExportSubjectPublicKeyInfo));
+            Assert.Equal(0, written);
+        }
+
+        [Fact]
+        public static void ExportSubjectPublicKeyInfo_ECDSA()
+        {
+            using ECDsa ecdsa = ECDsa.Create();
+            ecdsa.ImportFromPem(TestData.ECDsaPkcs8PublicKey);
+            PublicKey key = new PublicKey(ecdsa);
+
+            Span<byte> algSpki = ecdsa.ExportSubjectPublicKeyInfo();
+            Assert.True(algSpki.SequenceEqual(key.ExportSubjectPublicKeyInfo()), "SequenceEquals(ExportSubjectPublicKeyInfo)");
+
+            // Just right
+            Assert.True(key.TryExportSubjectPublicKeyInfo(algSpki, out int written), nameof(key.TryExportSubjectPublicKeyInfo));
+            Assert.Equal(algSpki.Length, written);
+
+            // Too small
+            Assert.False(key.TryExportSubjectPublicKeyInfo(algSpki.Slice(1), out written), nameof(key.TryExportSubjectPublicKeyInfo));
+            Assert.Equal(0, written);
+        }
+
+        [Fact]
+        public static void ExportSubjectPublicKeyInfo_ECDH()
+        {
+            using ECDiffieHellman ecdh = ECDiffieHellman.Create();
+            ecdh.ImportFromPem(TestData.EcDhPkcs8Key);
+            PublicKey key = new PublicKey(ecdh);
+
+            Span<byte> algSpki = ecdh.ExportSubjectPublicKeyInfo();
+            Assert.True(algSpki.SequenceEqual(key.ExportSubjectPublicKeyInfo()), "SequenceEquals(ExportSubjectPublicKeyInfo)");
+
+            // Just right
+            Assert.True(key.TryExportSubjectPublicKeyInfo(algSpki, out int written), nameof(key.TryExportSubjectPublicKeyInfo));
+            Assert.Equal(algSpki.Length, written);
+
+            // Too small
+            Assert.False(key.TryExportSubjectPublicKeyInfo(algSpki.Slice(1), out written), nameof(key.TryExportSubjectPublicKeyInfo));
+            Assert.Equal(0, written);
+        }
+
+        [Fact]
+        public static void CreateFromSubjectPublicKeyInfo_Roundtrip_RSA()
+        {
+            using RSA rsa = RSA.Create();
+            rsa.ImportFromPem(TestData.RsaPkcs8PublicKey);
+            byte[] spki = rsa.ExportSubjectPublicKeyInfo();
+
+            PublicKey key = PublicKey.CreateFromSubjectPublicKeyInfo(spki, out int read);
+
+            Assert.True(key.Key is RSA, "is RSA");
+            Assert.Equal("1.2.840.113549.1.1.1", key.Oid.Value);
+            Assert.Equal(spki, key.ExportSubjectPublicKeyInfo());
+            Assert.Equal(spki.Length, read);
+        }
+
+        [Fact]
+        public static void CreateFromSubjectPublicKeyInfo_Roundtrip_DSA()
+        {
+            using DSA dsa = DSA.Create();
+            dsa.ImportFromPem(TestData.DsaPkcs8PublicKey);
+            byte[] spki = dsa.ExportSubjectPublicKeyInfo();
+
+            PublicKey key = PublicKey.CreateFromSubjectPublicKeyInfo(spki, out int read);
+
+            Assert.True(key.Key is DSA, "is DSA");
+            Assert.Equal("1.2.840.10040.4.1", key.Oid.Value);
+            Assert.Equal(spki, key.ExportSubjectPublicKeyInfo());
+            Assert.Equal(spki.Length, read);
+        }
+
+        [Fact]
+        public static void CreateFromSubjectPublicKeyInfo_Roundtrip_ECDSA()
+        {
+            using ECDsa ecdsa = ECDsa.Create();
+            ecdsa.ImportFromPem(TestData.ECDsaPkcs8PublicKey);
+            byte[] spki = ecdsa.ExportSubjectPublicKeyInfo();
+
+            PublicKey key = PublicKey.CreateFromSubjectPublicKeyInfo(spki, out int read);
+
+            Assert.Throws<NotSupportedException>(() => key.Key);
+            Assert.Equal("1.2.840.10045.2.1", key.Oid.Value);
+            Assert.Equal(spki, key.ExportSubjectPublicKeyInfo());
+            Assert.Equal(spki.Length, read);
+        }
+
+        [Fact]
+        public static void CreateFromSubjectPublicKeyInfo_Roundtrip_ECDH()
+        {
+            using ECDiffieHellman ecdh = ECDiffieHellman.Create();
+            ecdh.ImportFromPem(TestData.EcDhPkcs8PublicKey);
+            byte[] spki = ecdh.ExportSubjectPublicKeyInfo();
+
+            PublicKey key = PublicKey.CreateFromSubjectPublicKeyInfo(spki, out int read);
+
+            Assert.Throws<NotSupportedException>(() => key.Key);
+            Assert.Equal("1.2.840.10045.2.1", key.Oid.Value);
+            Assert.Equal(spki, key.ExportSubjectPublicKeyInfo());
+            Assert.Equal(spki.Length, read);
+        }
+
+        [Fact]
+        public static void CreateFromSubjectPublicKeyInfo_BadEncoding()
+        {
+            Assert.Throws<CryptographicException>(() =>
+                PublicKey.CreateFromSubjectPublicKeyInfo(new byte[] { 0xFF }, out _));
+        }
+
         private static void TestKey_ECDsaCng(byte[] certBytes, TestData.ECDsaCngKeyValues expected)
         {
             using (X509Certificate2 cert = new X509Certificate2(certBytes))
