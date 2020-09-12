@@ -53,7 +53,7 @@ void Compiler::fgInitArgInfoHelp(GenTreeCall* call, NonStandardArgs* nonStandard
         }
         *insertionPoint = gtNewCallArgs(newArg);
 
-        *numArgs++;
+        (*numArgs)++;
         nonStandardArgs->Add(newArg, virtualStubParamInfo->GetReg());
     }
 #endif // defined(TARGET_ARM)
