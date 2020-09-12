@@ -6821,13 +6821,20 @@ void CodeGen::genSSE2BitwiseOp(GenTree* treeNode)
         *bitMask = GetEmitter()->emitAnyConst(cnsAddr, cnsSize, cnsAlign);
     }
 
+    GenTree* op1 = treeNode->AsOp()->gtOp1;
+    assert(op1->isUsedFromReg());
+
+    if (compiler->canUseVexEncoding())
+    {
+        GetEmitter()->emitIns_R_R_C(ins, emitTypeSize(targetType), targetReg, genConsumeReg(op1), *bitMask, 0);
+        return;
+    }
+
     // We need an additional register for bitmask.
     regNumber tmpReg = treeNode->GetSingleTempReg();
 
     // Move operand into targetReg only if the reg reserved for
     // internal purpose is not the same as targetReg.
-    GenTree* op1 = treeNode->AsOp()->gtOp1;
-    assert(op1->isUsedFromReg());
     regNumber operandReg = genConsumeReg(op1);
     if (tmpReg != targetReg)
     {
