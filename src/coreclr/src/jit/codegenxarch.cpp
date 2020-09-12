@@ -6744,17 +6744,34 @@ void CodeGen::genSSE2BitwiseOp(GenTree* treeNode)
     regNumber targetReg  = treeNode->GetRegNum();
     var_types targetType = treeNode->TypeGet();
     assert(varTypeIsFloating(targetType));
-
+    float       f   = 0;
+    double      d   = 0;
     instruction ins = INS_invalid;
     switch (treeNode->OperGet())
     {
     case GT_NEG:
         ins = INS_xorps;
+        if (targetType == TYP_FLOAT)
+        {
+            *reinterpret_cast<int*>(&f) = 0x80000000;
+        }
+        else
+        {
+            *reinterpret_cast<__int64*>(&d) = 0x8000000000000000LL;
+        }
         break;
 
     case GT_INTRINSIC:
         assert(treeNode->AsIntrinsic()->gtIntrinsicName == NI_System_Math_Abs);
         ins = INS_andps;
+        if (targetType == TYP_FLOAT)
+        {
+            *reinterpret_cast<int*>(&f) = 0x7fffffff;
+        }
+        else
+        {
+            *reinterpret_cast<__int64*>(&d) = 0x7fffffffffffffffLL;
+        }
         break;
 
     default:
@@ -6766,7 +6783,7 @@ void CodeGen::genSSE2BitwiseOp(GenTree* treeNode)
     GenTree* op1 = treeNode->AsOp()->gtOp1;
     assert(op1->isUsedFromReg());
 
-    GenTree* tmpZeroCns = compiler->gtNewDconNode(0.0, treeNode->TypeGet());
+    GenTree* tmpZeroCns = compiler->gtNewDconNode(treeNode->TypeIs(TYP_FLOAT) ? f : d, treeNode->TypeGet());
     tmpZeroCns->SetContained();
     bool isRMW = !compiler->canUseVexEncoding();
     inst_RV_RV_TT(ins, emitTypeSize(treeNode), targetReg, genConsumeReg(op1), tmpZeroCns, isRMW);
