@@ -19,8 +19,8 @@ namespace Sample
             return 42;
         }
 
-        public static double BenchmarkMethod (int i, float f, double d) {
-            return i + f + d;
+        public static float BenchmarkMethod (int i, float f, double d) {
+            return (float)(i + f + d);
         }
     }
 }

@@ -721,7 +721,7 @@ MonoClass* mono_get_uri_class(MonoException** exc)
 }
 
 #define MARSHAL_TYPE_INT 1
-#define MARSHAL_TYPE_FP 2
+#define MARSHAL_TYPE_FP64 2
 #define MARSHAL_TYPE_STRING 3
 #define MARSHAL_TYPE_VT 4
 #define MARSHAL_TYPE_DELEGATE 5
@@ -744,6 +744,8 @@ MonoClass* mono_get_uri_class(MonoException** exc)
 #define MARSHAL_ARRAY_UINT 16
 #define MARSHAL_ARRAY_FLOAT 17
 #define MARSHAL_ARRAY_DOUBLE 18
+
+#define MARSHAL_TYPE_FP32 2
 
 EMSCRIPTEN_KEEPALIVE int
 mono_wasm_get_obj_type (MonoObject *obj)
@@ -789,8 +791,9 @@ mono_wasm_get_obj_type (MonoObject *obj)
 	case MONO_TYPE_I:	// IntPtr
 		return MARSHAL_TYPE_INT;
 	case MONO_TYPE_R4:
+		return MARSHAL_TYPE_FP32;
 	case MONO_TYPE_R8:
-		return MARSHAL_TYPE_FP;
+		return MARSHAL_TYPE_FP64;
 	case MONO_TYPE_STRING:
 		return MARSHAL_TYPE_STRING;
 	case MONO_TYPE_SZARRAY:  { // simple zero based one-dim-array
@@ -874,7 +877,7 @@ mono_unbox_int (MonoObject *obj)
 }
 
 EMSCRIPTEN_KEEPALIVE double
-mono_wasm_unbox_float (MonoObject *obj)
+mono_wasm_unbox_float64 (MonoObject *obj)
 {
 	if (!obj)
 		return 0;
@@ -887,9 +890,17 @@ mono_wasm_unbox_float (MonoObject *obj)
 	case MONO_TYPE_R8:
 		return *(double*)ptr;
 	default:
-		printf ("Invalid type %d to mono_wasm_unbox_float\n", mono_type_get_type (type));
+		printf ("Invalid type %d to mono_wasm_unbox_float64\n", mono_type_get_type (type));
 		return 0;
 	}
+}
+
+// HACK: This function purely exists to provide a float32 return value to emscripten,
+//  because some JS runtimes allocate doubles on the heap
+EMSCRIPTEN_KEEPALIVE float
+mono_wasm_unbox_float32 (MonoObject *obj)
+{
+	return (float)mono_wasm_unbox_float64(obj);
 }
 
 EMSCRIPTEN_KEEPALIVE int

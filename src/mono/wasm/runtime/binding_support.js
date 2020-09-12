@@ -59,7 +59,8 @@ var BindingSupportLib = {
 			this.mono_wasm_string_from_utf16 = Module.cwrap ('mono_wasm_string_from_utf16', 'number', ['number', 'number']);
 			this.mono_get_obj_type = Module.cwrap ('mono_wasm_get_obj_type', 'number', ['number']);
 			this.mono_unbox_int = Module.cwrap ('mono_unbox_int', 'number', ['number']);
-			this.mono_unbox_float = Module.cwrap ('mono_wasm_unbox_float', 'number', ['number']);
+			this.mono_unbox_float32 = Module.cwrap ('mono_wasm_unbox_float32', 'number', ['number']);
+			this.mono_unbox_float64 = Module.cwrap ('mono_wasm_unbox_float64', 'number', ['number']);
 			this.mono_array_length = Module.cwrap ('mono_wasm_array_length', 'number', ['number']);
 			this.mono_array_get = Module.cwrap ('mono_wasm_array_get', 'number', ['number', 'number']);
 			this.mono_obj_array_new = Module.cwrap ('mono_wasm_obj_array_new', 'number', ['number']);
@@ -286,8 +287,10 @@ var BindingSupportLib = {
 			switch (type) {
 				case 1: // int
 					return this.mono_unbox_int (mono_obj);
-				case 2: // float
-					return this.mono_unbox_float (mono_obj);
+				case 24: // single
+					return Math.fround (this.mono_unbox_float32 (mono_obj));
+				case 2: // double
+					return this.mono_unbox_float64 (mono_obj);
 				case 3: //string
 					return this.conv_string (mono_obj);
 				case 4: //vts
@@ -775,7 +778,9 @@ var BindingSupportLib = {
 			result.set ('l', { steps: [{ indirect: 'i64'}], size: 8});
 			result.set ('f', { steps: [{ indirect: 'float'}], size: 8});
 			result.set ('d', { steps: [{ indirect: 'double'}], size: 8});
-			return this._primitive_converters = result;
+
+			this._primitive_converters = result;
+			return result;
 		},
 
 		_create_converter_for_marshal_string: function (args_marshal) {
@@ -875,7 +880,7 @@ var BindingSupportLib = {
 				""
 			);
 
-			for (var i = 0; i < converter.steps.length; i++) {
+			for (let i = 0; i < converter.steps.length; i++) {
 				var step = converter.steps[i];
 				var closureKey = "step" + i;
 				var valueKey = "value" + i;
@@ -956,7 +961,7 @@ var BindingSupportLib = {
 				"  rootBuffer, method,"
 			];
 
-			for (var i = 0; i < converter.steps.length; i++) {
+			for (let i = 0; i < converter.steps.length; i++) {
 				body.push(
 					"  args[" + i + 
 					(
@@ -1108,22 +1113,29 @@ var BindingSupportLib = {
 			return this._call_method_with_converted_args (method, this_arg, buffer, is_result_marshaled, argsRootBuffer);
 		},
 
+		_handle_exception_for_call: function (
+			buffer, resultRoot, exceptionRoot, argsRootBuffer
+		) {
+			var exc = this._convert_exception_for_method_call (resultRoot.value, exceptionRoot.value);
+			if (!exc)
+				return;
+
+			this._teardown_after_call (buffer, resultRoot, exceptionRoot, argsRootBuffer);
+			throw exc;
+		},
+
 		_handle_exception_and_produce_result_for_call: function (
 			buffer, resultRoot, exceptionRoot, argsRootBuffer, is_result_marshaled
 		) {
-			var exc = this._convert_exception_for_method_call (resultRoot.value, exceptionRoot.value);
-			if (exc) {
-				this._teardown_after_call (buffer, resultRoot, exceptionRoot, argsRootBuffer);
-				throw exc;
-			} else {
-				if (is_result_marshaled)
-					result = this._unbox_mono_obj_rooted (resultRoot);
-				else
-					result = resultRoot.value;
+			this._handle_exception_for_call (buffer, resultRoot, exceptionRoot, argsRootBuffer);
 
-				this._teardown_after_call (buffer, resultRoot, exceptionRoot, argsRootBuffer);
-				return result;
-			}
+			if (is_result_marshaled)
+				result = this._unbox_mono_obj_rooted (resultRoot);
+			else
+				result = resultRoot.value;
+
+			this._teardown_after_call (buffer, resultRoot, exceptionRoot, argsRootBuffer);
+			return result;
 		},
 
 		_teardown_after_call: function (buffer, resultRoot, exceptionRoot, argsRootBuffer) {
@@ -1180,6 +1192,7 @@ var BindingSupportLib = {
 				};
 
 			var closure = {
+				library_mono: MONO,
 				binding_support: this,
 				method: method,
 				this_arg: this_arg
@@ -1189,20 +1202,23 @@ var BindingSupportLib = {
 				closure["converter_" + converter.name] = converter;
 
 			var argumentNames = [];
-			var body = [];
+			var body = [
+				"var resultRoot = library_mono.mono_wasm_new_root (), exceptionRoot = library_mono.mono_wasm_new_root ();",
+				""
+			];
 
 			if (converter) {
 				body.push(
 					"var argsRootBuffer = binding_support._get_args_root_buffer_for_method_call (converter_" + converter.name + ");",
 					"var buffer = converter_" + converter.name + ".compiled_function (",
-					"  argsRootBuffer, method,"
+					"    argsRootBuffer, method,"
 				);
 
 				for (var i = 0; i < converter.steps.length; i++) {
 					var argName = "arg" + i;
 					argumentNames.push(argName);
 					body.push(
-						"  " + argName +
+						"    " + argName +
 						(
 							(i == converter.steps.length - 1) 
 								? "" 
@@ -1226,7 +1242,33 @@ var BindingSupportLib = {
 				body.push ("var is_result_marshaled = true;");
 			}
 
-			body.push ("return binding_support._call_method_with_converted_args (method, this_arg, buffer, is_result_marshaled, argsRootBuffer);");
+			body.push(
+				"",
+				"resultRoot.value = binding_support.invoke_method (method, this_arg, buffer, exceptionRoot.get_address ());",
+				"binding_support._handle_exception_for_call (buffer, resultRoot, exceptionRoot, argsRootBuffer);",
+				"",
+				"var resultPtr = resultRoot.value, result, resultType;",
+				"if (!is_result_marshaled) ",
+				"    result = resultPtr;",
+				"else if (resultPtr === 0)",
+				"    result = undefined;",
+				"else {",
+				"    resultType = binding_support.mono_get_obj_type (resultPtr);",
+				"    switch (resultType) {",
+				"    case 1:",
+				"        result = binding_support.mono_unbox_int (resultPtr); break;",
+				"    case 24:",
+				"        result = Math.fround (binding_support.mono_unbox_float32 (resultPtr)); break;",
+				"    case 2:",
+				"        result = binding_support.mono_unbox_float64 (resultPtr); break;",
+				"    default:",
+				"        result = binding_support._unbox_mono_obj_rooted_with_known_type (resultPtr, resultType); break;",
+				"    }",
+				"}",
+				"",
+				"binding_support._teardown_after_call (buffer, resultRoot, exceptionRoot, argsRootBuffer);",
+				"return result;"
+			);
 
 			bodyJs = body.join ("\r\n");
 
