@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <CLRTestPriority>1</CLRTestPriority>
+    <CLRTestPriority>2</CLRTestPriority> <!-- TODO: revert to 1 after fixing https://github.com/dotnet/runtime/issues/42168 -->
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="UnmanagedCallersOnlyTest.cs" />
