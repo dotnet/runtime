@@ -1242,6 +1242,15 @@ var BindingSupportLib = {
 				body.push ("var is_result_marshaled = true;");
 			}
 
+			// We inline a bunch of the invoke and marshaling logic here in order to eliminate the GC pressure normally
+			//  created by the unboxing part of the call process. Because unbox_mono_obj(_rooted) can return non-numeric
+			//  types, v8 and spidermonkey allocate and store its result on the heap (in the nursery, to be fair).
+			// For a bound method however, we know the result will always be the same type because C# methods have known
+			//  return types. Inlining the invoke and marshaling logic means that even though the bound method has logic
+			//  for handling various types, only one path through the method (for its appropriate return type) will ever
+			//  be taken, and the JIT will see that the 'result' local and thus the return value of this function are
+			//  always of the exact same type. All of the branches related to this end up being predicted and low-cost.
+			// The end result is that bound method invocations don't always allocate, so no more nursery GCs. Yay! -kg
 			body.push(
 				"",
 				"resultRoot.value = binding_support.invoke_method (method, this_arg, buffer, exceptionRoot.get_address ());",
