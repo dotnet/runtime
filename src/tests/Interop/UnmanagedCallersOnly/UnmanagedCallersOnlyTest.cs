@@ -35,17 +35,17 @@ public class Program
         public static extern int PInvokeMarkedWithUnmanagedCallersOnly(int n);
     }
 
-    private const string InvalidCSharpAssemblyName = "InvalidCSharp.dll";
+    private const string InvalidCSharpAssemblyName = "InvalidCSharp";
 
     public static Type GetCallbacksType()
     {
-        var asm = Assembly.Load("InvalidCSharp");
+        var asm = Assembly.Load(InvalidCSharpAssemblyName);
         return asm.GetType("InvalidCSharp.Callbacks");
     }
 
     public static Type GetGenericClassOfIntType()
     {
-        var asm = Assembly.Load("InvalidCSharp");
+        var asm = Assembly.Load(InvalidCSharpAssemblyName);
         return asm.GetType("InvalidCSharp.GenericClass`1").MakeGenericType(typeof(int));
     }
 
