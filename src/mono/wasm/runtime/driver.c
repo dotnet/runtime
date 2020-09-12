@@ -745,19 +745,13 @@ MonoClass* mono_get_uri_class(MonoException** exc)
 #define MARSHAL_ARRAY_FLOAT 17
 #define MARSHAL_ARRAY_DOUBLE 18
 
-#define MARSHAL_TYPE_FP32 2
+#define MARSHAL_TYPE_FP32 24
+#define MARSHAL_TYPE_UINT32 25
+#define MARSHAL_TYPE_INT64 26
+#define MARSHAL_TYPE_UINT64 27
 
-EMSCRIPTEN_KEEPALIVE int
-mono_wasm_get_obj_type (MonoObject *obj)
+void mono_wasm_ensure_classes_resolved ()
 {
-	if (!obj)
-		return 0;
-
-	/* Process obj before calling into the runtime, class_from_name () can invoke managed code */
-	MonoClass *klass = mono_object_get_class (obj);
-	MonoType *type = mono_class_get_type (klass);
-	obj = NULL;
-
 	if (!datetime_class && !resolved_datetime_class) {
 		datetime_class = mono_class_from_name (mono_get_corlib(), "System", "DateTime");
 		resolved_datetime_class = 1;
@@ -775,8 +769,12 @@ mono_wasm_get_obj_type (MonoObject *obj)
 		safehandle_class = mono_class_from_name (mono_get_corlib(), "System.Runtime.InteropServices", "SafeHandle");
 		resolved_safehandle_class = 1;
 	}
+}
 
-	switch (mono_type_get_type (type)) {
+int
+mono_wasm_marshal_type_from_mono_type (int mono_type, MonoClass *klass, MonoType *type)
+{
+	switch (mono_type) {
 	// case MONO_TYPE_CHAR: prob should be done not as a number?
 	case MONO_TYPE_BOOLEAN:
 		return MARSHAL_TYPE_BOOL;
@@ -785,11 +783,15 @@ mono_wasm_get_obj_type (MonoObject *obj)
 	case MONO_TYPE_I2:
 	case MONO_TYPE_U2:
 	case MONO_TYPE_I4:
-	case MONO_TYPE_U4:
-	case MONO_TYPE_I8:
-	case MONO_TYPE_U8:
 	case MONO_TYPE_I:	// IntPtr
 		return MARSHAL_TYPE_INT;
+	case MONO_TYPE_U4:  // The distinction between this and signed int is
+						// important due to how numbers work in JavaScript
+		return MARSHAL_TYPE_UINT32;
+	case MONO_TYPE_I8:
+		return MARSHAL_TYPE_INT64;
+	case MONO_TYPE_U8:
+		return MARSHAL_TYPE_UINT64;
 	case MONO_TYPE_R4:
 		return MARSHAL_TYPE_FP32;
 	case MONO_TYPE_R8:
@@ -797,7 +799,7 @@ mono_wasm_get_obj_type (MonoObject *obj)
 	case MONO_TYPE_STRING:
 		return MARSHAL_TYPE_STRING;
 	case MONO_TYPE_SZARRAY:  { // simple zero based one-dim-array
-		MonoClass *eklass = mono_class_get_element_class(klass);
+		MonoClass *eklass = mono_class_get_element_class (klass);
 		MonoType *etype = mono_class_get_type (eklass);
 
 		switch (mono_type_get_type (etype)) {
@@ -822,6 +824,8 @@ mono_wasm_get_obj_type (MonoObject *obj)
 		}
 	}
 	default:
+		mono_wasm_ensure_classes_resolved ();
+
 		if (klass == datetime_class)
 			return MARSHAL_TYPE_DATE;
 		if (klass == datetimeoffset_class)
@@ -842,6 +846,86 @@ mono_wasm_get_obj_type (MonoObject *obj)
 
 		return MARSHAL_TYPE_OBJECT;
 	}
+}
+
+EMSCRIPTEN_KEEPALIVE int
+mono_wasm_get_obj_type (MonoObject *obj)
+{
+	if (!obj)
+		return 0;
+
+	/* Process obj before calling into the runtime, class_from_name () can invoke managed code */
+	MonoClass *klass = mono_object_get_class (obj);
+	MonoType *type = mono_class_get_type (klass);
+	obj = NULL;
+
+	int mono_type = mono_type_get_type (type);
+
+	return mono_wasm_marshal_type_from_mono_type (mono_type, klass, type);
+}
+
+EMSCRIPTEN_KEEPALIVE int
+mono_try_unbox_primitive_and_get_type (MonoObject *obj, void *result)
+{
+	int *resultI = result;
+	int64_t *resultL = result;
+	float *resultF = result;
+	double *resultD = result;
+
+	if (!obj) {
+		*resultL = 0;
+		return 0;
+	}
+
+	/* Process obj before calling into the runtime, class_from_name () can invoke managed code */
+	MonoClass *klass = mono_object_get_class (obj);
+	MonoType *type = mono_class_get_type (klass);
+	obj = NULL;
+
+	int mono_type = mono_type_get_type (type);
+	
+	void *ptr = mono_object_unbox (obj);
+
+	switch (mono_type) {
+		case MONO_TYPE_I1:
+		case MONO_TYPE_BOOLEAN:
+			*resultI = *(signed char*)ptr;
+			break;
+		case MONO_TYPE_U1:
+			*resultI = *(unsigned char*)ptr;
+			break;
+		case MONO_TYPE_I2:
+			*resultI = *(short*)ptr;
+			break;
+		case MONO_TYPE_U2:
+			*resultI = *(unsigned short*)ptr;
+			break;
+		case MONO_TYPE_I4:
+		case MONO_TYPE_I:
+			*resultI = *(int*)ptr;
+			break;
+		case MONO_TYPE_U4:
+			// FIXME: Will this behave the way we want for large unsigned values?
+			*resultI = *(int*)ptr;
+			break;
+		case MONO_TYPE_R4:
+			*resultF = *(float*)ptr;
+			break;
+		case MONO_TYPE_R8:
+			*resultD = *(double*)ptr;
+			break;
+		case MONO_TYPE_I8:
+		case MONO_TYPE_U8:
+			// FIXME: At present the javascript side of things can't handle this,
+			//  but there's no reason not to future-proof this API
+			*resultL = *(int64_t*)ptr;
+			break;
+		default:
+			*resultL = 0;
+			break;
+	}
+
+	return mono_wasm_marshal_type_from_mono_type (mono_type, klass, type);
 }
 
 EMSCRIPTEN_KEEPALIVE int

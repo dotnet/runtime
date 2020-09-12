@@ -67,6 +67,7 @@ var BindingSupportLib = {
 			this.mono_obj_array_set = Module.cwrap ('mono_wasm_obj_array_set', 'void', ['number', 'number', 'number']);
 			this.mono_wasm_register_bundled_satellite_assemblies = Module.cwrap ('mono_wasm_register_bundled_satellite_assemblies', 'void', [ ]);
 			this.mono_unbox_enum = Module.cwrap ('mono_wasm_unbox_enum', 'number', ['number']);
+			this.mono_try_unbox_primitive_and_get_type = Module.cwrap ('mono_try_unbox_primitive_and_get_type', 'number', ['number', 'number']);
 			this.assembly_get_entry_point = Module.cwrap ('mono_wasm_assembly_get_entry_point', 'number', ['number']);
 
 			// receives a byteoffset into allocated Heap with a size.
@@ -287,6 +288,12 @@ var BindingSupportLib = {
 			switch (type) {
 				case 1: // int
 					return this.mono_unbox_int (mono_obj);
+				case 25: // uint
+					return this.mono_unbox_int (mono_obj) >>> 0; // FIXME: Is this right?
+				case 26: // int64
+				case 27: // uint64
+					// TODO: Fix this once emscripten offers HEAPI64/HEAPU64 or can return them
+					throw new Error ("int64 not available");
 				case 24: // single
 					return Math.fround (this.mono_unbox_float32 (mono_obj));
 				case 2: // double
@@ -1262,16 +1269,22 @@ var BindingSupportLib = {
 				"else if (resultPtr === 0)",
 				"    result = undefined;",
 				"else {",
-				"    resultType = binding_support.mono_get_obj_type (resultPtr);",
+				// For the common scenario where the return type is a primitive, we want to try and unbox it directly
+				//  into our existing heap allocation and then read it out of the heap. Doing this all in one operation
+				//  means that we only need to enter a gc safe region once (instead of multiple times with the normal,
+				//  slower check-type-and-then-unbox flow which has to enter a safe region at least twice).
+				"    resultType = binding_support.mono_try_unbox_primitive_and_get_type (resultPtr, buffer);",
 				"    switch (resultType) {",
-				"    case 1:",
-				"        result = binding_support.mono_unbox_int (resultPtr); break;",
-				"    case 24:",
-				"        result = Math.fround (binding_support.mono_unbox_float32 (resultPtr)); break;",
-				"    case 2:",
-				"        result = binding_support.mono_unbox_float64 (resultPtr); break;",
-				"    default:",
-				"        result = binding_support._unbox_mono_obj_rooted_with_known_type (resultPtr, resultType); break;",
+				"    case 1:", // int
+				"        result = Module.HEAP32[buffer / 4]; break;",
+				"    case 25:", // uint32
+				"        result = Module.HEAPU32[buffer / 4]; break;",
+				"    case 24:", // float32
+				"        result = Module.HEAPF32[buffer / 4]; break;",
+				"    case 2:", // float64
+				"        result = Module.HEAPF64[buffer / 8]; break;",
+				"    case 8:", // boolean
+				"        result = (Module.HEAP32[buffer / 4]) !== 0; break;",
 				"    }",
 				"}",
 				"",
