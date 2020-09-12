@@ -22,8 +22,7 @@
     <_testFilter>$(_testFilter.Trim('&amp;amp;'))</_testFilter>
   </PropertyGroup>
 
-  <Target Name="GenerateRunSettingsFile"
-          DependsOnTargets="SetupCoverageFilter">
+  <Target Name="GenerateRunSettingsFile">
     <PropertyGroup>
       <RunSettingsFileContent>$([System.IO.File]::ReadAllText('$(RunSettingsInputFilePath)'))</RunSettingsFileContent>
       <RunSettingsFileContent Condition="'$(TestDisableParallelization)' == 'true'">$(RunSettingsFileContent.Replace('$$MAXCPUCOUNT$$', '1'))</RunSettingsFileContent>
@@ -50,5 +49,10 @@
     <PropertyGroup>
       <RunSettingsFilePath>$(RunSettingsOutputFilePath)</RunSettingsFilePath>
     </PropertyGroup>
+    <ItemGroup>
+      <ResolvedFileToPublish Include="$(RunSettingsOutputFilePath)"
+                             RelativePath="$([System.IO.Path]::GetFileName('$(RunSettingsOutputFilePath)'))"
+                             CopyToPublishDirectory="PreserveNewest" />
+    </ItemGroup>
   </Target>
 </Project>

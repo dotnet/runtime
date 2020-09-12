@@ -3,7 +3,8 @@
     <PackageReference Include="coverlet.collector" Version="$(CoverletCollectorVersion)" />
   </ItemGroup>
 
-  <Target Name="SetupCoverageFilter">
+  <Target Name="SetupCoverageFilter"
+          BeforeTargets="GenerateRunSettingsFile">
     <!--
       We need to filter the data to only the assembly being tested. Otherwise we will gather tons of data about other assemblies.
       If the code being tested is part of the runtime itself, it requires special treatment.
@@ -39,8 +40,10 @@
 
   <!-- Build a coverage report if building an individual library with Coverage true. -->
   <Target Name="GenerateCoverageReport"
-          Condition="'$(VSTestCollect.ToLower())' == 'xplat code coverage' and '$(BuildAllProjects)' != 'true' and '$(SkipCoverageReport)' != 'true'"
-          AfterTargets="VSTest">
+          AfterTargets="VSTest"
+          Condition="'$(VSTestCollect.ToLower())' == 'xplat code coverage' and
+                     '$(BuildAllProjects)' != 'true' and
+                     '$(SkipCoverageReport)' != 'true'">
     <ItemGroup Condition="'$(CoverageReportInputPath)' == ''">
       <CoverageOutputFile Include="$(OutDir)TestResults\*\coverage.opencover.xml" />
     </ItemGroup>
