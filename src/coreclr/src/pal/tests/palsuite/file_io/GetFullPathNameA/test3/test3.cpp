@@ -236,6 +236,6 @@ cleanUpOne:
     free (szCreatedDirW);
 
     /* Terminate the PAL.*/
-    PAL_Terminate();
+    PAL_TerminateEx(bRetVal);
     return bRetVal;
 }

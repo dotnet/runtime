@@ -23,7 +23,7 @@ int PrintUsage(int argc, char *argv[])
     printf("paltests <PrintPalTests|TestName>\n");
     printf("Either print list of all paltests by passing PrintPalTests, or run a single PAL test.\n");
 
-    PAL_Terminate();
+    PAL_TerminateEx(FAIL);
     return FAIL;
 }
 

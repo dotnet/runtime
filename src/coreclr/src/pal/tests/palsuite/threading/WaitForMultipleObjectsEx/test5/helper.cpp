@@ -115,7 +115,7 @@ PALTEST(threading_WaitForMultipleObjectsEx_test5_paltest_waitformultipleobjectse
     PEDANTIC(CloseHandle, (hProcessReadyEvent));
     PEDANTIC(CloseHandle, (hProcessFinishEvent));
 
-    PAL_Terminate();
+    PAL_TerminateEx(success ? PASS : FAIL);
 
     return success ? PASS : FAIL;
 }

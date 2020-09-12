@@ -165,7 +165,7 @@ cleanUpOne:
 
     /* Terminate the PAL.
      */
-    PAL_Terminate();
+    PAL_TerminateEx(iRetVal);
     return iRetVal;
 
 }

@@ -199,6 +199,6 @@ PALTEST(debug_api_WriteProcessMemory_test3_paltest_writeprocessmemory_test3, "de
     PEDANTIC(CloseHandle, (pi.hThread));
     PEDANTIC(CloseHandle, (pi.hProcess));
 
-    PAL_Terminate(dwExitCode);
+    PAL_TerminateEx(dwExitCode);
     return dwExitCode;
 }

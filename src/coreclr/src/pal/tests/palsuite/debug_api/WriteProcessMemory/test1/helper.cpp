@@ -236,7 +236,7 @@ EXIT:
         Fail("");
     }
 
-    PAL_Terminate();
+    PAL_TerminateEx(success ? PASS : FAIL);
 
     return success ? PASS : FAIL;
 }

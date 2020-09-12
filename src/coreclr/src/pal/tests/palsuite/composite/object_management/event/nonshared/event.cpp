@@ -283,7 +283,7 @@ PALTEST(composite_object_management_event_nonshared_paltest_event_nonshared, "co
         testStatus = FAIL;
     } 
 
-    PAL_Terminate();
+    PAL_TerminateEx(testStatus);
     return testStatus;
 
 }

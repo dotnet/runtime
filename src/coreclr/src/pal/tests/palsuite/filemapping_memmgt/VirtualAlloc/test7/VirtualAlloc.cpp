@@ -33,7 +33,7 @@ PALTEST(filemapping_memmgt_VirtualAlloc_test7_paltest_virtualalloc_test7, "filem
     if(NULL == lpVirtualAddress)
     {
         Fail("\nFailed to call VirtualAlloc API!\n");
-        PAL_Terminate();
+        PAL_TerminateEx(1);
         return 1;
     }
 
@@ -42,7 +42,7 @@ PALTEST(filemapping_memmgt_VirtualAlloc_test7_paltest_virtualalloc_test7, "filem
     if(0 == err)
     {
         Fail("\nFailed to call VirtualFree API!\n");
-        PAL_Terminate();
+        PAL_TerminateEx(1);
         return 1;
     }
 

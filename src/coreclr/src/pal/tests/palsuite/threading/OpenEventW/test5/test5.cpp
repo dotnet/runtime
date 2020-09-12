@@ -188,7 +188,7 @@ cleanup:
 
 
     /* PAL termination */
-    PAL_Terminate();
+    PAL_TerminateEx(ret);
 
     /* return success or failure */
     return ret;

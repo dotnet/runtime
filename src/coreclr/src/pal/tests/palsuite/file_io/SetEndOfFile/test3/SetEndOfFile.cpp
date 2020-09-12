@@ -59,7 +59,7 @@ PALTEST(file_io_SetEndOfFile_test3_paltest_setendoffile_test3, "file_io/SetEndOf
             Trace("SetEndOfFile: ERROR -> Unable to close file \"%s\".\n",
                   szTextFile);
         }
-        PAL_Terminate();
+        PAL_TerminateEx(FAIL);
         return FAIL;
     }
 
