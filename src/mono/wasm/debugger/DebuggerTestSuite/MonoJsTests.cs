@@ -138,5 +138,79 @@ namespace DebuggerTests
                 Assert.False(res.IsOk);
             });
         }
+
+        [Fact]
+        public async Task BadRaiseEventsTest()
+        {
+            var insp = new Inspector();
+            var scripts = SubscribeToScripts(insp);
+
+            await Ready();
+            await insp.Ready(async (cli, token) =>
+            {
+                ctx = new DebugTestContext(cli, insp, token, scripts);
+
+                var bad_expressions = new[]
+                {
+                    "MONO.mono_wasm_raise_event('')",
+                    "MONO.mono_wasm_raise_event(undefined)",
+                    "MONO.mono_wasm_raise_event({})",
+
+                    "MONO.mono_wasm_raise_event({eventName:'foo'}, '')",
+                    "MONO.mono_wasm_raise_event({eventName:'foo'}, 12)"
+                };
+
+                foreach (var expression in bad_expressions)
+                {
+                    var res = await ctx.cli.SendCommand($"Runtime.evaluate",
+                                JObject.FromObject(new
+                                {
+                                    expression,
+                                    returnByValue = true
+                                }), ctx.token);
+                    Assert.False(res.IsOk, $"Expected to fail for {expression}");
+                }
+            });
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        [InlineData(null)]
+        public async Task RaiseEventTraceTest(bool? trace)
+        {
+            var insp = new Inspector();
+            var scripts = SubscribeToScripts(insp);
+
+            await Ready();
+            await insp.Ready(async (cli, token) =>
+            {
+                ctx = new DebugTestContext(cli, insp, token, scripts);
+
+                var tcs = new TaskCompletionSource<bool>();
+                insp.On("Runtime.consoleAPICalled", async (args, token) => {
+                    if (args?["type"]?.Value<string>() == "debug" &&
+                       args?["args"]?.Type == JTokenType.Array &&
+                       args?["args"]?[0]?["value"]?.Value<string>()?.StartsWith("mono_wasm_event_raised:") == true)
+                    {
+                        tcs.SetResult(true);
+                    }
+
+                    await Task.CompletedTask;
+                });
+
+                var trace_str = trace.HasValue ? $"trace: {trace.ToString().ToLower()}" : String.Empty;
+                var expression = $"MONO.mono_wasm_raise_event({{ eventName:'qwe' }}, {{ {trace_str} }})";
+                var res = await ctx.cli.SendCommand($"Runtime.evaluate", JObject.FromObject(new { expression }), ctx.token);
+                Assert.True(res.IsOk, $"Expected to pass for {expression}");
+
+                var t = await Task.WhenAny(tcs.Task, Task.Delay(2000));
+
+                if (trace == true)
+                    Assert.True(tcs.Task == t, "Timed out waiting for the event to be logged");
+                else
+                    Assert.False(tcs.Task == t, "Event should not have been logged");
+            });
+        }
     }
 }
