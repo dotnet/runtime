@@ -8,7 +8,6 @@ namespace System.Text.Json.Serialization.Tests
     public static class ContinuationTests
     {
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/42070")]
         public static async Task ContinationAtNullShouldWork()
         {
             var stream = new MemoryStream();

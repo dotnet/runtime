@@ -234,7 +234,7 @@ namespace System.Text.Json
             else
             {
                 success = true;
-                if (!isNullToken || !IgnoreDefaultValuesOnRead || !Converter.CanBeNull)
+                if (!isNullToken || !IgnoreDefaultValuesOnRead || !Converter.CanBeNull || state.IsContinuation)
                 {
                     success = Converter.TryRead(ref reader, RuntimePropertyType!, Options, ref state, out T value);
                     if (success)
