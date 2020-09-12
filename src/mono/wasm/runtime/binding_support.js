@@ -720,7 +720,7 @@ var BindingSupportLib = {
 			return js_obj;
 		},
 
-		_createNamedFunction: function (name, argumentNames, body, closure) {
+		_create_named_function: function (name, argumentNames, body, closure) {
 			var result = null, keys = null, closureArgumentList = null, closureArgumentNames = null;
 
 			if (closure) {
@@ -730,13 +730,13 @@ var BindingSupportLib = {
 					closureArgumentList[i] = closure[closureArgumentNames[i]];
 			}
 
-			var constructor = this._createRebindableNamedFunction (name, argumentNames, body, closureArgumentNames);
+			var constructor = this._create_rebindable_named_function (name, argumentNames, body, closureArgumentNames);
 			result = constructor.apply (null, closureArgumentList);
 
 			return result;
 		},
 
-		_createRebindableNamedFunction: function (name, argumentNames, body, closureArgNames) {
+		_create_rebindable_named_function: function (name, argumentNames, body, closureArgNames) {
 			var strictPrefix = "\"use strict\";\r\n";
 			var uriPrefix = "", escapedFunctionIdentifier = "";
 
@@ -895,7 +895,6 @@ var BindingSupportLib = {
 				var step = converter.steps[i];
 				var closureKey = "step" + i;
 				var valueKey = "value" + i;
-				var hasAssignedAddress = false;
 
 				var argKey = "arg" + i;
 				argumentNames.push (argKey);
@@ -911,8 +910,6 @@ var BindingSupportLib = {
 				}
 
 				if (step.indirect) {
-					hasAssignedAddress = true;
-
 					switch (step.indirect) {
 						case "u32":
 							body.push ("Module.HEAPU32[indirect32 + " + (indirectLocalOffset / 4) + "] = " + valueKey + ";");
@@ -954,7 +951,7 @@ var BindingSupportLib = {
 
 			var bodyJs = body.join ("\r\n"), compiledFunction = null, compiledVariadicFunction = null;
 			try {
-				compiledFunction = this._createNamedFunction("converter_" + converterName, argumentNames, bodyJs, closure);
+				compiledFunction = this._create_named_function("converter_" + converterName, argumentNames, bodyJs, closure);
 				converter.compiled_function = compiledFunction;
 				// console.log("compiled converter", compiledFunction);
 			} catch (exc) {
@@ -987,7 +984,7 @@ var BindingSupportLib = {
 
 			bodyJs = body.join ("\r\n");
 			try {
-				compiledVariadicFunction = this._createNamedFunction("variadic_converter_" + converterName, argumentNames, bodyJs, closure);
+				compiledVariadicFunction = this._create_named_function("variadic_converter_" + converterName, argumentNames, bodyJs, closure);
 				converter.compiled_variadic_function = compiledVariadicFunction;
 				// console.log("compiled converter", compiledFunction);
 			} catch (exc) {
@@ -1314,7 +1311,7 @@ var BindingSupportLib = {
 			if (this_arg)
 				displayName += "_with_this_" + this_arg;
 
-			return this._createNamedFunction(displayName, argumentNames, bodyJs, closure);
+			return this._create_named_function(displayName, argumentNames, bodyJs, closure);
 		},
 
 		invoke_delegate: function (delegate_obj, js_args) {
