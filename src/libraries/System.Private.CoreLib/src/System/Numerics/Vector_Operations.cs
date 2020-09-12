@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 namespace System.Numerics
@@ -8,11 +9,9 @@ namespace System.Numerics
     /// <summary>
     /// Contains various methods useful for creating, manipulating, combining, and converting generic vectors with one another.
     /// </summary>
+    [Intrinsic]
     public static partial class Vector
     {
-        // JIT is not looking at the Vector class methods
-        // all methods here should be inlined and they must be implemented in terms of Vector<T> intrinsics
-        #region Select Methods
         /// <summary>
         /// Creates a new vector with elements selected between the two given source vectors, and based on a mask vector.
         /// </summary>
@@ -54,10 +53,7 @@ namespace System.Numerics
         {
             return Vector<T>.ConditionalSelect(condition, left, right);
         }
-        #endregion Select Methods
 
-        #region Comparison methods
-        #region Equals methods
         /// <summary>
         /// Returns a new vector whose elements signal whether the elements in left and right were equal.
         /// </summary>
@@ -146,9 +142,7 @@ namespace System.Numerics
         {
             return !Vector<T>.Equals(left, right).Equals(Vector<T>.Zero);
         }
-        #endregion Equals methods
 
-        #region Lessthan Methods
         /// <summary>
         /// Returns a new vector whose elements signal whether the elements in left were less than their
         /// corresponding elements in right.
@@ -244,9 +238,7 @@ namespace System.Numerics
             Vector<int> cond = (Vector<int>)Vector<T>.LessThan(left, right);
             return !cond.Equals(Vector<int>.Zero);
         }
-        #endregion LessthanMethods
 
-        #region Lessthanorequal methods
         /// <summary>
         /// Returns a new vector whose elements signal whether the elements in left were less than or equal to their
         /// corresponding elements in right.
@@ -342,9 +334,7 @@ namespace System.Numerics
             Vector<int> cond = (Vector<int>)Vector<T>.LessThanOrEqual(left, right);
             return !cond.Equals(Vector<int>.Zero);
         }
-        #endregion Lessthanorequal methods
 
-        #region Greaterthan methods
         /// <summary>
         /// Returns a new vector whose elements signal whether the elements in left were greater than their
         /// corresponding elements in right.
@@ -441,9 +431,7 @@ namespace System.Numerics
             Vector<int> cond = (Vector<int>)Vector<T>.GreaterThan(left, right);
             return !cond.Equals(Vector<int>.Zero);
         }
-        #endregion Greaterthan methods
 
-        #region Greaterthanorequal methods
         /// <summary>
         /// Returns a new vector whose elements signal whether the elements in left were greater than or equal to their
         /// corresponding elements in right.
@@ -540,10 +528,7 @@ namespace System.Numerics
             Vector<int> cond = (Vector<int>)Vector<T>.GreaterThanOrEqual(left, right);
             return !cond.Equals(Vector<int>.Zero);
         }
-        #endregion Greaterthanorequal methods
-        #endregion Comparison methods
 
-        #region Vector Math Methods
         // Every operation must either be a JIT intrinsic or implemented over a JIT intrinsic
         // as a thin wrapper
         // Operations implemented over a JIT intrinsic should be inlined
@@ -689,9 +674,7 @@ namespace System.Numerics
         {
             return Vector<double>.Floor(value);
         }
-        #endregion Vector Math Methods
 
-        #region Named Arithmetic Operators
         /// <summary>
         /// Creates a new vector whose values are the sum of each pair of elements from the two given vectors.
         /// </summary>
@@ -775,9 +758,7 @@ namespace System.Numerics
         {
             return -value;
         }
-        #endregion Named Arithmetic Operators
 
-        #region Named Bitwise Operators
         /// <summary>
         /// Returns a new vector by performing a bitwise-and operation on each of the elements in the given vectors.
         /// </summary>
@@ -837,9 +818,7 @@ namespace System.Numerics
         {
             return left & ~right;
         }
-        #endregion Named Bitwise Operators
 
-        #region Conversion Methods
         /// <summary>
         /// Reinterprets the bits of the given vector into those of a vector of unsigned bytes.
         /// </summary>
@@ -954,6 +933,503 @@ namespace System.Numerics
         {
             return (Vector<double>)value;
         }
-        #endregion Conversion Methods
+
+        /// <summary>
+        /// Widens a Vector{Byte} into two Vector{UInt16}'s.
+        /// <param name="source">The source vector whose elements are widened into the outputs.</param>
+        /// <param name="low">The first output vector, whose elements will contain the widened elements from lower indices in the source vector.</param>
+        /// <param name="high">The second output vector, whose elements will contain the widened elements from higher indices in the source vector.</param>
+        /// </summary>
+        [CLSCompliant(false)]
+        [Intrinsic]
+        public static unsafe void Widen(Vector<byte> source, out Vector<ushort> low, out Vector<ushort> high)
+        {
+            int elements = Vector<byte>.Count;
+            ushort* lowPtr = stackalloc ushort[elements / 2];
+            for (int i = 0; i < elements / 2; i++)
+            {
+                lowPtr[i] = (ushort)source[i];
+            }
+            ushort* highPtr = stackalloc ushort[elements / 2];
+            for (int i = 0; i < elements / 2; i++)
+            {
+                highPtr[i] = (ushort)source[i + (elements / 2)];
+            }
+
+            low = *(Vector<ushort>*)lowPtr;
+            high = *(Vector<ushort>*)highPtr;
+        }
+
+        /// <summary>
+        /// Widens a Vector{UInt16} into two Vector{UInt32}'s.
+        /// <param name="source">The source vector whose elements are widened into the outputs.</param>
+        /// <param name="low">The first output vector, whose elements will contain the widened elements from lower indices in the source vector.</param>
+        /// <param name="high">The second output vector, whose elements will contain the widened elements from higher indices in the source vector.</param>
+        /// </summary>
+        [CLSCompliant(false)]
+        [Intrinsic]
+        public static unsafe void Widen(Vector<ushort> source, out Vector<uint> low, out Vector<uint> high)
+        {
+            int elements = Vector<ushort>.Count;
+            uint* lowPtr = stackalloc uint[elements / 2];
+            for (int i = 0; i < elements / 2; i++)
+            {
+                lowPtr[i] = (uint)source[i];
+            }
+            uint* highPtr = stackalloc uint[elements / 2];
+            for (int i = 0; i < elements / 2; i++)
+            {
+                highPtr[i] = (uint)source[i + (elements / 2)];
+            }
+
+            low = *(Vector<uint>*)lowPtr;
+            high = *(Vector<uint>*)highPtr;
+        }
+
+        /// <summary>
+        /// Widens a Vector{UInt32} into two Vector{UInt64}'s.
+        /// <param name="source">The source vector whose elements are widened into the outputs.</param>
+        /// <param name="low">The first output vector, whose elements will contain the widened elements from lower indices in the source vector.</param>
+        /// <param name="high">The second output vector, whose elements will contain the widened elements from higher indices in the source vector.</param>
+        /// </summary>
+        [CLSCompliant(false)]
+        [Intrinsic]
+        public static unsafe void Widen(Vector<uint> source, out Vector<ulong> low, out Vector<ulong> high)
+        {
+            int elements = Vector<uint>.Count;
+            ulong* lowPtr = stackalloc ulong[elements / 2];
+            for (int i = 0; i < elements / 2; i++)
+            {
+                lowPtr[i] = (ulong)source[i];
+            }
+            ulong* highPtr = stackalloc ulong[elements / 2];
+            for (int i = 0; i < elements / 2; i++)
+            {
+                highPtr[i] = (ulong)source[i + (elements / 2)];
+            }
+
+            low = *(Vector<ulong>*)lowPtr;
+            high = *(Vector<ulong>*)highPtr;
+        }
+
+        /// <summary>
+        /// Widens a Vector{SByte} into two Vector{Int16}'s.
+        /// <param name="source">The source vector whose elements are widened into the outputs.</param>
+        /// <param name="low">The first output vector, whose elements will contain the widened elements from lower indices in the source vector.</param>
+        /// <param name="high">The second output vector, whose elements will contain the widened elements from higher indices in the source vector.</param>
+        /// </summary>
+        [CLSCompliant(false)]
+        [Intrinsic]
+        public static unsafe void Widen(Vector<sbyte> source, out Vector<short> low, out Vector<short> high)
+        {
+            int elements = Vector<sbyte>.Count;
+            short* lowPtr = stackalloc short[elements / 2];
+            for (int i = 0; i < elements / 2; i++)
+            {
+                lowPtr[i] = (short)source[i];
+            }
+            short* highPtr = stackalloc short[elements / 2];
+            for (int i = 0; i < elements / 2; i++)
+            {
+                highPtr[i] = (short)source[i + (elements / 2)];
+            }
+
+            low = *(Vector<short>*)lowPtr;
+            high = *(Vector<short>*)highPtr;
+        }
+
+        /// <summary>
+        /// Widens a Vector{Int16} into two Vector{Int32}'s.
+        /// <param name="source">The source vector whose elements are widened into the outputs.</param>
+        /// <param name="low">The first output vector, whose elements will contain the widened elements from lower indices in the source vector.</param>
+        /// <param name="high">The second output vector, whose elements will contain the widened elements from higher indices in the source vector.</param>
+        /// </summary>
+        [Intrinsic]
+        public static unsafe void Widen(Vector<short> source, out Vector<int> low, out Vector<int> high)
+        {
+            int elements = Vector<short>.Count;
+            int* lowPtr = stackalloc int[elements / 2];
+            for (int i = 0; i < elements / 2; i++)
+            {
+                lowPtr[i] = (int)source[i];
+            }
+            int* highPtr = stackalloc int[elements / 2];
+            for (int i = 0; i < elements / 2; i++)
+            {
+                highPtr[i] = (int)source[i + (elements / 2)];
+            }
+
+            low = *(Vector<int>*)lowPtr;
+            high = *(Vector<int>*)highPtr;
+        }
+
+        /// <summary>
+        /// Widens a Vector{Int32} into two Vector{Int64}'s.
+        /// <param name="source">The source vector whose elements are widened into the outputs.</param>
+        /// <param name="low">The first output vector, whose elements will contain the widened elements from lower indices in the source vector.</param>
+        /// <param name="high">The second output vector, whose elements will contain the widened elements from higher indices in the source vector.</param>
+        /// </summary>
+        [Intrinsic]
+        public static unsafe void Widen(Vector<int> source, out Vector<long> low, out Vector<long> high)
+        {
+            int elements = Vector<int>.Count;
+            long* lowPtr = stackalloc long[elements / 2];
+            for (int i = 0; i < elements / 2; i++)
+            {
+                lowPtr[i] = (long)source[i];
+            }
+            long* highPtr = stackalloc long[elements / 2];
+            for (int i = 0; i < elements / 2; i++)
+            {
+                highPtr[i] = (long)source[i + (elements / 2)];
+            }
+
+            low = *(Vector<long>*)lowPtr;
+            high = *(Vector<long>*)highPtr;
+        }
+
+        /// <summary>
+        /// Widens a Vector{Single} into two Vector{Double}'s.
+        /// <param name="source">The source vector whose elements are widened into the outputs.</param>
+        /// <param name="low">The first output vector, whose elements will contain the widened elements from lower indices in the source vector.</param>
+        /// <param name="high">The second output vector, whose elements will contain the widened elements from higher indices in the source vector.</param>
+        /// </summary>
+        [Intrinsic]
+        public static unsafe void Widen(Vector<float> source, out Vector<double> low, out Vector<double> high)
+        {
+            int elements = Vector<float>.Count;
+            double* lowPtr = stackalloc double[elements / 2];
+            for (int i = 0; i < elements / 2; i++)
+            {
+                lowPtr[i] = (double)source[i];
+            }
+            double* highPtr = stackalloc double[elements / 2];
+            for (int i = 0; i < elements / 2; i++)
+            {
+                highPtr[i] = (double)source[i + (elements / 2)];
+            }
+
+            low = *(Vector<double>*)lowPtr;
+            high = *(Vector<double>*)highPtr;
+        }
+
+        /// <summary>
+        /// Narrows two Vector{UInt16}'s into one Vector{Byte}.
+        /// <param name="low">The first source vector, whose elements become the lower-index elements of the return value.</param>
+        /// <param name="high">The second source vector, whose elements become the higher-index elements of the return value.</param>
+        /// <returns>A Vector{Byte} containing elements narrowed from the source vectors.</returns>
+        /// </summary>
+        [CLSCompliant(false)]
+        [Intrinsic]
+        public static unsafe Vector<byte> Narrow(Vector<ushort> low, Vector<ushort> high)
+        {
+            int elements = Vector<byte>.Count;
+            byte* retPtr = stackalloc byte[elements];
+            for (int i = 0; i < elements / 2; i++)
+            {
+                retPtr[i] = (byte)low[i];
+            }
+            for (int i = 0; i < elements / 2; i++)
+            {
+                retPtr[i + (elements / 2)] = (byte)high[i];
+            }
+
+            return *(Vector<byte>*)retPtr;
+        }
+
+        /// <summary>
+        /// Narrows two Vector{UInt32}'s into one Vector{UInt16}.
+        /// <param name="low">The first source vector, whose elements become the lower-index elements of the return value.</param>
+        /// <param name="high">The second source vector, whose elements become the higher-index elements of the return value.</param>
+        /// <returns>A Vector{UInt16} containing elements narrowed from the source vectors.</returns>
+        /// </summary>
+        [CLSCompliant(false)]
+        [Intrinsic]
+        public static unsafe Vector<ushort> Narrow(Vector<uint> low, Vector<uint> high)
+        {
+            int elements = Vector<ushort>.Count;
+            ushort* retPtr = stackalloc ushort[elements];
+            for (int i = 0; i < elements / 2; i++)
+            {
+                retPtr[i] = (ushort)low[i];
+            }
+            for (int i = 0; i < elements / 2; i++)
+            {
+                retPtr[i + (elements / 2)] = (ushort)high[i];
+            }
+
+            return *(Vector<ushort>*)retPtr;
+        }
+
+        /// <summary>
+        /// Narrows two Vector{UInt64}'s into one Vector{UInt32}.
+        /// <param name="low">The first source vector, whose elements become the lower-index elements of the return value.</param>
+        /// <param name="high">The second source vector, whose elements become the higher-index elements of the return value.</param>
+        /// <returns>A Vector{UInt32} containing elements narrowed from the source vectors.</returns>
+        /// </summary>
+        [CLSCompliant(false)]
+        [Intrinsic]
+        public static unsafe Vector<uint> Narrow(Vector<ulong> low, Vector<ulong> high)
+        {
+            int elements = Vector<uint>.Count;
+            uint* retPtr = stackalloc uint[elements];
+            for (int i = 0; i < elements / 2; i++)
+            {
+                retPtr[i] = (uint)low[i];
+            }
+            for (int i = 0; i < elements / 2; i++)
+            {
+                retPtr[i + (elements / 2)] = (uint)high[i];
+            }
+
+            return *(Vector<uint>*)retPtr;
+        }
+
+        /// <summary>
+        /// Narrows two Vector{Int16}'s into one Vector{SByte}.
+        /// <param name="low">The first source vector, whose elements become the lower-index elements of the return value.</param>
+        /// <param name="high">The second source vector, whose elements become the higher-index elements of the return value.</param>
+        /// <returns>A Vector{SByte} containing elements narrowed from the source vectors.</returns>
+        /// </summary>
+        [CLSCompliant(false)]
+        [Intrinsic]
+        public static unsafe Vector<sbyte> Narrow(Vector<short> low, Vector<short> high)
+        {
+            int elements = Vector<sbyte>.Count;
+            sbyte* retPtr = stackalloc sbyte[elements];
+            for (int i = 0; i < elements / 2; i++)
+            {
+                retPtr[i] = (sbyte)low[i];
+            }
+            for (int i = 0; i < elements / 2; i++)
+            {
+                retPtr[i + (elements / 2)] = (sbyte)high[i];
+            }
+
+            return *(Vector<sbyte>*)retPtr;
+        }
+
+        /// <summary>
+        /// Narrows two Vector{Int32}'s into one Vector{Int16}.
+        /// <param name="low">The first source vector, whose elements become the lower-index elements of the return value.</param>
+        /// <param name="high">The second source vector, whose elements become the higher-index elements of the return value.</param>
+        /// <returns>A Vector{Int16} containing elements narrowed from the source vectors.</returns>
+        /// </summary>
+        [Intrinsic]
+        public static unsafe Vector<short> Narrow(Vector<int> low, Vector<int> high)
+        {
+            int elements = Vector<short>.Count;
+            short* retPtr = stackalloc short[elements];
+            for (int i = 0; i < elements / 2; i++)
+            {
+                retPtr[i] = (short)low[i];
+            }
+            for (int i = 0; i < elements / 2; i++)
+            {
+                retPtr[i + (elements / 2)] = (short)high[i];
+            }
+
+            return *(Vector<short>*)retPtr;
+        }
+
+        /// <summary>
+        /// Narrows two Vector{Int64}'s into one Vector{Int32}.
+        /// <param name="low">The first source vector, whose elements become the lower-index elements of the return value.</param>
+        /// <param name="high">The second source vector, whose elements become the higher-index elements of the return value.</param>
+        /// <returns>A Vector{Int32} containing elements narrowed from the source vectors.</returns>
+        /// </summary>
+        [Intrinsic]
+        public static unsafe Vector<int> Narrow(Vector<long> low, Vector<long> high)
+        {
+            int elements = Vector<int>.Count;
+            int* retPtr = stackalloc int[elements];
+            for (int i = 0; i < elements / 2; i++)
+            {
+                retPtr[i] = (int)low[i];
+            }
+            for (int i = 0; i < elements / 2; i++)
+            {
+                retPtr[i + (elements / 2)] = (int)high[i];
+            }
+
+            return *(Vector<int>*)retPtr;
+        }
+
+        /// <summary>
+        /// Narrows two Vector{Double}'s into one Vector{Single}.
+        /// <param name="low">The first source vector, whose elements become the lower-index elements of the return value.</param>
+        /// <param name="high">The second source vector, whose elements become the higher-index elements of the return value.</param>
+        /// <returns>A Vector{Single} containing elements narrowed from the source vectors.</returns>
+        /// </summary>
+        [Intrinsic]
+        public static unsafe Vector<float> Narrow(Vector<double> low, Vector<double> high)
+        {
+            int elements = Vector<float>.Count;
+            float* retPtr = stackalloc float[elements];
+            for (int i = 0; i < elements / 2; i++)
+            {
+                retPtr[i] = (float)low[i];
+            }
+            for (int i = 0; i < elements / 2; i++)
+            {
+                retPtr[i + (elements / 2)] = (float)high[i];
+            }
+
+            return *(Vector<float>*)retPtr;
+        }
+
+        /// <summary>
+        /// Converts a Vector{Int32} to a Vector{Single}.
+        /// </summary>
+        /// <param name="value">The source vector.</param>
+        /// <returns>The converted vector.</returns>
+        [Intrinsic]
+        public static unsafe Vector<float> ConvertToSingle(Vector<int> value)
+        {
+            int elements = Vector<float>.Count;
+            float* retPtr = stackalloc float[elements];
+            for (int i = 0; i < elements; i++)
+            {
+                retPtr[i] = (float)value[i];
+            }
+
+            return *(Vector<float>*)retPtr;
+        }
+
+        /// <summary>
+        /// Converts a Vector{UInt32} to a Vector{Single}.
+        /// </summary>
+        /// <param name="value">The source vector.</param>
+        /// <returns>The converted vector.</returns>
+        [CLSCompliant(false)]
+        [Intrinsic]
+        public static unsafe Vector<float> ConvertToSingle(Vector<uint> value)
+        {
+            int elements = Vector<float>.Count;
+            float* retPtr = stackalloc float[elements];
+            for (int i = 0; i < elements; i++)
+            {
+                retPtr[i] = (float)value[i];
+            }
+
+            return *(Vector<float>*)retPtr;
+        }
+
+        /// <summary>
+        /// Converts a Vector{Int64} to a Vector{Double}.
+        /// </summary>
+        /// <param name="value">The source vector.</param>
+        /// <returns>The converted vector.</returns>
+        [Intrinsic]
+        public static unsafe Vector<double> ConvertToDouble(Vector<long> value)
+        {
+            int elements = Vector<double>.Count;
+            double* retPtr = stackalloc double[elements];
+            for (int i = 0; i < elements; i++)
+            {
+                retPtr[i] = (double)value[i];
+            }
+
+            return *(Vector<double>*)retPtr;
+        }
+
+        /// <summary>
+        /// Converts a Vector{UInt64} to a Vector{Double}.
+        /// </summary>
+        /// <param name="value">The source vector.</param>
+        /// <returns>The converted vector.</returns>
+        [CLSCompliant(false)]
+        [Intrinsic]
+        public static unsafe Vector<double> ConvertToDouble(Vector<ulong> value)
+        {
+            int elements = Vector<double>.Count;
+            double* retPtr = stackalloc double[elements];
+            for (int i = 0; i < elements; i++)
+            {
+                retPtr[i] = (double)value[i];
+            }
+
+            return *(Vector<double>*)retPtr;
+        }
+
+        /// <summary>
+        /// Converts a Vector{Single} to a Vector{Int32}.
+        /// </summary>
+        /// <param name="value">The source vector.</param>
+        /// <returns>The converted vector.</returns>
+        [Intrinsic]
+        public static unsafe Vector<int> ConvertToInt32(Vector<float> value)
+        {
+            int elements = Vector<int>.Count;
+            int* retPtr = stackalloc int[elements];
+            for (int i = 0; i < elements; i++)
+            {
+                retPtr[i] = (int)value[i];
+            }
+
+            return *(Vector<int>*)retPtr;
+        }
+
+        /// <summary>
+        /// Converts a Vector{Single} to a Vector{UInt32}.
+        /// </summary>
+        /// <param name="value">The source vector.</param>
+        /// <returns>The converted vector.</returns>
+        [CLSCompliant(false)]
+        [Intrinsic]
+        public static unsafe Vector<uint> ConvertToUInt32(Vector<float> value)
+        {
+            int elements = Vector<uint>.Count;
+            uint* retPtr = stackalloc uint[elements];
+            for (int i = 0; i < elements; i++)
+            {
+                retPtr[i] = (uint)value[i];
+            }
+
+            return *(Vector<uint>*)retPtr;
+        }
+
+        /// <summary>
+        /// Converts a Vector{Double} to a Vector{Int64}.
+        /// </summary>
+        /// <param name="value">The source vector.</param>
+        /// <returns>The converted vector.</returns>
+        [Intrinsic]
+        public static unsafe Vector<long> ConvertToInt64(Vector<double> value)
+        {
+            int elements = Vector<long>.Count;
+            long* retPtr = stackalloc long[elements];
+            for (int i = 0; i < elements; i++)
+            {
+                retPtr[i] = (long)value[i];
+            }
+
+            return *(Vector<long>*)retPtr;
+        }
+
+        /// <summary>
+        /// Converts a Vector{Double} to a Vector{UInt64}.
+        /// </summary>
+        /// <param name="value">The source vector.</param>
+        /// <returns>The converted vector.</returns>
+        [CLSCompliant(false)]
+        [Intrinsic]
+        public static unsafe Vector<ulong> ConvertToUInt64(Vector<double> value)
+        {
+            int elements = Vector<ulong>.Count;
+            ulong* retPtr = stackalloc ulong[elements];
+            for (int i = 0; i < elements; i++)
+            {
+                retPtr[i] = (ulong)value[i];
+            }
+
+            return *(Vector<ulong>*)retPtr;
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowInsufficientNumberOfElementsException(int requiredElementCount)
+        {
+            throw new IndexOutOfRangeException(SR.Format(SR.Arg_InsufficientNumberOfElements, requiredElementCount, "values"));
+        }
     }
 }
