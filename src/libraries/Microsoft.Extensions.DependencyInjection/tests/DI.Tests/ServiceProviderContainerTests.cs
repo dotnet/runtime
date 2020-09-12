@@ -164,12 +164,22 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         }
 
         [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public void ResolvesConstantValueTypeServicesCorrectly(bool useScoped)
+        [InlineData(ServiceLifetime.Transient)]
+        [InlineData(ServiceLifetime.Scoped)]
+        [InlineData(ServiceLifetime.Singleton)]
+        public void ResolvesConstantValueTypeServicesCorrectly(ServiceLifetime lifetime)
         {
             var serviceCollection = new ServiceCollection();
-            if (useScoped)
+            if (lifetime == ServiceLifetime.Transient)
+            {
+                serviceCollection.AddTransient(typeof(int), _ => 4);
+                serviceCollection.AddTransient(typeof(DateTime), _ => new DateTime());
+                serviceCollection.AddTransient(typeof(TheEnum), _ => TheEnum.HelloWorld);
+
+                serviceCollection.AddTransient(typeof(TimeSpan), _ => TimeSpan.Zero);
+                serviceCollection.AddTransient(typeof(TimeSpan), _ => new TimeSpan(1, 2, 3));
+            }
+            else if (lifetime == ServiceLifetime.Scoped)
             {
                 serviceCollection.AddScoped(typeof(int), _ => 4);
                 serviceCollection.AddScoped(typeof(DateTime), _ => new DateTime());
@@ -178,7 +188,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
                 serviceCollection.AddScoped(typeof(TimeSpan), _ => TimeSpan.Zero);
                 serviceCollection.AddScoped(typeof(TimeSpan), _ => new TimeSpan(1, 2, 3));
             }
-            else
+            else if (lifetime == ServiceLifetime.Singleton)
             {
                 serviceCollection.AddSingleton(typeof(int), 4);
                 serviceCollection.AddSingleton(typeof(DateTime), new DateTime());
@@ -255,7 +265,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             Assert.NotNull(provider.CreateScope());
         }
 
-        [Theory(Skip = "We don't support value task services currently")]
+        [Theory(Skip = "https://github.com/dotnet/runtime/issues/42160 - We don't support value task services currently")]
         [InlineData(ServiceLifetime.Transient)]
         [InlineData(ServiceLifetime.Scoped)]
         [InlineData(ServiceLifetime.Singleton)]
