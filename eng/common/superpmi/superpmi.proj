@@ -4,10 +4,11 @@
     <Python>py -3</Python>
     <PmiAssembliesDirectory>%HELIX_CORRELATION_PAYLOAD%\PmiAssembliesDirectory</PmiAssembliesDirectory>
     <SuperPMIDirectory>%HELIX_CORRELATION_PAYLOAD%\superpmi</SuperPMIDirectory>
+    <OutputMchPath>%HELIX_CORRELATION_PAYLOAD%\artifacts</OutputMchPath>
     <JitUtilsDirectory>%HELIX_CORRELATION_PAYLOAD%\jitutils\bin</JitUtilsDirectory>
 
     <!-- <CoreRun>%HELIX_CORRELATION_PAYLOAD%\PmiAssembliesDirectory\CoreRun.exe</CoreRun> -->
-    <WorkItemCommand>$(SuperPMIDirectory)\superpmi.py collect -pmi_location $(JitUtilsDirectory)</WorkItemCommand>
+    <WorkItemCommand>$(SuperPMIDirectory)\superpmi.py collect -pmi_location $(JitUtilsDirectory)\pmi.dll --pmi -pmi_assemblies $(PmiAssembliesDirectory) -core_root $(PmiAssembliesDirectory)</WorkItemCommand>
 
     <!-- <HelixPreCommands>$(HelixPreCommands);call %HELIX_CORRELATION_PAYLOAD%\jitutils\bootstrap.cmd;copy %HELIX_CORRELATION_PAYLOAD%\jitutils\bin\pmi.dll $(CoreRoot)</HelixPreCommands> -->
     <!-- <ArtifactsDirectory>%HELIX_CORRELATION_PAYLOAD%\artifacts\BenchmarkDotNet.Artifacts</ArtifactsDirectory>
@@ -17,11 +18,8 @@
     
   </PropertyGroup>
 
-  
-
-
   <PropertyGroup Condition="'$(WorkItemCommand)' != ''">
-    <WorkItemCommand>$(Python) $(WorkItemCommand) -arch $(Architecture) -build_type Checked -core_root $(PmiAssembliesDirectory) --pmi -pmi_assemblies $(PmiAssembliesDirectory)</WorkItemCommand>
+    <WorkItemCommand>$(Python) $(WorkItemCommand) -arch $(Architecture) -build_type Checked -output_mch_path  $(OutputMchPath)</WorkItemCommand>
   </PropertyGroup>
 
   <PropertyGroup>
