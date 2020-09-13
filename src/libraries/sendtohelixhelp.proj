@@ -92,7 +92,7 @@
         <HelixCommand Condition="'$(TargetsWindows)' != 'true' and '$(IncludeHelixCorrelationPayload)' == 'true'">$(HelixCommand) -- RunConfiguration.DotNetHostPath="$HELIX_CORRELATION_PAYLOAD/dotnet"</HelixCommand>
       </PropertyGroup>
       <PropertyGroup Condition="'$(TargetsMobile)' == 'true'">
-        <HelixCommand>./RunTests.sh %HELIX_WORKITEM_FRIENDLYNAME%</HelixCommand>
+        <HelixCommand>./RunTests.sh $HELIX_WORKITEM_FRIENDLYNAME</HelixCommand>
         <HelixCommand Condition="'$(TargetOS)' != 'Browser'">$(HelixCommand) $(TargetArchitecture)</HelixCommand>
       </PropertyGroup>
       <!-- Tell VSTest where to put dump files. -->
