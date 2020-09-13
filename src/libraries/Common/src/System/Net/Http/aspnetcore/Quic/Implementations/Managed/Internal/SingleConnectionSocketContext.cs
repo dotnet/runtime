@@ -1,15 +1,21 @@
 using System.Diagnostics;
+using System.Net.Sockets;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Net.Quic.Implementations.Managed.Internal
 {
     internal sealed class SingleConnectionSocketContext : QuicSocketContext
     {
+        private readonly IPEndPoint _remoteEndPoint;
         private readonly ManagedQuicConnection _connection;
 
-        internal SingleConnectionSocketContext(IPEndPoint listenEndpoint, ManagedQuicConnection connection)
-            : base(listenEndpoint)
+        internal SingleConnectionSocketContext(IPEndPoint? localEndpoint, IPEndPoint remoteEndPoint, ManagedQuicConnection connection)
+            : base(localEndpoint)
         {
+            _remoteEndPoint = remoteEndPoint;
             _connection = connection;
+            Socket.Connect(remoteEndPoint);
         }
 
         protected override ManagedQuicConnection? FindConnection(QuicReader reader, IPEndPoint sender)
@@ -68,6 +74,20 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                 default:
                     throw new ArgumentOutOfRangeException(nameof(newState), newState, null);
             }
+        }
+
+        protected override int ReceiveFrom(byte[] buffer, ref EndPoint sender)
+        {
+            // use method without explicit address because we use connected socket
+            return Socket.Receive(buffer);
+        }
+
+        protected override async Task<SocketReceiveFromResult> ReceiveFromAsync(byte[] buffer, EndPoint sender,
+            CancellationToken token)
+        {
+            // use method without explicit address because we use connected socket
+            int i = await Socket.ReceiveAsync(buffer, SocketFlags.None, token);
+            return new SocketReceiveFromResult {ReceivedBytes = i, RemoteEndPoint = _remoteEndPoint};
         }
 
         protected override void DetachConnection(ManagedQuicConnection connection)

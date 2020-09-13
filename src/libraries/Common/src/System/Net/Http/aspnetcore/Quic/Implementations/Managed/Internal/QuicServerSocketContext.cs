@@ -1,6 +1,9 @@
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Net.Sockets;
+using System.Threading;
 using System.Threading.Channels;
+using System.Threading.Tasks;
 
 namespace System.Net.Quic.Implementations.Managed.Internal
 {
@@ -13,9 +16,9 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
         private bool _acceptNewConnections;
 
-        internal QuicServerSocketContext(IPEndPoint listenEndpoint, QuicListenerOptions listenerOptions,
+        internal QuicServerSocketContext(IPEndPoint localEndPoint, QuicListenerOptions listenerOptions,
             ChannelWriter<ManagedQuicConnection> newConnectionsWriter)
-            : base(listenEndpoint)
+            : base(localEndPoint)
         {
             _newConnections = newConnectionsWriter;
             _listenerOptions = listenerOptions;
@@ -135,6 +138,12 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                     throw new ArgumentOutOfRangeException(nameof(newState), newState, null);
             }
         }
+
+        protected override int ReceiveFrom(byte[] buffer, ref EndPoint sender) => Socket.ReceiveFrom(buffer, ref sender);
+
+        protected override Task<SocketReceiveFromResult> ReceiveFromAsync(byte[] buffer, EndPoint sender,
+            CancellationToken token)
+            => Socket.ReceiveFromAsync(buffer, SocketFlags.None, sender);
 
         protected override void DetachConnection(ManagedQuicConnection connection)
         {

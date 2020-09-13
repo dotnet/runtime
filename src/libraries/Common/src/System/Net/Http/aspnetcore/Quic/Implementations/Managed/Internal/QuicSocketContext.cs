@@ -15,7 +15,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
     {
         private static readonly Task _infiniteTimeoutTask = new TaskCompletionSource<int>().Task;
 
-        private readonly IPEndPoint _listenEndpoint;
+        private readonly IPEndPoint? _localEndPoint;
         private readonly CancellationTokenSource _socketTaskCts;
 
         private TaskCompletionSource<int> _signalTcs =
@@ -32,14 +32,14 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
         private long _currentTimeout = long.MaxValue;
 
-        private readonly Socket _socket = new Socket(SocketType.Dgram, ProtocolType.Udp);
+        protected readonly Socket Socket = new Socket(SocketType.Dgram, ProtocolType.Udp);
 
         private readonly byte[] _sendBuffer = new byte[64 * 1024];
         private readonly byte[] _recvBuffer = new byte[64 * 1024];
 
-        protected QuicSocketContext(IPEndPoint listenEndpoint)
+        protected QuicSocketContext(IPEndPoint? localEndPoint)
         {
-            _listenEndpoint = listenEndpoint;
+            _localEndPoint = localEndPoint;
 
             _socketTaskCts = new CancellationTokenSource();
 
@@ -51,7 +51,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             _recvContext = new RecvContext(sentPacketPool);
         }
 
-        public IPEndPoint LocalEndPoint => (IPEndPoint)_socket.LocalEndPoint!;
+        public IPEndPoint LocalEndPoint => (IPEndPoint)Socket.LocalEndPoint!;
 
         internal void Start()
         {
@@ -60,8 +60,11 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                 return;
             }
 
-            _socket.Bind(_listenEndpoint);
-            _socket.Blocking = false;
+            if (_localEndPoint != null)
+            {
+                Socket.Bind(_localEndPoint);
+            }
+            Socket.Blocking = false;
 
             // TODO-RZ: Find out why I can't use RuntimeInformation when building inside .NET Runtime
 #if FEATURE_QUIC_STANDALONE
@@ -72,7 +75,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                 // https://stackoverflow.com/questions/38191968/c-sharp-udp-an-existing-connection-was-forcibly-closed-by-the-remote-host
 
                 const int SIO_UDP_CONNRESET = -1744830452;
-                _socket.IOControl(
+                Socket.IOControl(
                     (IOControlCode)SIO_UDP_CONNRESET,
                     new byte[] { 0, 0, 0, 0 },
                     null
@@ -98,8 +101,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
         protected void Update(ManagedQuicConnection connection, QuicConnectionState previousState)
         {
-            // TODO-RZ: I would like to have unbound loop there, but until flow control is implemented, it might loop
-            // indefinitely
+            // TODO-RZ: I would like to have unbound loop there, but this might loop indefinitely
             for (int i = 0; i < 2; i++)
             {
                 _writer.Reset(_sendBuffer);
@@ -122,7 +124,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
                 if (NetEventSource.IsEnabled) NetEventSource.DatagramSent(connection, _writer.Buffer.Span.Slice(0, _writer.BytesWritten));
 
-                _socket.SendTo(_sendBuffer, 0, _writer.BytesWritten, SocketFlags.None, receiver!);
+                Socket.SendTo(_sendBuffer, 0, _writer.BytesWritten, SocketFlags.None, receiver!);
             }
         }
 
@@ -203,6 +205,11 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         protected abstract void
             OnConnectionStateChanged(ManagedQuicConnection connection, QuicConnectionState newState);
 
+        protected abstract int ReceiveFrom(byte[] buffer, ref EndPoint sender);
+
+        protected abstract Task<SocketReceiveFromResult> ReceiveFromAsync(byte[] buffer, EndPoint sender,
+            CancellationToken token);
+
         private async Task BackgroundWorker()
         {
             var token = _socketTaskCts.Token;
@@ -237,13 +244,13 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                         else
                         {
                             // no pending async task, receive synchronously if there is some data
-                            if (!_socket.Poll(0, SelectMode.SelectRead))
+                            if (!Socket.Poll(0, SelectMode.SelectRead))
                             {
                                 break;
                             }
 
-                            EndPoint remoteEp = _listenEndpoint;
-                            int result = _socket.ReceiveFrom(_recvBuffer, ref remoteEp);
+                            EndPoint remoteEp = _localEndPoint;
+                            int result = ReceiveFrom(_recvBuffer, ref remoteEp);
                             DoReceive(_recvBuffer.AsMemory(0, result), (IPEndPoint)remoteEp);
                             lastAction = now;
                         }
@@ -271,7 +278,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                             : _infiniteTimeoutTask;
 
                         // update the recv task only if there is no outstanding async recv
-                        socketReceiveTask ??= _socket.ReceiveFromAsync(_recvBuffer, SocketFlags.None, _listenEndpoint);
+                        socketReceiveTask ??= ReceiveFromAsync(_recvBuffer, _localEndPoint, CancellationToken.None);
 
                         _signalTcs = new TaskCompletionSource<int>();
                         Task signalTask = _signalTcs.Task;
@@ -292,8 +299,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
             // cleanup everything
 
-            _socket.Close();
-            _socket.Dispose();
+            Socket.Close();
+            Socket.Dispose();
         }
 
         /// <summary>

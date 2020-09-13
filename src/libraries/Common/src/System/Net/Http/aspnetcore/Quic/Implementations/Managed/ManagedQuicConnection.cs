@@ -210,11 +210,7 @@ namespace System.Net.Quic.Implementations.Managed
 
             _remoteEndpoint = options.RemoteEndPoint!;
 
-            var listenEndPoint = options.LocalEndPoint ?? new IPEndPoint(
-                _remoteEndpoint.AddressFamily == AddressFamily.InterNetwork
-                    ? IPAddress.Any
-                    : IPAddress.IPv6Any, 0);
-            _socketContext = new SingleConnectionSocketContext(listenEndPoint, this);
+            _socketContext = new SingleConnectionSocketContext(options.LocalEndPoint, _remoteEndpoint, this);
             _localTransportParameters = TransportParameters.FromClientConnectionOptions(options);
             _gcHandle = GCHandle.Alloc(this);
             Tls = new Tls(_gcHandle, options, _localTransportParameters);
