@@ -9,90 +9,79 @@ namespace System.Diagnostics.Tracing
     /// <summary>Simple event listener than invokes a callback for each event received.</summary>
     internal sealed class TestEventListener : EventListener
     {
-        private readonly string _targetSourceName;
-        private readonly Guid _targetSourceGuid;
-        private readonly EventLevel _level;
+        private readonly Dictionary<string, (EventLevel Level, EventKeywords Keywords)> _names = new Dictionary<string, (EventLevel, EventKeywords)>();
+        private readonly Dictionary<Guid, (EventLevel Level, EventKeywords Keywords)> _guids = new Dictionary<Guid, (EventLevel, EventKeywords)>();
+
         private readonly double? _eventCounterInterval;
 
         private Action<EventWrittenEventArgs> _eventWritten;
-        private List<EventSource> _tmpEventSourceList = new List<EventSource>();
+        private readonly List<EventSource> _eventSourceList = new List<EventSource>();
 
         public TestEventListener(string targetSourceName, EventLevel level, double? eventCounterInterval = null)
         {
-            // Store the arguments
-            _targetSourceName = targetSourceName;
-            _level = level;
             _eventCounterInterval = eventCounterInterval;
-
-            LoadSourceList();
+            AddSource(targetSourceName, level);
         }
 
         public TestEventListener(Guid targetSourceGuid, EventLevel level, double? eventCounterInterval = null)
         {
-            // Store the arguments
-            _targetSourceGuid = targetSourceGuid;
-            _level = level;
             _eventCounterInterval = eventCounterInterval;
-
-            LoadSourceList();
+            AddSource(targetSourceGuid, level);
         }
 
-        private void LoadSourceList()
-        {
-            // The base constructor, which is called before this constructor,
-            // will invoke the virtual OnEventSourceCreated method for each
-            // existing EventSource, which means OnEventSourceCreated will be
-            // called before _targetSourceGuid and _level have been set.  As such,
-            // we store a temporary list that just exists from the moment this instance
-            // is created (instance field initializers run before the base constructor)
-            // and until we finish construction... in that window, OnEventSourceCreated
-            // will store the sources into the list rather than try to enable them directly,
-            // and then here we can enumerate that list, then clear it out.
-            List<EventSource> sources;
-            lock (_tmpEventSourceList)
-            {
-                sources = _tmpEventSourceList;
-                _tmpEventSourceList = null;
-            }
-            foreach (EventSource source in sources)
-            {
-                EnableSourceIfMatch(source);
-            }
-        }
+        public void AddSource(string name, EventLevel level, EventKeywords keywords = EventKeywords.All) =>
+            AddSource(name, null, level, keywords);
 
-        protected override void OnEventSourceCreated(EventSource eventSource)
+        public void AddSource(Guid guid, EventLevel level, EventKeywords keywords = EventKeywords.All) =>
+            AddSource(null, guid, level, keywords);
+
+        private void AddSource(string name, Guid? guid, EventLevel level, EventKeywords keywords)
         {
-            List<EventSource> tmp = _tmpEventSourceList;
-            if (tmp != null)
+            lock (_eventSourceList)
             {
-                lock (tmp)
+                if (name is not null)
+                    _names.Add(name, (level, keywords));
+
+                if (guid.HasValue)
+                    _guids.Add(guid.Value, (level, keywords));
+
+                foreach (EventSource source in _eventSourceList)
                 {
-                    if (_tmpEventSourceList != null)
+                    if (name == source.Name || guid == source.Guid)
                     {
-                        _tmpEventSourceList.Add(eventSource);
-                        return;
+                        EnableEventSource(source, level, keywords);
                     }
                 }
             }
-
-            EnableSourceIfMatch(eventSource);
         }
 
-        private void EnableSourceIfMatch(EventSource source)
+        public void AddActivityTracking() =>
+            AddSource("System.Threading.Tasks.TplEventSource", EventLevel.Informational, (EventKeywords)0x80 /* TasksFlowActivityIds */);
+
+        protected override void OnEventSourceCreated(EventSource eventSource)
         {
-            if (source.Name.Equals(_targetSourceName) ||
-                source.Guid.Equals(_targetSourceGuid))
+            lock (_eventSourceList)
             {
-                if (_eventCounterInterval != null)
+                _eventSourceList.Add(eventSource);
+
+                if (_names.TryGetValue(eventSource.Name, out (EventLevel Level, EventKeywords Keywords) settings) ||
+                    _guids.TryGetValue(eventSource.Guid, out settings))
                 {
-                    var args = new Dictionary<string, string> { { "EventCounterIntervalSec", _eventCounterInterval?.ToString() } };
-                    EnableEvents(source, _level, EventKeywords.All, args);
-                }
-                else
-                {
-                    EnableEvents(source, _level);
+                    EnableEventSource(eventSource, settings.Level, settings.Keywords);
                 }
             }
+        }
+
+        private void EnableEventSource(EventSource source, EventLevel level, EventKeywords keywords)
+        {
+            var args = new Dictionary<string, string>();
+
+            if (_eventCounterInterval != null)
+            {
+                args.Add("EventCounterIntervalSec", _eventCounterInterval.ToString());
+            }
+
+            EnableEvents(source, level, keywords, args);
         }
 
         public void RunWithCallback(Action<EventWrittenEventArgs> handler, Action body)
