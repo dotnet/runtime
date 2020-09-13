@@ -50,8 +50,6 @@
     <ProjectServicingConfiguration Include="Microsoft.NETCore.App.Ref" PatchVersion="0" />
   </ItemGroup>
   <PropertyGroup>
-    <!-- Pin compiler version to workaround: https://github.com/dotnet/runtime/issues/41100 -->
-    <MicrosoftNetCompilersToolsetVersion>3.8.0-2.20403.2</MicrosoftNetCompilersToolsetVersion>
     <!-- Arcade dependencies -->
     <MicrosoftDotNetApiCompatVersion>5.0.0-beta.20459.8</MicrosoftDotNetApiCompatVersion>
     <MicrosoftDotNetBuildTasksFeedVersion>5.0.0-beta.20459.8</MicrosoftDotNetBuildTasksFeedVersion>
