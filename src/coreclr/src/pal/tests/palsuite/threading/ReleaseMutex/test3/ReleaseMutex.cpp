@@ -38,7 +38,7 @@ ThreadFunction( LPVOID lpNoArg )
     return 0;
 }
 
-int __cdecl main (int argc, char **argv) 
+PALTEST(threading_ReleaseMutex_test3_paltest_releasemutex_test3, "threading/ReleaseMutex/test3/paltest_releasemutex_test3")
 {
 
     if(0 != (PAL_Initialize(argc, argv)))

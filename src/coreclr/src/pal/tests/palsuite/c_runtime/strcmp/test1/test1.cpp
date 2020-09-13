@@ -37,7 +37,7 @@ testCase testCases[]=
      {-1,"aaaabbbbb","aabcdefeccg"}
 };
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime_strcmp_test1_paltest_strcmp_test1, "c_runtime/strcmp/test1/paltest_strcmp_test1")
 {
     int i = 0;
     int result = 0;

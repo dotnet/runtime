@@ -26,7 +26,7 @@ const char* szText = "The quick brown fox jumped over the lazy dog's back.";
 const char* szTextFile = "text.txt";
 
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(file_io_SetFilePointer_test4_paltest_setfilepointer_test4, "file_io/SetFilePointer/test4/paltest_setfilepointer_test4")
 {
     HANDLE hFile = NULL;
     DWORD dwByteCount = 0;

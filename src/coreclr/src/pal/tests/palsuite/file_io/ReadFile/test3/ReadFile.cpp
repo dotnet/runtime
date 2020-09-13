@@ -135,7 +135,7 @@ BOOL readTest(DWORD dwByteCount, char cResult)
 
 
 
-int __cdecl main(int argc, char **argv)
+PALTEST(file_io_ReadFile_test3_paltest_readfile_test3, "file_io/ReadFile/test3/paltest_readfile_test3")
 {
     HANDLE hFile = NULL;
     DWORD dwByteCount[4] = {0, 1, 2, 3};

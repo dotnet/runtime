@@ -29,7 +29,7 @@ void do_cleanup()
 
 }
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(file_io_WriteFile_test1_paltest_writefile_test1, "file_io/WriteFile/test1/paltest_writefile_test1")
 {
     HANDLE hFile = NULL;
     DWORD dwBytesWritten;

@@ -12,7 +12,7 @@
 
 #include <palsuite.h>
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(miscellaneous_queryperformancefrequency_test1_paltest_queryperformancefrequency_test1, "miscellaneous/queryperformancefrequency/test1/paltest_queryperformancefrequency_test1")
 {
 
     LARGE_INTEGER Freq;

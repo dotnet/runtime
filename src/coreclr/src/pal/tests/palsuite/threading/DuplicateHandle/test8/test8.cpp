@@ -18,7 +18,7 @@
 
 DWORD PALAPI CreateTestThread(LPVOID lpParam);
 
-int __cdecl main(int argc, char* argv[])
+PALTEST(threading_DuplicateHandle_test8_paltest_duplicatehandle_test8, "threading/DuplicateHandle/test8/paltest_duplicatehandle_test8")
 {
     HANDLE  hThread;
     HANDLE  hCurrentThread;

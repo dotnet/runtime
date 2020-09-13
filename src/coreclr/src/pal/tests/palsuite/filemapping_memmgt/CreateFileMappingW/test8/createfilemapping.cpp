@@ -16,7 +16,7 @@
 const   int MAPPINGSIZE = 2048;
 HANDLE  SWAP_HANDLE     = ((VOID *)(-1));
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(filemapping_memmgt_CreateFileMappingW_test8_paltest_createfilemappingw_test8, "filemapping_memmgt/CreateFileMappingW/test8/paltest_createfilemappingw_test8")
 {
     WCHAR   lpObjectName[] = {'m','y','O','b','j','e','c','t','\0'};
     

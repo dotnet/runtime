@@ -98,7 +98,8 @@ void RemoveAll()
     removeFileHelper(fileloc, 1);
 }
 
-int __cdecl main(int argc, char *argv[]) {
+PALTEST(file_io_SearchPathW_test1_paltest_searchpathw_test1, "file_io/SearchPathW/test1/paltest_searchpathw_test1")
+{
 
     WCHAR* lpPath        = NULL;
     WCHAR* lpFileName    = NULL;

@@ -62,7 +62,7 @@ void CheckFileSize(HANDLE hFile, DWORD dwOffset, DWORD dwHighOrder)
 }
 
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(file_io_GetFileSize_test1_paltest_getfilesize_test1, "file_io/GetFileSize/test1/paltest_getfilesize_test1")
 {
     HANDLE hFile = NULL;
     DWORD dwRc = 0;

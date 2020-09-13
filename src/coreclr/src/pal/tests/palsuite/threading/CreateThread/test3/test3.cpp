@@ -26,7 +26,7 @@ DWORD PALAPI Thread( LPVOID lpParameter)
     return 0;
 }
 
-int __cdecl main(int argc, char **argv)
+PALTEST(threading_CreateThread_test3_paltest_createthread_test3, "threading/CreateThread/test3/paltest_createthread_test3")
 {
     DWORD dwThreadId;
     DWORD dwRet;

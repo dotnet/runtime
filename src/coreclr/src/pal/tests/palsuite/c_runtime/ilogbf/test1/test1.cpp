@@ -45,7 +45,7 @@ void __cdecl validate(float value, int expected)
  * 
  * executable entry point
  */
-int __cdecl main(int argc, char **argv)
+PALTEST(c_runtime_ilogbf_test1_paltest_ilogbf_test1, "c_runtime/ilogbf/test1/paltest_ilogbf_test1")
 {
     struct test tests[] = 
     {

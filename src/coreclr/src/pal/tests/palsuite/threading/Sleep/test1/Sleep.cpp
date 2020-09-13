@@ -30,7 +30,7 @@ DWORD SleepTimes[] =
 /* Milliseconds of error which are acceptable Function execution time, etc. */
 DWORD AcceptableTimeError = 150;
 
-int __cdecl main( int argc, char **argv ) 
+PALTEST(threading_Sleep_test1_paltest_sleep_test1, "threading/Sleep/test1/paltest_sleep_test1")
 {
     UINT64 OldTimeStamp;
     UINT64 NewTimeStamp;

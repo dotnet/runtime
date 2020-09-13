@@ -60,7 +60,7 @@ BOOL CleanUp()
     return result;
 }
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(file_io_FindFirstFileA_test1_paltest_findfirstfilea_test1, "file_io/FindFirstFileA/test1/paltest_findfirstfilea_test1")
 {
     WIN32_FIND_DATA findFileData;
     HANDLE hFind = NULL;

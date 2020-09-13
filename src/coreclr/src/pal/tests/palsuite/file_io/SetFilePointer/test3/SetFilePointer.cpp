@@ -27,7 +27,7 @@ const char* const szText =
 const char* szTextFile = "text.txt";
 
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(file_io_SetFilePointer_test3_paltest_setfilepointer_test3, "file_io/SetFilePointer/test3/paltest_setfilepointer_test3")
 {
     HANDLE hFile = NULL;
     DWORD dwByteCount = 0;

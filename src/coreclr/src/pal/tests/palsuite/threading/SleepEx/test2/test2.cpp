@@ -38,7 +38,7 @@ DWORD PALAPI SleeperProc(LPVOID lpParameter);
 
 DWORD ThreadSleepDelta;
 
-int __cdecl main( int argc, char **argv ) 
+PALTEST(threading_SleepEx_test2_paltest_sleepex_test2, "threading/SleepEx/test2/paltest_sleepex_test2")
 {
     int i;
     DWORD dwAvgDelta;

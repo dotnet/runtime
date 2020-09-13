@@ -13,7 +13,7 @@
 **============================================================*/
 #include <palsuite.h>
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(filemapping_memmgt_VirtualFree_test2_paltest_virtualfree_test2, "filemapping_memmgt/VirtualFree/test2/paltest_virtualfree_test2")
 {
     int err;
     LPVOID lpVirtualAddress;

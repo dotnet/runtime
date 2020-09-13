@@ -86,7 +86,7 @@ void __cdecl validate_isnan(float value)
  * 
  * executable entry point
  */
-INT __cdecl main(INT argc, CHAR **argv)
+PALTEST(c_runtime_fabsf_test1_paltest_fabsf_test1, "c_runtime/fabsf/test1/paltest_fabsf_test1")
 {
     struct test tests[] = 
     {

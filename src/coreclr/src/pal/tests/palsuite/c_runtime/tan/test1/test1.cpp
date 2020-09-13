@@ -87,7 +87,7 @@ void __cdecl validate_isnan(double value)
  * 
  * executable entry point
  */
-int __cdecl main(int argc, char **argv)
+PALTEST(c_runtime_tan_test1_paltest_tan_test1, "c_runtime/tan/test1/paltest_tan_test1")
 {
     struct test tests[] = 
     {

@@ -42,7 +42,7 @@ static HANDLE hEvent[sizeof(testCases)/sizeof(struct testCase)];
 
 DWORD result[sizeof(testCases)/sizeof(struct testCase)];
 
-int __cdecl main(int argc, char **argv)
+PALTEST(threading_CreateEventW_test3_paltest_createeventw_test3, "threading/CreateEventW/test3/paltest_createeventw_test3")
 {
 
     BOOL bRet = TRUE;

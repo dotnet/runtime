@@ -61,7 +61,7 @@ DWORD PALAPI ThreadFunc( LPVOID param )
 }
 
 
-int __cdecl main( int argc, char **argv )
+PALTEST(threading_QueueUserAPC_test5_paltest_queueuserapc_test5, "threading/QueueUserAPC/test5/paltest_queueuserapc_test5")
 
 {
     /* local variables */

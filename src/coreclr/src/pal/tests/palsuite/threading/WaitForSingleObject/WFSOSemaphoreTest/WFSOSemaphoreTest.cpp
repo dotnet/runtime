@@ -33,7 +33,7 @@ int testReturnCode = PASS;
 DWORD PALAPI WFSOSemaphoreTest(LPVOID params);
 void incrementCounter(void);
 
-int __cdecl main(int argc, char **argv)
+PALTEST(threading_WaitForSingleObject_WFSOSemaphoreTest_paltest_waitforsingleobject_wfsosemaphoretest, "threading/WaitForSingleObject/WFSOSemaphoreTest/paltest_waitforsingleobject_wfsosemaphoretest")
 {
 
 	//Declare local variables

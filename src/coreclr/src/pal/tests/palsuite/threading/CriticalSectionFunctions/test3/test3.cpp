@@ -128,7 +128,7 @@ DWORD PALAPI Thread(LPVOID lpParam)
     return FAIL;
 }
 
-int __cdecl main(int argc, char **argv)
+PALTEST(threading_CriticalSectionFunctions_test3_paltest_criticalsectionfunctions_test3, "threading/CriticalSectionFunctions/test3/paltest_criticalsectionfunctions_test3")
 {
     HANDLE hThread[NUM_THREADS];
     DWORD dwThreadId[NUM_THREADS];

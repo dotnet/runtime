@@ -18,7 +18,7 @@ int __cdecl charcmp(const void *pa, const void *pb)
     return memcmp(pa, pb, 1);
 }
 
-int __cdecl main(int argc, char **argv)
+PALTEST(c_runtime_bsearch_test1_paltest_bsearch_test1, "c_runtime/bsearch/test1/paltest_bsearch_test1")
 {
 
     const char array[] = "abcdefghij";

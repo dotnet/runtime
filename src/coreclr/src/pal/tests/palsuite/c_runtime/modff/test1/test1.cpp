@@ -91,7 +91,7 @@ void __cdecl validate_isnan(float value)
  * 
  * executable entry point
  */
-int __cdecl main(int argc, char **argv)
+PALTEST(c_runtime_modff_test1_paltest_modff_test1, "c_runtime/modff/test1/paltest_modff_test1")
 {
     struct test tests[] = 
     {

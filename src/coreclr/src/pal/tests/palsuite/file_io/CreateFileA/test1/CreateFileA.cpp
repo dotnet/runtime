@@ -31,7 +31,7 @@ BOOL Cleanup(void)
 }
 
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(file_io_CreateFileA_test1_paltest_createfilea_test1, "file_io/CreateFileA/test1/paltest_createfilea_test1")
 {
     BOOL bSuccess = TRUE;
     int nCounter = 0;

@@ -15,7 +15,7 @@
 const char* szFileName = "blah";
 
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(file_io_GetCurrentDirectoryA_test1_paltest_getcurrentdirectorya_test1, "file_io/GetCurrentDirectoryA/test1/paltest_getcurrentdirectorya_test1")
 {
     DWORD dwRc = 0;
     DWORD dwRc2 = 0;

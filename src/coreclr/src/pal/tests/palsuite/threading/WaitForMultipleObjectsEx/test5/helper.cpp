@@ -22,7 +22,7 @@ HANDLE hProcessFinishEvent;
 HANDLE hProcessCleanupEvent;
 
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(threading_WaitForMultipleObjectsEx_test5_paltest_waitformultipleobjectsex_test5_helper, "threading/WaitForMultipleObjectsEx/test5/paltest_waitformultipleobjectsex_test5_helper")
 {
      
     BOOL  success = TRUE;  /* assume success */

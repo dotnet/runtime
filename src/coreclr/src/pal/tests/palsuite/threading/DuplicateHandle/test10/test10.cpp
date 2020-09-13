@@ -70,7 +70,7 @@ DWORD PALAPI ThreadTest2(LPVOID lpParam)
 }
 
 
-int __cdecl main(int argc, char **argv)
+PALTEST(threading_DuplicateHandle_test10_paltest_duplicatehandle_test10, "threading/DuplicateHandle/test10/paltest_duplicatehandle_test10")
 {
 
     HANDLE hDupSemaphore;

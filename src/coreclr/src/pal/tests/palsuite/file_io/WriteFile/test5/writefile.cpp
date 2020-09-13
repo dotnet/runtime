@@ -40,7 +40,7 @@ BOOL CleanUp(HANDLE hFile, const char * fileName)
 }
 
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(file_io_WriteFile_test5_paltest_writefile_test5, "file_io/WriteFile/test5/paltest_writefile_test5")
 {
 
     HANDLE hFile = NULL;

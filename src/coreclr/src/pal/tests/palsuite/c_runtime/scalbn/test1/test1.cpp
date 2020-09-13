@@ -83,7 +83,7 @@ void __cdecl validate_isnan(double value, int exponent)
  * 
  * executable entry point
  */
-int __cdecl main(int argc, char **argv)
+PALTEST(c_runtime_scalbn_test1_paltest_scalbn_test1, "c_runtime/scalbn/test1/paltest_scalbn_test1")
 {
     struct test tests[] = 
     {

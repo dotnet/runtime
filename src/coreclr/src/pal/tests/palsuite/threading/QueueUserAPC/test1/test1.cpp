@@ -36,7 +36,7 @@ static HANDLE hSyncEvent2 = NULL;
 /* thread result because we have no GetExitCodeThread() API */
 BOOL bThreadResult = FAIL;
 
-int __cdecl main (int argc, char **argv)
+PALTEST(threading_QueueUserAPC_test1_paltest_queueuserapc_test1, "threading/QueueUserAPC/test1/paltest_queueuserapc_test1")
 {
     HANDLE hThread = NULL;
     int ret;

@@ -95,7 +95,7 @@ LONG Filter_test2(EXCEPTION_POINTERS* ep, VOID* unused)
     return EXCEPTION_EXECUTE_HANDLER;
 }
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(exception_handling_RaiseException_test2_paltest_raiseexception_test2, "exception_handling/RaiseException/test2/paltest_raiseexception_test2")
 {
     bExcept = FALSE;
     

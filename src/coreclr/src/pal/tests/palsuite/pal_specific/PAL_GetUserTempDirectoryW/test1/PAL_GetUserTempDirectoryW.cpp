@@ -16,7 +16,7 @@
 
 #define DIRECTORYLENGTH 1024
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(pal_specific_PAL_GetUserTempDirectoryW_test1_paltest_pal_getusertempdirectoryw_test1, "pal_specific/PAL_GetUserTempDirectoryW/test1/paltest_pal_getusertempdirectoryw_test1")
 {
     int err;
     DWORD dwFileAttribute;

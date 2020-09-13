@@ -71,7 +71,7 @@ mkAbsoluteFilenameW (
 
 } 
 
-int __cdecl main( int argc, char **argv ) 
+PALTEST(threading_CreateProcessW_test1_paltest_createprocessw_test1_child, "threading/CreateProcessW/test1/paltest_createprocessw_test1_child")
 {
 
     static FILE * fp;

@@ -49,7 +49,7 @@ struct ThreadData
 typedef struct ThreadData THREADDATA;
 
 
-int __cdecl main (int argc, char **argv) 
+PALTEST(threading_CreateMutexW_ReleaseMutex_test2_paltest_createmutexw_releasemutex_test2, "threading/CreateMutexW_ReleaseMutex/test2/paltest_createmutexw_releasemutex_test2")
 {
     BOOL bFailures = FALSE;
     char *szMaxPath;

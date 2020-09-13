@@ -87,7 +87,7 @@ void __cdecl validate_isnan(float numerator, float denominator)
  * 
  * executable entry point
  */
-INT __cdecl main(INT argc, CHAR **argv)
+PALTEST(c_runtime_fmodf_test1_paltest_fmodf_test1, "c_runtime/fmodf/test1/paltest_fmodf_test1")
 {
     struct test tests[] = 
     {

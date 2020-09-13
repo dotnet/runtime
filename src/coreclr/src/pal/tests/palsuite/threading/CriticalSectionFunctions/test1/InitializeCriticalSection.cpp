@@ -156,7 +156,7 @@ consumer( LPVOID lpParam )
     return 0;
 }
 
-int __cdecl main (int argc, char **argv) 
+PALTEST(threading_CriticalSectionFunctions_test1_paltest_criticalsectionfunctions_test1, "threading/CriticalSectionFunctions/test1/paltest_criticalsectionfunctions_test1")
 {
 
     BufferStructure Buffer, *pBuffer;

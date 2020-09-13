@@ -79,7 +79,7 @@ void __cdecl validate_isnan(double value)
     }
 }
 
-int __cdecl main(int argc, char **argv)
+PALTEST(c_runtime_sqrt_test1_paltest_sqrt_test1, "c_runtime/sqrt/test1/paltest_sqrt_test1")
 {
     struct test tests[] = 
     {

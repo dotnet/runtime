@@ -19,7 +19,7 @@ BOOL bExcept        = FALSE;
 BOOL bTry_nested    = FALSE;
 BOOL bExcept_nested = FALSE;
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(exception_handling_pal_except_test2_paltest_pal_except_test2, "exception_handling/pal_except/test2/paltest_pal_except_test2")
 {
     if (0 != PAL_Initialize(argc, argv))
     {

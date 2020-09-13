@@ -38,7 +38,7 @@
 const char* szDotDot   = "..\\";
 const char* szFileName = "testing.tmp";
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(file_io_GetFullPathNameA_test3_paltest_getfullpathnamea_test3, "file_io/GetFullPathNameA/test3/paltest_getfullpathnamea_test3")
 {
     DWORD   dwRc = 0;
     char    szReturnedPath[_MAX_DIR+1];

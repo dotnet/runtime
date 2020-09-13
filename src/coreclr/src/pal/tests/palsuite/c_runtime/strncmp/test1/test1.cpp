@@ -44,7 +44,7 @@ testCase testCases[]=
 };
 
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime_strncmp_test1_paltest_strncmp_test1, "c_runtime/strncmp/test1/paltest_strncmp_test1")
 {
     int i=0;
     int iresult=0;

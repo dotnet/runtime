@@ -76,7 +76,7 @@ done:
 }
 
 
-int __cdecl main (int argc, char **argv)
+PALTEST(threading_QueueUserAPC_test2_paltest_queueuserapc_test2, "threading/QueueUserAPC/test2/paltest_queueuserapc_test2")
 {
     /* local variables */
     HANDLE hThread = 0;

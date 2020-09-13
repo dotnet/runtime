@@ -49,7 +49,7 @@ void Helper()
     PAL_ENDTRY;
 }
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(exception_handling_pal_except_test3_paltest_pal_except_test3, "exception_handling/pal_except/test3/paltest_pal_except_test3")
 {
     if (0 != PAL_Initialize(argc, argv))
     {

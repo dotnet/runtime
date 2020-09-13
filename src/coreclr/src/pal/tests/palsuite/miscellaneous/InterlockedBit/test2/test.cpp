@@ -30,7 +30,8 @@ TEST_DATA test_data[] =
     { (LONG)0xffffffff, 28, (LONG)0xffffffff, 1 }
 };
 
-int __cdecl main(int argc, char *argv[]) {
+PALTEST(miscellaneous_InterlockedBit_test2_paltest_interlockedbit_test2, "miscellaneous/InterlockedBit/test2/paltest_interlockedbit_test2")
+{
 
     /*
      * Initialize the PAL and return FAILURE if this fails

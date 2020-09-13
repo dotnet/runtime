@@ -60,7 +60,7 @@ void removeAll()
 }
 
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(file_io_FindClose_test1_paltest_findclose_test1, "file_io/FindClose/test1/paltest_findclose_test1")
 {
     WIN32_FIND_DATAW findFileData;
     WIN32_FIND_DATAW findFileData_02;

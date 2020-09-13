@@ -34,7 +34,7 @@ void incrementCounter(void);
 
 
 
-int __cdecl main(int argc, char **argv)
+PALTEST(threading_WaitForSingleObject_WFSOMutexTest_paltest_waitforsingleobject_wfsomutextest, "threading/WaitForSingleObject/WFSOMutexTest/paltest_waitforsingleobject_wfsomutextest")
 {
 
 	//Declare local variables

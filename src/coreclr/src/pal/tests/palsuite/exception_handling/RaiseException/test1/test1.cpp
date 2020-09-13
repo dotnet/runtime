@@ -19,7 +19,7 @@ BOOL bExcept  = FALSE;
 BOOL bTry     = FALSE;
 BOOL bFinally = FALSE;
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(exception_handling_RaiseException_test1_paltest_raiseexception_test1, "exception_handling/RaiseException/test1/paltest_raiseexception_test1")
 {
 
     if(0 != (PAL_Initialize(argc, argv)))

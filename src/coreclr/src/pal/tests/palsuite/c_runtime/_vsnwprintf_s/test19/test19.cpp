@@ -60,7 +60,7 @@ void DoArgumentPrecDoubleTest(WCHAR *formatstr, int precision, double param,
  * Uses memcmp & wcslen
  */
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime__vsnwprintf_s_test19_paltest_vsnwprintf_test19, "c_runtime/_vsnwprintf_s/test19/paltest_vsnwprintf_test19")
 {
 
     if (PAL_Initialize(argc, argv) != 0)

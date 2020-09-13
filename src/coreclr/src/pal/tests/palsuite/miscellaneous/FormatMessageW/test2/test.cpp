@@ -539,7 +539,7 @@ int test12(int num, ...)
     return PASS;
 }
 
-int __cdecl main(int argc, char *argv[]) 
+PALTEST(miscellaneous_FormatMessageW_test2_paltest_formatmessagew_test2, "miscellaneous/FormatMessageW/test2/paltest_formatmessagew_test2")
 {
     WCHAR szwInsert[] = {'I','N','S','E','R','T','\0'};
     WCHAR szwFoo[] = {'f','o','o','\0'};

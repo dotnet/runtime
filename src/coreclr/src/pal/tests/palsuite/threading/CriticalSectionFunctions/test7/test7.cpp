@@ -93,7 +93,7 @@ DWORD PALAPI Thread(LPVOID lpParam)
     return 0;
 }
 
-int __cdecl main(int argc, char **argv)
+PALTEST(threading_CriticalSectionFunctions_test7_paltest_criticalsectionfunctions_test7, "threading/CriticalSectionFunctions/test7/paltest_criticalsectionfunctions_test7")
 {
     DWORD dwThreadId;
     DWORD dwMRet;

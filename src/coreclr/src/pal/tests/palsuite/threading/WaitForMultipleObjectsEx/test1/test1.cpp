@@ -202,7 +202,7 @@ BOOL WaitMultipleDuplicateHandleTest()
     return testResult;
 }
 
-int __cdecl main(int argc, char **argv)
+PALTEST(threading_WaitForMultipleObjectsEx_test1_paltest_waitformultipleobjectsex_test1, "threading/WaitForMultipleObjectsEx/test1/paltest_waitformultipleobjectsex_test1")
 {
     
     if(0 != (PAL_Initialize(argc, argv)))

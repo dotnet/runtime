@@ -39,7 +39,7 @@ TestCase TestCases[] =
 int NumCases = sizeof(TestCases) / sizeof(TestCases[0]);
 
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime_strtoul_test1_paltest_strtoul_test1, "c_runtime/strtoul/test1/paltest_strtoul_test1")
 {
     char *end;
     ULONG l;

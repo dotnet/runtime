@@ -175,7 +175,7 @@ BOOL SetUpDirs()
 //    Trace("Setup dirs returning %d\n", result);
     return result;
 }
-int __cdecl main(int argc, char **argv)
+PALTEST(file_io_GetFileAttributesW_test1_paltest_getfileattributesw_test1, "file_io/GetFileAttributesW/test1/paltest_getfileattributesw_test1")
 {
     int i;
     BOOL  bFailed = FALSE;

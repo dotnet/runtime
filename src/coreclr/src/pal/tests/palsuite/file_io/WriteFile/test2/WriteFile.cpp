@@ -53,7 +53,7 @@ BOOL writeTest(DWORD dwByteCount, DWORD dwBytesWrittenResult, BOOL bResult)
     return TRUE;
 }
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(file_io_WriteFile_test2_paltest_writefile_test2, "file_io/WriteFile/test2/paltest_writefile_test2")
 {
     const char * testString = "The quick fox jumped over the lazy dog's back.";
     const int testStringLen = strlen(testString);

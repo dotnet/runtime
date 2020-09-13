@@ -92,7 +92,7 @@ void __cdecl validate_isnan(double value)
  * 
  * executable entry point
  */
-int __cdecl main(int argc, char **argv)
+PALTEST(c_runtime_modf_test1_paltest_modf_test1, "c_runtime/modf/test1/paltest_modf_test1")
 {
     struct test tests[] = 
     {

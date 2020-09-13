@@ -105,7 +105,7 @@ done:
 }
 
 
-int __cdecl main( int argc, char **argv )
+PALTEST(threading_QueueUserAPC_test7_paltest_queueuserapc_test7, "threading/QueueUserAPC/test7/paltest_queueuserapc_test7")
 
 {
     /* local variables */

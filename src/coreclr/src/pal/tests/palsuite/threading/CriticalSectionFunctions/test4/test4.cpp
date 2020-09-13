@@ -57,7 +57,7 @@ DWORD PALAPI ThreadTest2(LPVOID lpParam)
 
 }
 
-int __cdecl main(int argc, char **argv)
+PALTEST(threading_CriticalSectionFunctions_test4_paltest_criticalsectionfunctions_test4, "threading/CriticalSectionFunctions/test4/paltest_criticalsectionfunctions_test4")
 {
 
     DWORD dwRet;

@@ -34,7 +34,7 @@ struct testCase testCases[] =
     {0,     " foo 32 bar", 0},
 };
 
-int __cdecl main(int argc, char **argv)
+PALTEST(c_runtime_wcstod_test1_paltest_wcstod_test1, "c_runtime/wcstod/test1/paltest_wcstod_test1")
 {
     WCHAR *wideStr;
     WCHAR *endptr;

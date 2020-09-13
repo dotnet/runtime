@@ -38,7 +38,7 @@
 const WCHAR szDotDot[]   = {'.','.','\0'};
 const WCHAR szFileName[] = {'t','e','s','t','i','n','g','.','t','m','p','\0'};
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(file_io_GetFullPathNameW_test4_paltest_getfullpathnamew_test4, "file_io/GetFullPathNameW/test4/paltest_getfullpathnamew_test4")
 {
     DWORD   dwRc = 0;
 

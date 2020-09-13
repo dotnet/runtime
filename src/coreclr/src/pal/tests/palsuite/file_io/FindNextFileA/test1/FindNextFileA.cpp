@@ -61,7 +61,7 @@ BOOL createTestFile(const char* szName)
 
 
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(file_io_FindNextFileA_test1_paltest_findnextfilea_test1, "file_io/FindNextFileA/test1/paltest_findnextfilea_test1")
 {
     WIN32_FIND_DATA findFileData;
     WIN32_FIND_DATA findFileData_02;

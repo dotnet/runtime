@@ -119,7 +119,7 @@ BOOL readTest(DWORD dwByteCount, char cResult)
     return TRUE;
 }
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(file_io_ReadFile_test2_paltest_readfile_test2, "file_io/ReadFile/test2/paltest_readfile_test2")
 {
     HANDLE hFile = NULL;
     const int BUFFER_SIZE = 2 * PAGESIZE;

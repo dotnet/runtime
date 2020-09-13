@@ -42,7 +42,7 @@ BOOL CleanUp(HANDLE hFile, const char * fileName)
     return bRc;
 }
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(file_io_WriteFile_test4_paltest_writefile_test4, "file_io/WriteFile/test4/paltest_writefile_test4")
 {
     const char* szStringTest = "1234567890";
     const char* szWritableFile = "writeable.txt";

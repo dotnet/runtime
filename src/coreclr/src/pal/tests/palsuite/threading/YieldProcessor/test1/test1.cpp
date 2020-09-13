@@ -31,7 +31,7 @@ void PALAPI Run_Thread(LPVOID lpParam);
  *
  * executable entry point
  */
-INT __cdecl main( INT argc, CHAR **argv )
+PALTEST(threading_YieldProcessor_test1_paltest_yieldprocessor_test1, "threading/YieldProcessor/test1/paltest_yieldprocessor_test1")
 {
     DWORD  dwParam;
     HANDLE hThread[THREAD_COUNT];

@@ -31,7 +31,7 @@ BOOL  PALAPI StartThreadTest();
 DWORD PALAPI CreateTestThread(LPVOID);
 BOOL  PALAPI TestDll(HMODULE, int);
 
-int __cdecl main(int argc, char* argv[])
+PALTEST(filemapping_memmgt_FreeLibraryAndExitThread_test1_paltest_freelibraryandexitthread_test1, "filemapping_memmgt/FreeLibraryAndExitThread/test1/paltest_freelibraryandexitthread_test1")
 {
     /*Initialize the PAL*/
     if ((PAL_Initialize(argc, argv)) != 0)

@@ -463,7 +463,7 @@ TestWakeupAllThread()
     }
 }
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(threading_WaitForMultipleObjectsEx_test5_paltest_waitformultipleobjectsex_test5, "threading/WaitForMultipleObjectsEx/test5/paltest_waitformultipleobjectsex_test5")
 {
     DWORD dwExitCode;
 

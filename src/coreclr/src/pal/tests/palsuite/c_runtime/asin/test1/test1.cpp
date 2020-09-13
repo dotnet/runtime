@@ -103,7 +103,7 @@ void __cdecl validate_isinf_positive(double value)
  * 
  * executable entry point
  */
-int __cdecl main(int argc, char **argv)
+PALTEST(c_runtime_asin_test1_paltest_asin_test1, "c_runtime/asin/test1/paltest_asin_test1")
 {
     struct test tests[] = 
     {

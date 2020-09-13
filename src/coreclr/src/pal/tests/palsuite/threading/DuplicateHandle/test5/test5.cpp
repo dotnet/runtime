@@ -21,7 +21,7 @@
 
 const char* cTestString = "one fish, two fish, red fish, blue fish.";
 
-int __cdecl main(int argc, char **argv)
+PALTEST(threading_DuplicateHandle_test5_paltest_duplicatehandle_test5, "threading/DuplicateHandle/test5/paltest_duplicatehandle_test5")
 {
     HANDLE  hReadPipe   = NULL;
     HANDLE  hWritePipe  = NULL;

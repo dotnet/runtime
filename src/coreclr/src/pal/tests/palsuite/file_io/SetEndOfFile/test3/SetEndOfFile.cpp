@@ -18,7 +18,7 @@
 const char* szTextFile = "text.txt";
 
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(file_io_SetEndOfFile_test3_paltest_setendoffile_test3, "file_io/SetEndOfFile/test3/paltest_setendoffile_test3")
 {
     HANDLE hFile = NULL;
     DWORD dwByteCount = 0;

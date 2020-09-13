@@ -30,7 +30,7 @@ DWORD PALAPI ThreadFunc( LPVOID lpParam )
 } 
 
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime_errno_test2_paltest_errno_test2, "c_runtime/errno/test2/paltest_errno_test2")
 {
     DWORD dwThreadId, dwThrdParam = 0; 
     HANDLE hThread; 

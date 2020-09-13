@@ -204,7 +204,7 @@ void removeAll(void)
 
 }
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(file_io_MoveFileExA_test1_paltest_movefileexa_test1, "file_io/MoveFileExA/test1/paltest_movefileexa_test1")
 {
     BOOL bRc = TRUE;
     char results[40];

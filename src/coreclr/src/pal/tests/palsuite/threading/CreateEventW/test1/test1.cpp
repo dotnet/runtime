@@ -73,7 +73,7 @@ BOOL CreateEventTest()
     return bRet;
 }
 
-int __cdecl main(int argc, char **argv)
+PALTEST(threading_CreateEventW_test1_paltest_createeventw_test1, "threading/CreateEventW/test1/paltest_createeventw_test1")
 {
     
     if(0 != (PAL_Initialize(argc, argv)))

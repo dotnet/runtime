@@ -75,7 +75,7 @@ DWORD PALAPI ThreadTest2(LPVOID lpParam)
 }
 
 
-int __cdecl main(int argc, char **argv)
+PALTEST(threading_DuplicateHandle_test4_paltest_duplicatehandle_test4, "threading/DuplicateHandle/test4/paltest_duplicatehandle_test4")
 {
     
     HANDLE hDupMutex;

@@ -28,7 +28,7 @@ VOID PALAPI APCFunc( ULONG_PTR dwParam )
     bAPCExecuted = TRUE;
 }
 
-int __cdecl main( int argc, char **argv )
+PALTEST(threading_QueueUserAPC_test4_paltest_queueuserapc_test4, "threading/QueueUserAPC/test4/paltest_queueuserapc_test4")
 
 {
     /* local variables */

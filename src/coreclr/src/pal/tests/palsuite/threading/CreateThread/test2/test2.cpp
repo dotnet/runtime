@@ -64,7 +64,7 @@ BOOL cleanup(int index)
     return(bRet);
 }
 
-int __cdecl main(int argc, char **argv)
+PALTEST(threading_CreateThread_test2_paltest_createthread_test2, "threading/CreateThread/test2/paltest_createthread_test2")
 {
     SIZE_T i;
     DWORD dwRetWFSO;

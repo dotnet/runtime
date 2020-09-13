@@ -17,7 +17,7 @@
 
 HANDLE hSemaphore;
 
-int __cdecl main (int argc, char **argv)
+PALTEST(threading_releasesemaphore_test1_paltest_releasesemaphore_test1, "threading/releasesemaphore/test1/paltest_releasesemaphore_test1")
 {
     if(0 != (PAL_Initialize(argc, argv)))
     {

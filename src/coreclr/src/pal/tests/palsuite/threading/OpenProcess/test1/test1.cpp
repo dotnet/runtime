@@ -58,7 +58,7 @@ mkAbsoluteFilename( LPSTR dirName,
 }
 
 
-int __cdecl main( int argc, char **argv )
+PALTEST(threading_OpenProcess_test1_paltest_openprocess_test1, "threading/OpenProcess/test1/paltest_openprocess_test1")
 
 {
     const char* rgchChildFile = "childprocess";

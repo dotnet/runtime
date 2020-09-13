@@ -17,7 +17,7 @@
 #include <palsuite.h>
 
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime_strncpy_test1_paltest_strncpy_test1, "c_runtime/strncpy/test1/paltest_strncpy_test1")
 {
     char dest[80];
     char *result = "foobar";

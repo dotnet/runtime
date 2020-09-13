@@ -230,7 +230,7 @@ DWORD PALAPI Consumer( LPVOID lpParam )
 }
 
 
-int __cdecl main (int argc, char **argv) 
+PALTEST(threading_CreateMutexW_ReleaseMutex_test1_paltest_createmutexw_releasemutex_test1, "threading/CreateMutexW_ReleaseMutex/test1/paltest_createmutexw_releasemutex_test1")
 {
     DWORD dwThreadId;
     DWORD dwWaitRet;

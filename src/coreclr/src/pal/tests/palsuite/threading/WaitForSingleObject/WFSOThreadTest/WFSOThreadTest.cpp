@@ -29,7 +29,7 @@ unsigned int globalcounter =0;
 //Declaring Function Prototypes
 DWORD PALAPI incrementCounter(LPVOID params);
 
-int __cdecl main(int argc, char **argv)
+PALTEST(threading_WaitForSingleObject_WFSOThreadTest_paltest_waitforsingleobject_wfsothreadtest, "threading/WaitForSingleObject/WFSOThreadTest/paltest_waitforsingleobject_wfsothreadtest")
 {
 
 	//Declare local variables

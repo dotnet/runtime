@@ -21,7 +21,7 @@
 LONG GlobalCounter = 0;
 void DecrementCounter(void);
 
-int __cdecl main(int argc, char *argv[]) 
+PALTEST(miscellaneous_InterlockedDecrement_test2_paltest_interlockeddecrement_test2, "miscellaneous/InterlockedDecrement/test2/paltest_interlockeddecrement_test2")
 {
 
 	LONG TotalOperations=0;

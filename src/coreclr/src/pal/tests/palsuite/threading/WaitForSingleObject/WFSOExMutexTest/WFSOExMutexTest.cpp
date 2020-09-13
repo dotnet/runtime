@@ -29,7 +29,7 @@ HANDLE hMutex;
 
 
 
-int __cdecl main( int argc, char **argv ) 
+PALTEST(threading_WaitForSingleObject_WFSOExMutexTest_paltest_waitforsingleobject_wfsoexmutextest, "threading/WaitForSingleObject/WFSOExMutexTest/paltest_waitforsingleobject_wfsoexmutextest")
 {
     int ret=0;
 	

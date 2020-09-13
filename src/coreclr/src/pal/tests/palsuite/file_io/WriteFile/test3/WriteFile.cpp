@@ -113,7 +113,7 @@ BOOL writeTest(const char* szString)
 
 
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(file_io_WriteFile_test3_paltest_writefile_test3, "file_io/WriteFile/test3/paltest_writefile_test3")
 {
     const char *pString = szStringTest;
     BOOL bRc = FALSE;

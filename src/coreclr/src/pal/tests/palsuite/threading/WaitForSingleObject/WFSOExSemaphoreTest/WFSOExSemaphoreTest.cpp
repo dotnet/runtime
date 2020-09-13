@@ -26,7 +26,7 @@ DWORD PALAPI WaiterProc(LPVOID lpParameter);
 
 DWORD ThreadWaitDelta;
 
-int __cdecl main( int argc, char **argv )
+PALTEST(threading_WaitForSingleObject_WFSOExSemaphoreTest_paltest_waitforsingleobject_wfsoexsemaphoretest, "threading/WaitForSingleObject/WFSOExSemaphoreTest/paltest_waitforsingleobject_wfsoexsemaphoretest")
 {
     if (0 != (PAL_Initialize(argc, argv)))
     {

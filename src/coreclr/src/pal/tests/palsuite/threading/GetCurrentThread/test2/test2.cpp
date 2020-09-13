@@ -75,7 +75,7 @@ DWORD PALAPI ThreadFunc( LPVOID param )
  *
  * executable entry point
  */
-INT __cdecl main( INT argc, CHAR **argv )
+PALTEST(threading_GetCurrentThread_test2_paltest_getcurrentthread_test2, "threading/GetCurrentThread/test2/paltest_getcurrentthread_test2")
 {
     HANDLE   hThread = NULL;
     DWORD    IDThread;

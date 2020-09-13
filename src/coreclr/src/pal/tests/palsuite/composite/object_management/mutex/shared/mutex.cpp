@@ -115,7 +115,7 @@ int GetParameters( int argc, char **argv)
     return 0;
 }
 
- int __cdecl main(INT argc, CHAR **argv)
+PALTEST(composite_object_management_mutex_shared_paltest_mutex_shared, "composite/object_management/mutex/shared/paltest_mutex_shared")
 {
     unsigned int i = 0;
     HANDLE hThread[MAXIMUM_WAIT_OBJECTS];

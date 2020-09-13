@@ -1188,7 +1188,7 @@ bool StressTests(DWORD durationMinutes)
     return static_cast<bool>(g_stressResult);
 }
 
-int __cdecl main(int argc, char **argv)
+PALTEST(threading_NamedMutex_test1_paltest_namedmutex_test1, "threading/NamedMutex/test1/paltest_namedmutex_test1")
 {
     if (argc < 1 || argc > 4)
     {

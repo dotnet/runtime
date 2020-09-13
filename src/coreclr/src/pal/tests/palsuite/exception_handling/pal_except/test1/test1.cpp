@@ -16,7 +16,7 @@
 BOOL bTry    = FALSE;
 BOOL bExcept = FALSE;
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(exception_handling_pal_except_test1_paltest_pal_except_test1, "exception_handling/pal_except/test1/paltest_pal_except_test1")
 {
     if (0 != PAL_Initialize(argc, argv))
     {

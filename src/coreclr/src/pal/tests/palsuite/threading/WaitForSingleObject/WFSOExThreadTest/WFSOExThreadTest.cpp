@@ -27,7 +27,7 @@ void WorkerThread(void);
 
 int ThreadWaitDelta;
 
-int __cdecl main( int argc, char **argv ) 
+PALTEST(threading_WaitForSingleObject_WFSOExThreadTest_paltest_waitforsingleobject_wfsoexthreadtest, "threading/WaitForSingleObject/WFSOExThreadTest/paltest_waitforsingleobject_wfsoexthreadtest")
 {
     if (0 != (PAL_Initialize(argc, argv)))
     {

@@ -27,7 +27,7 @@ DWORD PALAPI WaiterProc(LPVOID lpParameter);
 
 DWORD ThreadWaitDelta;
 
-int __cdecl main( int argc, char **argv )
+PALTEST(threading_WaitForMultipleObjectsEx_test2_paltest_waitformultipleobjectsex_test2, "threading/WaitForMultipleObjectsEx/test2/paltest_waitformultipleobjectsex_test2")
 {
 
     DWORD delta = 0;

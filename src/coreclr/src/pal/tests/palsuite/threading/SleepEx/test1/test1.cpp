@@ -37,7 +37,7 @@ testCase testCases[] =
 /* Milliseconds of error which are acceptable Function execution time, etc. */
 DWORD AcceptableTimeError = 150;
 
-int __cdecl main( int argc, char **argv ) 
+PALTEST(threading_SleepEx_test1_paltest_sleepex_test1, "threading/SleepEx/test1/paltest_sleepex_test1")
 {
     UINT64 OldTimeStamp;
     UINT64 NewTimeStamp;

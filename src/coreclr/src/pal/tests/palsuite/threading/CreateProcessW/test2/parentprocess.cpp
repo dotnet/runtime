@@ -30,7 +30,7 @@
 
 
 
-int __cdecl main( int argc, char **argv ) 
+PALTEST(threading_CreateProcessW_test2_paltest_createprocessw_test2, "threading/CreateProcessW/test2/paltest_createprocessw_test2")
 {
 
     /*******************************************

@@ -115,7 +115,7 @@ void RunTest(char* Name, DWORD Attribs, ItemType TheType )
     
 }
 
-int __cdecl main(int argc, char **argv)
+PALTEST(file_io_GetFileAttributesExW_test1_paltest_getfileattributesexw_test1, "file_io/GetFileAttributesExW/test1/paltest_getfileattributesexw_test1")
 {
     DWORD TheResult;
     WCHAR* FileName;

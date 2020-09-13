@@ -59,7 +59,7 @@ BOOL cleanup(int index)
     return(bRet);
 }
 
-int __cdecl main (int argc, char **argv)
+PALTEST(threading_CreateSemaphoreW_ReleaseSemaphore_test3_paltest_createsemaphorew_releasesemaphore_test3, "threading/CreateSemaphoreW_ReleaseSemaphore/test3/paltest_createsemaphorew_releasesemaphore_test3")
 {
     int i;
     int j;

@@ -18,7 +18,7 @@ int __cdecl twocharcmp(const void *pa, const void *pb)
     return memcmp(pa, pb, 2);
 }
 
-int __cdecl main(int argc, char **argv)
+PALTEST(c_runtime_qsort_test2_paltest_qsort_test2, "c_runtime/qsort/test2/paltest_qsort_test2")
 {
     char before[] = "ccggaaiieehhddbbjjff";
     const char after[] = "aabbccddeeffgghhiijj";
