@@ -87,9 +87,9 @@
     <When Condition="'$(TestPackages)' != 'true'">
       <PropertyGroup Condition="'$(TargetsMobile)' != 'true'">
         <HelixCommand Condition="'$(TargetsWindows)' == 'true'">dotnet test %HELIX_WORKITEM_FRIENDLYNAME%.dll --settings .runsettings</HelixCommand>
-        <HelixCommand Condition="'$(TargetsWindows)' == 'true' and '$(IncludeHelixCorrelationPayload)' == 'true'">$(HelixCommand) -- RunConfiguration.DotNetHostPath="%HELIX_CORRELATION_PAYLOAD%"</HelixCommand>
+        <HelixCommand Condition="'$(TargetsWindows)' == 'true' and '$(IncludeHelixCorrelationPayload)' == 'true'">$(HelixCommand) -- RunConfiguration.DotNetHostPath="%HELIX_CORRELATION_PAYLOAD%\dotnet.exe"</HelixCommand>
         <HelixCommand Condition="'$(TargetsWindows)' != 'true'">dotnet test $HELIX_WORKITEM_FRIENDLYNAME.dll --settings .runsettings</HelixCommand>
-        <HelixCommand Condition="'$(TargetsWindows)' != 'true' and '$(IncludeHelixCorrelationPayload)' == 'true'">$(HelixCommand) -- RunConfiguration.DotNetHostPath="$HELIX_CORRELATION_PAYLOAD"</HelixCommand>
+        <HelixCommand Condition="'$(TargetsWindows)' != 'true' and '$(IncludeHelixCorrelationPayload)' == 'true'">$(HelixCommand) -- RunConfiguration.DotNetHostPath="$HELIX_CORRELATION_PAYLOAD/dotnet"</HelixCommand>
       </PropertyGroup>
       <PropertyGroup Condition="'$(TargetsMobile)' == 'true'">
         <HelixCommand>./RunTests.sh %HELIX_WORKITEM_FRIENDLYNAME%</HelixCommand>

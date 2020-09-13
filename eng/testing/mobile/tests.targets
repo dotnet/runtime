@@ -188,6 +188,10 @@
       <_runnerFilesToPublish Include="$(AndroidTestRunnerDir)*" Condition="'$(TargetOS)' == 'Android'" />
       <_runnerFilesToPublish Include="$(AppleTestRunnerDir)*" Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'" />
       <_runnerFilesToPublish Include="$(WasmTestRunnerDir)*" Condition="'$(TargetOS)' == 'Browser'" />
+      <ResolvedFileToPublish Include="@(_runnerFilesToPublish)"
+                             RelativePath="%(FileName)%(Extension)"
+                             CopyToPublishDirectory="PreserveNewest"
+                             PostprocessAssembly="true" />
     </ItemGroup>
   </Target>
 
