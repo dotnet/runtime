@@ -36,5 +36,5 @@ void Compiler::fgInitArgInfoHelp(GenTreeCall* call, NonStandardArgs* nonStandard
         assert(arg2 != nullptr);
         nonStandardArgs->Add(arg2, REG_LNGARG_HI);
     }
-#endif  // TARGET_X86
+#endif // TARGET_X86
 }

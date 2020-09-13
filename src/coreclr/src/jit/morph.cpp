@@ -2504,8 +2504,8 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         noway_assert(arg != nullptr);
         call->gtCallCookie = nullptr;
 
-	// TODO: Refactory proposal
-	// I am not good at naming.  The function name might be fgInitArgInfoHelpN.
+        // TODO: Refactory proposal
+        // I am not good at naming.  The function name might be fgInitArgInfoHelpN below.
 
 #if defined(TARGET_X86)
         // x86 passes the cookie on the stack as the final argument to the call.
