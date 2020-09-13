@@ -19,6 +19,7 @@ class Program
         RunTestThrows(Tests.EqualsOutOfBound);
         RunTestThrows(Tests.EqualsReversedOutOfBound);
         RunTestThrows(Tests.NotEqualsOutOfBound);
+        RunTestThrows(Tests.NegativeIndexesThrows);
         RunTestThrows(TestsEarlyReturn.GreaterOutOfBound);
         RunTestThrows(TestsEarlyReturn.GreaterEqualOutOfBound);
         RunTestThrows(TestsEarlyReturn.LessOutOfBound);
@@ -33,7 +34,8 @@ class Program
         RunTestNoThrow(Tests.LessEqualsInBound);
         RunTestNoThrow(Tests.EqualsInBound);
         RunTestNoThrow(Tests.EqualsReversedInBound);
-        RunTestNoThrow(Tests.ZeroInBounds);
+        RunTestNoThrow(Tests.ZeroInBounds);  
+        RunTestNoThrow(Tests.CompareAgainstLong);
         RunTestNoThrow(TestsEarlyReturn.GreaterInBound);
         RunTestNoThrow(TestsEarlyReturn.GreaterEqualInBound);
         RunTestNoThrow(TestsEarlyReturn.LessInBound);
@@ -240,6 +242,21 @@ public static class Tests
         if (arr.Length == 6)
         {
             arr[(int)(i % 7)] = 0;
+        }
+    }
+
+    public static void CompareAgainstLong(int[] arr)
+    {
+        long len = (1L << 32) + 1;
+        if (arr.Length == len)
+            arr[0] = 0;
+    }
+
+    public static void NegativeIndexesThrows(int[] arr)
+    {
+        if (arr.Length < 7)
+        {
+            arr[-1] = 0;
         }
     }
 }
