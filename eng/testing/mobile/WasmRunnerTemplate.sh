@@ -11,7 +11,7 @@ if [ -z ${2+x} ]; then
 fi
 
 if [ "$JS_ENGINE" == "V8" ]; then
-	JS_ENGINE_ARGS=${JS_ENGINE_ARGS} --engine-arg=--stack-trace-limit=1000
+	JS_ENGINE_ARGS="${JS_ENGINE_ARGS} --engine-arg=--stack-trace-limit=1000"
 fi
 
 if [ ! -z "$XHARNESS_CLI_PATH" ]; then
@@ -22,7 +22,7 @@ else
 	HARNESS_RUNNER="dotnet xharness"
 fi
 
-$HARNESS_RUNNER wasm test --engine=${JSEngine} $JSEngineArgs --js-file=runtime.js -v --output-directory=$XHARNESS_OUT -- --run WasmTestRunner.dll ${TEST_NAME}.dll
+$HARNESS_RUNNER wasm test --engine=${JS_ENGINE} ${JS_ENGINE_ARGS} --js-file=runtime.js -v --output-directory=$XHARNESS_OUT -- --run WasmTestRunner.dll ${TEST_NAME}.dll
 
 _exitCode=$?
 
