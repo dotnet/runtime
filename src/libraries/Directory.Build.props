@@ -299,7 +299,9 @@
   <PropertyGroup Condition="'$(IsTestProject)' == 'true'">
     <EnableTestSupport>true</EnableTestSupport>
     <EnableRunSettingsSupport>true</EnableRunSettingsSupport>
-    <EnableCoverageSupport Condition="'$(ContinuousIntegrationBuild)' != 'true'">true</EnableCoverageSupport>
+    <!-- Enable on demand in CI as coverlet comes with many dependencies. -->
+    <EnableCoverageSupport Condition="'$(ContinuousIntegrationBuild)' != 'true' or
+                                      '$(VSTestCollect.ToLower())' == 'xplat code coverage'">true</EnableCoverageSupport>
   </PropertyGroup>
 
   <!-- To enable the interpreter for mono, we need to pass an env switch -->

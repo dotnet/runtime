@@ -181,6 +181,7 @@ foreach ($argument in $PSBoundParameters.Keys)
     "framework"              { $arguments += " /p:BuildTargetFramework=$($PSBoundParameters[$argument].ToLowerInvariant())" }
     "os"                     { $arguments += " /p:TargetOS=$($PSBoundParameters[$argument])" }
     "allconfigurations"      { $arguments += " /p:BuildAllConfigurations=true" }
+    "coverage"               { $arguments += " /p:VSTestCollect='XPlat Code Coverage'" }
     "properties"             { $arguments += " " + $properties }
     "verbosity"              { $arguments += " -$argument " + $($PSBoundParameters[$argument]) }
     # configuration and arch can be specified multiple times, so they should be no-ops here
