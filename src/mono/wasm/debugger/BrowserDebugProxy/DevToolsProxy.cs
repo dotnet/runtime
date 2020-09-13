@@ -277,7 +277,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         // , HttpContext context)
         public async Task Run(Uri browserUri, WebSocket ideSocket)
         {
-            Log("info", $"DevToolsProxy: Starting on {browserUri}");
+            Log("debug", $"DevToolsProxy: Starting on {browserUri}");
             using (this.ide = ideSocket)
             {
                 Log("verbose", $"DevToolsProxy: IDE waiting for connection on {browserUri}");
@@ -369,9 +369,15 @@ namespace Microsoft.WebAssembly.Diagnostics
                 case "verbose":
                     logger.LogDebug(msg);
                     break;
-                case "info":
-                case "warning":
                 case "error":
+                    logger.LogError(msg);
+                    break;
+                case "info":
+                    logger.LogInformation(msg);
+                    break;
+                case "warning":
+                    logger.LogWarning(msg);
+                    break;
                 default:
                     logger.LogDebug(msg);
                     break;
