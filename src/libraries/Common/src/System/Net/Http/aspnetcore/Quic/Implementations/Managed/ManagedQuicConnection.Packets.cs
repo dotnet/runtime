@@ -81,7 +81,7 @@ namespace System.Net.Quic.Implementations.Managed
                     switch (header.PacketType)
                     {
                         case PacketType.Initial:
-                            if (_isServer)
+                            if (IsServer)
                             {
                                 // check UDP datagram size, by now the reader's buffer end is aligned with the UDP datagram end.
                                 // TODO-RZ: in rare cases when initial is not the first of the coalesced packets this can falsely close the connection.
@@ -94,7 +94,7 @@ namespace System.Net.Quic.Implementations.Managed
                             }
 
                             // Servers may not send Token in Initial packets
-                            if (!_isServer && !headerData.Token.IsEmpty)
+                            if (!IsServer && !headerData.Token.IsEmpty)
                             {
                                 return CloseConnection(
                                     TransportErrorCode.ProtocolViolation,
@@ -104,7 +104,7 @@ namespace System.Net.Quic.Implementations.Managed
                             // after client receives the first packet (which is either initial or retry), it must
                             // use the connection id supplied by the server, but should ignore any further changes to CID,
                             // see [TRANSPORT] Section 7.2
-                            if (!_isServer &&
+                            if (!IsServer &&
                                 GetPacketNumberSpace(EncryptionLevel.Initial).LargestReceivedPacketNumber < 0)
                             {
                                 // protection keys are not affected by this change
@@ -130,7 +130,7 @@ namespace System.Net.Quic.Implementations.Managed
                                 reader.BytesRead);
                             ProcessPacketResult result = ReceiveCommon(reader, header, headerData, pnSpace, context);
 
-                            if (result == ProcessPacketResult.Ok && _isServer && header.PacketType == PacketType.Handshake)
+                            if (result == ProcessPacketResult.Ok && IsServer && header.PacketType == PacketType.Handshake)
                             {
                                 // RFC: A server stops sending and processing Initial packets when it receives its first
                                 // Handshake packet
@@ -146,7 +146,7 @@ namespace System.Net.Quic.Implementations.Managed
                 }
 
                 // clients SHOULD ignore fixed bit when receiving version negotiation
-                if (!header.FixedBit && _isServer && header.PacketType == PacketType.VersionNegotiation ||
+                if (!header.FixedBit && IsServer && header.PacketType == PacketType.VersionNegotiation ||
                     // TODO-RZ: following checks should be moved into SocketContext
                     SourceConnectionId != null &&
                     !header.DestinationConnectionId.SequenceEqual(SourceConnectionId!.Data) ||
@@ -245,7 +245,7 @@ namespace System.Net.Quic.Implementations.Managed
         private bool UnprotectLongHeaderPacket(QuicReader reader, ref LongPacketHeader header, out SharedPacketData headerData, PacketNumberSpace pnSpace)
         {
             // initialize protection keys if necessary (first initial packet)
-            if (_isServer && header.PacketType == PacketType.Initial &&
+            if (IsServer && header.PacketType == PacketType.Initial &&
                 pnSpace.RecvCryptoSeal == null && pnSpace.LargestReceivedPacketNumber < 0)
             {
                 // clients destination connection Id is ours source connection Id
@@ -507,7 +507,7 @@ namespace System.Net.Quic.Implementations.Managed
                 _doKeyUpdate = false;
             }
 
-            if (!_isServer && packetType == PacketType.Initial)
+            if (!IsServer && packetType == PacketType.Initial)
             {
                 // TODO-RZ: It would be more efficient to add padding only to the last packet sent when coalescing packets.
 
@@ -561,7 +561,7 @@ namespace System.Net.Quic.Implementations.Managed
                 _ackElicitingWasSentSinceLastReceive = true;
             }
 
-            if (!_isServer && packetType == PacketType.Handshake)
+            if (!IsServer && packetType == PacketType.Handshake)
             {
                 // RFC: A client stops sending and processing Initial packets when it sends its first Handshake packet
                 DropPacketNumberSpace(PacketSpace.Initial, context.SentPacketPool);

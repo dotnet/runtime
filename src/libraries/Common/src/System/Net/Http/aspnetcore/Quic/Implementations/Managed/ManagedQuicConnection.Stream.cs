@@ -78,7 +78,7 @@ namespace System.Net.Quic.Implementations.Managed
         /// <returns></returns>
         internal ManagedQuicStream OpenStream(bool unidirectional)
         {
-            var type = StreamHelpers.GetLocallyInitiatedType(_isServer, unidirectional);
+            var type = StreamHelpers.GetLocallyInitiatedType(IsServer, unidirectional);
             ref int counter = ref (unidirectional ? ref _uniStreamsOpened : ref _bidirStreamsOpened);
             long limit = unidirectional ? _peerLimits.MaxStreamsUni : _peerLimits.MaxStreamsBidi;
 
@@ -124,7 +124,7 @@ namespace System.Net.Quic.Implementations.Managed
             // check whether the stream can be opened based on local limits
 
             long index = StreamHelpers.GetStreamIndex(streamId);
-            bool local = StreamHelpers.IsLocallyInitiated(_isServer, streamId);
+            bool local = StreamHelpers.IsLocallyInitiated(IsServer, streamId);
             var param = local
                 ? _peerLimits
                 : _localLimits;

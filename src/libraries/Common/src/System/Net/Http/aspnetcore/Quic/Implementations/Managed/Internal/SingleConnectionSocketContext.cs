@@ -11,11 +11,10 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         private readonly ManagedQuicConnection _connection;
 
         internal SingleConnectionSocketContext(IPEndPoint? localEndpoint, IPEndPoint remoteEndPoint, ManagedQuicConnection connection)
-            : base(localEndpoint)
+            : base(localEndpoint, remoteEndPoint, connection.IsServer)
         {
             _remoteEndPoint = remoteEndPoint;
             _connection = connection;
-            Socket.Connect(remoteEndPoint);
         }
 
         protected override ManagedQuicConnection? FindConnection(QuicReader reader, IPEndPoint sender)

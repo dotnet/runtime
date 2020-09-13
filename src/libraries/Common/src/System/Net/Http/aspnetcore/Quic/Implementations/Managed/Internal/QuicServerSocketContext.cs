@@ -18,7 +18,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
         internal QuicServerSocketContext(IPEndPoint localEndPoint, QuicListenerOptions listenerOptions,
             ChannelWriter<ManagedQuicConnection> newConnectionsWriter)
-            : base(localEndPoint)
+            : base(localEndPoint, null, true)
         {
             _newConnections = newConnectionsWriter;
             _listenerOptions = listenerOptions;
@@ -106,6 +106,25 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             UpdateTimeout(nextTimeout);
         }
 
+        private void OnConnectionHandshakeCompleted(ManagedQuicConnection connection)
+        {
+            // Connection established -> transition to single connection  QuicSocketContext
+            _newConnections.TryWrite(connection);
+
+            // Create new single connection context, this will bind a more specific socket to the
+            // remote endpoint's address. Any further packets will be received by this context
+
+            var newContext = new SingleConnectionSocketContext(connection.LocalEndPoint, connection.RemoteEndPoint, connection);
+
+            // drain all packets that are still queued for this context into the connection.
+            ReceiveAllDatagramsForConnection(connection);
+
+            // transition to the new context
+            DetachConnection(connection);
+            connection.SetSocketContext(newContext);
+            newContext.Start();
+        }
+
         protected override void OnConnectionStateChanged(ManagedQuicConnection connection, QuicConnectionState newState)
         {
             switch (newState)
@@ -113,7 +132,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                 case QuicConnectionState.None:
                     break;
                 case QuicConnectionState.Connected:
-                    _newConnections.TryWrite(connection);
+                    OnConnectionHandshakeCompleted(connection);
                     break;
                 case QuicConnectionState.Closing:
                     break;
@@ -147,7 +166,6 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
         protected override void DetachConnection(ManagedQuicConnection connection)
         {
-            Debug.Assert(connection.IsClosed);
             bool removed = ImmutableInterlocked.TryRemove(ref _connectionsByEndpoint, connection.RemoteEndPoint, out _);
             if (_connectionsByEndpoint.IsEmpty && !_acceptNewConnections)
             {

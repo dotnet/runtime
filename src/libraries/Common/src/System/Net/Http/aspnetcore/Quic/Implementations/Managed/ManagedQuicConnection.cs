@@ -107,13 +107,13 @@ namespace System.Net.Quic.Implementations.Managed
         /// <summary>
         ///     Context of the socket serving this connection.
         /// </summary>
-        private readonly QuicSocketContext _socketContext;
+        private QuicSocketContext _socketContext;
 
         /// <summary>
         ///     True if handshake has been confirmed by the peer. For server this means that TLS has reported handshake complete,
         ///     for client it means that a HANDSHAKE_DONE frame has been received.
         /// </summary>
-        private bool HandshakeConfirmed => _isServer ? Tls.IsHandshakeComplete : _handshakeDoneReceived;
+        private bool HandshakeConfirmed => IsServer ? Tls.IsHandshakeComplete : _handshakeDoneReceived;
 
         /// <summary>
         ///     True if HANDSHAKE_DONE frame has been received. Valid only for client.
@@ -128,7 +128,7 @@ namespace System.Net.Quic.Implementations.Managed
         /// <summary>
         ///     True if this side of connection belongs to the server.
         /// </summary>
-        private readonly bool _isServer;
+        internal readonly bool IsServer;
 
         /// <summary>
         ///     Collection of streams for this connection.
@@ -203,10 +203,15 @@ namespace System.Net.Quic.Implementations.Managed
             _pingWanted = true;
         }
 
+        /// <summary>
+        ///     Unsafe access to the <see cref="RemoteEndPoint"/> field. Does not create a defensive copy!
+        /// </summary>
+        internal IPEndPoint UnsafeRemoteEndPoint => _remoteEndpoint;
+
         // client constructor
         public ManagedQuicConnection(QuicClientConnectionOptions options)
         {
-            _isServer = false;
+            IsServer = false;
 
             _remoteEndpoint = options.RemoteEndPoint!;
 
@@ -236,7 +241,7 @@ namespace System.Net.Quic.Implementations.Managed
         public ManagedQuicConnection(QuicListenerOptions options, QuicServerSocketContext socketContext,
             IPEndPoint remoteEndpoint)
         {
-            _isServer = true;
+            IsServer = true;
             _socketContext = socketContext;
             _remoteEndpoint = remoteEndpoint;
             _localTransportParameters = TransportParameters.FromListenerOptions(options);
@@ -259,6 +264,15 @@ namespace System.Net.Quic.Implementations.Managed
         ///     Connection ID used by the peer to identify packets for this connection.
         /// </summary>
         public ConnectionId? DestinationConnectionId { get; private set; }
+
+        /// <summary>
+        ///     Sets new socket context that will from now on service the connection.
+        /// </summary>
+        /// <param name="context">The new context.</param>
+        internal void SetSocketContext(QuicSocketContext context)
+        {
+            _socketContext = context;
+        }
 
         /// <summary>
         ///     Returns timestamp of the next timer event, after timeout, <see cref="OnTimeout"/> should be called.
@@ -328,7 +342,7 @@ namespace System.Net.Quic.Implementations.Managed
 
             if (ReferenceEquals(_peerTransportParameters, TransportParameters.Default))
             {
-                var param = Tls.GetPeerTransportParameters(_isServer);
+                var param = Tls.GetPeerTransportParameters(IsServer);
 
                 if (param == null)
                 {
@@ -360,7 +374,7 @@ namespace System.Net.Quic.Implementations.Managed
 
             var algorithm = QuicConstants.InitialCipherSuite;
 
-            if (_isServer)
+            if (IsServer)
             {
                 SetEncryptionSecrets(EncryptionLevel.Initial, algorithm, client, server);
             }

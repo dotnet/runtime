@@ -35,7 +35,7 @@ namespace System.Net.Quic.Implementations.Managed
             return packetType switch
             {
                 // 1-RTT packets may contain any frame, but HANDSHAKE_DONE may only be sent by server
-                PacketType.OneRtt => frameType != FrameType.HandshakeDone || !_isServer,
+                PacketType.OneRtt => frameType != FrameType.HandshakeDone || !IsServer,
 
                 PacketType.Initial => frameType switch
                 {
@@ -276,7 +276,7 @@ namespace System.Net.Quic.Implementations.Managed
 
             if (IsClosing) return ProcessPacketResult.Ok;
 
-            if (!StreamHelpers.CanRead(_isServer, frame.StreamId))
+            if (!StreamHelpers.CanRead(IsServer, frame.StreamId))
                 return CloseConnection(TransportErrorCode.StreamStateError,
                     QuicError.StreamNotReadable,
                     FrameType.ResetStream);
@@ -302,14 +302,14 @@ namespace System.Net.Quic.Implementations.Managed
 
             if (IsClosing) return ProcessPacketResult.Ok;
 
-            if (!StreamHelpers.CanWrite(_isServer, frame.StreamId))
+            if (!StreamHelpers.CanWrite(IsServer, frame.StreamId))
                 return CloseConnection(TransportErrorCode.StreamStateError,
                     QuicError.StreamNotWritable,
                     FrameType.StopSending);
 
             // RFC: Receiving a STOP_SENDING frame for a locally-initiated stream that has not yet been created MUST be
             // treated as a connection error of type STREAM_STATE_ERROR.
-            if (StreamHelpers.IsLocallyInitiated(_isServer, frame.StreamId) &&
+            if (StreamHelpers.IsLocallyInitiated(IsServer, frame.StreamId) &&
                 StreamHelpers.GetStreamIndex(frame.StreamId) >= _streams.GetStreamCount(StreamHelpers.GetStreamType(frame.StreamId)))
                 return CloseConnection(TransportErrorCode.StreamStateError,
                     QuicError.StreamNotCreated,
@@ -379,7 +379,7 @@ namespace System.Net.Quic.Implementations.Managed
 
             if (IsClosing) return ProcessPacketResult.Ok;
 
-            if (!StreamHelpers.CanWrite(_isServer, frame.StreamId))
+            if (!StreamHelpers.CanWrite(IsServer, frame.StreamId))
                 return CloseConnection(TransportErrorCode.StreamStateError,
                     QuicError.NotInRecvState, FrameType.MaxStreamData);
 
@@ -581,7 +581,7 @@ namespace System.Net.Quic.Implementations.Managed
 
             if (IsClosing) return ProcessPacketResult.Ok;
 
-            if (!StreamHelpers.CanRead(_isServer, frame.StreamId))
+            if (!StreamHelpers.CanRead(IsServer, frame.StreamId))
                 return CloseConnection(TransportErrorCode.StreamStateError,
                     QuicError.StreamNotWritable,
                     frameType);
@@ -646,7 +646,7 @@ namespace System.Net.Quic.Implementations.Managed
         private ProcessPacketResult ProcessHandshakeDoneFrame(QuicReader reader, QuicSocketContext.RecvContext context)
         {
             // frame not being allowed to be sent by client is handled in IsPacketAllowed
-            Debug.Assert(!_isServer);
+            Debug.Assert(!IsServer);
 
             reader.ReadFrameType(); // there are no more data, just the frame type identifier.
 
@@ -674,7 +674,7 @@ namespace System.Net.Quic.Implementations.Managed
             // we can simply track if this packet by tracking the written offset.
             int writtenAfterNonAckEliciting = writer.BytesWritten;
 
-            if (writer.BytesAvailable > 0 && _isServer && !_handshakeDoneSent && packetType == PacketType.OneRtt &&
+            if (writer.BytesAvailable > 0 && IsServer && !_handshakeDoneSent && packetType == PacketType.OneRtt &&
                 Tls.IsHandshakeComplete)
             {
                 writer.WriteFrameType(FrameType.HandshakeDone);

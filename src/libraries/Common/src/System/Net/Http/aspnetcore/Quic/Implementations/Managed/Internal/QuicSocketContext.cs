@@ -16,6 +16,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         private static readonly Task _infiniteTimeoutTask = new TaskCompletionSource<int>().Task;
 
         private readonly IPEndPoint? _localEndPoint;
+        private readonly bool _isServer;
         private readonly CancellationTokenSource _socketTaskCts;
 
         private TaskCompletionSource<int> _signalTcs =
@@ -37,9 +38,10 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         private readonly byte[] _sendBuffer = new byte[64 * 1024];
         private readonly byte[] _recvBuffer = new byte[64 * 1024];
 
-        protected QuicSocketContext(IPEndPoint? localEndPoint)
+        protected QuicSocketContext(IPEndPoint? localEndPoint, IPEndPoint? remoteEndPoint, bool isServer)
         {
             _localEndPoint = localEndPoint;
+            _isServer = isServer;
 
             _socketTaskCts = new CancellationTokenSource();
 
@@ -49,6 +51,20 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             var sentPacketPool = new ObjectPool<SentPacket>(256);
             _sendContext = new SendContext(sentPacketPool);
             _recvContext = new RecvContext(sentPacketPool);
+
+            Socket.ExclusiveAddressUse = !isServer;
+
+            if (localEndPoint != null)
+            {
+                Socket.Bind(localEndPoint);
+            }
+
+            if (remoteEndPoint != null)
+            {
+                Socket.Connect(remoteEndPoint);
+            }
+
+            Socket.Blocking = false;
         }
 
         public IPEndPoint LocalEndPoint => (IPEndPoint)Socket.LocalEndPoint!;
@@ -59,12 +75,6 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             {
                 return;
             }
-
-            if (_localEndPoint != null)
-            {
-                Socket.Bind(_localEndPoint);
-            }
-            Socket.Blocking = false;
 
             // TODO-RZ: Find out why I can't use RuntimeInformation when building inside .NET Runtime
 #if FEATURE_QUIC_STANDALONE
@@ -301,6 +311,30 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
             Socket.Close();
             Socket.Dispose();
+        }
+
+        // TODO-RZ: This function is a slight hack, but the socket context classes will need to be reworked either way
+        protected void ReceiveAllDatagramsForConnection(ManagedQuicConnection connection)
+        {
+            // sadly, we have to use exception based dispatch, because there is no way to find out that this was the
+            // last datagram from given endpoint
+            try
+            {
+                while (Socket.Available > 0)
+                {
+                    EndPoint ep = connection.UnsafeRemoteEndPoint;
+                    int length = Socket.ReceiveFrom(_recvBuffer, ref ep);
+                    Debug.Assert(ep.Equals(connection.UnsafeRemoteEndPoint));
+
+                    _recvContext.Timestamp = Timestamp.Now;
+                    _reader.Reset(_recvBuffer.AsMemory(0, length));
+                    connection.ReceiveData(_reader, connection.UnsafeRemoteEndPoint, _recvContext);
+                }
+            }
+            catch (SocketException e)
+            {
+                // "service temporarily unavailable", we are done
+            }
         }
 
         /// <summary>
