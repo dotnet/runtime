@@ -6739,55 +6739,41 @@ int CodeGenInterface::genCallerSPtoInitialSPdelta() const
 // Assumptions:
 //     i) tree oper is one of GT_NEG or GT_INTRINSIC Abs()
 //    ii) tree type is floating point type.
+//   iii) caller of this routine needs to call genProduceReg()
 void CodeGen::genSSE2BitwiseOp(GenTree* treeNode)
 {
     regNumber targetReg  = treeNode->GetRegNum();
     var_types targetType = treeNode->TypeGet();
+
     assert(varTypeIsFloating(targetType));
-    float       f   = 0;
-    double      d   = 0;
-    instruction ins = INS_invalid;
-    switch (treeNode->OperGet())
+
+    UINT64      mask = 0;
+    instruction ins  = INS_invalid;
+
+    if (treeNode->OperIs(GT_NEG))
     {
-    case GT_NEG:
-        ins = INS_xorps;
-        if (targetType == TYP_FLOAT)
-        {
-            *reinterpret_cast<int*>(&f) = 0x80000000;
-        }
-        else
-        {
-            *reinterpret_cast<__int64*>(&d) = 0x8000000000000000LL;
-        }
-        break;
-
-    case GT_INTRINSIC:
+        ins  = INS_xorps;
+        mask = 0x8000000000000000UL;
+    }
+    else if (treeNode->OperIs(GT_INTRINSIC))
+    {
         assert(treeNode->AsIntrinsic()->gtIntrinsicName == NI_System_Math_Abs);
-        ins = INS_andps;
-        if (targetType == TYP_FLOAT)
-        {
-            *reinterpret_cast<int*>(&f) = 0x7fffffff;
-        }
-        else
-        {
-            *reinterpret_cast<__int64*>(&d) = 0x7fffffffffffffffLL;
-        }
-        break;
-
-    default:
-        assert(!"genSSE2: unsupported oper");
-        unreached();
-        break;
+        ins  = INS_andps;
+        mask = 0x7fffffffffffffffUL;
+    }
+    else
+    {
+        assert(!"genSSE2BitwiseOp: unsupported oper");
     }
 
-    GenTree* op1 = treeNode->AsOp()->gtOp1;
-    assert(op1->isUsedFromReg());
+    assert(treeNode->gtGetOp1()->isUsedFromReg());
 
-    GenTree* tmpZeroCns = compiler->gtNewDconNode(treeNode->TypeIs(TYP_FLOAT) ? f : d, treeNode->TypeGet());
+    // create fake Dcon node for inst_RV_RV_TT (should be contained)
+    GenTree* tmpZeroCns = compiler->gtNewDconNode(*(double*)&mask, treeNode->TypeGet());
     tmpZeroCns->SetContained();
+
     bool isRMW = !compiler->canUseVexEncoding();
-    inst_RV_RV_TT(ins, emitTypeSize(treeNode), targetReg, genConsumeReg(op1), tmpZeroCns, isRMW);
-    return;
+    inst_RV_RV_TT(ins, emitTypeSize(treeNode), targetReg, genConsumeReg(treeNode->gtGetOp1()), tmpZeroCns, isRMW);
 }
 
 //-----------------------------------------------------------------------------------------
