@@ -325,10 +325,12 @@ DWORD PALAPI TestThread(PVOID pArg)
             sprintf_s (szCmd, 128, "child6 -event %s", szTestName);
             szCmd[127] = 0;
 
-            bRet = CreateProcessA(NULL, szCmd, NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi);
+            LPWSTR szCmdW = convert(szCmd);
+            bRet = CreateProcessW(NULL, szCmdW, NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi);
+            free(szCmdW);
             if (FALSE == bRet)
             {
-                Fail("CreateProcess failed [GetLastError()=%u]\n",
+                Fail("CreateProcessW failed [GetLastError()=%u]\n",
                      GetLastError());
             }
 
@@ -365,13 +367,16 @@ DWORD PALAPI TestThread(PVOID pArg)
             sprintf_s (szCmd, 128, "child6 -semaphore %s", szTestName);
             szCmd[127] = 0;
 
-            bRet = CreateProcessA(NULL, szCmd, NULL, NULL, FALSE,
+            LPWSTR szCmdW = convert(szCmd);
+            bRet = CreateProcessW(NULL, szCmdW, NULL, NULL, FALSE,
                                   0, NULL, NULL, &si, &pi);
+            free(szCmdW);
             if (FALSE == bRet)
             {
-                Fail("CreateProcessA failed [GetLastError()=%u]\n",
+                Fail("CreateProcessW failed [GetLastError()=%u]\n",
                      GetLastError());
             }
+
 
             Trace("Setting event %s\n", szEventName);
             bRet = SetEvent(hNamedEvent);
@@ -425,10 +430,12 @@ DWORD PALAPI TestThread(PVOID pArg)
             sprintf_s (szCmd, 128, "child6 -mutex %s -exitcode %d", szTestName, iDesiredExitCode);
             szCmd[127] = 0;
 
-            bRet = CreateProcessA(NULL, szCmd, NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi);
+            LPWSTR szCmdW = convert(szCmd);
+            bRet = CreateProcessW(NULL, szCmdW, NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi);
+            free(szCmdW);
             if (FALSE == bRet)
             {
-                Fail("CreateProcess failed [GetLastError()=%u]\n",
+                Fail("CreateProcessW failed [GetLastError()=%u]\n",
                      GetLastError());
             }
 
@@ -529,11 +536,13 @@ DWORD PALAPI TestThread(PVOID pArg)
             sprintf_s (szCmd, 128, "child6 -mutex_and_named_event %s", szTestName);
             szCmd[127] = 0;
 
-            bRet = CreateProcessA(NULL, szCmd, NULL, NULL, FALSE,
+            LPWSTR szCmdW = convert(szCmd);
+            bRet = CreateProcessW(NULL, szCmdW, NULL, NULL, FALSE,
                                   0, NULL, NULL, &si, &pi);
+            free(szCmdW);
             if (FALSE == bRet)
             {
-                Fail("CreateProcess failed [GetLastError()=%u]\n",
+                Fail("CreateProcessW failed [GetLastError()=%u]\n",
                      GetLastError());
             }
 

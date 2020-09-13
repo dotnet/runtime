@@ -10,7 +10,7 @@
 **          - a normal directory and file
 **          - a read only directory and file
 **          - a read write directory and file
-**          - a hidden directory and file 
+**          - a hidden directory and file
 **          - a read only hidden directory and file
 **          - a directory and a file with no attributes
 **          - an invalid file name
@@ -22,7 +22,7 @@
 const int TYPE_DIR = 0;
 const int TYPE_FILE = 1;
 /* Structure defining a test case */
-typedef struct 
+typedef struct
 {
     char *name;     /* name of the file/directory */
     DWORD expectedAttribs;  /* expected attributes */
@@ -30,7 +30,7 @@ typedef struct
     int isFile;    /* is file (1) or dir (0) */
 }TestCaseFile;
 
-typedef struct 
+typedef struct
 {
     char *name;     /* name of the file/directory */
     DWORD expectedAttribs;  /* expected attributes */
@@ -59,22 +59,22 @@ BOOL CleanUpFiles()
     for (i = 0; i < numFileTests - 1 ; i++ )
     {
         dwAtt = GetFileAttributesA(gfaTestsFile[i].name);
- 
+
         if( dwAtt != INVALID_FILE_ATTRIBUTES )
         {
             //Trace("Files iteration %d\n", i);
             if(!SetFileAttributesA (gfaTestsFile[i].name, FILE_ATTRIBUTE_NORMAL))
             {
                 result = FALSE;
-                Trace("ERROR:%d: Error setting attributes [%s][%d]\n", GetLastError(), gfaTestsFile[i].name, FILE_ATTRIBUTE_NORMAL); 
-            } 
+                Trace("ERROR:%d: Error setting attributes [%s][%d]\n", GetLastError(), gfaTestsFile[i].name, FILE_ATTRIBUTE_NORMAL);
+            }
 
             if(!DeleteFileA (gfaTestsFile[i].name))
             {
                 result = FALSE;
-                Trace("ERROR:%d: Error deleting file [%s][%d]\n", GetLastError(), gfaTestsFile[i].name, dwAtt);   
+                Trace("ERROR:%d: Error deleting file [%s][%d]\n", GetLastError(), gfaTestsFile[i].name, dwAtt);
             }
-            
+
         }
     }
 //    Trace("Value of result is %d\n", result);
@@ -102,8 +102,8 @@ BOOL SetUpFiles()
         if(!SetFileAttributesA (gfaTestsFile[i].name, gfaTestsFile[i].expectedAttribs))
         {
             result = FALSE;
-            Trace("ERROR:%d: Error setting attributes [%s][%d]\n", GetLastError(), gfaTestsFile[i].name, gfaTestsFile[i].expectedAttribs); 
-        } 
+            Trace("ERROR:%d: Error setting attributes [%s][%d]\n", GetLastError(), gfaTestsFile[i].name, gfaTestsFile[i].expectedAttribs);
+        }
     }
 
     return result;
@@ -117,22 +117,24 @@ BOOL CleanUpDirs()
     for (i = 0; i < numDirTests - 1; i++ )
     {
         dwAtt = GetFileAttributesA(gfaTestsDir[i].name);
- 
+
         if( dwAtt != INVALID_FILE_ATTRIBUTES )
         {
-            
+
             if(!SetFileAttributesA (gfaTestsDir[i].name, FILE_ATTRIBUTE_DIRECTORY))
             {
                 result = FALSE;
-                Trace("ERROR:%d: Error setting attributes [%s][%d]\n", GetLastError(), gfaTestsDir[i].name, (FILE_ATTRIBUTE_NORMAL | FILE_ATTRIBUTE_DIRECTORY)); 
-            } 
+                Trace("ERROR:%d: Error setting attributes [%s][%d]\n", GetLastError(), gfaTestsDir[i].name, (FILE_ATTRIBUTE_NORMAL | FILE_ATTRIBUTE_DIRECTORY));
+            }
 
-            if(!RemoveDirectoryA (gfaTestsDir[i].name))
+            LPWSTR nameW = convert(gfaTestsDir[i].name);
+            if(!RemoveDirectoryW (nameW))
             {
                 result = FALSE;
-                Trace("ERROR:%d: Error deleting file [%s][%d]\n", GetLastError(), gfaTestsDir[i].name, dwAtt);   
+                Trace("ERROR:%d: Error deleting file [%s][%d]\n", GetLastError(), gfaTestsDir[i].name, dwAtt);
             }
-            
+
+            free(nameW);
         }
     }
 
@@ -158,15 +160,15 @@ BOOL SetUpDirs()
         if(!SetFileAttributesA (gfaTestsDir[i].name, gfaTestsDir[i].expectedAttribs))
         {
             result = FALSE;
-            Trace("ERROR:%d: Error setting attributes [%s][%d]\n", GetLastError(), gfaTestsDir[i].name, gfaTestsDir[i].expectedAttribs); 
-        } 
+            Trace("ERROR:%d: Error setting attributes [%s][%d]\n", GetLastError(), gfaTestsDir[i].name, gfaTestsDir[i].expectedAttribs);
+        }
 
         ret = GetFileAttributesA (gfaTestsDir[i].name);
         if(ret != gfaTestsDir[i].expectedAttribs)
         {
             result = FALSE;
-            Trace("ERROR: Error setting attributes [%s][%d]\n", gfaTestsDir[i].name, gfaTestsDir[i].expectedAttribs); 
-        } 
+            Trace("ERROR: Error setting attributes [%s][%d]\n", gfaTestsDir[i].name, gfaTestsDir[i].expectedAttribs);
+        }
         // Trace("Setup Dir setting attr [%d], returned [%d]\n", gfaTestsDir[i].expectedAttribs, ret);
 
     }
@@ -187,7 +189,7 @@ int __cdecl main(int argc, char **argv)
     char * NoDirectoryName              = "no_directory";
 
     char * NormalFileName               = "normal_test_file";
-    char * ReadOnlyFileName             = "ro_test_file";  
+    char * ReadOnlyFileName             = "ro_test_file";
     char * ReadWriteFileName            = "rw_file";
     char * HiddenFileName               = ".hidden_file";
     char * HiddenReadOnlyFileName       = ".hidden_ro_file";
@@ -198,9 +200,9 @@ int __cdecl main(int argc, char **argv)
     gfaTestsDir[0].name    = NormalDirectoryName;
     gfaTestsDir[0].expectedAttribs = FILE_ATTRIBUTE_DIRECTORY;
     gfaTestsDir[0].isFile  = TYPE_DIR;
-    
+
     gfaTestsDir[1].name    = ReadOnlyDirectoryName;
-    gfaTestsDir[1].expectedAttribs = FILE_ATTRIBUTE_DIRECTORY | 
+    gfaTestsDir[1].expectedAttribs = FILE_ATTRIBUTE_DIRECTORY |
                           FILE_ATTRIBUTE_READONLY;
     gfaTestsDir[1].isFile  = TYPE_DIR;
 
@@ -209,12 +211,12 @@ int __cdecl main(int argc, char **argv)
     gfaTestsDir[2].isFile  = TYPE_DIR;
 
     gfaTestsDir[3].name    = HiddenDirectoryName;
-    gfaTestsDir[3].expectedAttribs = FILE_ATTRIBUTE_DIRECTORY; //| 
+    gfaTestsDir[3].expectedAttribs = FILE_ATTRIBUTE_DIRECTORY; //|
                           //FILE_ATTRIBUTE_HIDDEN;
     gfaTestsDir[3].isFile  = TYPE_DIR;
-    
+
     gfaTestsDir[4].name    = HiddenReadOnlyDirectoryName;
-    gfaTestsDir[4].expectedAttribs = FILE_ATTRIBUTE_DIRECTORY | 
+    gfaTestsDir[4].expectedAttribs = FILE_ATTRIBUTE_DIRECTORY |
                           FILE_ATTRIBUTE_READONLY; //|
                           //FILE_ATTRIBUTE_HIDDEN;
     gfaTestsDir[4].isFile  = TYPE_DIR;
@@ -249,7 +251,7 @@ int __cdecl main(int argc, char **argv)
 
     gfaTestsFile[5].name    = NotReallyAFileName;
     gfaTestsFile[5].expectedAttribs =  INVALID_FILE_ATTRIBUTES;
-    gfaTestsFile[5].isFile  = TYPE_FILE;    
+    gfaTestsFile[5].isFile  = TYPE_FILE;
 
     /* Initialize PAL environment */
     if (0 != PAL_Initialize(argc,argv))
@@ -277,7 +279,7 @@ int __cdecl main(int argc, char **argv)
         Fail("GetFileAttributesW: SetUp Directories Failed\n");
     }
 
-    /* 
+    /*
      * Go through all the test cases above,
      * call GetFileAttributesW on the name and
      * make sure the return value is the one expected

@@ -13,7 +13,7 @@
 #include <palsuite.h>
 
 
-LPSTR lpSource[4] = { 
+LPSTR lpSource[4] = {
 						"src_existing.tmp",
 						"src_non-existant.tmp",
 						"src_dir_existing",
@@ -42,7 +42,7 @@ LPSTR lpFiles[14] ={
 						"dst_dir_non-existant\\test01.tmp",
 						"dst_dir_non-existant\\test02.tmp"
 						};
-  
+
 DWORD dwFlag[2] = {MOVEFILE_COPY_ALLOWED, MOVEFILE_REPLACE_EXISTING};
 
 
@@ -54,7 +54,7 @@ int createExisting(void)
     HANDLE tempFile2 = NULL;
 
     /* create the src_existing file and dst_existing file */
-    tempFile = CreateFileA(lpSource[0], GENERIC_WRITE, 0, 0, CREATE_ALWAYS,                        
+    tempFile = CreateFileA(lpSource[0], GENERIC_WRITE, 0, 0, CREATE_ALWAYS,
                             FILE_ATTRIBUTE_NORMAL, 0);
     tempFile2 = CreateFileA(lpDestination[0], GENERIC_WRITE, 0, 0, CREATE_ALWAYS,
                             FILE_ATTRIBUTE_NORMAL, 0);
@@ -63,9 +63,9 @@ int createExisting(void)
 
     if ((tempFile == NULL) || (tempFile2 == NULL))
     {
-        Trace("ERROR[%ul]: couldn't create %S or %S\n", GetLastError(), lpSource[0], 
+        Trace("ERROR[%ul]: couldn't create %S or %S\n", GetLastError(), lpSource[0],
                 lpDestination[0]);
-        return FAIL;    
+        return FAIL;
     }
 
     /* create the src_dir_existing and dst_dir_existing directory and files */
@@ -102,20 +102,25 @@ int createExisting(void)
 }
 
 void removeDirectoryHelper(LPSTR dir, int location)
-{    
+{
     DWORD dwAtt = GetFileAttributesA(dir);
 
     if (( dwAtt != INVALID_FILE_ATTRIBUTES ) && ( dwAtt & FILE_ATTRIBUTE_DIRECTORY) )
     {
-        if(!RemoveDirectoryA(dir))
+        LPWSTR dirW = convert(dir);
+        if(!RemoveDirectoryW(dirW))
         {
-            Fail("ERROR: Failed to remove Directory [%s], Error Code [%d], location [%d]\n", dir, GetLastError(), location);           
+            DWORD dwError = GetLastError();
+            free(dirW);
+            Fail("ERROR: Failed to remove Directory [%s], Error Code [%d], location [%d]\n", dir, dwError, location);
         }
+
+        free(dirW);
     }
 }
 
 void removeFileHelper(LPSTR pfile, int location)
-{    
+{
     FILE *fp;
     fp = fopen( pfile, "r");
 
@@ -123,12 +128,12 @@ void removeFileHelper(LPSTR pfile, int location)
     {
         if(fclose(fp))
         {
-          Fail("ERROR: Failed to close the file [%s], Error Code [%d], location [%d]\n", pfile, GetLastError(), location);           
+          Fail("ERROR: Failed to close the file [%s], Error Code [%d], location [%d]\n", pfile, GetLastError(), location);
         }
 
         if(!DeleteFileA(pfile))
         {
-            Fail("ERROR: Failed to delete file [%s], Error Code [%d], location [%d]\n", pfile, GetLastError(), location);           
+            Fail("ERROR: Failed to delete file [%s], Error Code [%d], location [%d]\n", pfile, GetLastError(), location);
         }
     }
 
@@ -138,7 +143,7 @@ void removeAll(void)
 {
     DWORD dwAtt;
     /* get rid of destination dirs and files */
-    removeFileHelper(lpSource[0], 11);  
+    removeFileHelper(lpSource[0], 11);
     removeFileHelper(lpSource[1], 12);
     removeFileHelper(lpFiles[0], 13);
     removeFileHelper(lpFiles[1], 14);
@@ -172,7 +177,7 @@ void removeAll(void)
     {
         removeFileHelper(lpDestination[1], 19);
     }
- 
+
     dwAtt = GetFileAttributesA(lpDestination[2]);
     if (( dwAtt != INVALID_FILE_ATTRIBUTES ) && ( dwAtt & FILE_ATTRIBUTE_DIRECTORY) )
     {
@@ -182,7 +187,7 @@ void removeAll(void)
     }
     else
     {
-        removeFileHelper(lpDestination[2], 23);  
+        removeFileHelper(lpDestination[2], 23);
     }
 
     dwAtt = GetFileAttributesA(lpDestination[3]);
@@ -236,7 +241,7 @@ int __cdecl main(int argc, char *argv[])
     if (createExisting() != PASS)
     {
         goto EXIT;
-    }  
+    }
 
     /* lpSource loop */
     for (i = 0; i < 4; i++)
@@ -252,14 +257,14 @@ int __cdecl main(int argc, char *argv[])
                 bRc = MoveFileExA(lpSource[i], lpDestination[j], dwFlag[k]);
 
                 if (!(
-                    ((bRc == TRUE) && (results[nCounter] == '1')) 
-                    || 
+                    ((bRc == TRUE) && (results[nCounter] == '1'))
+                    ||
                     ((bRc == FALSE ) && (results[nCounter] == '0'))                    )
                     )
                 {
-                    Trace("MoveFileExA(%s, %s, %s): Values of i[%d], j[%d], k [%d] and results[%d]=%c LastError[%d]Flag[%d]FAILED\n", 
-                        lpSource[i], lpDestination[j], 
-                        k == 1 ? 
+                    Trace("MoveFileExA(%s, %s, %s): Values of i[%d], j[%d], k [%d] and results[%d]=%c LastError[%d]Flag[%d]FAILED\n",
+                        lpSource[i], lpDestination[j],
+                        k == 1 ?
                         "MOVEFILE_REPLACE_EXISTING":"MOVEFILE_COPY_ALLOWED", i, j, k, nCounter, results[nCounter], GetLastError(), bRc);
                     goto EXIT;
                 }
@@ -276,7 +281,7 @@ int __cdecl main(int argc, char *argv[])
     }
 
     /* create the temp source file */
-    hFile = CreateFileA(tempSource, GENERIC_WRITE, 0, 0, CREATE_ALWAYS,                        
+    hFile = CreateFileA(tempSource, GENERIC_WRITE, 0, 0, CREATE_ALWAYS,
                             FILE_ATTRIBUTE_NORMAL, 0);
 
     if( hFile == INVALID_HANDLE_VALUE )
@@ -285,7 +290,7 @@ int __cdecl main(int argc, char *argv[])
             "create the file correctly.\n");
         goto EXIT;
     }
-    
+
     bRc = CloseHandle(hFile);
     if(!bRc)
     {
@@ -321,7 +326,7 @@ int __cdecl main(int argc, char *argv[])
         Trace("MoveFileExA: GetFileAttributes failed to get "
             "the file's attributes.\n");
         goto EXIT;
-    }   
+    }
 
     if((result & FILE_ATTRIBUTE_READONLY) != FILE_ATTRIBUTE_READONLY)
     {
