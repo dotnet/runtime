@@ -193,7 +193,7 @@ namespace System.Net.Http
                 };
             }
 
-            return s_knownMethods.TryGetValue(method, out HttpMethod normalized) ? normalized : method;
+            return s_knownMethods.TryGetValue(method, out HttpMethod? normalized) ? normalized! : method;
         }
 
         internal bool MustHaveRequestBody
