@@ -5355,7 +5355,7 @@ UNATIVE_OFFSET emitter::emitDataGenBeg(UNATIVE_OFFSET size, UNATIVE_OFFSET align
     /* Get hold of the current offset */
     secOffs = emitConsDsc.dsdOffs;
 
-    if (alignment > 4)
+    if ((secOffs != 0) && (alignment > 4))
     {
         // As per the above comment, the minimum alignment is actually 4
         // bytes so we don't need to make any adjustments if the requested
@@ -5552,6 +5552,8 @@ CORINFO_FIELD_HANDLE emitter::emitAnyConst(const void* cnsAddr, UNATIVE_OFFSET c
 // Arguments:
 //    constValue - constant value
 //    attr       - constant size
+//    packSize   - works as a multiplier if packSize > attr
+//    packAlignment - pack alignment
 //
 // Return Value:
 //    A field handle representing the data offset to access the constant.
@@ -5559,7 +5561,6 @@ CORINFO_FIELD_HANDLE emitter::emitAnyConst(const void* cnsAddr, UNATIVE_OFFSET c
 // Notes:
 //    If attr is EA_4BYTE then the double value is converted to a float value.
 //    If attr is EA_8BYTE then 8 byte alignment is automatically requested.
-//    If attr is EA_16BYTE then 8 byte value is emitted twice.
 //
 CORINFO_FIELD_HANDLE emitter::emitFltOrDblConst(double constValue, emitAttr attr, emitAttr packSize, emitAttr packAlignment)
 {
