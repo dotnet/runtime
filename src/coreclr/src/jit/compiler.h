@@ -5384,6 +5384,7 @@ protected:
     }
 
     bool fgHaveProfileData();
+    void fgComputeProfileScale();
     bool fgGetProfileWeightForBasicBlock(IL_OFFSET offset, unsigned* weight);
     void fgInstrumentMethod();
 
