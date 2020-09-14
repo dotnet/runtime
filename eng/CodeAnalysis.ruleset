@@ -64,7 +64,7 @@
       <Rule Id="CA1308" Action="None" />             <!-- Normalize strings to uppercase -->
       <Rule Id="CA1309" Action="None" />             <!-- Use ordinal stringcomparison -->
       <Rule Id="CA1401" Action="Warning" />          <!-- P/Invokes should not be visible -->
-      <Rule Id="CA1416" Action="None" />             <!-- Validate platform compatibility; https://github.com/dotnet/runtime/issues/41354 -->
+      <Rule Id="CA1416" Action="Warning" />          <!-- Validate platform compatibility -->
       <Rule Id="CA1417" Action="Warning" />          <!-- Do not use 'OutAttribute' on string parameters for P/Invokes -->
       <Rule Id="CA1501" Action="None" />             <!-- Avoid excessive inheritance -->
       <Rule Id="CA1502" Action="None" />             <!-- Avoid excessive complexity -->
