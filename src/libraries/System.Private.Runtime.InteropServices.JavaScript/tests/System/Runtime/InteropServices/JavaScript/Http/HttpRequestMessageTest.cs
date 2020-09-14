@@ -43,26 +43,17 @@ namespace System.Runtime.InteropServices.JavaScript.Http.Tests
             Assert.Equal(new Uri("/relative", UriKind.Relative), rm.RequestUri);
         }
 
-        [Fact]
-        public void Ctor_AbsoluteStringUri_CorrectValues()
+        [Theory]
+        [InlineData("http://host/absolute/")]
+        [InlineData("blob:http://host/absolute/")]
+        public void Ctor_AbsoluteStringUri_CorrectValues(string uri)
         {
-            var rm = new HttpRequestMessage(HttpMethod.Post, "http://host/absolute/");
+            var rm = new HttpRequestMessage(HttpMethod.Post, uri);
 
             Assert.Equal(HttpMethod.Post, rm.Method);
             Assert.Equal(_expectedRequestMessageVersion, rm.Version);
             Assert.Null(rm.Content);
-            Assert.Equal(new Uri("http://host/absolute/"), rm.RequestUri);
-        }
-
-        [Fact]
-        public void Ctor_AbsoluteBlobStringUri_CorrectValues()
-        {
-            var rm = new HttpRequestMessage(HttpMethod.Post, "blob:http://host/absolute/");
-
-            Assert.Equal(HttpMethod.Post, rm.Method);
-            Assert.Equal(_expectedRequestMessageVersion, rm.Version);
-            Assert.Null(rm.Content);
-            Assert.Equal(new Uri("blob:http://host/absolute/"), rm.RequestUri);
+            Assert.Equal(new Uri(uri), rm.RequestUri);
         }
 
         [Fact]
@@ -88,22 +79,12 @@ namespace System.Runtime.InteropServices.JavaScript.Http.Tests
             Assert.Equal(uri, rm.RequestUri);
         }
 
-        [Fact]
-        public void Ctor_AbsoluteUri_CorrectValues()
+        [Theory]
+        [InlineData("http://host/absolute/")]
+        [InlineData("blob:http://host/absolute/")]
+        public void Ctor_AbsoluteUri_CorrectValues(string uriData)
         {
-            var uri = new Uri("http://host/absolute/");
-            var rm = new HttpRequestMessage(HttpMethod.Post, uri);
-
-            Assert.Equal(HttpMethod.Post, rm.Method);
-            Assert.Equal(_expectedRequestMessageVersion, rm.Version);
-            Assert.Null(rm.Content);
-            Assert.Equal(uri, rm.RequestUri);
-        }
-
-        [Fact]
-        public void Ctor_AbsoluteBlobUri_CorrectValues()
-        {
-            var uri = new Uri("blob:http://host/absolute/");
+            var uri = new Uri(uriData);
             var rm = new HttpRequestMessage(HttpMethod.Post, uri);
 
             Assert.Equal(HttpMethod.Post, rm.Method);
@@ -123,16 +104,12 @@ namespace System.Runtime.InteropServices.JavaScript.Http.Tests
             Assert.Null(rm.Content);
         }
 
-        [Fact]
-        public void Ctor_NullMethod_ThrowsArgumentNullException()
+        [Theory]
+        [InlineData("http://example.com")]
+        [InlineData("blob:http://example.com")]
+        public void Ctor_NullMethod_ThrowsArgumentNullException(string uriData)
         {
-            Assert.Throws<ArgumentNullException>(() => new HttpRequestMessage(null, "http://example.com"));
-        }
-
-        [Fact]
-        public void Ctor_NullMethodBlob_ThrowsArgumentNullException()
-        {
-            Assert.Throws<ArgumentNullException>(() => new HttpRequestMessage(null, "blob:http://example.com"));
+            Assert.Throws<ArgumentNullException>(() => new HttpRequestMessage(null, uriData));
         }
 
         [Fact]
@@ -141,10 +118,12 @@ namespace System.Runtime.InteropServices.JavaScript.Http.Tests
             AssertExtensions.Throws<ArgumentException>("requestUri", () => new HttpRequestMessage(HttpMethod.Put, "ftp://example.com"));
         }
 
-        [Fact]
-        public void Dispose_DisposeObject_ContentGetsDisposedAndSettersWillThrowButGettersStillWork()
+        [Theory]
+        [InlineData("http://example.com")]
+        [InlineData("blob:http://example.com")]
+        public void Dispose_DisposeObject_ContentGetsDisposedAndSettersWillThrowButGettersStillWork(string uriData)
         {
-            var rm = new HttpRequestMessage(HttpMethod.Get, "http://example.com");
+            var rm = new HttpRequestMessage(HttpMethod.Get, uriData);
             var content = new MockContent();
             rm.Content = content;
             Assert.False(content.IsDisposed);
@@ -160,66 +139,20 @@ namespace System.Runtime.InteropServices.JavaScript.Http.Tests
 
             // Property getters should still work after disposing.
             Assert.Equal(HttpMethod.Get, rm.Method);
-            Assert.Equal(new Uri("http://example.com"), rm.RequestUri);
+            Assert.Equal(new Uri(uriData), rm.RequestUri);
             Assert.Equal(_expectedRequestMessageVersion, rm.Version);
             Assert.Equal(content, rm.Content);
         }
 
-        [Fact]
-        public void Dispose_DisposeObject_Blob_ContentGetsDisposedAndSettersWillThrowButGettersStillWork()
-        {
-            var rm = new HttpRequestMessage(HttpMethod.Get, "blob:http://example.com");
-            var content = new MockContent();
-            rm.Content = content;
-            Assert.False(content.IsDisposed);
-
-            rm.Dispose();
-            rm.Dispose(); // Multiple calls don't throw.
-
-            Assert.True(content.IsDisposed);
-            Assert.Throws<ObjectDisposedException>(() => { rm.Method = HttpMethod.Put; });
-            Assert.Throws<ObjectDisposedException>(() => { rm.RequestUri = null; });
-            Assert.Throws<ObjectDisposedException>(() => { rm.Version = new Version(1, 0); });
-            Assert.Throws<ObjectDisposedException>(() => { rm.Content = null; });
-
-            // Property getters should still work after disposing.
-            Assert.Equal(HttpMethod.Get, rm.Method);
-            Assert.Equal(new Uri("blob:http://example.com"), rm.RequestUri);
-            Assert.Equal(_expectedRequestMessageVersion, rm.Version);
-            Assert.Equal(content, rm.Content);
-        }
-
-        [Fact]
-        public void Properties_SetOptionsAndGetTheirValue_MatchingValues()
+        [Theory]
+        [InlineData("https://example.com")]
+        [InlineData("blob:https://example.com")]
+        public void Properties_SetOptionsAndGetTheirValue_MatchingValues(string uriData)
         {
             var rm = new HttpRequestMessage();
 
             var content = new MockContent();
-            var uri = new Uri("https://example.com");
-            var version = new Version(1, 0);
-            var method = new HttpMethod("custom");
-
-            rm.Content = content;
-            rm.Method = method;
-            rm.RequestUri = uri;
-            rm.Version = version;
-
-            Assert.Equal(content, rm.Content);
-            Assert.Equal(uri, rm.RequestUri);
-            Assert.Equal(method, rm.Method);
-            Assert.Equal(version, rm.Version);
-
-            Assert.NotNull(rm.Headers);
-            Assert.NotNull(rm.Options);
-        }
-
-        [Fact]
-        public void Properties_Blob_SetOptionsAndGetTheirValue_MatchingValues()
-        {
-            var rm = new HttpRequestMessage();
-
-            var content = new MockContent();
-            var uri = new Uri("blob:https://example.com");
+            var uri = new Uri(uriData);
             var version = new Version(1, 0);
             var method = new HttpMethod("custom");
 
@@ -238,53 +171,15 @@ namespace System.Runtime.InteropServices.JavaScript.Http.Tests
         }
 
 #nullable enable
-        [Fact]
-        public void Properties_SetOptionsAndGetTheirValue_Set_FetchOptions()
+        [Theory]
+        [InlineData("https://example.com")]
+        [InlineData("blob:https://example.com")]
+        public void Properties_SetOptionsAndGetTheirValue_Set_FetchOptions(string uriData)
         {
             var rm = new HttpRequestMessage();
 
             var content = new MockContent();
-            var uri = new Uri("https://example.com");
-            var version = new Version(1, 0);
-            var method = new HttpMethod("custom");
-
-            rm.Content = content;
-            rm.Method = method;
-            rm.RequestUri = uri;
-            rm.Version = version;
-
-            var fetchme = new Dictionary<string, object?>();
-            fetchme.Add("hic", null);
-            fetchme.Add("sunt", 4444);
-            fetchme.Add("dracones", new List<string>());
-            rm.Options.Set(FetchOptions, fetchme);
-
-            Assert.Equal(content, rm.Content);
-            Assert.Equal(uri, rm.RequestUri);
-            Assert.Equal(method, rm.Method);
-            Assert.Equal(version, rm.Version);
-
-            Assert.NotNull(rm.Headers);
-            Assert.NotNull(rm.Options);
-
-            rm.Options.TryGetValue(FetchOptions, out IDictionary<string, object?>? fetchOptionsValue);
-            Assert.NotNull(fetchOptionsValue);
-            if (fetchOptionsValue != null)
-            {
-                foreach (var item in fetchOptionsValue)
-                {
-                    Assert.True(fetchme.ContainsKey(item.Key));
-                }
-            }
-        }
-
-        [Fact]
-        public void Properties_BlobSetOptionsAndGetTheirValue_Set_FetchOptions()
-        {
-            var rm = new HttpRequestMessage();
-
-            var content = new MockContent();
-            var uri = new Uri("blob:https://example.com");
+            var uri = new Uri(uriData);
             var version = new Version(1, 0);
             var method = new HttpMethod("custom");
 
@@ -320,40 +215,15 @@ namespace System.Runtime.InteropServices.JavaScript.Http.Tests
 #nullable disable
 
 #nullable enable
-        [Fact]
-        public void Properties_SetOptionsAndGetTheirValue_NotSet_FetchOptions()
+        [Theory]
+        [InlineData("https://example.com")]
+        [InlineData("blob:https://example.com")]
+        public void Properties_SetOptionsAndGetTheirValue_NotSet_FetchOptions(string uriData)
         {
             var rm = new HttpRequestMessage();
 
             var content = new MockContent();
-            var uri = new Uri("https://example.com");
-            var version = new Version(1, 0);
-            var method = new HttpMethod("custom");
-
-            rm.Content = content;
-            rm.Method = method;
-            rm.RequestUri = uri;
-            rm.Version = version;
-
-            Assert.Equal(content, rm.Content);
-            Assert.Equal(uri, rm.RequestUri);
-            Assert.Equal(method, rm.Method);
-            Assert.Equal(version, rm.Version);
-
-            Assert.NotNull(rm.Headers);
-            Assert.NotNull(rm.Options);
-
-            rm.Options.TryGetValue(FetchOptions, out IDictionary<string, object?>? fetchOptionsValue);
-            Assert.Null(fetchOptionsValue);
-        }
-
-        [Fact]
-        public void Properties_Blob_SetOptionsAndGetTheirValue_NotSet_FetchOptions()
-        {
-            var rm = new HttpRequestMessage();
-
-            var content = new MockContent();
-            var uri = new Uri("blob:https://example.com");
+            var uri = new Uri(uriData);
             var version = new Version(1, 0);
             var method = new HttpMethod("custom");
 
@@ -374,14 +244,15 @@ namespace System.Runtime.InteropServices.JavaScript.Http.Tests
             Assert.Null(fetchOptionsValue);
         }
 #nullable disable
-
-        [Fact]
-        public void Properties_SetOptionsAndGetTheirValue_Set_EnableStreamingResponse()
+        [Theory]
+        [InlineData("https://example.com")]
+        [InlineData("blob:https://example.com")]
+        public void Properties_SetOptionsAndGetTheirValue_Set_EnableStreamingResponse(string uriData)
         {
             var rm = new HttpRequestMessage();
 
             var content = new MockContent();
-            var uri = new Uri("https://example.com");
+            var uri = new Uri(uriData);
             var version = new Version(1, 0);
             var method = new HttpMethod("custom");
 
@@ -404,42 +275,15 @@ namespace System.Runtime.InteropServices.JavaScript.Http.Tests
             Assert.True(streamingEnabledValue);
         }
 
-        [Fact]
-        public void Properties_Blob_SetOptionsAndGetTheirValue_Set_EnableStreamingResponse()
+        [Theory]
+        [InlineData("https://example.com")]
+        [InlineData("blob:https://example.com")]
+        public void Properties_SetOptionsAndGetTheirValue_NotSet_EnableStreamingResponse(string uriData)
         {
             var rm = new HttpRequestMessage();
 
             var content = new MockContent();
-            var uri = new Uri("blob:https://example.com");
-            var version = new Version(1, 0);
-            var method = new HttpMethod("custom");
-
-            rm.Content = content;
-            rm.Method = method;
-            rm.RequestUri = uri;
-            rm.Version = version;
-
-            rm.Options.Set(EnableStreamingResponse, true);
-
-            Assert.Equal(content, rm.Content);
-            Assert.Equal(uri, rm.RequestUri);
-            Assert.Equal(method, rm.Method);
-            Assert.Equal(version, rm.Version);
-
-            Assert.NotNull(rm.Headers);
-            Assert.NotNull(rm.Options);
-
-            rm.Options.TryGetValue(EnableStreamingResponse, out bool streamingEnabledValue);
-            Assert.True(streamingEnabledValue);
-        }
-
-        [Fact]
-        public void Properties_SetOptionsAndGetTheirValue_NotSet_EnableStreamingResponse()
-        {
-            var rm = new HttpRequestMessage();
-
-            var content = new MockContent();
-            var uri = new Uri("https://example.com");
+            var uri = new Uri(uriData);
             var version = new Version(1, 0);
             var method = new HttpMethod("custom");
 
@@ -460,32 +304,6 @@ namespace System.Runtime.InteropServices.JavaScript.Http.Tests
             Assert.False(streamingEnabledValue);
         }
 
-        [Fact]
-        public void Properties_Blob_SetOptionsAndGetTheirValue_NotSet_EnableStreamingResponse()
-        {
-            var rm = new HttpRequestMessage();
-
-            var content = new MockContent();
-            var uri = new Uri("blob:https://example.com");
-            var version = new Version(1, 0);
-            var method = new HttpMethod("custom");
-
-            rm.Content = content;
-            rm.Method = method;
-            rm.RequestUri = uri;
-            rm.Version = version;
-
-            Assert.Equal(content, rm.Content);
-            Assert.Equal(uri, rm.RequestUri);
-            Assert.Equal(method, rm.Method);
-            Assert.Equal(version, rm.Version);
-
-            Assert.NotNull(rm.Headers);
-            Assert.NotNull(rm.Options);
-
-            rm.Options.TryGetValue(EnableStreamingResponse, out bool streamingEnabledValue);
-            Assert.False(streamingEnabledValue);
-        }
 
         [Fact]
         public void RequestUri_SetNonHttpUri_ThrowsArgumentException()
@@ -509,7 +327,7 @@ namespace System.Runtime.InteropServices.JavaScript.Http.Tests
         }
 
         [Fact]
-        public void ToString_DefaultAndNonDefaultInstance_DumpAllFields()
+        public void ToString_DefaultPutInstance_DumpAllFields()
         {
             var rm = new HttpRequestMessage();
             string expected =
@@ -517,66 +335,45 @@ namespace System.Runtime.InteropServices.JavaScript.Http.Tests
                     _expectedRequestMessageVersion.ToString(2) +
                     $", Content: <null>, Headers:{Environment.NewLine}{{{Environment.NewLine}}}";
             Assert.Equal(expected, rm.ToString());
+        }
 
+        [Theory]
+        [InlineData("http://a.com/")]
+        [InlineData("blob:http://a.com/")]
+        public void ToString_NonDefaultInstanceWithNoCustomHeaders_DumpAllFields(string uriData)
+        {
+            var rm = new HttpRequestMessage();
             rm.Method = HttpMethod.Put;
-            rm.RequestUri = new Uri("http://a.com/");
+            rm.RequestUri = new Uri(uriData);
             rm.Version = new Version(1, 0);
             rm.Content = new StringContent("content");
 
             // Note that there is no Content-Length header: The reason is that the value for Content-Length header
             // doesn't get set by StringContent..ctor, but only if someone actually accesses the ContentLength property.
             Assert.Equal(
-                "Method: PUT, RequestUri: 'http://a.com/', Version: 1.0, Content: " + typeof(StringContent).ToString() + ", Headers:" + Environment.NewLine +
+                $"Method: PUT, RequestUri: '{uriData}', Version: 1.0, Content: " + typeof(StringContent).ToString() + ", Headers:" + Environment.NewLine +
                 $"{{{Environment.NewLine}" +
                 "  Content-Type: text/plain; charset=utf-8" + Environment.NewLine +
-                "}", rm.ToString());
-
-            rm.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("text/plain", 0.2));
-            rm.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("text/xml", 0.1));
-            rm.Headers.Add("Custom-Request-Header", "value1");
-            rm.Content.Headers.Add("Custom-Content-Header", "value2");
-
-            Assert.Equal(
-                "Method: PUT, RequestUri: 'http://a.com/', Version: 1.0, Content: " + typeof(StringContent).ToString() + ", Headers:" + Environment.NewLine +
-                "{" + Environment.NewLine +
-                "  Accept: text/plain; q=0.2" + Environment.NewLine +
-                "  Accept: text/xml; q=0.1" + Environment.NewLine +
-                "  Custom-Request-Header: value1" + Environment.NewLine +
-                "  Content-Type: text/plain; charset=utf-8" + Environment.NewLine +
-                "  Custom-Content-Header: value2" + Environment.NewLine +
                 "}", rm.ToString());
         }
 
-        [Fact]
-        public void ToString_Blob_DefaultAndNonDefaultInstance_DumpAllFields()
+        [Theory]
+        [InlineData("http://a.com/")]
+        [InlineData("blob:http://a.com/")]
+        public void ToString_NonDefaultInstanceWithCustomHeaders_DumpAllFields(string uriData)
         {
             var rm = new HttpRequestMessage();
-            string expected =
-                    "Method: GET, RequestUri: '<null>', Version: " +
-                    _expectedRequestMessageVersion.ToString(2) +
-                    $", Content: <null>, Headers:{Environment.NewLine}{{{Environment.NewLine}}}";
-            Assert.Equal(expected, rm.ToString());
-
             rm.Method = HttpMethod.Put;
-            rm.RequestUri = new Uri("blob:http://a.com/");
+            rm.RequestUri = new Uri(uriData);
             rm.Version = new Version(1, 0);
             rm.Content = new StringContent("content");
-
-            // Note that there is no Content-Length header: The reason is that the value for Content-Length header
-            // doesn't get set by StringContent..ctor, but only if someone actually accesses the ContentLength property.
-            Assert.Equal(
-                "Method: PUT, RequestUri: 'blob:http://a.com/', Version: 1.0, Content: " + typeof(StringContent).ToString() + ", Headers:" + Environment.NewLine +
-                $"{{{Environment.NewLine}" +
-                "  Content-Type: text/plain; charset=utf-8" + Environment.NewLine +
-                "}", rm.ToString());
-
             rm.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("text/plain", 0.2));
             rm.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("text/xml", 0.1));
             rm.Headers.Add("Custom-Request-Header", "value1");
             rm.Content.Headers.Add("Custom-Content-Header", "value2");
 
             Assert.Equal(
-                "Method: PUT, RequestUri: 'blob:http://a.com/', Version: 1.0, Content: " + typeof(StringContent).ToString() + ", Headers:" + Environment.NewLine +
+                $"Method: PUT, RequestUri: '{uriData}', Version: 1.0, Content: " + typeof(StringContent).ToString() + ", Headers:" + Environment.NewLine +
                 "{" + Environment.NewLine +
                 "  Accept: text/plain; q=0.2" + Environment.NewLine +
                 "  Accept: text/xml; q=0.1" + Environment.NewLine +
