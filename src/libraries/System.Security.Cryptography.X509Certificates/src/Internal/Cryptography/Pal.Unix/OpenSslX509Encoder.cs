@@ -16,22 +16,18 @@ namespace Internal.Cryptography.Pal
     {
         public ECDsa DecodeECDsaPublicKey(ICertificatePal? certificatePal)
         {
-            if (certificatePal is OpenSslX509CertificateReader reader)
-            {
-                return reader.GetECDsaPublicKey();
-            }
+            if (certificatePal is null)
+                throw new NotSupportedException(SR.NotSupported_KeyAlgorithm);
 
-            throw new NotSupportedException(SR.NotSupported_KeyAlgorithm);
+            return ((OpenSslX509CertificateReader)certificatePal).GetECDsaPublicKey();
         }
 
         public ECDiffieHellman DecodeECDiffieHellmanPublicKey(ICertificatePal? certificatePal)
         {
-            if (certificatePal is OpenSslX509CertificateReader reader)
-            {
-                return reader.GetECDiffieHellmanPublicKey();
-            }
+            if (certificatePal is null)
+                throw new NotSupportedException(SR.NotSupported_KeyAlgorithm);
 
-            throw new NotSupportedException(SR.NotSupported_KeyAlgorithm);
+            return ((OpenSslX509CertificateReader)certificatePal).GetECDiffieHellmanPublicKey();
         }
 
 

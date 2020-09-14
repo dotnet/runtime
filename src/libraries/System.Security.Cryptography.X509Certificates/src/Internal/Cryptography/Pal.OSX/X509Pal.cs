@@ -25,12 +25,12 @@ namespace Internal.Cryptography.Pal
         {
             public ECDsa DecodeECDsaPublicKey(ICertificatePal? certificatePal)
             {
-                return DecodeECPublicKey(certificatePal, key => new ECDsaImplementation.ECDsaSecurityTransforms(key));
+                return new ECDsaImplementation.ECDsaSecurityTransforms(DecodeECPublicKey(certificatePal));
             }
 
             public ECDiffieHellman DecodeECDiffieHellmanPublicKey(ICertificatePal? certificatePal)
             {
-                return DecodeECPublicKey(certificatePal, key => new ECDiffieHellmanImplementation.ECDiffieHellmanSecurityTransforms(key));
+                return new ECDiffieHellmanImplementation.ECDiffieHellmanSecurityTransforms(DecodeECPublicKey(certificatePal));
             }
 
             public AsymmetricAlgorithm DecodePublicKey(Oid oid, byte[] encodedKeyValue, byte[] encodedParameters,
@@ -72,40 +72,36 @@ namespace Internal.Cryptography.Pal
                 throw new NotSupportedException(SR.NotSupported_KeyAlgorithm);
             }
 
-            private static TAlgorithm DecodeECPublicKey<TAlgorithm>(ICertificatePal? certificatePal, Func<SafeSecKeyRefHandle, TAlgorithm> factory)
-                where TAlgorithm : AsymmetricAlgorithm
+            private static SafeSecKeyRefHandle DecodeECPublicKey(ICertificatePal? certificatePal)
             {
                 const int errSecInvalidKeyRef = -67712;
                 const int errSecUnsupportedKeySize = -67735;
 
-                if (certificatePal is AppleCertificatePal applePal)
-                {
-                    SafeSecKeyRefHandle key = Interop.AppleCrypto.X509GetPublicKey(applePal.CertificateHandle);
-
-                    // If X509GetPublicKey uses the new SecCertificateCopyKey API it can return an invalid
-                    // key reference for unsupported algorithms. This currently happens for the BrainpoolP160r1
-                    // algorithm in the test suite (as of macOS Mojave Developer Preview 4).
-                    if (key.IsInvalid)
-                    {
-                        throw Interop.AppleCrypto.CreateExceptionForOSStatus(errSecInvalidKeyRef);
-                    }
-                    // EccGetKeySizeInBits can fail for two reasons. First, the Apple implementation has changed
-                    // and we receive values from API that were not previously handled. In that case the
-                    // implementation will need to be adjusted to handle these values. Second, we deliberately
-                    // return 0 from the native code to prevent hitting buggy API implementations in Apple code
-                    // later.
-                    if (Interop.AppleCrypto.EccGetKeySizeInBits(key) == 0)
-                    {
-                        key.Dispose();
-                        throw Interop.AppleCrypto.CreateExceptionForOSStatus(errSecUnsupportedKeySize);
-                    }
-
-                    return factory(key);
-                }
-                else
-                {
+                if (certificatePal is null)
                     throw new NotSupportedException(SR.NotSupported_KeyAlgorithm);
+
+                AppleCertificatePal applePal = (AppleCertificatePal)certificatePal;
+                SafeSecKeyRefHandle key = Interop.AppleCrypto.X509GetPublicKey(applePal.CertificateHandle);
+
+                // If X509GetPublicKey uses the new SecCertificateCopyKey API it can return an invalid
+                // key reference for unsupported algorithms. This currently happens for the BrainpoolP160r1
+                // algorithm in the test suite (as of macOS Mojave Developer Preview 4).
+                if (key.IsInvalid)
+                {
+                    throw Interop.AppleCrypto.CreateExceptionForOSStatus(errSecInvalidKeyRef);
                 }
+                // EccGetKeySizeInBits can fail for two reasons. First, the Apple implementation has changed
+                // and we receive values from API that were not previously handled. In that case the
+                // implementation will need to be adjusted to handle these values. Second, we deliberately
+                // return 0 from the native code to prevent hitting buggy API implementations in Apple code
+                // later.
+                if (Interop.AppleCrypto.EccGetKeySizeInBits(key) == 0)
+                {
+                    key.Dispose();
+                    throw Interop.AppleCrypto.CreateExceptionForOSStatus(errSecUnsupportedKeySize);
+                }
+
+                return key;
             }
 
             private static AsymmetricAlgorithm DecodeRsaPublicKey(byte[] encodedKeyValue)
