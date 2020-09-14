@@ -80,8 +80,15 @@ namespace Internal.Cryptography.Pal
             Action<TAlgorithm, ECParameters> import)
                 where TAlgorithm : AsymmetricAlgorithm, new()
         {
-            TAlgorithm ecdsa;
-            using (SafeBCryptKeyHandle bCryptKeyHandle = ImportPublicKeyInfo(certificatePal.CertContext))
+            TAlgorithm key;
+            CryptImportPublicKeyInfoFlags importFlags = CryptImportPublicKeyInfoFlags.NONE;
+
+            if (typeof(ECDiffieHellmanCng) == typeof(TAlgorithm))
+            {
+                importFlags |= CryptImportPublicKeyInfoFlags.CRYPT_OID_INFO_PUBKEY_ENCRYPT_KEY_FLAG;
+            }
+
+            using (SafeBCryptKeyHandle bCryptKeyHandle = ImportPublicKeyInfo(certificatePal.CertContext, importFlags))
             {
                 CngKeyBlobFormat blobFormat;
                 byte[] keyBlob;
@@ -101,7 +108,7 @@ namespace Internal.Cryptography.Pal
                     keyBlob = ExportKeyBlob(bCryptKeyHandle, blobFormat);
                     using (CngKey cngKey = CngKey.Import(keyBlob, blobFormat))
                     {
-                        ecdsa = factory(cngKey);
+                        key = factory(cngKey);
                     }
                 }
                 else
@@ -111,15 +118,15 @@ namespace Internal.Cryptography.Pal
                     ECParameters ecparams = default;
                     ExportNamedCurveParameters(ref ecparams, keyBlob, false);
                     ecparams.Curve = ECCurve.CreateFromFriendlyName(curveName);
-                    ecdsa = new TAlgorithm();
-                    import(ecdsa, ecparams);
+                    key = new TAlgorithm();
+                    import(key, ecparams);
                 }
             }
 
-            return ecdsa;
+            return key;
         }
 
-        private static SafeBCryptKeyHandle ImportPublicKeyInfo(SafeCertContextHandle certContext)
+        private static SafeBCryptKeyHandle ImportPublicKeyInfo(SafeCertContextHandle certContext, CryptImportPublicKeyInfoFlags importFlags)
         {
             unsafe
             {
@@ -130,7 +137,7 @@ namespace Internal.Cryptography.Pal
                 {
                     unsafe
                     {
-                        bool success = Interop.crypt32.CryptImportPublicKeyInfoEx2(CertEncodingType.X509_ASN_ENCODING, &(certContext.CertContext->pCertInfo->SubjectPublicKeyInfo), 0, null, out bCryptKeyHandle);
+                        bool success = Interop.crypt32.CryptImportPublicKeyInfoEx2(CertEncodingType.X509_ASN_ENCODING, &(certContext.CertContext->pCertInfo->SubjectPublicKeyInfo), importFlags, null, out bCryptKeyHandle);
                         if (!success)
                             throw Marshal.GetHRForLastWin32Error().ToCryptographicException();
                         return bCryptKeyHandle;
