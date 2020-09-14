@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <!--
-    Common files don't take part in the root tests\src\Directory.Build.targets
+    Common files don't take part in the root src\tests\Directory.Build.targets
     This file prevents them from including it as it gets included in its place
     If they ever need to take part, we can conditionally include them as documented
     here https://docs.microsoft.com/en-us/visualstudio/msbuild/customize-your-build#directorybuildprops-and-directorybuildtargets
   -->
-  <Import Project="$(RepoRoot)src/coreclr/tests/disableversioncheck.targets"
+  <Import Project="$(MSBuildThisFileDirectory)/Common/disableversioncheck.targets"
           Condition="'$(DisableVersionCheckImported)' != 'true'" />
 
   <!-- Default priority building values. -->
@@ -73,8 +73,6 @@
       <Private>false</Private>
     </ProjectReference>
   </ItemGroup>
-
-  <Import Project="$(RepoRoot)src\coreclr\tests\Directory.Build.targets" />
 
   <!-- Determine if this project should be built or not -->
   <PropertyGroup>
