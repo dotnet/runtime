@@ -4,26 +4,38 @@
 using System;
 using System.IO;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Threading;
 
 namespace Profiler.Tests
 {
+    public delegate void ProfilerCallback();
+
     class ReleaseOnShutdown
     {
         static readonly Guid ReleaseOnShutdownGuid = new Guid("B8C47A29-9C1D-4EEA-ABA0-8E8B3E3B792E");
+
+        static volatile bool _profilerDone = false;
+
+        [DllImport("Profiler")]
+        private static extern void PassBoolToProfiler(IntPtr boolPtr);
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static void WasteTime()
         {
             // Give time for the profiler to detach
-            Console.WriteLine("Sleeping...");
+            Console.WriteLine("Waiting for profiler to detach...");
             for (int i = 0; i < 100; ++i)
             {
-                Thread.Sleep(100);
+                Thread.Sleep(TimeSpan.FromSeconds(1));
+                if (_profilerDone)
+                {
+                    break;
+                }
             }
         }
 
-        public static int RunTest(string[] args)
+        public unsafe static int RunTest(string[] args)
         {
             string profilerName;
             if (TestLibrary.Utilities.IsWindows)
@@ -45,7 +57,12 @@ namespace Profiler.Tests
             Console.WriteLine($"Attaching profiler {profilerPath} to self.");
             ProfilerControlHelpers.AttachProfilerToSelf(ReleaseOnShutdownGuid, profilerPath);
 
-            WasteTime();
+            fixed (bool *boolPtr = &_profilerDone)
+            {
+                PassBoolToProfiler(new IntPtr(boolPtr));
+
+                WasteTime();
+            }
 
             return 100;
         }

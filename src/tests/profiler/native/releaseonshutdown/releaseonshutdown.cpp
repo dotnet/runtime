@@ -18,16 +18,24 @@ using std::getline;
 #endif // __APPLE__
 #endif // WIN32
 
+ReleaseOnShutdown *ReleaseOnShutdown::Instance;
+
 ReleaseOnShutdown::ReleaseOnShutdown() :
     _dispenser(NULL),
     _failures(0),
-    _detachSucceeded(false)
+    _detachSucceeded(false),
+    _doneFlag(NULL)
 {
-
+    ReleaseOnShutdown::Instance = this;
 }
 
 ReleaseOnShutdown::~ReleaseOnShutdown()
 {
+    if (_doneFlag != NULL)
+    {
+        *_doneFlag = true;
+    }
+
     if (_dispenser != NULL)
     {
         _dispenser->Release();
@@ -104,4 +112,9 @@ HRESULT STDMETHODCALLTYPE ReleaseOnShutdown::ProfilerDetachSucceeded()
     printf("Profiler detach succeeded\n");
     _detachSucceeded = true;
     return S_OK;
+}
+
+extern "C" EXPORT void STDMETHODCALLTYPE PassBoolToProfiler(void *boolPtr)
+{
+    ReleaseOnShutdown::Instance->SetBoolPtr(boolPtr);
 }

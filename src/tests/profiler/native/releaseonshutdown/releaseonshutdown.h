@@ -23,6 +23,8 @@ typedef HRESULT (*GetDispenserFunc) (const CLSID &pClsid, const IID &pIid, void 
 class ReleaseOnShutdown : public Profiler
 {
 public:
+    static ReleaseOnShutdown *Instance;
+
     ReleaseOnShutdown();
     virtual ~ReleaseOnShutdown();
 
@@ -33,6 +35,12 @@ public:
     virtual HRESULT STDMETHODCALLTYPE ProfilerAttachComplete();
     virtual HRESULT STDMETHODCALLTYPE ProfilerDetachSucceeded();
 
+    void SetBoolPtr(void *ptr)
+    {
+        assert(ptr != NULL);
+        _doneFlag = reinterpret_cast<bool *>(ptr);
+    }
+
 private:
 
     HRESULT GetDispenser(IMetaDataDispenserEx **disp);
@@ -40,4 +48,5 @@ private:
     IMetaDataDispenserEx* _dispenser;
     std::atomic<int> _failures;
     bool _detachSucceeded;
+    bool *_doneFlag;
 };
