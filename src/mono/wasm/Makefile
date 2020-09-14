@@ -146,9 +146,10 @@ run-tests-%:
 
 build-debugger-test-app: 
 	$(DOTNET) build --configuration debug --nologo /p:TargetArchitecture=wasm /p:TargetOS=Browser /p:Configuration=Debug /p:RuntimeConfiguration=$(CONFIG) $(TOP)/src/mono/wasm/debugger/tests/debugger-test
-	cp $(TOP)/src/mono/wasm/debugger/tests/debugger-driver.html $(TOP)/src/mono/wasm/debugger/tests/bin/Debug/publish		$(DOTNET) build --configuration debug --nologo /p:TargetArchitecture=wasm /p:TargetOS=Browser /p:Configuration=Debug /p:RuntimeConfiguration=$(CONFIG) $(TOP)/src/mono/wasm/debugger/tests/lazy-debugger-test
-	cp $(TOP)/src/mono/wasm/debugger/tests/other.js $(TOP)/src/mono/wasm/debugger/tests/bin/Debug/publish		cp $(TOP)/src/mono/wasm/debugger/tests/debugger-test/debugger-driver.html $(TOP)/src/mono/wasm/debugger/tests/debugger-test/bin/Debug/publish
-	cp $(TOP)/src/mono/wasm/debugger/tests/runtime-debugger.js $(TOP)/src/mono/wasm/debugger/tests/bin/Debug/publish		cp $(TOP)/src/mono/wasm/debugger/tests/debugger-test/other.js $(TOP)/src/mono/wasm/debugger/tests/debugger-test/bin/Debug/publish
+	$(DOTNET) build --configuration debug --nologo /p:TargetArchitecture=wasm /p:TargetOS=Browser /p:Configuration=Debug /p:RuntimeConfiguration=$(CONFIG) $(TOP)/src/mono/wasm/debugger/tests/lazy-debugger-test
+	cp $(TOP)/src/mono/wasm/debugger/tests/debugger-test/debugger-driver.html $(TOP)/src/mono/wasm/debugger/tests/debugger-test/bin/Debug/publish
+	cp $(TOP)/src/mono/wasm/debugger/tests/debugger-test/other.js $(TOP)/src/mono/wasm/debugger/tests/debugger-test/bin/Debug/publish
+	cp $(TOP)/src/mono/wasm/debugger/tests/debugger-test/runtime-debugger.js $(TOP)/src/mono/wasm/debugger/tests/debugger-test/bin/Debug/publish
 	cp $(TOP)/src/mono/wasm/debugger/tests/debugger-test/runtime-debugger.js $(TOP)/src/mono/wasm/debugger/tests/debugger-test/bin/Debug/publish
 	cp $(TOP)/src/mono/wasm/debugger/tests/lazy-debugger-test/bin/Debug/publish/managed/* $(TOP)/src/mono/wasm/debugger/tests/debugger-test/bin/Debug/publish
 

@@ -1718,9 +1718,8 @@ var MonoSupportLib = {
 		},
 
 		mono_wasm_add_lazy_load_files: function (assembly_data, pdb_data) {
-			console.log("Loading files...");
-			MONO.lazy_loaded_files = { assembly_data, pdb_data };
-			debugger;
+			const event_args = { assembly_data, pdb_data };
+			mono_wasm_raise_event('ADD_ASSEMBLY_PDB', event_args);
 		},
 
 		mono_wasm_get_loaded_asset_table: function() {
