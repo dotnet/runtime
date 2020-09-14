@@ -10,9 +10,11 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+
 using std::string;
 using std::ifstream;
 using std::getline;
+
 #ifdef __APPLE__
 #include <mach-o/dyld.h>
 #endif // __APPLE__
@@ -31,11 +33,6 @@ ReleaseOnDetach::ReleaseOnDetach() :
 
 ReleaseOnDetach::~ReleaseOnDetach()
 {
-    if (_doneFlag != NULL)
-    {
-        *_doneFlag = true;
-    }
-
     if (_dispenser != NULL)
     {
         _dispenser->Release();
@@ -50,6 +47,13 @@ ReleaseOnDetach::~ReleaseOnDetach()
     else
     {
         printf("Test failed _failures=%d _detachSucceeded=%d\n", _failures.load(), _detachSucceeded);
+    }
+
+    fflush(stdout);
+
+    if (_doneFlag != NULL)
+    {
+        *_doneFlag = true;
     }
 }
 

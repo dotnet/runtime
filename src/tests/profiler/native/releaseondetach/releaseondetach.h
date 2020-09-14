@@ -5,9 +5,6 @@
 
 #include "../profiler.h"
 
-#include <unordered_set>
-#include <map>
-#include <memory>
 #include <string>
 
 typedef HRESULT (*GetDispenserFunc) (const CLSID &pClsid, const IID &pIid, void **ppv);
@@ -48,5 +45,5 @@ private:
     IMetaDataDispenserEx* _dispenser;
     std::atomic<int> _failures;
     bool _detachSucceeded;
-    bool *_doneFlag;
+    volatile bool *_doneFlag;
 };
