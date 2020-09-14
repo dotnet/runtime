@@ -19,6 +19,7 @@
 #include <emscripten.h>
 
 #include "mono/metadata/assembly-internals.h"
+#include "mono/metadata/debug-mono-ppdb.h"
 
 static int log_level = 1;
 
@@ -170,7 +171,7 @@ free_frame_state (void)
 		for (i = 0; i < frames->len; ++i)
 			free_frame ((DbgEngineStackFrame*)g_ptr_array_index (frames, i));
 		g_ptr_array_set_size (frames, 0);
-	}	
+	}
 }
 
 static void
@@ -184,7 +185,7 @@ compute_frames (void) {
 		frames = g_ptr_array_new ();
 	}
 
-	mono_walk_stack_with_ctx (collect_frames, NULL, MONO_UNWIND_NONE, NULL);	
+	mono_walk_stack_with_ctx (collect_frames, NULL, MONO_UNWIND_NONE, NULL);
 }
 static MonoContext*
 tls_get_restore_state (void *tls)
@@ -328,7 +329,7 @@ ss_create_init_args (SingleStepReq *ss_req, SingleStepArgs *ss_args)
 static void
 ss_args_destroy (SingleStepArgs *ss_args)
 {
-	//nothing to do	
+	//nothing to do
 }
 
 static int
@@ -455,8 +456,8 @@ mono_wasm_setup_single_step (int kind)
 	return isBPOnNativeCode;
 }
 
-static int 
-get_object_id(MonoObject *obj) 
+static int
+get_object_id(MonoObject *obj)
 {
 	ObjRef *ref;
 	if (!obj)
@@ -478,15 +479,15 @@ assembly_load(MonoProfiler *prof, MonoAssembly *assembly)
 {
     DEBUG_PRINTF(1, "loading assembly\n");
     MonoImage *assembly_image = assembly->image;
-    MonoImage *pdb_image;
-    MonoDebugHandle *handle = mono_debug_get_handle(image);
+    MonoImage *pdb_image = NULL;
+    MonoDebugHandle *handle = mono_debug_get_handle(assembly_image);
     MonoPPDBFile *ppdb = handle->ppdb;
     if (ppdb)
     {
         pdb_image = mono_ppdb_get_image(ppdb);
-        buffer_add_byte_array(buf, (guint8 *)pdb_image->raw_data, pdb_image->raw_data_len);
+        mono_wasm_add_lazy_load_files(assembly_image->raw_data, pdb_image->raw_data);
     }
-    mono_wasm_add_lazy_load_files(assembly_image->raw_data, pdb_image->raw_data);
+    mono_wasm_add_lazy_load_files(assembly_image->raw_data, NULL);
 }
 
 static void
