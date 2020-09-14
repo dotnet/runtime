@@ -142,6 +142,8 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                         StringValues urlSymbolServerList;
                         
+                        context.Request.Query.TryGetValue("urlSymbolServer", out urlSymbolServerList);
+
                         var proxy = new DebuggerProxy(loggerFactory, urlSymbolServerList.ToList());
                         
                         var ideSocket = await context.WebSockets.AcceptWebSocketAsync();
