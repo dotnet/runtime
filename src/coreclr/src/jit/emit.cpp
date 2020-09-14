@@ -5559,10 +5559,11 @@ CORINFO_FIELD_HANDLE emitter::emitAnyConst(const void* cnsAddr, UNATIVE_OFFSET c
 // Notes:
 //    If attr is EA_4BYTE then the double value is converted to a float value.
 //    If attr is EA_8BYTE then 8 byte alignment is automatically requested.
+//    If attr is EA_16BYTE then 8 byte value is emitted twice.
 //
 CORINFO_FIELD_HANDLE emitter::emitFltOrDblConst(double constValue, emitAttr attr)
 {
-    assert((attr == EA_4BYTE) || (attr == EA_8BYTE));
+    assert((attr == EA_4BYTE) || (attr == EA_8BYTE) || (attr == EA_16BYTE));
 
     void* cnsAddr;
     float f;
@@ -5594,7 +5595,17 @@ CORINFO_FIELD_HANDLE emitter::emitFltOrDblConst(double constValue, emitAttr attr
     }
 #endif // TARGET_XARCH
 
-    UNATIVE_OFFSET cnum = emitDataConst(cnsAddr, cnsSize, cnsAlign);
+    UNATIVE_OFFSET cnum;
+    if (attr == EA_16BYTE)
+    {
+        cnum = emitDataConst(cnsAddr, cnsSize, 1);
+        emitDataConst(cnsAddr, cnsSize, 1);
+    }
+    else
+    {
+        cnum = emitDataConst(cnsAddr, cnsSize, cnsAlign);
+    }
+
     return emitComp->eeFindJitDataOffs(cnum);
 }
 

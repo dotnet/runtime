@@ -1207,11 +1207,11 @@ void CodeGen::inst_RV_RV_TT(
                     // Cache constant masks used for GT_NEG and MathF.Abs
                     // TODO: cache all constants https://github.com/dotnet/runtime/issues/42178
                     UINT64 dCnsBits = *(UINT64*)&dblCns->gtDconVal;
-                    if (dCnsBits == 0x8000000000000000UL)
+                    if ((ins == INS_xorps) && (dCnsBits == 0x8000000000000000UL))
                     {
                         bitMask = dblCns->TypeIs(TYP_FLOAT) ? &negBitmaskFlt : &negBitmaskDbl;
                     }
-                    else if (dCnsBits == 0x7fffffffffffffffUL)
+                    else if ((ins == INS_andps) && (dCnsBits == 0x7fffffffffffffffUL))
                     {
                         bitMask = dblCns->TypeIs(TYP_FLOAT) ? &absBitmaskFlt : &absBitmaskDbl;
                     }
@@ -1220,7 +1220,8 @@ void CodeGen::inst_RV_RV_TT(
                     {
                         if (*bitMask == nullptr)
                         {
-                            *bitMask = GetEmitter()->emitFltOrDblConst(dblCns->gtDconVal, emitTypeSize(dblCns));
+                            emitAttr cnsSize = dblCns->TypeIs(TYP_DOUBLE) ? EA_16BYTE : EA_4BYTE;
+                            *bitMask = GetEmitter()->emitFltOrDblConst(dblCns->gtDconVal, cnsSize);
                         }
                         cnsDblHnd = *bitMask;
                     }
