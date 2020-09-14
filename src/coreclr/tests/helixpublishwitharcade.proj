@@ -36,6 +36,7 @@
         RuntimeVariant=$(_RuntimeVariant);
         BundledNETCoreAppPackageVersion=$(BundledNETCoreAppPackageVersion);
         HelixRuntimeRid=$(HelixRuntimeRid)
+        PALTestsDir=$(_PALTestsDir)
       </_PropertiesToPass>
 
       
@@ -302,6 +303,12 @@
       <PayloadDirectory>%(PayloadDirectory)</PayloadDirectory>
       <Command>dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs)</Command>
       <Command Condition=" '%(TestGroup)' != '' ">dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs) -trait TestGroup=%(TestGroup)</Command>
+      <Timeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</Timeout>
+    </HelixWorkItem>
+
+    <HelixWorkItem Condition="'$(PALTestsDir)' != '' and '$(TargetsWindows)' != 'true'" Include="PALTests">
+      <PayloadDirectory>$(PALTestsDir)</PayloadDirectory>
+      <Command>runpaltestshelix.sh</Command>
       <Timeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</Timeout>
     </HelixWorkItem>
   </ItemGroup>

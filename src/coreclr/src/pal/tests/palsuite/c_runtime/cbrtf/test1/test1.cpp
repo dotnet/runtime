@@ -41,11 +41,11 @@ struct test
 };
 
 /**
- * validate
+ * cbrtf_test1_validate
  *
  * test validation function
  */
-void __cdecl validate(float value, float expected, float variance)
+void __cdecl cbrtf_test1_validate(float value, float expected, float variance)
 {
     float result = cbrtf(value);
 
@@ -63,11 +63,11 @@ void __cdecl validate(float value, float expected, float variance)
 }
 
 /**
- * validate
+ * cbrtf_test1_validate
  *
  * test validation function for values returning NaN
  */
-void __cdecl validate_isnan(float value)
+void __cdecl cbrtf_test1_validate_isnan(float value)
 {
     float result = cbrtf(value);
 
@@ -105,16 +105,16 @@ PALTEST(c_runtime_cbrtf_test1_paltest_cbrtf_test1, "c_runtime/cbrtf/test1/paltes
         return FAIL;
     }
     
-    validate(-0.0f, -0.0f, PAL_EPSILON);
-    validate( 0.0f,  0.0f, PAL_EPSILON);
+    cbrtf_test1_validate(-0.0f, -0.0f, PAL_EPSILON);
+    cbrtf_test1_validate( 0.0f,  0.0f, PAL_EPSILON);
 
     for (int i = 0; i < (sizeof(tests) / sizeof(struct test)); i++)
     {
-        validate(tests[i].value, tests[i].expected, tests[i].variance);
-        validate(-tests[i].value, -tests[i].expected, tests[i].variance);
+        cbrtf_test1_validate(tests[i].value, tests[i].expected, tests[i].variance);
+        cbrtf_test1_validate(-tests[i].value, -tests[i].expected, tests[i].variance);
     }
     
-    validate_isnan(PAL_NAN);
+    cbrtf_test1_validate_isnan(PAL_NAN);
 
     PAL_Terminate();
     return PASS;

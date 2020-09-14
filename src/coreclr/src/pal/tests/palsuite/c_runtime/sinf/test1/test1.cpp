@@ -44,11 +44,11 @@ struct test
 };
 
 /**
- * validate
+ * sinf_test1_validate
  *
  * test validation function
  */
-void __cdecl validate(float value, float expected, float variance)
+void __cdecl sinf_test1_validate(float value, float expected, float variance)
 {
     float result = sinf(value);
 
@@ -66,11 +66,11 @@ void __cdecl validate(float value, float expected, float variance)
 }
 
 /**
- * validate
+ * sinf_test1_validate
  *
  * test validation function for values returning NaN
  */
-void __cdecl validate_isnan(float value)
+void __cdecl sinf_test1_validate_isnan(float value)
 {
     float result = sinf(value);
 
@@ -116,13 +116,13 @@ PALTEST(c_runtime_sinf_test1_paltest_sinf_test1, "c_runtime/sinf/test1/paltest_s
 
     for (int i = 0; i < (sizeof(tests) / sizeof(struct test)); i++)
     {
-        validate( tests[i].value,  tests[i].expected, tests[i].variance);
-        validate(-tests[i].value, -tests[i].expected, tests[i].variance);
+        sinf_test1_validate( tests[i].value,  tests[i].expected, tests[i].variance);
+        sinf_test1_validate(-tests[i].value, -tests[i].expected, tests[i].variance);
     }
     
-    validate_isnan(PAL_NEGINF);
-    validate_isnan(PAL_NAN);
-    validate_isnan(PAL_POSINF);
+    sinf_test1_validate_isnan(PAL_NEGINF);
+    sinf_test1_validate_isnan(PAL_NAN);
+    sinf_test1_validate_isnan(PAL_POSINF);
 
     PAL_Terminate();
     return PASS;

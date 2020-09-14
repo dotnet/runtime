@@ -12,10 +12,10 @@
 
 #include <palsuite.h>
 
-const char* szFileName = "testing.tmp";
-
 PALTEST(file_io_GetFullPathNameW_test1_paltest_getfullpathnamew_test1, "file_io/GetFullPathNameW/test1/paltest_getfullpathnamew_test1")
 {
+    const char* szFileName = "testing.tmp";
+
     DWORD dwRc = 0;
     WCHAR szwReturnedPath[_MAX_DIR+1];
     WCHAR szwShortBuff[2];

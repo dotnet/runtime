@@ -32,8 +32,9 @@ if(FEATURE_EVENT_TRACE)
   add_subdirectory(eventprovider)
 endif(FEATURE_EVENT_TRACE)
 
-add_executable(paltests
+_add_executable(paltests
   paltests.cpp
+  common/palsuite.cpp
   #composite/object_management/event/nonshared/event.cpp
   #composite/object_management/event/nonshared/main.cpp
   #composite/object_management/event/shared/event.cpp
@@ -574,19 +575,19 @@ add_executable(paltests
   filemapping_memmgt/CreateFileMappingW/test7/createfilemapping.cpp
   filemapping_memmgt/CreateFileMappingW/test8/createfilemapping.cpp
   filemapping_memmgt/CreateFileMappingW/test9/createfilemapping.cpp
-  filemapping_memmgt/FreeLibrary/test1/dlltest.cpp
+#  filemapping_memmgt/FreeLibrary/test1/dlltest.cpp
   filemapping_memmgt/FreeLibrary/test1/FreeLibrary.cpp
   filemapping_memmgt/FreeLibrary/test2/test2.cpp
-  filemapping_memmgt/FreeLibraryAndExitThread/test1/dlltest.cpp
+#  filemapping_memmgt/FreeLibraryAndExitThread/test1/dlltest.cpp
   filemapping_memmgt/FreeLibraryAndExitThread/test1/test1.cpp
   filemapping_memmgt/GetModuleFileNameA/test1/GetModuleFileNameA.cpp
   filemapping_memmgt/GetModuleFileNameA/test2/GetModuleFileNameA.cpp
   filemapping_memmgt/GetModuleFileNameW/test1/GetModuleFileNameW.cpp
   filemapping_memmgt/GetModuleFileNameW/test2/GetModuleFileNameW.cpp
   filemapping_memmgt/GetProcAddress/test1/test1.cpp
-  filemapping_memmgt/GetProcAddress/test1/testlib.cpp
+#  filemapping_memmgt/GetProcAddress/test1/testlib.cpp
   filemapping_memmgt/GetProcAddress/test2/test2.cpp
-  filemapping_memmgt/GetProcAddress/test2/testlib.cpp
+#  filemapping_memmgt/GetProcAddress/test2/testlib.cpp
   filemapping_memmgt/LocalAlloc/test1/LocalAlloc.cpp
   filemapping_memmgt/LocalFree/test1/LocalFree.cpp
   filemapping_memmgt/LocalFree/test2/LocalFree.cpp
@@ -811,14 +812,14 @@ add_executable(paltests
   miscellaneous/_i64tow/test1/test1.cpp
   pal_specific/PAL_errno/test1/PAL_errno.cpp
   pal_specific/PAL_GetPALDirectoryW/test1/PAL_GetPALDirectoryW.cpp
-  pal_specific/PAL_GetUserTempDirectoryW/test1/PAL_GetUserTempDirectoryW.cpp
+# pal_specific/PAL_GetUserTempDirectoryW/test1/PAL_GetUserTempDirectoryW.cpp
   #pal_specific/PAL_get_stderr/test1/PAL_get_stderr.cpp
   #pal_specific/PAL_get_stdin/test1/PAL_get_stdin.cpp
   #pal_specific/PAL_get_stdout/test1/PAL_get_stdout.cpp
   pal_specific/PAL_Initialize_Terminate/test1/PAL_Initialize_Terminate.cpp
   pal_specific/PAL_Initialize_Terminate/test2/pal_initialize_twice.cpp
-  pal_specific/PAL_RegisterLibraryW_UnregisterLibraryW/test1/PAL_RegisterLibraryW_UnregisterLibraryW.cpp
-  pal_specific/PAL_RegisterLibraryW_UnregisterLibraryW/test2_neg/reg_unreg_libraryw_neg.cpp
+#  pal_specific/PAL_RegisterLibraryW_UnregisterLibraryW/test1/PAL_RegisterLibraryW_UnregisterLibraryW.cpp
+#  pal_specific/PAL_RegisterLibraryW_UnregisterLibraryW/test2_neg/reg_unreg_libraryw_neg.cpp
   samples/test1/test.cpp
   samples/test2/test.cpp
   threading/CreateEventW/test1/test1.cpp
@@ -860,7 +861,7 @@ add_executable(paltests
   threading/DuplicateHandle/test6/test6.cpp
   threading/DuplicateHandle/test7/test7.cpp
   threading/DuplicateHandle/test8/test8.cpp
-  threading/DuplicateHandle/test9/test9.cpp
+#  threading/DuplicateHandle/test9/test9.cpp
   threading/ExitProcess/test1/ExitProcess.cpp
   threading/ExitProcess/test2/test2.cpp
   threading/ExitProcess/test3/test3.cpp
@@ -941,3 +942,7 @@ add_dependencies(paltests coreclrpal)
 target_link_libraries(paltests
   ${COMMON_TEST_LIBRARIES}
 )
+
+_install (TARGETS paltests DESTINATION paltests)
+_install (FILES paltestlist.txt DESTINATION paltests)
+_install (PROGRAMS runpaltests.sh runpaltestshelix.sh DESTINATION paltests)

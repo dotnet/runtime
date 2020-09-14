@@ -16,7 +16,7 @@
 
 #include <palsuite.h>
 
-HANDLE hProcessStartEvent;
+HANDLE hProcessStartEvent_WFMO_test5_helper;
 HANDLE hProcessReadyEvent;
 HANDLE hProcessFinishEvent;
 HANDLE hProcessCleanupEvent;
@@ -38,9 +38,9 @@ PALTEST(threading_WaitForMultipleObjectsEx_test5_paltest_waitformultipleobjectse
 
     /* Open the event to let test thread tell us to get started. */
     uniString = convert(szcHelperProcessStartEvName);
-    hProcessStartEvent = OpenEventW(EVENT_ALL_ACCESS, 0, uniString);
+    hProcessStartEvent_WFMO_test5_helper = OpenEventW(EVENT_ALL_ACCESS, 0, uniString);
     free(uniString);
-    if (!hProcessStartEvent) 
+    if (!hProcessStartEvent_WFMO_test5_helper) 
     {
         Fail("helper.main: OpenEvent of '%S' failed (%u). "
              "(the event should already exist!)\n", 
@@ -48,7 +48,7 @@ PALTEST(threading_WaitForMultipleObjectsEx_test5_paltest_waitformultipleobjectse
     }
 
     /* Wait for signal from test thread. */
-    dwRet = WaitForSingleObject(hProcessStartEvent, TIMEOUT);
+    dwRet = WaitForSingleObject(hProcessStartEvent_WFMO_test5_helper, TIMEOUT);
     if (dwRet != WAIT_OBJECT_0)
     {
         Fail("helper.main: WaitForSingleObject '%s' failed\n"
@@ -111,7 +111,7 @@ PALTEST(threading_WaitForMultipleObjectsEx_test5_paltest_waitformultipleobjectse
             szcHelperProcessFinishEvName, dwProcessId, GetLastError());
     }
 
-    PEDANTIC(CloseHandle, (hProcessStartEvent));
+    PEDANTIC(CloseHandle, (hProcessStartEvent_WFMO_test5_helper));
     PEDANTIC(CloseHandle, (hProcessReadyEvent));
     PEDANTIC(CloseHandle, (hProcessFinishEvent));
 

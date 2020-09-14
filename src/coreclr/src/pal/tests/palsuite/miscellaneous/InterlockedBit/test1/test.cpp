@@ -20,18 +20,17 @@ typedef struct tag_TEST_DATA
     UCHAR expectedReturnValue;
 } TEST_DATA;
 
-TEST_DATA test_data[] =
-{
-    { (LONG)0x00000000,  3, (LONG)0x00000000, 0 },
-    { (LONG)0x12341234,  2, (LONG)0x12341230, 1 },
-    { (LONG)0x12341234,  3, (LONG)0x12341234, 0 },
-    { (LONG)0x12341234, 31, (LONG)0x12341234, 0 },
-    { (LONG)0x12341234, 28, (LONG)0x02341234, 1 },
-    { (LONG)0xffffffff, 28, (LONG)0xefffffff, 1 }
-};
-
 PALTEST(miscellaneous_InterlockedBit_test1_paltest_interlockedbit_test1, "miscellaneous/InterlockedBit/test1/paltest_interlockedbit_test1")
 {
+    TEST_DATA test_data[] =
+    {
+        { (LONG)0x00000000,  3, (LONG)0x00000000, 0 },
+        { (LONG)0x12341234,  2, (LONG)0x12341230, 1 },
+        { (LONG)0x12341234,  3, (LONG)0x12341234, 0 },
+        { (LONG)0x12341234, 31, (LONG)0x12341234, 0 },
+        { (LONG)0x12341234, 28, (LONG)0x02341234, 1 },
+        { (LONG)0xffffffff, 28, (LONG)0xefffffff, 1 }
+    };
 
     /*
      * Initialize the PAL and return FAILURE if this fails

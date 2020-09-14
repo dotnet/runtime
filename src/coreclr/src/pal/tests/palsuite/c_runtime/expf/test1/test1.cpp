@@ -39,11 +39,11 @@ struct test
 };
 
 /**
- * validate
+ * expf_test1_validate
  *
  * test validation function
  */
-void __cdecl validate(float value, float expected, float variance)
+void __cdecl expf_test1_validate(float value, float expected, float variance)
 {
     float result = expf(value);
 
@@ -61,11 +61,11 @@ void __cdecl validate(float value, float expected, float variance)
 }
 
 /**
- * validate
+ * expf_test1_validate
  *
  * test validation function for values returning NaN
  */
-void __cdecl validate_isnan(float value)
+void __cdecl expf_test1_validate_isnan(float value)
 {
     float result = expf(value);
 
@@ -126,10 +126,10 @@ PALTEST(c_runtime_expf_test1_paltest_expf_test1, "c_runtime/expf/test1/paltest_e
 
     for (int i = 0; i < (sizeof(tests) / sizeof(struct test)); i++)
     {
-        validate(tests[i].value, tests[i].expected, tests[i].variance);
+        expf_test1_validate(tests[i].value, tests[i].expected, tests[i].variance);
     }
 
-    validate_isnan(PAL_NAN);
+    expf_test1_validate_isnan(PAL_NAN);
 
     PAL_Terminate();
     return PASS;

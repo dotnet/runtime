@@ -19,7 +19,7 @@
 
 #include <palsuite.h>
 
-const char* cTestString = "one fish, two fish, red fish, blue fish.";
+#define cTestString "one fish, two fish, read fish, blue fish."
 
 PALTEST(threading_DuplicateHandle_test5_paltest_duplicatehandle_test5, "threading/DuplicateHandle/test5/paltest_duplicatehandle_test5")
 {

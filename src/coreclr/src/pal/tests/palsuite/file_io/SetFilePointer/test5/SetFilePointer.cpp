@@ -22,7 +22,7 @@
 
 #include <palsuite.h>
 
-const char* szTextFile = "text.txt";
+
 
 PALTEST(file_io_SetFilePointer_test5_paltest_setfilepointer_test5, "file_io/SetFilePointer/test5/paltest_setfilepointer_test5")
 {

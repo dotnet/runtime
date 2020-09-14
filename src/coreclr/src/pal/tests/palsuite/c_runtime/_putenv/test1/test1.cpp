@@ -21,19 +21,18 @@ struct TestElement
     BOOL bValidString;           /* valid argument string identifier      */
 };
 
-struct TestElement TestCases[] = 
-{
-    {"PalTestingEnvironmentVariable=A value", "PalTestingEnvironmentVariable",
-     "A value", TRUE},
-    {"AnotherVariable=", "AnotherVariable", "", TRUE},
-    {"YetAnotherVariable", "", "", FALSE},
-    {"=ADifferentVariable", "", "ADifferentVariable", FALSE},
-    {"", "", "", FALSE}
-
-};
-
 PALTEST(c_runtime__putenv_test1_paltest_putenv_test1, "c_runtime/_putenv/test1/paltest_putenv_test1")
 {
+    struct TestElement TestCases[] = 
+    {
+        {"PalTestingEnvironmentVariable=A value", "PalTestingEnvironmentVariable",
+        "A value", TRUE},
+        {"AnotherVariable=", "AnotherVariable", "", TRUE},
+        {"YetAnotherVariable", "", "", FALSE},
+        {"=ADifferentVariable", "", "ADifferentVariable", FALSE},
+        {"", "", "", FALSE}
+
+    };
 
     int i;
     char *variableValue;

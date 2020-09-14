@@ -25,14 +25,12 @@
 
 #include <palsuite.h>
 
-CRITICAL_SECTION CriticalSection;
-
 volatile BOOL t0_tflag = FAIL;  /* thread 0 timeout flag */
 volatile BOOL t1_aflag = FAIL;  /* thread 1 access flag */
 volatile BOOL t1_cflag = FAIL;  /* thread 1 critical section flag */
 volatile BOOL bTestResult = FAIL;
 
-DWORD PALAPI Thread(LPVOID lpParam)
+DWORD PALAPI Thread_CriticalSectionFunctions_test2(LPVOID lpParam)
 {
     t1_aflag = PASS;
     EnterCriticalSection(&CriticalSection);
@@ -63,7 +61,7 @@ PALTEST(threading_CriticalSectionFunctions_test2_paltest_criticalsectionfunction
      */
     hThread = CreateThread(NULL,
                            0,
-                           &Thread,
+                           &Thread_CriticalSectionFunctions_test2,
                            (LPVOID) NULL,
                            CREATE_SUSPENDED,
                            &dwThreadId);

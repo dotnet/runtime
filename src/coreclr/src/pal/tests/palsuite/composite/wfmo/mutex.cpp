@@ -56,7 +56,7 @@ ResultBuffer *resultBuffer = NULL;
 
 int testStatus;
 
-void PALAPI Run_Thread(LPVOID lpParam);
+void PALAPI Run_Thread_composite_wfmo(LPVOID lpParam);
 
 int GetParameters( int argc, char **argv)
 {
@@ -205,7 +205,7 @@ PALTEST(composite_wfmo_paltest_composite_wfmo, "composite/wfmo/paltest_composite
         hThread[i] = CreateThread(
                                     NULL,                   /* no security attributes */
                                     0,                      /* use default stack size */
-                                    (LPTHREAD_START_ROUTINE)Run_Thread,/* thread function */
+                                    (LPTHREAD_START_ROUTINE)Run_Thread_composite_wfmo,/* thread function */
                                     (LPVOID)dwParam,  /* argument to thread function */
                                     0,                      /* use default creation flags  */
                                     &threadId[i]     /* returns the thread identifier*/                                  
@@ -287,7 +287,7 @@ PALTEST(composite_wfmo_paltest_composite_wfmo, "composite/wfmo/paltest_composite
     return testStatus;
 }
 
-void  PALAPI Run_Thread (LPVOID lpParam)
+void  PALAPI Run_Thread_composite_wfmo (LPVOID lpParam)
 {
     unsigned int i = 0;
     struct statistics stats;

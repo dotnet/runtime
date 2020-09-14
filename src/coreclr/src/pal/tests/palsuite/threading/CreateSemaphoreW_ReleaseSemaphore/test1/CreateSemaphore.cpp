@@ -218,7 +218,6 @@ consumer( LPVOID lpParam )
 
 PALTEST(threading_CreateSemaphoreW_ReleaseSemaphore_test1_paltest_createsemaphorew_releasesemaphore_test1, "threading/CreateSemaphoreW_ReleaseSemaphore/test1/paltest_createsemaphorew_releasesemaphore_test1")
 {
-
     BufferStructure Buffer, *pBuffer;
 
     pBuffer = &Buffer;

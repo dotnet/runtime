@@ -18,20 +18,20 @@
 
 #include <palsuite.h>
 
-DWORD SleepTimes[] =
-{
-    0,
-    50,
-    100,
-    500,
-    2000
-};
-
-/* Milliseconds of error which are acceptable Function execution time, etc. */
-DWORD AcceptableTimeError = 150;
-
 PALTEST(threading_Sleep_test1_paltest_sleep_test1, "threading/Sleep/test1/paltest_sleep_test1")
 {
+    DWORD SleepTimes[] =
+    {
+        0,
+        50,
+        100,
+        500,
+        2000
+    };
+
+    /* Milliseconds of error which are acceptable Function execution time, etc. */
+    DWORD AcceptableTimeError = 150;
+
     UINT64 OldTimeStamp;
     UINT64 NewTimeStamp;
     DWORD MaxDelta;

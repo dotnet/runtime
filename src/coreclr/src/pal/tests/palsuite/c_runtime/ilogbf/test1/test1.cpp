@@ -25,11 +25,11 @@ struct test
 };
 
 /**
- * validate
+ * ilogbf_test1_validate
  *
  * test validation function
  */
-void __cdecl validate(float value, int expected)
+void __cdecl ilogbf_test1_validate(float value, int expected)
 {
     int result = ilogbf(value);
 
@@ -92,7 +92,7 @@ PALTEST(c_runtime_ilogbf_test1_paltest_ilogbf_test1, "c_runtime/ilogbf/test1/pal
 
     for (int i = 0; i < (sizeof(tests) / sizeof(struct test)); i++)
     {
-        validate(tests[i].value, tests[i].expected);
+        ilogbf_test1_validate(tests[i].value, tests[i].expected);
     }
 
     PAL_Terminate();

@@ -15,7 +15,7 @@
 #include <palsuite.h>
 
 
-const char* szTextFile = "text.txt";
+
 
 
 PALTEST(file_io_SetFilePointer_test1_paltest_setfilepointer_test1, "file_io/SetFilePointer/test1/paltest_setfilepointer_test1")

@@ -13,7 +13,7 @@
 #ifndef __vfprintf_H__
 #define __vfprintf_H__
 
-int DoVfprintf(FILE *fp, const char *format, ...)
+inline int DoVfprintf(FILE *fp, const char *format, ...)
 {
     int retVal;
     va_list arglist;
@@ -25,7 +25,7 @@ int DoVfprintf(FILE *fp, const char *format, ...)
     return (retVal);
 }
 
-void DoStrTest(const char *formatstr, char* param, const char *checkstr)
+inline void DoStrTest_vfprintf(const char *formatstr, char* param, const char *checkstr)
 {
     FILE *fp;    
     char buf[256] = { 0 };
@@ -55,8 +55,9 @@ void DoStrTest(const char *formatstr, char* param, const char *checkstr)
     }    
     fclose(fp);
 }
+#define DoStrTest DoStrTest_vfprintf
 
-void DoWStrTest(const char *formatstr, WCHAR* param, const char *checkstr)
+inline void DoWStrTest_vfprintf(const char *formatstr, WCHAR* param, const char *checkstr)
 {
     FILE *fp;
     char buf[256] = { 0 };
@@ -86,9 +87,9 @@ void DoWStrTest(const char *formatstr, WCHAR* param, const char *checkstr)
     }    
     fclose(fp);
 }
+#define DoWStrTest DoWStrTest_vfprintf
 
-
-void DoPointerTest(const char *formatstr, void* param, char* paramstr, 
+inline void DoPointerTest_vfprintf(const char *formatstr, void* param, char* paramstr, 
                    const char *checkstr1)
 {
     FILE *fp;
@@ -126,10 +127,9 @@ void DoPointerTest(const char *formatstr, void* param, char* paramstr,
         Fail("ERROR: fclose failed to close \"testfile.txt\"\n");
     }
 }
+#define DoPointerTest DoPointerTest_vfprintf
 
-
-
-void DoCountTest(const char *formatstr, int param, const char *checkstr)
+inline void DoCountTest_vfprintf(const char *formatstr, int param, const char *checkstr)
 {
     FILE *fp;
     char buf[512] = { 0 };
@@ -171,8 +171,9 @@ void DoCountTest(const char *formatstr, int param, const char *checkstr)
         Fail("ERROR: fclose failed to close \"testfile.txt\"\n");
     }
 }
+#define DoCountTest DoCountTest_vfprintf
 
-void DoShortCountTest(const char *formatstr, int param, const char *checkstr)
+inline void DoShortCountTest_vfprintf(const char *formatstr, int param, const char *checkstr)
 {
     FILE *fp;
     char buf[512] = { 0 };
@@ -214,9 +215,9 @@ void DoShortCountTest(const char *formatstr, int param, const char *checkstr)
         Fail("ERROR: fclose failed to close \"testfile.txt\"\n");
     }
 }
+#define DoShortCountTest DoShortCountTest_vfprintf
 
-
-void DoCharTest(const char *formatstr, char param, const char *checkstr)
+inline void DoCharTest_vfprintf(const char *formatstr, char param, const char *checkstr)
 {
     FILE *fp;
     char buf[256] = { 0 };
@@ -246,8 +247,9 @@ void DoCharTest(const char *formatstr, char param, const char *checkstr)
     }    
     fclose(fp);
 }
+#define DoCharTest DoCharTest_vfprintf
 
-void DoWCharTest(const char *formatstr, WCHAR param, const char *checkstr)
+inline void DoWCharTest_vfprintf(const char *formatstr, WCHAR param, const char *checkstr)
 {
     FILE *fp;
     char buf[256] = { 0 };
@@ -277,8 +279,9 @@ void DoWCharTest(const char *formatstr, WCHAR param, const char *checkstr)
     }    
     fclose(fp);
 }
+#define DoWCharTest DoWCharTest_vfprintf
 
-void DoNumTest(const char *formatstr, int value, const char *checkstr)
+inline void DoNumTest_vfprintf(const char *formatstr, int value, const char *checkstr)
 {
     FILE *fp;
     char buf[256] = { 0 };
@@ -308,8 +311,9 @@ void DoNumTest(const char *formatstr, int value, const char *checkstr)
     }    
     fclose(fp);
 }
+#define DoNumTest DoNumTest_vfprintf
 
-void DoI64Test(const char *formatstr, INT64 value, char *valuestr, const char *checkstr1)
+inline void DoI64Test_vfprintf(const char *formatstr, INT64 value, char *valuestr, const char *checkstr1)
 {
     FILE *fp;
     char buf[256] = { 0 };
@@ -339,8 +343,9 @@ void DoI64Test(const char *formatstr, INT64 value, char *valuestr, const char *c
     }    
     fclose(fp);
 }
+#define DoI64Test DoI64Test_vfprintf
 
-void DoDoubleTest(const char *formatstr, double value, const char *checkstr1,
+inline void DoDoubleTest_vfprintf(const char *formatstr, double value, const char *checkstr1,
                   const char *checkstr2)
 {
     FILE *fp;
@@ -373,9 +378,9 @@ void DoDoubleTest(const char *formatstr, double value, const char *checkstr1,
     }    
     fclose(fp);
 }
+#define DoDoubleTest DoDoubleTest_vfprintf
 
-
-void DoArgumentPrecTest(const char *formatstr, int precision, void *param, 
+inline void DoArgumentPrecTest_vfprintf(const char *formatstr, int precision, void *param, 
                         char *paramstr, const char *checkstr1, const char *checkstr2)
 {
     FILE *fp;
@@ -416,8 +421,9 @@ void DoArgumentPrecTest(const char *formatstr, int precision, void *param,
     }
             
 }
+#define DoArgumentPrecTest DoArgumentPrecTest_vfprintf
 
-void DoArgumentPrecDoubleTest(const char *formatstr, int precision, double param, 
+inline void DoArgumentPrecDoubleTest_vfprintf(const char *formatstr, int precision, double param, 
                               const char *checkstr1, const char *checkstr2)
 {
     FILE *fp;
@@ -457,6 +463,7 @@ void DoArgumentPrecDoubleTest(const char *formatstr, int precision, double param
     }
             
 }
+#define DoArgumentPrecDoubleTest DoArgumentPrecDoubleTest_vfprintf
 
 #endif
 

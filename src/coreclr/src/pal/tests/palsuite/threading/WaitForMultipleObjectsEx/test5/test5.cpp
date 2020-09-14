@@ -54,7 +54,7 @@ struct helper_process_t
     HANDLE hProcessFinishEvent;
 } helper_process[MAX_HELPER_PROCESS];
 
-HANDLE hProcessStartEvent;
+HANDLE hProcessStartEvent_WFMO_test5;
 
 struct helper_thread_t 
 {
@@ -149,9 +149,9 @@ Setup()
 
     /* Create the event to start helper process after it was created. */
     uniString = convert(szcHelperProcessStartEvName);
-    hProcessStartEvent = CreateEvent(NULL, TRUE, FALSE, uniString);
+    hProcessStartEvent_WFMO_test5 = CreateEvent(NULL, TRUE, FALSE, uniString);
     free(uniString);
-    if (!hProcessStartEvent) 
+    if (!hProcessStartEvent_WFMO_test5) 
     {
         Fail("test5.Setup: CreateEvent of '%s' failed. "
              "GetLastError() returned %d.\n", szcHelperProcessStartEvName, 
@@ -214,7 +214,7 @@ Setup()
     free(uniStringHelper);
 
     /* Signal all helper processes to start. */
-    if (!SetEvent(hProcessStartEvent))
+    if (!SetEvent(hProcessStartEvent_WFMO_test5))
     {
         Fail("test5.Setup: SetEvent '%s' failed\n",
             "LastError:(%u)\n",
@@ -282,7 +282,7 @@ Setup()
  * Cleanup the helper processes and helper threads.
  */
 DWORD
-Cleanup()
+Cleanup_WFMO_test5()
 {
     DWORD dwExitCode;
     DWORD dwRet;
@@ -323,7 +323,7 @@ Cleanup()
     }
 
     /* Close all process start event. */
-    PEDANTIC(CloseHandle, (hProcessStartEvent));
+    PEDANTIC(CloseHandle, (hProcessStartEvent_WFMO_test5));
 
     return dwExitCode;
 }
@@ -491,13 +491,13 @@ PALTEST(threading_WaitForMultipleObjectsEx_test5_paltest_waitformultipleobjectse
     Setup();
     ThreadIndexOfThreadFinishEvent = 3;
     TestWakeupOneThread();
-    dwExitCode = Cleanup();
+    dwExitCode = Cleanup_WFMO_test5();
 
     if (PASS == dwExitCode)
     {
         Setup();
         TestWakeupAllThread();
-        dwExitCode = Cleanup();
+        dwExitCode = Cleanup_WFMO_test5();
     }
 
     PAL_TerminateEx(dwExitCode);

@@ -16,7 +16,7 @@
 
 #include <palsuite.h>
 
-DWORD PALAPI CreateTestThread(LPVOID lpParam);
+DWORD PALAPI CreateTestThread_DuplicateHandle_test8(LPVOID lpParam);
 
 PALTEST(threading_DuplicateHandle_test8_paltest_duplicatehandle_test8, "threading/DuplicateHandle/test8/paltest_duplicatehandle_test8")
 {
@@ -24,7 +24,7 @@ PALTEST(threading_DuplicateHandle_test8_paltest_duplicatehandle_test8, "threadin
     HANDLE  hCurrentThread;
     HANDLE  hDupThread;
     DWORD   dwThreadId = 0;
-    LPTHREAD_START_ROUTINE lpStartAddress =  &CreateTestThread;
+    LPTHREAD_START_ROUTINE lpStartAddress =  &CreateTestThread_DuplicateHandle_test8;
 
     int threadPriority;
     int duplicatePriority;
@@ -157,7 +157,7 @@ PALTEST(threading_DuplicateHandle_test8_paltest_duplicatehandle_test8, "threadin
 }
 
 /*Thread testing function, only return '0'*/
-DWORD PALAPI CreateTestThread(LPVOID lpParam)
+DWORD PALAPI CreateTestThread_DuplicateHandle_test8(LPVOID lpParam)
 {
     return (DWORD)0;
 }

@@ -43,11 +43,11 @@ struct test
 };
 
 /**
- * validate
+ * fmaf_test1_validate
  *
  * test validation function
  */
-void __cdecl validate(float x, float y, float z, float expected, float variance)
+void __cdecl fmaf_test1_validate(float x, float y, float z, float expected, float variance)
 {
     float result = fmaf(x, y, z);
 
@@ -65,11 +65,11 @@ void __cdecl validate(float x, float y, float z, float expected, float variance)
 }
 
 /**
- * validate
+ * fmaf_test1_validate
  *
  * test validation function for values returning NaN
  */
-void __cdecl validate_isnan(float x, float y, float z)
+void __cdecl fmaf_test1_validate_isnan(float x, float y, float z)
 {
     float result = fmaf(x, y, z);
 
@@ -103,41 +103,41 @@ PALTEST(c_runtime_fmaf_test1_paltest_fmaf_test1, "c_runtime/fmaf/test1/paltest_f
 
     for (int i = 0; i < (sizeof(tests) / sizeof(struct test)); i++)
     {
-        validate(tests[i].x, tests[i].y, tests[i].z, tests[i].expected, tests[i].variance);
+        fmaf_test1_validate(tests[i].x, tests[i].y, tests[i].z, tests[i].expected, tests[i].variance);
     }
 
     // Returns NaN if x or y is infinite, the other is zero, and z is NaN
-    validate_isnan(PAL_NEGINF, 0, PAL_NAN);
-    validate_isnan(PAL_POSINF, 0, PAL_NAN);
-    validate_isnan(0, PAL_NEGINF, PAL_NAN);
-    validate_isnan(0, PAL_POSINF, PAL_NAN);
+    fmaf_test1_validate_isnan(PAL_NEGINF, 0, PAL_NAN);
+    fmaf_test1_validate_isnan(PAL_POSINF, 0, PAL_NAN);
+    fmaf_test1_validate_isnan(0, PAL_NEGINF, PAL_NAN);
+    fmaf_test1_validate_isnan(0, PAL_POSINF, PAL_NAN);
 
     // Returns NaN if x or y is infinite, the other is zero, and z is not-NaN
-    validate_isnan(PAL_POSINF, 0, PAL_NEGINF);
-    validate_isnan(PAL_NEGINF, 0, PAL_NEGINF);
-    validate_isnan(0, PAL_POSINF, PAL_NEGINF);
-    validate_isnan(0, PAL_NEGINF, PAL_NEGINF);
+    fmaf_test1_validate_isnan(PAL_POSINF, 0, PAL_NEGINF);
+    fmaf_test1_validate_isnan(PAL_NEGINF, 0, PAL_NEGINF);
+    fmaf_test1_validate_isnan(0, PAL_POSINF, PAL_NEGINF);
+    fmaf_test1_validate_isnan(0, PAL_NEGINF, PAL_NEGINF);
     
-    validate_isnan(PAL_POSINF, 0, 0);
-    validate_isnan(PAL_NEGINF, 0, 0);
-    validate_isnan(0, PAL_POSINF, 0);
-    validate_isnan(0, PAL_NEGINF, 0);
+    fmaf_test1_validate_isnan(PAL_POSINF, 0, 0);
+    fmaf_test1_validate_isnan(PAL_NEGINF, 0, 0);
+    fmaf_test1_validate_isnan(0, PAL_POSINF, 0);
+    fmaf_test1_validate_isnan(0, PAL_NEGINF, 0);
 
-    validate_isnan(PAL_POSINF, 0, PAL_POSINF);
-    validate_isnan(PAL_NEGINF, 0, PAL_POSINF);
-    validate_isnan(0, PAL_POSINF, PAL_POSINF);
-    validate_isnan(0, PAL_NEGINF, PAL_POSINF);
+    fmaf_test1_validate_isnan(PAL_POSINF, 0, PAL_POSINF);
+    fmaf_test1_validate_isnan(PAL_NEGINF, 0, PAL_POSINF);
+    fmaf_test1_validate_isnan(0, PAL_POSINF, PAL_POSINF);
+    fmaf_test1_validate_isnan(0, PAL_NEGINF, PAL_POSINF);
 
     // Returns NaN if (x * y) is infinite, and z is an infinite of the opposite sign
-    validate_isnan(PAL_POSINF, PAL_POSINF, PAL_NEGINF);
-    validate_isnan(PAL_NEGINF, PAL_NEGINF, PAL_NEGINF);
-    validate_isnan(PAL_POSINF, PAL_NEGINF, PAL_POSINF);
-    validate_isnan(PAL_NEGINF, PAL_POSINF, PAL_POSINF);
+    fmaf_test1_validate_isnan(PAL_POSINF, PAL_POSINF, PAL_NEGINF);
+    fmaf_test1_validate_isnan(PAL_NEGINF, PAL_NEGINF, PAL_NEGINF);
+    fmaf_test1_validate_isnan(PAL_POSINF, PAL_NEGINF, PAL_POSINF);
+    fmaf_test1_validate_isnan(PAL_NEGINF, PAL_POSINF, PAL_POSINF);
 
-    validate_isnan(PAL_POSINF, 1, PAL_NEGINF);
-    validate_isnan(PAL_NEGINF, 1, PAL_POSINF);
-    validate_isnan(1, PAL_POSINF, PAL_NEGINF);
-    validate_isnan(1, PAL_NEGINF, PAL_POSINF);
+    fmaf_test1_validate_isnan(PAL_POSINF, 1, PAL_NEGINF);
+    fmaf_test1_validate_isnan(PAL_NEGINF, 1, PAL_POSINF);
+    fmaf_test1_validate_isnan(1, PAL_POSINF, PAL_NEGINF);
+    fmaf_test1_validate_isnan(1, PAL_NEGINF, PAL_POSINF);
 
     PAL_Terminate();
     return PASS;

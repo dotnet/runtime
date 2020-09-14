@@ -172,7 +172,7 @@ BOOL WaitForMultipleObjectsExTest()
     return bRet;
 }
 
-BOOL WaitMultipleDuplicateHandleTest()
+BOOL WaitMultipleDuplicateHandleTest_WFMOEx_test1()
 {
     BOOL testResult = TRUE;
     const HANDLE eventHandle = CreateEvent(NULL, TRUE, TRUE, NULL);
@@ -215,7 +215,7 @@ PALTEST(threading_WaitForMultipleObjectsEx_test1_paltest_waitformultipleobjectse
         Fail ("Test failed\n");
     }
 
-    if (!WaitMultipleDuplicateHandleTest())
+    if (!WaitMultipleDuplicateHandleTest_WFMOEx_test1())
     {
         Fail("Test failed\n");
     }

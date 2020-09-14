@@ -41,11 +41,11 @@ struct test
 };
 
 /**
- * validate
+ * scalbn_test1_validate
  *
  * test validation function
  */
-void __cdecl validate(double value, int exponent, double expected, double variance)
+void __cdecl scalbn_test1_validate(double value, int exponent, double expected, double variance)
 {
     double result = scalbn(value, exponent);
 
@@ -63,11 +63,11 @@ void __cdecl validate(double value, int exponent, double expected, double varian
 }
 
 /**
- * validate
+ * scalbn_test1_validate
  *
  * test validation function for values returning NaN
  */
-void __cdecl validate_isnan(double value, int exponent)
+void __cdecl scalbn_test1_validate_isnan(double value, int exponent)
 {
     double result = scalbn(value, exponent);
 
@@ -129,10 +129,10 @@ PALTEST(c_runtime_scalbn_test1_paltest_scalbn_test1, "c_runtime/scalbn/test1/pal
 
     for (int i = 0; i < (sizeof(tests) / sizeof(struct test)); i++)
     {
-        validate(tests[i].value, tests[i].exponent, tests[i].expected, tests[i].variance);
+        scalbn_test1_validate(tests[i].value, tests[i].exponent, tests[i].expected, tests[i].variance);
     }
 
-    validate_isnan(PAL_NAN, 2147483647);
+    scalbn_test1_validate_isnan(PAL_NAN, 2147483647);
 
     PAL_Terminate();
     return PASS;

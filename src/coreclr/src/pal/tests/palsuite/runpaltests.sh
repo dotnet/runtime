@@ -6,7 +6,7 @@
 if [ $# -lt 1 -o $# -gt 3 ]
 then
   echo "Usage..."
-  echo "runpaltests.sh <path to root build directory> [<path to temp folder for PAL tests>]"
+  echo "runpaltests.sh <path to root build directory of the pal tests>  [<path to test output folder>] [<path to temp folder for PAL tests>]"
   echo
   echo "For example:"
   echo "runpaltests.sh /projectk/build/debug"
@@ -20,9 +20,14 @@ echo
 
 # Store the location of the root of build directory
 BUILD_ROOD_DIR=$1
+
 # Create path to the compiled PAL tets in the build directory
-PAL_TEST_BUILD=$BUILD_ROOD_DIR/src/pal/tests/palsuite
+PAL_TEST_BUILD=$BUILD_ROOD_DIR
 echo Running PAL tests from $PAL_TEST_BUILD
+
+OLDPWD=$PWD
+
+export LD_LIBRARY_PATH=$BUILD_ROOD_DIR:$LD_LIBRARY_PATH
 
 # Create absolute path to the file that contains a list of PAL tests to execute.
 # This file is located next to this script in the source tree
@@ -33,22 +38,27 @@ RELATIVE_PATH_TO_PAL_TESTS=${RELATIVE_PATH_TO_PAL_TESTS%/*.*}
 cd $RELATIVE_PATH_TO_PAL_TESTS
 # Environment variable PWD contains absolute path to the current folder
 # so use it to create absolute path to the file with a list of tests.
-PAL_TEST_LIST=$PWD/paltestlist.txt
+PAL_TEST_LIST=$BUILD_ROOD_DIR/paltestlist.txt
 # Change current directory back to the original location
-cd $OLDPWD
 echo The list of PAL tests to run will be read from $PAL_TEST_LIST
 
 # Create the test output root directory
-mkdir -p /tmp/PalTestOutput
-if [ ! -d /tmp/PalTestOutput ]; then
-  rm -f -r /tmp/PalTestOutput
+if [ $# -gt 2 ]
+then
+  PAL_TEST_OUTPUT_DIR=$3
+  mkdir -p $PAL_TEST_OUTPUT_DIR
+else
   mkdir -p /tmp/PalTestOutput
+  if [ ! -d /tmp/PalTestOutput ]; then
+    rm -f -r /tmp/PalTestOutput
+    mkdir -p /tmp/PalTestOutput
+  fi
+  PAL_TEST_OUTPUT_DIR=/tmp/PalTestOutput/default
 fi
 
 # Determine the folder to use for PAL test output during the run, and the folder where output files were requested to be copied.
 # First check if the output folder was passed as a parameter to the script. It is supposed be the second parameter so check if
 # we have more than 1 argument.
-PAL_TEST_OUTPUT_DIR=/tmp/PalTestOutput/default
 if [ $# -gt 1 ]
 then
   COPY_TO_TEST_OUTPUT_DIR=$2
@@ -57,11 +67,16 @@ else
 fi
 
 # Determine the folder to use for PAL test output during the run
-if [ "$COPY_TO_TEST_OUTPUT_DIR" != "$PAL_TEST_OUTPUT_DIR" ]; then
-  # Output files were requested to be copied to a specific folder. In this mode, we need to support parallel runs of PAL tests
-  # on the same machine. Make a unique temp folder for working output inside /tmp/PalTestOutput.
-  PAL_TEST_OUTPUT_DIR=$(mktemp -d /tmp/PalTestOutput/tmp.XXXXXXXX)
+if [ ! $# -gt 2 ]
+then
+  if [ "$COPY_TO_TEST_OUTPUT_DIR" != "$PAL_TEST_OUTPUT_DIR" ]; then
+    # Output files were requested to be copied to a specific folder. In this mode, we need to support parallel runs of PAL tests
+    # on the same machine. Make a unique temp folder for working output inside $PAL_TEST_RESULTS_DIR.
+    PAL_TEST_OUTPUT_DIR=$(mktemp -d $PAL_TEST_RESULTS_DIR/tmp.XXXXXXXX)
+  fi
 fi
+
+cd $PAL_TEST_OUTPUT_DIR
 
 echo PAL tests will store their temporary files and output in $PAL_TEST_OUTPUT_DIR.
 if [ "$COPY_TO_TEST_OUTPUT_DIR" != "$PAL_TEST_OUTPUT_DIR" ]; then
@@ -124,6 +139,10 @@ do
 
   # Create path to a test executable to run
   TEST_COMMAND="$PAL_TEST_BUILD/$TEST_NAME"
+  if [ ! -f $TEST_COMMAND ]; then
+    TEST_COMMAND="$PAL_TEST_BUILD/paltests $TEST_NAME"
+  fi
+
   echo -n .
   # Redirect to temp file
   $TEST_COMMAND 2>&1 | tee ${PAL_OUT_FILE} ; ( exit ${PIPESTATUS[0]} )
@@ -207,6 +226,8 @@ if [ "$COPY_TO_TEST_OUTPUT_DIR" != "$PAL_TEST_OUTPUT_DIR" ]; then
   rm -f -r $PAL_TEST_OUTPUT_DIR
   echo Copied PAL test output files to $COPY_TO_TEST_OUTPUT_DIR.
 fi
+
+cd $OLDPWD
 
 # Set exit code to be equal to the number PAL tests that have failed.
 # Exit code 0 indicates success.

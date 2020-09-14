@@ -20,7 +20,7 @@
 
 #include <palsuite.h>
 
-const char* szTextFile = "text.txt";
+
 
 
 PALTEST(file_io_SetEndOfFile_test1_paltest_setendoffile_test1, "file_io/SetEndOfFile/test1/paltest_setendoffile_test1")

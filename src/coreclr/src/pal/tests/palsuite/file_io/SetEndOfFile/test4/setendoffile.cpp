@@ -16,8 +16,8 @@
 #include <palsuite.h>
 
 
-const char* szStringTest = "The quick fox jumped over the lazy dog's back.";
-const char* szTextFile = "test.tmp";
+#define szStringTest "The quick fox jumped over the lazy dog's back."
+#define szTextFile "test.tmp"
 
 static void Cleanup(HANDLE hFile)
 {

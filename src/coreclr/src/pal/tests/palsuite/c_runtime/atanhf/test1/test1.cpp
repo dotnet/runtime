@@ -44,11 +44,11 @@ struct test
 };
 
 /**
- * validate
+ * atanhf_test1_validate
  *
  * test validation function
  */
-void __cdecl validate(float value, float expected, float variance)
+void __cdecl atanhf_test1_validate(float value, float expected, float variance)
 {
     float result = atanhf(value);
 
@@ -66,11 +66,11 @@ void __cdecl validate(float value, float expected, float variance)
 }
 
 /**
- * validate
+ * atanhf_test1_validate
  *
  * test validation function for values returning NaN
  */
-void __cdecl validate_isnan(float value)
+void __cdecl atanhf_test1_validate_isnan(float value)
 {
     float result = atanhf(value);
 
@@ -117,11 +117,11 @@ PALTEST(c_runtime_atanhf_test1_paltest_atanhf_test1, "c_runtime/atanhf/test1/pal
 
     for (int i = 0; i < (sizeof(tests) / sizeof(struct test)); i++)
     {
-        validate( tests[i].value,  tests[i].expected, tests[i].variance);
-        validate(-tests[i].value, -tests[i].expected, tests[i].variance);
+        atanhf_test1_validate( tests[i].value,  tests[i].expected, tests[i].variance);
+        atanhf_test1_validate(-tests[i].value, -tests[i].expected, tests[i].variance);
     }
 
-    validate_isnan(PAL_NAN);
+    atanhf_test1_validate_isnan(PAL_NAN);
 
     PAL_Terminate();
     return PASS;

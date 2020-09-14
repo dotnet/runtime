@@ -20,7 +20,7 @@
 
 #include <palsuite.h>
 
-const char* cTestString = "one fish, two fish, red fish, blue fish.";
+#define cTestString "one fish, two fish, read fish, blue fish."
 
 PALTEST(miscellaneous_CreatePipe_test1_paltest_createpipe_test1, "miscellaneous/CreatePipe/test1/paltest_createpipe_test1")
 {

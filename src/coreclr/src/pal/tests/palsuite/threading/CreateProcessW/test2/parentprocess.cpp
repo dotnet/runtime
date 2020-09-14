@@ -119,7 +119,16 @@ PALTEST(threading_CreateProcessW_test2_paltest_createprocessw_test2, "threading/
     si.hStdOutput = hTestStdOutW;
     si.hStdError = hTestStdErrW;
 
-    wcscpy(szFullPathNameW, szChildFileW);
+    int mbwcResult = MultiByteToWideChar(CP_ACP, 0, argv[0], -1, szFullPathNameW, sizeof(szFullPathNameW));
+
+    if (0 == mbwcResult)
+    {
+        Fail ("Palsuite Code: MultiByteToWideChar() call failed. Exiting.\n");
+    }
+
+    wcscat(szFullPathNameW, u" ");
+    wcscat(szFullPathNameW, szChildFileW);
+
     wcscat(szFullPathNameW, szArgs);
 
     /*******************************************

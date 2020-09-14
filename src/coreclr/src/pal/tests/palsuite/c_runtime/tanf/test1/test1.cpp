@@ -44,11 +44,11 @@ struct test
 };
 
 /**
- * validate
+ * tanf_test1_validate
  *
  * test validation function
  */
-void __cdecl validate(float value, float expected, float variance)
+void __cdecl tanf_test1_validate(float value, float expected, float variance)
 {
     float result = tanf(value);
 
@@ -66,11 +66,11 @@ void __cdecl validate(float value, float expected, float variance)
 }
 
 /**
- * validate
+ * tanf_test1_validate
  *
  * test validation function for values returning NaN
  */
-void __cdecl validate_isnan(float value)
+void __cdecl tanf_test1_validate_isnan(float value)
 {
     float result = tanf(value);
 
@@ -116,19 +116,19 @@ PALTEST(c_runtime_tanf_test1_paltest_tanf_test1, "c_runtime/tanf/test1/paltest_t
 
     for (int i = 0; i < (sizeof(tests) / sizeof(struct test)); i++)
     {
-        validate( tests[i].value,  tests[i].expected, tests[i].variance);
-        validate(-tests[i].value, -tests[i].expected, tests[i].variance);
+        tanf_test1_validate( tests[i].value,  tests[i].expected, tests[i].variance);
+        tanf_test1_validate(-tests[i].value, -tests[i].expected, tests[i].variance);
     }
     
     // -- SPECIAL CASE --
     // Normally, tanf(pi / 2) would return PAL_POSINF (atan2f(PAL_POSINF) does return (pi / 2)).
     // However, it seems instead (on all supported systems), we get a different number entirely.
-    validate( 1.57079633f, -22877332.0, PAL_EPSILON * 100000000);
-    validate(-1.57079633f,  22877332.0, PAL_EPSILON * 100000000);
+    tanf_test1_validate( 1.57079633f, -22877332.0, PAL_EPSILON * 100000000);
+    tanf_test1_validate(-1.57079633f,  22877332.0, PAL_EPSILON * 100000000);
     
-    validate_isnan(PAL_NEGINF);
-    validate_isnan(PAL_NAN);
-    validate_isnan(PAL_POSINF);
+    tanf_test1_validate_isnan(PAL_NEGINF);
+    tanf_test1_validate_isnan(PAL_NAN);
+    tanf_test1_validate_isnan(PAL_POSINF);
 
     PAL_Terminate();
     return PASS;

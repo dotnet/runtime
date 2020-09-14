@@ -42,11 +42,11 @@ struct test
 };
 
 /**
- * validate
+ * floorf_test1_validate
  *
  * test validation function
  */
-void __cdecl validate(float value, float expected, float variance)
+void __cdecl floorf_test1_validate(float value, float expected, float variance)
 {
     float result = floorf(value);
 
@@ -64,11 +64,11 @@ void __cdecl validate(float value, float expected, float variance)
 }
 
 /**
- * validate
+ * floorf_test1_validate
  *
  * test validation function for values returning NaN
  */
-void __cdecl validate_isnan(float value)
+void __cdecl floorf_test1_validate_isnan(float value)
 {
     float result = floorf(value);
 
@@ -111,19 +111,19 @@ PALTEST(c_runtime_floorf_test1_paltest_floorf_test1, "c_runtime/floorf/test1/pal
         return FAIL;
     }
     
-    validate( 0,    0, PAL_EPSILON);
-    validate(-0.0f, 0, PAL_EPSILON);
+    floorf_test1_validate( 0,    0, PAL_EPSILON);
+    floorf_test1_validate(-0.0f, 0, PAL_EPSILON);
     
-    validate( 1,     1, PAL_EPSILON * 10);
-    validate(-1.0f, -1, PAL_EPSILON * 10);
+    floorf_test1_validate( 1,     1, PAL_EPSILON * 10);
+    floorf_test1_validate(-1.0f, -1, PAL_EPSILON * 10);
 
     for (int i = 0; i < (sizeof(tests) / sizeof(struct test)); i++)
     {
-        validate( tests[i].value,  tests[i].expected,       tests[i].variance);
-        validate(-tests[i].value, -(tests[i].expected + 1), tests[i].variance);
+        floorf_test1_validate( tests[i].value,  tests[i].expected,       tests[i].variance);
+        floorf_test1_validate(-tests[i].value, -(tests[i].expected + 1), tests[i].variance);
     }
     
-    validate_isnan(PAL_NAN);
+    floorf_test1_validate_isnan(PAL_NAN);
 
     PAL_Terminate();
     return PASS;

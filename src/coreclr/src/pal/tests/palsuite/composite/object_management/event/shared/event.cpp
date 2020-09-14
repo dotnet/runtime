@@ -57,7 +57,7 @@ int testStatus;
 const char sTmpEventName[MAX_PATH] = "StartTestEvent";
 char objectSuffix[MAX_PATH];
 
-void PALAPI Run_Thread(LPVOID lpParam);
+void PALAPI Run_Thread_event_shared(LPVOID lpParam);
 
 int GetParameters( int argc, char **argv)
 {
@@ -218,7 +218,7 @@ PALTEST(composite_object_management_event_shared_paltest_event_shared, "composit
         hThread[i] = CreateThread(
                                     NULL,                   /* no security attributes */
                                     0,                      /* use default stack size */
-                                    (LPTHREAD_START_ROUTINE)Run_Thread,/* thread function */
+                                    (LPTHREAD_START_ROUTINE)Run_Thread_event_shared,/* thread function */
                                     (LPVOID)dwParam,  /* argument to thread function */
                                     0,                      /* use default creation flags  */
                                     &threadId[i]     /* returns the thread identifier*/                                  
@@ -301,7 +301,7 @@ PALTEST(composite_object_management_event_shared_paltest_event_shared, "composit
     return testStatus;
 }
 
-void  PALAPI Run_Thread (LPVOID lpParam)
+void  PALAPI Run_Thread_event_shared (LPVOID lpParam)
 {
     unsigned int i = 0;
     DWORD dwWaitResult; 

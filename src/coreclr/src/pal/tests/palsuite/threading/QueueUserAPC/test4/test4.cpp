@@ -21,11 +21,11 @@
 #include <palsuite.h>
 
 
-static BOOL bAPCExecuted = FALSE;
+static BOOL bAPCExecuted_QueueUserAPC_test4 = FALSE;
 
-VOID PALAPI APCFunc( ULONG_PTR dwParam )
+VOID PALAPI APCFunc_QueueUserAPC_test4( ULONG_PTR dwParam )
 {
-    bAPCExecuted = TRUE;
+    bAPCExecuted_QueueUserAPC_test4 = TRUE;
 }
 
 PALTEST(threading_QueueUserAPC_test4_paltest_queueuserapc_test4, "threading/QueueUserAPC/test4/paltest_queueuserapc_test4")
@@ -43,7 +43,7 @@ PALTEST(threading_QueueUserAPC_test4_paltest_queueuserapc_test4, "threading/Queu
 
     /* get the current thread */
     hThread = GetCurrentThread();
-    ret = QueueUserAPC( APCFunc, hThread, 0 );
+    ret = QueueUserAPC( APCFunc_QueueUserAPC_test4, hThread, 0 );
     if( ret == 0 )
     {
         Fail( "ERROR:%lu:QueueUserAPC call failed\n", GetLastError() );
@@ -58,7 +58,7 @@ PALTEST(threading_QueueUserAPC_test4_paltest_queueuserapc_test4, "threading/Queu
     }
 
     /* check that the APC function was executed */
-    if( bAPCExecuted == FALSE )
+    if( bAPCExecuted_QueueUserAPC_test4 == FALSE )
     {
         Fail( "ERROR:APC function was not executed\n" );
     }

@@ -30,6 +30,7 @@ int __cdecl main(int argc, char *argv[])
                 stringMatches = true;
                 break;
             }
+            i++;
         }
         if (!stringMatches)
             continue;

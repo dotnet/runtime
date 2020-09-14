@@ -24,7 +24,7 @@
 
 const char * const szText =
 	"The quick brown fox jumped over the lazy dog's back.";
-const char* szTextFile = "text.txt";
+
 
 
 PALTEST(file_io_SetFilePointer_test2_paltest_setfilepointer_test2, "file_io/SetFilePointer/test2/paltest_setfilepointer_test2")

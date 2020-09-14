@@ -42,11 +42,11 @@ struct test
 };
 
 /**
- * validate
+ * powf_test1_validate
  *
  * test validation function
  */
-void __cdecl validate(float x, float y, float expected, float variance)
+void __cdecl powf_test1_validate(float x, float y, float expected, float variance)
 {
     float result = powf(x, y);
 
@@ -64,11 +64,11 @@ void __cdecl validate(float x, float y, float expected, float variance)
 }
 
 /**
- * validate
+ * powf_test1_validate
  *
  * test validation function for values returning NaN
  */
-void __cdecl validate_isnan(float x, float y)
+void __cdecl powf_test1_validate_isnan(float x, float y)
 {
     float result = powf(x, y);
 
@@ -202,26 +202,26 @@ PALTEST(c_runtime_powf_test1_paltest_powf_test1, "c_runtime/powf/test1/paltest_p
 
     for (int i = 0; i < (sizeof(tests) / sizeof(struct test)); i++)
     {
-        validate(tests[i].x, tests[i].y, tests[i].expected, tests[i].variance);
+        powf_test1_validate(tests[i].x, tests[i].y, tests[i].expected, tests[i].variance);
     }
 
-    validate_isnan(-10, -1.57079633f);                                                   //          y: -(pi / 2)
-    validate_isnan(-10, -0.785398163f);                                                  //          y: -(pi / 4)
-    validate_isnan(-10,  0.785398163f);                                                  //          y:   pi / 4
-    validate_isnan(-10,  1.57079633f);                                                   //          y:   pi / 2
+    powf_test1_validate_isnan(-10, -1.57079633f);                                                   //          y: -(pi / 2)
+    powf_test1_validate_isnan(-10, -0.785398163f);                                                  //          y: -(pi / 4)
+    powf_test1_validate_isnan(-10,  0.785398163f);                                                  //          y:   pi / 4
+    powf_test1_validate_isnan(-10,  1.57079633f);                                                   //          y:   pi / 2
     
-    validate_isnan(-2.71828183f, -1.57079633f);                                          // x: -(e)  y: -(pi / 2)
-    validate_isnan(-2.71828183f, -0.785398163f);                                         // x: -(e)  y: -(pi / 4)
-    validate_isnan(-2.71828183f,  0.785398163f);                                         // x: -(e)  y:   pi / 4
-    validate_isnan(-2.71828183f,  1.57079633f);                                          // x: -(e)  y:   pi / 2
+    powf_test1_validate_isnan(-2.71828183f, -1.57079633f);                                          // x: -(e)  y: -(pi / 2)
+    powf_test1_validate_isnan(-2.71828183f, -0.785398163f);                                         // x: -(e)  y: -(pi / 4)
+    powf_test1_validate_isnan(-2.71828183f,  0.785398163f);                                         // x: -(e)  y:   pi / 4
+    powf_test1_validate_isnan(-2.71828183f,  1.57079633f);                                          // x: -(e)  y:   pi / 2
 
-    validate_isnan(PAL_NEGINF, PAL_NAN);
-    validate_isnan(PAL_NAN,    PAL_NEGINF);
+    powf_test1_validate_isnan(PAL_NEGINF, PAL_NAN);
+    powf_test1_validate_isnan(PAL_NAN,    PAL_NEGINF);
     
-    validate_isnan(PAL_POSINF, PAL_NAN);
-    validate_isnan(PAL_NAN,    PAL_POSINF);
+    powf_test1_validate_isnan(PAL_POSINF, PAL_NAN);
+    powf_test1_validate_isnan(PAL_NAN,    PAL_POSINF);
     
-    validate_isnan(PAL_NAN, PAL_NAN);
+    powf_test1_validate_isnan(PAL_NAN, PAL_NAN);
 
     PAL_Terminate();
     return PASS;

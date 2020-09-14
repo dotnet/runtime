@@ -27,12 +27,12 @@ static HANDLE hSyncEvent2 = NULL;
 static BOOL bThreadResult = FAIL;
 
 
-VOID PALAPI APCFunc(ULONG_PTR dwParam)
+VOID PALAPI APCFunc_QueueUserAPC_test2(ULONG_PTR dwParam)
 {
     InAPC = TRUE;
 }
 
-DWORD PALAPI SleeperProc(LPVOID lpParameter)
+DWORD PALAPI SleeperProc_QueueUserAPC_test2(LPVOID lpParameter)
 {
     DWORD ret;
 
@@ -109,7 +109,7 @@ PALTEST(threading_QueueUserAPC_test2_paltest_queueuserapc_test2, "threading/Queu
     /* create a child thread */
     hThread = CreateThread( NULL,
                             0,
-                            (LPTHREAD_START_ROUTINE)SleeperProc,
+                            (LPTHREAD_START_ROUTINE)SleeperProc_QueueUserAPC_test2,
                             0,
                             0,
                             &ChildThread);
@@ -133,7 +133,7 @@ PALTEST(threading_QueueUserAPC_test2_paltest_queueuserapc_test2, "threading/Queu
     }
 
     /* queue a user APC on the child thread */
-    ret = QueueUserAPC(APCFunc, hThread, 0);
+    ret = QueueUserAPC(APCFunc_QueueUserAPC_test2, hThread, 0);
     if (ret == 0)
     {
         Trace( "ERROR:%lu:QueueUserAPC() call failed\n",

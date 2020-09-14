@@ -13,10 +13,10 @@
 #define UNICODE
 #include <palsuite.h>
 
-WCHAR OutBuffer[1024];
 
 PALTEST(miscellaneous_FormatMessageW_test3_paltest_formatmessagew_test3, "miscellaneous/FormatMessageW/test3/paltest_formatmessagew_test3")
 {
+    WCHAR OutBuffer[1024];
 
     WCHAR *  TheString; 
     WCHAR * CorrectString;

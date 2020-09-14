@@ -44,11 +44,11 @@ struct test
 };
 
 /**
- * validate
+ * acoshf_test1_validate
  *
  * test validation function
  */
-void __cdecl validate(float value, float expected, float variance)
+void __cdecl acoshf_test1_validate(float value, float expected, float variance)
 {
     float result = acoshf(value);
 
@@ -66,11 +66,11 @@ void __cdecl validate(float value, float expected, float variance)
 }
 
 /**
- * validate
+ * acoshf_test1_validate
  *
  * test validation function for values returning NaN
  */
-void __cdecl validate_isnan(float value)
+void __cdecl acoshf_test1_validate_isnan(float value)
 {
     float result = acoshf(value);
 
@@ -117,10 +117,10 @@ PALTEST(c_runtime_acoshf_test1_paltest_acoshf_test1, "c_runtime/acoshf/test1/pal
 
     for (int i = 0; i < (sizeof(tests) / sizeof(struct test)); i++)
     {
-        validate(tests[i].value, tests[i].expected, tests[i].variance);
+        acoshf_test1_validate(tests[i].value, tests[i].expected, tests[i].variance);
     }
 
-    validate_isnan(PAL_NAN);
+    acoshf_test1_validate_isnan(PAL_NAN);
 
     PAL_Terminate();
     return PASS;

@@ -27,7 +27,7 @@ volatile LONG g_lCriticalCount = 0;
 HANDLE g_hEvStart = NULL;
 
 CRITICAL_SECTION g_cs;
-DWORD PALAPI Thread(LPVOID lpParam)
+DWORD PALAPI Thread_CriticalSectionFunctions_test8(LPVOID lpParam)
 {
     int i, j, iLpCnt;
     DWORD dwRet = 0;
@@ -175,7 +175,7 @@ PALTEST(threading_CriticalSectionFunctions_test8_paltest_criticalsectionfunction
     {
         hThreads[iThreadCount] = CreateThread(NULL,
                                               0,
-                                              &Thread,
+                                              &Thread_CriticalSectionFunctions_test8,
                                               (LPVOID) NULL,
                                               0,
                                               &dwThreadId);

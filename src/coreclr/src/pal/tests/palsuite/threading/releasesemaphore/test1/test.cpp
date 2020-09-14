@@ -15,10 +15,10 @@
 
 #include <palsuite.h>
 
-HANDLE hSemaphore;
 
 PALTEST(threading_releasesemaphore_test1_paltest_releasesemaphore_test1, "threading/releasesemaphore/test1/paltest_releasesemaphore_test1")
 {
+    HANDLE hSemaphore;
     if(0 != (PAL_Initialize(argc, argv)))
     {
 	return (FAIL);

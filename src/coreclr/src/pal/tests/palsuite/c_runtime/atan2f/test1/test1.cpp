@@ -39,11 +39,11 @@ struct test
 };
 
 /**
- * validate
+ * atan2f_test1_validate
  *
  * test validation function
  */
-void __cdecl validate(float y, float x, float expected, float variance)
+void __cdecl atan2f_test1_validate(float y, float x, float expected, float variance)
 {
     float result = atan2f(y, x);
 
@@ -61,11 +61,11 @@ void __cdecl validate(float y, float x, float expected, float variance)
 }
 
 /**
- * validate
+ * atan2f_test1_validate
  *
  * test validation function for values returning NaN
  */
-void __cdecl validate_isnan(float y, float x)
+void __cdecl atan2f_test1_validate_isnan(float y, float x)
 {
     float result = atan2f(y, x);
 
@@ -118,28 +118,28 @@ PALTEST(c_runtime_atan2f_test1_paltest_atan2f_test1, "c_runtime/atan2f/test1/pal
     {
         const float pi = 3.14159265f;
         
-        validate( tests[i].y,  tests[i].x,  tests[i].expected,      tests[i].variance);
-        validate(-tests[i].y,  tests[i].x, -tests[i].expected,      tests[i].variance);
-        validate( tests[i].y, -tests[i].x,  pi - tests[i].expected, tests[i].variance);
-        validate(-tests[i].y, -tests[i].x,  tests[i].expected - pi, tests[i].variance);
+        atan2f_test1_validate( tests[i].y,  tests[i].x,  tests[i].expected,      tests[i].variance);
+        atan2f_test1_validate(-tests[i].y,  tests[i].x, -tests[i].expected,      tests[i].variance);
+        atan2f_test1_validate( tests[i].y, -tests[i].x,  pi - tests[i].expected, tests[i].variance);
+        atan2f_test1_validate(-tests[i].y, -tests[i].x,  tests[i].expected - pi, tests[i].variance);
     }
     
-    validate_isnan(PAL_NEGINF, PAL_NAN);
-    validate_isnan(PAL_NAN,    PAL_NEGINF);
-    validate_isnan(PAL_NAN,    PAL_POSINF);
-    validate_isnan(PAL_POSINF, PAL_NAN);
+    atan2f_test1_validate_isnan(PAL_NEGINF, PAL_NAN);
+    atan2f_test1_validate_isnan(PAL_NAN,    PAL_NEGINF);
+    atan2f_test1_validate_isnan(PAL_NAN,    PAL_POSINF);
+    atan2f_test1_validate_isnan(PAL_POSINF, PAL_NAN);
     
-    validate_isnan(PAL_NAN, -1);
-    validate_isnan(PAL_NAN, -0.0f);
-    validate_isnan(PAL_NAN,  0);
-    validate_isnan(PAL_NAN,  1);
+    atan2f_test1_validate_isnan(PAL_NAN, -1);
+    atan2f_test1_validate_isnan(PAL_NAN, -0.0f);
+    atan2f_test1_validate_isnan(PAL_NAN,  0);
+    atan2f_test1_validate_isnan(PAL_NAN,  1);
     
-    validate_isnan(-1,   PAL_NAN);
-    validate_isnan(-0.0f, PAL_NAN);
-    validate_isnan( 0,   PAL_NAN);
-    validate_isnan( 1,   PAL_NAN);
+    atan2f_test1_validate_isnan(-1,   PAL_NAN);
+    atan2f_test1_validate_isnan(-0.0f, PAL_NAN);
+    atan2f_test1_validate_isnan( 0,   PAL_NAN);
+    atan2f_test1_validate_isnan( 1,   PAL_NAN);
     
-    validate_isnan(PAL_NAN, PAL_NAN);
+    atan2f_test1_validate_isnan(PAL_NAN, PAL_NAN);
 
     PAL_Terminate();
     return PASS;

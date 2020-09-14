@@ -13,7 +13,7 @@
 
 #include <palsuite.h>
 
-int __cdecl twocharcmp(const void *pa, const void *pb)
+int __cdecl twocharcmp_qsort_test2(const void *pa, const void *pb)
 {
     return memcmp(pa, pb, 2);
 }
@@ -29,7 +29,7 @@ PALTEST(c_runtime_qsort_test2_paltest_qsort_test2, "c_runtime/qsort/test2/paltes
     }
 
 
-    qsort(before, (sizeof(before) - 1) / 2, 2 * sizeof(char), twocharcmp);
+    qsort(before, (sizeof(before) - 1) / 2, 2 * sizeof(char), twocharcmp_qsort_test2);
   
     if (memcmp(before, after, sizeof(before)) != 0)
     {
