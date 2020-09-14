@@ -23,6 +23,22 @@ namespace System.Security.Cryptography.X509Certificates
             EncodedKeyValue = new AsnEncodedData(keyValue);
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="PublicKey" /> class
+        /// using SubjectPublicKeyInfo from an <see cref="AsymmetricAlgorithm" />.
+        /// </summary>
+        /// <param name="key">
+        /// An asymmetric algorithm to obtain the SubjectPublicKeyInfo from.
+        /// </param>
+        /// <exception cref="CryptographicException">
+        /// The SubjectPublicKeyInfo could not be decoded. The
+        /// <see cref="AsymmetricAlgorithm.ExportSubjectPublicKeyInfo" /> must return a
+        /// valid ASN.1-DER encoded X.509 SubjectPublicKeyInfo.
+        /// </exception>
+        /// <exception cref="NotImplementedException">
+        /// <see cref="AsymmetricAlgorithm.ExportSubjectPublicKeyInfo" /> has not been overridden
+        /// in a derived class.
+        /// </exception>
         public PublicKey(AsymmetricAlgorithm key)
         {
             byte[] subjectPublicKey = key.ExportSubjectPublicKeyInfo();
@@ -72,12 +88,46 @@ namespace System.Security.Cryptography.X509Certificates
 
         public Oid Oid => _oid;
 
+        /// <summary>
+        /// Attempts to export the current key in the X.509 SubjectPublicKeyInfo format into a provided buffer.
+        /// </summary>
+        /// <param name="destination">
+        /// The byte span to receive the X.509 SubjectPublicKeyInfo data.
+        /// </param>
+        /// <param name="bytesWritten">
+        /// When this method returns, contains a value that indicates the number of bytes written to
+        /// <paramref name="destination" />. This parameter is treated as uninitialized.
+        /// </param>
+        /// <returns>
+        /// <see langword="true"/> if <paramref name="destination"/> is big enough to receive the output;
+        /// otherwise, <see langword="false"/>.
+        /// </returns>
         public bool TryExportSubjectPublicKeyInfo(Span<byte> destination, out int bytesWritten) =>
             EncodeSubjectPublicKeyInfo().TryEncode(destination, out bytesWritten);
 
+        /// <summary>
+        /// Exports the current key in the X.509 SubjectPublicKeyInfo format.
+        /// </summary>
+        /// <returns>
+        /// A byte array containing the X.509 SubjectPublicKeyInfo representation of this key.
+        /// </returns>
         public byte[] ExportSubjectPublicKeyInfo() =>
             EncodeSubjectPublicKeyInfo().Encode();
 
+        /// <summary>
+        /// Creates a new instance of <see cref="PublicKey" /> from a X.509 SubjectPublicKeyInfo.
+        /// </summary>
+        /// <param name="source">
+        /// The bytes of an X.509 SubjectPublicKeyInfo structure in the ASN.1-DER encoding.
+        /// </param>
+        /// <param name="bytesRead">
+        /// When this method returns, contains a value that indicates the number of bytes read from
+        /// <paramref name="source" />. This parameter is treated as uninitialized.
+        /// </param>
+        /// <returns>A public key representing the SubjectPublicKeyInfo.</returns>
+        /// <exception cref="CryptographicException">
+        /// The SubjectPublicKeyInfo could not be decoded.
+        /// </exception>
         public static PublicKey CreateFromSubjectPublicKeyInfo(ReadOnlySpan<byte> source, out int bytesRead)
         {
             int read = DecodeSubjectPublicKeyInfo(
