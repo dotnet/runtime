@@ -33,6 +33,7 @@ namespace System.Configuration
             _includesUserConfig = includeUserConfig;
 
             Assembly exeAssembly = null;
+            bool isSingleFile = false;
 
             if (exePath != null)
             {
@@ -48,7 +49,14 @@ namespace System.Configuration
                 // Exe path wasn't specified, get it from the entry assembly
                 exeAssembly = Assembly.GetEntryAssembly();
 
-                if (exeAssembly != null)
+                // in case of SingleFile deployment, Assembly.Location is empty.
+                if (exeAssembly != null && string.IsNullOrEmpty(exeAssembly.Location))
+                {
+                    isSingleFile = true;
+                    HasEntryAssembly = true;
+                }
+
+                if (exeAssembly != null && !isSingleFile)
                 {
                     HasEntryAssembly = true;
 
@@ -83,7 +91,16 @@ namespace System.Configuration
 
             if (!string.IsNullOrEmpty(ApplicationUri))
             {
-                ApplicationConfigUri = ApplicationUri + ConfigExtension;
+                string applicationPath = ApplicationUri;
+                if (isSingleFile)
+                {
+                    // on Unix, we want to first append '.dll' extension and on Windows change '.exe' to '.dll'
+                    // eventually, in ApplicationConfigUri we will get '{applicationName}.dll.config'
+                    applicationPath = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ?
+                        Path.ChangeExtension(ApplicationUri, ".dll") : ApplicationUri + ".dll";
+                }
+
+                ApplicationConfigUri = applicationPath + ConfigExtension;
             }
 
             // In the case when exePath was explicitly supplied, we will not be able to
