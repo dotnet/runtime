@@ -591,6 +591,9 @@ namespace System.Runtime.InteropServices.JavaScript.Http.Tests
         {
             Runtime.InvokeJS(@"
                 function typedArrayToURL(typedArray, mimeType) {
+                    // URL.createObjectURL does not work outside of browser but since this was actual
+                    // test code from https://developer.mozilla.org/en-US/docs/Web/API/Blob
+                    // left it in to show what this should do if the test code were to actually run
                     //return URL.createObjectURL(new Blob([typedArray.buffer], {type: mimeType}))
                     return 'blob:https://mdn.mozillademos.org/ca45b575-6348-4d3e-908a-3dbf3d146ea7';
                 }
@@ -599,6 +602,8 @@ namespace System.Runtime.InteropServices.JavaScript.Http.Tests
                     bytes[i] = 32 + i;
                 }
                 const url = typedArrayToURL(bytes, 'text/plain');
+                // Calls method with string that will be converted to a valid Uri
+                // within the method
                 App.call_test_method  (""SetBlobUrl"", [ url ]);
             ");
 
@@ -615,6 +620,9 @@ namespace System.Runtime.InteropServices.JavaScript.Http.Tests
         {
             Runtime.InvokeJS(@"
                 function typedArrayToURL(typedArray, mimeType) {
+                    // URL.createObjectURL does not work outside of browser but since this was actual
+                    // test code from https://developer.mozilla.org/en-US/docs/Web/API/Blob
+                    // left it in to show what this should do if the test code were to actually run
                     //return URL.createObjectURL(new Blob([typedArray.buffer], {type: mimeType}))
                     return 'blob:https://mdn.mozillademos.org/ca45b575-6348-4d3e-908a-3dbf3d146ea7';
                 }
@@ -623,7 +631,8 @@ namespace System.Runtime.InteropServices.JavaScript.Http.Tests
                     bytes[i] = 32 + i;
                 }
                 const url = typedArrayToURL(bytes, 'text/plain');
-                App.call_test_method  (""SetBlobUri"", [ url ]);
+                // Calls method with string that will be marshaled as valid URI
+                App.call_test_method  (""SetBlobAsUri"", [ url ]);
             ");
 
             var rm = new HttpRequestMessage(HttpMethod.Post, HelperMarshal._blobURI);

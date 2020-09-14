@@ -340,7 +340,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         internal static Uri _blobURI;
-        public static void SetBlobUri(Uri blobUri)
+        public static void SetBlobAsUri(Uri blobUri)
         {
             _blobURI = blobUri;
         }
