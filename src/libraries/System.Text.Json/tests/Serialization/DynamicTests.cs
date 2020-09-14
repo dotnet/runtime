@@ -11,7 +11,7 @@ namespace System.Text.Json.Serialization.Tests
     public static class DynamicTests
     {
         public const string Json =
-            "{\"MyString\":\"Hello\",\"MyNull\":null,\"MyBoolean\":true,\"MyArray\":[1,2],\"MyInt\":42,\"MyDouble\":4.2,\"MyDateTime\":\"2020-07-08T00:00:00\",\"MyGuid\":\"ed957609-cdfe-412f-88c1-02daca1b4f51\",\"MyObject\":{\"MyString\":\"World\"}}";
+            "{\"MyString\":\"Hello\",\"MyNull\":null,\"MyBoolean\":true,\"MyArray\":[1,2],\"MyInt\":42,\"MyDateTime\":\"2020-07-08T00:00:00\",\"MyGuid\":\"ed957609-cdfe-412f-88c1-02daca1b4f51\",\"MyObject\":{\"MyString\":\"World\"}}";
         public static DateTime MyDateTime => new DateTime(2020, 7, 8);
         public static Guid MyGuid => new Guid("ed957609-cdfe-412f-88c1-02daca1b4f51");
 
@@ -26,7 +26,6 @@ namespace System.Text.Json.Serialization.Tests
             myDynamic.MyBoolean = true;
             myDynamic.MyArray = new List<int>() { 1, 2 };
             myDynamic.MyInt = 42;
-            myDynamic.MyDouble = 4.2;
             myDynamic.MyDateTime = MyDateTime;
             myDynamic.MyGuid = MyGuid;
             myDynamic.MyObject = myDynamicChild;
@@ -43,9 +42,10 @@ namespace System.Text.Json.Serialization.Tests
         {
             dynamic myDynamic = GetExpandoObject();
 
-            // STJ can serialize with ExpandoObject + 'dynamic' keyword.
+            // STJ serializes ExpandoObject as IDictionary<string, object>;
+            // there is no custom converter for ExpandoObject.
             string json = JsonSerializer.Serialize<dynamic>(myDynamic);
-            Assert.Equal(Json, json);
+            JsonTestHelper.AssertJsonEqual(Json, json);
 
             dynamic d = JsonSerializer.Deserialize<dynamic>(json);
 
@@ -56,7 +56,7 @@ namespace System.Text.Json.Serialization.Tests
                 int c = d.MyInt;
                 Assert.True(false, "Should have thrown Exception!");
             }
-            catch (Exception) { }
+            catch (Microsoft.CSharp.RuntimeBinder.RuntimeBinderException) { }
 
             Assert.IsType<JsonElement>(d);
             JsonElement elem = (JsonElement)d;
@@ -67,20 +67,19 @@ namespace System.Text.Json.Serialization.Tests
 
             // Re-serialize
             json = JsonSerializer.Serialize<object>(elem);
-            Assert.Equal(Json, json);
+            JsonTestHelper.AssertJsonEqual(Json, json);
 
             json = JsonSerializer.Serialize<dynamic>(elem);
-            Assert.Equal(Json, json);
+            JsonTestHelper.AssertJsonEqual(Json, json);
 
             json = JsonSerializer.Serialize(elem);
-            Assert.Equal(Json, json);
+            JsonTestHelper.AssertJsonEqual(Json, json);
 
             void VerifyPrimitives()
             {
                 Assert.Equal("Hello", elem.GetProperty("MyString").GetString());
                 Assert.True(elem.GetProperty("MyBoolean").GetBoolean());
                 Assert.Equal(42, elem.GetProperty("MyInt").GetInt32());
-                Assert.Equal(4.2, elem.GetProperty("MyDouble").GetDouble());
                 Assert.Equal(MyDateTime, elem.GetProperty("MyDateTime").GetDateTime());
                 Assert.Equal(MyGuid, elem.GetProperty("MyGuid").GetGuid());
             }
@@ -105,7 +104,7 @@ namespace System.Text.Json.Serialization.Tests
         public static void ExpandoObject()
         {
             ExpandoObject expando = JsonSerializer.Deserialize<ExpandoObject>(Json);
-            Assert.Equal(9, ((IDictionary<string, object>)expando).Keys.Count);
+            Assert.Equal(8, ((IDictionary<string, object>)expando).Keys.Count);
 
             dynamic obj = expando;
 
@@ -115,13 +114,13 @@ namespace System.Text.Json.Serialization.Tests
 
             // Re-serialize
             string json = JsonSerializer.Serialize<ExpandoObject>(obj);
-            Assert.Equal(Json, json);
+            JsonTestHelper.AssertJsonEqual(Json, json);
 
             json = JsonSerializer.Serialize<dynamic>(obj);
-            Assert.Equal(Json, json);
+            JsonTestHelper.AssertJsonEqual(Json, json);
 
             json = JsonSerializer.Serialize(obj);
-            Assert.Equal(Json, json);
+            JsonTestHelper.AssertJsonEqual(Json, json);
 
             void VerifyPrimitives()
             {
@@ -133,9 +132,6 @@ namespace System.Text.Json.Serialization.Tests
 
                 jsonElement = obj.MyInt;
                 Assert.Equal(42, jsonElement.GetInt32());
-
-                jsonElement = obj.MyDouble;
-                Assert.Equal(4.2, jsonElement.GetDouble());
 
                 jsonElement = obj.MyDateTime;
                 Assert.Equal(MyDateTime, jsonElement.GetDateTime());

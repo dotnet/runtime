@@ -9,9 +9,9 @@ using static System.Text.Json.Serialization.Samples.JsonSerializerExtensions;
 
 namespace System.Text.Json.Serialization.Tests
 {
-    public static class CustomConverterTests_Dynamic
+    public static partial class CustomConverterTests
     {
-        private enum MyEnum
+        private enum MyCustomEnum
         {
             Default = 0,
             FortyTwo = 42,
@@ -33,7 +33,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal("Hello", obj.MyString);
 
             // Verify other string-based types.
-            Assert.Equal(MyEnum.Hello, (MyEnum)obj.MyString);
+            Assert.Equal(MyCustomEnum.Hello, (MyCustomEnum)obj.MyString);
             Assert.Equal(DynamicTests.MyDateTime, (DateTime)obj.MyDateTime);
             Assert.Equal(DynamicTests.MyGuid, (Guid)obj.MyGuid);
 
@@ -46,17 +46,22 @@ namespace System.Text.Json.Serialization.Tests
             Assert.ThrowsAny<Exception>(() => obj.MyInt == 42L);
             Assert.Equal(42L, (long)obj.MyInt);
             Assert.Equal((byte)42, (byte)obj.MyInt);
-            Assert.Equal(42f, (float)obj.MyInt);
-            Assert.Equal(42m, (decimal)obj.MyInt);
-
-            Assert.IsType<JsonDynamicNumber>(obj.MyDouble);
-            Assert.Equal(4.2, (double)obj.MyDouble);
-
-            double d = obj.MyDouble;
-            Assert.Equal(4.2, d);
 
             // Verify int-based Enum support through "unknown number type" fallback.
-            Assert.Equal(MyEnum.FortyTwo, (MyEnum)obj.MyInt);
+            Assert.Equal(MyCustomEnum.FortyTwo, (MyCustomEnum)obj.MyInt);
+
+            // Verify floating point.
+            obj = JsonSerializer.Deserialize<dynamic>("4.2", options);
+            Assert.IsType<JsonDynamicNumber>(obj);
+
+            double dbl = (double)obj;
+#if !BUILDING_INBOX_LIBRARY
+            string temp = dbl.ToString();
+            // The reader uses "G17" format which causes temp to be 4.2000000000000002 in this case.
+            dbl = double.Parse(temp, System.Globalization.CultureInfo.InvariantCulture);
+#endif
+            Assert.Equal(4.2, dbl);
+
         }
 
         [Fact]
@@ -111,12 +116,12 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal("\"a\"", json);
 
             // Number (JsonElement)
-            using (JsonDocument doc = JsonDocument.Parse($"{Decimal.MaxValue}"))
+            using (JsonDocument doc = JsonDocument.Parse($"{decimal.MaxValue}"))
             {
                 dynamic dynamicNumber = new JsonDynamicNumber(doc.RootElement, options);
-                Assert.Equal<decimal>(Decimal.MaxValue, (decimal)dynamicNumber);
+                Assert.Equal<decimal>(decimal.MaxValue, (decimal)dynamicNumber);
                 json = JsonSerializer.Serialize(dynamicNumber, options);
-                Assert.Equal(Decimal.MaxValue.ToString(), json);
+                Assert.Equal(decimal.MaxValue.ToString(), json);
             }
 
             // Boolean
@@ -141,26 +146,25 @@ namespace System.Text.Json.Serialization.Tests
 
             dynamic dynamicObject = new JsonDynamicObject(dictionary, options);
             json = JsonSerializer.Serialize(dynamicObject, options);
-            Assert.Equal("{\"One\":1,\"Two\":2}", json);
-        }
-
-
-        [Fact]
-        public static void DirectUseOfDynamicTypes_Deserialize_Fails()
-        {
-            var options = new JsonSerializerOptions();
-            options.EnableDynamicTypes();
-
-            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<JsonDynamicType>("{}", options));
-            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<JsonDynamicArray>("[]", options));
-            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<JsonDynamicBoolean>("true", options));
-            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<JsonDynamicNumber>("0", options));
-            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<JsonDynamicObject>("{}", options));
-            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<JsonDynamicString>("\"str\"", options));
+            JsonTestHelper.AssertJsonEqual("{\"One\":1,\"Two\":2}", json);
         }
 
         [Fact]
         public static void DirectUseOfDynamicTypes_Deserialize()
+        {
+            var options = new JsonSerializerOptions();
+            options.EnableDynamicTypes();
+
+            JsonSerializer.Deserialize<JsonDynamicType>("{}", options);
+            JsonSerializer.Deserialize<JsonDynamicArray>("[]", options);
+            JsonSerializer.Deserialize<JsonDynamicBoolean>("true", options);
+            JsonSerializer.Deserialize<JsonDynamicNumber>("0", options);
+            JsonSerializer.Deserialize<JsonDynamicObject>("{}", options);
+            JsonSerializer.Deserialize<JsonDynamicString>("\"str\"", options);
+        }
+
+        [Fact]
+        public static void DirectUseOfDynamicTypes_AsObject_Deserialize()
         {
             var options = new JsonSerializerOptions();
             options.EnableDynamicTypes();
@@ -176,7 +180,7 @@ namespace System.Text.Json.Serialization.Tests
         public static void VerifyMutableDom()
         {
             const string ExpectedJson ="{\"MyString\":\"Hello!\",\"MyNull\":null,\"MyBoolean\":false,\"MyArray\":[\"2\"]," +
-                "\"MyInt\":43,\"MyDouble\":4.3,\"MyDateTime\":\"2020-07-08T00:00:00\",\"MyGuid\":\"ed957609-cdfe-412f-88c1-02daca1b4f51\"," +
+                "\"MyInt\":43,\"MyDateTime\":\"2020-07-08T00:00:00\",\"MyGuid\":\"ed957609-cdfe-412f-88c1-02daca1b4f51\"," +
                 "\"MyObject\":{\"MyString\":\"Hello!!\"},\"Child\":{\"ChildProp\":1}}";
 
             var options = new JsonSerializerOptions();
@@ -189,7 +193,6 @@ namespace System.Text.Json.Serialization.Tests
             obj.MyString = "Hello!";
             obj.MyBoolean = false;
             obj.MyInt = 43;
-            obj.MyDouble = 4.3;
             obj.MyObject = new ExpandoObject();
             obj.MyObject.MyString = "Hello!!";
             obj.MyArray.Clear();
@@ -201,14 +204,14 @@ namespace System.Text.Json.Serialization.Tests
             obj.Child = child;
 
             string json = JsonSerializer.Serialize(obj, options);
-            Assert.Equal(ExpectedJson, json);
+            JsonTestHelper.AssertJsonEqual(ExpectedJson, json);
         }
 
         [Fact]
         public static void VerifyMutableDom_WithIndexers()
         {
             const string ExpectedJson = "{\"MyString\":\"Hello!\",\"MyNull\":null,\"MyBoolean\":false,\"MyArray\":[\"2\"]," +
-                "\"MyInt\":43,\"MyDouble\":4.3,\"MyDateTime\":\"2020-07-08T00:00:00\",\"MyGuid\":\"ed957609-cdfe-412f-88c1-02daca1b4f51\"," +
+                "\"MyInt\":43,\"MyDateTime\":\"2020-07-08T00:00:00\",\"MyGuid\":\"ed957609-cdfe-412f-88c1-02daca1b4f51\"," +
                 "\"MyObject\":{\"MyString\":\"Hello!!\"},\"Child\":{\"ChildProp\":1}}";
 
             var options = new JsonSerializerOptions();
@@ -220,7 +223,6 @@ namespace System.Text.Json.Serialization.Tests
             obj["MyString"] = "Hello!";
             obj["MyBoolean"] = false;
             obj["MyInt"] = 43;
-            obj["MyDouble"] = 4.3;
 
             ((IDictionary<string, object>)obj["MyObject"])["MyString"] = "Hello!!";
 
@@ -234,7 +236,7 @@ namespace System.Text.Json.Serialization.Tests
             ((IList<object>)obj["MyArray"])[0]="2"; // replace the "1"
 
             string json = JsonSerializer.Serialize(obj, options);
-            Assert.Equal(ExpectedJson, json);
+            JsonTestHelper.AssertJsonEqual(ExpectedJson, json);
         }
 
         [Fact]
@@ -276,12 +278,12 @@ namespace System.Text.Json.Serialization.Tests
 
             var options = new JsonSerializerOptions();
             options.EnableDynamicTypes();
-            options.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+            options.PropertyNamingPolicy = new SimpleSnakeCasePolicy();
 
             dynamic obj = JsonSerializer.Deserialize<dynamic>(Json, options);
 
             string json = JsonSerializer.Serialize(obj, options);
-            Assert.Equal(Json, json);
+            JsonTestHelper.AssertJsonEqual(Json, json);
         }
 
         [Fact]
@@ -295,7 +297,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void QuotedNumbers()
+        public static void QuotedNumbers_Deserialize()
         {
             var options = new JsonSerializerOptions();
             options.EnableDynamicTypes();
@@ -310,6 +312,22 @@ namespace System.Text.Json.Serialization.Tests
             Assert.IsType<JsonDynamicString>(obj);
             Assert.Equal(double.NaN, (double)obj);
             Assert.Equal(float.NaN, (float)obj);
+        }
+
+        [Fact]
+        public static void QuotedNumbers_Serialize()
+        {
+            var options = new JsonSerializerOptions();
+            options.EnableDynamicTypes();
+            options.NumberHandling = JsonNumberHandling.WriteAsString;
+
+            dynamic obj = 42L;
+            string json = JsonSerializer.Serialize<dynamic>(obj, options);
+            Assert.Equal("\"42\"", json);
+
+            obj = double.NaN;
+            json = JsonSerializer.Serialize<dynamic>(obj, options);
+            Assert.Equal("\"NaN\"", json);
         }
     }
 }

@@ -44,6 +44,11 @@ namespace System.Text.Json.Serialization.Samples
         /// </remarks>
         public static void EnableDynamicTypes(this JsonSerializerOptions options)
         {
+            if (options == null)
+            {
+                throw new ArgumentNullException(nameof(options));
+            }
+
             options.Converters.Add(new DynamicObjectConverter());
         }
 
@@ -56,10 +61,15 @@ namespace System.Text.Json.Serialization.Samples
 
             internal JsonDynamicType(JsonSerializerOptions options)
             {
+                if (options == null)
+                {
+                    throw new ArgumentNullException(nameof(options));
+                }
+
                 Options = options;
             }
 
-            public override sealed bool TryConvert(ConvertBinder binder, out object result)
+            public sealed override bool TryConvert(ConvertBinder binder, out object result)
             {
                 return TryConvert(binder.ReturnType, out result);
             }
@@ -370,11 +380,6 @@ namespace System.Text.Json.Serialization.Samples
 
             public override sealed object Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
             {
-                if (typeToConvert != typeof(object))
-                {
-                    throw new InvalidOperationException("Only types declared as System.Object can be serialized.");
-                }
-
                 switch (reader.TokenType)
                 {
                     case JsonTokenType.String:
