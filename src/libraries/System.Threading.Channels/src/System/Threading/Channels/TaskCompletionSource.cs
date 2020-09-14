@@ -18,8 +18,7 @@ namespace System.Threading.Channels
         /// The <paramref name="creationOptions"/> represent options invalid for use
         /// with a <see cref="TaskCompletionSource"/>.
         /// </exception>
-        public TaskCompletionSource(TaskCreationOptions creationOptions) :
-            base(null, creationOptions)
+        public TaskCompletionSource(TaskCreationOptions creationOptions) : base(creationOptions)
         {
         }
 
@@ -33,9 +32,6 @@ namespace System.Threading.Channels
         /// <see cref="TaskStatus.Faulted"/>, or
         /// <see cref="TaskStatus.Canceled"/>.
         /// </remarks>
-        public bool TrySetResult()
-        {
-            return TrySetResult(default);
-        }
+        public bool TrySetResult() => TrySetResult(default);
     }
 }
