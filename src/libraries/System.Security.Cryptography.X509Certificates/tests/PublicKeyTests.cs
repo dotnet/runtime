@@ -725,7 +725,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
             PublicKey key = PublicKey.CreateFromSubjectPublicKeyInfo(spki, out int read);
 
-            Assert.True(key.Key is RSA, "is RSA");
+            Assert.IsAssignableFrom<RSA>(key.Key);
             Assert.Equal("1.2.840.113549.1.1.1", key.Oid.Value);
             Assert.Equal(spki, key.ExportSubjectPublicKeyInfo());
             Assert.Equal(spki.Length, read);
@@ -740,7 +740,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
             PublicKey key = PublicKey.CreateFromSubjectPublicKeyInfo(spki, out int read);
 
-            Assert.True(key.Key is DSA, "is DSA");
+            Assert.IsAssignableFrom<DSA>(key.Key);
             Assert.Equal("1.2.840.10040.4.1", key.Oid.Value);
             Assert.Equal(spki, key.ExportSubjectPublicKeyInfo());
             Assert.Equal(spki.Length, read);
