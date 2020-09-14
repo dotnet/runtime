@@ -26,9 +26,9 @@ namespace Profiler.Tests
             // Give time for the profiler to detach
             Console.WriteLine("Waiting for profiler to detach...");
             bool profilerSetFlag = false;
-            for (int i = 0; i < 100; ++i)
+            for (int i = 0; i < 100_000; ++i)
             {
-                Thread.Sleep(TimeSpan.FromSeconds(1));
+                Thread.Sleep(TimeSpan.FromMilliseconds(1));
                 if (_profilerDone)
                 {
                     profilerSetFlag = true;
