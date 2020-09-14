@@ -14,7 +14,7 @@ set(SOURCES
     metadatagetdispenser/metadatagetdispenser.cpp
     getappdomainstaticaddress/getappdomainstaticaddress.cpp
     eltprofiler/slowpatheltprofiler.cpp
-    releaseonshutdown/releaseonshutdown.cpp
+    releaseondetach/releaseondetach.cpp
     profiler.def
     profiler.cpp
     classfactory.cpp

@@ -15,18 +15,18 @@ typedef HRESULT (*GetDispenserFunc) (const CLSID &pClsid, const IID &pIid, void 
 // This test class is very small and doesn't do much. A repeated problem we had was that 
 // if an ICorProfilerCallback* interface was added the developer would forget to add
 // code to call release on the new interface. This test verifies that it is reclaimed
-// after shutdown. It relies on the fact that the base Profiler class will be updated
+// after detach. It relies on the fact that the base Profiler class will be updated
 // to the new ICorProfilerCallback* interface whenever the interface is added.
 //
 // If this test fails, it likely means you added an ICorProfilerCallback* interface
 // and didn't add the corresponding Release call in ~EEToProfInterfaceImpl.
-class ReleaseOnShutdown : public Profiler
+class ReleaseOnDetach : public Profiler
 {
 public:
-    static ReleaseOnShutdown *Instance;
+    static ReleaseOnDetach *Instance;
 
-    ReleaseOnShutdown();
-    virtual ~ReleaseOnShutdown();
+    ReleaseOnDetach();
+    virtual ~ReleaseOnDetach();
 
     virtual GUID GetClsid();
     virtual HRESULT STDMETHODCALLTYPE InitializeForAttach(IUnknown* pCorProfilerInfoUnk, void* pvClientData, UINT cbClientData);

@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#include "releaseonshutdown.h"
+#include "releaseondetach.h"
 
 #ifdef WIN32
 #include <Windows.h>
@@ -18,18 +18,18 @@ using std::getline;
 #endif // __APPLE__
 #endif // WIN32
 
-ReleaseOnShutdown *ReleaseOnShutdown::Instance;
+ReleaseOnDetach *ReleaseOnDetach::Instance;
 
-ReleaseOnShutdown::ReleaseOnShutdown() :
+ReleaseOnDetach::ReleaseOnDetach() :
     _dispenser(NULL),
     _failures(0),
     _detachSucceeded(false),
     _doneFlag(NULL)
 {
-    ReleaseOnShutdown::Instance = this;
+    ReleaseOnDetach::Instance = this;
 }
 
-ReleaseOnShutdown::~ReleaseOnShutdown()
+ReleaseOnDetach::~ReleaseOnDetach()
 {
     if (_doneFlag != NULL)
     {
@@ -53,14 +53,14 @@ ReleaseOnShutdown::~ReleaseOnShutdown()
     }
 }
 
-GUID ReleaseOnShutdown::GetClsid()
+GUID ReleaseOnDetach::GetClsid()
 {
     // {B8C47A29-9C1D-4EEA-ABA0-8E8B3E3B792E}
     GUID clsid = { 0xB8C47A29, 0x9C1D, 0x4EEA, { 0xAB, 0xA0, 0x8E, 0x8B, 0x3E, 0x3B, 0x79, 0x2E } };
     return clsid;
 }
 
-HRESULT ReleaseOnShutdown::InitializeForAttach(IUnknown* pICorProfilerInfoUnk, void* pvClientData, UINT cbClientData)
+HRESULT ReleaseOnDetach::InitializeForAttach(IUnknown* pICorProfilerInfoUnk, void* pvClientData, UINT cbClientData)
 {
     HRESULT hr = Profiler::Initialize(pICorProfilerInfoUnk);
     if (FAILED(hr))
@@ -84,14 +84,14 @@ HRESULT ReleaseOnShutdown::InitializeForAttach(IUnknown* pICorProfilerInfoUnk, v
     return S_OK;
 }
 
-HRESULT ReleaseOnShutdown::Shutdown()
+HRESULT ReleaseOnDetach::Shutdown()
 {
     Profiler::Shutdown();
 
     return S_OK;
 }
 
-HRESULT ReleaseOnShutdown::ProfilerAttachComplete()
+HRESULT ReleaseOnDetach::ProfilerAttachComplete()
 {
     HRESULT hr = pCorProfilerInfo->RequestProfilerDetach(0);
     if (FAILED(hr))
@@ -107,7 +107,7 @@ HRESULT ReleaseOnShutdown::ProfilerAttachComplete()
     return S_OK;
 }
 
-HRESULT STDMETHODCALLTYPE ReleaseOnShutdown::ProfilerDetachSucceeded()
+HRESULT STDMETHODCALLTYPE ReleaseOnDetach::ProfilerDetachSucceeded()
 {
     printf("Profiler detach succeeded\n");
     _detachSucceeded = true;
@@ -116,5 +116,5 @@ HRESULT STDMETHODCALLTYPE ReleaseOnShutdown::ProfilerDetachSucceeded()
 
 extern "C" EXPORT void STDMETHODCALLTYPE PassBoolToProfiler(void *boolPtr)
 {
-    ReleaseOnShutdown::Instance->SetBoolPtr(boolPtr);
+    ReleaseOnDetach::Instance->SetBoolPtr(boolPtr);
 }
