@@ -5564,8 +5564,7 @@ CORINFO_FIELD_HANDLE emitter::emitAnyConst(const void* cnsAddr, UNATIVE_OFFSET c
 //
 CORINFO_FIELD_HANDLE emitter::emitFltOrDblConst(double   constValue,
                                                 emitAttr attr,
-                                                emitAttr packSize,
-                                                emitAttr packAlignment)
+                                                emitAttr packSize)
 {
     assert((attr == EA_4BYTE) || (attr == EA_8BYTE));
 
@@ -5602,7 +5601,7 @@ CORINFO_FIELD_HANDLE emitter::emitFltOrDblConst(double   constValue,
     UNATIVE_OFFSET cnum;
     if (packSize > attr)
     {
-        cnum = emitDataConst(cnsAddr, cnsSize, packAlignment);
+        cnum = emitDataConst(cnsAddr, cnsSize, packSize);
         for (size_t i = 1; i < packSize / attr; i++)
         {
             emitDataConst(cnsAddr, cnsSize, 1);
