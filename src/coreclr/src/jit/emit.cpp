@@ -5561,9 +5561,9 @@ CORINFO_FIELD_HANDLE emitter::emitAnyConst(const void* cnsAddr, UNATIVE_OFFSET c
 //    If attr is EA_8BYTE then 8 byte alignment is automatically requested.
 //    If attr is EA_16BYTE then 8 byte value is emitted twice.
 //
-CORINFO_FIELD_HANDLE emitter::emitFltOrDblConst(double constValue, emitAttr attr)
+CORINFO_FIELD_HANDLE emitter::emitFltOrDblConst(double constValue, emitAttr attr, emitAttr packSize, emitAttr packAlignment)
 {
-    assert((attr == EA_4BYTE) || (attr == EA_8BYTE) || (attr == EA_16BYTE));
+    assert((attr == EA_4BYTE) || (attr == EA_8BYTE));
 
     void* cnsAddr;
     float f;
@@ -5596,10 +5596,13 @@ CORINFO_FIELD_HANDLE emitter::emitFltOrDblConst(double constValue, emitAttr attr
 #endif // TARGET_XARCH
 
     UNATIVE_OFFSET cnum;
-    if (attr == EA_16BYTE)
+    if (packSize > attr)
     {
-        cnum = emitDataConst(cnsAddr, cnsSize, 1);
-        emitDataConst(cnsAddr, cnsSize, 1);
+        cnum = emitDataConst(cnsAddr, cnsSize, packAlignment);
+        for (size_t i = 1; i < packSize / attr; i++)
+        {
+            emitDataConst(cnsAddr, cnsSize, 1);
+        }
     }
     else
     {

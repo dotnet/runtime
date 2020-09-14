@@ -1220,8 +1220,8 @@ void CodeGen::inst_RV_RV_TT(
                     {
                         if (*bitMask == nullptr)
                         {
-                            emitAttr cnsSize = dblCns->TypeIs(TYP_DOUBLE) ? EA_16BYTE : EA_4BYTE;
-                            *bitMask = GetEmitter()->emitFltOrDblConst(dblCns->gtDconVal, cnsSize);
+                            *bitMask = GetEmitter()->emitFltOrDblConst(dblCns->gtDconVal, emitTypeSize(dblCns), EA_16BYTE,
+                                compiler->canUseVexEncoding() ? EA_1BYTE : EA_16BYTE);
                         }
                         cnsDblHnd = *bitMask;
                     }
