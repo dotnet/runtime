@@ -9,9 +9,9 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 	{
 		[Kept]
 		[ExpectedInstructionSequence (new[] {
-				"ldc.i4.s",
+				"ldc.i4.s 0xa",
 				"pop",
-				"ldc.i4",
+				"ldc.i4 0x5",
 				"stsfld",
 				"ret"
 			})]

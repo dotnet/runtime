@@ -114,7 +114,7 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 
 		[Kept]
 		[ExpectedInstructionSequence (new[] {
-				"ldc.r8",
+				"ldc.r8 0",
 				"ret",
 			})]
 		[ExpectLocalsModified]
@@ -139,7 +139,7 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 
 		[Kept]
 		[ExpectedInstructionSequence (new[] {
-				"ldc.r4",
+				"ldc.r4 0",
 				"ret",
 			})]
 		[ExpectLocalsModified]
@@ -151,7 +151,7 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 
 		[Kept]
 		[ExpectedInstructionSequence (new[] {
-				"ldc.i8",
+				"ldc.i8 0x0",
 				"ret",
 			})]
 		static ulong TestMethod_10 ()
