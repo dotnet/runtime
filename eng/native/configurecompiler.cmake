@@ -48,6 +48,7 @@ add_compile_definitions("$<$<OR:$<CONFIG:RELEASE>,$<CONFIG:RELWITHDEBINFO>>:NDEB
 
 if (MSVC)
   add_linker_flag(/GUARD:CF)
+  add_linker_flag(/MAP)
 
   # Linker flags
   #
@@ -442,6 +443,8 @@ if (MSVC)
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/Gm->) # disable minimal rebuild
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/Zp8>) # pack structs on 8-byte boundary
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/Gy>) # separate functions for linker
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/GS>) # Explicitly enable the buffer security checks
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/fp:precise>) # Enable precise floating point
 
   # disable C++ RTTI
   # /GR is added by default by CMake, so remove it manually.
@@ -452,6 +455,9 @@ if (MSVC)
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/MP>) # Build with Multiple Processes (number of processes equal to the number of processors)
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/Zm200>) # Specify Precompiled Header Memory Allocation Limit of 150MB
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/Zc:strictStrings>) # Disable string-literal to char* or wchar_t* conversion
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/Zc:wchar_t>) # wchar_t is a built-in type.
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/Zc:inline>) # All inline functions must have their definition available in the current translation unit.
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/Zc:forScope>) # Enforce standards-compliant for scope.
 
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4960>)
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4961>)
