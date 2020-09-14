@@ -25,13 +25,20 @@ namespace Profiler.Tests
         {
             // Give time for the profiler to detach
             Console.WriteLine("Waiting for profiler to detach...");
+            bool profilerSetFlag = false;
             for (int i = 0; i < 100; ++i)
             {
                 Thread.Sleep(TimeSpan.FromSeconds(1));
                 if (_profilerDone)
                 {
+                    profilerSetFlag = true;
                     break;
                 }
+            }
+
+            if (!profilerSetFlag)
+            {
+                Console.WriteLine("Warning: test will fail because the profiler never had its destructor called.");
             }
         }
 
@@ -57,6 +64,10 @@ namespace Profiler.Tests
             Console.WriteLine($"Attaching profiler {profilerPath} to self.");
             ProfilerControlHelpers.AttachProfilerToSelf(ReleaseOnShutdownGuid, profilerPath);
 
+            // This warning is that the pointer to the volatile bool won't be treated as volatile,
+            // but that's ok. The loop aboive in WastTime is what needs to read it as volatile.
+            // The native part just sets it.
+            #pragma warning disable CS0420
             fixed (bool *boolPtr = &_profilerDone)
             {
                 PassBoolToProfiler(new IntPtr(boolPtr));
