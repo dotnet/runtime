@@ -89,7 +89,8 @@ Build CoreCLR with PAL tests on the Unix machine:
 Run tests:
 
 ```sh
-./src/coreclr/src/pal/tests/palsuite/runpaltests.sh $(pwd)/artifacts/obj/coreclr/$(uname).x64.Debug
+./src/coreclr/src/pal/tests/palsuite/runpaltests.sh $(pwd)/artifacts/bin/coreclr/$(uname).x64.Debug/paltests
+# on macOS, replace $(uname) with OSX
 ```
 
 Test results will go into: `/tmp/PalTestOutput/default/pal_tests.xml`

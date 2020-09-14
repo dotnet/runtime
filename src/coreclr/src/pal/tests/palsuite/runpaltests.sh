@@ -20,6 +20,9 @@ echo
 
 # Store the location of the root of build directory
 BUILD_ROOT_DIR=$1
+if [ -d "$(pwd)/$BUILD_ROOT_DIR" ]; then
+  BUILD_ROOT_DIR="$(pwd)/$BUILD_ROOT_DIR"
+fi
 
 # Create path to the compiled PAL tets in the build directory
 PAL_TEST_BUILD=$BUILD_ROOT_DIR
