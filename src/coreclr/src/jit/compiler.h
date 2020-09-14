@@ -5451,6 +5451,9 @@ private:
 
     //------------------------- Morphing --------------------------------------
 
+
+#if defined(TARGET_X86) || defined(DEBUG)
+private:
     unsigned fgPtrArgCntMax;
 
 public:
@@ -5474,6 +5477,7 @@ public:
     {
         fgPtrArgCntMax = argCntMax;
     }
+#endif // X86 || DEBUG
 
     bool compCanEncodePtrArgCntMax();
 

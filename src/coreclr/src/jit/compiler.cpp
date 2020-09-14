@@ -4917,10 +4917,12 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
     m_pLowering = new (this, CMK_LSRA) Lowering(this, m_pLinearScan); // PHASE_LOWERING
     m_pLowering->Run();
 
-    // Set stack levels
-    //
+#if defined(TARGET_X86) || defined(DEBUG)
+    // Set stack levels, this informmation is necessary for x86
+    // but on other platforms it is used only in asserts.
     StackLevelSetter stackLevelSetter(this);
     stackLevelSetter.Run();
+#endif // X86 || debug
 
     // We can not add any new tracked variables after this point.
     lvaTrackedFixed = true;

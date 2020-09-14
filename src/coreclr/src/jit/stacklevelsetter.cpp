@@ -6,6 +6,8 @@
 #pragma hdrstop
 #endif
 
+#if defined(TARGET_X86) || defined(DEBUG)
+
 #include "stacklevelsetter.h"
 
 StackLevelSetter::StackLevelSetter(Compiler* compiler)
@@ -304,7 +306,7 @@ void StackLevelSetter::SubStackLevel(unsigned value)
 //
 // Notes:
 //    CheckArgCnt records the maximum number of pushed arguments.
-//    Depending upon this value of the maximum number of pushed arguments
+//    On x86 depending upon this value of the maximum number of pushed arguments
 //    we may need to use an EBP frame or be partially interuptible.
 //    This functionality has to be called after maxStackLevel is set.
 //
@@ -314,6 +316,7 @@ void StackLevelSetter::SubStackLevel(unsigned value)
 //
 void StackLevelSetter::CheckArgCnt()
 {
+#if defined(TARGET_X86)
     if (!comp->compCanEncodePtrArgCntMax())
     {
 #ifdef DEBUG
@@ -325,6 +328,11 @@ void StackLevelSetter::CheckArgCnt()
 #endif
         comp->SetInterruptible(false);
     }
+#else
+    assert(comp->compCanEncodePtrArgCntMax());
+#endif
+
+#if defined(TARGET_X86)
     if (maxStackLevel >= sizeof(unsigned))
     {
 #ifdef DEBUG
@@ -335,6 +343,7 @@ void StackLevelSetter::CheckArgCnt()
 #endif
         comp->codeGen->setFramePointerRequired(true);
     }
+#endif
 }
 
 //------------------------------------------------------------------------
@@ -356,3 +365,5 @@ void StackLevelSetter::CheckAdditionalArgs()
     }
 #endif // TARGET_X86
 }
+
+#endif // X86 || DEBUG

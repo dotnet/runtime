@@ -116,8 +116,10 @@ void Compiler::fgInit()
         fgExcptnTargetCache[i] = nullptr;
     }
 
+#if defined(TARGET_X86) || defined(DEBUG)
     /* Keep track of the max count of pointer arguments */
     fgPtrArgCntMax = 0;
+#endif
 
     /* This global flag is set whenever we remove a statement */
     fgStmtRemoved = false;
