@@ -344,14 +344,15 @@ interp_opt_sets [] = {
 	INTERP_OPT_INLINE | INTERP_OPT_CPROP,
 	INTERP_OPT_INLINE | INTERP_OPT_SUPER_INSTRUCTIONS,
 	INTERP_OPT_CPROP | INTERP_OPT_SUPER_INSTRUCTIONS,
-	INTERP_OPT_INLINE | INTERP_OPT_CPROP | INTERP_OPT_SUPER_INSTRUCTIONS,
+	INTERP_OPT_INLINE | INTERP_OPT_CPROP | INTERP_OPT_SUPER_INSTRUCTIONS | INTERP_OPT_BBLOCKS,
 };
 
 static const char* const
 interp_opflags_names [] = {
 	"inline",
 	"cprop",
-	"super-insn"
+	"super-insn",
+	"bblocks"
 };
 
 static const char*

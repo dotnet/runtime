@@ -85,7 +85,6 @@ nativeStringResourceTable_mscorrc
 #sscanf_s
 
 #CopyFileW
-#CreateFileMappingA
 #CreateFileMappingW
 #CreateFileA
 #CreateFileW

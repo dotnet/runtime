@@ -1,11 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.Versioning;
+
 namespace System.Security.Cryptography
 {
     /// <summary>
     /// Specifies the padding mode and parameters to use with RSA encryption or decryption operations.
     /// </summary>
+    [UnsupportedOSPlatform("browser")]
     public sealed class RSAEncryptionPadding : IEquatable<RSAEncryptionPadding>
     {
         private static readonly RSAEncryptionPadding s_pkcs1 = new RSAEncryptionPadding(RSAEncryptionPaddingMode.Pkcs1, default(HashAlgorithmName));

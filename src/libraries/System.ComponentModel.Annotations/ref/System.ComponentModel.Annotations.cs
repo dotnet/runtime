@@ -35,7 +35,7 @@ namespace System.ComponentModel.DataAnnotations
         public string? OtherPropertyDisplayName { get { throw null; } }
         public override bool RequiresValidationContext { get { throw null; } }
         public override string FormatErrorMessage(string name) { throw null; }
-        protected override System.ComponentModel.DataAnnotations.ValidationResult IsValid(object value, System.ComponentModel.DataAnnotations.ValidationContext validationContext) { throw null; }
+        protected override System.ComponentModel.DataAnnotations.ValidationResult? IsValid(object? value, System.ComponentModel.DataAnnotations.ValidationContext validationContext) { throw null; }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Property, AllowMultiple=false, Inherited=true)]
     public sealed partial class ConcurrencyCheckAttribute : System.Attribute
@@ -103,7 +103,7 @@ namespace System.ComponentModel.DataAnnotations
         public string? ShortName { get { throw null; } set { } }
         public bool? GetAutoGenerateField() { throw null; }
         public bool? GetAutoGenerateFilter() { throw null; }
-        public string GetDescription() { throw null; }
+        public string? GetDescription() { throw null; }
         public string? GetGroupName() { throw null; }
         public string? GetName() { throw null; }
         public int? GetOrder() { throw null; }
@@ -166,8 +166,8 @@ namespace System.ComponentModel.DataAnnotations
     {
         public FilterUIHintAttribute(string filterUIHint) { }
         public FilterUIHintAttribute(string filterUIHint, string? presentationLayer) { }
-        public FilterUIHintAttribute(string filterUIHint, string? presentationLayer, params object[] controlParameters) { }
-        public System.Collections.Generic.IDictionary<string, object> ControlParameters { get { throw null; } }
+        public FilterUIHintAttribute(string filterUIHint, string? presentationLayer, params object?[] controlParameters) { }
+        public System.Collections.Generic.IDictionary<string, object?> ControlParameters { get { throw null; } }
         public string FilterUIHint { get { throw null; } }
         public string? PresentationLayer { get { throw null; } }
         public override bool Equals(object? obj) { throw null; }
@@ -292,14 +292,14 @@ namespace System.ComponentModel.DataAnnotations
         public virtual string FormatErrorMessage(string name) { throw null; }
         public System.ComponentModel.DataAnnotations.ValidationResult? GetValidationResult(object? value, System.ComponentModel.DataAnnotations.ValidationContext validationContext) { throw null; }
         public virtual bool IsValid(object? value) { throw null; }
-        protected virtual System.ComponentModel.DataAnnotations.ValidationResult IsValid(object? value, System.ComponentModel.DataAnnotations.ValidationContext validationContext) { throw null; }
+        protected virtual System.ComponentModel.DataAnnotations.ValidationResult? IsValid(object? value, System.ComponentModel.DataAnnotations.ValidationContext validationContext) { throw null; }
         public void Validate(object? value, System.ComponentModel.DataAnnotations.ValidationContext validationContext) { }
         public void Validate(object? value, string name) { }
     }
     public sealed partial class ValidationContext : System.IServiceProvider
     {
         public ValidationContext(object instance) { }
-        public ValidationContext(object instance, System.Collections.Generic.IDictionary<object, object>? items) { }
+        public ValidationContext(object instance, System.Collections.Generic.IDictionary<object, object?>? items) { }
         public ValidationContext(object instance, System.IServiceProvider? serviceProvider, System.Collections.Generic.IDictionary<object, object?>? items) { }
         public string DisplayName { get { throw null; } set { } }
         public System.Collections.Generic.IDictionary<object, object?> Items { get { throw null; } }

@@ -1046,11 +1046,8 @@ FCFuncEnd()
 #ifdef TARGET_UNIX
 FCFuncStart(gPalKernel32Funcs)
     QCFuncElement("CloseHandle", CloseHandle)
-    QCFuncElement("CreateEvent", CreateEventW)
     QCFuncElement("CreateEventEx", CreateEventExW)
-    QCFuncElement("CreateMutex", CreateMutexW)
     QCFuncElement("CreateMutexEx", CreateMutexExW)
-    QCFuncElement("CreateSemaphore", CreateSemaphoreW)
     QCFuncElement("CreateSemaphoreEx", CreateSemaphoreExW)
     QCFuncElement("FormatMessage", FormatMessageW)
     QCFuncElement("FreeEnvironmentStrings", FreeEnvironmentStringsW)
@@ -1067,9 +1064,6 @@ FCFuncStart(gPalKernel32Funcs)
     QCFuncElement("SetEnvironmentVariable", SetEnvironmentVariableW)
     QCFuncElement("SetEvent", SetEvent)
     QCFuncElement("WriteFile", WriteFile)
-FCFuncEnd()
-FCFuncStart(gPalOleAut32Funcs)
-    QCFuncElement("SysAllocStringByteLen", SysAllocStringByteLen)
 FCFuncEnd()
 #endif
 
@@ -1182,9 +1176,6 @@ FCClassElement("OAVariantLib", "Microsoft.Win32", gOAVariantFuncs)
 FCClassElement("Object", "System", gObjectFuncs)
 #ifdef FEATURE_COMINTEROP
 FCClassElement("ObjectMarshaler", "System.StubHelpers", gObjectMarshalerFuncs)
-#endif
-#ifdef TARGET_UNIX
-FCClassElement("OleAut32", "", gPalOleAut32Funcs)
 #endif
 FCClassElement("OverlappedData", "System.Threading", gOverlappedFuncs)
 

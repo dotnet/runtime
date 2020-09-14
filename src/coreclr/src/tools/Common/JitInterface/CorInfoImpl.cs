@@ -49,7 +49,7 @@ namespace Internal.JitInterface
 #if SUPPORT_JIT
         private const string JitSupportLibrary = "*";
 #else
-        private const string JitSupportLibrary = "jitinterface";
+        internal const string JitSupportLibrary = "jitinterface";
 #endif
 
         private IntPtr _jit;
@@ -397,12 +397,19 @@ namespace Internal.JitInterface
         private const int handleMultipler = 8;
         private const int handleBase = 0x420000;
 
+#if DEBUG
+        private static readonly IntPtr s_handleHighBitSet = (sizeof(IntPtr) == 4) ? new IntPtr(0x40000000) : new IntPtr(0x4000000000000000);
+#endif
+
         private IntPtr ObjectToHandle(Object obj)
         {
             IntPtr handle;
             if (!_objectToHandle.TryGetValue(obj, out handle))
             {
                 handle = (IntPtr)(handleMultipler * _handleToObject.Count + handleBase);
+#if DEBUG
+                handle = new IntPtr((long)s_handleHighBitSet | (long)handle);
+#endif
                 _handleToObject.Add(obj);
                 _objectToHandle.Add(obj, handle);
             }
@@ -411,6 +418,9 @@ namespace Internal.JitInterface
 
         private Object HandleToObject(IntPtr handle)
         {
+#if DEBUG
+            handle = new IntPtr(~(long)s_handleHighBitSet & (long) handle);
+#endif
             int index = ((int)handle - handleBase) / handleMultipler;
             return _handleToObject[index];
         }

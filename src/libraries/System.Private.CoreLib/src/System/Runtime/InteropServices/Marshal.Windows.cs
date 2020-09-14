@@ -200,6 +200,16 @@ namespace System.Runtime.InteropServices
             return bstr;
         }
 
+        internal static unsafe IntPtr AllocBSTRByteLen(uint length)
+        {
+            IntPtr bstr = Interop.OleAut32.SysAllocStringByteLen(null, length);
+            if (bstr == IntPtr.Zero)
+            {
+                throw new OutOfMemoryException();
+            }
+            return bstr;
+        }
+
         public static void FreeBSTR(IntPtr ptr)
         {
             if (!IsNullOrWin32Atom(ptr))

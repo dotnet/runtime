@@ -168,7 +168,7 @@ namespace System.Diagnostics
                     }
                     else
                     {
-                        foreach (KeyValuePair<string, object> tag in atc)
+                        foreach (KeyValuePair<string, object?> tag in atc)
                         {
                             samplerTags.Add(tag);
                         }

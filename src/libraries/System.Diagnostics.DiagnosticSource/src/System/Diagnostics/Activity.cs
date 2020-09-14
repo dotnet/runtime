@@ -392,7 +392,7 @@ namespace System.Diagnostics
         /// <param name="key">The tag key name</param>
         /// <param name="value">The tag value mapped to the input key</param>
         /// <returns>'this' for convenient chaining</returns>
-        public Activity SetTag(string key, object value)
+        public Activity SetTag(string key, object? value)
         {
             KeyValuePair<string, object?> kvp = new KeyValuePair<string, object?>(key, value);
 
