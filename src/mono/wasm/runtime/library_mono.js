@@ -2065,7 +2065,7 @@ var MonoSupportLib = {
 		 * @param {Event} event - event to be raised
 		 * @param {object} args - arguments for raising this event, eg. `{trace: true}`
 		 */
-		mono_wasm_raise_event: function(event, args={}) {
+		mono_wasm_raise_debug_event: function(event, args={}) {
 			if (typeof event !== 'object')
 				throw new Error(`event must be an object, but got ${JSON.stringify(event)}`);
 
@@ -2075,7 +2075,7 @@ var MonoSupportLib = {
 			if (typeof args !== 'object')
 				throw new Error(`args must be an object, but got ${JSON.stringify(args)}`);
 
-			console.debug('mono_wasm_event_raised:aef14bca-5519-4dfe-b35a-f867abc123ae', JSON.stringify(event), JSON.stringify(args));
+			console.debug('mono_wasm_debug_event_raised:aef14bca-5519-4dfe-b35a-f867abc123ae', JSON.stringify(event), JSON.stringify(args));
 		},
 	},
 

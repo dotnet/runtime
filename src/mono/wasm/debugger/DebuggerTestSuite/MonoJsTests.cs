@@ -140,7 +140,7 @@ namespace DebuggerTests
         }
 
         [Fact]
-        public async Task BadRaiseEventsTest()
+        public async Task BadRaiseDebugEventsTest()
         {
             var insp = new Inspector();
             var scripts = SubscribeToScripts(insp);
@@ -152,12 +152,12 @@ namespace DebuggerTests
 
                 var bad_expressions = new[]
                 {
-                    "MONO.mono_wasm_raise_event('')",
-                    "MONO.mono_wasm_raise_event(undefined)",
-                    "MONO.mono_wasm_raise_event({})",
+                    "MONO.mono_wasm_raise_debug_event('')",
+                    "MONO.mono_wasm_raise_debug_event(undefined)",
+                    "MONO.mono_wasm_raise_debug_event({})",
 
-                    "MONO.mono_wasm_raise_event({eventName:'foo'}, '')",
-                    "MONO.mono_wasm_raise_event({eventName:'foo'}, 12)"
+                    "MONO.mono_wasm_raise_debug_event({eventName:'foo'}, '')",
+                    "MONO.mono_wasm_raise_debug_event({eventName:'foo'}, 12)"
                 };
 
                 foreach (var expression in bad_expressions)
@@ -177,7 +177,7 @@ namespace DebuggerTests
         [InlineData(true)]
         [InlineData(false)]
         [InlineData(null)]
-        public async Task RaiseEventTraceTest(bool? trace)
+        public async Task RaiseDebugEventTraceTest(bool? trace)
         {
             var insp = new Inspector();
             var scripts = SubscribeToScripts(insp);
@@ -191,7 +191,7 @@ namespace DebuggerTests
                 insp.On("Runtime.consoleAPICalled", async (args, token) => {
                     if (args?["type"]?.Value<string>() == "debug" &&
                        args?["args"]?.Type == JTokenType.Array &&
-                       args?["args"]?[0]?["value"]?.Value<string>()?.StartsWith("mono_wasm_event_raised:") == true)
+                       args?["args"]?[0]?["value"]?.Value<string>()?.StartsWith("mono_wasm_debug_event_raised:") == true)
                     {
                         tcs.SetResult(true);
                     }
@@ -200,7 +200,7 @@ namespace DebuggerTests
                 });
 
                 var trace_str = trace.HasValue ? $"trace: {trace.ToString().ToLower()}" : String.Empty;
-                var expression = $"MONO.mono_wasm_raise_event({{ eventName:'qwe' }}, {{ {trace_str} }})";
+                var expression = $"MONO.mono_wasm_raise_debug_event({{ eventName:'qwe' }}, {{ {trace_str} }})";
                 var res = await ctx.cli.SendCommand($"Runtime.evaluate", JObject.FromObject(new { expression }), ctx.token);
                 Assert.True(res.IsOk, $"Expected to pass for {expression}");
 
