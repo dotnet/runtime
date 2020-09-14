@@ -35,7 +35,7 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 
 		[Kept]
 		[ExpectedInstructionSequence (new[] {
-				"ldc.i4",
+				"ldc.i4 0x4",
 				"ret",
 			})]
 		static byte TestMethod_2 ()
@@ -45,7 +45,7 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 
 		[Kept]
 		[ExpectedInstructionSequence (new[] {
-				"ldc.i4",
+				"ldc.i4 0x78",
 				"ret",
 			})]
 		static char TestMethod_3 ()
@@ -55,7 +55,7 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 
 		[Kept]
 		[ExpectedInstructionSequence (new[] {
-				"ldc.i4",
+				"ldc.i4 0x3",
 				"ret"
 			})]
 		static sbyte TestMethod_4 ()
@@ -85,7 +85,7 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 
 		[Kept]
 		[ExpectedInstructionSequence (new[] {
-				"ldc.r8",
+				"ldc.r8 2.5",
 				"ret",
 			})]
 		static double TestMethod_7 ()
@@ -95,7 +95,7 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 
 		[Kept]
 		[ExpectedInstructionSequence (new[] {
-				"ldc.i4",
+				"ldc.i4 0xfffffffd",
 				"ret"
 			})]
 		static int TestMethod_8 ()
@@ -105,7 +105,7 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 
 		[Kept]
 		[ExpectedInstructionSequence (new[] {
-				"ldc.r4",
+				"ldc.r4 6",
 				"ret",
 			})]
 		static float TestMethod_9 ()
@@ -115,7 +115,7 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 
 		[Kept]
 		[ExpectedInstructionSequence (new[] {
-				"ldc.i8",
+				"ldc.i8 0x1e240",
 				"ret",
 			})]
 		static ulong TestMethod_10 ()
@@ -125,7 +125,7 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 
 		[Kept]
 		[ExpectedInstructionSequence (new[] {
-				"ldc.i8",
+				"ldc.i8 0xfffffffffffffc18",
 				"ret",
 			})]
 		static long TestMethod_11 ()
@@ -135,7 +135,7 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 
 		[Kept]
 		[ExpectedInstructionSequence (new[] {
-				"ldc.i4",
+				"ldc.i4 0xffffffff",
 				"ret",
 			})]
 		static uint TestMethod_12 ()

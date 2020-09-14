@@ -381,8 +381,43 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				nameof (ExpectedInstructionSequenceAttribute),
 				nameof (ExpectBodyModifiedAttribute),
 				"instructions",
-				m => m.Body.Instructions.Select (ins => ins.OpCode.ToString ().ToLower ()).ToArray (),
+				m => m.Body.Instructions.Select (ins => FormatInstruction (ins).ToLower ()).ToArray (),
 				attr => GetStringArrayAttributeValue (attr).Select (v => v.ToLower ()).ToArray ());
+		}
+
+		static string FormatInstruction (Instruction instr)
+		{
+			switch (instr.OpCode.Code) {
+			case Code.Ldc_I4:
+				if (instr.Operand is int ivalue)
+					return $"{instr.OpCode.ToString ()} 0x{ivalue.ToString ("x")}";
+
+				throw new NotImplementedException (instr.Operand.GetType ().ToString ());
+			case Code.Ldc_I4_S:
+				if (instr.Operand is sbyte bvalue)
+					return $"{instr.OpCode.ToString ()} 0x{bvalue.ToString ("x")}";
+
+				throw new NotImplementedException (instr.Operand.GetType ().ToString ());
+			case Code.Ldc_I8:
+				if (instr.Operand is long lvalue)
+					return $"{instr.OpCode.ToString ()} 0x{lvalue.ToString ("x")}";
+
+				throw new NotImplementedException (instr.Operand.GetType ().ToString ());
+
+			case Code.Ldc_R4:
+				if (instr.Operand is float fvalue)
+					return $"{instr.OpCode.ToString ()} {fvalue.ToString ()}";
+
+				throw new NotImplementedException (instr.Operand.GetType ().ToString ());
+
+			case Code.Ldc_R8:
+				if (instr.Operand is double dvalue)
+					return $"{instr.OpCode.ToString ()} {dvalue.ToString ()}";
+
+				throw new NotImplementedException (instr.Operand.GetType ().ToString ());
+			default:
+				return instr.OpCode.ToString ();
+			}
 		}
 
 		static void VerifyExceptionHandlers (MethodDefinition src, MethodDefinition linked)
