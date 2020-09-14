@@ -600,7 +600,7 @@ namespace System.Runtime.InteropServices
         {
             if (errorCode < 0)
             {
-                InternalThrowExceptionForHr(errorCode, IntPtr.Zero);
+                throw GetExceptionForHR(errorCode)!;
             }
         }
 
@@ -608,14 +608,8 @@ namespace System.Runtime.InteropServices
         {
             if (errorCode < 0)
             {
-                InternalThrowExceptionForHr(errorCode, errorInfo);
+                throw GetExceptionForHR(errorCode, errorInfo)!;
             }
-        }
-
-        [StackTraceHidden]
-        private static void InternalThrowExceptionForHr(int errorCode, IntPtr errorInfo)
-        {
-            throw GetExceptionForHR(errorCode, errorInfo)!;
         }
 
         public static IntPtr SecureStringToBSTR(SecureString s)
