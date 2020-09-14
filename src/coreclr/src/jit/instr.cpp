@@ -1221,8 +1221,7 @@ void CodeGen::inst_RV_RV_TT(
                         if (*bitMask == nullptr)
                         {
                             *bitMask =
-                                GetEmitter()->emitFltOrDblConst(dblCns->gtDconVal, emitTypeSize(dblCns), EA_16BYTE,
-                                                                EA_16BYTE);
+                                GetEmitter()->emitFltOrDblConst(dblCns->gtDconVal, emitTypeSize(dblCns), EA_16BYTE);
                         }
                         cnsDblHnd = *bitMask;
                     }
