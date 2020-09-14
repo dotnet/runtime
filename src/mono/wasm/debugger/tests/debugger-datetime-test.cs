@@ -7,7 +7,7 @@ namespace DebuggerTests
 {
     public class DateTimeTest
     {
-        public static string LocaleTest(string locale)
+        public static void LocaleTest(string locale)
         {
             CultureInfo.CurrentCulture = new CultureInfo(locale, false);
             Console.WriteLine("CurrentCulture is {0}", CultureInfo.CurrentCulture.Name);
@@ -20,10 +20,10 @@ namespace DebuggerTests
             var stp = dtfi.ShortTimePattern;
 
             DateTime dt = new DateTime(2020, 1, 2, 3, 4, 5);
-            string dt_str = dt.ToString();
-            Console.WriteLine("Current time is {0}", dt_str);
 
-            return dt_str;
+            Console.WriteLine("Current time is {0}", dt);
+
+            return;
         }
     }
 }

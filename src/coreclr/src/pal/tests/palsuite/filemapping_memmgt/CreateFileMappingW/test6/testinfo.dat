@@ -4,7 +4,7 @@
 Version = 1.0
 Section = Filemapping_memmgt
 Function = CreateFileMapping
-Name = CreateFileMappingA - with PAGE_READONLY
+Name = CreateFileMappingW - with PAGE_READONLY
 TYPE = DEFAULT
 EXE1 = createfilemappingw
 Description
