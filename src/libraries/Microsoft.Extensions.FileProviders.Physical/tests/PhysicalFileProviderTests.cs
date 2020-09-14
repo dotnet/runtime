@@ -18,6 +18,7 @@ namespace Microsoft.Extensions.FileProviders
     public class PhysicalFileProviderTests
     {
         private const int WaitTimeForTokenToFire = 500;
+        private const int WaitTimeForTokenCallback = 10000;
 
         [Fact]
         public void GetFileInfoReturnsNotFoundFileInfoForNullPath()
@@ -103,7 +104,6 @@ namespace Microsoft.Extensions.FileProviders
             // choose an arbitrary number that exceeds max
             int instances = maxInstances + 16;
 
-
             AutoResetEvent are = new AutoResetEvent(false);
             try
             {
@@ -115,16 +115,14 @@ namespace Microsoft.Extensions.FileProviders
                         UseActivePolling = true
                     };
                     disposables.Add(pfp);
-                    disposables.Add(pfp.Watch("*").RegisterChangeCallback(
-                        o => are.Set(),
-                        i));
+                    disposables.Add(pfp.Watch("*").RegisterChangeCallback(_ => are.Set(), null));
                 }
 
                 // trigger an event
                 root.CreateFile("test.txt");
 
                 // wait for at least one event.
-                Assert.True(are.WaitOne(WaitTimeForTokenToFire));
+                Assert.True(are.WaitOne(WaitTimeForTokenCallback));
             }
             finally
             {
