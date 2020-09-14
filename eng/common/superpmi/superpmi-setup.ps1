@@ -1,6 +1,7 @@
 Param(
     [string] $SourceDirectory=$env:BUILD_SOURCESDIRECTORY,
     [string] $CoreRootDirectory,
+    [string] $ManagedTestArtifactDirectory,
     [string] $BaselineCoreRootDirectory,
     [string] $Architecture="x64",
     [string] $Framework="net5.0",
@@ -19,6 +20,7 @@ Param(
 # 3. copy 
 
 Write-Host "CORE_ROOT is" $CoreRootDirectory
+Write-Host "Test artifacts is " $ManagedTestArtifactDirectory
 
 $RunFromPerformanceRepo = ($Repository -eq "dotnet/jitutils") -or ($Repository -eq "dotnet-jitutils")
 $PayloadDirectory = (Join-Path $SourceDirectory "Payload")
@@ -30,8 +32,8 @@ $Queue = "Windows.10.Amd64.ClientRS4.DevEx.15.8.Open"
 $HelixSourcePrefix = "official"
 $Creator = $env:BUILD_DEFINITIONNAME
 robocopy $SourceDirectory\src\coreclr\scripts $SuperPmiDirectory /E /XD $PayloadDirectory $SourceDirectory\artifacts $SourceDirectory\.git
-robocopy $CoreRootDirectory $PmiAssembliesDirectory /E
-
+robocopy $CoreRootDirectory $PmiAssembliesDirectory\Core_Root /E
+robocopy $ManagedTestArtifactDirectory $PmiAssembliesDirectory\Tests
 
 New-Item -Path $WorkItemDirectory -Name "placeholder.txt" -ItemType "file" -Value "Placeholder file." -Force
 

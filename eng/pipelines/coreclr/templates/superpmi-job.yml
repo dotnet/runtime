@@ -77,6 +77,14 @@ jobs:
         artifactName: '$(buildProductArtifactName)'
         displayName: 'Coreclr product build'
 
+    # Download and unzip managed test artifacts
+    - template: /eng/pipelines/common/download-artifact-step.yml
+      parameters:
+        unpackFolder: '$(managedTestArtifactRootFolderPath)'
+        artifactFileName: '$(managedGenericTestArtifactName).tar.gz'
+        artifactName: '$(managedGenericTestArtifactName)'
+        displayName: 'generic managed test artifacts'
+
     # Create Core_Root
     - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(buildConfig) $(archType) generatelayoutonly $(librariesOverrideArg)
       displayName: Create Core_Root

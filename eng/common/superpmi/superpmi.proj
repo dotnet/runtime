@@ -8,7 +8,7 @@
     <JitUtilsDirectory>%HELIX_CORRELATION_PAYLOAD%\jitutils\bin</JitUtilsDirectory>
 
     <!-- <CoreRun>%HELIX_CORRELATION_PAYLOAD%\PmiAssembliesDirectory\CoreRun.exe</CoreRun> -->
-    <WorkItemCommand>$(SuperPMIDirectory)\superpmi.py collect -pmi_location $(JitUtilsDirectory)\pmi.dll --pmi -pmi_assemblies $(PmiAssembliesDirectory) -core_root $(PmiAssembliesDirectory)</WorkItemCommand>
+    <WorkItemCommand>$(SuperPMIDirectory)\superpmi.py collect -pmi_location $(JitUtilsDirectory)\pmi.dll --pmi -core_root $(PmiAssembliesDirectory)\Core_Root</WorkItemCommand>
 
     <!-- <HelixPreCommands>$(HelixPreCommands);call %HELIX_CORRELATION_PAYLOAD%\jitutils\bootstrap.cmd;copy %HELIX_CORRELATION_PAYLOAD%\jitutils\bin\pmi.dll $(CoreRoot)</HelixPreCommands> -->
     <!-- <ArtifactsDirectory>%HELIX_CORRELATION_PAYLOAD%\artifacts\BenchmarkDotNet.Artifacts</ArtifactsDirectory>
@@ -19,7 +19,7 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(WorkItemCommand)' != ''">
-    <WorkItemCommand>$(Python) $(WorkItemCommand) -arch $(Architecture) -build_type Checked -output_mch_path  $(OutputMchPath)\coreroot.$(AGENT_OS).$(Architecture).Checked.mch</WorkItemCommand>
+    <WorkItemCommand>$(Python) $(WorkItemCommand) -arch $(Architecture) -build_type Checked </WorkItemCommand>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -37,7 +37,9 @@
     <PartitionCount>1</PartitionCount>
   </PropertyGroup>
   <ItemGroup>
-    <Partition Include="$(BuildConfig).Partition0" Index="0" />
+    <Partition Include="$(BuildConfig).Partition0" Name="Core_Root" />
+    <Partition Include="$(BuildConfig).Partition1" Name="Tests" />
+    <!-- <Partition Include="$(BuildConfig).Partition2" Name="P1_Test" /> -->
     <!-- <Partition Include="$(BuildConfig).Partition1" Index="1" />
     <Partition Include="$(BuildConfig).Partition2" Index="2" />
     <Partition Include="$(BuildConfig).Partition3" Index="3" />
@@ -79,8 +81,8 @@
 
   <ItemGroup>
     <HelixWorkItem Include="@(Partition)">
-      <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
-      <Command>$(WorkItemCommand)</Command>
+      <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory> <!-- TODO: Here too make payload folder different for workitem.Name -->
+      <Command>$(WorkItemCommand) -pmi_assemblies $(PmiAssembliesDirectory)\%(HelixWorkItem.Name) -output_mch_path $(OutputMchPath)\%(HelixWorkItem.Name).$(AGENT_OS).$(Architecture).Checked.mch</Command>
       <Timeout>$(WorkItemTimeout)</Timeout>
     </HelixWorkItem>
   </ItemGroup>

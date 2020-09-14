@@ -49,16 +49,15 @@ jobs:
     jobParameters:
       testGroup: outerloop
 
-# For now, lets not build and run test
-# - template: /eng/pipelines/common/platform-matrix.yml
-#   parameters:
-#     jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
-#     buildConfig: checked
-#     platforms:
-#     - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
-#     jobParameters:
-#       testGroup: outerloop
-#       liveLibrariesBuildConfig: Release
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
+    buildConfig: checked
+    platforms:
+    - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
+    jobParameters:
+      testGroup: outerloop
+      liveLibrariesBuildConfig: Release
 
 # - template: /eng/pipelines/common/platform-matrix.yml
 #   parameters:
