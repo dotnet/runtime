@@ -5562,7 +5562,10 @@ CORINFO_FIELD_HANDLE emitter::emitAnyConst(const void* cnsAddr, UNATIVE_OFFSET c
 //    If attr is EA_4BYTE then the double value is converted to a float value.
 //    If attr is EA_8BYTE then 8 byte alignment is automatically requested.
 //
-CORINFO_FIELD_HANDLE emitter::emitFltOrDblConst(double constValue, emitAttr attr, emitAttr packSize, emitAttr packAlignment)
+CORINFO_FIELD_HANDLE emitter::emitFltOrDblConst(double   constValue,
+                                                emitAttr attr,
+                                                emitAttr packSize,
+                                                emitAttr packAlignment)
 {
     assert((attr == EA_4BYTE) || (attr == EA_8BYTE));
 

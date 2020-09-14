@@ -1683,7 +1683,10 @@ public:
     CORINFO_FIELD_HANDLE emitAnyConst(const void* cnsAddr, UNATIVE_OFFSET cnsSize, UNATIVE_OFFSET cnsAlign);
 
 private:
-    CORINFO_FIELD_HANDLE emitFltOrDblConst(double constValue, emitAttr attr, emitAttr packSize = EA_UNKNOWN, emitAttr = EA_1BYTE);
+    CORINFO_FIELD_HANDLE emitFltOrDblConst(double   constValue,
+                                           emitAttr attr,
+                                           emitAttr packSize      = EA_UNKNOWN,
+                                           emitAttr packAlignment = EA_1BYTE);
     regNumber emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, GenTree* src);
     regNumber emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, GenTree* src1, GenTree* src2);
     void emitInsLoadInd(instruction ins, emitAttr attr, regNumber dstReg, GenTreeIndir* mem);
