@@ -77,6 +77,7 @@ namespace System.Threading
         public bool Join(int millisecondsTimeout) { throw null; }
         public bool Join(System.TimeSpan timeout) { throw null; }
         public static void MemoryBarrier() { }
+        [System.ObsoleteAttribute("Thread.ResetAbort is not supported and throws PlatformNotSupportedException.", DiagnosticId = "SYSLIB0006", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static void ResetAbort() { }
         [System.ObsoleteAttribute("Thread.Resume has been deprecated.  Please use other classes in System.Threading, such as Monitor, Mutex, Event, and Semaphore, to synchronize Threads or protect resources.  https://go.microsoft.com/fwlink/?linkid=14202", false)]
         public void Resume() { }
