@@ -195,7 +195,7 @@ namespace System
         private Func<T>? _factory;
 
         // _value eventually stores the lazily created value. It is valid when _state = null.
-        private T _value = default!;
+        private T? _value;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="System.Lazy{T}"/> class that
@@ -447,14 +447,13 @@ namespace System
         }
 
         /// <summary>Gets the value of the Lazy&lt;T&gt; for debugging display purposes.</summary>
-        [MaybeNull]
-        internal T ValueForDebugDisplay
+        internal T? ValueForDebugDisplay
         {
             get
             {
                 if (!IsValueCreated)
                 {
-                    return default!;
+                    return default;
                 }
                 return _value;
             }
@@ -503,7 +502,7 @@ namespace System
         /// from initialization delegate.
         /// </remarks>
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        public T Value => _state == null ? _value : CreateValue();
+        public T Value => _state == null ? _value! : CreateValue();
     }
 
     /// <summary>A debugger view of the Lazy&lt;T&gt; to surface additional debugging properties and
@@ -524,8 +523,7 @@ namespace System
         public bool IsValueCreated => _lazy.IsValueCreated;
 
         /// <summary>Returns the value of the Lazy object.</summary>
-        [MaybeNull]
-        public T Value => _lazy.ValueForDebugDisplay;
+        public T? Value => _lazy.ValueForDebugDisplay;
 
         /// <summary>Returns the execution mode of the Lazy object</summary>
         public LazyThreadSafetyMode? Mode => _lazy.Mode;

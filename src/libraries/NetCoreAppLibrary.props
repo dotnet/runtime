@@ -48,7 +48,6 @@
       System.IO.FileSystem.Watcher;
       System.IO.IsolatedStorage;
       System.IO.MemoryMappedFiles;
-      System.IO.Pipelines;
       System.IO.Pipes;
       System.IO.Pipes.AccessControl;
       System.IO.UnmanagedMemoryStream;
@@ -57,7 +56,6 @@
       System.Linq.Parallel;
       System.Linq.Queryable;
       System.Memory;
-      System.Net.Connections;
       System.Net.Http;
       System.Net.Http.Json;
       System.Net.HttpListener;
@@ -78,6 +76,7 @@
       System.Numerics.Vectors;
       System.ObjectModel;
       System.Private.DataContractSerialization;
+      System.Private.Runtime.InteropServices.JavaScript;
       System.Private.Uri;
       System.Private.Xml;
       System.Private.Xml.Linq;
@@ -99,7 +98,6 @@
       System.Runtime.Extensions;
       System.Runtime.Handles;
       System.Runtime.InteropServices;
-      System.Runtime.InteropServices.JavaScript;
       System.Runtime.InteropServices.RuntimeInformation;
       System.Runtime.Intrinsics;
       System.Runtime.Loader;

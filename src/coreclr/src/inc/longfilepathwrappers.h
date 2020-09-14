@@ -49,7 +49,7 @@ FindFirstFileExWrapper(
     _In_ DWORD dwAdditionalFlags
     );
 
-#ifndef TARGET_UNIX
+#ifndef HOST_UNIX
 BOOL
 CopyFileExWrapper(
     _In_        LPCWSTR lpExistingFileName,
@@ -60,7 +60,7 @@ CopyFileExWrapper(
     _Inout_opt_ LPBOOL pbCancel,
     _In_        DWORD dwCopyFlags
     );
-#endif //TARGET_UNIX
+#endif //HOST_UNIX
 
 BOOL
 MoveFileExWrapper(

@@ -390,8 +390,6 @@ DEFINE_METHOD(STUBFIELDINFO,        CTOR,                   .ctor,              
 #endif
 
 DEFINE_CLASS(FIELD,                 Reflection,             RuntimeFieldInfo)
-DEFINE_METHOD(FIELD,                SET_VALUE,              SetValue,                   IM_Obj_Obj_BindingFlags_Binder_CultureInfo_RetVoid)
-DEFINE_METHOD(FIELD,                GET_VALUE,              GetValue,                   IM_Obj_RetObj)
 
 DEFINE_CLASS(FIELD_HANDLE,          System,                 RuntimeFieldHandle)
 DEFINE_FIELD(FIELD_HANDLE,          M_FIELD,                m_ptr)
@@ -399,6 +397,8 @@ DEFINE_FIELD(FIELD_HANDLE,          M_FIELD,                m_ptr)
 DEFINE_CLASS(I_RT_FIELD_INFO,       System,                 IRuntimeFieldInfo)
 
 DEFINE_CLASS(FIELD_INFO,            Reflection,             FieldInfo)
+DEFINE_METHOD(FIELD_INFO,           SET_VALUE,              SetValue,                   IM_Obj_Obj_BindingFlags_Binder_CultureInfo_RetVoid)
+DEFINE_METHOD(FIELD_INFO,           GET_VALUE,              GetValue,                   IM_Obj_RetObj)
 
 
 DEFINE_CLASS(GUID,                  System,                 Guid)
@@ -589,6 +589,8 @@ DEFINE_FIELD(NULL,                  VALUE,          Value)
 DEFINE_CLASS(NULLABLE,              System,                 Nullable`1)
 
 DEFINE_CLASS(BYREFERENCE,           System,                 ByReference`1)
+DEFINE_METHOD(BYREFERENCE,          CTOR,                   .ctor, NoSig)
+DEFINE_METHOD(BYREFERENCE,          GET_VALUE,              get_Value, NoSig)
 DEFINE_CLASS(SPAN,                  System,                 Span`1)
 DEFINE_METHOD(SPAN,                 GET_ITEM,               get_Item, IM_Int_RetRefT)
 DEFINE_CLASS(READONLY_SPAN,         System,                 ReadOnlySpan`1)
@@ -708,7 +710,6 @@ DEFINE_METHOD(RUNTIME_HELPERS,      ENUM_EQUALS,            EnumEquals, NoSig)
 DEFINE_METHOD(RUNTIME_HELPERS,      ENUM_COMPARE_TO,        EnumCompareTo, NoSig)
 DEFINE_METHOD(RUNTIME_HELPERS,      ALLOC_TAILCALL_ARG_BUFFER, AllocTailCallArgBuffer,  SM_Int_IntPtr_RetIntPtr)
 DEFINE_METHOD(RUNTIME_HELPERS,      GET_TAILCALL_INFO,      GetTailCallInfo, NoSig)
-DEFINE_METHOD(RUNTIME_HELPERS,      FREE_TAILCALL_ARG_BUFFER, FreeTailCallArgBuffer,    SM_RetVoid)
 DEFINE_METHOD(RUNTIME_HELPERS,      DISPATCH_TAILCALLS,     DispatchTailCalls,          NoSig)
 
 DEFINE_CLASS(UNSAFE,                InternalCompilerServices,       Unsafe)
@@ -760,9 +761,6 @@ DEFINE_FIELD(PORTABLE_TAIL_CALL_FRAME, NEXT_CALL,                     NextCall)
 DEFINE_CLASS(TAIL_CALL_TLS,            CompilerServices,              TailCallTls)
 DEFINE_FIELD(TAIL_CALL_TLS,            FRAME,                         Frame)
 DEFINE_FIELD(TAIL_CALL_TLS,            ARG_BUFFER,                    ArgBuffer)
-DEFINE_FIELD(TAIL_CALL_TLS,            ARG_BUFFER_SIZE,               _argBufferSize)
-DEFINE_FIELD(TAIL_CALL_TLS,            ARG_BUFFER_GC_DESC,            _argBufferGCDesc)
-DEFINE_FIELD(TAIL_CALL_TLS,            ARG_BUFFER_INLINE,             _argBufferInline)
 
 DEFINE_CLASS_U(CompilerServices,           PortableTailCallFrame, PortableTailCallFrame)
 DEFINE_FIELD_U(Prev,                       PortableTailCallFrame, Prev)
@@ -772,10 +770,6 @@ DEFINE_FIELD_U(NextCall,                   PortableTailCallFrame, NextCall)
 DEFINE_CLASS_U(CompilerServices,           TailCallTls,           TailCallTls)
 DEFINE_FIELD_U(Frame,                      TailCallTls,           m_frame)
 DEFINE_FIELD_U(ArgBuffer,                  TailCallTls,           m_argBuffer)
-DEFINE_FIELD_U(_argBufferSize,             TailCallTls,           m_argBufferSize)
-DEFINE_FIELD_U(_argBufferGCDesc,           TailCallTls,           m_argBufferGCDesc)
-DEFINE_FIELD_U(_argBufferInline,           TailCallTls,           m_argBufferInline)
-
 
 DEFINE_CLASS(RUNTIME_WRAPPED_EXCEPTION, CompilerServices,   RuntimeWrappedException)
 DEFINE_METHOD(RUNTIME_WRAPPED_EXCEPTION, OBJ_CTOR,          .ctor,                      IM_Obj_RetVoid)
@@ -972,7 +966,7 @@ DEFINE_CLASS_U(Threading,              WaitHandle,             WaitHandleBase)
 DEFINE_FIELD_U(_waitHandle,         WaitHandleBase,         m_safeHandle)
 
 DEFINE_CLASS(DEBUGGER,              Diagnostics,            Debugger)
-DEFINE_METHOD(DEBUGGER,             BREAK_CAN_THROW,        BreakCanThrow,          SM_RetVoid)
+DEFINE_METHOD(DEBUGGER,             BREAK,                  Break,                  SM_RetVoid)
 
 DEFINE_CLASS(BUFFER,                System,                 Buffer)
 DEFINE_METHOD(BUFFER,               MEMCPY_PTRBYTE_ARRBYTE, Memcpy,                 SM_PtrByte_Int_ArrByte_Int_Int_RetVoid)

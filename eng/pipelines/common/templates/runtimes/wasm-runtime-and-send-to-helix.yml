@@ -1,0 +1,83 @@
+parameters:
+  buildConfig: ''
+  archType: 'wasm'
+  osGroup: 'Browser'
+  osSubgroup: ''
+  container: ''
+  testGroup: ''
+  crossrootfsDir: ''
+  readyToRun: false
+  liveLibrariesBuildConfig: ''
+  crossgen2: false
+  compositeBuildMode: false
+  helixQueues: ''
+  stagedBuild: false
+  displayNameArgs: ''
+  runInUnloadableContext: false
+  runtimeVariant: ''
+  variables: {}
+  pool: ''
+  runtimeFlavor: 'mono'
+  runtimeFlavorDisplayName: 'Mono'
+  dependsOn: []
+  #arcade-specific parameters
+  condition: always()
+  continueOnError: false
+  displayName: ''
+  timeoutInMinutes: ''
+  enableMicrobuild: ''
+  gatherAssetManifests: false
+
+
+steps:
+  - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) /p:LibrariesConfiguration=${{ parameters.buildConfig }} -ci -skipstressdependencies -excludemonofailures os Browser wasm $(buildConfigUpper)
+    displayName: Build Tests
+
+  #  Send tests to Helix
+  - template: /eng/pipelines/common/templates/runtimes/send-to-helix-step.yml
+    parameters:
+      displayName: Send tests to Helix
+      buildConfig: $(buildConfigUpper)
+      archType: ${{ parameters.archType }}
+      osGroup: ${{ parameters.osGroup }}
+      osSubgroup: ${{ parameters.osSubgroup}}
+      coreClrRepoRoot: $(Build.SourcesDirectory)/src/coreclr
+      runtimeFlavorDisplayName: ${{ parameters.runtimeFlavorDisplayName }}
+
+      ${{ if eq(variables['System.TeamProject'], 'public') }}:
+        creator: $(Build.DefinitionName)
+
+        helixBuild: $(Build.BuildNumber)
+        helixSource: $(_HelixSource)
+
+        # REVIEW: not sure why "cli" is part of the names here. Leave it for the ones that already had it,
+        # but don't add it to new ones.
+        ${{ if eq(parameters.readyToRun, true) }}:
+          helixType: 'test/functional/r2r/cli/'
+        ${{ if ne(parameters.readyToRun, true) }}:
+          helixType: 'test/functional/cli/'
+
+        helixQueues: ${{ parameters.helixQueues }}
+
+        # This tests whether an array is empty
+        ${{ if eq(join('', parameters.helixQueues), '') }}:
+          condition: false
+
+        publishTestResults: true
+
+        timeoutPerTestInMinutes: $(timeoutPerTestInMinutes)
+        timeoutPerTestCollectionInMinutes: $(timeoutPerTestCollectionInMinutes)
+
+        runCrossGen: ${{ and(eq(parameters.readyToRun, true), ne(parameters.crossgen2, true)) }}
+        runCrossGen2: ${{ and(eq(parameters.readyToRun, true), eq(parameters.crossgen2, true)) }}
+        compositeBuildMode: ${{ parameters.compositeBuildMode }}
+        runInUnloadableContext: ${{ parameters.runInUnloadableContext }}
+
+        ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+          # Access token variable for internal project from the
+          # DotNet-HelixApi-Access variable group
+          helixAccessToken: $(HelixApiAccessToken)
+
+        helixProjectArguments: '$(Build.SourcesDirectory)/src/coreclr/tests/helixpublishwitharcade.proj'
+
+        scenarios: normal 

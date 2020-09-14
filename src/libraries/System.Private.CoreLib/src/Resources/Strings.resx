@@ -835,9 +835,6 @@
   <data name="Argument_AttributeNamesMustBeUnique" xml:space="preserve">
     <value>Attribute names must be unique.</value>
   </data>
-  <data name="Argument_BadAttributeOnInterfaceMethod" xml:space="preserve">
-    <value>Interface method must be abstract and virtual.</value>
-  </data>
   <data name="Argument_BadConstantValue" xml:space="preserve">
     <value>Bad default value.</value>
   </data>
@@ -2674,6 +2671,9 @@
   <data name="InvariantFailed_Cnd" xml:space="preserve">
     <value>Invariant failed: {0}</value>
   </data>
+  <data name="IO_NoFileTableInInMemoryAssemblies" xml:space="preserve">
+    <value>This assembly does not have a file table because it was loaded from memory.</value>
+  </data>
   <data name="IO_EOF_ReadBeyondEOF" xml:space="preserve">
     <value>Unable to read beyond the end of the stream.</value>
   </data>
@@ -3771,5 +3771,8 @@
   </data>
   <data name="BinaryFormatter_SerializationDisallowed" xml:space="preserve">
     <value>BinaryFormatter serialization and deserialization are disabled within this application. See https://aka.ms/binaryformatter for more information.</value>
+  </data>
+  <data name="NotSupported_CodeBase" xml:space="preserve">
+    <value>CodeBase is not supported on assemblies loaded from a single-file bundle.</value>
   </data>
 </root>

@@ -31,8 +31,7 @@ namespace System.Net.Http
 
         public bool Equals(HttpAuthority? other)
         {
-            Debug.Assert(other != null);
-            return string.Equals(IdnHost, other.IdnHost) && Port == other.Port;
+            return other != null && string.Equals(IdnHost, other.IdnHost) && Port == other.Port;
         }
 
         public override bool Equals(object? obj)

@@ -97,6 +97,9 @@ usage()
   echo "* Build CoreCLR for Linux x64 on Debug configuration using GCC 8.4."
   echo "./build.sh clr -gcc8.4"
   echo ""
+  echo "* Build CoreCLR for Linux x64 using extra compiler flags (-fstack-clash-protection)."
+  echo "EXTRA_CFLAGS=-fstack-clash-protection EXTRA_CXXFLAGS=-fstack-clash-protection ./build.sh clr"
+  echo ""
   echo "* Cross-compile CoreCLR runtime for Linux ARM64 on Release configuration."
   echo "./build.sh clr.runtime -arch arm64 -c release -cross"
   echo ""
@@ -386,6 +389,11 @@ done
 
 if [ ${#actInt[@]} -eq 0 ]; then
     arguments="-restore -build $arguments"
+fi
+
+if [ "$os" = "Browser" ] && [ "$arch" != "wasm" ]; then
+    # override default arch for Browser, we only support wasm
+    arch=wasm
 fi
 
 initDistroRid $os $arch $crossBuild $portableBuild

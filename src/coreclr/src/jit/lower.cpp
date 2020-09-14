@@ -585,7 +585,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
     // I think this is due to the fact that we use absolute addressing
     // instead of relative. But in CoreRT is used as a rule relative
     // addressing when we generate an executable.
-    // See also https://github.com/dotnet/coreclr/issues/13194
+    // See also https://github.com/dotnet/runtime/issues/8683
     // Also https://github.com/dotnet/coreclr/pull/13197
     useJumpSequence = useJumpSequence || comp->IsTargetAbi(CORINFO_CORERT_ABI);
 #endif // defined(TARGET_UNIX) && defined(TARGET_ARM)
@@ -3181,7 +3181,9 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
             // Create the assignment node.
             lclStore->ChangeOper(GT_STORE_OBJ);
             GenTreeBlk* objStore = lclStore->AsObj();
-            objStore->gtFlags    = GTF_ASG | GTF_IND_NONFAULTING | GTF_IND_TGT_NOT_HEAP;
+            // Only the GTF_LATE_ARG flag (if present) is preserved.
+            objStore->gtFlags &= GTF_LATE_ARG;
+            objStore->gtFlags |= GTF_ASG | GTF_IND_NONFAULTING | GTF_IND_TGT_NOT_HEAP;
 #ifndef JIT32_GCENCODER
             objStore->gtBlkOpGcUnsafe = false;
 #endif
@@ -6488,7 +6490,7 @@ void Lowering::TransformUnusedIndirection(GenTreeIndir* ind, Compiler* comp, Bas
     // - On XARCH, use GT_IND if we have a contained address, and GT_NULLCHECK otherwise.
     // In all cases, change the type to TYP_INT.
     //
-    assert(ind->OperIs(GT_NULLCHECK, GT_IND));
+    assert(ind->OperIs(GT_NULLCHECK, GT_IND, GT_BLK, GT_OBJ));
 
     ind->gtType = TYP_INT;
 #ifdef TARGET_ARM64
@@ -6499,12 +6501,12 @@ void Lowering::TransformUnusedIndirection(GenTreeIndir* ind, Compiler* comp, Bas
     bool useNullCheck = !ind->Addr()->isContained();
 #endif // !TARGET_XARCH
 
-    if (useNullCheck && ind->OperIs(GT_IND))
+    if (useNullCheck && !ind->OperIs(GT_NULLCHECK))
     {
         comp->gtChangeOperToNullCheck(ind, block);
         ind->ClearUnusedValue();
     }
-    else if (!useNullCheck && ind->OperIs(GT_NULLCHECK))
+    else if (!useNullCheck && !ind->OperIs(GT_IND))
     {
         ind->ChangeOper(GT_IND);
         ind->SetUnusedValue();

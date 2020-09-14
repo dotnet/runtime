@@ -1091,7 +1091,7 @@ bool HeapWalkHelper(Object * pBO, void * pvContext)
     OBJECTREF *   arrObjRef      = NULL;
     size_t        cNumRefs       = 0;
     bool          bOnStack       = false;
-    MethodTable * pMT            = pBO->GetMethodTable();
+    MethodTable * pMT            = pBO->GetGCSafeMethodTable();
 
     ProfilerWalkHeapContext * pProfilerWalkHeapContext = (ProfilerWalkHeapContext *) pvContext;
 
@@ -3085,7 +3085,7 @@ HRESULT ProfToEEInterfaceImpl::GetRVAStaticAddress(ClassID classId,
  * Returns:
  *    S_OK on success,
  *    E_INVALIDARG if not an app domain static,
- *    CORPROF_E_DATAINCOMPLETE if not yet initialized.
+ *    CORPROF_E_DATAINCOMPLETE if not yet initialized or the module is being unloaded.
  *
  */
 HRESULT ProfToEEInterfaceImpl::GetAppDomainStaticAddress(ClassID classId,
@@ -3146,8 +3146,10 @@ HRESULT ProfToEEInterfaceImpl::GetAppDomainStaticAddress(ClassID classId,
         return CORPROF_E_DATAINCOMPLETE;
     }
 
-    if (typeHandle.GetModule()->GetLoaderAllocator() == NULL ||
-        typeHandle.GetModule()->GetLoaderAllocator()->GetExposedObject() == NULL)
+    // We might have caught a collectible assembly in the middle of being collected
+    Module *pModule = typeHandle.GetModule();
+    if (pModule->IsCollectible() &&
+        (pModule->GetLoaderAllocator() == NULL || pModule->GetLoaderAllocator()->GetExposedObject() == NULL))
     {
         return CORPROF_E_DATAINCOMPLETE;
     }

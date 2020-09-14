@@ -23,8 +23,10 @@ namespace System.Data
     /// <summary>
     /// Represents an in-memory cache of data.
     /// </summary>
+    [Designer("Microsoft.VSDesigner.Data.VS.DataSetDesigner, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     [DefaultProperty(nameof(DataSetName))]
     [Serializable]
+    [ToolboxItem("Microsoft.VSDesigner.Data.VS.DataSetToolboxItem, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     [XmlSchemaProvider(nameof(GetDataSetSchema))]
     [XmlRoot(nameof(DataSet))]
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
@@ -179,7 +181,7 @@ namespace System.Data
             {
                 if (reader.HasAttributes)
                 {
-                    string attribValue = reader.GetAttribute(Keywords.MSD_SCHEMASERIALIZATIONMODE, Keywords.MSDNS);
+                    string? attribValue = reader.GetAttribute(Keywords.MSD_SCHEMASERIALIZATIONMODE, Keywords.MSDNS);
                     if (string.Equals(attribValue, Keywords.MSD_EXCLUDESCHEMA, StringComparison.OrdinalIgnoreCase))
                     {
                         schemaSerializationMode = SchemaSerializationMode.ExcludeSchema;
@@ -1531,7 +1533,7 @@ namespace System.Data
                 XmlDocument xdoc = new XmlDocument();
                 if (reader.NodeType == XmlNodeType.Element)
                 {
-                    XmlNode node = xdoc.ReadNode(reader);
+                    XmlNode node = xdoc.ReadNode(reader)!;
                     xdoc.AppendChild(node);
                 }
                 else
@@ -1691,7 +1693,7 @@ namespace System.Data
                             throw ExceptionBuilder.DataSetUnsupportedSchema(Keywords.XSDNS);
                         }
 
-                        XmlNode node = xdoc.ReadNode(reader);
+                        XmlNode node = xdoc.ReadNode(reader)!;
                         topNode.AppendChild(node);
                     }
 
@@ -1753,7 +1755,7 @@ namespace System.Data
             {
                 if (reader.HasAttributes)
                 {
-                    string attribValue = reader.GetAttribute(Keywords.MSD_FRAGMENTCOUNT, Keywords.MSDNS); // this must not move the position
+                    string? attribValue = reader.GetAttribute(Keywords.MSD_FRAGMENTCOUNT, Keywords.MSDNS); // this must not move the position
                     if (!string.IsNullOrEmpty(attribValue))
                     {
                         schemaFragmentCount = int.Parse(attribValue, null);
@@ -1763,7 +1765,7 @@ namespace System.Data
 
             while (reader.LocalName == Keywords.XSD_SCHEMA && reader.NamespaceURI == Keywords.XSDNS)
             {
-                XmlSchema s = XmlSchema.Read(reader, null);
+                XmlSchema s = XmlSchema.Read(reader, null)!;
                 sSet.Add(s);
                 //read the end tag
                 ReadEndElement(reader);
@@ -1785,10 +1787,10 @@ namespace System.Data
         internal void ReadXDRSchema(XmlReader reader)
         {
             XmlDocument xdoc = new XmlDocument(); // we may need this to infer the schema
-            XmlNode schNode = xdoc.ReadNode(reader);
+            XmlNode schNode = xdoc.ReadNode(reader)!;
             xdoc.AppendChild(schNode);
             XDRSchema schema = new XDRSchema(this, false);
-            DataSetName = xdoc.DocumentElement.LocalName;
+            DataSetName = xdoc.DocumentElement!.LocalName;
             schema.LoadSchema((XmlElement)schNode, this);
         }
 
@@ -1960,9 +1962,9 @@ namespace System.Data
         }
         #endregion
 
-        public XmlReadMode ReadXml(XmlReader reader) => ReadXml(reader, false);
+        public XmlReadMode ReadXml(XmlReader? reader) => ReadXml(reader, false);
 
-        internal XmlReadMode ReadXml(XmlReader reader, bool denyResolving)
+        internal XmlReadMode ReadXml(XmlReader? reader, bool denyResolving)
         {
             IDisposable? restrictedScope = null;
             long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataSet.ReadXml|INFO> {0}, denyResolving={1}", ObjectID, denyResolving);
@@ -2119,7 +2121,7 @@ namespace System.Data
 
                                 if (!fSchemaFound && Tables.Count == 0)
                                 {
-                                    XmlNode node = xdoc.ReadNode(reader);
+                                    XmlNode node = xdoc.ReadNode(reader)!;
                                     topNode.AppendChild(node);
                                 }
                                 else
@@ -2175,12 +2177,12 @@ namespace System.Data
 
                         if (!isEmptyDataSet && !topNodeIsProcessed)
                         {
-                            XmlElement root = xdoc.DocumentElement;
+                            XmlElement root = xdoc.DocumentElement!;
                             Debug.Assert(root.NamespaceURI != null, "root.NamespaceURI should not ne null, it should be empty string");
                             // just recognize that below given Xml represents datatable in toplevel
                             //<table attr1="foo" attr2="bar" table_Text="junk">text</table>
                             // only allow root element with simple content, if any
-                            if (root.ChildNodes.Count == 0 || ((root.ChildNodes.Count == 1) && root.FirstChild.GetType() == typeof(System.Xml.XmlText)))
+                            if (root.ChildNodes.Count == 0 || ((root.ChildNodes.Count == 1) && root.FirstChild!.GetType() == typeof(System.Xml.XmlText)))
                             {
                                 bool initfTopLevelTable = _fTopLevelTable;
                                 // if root element maps to a datatable
@@ -2241,7 +2243,7 @@ namespace System.Data
             }
         }
 
-        public XmlReadMode ReadXml(Stream stream)
+        public XmlReadMode ReadXml(Stream? stream)
         {
             if (stream == null)
             {
@@ -2256,7 +2258,7 @@ namespace System.Data
             return ReadXml(xr, false);
         }
 
-        public XmlReadMode ReadXml(TextReader reader)
+        public XmlReadMode ReadXml(TextReader? reader)
         {
             if (reader == null)
             {
@@ -2523,7 +2525,7 @@ namespace System.Data
                         if (mode == XmlReadMode.Fragment)
                         {
                             xdoc.AppendChild(xdoc.CreateElement("ds_sqlXmlWraPPeR"));
-                            topNode = xdoc.DocumentElement;
+                            topNode = xdoc.DocumentElement!;
                         }
                         else
                         {
@@ -2664,7 +2666,7 @@ namespace System.Data
 
                             if (mode == XmlReadMode.InferSchema || mode == XmlReadMode.InferTypedSchema)
                             { //save the node in DOM until the end;
-                                XmlNode node = xdoc.ReadNode(reader);
+                                XmlNode node = xdoc.ReadNode(reader)!;
                                 topNode.AppendChild(node);
                             }
                             else
@@ -3307,7 +3309,7 @@ namespace System.Data
                 const string xsinill = Keywords.XSI + ":" + Keywords.XSI_NIL;
                 if (reader.MoveToAttribute(xsinill))
                 {
-                    string nilAttrib = reader.GetAttribute(xsinill);
+                    string? nilAttrib = reader.GetAttribute(xsinill);
                     if (string.Equals(nilAttrib, "true", StringComparison.Ordinal))
                     {
                         // case sensitive true comparison
@@ -3319,7 +3321,7 @@ namespace System.Data
                 const string UseDataSetSchemaOnlyString = Keywords.MSD + ":" + Keywords.USEDATASETSCHEMAONLY;
                 if (reader.MoveToAttribute(UseDataSetSchemaOnlyString))
                 {
-                    string useDataSetSchemaOnly = reader.GetAttribute(UseDataSetSchemaOnlyString);
+                    string? useDataSetSchemaOnly = reader.GetAttribute(UseDataSetSchemaOnlyString);
                     if (string.Equals(useDataSetSchemaOnly, "true", StringComparison.Ordinal) ||
                         string.Equals(useDataSetSchemaOnly, "1", StringComparison.Ordinal))
                     {
@@ -3328,14 +3330,14 @@ namespace System.Data
                     else if (!string.Equals(useDataSetSchemaOnly, "false", StringComparison.Ordinal) &&
                              !string.Equals(useDataSetSchemaOnly, "0", StringComparison.Ordinal))
                     {
-                        throw ExceptionBuilder.InvalidAttributeValue(Keywords.USEDATASETSCHEMAONLY, useDataSetSchemaOnly);
+                        throw ExceptionBuilder.InvalidAttributeValue(Keywords.USEDATASETSCHEMAONLY, useDataSetSchemaOnly!);
                     }
                 }
 
                 const string udtIsWrappedString = Keywords.MSD + ":" + Keywords.UDTCOLUMNVALUEWRAPPED;
                 if (reader.MoveToAttribute(udtIsWrappedString))
                 {
-                    string _udtIsWrappedString = reader.GetAttribute(udtIsWrappedString);
+                    string? _udtIsWrappedString = reader.GetAttribute(udtIsWrappedString);
                     if (string.Equals(_udtIsWrappedString, "true", StringComparison.Ordinal) ||
                         string.Equals(_udtIsWrappedString, "1", StringComparison.Ordinal))
                     {
@@ -3344,7 +3346,7 @@ namespace System.Data
                     else if (!string.Equals(_udtIsWrappedString, "false", StringComparison.Ordinal) &&
                              !string.Equals(_udtIsWrappedString, "0", StringComparison.Ordinal))
                     {
-                        throw ExceptionBuilder.InvalidAttributeValue(Keywords.UDTCOLUMNVALUEWRAPPED, _udtIsWrappedString);
+                        throw ExceptionBuilder.InvalidAttributeValue(Keywords.UDTCOLUMNVALUEWRAPPED, _udtIsWrappedString!);
                     }
                 }
             }
@@ -3353,7 +3355,7 @@ namespace System.Data
 
         protected virtual System.Xml.Schema.XmlSchema? GetSchemaSerializable() => null;
 
-        public static XmlSchemaComplexType GetDataSetSchema(XmlSchemaSet schemaSet)
+        public static XmlSchemaComplexType GetDataSetSchema(XmlSchemaSet? schemaSet)
         {
             // For performance reasons we are exploiting the fact that config files content is constant
             // for a given appdomain so we can safely cache the prepared schema complex type and reuse it
@@ -3385,8 +3387,6 @@ namespace System.Data
 
         private static bool PublishLegacyWSDL() => false;
 
-// TODO: Enable after System.Private.Xml is annotated
-#nullable disable
 #pragma warning disable 8632
         XmlSchema? IXmlSerializable.GetSchema()
         {
@@ -3444,7 +3444,6 @@ namespace System.Data
             WriteXml(writer, XmlWriteMode.DiffGram);
         }
 #pragma warning restore 8632
-#nullable enable
 
         public virtual void Load(IDataReader reader, LoadOption loadOption, FillErrorEventHandler? errorHandler, params DataTable[] tables)
         {

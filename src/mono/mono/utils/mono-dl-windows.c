@@ -57,7 +57,7 @@ mono_dl_open_file (const char *file, int flags)
 		guint32 last_error = 0;
 
 #if HAVE_API_SUPPORT_WIN32_LOAD_LIBRARY
-		hModule = LoadLibraryW (file_utf16);
+		hModule = LoadLibraryExW (file_utf16, NULL, flags);
 #elif HAVE_API_SUPPORT_WIN32_LOAD_PACKAGED_LIBRARY
 		hModule = LoadPackagedLibrary (file_utf16, NULL);
 #else
@@ -160,9 +160,10 @@ mono_dl_lookup_symbol (MonoDl *module, const char *symbol_name)
 }
 
 int
-mono_dl_convert_flags (int flags)
+mono_dl_convert_flags (int mono_flags, int native_flags)
 {
-	return 0;
+	// Mono flags are not applicable on Windows
+	return native_flags;
 }
 
 #if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)

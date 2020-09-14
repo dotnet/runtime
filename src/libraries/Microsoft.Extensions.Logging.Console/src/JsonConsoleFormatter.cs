@@ -2,12 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 
@@ -54,25 +58,12 @@ namespace Microsoft.Extensions.Logging.Console
 
                     if (exception != null)
                     {
-                        writer.WriteStartObject(nameof(Exception));
-                        writer.WriteString(nameof(exception.Message), exception.Message.ToString());
-                        writer.WriteString("Type", exception.GetType().ToString());
-                        writer.WriteStartArray(nameof(exception.StackTrace));
-                        string stackTrace = exception?.StackTrace;
-                        if (stackTrace != null)
+                        string exceptionMessage = exception.ToString();
+                        if (!FormatterOptions.JsonWriterOptions.Indented)
                         {
-#if NETCOREAPP
-                            foreach (var stackTraceLines in stackTrace?.Split(Environment.NewLine))
-#else
-                            foreach (var stackTraceLines in stackTrace?.Split(new string[] { Environment.NewLine }, StringSplitOptions.None))
-#endif
-                            {
-                                writer.WriteStringValue(stackTraceLines);
-                            }
+                            exceptionMessage = exceptionMessage.Replace(Environment.NewLine, " ");
                         }
-                        writer.WriteEndArray();
-                        writer.WriteNumber(nameof(exception.HResult), exception.HResult);
-                        writer.WriteEndObject();
+                        writer.WriteString(nameof(Exception), exceptionMessage);
                     }
 
                     if (logEntry.State != null)
@@ -83,7 +74,7 @@ namespace Microsoft.Extensions.Logging.Console
                         {
                             foreach (KeyValuePair<string, object> item in stateProperties)
                             {
-                                writer.WriteString(item.Key, ToInvariantString(item.Value));
+                                WriteItem(writer, item);
                             }
                         }
                         writer.WriteEndObject();
@@ -128,7 +119,7 @@ namespace Microsoft.Extensions.Logging.Console
                         state.WriteString("Message", scope.ToString());
                         foreach (KeyValuePair<string, object> item in scopes)
                         {
-                            state.WriteString(item.Key, ToInvariantString(item.Value));
+                            WriteItem(state, item);
                         }
                         state.WriteEndObject();
                     }
@@ -138,6 +129,63 @@ namespace Microsoft.Extensions.Logging.Console
                     }
                 }, writer);
                 writer.WriteEndArray();
+            }
+        }
+
+        private void WriteItem(Utf8JsonWriter writer, KeyValuePair<string, object> item)
+        {
+            var key = item.Key;
+            switch (item.Value)
+            {
+                case bool boolValue:
+                    writer.WriteBoolean(key, boolValue);
+                    break;
+                case byte byteValue:
+                    writer.WriteNumber(key, byteValue);
+                    break;
+                case sbyte sbyteValue:
+                    writer.WriteNumber(key, sbyteValue);
+                    break;
+                case char charValue:
+#if NETCOREAPP
+                    writer.WriteString(key, MemoryMarshal.CreateSpan(ref charValue, 1));
+#else
+                    writer.WriteString(key, charValue.ToString());
+#endif
+                    break;
+                case decimal decimalValue:
+                    writer.WriteNumber(key, decimalValue);
+                    break;
+                case double doubleValue:
+                    writer.WriteNumber(key, doubleValue);
+                    break;
+                case float floatValue:
+                    writer.WriteNumber(key, floatValue);
+                    break;
+                case int intValue:
+                    writer.WriteNumber(key, intValue);
+                    break;
+                case uint uintValue:
+                    writer.WriteNumber(key, uintValue);
+                    break;
+                case long longValue:
+                    writer.WriteNumber(key, longValue);
+                    break;
+                case ulong ulongValue:
+                    writer.WriteNumber(key, ulongValue);
+                    break;
+                case short shortValue:
+                    writer.WriteNumber(key, shortValue);
+                    break;
+                case ushort ushortValue:
+                    writer.WriteNumber(key, ushortValue);
+                    break;
+                case null:
+                    writer.WriteNull(key);
+                    break;
+                default:
+                    writer.WriteString(key, ToInvariantString(item.Value));
+                    break;
             }
         }
 

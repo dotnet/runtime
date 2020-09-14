@@ -26,12 +26,14 @@ namespace ILCompiler
         private VectorOfTFieldLayoutAlgorithm _vectorOfTFieldLayoutAlgorithm;
         private VectorFieldLayoutAlgorithm _vectorFieldLayoutAlgorithm;
 
-        public ReadyToRunCompilerContext(TargetDetails details, SharedGenericsMode genericsMode)
+        public ReadyToRunCompilerContext(TargetDetails details, SharedGenericsMode genericsMode, bool bubbleIncludesCorelib)
             : base(details, genericsMode)
         {
             _r2rFieldLayoutAlgorithm = new ReadyToRunMetadataFieldLayoutAlgorithm();
             _systemObjectFieldLayoutAlgorithm = new SystemObjectFieldLayoutAlgorithm(_r2rFieldLayoutAlgorithm);
-            _vectorFieldLayoutAlgorithm = new VectorFieldLayoutAlgorithm(_r2rFieldLayoutAlgorithm);
+
+            // Only the Arm64 JIT respects the OS rules for vector type abi currently
+            _vectorFieldLayoutAlgorithm = new VectorFieldLayoutAlgorithm(_r2rFieldLayoutAlgorithm, (details.Architecture == TargetArchitecture.ARM64) ? true : bubbleIncludesCorelib);
 
             string matchingVectorType = "Unknown";
             if (details.MaximumSimdVectorLength == SimdVectorLength.Vector128Bit)
@@ -39,8 +41,8 @@ namespace ILCompiler
             else if (details.MaximumSimdVectorLength == SimdVectorLength.Vector256Bit)
                 matchingVectorType = "Vector256`1";
 
-            _vectorOfTFieldLayoutAlgorithm = new VectorOfTFieldLayoutAlgorithm(_r2rFieldLayoutAlgorithm, _vectorFieldLayoutAlgorithm, matchingVectorType);
-
+            // No architecture has completely stable handling of Vector<T> in the abi (Arm64 may change to SVE)
+            _vectorOfTFieldLayoutAlgorithm = new VectorOfTFieldLayoutAlgorithm(_r2rFieldLayoutAlgorithm, _vectorFieldLayoutAlgorithm, matchingVectorType, bubbleIncludesCorelib);
         }
 
         public override FieldLayoutAlgorithm GetLayoutAlgorithmForType(DefType type)
@@ -112,12 +114,14 @@ namespace ILCompiler
         private FieldLayoutAlgorithm _vectorFallbackAlgorithm;
         private string _similarVectorName;
         private DefType _similarVectorOpenType;
+        private bool _vectorAbiIsStable;
 
-        public VectorOfTFieldLayoutAlgorithm(FieldLayoutAlgorithm fallbackAlgorithm, FieldLayoutAlgorithm vectorFallbackAlgorithm, string similarVector)
+        public VectorOfTFieldLayoutAlgorithm(FieldLayoutAlgorithm fallbackAlgorithm, FieldLayoutAlgorithm vectorFallbackAlgorithm, string similarVector, bool vectorAbiIsStable = true)
         {
             _fallbackAlgorithm = fallbackAlgorithm;
             _vectorFallbackAlgorithm = vectorFallbackAlgorithm;
             _similarVectorName = similarVector;
+            _vectorAbiIsStable = vectorAbiIsStable;
         }
 
         private DefType GetSimilarVector(DefType vectorOfTType)
@@ -158,6 +162,7 @@ namespace ILCompiler
                     ByteCountUnaligned = LayoutInt.Indeterminate,
                     ByteCountAlignment = LayoutInt.Indeterminate,
                     Offsets = fieldsAndOffsets.ToArray(),
+                    LayoutAbiStable = false,
                 };
                 return instanceLayout;
             }
@@ -175,6 +180,7 @@ namespace ILCompiler
                     FieldAlignment = layoutFromSimilarIntrinsicVector.FieldAlignment,
                     FieldSize = layoutFromSimilarIntrinsicVector.FieldSize,
                     Offsets = layoutFromMetadata.Offsets,
+                    LayoutAbiStable = _vectorAbiIsStable,
                 };
 #else
                 return new ComputedInstanceFieldLayout
@@ -184,6 +190,7 @@ namespace ILCompiler
                     FieldAlignment = layoutFromMetadata.FieldAlignment,
                     FieldSize = layoutFromSimilarIntrinsicVector.FieldSize,
                     Offsets = layoutFromMetadata.Offsets,
+                    LayoutAbiStable = _vectorAbiIsStable,
                 };
 #endif
             }

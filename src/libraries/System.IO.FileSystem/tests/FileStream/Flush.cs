@@ -135,6 +135,7 @@ namespace System.IO.Tests
         [InlineData(null)]
         [InlineData(false)]
         [InlineData(true)]
+        [PlatformSpecific(~TestPlatforms.Browser)] // IO.Pipes not supported
         public void FlushCanBeUsedOnPipes_Success(bool? flushToDisk)
         {
             using (var pipeStream = new AnonymousPipeServerStream(PipeDirection.In))

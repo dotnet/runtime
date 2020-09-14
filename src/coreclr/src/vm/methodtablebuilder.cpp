@@ -9588,7 +9588,7 @@ void MethodTableBuilder::CheckForSystemTypes()
 #ifdef CROSSGEN_COMPILE
                 // Disable AOT compiling for the SIMD hardware intrinsic types. These types require special
                 // ABI handling as they represent fundamental data types (__m64, __m128, and __m256) and not
-                // aggregate or union types. See https://github.com/dotnet/coreclr/issues/15943
+                // aggregate or union types. See https://github.com/dotnet/runtime/issues/9578
                 //
                 // Once they are properly handled according to the ABI requirements, we can remove this check
                 // and allow them to be used in crossgen/AOT scenarios.
@@ -10114,10 +10114,12 @@ MethodTableBuilder::SetupMethodTable2(
 
     EEClass *pClass = GetHalfBakedClass();
 
-    DWORD cbDict = bmtGenerics->HasInstantiation()
-                   ?  DictionaryLayout::GetDictionarySizeFromLayout(
-                          bmtGenerics->GetNumGenericArgs(), pClass->GetDictionaryLayout())
-                   : 0;
+    DWORD cbDictSlotSize = 0;
+    DWORD cbDictAllocSize = 0;
+    if (bmtGenerics->HasInstantiation())
+    {
+        cbDictAllocSize = DictionaryLayout::GetDictionarySizeFromLayout(bmtGenerics->GetNumGenericArgs(), pClass->GetDictionaryLayout(), &cbDictSlotSize);
+    }
 
 #ifdef FEATURE_COLLECTIBLE_TYPES
     BOOL fCollectible = pLoaderModule->IsCollectible();
@@ -10150,7 +10152,7 @@ MethodTableBuilder::SetupMethodTable2(
                                    dwGCSize,
                                    bmtInterface->dwInterfaceMapSize,
                                    bmtGenerics->numDicts,
-                                   cbDict,
+                                   cbDictAllocSize,
                                    GetParentMethodTable(),
                                    GetClassLoader(),
                                    bmtAllocator,
@@ -10370,7 +10372,7 @@ MethodTableBuilder::SetupMethodTable2(
 
             PTR_Dictionary pDictionarySlots = pMT->GetPerInstInfo()[bmtGenerics->numDicts - 1].GetValue();
             DWORD* pSizeSlot = (DWORD*)(pDictionarySlots + bmtGenerics->GetNumGenericArgs());
-            *pSizeSlot = cbDict;
+            *pSizeSlot = cbDictSlotSize;
         }
     }
 
@@ -11600,6 +11602,29 @@ BOOL MethodTableBuilder::ChangesImplementationOfVirtualSlot(SLOT_INDEX idx)
         // methods.
         if (!fChangesImplementation && (ParentImpl.GetSlotIndex() != idx))
             fChangesImplementation = TRUE;
+
+        // If the current vtable slot is MethodImpl, is it possible that it will be updated by
+        // the ClassLoader::PropagateCovariantReturnMethodImplSlots.
+        if (!fChangesImplementation && VTImpl.GetMethodDesc()->IsMethodImpl())
+        {
+            // Note: to know exactly whether the slot will be updated or not, we would need to check the
+            // PreserveBaseOverridesAttribute presence on the current vtable slot and in the worst case
+            // on all of its ancestors. This is expensive, so we don't do that check here and accept
+            // the fact that we get some false positives and end up sharing less vtable chunks.
+
+            // Search the previous slots in the parent vtable for the same implementation. If it exists and it was
+            // overriden, the ClassLoader::PropagateCovariantReturnMethodImplSlots will propagate the change to the current
+            // slot (idx), so the implementation of it will change.
+            MethodDesc* pParentMD = ParentImpl.GetMethodDesc();
+            for (SLOT_INDEX i = 0; i < idx; i++)
+            {
+                if ((*bmtParent)[i].Impl().GetMethodDesc() == pParentMD && (*bmtVT)[i].Impl().GetMethodDesc() != pParentMD)
+                {
+                    fChangesImplementation = TRUE;
+                    break;
+                }
+            }
+        }
     }
 
     return fChangesImplementation;

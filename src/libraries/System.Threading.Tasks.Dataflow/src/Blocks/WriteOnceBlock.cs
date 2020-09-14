@@ -39,8 +39,7 @@ namespace System.Threading.Tasks.Dataflow
         /// <summary>The header of the singly-assigned value.</summary>
         private DataflowMessageHeader _header;
         /// <summary>The singly-assigned value.</summary>
-        [AllowNull, MaybeNull]
-        private T _value = default;
+        private T? _value;
 
         /// <summary>Gets the object used as the value lock.</summary>
         private object ValueLock { get { return _targetRegistry; } }
@@ -381,7 +380,7 @@ namespace System.Threading.Tasks.Dataflow
         }
 
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Sources/Member[@name="ConsumeMessage"]/*' />
-        T ISourceBlock<T>.ConsumeMessage(DataflowMessageHeader messageHeader, ITargetBlock<T> target, out bool messageConsumed)
+        T? ISourceBlock<T>.ConsumeMessage(DataflowMessageHeader messageHeader, ITargetBlock<T> target, out bool messageConsumed)
         {
             // Validate arguments
             if (!messageHeader.IsValid) throw new ArgumentException(SR.Argument_InvalidMessageHeader, nameof(messageHeader));
@@ -397,7 +396,7 @@ namespace System.Threading.Tasks.Dataflow
             else
             {
                 messageConsumed = false;
-                return default(T)!;
+                return default;
             }
         }
 
@@ -506,8 +505,7 @@ namespace System.Threading.Tasks.Dataflow
         /// <summary>Gets whether the block is storing a value.</summary>
         private bool HasValue { get { return _header.IsValid; } }
         /// <summary>Gets the value being stored by the block.</summary>
-        [MaybeNull]
-        private T Value { get { return _header.IsValid ? _value : default(T); } }
+        private T? Value { get { return _header.IsValid ? _value : default(T); } }
 
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Blocks/Member[@name="ToString"]/*' />
         public override string ToString() { return Common.GetNameForDebugger(this, _dataflowBlockOptions); }
@@ -546,8 +544,7 @@ namespace System.Threading.Tasks.Dataflow
             /// <summary>Gets whether the WriteOnceBlock has a value.</summary>
             public bool HasValue { get { return _writeOnceBlock.HasValue; } }
             /// <summary>Gets the WriteOnceBlock's value if it has one, or default(T) if it doesn't.</summary>
-            [MaybeNull]
-            public T Value { get { return _writeOnceBlock.Value; } }
+            public T? Value { get { return _writeOnceBlock.Value; } }
 
             /// <summary>Gets the DataflowBlockOptions used to configure this block.</summary>
             public DataflowBlockOptions DataflowBlockOptions { get { return _writeOnceBlock._dataflowBlockOptions; } }

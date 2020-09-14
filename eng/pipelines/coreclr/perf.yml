@@ -17,25 +17,8 @@ trigger:
     - README.md
     - SECURITY.md
     - THIRD-PARTY-NOTICES.TXT
-
-
-pr:
-  branches:
-    include:
-    - master
-  paths:
-    include:
-    - '*'
-    - src/libraries/System.Private.CoreLib/*
-    exclude:
-    - docs/*
-    - CODE-OF-CONDUCT.md
-    - CONTRIBUTING.md
-    - LICENSE.TXT
-    - PATENTS.TXT
-    - README.md
-    - SECURITY.md
-    - THIRD-PARTY-NOTICES.TXT
+  
+pr: none
 
 jobs:
 #
@@ -55,6 +38,27 @@ jobs:
     jobParameters:
       testGroup: perf
 
+# build mono on wasm
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    buildConfig: release
+    runtimeFlavor: mono
+    platforms:
+    - Browser_wasm
+    jobParameters:
+      buildArgs: -s mono+libs+installer -c $(_BuildConfig)
+      nameSuffix: wasm
+      isOfficialBuild: ${{ variables.isOfficialBuild }}
+      extraStepsTemplate: /eng/pipelines/common/upload-artifact-step.yml
+      extraStepsParameters:
+        rootFolder: '$(Build.SourcesDirectory)/artifacts/'
+        includeRootFolder: true
+        displayName: Browser Wasm Artifacts
+        artifactName: BrowserWasm
+        archiveType: zip
+        archiveExtension: .zip
+
 # build mono
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
@@ -64,7 +68,7 @@ jobs:
     platforms:
     - Linux_x64
 
-# run mono perf job
+# run mono microbenchmarks perf job
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
@@ -78,23 +82,42 @@ jobs:
       runtimeType: mono
       projectFile: microbenchmarks.proj
       runKind: micro_mono
+      runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
 
-# run mono interpreter job (private CI only)
-- ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
-  - template: /eng/pipelines/common/platform-matrix.yml
-    parameters:
-      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
-      buildConfig: release
-      runtimeFlavor: mono
-      platforms:
-      - Linux_x64
-      jobParameters:
-        testGroup: perf
-        liveLibrariesBuildConfig: Release
-        runtimeType: mono
-        codeGenType: 'Interpreter'
-        projectFile: microbenchmarks.proj
-        runKind: micro_mono
+# run mono interpreter perf job
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+    buildConfig: release
+    runtimeFlavor: mono
+    platforms:
+    - Linux_x64
+    jobParameters:
+      testGroup: perf
+      liveLibrariesBuildConfig: Release
+      runtimeType: mono
+      codeGenType: 'Interpreter'
+      projectFile: microbenchmarks.proj
+      runKind: micro_mono
+      runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
+
+# run mono wasm microbenchmarks perf job
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml # NOTE: should we move this file out of coreclr tempelates because it contains mono jobs?
+    buildConfig: release
+    runtimeFlavor: wasm
+    platforms:
+    - Linux_x64
+    jobParameters:
+      testGroup: perf
+      liveLibrariesBuildConfig: Release
+      runtimeType: wasm
+      codeGenType: 'wasm'
+      projectFile: microbenchmarks.proj
+      runKind: micro
+      runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
+
 
 # run coreclr microbenchmarks perf job
 - template: /eng/pipelines/common/platform-matrix.yml
@@ -111,6 +134,7 @@ jobs:
       liveLibrariesBuildConfig: Release
       projectFile: microbenchmarks.proj
       runKind: micro
+      runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
 
 # run coreclr crossgen perf job
 - template: /eng/pipelines/common/platform-matrix.yml
@@ -119,7 +143,7 @@ jobs:
     buildConfig: release
     runtimeFlavor: coreclr
     platforms:
-    #- Linux_x64
+    - Linux_x64
     - Windows_NT_x64
     - Windows_NT_x86
     jobParameters:
@@ -127,4 +151,22 @@ jobs:
       liveLibrariesBuildConfig: Release
       projectFile: crossgen_perf.proj
       runKind: crossgen_scenarios
+      runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
+
+# run mono wasm blazor perf job
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+    buildConfig: release
+    runtimeFlavor: wasm
+    platforms:
+    - Linux_x64
+    jobParameters:
+      testGroup: perf
+      liveLibrariesBuildConfig: Release
+      runtimeType: wasm
+      projectFile: blazor_perf.proj
+      runKind: blazor_scenarios
+      runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
+      additionalSetupParameters: '--latestdotnet'
 

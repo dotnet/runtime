@@ -172,7 +172,10 @@ namespace System.Net.Test.Common
         {
             HttpRequestData request = await ReadRequestDataAsync().ConfigureAwait(false);
             await SendResponseAsync(statusCode, headers, content).ConfigureAwait(false);
-            await CloseAsync(Http3LoopbackConnection.H3_NO_ERROR);
+
+            // closing the connection here causes bytes written to streams to go missing.
+            //await CloseAsync(H3_NO_ERROR).ConfigureAwait(false);
+
             return request;
         }
 

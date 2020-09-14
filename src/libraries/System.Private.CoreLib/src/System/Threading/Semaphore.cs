@@ -33,7 +33,7 @@ namespace System.Threading
             CreateSemaphoreCore(initialCount, maximumCount, name, out createdNew);
         }
 
-        [MinimumOSPlatform("windows7.0")]
+        [SupportedOSPlatform("windows")]
         public static Semaphore OpenExisting(string name)
         {
             switch (OpenExistingWorker(name, out Semaphore? result))
@@ -50,7 +50,7 @@ namespace System.Threading
             }
         }
 
-        [MinimumOSPlatform("windows7.0")]
+        [SupportedOSPlatform("windows")]
         public static bool TryOpenExisting(string name, [NotNullWhen(true)] out Semaphore? result) =>
             OpenExistingWorker(name, out result!) == OpenExistingResult.Success;
 

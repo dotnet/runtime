@@ -1602,7 +1602,7 @@ void DispatchInfo::InvokeMemberWorker(DispatchMemberInfo*   pDispMemberInfo,
                         COMPlusThrowHR(DISP_E_BADPARAMCOUNT);
 
                     // Retrieve the method descriptor that will be called on.
-                    MethodDesc *pMD = GetFieldInfoMD(METHOD__FIELD__GET_VALUE, pObjs->MemberInfo->GetTypeHandle());
+                    MethodDesc *pMD = GetFieldInfoMD(METHOD__FIELD_INFO__GET_VALUE, pObjs->MemberInfo->GetTypeHandle());
                     MethodDescCallSite getValue(pMD, &pObjs->MemberInfo);
 
                     // Prepare the arguments that will be passed to Invoke.
@@ -1624,7 +1624,7 @@ void DispatchInfo::InvokeMemberWorker(DispatchMemberInfo*   pDispMemberInfo,
                         COMPlusThrowHR(DISP_E_NONAMEDARGS);
 
                     // Retrieve the method descriptor that will be called on.
-                    MethodDesc *pMD = GetFieldInfoMD(METHOD__FIELD__SET_VALUE, pObjs->MemberInfo->GetTypeHandle());
+                    MethodDesc *pMD = GetFieldInfoMD(METHOD__FIELD_INFO__SET_VALUE, pObjs->MemberInfo->GetTypeHandle());
                     MethodDescCallSite setValue(pMD, &pObjs->MemberInfo);
 
                     // Prepare the arguments that will be passed to Invoke.

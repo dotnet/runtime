@@ -43,10 +43,12 @@
 
 #define CONTEXT_UNWOUND_TO_CALL 0x20000000
 
+#if !defined(HOST_ARM64)
 typedef struct _NEON128 {
     ULONGLONG Low;
     LONGLONG High;
 } NEON128, *PNEON128;
+#endif // !defined(HOST_ARM64)
 
 typedef struct DECLSPEC_ALIGN(8) _T_CONTEXT {
     //
@@ -152,13 +154,14 @@ typedef struct _T_KNONVOLATILE_CONTEXT_POINTERS {
 //
 // Define dynamic function table entry.
 //
-
+#if defined(HOST_X86)
 typedef
 PT_RUNTIME_FUNCTION
 (*PGET_RUNTIME_FUNCTION_CALLBACK) (
     IN DWORD64 ControlPc,
     IN PVOID Context
     );
+#endif // defined(HOST_X86)
 
 typedef struct _T_DISPATCHER_CONTEXT {
     ULONG ControlPc;

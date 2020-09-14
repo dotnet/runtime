@@ -68,7 +68,11 @@
           $(DownloadDirectory)*\Libraries_AllConfigurations\**\*.nupkg"
         Exclude="@(RuntimeNupkgFile);@(DownloadedSymbolNupkgFile)" />
 
-      <NupkgToPublishFile Include="@(RuntimeNupkgFile);@(RidAgnosticNupkgToPublishFile)" />
+      <TransportPackagesToPublishFile
+        Include="$(DownloadDirectory)**\*Transport*.nupkg"
+        Exclude="@(RuntimeNupkgFile);@(RidAgnosticNupkgToPublishFile);@(DownloadedSymbolNupkgFile)" />
+
+      <NupkgToPublishFile Include="@(RuntimeNupkgFile);@(RidAgnosticNupkgToPublishFile);@(TransportPackagesToPublishFile)" />
 
       <!--
         Assuming all symbol packages ship and can be found by turning .nupkg => .symbols.nupkg, find
@@ -84,10 +88,11 @@
       <PotentialSymbolNupkgToPublishFile
         Include="
           @(NupkgToPublishFile->Replace('\NonShipping\', '\Shipping\')->Replace('.nupkg', '.symbols.nupkg'));
+          @(NupkgToPublishFile->Replace('\NonShipping\', '\NonShipping\symbols\')->Replace('.nupkg', '.symbols.nupkg'));
           @(NupkgToPublishFile->Replace('\Shipping\', '\Shipping\symbols\')->Replace('.nupkg', '.symbols.nupkg'))" />
 
       <SymbolNupkgToPublishFile
-        Include="@(PotentialSymbolNupkgToPublishFile)"
+        Include="@(PotentialSymbolNupkgToPublishFile -> Distinct())"
         Condition="Exists('%(Identity)')" />
     </ItemGroup>
 

@@ -98,8 +98,8 @@ namespace Microsoft.Win32.SafeHandles
         /// <summary>
         ///     Wrapper for the _holder field which ensures that we're in a consistent state
         /// </summary>
-        [MaybeNull]
-        private SafeNCryptHandle Holder
+        [DisallowNull]
+        private SafeNCryptHandle? Holder
         {
             get
             {

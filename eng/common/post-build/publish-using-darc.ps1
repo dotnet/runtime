@@ -1,20 +1,22 @@
 param(
   [Parameter(Mandatory=$true)][int] $BuildId,
+  [Parameter(Mandatory=$true)][int] $PublishingInfraVersion,
   [Parameter(Mandatory=$true)][string] $AzdoToken,
   [Parameter(Mandatory=$true)][string] $MaestroToken,
   [Parameter(Mandatory=$false)][string] $MaestroApiEndPoint = 'https://maestro-prod.westus2.cloudapp.azure.com',
   [Parameter(Mandatory=$true)][string] $WaitPublishingFinish,
-  [Parameter(Mandatory=$true)][string] $EnableSourceLinkValidation,
-  [Parameter(Mandatory=$true)][string] $EnableSigningValidation,
-  [Parameter(Mandatory=$true)][string] $EnableNugetValidation,
-  [Parameter(Mandatory=$true)][string] $PublishInstallersAndChecksums,
+  [Parameter(Mandatory=$false)][string] $EnableSourceLinkValidation,
+  [Parameter(Mandatory=$false)][string] $EnableSigningValidation,
+  [Parameter(Mandatory=$false)][string] $EnableNugetValidation,
+  [Parameter(Mandatory=$false)][string] $PublishInstallersAndChecksums,
   [Parameter(Mandatory=$false)][string] $ArtifactsPublishingAdditionalParameters,
   [Parameter(Mandatory=$false)][string] $SigningValidationAdditionalParameters
 )
 
 try {
   . $PSScriptRoot\post-build-utils.ps1
-  . $PSScriptRoot\..\darc-init.ps1
+  # Hard coding darc version till the next arcade-services roll out, cos this version has required API changes for darc add-build-to-channel
+  $darc = Get-Darc "1.1.0-beta.20418.1"
 
   $optionalParams = [System.Collections.ArrayList]::new()
 
@@ -27,7 +29,7 @@ try {
     $optionalParams.Add("--no-wait") | Out-Null
   }
 
-  if ("true" -eq $PublishInstallersAndChecksums) {
+  if ("false" -ne $PublishInstallersAndChecksums) {
     $optionalParams.Add("--publish-installers-and-checksums") | Out-Null
   }
 
@@ -48,13 +50,14 @@ try {
     }
   }
 
-  & darc add-build-to-channel `
-	--id $buildId `
-	--default-channels `
-	--source-branch master `
-	--azdev-pat $AzdoToken `
-	--bar-uri $MaestroApiEndPoint `
-	--password $MaestroToken `
+  & $darc add-build-to-channel `
+  --id $buildId `
+  --publishing-infra-version $PublishingInfraVersion `
+  --default-channels `
+  --source-branch master `
+  --azdev-pat $AzdoToken `
+  --bar-uri $MaestroApiEndPoint `
+  --password $MaestroToken `
 	@optionalParams
 
   if ($LastExitCode -ne 0) {

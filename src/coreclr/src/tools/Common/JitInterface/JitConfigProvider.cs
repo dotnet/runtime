@@ -54,8 +54,12 @@ namespace Internal.JitInterface
                     }
                     else
                     {
-                        libHandle = NativeLibrary.Load("clrjit-" + GetTargetSpec(target), assembly, searchPath);
+                        libHandle = NativeLibrary.Load("clrjit_" + GetTargetSpec(target), assembly, searchPath);
                     }
+                }
+                if (libName == CorInfoImpl.JitSupportLibrary)
+                {
+                    libHandle = NativeLibrary.Load("jitinterface_" + RuntimeInformation.ProcessArchitecture.ToString().ToLowerInvariant(), assembly, searchPath);
                 }
                 return libHandle;
             });
@@ -141,7 +145,8 @@ namespace Internal.JitInterface
                 TargetArchitecture.ARM64 => "arm64",
                 _ => throw new NotImplementedException(target.Architecture.ToString())
             };
-            return targetOSComponent + '-' + targetArchComponent;
+
+            return targetOSComponent + '_' + targetArchComponent + "_" + RuntimeInformation.ProcessArchitecture.ToString().ToLowerInvariant();
         }
 
         #region Unmanaged instance

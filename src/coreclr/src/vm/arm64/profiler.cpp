@@ -260,11 +260,16 @@ LPVOID ProfileArgIterator::GetReturnBufferAddr(void)
                     *(UINT32*)dest = *(UINT32*)&pData->floatArgumentRegisters.q[floatRegIdx];
                     dest += 4;
                 }
-                else
+                else if (hfaFieldSize == 8)
                 {
-                    _ASSERTE(hfaFieldSize == 8);
                     *(UINT64*)dest = *(UINT64*)&pData->floatArgumentRegisters.q[floatRegIdx];
                     dest += 8;
+                }
+                else
+                {
+                    _ASSERTE(hfaFieldSize == 16);
+                    *(NEON128*)dest = pData->floatArgumentRegisters.q[floatRegIdx];
+                    dest += 16;
                 }
 
                 if (floatRegIdx > 8)

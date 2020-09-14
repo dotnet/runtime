@@ -8,9 +8,11 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 
 namespace System.Security.Cryptography
 {
+    [UnsupportedOSPlatform("browser")]
     public class CryptoConfig
     {
         private const string AssemblyName_Cng = "System.Security.Cryptography.Cng";
@@ -188,7 +190,7 @@ namespace System.Security.Cryptography
                 ht.Add("System.Security.Cryptography.DSA", DSACryptoServiceProviderType);
 
                 // Windows will register the public ECDsaCng type.  Non-Windows gets a special handler.
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                if (OperatingSystem.IsWindows())
                 {
                     ht.Add(ECDsaIdentifier, ECDsaCngType);
                 }

@@ -611,7 +611,7 @@ def call_msbuild(args):
 
     command =   [args.dotnetcli_script_path,
                  "msbuild",
-                 os.path.join(args.coreclr_tests_src_dir, "runtest.proj"),
+                 os.path.join(args.coreclr_tests_src_dir, "run.proj"),
                  "/p:Runtests=true",
                  "/clp:showcommandline"]
 
@@ -640,6 +640,8 @@ def call_msbuild(args):
                 "/p:TargetArchitecture=%s" % args.arch,
                 "/p:Configuration=%s" % args.build_type,
                 "/p:__LogsDir=%s" % args.logs_dir]
+
+    command += ["/bl:%s.binlog" % (log_path)]
 
     print(" ".join(command))
 
@@ -967,8 +969,8 @@ def run_tests(args,
     # Ideally, this code should be removed when we find a more robust way of running Xunit tests.
     #
     # References:
-    #  * https://github.com/dotnet/coreclr/issues/20392
-    #  * https://github.com/dotnet/coreclr/issues/20594
+    #  * https://github.com/dotnet/runtime/issues/11232
+    #  * https://github.com/dotnet/runtime/issues/11320
     #  * https://github.com/xunit/xunit/issues/1842
     #  * https://github.com/xunit/xunit/pull/1846
     #
@@ -1000,9 +1002,10 @@ def setup_args(args):
         location using the build type and the arch.
     """
 
+    requires_coreroot = args.arch.lower() != "wasm"
     coreclr_setup_args = CoreclrArguments(args, 
                                           require_built_test_dir=True,
-                                          require_built_core_root=True, 
+                                          require_built_core_root=requires_coreroot, 
                                           require_built_product_dir=False)
 
     normal_location = os.path.join(coreclr_setup_args.artifacts_location, "tests", "coreclr", "%s.%s.%s" % (coreclr_setup_args.host_os, coreclr_setup_args.arch, coreclr_setup_args.build_type))
@@ -1155,7 +1158,7 @@ def setup_args(args):
     coreclr_setup_args.corerun_path = os.path.join(coreclr_setup_args.core_root, "corerun%s" % (".exe" if coreclr_setup_args.host_os == "Windows_NT" else ""))
     coreclr_setup_args.dotnetcli_script_path = os.path.join(coreclr_setup_args.runtime_repo_location, "dotnet%s" % (".cmd" if coreclr_setup_args.host_os == "Windows_NT" else ".sh"))
     coreclr_setup_args.coreclr_tests_dir = os.path.join(coreclr_setup_args.coreclr_dir, "tests")
-    coreclr_setup_args.coreclr_tests_src_dir = os.path.join(coreclr_setup_args.coreclr_tests_dir, "src")
+    coreclr_setup_args.coreclr_tests_src_dir = os.path.join(coreclr_setup_args.runtime_repo_location, "src", "tests")
     coreclr_setup_args.runincontext_script_path = os.path.join(coreclr_setup_args.coreclr_tests_dir, "scripts", "runincontext%s" % (".cmd" if coreclr_setup_args.host_os == "Windows_NT" else ".sh"))
     coreclr_setup_args.logs_dir = os.path.join(coreclr_setup_args.artifacts_location, "log")
 

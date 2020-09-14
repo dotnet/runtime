@@ -1,0 +1,441 @@
+<!--
+***********************************************************************************************
+CLRTest.Execute.Bash.targets
+
+WARNING:  DO NOT MODIFY this file unless you are knowledgeable about MSBuild and have
+          created a backup copy.  Incorrect changes to this file will make it
+          impossible to load or build your projects from the command-line or the IDE.
+
+This file contains the logic for providing Execution Script generation.
+
+WARNING:   When setting properties based on their current state (for example:
+           <Foo Condition="'$(Foo)'==''>Bar</Foo>).  Be very careful.  Another script generation
+           target might be trying to do the same thing.  It's better to avoid this by instead setting a new property.
+           
+           Additionally, be careful with itemgroups.  Include will propagate outside of the target too!
+
+***********************************************************************************************
+-->
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <!-- This is here because of this bug: https://docs.microsoft.com/en-us/archive/blogs/msbuild/well-known-limitation-dynamic-items-and-properties-not-emitted-until-target-execution-completes -->
+  <Target Name="FetchExternalPropertiesForXpalt">
+    <!--Call GetExecuteShFullPath to get ToRunProject cmd file Path  -->
+    <MSBuild Projects="$(CLRTestProjectToRun)" 
+             Targets="GetExecuteShFullPath"
+             Properties="GenerateRunScript=True"
+             Condition="'$(_CLRTestNeedsProjectToRun)' == 'True'">
+      <Output TaskParameter="TargetOutputs" PropertyName="_CLRTestToRunFileFullPath"/>
+    </MSBuild>
+  </Target>
+  
+  <!--
+    Target: GetExecuteShFullPath
+    Return Executed Sh Relative Full Path
+    We can use this target get its toRun Project's Sh Full Path to avoid hard-code
+  -->
+  <Target
+    Name="GetExecuteShFullPath"
+    Returns="$(ExecuteShFullPath)">
+    <PropertyGroup Condition="$(GenerateRunScript)">
+      <ExecuteShFullPath>$(OutputPath)$(MSBuildProjectName).sh</ExecuteShFullPath>
+    </PropertyGroup>
+    <!-- In order to avoid the overhead of calling MSBuild (as it may result in chains of MSBuild calls) I am assuming the extension in this circumstance. -->
+    <PropertyGroup Condition="$(CLRTestProjectToRun) != '' AND $(GenerateRunScript)">
+      <ExecuteShFullPath>$(OutputPath)$([System.IO.Path]::GetFilenameWithoutExtension(&quot;$(CLRTestProjectToRun)&quot;)).dll</ExecuteShFullPath>
+    </PropertyGroup>
+    <PropertyGroup Condition="!$(GenerateRunScript)">
+      <ExecuteShFullPath>$(OutputPath)$(MSBuildProjectName).$(OutputType.ToLower())</ExecuteShFullPath>
+    </PropertyGroup>
+  </Target>
+
+
+  <!--
+  *******************************************************************************************
+  TARGET: GenerateExecutionScriptInternal
+  
+  For tests that "run" we will generate an execution script that wraps any arguments or other
+  goo.  This allows generated .lst files to be very simple and reusable to invoke any "stage"
+  of test execution.
+  
+  Notice this is hooked up to run after targets that generate the stores that are marked with GenerateScripts metadata.
+  Note also that this means it will run after the first of such targets.
+  -->
+  <Target Name="GenerateBashExecutionScript"
+    Inputs="$(MSBuildProjectFullPath)"
+    Outputs="$(OutputPath)\$(MSBuildProjectName).sh"
+    DependsOnTargets="FetchExternalPropertiesForXpalt;$(BashScriptSnippetGen);GetJitDisasmBashScript;GetIlasmRoundTripBashScript">
+
+    <Message Text="Project depends on $(_CLRTestToRunFileFullPath)." Condition="'$(_CLRTestNeedsProjectToRun)' == 'True'" />
+
+    <PropertyGroup>
+      <IncompatibleTestBashScriptExitCode>0</IncompatibleTestBashScriptExitCode>
+
+      <BashCLRTestEnvironmentCompatibilityCheck Condition="'$(GCStressIncompatible)' == 'true'"><![CDATA[
+$(BashCLRTestEnvironmentCompatibilityCheck)
+if [ ! -z "$COMPlus_GCStress" ]
+then
+  echo SKIPPING EXECUTION BECAUSE COMPlus_GCStress IS SET
+  exit $(IncompatibleTestBashScriptExitCode)
+fi
+      ]]></BashCLRTestEnvironmentCompatibilityCheck>
+      <BashCLRTestEnvironmentCompatibilityCheck Condition="'$(UnloadabilityIncompatible)' == 'true'"><![CDATA[
+$(BashCLRTestEnvironmentCompatibilityCheck)
+if [ ! -z "$RunInUnloadableContext" ]
+then
+  echo SKIPPING EXECUTION BECAUSE the test is incompatible with unloadability
+  exit $(IncompatibleTestBashScriptExitCode)
+fi
+      ]]></BashCLRTestEnvironmentCompatibilityCheck>
+      <BashCLRTestEnvironmentCompatibilityCheck Condition="'$(JitOptimizationSensitive)' == 'true'">
+    <![CDATA[
+$(BashCLRTestEnvironmentCompatibilityCheck)
+if [[ ( ! -z "$COMPlus_JitStress" ) || ( ! -z "$COMPlus_JitStressRegs" ) || ( ! -z "$COMPlus_JITMinOpts" ) || ( ! -z "$COMPlus_TailcallStress" ) ]]
+then
+  echo "SKIPPING EXECUTION BECAUSE ONE OR MORE OF (COMPlus_JitStress, COMPlus_JitStressRegs, COMPlus_JITMinOpts, COMPlus_TailcallStress) IS SET"
+  exit $(IncompatibleTestBashScriptExitCode)
+fi
+if [[ "$COMPlus_TieredCompilation" != "0" ]]
+then
+  echo "SKIPPING EXECUTION BECAUSE COMPlus_TieredCompilation has not been disabled and this test is marked JitOptimizationSensitive"
+  exit $(IncompatibleTestBashScriptExitCode)
+fi
+      ]]></BashCLRTestEnvironmentCompatibilityCheck>
+      <BashCLRTestEnvironmentCompatibilityCheck Condition="'$(HeapVerifyIncompatible)' == 'true'"><![CDATA[
+$(BashCLRTestEnvironmentCompatibilityCheck)
+if [ ! -z "$COMPlus_HeapVerify" ]
+then
+  echo SKIPPING EXECUTION BECAUSE COMPlus_HeapVerify IS SET
+  exit $(IncompatibleTestBashScriptExitCode)
+fi
+      ]]></BashCLRTestEnvironmentCompatibilityCheck>
+      <BashCLRTestEnvironmentCompatibilityCheck Condition="'$(IlasmRoundTripIncompatible)' == 'true'"><![CDATA[
+$(BashCLRTestEnvironmentCompatibilityCheck)
+if [ ! -z "$RunningIlasmRoundTrip" ]
+then
+  echo SKIPPING EXECUTION BECAUSE RunningIlasmRoundTrip IS SET
+  exit $(IncompatibleTestBashScriptExitCode)
+fi
+      ]]></BashCLRTestEnvironmentCompatibilityCheck>
+
+      <BashCLRTestExitCodePrep Condition="$(_CLRTestNeedsToRun)">
+<![CDATA[
+if [ -z ${CLRTestExpectedExitCode+x} ]%3B then export CLRTestExpectedExitCode=$(CLRTestExitCode)%3B fi
+echo BEGIN EXECUTION]]>
+      </BashCLRTestExitCodePrep>
+    
+      <BashCLRTestArgPrep Condition=" '$(CLRTestExecutionArguments)'!='' ">
+<![CDATA[if [ -z ${CLRTestExecutionArguments+x} ]%3B then CLRTestExecutionArguments=($(CLRTestExecutionArguments))%3B fi]]>
+      </BashCLRTestArgPrep>
+    
+      <!-- By default, be prepared to do a full check -->
+      <BashCLRTestExitCodeCheck><![CDATA[
+echo Expected: $CLRTestExpectedExitCode
+echo Actual: $CLRTestExitCode
+if [ $CLRTestExitCode -ne $CLRTestExpectedExitCode ]
+then
+  echo END EXECUTION - FAILED
+  exit 1
+else
+  echo END EXECUTION - PASSED
+  exit 0
+fi
+      ]]></BashCLRTestExitCodeCheck>
+    </PropertyGroup>
+  
+    <ItemGroup Condition="$(_CLRTestNeedsToRun)">
+      <Clean Include="$(OutputPath)\$(MSBuildProjectName).sh"/>
+
+      <BashCLRTestExecutionScriptArgument Include="debug">
+        <HasParam>true</HasParam>
+        <ParamText>=*</ParamText> <!-- Bash specific -->
+        <ParamName>debuggerFullPath</ParamName>
+        <Command><![CDATA[        export _DebuggerFullPath="${i#*=}"
+        if [ ! -f "$_DebuggerFullPath" ]
+        then
+            echo "The Debugger FullPath %5C%22${_DebuggerFullPath}%5C%22 does not exist"
+            usage
+        fi]]></Command>
+        <Description>Run testcases under debugger.</Description>
+      </BashCLRTestExecutionScriptArgument>
+
+      <BashCLRTestExecutionScriptArgument Include="coreroot">
+        <HasParam>true</HasParam>
+        <ParamText>=*</ParamText> <!-- Bash specific -->
+        <ParamName>coreRootFullPath</ParamName>
+        <Command><![CDATA[        export CORE_ROOT="${i#*=}"]]></Command>
+        <Description>Set CORE_ROOT to the specified value before running the test.</Description>
+      </BashCLRTestExecutionScriptArgument>
+    </ItemGroup>
+
+      <PropertyGroup>
+          <ReflectionRootsXml>$(MSBuildProjectName).reflect.xml</ReflectionRootsXml>
+          <BashLinkerTestLaunchCmds>
+              <![CDATA[
+# Linker commands
+
+LinkBin=__Link
+Assemblies="-a System.Private.CoreLib"
+ReflectionRoots=
+
+shopt -s nullglob
+
+if [ ! -z "$DoLink" ]; 
+then
+  if [ ! -x "$ILLINK" ]; 
+  then
+    echo "Illink executable [$ILLINK] Invalid"
+    exit 1
+  fi
+  
+  # Clean up old Linked binaries, if any
+  rm -rf $LinkBin
+    
+  # Remove Native images, since the goal is to run from Linked binaries
+  rm -f *.ni.*
+
+  # Use hints for reflection roots, if provided in $(ReflectionRootsXml)
+  if [ -f $(ReflectionRootsXml) ]; 
+  then
+    ReflectionRoots="-x $(ReflectionRootsXml)"
+  fi
+
+  # Include all .exe files in this directory as entry points (some tests had multiple .exe file modules)
+  for bin in *.exe *.dll; 
+  do 
+    Assemblies="$Assemblies -a ${bin%.*}"
+  done
+
+  # Run dotnet-linker
+  # Run the Linker such that all assemblies except System.Private.Corlib.dll are linked
+  # Debug symbol generation needs some fixes, and is currently omitted.
+  # Once this is fixed, add -b true option.
+  echo "$ILLINK -out $LinkBin -d $CORE_ROOT -c link -l none -t $Assemblies $ReflectionRoots"
+  $ILLINK -out $LinkBin -d $CORE_ROOT -c link -l none -t $Assemblies $ReflectionRoots
+  ERRORLEVEL=$?
+  if [  $ERRORLEVEL -ne 0 ]
+  then
+    echo ILLINK FAILED $ERRORLEVEL
+    if [ -z "$KeepLinkedBinaries" ]; 
+    then
+      rm -rf $LinkBin
+    fi
+    exit 1
+  fi
+  
+  # Copy CORECLR native binaries to $LinkBin, 
+  # so that we can run the test based on that directory
+  cp $CORE_ROOT/*.so $LinkBin/
+  cp $CORE_ROOT/corerun $LinkBin/
+
+  # Copy some files that may be arguments
+  for f in *.txt;
+  do
+    [ -e "$f" ] && cp $f $LinkBin
+  done
+
+  ExePath=$LinkBin/$(InputAssemblyName)
+  export CORE_ROOT=$PWD/$LinkBin
+fi
+]]>
+          </BashLinkerTestLaunchCmds>
+          <BashLinkerTestCleanupCmds>
+              <![CDATA[
+# Clean up the LinkBin directories after test execution.
+# Otherwise, RunTests may run out of disk space.
+
+if [ ! -z "$DoLink" ]; 
+then
+  if [ -z "$KeepLinkedBinaries" ]; 
+  then
+    rm -rf $LinkBin
+  fi
+fi
+]]>
+          </BashLinkerTestCleanupCmds>
+      </PropertyGroup>
+      <PropertyGroup>
+      <_CLRTestRunFile Condition="'$(CLRTestIsHosted)'=='true'">"$CORE_ROOT/corerun"</_CLRTestRunFile>
+
+      <BashCLRTestPreCommands Condition="'$(TargetArchitecture)' == 'wasm'">
+   <![CDATA[
+# Build wasm app containing the test dll
+__Command=""
+if [ ! -z ${__TestDotNetCmd+x} ] %3B then
+  __Command+=" $__TestDotNetCmd"
+else
+  __Command+=" dotnet"
+fi
+
+$__Command msbuild $CORE_ROOT/wasm-test-runner/WasmTestRunner.proj /p:NetCoreAppCurrent=$(NetCoreAppCurrent) /p:TestAssembly=`pwd`/$(MsBuildProjectName).dll /p:TestBinDir=`pwd`
+
+   ]]>
+      </BashCLRTestPreCommands>
+
+      <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And $(TargetArchitecture) != 'wasm' ">
+    <![CDATA[
+$(BashLinkerTestLaunchCmds)
+
+if [ ! -z "$CLRCustomTestLauncher" ];
+then
+    LAUNCHER="$CLRCustomTestLauncher $PWD/"
+else
+    LAUNCHER="$_DebuggerFullPath $(_CLRTestRunFile)"
+fi
+
+$(BashIlrtTestLaunchCmds)
+
+if [ ! -z ${RunCrossGen+x} ]%3B then
+  TakeLock
+fi
+
+echo $LAUNCHER $ExePath %24(printf "'%s' " "${CLRTestExecutionArguments[@]}")
+$LAUNCHER $ExePath "${CLRTestExecutionArguments[@]}"
+
+CLRTestExitCode=$?
+
+if [ ! -z ${RunCrossGen+x} ]%3B then
+  ReleaseLock
+fi
+
+$(BashLinkerTestCleanupCmds)
+      ]]></BashCLRTestLaunchCmds>
+      <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And $(TargetArchitecture) == 'wasm' ">
+      <![CDATA[
+cd WasmApp
+./run-v8.sh $(MsBuildProjectName)
+CLRTestExitCode=$?
+      ]]>
+      </BashCLRTestLaunchCmds>
+      <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'RunOnly'"><![CDATA[
+echo export CDPATH="$%28dirname "${BASH_SOURCE[0]}")"
+export CDPATH="$%28dirname "${BASH_SOURCE[0]}")"
+echo /usr/bin/env bash $(InputAssemblyName) %24(printf "'%s' " "${CLRTestExecutionArguments[@]}")
+/usr/bin/env bash $(InputAssemblyName) "${CLRTestExecutionArguments[@]}"
+CLRTestExitCode=$?
+CLRTestExpectedExitCode=0
+      ]]></BashCLRTestLaunchCmds>
+    </PropertyGroup>
+
+    <PropertyGroup>
+      <BashEnvironmentVariables>
+@(CLRTestBashEnvironmentVariable -> '%(Identity)', '%0a')
+      </BashEnvironmentVariables>
+    </PropertyGroup>
+     
+    <Message Text="MSBuildProjectDirectory:$(MSBuildProjectDirectory)" />
+    <Message Text="_CLRTestToRunFileFullPath:$(_CLRTestToRunFileFullPath)"/>
+    <Message Text="_CLRTestRunFile:$(_CLRTestRunFile)" />
+    
+    <ItemGroup>
+      <_RequiredProperties Include="_CLRTestRunFile">
+        <Value>$(_CLRTestRunFile)</Value>
+      </_RequiredProperties>
+    </ItemGroup>
+    
+    <!-- Raise an error if any value in _RequiredProperties is missing  -->
+    <Error Condition=" '%(_RequiredProperties.Value)'=='' "
+      Text="Missing required test property [%(_RequiredProperties.Identity)]. Something isn't plumbed through correctly.  Contact $(_CLRTestBuildSystemOwner)." />
+    <PropertyGroup>
+      <!--
+      This generates the script portion to parse all of the command line arguments.
+      The Command metadata for BashCLRTestExecutionScriptArgument items is executed
+      when the argument is found.
+      -->
+      <BashCLRTestArgPrep><![CDATA[
+usage()
+{
+    echo "Usage: $0  $(_CLRTestParamList)"
+    echo 
+    echo "Arguments:"
+@(BashCLRTestExecutionScriptArgument -> '    echo "-%(Identity)=%(ParamName)"
+    echo      "%(Description)"', '
+')
+    echo "-?,-h,--help    show this message"
+    exit 1
+}
+
+# Parse Command Line
+
+for i in "$@"
+    do
+        case $i in
+        -?|-h|--help)
+        usage
+        %3B%3B
+@(BashCLRTestExecutionScriptArgument -> '        -%(Identity)%(ParamText)|/%(Identity)%(ParamText))
+%(Command)
+        %3B%3B')
+        *)
+        CLRTestExecutionArguments+=("${i}")
+    esac
+done
+
+$(BashCLRTestArgPrep)
+      ]]></BashCLRTestArgPrep>
+
+      <!-- NOTE! semicolons must be escaped with %3B boooo -->
+      <_CLRTestExecutionScriptText>
+        <![CDATA[
+%23%21/usr/bin/env bash
+TakeLock()
+{
+    echo "in takeLock"
+    if mkdir $LockFile%3B then
+        return 2
+    else
+        sleep 10
+        TakeLock
+    fi
+    echo "exiting takelock"
+}
+
+ReleaseLock()
+{
+    echo "in ReleaseLock"
+    if [ -d "$LockFile" ]%3B then
+        rm -rf "$LockFile"
+        return 3
+    fi
+}
+cd "$%28dirname "${BASH_SOURCE[0]}")"
+LockFile="lock"
+
+
+# The __TestEnv variable may be used to specify a script to source before the test.
+if [ -n "$__TestEnv" ]%3B then
+    source $__TestEnv
+fi
+
+$(BashEnvironmentVariables)
+$(BashCLRTestEnvironmentCompatibilityCheck)
+$(BashCLRTestArgPrep)
+$(BashCLRTestExitCodePrep)
+$(JitDisasmBashScript)
+$(IlasmRoundTripBashScript)
+# Allow precommands to override the ExePath
+ExePath=$(InputAssemblyName)
+# PreCommands
+$(BashCLRTestPreCommands)
+# Launch
+$(BashCLRTestLaunchCmds)
+# PostCommands
+$(BashCLRTestPostCommands)
+$(BashCLRTestExitCodeCheck)
+      ]]>
+      </_CLRTestExecutionScriptText>
+
+    </PropertyGroup>
+
+    <!-- Write the file.
+         Note: under the hood, this will rely on Environment.NewLine for line 
+         endings. This means that if the scripts are being generated on Windows,
+         the line endings will need to be changed from CR-LF to Unix (LF) line 
+         endings before running the scripts on Unix platforms. -->
+    <WriteLinesToFile
+      File="$(OutputPath)\$(MSBuildProjectName).sh"
+      Lines="$(_CLRTestExecutionScriptText)"
+      Overwrite="true" />
+  </Target>
+  
+</Project>

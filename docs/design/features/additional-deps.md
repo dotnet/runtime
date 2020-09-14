@@ -52,9 +52,7 @@ The proposal for this is to "roll-backwards" starting with the "found" version.
 
 #### Roll-forward uses app's TFM
 
-A secondary issue with with the store's naming convention for framework. It contains a path such as:
-   `\dotnet\store\x64\netcoreapp2.0\microsoft.applicationinsights\2.4.0`
-where 'netcoreapp2.0' is a "tfm" (target framework moniker). During roll-forward cases, the tfm is still the value specified in the app's runtimeconfig. The host only includes store folders that match that tfm, so it may not find packages from other deps files that were generated off a different tfm. In addition, with the advent of multiple frameworks, it makes it cumbersome to be forced to install to every tfm because multiple frameworks may use the same package, and because each package is still identified by an exact version.
+A secondary issue with with the store's naming convention for framework. It contains a path such as: `\dotnet\store\x64\netcoreapp2.0\microsoft.applicationinsights\2.4.0` where 'netcoreapp2.0' is a "tfm" (target framework moniker). During roll-forward cases, the tfm is still the value specified in the app's runtimeconfig. The host only includes store folders that match that tfm, so it may not find packages from other deps files that were generated off a different tfm. In addition, with the advent of multiple frameworks, it makes it cumbersome to be forced to install to every tfm because multiple frameworks may use the same package, and because each package is still identified by an exact version.
 
 The proposal for this is to add an "any" tfm.
 
@@ -80,9 +78,8 @@ Where "found" means the version that is being used at run time including roll-fo
 ## 2.1 proposal (add an "any" tfm to store)
 For example,
     `\dotnet\store\x64\any\microsoft.applicationinsights\2.4.0`
-    
-The `any` tfm would be used if the specified tfm (e.g. netcoreapp2.0) is not found:    
-    `\dotnet\store\x64\netcoreapp2.0\microsoft.applicationinsights\2.4.0`
+
+The `any` tfm would be used if the specified tfm (e.g. netcoreapp2.0) is not found: `\dotnet\store\x64\netcoreapp2.0\microsoft.applicationinsights\2.4.0`
 
 _Possible risk: doesn't this make "uninstall" more difficult? Because multiple installs may write the same packages and try to remove packages that another installer created?_
 
@@ -95,7 +92,7 @@ The current ordering for resolving deps files is:
   1) The app's deps file
   2) The additional-deps file(s)
   3) The framework(s) deps file(s)
-  
+
 The order is important because "first-in" wins. Since the additional-deps is before the framework, the additional-deps will "win" in all cases except during a minor\major roll-forward. The reason minor\major roll-forward is different is because the framework has special logic (new in 2.1) to compare assembly and file version numbers from the deps files, and pick the newest.
 
 The proposed ordering change for 2.1 is:
@@ -108,7 +105,7 @@ In addition, the additional-deps will always look for assembly and file version 
 ## 2.1 proposal (add runtimeconfig knob to to disable `%DOTNET_ADDITIONAL_DEPS%`)
 <strike>
 Add an `additionalDepsLookup` option to the runtimeconfig with these values:
-  
+
   0) The `%DOTNET_ADDITIONAL_DEPS%` is not used
   1) `DOTNET_ADDITIONAL_DEPS` is used (the default)
 </strike>

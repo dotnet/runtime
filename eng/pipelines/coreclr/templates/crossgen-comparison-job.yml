@@ -104,7 +104,7 @@ jobs:
           displayName: 'live-built libraries'
 
     # Populate Core_Root
-    - script: $(coreClrRepoRootDir)build-test$(scriptExt) $(buildConfig) $(archType) $(crossArg) generatelayoutonly
+    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(buildConfig) $(archType) $(crossArg) generatelayoutonly
       displayName: Populate Core_Root
 
     # Create directories and ensure crossgen is executable
@@ -123,7 +123,7 @@ jobs:
       displayName: Create cross-platform crossgen baseline
       inputs:
         scriptSource: 'filePath'
-        scriptPath: $(coreClrRepoRoot)/tests/scripts/crossgen_comparison.py
+        scriptPath: $(Build.SourcesDirectory)/src/coreclr/tests/scripts/crossgen_comparison.py
         pythonInterpreter: /usr/bin/python3
         ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
           arguments:
@@ -164,7 +164,7 @@ jobs:
           Creator: $(Creator)
         WorkItemTimeout: 3:00 # 3 hours
         WorkItemDirectory: '$(workItemDirectory)'
-        CorrelationPayloadDirectory: '$(coreClrRepoRoot)/tests/scripts'
+        CorrelationPayloadDirectory: '$(Build.SourcesDirectory)/src/coreclr/tests/scripts'
         ${{ if ne(parameters.osName, 'Windows_NT') }}:
           WorkItemCommand:
             chmod +x     $HELIX_WORKITEM_PAYLOAD/crossgen;

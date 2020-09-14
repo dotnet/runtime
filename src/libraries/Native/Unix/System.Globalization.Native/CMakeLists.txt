@@ -59,6 +59,10 @@ set(NATIVEGLOBALIZATION_SOURCES
     entrypoints.c
 )
 
+if (MSVC)
+    set_source_files_properties(${NATIVEGLOBALIZATION_SOURCES} PROPERTIES LANGUAGE CXX)
+endif()
+
 include_directories("../Common")
 
 if (GEN_SHARED_LIB)

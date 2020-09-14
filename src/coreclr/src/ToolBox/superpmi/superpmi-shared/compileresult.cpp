@@ -796,6 +796,16 @@ void CompileResult::applyRelocs(unsigned char* block1, ULONG blocksize1, void* o
                 size_t address = section_begin + (size_t)fixupLocation - (size_t)originalAddr;
                 if ((section_begin <= address) && (address < section_end)) // A reloc for our section?
                 {
+#if defined(TARGET_AMD64)
+                    // During an actual compile, recordRelocation() will be called before the compile
+                    // is actually finished, and it will write the relative offset into the fixupLocation.
+                    // Then, emitEndCodeGen() will patch forward jumps by subtracting any adjustment due
+                    // to overestimation of instruction sizes. Because we're applying the relocs after the
+                    // compile has finished, we need to reverse that: i.e. add in the (negative) adjustment
+                    // that's now in the fixupLocation.
+                    INT32 adjustment = *(INT32*)address;
+                    delta += adjustment;
+#endif
                     LogDebug("  fixupLoc-%016llX (@%p) : %08X => %08X", fixupLocation, address, *(DWORD*)address,
                              delta);
                     *(DWORD*)address = (DWORD)delta;
@@ -885,9 +895,17 @@ void* CompileResult::repAddressMap(void* replayAddress)
 {
     if (AddressMap == nullptr)
         return nullptr;
-    Agnostic_AddressMap value;
-    value = AddressMap->Get((DWORDLONG)replayAddress);
-    return (void*)value.Address;
+
+    int index = AddressMap->GetIndex((DWORDLONG)replayAddress);
+
+    if (index != -1)
+    {
+        Agnostic_AddressMap value;
+        value = AddressMap->Get((DWORDLONG)replayAddress);
+        return (void*)value.Address;
+    }
+
+    return nullptr;
 }
 void* CompileResult::searchAddressMap(void* newAddress)
 {
@@ -950,39 +968,6 @@ void CompileResult::dmpAllocUnwindInfo(DWORD key, const Agnostic_AllocUnwindInfo
            "funcKind-%u",
            key, value.pHotCode, value.pColdCode, value.startOffset, value.endOffset, value.unwindSize,
            value.pUnwindBlock_index, value.funcKind);
-}
-
-void CompileResult::recAllocMethodBlockCounts(ULONG count, ICorJitInfo::BlockCounts** pBlockCounts, HRESULT result)
-{
-    if (AllocMethodBlockCounts == nullptr)
-        AllocMethodBlockCounts = new LightWeightMap<DWORD, Agnostic_AllocMethodBlockCounts>();
-
-    Agnostic_AllocMethodBlockCounts value;
-
-    value.count  = (DWORD)count;
-    value.result = (DWORD)result;
-    value.pBlockCounts_index =
-        AllocMethodBlockCounts->AddBuffer((unsigned char*)*pBlockCounts, count * sizeof(ICorJitInfo::BlockCounts));
-
-    AllocMethodBlockCounts->Add((DWORD)0, value);
-}
-void CompileResult::dmpAllocMethodBlockCounts(DWORD key, const Agnostic_AllocMethodBlockCounts& value)
-{
-    printf("AllocMethodBlockCounts key %u, value cnt-%u ind-%u res-%08X", key, value.count, value.pBlockCounts_index,
-           value.result);
-}
-HRESULT CompileResult::repAllocMethodBlockCounts(ULONG count, ICorJitInfo::BlockCounts** pBlockCounts)
-{
-    Agnostic_AllocMethodBlockCounts value;
-    value = AllocMethodBlockCounts->Get((DWORD)0);
-
-    if (count != value.count)
-        __debugbreak();
-
-    HRESULT result = (HRESULT)value.result;
-    *pBlockCounts = (ICorJitInfo::BlockCounts*)AllocMethodBlockCounts->GetBuffer(value.pBlockCounts_index);
-    recAddressMap((void*)0x4242, (void*)*pBlockCounts, count * (sizeof(ICorJitInfo::BlockCounts)));
-    return result;
 }
 
 void CompileResult::recRecordCallSite(ULONG instrOffset, CORINFO_SIG_INFO* callSig, CORINFO_METHOD_HANDLE methodHandle)

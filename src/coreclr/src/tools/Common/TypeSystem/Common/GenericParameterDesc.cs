@@ -45,10 +45,10 @@ namespace Internal.TypeSystem
         /// A type can be substituted for the generic type parameter only if it is a reference type.
         /// </summary>
         ReferenceTypeConstraint = 0x04,
-        
+
         /// <summary>
-        // A type can be substituted for the generic type parameter only if it is a value
-        // type and is not nullable.
+        /// A type can be substituted for the generic type parameter only if it is a value
+        /// type and is not nullable.
         /// </summary>
         NotNullableValueTypeConstraint = 0x08,
 

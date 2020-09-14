@@ -155,6 +155,7 @@ FCFuncStart(gDateTimeFuncs)
 FCFuncEnd()
 
 FCFuncStart(gEnvironmentFuncs)
+    FCFuncElement("get_CurrentManagedThreadId", JIT_GetCurrentManagedThreadId)
     FCFuncElement("get_TickCount", SystemNative::GetTickCount)
     FCFuncElement("get_TickCount64", SystemNative::GetTickCount64)
     QCFuncElement("_Exit", SystemNative::Exit)
@@ -881,7 +882,6 @@ FCFuncStart(gRuntimeHelpers)
     FCFuncElement("GetUninitializedObjectInternal", ReflectionSerialization::GetUninitializedObject)
     QCFuncElement("AllocateTypeAssociatedMemoryInternal", RuntimeTypeHandle::AllocateTypeAssociatedMemory)
     FCFuncElement("AllocTailCallArgBuffer", TailCallHelp::AllocTailCallArgBuffer)
-    FCFuncElement("FreeTailCallArgBuffer", TailCallHelp::FreeTailCallArgBuffer)
     FCFuncElement("GetTailCallInfo", TailCallHelp::GetTailCallInfo)
     FCFuncElement("GetILBytesJitted", GetJittedBytes)
     FCFuncElement("GetMethodsJittedCount", GetJittedMethodsCount)
@@ -1046,23 +1046,14 @@ FCFuncEnd()
 #ifdef TARGET_UNIX
 FCFuncStart(gPalKernel32Funcs)
     QCFuncElement("CloseHandle", CloseHandle)
-    QCFuncElement("CreateEvent", CreateEventW)
     QCFuncElement("CreateEventEx", CreateEventExW)
-    QCFuncElement("CreateMutex", CreateMutexW)
     QCFuncElement("CreateMutexEx", CreateMutexExW)
-    QCFuncElement("CreateSemaphore", CreateSemaphoreW)
     QCFuncElement("CreateSemaphoreEx", CreateSemaphoreExW)
     QCFuncElement("FormatMessage", FormatMessageW)
     QCFuncElement("FreeEnvironmentStrings", FreeEnvironmentStringsW)
-    QCFuncElement("GetCurrentProcessId", GetCurrentProcessId)
-    QCFuncElement("GetCurrentThreadId", GetCurrentThreadId)
     QCFuncElement("GetEnvironmentStrings", GetEnvironmentStringsW)
     QCFuncElement("GetEnvironmentVariable", GetEnvironmentVariableW)
     QCFuncElement("GetStdHandle", GetStdHandle)
-    QCFuncElement("GetSystemInfo", GetSystemInfo)
-    QCFuncElement("LocalAlloc", LocalAlloc)
-    QCFuncElement("LocalReAlloc", LocalReAlloc)
-    QCFuncElement("LocalFree", LocalFree)
     QCFuncElement("OpenEvent", OpenEventW)
     QCFuncElement("OpenMutex", OpenMutexW)
     QCFuncElement("OpenSemaphore", OpenSemaphoreW)
@@ -1074,19 +1065,13 @@ FCFuncStart(gPalKernel32Funcs)
     QCFuncElement("SetEvent", SetEvent)
     QCFuncElement("WriteFile", WriteFile)
 FCFuncEnd()
-
-FCFuncStart(gPalOle32Funcs)
-    QCFuncElement("CoTaskMemAlloc", CoTaskMemAlloc)
-    QCFuncElement("CoTaskMemRealloc", CoTaskMemRealloc)
-    QCFuncElement("CoTaskMemFree", CoTaskMemFree)
-FCFuncEnd()
-
-FCFuncStart(gPalOleAut32Funcs)
-    QCFuncElement("SysAllocStringByteLen", SysAllocStringByteLen)
-    QCFuncElement("SysAllocStringLen", SysAllocStringLen)
-    QCFuncElement("SysFreeString", SysFreeString)
-FCFuncEnd()
 #endif
+
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+FCFuncStart(gX86BaseFuncs)
+    QCFuncElement("__cpuidex", SystemNative::X86BaseCpuId)
+FCFuncEnd()
+#endif // defined(TARGET_X86) || defined(TARGET_AMD64)
 
 #ifdef FEATURE_COMINTEROP
 
@@ -1192,10 +1177,6 @@ FCClassElement("Object", "System", gObjectFuncs)
 #ifdef FEATURE_COMINTEROP
 FCClassElement("ObjectMarshaler", "System.StubHelpers", gObjectMarshalerFuncs)
 #endif
-#ifdef TARGET_UNIX
-FCClassElement("Ole32", "", gPalOle32Funcs)
-FCClassElement("OleAut32", "", gPalOleAut32Funcs)
-#endif
 FCClassElement("OverlappedData", "System.Threading", gOverlappedFuncs)
 
 
@@ -1234,6 +1215,10 @@ FCClassElement("Variant", "System", gVariantFuncs)
 FCClassElement("WaitHandle", "System.Threading", gWaitHandleFuncs)
 FCClassElement("WeakReference", "System", gWeakReferenceFuncs)
 FCClassElement("WeakReference`1", "System", gWeakReferenceOfTFuncs)
+
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+FCClassElement("X86Base", "System.Runtime.Intrinsics.X86", gX86BaseFuncs)
+#endif // defined(TARGET_X86) || defined(TARGET_AMD64)
 
 #if defined(FEATURE_EVENTSOURCE_XPLAT)
 FCClassElement("XplatEventLogger", "System.Diagnostics.Tracing", gEventLogger)

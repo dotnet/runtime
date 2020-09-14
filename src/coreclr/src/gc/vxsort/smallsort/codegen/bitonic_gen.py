@@ -10,8 +10,8 @@
 # usage: bitonic_gen.py [-h] [--vector-isa VECTOR_ISA [VECTOR_ISA ...]]
 #                     [--break-inline BREAK_INLINE] [--output-dir OUTPUT_DIR]
 #
-# the files in src/coreclr/src/gc/vxsort/smallsort checked in can be generated with:
-#   python bitonic_gen.py --output-dir c:\temp --vector-isa AVX2 AVX512
+# the files in src/coreclr/src/gc/vxsort/smallsort that are currently checked in can be generated with:
+#   python bitonic_gen.py --output-dir c:\temp --vector-isa AVX2 AVX512  --break-inline 4
 #
 import argparse
 import os
@@ -55,7 +55,7 @@ def generate_per_type(f_header, f_src, type, vector_isa, break_inline):
     for width in range(2, g.max_bitonic_sort_vectors() + 1):
 
         # Allow breaking the inline chain once in a while (configurable)
-        if break_inline == 0 or width & break_inline != 0:
+        if break_inline == 0 or width % break_inline != 0:
             inline = True
         else:
             inline = False
@@ -65,6 +65,7 @@ def generate_per_type(f_header, f_src, type, vector_isa, break_inline):
             g.generate_compounded_merger(f_header, width, ascending=True, inline=inline)
             g.generate_compounded_merger(f_header, width, ascending=False, inline=inline)
 
+    #g.generate_entry_points_old(f_header)
     g.generate_entry_points(f_header)
     g.generate_master_entry_point(f_header, f_src)
     g.generate_epilogue(f_header)

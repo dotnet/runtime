@@ -454,7 +454,7 @@ int32_t GlobalizationNative_CompareString(
         }
         if (lpStr2 == NULL)
         {
-            lpStr2 = &dummyChar; 
+            lpStr2 = &dummyChar;
         }
 
         result = ucol_strcoll(pColl, lpStr1, cwStr1Length, lpStr2, cwStr2Length);
@@ -492,12 +492,12 @@ int32_t GlobalizationNative_IndexOf(
         result = GlobalizationNative_CompareString(pSortHandle, lpTarget, cwTargetLength, lpSource, cwSourceLength, options);
         if (result == UCOL_EQUAL && pMatchedLength != NULL)
         {
-            *pMatchedLength = cwTargetLength;
+            *pMatchedLength = cwSourceLength;
         }
 
         return (result == UCOL_EQUAL) ? 0 : -1;
     }
-    
+
     UErrorCode err = U_ZERO_ERROR;
     const UCollator* pColl = GetCollatorFromSortHandle(pSortHandle, options, &err);
 
@@ -551,7 +551,7 @@ int32_t GlobalizationNative_LastIndexOf(
         result = GlobalizationNative_CompareString(pSortHandle, lpTarget, cwTargetLength, lpSource, cwSourceLength, options);
         if (result == UCOL_EQUAL && pMatchedLength != NULL)
         {
-            *pMatchedLength = cwTargetLength;
+            *pMatchedLength = cwSourceLength;
         }
 
         return (result == UCOL_EQUAL) ? 0 : -1;
@@ -576,85 +576,6 @@ int32_t GlobalizationNative_LastIndexOf(
             }
             usearch_close(pSearch);
         }
-    }
-
-    return result;
-}
-
-/*
-Static Function:
-AreEqualOrdinalIgnoreCase
-*/
-static int AreEqualOrdinalIgnoreCase(UChar32 one, UChar32 two)
-{
-    // Return whether the two characters are identical or would be identical if they were upper-cased.
-
-    if (one == two)
-    {
-        return TRUE;
-    }
-
-    if (one == 0x0131 || two == 0x0131)
-    {
-        // On Windows with InvariantCulture, the LATIN SMALL LETTER DOTLESS I (U+0131)
-        // capitalizes to itself, whereas with ICU it capitalizes to LATIN CAPITAL LETTER I (U+0049).
-        // We special case it to match the Windows invariant behavior.
-        return FALSE;
-    }
-
-    return u_toupper(one) == u_toupper(two);
-}
-
-/*
-Function:
-IndexOfOrdinalIgnoreCase
-*/
-int32_t GlobalizationNative_IndexOfOrdinalIgnoreCase(
-    const UChar* lpTarget, int32_t cwTargetLength, const UChar* lpSource, int32_t cwSourceLength, int32_t findLast)
-{
-    int32_t result = -1;
-
-    int32_t endIndex = cwSourceLength - cwTargetLength;
-    assert(endIndex >= 0);
-
-    int32_t i = 0;
-    while (i <= endIndex)
-    {
-        int32_t srcIdx = i, trgIdx = 0;
-        const UChar *src = lpSource, *trg = lpTarget;
-
-        int32_t match = TRUE;
-        while (trgIdx < cwTargetLength)
-        {
-            UChar32 srcCodepoint, trgCodepoint;
-
-#ifdef __clang__
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wsign-conversion"
-#endif
-            U16_NEXT(src, srcIdx, cwSourceLength, srcCodepoint);
-            U16_NEXT(trg, trgIdx, cwTargetLength, trgCodepoint);
-#ifdef __clang__
-#pragma clang diagnostic pop
-#endif
-
-            if (!AreEqualOrdinalIgnoreCase(srcCodepoint, trgCodepoint))
-            {
-                match = FALSE;
-                break;
-            }
-        }
-
-        if (match)
-        {
-            result = i;
-            if (!findLast)
-            {
-                break;
-            }
-        }
-
-        U16_FWD_1(lpSource, i, cwSourceLength);
     }
 
     return result;
@@ -689,13 +610,14 @@ static int32_t GetCollationElementMask(UColAttributeValue strength)
     }
 }
 
-static int32_t inline SimpleAffix_Iterators(UCollationElements* pPatternIterator, UCollationElements* pSourceIterator, UColAttributeValue strength, int32_t forwardSearch)
+static int32_t inline SimpleAffix_Iterators(UCollationElements* pPatternIterator, UCollationElements* pSourceIterator, UColAttributeValue strength, int32_t forwardSearch, int32_t* pCapturedOffset)
 {
     assert(strength >= UCOL_SECONDARY);
 
     UErrorCode errorCode = U_ZERO_ERROR;
     int32_t movePattern = TRUE, moveSource = TRUE;
     int32_t patternElement = UCOL_IGNORABLE, sourceElement = UCOL_IGNORABLE;
+    int32_t capturedOffset = 0;
 
     int32_t collationElementMask = GetCollationElementMask(strength);
 
@@ -707,6 +629,10 @@ static int32_t inline SimpleAffix_Iterators(UCollationElements* pPatternIterator
         }
         if (moveSource)
         {
+            if (pCapturedOffset != NULL)
+            {
+                capturedOffset = ucol_getOffset(pSourceIterator); // need to capture offset before advancing iterator
+            }
             sourceElement = forwardSearch ? ucol_next(pSourceIterator, &errorCode) : ucol_previous(pSourceIterator, &errorCode);
         }
         movePattern = TRUE; moveSource = TRUE;
@@ -715,11 +641,11 @@ static int32_t inline SimpleAffix_Iterators(UCollationElements* pPatternIterator
         {
             if (sourceElement == UCOL_NULLORDER)
             {
-                return TRUE; // source is equal to pattern, we have reached both ends|beginnings at the same time
+                goto ReturnTrue; // source is equal to pattern, we have reached both ends|beginnings at the same time
             }
             else if (sourceElement == UCOL_IGNORABLE)
             {
-                return TRUE; // the next|previous character in source is an ignorable character, an example: "o\u0000".StartsWith("o")
+                goto ReturnTrue; // the next|previous character in source is an ignorable character, an example: "o\u0000".StartsWith("o")
             }
             else if (forwardSearch && ((sourceElement & UCOL_PRIMARYORDERMASK) == 0) && (sourceElement & UCOL_SECONDARYORDERMASK) != 0)
             {
@@ -727,7 +653,7 @@ static int32_t inline SimpleAffix_Iterators(UCollationElements* pPatternIterator
             }
             else
             {
-                return TRUE;
+                goto ReturnTrue;
             }
         }
         else if (patternElement == UCOL_IGNORABLE)
@@ -743,9 +669,16 @@ static int32_t inline SimpleAffix_Iterators(UCollationElements* pPatternIterator
             return FALSE;
         }
     }
+
+ReturnTrue:
+    if (pCapturedOffset != NULL)
+    {
+        *pCapturedOffset = capturedOffset;
+    }
+    return TRUE;
 }
 
-static int32_t SimpleAffix(const UCollator* pCollator, UErrorCode* pErrorCode, const UChar* pPattern, int32_t patternLength, const UChar* pText, int32_t textLength, int32_t forwardSearch)
+static int32_t SimpleAffix(const UCollator* pCollator, UErrorCode* pErrorCode, const UChar* pPattern, int32_t patternLength, const UChar* pText, int32_t textLength, int32_t forwardSearch, int32_t* pMatchedLength)
 {
     int32_t result = FALSE;
 
@@ -757,7 +690,15 @@ static int32_t SimpleAffix(const UCollator* pCollator, UErrorCode* pErrorCode, c
         {
             UColAttributeValue strength = ucol_getStrength(pCollator);
 
-            result = SimpleAffix_Iterators(pPatternIterator, pSourceIterator, strength, forwardSearch);
+            int32_t capturedOffset = 0;
+            result = SimpleAffix_Iterators(pPatternIterator, pSourceIterator, strength, forwardSearch, (pMatchedLength != NULL) ? &capturedOffset : NULL);
+
+            if (result && pMatchedLength != NULL)
+            {
+                // depending on whether we're searching forward or backward, the matching substring
+                // is [start of source string .. curIdx] or [curIdx .. end of source string]
+                *pMatchedLength = (forwardSearch) ? capturedOffset : (textLength - capturedOffset);
+            }
 
             ucol_closeElements(pSourceIterator);
         }
@@ -768,7 +709,7 @@ static int32_t SimpleAffix(const UCollator* pCollator, UErrorCode* pErrorCode, c
     return result;
 }
 
-static int32_t ComplexStartsWith(const UCollator* pCollator, UErrorCode* pErrorCode, const UChar* pPattern, int32_t patternLength, const UChar* pText, int32_t textLength)
+static int32_t ComplexStartsWith(const UCollator* pCollator, UErrorCode* pErrorCode, const UChar* pPattern, int32_t patternLength, const UChar* pText, int32_t textLength, int32_t* pMatchedLength)
 {
     int32_t result = FALSE;
 
@@ -785,6 +726,12 @@ static int32_t ComplexStartsWith(const UCollator* pCollator, UErrorCode* pErrorC
             else
             {
                 result = CanIgnoreAllCollationElements(pCollator, pText, idx);
+            }
+
+            if (result && pMatchedLength != NULL)
+            {
+                // adjust matched length to account for all the elements we implicitly consumed at beginning of string
+                *pMatchedLength = idx + usearch_getMatchedLength(pSearch);
             }
         }
 
@@ -803,9 +750,9 @@ int32_t GlobalizationNative_StartsWith(
                         int32_t cwTargetLength,
                         const UChar* lpSource,
                         int32_t cwSourceLength,
-                        int32_t options)
+                        int32_t options,
+                        int32_t* pMatchedLength)
 {
-
     UErrorCode err = U_ZERO_ERROR;
     const UCollator* pCollator = GetCollatorFromSortHandle(pSortHandle, options, &err);
 
@@ -815,15 +762,15 @@ int32_t GlobalizationNative_StartsWith(
     }
     else if (options > CompareOptionsIgnoreCase)
     {
-        return ComplexStartsWith(pCollator, &err, lpTarget, cwTargetLength, lpSource, cwSourceLength);
+        return ComplexStartsWith(pCollator, &err, lpTarget, cwTargetLength, lpSource, cwSourceLength, pMatchedLength);
     }
     else
     {
-        return SimpleAffix(pCollator, &err, lpTarget, cwTargetLength, lpSource, cwSourceLength, TRUE);
+        return SimpleAffix(pCollator, &err, lpTarget, cwTargetLength, lpSource, cwSourceLength, TRUE, pMatchedLength);
     }
 }
 
-static int32_t ComplexEndsWith(const UCollator* pCollator, UErrorCode* pErrorCode, const UChar* pPattern, int32_t patternLength, const UChar* pText, int32_t textLength)
+static int32_t ComplexEndsWith(const UCollator* pCollator, UErrorCode* pErrorCode, const UChar* pPattern, int32_t patternLength, const UChar* pText, int32_t textLength, int32_t* pMatchedLength)
 {
     int32_t result = FALSE;
 
@@ -846,6 +793,12 @@ static int32_t ComplexEndsWith(const UCollator* pCollator, UErrorCode* pErrorCod
 
                 result = CanIgnoreAllCollationElements(pCollator, pText + matchEnd, remainingStringLength);
             }
+
+            if (result && pMatchedLength != NULL)
+            {
+                // adjust matched length to account for all the elements we implicitly consumed at end of string
+                *pMatchedLength = textLength - idx;
+            }
         }
 
         usearch_close(pSearch);
@@ -863,7 +816,8 @@ int32_t GlobalizationNative_EndsWith(
                         int32_t cwTargetLength,
                         const UChar* lpSource,
                         int32_t cwSourceLength,
-                        int32_t options)
+                        int32_t options,
+                        int32_t* pMatchedLength)
 {
     UErrorCode err = U_ZERO_ERROR;
     const UCollator* pCollator = GetCollatorFromSortHandle(pSortHandle, options, &err);
@@ -874,11 +828,11 @@ int32_t GlobalizationNative_EndsWith(
     }
     else if (options > CompareOptionsIgnoreCase)
     {
-        return ComplexEndsWith(pCollator, &err, lpTarget, cwTargetLength, lpSource, cwSourceLength);
+        return ComplexEndsWith(pCollator, &err, lpTarget, cwTargetLength, lpSource, cwSourceLength, pMatchedLength);
     }
     else
     {
-        return SimpleAffix(pCollator, &err, lpTarget, cwTargetLength, lpSource, cwSourceLength, FALSE);
+        return SimpleAffix(pCollator, &err, lpTarget, cwTargetLength, lpSource, cwSourceLength, FALSE, pMatchedLength);
     }
 }
 
@@ -900,48 +854,4 @@ int32_t GlobalizationNative_GetSortKey(
     }
 
     return result;
-}
-
-int32_t GlobalizationNative_CompareStringOrdinalIgnoreCase(
-    const UChar* lpStr1, int32_t cwStr1Length, const UChar* lpStr2, int32_t cwStr2Length)
-{
-    assert(lpStr1 != NULL);
-    assert(cwStr1Length >= 0);
-    assert(lpStr2 != NULL);
-    assert(cwStr2Length >= 0);
-
-    int32_t str1Idx = 0;
-    int32_t str2Idx = 0;
-
-    while (str1Idx < cwStr1Length && str2Idx < cwStr2Length)
-    {
-        UChar32 str1Codepoint, str2Codepoint;
-
-#ifdef __clang__
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wsign-conversion"
-#endif
-        U16_NEXT(lpStr1, str1Idx, cwStr1Length, str1Codepoint);
-        U16_NEXT(lpStr2, str2Idx, cwStr2Length, str2Codepoint);
-#ifdef __clang__
-#pragma clang diagnostic pop
-#endif
-
-        if (str1Codepoint != str2Codepoint && u_toupper(str1Codepoint) != u_toupper(str2Codepoint))
-        {
-            return str1Codepoint < str2Codepoint ? -1 : 1;
-        }
-    }
-
-    if (cwStr1Length < cwStr2Length)
-    {
-        return -1;
-    }
-
-    if (cwStr2Length < cwStr1Length)
-    {
-        return 1;
-    }
-
-    return 0;
 }

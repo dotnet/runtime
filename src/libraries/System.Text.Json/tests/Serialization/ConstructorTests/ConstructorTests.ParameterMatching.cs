@@ -779,7 +779,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public async Task FirstParameterWins()
+        public async Task LastParameterWins()
         {
             Point_2D point = await Serializer.DeserializeWrapper<Point_2D>(@"{""X"":1,""Y"":2,""X"":4}");
             Assert.Equal(4, point.X); // Not 1.
@@ -787,7 +787,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public async Task SubsequentParameter_GoesToExtensionData()
+        public async Task LastParameterWins_DoesNotGoToExtensionData()
         {
             string json = @"{
                 ""FirstName"":""Jet"",

@@ -38,7 +38,7 @@
     <Compile Include="System\Diagnostics\ActivityTagsCollection.cs" />
     <Compile Include="System\Diagnostics\ActivityContext.cs" />
     <Compile Include="System\Diagnostics\ActivityCreationOptions.cs" />
-    <Compile Include="System\Diagnostics\ActivityDataRequest.cs" />
+    <Compile Include="System\Diagnostics\ActivitySamplingResult.cs" />
     <Compile Include="System\Diagnostics\ActivityEvent.cs" />
     <Compile Include="System\Diagnostics\ActivityKind.cs" />
     <Compile Include="System\Diagnostics\ActivityLink.cs" />
@@ -93,5 +93,6 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' != 'netstandard1.1' and '$(TargetFramework)' != '$(NetCoreAppCurrent)'">
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.CompilerServices.Unsafe\src\System.Runtime.CompilerServices.Unsafe.ilproj" />
   </ItemGroup>
 </Project>

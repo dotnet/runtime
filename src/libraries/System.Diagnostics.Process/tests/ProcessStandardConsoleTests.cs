@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
-using System.Runtime.InteropServices;
 using System.Text;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
@@ -24,15 +23,15 @@ namespace System.Diagnostics.Tests
                 p.StartInfo.RedirectStandardError = true;
                 p.Start();
 
-                Assert.Equal(p.StandardInput.Encoding.CodePage, expectedCodePage);
-                Assert.Equal(p.StandardOutput.CurrentEncoding.CodePage, expectedCodePage);
-                Assert.Equal(p.StandardError.CurrentEncoding.CodePage, expectedCodePage);
+                Assert.Equal(expectedCodePage, p.StandardInput.Encoding.CodePage);
+                Assert.Equal(expectedCodePage, p.StandardOutput.CurrentEncoding.CodePage);
+                Assert.Equal(expectedCodePage, p.StandardError.CurrentEncoding.CodePage);
 
                 p.Kill();
                 Assert.True(p.WaitForExit(WaitInMS));
             };
 
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (!OperatingSystem.IsWindows())
             {
                 run(Encoding.UTF8.CodePage);
                 return;

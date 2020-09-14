@@ -68,7 +68,7 @@ namespace Internal.Cryptography
         protected override unsafe int UncheckedTransformFinalBlock(ReadOnlySpan<byte> inputBuffer, Span<byte> outputBuffer)
         {
             // We can't complete decryption on a partial block
-            if (inputBuffer.Length % InputBlockSize != 0)
+            if (inputBuffer.Length % PaddingSizeBytes != 0)
                 throw new CryptographicException(SR.Cryptography_PartialBlock);
 
             //

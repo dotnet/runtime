@@ -7,6 +7,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
 {
     using Aes = System.Security.Cryptography.Aes;
 
+    [SkipOnMono("Not supported on Browser", TestPlatforms.Browser)]
     public class AesModeTests
     {
         [Fact]
@@ -19,6 +20,18 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         public static void SupportsECB()
         {
             SupportsMode(CipherMode.ECB);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        public static void SupportsCFB()
+        {
+            SupportsMode(CipherMode.CFB);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows7))]
+        public static void Windows7DoesNotSupportCFB()
+        {
+            DoesNotSupportMode(CipherMode.CFB);
         }
 
         [Fact]
@@ -50,7 +63,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                 // aes.CreateEncryptor() (with an invalid Mode value)
                 // transform.Transform[Final]Block() (with an invalid Mode value)
 
-                Assert.Throws<CryptographicException>(
+                Assert.ThrowsAny<CryptographicException>(
                     () =>
                     {
                         aes.Mode = mode;

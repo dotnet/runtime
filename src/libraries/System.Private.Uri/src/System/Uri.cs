@@ -504,6 +504,7 @@ namespace System
             _flags = Flags.Zero;
             _info = null!;
             _syntax = null!;
+            _originalUnicodeString = null!;
             // If not resolved, we reparse modified Uri string and populate Uri internal data.
             CreateThis(relativeUri, dontEscape, UriKind.Absolute);
         }
@@ -550,6 +551,7 @@ namespace System
             _flags = Flags.Zero;
             _info = null!;
             _syntax = null!;
+            _originalUnicodeString = null!;
             CreateThis(newUriString, dontEscape, UriKind.Absolute);
             DebugSetLeftCtor();
         }
@@ -2265,7 +2267,7 @@ namespace System
                                 }
                             }
                         }
-                        if (notEmpty && info.Offset.PortValue != port)
+                        if (notEmpty && _syntax.DefaultPort != port)
                         {
                             info.Offset.PortValue = (ushort)port;
                             cF |= Flags.NotDefaultPort;
@@ -5188,7 +5190,7 @@ namespace System
             return new string(dest, 0, count);
         }
 
-        [Obsolete("The method has been deprecated. Please use GetComponents() or static EscapeUriString() to escape a Uri component or a string. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("The method has been deprecated. Please use GetComponents() or static EscapeDataString() to escape a Uri component or a string. https://go.microsoft.com/fwlink/?linkid=14202")]
         protected static string EscapeString(string? str) =>
             str is null ? string.Empty :
             UriHelper.EscapeString(str, checkExistingEscaped: true, UriHelper.UnreservedReservedTable, '?', '#');

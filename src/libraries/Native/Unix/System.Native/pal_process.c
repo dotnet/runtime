@@ -28,8 +28,6 @@
 #include <sched.h>
 #endif
 
-// Validate that our Signals enum values are correct for the platform
-c_static_assert(PAL_SIGKILL == SIGKILL);
 
 // Validate that our SysLogPriority values are correct for the platform
 c_static_assert(PAL_LOG_EMERG == LOG_EMERG);
@@ -653,6 +651,26 @@ int32_t SystemNative_SetRLimit(RLimitResources resourceType, const RLimit* limit
 
 int32_t SystemNative_Kill(int32_t pid, int32_t signal)
 {
+    switch (signal)
+    {
+        case PAL_NONE:
+             signal = 0;
+             break;
+
+        case PAL_SIGKILL:
+             signal = SIGKILL;
+             break;
+
+        case PAL_SIGSTOP:
+             signal = SIGSTOP;
+             break;
+
+        default:
+             assert_msg(false, "Unknown signal", signal);
+             errno = EINVAL;
+             return -1;
+    }
+
     return kill(pid, signal);
 }
 

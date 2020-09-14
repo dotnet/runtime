@@ -10,7 +10,7 @@ These instructions are written assuming FreeBSD 10.1-RELEASE, since that's the r
 
 These instructions assume you use the binary package tool `pkg` (analog to `apt-get` or `yum` on Linux) to install the environment. Compiling the dependencies from source using the ports tree might work too, but is untested.
 
-Minimum RAM required to build is 1GB. The build is known to fail on 512 MB VMs ([Issue 536](https://github.com/dotnet/coreclr/issues/536)).
+Minimum RAM required to build is 1GB. The build is known to fail on 512 MB VMs ([Issue 4069](https://github.com/dotnet/runtime/issues/4069)).
 
 Toolchain Setup
 ---------------
@@ -166,7 +166,7 @@ Download NuGet Packages
 
 With Mono and NuGet in hand, you can use NuGet to get the required dependencies.
 
-Make a `packages.config` file with the following text. These are the required dependencies of this particular app. Different apps will have different dependencies and require a different `packages.config` - see [Issue #480](https://github.com/dotnet/coreclr/issues/480).
+Make a `packages.config` file with the following text. These are the required dependencies of this particular app. Different apps will have different dependencies and require a different `packages.config` - see [Issue #4053](https://github.com/dotnet/runtime/issues/4053).
 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
@@ -198,7 +198,7 @@ And restore your packages.config file:
 janhenke@freebsd-frankfurt:~/coreclr-demo/packages % mono nuget.exe restore -Source https://www.myget.org/F/dotnet-corefx/ -PackagesDirectory .
 ```
 
-NOTE: This assumes you already installed the default CA certs. If you have problems downloading the packages please see [Issue #602](https://github.com/dotnet/coreclr/issues/602#issuecomment-88203778). The command for FreeBSD is:
+NOTE: This assumes you already installed the default CA certs. If you have problems downloading the packages please see [Issue #4089](https://github.com/dotnet/runtime/issues/4089#issuecomment-88203778). The command for FreeBSD is:
 
 ```sh
 janhenke@freebsd-frankfurt:~/coreclr-demo/packages % mozroots --import --sync

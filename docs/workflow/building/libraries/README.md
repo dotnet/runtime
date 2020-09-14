@@ -9,11 +9,11 @@ Here is one example of a daily workflow for a developer working mainly on the li
 git clean -xdf
 git pull upstream master & git push origin master
 :: Build Debug libraries on top of Release runtime:
-build clr+libs -rc Release
+build.cmd clr+libs -rc Release
 :: The above you may only perform once in a day, or when you pull down significant new changes.
 
 :: If you use Visual Studio, you might open System.Text.RegularExpressions.sln here.
-build -vs System.Text.RegularExpressions
+build.cmd -vs System.Text.RegularExpressions
 
 :: Switch to working on a given library (RegularExpressions in this case)
 cd src\libraries\System.Text.RegularExpressions
@@ -185,7 +185,7 @@ You can iterate on `System.Private.CoreLib` by running:
 build.cmd clr.corelib+clr.nativecorelib+libs.pretest -rc Release
 ```
 
-When this `System.Private.CoreLib` will be built in Release mode, then it will be crossgen'd and we will update the testhost to the latest version of corelib. 
+When this `System.Private.CoreLib` will be built in Release mode, then it will be crossgen'd and we will update the testhost to the latest version of corelib.
 
 You can use the same workflow for mono runtime by using `mono.corelib+libs.pretest` subsets.
 

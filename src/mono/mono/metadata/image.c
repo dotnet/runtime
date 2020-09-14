@@ -47,6 +47,7 @@
 #include <mono/metadata/loaded-images-internals.h>
 #include <mono/metadata/w32process-internals.h>
 #include <mono/metadata/debug-internals.h>
+#include <mono/metadata/mono-private-unstable.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #ifdef HAVE_UNISTD_H
@@ -525,6 +526,13 @@ load_metadata_ptrs (MonoImage *image, MonoCLIImageInfo *iinfo)
 		} else if (strncmp (ptr + 8, "#Pdb", 5) == 0) {
 			image->heap_pdb.data = image->raw_metadata + read32 (ptr);
 			image->heap_pdb.size = read32 (ptr + 4);
+			ptr += 8 + 5;
+		} else if (strncmp (ptr + 8, "#JTD", 5) == 0) {
+			// See https://github.com/dotnet/runtime/blob/110282c71b3f7e1f91ea339953f4a0eba362a62c/src/libraries/System.Reflection.Metadata/src/System/Reflection/Metadata/MetadataReader.cs#L165-L175
+			// skip read32(ptr) and read32(ptr + 4)
+			// ignore the content of this stream
+			image->minimal_delta = TRUE;
+			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "Image '%s' has a minimal delta marker", image->name);
 			ptr += 8 + 5;
 		} else {
 			g_message ("Unknown heap type: %s\n", ptr + 8);
@@ -1846,39 +1854,80 @@ mono_image_loaded_by_guid (const char *guid)
 	return mono_image_loaded_by_guid_internal (guid, FALSE);
 }
 
+static const char *
+get_image_culture (MonoImage *image)
+{
+	MonoTableInfo *t = &image->tables [MONO_TABLE_ASSEMBLY];
+	if (!t->rows)
+		return NULL;
+
+	guint32 cols [MONO_ASSEMBLY_SIZE];
+	mono_metadata_decode_row (t, 0, cols, MONO_ASSEMBLY_SIZE);
+	return mono_metadata_string_heap (image, cols [MONO_ASSEMBLY_CULTURE]);
+}
+
+char *
+mono_image_get_name_with_culture_if_needed (MonoImage *image)
+{
+	if (!g_str_has_prefix (image->name, "data-") &&
+		!g_path_is_absolute (image->name))
+	{
+		const char *culture = get_image_culture (image);
+
+		if (culture && culture [0] != 0)
+			return g_strdup_printf ("%s/%s", culture, image->name);
+	}
+
+	return NULL;
+}
+
 static MonoImage *
 register_image (MonoLoadedImages *li, MonoImage *image, gboolean *problematic)
 {
 	MonoImage *image2;
+	char *name = image->name;
+#ifdef ENABLE_NETCORE
+	/* Since we register cultures by file name, we need to make this culture aware for
+	   satellite assemblies */
+	char *name_with_culture = mono_image_get_name_with_culture_if_needed (image);
+	if (name_with_culture)
+		name = name_with_culture;
+#endif
 	GHashTable *loaded_images = mono_loaded_images_get_hash (li, image->ref_only);
 
 	mono_images_lock ();
-	image2 = (MonoImage *)g_hash_table_lookup (loaded_images, image->name);
+	image2 = (MonoImage *)g_hash_table_lookup (loaded_images, name);
 
 	if (image2) {
 		/* Somebody else beat us to it */
 		mono_image_addref (image2);
 		mono_images_unlock ();
 		mono_image_close (image);
+#ifdef ENABLE_NETCORE
+		g_free (name_with_culture);
+#endif
 		return image2;
 	}
 
 	GHashTable *loaded_images_by_name = mono_loaded_images_get_by_name_hash (li, image->ref_only);
-	g_hash_table_insert (loaded_images, image->name, image);
+	g_hash_table_insert (loaded_images, name, image);
 	if (image->assembly_name && (g_hash_table_lookup (loaded_images_by_name, image->assembly_name) == NULL))
 		g_hash_table_insert (loaded_images_by_name, (char *) image->assembly_name, image);
 	mono_images_unlock ();
 
 	if (mono_is_problematic_image (image)) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Registering %s, problematic image '%s'", image->ref_only ? "REFONLY" : "default", image->name);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Registering %s, problematic image '%s'", image->ref_only ? "REFONLY" : "default", name);
 		if (problematic)
 			*problematic = TRUE;
 	}
+#ifdef ENABLE_NETCORE
+	g_free (name_with_culture);
+#endif
 	return image;
 }
 
 MonoImage *
-mono_image_open_from_data_internal (MonoAssemblyLoadContext *alc, char *data, guint32 data_len, gboolean need_copy, MonoImageOpenStatus *status, gboolean refonly, gboolean metadata_only, const char *name)
+mono_image_open_from_data_internal (MonoAssemblyLoadContext *alc, char *data, guint32 data_len, gboolean need_copy, MonoImageOpenStatus *status, gboolean refonly, gboolean metadata_only, const char *name, const char *filename)
 {
 	MonoCLIImageInfo *iinfo;
 	MonoImage *image;
@@ -1900,12 +1949,12 @@ mono_image_open_from_data_internal (MonoAssemblyLoadContext *alc, char *data, gu
 		memcpy (datac, data, data_len);
 	}
 
-	MonoImageStorage *storage = mono_image_storage_new_raw_data (datac, data_len, need_copy, name);
+	MonoImageStorage *storage = mono_image_storage_new_raw_data (datac, data_len, need_copy, filename);
 	image = g_new0 (MonoImage, 1);
 	image->storage = storage;
 	mono_image_init_raw_data (image, storage);
-	image->name = (name == NULL) ? g_strdup_printf ("data-%p", datac) : g_strdup(name);
-	image->filename = name ? g_strdup (name) : NULL;
+	image->name = (name == NULL) ? g_strdup_printf ("data-%p", datac) : g_strdup (name);
+	image->filename = filename ? g_strdup (filename) : NULL;
 	iinfo = g_new0 (MonoCLIImageInfo, 1);
 	image->image_info = iinfo;
 	image->ref_only = refonly;
@@ -1922,6 +1971,21 @@ mono_image_open_from_data_internal (MonoAssemblyLoadContext *alc, char *data, gu
 	return register_image (mono_alc_get_loaded_images (alc), image, NULL);
 }
 
+MonoImage *
+mono_image_open_from_data_alc (MonoAssemblyLoadContextGCHandle alc_gchandle, char *data, uint32_t data_len, mono_bool need_copy, MonoImageOpenStatus *status, const char *name)
+{
+	MonoImage *result;
+	MONO_ENTER_GC_UNSAFE;
+#ifdef ENABLE_NETCORE
+	MonoAssemblyLoadContext *alc = mono_alc_from_gchandle (alc_gchandle);
+#else
+	MonoAssemblyLoadContext *alc = mono_domain_default_alc (mono_domain_get ());
+#endif
+	result = mono_image_open_from_data_internal (alc, data, data_len, need_copy, status, FALSE, FALSE, name, name);
+	MONO_EXIT_GC_UNSAFE;
+	return result;
+}
+
 /**
  * mono_image_open_from_data_with_name:
  */
@@ -1931,7 +1995,7 @@ mono_image_open_from_data_with_name (char *data, guint32 data_len, gboolean need
 	MonoImage *result;
 	MONO_ENTER_GC_UNSAFE;
 	MonoDomain *domain = mono_domain_get ();
-	result = mono_image_open_from_data_internal (mono_domain_default_alc (domain), data, data_len, need_copy, status, refonly, FALSE, name);
+	result = mono_image_open_from_data_internal (mono_domain_default_alc (domain), data, data_len, need_copy, status, refonly, FALSE, name, name);
 	MONO_EXIT_GC_UNSAFE;
 	return result;
 }
@@ -1945,7 +2009,7 @@ mono_image_open_from_data_full (char *data, guint32 data_len, gboolean need_copy
 	MonoImage *result;
 	MONO_ENTER_GC_UNSAFE;
 	MonoDomain *domain = mono_domain_get ();
-	result = mono_image_open_from_data_internal (mono_domain_default_alc (domain), data, data_len, need_copy, status, refonly, FALSE, NULL);
+	result = mono_image_open_from_data_internal (mono_domain_default_alc (domain), data, data_len, need_copy, status, refonly, FALSE, NULL, NULL);
 	MONO_EXIT_GC_UNSAFE;
 	return result;
 }
@@ -1959,7 +2023,7 @@ mono_image_open_from_data (char *data, guint32 data_len, gboolean need_copy, Mon
 	MonoImage *result;
 	MONO_ENTER_GC_UNSAFE;
 	MonoDomain *domain = mono_domain_get ();
-	result = mono_image_open_from_data_internal (mono_domain_default_alc (domain), data, data_len, need_copy, status, FALSE, FALSE, NULL);
+	result = mono_image_open_from_data_internal (mono_domain_default_alc (domain), data, data_len, need_copy, status, FALSE, FALSE, NULL, NULL);
 	MONO_EXIT_GC_UNSAFE;
 	return result;
 }
@@ -2029,6 +2093,11 @@ mono_image_open_full (const char *fname, MonoImageOpenStatus *status, gboolean r
 	return mono_image_open_a_lot (alc, fname, status, refonly, FALSE);
 }
 
+/**
+ * mono_image_open_a_lot_parameterized
+ * this API is not culture aware, so if we load a satellite assembly for one culture by name
+ * via this API, and then try to load it with another culture we will return the first one.
+ */
 static MonoImage *
 mono_image_open_a_lot_parameterized (MonoLoadedImages *li, MonoAssemblyLoadContext *alc, const char *fname, MonoImageOpenStatus *status, gboolean refonly, gboolean load_from_context, gboolean *problematic)
 {

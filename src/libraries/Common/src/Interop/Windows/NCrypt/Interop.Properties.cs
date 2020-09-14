@@ -1,9 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.InteropServices;
-using System.Security.Cryptography;
+using System;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
+using System.Security.Cryptography;
 
 using Microsoft.Win32.SafeHandles;
 
@@ -17,6 +19,7 @@ internal static partial class Interop
         [DllImport(Interop.Libraries.NCrypt, CharSet = CharSet.Unicode)]
         internal static extern unsafe ErrorCode NCryptSetProperty(SafeNCryptHandle hObject, string pszProperty, [In] void* pbInput, int cbInput, CngPropertyOptions dwFlags);
 
+        [SupportedOSPlatform("windows")]
         internal static ErrorCode NCryptGetByteProperty(SafeNCryptHandle hObject, string pszProperty, ref byte result, CngPropertyOptions options = CngPropertyOptions.None)
         {
             int cbResult;
@@ -53,6 +56,10 @@ internal static partial class Interop
             {
                 fixed (int* pResult = &result)
                 {
+#if NETSTANDARD || NETCOREAPP
+                    Debug.Assert(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
+#endif
+
                     errorCode = Interop.NCrypt.NCryptGetProperty(
                         hObject,
                         pszProperty,

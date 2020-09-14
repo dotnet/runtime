@@ -52,6 +52,6 @@ namespace System.Runtime.InteropServices
         /// <summary>
         /// Indicates whether the current application is running on the specified platform.
         /// </summary>
-        public static bool IsOSPlatform(OSPlatform osPlatform) => osPlatform.IsCurrent;
+        public static bool IsOSPlatform(OSPlatform osPlatform) => OperatingSystem.IsOSPlatform(osPlatform.Name);
     }
 }

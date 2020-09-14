@@ -152,7 +152,7 @@ namespace System.Xml.Xsl.Qil
 
         private class ObjectHashtable : Hashtable
         {
-            protected override bool KeyEquals(object item, object key)
+            protected override bool KeyEquals(object? item, object key)
             {
                 return item == key;
             }
@@ -182,7 +182,7 @@ namespace System.Xml.Xsl.Qil
             message += " ["+ n.NodeId + " (" + n.NodeType.ToString("G") + ")]";
 #endif
 
-            string s = n.Annotation as string;
+            string? s = n.Annotation as string;
             if (s != null)
             {
                 message = s + "\n" + message;

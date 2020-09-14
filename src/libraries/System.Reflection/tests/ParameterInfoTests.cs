@@ -173,6 +173,15 @@ namespace System.Reflection.Tests
             Assert.Equal(Missing.Value, parameterInfo.DefaultValue);
         }
 
+        [Fact]
+        public void DefaultValue_ForByRefLikeArg_ReturnsNull()
+        {
+            ParameterInfo parameterInfo = GetParameterInfo(typeof(ParameterInfoMetadata), nameof(ParameterInfoMetadata.MethodWithByRefLikeArgWithDefault), 0);
+            Assert.True(parameterInfo.HasDefaultValue);
+            Assert.Null(parameterInfo.DefaultValue);
+            Assert.Null(parameterInfo.RawDefaultValue);
+        }
+
         [Theory]
         [InlineData(typeof(ParameterInfoMetadata), "Method1", 1, false)]
         [InlineData(typeof(ParameterInfoMetadata), "MethodWithOutParameter", 1, false)]
@@ -354,6 +363,8 @@ namespace System.Reflection.Tests
             public void MethodWithDefaultDateTime(DateTime arg = default(DateTime)) { }
             public void MethodWithDefaultNullableDateTime(DateTime? arg = default(DateTime?)) { }
 
+            public void MethodWithByRefLikeArgWithDefault(MyByRefLikeStruct arg = default) { }
+
             public void MethodWithEnum(AttributeTargets arg = AttributeTargets.All) { }
             public void MethodWithNullableEnum(AttributeTargets? arg = AttributeTargets.All) { }
 
@@ -399,6 +410,11 @@ namespace System.Reflection.Tests
                 MemberImpl = pretendMember;
                 PositionImpl = pretendPosition;
             }
+        }
+
+        public ref struct MyByRefLikeStruct
+        {
+            public int MyInt;
         }
     }
 }

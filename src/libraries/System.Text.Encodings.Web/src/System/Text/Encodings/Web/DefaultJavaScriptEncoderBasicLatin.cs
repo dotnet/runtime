@@ -103,11 +103,19 @@ namespace System.Text.Encodings.Web
 #endif
             Debug.Assert(textLength > 0 && ptr < end);
 
+            // For performance on the Mono interpreter, avoid referencing the static table for every value.
+            ReadOnlySpan<byte> allowListLocal = AllowList;
+
             do
             {
                 Debug.Assert(text <= ptr && ptr < (text + textLength));
 
-                if (NeedsEscaping(*(char*)ptr))
+                char value = *(char*)ptr;
+
+                // NeedsEscaping() is lifted below for perf; verify semantics remain consistent.
+                Debug.Assert((value > LastAsciiCharacter || allowListLocal[value] == 0) == NeedsEscaping(value));
+
+                if (value > LastAsciiCharacter || allowListLocal[value] == 0)
                 {
                     goto Return;
                 }
@@ -276,11 +284,17 @@ namespace System.Text.Encodings.Web
 #endif
                 Debug.Assert(textLength > 0 && ptr < end);
 
+                // For performance on the Mono interpreter, avoid referencing the static table for every value.
+                ReadOnlySpan<byte> allowListLocal = AllowList;
+
                 do
                 {
                     Debug.Assert(pValue <= ptr && ptr < (pValue + utf8Text.Length));
 
-                    if (NeedsEscaping(*ptr))
+                    // NeedsEscaping() is lifted below for perf; verify semantics remain consistent.
+                    Debug.Assert((allowListLocal[*ptr] == 0) == NeedsEscaping(*ptr));
+
+                    if (allowListLocal[*ptr] == 0)
                     {
                         goto Return;
                     }

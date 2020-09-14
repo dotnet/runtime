@@ -157,7 +157,7 @@ internal static partial class Interop
 
         public static bool WinHttpSendRequest(
             SafeWinHttpHandle requestHandle,
-            StringBuilder headers,
+            IntPtr headers,
             uint headersLength,
             IntPtr optional,
             uint optionalLength,

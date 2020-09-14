@@ -7,9 +7,9 @@ set(NATIVE_SOURCES
     corinfoexception.cpp
 )
 
-add_library_clr(jitinterface
+add_library_clr(jitinterface_${ARCH_HOST_NAME}
     SHARED
     ${NATIVE_SOURCES}
 )
 
-install_clr(TARGETS jitinterface)
+install_clr(TARGETS jitinterface_${ARCH_HOST_NAME})
