@@ -1713,6 +1713,16 @@ var MonoSupportLib = {
 			return MONO.loaded_files;
 		},
 
+		mono_wasm_get_lazy_loaded_files: function() {
+			return MONO.lazy_loaded_files;
+		},
+
+		mono_wasm_add_lazy_load_files: function (assembly_data, pdb_data) {
+			console.log("Loading files...");
+			MONO.lazy_loaded_files = { assembly_data, pdb_data };
+			debugger;
+		},
+
 		mono_wasm_get_loaded_asset_table: function() {
 			return MONO.loaded_assets;
 		},
