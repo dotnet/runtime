@@ -34,6 +34,7 @@ using System.Collections.Specialized;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Runtime.Versioning;
 using System.Security.Authentication.ExtendedProtection;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
@@ -373,8 +374,10 @@ namespace System.Net
 
         public bool IsSecureConnection => _context.Connection.IsSecure;
 
+        [UnsupportedOSPlatform("browser")]
         public IPEndPoint? LocalEndPoint => _context.Connection.LocalEndPoint;
 
+        [UnsupportedOSPlatform("browser")]
         public IPEndPoint? RemoteEndPoint => _context.Connection.RemoteEndPoint;
 
         public Guid RequestTraceIdentifier { get; } = Guid.NewGuid();

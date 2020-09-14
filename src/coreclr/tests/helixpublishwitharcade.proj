@@ -169,7 +169,7 @@
   </Target>
 
   <Target Name="PrepareCorrelationPayloadDirectory">
-    <MSBuild Projects="src\xunitconsolerunner.depproj" Targets="Restore" />
+    <MSBuild Projects="$(RepoRoot)src\tests\Common\xunitconsolerunner.depproj" Targets="Restore" />
 
     <ItemGroup>
       <_XUnitConsoleRunnerFiles Include="$(NuGetPackageRoot)$(MicrosoftDotNetXUnitConsoleRunnerPackage)\$(MicrosoftDotNetXUnitConsoleRunnerVersion)\**\xunit.console.*" />
