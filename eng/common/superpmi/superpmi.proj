@@ -4,7 +4,7 @@
     <Python>py -3</Python>
     <PmiAssembliesDirectory>%HELIX_CORRELATION_PAYLOAD%\PmiAssembliesDirectory</PmiAssembliesDirectory>
     <SuperPMIDirectory>%HELIX_CORRELATION_PAYLOAD%\superpmi</SuperPMIDirectory>
-    <OutputMchPath>%HELIX_WORKITEM_UPLOAD_ROOT%\artifacts</OutputMchPath>
+    <OutputMchPath>%HELIX_WORKITEM_UPLOAD_ROOT%</OutputMchPath>
     <JitUtilsDirectory>%HELIX_CORRELATION_PAYLOAD%\jitutils\bin</JitUtilsDirectory>
 
     <!-- <CoreRun>%HELIX_CORRELATION_PAYLOAD%\PmiAssembliesDirectory\CoreRun.exe</CoreRun> -->
@@ -84,6 +84,7 @@
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory> <!-- TODO: Here too make payload folder different for workitem.Name -->
       <Command>$(WorkItemCommand) -pmi_assemblies $(PmiAssembliesDirectory)\%(HelixWorkItem.Name) -output_mch_path $(OutputMchPath)\%(HelixWorkItem.Name).$(AGENT_OS).$(Architecture).Checked.mch</Command>
       <Timeout>$(WorkItemTimeout)</Timeout>
+      <DownloadFilesFromResults>%(HelixWorkItem.Name).$(AGENT_OS).$(Architecture).Checked.mch</DownloadFilesFromResults>
     </HelixWorkItem>
   </ItemGroup>
 
