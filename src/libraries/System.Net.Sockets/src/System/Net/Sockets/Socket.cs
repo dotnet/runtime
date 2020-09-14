@@ -1110,18 +1110,14 @@ namespace System.Net.Sockets
                 ref socketAddress.InternalSize,
                 out acceptedSocketHandle);
 
+            if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.AfterAccept(errorCode);
+
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)
             {
-                if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.AcceptFailedAndStop(errorCode, null);
-
                 Debug.Assert(acceptedSocketHandle.IsInvalid);
                 UpdateAcceptSocketErrorForDisposed(ref errorCode);
                 UpdateStatusAfterSocketErrorAndThrowException(errorCode);
-            }
-            else
-            {
-                if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.AcceptStop();
             }
 
             Debug.Assert(!acceptedSocketHandle.IsInvalid);
@@ -2140,7 +2136,13 @@ namespace System.Net.Sockets
 
         internal IAsyncResult UnsafeBeginConnect(EndPoint remoteEP, AsyncCallback? callback, object? state, bool flowContext = false)
         {
-            if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.ConnectStart(remoteEP);
+            if (SocketsTelemetry.Log.IsEnabled())
+            {
+                SocketsTelemetry.Log.ConnectStart(remoteEP);
+
+                // Ignore flowContext when using Telemetry to avoid losing Activity tracking
+                flowContext = true;
+            }
 
             if (CanUseConnectEx(remoteEP))
             {
@@ -2363,7 +2365,15 @@ namespace System.Net.Sockets
         //    int - Return code from async Connect, 0 for success, SocketError.NotConnected otherwise
         public void EndConnect(IAsyncResult asyncResult)
         {
-            ThrowIfDisposed();
+            if (Disposed)
+            {
+                if (SocketsTelemetry.Log.IsEnabled() && asyncResult is not MultipleAddressConnectAsyncResult)
+                {
+                    SocketsTelemetry.Log.AfterConnect(SocketError.OperationAborted);
+                }
+
+                ThrowObjectDisposedException();
+            }
 
             // Validate input parameters.
             if (asyncResult == null)
@@ -2391,10 +2401,14 @@ namespace System.Net.Sockets
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"asyncResult:{asyncResult}");
 
             Exception? ex = castedAsyncResult.Result as Exception;
+
+            if (SocketsTelemetry.Log.IsEnabled() && castedAsyncResult is not MultipleAddressConnectAsyncResult)
+            {
+                SocketsTelemetry.Log.AfterConnect((SocketError)castedAsyncResult.ErrorCode, ex?.Message);
+            }
+
             if (ex != null || (SocketError)castedAsyncResult.ErrorCode != SocketError.Success)
             {
-                if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.ConnectFailedAndStop((SocketError)castedAsyncResult.ErrorCode, ex?.Message);
-
                 if (ex == null)
                 {
                     SocketError errorCode = (SocketError)castedAsyncResult.ErrorCode;
@@ -2408,8 +2422,6 @@ namespace System.Net.Sockets
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, ex);
                 ExceptionDispatchInfo.Throw(ex);
             }
-
-            if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.ConnectStop();
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Connected(this, LocalEndPoint, RemoteEndPoint);
         }
@@ -3540,13 +3552,11 @@ namespace System.Net.Sockets
             // Throw an appropriate SocketException if the native call fails synchronously.
             if (!CheckErrorAndUpdateStatus(errorCode))
             {
-                if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.AcceptFailedAndStop(errorCode, null);
+                if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.AfterAccept(errorCode);
 
                 UpdateAcceptSocketErrorForDisposed(ref errorCode);
                 throw new SocketException((int)errorCode);
             }
-
-            if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.AcceptStop();
 
             // Finish the flow capture, maybe complete here.
             asyncResult.FinishPostingAsyncOp(ref Caches.AcceptClosureCache);
@@ -3573,7 +3583,12 @@ namespace System.Net.Sockets
         }
         private Socket EndAcceptCommon(out byte[]? buffer, out int bytesTransferred, IAsyncResult asyncResult)
         {
-            ThrowIfDisposed();
+            if (Disposed)
+            {
+                if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.AfterAccept(SocketError.OperationAborted);
+
+                ThrowObjectDisposedException();
+            }
 
             // Validate input parameters.
             if (asyncResult == null)
@@ -3594,20 +3609,19 @@ namespace System.Net.Sockets
             bytesTransferred = (int)castedAsyncResult.BytesTransferred;
             buffer = castedAsyncResult.Buffer;
 
+            if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.BytesReceived(bytesTransferred);
+
             castedAsyncResult.EndCalled = true;
 
             // Throw an appropriate SocketException if the native call failed asynchronously.
             SocketError errorCode = (SocketError)castedAsyncResult.ErrorCode;
+
+            if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.AfterAccept(errorCode);
+
             if (errorCode != SocketError.Success)
             {
-                if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.AcceptFailedAndStop(errorCode, null);
-
                 UpdateAcceptSocketErrorForDisposed(ref errorCode);
                 UpdateStatusAfterSocketErrorAndThrowException(errorCode);
-            }
-            else
-            {
-                if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.AcceptStop();
             }
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Accepted(socket, socket.RemoteEndPoint, socket.LocalEndPoint);
@@ -4223,11 +4237,11 @@ namespace System.Net.Sockets
 
             SocketError errorCode = SocketPal.Connect(_handle, socketAddress.Buffer, socketAddress.Size);
 
+            if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.AfterConnect(errorCode);
+
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)
             {
-                if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.ConnectFailedAndStop(errorCode, null);
-
                 UpdateConnectSocketErrorForDisposed(ref errorCode);
                 // Update the internal state of this socket according to the error before throwing.
                 SocketException socketException = SocketExceptionFactory.CreateSocketException((int)errorCode, endPointSnapshot);
@@ -4235,8 +4249,6 @@ namespace System.Net.Sockets
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, socketException);
                 throw socketException;
             }
-
-            if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.ConnectStop();
 
             if (_rightEndPoint == null)
             {
