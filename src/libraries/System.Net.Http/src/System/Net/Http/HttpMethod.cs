@@ -25,7 +25,7 @@ namespace System.Net.Http
         private static readonly HttpMethod s_patchMethod = new HttpMethod("PATCH", -1);
         private static readonly HttpMethod s_connectMethod = new HttpMethod("CONNECT", http3StaticTableIndex: H3StaticTable.MethodConnect);
 
-        private static Dictionary<HttpMethod, HttpMethod> s_knownMethods;
+        private static Dictionary<HttpMethod, HttpMethod>? s_knownMethods;
 
         public static HttpMethod Get
         {
