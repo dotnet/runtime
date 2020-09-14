@@ -101,4 +101,10 @@
           SkipUnchangedFiles="true" />
   </Target>
 
+  <Target Name="RunDebuggerTests"
+          AfterTargets="Test"
+          Condition="'$(TargetOS)' == 'Browser'">
+    <MSBuild Projects="$(MSBuildThisFileDirectory)/debugger/DebuggerTestSuite/DebuggerTestSuite.csproj" Targets="Test" />
+  </Target>
+
 </Project>
