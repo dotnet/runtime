@@ -5,7 +5,7 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <NoWarn>8002,NU1701</NoWarn>
-    <Platforms>x64;x86</Platforms>
+    <Platforms>x64;x86;arm64;arm</Platforms>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <AppendTargetFrameworkToOutputPath Condition="'$(BuildingInsideVisualStudio)' == 'true'">true</AppendTargetFrameworkToOutputPath>
@@ -42,11 +42,14 @@
 
   <PropertyGroup>
     <CrossHostArch></CrossHostArch>
-    <CrossHostArch Condition="'$(TargetArchitecture)' == 'arm64'">x64</CrossHostArch>
+    <CrossHostArch Condition="'$(TargetArchitecture)' == 'arm64' and '$(BuildArchitecture)' == 'x64'">x64</CrossHostArch>
+    <CrossHostArch Condition="'$(TargetArchitecture)' == 'arm' and '$(BuildArchitecture)' == 'x64'">x64</CrossHostArch>
+    <CrossHostArch Condition="'$(TargetArchitecture)' == 'x86' and '$(BuildArchitecture)' == 'x64'">x64</CrossHostArch>
 
     <TargetOSComponent>unix</TargetOSComponent>
     <TargetOSComponent Condition="'$(TargetOS)' == 'Windows_NT'">win</TargetOSComponent>
-    <TargetSpec>$(TargetOSComponent)-$(TargetArchitecture)</TargetSpec>
+    <TargetSpec>$(TargetOSComponent)_$(TargetArchitecture)_$(TargetArchitecture)</TargetSpec>
+    <CrossTargetSpec>$(TargetOSComponent)_$(TargetArchitecture)_$(CrossHostArch)</CrossTargetSpec>
 
     <LibraryNamePrefix>lib</LibraryNamePrefix>
     <LibraryNamePrefix Condition="$([MSBuild]::IsOsPlatform('WINDOWS'))"></LibraryNamePrefix>
@@ -54,7 +57,7 @@
     <LibraryNameExtension Condition="$([MSBuild]::IsOsPlatform('LINUX'))">.so</LibraryNameExtension>
     <LibraryNameExtension Condition="$([MSBuild]::IsOsPlatform('OSX'))">.dylib</LibraryNameExtension>
 
-    <JitInterfaceLibraryName>$(LibraryNamePrefix)jitinterface$(LibraryNameExtension)</JitInterfaceLibraryName>
+    <JitInterfaceLibraryName>$(LibraryNamePrefix)jitinterface_$(TargetArchitecture)$(LibraryNameExtension)</JitInterfaceLibraryName>
   </PropertyGroup>
 
   <ItemGroup>
@@ -64,10 +67,20 @@
       Link="%(FileName)%(Extension)"
      />
 
+    <Content Include="$(BinDir)\$(NativeArchFolder)$(LibraryNamePrefix)clrjit_*_$(TargetArchitecture)$(LibraryNameExtension)"
+      CopyToOutputDirectory="PreserveNewest"
+      CopyToPublishDirectory="PreserveNewest"
+      Link="%(FileName)%(Extension)"
+     />
+  </ItemGroup>
+
+  <!-- On windows we can re-use the clrjit.dll produced in the build for aot compilation. On Linux
+       this works at runtime, but makes it difficult to debug the jit.-->
+  <ItemGroup Condition="'$(TargetOS)' == 'Windows_NT'">
     <Content Include="$(BinDir)\$(NativeArchFolder)$(LibraryNamePrefix)clrjit$(LibraryNameExtension)"
       CopyToOutputDirectory="PreserveNewest"
       CopyToPublishDirectory="PreserveNewest"
-      Link="$(LibraryNamePrefix)clrjit-$(TargetSpec)$(LibraryNameExtension)"
+      Link="$(LibraryNamePrefix)clrjit_$(TargetSpec)$(LibraryNameExtension)"
      />
   </ItemGroup>
 
@@ -79,8 +92,8 @@
 
     <ItemGroup>
       <PackageFile Include="$(BinDir)\crossgen2\*"
-        Exclude="$(BinDir)\crossgen2\$(JitInterfaceLibraryName);$(BinDir)\crossgen2\$(LibraryNamePrefix)clrjit-*$(LibraryNameExtension)" />
-      <PackageFile Include="$(BinDir)\$(CrossHostArch)\$(JitInterfaceLibraryName)" />
+        Exclude="$(BinDir)\crossgen2\$(JitInterfaceLibraryName);$(BinDir)\crossgen2\$(LibraryNamePrefix)clrjit_*$(LibraryNameExtension)" />
+      <PackageFile Include="$(BinDir)\$(CrossHostArch)\$(LibraryNamePrefix)jitinterface_$(CrossHostArch)$(LibraryNameExtension)" />
     </ItemGroup>
 
     <MakeDir Directories="$(CrossPackageFolder)" />
@@ -91,8 +104,15 @@
       />
 
     <Copy
-      SourceFiles="$(BinDir)\$(CrossHostArch)\$(LibraryNamePrefix)clrjit$(LibraryNameExtension)"
-      DestinationFiles="$(CrossPackageFolder)\$(LibraryNamePrefix)clrjit-$(TargetSpec)$(LibraryNameExtension)"
+      Condition="'$(TargetOS)' != 'Windows_NT'"
+      SourceFiles="$(BinDir)$(CrossHostArch)\$(LibraryNamePrefix)clrjit_$(CrossTargetSpec)$(LibraryNameExtension)"
+      DestinationFolder="$(CrossPackageFolder)"
+      UseHardLinksIfPossible="true"
+      />
+    <Copy
+      Condition="'$(TargetOS)' == 'Windows_NT'"
+      SourceFiles="$(BinDir)$(CrossHostArch)\$(LibraryNamePrefix)clrjit$(LibraryNameExtension)"
+      DestinationFiles="$(CrossPackageFolder)\$(LibraryNamePrefix)clrjit_$(CrossTargetSpec)$(LibraryNameExtension)"
       UseHardLinksIfPossible="true"
       />
 

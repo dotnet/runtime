@@ -381,20 +381,6 @@ namespace System.ComponentModel
         public override bool Equals(object obj) { throw null; }
         public override int GetHashCode() { throw null; }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Interface, AllowMultiple=true, Inherited=true)]
-    public sealed partial class DesignerAttribute : System.Attribute
-    {
-        public DesignerAttribute(string designerTypeName) { }
-        public DesignerAttribute(string designerTypeName, string designerBaseTypeName) { }
-        public DesignerAttribute(string designerTypeName, System.Type designerBaseType) { }
-        public DesignerAttribute(System.Type designerType) { }
-        public DesignerAttribute(System.Type designerType, System.Type designerBaseType) { }
-        public string DesignerBaseTypeName { get { throw null; } }
-        public string DesignerTypeName { get { throw null; } }
-        public override object TypeId { get { throw null; } }
-        public override bool Equals(object obj) { throw null; }
-        public override int GetHashCode() { throw null; }
-    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Interface)]
     public sealed partial class DesignTimeVisibleAttribute : System.Attribute
     {
@@ -411,19 +397,6 @@ namespace System.ComponentModel
     public partial class DoubleConverter : System.ComponentModel.BaseNumberConverter
     {
         public DoubleConverter() { }
-    }
-    [System.AttributeUsageAttribute(System.AttributeTargets.All, AllowMultiple=true, Inherited=true)]
-    public sealed partial class EditorAttribute : System.Attribute
-    {
-        public EditorAttribute() { }
-        public EditorAttribute(string typeName, string baseTypeName) { }
-        public EditorAttribute(string typeName, System.Type baseType) { }
-        public EditorAttribute(System.Type type, System.Type baseType) { }
-        public string EditorBaseTypeName { get { throw null; } }
-        public string EditorTypeName { get { throw null; } }
-        public override object TypeId { get { throw null; } }
-        public override bool Equals(object obj) { throw null; }
-        public override int GetHashCode() { throw null; }
     }
     public partial class EnumConverter : System.ComponentModel.TypeConverter
     {
@@ -600,7 +573,9 @@ namespace System.ComponentModel
         string Name { get; }
         bool Show(string language, string value, ref string newValue);
     }
+    [System.ComponentModel.EditorAttribute("System.Windows.Forms.Design.DataSourceListEditor, System.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     [System.ComponentModel.MergablePropertyAttribute(false)]
+    [System.ComponentModel.TypeConverterAttribute("System.Windows.Forms.Design.DataSourceConverter, System.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public partial interface IListSource
     {
         bool ContainsListCollection { get; }
@@ -713,7 +688,9 @@ namespace System.ComponentModel
         internal LicenseManager() { }
         public static System.ComponentModel.LicenseContext CurrentContext { get { throw null; } set { } }
         public static System.ComponentModel.LicenseUsageMode UsageMode { get { throw null; } }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static object CreateWithContext(System.Type type, System.ComponentModel.LicenseContext creationContext) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static object CreateWithContext(System.Type type, System.ComponentModel.LicenseContext creationContext, object[] args) { throw null; }
         public static bool IsLicensed(System.Type type) { throw null; }
         public static bool IsValid(System.Type type) { throw null; }
@@ -833,6 +810,7 @@ namespace System.ComponentModel
         public override bool Equals(object obj) { throw null; }
         public override int GetHashCode() { throw null; }
     }
+    [System.ComponentModel.DesignerAttribute("System.Windows.Forms.Design.ComponentDocumentDesigner, System.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", typeof(System.ComponentModel.Design.IRootDesigner))]
     [System.ComponentModel.DesignerCategoryAttribute("Component")]
     [System.ComponentModel.TypeConverterAttribute(typeof(System.ComponentModel.ComponentConverter))]
     public partial class MarshalByValueComponent : System.ComponentModel.IComponent, System.IDisposable, System.IServiceProvider
@@ -893,6 +871,7 @@ namespace System.ComponentModel
         public bool Add(string input, out int testPosition, out System.ComponentModel.MaskedTextResultHint resultHint) { throw null; }
         public void Clear() { }
         public void Clear(out System.ComponentModel.MaskedTextResultHint resultHint) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public object Clone() { throw null; }
         public int FindAssignedEditPositionFrom(int position, bool direction) { throw null; }
         public int FindAssignedEditPositionInRange(int startPosition, int endPosition, bool direction) { throw null; }
@@ -1330,6 +1309,7 @@ namespace System.ComponentModel
     {
         protected TypeDescriptionProvider() { }
         protected TypeDescriptionProvider(System.ComponentModel.TypeDescriptionProvider parent) { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public virtual object CreateInstance(System.IServiceProvider provider, System.Type objectType, System.Type[] argTypes, object[] args) { throw null; }
         public virtual System.Collections.IDictionary GetCache(object instance) { throw null; }
         public virtual System.ComponentModel.ICustomTypeDescriptor GetExtendedTypeDescriptor(object instance) { throw null; }
@@ -1349,9 +1329,9 @@ namespace System.ComponentModel
         internal TypeDescriptor() { }
         [System.ObsoleteAttribute("This property has been deprecated. Use a type description provider to supply type information for COM types instead. https://go.microsoft.com/fwlink/?linkid=14202")]
         public static System.ComponentModel.IComNativeDescriptorHandler ComNativeDescriptorHandler { get { throw null; } set { } }
-        public static System.Type ComObjectType { get { throw null; } }
+        public static System.Type ComObjectType { [return: System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] get { throw null; } }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
-        public static System.Type InterfaceType { get { throw null; } }
+        public static System.Type InterfaceType { [return: System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] get { throw null; } }
         public static event System.ComponentModel.RefreshEventHandler Refreshed { add { } remove { } }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public static System.ComponentModel.TypeDescriptionProvider AddAttributes(object instance, params System.Attribute[] attributes) { throw null; }
@@ -1372,6 +1352,7 @@ namespace System.ComponentModel
         public static System.ComponentModel.Design.IDesigner CreateDesigner(System.ComponentModel.IComponent component, System.Type designerBaseType) { throw null; }
         public static System.ComponentModel.EventDescriptor CreateEvent(System.Type componentType, System.ComponentModel.EventDescriptor oldEventDescriptor, params System.Attribute[] attributes) { throw null; }
         public static System.ComponentModel.EventDescriptor CreateEvent(System.Type componentType, string name, System.Type type, params System.Attribute[] attributes) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static object CreateInstance(System.IServiceProvider provider, System.Type objectType, System.Type[] argTypes, object[] args) { throw null; }
         public static System.ComponentModel.PropertyDescriptor CreateProperty(System.Type componentType, System.ComponentModel.PropertyDescriptor oldPropertyDescriptor, params System.Attribute[] attributes) { throw null; }
         public static System.ComponentModel.PropertyDescriptor CreateProperty(System.Type componentType, string name, System.Type type, params System.Attribute[] attributes) { throw null; }
@@ -1576,6 +1557,7 @@ namespace System.ComponentModel.Design
         protected virtual bool ShowDialog(System.ComponentModel.Design.DesignerOptionService.DesignerOptionCollection options, object optionObject) { throw null; }
         object System.ComponentModel.Design.IDesignerOptionService.GetOptionValue(string pageName, string valueName) { throw null; }
         void System.ComponentModel.Design.IDesignerOptionService.SetOptionValue(string pageName, string valueName, object value) { }
+        [System.ComponentModel.EditorAttribute("", "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
         public sealed partial class DesignerOptionCollection : System.Collections.ICollection, System.Collections.IEnumerable, System.Collections.IList
         {
             internal DesignerOptionCollection() { }
@@ -2065,16 +2047,6 @@ namespace System.ComponentModel.Design.Serialization
         public abstract void Dispose();
         public virtual void Flush() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Interface, AllowMultiple=true, Inherited=true)]
-    public sealed partial class DesignerSerializerAttribute : System.Attribute
-    {
-        public DesignerSerializerAttribute(string serializerTypeName, string baseSerializerTypeName) { }
-        public DesignerSerializerAttribute(string serializerTypeName, System.Type baseSerializerType) { }
-        public DesignerSerializerAttribute(System.Type serializerType, System.Type baseSerializerType) { }
-        public string SerializerBaseTypeName { get { throw null; } }
-        public string SerializerTypeName { get { throw null; } }
-        public override object TypeId { get { throw null; } }
-    }
     public partial interface IDesignerLoaderHost : System.ComponentModel.Design.IDesignerHost, System.ComponentModel.Design.IServiceContainer, System.IServiceProvider
     {
         void EndLoad(string baseClassName, bool successful, System.Collections.ICollection errorCollection);
@@ -2251,6 +2223,7 @@ namespace System.Security.Authentication.ExtendedProtection
     {
         public ExtendedProtectionPolicyTypeConverter() { }
         public override bool CanConvertTo(System.ComponentModel.ITypeDescriptorContext context, System.Type destinationType) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public override object ConvertTo(System.ComponentModel.ITypeDescriptorContext context, System.Globalization.CultureInfo culture, object value, System.Type destinationType) { throw null; }
     }
 }

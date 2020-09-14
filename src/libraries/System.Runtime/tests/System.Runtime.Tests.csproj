@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <NoWarn>$(NoWarn),1718</NoWarn>
+    <NoWarn>$(NoWarn),1718,SYSLIB0013</NoWarn>
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
@@ -196,6 +196,7 @@
     <Compile Include="System\Reflection\CustomAttribute_Named_Typed_ArgumentTests.cs" />
     <Compile Include="System\Reflection\DefaultMemberAttributeTests.cs" />
     <Compile Include="System\Reflection\InvokeRefReturn.cs" />
+    <Compile Include="System\Reflection\InvokeWithRefLikeArgs.cs" />
     <Compile Include="System\Reflection\IsCollectibleTests.cs" />
     <Compile Include="System\Reflection\MethodBaseTests.cs" />
     <Compile Include="System\Reflection\MethodBodyTests.cs" />
@@ -270,13 +271,14 @@
              Link="Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="Moq" Version="$(MoqVersion)" />
     <ProjectReference Include="TestLoadAssembly\TestLoadAssembly.csproj" />
     <ProjectReference Include="TestCollectibleAssembly\TestCollectibleAssembly.csproj" />
     <ProjectReference Include="TestModule\System.Reflection.TestModule.ilproj" />
     <ProjectReference Include="TestStructs\System.TestStructs.ilproj" />
     <ProjectReference Include="$(CommonTestPath)TestUtilities.Unicode\TestUtilities.Unicode.csproj" />
-  </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="Moq" Version="$(MoqVersion)" />
+    <!-- Used during reflection in tests. -->
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Permissions\src\System.Security.Permissions.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Threading.AccessControl\src\System.Threading.AccessControl.csproj" />
   </ItemGroup>
 </Project>

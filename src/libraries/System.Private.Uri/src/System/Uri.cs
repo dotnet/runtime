@@ -504,6 +504,7 @@ namespace System
             _flags = Flags.Zero;
             _info = null!;
             _syntax = null!;
+            _originalUnicodeString = null!;
             // If not resolved, we reparse modified Uri string and populate Uri internal data.
             CreateThis(relativeUri, dontEscape, UriKind.Absolute);
         }
@@ -550,6 +551,7 @@ namespace System
             _flags = Flags.Zero;
             _info = null!;
             _syntax = null!;
+            _originalUnicodeString = null!;
             CreateThis(newUriString, dontEscape, UriKind.Absolute);
             DebugSetLeftCtor();
         }
@@ -1497,10 +1499,10 @@ namespace System
         // Throws:
         //  Nothing
         //
-        public static bool IsHexDigit(char character) =>
-            (uint)(character - '0') <= '9' - '0' ||
-            (uint)(character - 'A') <= 'F' - 'A' ||
-            (uint)(character - 'a') <= 'f' - 'a';
+        public static bool IsHexDigit(char character)
+        {
+            return HexConverter.IsHexChar(character);
+        }
 
         //
         // Returns:
@@ -1509,11 +1511,16 @@ namespace System
         // Throws:
         //  ArgumentException
         //
-        public static int FromHex(char digit) =>
-            (uint)(digit - '0') <= '9' - '0' ? digit - '0' :
-            (uint)(digit - 'A') <= 'F' - 'A' ? digit - 'A' + 10 :
-            (uint)(digit - 'a') <= 'f' - 'a' ? digit - 'a' + 10 :
-            throw new ArgumentException(null, nameof(digit));
+        public static int FromHex(char digit)
+        {
+            int result = HexConverter.FromChar(digit);
+            if (result == 0xFF)
+            {
+                throw new ArgumentException(null, nameof(digit));
+            }
+
+            return result;
+        }
 
         public override int GetHashCode()
         {
@@ -2260,7 +2267,7 @@ namespace System
                                 }
                             }
                         }
-                        if (notEmpty && info.Offset.PortValue != port)
+                        if (notEmpty && _syntax.DefaultPort != port)
                         {
                             info.Offset.PortValue = (ushort)port;
                             cF |= Flags.NotDefaultPort;
@@ -5183,7 +5190,7 @@ namespace System
             return new string(dest, 0, count);
         }
 
-        [Obsolete("The method has been deprecated. Please use GetComponents() or static EscapeUriString() to escape a Uri component or a string. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("The method has been deprecated. Please use GetComponents() or static EscapeDataString() to escape a Uri component or a string. https://go.microsoft.com/fwlink/?linkid=14202")]
         protected static string EscapeString(string? str) =>
             str is null ? string.Empty :
             UriHelper.EscapeString(str, checkExistingEscaped: true, UriHelper.UnreservedReservedTable, '?', '#');

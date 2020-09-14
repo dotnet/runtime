@@ -1673,7 +1673,7 @@ void CodeGen::psiEndProlog()
  We still report all the arguments at the very start of the method so that
  the user can see the arguments at the very start of the method (offset=0).
 
- Disabling this decreased the debug maps in mscorlib by 10% (01/2003)
+ Disabling this decreased the debug maps in CoreLib by 10% (01/2003)
  */
 
 #if 0

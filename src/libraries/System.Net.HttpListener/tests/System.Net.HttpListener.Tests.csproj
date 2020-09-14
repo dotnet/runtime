@@ -5,7 +5,6 @@
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)-OSX</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="AssemblyInfo.cs" />
     <Compile Include="GetContextHelper.cs" />
     <Compile Include="HttpListenerFactory.cs" />
     <Compile Include="HttpListenerAuthenticationTests.cs" />
@@ -26,8 +25,5 @@
     <Compile Include="XUnitAssemblyAttributes.cs" />
     <Compile Include="$(CommonTestPath)System\Threading\Tasks\TaskTimeoutExtensions.cs"
              Link="Common\System\Threading\Tasks\TaskTimeoutExtensions.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetsOSX)'=='true'">
-    <TestCommandLines Include="ulimit -n 7000" />
   </ItemGroup>
 </Project>

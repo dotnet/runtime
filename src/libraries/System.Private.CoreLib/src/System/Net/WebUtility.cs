@@ -510,10 +510,10 @@ namespace System.Net
                 }
                 else if (ch == '%' && pos < count - 2)
                 {
-                    int h1 = HexToInt(value[pos + 1]);
-                    int h2 = HexToInt(value[pos + 2]);
+                    int h1 = HexConverter.FromChar(value[pos + 1]);
+                    int h2 = HexConverter.FromChar(value[pos + 2]);
 
-                    if (h1 >= 0 && h2 >= 0)
+                    if ((h1 | h2) != 0xFF)
                     {     // valid 2 hex chars
                         byte b = (byte)((h1 << 4) | h2);
                         pos += 2;
@@ -568,10 +568,10 @@ namespace System.Net
                 }
                 else if (b == '%' && i < count - 2)
                 {
-                    int h1 = HexToInt((char)bytes[pos + 1]);
-                    int h2 = HexToInt((char)bytes[pos + 2]);
+                    int h1 = HexConverter.FromChar(bytes[pos + 1]);
+                    int h2 = HexConverter.FromChar(bytes[pos + 2]);
 
-                    if (h1 >= 0 && h2 >= 0)
+                    if ((h1 | h2) != 0xFF)
                     {     // valid 2 hex chars
                         b = (byte)((h1 << 4) | h2);
                         i += 2;
@@ -647,14 +647,6 @@ namespace System.Net
 
             // below code is from Char.ConvertToUtf32, but without the checks (since we just performed them)
             return (((leadingSurrogate - HIGH_SURROGATE_START) * 0x400) + (trailingSurrogate - LOW_SURROGATE_START) + UNICODE_PLANE01_START);
-        }
-
-        private static int HexToInt(char h)
-        {
-            return (h >= '0' && h <= '9') ? h - '0' :
-            (h >= 'a' && h <= 'f') ? h - 'a' + 10 :
-            (h >= 'A' && h <= 'F') ? h - 'A' + 10 :
-            -1;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

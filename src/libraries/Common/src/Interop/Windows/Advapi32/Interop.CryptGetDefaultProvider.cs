@@ -20,7 +20,9 @@ internal partial class Interop
             int dwProvType,
             IntPtr pdwReserved,
             GetDefaultProviderFlags dwFlags,
-            StringBuilder? pszProvName,
+#pragma warning disable CA1838 // not on a hot path
+            [Out] StringBuilder? pszProvName,
+#pragma warning restore CA1838
             ref int pcbProvName);
     }
 }

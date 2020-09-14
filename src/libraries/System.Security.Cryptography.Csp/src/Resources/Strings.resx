@@ -215,8 +215,8 @@
   <data name="CspParameter_invalid" xml:space="preserve">
     <value>CSPParameters cannot be null</value>
   </data>
-  <data name="Cryptography_PlatformNotSupported" xml:space="preserve">
-    <value>System.Security.Cryptography is not supported on this platform.</value>
+  <data name="SystemSecurityCryptographyCsp_PlatformNotSupported" xml:space="preserve">
+    <value>System.Security.Cryptography.Csp is not supported on this platform.</value>
   </data>
   <data name="Argument_DestinationTooShort" xml:space="preserve">
     <value>Destination is too short.</value>

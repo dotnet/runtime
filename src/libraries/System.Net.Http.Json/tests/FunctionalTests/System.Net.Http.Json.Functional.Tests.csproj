@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);net48</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="HttpClientJsonExtensionsTests.cs" />
@@ -28,5 +28,9 @@
              Link="Common\System\Net\Http\GenericLoopbackServer.cs" />
     <Compile Include="$(CommonTestPath)System\Threading\Tasks\TaskTimeoutExtensions.cs"
              Link="Common\System\Threading\Tasks\TaskTimeoutExtensions.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'net48'">
+    <Reference Include="System.Net.Http" />
+    <ProjectReference Include="..\..\src\System.Net.Http.Json.csproj" />
   </ItemGroup>
 </Project>

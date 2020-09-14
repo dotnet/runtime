@@ -144,7 +144,7 @@ public:
             // to encode zero-valued fields with zero bits. Is this is deemed an important optimization in the
             // future we could always given up on a simple linear mapping of the size field and use a lookup
             // table to map values encoded into the real sizes. Experiments with EEClass packed fields over
-            // mscorlib show that this currently doesn't yield us much benefit, primarily due to the DWORD
+            // CoreLib show that this currently doesn't yield us much benefit, primarily due to the DWORD
             // round-up size semantic, which implies we'd need a lot more optimization than this to reduce the
             // average structure size below the next DWORD threshhold.
             BitVectorSet(dwOffset, kMaxLengthBits, dwFieldLength - 1);

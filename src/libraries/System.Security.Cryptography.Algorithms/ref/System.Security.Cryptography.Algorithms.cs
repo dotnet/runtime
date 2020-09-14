@@ -94,7 +94,9 @@ namespace System.Security.Cryptography
         public static bool AllowOnlyFipsAlgorithms { get { throw null; } }
         public static void AddAlgorithm(System.Type algorithm, params string[] names) { }
         public static void AddOID(string oid, params string[] names) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The default algorithm implementations might be removed, use strong type references like 'RSA.Create()' instead.")]
         public static object? CreateFromName(string name) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The default algorithm implementations might be removed, use strong type references like 'RSA.Create()' instead.")]
         public static object? CreateFromName(string name, params object?[]? args) { throw null; }
         public static byte[] EncodeOID(string str) { throw null; }
         public static string? MapNameToOID(string name) { throw null; }
@@ -306,8 +308,10 @@ namespace System.Security.Cryptography
         protected virtual void Dispose(bool disposing) { }
         public virtual System.Security.Cryptography.ECParameters ExportExplicitParameters() { throw null; }
         public virtual System.Security.Cryptography.ECParameters ExportParameters() { throw null; }
+        public virtual byte[] ExportSubjectPublicKeyInfo() { throw null; }
         public virtual byte[] ToByteArray() { throw null; }
         public virtual string ToXmlString() { throw null; }
+        public virtual bool TryExportSubjectPublicKeyInfo(System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
     public abstract partial class ECDsa : System.Security.Cryptography.AsymmetricAlgorithm
     {

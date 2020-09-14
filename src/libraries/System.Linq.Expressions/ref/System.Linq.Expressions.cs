@@ -1144,6 +1144,7 @@ namespace System.Runtime.CompilerServices
     public abstract partial class DebugInfoGenerator
     {
         protected DebugInfoGenerator() { }
+        [System.ObsoleteAttribute("The CreatePdbGenerator API is not supported and throws PlatformNotSupportedException.", DiagnosticId = "SYSLIB0008", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static System.Runtime.CompilerServices.DebugInfoGenerator CreatePdbGenerator() { throw null; }
         public abstract void MarkSequencePoint(System.Linq.Expressions.LambdaExpression method, int ilOffset, System.Linq.Expressions.DebugInfoExpression sequencePoint);
     }

@@ -30,10 +30,9 @@ namespace System.Diagnostics.Tracing
             EventDataAttribute? eventAttrib,
             List<Type> recursionCheck)
         {
-            IEnumerable<PropertyInfo> propertyInfos = Statics.GetProperties(dataType);
             var propertyList = new List<PropertyAnalysis>();
 
-            foreach (PropertyInfo propertyInfo in propertyInfos)
+            foreach (PropertyInfo propertyInfo in dataType.GetProperties())
             {
                 if (Statics.HasCustomAttribute(propertyInfo, typeof(EventIgnoreAttribute)))
                 {
@@ -46,7 +45,7 @@ namespace System.Diagnostics.Tracing
                     continue;
                 }
 
-                MethodInfo? getterInfo = Statics.GetGetMethod(propertyInfo);
+                MethodInfo? getterInfo = propertyInfo.GetGetMethod();
                 if (getterInfo == null)
                 {
                     continue;

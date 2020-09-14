@@ -23,20 +23,12 @@ FCIMPL2(void*, TailCallHelp::AllocTailCallArgBuffer, INT32 size, void* gcDesc)
 
     _ASSERTE(size >= 0);
 
-    void* result = GetThread()->GetTailCallTls()->AllocArgBuffer(static_cast<size_t>(size), gcDesc);
+    void* result = GetThread()->GetTailCallTls()->AllocArgBuffer(size, gcDesc);
     
     if (result == NULL)
         FCThrow(kOutOfMemoryException);
 
     return result;
-}
-FCIMPLEND
-
-FCIMPL0(void, TailCallHelp::FreeTailCallArgBuffer)
-{
-    FCALL_CONTRACT;
-    
-    GetThread()->GetTailCallTls()->FreeArgBuffer();
 }
 FCIMPLEND
 
@@ -67,12 +59,14 @@ struct ArgBufferValue
 struct ArgBufferLayout
 {
     bool HasTargetAddress;
+    bool HasInstArg;
     unsigned int TargetAddressOffset;
     InlineSArray<ArgBufferValue, 8> Values;
     unsigned int Size;
 
     ArgBufferLayout()
         : HasTargetAddress(false)
+        , HasInstArg(false)
         , TargetAddressOffset(0)
         , Size(0)
     {
@@ -119,7 +113,7 @@ MethodDesc* TailCallHelp::GetOrLoadTailCallDispatcherMD()
     CONTRACTL_END;
 
     if (s_tailCallDispatcherMD == NULL)
-        s_tailCallDispatcherMD = MscorlibBinder::GetMethod(METHOD__RUNTIME_HELPERS__DISPATCH_TAILCALLS);
+        s_tailCallDispatcherMD = CoreLibBinder::GetMethod(METHOD__RUNTIME_HELPERS__DISPATCH_TAILCALLS);
 
     return s_tailCallDispatcherMD;
 }
@@ -133,7 +127,7 @@ MethodDesc* TailCallHelp::GetTailCallDispatcherMD()
 
 void TailCallHelp::CreateTailCallHelperStubs(
     MethodDesc* pCallerMD, MethodDesc* pCalleeMD,
-    MetaSig& callSiteSig, bool virt, bool thisArgByRef,
+    MetaSig& callSiteSig, bool virt, bool thisArgByRef, bool hasInstArg,
     MethodDesc** storeArgsStub, bool* storeArgsNeedsTarget,
     MethodDesc** callTargetStub)
 {
@@ -154,7 +148,7 @@ void TailCallHelp::CreateTailCallHelperStubs(
     TypeHandle retTyHnd = NormalizeSigType(callSiteSig.GetRetTypeHandleThrowing());
     TailCallInfo info(pCallerMD, pCalleeMD, pLoaderAllocator, &callSiteSig, virt, retTyHnd);
 
-    LayOutArgBuffer(callSiteSig, pCalleeMD, *storeArgsNeedsTarget, thisArgByRef, &info.ArgBufLayout);
+    LayOutArgBuffer(callSiteSig, pCalleeMD, *storeArgsNeedsTarget, thisArgByRef, hasInstArg, &info.ArgBufLayout);
     info.HasGCDescriptor = GenerateGCDescriptor(pCalleeMD, info.ArgBufLayout, &info.GCRefMapBuilder);
 
     *storeArgsStub = CreateStoreArgsStub(info);
@@ -163,9 +157,9 @@ void TailCallHelp::CreateTailCallHelperStubs(
 
 void TailCallHelp::LayOutArgBuffer(
     MetaSig& callSiteSig, MethodDesc* calleeMD,
-    bool storeTarget, bool thisArgByRef, ArgBufferLayout* layout)
+    bool storeTarget, bool thisArgByRef, bool hasInstArg, ArgBufferLayout* layout)
 {
-    unsigned int offs = 0;
+    unsigned int offs = offsetof(TailCallArgBuffer, Args);
 
     auto addValue = [&](TypeHandle th)
     {
@@ -183,7 +177,7 @@ void TailCallHelp::LayOutArgBuffer(
         bool thisParamByRef = (calleeMD != NULL) ? calleeMD->GetMethodTable()->IsValueType() : thisArgByRef;
         if (thisParamByRef)
         {
-            thisHnd = TypeHandle(MscorlibBinder::GetElementType(ELEMENT_TYPE_U1))
+            thisHnd = TypeHandle(CoreLibBinder::GetElementType(ELEMENT_TYPE_U1))
                       .MakeByRef();
         }
         else
@@ -194,6 +188,15 @@ void TailCallHelp::LayOutArgBuffer(
         addValue(thisHnd);
     }
 
+    layout->HasInstArg = hasInstArg;
+
+#ifndef TARGET_X86
+    if (hasInstArg)
+    {
+        addValue(TypeHandle(CoreLibBinder::GetElementType(ELEMENT_TYPE_I)));
+    }
+#endif
+
     callSiteSig.Reset();
     CorElementType ty;
     while ((ty = callSiteSig.NextArg()) != ELEMENT_TYPE_END)
@@ -202,6 +205,13 @@ void TailCallHelp::LayOutArgBuffer(
         tyHnd = NormalizeSigType(tyHnd);
         addValue(tyHnd);
     }
+
+#ifdef TARGET_X86
+    if (hasInstArg)
+    {
+        addValue(TypeHandle(CoreLibBinder::GetElementType(ELEMENT_TYPE_I)));
+    }
+#endif
 
     if (storeTarget)
     {
@@ -226,16 +236,16 @@ TypeHandle TailCallHelp::NormalizeSigType(TypeHandle tyHnd)
     }
     if (CorTypeInfo::IsObjRef(ety))
     {
-        return TypeHandle(MscorlibBinder::GetElementType(ELEMENT_TYPE_OBJECT));
+        return TypeHandle(CoreLibBinder::GetElementType(ELEMENT_TYPE_OBJECT));
     }
     if (tyHnd.IsPointer() || tyHnd.IsFnPtrType())
     {
-        return TypeHandle(MscorlibBinder::GetElementType(ELEMENT_TYPE_I));
+        return TypeHandle(CoreLibBinder::GetElementType(ELEMENT_TYPE_I));
     }
 
     if (tyHnd.IsByRef())
     {
-        return TypeHandle(MscorlibBinder::GetElementType(ELEMENT_TYPE_U1))
+        return TypeHandle(CoreLibBinder::GetElementType(ELEMENT_TYPE_U1))
                .MakeByRef();
     }
 
@@ -247,35 +257,49 @@ TypeHandle TailCallHelp::NormalizeSigType(TypeHandle tyHnd)
 bool TailCallHelp::GenerateGCDescriptor(
     MethodDesc* pTargetMD, const ArgBufferLayout& layout, GCRefMapBuilder* builder)
 {
-    auto writeGCType = [&](unsigned int offset, CorInfoGCType type)
+    auto writeGCType = [&](unsigned int argPos, CorInfoGCType type)
     {
-        _ASSERTE(offset % TARGET_POINTER_SIZE == 0);
         switch (type)
         {
-            case TYPE_GC_REF: builder->WriteToken(offset / TARGET_POINTER_SIZE, GCREFMAP_REF); break;
-            case TYPE_GC_BYREF: builder->WriteToken(offset / TARGET_POINTER_SIZE, GCREFMAP_INTERIOR); break;
+            case TYPE_GC_REF: builder->WriteToken(argPos, GCREFMAP_REF); break;
+            case TYPE_GC_BYREF: builder->WriteToken(argPos, GCREFMAP_INTERIOR); break;
             case TYPE_GC_NONE: break;
             default: UNREACHABLE_MSG("Invalid type"); break;
         }
     };
+
+    bool reportInstArg = layout.HasInstArg;
 
     CQuickBytes gcPtrs;
     for (COUNT_T i = 0; i < layout.Values.GetCount(); i++)
     {
         const ArgBufferValue& val = layout.Values[i];
 
+        unsigned int argPos = (val.Offset - offsetof(TailCallArgBuffer, Args)) / TARGET_POINTER_SIZE;
+
         TypeHandle tyHnd = val.TyHnd;
         if (tyHnd.IsValueType())
         {
             if (!tyHnd.GetMethodTable()->ContainsPointers())
+            {
+#ifndef TARGET_X86
+                // The generic instantiation arg is right after this pointer
+                if (reportInstArg)
+                {
+                    _ASSERTE(i == 0 || i == 1);
+                    builder->WriteToken(argPos, pTargetMD->RequiresInstMethodDescArg() ? GCREFMAP_METHOD_PARAM : GCREFMAP_TYPE_PARAM);
+                    reportInstArg = false;
+                }
+#endif
                 continue;
+            }
 
             unsigned int numSlots = (tyHnd.GetSize() + TARGET_POINTER_SIZE - 1) / TARGET_POINTER_SIZE;
             BYTE* ptr = static_cast<BYTE*>(gcPtrs.AllocThrows(numSlots));
             CEEInfo::getClassGClayoutStatic(tyHnd, ptr);
             for (unsigned int i = 0; i < numSlots; i++)
             {
-                writeGCType(val.Offset + i * TARGET_POINTER_SIZE, (CorInfoGCType)ptr[i]);
+                writeGCType(argPos + i , (CorInfoGCType)ptr[i]);
             }
 
             continue;
@@ -284,8 +308,18 @@ bool TailCallHelp::GenerateGCDescriptor(
         CorElementType ety = tyHnd.GetSignatureCorElementType();
         CorInfoGCType gc = CorTypeInfo::GetGCType(ety);
 
-        writeGCType(val.Offset, gc);
+        writeGCType(argPos, gc);
     }
+
+#ifdef TARGET_X86
+    // The generic instantiation arg is last
+    if (reportInstArg)
+    {
+        const ArgBufferValue& val = layout.Values[layout.Values.GetCount() - 1];
+        unsigned int argPos = (val.Offset - offsetof(TailCallArgBuffer, Args)) / TARGET_POINTER_SIZE;
+        builder->WriteToken(argPos, pTargetMD->RequiresInstMethodDescArg() ? GCREFMAP_METHOD_PARAM : GCREFMAP_TYPE_PARAM);
+    }
+#endif
 
     builder->Flush();
 
@@ -331,29 +365,23 @@ MethodDesc* TailCallHelp::CreateStoreArgsStub(TailCallInfo& info)
     auto emitOffs = [&](UINT offs)
     {
         pCode->EmitLDLOC(bufferLcl);
-        if (offs != 0)
-        {
-            pCode->EmitLDC(offs);
-            pCode->EmitADD();
-        }
+        pCode->EmitLDC(offs);
+        pCode->EmitADD();
     };
-
-    unsigned int argIndex = 0;
 
     for (COUNT_T i = 0; i < info.ArgBufLayout.Values.GetCount(); i++)
     {
         const ArgBufferValue& arg = info.ArgBufLayout.Values[i];
-        CorElementType ty = arg.TyHnd.GetSignatureCorElementType();
 
         emitOffs(arg.Offset);
-        pCode->EmitLDARG(argIndex++);
+        pCode->EmitLDARG(i);
         EmitStoreTyHnd(pCode, arg.TyHnd);
     }
 
     if (info.ArgBufLayout.HasTargetAddress)
     {
         emitOffs(info.ArgBufLayout.TargetAddressOffset);
-        pCode->EmitLDARG(argIndex++);
+        pCode->EmitLDARG(info.ArgBufLayout.Values.GetCount());
         pCode->EmitSTIND_I();
     }
 
@@ -447,42 +475,31 @@ MethodDesc* TailCallHelp::CreateCallTargetStub(const TailCallInfo& info)
     auto emitOffs = [&](UINT offs)
     {
         pCode->EmitLDARG(ARG_ARG_BUFFER);
-        if (offs != 0)
-        {
-            pCode->EmitLDC(offs);
-            pCode->EmitADD();
-        }
+        pCode->EmitLDC(offs);
+        pCode->EmitADD();
     };
-
-    StackSArray<DWORD> argLocals;
-    for (COUNT_T i = 0; i < info.ArgBufLayout.Values.GetCount(); i++)
-    {
-        const ArgBufferValue& arg = info.ArgBufLayout.Values[i];
-        DWORD argLcl = pCode->NewLocal(LocalDesc(arg.TyHnd));
-        argLocals.Append(argLcl);
-
-        // arg = args->Arg_i
-        emitOffs(arg.Offset);
-        EmitLoadTyHnd(pCode, arg.TyHnd);
-        pCode->EmitSTLOC(argLcl);
-    }
-
-    DWORD targetAddrLcl;
-    if (info.ArgBufLayout.HasTargetAddress)
-    {
-        targetAddrLcl = pCode->NewLocal(ELEMENT_TYPE_I);
-
-        emitOffs(info.ArgBufLayout.TargetAddressOffset);
-        pCode->EmitLDIND_I();
-        pCode->EmitSTLOC(targetAddrLcl);
-    }
-
-    // RuntimeHelpers.FreeTailCallArgBuffer();
-    pCode->EmitCALL(METHOD__RUNTIME_HELPERS__FREE_TAILCALL_ARG_BUFFER, 0, 0);
 
     // *pTailCallAwareRetAddr = NextCallReturnAddress();
     pCode->EmitLDARG(ARG_PTR_TAILCALL_AWARE_RET_ADDR);
     pCode->EmitCALL(METHOD__STUBHELPERS__NEXT_CALL_RETURN_ADDRESS, 0, 1);
+    pCode->EmitSTIND_I();
+
+    for (COUNT_T i = 0; i < info.ArgBufLayout.Values.GetCount(); i++)
+    {
+        const ArgBufferValue& arg = info.ArgBufLayout.Values[i];
+
+        // arg = args->Arg_i
+        emitOffs(arg.Offset);
+        EmitLoadTyHnd(pCode, arg.TyHnd);
+    }
+
+    // All arguments are loaded on the stack, it is safe to disable the GC reporting of ArgBuffer now.
+    // This is optimization to avoid extending argument lifetime unnecessarily.
+    // We still need to report the inst argument of shared generic code to prevent it from being unloaded. The inst
+    // argument is just a regular IntPtr on the stack. It is safe to stop reporting it only after the target method
+    // takes over.
+    pCode->EmitLDARG(ARG_ARG_BUFFER);
+    pCode->EmitLDC(info.ArgBufLayout.HasInstArg ? TAILCALLARGBUFFER_INSTARG_ONLY : TAILCALLARGBUFFER_ABANDONED);
     pCode->EmitSTIND_I();
 
     int numRetVals = info.CallSiteSig->IsReturnTypeVoid() ? 0 : 1;
@@ -495,23 +512,18 @@ MethodDesc* TailCallHelp::CreateCallTargetStub(const TailCallInfo& info)
         // the proper MethodRef.
         _ASSERTE(!info.CallSiteSig->IsVarArg());
 
-        for (COUNT_T i = 0; i < argLocals.GetCount(); i++)
-        {
-            pCode->EmitLDLOC(argLocals[i]);
-        }
-
         if (info.CallSiteIsVirtual)
         {
             pCode->EmitCALLVIRT(
                 pCode->GetToken(info.Callee),
-                static_cast<int>(argLocals.GetCount()),
+                static_cast<int>(info.ArgBufLayout.Values.GetCount()),
                 numRetVals);
         }
         else
         {
             pCode->EmitCALL(
                 pCode->GetToken(info.Callee),
-                static_cast<int>(argLocals.GetCount()),
+                static_cast<int>(info.ArgBufLayout.Values.GetCount()),
                 numRetVals);
         }
     }
@@ -538,7 +550,7 @@ MethodDesc* TailCallHelp::CreateCallTargetStub(const TailCallInfo& info)
 
         COUNT_T firstSigArg = info.CallSiteSig->HasThis() ? 1 : 0;
 
-        for (COUNT_T i = firstSigArg; i < argLocals.GetCount(); i++)
+        for (COUNT_T i = firstSigArg; i < info.ArgBufLayout.Values.GetCount(); i++)
         {
             const ArgBufferValue& val = info.ArgBufLayout.Values[i];
             AppendTypeHandle(calliSig, val.TyHnd);
@@ -547,16 +559,12 @@ MethodDesc* TailCallHelp::CreateCallTargetStub(const TailCallInfo& info)
         DWORD cbCalliSig;
         PCCOR_SIGNATURE pCalliSig = (PCCOR_SIGNATURE)calliSig.GetSignature(&cbCalliSig);
 
-        for (COUNT_T i = 0; i < argLocals.GetCount(); i++)
-        {
-            pCode->EmitLDLOC(argLocals[i]);
-        }
-
-        pCode->EmitLDLOC(targetAddrLcl);
+        emitOffs(info.ArgBufLayout.TargetAddressOffset);
+        pCode->EmitLDIND_I();
 
         pCode->EmitCALLI(
             pCode->GetSigToken(pCalliSig, cbCalliSig),
-            static_cast<int>(argLocals.GetCount()),
+            static_cast<int>(info.ArgBufLayout.Values.GetCount()),
             numRetVals);
     }
 
@@ -620,35 +628,63 @@ void TailCallHelp::CreateCallTargetStubSig(const TailCallInfo& info, SigBuilder*
 #endif // _DEBUG
 }
 
+// Get TypeHandle for ByReference<System.Byte>
+static TypeHandle GetByReferenceOfByteType()
+{
+    TypeHandle byteTH(CoreLibBinder::GetElementType(ELEMENT_TYPE_U1));
+    Instantiation byteInst(&byteTH, 1);
+    TypeHandle th = TypeHandle(CoreLibBinder::GetClass(CLASS__BYREFERENCE)).Instantiate(byteInst);
+    return th;
+}
+
+// Get MethodDesc* for ByReference<System.Byte>::get_Value
+static MethodDesc* GetByReferenceOfByteValueGetter()
+{
+    MethodDesc* getter = CoreLibBinder::GetMethod(METHOD__BYREFERENCE__GET_VALUE);
+    getter =
+        MethodDesc::FindOrCreateAssociatedMethodDesc(
+                getter,
+                GetByReferenceOfByteType().GetMethodTable(),
+                false,
+                Instantiation(),
+                TRUE);
+
+    return getter;
+}
+
+// Get MethodDesc* for ByReference<System.Byte>::.ctor
+static MethodDesc* GetByReferenceOfByteCtor()
+{
+    MethodDesc* ctor = CoreLibBinder::GetMethod(METHOD__BYREFERENCE__CTOR);
+    ctor =
+        MethodDesc::FindOrCreateAssociatedMethodDesc(
+                ctor,
+                GetByReferenceOfByteType().GetMethodTable(),
+                false,
+                Instantiation(),
+                TRUE);
+
+    return ctor;
+}
+
 void TailCallHelp::EmitLoadTyHnd(ILCodeStream* stream, TypeHandle tyHnd)
 {
-    CorElementType ty = tyHnd.GetSignatureCorElementType();
     if (tyHnd.IsByRef())
-    {
-        // Note: we can use an "untracked" ldind.i here even with byrefs because
-        // we are loading between two tracked positions.
-        stream->EmitLDIND_I();
-    }
+        stream->EmitCALL(stream->GetToken(GetByReferenceOfByteValueGetter()), 1, 1);
     else
-    {
-        int token = stream->GetToken(tyHnd);
-        stream->EmitLDOBJ(token);
-    }
+        stream->EmitLDOBJ(stream->GetToken(tyHnd));
 }
 
 void TailCallHelp::EmitStoreTyHnd(ILCodeStream* stream, TypeHandle tyHnd)
 {
-    CorElementType ty = tyHnd.GetSignatureCorElementType();
     if (tyHnd.IsByRef())
     {
-        // Note: we can use an "untracked" stind.i here even with byrefs because
-        // we are storing between two tracked positions.
-        stream->EmitSTIND_I();
+        stream->EmitNEWOBJ(stream->GetToken(GetByReferenceOfByteCtor()), 1);
+        stream->EmitSTOBJ(stream->GetToken(GetByReferenceOfByteType()));
     }
     else
     {
-        int token = stream->GetToken(tyHnd);
-        stream->EmitSTOBJ(token);
+        stream->EmitSTOBJ(stream->GetToken(tyHnd));
     }
 }
 

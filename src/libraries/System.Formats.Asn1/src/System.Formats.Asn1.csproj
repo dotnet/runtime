@@ -2,8 +2,8 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Nullable>enable</Nullable>
-    <TargetFrameworks>netstandard2.0;net461;$(NetFrameworkCurrent)</TargetFrameworks>
-    <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
+    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;net461</TargetFrameworks>
+    <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonPath)System\Security\Cryptography\CryptoPool.cs">
@@ -47,14 +47,29 @@
     <Compile Include="System\Formats\Asn1\TagClass.cs" />
     <Compile Include="System\Formats\Asn1\UniversalTagNumber.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <Reference Include="System.Buffers" />
-    <Reference Include="System.Memory" />
-  </ItemGroup>
+  <Choose>
+    <When Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+      <ItemGroup>
+        <Reference Include="System.Buffers" />
+        <Reference Include="System.Collections" />
+        <Reference Include="System.Memory" />
+        <Reference Include="System.Runtime" />
+        <Reference Include="System.Runtime.InteropServices" />
+        <Reference Include="System.Runtime.Numerics" />
+        <Reference Include="System.Security.Cryptography.Primitives" />
+        <Reference Include="System.Text.Encoding.Extensions" />
+      </ItemGroup>
+    </When>
+    <Otherwise>
+      <ItemGroup>
+        <PackageReference Include="System.Buffers" Version="$(SystemBuffersVersion)" />
+        <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
+        <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.CompilerServices.Unsafe\src\System.Runtime.CompilerServices.Unsafe.ilproj" />
+      </ItemGroup>
+    </Otherwise>
+  </Choose>
   <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
-    <Reference Include="mscorlib" />
-    <Reference Include="System" />
     <Reference Include="System.Numerics" />
-    <Reference Include="System.ValueTuple" />
+    <PackageReference Include="System.ValueTuple" Version="$(SystemValueTupleVersion)" Condition="'$(TargetFramework)' == 'net461'" />
   </ItemGroup>
 </Project>

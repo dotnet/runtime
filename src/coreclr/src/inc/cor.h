@@ -2093,15 +2093,11 @@ inline ULONG CorSigUncompressData(      // return number of bytes of that compre
 }
 
 
-#if !defined(SELECTANY)
-#if defined(__GNUC__)
-    #define SELECTANY extern __attribute__((weak))
-#else
-    #define SELECTANY extern __declspec(selectany)
-#endif
-#endif
-
-SELECTANY const mdToken g_tkCorEncodeToken[4] ={mdtTypeDef, mdtTypeRef, mdtTypeSpec, mdtBaseType};
+FORCEINLINE mdToken CorSigDecodeTokenType(int encoded)
+{
+    static const mdToken s_tableTokenTypes[] = {mdtTypeDef, mdtTypeRef, mdtTypeSpec, mdtBaseType};
+    return s_tableTokenTypes[encoded];
+}
 
 // uncompress a token
 inline mdToken CorSigUncompressToken(   // return the token.
@@ -2111,7 +2107,7 @@ inline mdToken CorSigUncompressToken(   // return the token.
     mdToken tkType;
 
     tk = CorSigUncompressData(pData);
-    tkType = g_tkCorEncodeToken[tk & 0x3];
+    tkType = CorSigDecodeTokenType(tk & 0x3);
     tk = TokenFromRid(tk >> 2, tkType);
     return tk;
 }
@@ -2126,7 +2122,7 @@ inline ULONG CorSigUncompressToken( // return number of bytes of that compressed
     mdToken tkType;
 
     cb = CorSigUncompressData(pData, (ULONG *)&tk);
-    tkType = g_tkCorEncodeToken[tk & 0x3];
+    tkType = CorSigDecodeTokenType(tk & 0x3);
     tk = TokenFromRid(tk >> 2, tkType);
     *pToken = tk;
     return cb;
@@ -2145,7 +2141,7 @@ inline HRESULT CorSigUncompressToken(
 
     if (SUCCEEDED(hr))
     {
-        tkType = g_tkCorEncodeToken[tk & 0x3];
+        tkType = CorSigDecodeTokenType(tk & 0x3);
         tk = TokenFromRid(tk >> 2, tkType);
         *pToken = tk;
     }
@@ -2298,17 +2294,17 @@ inline ULONG CorSigCompressToken(   // return number of bytes that compressed fo
     // TypeSpec is encoded with low bits 10
     // BaseType is encoded with low bit 11
     //
-    if (ulTyp == g_tkCorEncodeToken[1])
+    if (ulTyp == CorSigDecodeTokenType(1))
     {
         // make the last two bits 01
         rid |= 0x1;
     }
-    else if (ulTyp == g_tkCorEncodeToken[2])
+    else if (ulTyp == CorSigDecodeTokenType(2))
     {
         // make last two bits 0
         rid |= 0x2;
     }
-    else if (ulTyp == g_tkCorEncodeToken[3])
+    else if (ulTyp == CorSigDecodeTokenType(3))
     {
         rid |= 0x3;
     }

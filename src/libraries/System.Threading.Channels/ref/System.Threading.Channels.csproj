@@ -1,26 +1,27 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);netcoreapp3.0;netstandard1.3;netstandard2.0;netstandard2.1</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);netcoreapp3.0;netstandard1.3;netstandard2.0;netstandard2.1;net461</TargetFrameworks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Threading.Channels.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' != 'netstandard1.3' AND '$(TargetFramework)' != 'netstandard2.0'">
+  <ItemGroup Condition="'$(TargetFramework)' != 'netstandard1.3' and
+                        '$(TargetFramework)' != 'netstandard2.0' and
+                        '$(TargetFramework)' != 'net461'">
     <Compile Include="System.Threading.Channels.netstandard21.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="$(TargetFramework.StartsWith('netstandard'))">
-    <Reference Include="System.Threading.Tasks.Extensions" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.0'">
     <Reference Include="System.Runtime" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
-    <ProjectReference Include="../../System.Runtime/ref/System.Runtime.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime/ref/System.Runtime.csproj" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.3'">
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Threading.Tasks" />
+  <ItemGroup Condition="$(TargetFramework.StartsWith('netstandard')) or
+                        '$(TargetFramework)' == 'net461'">
+    <PackageReference Include="System.Threading.Tasks.Extensions" Version="$(SystemThreadingTasksExtensionsVersion)" />
+    <!-- Include these transitive dependencies to overrule NuGet's ProjectReference over PackageReferene behavior. -->
+    <PackageReference Include="System.Runtime" Version="$(SystemRuntimeVersion)" Condition="'$(TargetFramework)' == 'netstandard1.3'" />
   </ItemGroup>
 </Project>

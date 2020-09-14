@@ -1,6 +1,3 @@
-// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
-
 
 
 /* this ALWAYS GENERATED file contains the IIDs and CLSIDs */
@@ -8,7 +5,17 @@
 /* link this file in with the server and any clients */
 
 
- /* File created by MIDL compiler version 8.00.0613 */
+ /* File created by MIDL compiler version 8.01.0622 */
+/* at Mon Jan 18 19:14:07 2038
+ */
+/* Compiler settings for C:/ssd/runtime/src/coreclr/src/inc/sospriv.idl:
+    Oicf, W1, Zp8, env=Win32 (32b run), target_arch=X86 8.01.0622 
+    protocol : dce , ms_ext, c_ext, robust
+    error checks: allocation ref bounds_check enum stub_data 
+    VC __declspec() decoration level: 
+         __declspec(uuid()), __declspec(selectany), __declspec(novtable)
+         DECLSPEC_UUID(), MIDL_INTERFACE()
+*/
 /* @@MIDL_FILE_HEADING(  ) */
 
 #pragma warning( disable: 4049 )  /* more than 64k source lines */
@@ -94,6 +101,9 @@ MIDL_DEFINE_GUID(IID, IID_ISOSDacInterface7,0xc1020dde,0xfe98,0x4536,0xa5,0x3b,0
 
 
 MIDL_DEFINE_GUID(IID, IID_ISOSDacInterface8,0xc12f35a9,0xe55c,0x4520,0xa8,0x94,0xb3,0xdc,0x51,0x65,0xdf,0xce);
+
+
+MIDL_DEFINE_GUID(IID, IID_ISOSDacInterface9,0x4eca42d8,0x7e7b,0x4c8a,0xa1,0x16,0x7b,0xfb,0xf6,0x92,0x92,0x67);
 
 #undef MIDL_DEFINE_GUID
 

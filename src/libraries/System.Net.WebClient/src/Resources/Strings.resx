@@ -75,7 +75,7 @@
   <data name="net_webstatus_MessageLengthLimitExceeded" xml:space="preserve">
     <value>The message length limit was exceeded</value>
   </data>
-  <data name="net_webclient_PlatformNotSupported" xml:space="preserve">
+  <data name="SystemNetWebClient_PlatformNotSupported" xml:space="preserve">
     <value>System.Net.WebClient is not supported on this platform. Use System.Net.Http.HttpClient instead.</value>
   </data>
 </root>

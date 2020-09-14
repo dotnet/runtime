@@ -4,7 +4,6 @@
 using Microsoft.Win32.SafeHandles;
 using System;
 using System.IO;
-using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -52,7 +51,7 @@ namespace System.IO.Tests
                 // other handle doesn't yet see the change
                 Assert.Equal(0, fsr.Length);
 
-                SafeFileHandle handle = fs.SafeFileHandle;
+                _ = fs.SafeFileHandle;
 
                 // expect the handle to be flushed
                 Assert.Equal(TestBuffer.Length, fsr.Length);
@@ -65,7 +64,7 @@ namespace System.IO.Tests
             await ThrowWhenHandlePositionIsChanged(useAsync: false);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task ThrowWhenHandlePositionIsChanged_async()
         {
             await ThrowWhenHandlePositionIsChanged(useAsync: true);
@@ -105,7 +104,7 @@ namespace System.IO.Tests
 
                     fs.WriteByte(0);
                     fsr.Position++;
-                    if (useAsync && RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) // Async I/O behaviors differ due to kernel-based implementation on Windows
+                    if (useAsync && OperatingSystem.IsWindows()) // Async I/O behaviors differ due to kernel-based implementation on Windows
                     {
                         Assert.Throws<IOException>(() => FSAssert.CompletesSynchronously(fs.ReadAsync(new byte[1], 0, 1)));
                     }

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics.Tracing;
@@ -82,17 +81,15 @@ namespace Tracing.Tests.EventSourceError
 
             return () => 
             {
-                // These values are ~80% (rounded to nice whole numbers) of the values
-                // I saw when writing the test. The idea is that I want to catch
-                // any real deviation in the number of types, but don't want to have
-                // to maintain this test as the number of types varies. (And they will vary due to 
-                // framework code changes). If this test needs any sort of ongoing maintenance
-                // just change all these values to a low number like 10 and move on.
-                if (_bulkTypeCount > 125
-                    && _bulkNodeCount > 600
-                    && _bulkEdgeCount > 850
-                    && _bulkRootEdgeCount > 250
-                    && _bulkRootStaticVarCount > 70)
+                // Hopefully it is low enough to be resilient to changes in the runtime
+                // and high enough to catch issues. There should be between hundreds and thousands
+                // for each, but the number is variable and the point of the test is to verify
+                // that we get any events at all.
+                if (_bulkTypeCount > 50
+                     && _bulkNodeCount > 50
+                     && _bulkEdgeCount > 50
+                     && _bulkRootEdgeCount > 50
+                     && _bulkRootStaticVarCount > 50)
                 {
                     return 100;
                 }

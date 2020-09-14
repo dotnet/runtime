@@ -134,7 +134,6 @@ namespace System.IO.Ports.Tests
             int bufferLength = rndGen.Next(1, MAX_BUFFER_SIZE);
             int offset = rndGen.Next(0, bufferLength - 1);
             int count = bufferLength - offset;
-            Type expectedException = typeof(ArgumentException);
 
             VerifyWrite(new byte[bufferLength], offset, count);
         }
@@ -146,7 +145,6 @@ namespace System.IO.Ports.Tests
             int bufferLength = rndGen.Next(1, MAX_BUFFER_SIZE);
             int offset = bufferLength - 1;
             int count = 1;
-            Type expectedException = typeof(ArgumentException);
 
             VerifyWrite(new byte[bufferLength], offset, count);
         }
@@ -158,7 +156,6 @@ namespace System.IO.Ports.Tests
             int bufferLength = rndGen.Next(1, MAX_BUFFER_SIZE);
             int offset = 0;
             int count = bufferLength;
-            Type expectedException = typeof(ArgumentException);
 
             VerifyWrite(new byte[bufferLength], offset, count);
         }
@@ -299,12 +296,6 @@ namespace System.IO.Ports.Tests
                 VerifyWriteByteArray(buffer, offset, count, com1, com2, numWrites);
             }
         }
-
-        private void VerifyWriteByteArray(byte[] buffer, int offset, int count, SerialPort com1, SerialPort com2)
-        {
-            VerifyWriteByteArray(buffer, offset, count, com1, com2, DEFAULT_NUM_WRITES);
-        }
-
 
         private void VerifyWriteByteArray(byte[] buffer, int offset, int count, SerialPort com1, SerialPort com2, int numWrites)
         {

@@ -6,6 +6,9 @@ using System.Security.Permissions;
 
 namespace System.Transactions
 {
+#if NET50_OBSOLETIONS
+    [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+#endif
     [AttributeUsage(AttributeTargets.All, AllowMultiple = true)]
     public sealed class DistributedTransactionPermissionAttribute : CodeAccessSecurityAttribute
     {

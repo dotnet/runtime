@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
+using System.Runtime.Serialization;
 using System.Text;
 using System.Threading;
 
@@ -50,7 +51,14 @@ namespace System.Resources
 
             if (_binaryFormatter == null)
             {
-                InitializeBinaryFormatter();
+                if (!InitializeBinaryFormatter())
+                {
+                    // The linker trimmed away the BinaryFormatter implementation and we can't call into it.
+                    // We'll throw an exception with the same text that BinaryFormatter would have thrown
+                    // had we been able to call into it. Keep this resource string in sync with the same
+                    // resource from the Formatters assembly.
+                    throw new NotSupportedException(SR.BinaryFormatter_SerializationDisallowed);
+                }
             }
 
             Type type = FindType(typeIndex);
@@ -65,13 +73,16 @@ namespace System.Resources
         }
 
         // Issue https://github.com/dotnet/runtime/issues/39290 tracks finding an alternative to BinaryFormatter
-        private void InitializeBinaryFormatter()
+        private bool InitializeBinaryFormatter()
         {
-            LazyInitializer.EnsureInitialized(ref s_binaryFormatterType, () =>
+            // If BinaryFormatter support is disabled for the app, the linker will replace this entire
+            // method body with "return false;", skipping all reflection code below.
+
+            LazyInitializer.EnsureInitialized(ref s_binaryFormatterType, static () =>
                 Type.GetType("System.Runtime.Serialization.Formatters.Binary.BinaryFormatter, System.Runtime.Serialization.Formatters, Version=0.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
                 throwOnError: true)!);
 
-            LazyInitializer.EnsureInitialized(ref s_deserializeMethod, () =>
+            LazyInitializer.EnsureInitialized(ref s_deserializeMethod, static () =>
             {
                 MethodInfo binaryFormatterDeserialize = s_binaryFormatterType!.GetMethod("Deserialize", new Type[] { typeof(Stream) })!;
 
@@ -83,6 +94,8 @@ namespace System.Resources
             });
 
             _binaryFormatter = Activator.CreateInstance(s_binaryFormatterType!)!;
+
+            return true; // initialization successful
         }
 
         // generic method that we specialize at runtime once we've loaded the BinaryFormatter type

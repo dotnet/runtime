@@ -1406,7 +1406,7 @@ namespace System.Net.Http
                 state.Pin();
                 if (!Interop.WinHttp.WinHttpSendRequest(
                     state.RequestHandle,
-                    null,
+                    IntPtr.Zero,
                     0,
                     IntPtr.Zero,
                     0,

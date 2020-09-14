@@ -869,7 +869,7 @@ HRESULT CordbModule::InitPublicMetaDataFromFile(const WCHAR * pszFullPathName,
                                                 DWORD dwOpenFlags,
                                                 bool validateFileInfo)
 {
-#ifdef TARGET_UNIX
+#ifdef HOST_UNIX
     // UNIXTODO: Some intricate details of file mapping don't work on Linux as on Windows.
     // We have to revisit this and try to fix it for POSIX system.
     return E_FAIL;
@@ -1199,6 +1199,10 @@ HRESULT CordbModule::QueryInterface(REFIID id, void **pInterface)
     else if (id == IID_ICorDebugModule3)
     {
         *pInterface = static_cast<ICorDebugModule3*>(this);
+    }
+    else if (id == IID_ICorDebugModule4)
+    {
+        *pInterface = static_cast<ICorDebugModule4*>(this);
     }
     else if (id == IID_IUnknown)
     {
@@ -2749,6 +2753,24 @@ HRESULT CordbModule::GetJITCompilerFlags(DWORD *pdwFlags )
 
     }
     EX_CATCH_HRESULT(hr);
+    return hr;
+}
+
+HRESULT CordbModule::IsMappedLayout(BOOL *isMapped)
+{
+    VALIDATE_POINTER_TO_OBJECT(isMapped, BOOL*);
+    FAIL_IF_NEUTERED(this);
+
+    HRESULT hr = S_OK;
+    CordbProcess *pProcess = GetProcess();
+
+    ATT_REQUIRE_STOPPED_MAY_FAIL(pProcess);
+    PUBLIC_API_BEGIN(pProcess);
+    {
+        hr = pProcess->GetDAC()->IsModuleMapped(m_vmModule, isMapped);
+    }
+    PUBLIC_API_END(hr);
+
     return hr;
 }
 

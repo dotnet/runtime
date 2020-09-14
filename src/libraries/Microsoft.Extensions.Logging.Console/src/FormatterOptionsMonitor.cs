@@ -2,13 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.IO;
-using System.Text;
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.Logging.Console
 {
-    internal class FormatterOptionsMonitor<TOptions> : IOptionsMonitor<TOptions> where TOptions : ConsoleFormatterOptions
+    internal class FormatterOptionsMonitor<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] TOptions> :
+        IOptionsMonitor<TOptions>
+        where TOptions : ConsoleFormatterOptions
     {
         private TOptions _options;
         public FormatterOptionsMonitor(TOptions options)

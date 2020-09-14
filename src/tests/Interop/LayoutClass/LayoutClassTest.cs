@@ -18,7 +18,7 @@ namespace PInvokeTests
         {
             a = _a;
             b = _b;
-            str = String.Concat(_str, "");
+            str = string.Concat(_str, "");
         }
     }
 
@@ -58,7 +58,7 @@ namespace PInvokeTests
             c = 0;
             b = bnum;
         }
-     }
+    }
 
     public enum DialogResult
     {
@@ -67,7 +67,6 @@ namespace PInvokeTests
         Cancel = 2
     }
 
-    
     [StructLayout(LayoutKind.Sequential)]
     public class Blittable
     {
@@ -83,7 +82,6 @@ namespace PInvokeTests
     {
         public SeqClass value;
     }
-
 
     [StructLayout(LayoutKind.Sequential)]
     public class RecursiveTestClass
@@ -105,155 +103,91 @@ namespace PInvokeTests
         private static extern bool SimpleExpLayoutClassByRef(ExpClass p);
 
         [DllImport("LayoutClassNative")]
-        private static extern bool SimpleNestedLayoutClassByValue(NestedLayout p);
+        private static extern bool SimpleBlittableSeqLayoutClassByRef(Blittable p);
 
         [DllImport("LayoutClassNative")]
-        private static extern bool SimpleBlittableSeqLayoutClassByRef(Blittable p);
+        private static extern bool SimpleBlittableSeqLayoutClassByOutAttr([Out] Blittable p);
+
+        [DllImport("LayoutClassNative")]
+        private static extern bool SimpleNestedLayoutClassByValue(NestedLayout p);
 
         [DllImport("LayoutClassNative", EntryPoint = "Invalid")]
         private static extern void RecursiveNativeLayoutInvalid(RecursiveTestStruct str);
 
-        public static bool SequentialClass()
+        public static void SequentialClass()
         {
+            Console.WriteLine($"Running {nameof(SequentialClass)}...");
+
             string s = "before";
-            bool retval = true;
-            SeqClass p = new SeqClass(0, false, s);
-
-            TestFramework.BeginScenario("Test #1 Pass a sequential layout class.");
-
-            try
-            {
-                retval = SimpleSeqLayoutClassByRef(p);
-
-                if (retval == false)
-                {
-                    TestFramework.LogError("01", "PInvokeTests->SequentialClass : Unexpected error occured on unmanaged side");
-                    return false;
-                }
-            }
-            catch (Exception e)
-            {
-                TestFramework.LogError("04", "Unexpected exception: " + e.ToString());
-                retval = false;
-            }
-
-            return retval;
+            var p = new SeqClass(0, false, s);
+            Assert.IsTrue(SimpleSeqLayoutClassByRef(p));
         }
 
-        public static bool ExplicitClass()
+        public static void ExplicitClass()
         {
-            ExpClass p;
-            bool retval = false;
+            Console.WriteLine($"Running {nameof(ExplicitClass)}...");
 
-            TestFramework.BeginScenario("Test #2 Pass an explicit layout class.");
-
-            try
-            {
-                p = new ExpClass(DialogResult.None, 10);
-                retval = SimpleExpLayoutClassByRef(p);
-
-                if (retval == false)
-                {
-                    TestFramework.LogError("01", "PInvokeTests->ExplicitClass : Unexpected error occured on unmanaged side");
-                    return false;
-                }
-
-            }
-            catch (Exception e)
-            {
-                TestFramework.LogError("03", "Unexpected exception: " + e.ToString());
-                retval = false;
-            }
-
-            return retval;
+            var p = new ExpClass(DialogResult.None, 10);
+            Assert.IsTrue(SimpleExpLayoutClassByRef(p));
         }
 
-        public static bool BlittableClass()
+        public static void BlittableClass()
         {
-            bool retval = true;
+            Console.WriteLine($"Running {nameof(BlittableClass)}...");
+
             Blittable p = new Blittable(10);
-
-            TestFramework.BeginScenario("Test #3 Pass a blittable sequential layout class.");
-
-            try
-            {
-                retval = SimpleBlittableSeqLayoutClassByRef(p);
-
-                if (retval == false)
-                {
-                    TestFramework.LogError("01", "PInvokeTests->Blittable : Unexpected error occured on unmanaged side");
-                    return false;
-                }
-            }
-            catch (Exception e)
-            {
-                TestFramework.LogError("04", "Unexpected exception: " + e.ToString());
-                retval = false;
-            }
-
-            return retval;
+            Assert.IsTrue(SimpleBlittableSeqLayoutClassByRef(p));
         }
-        
-        public static bool NestedLayoutClass()
+
+        public static void BlittableClassByOutAttr()
         {
+            Console.WriteLine($"Running {nameof(BlittableClassByOutAttr)}...");
+
+            int a = 10;
+            int expected = a + 1;
+            Blittable p = new Blittable(a);
+            Assert.IsTrue(SimpleBlittableSeqLayoutClassByOutAttr(p));
+            Assert.AreEqual(expected, p.a);
+        }
+
+        public static void NestedLayoutClass()
+        {
+            Console.WriteLine($"Running {nameof(NestedLayoutClass)}...");
+
             string s = "before";
-            bool retval = true;
-            SeqClass p = new SeqClass(0, false, s);
-            NestedLayout target = new NestedLayout
+            var p = new SeqClass(0, false, s);
+            var target = new NestedLayout
             {
                 value = p
             };
-
-            TestFramework.BeginScenario("Test #4 Nested sequential layout class in a structure.");
-
-            try
-            {
-                retval = SimpleNestedLayoutClassByValue(target);
-
-                if (retval == false)
-                {
-                    TestFramework.LogError("01", "PInvokeTests->NestedLayoutClass : Unexpected error occured on unmanaged side");
-                    return false;
-                }
-            }
-            catch (Exception e)
-            {
-                TestFramework.LogError("04", "Unexpected exception: " + e.ToString());
-                retval = false;
-            }
-
-            return retval;
+            Assert.IsTrue(SimpleNestedLayoutClassByValue(target));
         }
 
-        public static bool RecursiveNativeLayout()
+        public static void RecursiveNativeLayout()
         {
-            TestFramework.BeginScenario("Test #5 Structure with field of nested layout class with field of containing structure.");
+            Console.WriteLine($"Running {nameof(RecursiveNativeLayout)}...");
 
-            try
-            {
-                RecursiveNativeLayoutInvalid(new RecursiveTestStruct());
-            }
-            catch (TypeLoadException)
-            {
-                return true;
-            }
-
-            return false;
+            Assert.Throws<TypeLoadException>(() => RecursiveNativeLayoutInvalid(new RecursiveTestStruct()));
         }
 
         public static int Main(string[] argv)
         {
-            bool retVal = true;
+            try
+            {
+                SequentialClass();
+                ExplicitClass();
+                BlittableClass();
+                BlittableClassByOutAttr();
+                NestedLayoutClass();
+                RecursiveNativeLayout();
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"Test Failure: {e}");
+                return 101;
+            }
 
-            retVal = retVal && SequentialClass();
-            retVal = retVal && ExplicitClass();
-            retVal = retVal && BlittableClass();
-            retVal = retVal && NestedLayoutClass();
-            retVal = retVal && RecursiveNativeLayout();
-
-            return (retVal ? 100 : 101);
+            return 100;
         }
-
-
     }
 }

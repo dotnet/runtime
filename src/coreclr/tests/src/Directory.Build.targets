@@ -75,7 +75,6 @@
     <_WillCLRTestProjectBuild Condition="'$(CLRTestBuildAllTargets)' != 'allTargets' And '$(CLRTestTargetUnsupported)' == 'true'">false</_WillCLRTestProjectBuild>
     <_WillCLRTestProjectBuild Condition="'$(DisableProjectBuild)' == 'true'">false</_WillCLRTestProjectBuild>
   </PropertyGroup>
-
   <PropertyGroup>
     <_CopyNativeProjectBinaries>$(CopyNativeProjectBinaries)</_CopyNativeProjectBinaries>
     <_CopyNativeProjectBinaries Condition="'$(_WillCLRTestProjectBuild)' != 'true'">false</_CopyNativeProjectBinaries>
@@ -150,8 +149,9 @@
 
      </ItemGroup>
 
+     <!-- There are currently no native project binaries on wasm -->
      <Error  Text="The native project files are missing in $(NativeProjectOutputFolder) please run build from the root of the repo at least once"
-             Condition="'@(NativeProjectBinaries)' == ''" />
+             Condition="'@(NativeProjectBinaries)' == '' And '$(TargetArchitecture)' != 'wasm'" />
 
      <Copy
         SourceFiles="@(NativeProjectBinaries)"
@@ -196,7 +196,7 @@
   <Import Project="CLRTest.Execute.targets" />
   <Target Name="CreateExecuteScript"
           BeforeTargets="Build;CopyAllNativeProjectReferenceBinaries"
-          Condition="'$(_CopyNativeProjectBinaries)' == 'true' And '$(GenerateRunScript)' != 'false' And ('$(_WillCLRTestProjectBuild)' == 'true')"
+          Condition="'$(CLRTestBuildAllTargets)' != 'allTargets' And '$(GenerateRunScript)' != 'false' And ('$(_WillCLRTestProjectBuild)' == 'true')"
           DependsOnTargets="GenerateExecutionScriptsInternal" />
 
   <Target Name="UpdateReferenceItems"

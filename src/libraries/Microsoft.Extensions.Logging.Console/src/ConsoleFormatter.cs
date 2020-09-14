@@ -3,7 +3,6 @@
 
 using System;
 using System.IO;
-using System.Text;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Microsoft.Extensions.Logging.Console

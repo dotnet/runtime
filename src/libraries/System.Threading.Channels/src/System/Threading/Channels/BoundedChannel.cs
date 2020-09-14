@@ -105,7 +105,7 @@ namespace System.Threading.Channels
                     }
                 }
 
-                item = default!;
+                item = default;
                 return false;
             }
 

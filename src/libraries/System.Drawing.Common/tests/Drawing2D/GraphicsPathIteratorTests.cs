@@ -251,7 +251,6 @@ namespace System.Drawing.Drawing2D.Tests
                 gp.StartFigure();
                 gp.AddLine(20, 21, 22, 23);
                 gp.AddBezier(5, 6, 7, 8, 9, 10, 11, 12);
-                byte[] types = new byte[] { 0, 3, 3, 3, 1, 33, 0, 1 };
 
                 using (GraphicsPathIterator gpi = new GraphicsPathIterator(gp))
                 {

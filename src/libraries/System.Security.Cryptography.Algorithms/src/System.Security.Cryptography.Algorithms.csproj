@@ -9,8 +9,8 @@
   <Import Project="$(CommonPath)System\Security\Cryptography\Asn1\AsnXml.targets" />
   <Import Project="$(CommonPath)System\Security\Cryptography\Asn1Reader\System.Security.Cryptography.Asn1Reader.Shared.projitems" />
   <PropertyGroup>
-    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsBrowser)' == 'true'">SR.Cryptography_PlatformNotSupported_Browser</GeneratePlatformNotSupportedAssemblyMessage>
-    <GeneratePlatformNotSupportedAdditionalParameters Condition="'$(TargetsBrowser)' == 'true'">--exclude-api-list ExcludeApiList.PNSE.Browser.txt</GeneratePlatformNotSupportedAdditionalParameters>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsBrowser)' == 'true'">SR.SystemSecurityCryptographyAlgorithms_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
+    <ApiExclusionListPath Condition="'$(TargetsBrowser)' == 'true'">ExcludeApiList.PNSE.Browser.txt</ApiExclusionListPath>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsBrowser)' != 'true'">
     <Compile Include="Internal\Cryptography\AesImplementation.cs" />
@@ -323,6 +323,8 @@
              Link="Common\Interop\Windows\BCrypt\Interop.BCryptDestroyHash.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptDuplicateHash.cs"
              Link="Common\Interop\Windows\BCrypt\Interop.BCryptDuplicateHash.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptHash.cs"
+             Link="Common\Interop\Windows\BCrypt\Interop.BCryptHash.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptHashData.cs"
              Link="Common\Interop\Windows\BCrypt\Interop.BCryptHashData.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptFinishHash.cs"
@@ -579,13 +581,29 @@
     <Compile Include="System\Security\Cryptography\AesGcm.Unix.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsBrowser)' == 'true'">
-    <Compile Include="System\Security\Cryptography\RandomNumberGenerator.cs" />
-    <Compile Include="Internal\Cryptography\RandomNumberGeneratorImplementation.cs" />
-    <Compile Include="Internal\Cryptography\RandomNumberGeneratorImplementation.Browser.cs" />
+    <Compile Include="$(CommonPath)Internal\Cryptography\HashProvider.cs"
+             Link="Internal\Cryptography\HashProvider.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetRandomBytes.cs"
              Link="Common\Interop\Unix\System.Native\Interop.GetRandomBytes.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
              Link="Common\Interop\Unix\Interop.Libraries.cs" />
+    <Compile Include="Internal\Cryptography\HashAlgorithmNames.cs" />
+    <Compile Include="Internal\Cryptography\HashProviderDispenser.Browser.cs" />
+    <Compile Include="Internal\Cryptography\HMACCommon.cs" />
+    <Compile Include="Internal\Cryptography\RandomNumberGeneratorImplementation.cs" />
+    <Compile Include="Internal\Cryptography\RandomNumberGeneratorImplementation.Browser.cs" />
+    <Compile Include="Internal\Cryptography\SHAHashProvider.Browser.cs" />
+    <Compile Include="System\Security\Cryptography\RandomNumberGenerator.cs" />
+    <Compile Include="System\Security\Cryptography\IncrementalHash.cs" />
+    <Compile Include="System\Security\Cryptography\MD5.cs" />
+    <Compile Include="System\Security\Cryptography\SHA1.cs" />
+    <Compile Include="System\Security\Cryptography\SHA1Managed.cs" />
+    <Compile Include="System\Security\Cryptography\SHA256.cs" />
+    <Compile Include="System\Security\Cryptography\SHA256Managed.cs" />
+    <Compile Include="System\Security\Cryptography\SHA384.cs" />
+    <Compile Include="System\Security\Cryptography\SHA384Managed.cs" />
+    <Compile Include="System\Security\Cryptography\SHA512.cs" />
+    <Compile Include="System\Security\Cryptography\SHA512Managed.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Collections" />

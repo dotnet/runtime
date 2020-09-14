@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 namespace System.Xml.Schema
 {
     using System.Collections;
@@ -68,12 +67,13 @@ namespace System.Xml.Schema
         [MemberNotNull(nameof(_xsdSchema))]
         private void Init()
         {
-            _nsManager = reader.NamespaceManager;
+            _nsManager = reader.NamespaceManager!;
             if (_nsManager == null)
             {
                 _nsManager = new XmlNamespaceManager(NameTable);
                 _bManageNamespaces = true;
             }
+
             _validationStack = new HWStack(STACK_INCREMENT);
             textValue = new StringBuilder();
             _attPresence = new Hashtable();

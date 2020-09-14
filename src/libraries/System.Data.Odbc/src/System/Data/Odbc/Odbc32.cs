@@ -116,7 +116,7 @@ namespace System.Data.Odbc
         {
         }
 
-        internal static short ShortStringLength(string inputString)
+        internal static short ShortStringLength(string? inputString)
         {
             return checked((short)ADP.StringLength(inputString));
         }
@@ -716,14 +716,14 @@ namespace System.Data.Odbc
         internal const short SQL_RESULT_COL = 3;
 
         // Helpers
-        internal static OdbcErrorCollection GetDiagErrors(string source, OdbcHandle hrHandle, RetCode retcode)
+        internal static OdbcErrorCollection GetDiagErrors(string? source, OdbcHandle hrHandle, RetCode retcode)
         {
             OdbcErrorCollection errors = new OdbcErrorCollection();
             GetDiagErrors(errors, source, hrHandle, retcode);
             return errors;
         }
 
-        internal static void GetDiagErrors(OdbcErrorCollection errors, string source, OdbcHandle hrHandle, RetCode retcode)
+        internal static void GetDiagErrors(OdbcErrorCollection errors, string? source, OdbcHandle hrHandle, RetCode retcode)
         {
             Debug.Assert(retcode != ODBC32.RetCode.INVALID_HANDLE, "retcode must never be ODBC32.RetCode.INVALID_HANDLE");
             if (RetCode.SUCCESS != retcode)

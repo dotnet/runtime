@@ -93,8 +93,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         /// <typeparam name="T">The type of the data to be unwrapped.</typeparam>
         /// <param name="state">The weak reference.</param>
         /// <returns>The T instance.</returns>
-        [return: MaybeNull]
-        internal static T UnwrapWeakReference<T>(object state) where T : class
+        internal static T? UnwrapWeakReference<T>(object state) where T : class
         {
             var wr = state as WeakReference<T>;
             Debug.Assert(wr != null, "Expected a WeakReference<T> as the state argument");

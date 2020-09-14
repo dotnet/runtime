@@ -27,11 +27,6 @@ namespace System.Xml.Tests
         XmlDocument, XPathDocument, Unknown
     }
 
-    public enum ReaderType
-    {
-        XmlTextReader, XmlNodeReader, XmlValidatingReader, XsltReader, Unknown
-    }
-
     ////////////////////////////////////////////////////////////////
     // Module declaration for LTM usage
     //

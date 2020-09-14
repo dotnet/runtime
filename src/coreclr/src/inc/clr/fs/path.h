@@ -9,7 +9,6 @@
 #define _clr_fs_Path_h_
 
 #include "clrtypes.h"
-#include "cor.h" // SELECTANY
 
 #include "strsafe.h"
 

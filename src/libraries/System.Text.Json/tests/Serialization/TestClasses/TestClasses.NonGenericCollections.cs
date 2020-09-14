@@ -218,6 +218,16 @@ namespace System.Text.Json.Serialization.Tests
             _list = new List<object>(items);
         }
 
+        public WrapperForIList(IEnumerable items)
+        {
+            _list = new List<object>();
+
+            foreach (object item in items)
+            {
+                _list.Add(item);
+            }
+        }
+
         public object this[int index] { get => ((IList)_list)[index]; set => ((IList)_list)[index] = value; }
 
         public bool IsFixedSize => ((IList)_list).IsFixedSize;

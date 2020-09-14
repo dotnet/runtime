@@ -239,6 +239,19 @@ public:
 #endif
 };
 
+// TailCallArgBuffer states
+#define TAILCALLARGBUFFER_ACTIVE       0
+#define TAILCALLARGBUFFER_INSTARG_ONLY 1
+#define TAILCALLARGBUFFER_ABANDONED    2
+
+struct TailCallArgBuffer
+{
+    int State;
+    int Size;
+    void* GCDesc;
+    BYTE Args[1];
+};
+
 #ifdef CROSSGEN_COMPILE
 
 #include "asmconstants.h"
@@ -580,19 +593,7 @@ enum ThreadpoolThreadType
 //---------------------------------------------------------------------------
 //
 //---------------------------------------------------------------------------
-Thread* SetupThread(BOOL fInternal);
-inline Thread* SetupThread()
-{
-    WRAPPER_NO_CONTRACT;
-    return SetupThread(FALSE);
-}
-// A host can deny a thread entering runtime by returning a NULL IHostTask.
-// But we do want threads used by threadpool.
-inline Thread* SetupInternalThread()
-{
-    WRAPPER_NO_CONTRACT;
-    return SetupThread(TRUE);
-}
+Thread* SetupThread();
 Thread* SetupThreadNoThrow(HRESULT *phresult = NULL);
 // WARNING : only GC calls this with bRequiresTSL set to FALSE.
 Thread* SetupUnstartedThread(BOOL bRequiresTSL=TRUE);
@@ -977,21 +978,17 @@ struct PortableTailCallFrame
 
 class TailCallTls
 {
-    friend class MscorlibBinder;
+    friend class CoreLibBinder;
 
     PortableTailCallFrame* m_frame;
-    char* m_argBuffer;
-    size_t m_argBufferSize;
-    void* m_argBufferGCDesc;
-    char m_argBufferInline[64];
+    TailCallArgBuffer* m_argBuffer;
 
 public:
     TailCallTls();
-    void* AllocArgBuffer(size_t size, void* gcDesc);
-    void FreeArgBuffer();
-    char* GetArgBuffer(void** gcDesc)
+    TailCallArgBuffer* AllocArgBuffer(int size, void* gcDesc);
+    void FreeArgBuffer() { delete[] (BYTE*)m_argBuffer; m_argBuffer = NULL; }
+    TailCallArgBuffer* GetArgBuffer()
     {
-        *gcDesc = m_argBufferGCDesc;
         return m_argBuffer;
     }
     const PortableTailCallFrame* GetFrame() { return m_frame; }
@@ -1001,9 +998,6 @@ public:
 //
 // A code:Thread contains all the per-thread information needed by the runtime.  You can get at this
 // structure throught the and OS TLS slot see code:#RuntimeThreadLocals for more
-// Implementing IUnknown would prevent the field (e.g. m_Context) layout from being rearranged (which will need to be fixed in
-// "asmconstants.h" for the respective architecture). As it is, ICLRTask derives from IUnknown and would have got IUnknown implemented
-// here - so doing this explicitly and maintaining layout sanity should be just fine.
 class Thread
 {
     friend struct ThreadQueue;  // used to enqueue & dequeue threads onto SyncBlocks
@@ -1793,7 +1787,7 @@ public:
     //--------------------------------------------------------------
     // Failable initialization occurs here.
     //--------------------------------------------------------------
-    BOOL InitThread(BOOL fInternal);
+    BOOL InitThread();
     BOOL AllocHandles();
 
     //--------------------------------------------------------------
@@ -2597,16 +2591,9 @@ public:
 
 
 public:
-    enum UserAbort_Client
-    {
-        UAC_Normal,
-        UAC_Host,       // Called by host through IClrTask::Abort
-    };
-
     HRESULT        UserAbort(ThreadAbortRequester requester,
                              EEPolicy::ThreadAbortTypes abortType,
-                             DWORD timeout,
-                             UserAbort_Client client
+                             DWORD timeout
                             );
 
     BOOL    HandleJITCaseForAbort();
@@ -3235,16 +3222,6 @@ public:
     static UINT_PTR GetLastNormalStackAddress(UINT_PTR stackBase);
     UINT_PTR GetLastNormalStackAddress();
 
-    UINT_PTR GetLastAllowableStackAddress()
-    {
-        return m_LastAllowableStackAddress;
-    }
-
-    UINT_PTR GetProbeLimit()
-    {
-        return m_ProbeLimit;
-    }
-
     void ResetStackLimits()
     {
         CONTRACTL
@@ -3260,8 +3237,6 @@ public:
         }
         SetStackLimits(fAllowableOnly);
     }
-
-    BOOL IsSPBeyondLimit();
 
     INDEBUG(static void DebugLogStackMBIs());
 
@@ -3671,16 +3646,6 @@ private:
     void SetLastThrownObjectHandle(OBJECTHANDLE h);
 
     ThreadExceptionState  m_ExceptionState;
-
-    //-----------------------------------------------------------
-    // For stack probing.  These are the last allowable addresses that a thread
-    // can touch.  Going beyond is a stack overflow.  The ProbeLimit will be
-    // set based on whether SO probing is enabled.  The LastAllowableAddress
-    // will always represent the true stack limit.
-    //-----------------------------------------------------------
-    UINT_PTR             m_ProbeLimit;
-
-    UINT_PTR             m_LastAllowableStackAddress;
 
 private:
     //---------------------------------------------------------------
@@ -4750,6 +4715,21 @@ public:
 
 private:
     PrepareCodeConfig *m_currentPrepareCodeConfig;
+
+#ifndef DACCESS_COMPILE
+public:
+    bool IsInForbidSuspendForDebuggerRegion() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_isInForbidSuspendForDebuggerRegion;
+    }
+
+    void EnterForbidSuspendForDebuggerRegion();
+    void ExitForbidSuspendForDebuggerRegion();
+#endif
+
+private:
+    bool m_isInForbidSuspendForDebuggerRegion;
 };
 
 // End of class Thread
@@ -4782,7 +4762,7 @@ class ThreadStore
 {
     friend class Thread;
     friend class ThreadSuspend;
-    friend Thread* SetupThread(BOOL);
+    friend Thread* SetupThread();
     friend class AppDomain;
 #ifdef DACCESS_COMPILE
     friend class ClrDataAccess;

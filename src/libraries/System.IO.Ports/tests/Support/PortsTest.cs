@@ -37,9 +37,9 @@ namespace System.IO.PortsTests
             Assert.True(false, string.Format(format, args));
         }
 
-#pragma warning disable MSLIB0001 // Encoding.UTF7 property is obsolete
+#pragma warning disable SYSLIB0001 // Encoding.UTF7 property is obsolete
         protected static Encoding LegacyUTF7Encoding => Encoding.UTF7;
-#pragma warning restore MSLIB0001
+#pragma warning restore SYSLIB0001
 
         /// <summary>
         /// Returns a value stating whether <paramref name="encoding"/> is UTF-7.

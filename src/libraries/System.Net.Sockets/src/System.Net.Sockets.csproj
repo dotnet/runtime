@@ -1,12 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <AssemblyName>System.Net.Sockets</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <PropertyGroup>
-    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsBrowser)' == 'true'">SR.Sockets_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsBrowser)' == 'true'">SR.SystemNetSockets_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
   </PropertyGroup>
   <PropertyGroup>
     <!-- SYSTEM_NET_SOCKETS_DLL is required to allow source-level code sharing for types defined within the
@@ -81,6 +80,8 @@
              Link="Common\System\Net\SocketAddress.cs" />
     <Compile Include="$(CommonPath)System\Net\TcpValidationHelpers.cs"
              Link="Common\System\Net\TcpValidationHelpers.cs" />
+    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
+             Link="Common\System\Threading\Tasks\TaskToApm.cs" />
     <!-- System.Net.Internals -->
     <Compile Include="$(CommonPath)System\Net\Internals\IPEndPointExtensions.cs"
              Link="Common\System\Net\Internals\IPEndPointExtensions.cs" />
@@ -216,8 +217,6 @@
              Link="Common\System\Net\SocketProtocolSupportPal.Unix" />
     <Compile Include="$(CommonPath)System\Net\Sockets\SocketErrorPal.Unix.cs"
              Link="Common\System\Net\Sockets\SocketErrorPal.Unix" />
-    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
-             Link="Common\System\Threading\Tasks\TaskToApm.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs"
              Link="Common\Interop\Unix\Interop.Errors.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
@@ -266,8 +265,6 @@
              Link="Common\Interop\Unix\Interop.Stat.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Listen.cs"
              Link="Common\Interop\Unix\System.Native\Interop.Listen.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MemSet.cs"
-             Link="Common\Interop\Unix\System.Native\Interop.MemSet.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MessageHeader.cs"
              Link="Common\Interop\Unix\System.Native\Interop.MessageHeader.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MulticastOption.cs"
@@ -302,6 +299,7 @@
              Link="Common\Interop\Unix\System.Native\Interop.Write.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Principal.Windows\src\System.Security.Principal.Windows.csproj" />
     <Reference Include="Microsoft.Win32.Primitives" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Concurrent" />
@@ -315,7 +313,6 @@
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Runtime.InteropServices.RuntimeInformation" />
     <Reference Include="System.Security.Claims" />
-    <Reference Include="System.Security.Principal.Windows" />
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Overlapped" />
     <Reference Include="System.Threading.ThreadPool" />

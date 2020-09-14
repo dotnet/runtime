@@ -150,7 +150,7 @@ namespace System.Reflection.Emit
             return parameters![pos];
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
             Justification = "Linker doesn't analyze RuntimeResolve but it's an identity function")]
         internal MethodBase RuntimeResolve()
         {

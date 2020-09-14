@@ -65,7 +65,6 @@ class MethodDescBackpatchInfoTracker
 {
 private:
     static CrstStatic s_lock;
-    static bool s_isLocked;
 
     class BackpatchInfoTrackerHashTraits : public NoRemoveDefaultCrossLoaderAllocatorHashTraits<MethodDesc *, UINT_PTR>
     {
@@ -97,63 +96,55 @@ public:
     static bool IsLockOwnedByCurrentThread();
 #endif
 
-#ifndef DACCESS_COMPILE
 public:
-    static bool IsLockOwnedByAnyThread()
+    // To be used when the thread will remain in preemptive GC mode while holding the lock
+    class ConditionalLockHolderForGCPreemp : private CrstHolderWithState
     {
-        LIMITED_METHOD_CONTRACT;
-        return VolatileLoadWithoutBarrier(&s_isLocked);
-    }
-
-    static void PollForDebuggerSuspension();
-#endif
-
-public:
-    class ConditionalLockHolder : private CrstHolderWithState
-    {
-    private:
-        bool m_isLocked;
-
     public:
-        ConditionalLockHolder(bool acquireLock = true)
+        ConditionalLockHolderForGCPreemp(bool acquireLock = true)
             : CrstHolderWithState(
 #ifndef DACCESS_COMPILE
                 acquireLock ? &s_lock : nullptr
 #else
                 nullptr
 #endif
-                ),
-            m_isLocked(false)
+                )
         {
-            WRAPPER_NO_CONTRACT;
-
-        #ifndef DACCESS_COMPILE
-            if (acquireLock)
+            CONTRACTL
             {
-                _ASSERTE(IsLockOwnedByCurrentThread());
-                _ASSERTE(!s_isLocked);
-                m_isLocked = true;
-                s_isLocked = true;
+                NOTHROW;
+                GC_NOTRIGGER;
+                MODE_PREEMPTIVE;
             }
-        #endif
+            CONTRACTL_END;
         }
 
-        ~ConditionalLockHolder()
-        {
-            WRAPPER_NO_CONTRACT;
-
-        #ifndef DACCESS_COMPILE
-            if (m_isLocked)
-            {
-                _ASSERTE(IsLockOwnedByCurrentThread());
-                _ASSERTE(s_isLocked);
-                s_isLocked = false;
-            }
-        #endif
-        }
-
-        DISABLE_COPY(ConditionalLockHolder);
+        DISABLE_COPY(ConditionalLockHolderForGCPreemp);
     };
+
+#ifndef DACCESS_COMPILE
+public:
+    // To be used when the thread may enter cooperative GC mode while holding the lock. The thread enters a
+    // forbid-suspend-for-debugger region along with acquiring the lock, such that it would not suspend for the debugger while
+    // holding the lock, as that may otherwise cause a FuncEval to deadlock when trying to acquire the lock.
+    class ConditionalLockHolderForGCCoop : private CrstAndForbidSuspendForDebuggerHolder
+    {
+    public:
+        ConditionalLockHolderForGCCoop(bool acquireLock = true)
+            : CrstAndForbidSuspendForDebuggerHolder(acquireLock ? &s_lock : nullptr)
+        {
+            CONTRACTL
+            {
+                NOTHROW;
+                GC_NOTRIGGER;
+                MODE_PREEMPTIVE;
+            }
+            CONTRACTL_END;
+        }
+
+        DISABLE_COPY(ConditionalLockHolderForGCCoop);
+    };
+#endif
 
 public:
     MethodDescBackpatchInfoTracker()

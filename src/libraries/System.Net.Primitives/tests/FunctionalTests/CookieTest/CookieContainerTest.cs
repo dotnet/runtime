@@ -13,7 +13,7 @@ namespace System.Net.Primitives.Functional.Tests
         private const string CookieValue2 = "CookieValue2";
 
         [Fact]
-        public void Add_CookieVersion1AndRootDomainWithNoLeadingDot_ThrowsCookieException()
+        public void Add_CookieVersion1AndRootDomainWithNoLeadingDot_Success()
         {
             const string SchemePrefix = "http://";
             const string OriginalDomain = "contoso.com";
@@ -21,7 +21,8 @@ namespace System.Net.Primitives.Functional.Tests
             var container = new CookieContainer();
             var cookie = new Cookie(CookieName1, CookieValue1) { Version = 1, Domain = OriginalDomain };
             var uri = new Uri(SchemePrefix + OriginalDomain);
-            Assert.Throws<CookieException>(() => container.Add(uri, cookie));
+            container.Add(uri, cookie);
+            Assert.Equal(1, container.GetCookies(uri).Count);
         }
 
         [Fact]

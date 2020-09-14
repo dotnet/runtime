@@ -39,6 +39,7 @@ if /i [%1] == [commit]      (set __CommitSha=%2&&shift&&shift&goto Arg_Loop)
 if /i [%1] == [incremental-native-build] ( set __IncrementalNativeBuild=1&&shift&goto Arg_Loop)
 if /i [%1] == [rootDir]     ( set __rootDir=%2&&shift&&shift&goto Arg_Loop)
 if /i [%1] == [coreclrartifacts]  (set __CoreClrArtifacts=%2&&shift&&shift&goto Arg_Loop)
+if /i [%1] == [nativelibsartifacts]  (set __NativeLibsArtifacts=%2&&shift&&shift&goto Arg_Loop)
 
 
 shift

@@ -63,7 +63,7 @@
 // Some useful effects of this rule (for ngen purposes) are:
 //
 // * G<object,...,object> lives in the module defining G
-// * non-mscorlib instantiations of mscorlib-defined generic types live in the module
+// * non-CoreLib instantiations of CoreLib-defined generic types live in the module
 //   of the instantiation (when only one module is invloved in the instantiation)
 //
 
@@ -138,9 +138,9 @@ PTR_Module ClassLoader::ComputeLoaderModuleWorker(
 
     if (pLoaderModule == NULL)
     {
-        CONSISTENCY_CHECK(MscorlibBinder::GetModule() && MscorlibBinder::GetModule()->IsSystem());
+        CONSISTENCY_CHECK(CoreLibBinder::GetModule() && CoreLibBinder::GetModule()->IsSystem());
 
-        pLoaderModule = MscorlibBinder::GetModule();
+        pLoaderModule = CoreLibBinder::GetModule();
     }
 
     if (FALSE)
@@ -250,7 +250,7 @@ PTR_Module ClassLoader::ComputeLoaderModuleForCompilation(
 
     // We're a little stuck - we can't force the item into an NGEN image at this point.  So just bail out
     // and use the loader module we've computed without recording the choice. The loader module should always
-    // be mscorlib in this case.
+    // be CoreLib in this case.
     AppDomain * pAppDomain = GetAppDomain();
     if (!pAppDomain->IsCompilationDomain() ||
         !pAppDomain->ToCompilationDomain()->GetTargetModule())
@@ -3282,7 +3282,7 @@ TypeHandle ClassLoader::CreateTypeHandleForTypeKey(TypeKey* pKey, AllocMemTracke
             // let <Type>* type have a method table
             // System.UIntPtr's method table is used for types like int*, void *, string * etc.
             if (kind == ELEMENT_TYPE_PTR)
-                templateMT = MscorlibBinder::GetElementType(ELEMENT_TYPE_U);
+                templateMT = CoreLibBinder::GetElementType(ELEMENT_TYPE_U);
             else
                 templateMT = NULL;
 
@@ -3519,7 +3519,6 @@ static void PushFinalLevels(TypeHandle typeHnd, ClassLoadLevel targetLevel, cons
     }
     CONTRACTL_END
 
-
     // This phase brings the type and all its transitive dependencies to their
     // final state, sans the IsFullyLoaded bit.
     if (targetLevel >= CLASS_DEPENDENCIES_LOADED)
@@ -3532,6 +3531,11 @@ static void PushFinalLevels(TypeHandle typeHnd, ClassLoadLevel targetLevel, cons
     // and on its transitive dependencies.
     if (targetLevel == CLASS_LOADED)
     {
+        if (!typeHnd.IsTypeDesc())
+        {
+            ClassLoader::ValidateMethodsWithCovariantReturnTypes(typeHnd.AsMethodTable());
+        }
+
         DFLPendingList pendingList;
         BOOL           fBailed = FALSE;
 
@@ -3589,6 +3593,10 @@ TypeHandle ClassLoader::LoadTypeHandleForTypeKey(TypeKey *pTypeKey,
     }
 #endif
 
+#if defined(FEATURE_EVENT_TRACE)
+    UINT32 typeLoad = ETW::TypeSystemLog::TypeLoadBegin();
+#endif
+
     // When using domain neutral assemblies (and not eagerly propagating dependency loads),
     // it's possible to get here without having injected the module into the current app domain.
     // GetDomainFile will accomplish that.
@@ -3610,6 +3618,13 @@ TypeHandle ClassLoader::LoadTypeHandleForTypeKey(TypeKey *pTypeKey,
     _ASSERTE(typeHnd.GetLoadLevel() >= targetLevelUnderLock);
 
     PushFinalLevels(typeHnd, targetLevel, pInstContext);
+
+#if defined(FEATURE_EVENT_TRACE)
+    if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, TypeLoadStop))
+    {
+        ETW::TypeSystemLog::TypeLoadEnd(typeLoad, typeHnd, (UINT16)targetLevel);
+    }
+#endif
 
     return typeHnd;
 }

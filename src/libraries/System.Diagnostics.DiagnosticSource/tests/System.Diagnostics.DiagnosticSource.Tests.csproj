@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)-Windows_NT</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);net48-Windows_NT</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup Condition="!$(TargetFramework.StartsWith('net4'))">
     <Compile Include="DiagnosticSourceEventSourceBridgeTests.cs" />
@@ -17,5 +17,9 @@
     <Compile Include="ActivityDateTimeTests.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Configuration.cs" Link="Common\System\Net\Configuration.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Configuration.Http.cs" Link="Common\System\Net\Configuration.Http.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
+    <ProjectReference Include="..\src\System.Diagnostics.DiagnosticSource.csproj" />
+    <Reference Include="System.Net.Http" />
   </ItemGroup>
 </Project>

@@ -189,7 +189,7 @@ internal static partial class Interop
                     if (!sslAuthenticationOptions.IsServer)
                     {
                         // The IdnMapping converts unicode input into the IDNA punycode sequence.
-                        string punyCode = s_idnMapping.GetAscii(sslAuthenticationOptions.TargetHost!);
+                        string punyCode = string.IsNullOrEmpty(sslAuthenticationOptions.TargetHost) ? string.Empty : s_idnMapping.GetAscii(sslAuthenticationOptions.TargetHost!);
 
                         // Similar to windows behavior, set SNI on openssl by default for client context, ignore errors.
                         if (!Ssl.SslSetTlsExtHostName(context, punyCode))

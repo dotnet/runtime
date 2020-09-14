@@ -10,6 +10,7 @@ internal partial class Interop
         internal delegate void TerminalInvalidationCallback();
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_SetTerminalInvalidationHandler")]
+        [SuppressGCTransition]
         internal static extern void SetTerminalInvalidationHandler(TerminalInvalidationCallback handler);
     }
 }

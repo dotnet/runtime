@@ -8,8 +8,6 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-cmake_policy(SET CMP0083 NEW)
-
 include(CheckCXXCompilerFlag)
 
 # "configureoptimization.cmake" must be included after CLR_CMAKE_HOST_UNIX has been set.
@@ -19,9 +17,7 @@ include(${CMAKE_CURRENT_LIST_DIR}/configureoptimization.cmake)
 # Initialize Cmake compiler flags and other variables
 #-----------------------------------------------------
 
-if(MSVC)
-    add_compile_options(/Zi /FC /Zc:strictStrings)
-elseif (CLR_CMAKE_HOST_UNIX)
+if (CLR_CMAKE_HOST_UNIX)
     add_compile_options(-g)
     add_compile_options(-Wall)
     if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -40,11 +36,18 @@ set(CMAKE_CXX_FLAGS_CHECKED "")
 set(CMAKE_EXE_LINKER_FLAGS_CHECKED "")
 set(CMAKE_SHARED_LINKER_FLAGS_CHECKED "")
 
+set(CMAKE_SHARED_LINKER_FLAGS_DEBUG "")
+set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "")
+set(CMAKE_SHARED_LINKER_FLAGS_RELWITHDEBINFO "")
+set(CMAKE_EXE_LINKER_FLAGS_DEBUG "")
+set(CMAKE_EXE_LINKER_FLAGS_DEBUG "")
+set(CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO "")
+
 add_compile_definitions("$<$<OR:$<CONFIG:DEBUG>,$<CONFIG:CHECKED>>:DEBUG;_DEBUG;_DBG;URTBLDENV_FRIENDLY=Checked;BUILDENV_CHECKED=1>")
 add_compile_definitions("$<$<OR:$<CONFIG:RELEASE>,$<CONFIG:RELWITHDEBINFO>>:NDEBUG;URTBLDENV_FRIENDLY=Retail>")
 
 if (MSVC)
-  add_link_options(/GUARD:CF)
+  add_linker_flag(/GUARD:CF)
 
   # Linker flags
   #
@@ -57,48 +60,51 @@ if (MSVC)
   endif ()
 
   #Do not create Side-by-Side Assembly Manifest
-  add_link_options($<$<STREQUAL:$<TARGET_PROPERTY:TYPE>,SHARED_LIBRARY>:/MANIFEST:NO>)
+  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /MANIFEST:NO")
   # can handle addresses larger than 2 gigabytes
-  add_link_options($<$<STREQUAL:$<TARGET_PROPERTY:TYPE>,SHARED_LIBRARY>:/LARGEADDRESSAWARE>)
+  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /LARGEADDRESSAWARE")
   #Compatible with Data Execution Prevention
-  add_link_options($<$<STREQUAL:$<TARGET_PROPERTY:TYPE>,SHARED_LIBRARY>:/NXCOMPAT>)
+  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /NXCOMPAT")
   #Use address space layout randomization
-  add_link_options($<$<STREQUAL:$<TARGET_PROPERTY:TYPE>,SHARED_LIBRARY>:/DYNAMICBASE>)
+  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /DYNAMICBASE")
   #shrink pdb size
-  add_link_options($<$<STREQUAL:$<TARGET_PROPERTY:TYPE>,SHARED_LIBRARY>:/PDBCOMPRESS>)
+  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /PDBCOMPRESS")
 
-  add_link_options($<$<STREQUAL:$<TARGET_PROPERTY:TYPE>,SHARED_LIBRARY>:/DEBUG>)
-  add_link_options($<$<STREQUAL:$<TARGET_PROPERTY:TYPE>,SHARED_LIBRARY>:/IGNORE:4197,4013,4254,4070,4221>)
-  add_link_options($<$<STREQUAL:$<TARGET_PROPERTY:TYPE>,SHARED_LIBRARY>:/SUBSYSTEM:WINDOWS,${WINDOWS_SUBSYSTEM_VERSION}>)
+  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /DEBUG")
+  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /IGNORE:4197,4013,4254,4070,4221")
+  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /SUBSYSTEM:WINDOWS,${WINDOWS_SUBSYSTEM_VERSION}")
 
   set(CMAKE_STATIC_LINKER_FLAGS "${CMAKE_STATIC_LINKER_FLAGS} /IGNORE:4221")
 
-  add_link_options($<$<STREQUAL:$<TARGET_PROPERTY:TYPE>,EXECUTABLE>:/DEBUG>)
-  add_link_options($<$<STREQUAL:$<TARGET_PROPERTY:TYPE>,EXECUTABLE>:/PDBCOMPRESS>)
-  add_link_options($<$<STREQUAL:$<TARGET_PROPERTY:TYPE>,EXECUTABLE>:/STACK:1572864>)
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /DEBUG")
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /PDBCOMPRESS")
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /STACK:1572864")
 
   # Debug build specific flags
-  add_link_options($<$<AND:$<OR:$<CONFIG:DEBUG>,$<CONFIG:CHECKED>>,$<STREQUAL:$<TARGET_PROPERTY:TYPE>,SHARED_LIBRARY>>:/NOVCFEATURE>)
+  set(CMAKE_SHARED_LINKER_FLAGS_DEBUG "${CMAKE_SHARED_LINKER_FLAGS_DEBUG} /NOVCFEATURE")
+  set(CMAKE_SHARED_LINKER_FLAGS_CHECKED "${CMAKE_SHARED_LINKER_FLAGS_CHECKED} /NOVCFEATURE")
 
   # Checked build specific flags
-  add_link_options($<$<CONFIG:CHECKED>:/INCREMENTAL:NO>) # prevent "warning LNK4075: ignoring '/INCREMENTAL' due to '/OPT:REF' specification"
-  add_link_options($<$<CONFIG:CHECKED>:/OPT:REF>)
-  add_link_options($<$<CONFIG:CHECKED>:/OPT:NOICF>)
+  add_linker_flag(/INCREMENTAL:NO CHECKED) # prevent "warning LNK4075: ignoring '/INCREMENTAL' due to '/OPT:REF' specification"
+  add_linker_flag(/OPT:REF CHECKED)
+  add_linker_flag(/OPT:NOICF CHECKED)
 
   # Release build specific flags
-  add_link_options($<$<CONFIG:RELEASE>:/LTCG>)
-  add_link_options($<$<CONFIG:RELEASE>:/OPT:REF>)
-  add_link_options($<$<CONFIG:RELEASE>:/OPT:ICF>)
+  add_linker_flag(/LTCG RELEASE)
+  add_linker_flag(/OPT:REF RELEASE)
+  add_linker_flag(/OPT:ICF RELEASE)
+  add_linker_flag(/INCREMENTAL:NO RELEASE)
   set(CMAKE_STATIC_LINKER_FLAGS_RELEASE "${CMAKE_STATIC_LINKER_FLAGS_RELEASE} /LTCG")
 
   # ReleaseWithDebugInfo build specific flags
-  add_link_options($<$<CONFIG:RELWITHDEBINFO>:/LTCG>)
-  add_link_options($<$<CONFIG:RELWITHDEBINFO>:/OPT:REF>)
-  add_link_options($<$<CONFIG:RELWITHDEBINFO>:/OPT:ICF>)
+  add_linker_flag(/LTCG RELWITHDEBINFO)
+  add_linker_flag(/OPT:REF RELWITHDEBINFO)
+  add_linker_flag(/OPT:ICF RELWITHDEBINFO)
   set(CMAKE_STATIC_LINKER_FLAGS_RELWITHDEBINFO "${CMAKE_STATIC_LINKER_FLAGS_RELWITHDEBINFO} /LTCG")
 
   # Force uCRT to be dynamically linked for Release build
-  add_link_options("$<$<CONFIG:RELEASE>:/NODEFAULTLIB:libucrt.lib;/DEFAULTLIB:ucrt.lib>")
+  add_linker_flag(/NODEFAULTLIB:libucrt.lib RELEASE)
+  add_linker_flag(/DEFAULTLIB:ucrt.lib RELEASE)
 
 elseif (CLR_CMAKE_HOST_UNIX)
   # Set the values to display when interactively configuring CMAKE_BUILD_TYPE
@@ -157,11 +163,10 @@ elseif (CLR_CMAKE_HOST_UNIX)
 
       # -fdata-sections -ffunction-sections: each function has own section instead of one per .o file (needed for --gc-sections)
       # -O1: optimization level used instead of -O0 to avoid compile error "invalid operand for inline asm constraint"
-      add_compile_definitions("$<$<OR:$<CONFIG:DEBUG>,$<CONFIG:CHECKED>>:${CLR_SANITIZE_CXX_OPTIONS};-fdata-sections;--ffunction-sections;-O1>")
-      add_link_options($<$<AND:$<OR:$<CONFIG:DEBUG>,$<CONFIG:CHECKED>>,$<STREQUAL:$<TARGET_PROPERTY:TYPE>,EXECUTABLE>>:${CLR_SANITIZE_LINK_OPTIONS}>)
-
+      add_compile_options("$<$<OR:$<CONFIG:DEBUG>,$<CONFIG:CHECKED>>:${CLR_SANITIZE_CXX_OPTIONS};-fdata-sections;--ffunction-sections;-O1>")
+      add_linker_flag("${CLR_SANITIZE_LINK_OPTIONS}" DEBUG CHECKED)
       # -Wl and --gc-sections: drop unused sections\functions (similar to Windows /Gy function-level-linking)
-      add_link_options("$<$<AND:$<OR:$<CONFIG:DEBUG>,$<CONFIG:CHECKED>>,$<STREQUAL:$<TARGET_PROPERTY:TYPE>,SHARED_LIBRARY>>:${CLR_SANITIZE_LINK_OPTIONS};-Wl,--gc-sections>")
+      add_linker_flag("-Wl,--gc-sections" DEBUG CHECKED)
     endif ()
   endif(UPPERCASE_CMAKE_BUILD_TYPE STREQUAL DEBUG OR UPPERCASE_CMAKE_BUILD_TYPE STREQUAL CHECKED)
 endif(MSVC)
@@ -173,15 +178,18 @@ endif(MSVC)
 #       ./build-native.sh cmakeargs "-DCLR_ADDITIONAL_COMPILER_OPTIONS=<...>" cmakeargs "-DCLR_ADDITIONAL_LINKER_FLAGS=<...>"
 #
 if(CLR_CMAKE_HOST_UNIX)
-    add_link_options(${CLR_ADDITIONAL_LINKER_FLAGS})
+  foreach(ADDTL_LINKER_FLAG ${CLR_ADDITIONAL_LINKER_FLAGS})
+    add_linker_flag(${ADDTL_LINKER_FLAG})
+  endforeach()
 endif(CLR_CMAKE_HOST_UNIX)
 
 if(CLR_CMAKE_HOST_LINUX)
   add_compile_options($<$<COMPILE_LANGUAGE:ASM>:-Wa,--noexecstack>)
-  add_link_options(-Wl,--build-id=sha1 -Wl,-z,relro,-z,now)
+  add_linker_flag(-Wl,--build-id=sha1)
+  add_linker_flag(-Wl,-z,relro,-z,now)
 elseif(CLR_CMAKE_HOST_FREEBSD)
   add_compile_options($<$<COMPILE_LANGUAGE:ASM>:-Wa,--noexecstack>)
-  add_link_options(LINKER:--build-id=sha1)
+  add_linker_flag("-Wl,--build-id=sha1")
 elseif(CLR_CMAKE_HOST_SUNOS)
   add_compile_options($<$<COMPILE_LANGUAGE:ASM>:-Wa,--noexecstack>)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fstack-protector")
@@ -193,13 +201,17 @@ endif()
 # Definitions (for platform)
 #-----------------------------------
 if (CLR_CMAKE_HOST_ARCH_AMD64)
+  set(ARCH_HOST_NAME x64)
   add_definitions(-DHOST_AMD64)
   add_definitions(-DHOST_64BIT)
 elseif (CLR_CMAKE_HOST_ARCH_I386)
+  set(ARCH_HOST_NAME x86)
   add_definitions(-DHOST_X86)
 elseif (CLR_CMAKE_HOST_ARCH_ARM)
+  set(ARCH_HOST_NAME arm)
   add_definitions(-DHOST_ARM)
 elseif (CLR_CMAKE_HOST_ARCH_ARM64)
+  set(ARCH_HOST_NAME arm64)
   add_definitions(-DHOST_ARM64)
   add_definitions(-DHOST_64BIT)
 else ()
@@ -254,18 +266,22 @@ endif(CLR_CMAKE_HOST_WIN32)
 # Architecture specific files folder name
 if (CLR_CMAKE_TARGET_ARCH_AMD64)
     set(ARCH_SOURCES_DIR amd64)
-    add_definitions(-DTARGET_AMD64)
-    add_definitions(-DTARGET_64BIT)
+    set(ARCH_TARGET_NAME x64)
+    add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_ARCH>>>:TARGET_AMD64>)
+    add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_ARCH>>>:TARGET_64BIT>)
 elseif (CLR_CMAKE_TARGET_ARCH_ARM64)
     set(ARCH_SOURCES_DIR arm64)
-    add_definitions(-DTARGET_ARM64)
-    add_definitions(-DTARGET_64BIT)
+    set(ARCH_TARGET_NAME arm64)
+    add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_ARCH>>>:TARGET_ARM64>)
+    add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_ARCH>>>:TARGET_64BIT>)
 elseif (CLR_CMAKE_TARGET_ARCH_ARM)
     set(ARCH_SOURCES_DIR arm)
-    add_definitions(-DTARGET_ARM)
+    set(ARCH_TARGET_NAME arm)
+    add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_ARCH>>>:TARGET_ARM>)
 elseif (CLR_CMAKE_TARGET_ARCH_I386)
+    set(ARCH_TARGET_NAME x86)
     set(ARCH_SOURCES_DIR i386)
-    add_definitions(-DTARGET_X86)
+    add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_ARCH>>>:TARGET_X86>)
 else ()
     clr_unknown_arch()
 endif ()
@@ -351,7 +367,7 @@ if (CLR_CMAKE_HOST_UNIX)
   endif()
 
   # Some architectures (e.g., ARM) assume char type is unsigned while CoreCLR assumes char is signed
-  # as x64 does. It has been causing issues in ARM (https://github.com/dotnet/coreclr/issues/4746)
+  # as x64 does. It has been causing issues in ARM (https://github.com/dotnet/runtime/issues/5778)
   add_compile_options(-fsigned-char)
 
   # We mark the function which needs exporting with DLLEXPORT
@@ -359,31 +375,31 @@ if (CLR_CMAKE_HOST_UNIX)
 
   # Specify the minimum supported version of macOS
   if(CLR_CMAKE_HOST_OSX)
-    set(MACOS_VERSION_MIN_FLAGS -mmacosx-version-min=10.12)
+    set(MACOS_VERSION_MIN_FLAGS -mmacosx-version-min=10.13)
     add_compile_options(${MACOS_VERSION_MIN_FLAGS})
-    add_link_options(${MACOS_VERSION_MIN_FLAGS})
+    add_linker_flag(${MACOS_VERSION_MIN_FLAGS})
   endif(CLR_CMAKE_HOST_OSX)
 endif(CLR_CMAKE_HOST_UNIX)
 
 if(CLR_CMAKE_TARGET_UNIX)
-  add_definitions(-DTARGET_UNIX)
+  add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_UNIX>)
   # Contracts are disabled on UNIX.
   add_definitions(-DDISABLE_CONTRACTS)
   if(CLR_CMAKE_TARGET_OSX)
-    add_definitions(-DTARGET_OSX)
+    add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_OSX>)
   elseif(CLR_CMAKE_TARGET_FREEBSD)
-    add_definitions(-DTARGET_FREEBSD)
+    add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_FREEBSD>)
   elseif(CLR_CMAKE_TARGET_LINUX)
-    add_definitions(-DTARGET_LINUX)
+    add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_LINUX>)
   elseif(CLR_CMAKE_TARGET_NETBSD)
-    add_definitions(-DTARGET_NETBSD)
+    add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_NETBSD>)
   elseif(CLR_CMAKE_TARGET_SUNOS)
-    add_definitions(-DTARGET_SUNOS)
+    add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_SUNOS>)
   elseif(CLR_CMAKE_TARGET_ANDROID)
-    add_definitions(-DTARGET_ANDROID)
+    add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_ANDROID>)
   endif()
 else(CLR_CMAKE_TARGET_UNIX)
-  add_definitions(-DTARGET_WINDOWS)
+  add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_WINDOWS>)
 endif(CLR_CMAKE_TARGET_UNIX)
 
 if(CLR_CMAKE_HOST_UNIX_ARM)
@@ -417,31 +433,27 @@ endif(CLR_CMAKE_HOST_UNIX)
 if (MSVC)
   # Compile options for targeting windows
 
-  # The following options are set by the razzle build
   add_compile_options(/TP) # compile all files as C++
   add_compile_options(/nologo) # Suppress Startup Banner
   add_compile_options(/W3) # set warning level to 3
   add_compile_options(/WX) # treat warnings as errors
   add_compile_options(/Oi) # enable intrinsics
   add_compile_options(/Oy-) # disable suppressing of the creation of frame pointers on the call stack for quicker function calls
-  add_compile_options(/U_MT) # undefine the predefined _MT macro
-  add_compile_options(/GF) # enable read-only string pooling
   add_compile_options(/Gm-) # disable minimal rebuild
   add_compile_options(/Zp8) # pack structs on 8-byte boundary
   add_compile_options(/Gy) # separate functions for linker
-  add_compile_options(/Zc:wchar_t-) # C++ language conformance: wchar_t is NOT the native type, but a typedef
-  add_compile_options(/Zc:forScope) # C++ language conformance: enforce Standard C++ for scoping rules
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /GR-") # disable C++ RTTI
   add_compile_options(/FC) # use full pathnames in diagnostics
   add_compile_options(/MP) # Build with Multiple Processes (number of processes equal to the number of processors)
-  add_compile_options(/GS) # Buffer Security Check
   add_compile_options(/Zm200) # Specify Precompiled Header Memory Allocation Limit of 150MB
+  add_compile_options(/Zc:strictStrings) # Disable string-literal to char* or wchar_t* conversion
 
   add_compile_options(/wd4960 /wd4961 /wd4603 /wd4627 /wd4838 /wd4456 /wd4457 /wd4458 /wd4459 /wd4091 /we4640)
 
   # Disable Warnings:
   # 4291: Delete not defined for new, c++ exception may cause leak.
-  add_compile_options(/wd4291)
+  # 5105: Windows SDK headers use 'defined' operator in some macros
+  add_compile_options(/wd4291 /wd5105)
 
   # Treat Warnings as Errors:
   # 4007: 'main' : must be __cdecl.
@@ -517,7 +529,7 @@ if(CLR_CMAKE_ENABLE_CODE_COVERAGE)
 
     add_compile_options(-fprofile-arcs)
     add_compile_options(-ftest-coverage)
-    add_link_options(--coverage)
+    add_linker_flag(--coverage)
   else()
     message(FATAL_ERROR "Code coverage builds not supported on current platform")
   endif(CLR_CMAKE_HOST_UNIX)

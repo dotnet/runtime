@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.14.5)
+cmake_minimum_required(VERSION 3.6.2)
 
 cmake_policy(SET CMP0042 NEW)
 
@@ -51,9 +51,9 @@ include(pgosupport.cmake)
 #-------------------------------
 # Include libraries native shims
 #-------------------------------
-if(NOT CLR_CROSS_COMPONENTS_BUILD)
+if(NOT CLR_CROSS_COMPONENTS_BUILD AND CLR_CMAKE_BUILD_SUBSET_RUNTIME)
   add_subdirectory(src/libraries-native)
-endif(NOT CLR_CROSS_COMPONENTS_BUILD)
+endif(NOT CLR_CROSS_COMPONENTS_BUILD AND CLR_CMAKE_BUILD_SUBSET_RUNTIME)
 
 #-----------------------------------------
 # Add Projects
@@ -86,7 +86,7 @@ add_subdirectory(src/pal/prebuilt/inc)
 
 add_subdirectory(src/debug/debug-pal)
 
-if(CLR_CMAKE_TARGET_WIN32)
+if(CLR_CMAKE_TARGET_WIN32 AND CLR_CMAKE_BUILD_SUBSET_RUNTIME)
   add_subdirectory(src/gc/sample)
 endif()
 
@@ -115,7 +115,9 @@ include_directories("../../artifacts/obj/coreclr")
 
 if(FEATURE_STANDALONE_GC)
   add_definitions(-DFEATURE_STANDALONE_GC)
-  add_subdirectory(src/gc)
+  if (CLR_CMAKE_BUILD_SUBSET_RUNTIME)
+    add_subdirectory(src/gc)
+  endif (CLR_CMAKE_BUILD_SUBSET_RUNTIME)
 endif(FEATURE_STANDALONE_GC)
 
 if (CLR_CMAKE_HOST_UNIX)

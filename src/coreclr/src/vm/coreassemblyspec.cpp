@@ -91,7 +91,7 @@ VOID  AssemblySpec::Bind(AppDomain      *pAppDomain,
         STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(pResult));
         PRECONDITION(CheckPointer(pAppDomain));
-        PRECONDITION(IsMscorlib() == FALSE); // This should never be called for MSCORLIB (explicit loading)
+        PRECONDITION(IsCoreLib() == FALSE); // This should never be called for CoreLib (explicit loading)
     }
     CONTRACTL_END;
 
@@ -116,7 +116,7 @@ VOID  AssemblySpec::Bind(AppDomain      *pAppDomain,
     ReleaseHolder<ICLRPrivAssembly> pPrivAsm;
     _ASSERTE(pBinder != NULL);
 
-    if (m_wszCodeBase == NULL && IsMscorlibSatellite())
+    if (m_wszCodeBase == NULL && IsCoreLibSatellite())
     {
         StackSString sSystemDirectory(SystemDomain::System()->SystemDirectory());
         StackSString tmpString;

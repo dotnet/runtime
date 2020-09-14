@@ -1,18 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <AssemblyName>System.Private.Xml</AssemblyName>
     <RootNamespace>System.Xml</RootNamespace>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);FEATURE_COMPILED_XSL</DefineConstants>
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)</TargetFrameworks>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(CommonPath)System\Text\StringBuilderCache.cs"
-             Link="Common\System\StringBuilderCache.cs" />
-    <Compile Include="$(CommonPath)System\Marvin.cs"
-             Link="Common\System\Marvin.cs" />
-    <Compile Include="$(CommonPath)System\HexConverter.cs"
-             Link="Common\System\HexConverter.cs" />
+    <Compile Include="$(CommonPath)System\Text\StringBuilderCache.cs" Link="Common\System\StringBuilderCache.cs" />
+    <Compile Include="$(CommonPath)System\Marvin.cs" Link="Common\System\Marvin.cs" />
+    <Compile Include="$(CommonPath)System\HexConverter.cs" Link="Common\System\HexConverter.cs" />
     <Compile Include="System\Xml\BinaryXml\XmlBinaryReader.cs" />
     <Compile Include="System\Xml\BinaryXml\BinXmlToken.cs" />
     <Compile Include="System\Xml\BinaryXml\SqlUtils.cs" />
@@ -553,11 +550,6 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="System\Xml\XmlCharType.bin">
-      <LogicalName>XmlCharType.bin</LogicalName>
-    </EmbeddedResource>
-  </ItemGroup>
-  <ItemGroup>
     <Reference Include="System.Reflection.Emit" />
     <Reference Include="System.Reflection.Emit.ILGeneration" />
     <Reference Include="System.Reflection.Emit.Lightweight" />
@@ -579,6 +571,7 @@
     <Reference Include="System.ObjectModel" />
     <Reference Include="System.Reflection.Primitives" />
     <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Security.Cryptography.Algorithms" />
@@ -790,8 +783,7 @@
     <Compile Include="System\Xml\Xsl\Xslt\XsltLoader.cs" />
     <Compile Include="System\Xml\Xsl\Xslt\XsltQilFactory.cs" />
     <Compile Include="System\Xml\Xsl\Xslt\XslVisitor.cs" />
-    <Compile Include="$(CommonPath)System\LocalAppContextSwitches.Common.cs"
-             Link="System\LocalAppContextSwitches.Common.cs" />
+    <Compile Include="$(CommonPath)System\LocalAppContextSwitches.Common.cs" Link="System\LocalAppContextSwitches.Common.cs" />
     <Compile Include="System\Xml\Core\LocalAppContextSwitches.cs" />
     <Compile Include="$(CommonPath)System\CSharpHelpers.cs" />
   </ItemGroup>

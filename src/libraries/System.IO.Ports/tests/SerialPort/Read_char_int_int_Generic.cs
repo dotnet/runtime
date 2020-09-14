@@ -276,8 +276,6 @@ namespace System.IO.Ports.Tests
         [ConditionalFact(nameof(HasNullModem))]
         public void BytesToRead_Equal_Buffer_Size()
         {
-            Random rndGen = new Random(-55);
-
             VerifyBytesToRead(numRndBytesToRead);
         }
         #endregion

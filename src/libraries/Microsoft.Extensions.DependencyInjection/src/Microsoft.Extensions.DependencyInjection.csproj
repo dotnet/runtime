@@ -1,8 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent);net461;netstandard2.0;netstandard2.1</TargetFrameworks>
-    <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
+    <TargetFrameworks>$(NetCoreAppCurrent);net461;netstandard2.0;netstandard2.1</TargetFrameworks>
     <!-- Debug IL generation -->
     <ILEmitBackendSaveAssemblies>False</ILEmitBackendSaveAssemblies>
   </PropertyGroup>
@@ -15,36 +14,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Reference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
-  </ItemGroup>
-
-  <ItemGroup Condition="$(TargetFramework.StartsWith('net4')) Or '$(TargetFramework)' == 'netstandard2.0'">
-    <Reference Include="Microsoft.Bcl.AsyncInterfaces" />
-    <Reference Include="System.Threading.Tasks.Extensions" />
-  </ItemGroup>
-
-  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
-    <Reference Include="mscorlib" />
-    <Reference Include="System.Linq.Expressions" />
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
-    <Reference Include="System.Collections" />
-    <Reference Include="System.Collections.Concurrent" />
-    <Reference Include="System.ComponentModel" />
-    <Reference Include="System.Diagnostics.Tracing" />
-    <Reference Include="System.Linq" />
-    <Reference Include="System.Linq.Expressions" />
-    <Reference Include="System.Reflection.Emit.ILGeneration" />
-    <Reference Include="System.Reflection.Emit.Lightweight" />
-    <Reference Include="System.Reflection.Primitives" />
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Threading" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Compile Include="**\*.cs" />
     <Compile Remove="ServiceLookup\ILEmit\**\*.cs" />
 
@@ -54,6 +23,37 @@
              Link="Common\src\Extensions\ParameterDefaultValue\ParameterDefaultValue.cs" />
     <Compile Include="$(CommonPath)Extensions\TypeNameHelper\TypeNameHelper.cs"
              Link="Common\src\Extensions\TypeNameHelper\TypeNameHelper.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' != '$(NetCoreAppCurrent)'">
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMembersAttribute.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMemberTypes.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.DependencyInjection.Abstractions\src\Microsoft.Extensions.DependencyInjection.Abstractions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">	
+    <Reference Include="System.Collections" />	
+    <Reference Include="System.Collections.Concurrent" />	
+    <Reference Include="System.ComponentModel" />	
+    <Reference Include="System.Diagnostics.Tracing" />	
+    <Reference Include="System.Linq" />	
+    <Reference Include="System.Linq.Expressions" />	
+    <Reference Include="System.Reflection.Emit.ILGeneration" />	
+    <Reference Include="System.Reflection.Emit.Lightweight" />	
+    <Reference Include="System.Reflection.Primitives" />	
+    <Reference Include="System.Runtime" />	
+    <Reference Include="System.Threading" />	
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' or
+                        $(TargetFramework.StartsWith('net4'))">
+    <PackageReference Include="System.Threading.Tasks.Extensions" Version="$(SystemThreadingTasksExtensionsVersion)" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Bcl.AsyncInterfaces\src\Microsoft.Bcl.AsyncInterfaces.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.CompilerServices.Unsafe\src\System.Runtime.CompilerServices.Unsafe.ilproj" />
   </ItemGroup>
 
 </Project>

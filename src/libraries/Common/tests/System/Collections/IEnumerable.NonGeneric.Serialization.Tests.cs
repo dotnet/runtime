@@ -11,7 +11,7 @@ namespace System.Collections.Tests
 {
     public abstract partial class IEnumerable_NonGeneric_Tests : TestBase
     {
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported))]
         [MemberData(nameof(ValidCollectionSizes))]
         public void IGenericSharedAPI_SerializeDeserialize(int count)
         {

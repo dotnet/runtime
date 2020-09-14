@@ -362,7 +362,7 @@ namespace System.Collections.Immutable
                 var match = this.Search(key, keyComparer);
                 if (match.IsEmpty)
                 {
-                    value = default(TValue)!;
+                    value = default;
                     return false;
                 }
                 else

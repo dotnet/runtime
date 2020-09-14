@@ -1,8 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <RootNamespace>System.Composition.Lightweight.UnitTests</RootNamespace>
-    <AssemblyName>System.Composition.Tests</AssemblyName>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);net461</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ActivationEventOrderingTests.cs" />
@@ -36,7 +35,11 @@
     <Compile Include="Util\AssertX.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Composition.Convention\src\System.Composition.Convention.csproj" />
     <ProjectReference Include="Microsoft.Composition.Demos.ExtendedCollectionImports\Microsoft.Composition.Demos.ExtendedCollectionImports.csproj" />
     <ProjectReference Include="TestLibrary\TestLibrary.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
+    <Reference Include="System.ComponentModel.Composition" />
   </ItemGroup>
 </Project>

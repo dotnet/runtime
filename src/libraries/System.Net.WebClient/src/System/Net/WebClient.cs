@@ -53,6 +53,7 @@ namespace System.Net
         private SendOrPostCallback? _reportDownloadProgressChanged;
         private SendOrPostCallback? _reportUploadProgressChanged;
 
+        [Obsolete(Obsoletions.WebRequestMessage, DiagnosticId = Obsoletions.WebRequestDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public WebClient()
         {
             // We don't know if derived types need finalizing, but WebClient doesn't.
@@ -216,7 +217,10 @@ namespace System.Net
 
         protected virtual WebRequest GetWebRequest(Uri address)
         {
+#pragma warning disable SYSLIB0014
             WebRequest request = WebRequest.Create(address);
+#pragma warning restore SYSLIB0014
+
             CopyHeadersTo(request);
 
             if (Credentials != null)
@@ -2005,7 +2009,7 @@ namespace System.Net
 
         [Obsolete("This API supports the .NET Framework infrastructure and is not intended to be used directly from your code.", true)]
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public event WriteStreamClosedEventHandler WriteStreamClosed { add { } remove { } }
+        public event WriteStreamClosedEventHandler? WriteStreamClosed { add { } remove { } }
 
         [Obsolete("This API supports the .NET Framework infrastructure and is not intended to be used directly from your code.", true)]
         [EditorBrowsable(EditorBrowsableState.Never)]

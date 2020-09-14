@@ -263,8 +263,8 @@ long_shl: dest:i src1:i src2:i len:64
 long_shr: dest:i src1:i src2:i len:64
 long_shr_un: dest:i src1:i src2:i len:64
 long_conv_to_ovf_i: dest:i src1:i src2:i len:48
-long_mul_ovf: 
-long_conv_to_r_un: dest:f src1:i src2:i len:64 
+long_mul_ovf:
+long_conv_to_r_un: dest:f src1:i src2:i len:64
 long_shr_imm: dest:i src1:i len:64
 long_shr_un_imm: dest:i src1:i len:64
 long_shl_imm: dest:i src1:i len:64

@@ -6,53 +6,67 @@ using System.Threading;
 
 namespace Profiler.Tests
 {
-    class GCBasicTests //: ProfilerTest
+    class AllocObject
     {
-        static readonly Guid GcBasicEventsProfilerGuid = new Guid("A040B953-EDE7-42D9-9077-AA69BB2BE024");
+        public static readonly int ArraySize = 100;
+        int[] m_array = null;
 
-        public static void DoWork() {
-            int k=0;
-            while(k<3) {
-                Console.WriteLine("{0}: Restarting run {1}",Thread.CurrentThread.Name,k);
-                int[] largeArray = new int[1000000];
-                for (int i=0;i<=100;i++){
-                    int[] saveArray = largeArray;
-                    largeArray = new int[largeArray.Length + 100000];
-                    saveArray = null;
-                    //Console.WriteLine("{0} at size {1}",Thread.CurrentThread.Name,largeArray.Length.ToString());
-                }
-                k++;
-           }
+        public AllocObject(bool poh)
+        {
+            if (poh)
+            {
+                m_array = GC.AllocateArray<int>(ArraySize, true);
+            }
+            else
+            {
+                m_array = new int[ArraySize];
+            }
         }
+    }
 
-        public static int RunTest(String[] args) {
-            long Threads = 1;
+    class GCTests
+    {
+        static readonly Guid GCProfilerGuid = new Guid("BCD8186F-1EEC-47E9-AFA7-396F879382C3");
 
-            if(args.Length > 2)
+        public static int RunTest(String[] args) 
+        {
+            int numAllocators = 1024;
+            int[] root1 = GC.AllocateArray<int>(AllocObject.ArraySize, true);
+            int[] root2 = GC.AllocateArray<int>(AllocObject.ArraySize, true);
+            AllocObject[] objs = new AllocObject[numAllocators];
+
+            Random rand = new Random();
+            int numPoh = 0;
+            int numReg = 0;
+            for (int i = 0; i < 10000; ++i)
             {
-                Console.WriteLine("usage: LargeObjectAlloc runtest <number of threads>");
-                return 1;
+                int pos = rand.Next(0, numAllocators);
+
+                bool poh = rand.NextDouble() > 0.5;
+                objs[pos] = new AllocObject(poh);
+
+                if (poh)
+                {
+                    ++numPoh;
+                }
+                else
+                {
+                    ++numReg;
+                }
+
+                if (i % 1000 == 0)
+                {
+                    GC.Collect();
+                    Console.WriteLine ($"Did {i} iterations Allocated={GC.GetAllocatedBytesForCurrentThread()}");
+                }
+
+
+                int[] m_array = new int[100];
             }
-            else if(args.Length == 2)
-            {
-                Threads = Int64.Parse(args[1]);
-            }
 
-            Console.WriteLine("LargeObjectAlloc started with {0} threads. Control-C to exit",
-                Threads.ToString());
-
-            Thread myThread = null;
-            for(long i = 0; i < Threads; i++)
-            {
-                myThread = new Thread(new ThreadStart(DoWork));
-                myThread.Name = i.ToString();
-                myThread.Start();
-            }
-
-            Console.WriteLine("All threads started");
-            myThread.Join();
-
-            Console.WriteLine("Test Passed");
+            Console.WriteLine($"{numPoh} POH allocs and {numReg} normal allocs.");
+            GC.KeepAlive(root1);
+            GC.KeepAlive(root2);
             return 100;
         }
 
@@ -64,8 +78,8 @@ namespace Profiler.Tests
             }
 
             return ProfilerTestRunner.Run(profileePath: System.Reflection.Assembly.GetExecutingAssembly().Location,
-                                          testName: "GCCallbacksBasic",
-                                          profilerClsid: GcBasicEventsProfilerGuid);
+                                          testName: "GCTests",
+                                          profilerClsid: GCProfilerGuid);
         }
     }
 }

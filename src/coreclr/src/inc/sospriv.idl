@@ -409,3 +409,18 @@ interface ISOSDacInterface8 : IUnknown
 
     HRESULT GetAssemblyLoadContext(CLRDATA_ADDRESS methodTable, CLRDATA_ADDRESS* assemblyLoadContext);
 }
+
+// Increment anytime there is a change in the data structures that SOS depends on like
+// stress log structs (StressMsg, StressLogChunck, ThreadStressLog, etc), exception
+// stack traces (StackTraceElement), the PredefinedTlsSlots enums, etc.
+cpp_quote("#define SOS_BREAKING_CHANGE_VERSION 1")
+
+[
+    object,
+    local,
+    uuid(4eca42d8-7e7b-4c8a-a116-7bfbf6929267)
+]
+interface ISOSDacInterface9 : IUnknown
+{
+    HRESULT GetBreakingChangeVersion(int* pVersion);
+}

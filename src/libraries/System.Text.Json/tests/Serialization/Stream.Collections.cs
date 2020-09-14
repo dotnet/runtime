@@ -98,7 +98,7 @@ namespace System.Text.Json.Serialization.Tests
 
                 // TODO: https://github.com/dotnet/runtime/issues/35611.
                 // Can't control order of dictionary elements when serializing, so reference metadata might not match up.
-                if(!(DictionaryTypes<TElement>().Contains(type) && options.ReferenceHandler == ReferenceHandler.Preserve))
+                if(!(CollectionTestTypes.DictionaryTypes<TElement>().Contains(type) && options.ReferenceHandler == ReferenceHandler.Preserve))
                 {
                     JsonTestHelper.AssertJsonEqual(expectedJson, serialized);
                 }
@@ -287,7 +287,7 @@ namespace System.Text.Json.Serialization.Tests
 
         private static IEnumerable<Type> CollectionTypes<TElement>()
         {
-            foreach (Type type in EnumerableTypes<TElement>())
+            foreach (Type type in CollectionTestTypes.EnumerableTypes<TElement>())
             {
                 yield return type;
             }
@@ -301,41 +301,15 @@ namespace System.Text.Json.Serialization.Tests
                 yield return type;
             }
             // Dictionary types
-            foreach (Type type in DictionaryTypes<TElement>())
+            foreach (Type type in CollectionTestTypes.DictionaryTypes<TElement>())
             {
                 yield return type;
             }
         }
 
-        private static IEnumerable<Type> EnumerableTypes<TElement>()
-        {
-            yield return typeof(TElement[]); // ArrayConverter
-            yield return typeof(ConcurrentQueue<TElement>); // ConcurrentQueueOfTConverter
-            yield return typeof(GenericICollectionWrapper<TElement>); // ICollectionOfTConverter
-            yield return typeof(WrapperForIEnumerable); // IEnumerableConverter
-            yield return typeof(WrapperForIReadOnlyCollectionOfT<TElement>); // IEnumerableOfTConverter
-            yield return typeof(Queue); // IEnumerableWithAddMethodConverter
-            yield return typeof(WrapperForIList); // IListConverter
-            yield return typeof(Collection<TElement>); // IListOfTConverter
-            yield return typeof(ImmutableList<TElement>); // ImmutableEnumerableOfTConverter
-            yield return typeof(HashSet<TElement>); // ISetOfTConverter
-            yield return typeof(List<TElement>); // ListOfTConverter
-            yield return typeof(Queue<TElement>); // QueueOfTConverter
-        }
-
         private static IEnumerable<Type> ObjectNotationTypes<TElement>()
         {
             yield return typeof(KeyValuePair<TElement, TElement>); // KeyValuePairConverter
-        }
-
-        private static IEnumerable<Type> DictionaryTypes<TElement>()
-        {
-            yield return typeof(Dictionary<string, TElement>); // DictionaryOfStringTValueConverter
-            yield return typeof(Hashtable); // IDictionaryConverter
-            yield return typeof(ConcurrentDictionary<string, TElement>); // IDictionaryOfStringTValueConverter
-            yield return typeof(GenericIDictionaryWrapper<string, TElement>); // IDictionaryOfStringTValueConverter
-            yield return typeof(ImmutableDictionary<string, TElement>); // ImmutableDictionaryOfStringTValueConverter
-            yield return typeof(GenericIReadOnlyDictionaryWrapper<string, TElement>); // IReadOnlyDictionaryOfStringTValueConverter
         }
 
         private static HashSet<Type> StackTypes<TElement>() => new HashSet<Type>
@@ -389,7 +363,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("]")]
         public static void DeserializeDictionaryStartsWithInvalidJson(string json)
         {
-            foreach (Type type in DictionaryTypes<string>())
+            foreach (Type type in CollectionTestTypes.DictionaryTypes<string>())
             {
                 Assert.ThrowsAsync<JsonException>(async () =>
                 {
@@ -404,7 +378,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void SerializeEmptyCollection()
         {
-            foreach (Type type in EnumerableTypes<int>())
+            foreach (Type type in CollectionTestTypes.EnumerableTypes<int>())
             {
                 Assert.Equal("[]", JsonSerializer.Serialize(GetEmptyCollection<int>(type)));
             }
@@ -414,7 +388,7 @@ namespace System.Text.Json.Serialization.Tests
                 Assert.Equal("[]", JsonSerializer.Serialize(GetEmptyCollection<int>(type)));
             }
 
-            foreach (Type type in DictionaryTypes<int>())
+            foreach (Type type in CollectionTestTypes.DictionaryTypes<int>())
             {
                 Assert.Equal("{}", JsonSerializer.Serialize(GetEmptyCollection<int>(type)));
             }

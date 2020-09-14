@@ -639,7 +639,7 @@ namespace System.Threading
             }
         }
 
-        private static readonly ContextCallback s_callCallbackInContext = state =>
+        private static readonly ContextCallback s_callCallbackInContext = static state =>
         {
             Debug.Assert(state is TimerQueueTimer);
             var t = (TimerQueueTimer)state;

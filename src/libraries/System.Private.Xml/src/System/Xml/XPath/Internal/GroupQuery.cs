@@ -10,7 +10,7 @@ namespace MS.Internal.Xml.XPath
         public GroupQuery(Query qy) : base(qy) { }
         private GroupQuery(GroupQuery other) : base(other) { }
 
-        public override XPathNavigator Advance()
+        public override XPathNavigator? Advance()
         {
             currentNode = qyInput.Advance();
             if (currentNode != null)

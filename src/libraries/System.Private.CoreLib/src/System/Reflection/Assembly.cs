@@ -165,6 +165,7 @@ namespace System.Reflection
         /*
           Returns true if the assembly was loaded from the global assembly cache.
         */
+        [Obsolete(Obsoletions.GlobalAssemblyCacheMessage, DiagnosticId = Obsoletions.GlobalAssemblyCacheDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public virtual bool GlobalAssemblyCache => throw NotImplemented.ByDesign;
         public virtual long HostContext => throw NotImplemented.ByDesign;
 

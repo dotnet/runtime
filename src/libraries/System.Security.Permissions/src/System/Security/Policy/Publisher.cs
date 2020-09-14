@@ -5,6 +5,9 @@ using System.Security.Cryptography.X509Certificates;
 
 namespace System.Security.Policy
 {
+#if NET50_OBSOLETIONS
+    [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+#endif
     public sealed partial class Publisher : EvidenceBase, IIdentityPermissionFactory
     {
         public Publisher(X509Certificate cert) { }

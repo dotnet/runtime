@@ -20,8 +20,8 @@ HRESULT CLRPrivBinderAssemblyLoadContext::BindAssemblyByNameWorker(BINDER_SPACE:
     HRESULT hr = S_OK;
 
 #ifdef _DEBUG
-    // MSCORLIB should be bound using BindToSystem
-    _ASSERTE(!pAssemblyName->IsMscorlib());
+    // CoreLib should be bound using BindToSystem
+    _ASSERTE(!pAssemblyName->IsCoreLib());
 #endif
 
     // Do we have the assembly already loaded in the context of the current binder?
@@ -145,7 +145,7 @@ HRESULT CLRPrivBinderAssemblyLoadContext::BindUsingPEImage( /* in */ PEImage *pP
 
         // Disallow attempt to bind to the core library. Aside from that,
         // the LoadContext can load any assembly (even if it was in a different LoadContext like TPA).
-        if (pAssemblyName->IsMscorlib())
+        if (pAssemblyName->IsCoreLib())
         {
             IF_FAIL_GO(HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND));
         }

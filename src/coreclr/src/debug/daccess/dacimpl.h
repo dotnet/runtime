@@ -840,7 +840,8 @@ class ClrDataAccess
       public ISOSDacInterface5,
       public ISOSDacInterface6,
       public ISOSDacInterface7,
-      public ISOSDacInterface8
+      public ISOSDacInterface8,
+      public ISOSDacInterface9
 {
 public:
     ClrDataAccess(ICorDebugDataTarget * pTarget, ICLRDataTarget * pLegacyTarget=0);
@@ -1204,6 +1205,9 @@ public:
     virtual HRESULT STDMETHODCALLTYPE GetFinalizationFillPointersSvr(CLRDATA_ADDRESS heapAddr, unsigned int cFillPointers, CLRDATA_ADDRESS *pFinalizationFillPointers, unsigned int *pNeeded);
 
     virtual HRESULT STDMETHODCALLTYPE GetAssemblyLoadContext(CLRDATA_ADDRESS methodTable, CLRDATA_ADDRESS* assemblyLoadContext);
+
+    // ISOSDacInterface9
+    virtual HRESULT STDMETHODCALLTYPE GetBreakingChangeVersion(int* pVersion);
 
     //
     // ClrDataAccess.

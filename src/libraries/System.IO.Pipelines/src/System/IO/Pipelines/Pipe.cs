@@ -319,6 +319,12 @@ namespace System.IO.Pipelines
                     ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.bytes);
                 }
 
+                // If the reader is completed we no-op Advance but leave GetMemory and FlushAsync alone
+                if (_readerCompletion.IsCompleted)
+                {
+                    return;
+                }
+
                 AdvanceCore(bytes);
             }
         }
@@ -852,6 +858,10 @@ namespace System.IO.Pipelines
             finally
             {
                 cancellationTokenRegistration.Dispose();
+            }
+
+            if (result.IsCanceled)
+            {
                 cancellationToken.ThrowIfCancellationRequested();
             }
 
@@ -948,6 +958,11 @@ namespace System.IO.Pipelines
             if (_writerCompletion.IsCompleted)
             {
                 ThrowHelper.ThrowInvalidOperationException_NoWritingAllowed();
+            }
+
+            if (_readerCompletion.IsCompleted)
+            {
+                return new ValueTask<FlushResult>(new FlushResult(isCanceled: false, isCompleted: true));
             }
 
             CompletionData completionData;

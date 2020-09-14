@@ -40,7 +40,7 @@ namespace MS.Internal.Xml.XPath
             {
                 // BugBug: We can do such trick at Evaluate time only.
                 // But to do this FilterQuery should stop inherit from BaseAxisQuery
-                ReversePositionQuery query = qyInput as ReversePositionQuery;
+                ReversePositionQuery? query = qyInput as ReversePositionQuery;
                 if (query != null)
                 {
                     qyInput = query.input;
@@ -48,7 +48,7 @@ namespace MS.Internal.Xml.XPath
             }
         }
 
-        public override XPathNavigator Advance()
+        public override XPathNavigator? Advance()
         {
             while ((currentNode = qyInput.Advance()) != null)
             {
@@ -72,9 +72,9 @@ namespace MS.Internal.Xml.XPath
             return true;
         }
 
-        public override XPathNavigator MatchNode(XPathNavigator current)
+        public override XPathNavigator? MatchNode(XPathNavigator? current)
         {
-            XPathNavigator context;
+            XPathNavigator? context;
             if (current == null)
             {
                 return null;
@@ -87,11 +87,11 @@ namespace MS.Internal.Xml.XPath
                 switch (_cond.StaticType)
                 {
                     case XPathResultType.Number:
-                        OperandQuery operand = _cond as OperandQuery;
+                        OperandQuery? operand = _cond as OperandQuery;
                         if (operand != null)
                         {
                             double val = (double)operand.val;
-                            ChildrenQuery childrenQuery = qyInput as ChildrenQuery;
+                            ChildrenQuery? childrenQuery = qyInput as ChildrenQuery;
                             if (childrenQuery != null)
                             { // foo[2], but not foo[expr][2]
                                 XPathNavigator result = current.Clone();
@@ -111,7 +111,7 @@ namespace MS.Internal.Xml.XPath
                                 } while (result.MoveToNext());
                                 return null;
                             }
-                            AttributeQuery attributeQuery = qyInput as AttributeQuery;
+                            AttributeQuery? attributeQuery = qyInput as AttributeQuery;
                             if (attributeQuery != null)
                             {// @foo[3], but not @foo[expr][2]
                                 XPathNavigator result = current.Clone();
@@ -156,7 +156,7 @@ namespace MS.Internal.Xml.XPath
                 /* Generic case */
                 {
                     Evaluate(new XPathSingletonIterator(context, /*moved:*/true));
-                    XPathNavigator result;
+                    XPathNavigator? result;
                     while ((result = Advance()) != null)
                     {
                         if (result.IsSamePosition(current))

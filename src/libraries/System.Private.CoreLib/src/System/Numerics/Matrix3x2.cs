@@ -2,12 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Globalization;
+using System.Runtime.CompilerServices;
 
 namespace System.Numerics
 {
     /// <summary>
     /// A structure encapsulating a 3x2 matrix.
     /// </summary>
+    [Intrinsic]
     public struct Matrix3x2 : IEquatable<Matrix3x2>
     {
         private const float RotationEpsilon = 0.001f * MathF.PI / 180f;     // 0.1% of a degree
@@ -107,12 +109,7 @@ namespace System.Numerics
         /// <returns>A translation matrix.</returns>
         public static Matrix3x2 CreateTranslation(Vector2 position)
         {
-            Matrix3x2 result;
-
-            result.M11 = 1.0f;
-            result.M12 = 0.0f;
-            result.M21 = 0.0f;
-            result.M22 = 1.0f;
+            Matrix3x2 result = _identity;
 
             result.M31 = position.X;
             result.M32 = position.Y;
@@ -128,12 +125,7 @@ namespace System.Numerics
         /// <returns>A translation matrix.</returns>
         public static Matrix3x2 CreateTranslation(float xPosition, float yPosition)
         {
-            Matrix3x2 result;
-
-            result.M11 = 1.0f;
-            result.M12 = 0.0f;
-            result.M21 = 0.0f;
-            result.M22 = 1.0f;
+            Matrix3x2 result = _identity;
 
             result.M31 = xPosition;
             result.M32 = yPosition;
@@ -149,14 +141,10 @@ namespace System.Numerics
         /// <returns>A scaling matrix.</returns>
         public static Matrix3x2 CreateScale(float xScale, float yScale)
         {
-            Matrix3x2 result;
+            Matrix3x2 result = _identity;
 
             result.M11 = xScale;
-            result.M12 = 0.0f;
-            result.M21 = 0.0f;
             result.M22 = yScale;
-            result.M31 = 0.0f;
-            result.M32 = 0.0f;
 
             return result;
         }
@@ -170,14 +158,12 @@ namespace System.Numerics
         /// <returns>A scaling matrix.</returns>
         public static Matrix3x2 CreateScale(float xScale, float yScale, Vector2 centerPoint)
         {
-            Matrix3x2 result;
+            Matrix3x2 result = _identity;
 
             float tx = centerPoint.X * (1 - xScale);
             float ty = centerPoint.Y * (1 - yScale);
 
             result.M11 = xScale;
-            result.M12 = 0.0f;
-            result.M21 = 0.0f;
             result.M22 = yScale;
             result.M31 = tx;
             result.M32 = ty;
@@ -192,14 +178,10 @@ namespace System.Numerics
         /// <returns>A scaling matrix.</returns>
         public static Matrix3x2 CreateScale(Vector2 scales)
         {
-            Matrix3x2 result;
+            Matrix3x2 result = _identity;
 
             result.M11 = scales.X;
-            result.M12 = 0.0f;
-            result.M21 = 0.0f;
             result.M22 = scales.Y;
-            result.M31 = 0.0f;
-            result.M32 = 0.0f;
 
             return result;
         }
@@ -212,14 +194,12 @@ namespace System.Numerics
         /// <returns>A scaling matrix.</returns>
         public static Matrix3x2 CreateScale(Vector2 scales, Vector2 centerPoint)
         {
-            Matrix3x2 result;
+            Matrix3x2 result = _identity;
 
             float tx = centerPoint.X * (1 - scales.X);
             float ty = centerPoint.Y * (1 - scales.Y);
 
             result.M11 = scales.X;
-            result.M12 = 0.0f;
-            result.M21 = 0.0f;
             result.M22 = scales.Y;
             result.M31 = tx;
             result.M32 = ty;
@@ -234,14 +214,10 @@ namespace System.Numerics
         /// <returns>A scaling matrix.</returns>
         public static Matrix3x2 CreateScale(float scale)
         {
-            Matrix3x2 result;
+            Matrix3x2 result = _identity;
 
             result.M11 = scale;
-            result.M12 = 0.0f;
-            result.M21 = 0.0f;
             result.M22 = scale;
-            result.M31 = 0.0f;
-            result.M32 = 0.0f;
 
             return result;
         }
@@ -254,14 +230,12 @@ namespace System.Numerics
         /// <returns>A scaling matrix.</returns>
         public static Matrix3x2 CreateScale(float scale, Vector2 centerPoint)
         {
-            Matrix3x2 result;
+            Matrix3x2 result = _identity;
 
             float tx = centerPoint.X * (1 - scale);
             float ty = centerPoint.Y * (1 - scale);
 
             result.M11 = scale;
-            result.M12 = 0.0f;
-            result.M21 = 0.0f;
             result.M22 = scale;
             result.M31 = tx;
             result.M32 = ty;
@@ -277,17 +251,13 @@ namespace System.Numerics
         /// <returns>A skew matrix.</returns>
         public static Matrix3x2 CreateSkew(float radiansX, float radiansY)
         {
-            Matrix3x2 result;
+            Matrix3x2 result = _identity;
 
             float xTan = MathF.Tan(radiansX);
             float yTan = MathF.Tan(radiansY);
 
-            result.M11 = 1.0f;
             result.M12 = yTan;
             result.M21 = xTan;
-            result.M22 = 1.0f;
-            result.M31 = 0.0f;
-            result.M32 = 0.0f;
 
             return result;
         }
@@ -301,7 +271,7 @@ namespace System.Numerics
         /// <returns>A skew matrix.</returns>
         public static Matrix3x2 CreateSkew(float radiansX, float radiansY, Vector2 centerPoint)
         {
-            Matrix3x2 result;
+            Matrix3x2 result = _identity;
 
             float xTan = MathF.Tan(radiansX);
             float yTan = MathF.Tan(radiansY);
@@ -309,10 +279,9 @@ namespace System.Numerics
             float tx = -centerPoint.Y * xTan;
             float ty = -centerPoint.X * yTan;
 
-            result.M11 = 1.0f;
             result.M12 = yTan;
             result.M21 = xTan;
-            result.M22 = 1.0f;
+
             result.M31 = tx;
             result.M32 = ty;
 
@@ -326,8 +295,6 @@ namespace System.Numerics
         /// <returns>A rotation matrix.</returns>
         public static Matrix3x2 CreateRotation(float radians)
         {
-            Matrix3x2 result;
-
             radians = MathF.IEEERemainder(radians, MathF.PI * 2);
 
             float c, s;
@@ -366,12 +333,11 @@ namespace System.Numerics
             // [  c  s ]
             // [ -s  c ]
             // [  0  0 ]
+            Matrix3x2 result = _identity;
             result.M11 = c;
             result.M12 = s;
             result.M21 = -s;
             result.M22 = c;
-            result.M31 = 0.0f;
-            result.M32 = 0.0f;
 
             return result;
         }
@@ -772,9 +738,9 @@ namespace System.Numerics
         /// <returns>True if the Object is equal to this matrix; False otherwise.</returns>
         public override readonly bool Equals(object? obj)
         {
-            if (obj is Matrix3x2)
+            if (obj is Matrix3x2 m)
             {
-                return Equals((Matrix3x2)obj);
+                return Equals(m);
             }
 
             return false;
@@ -798,9 +764,7 @@ namespace System.Numerics
         /// <returns>The hash code.</returns>
         public override readonly int GetHashCode()
         {
-            return unchecked(M11.GetHashCode() + M12.GetHashCode() +
-                             M21.GetHashCode() + M22.GetHashCode() +
-                             M31.GetHashCode() + M32.GetHashCode());
+            return HashCode.Combine(M11, M12, M21, M22, M31, M32);
         }
     }
 }

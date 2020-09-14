@@ -32,7 +32,7 @@ namespace System.Reflection.Tests
         [InlineData(typeof(GenericClass<int>), new string[] { "Int32 ReturnAndSetField(Int32)" })]
         public void GetDefaultMembers(Type type, string[] expectedNames)
         {
-            string[] memberNames = type.GetDefaultMembers().Select(member => member.Name).ToArray();
+            string[] memberNames = TypeExtensions.GetDefaultMembers(type).Select(member => member.Name).ToArray();
             Assert.Equal(expectedNames.Length, memberNames.Length);
             Assert.All(expectedNames, toString => memberNames.Contains(toString));
         }
@@ -132,11 +132,11 @@ namespace System.Reflection.Tests
         {
             if (bindingAttributes == DefaultBindingFlags)
             {
-                string[] eventNames1 = typeof(Cat<int>).GetEvents().Select(eventInfo => eventInfo.Name).ToArray();
+                string[] eventNames1 = TypeExtensions.GetEvents(typeof(Cat<int>)).Select(eventInfo => eventInfo.Name).ToArray();
                 Assert.Equal(expectedNames.Length, eventNames1.Length);
                 Assert.All(expectedNames, name => eventNames1.Contains(name));
             }
-            string[] eventNames2 = typeof(Cat<int>).GetEvents(bindingAttributes).Select(eventInfo => eventInfo.Name).ToArray();
+            string[] eventNames2 = TypeExtensions.GetEvents(typeof(Cat<int>), bindingAttributes).Select(eventInfo => eventInfo.Name).ToArray();
             Assert.Equal(expectedNames.Length, eventNames2.Length);
             Assert.All(expectedNames, name => eventNames2.Contains(name));
         }
@@ -154,7 +154,7 @@ namespace System.Reflection.Tests
         [MemberData(nameof(GetFields_TestData))]
         public void GetFields(Type type, string[] expectedNames)
         {
-            string[] fieldNames = type.GetFields().Select(field => field.Name).ToArray();
+            string[] fieldNames = TypeExtensions.GetFields(type).Select(field => field.Name).ToArray();
             Assert.Equal(expectedNames.Length, fieldNames.Length);
             Assert.All(expectedNames, name => fieldNames.Contains(name));
         }
@@ -173,7 +173,7 @@ namespace System.Reflection.Tests
         [InlineData(typeof(TI_Struct?), new Type[0])]
         public void GetInterfaces(Type type, Type[] expected)
         {
-            Type[] interfaces = type.GetInterfaces();
+            Type[] interfaces = TypeExtensions.GetInterfaces(type);
             Assert.Equal(expected.Length, interfaces.Length);
             Assert.All(expected, interfaceType => interfaces.Equals(interfaceType));
         }
@@ -181,7 +181,7 @@ namespace System.Reflection.Tests
         [Fact]
         public void GetInterfaces_GenericInterfaceWithTypeParameter_ReturnsExpectedToString()
         {
-            Type[] interfaces = typeof(GenericClassWithInterface<>).GetInterfaces();
+            Type[] interfaces = TypeExtensions.GetInterfaces(typeof(GenericClassWithInterface<>));
             Assert.Equal(1, interfaces.Length);
             Assert.Equal("System.Reflection.Tests.IGenericInterface`1[T]", interfaces[0].ToString());
         }
@@ -213,7 +213,7 @@ namespace System.Reflection.Tests
         {
             if (bindingAttributes == DefaultBindingFlags)
             {
-                string[] memberNames1 = type.GetMember(name).Select(member => member.Name).ToArray();
+                string[] memberNames1 = TypeExtensions.GetMember(type, name).Select(member => member.Name).ToArray();
                 Assert.Equal(expectedNames.Length, memberNames1.Length);
                 Assert.All(expectedNames, expectedName => memberNames1.Contains(expectedName));
                 if (name == "*")
@@ -225,13 +225,13 @@ namespace System.Reflection.Tests
                     Assert.All(memberNamesFromAsterix1, memberInfo => memberNamesFromMethod1.Contains(memberInfo));
                 }
             }
-            string[] memberNames2 = type.GetMember(name, bindingAttributes).Select(member => member.Name).ToArray();
+            string[] memberNames2 = TypeExtensions.GetMember(type, name, bindingAttributes).Select(member => member.Name).ToArray();
             Assert.Equal(expectedNames.Length, memberNames2.Length);
             Assert.All(expectedNames, expectedName => memberNames2.Contains(expectedName));
             if (name == "*")
             {
-                MemberInfo[] memberNamesFromAsterix2 = type.GetMember(name, bindingAttributes);
-                MemberInfo[] memberNamesFromMethod2 = type.GetMembers(bindingAttributes);
+                MemberInfo[] memberNamesFromAsterix2 = TypeExtensions.GetMember(type, name, bindingAttributes);
+                MemberInfo[] memberNamesFromMethod2 = TypeExtensions.GetMembers(type, bindingAttributes);
 
                 Assert.Equal(memberNamesFromAsterix2.Length, memberNamesFromMethod2.Length);
                 Assert.All(memberNamesFromAsterix2, memberInfo => memberNamesFromMethod2.Contains(memberInfo));
@@ -334,11 +334,11 @@ namespace System.Reflection.Tests
         {
             if (bindingAttributes == DefaultBindingFlags)
             {
-                string[] methodNames1 = type.GetMethods().Select(method => method.Name).ToArray();
+                string[] methodNames1 = TypeExtensions.GetMethods(type).Select(method => method.Name).ToArray();
                 Assert.Equal(expectedNames.Length, methodNames1.Length);
                 Assert.All(expectedNames, name => methodNames1.Contains(name));
             }
-            string[] methodNames2 = type.GetMethods(bindingAttributes).Select(method => method.Name).ToArray();
+            string[] methodNames2 = TypeExtensions.GetMethods(type, bindingAttributes).Select(method => method.Name).ToArray();
             Assert.Equal(expectedNames.Length, methodNames2.Length);
             Assert.All(expectedNames, name => methodNames2.Contains(name));
         }
@@ -419,11 +419,11 @@ namespace System.Reflection.Tests
         {
             if (bindingAttributes == DefaultBindingFlags)
             {
-                string[] propertyNames1 = type.GetProperties().Select(method => method.Name).ToArray();
+                string[] propertyNames1 = TypeExtensions.GetProperties(type).Select(method => method.Name).ToArray();
                 Assert.Equal(expectedNames.Length, propertyNames1.Length);
                 Assert.All(expectedNames, name => propertyNames1.Contains(name));
             }
-            string[] propertyNames2 = type.GetProperties(bindingAttributes).Select(method => method.Name).ToArray();
+            string[] propertyNames2 = TypeExtensions.GetProperties(type, bindingAttributes).Select(method => method.Name).ToArray();
             Assert.Equal(expectedNames.Length, propertyNames2.Length);
             Assert.All(expectedNames, name => propertyNames2.Contains(name));
         }
@@ -446,17 +446,17 @@ namespace System.Reflection.Tests
             {
                 if (bindingAttributes == DefaultBindingFlags)
                 {
-                    Assert.Equal(name, type.GetProperty(name).Name);
+                    Assert.Equal(name, TypeExtensions.GetProperty(type, name).Name);
                 }
-                Assert.Equal(name, type.GetProperty(name, bindingAttributes).Name);
+                Assert.Equal(name, TypeExtensions.GetProperty(type, name, bindingAttributes).Name);
             }
             else
             {
                 if (types.Length == 0)
                 {
-                    Assert.Equal(name, type.GetProperty(name, returnType).Name);
+                    Assert.Equal(name, TypeExtensions.GetProperty(type, name, returnType).Name);
                 }
-                Assert.Equal(name, type.GetProperty(name, returnType, types).Name);
+                Assert.Equal(name, TypeExtensions.GetProperty(type, name, returnType, types).Name);
             }
         }
 
@@ -542,13 +542,13 @@ namespace System.Reflection.Tests
         [MemberData(nameof(IsInstanceOfType_TestData))]
         public void IsInstanceOfType(Type type, object value, bool expected)
         {
-            Assert.Equal(expected, type.IsInstanceOfType(value));
+            Assert.Equal(expected, TypeExtensions.IsInstanceOfType(type, value));
         }
 
         [Fact]
         public void IsInstanceOfType_NullableTypeAndValue_ReturnsTrue()
         {
-            Assert.True(typeof(int?).IsInstanceOfType((int?)100));
+            Assert.True(TypeExtensions.IsInstanceOfType(typeof(int?), (int?)100));
         }
 
         [Theory]
@@ -567,21 +567,21 @@ namespace System.Reflection.Tests
             TypeInfo typeInfo = type.GetTypeInfo();
             BindingFlags declaredFlags = BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance;
 
-            Assert.Equal(type.GetMethod("ProtectedMethod", declaredFlags), typeInfo.GetDeclaredMethods("ProtectedMethod").First());
-            Assert.Equal(type.GetNestedType("PublicNestedType", declaredFlags), typeInfo.GetDeclaredNestedType("PublicNestedType").AsType());
-            Assert.Equal(type.GetProperty("PrivateProperty", declaredFlags), typeInfo.GetDeclaredProperty("PrivateProperty"));
+            Assert.Equal(TypeExtensions.GetMethod(type, "ProtectedMethod", declaredFlags), typeInfo.GetDeclaredMethods("ProtectedMethod").First());
+            Assert.Equal(TypeExtensions.GetNestedType(type, "PublicNestedType", declaredFlags), typeInfo.GetDeclaredNestedType("PublicNestedType").AsType());
+            Assert.Equal(TypeExtensions.GetProperty(type, "PrivateProperty", declaredFlags), typeInfo.GetDeclaredProperty("PrivateProperty"));
 
-            Assert.All(type.GetFields(declaredFlags), field => typeInfo.DeclaredFields.Contains(field));
-            Assert.All(type.GetMethods(declaredFlags), method => typeInfo.DeclaredMethods.Contains(method));
-            Assert.All(type.GetNestedTypes(declaredFlags), nestedType => typeInfo.DeclaredNestedTypes.Contains(nestedType.GetTypeInfo()));
-            Assert.All(type.GetProperties(declaredFlags), property => typeInfo.DeclaredProperties.Contains(property));
-            Assert.All(type.GetEvents(declaredFlags), eventInfo => typeInfo.DeclaredEvents.Contains(eventInfo));
-            Assert.All(type.GetConstructors(declaredFlags), constructor => typeInfo.DeclaredConstructors.Contains(constructor));
+            Assert.All(TypeExtensions.GetFields(type, declaredFlags), field => typeInfo.DeclaredFields.Contains(field));
+            Assert.All(TypeExtensions.GetMethods(type, declaredFlags), method => typeInfo.DeclaredMethods.Contains(method));
+            Assert.All(TypeExtensions.GetNestedTypes(type, declaredFlags), nestedType => typeInfo.DeclaredNestedTypes.Contains(nestedType.GetTypeInfo()));
+            Assert.All(TypeExtensions.GetProperties(type, declaredFlags), property => typeInfo.DeclaredProperties.Contains(property));
+            Assert.All(TypeExtensions.GetEvents(type, declaredFlags), eventInfo => typeInfo.DeclaredEvents.Contains(eventInfo));
+            Assert.All(TypeExtensions.GetConstructors(type, declaredFlags), constructor => typeInfo.DeclaredConstructors.Contains(constructor));
 
-            Assert.All(type.GetEvents(), eventInfo => typeInfo.AsType().GetEvents().Contains(eventInfo));
-            Assert.All(type.GetFields(), fieldInfo => typeInfo.AsType().GetFields().Contains(fieldInfo));
-            Assert.All(type.GetMethods(), methodInfo => typeInfo.AsType().GetMethods().Contains(methodInfo));
-            Assert.All(type.GetProperties(), propertyInfo => typeInfo.AsType().GetProperties().Contains(propertyInfo));
+            Assert.All(TypeExtensions.GetEvents(type), eventInfo => typeInfo.AsType().GetEvents().Contains(eventInfo));
+            Assert.All(TypeExtensions.GetFields(type), fieldInfo => typeInfo.AsType().GetFields().Contains(fieldInfo));
+            Assert.All(TypeExtensions.GetMethods(type), methodInfo => typeInfo.AsType().GetMethods().Contains(methodInfo));
+            Assert.All(TypeExtensions.GetProperties(type), propertyInfo => typeInfo.AsType().GetProperties().Contains(propertyInfo));
 
             Assert.Equal(type.GetType(), typeInfo.GetType());
             Assert.True(type.Equals(typeInfo));

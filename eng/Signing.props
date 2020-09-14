@@ -28,6 +28,13 @@
 
       <!-- apphost and comhost template files are not signed, by design. -->
       <FileSignInfo Include="apphost.exe;singlefilehost.exe;comhost.dll" CertificateName="None" />
+
+      <!-- Third-party components which should be signed.  -->
+      <FileSignInfo Include="Newtonsoft.Json.dll" CertificateName="3PartySHA2" />
+      <FileSignInfo Include="Mono.Cecil.dll" CertificateName="3PartySHA2" />
+      <FileSignInfo Include="Mono.Cecil.Mdb.dll" CertificateName="3PartySHA2" />
+      <FileSignInfo Include="Mono.Cecil.Pdb.dll" CertificateName="3PartySHA2" />
+      <FileSignInfo Include="Mono.Cecil.Rocks.dll" CertificateName="3PartySHA2" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(CrossTargetComponentFolder)' != ''">
@@ -47,10 +54,15 @@
       <ItemsToSign Include="$(CoreCLRCrossgen2Dir)ILCompiler.DependencyAnalysisFramework.dll" />
       <ItemsToSign Include="$(CoreCLRCrossgen2Dir)ILCompiler.ReadyToRun.dll" />
       <ItemsToSign Include="$(CoreCLRCrossgen2Dir)ILCompiler.TypeSystem.ReadyToRun.dll" />
-      <ItemsToSign Include="$(CoreCLRCrossgen2Dir)jitinterface.dll" />
+      <ItemsToSign Include="$(CoreCLRCrossgen2Dir)jitinterface_$(TargetArchitecture).dll" />
 
-      <ItemsToSign Condition="'$(TargetOS)' == 'Windows_NT'" Include="$(CoreCLRCrossgen2Dir)clrjit-win-$(TargetArchitecture).dll" />
-      <ItemsToSign Condition="'$(TargetOS)' != 'Windows_NT'" Include="$(CoreCLRCrossgen2Dir)clrjit-unix-$(TargetArchitecture).dll" />
+      <ItemsToSign Include="$(CoreCLRCrossgen2Dir)clrjit_win_x86_$(TargetArchitecture).dll" />
+      <ItemsToSign Include="$(CoreCLRCrossgen2Dir)clrjit_win_arm_$(TargetArchitecture).dll" />
+      <ItemsToSign Include="$(CoreCLRCrossgen2Dir)clrjit_unix_arm_$(TargetArchitecture).dll" />
+      <ItemsToSign Condition="'$(TargetArchitecture)' == 'arm64' or  '$(TargetArchitecture)' == 'x64'" Include="$(CoreCLRCrossgen2Dir)clrjit_win_x64_$(TargetArchitecture).dll" />
+      <ItemsToSign Condition="'$(TargetArchitecture)' == 'arm64' or  '$(TargetArchitecture)' == 'x64'" Include="$(CoreCLRCrossgen2Dir)clrjit_win_arm64_$(TargetArchitecture).dll" />
+      <ItemsToSign Condition="'$(TargetArchitecture)' == 'arm64' or  '$(TargetArchitecture)' == 'x64'" Include="$(CoreCLRCrossgen2Dir)clrjit_unix_x64_$(TargetArchitecture).dll" />
+      <ItemsToSign Condition="'$(TargetArchitecture)' == 'arm64' or  '$(TargetArchitecture)' == 'x64'" Include="$(CoreCLRCrossgen2Dir)clrjit_unix_arm64_$(TargetArchitecture).dll" />
 
       <ItemsToSign Include="@(CoreCLRCrossTargetItemsToSign)" />
 
@@ -104,13 +116,13 @@
       <DownloadedSymbolPackages Include="$(DownloadDirectory)**\*.symbols.nupkg" />
       <ItemsToSign Include="$(DownloadDirectory)**\*.nupkg" Exclude="@(DownloadedSymbolPackages)" />
 
+      <!-- The cross OS diagnostics symbol packages need to be signed as they are the only packages
+      that have a specific version of assets that are only meant to be indexed in symbol servers.
+      Since only *symbols.nupkg get indexed, and installer doesn't produce these, we need to glob them for signing. -->
+      <ItemsToSign Include="$(DownloadDirectory)**\*CrossOsDiag*.symbols.nupkg" />
+
       <ItemsToSign Include="$(DownloadDirectory)**\*.deb" />
       <ItemsToSign Include="$(DownloadDirectory)**\*.rpm" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <!-- External files -->
-      <ItemsToSign Remove="@(ItemsToSign->WithMetadataValue('Filename', 'Newtonsoft.Json'))" />
     </ItemGroup>
 
     <ItemGroup>

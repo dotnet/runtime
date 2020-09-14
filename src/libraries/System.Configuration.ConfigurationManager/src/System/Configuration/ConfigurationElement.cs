@@ -997,9 +997,9 @@ namespace System.Configuration
                             break;
                         case ConfigurationSaveMode.Full:
                             if (IsNullOrNullProperty(value))
-                                Values[prop.Name] = value;
-                            else
                                 Values[prop.Name] = value2;
+                            else
+                                Values[prop.Name] = value;
                             break;
                     }
                 }

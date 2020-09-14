@@ -3588,7 +3588,7 @@ const bool verifyGCTables = false;
  *  Dump the info block header.
  */
 
-unsigned GCInfo::gcInfoBlockHdrDump(const BYTE* table, InfoHdr* header, unsigned* methodSize)
+size_t GCInfo::gcInfoBlockHdrDump(const BYTE* table, InfoHdr* header, unsigned* methodSize)
 {
     GCDump gcDump(GCINFO_VERSION);
 
@@ -3600,7 +3600,7 @@ unsigned GCInfo::gcInfoBlockHdrDump(const BYTE* table, InfoHdr* header, unsigned
 
 /*****************************************************************************/
 
-unsigned GCInfo::gcDumpPtrTable(const BYTE* table, const InfoHdr& header, unsigned methodSize)
+size_t GCInfo::gcDumpPtrTable(const BYTE* table, const InfoHdr& header, unsigned methodSize)
 {
     printf("Pointer table:\n");
 
@@ -3633,7 +3633,10 @@ void GCInfo::gcFindPtrsInFrame(const void* infoBlock, const void* codeBlock, uns
 template class JitHashTable<RegSlotIdKey, RegSlotIdKey, GcSlotId>;
 template class JitHashTable<StackSlotIdKey, StackSlotIdKey, GcSlotId>;
 
-#ifdef DEBUG
+#if defined(DEBUG) || DUMP_GC_TABLES
+
+// This is a copy of GcStackSlotBaseNames from gcinfotypes.h so we can compile in to non-DEBUG builds.
+const char* const JitGcStackSlotBaseNames[] = {"caller.sp", "sp", "frame"};
 
 static const char* const GcSlotFlagsNames[] = {"",
                                                "(byref) ",
@@ -3652,7 +3655,7 @@ class GcInfoEncoderWithLogging
 
 public:
     GcInfoEncoderWithLogging(GcInfoEncoder* gcInfoEncoder, bool verbose)
-        : m_gcInfoEncoder(gcInfoEncoder), m_doLogging(verbose || JitConfig.JitGCInfoLogging() != 0)
+        : m_gcInfoEncoder(gcInfoEncoder), m_doLogging(verbose INDEBUG(|| JitConfig.JitGCInfoLogging() != 0))
     {
     }
 
@@ -3662,7 +3665,7 @@ public:
         if (m_doLogging)
         {
             printf("Stack slot id for offset %d (0x%x) (%s) %s= %d.\n", spOffset, spOffset,
-                   GcStackSlotBaseNames[spBase], GcSlotFlagsNames[flags & 7], newSlotId);
+                   JitGcStackSlotBaseNames[spBase], GcSlotFlagsNames[flags & 7], newSlotId);
         }
         return newSlotId;
     }
@@ -3827,14 +3830,14 @@ public:
 };
 
 #define GCENCODER_WITH_LOGGING(withLog, realEncoder)                                                                   \
-    GcInfoEncoderWithLogging  withLog##Var(realEncoder, compiler->verbose || compiler->opts.dspGCtbls);                \
+    GcInfoEncoderWithLogging  withLog##Var(realEncoder, INDEBUG(compiler->verbose ||) compiler->opts.dspGCtbls);       \
     GcInfoEncoderWithLogging* withLog = &withLog##Var;
 
-#else // DEBUG
+#else // !(defined(DEBUG) || DUMP_GC_TABLES)
 
 #define GCENCODER_WITH_LOGGING(withLog, realEncoder) GcInfoEncoder* withLog = realEncoder;
 
-#endif // DEBUG
+#endif // !(defined(DEBUG) || DUMP_GC_TABLES)
 
 void GCInfo::gcInfoBlockHdrSave(GcInfoEncoder* gcInfoEncoder, unsigned methodSize, unsigned prologSize)
 {
@@ -4006,7 +4009,7 @@ void GCInfo::gcInfoBlockHdrSave(GcInfoEncoder* gcInfoEncoder, unsigned methodSiz
 #endif // DISPLAY_SIZES
 }
 
-#ifdef DEBUG
+#if defined(DEBUG) || DUMP_GC_TABLES
 #define Encoder GcInfoEncoderWithLogging
 #else
 #define Encoder GcInfoEncoder

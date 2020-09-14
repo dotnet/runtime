@@ -1,45 +1,31 @@
 <Project> 
   <PropertyGroup>
-    <!-- Copies the app.config file to the OutDir. -->
-    <TestRuntimeConfigurationFile Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">$(MSBuildThisFileDirectory)netfx.exe.config</TestRuntimeConfigurationFile>
-
     <!-- By default copy the test runtime config file for executable test projects (+ test support projects). -->
-    <GenerateRuntimeConfigurationFiles Condition="'$(IsTestProject)' == 'true' or '$(OutputType.ToLower())' == 'exe'">true</GenerateRuntimeConfigurationFiles>
+    <IsTestProjectOrExecutable Condition="'$(IsTestProject)' == 'true' or
+                                          '$(OutputType.ToLower())' == 'exe'">true</IsTestProjectOrExecutable>
+    <GenerateRuntimeConfigurationFiles Condition="'$(GenerateRuntimeConfigurationFiles)' == '' and
+                                                  '$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
+                                                  '$(IsTestProjectOrExecutable)' == 'true'">true</GenerateRuntimeConfigurationFiles>
+    <GenerateAppConfigurationFile Condition="'$(IsTestProjectOrExecutable)' == 'true' and
+                                             '$(TargetFrameworkIdentifier)' == '.NETFramework'">true</GenerateAppConfigurationFile>
+    <AppConfig Condition="'$(GenerateAppConfigurationFile)' == 'true'">$(MSBuildThisFileDirectory)netfx.exe.config</AppConfig>
+    <!-- TODO: Change in RemoteExecutor -->
+    <RemoteClientAppConfigFile Condition="'$(GenerateAppConfigurationFile)' == 'true'">$(TargetPath).config</RemoteClientAppConfigFile>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(GenerateRuntimeConfigurationFiles)' == 'true'">
-    <None Include="$(TestRuntimeConfigurationFile)"
-          Condition="Exists('$(TestRuntimeConfigurationFile)')"
-          Link="$(TargetName).exe.config"
-          CopyToOutputDirectory="PreserveNewest"
-          Visible="false" />
+  <ItemGroup Condition="'$(IsTestProjectOrExecutable)' == 'true'">
     <!--
       Include deps.json and runtimeconfig.json in ContentWithTargetPath so they will
       be copied to the output folder of projects that reference this one.
       Tracking issue: https://github.com/dotnet/sdk/issues/1675
     -->
     <ContentWithTargetPath Include="$(ProjectDepsFilePath)"
-                           Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and '$(GenerateDependencyFile)' == 'true'"
+                           Condition="'$(GenerateDependencyFile)' == 'true'"
                            CopyToOutputDirectory="PreserveNewest"
                            TargetPath="$(ProjectDepsFileName)" />
     <ContentWithTargetPath Include="$(ProjectRuntimeConfigFilePath)"
-                           Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'"
+                           Condition="'$(GenerateRuntimeConfigurationFiles)' == 'true'"
                            CopyToOutputDirectory="PreserveNewest"
                            TargetPath="$(ProjectRuntimeConfigFileName)" />
   </ItemGroup>
-
-    <!--
-    We disabled implicit framework references but still want to be treated as framework dependent:
-    1. To have runtimeTargets in the deps file.
-    2. To populate the framework node in the runtimeconfig's runtimeOptions 
-    To do this we manually set the RuntimeFramework.
-    At that point restore and conflict resolution already happened therefore setting the item here has no side effects.
-   -->
-  <Target Name="_SetRuntimeFrameworksForTestAssemblies"
-          Condition="'$(SelfContained)' != 'true' and '$(MSBuildProjectExtension)' != '.depproj'"
-          BeforeTargets="GenerateBuildDependencyFile">
-    <ItemGroup>
-      <RuntimeFramework Include="Microsoft.NETCore.App" Version="$(ProductVersion)" />
-    </ItemGroup>
-  </Target>
 </Project>

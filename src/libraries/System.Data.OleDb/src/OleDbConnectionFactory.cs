@@ -31,13 +31,14 @@ namespace System.Data.OleDb
             }
         }
 
-        protected override DbConnectionInternal CreateConnection(DbConnectionOptions options, DbConnectionPoolKey poolKey, object poolGroupProviderInfo, DbConnectionPool pool, DbConnection owningObject)
+        protected override DbConnectionInternal CreateConnection(DbConnectionOptions options, DbConnectionPoolKey poolKey, object poolGroupProviderInfo, DbConnectionPool? pool, DbConnection? owningObject)
         {
-            DbConnectionInternal result = new OleDbConnectionInternal((OleDbConnectionString)options, (OleDbConnection)owningObject);
+            // TODO-NULLABLE: owningObject may actually be null (see DbConnectionPool.CreateObject), in which case this will throw...
+            DbConnectionInternal result = new OleDbConnectionInternal((OleDbConnectionString)options, (OleDbConnection)owningObject!);
             return result;
         }
 
-        protected override DbConnectionOptions CreateConnectionOptions(string connectionString, DbConnectionOptions previous)
+        protected override DbConnectionOptions CreateConnectionOptions(string connectionString, DbConnectionOptions? previous)
         {
             Debug.Assert(!ADP.IsEmpty(connectionString), "null connectionString");
             OleDbConnectionString result = new OleDbConnectionString(connectionString, (null != previous));
@@ -50,17 +51,17 @@ namespace System.Data.OleDb
             cacheMetaDataFactory = false;
 
             OleDbConnectionInternal oleDbInternalConnection = (OleDbConnectionInternal)internalConnection;
-            OleDbConnection oleDbOuterConnection = oleDbInternalConnection.Connection;
+            OleDbConnection? oleDbOuterConnection = oleDbInternalConnection.Connection;
             Debug.Assert(oleDbOuterConnection != null, "outer connection may not be null.");
 
             NameValueCollection settings = (NameValueCollection)ConfigurationManager.GetSection("system.data.oledb");
-            Stream XMLStream = null;
-            string providerFileName = oleDbOuterConnection.GetDataSourcePropertyValue(OleDbPropertySetGuid.DataSourceInfo, ODB.DBPROP_PROVIDERFILENAME) as string;
+            Stream? XMLStream = null;
+            string? providerFileName = oleDbOuterConnection.GetDataSourcePropertyValue(OleDbPropertySetGuid.DataSourceInfo, ODB.DBPROP_PROVIDERFILENAME) as string;
 
             if (settings != null)
             {
-                string[] values = null;
-                string metaDataXML = null;
+                string[]? values = null;
+                string? metaDataXML = null;
                 // first try to get the provider specific xml
 
                 // if providerfilename is not supported we can't build the settings key needed to
@@ -81,7 +82,7 @@ namespace System.Data.OleDb
                 // If there is new XML get it
                 if (values != null)
                 {
-                    XMLStream = ADP.GetXmlStreamFromValues(values, metaDataXML);
+                    XMLStream = ADP.GetXmlStreamFromValues(values, metaDataXML!);
                 }
             }
 
@@ -103,7 +104,7 @@ namespace System.Data.OleDb
                                              oleDbInternalConnection.GetSchemaRowsetInformation());
         }
 
-        protected override DbConnectionPoolGroupOptions CreateConnectionPoolGroupOptions(DbConnectionOptions connectionOptions)
+        protected override DbConnectionPoolGroupOptions? CreateConnectionPoolGroupOptions(DbConnectionOptions connectionOptions)
         {
             return null;
         }
@@ -113,9 +114,9 @@ namespace System.Data.OleDb
             return new OleDbConnectionPoolGroupProviderInfo();
         }
 
-        internal override DbConnectionPoolGroup GetConnectionPoolGroup(DbConnection connection)
+        internal override DbConnectionPoolGroup? GetConnectionPoolGroup(DbConnection connection)
         {
-            OleDbConnection c = (connection as OleDbConnection);
+            OleDbConnection? c = (connection as OleDbConnection);
             if (null != c)
             {
                 return c.PoolGroup;
@@ -125,7 +126,7 @@ namespace System.Data.OleDb
 
         internal override void PermissionDemand(DbConnection outerConnection)
         {
-            OleDbConnection c = (outerConnection as OleDbConnection);
+            OleDbConnection? c = (outerConnection as OleDbConnection);
             if (null != c)
             {
                 c.PermissionDemand();
@@ -134,7 +135,7 @@ namespace System.Data.OleDb
 
         internal override void SetConnectionPoolGroup(DbConnection outerConnection, DbConnectionPoolGroup poolGroup)
         {
-            OleDbConnection c = (outerConnection as OleDbConnection);
+            OleDbConnection? c = (outerConnection as OleDbConnection);
             if (null != c)
             {
                 c.PoolGroup = poolGroup;
@@ -143,7 +144,7 @@ namespace System.Data.OleDb
 
         internal override void SetInnerConnectionEvent(DbConnection owningObject, DbConnectionInternal to)
         {
-            OleDbConnection c = (owningObject as OleDbConnection);
+            OleDbConnection? c = (owningObject as OleDbConnection);
             if (null != c)
             {
                 c.SetInnerConnectionEvent(to);
@@ -152,7 +153,7 @@ namespace System.Data.OleDb
 
         internal override bool SetInnerConnectionFrom(DbConnection owningObject, DbConnectionInternal to, DbConnectionInternal from)
         {
-            OleDbConnection c = (owningObject as OleDbConnection);
+            OleDbConnection? c = (owningObject as OleDbConnection);
             if (null != c)
             {
                 return c.SetInnerConnectionFrom(to, from);
@@ -162,7 +163,7 @@ namespace System.Data.OleDb
 
         internal override void SetInnerConnectionTo(DbConnection owningObject, DbConnectionInternal to)
         {
-            OleDbConnection c = (owningObject as OleDbConnection);
+            OleDbConnection? c = (owningObject as OleDbConnection);
             if (null != c)
             {
                 c.SetInnerConnectionTo(to);

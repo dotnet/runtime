@@ -3,6 +3,7 @@
 
 using System.Collections;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.Versioning;
 using System.Text;
@@ -96,7 +97,7 @@ namespace System.Data.Common
 
         private readonly string _usersConnectionString;
         private readonly Hashtable _parsetable;
-        internal readonly NameValuePair KeyChain;
+        internal readonly NameValuePair? KeyChain;
         internal readonly bool HasPasswordKeyword;
         internal readonly bool HasUserIdKeyword;
 
@@ -117,14 +118,14 @@ namespace System.Data.Common
         internal readonly bool UseOdbcRules;
 
         // called by derived classes that may cache based on connectionString
-        public DbConnectionOptions(string connectionString)
+        public DbConnectionOptions(string? connectionString)
             : this(connectionString, null, false)
         {
         }
 
         // synonyms hashtable is meant to be read-only translation of parsed string
         // keywords/synonyms to a known keyword string
-        public DbConnectionOptions(string connectionString, Hashtable synonyms, bool useOdbcRules)
+        public DbConnectionOptions(string? connectionString, Hashtable? synonyms, bool useOdbcRules)
         {
             UseOdbcRules = useOdbcRules;
             _parsetable = new Hashtable();
@@ -171,12 +172,12 @@ namespace System.Data.Common
             get { return (null == KeyChain); }
         }
 
-        public string this[string keyword]
+        public string? this[string keyword]
         {
-            get { return (string)_parsetable[keyword]; }
+            get { return (string?)_parsetable[keyword]; }
         }
 
-        internal static void AppendKeyValuePairBuilder(StringBuilder builder, string keyName, string keyValue, bool useOdbcRules)
+        internal static void AppendKeyValuePairBuilder(StringBuilder builder, string keyName, string? keyValue, bool useOdbcRules)
         {
             ADP.CheckArgumentNull(builder, "builder");
             ADP.CheckArgumentLength(keyName, "keyName");
@@ -251,7 +252,7 @@ namespace System.Data.Common
 
         public bool ConvertValueToBoolean(string keyName, bool defaultValue)
         {
-            object value = _parsetable[keyName];
+            object? value = _parsetable[keyName];
             if (null == value)
             {
                 return defaultValue;
@@ -281,7 +282,7 @@ namespace System.Data.Common
 
         public int ConvertValueToInt32(string keyName, int defaultValue)
         {
-            object value = _parsetable[keyName];
+            object? value = _parsetable[keyName];
             if (null == value)
             {
                 return defaultValue;
@@ -305,9 +306,9 @@ namespace System.Data.Common
             }
         }
 
-        public string ConvertValueToString(string keyName, string defaultValue)
+        public string? ConvertValueToString(string keyName, string? defaultValue)
         {
-            string value = (string)_parsetable[keyName];
+            string? value = (string?)_parsetable[keyName];
             return ((null != value) ? value : defaultValue);
         }
 
@@ -330,16 +331,16 @@ namespace System.Data.Common
         // * this method queries "DataDirectory" value from the current AppDomain.
         //   This string is used for to replace "!DataDirectory!" values in the connection string, it is not considered as an "exposed resource".
         // * This method uses GetFullPath to validate that root path is valid, the result is not exposed out.
-        internal static string ExpandDataDirectory(string keyword, string value, ref string datadir)
+        internal static string? ExpandDataDirectory(string keyword, string? value, ref string? datadir)
         {
-            string fullPath = null;
+            string? fullPath = null;
             if ((null != value) && value.StartsWith(DataDirectory, StringComparison.OrdinalIgnoreCase))
             {
-                string rootFolderPath = datadir;
+                string? rootFolderPath = datadir;
                 if (null == rootFolderPath)
                 {
                     // find the replacement path
-                    object rootFolderObject = AppDomain.CurrentDomain.GetData("DataDirectory");
+                    object? rootFolderObject = AppDomain.CurrentDomain.GetData("DataDirectory");
                     rootFolderPath = (rootFolderObject as string);
                     if ((null != rootFolderObject) && (null == rootFolderPath))
                     {
@@ -388,16 +389,16 @@ namespace System.Data.Common
             return fullPath;
         }
 
-        internal string ExpandDataDirectories(ref string filename, ref int position)
+        internal string? ExpandDataDirectories(ref string? filename, ref int position)
         {
-            string value = null;
+            string? value = null;
             StringBuilder builder = new StringBuilder(_usersConnectionString.Length);
-            string datadir = null;
+            string? datadir = null;
 
             int copyPosition = 0;
             bool expanded = false;
 
-            for (NameValuePair current = KeyChain; null != current; current = current.Next)
+            for (NameValuePair? current = KeyChain; null != current; current = current.Next)
             {
                 value = current.Value;
 
@@ -481,11 +482,11 @@ namespace System.Data.Common
         }
 
         [System.Diagnostics.Conditional("DEBUG")]
-        private static void DebugTraceKeyValuePair(string keyname, string keyvalue, Hashtable synonyms)
+        private static void DebugTraceKeyValuePair(string keyname, string? keyvalue, Hashtable? synonyms)
         {
             Debug.Assert(keyname == keyname.ToLowerInvariant(), "missing ToLower");
 
-            string realkeyname = ((null != synonyms) ? (string)synonyms[keyname] : keyname);
+            string? realkeyname = ((null != synonyms) ? (string)synonyms[keyname]! : keyname);
             if ((KEY.Password != realkeyname) && (SYNONYM.Pwd != realkeyname))
             { // don't trace passwords ever!
                 if (null != keyvalue)
@@ -543,7 +544,7 @@ namespace System.Data.Common
             NullTermination,
         };
 
-        internal static int GetKeyValuePair(string connectionString, int currentPosition, StringBuilder buffer, bool useOdbcRules, out string keyname, out string keyvalue)
+        internal static int GetKeyValuePair(string connectionString, int currentPosition, StringBuilder buffer, bool useOdbcRules, out string? keyname, out string? keyvalue)
         {
             int startposition = currentPosition;
 
@@ -747,7 +748,7 @@ namespace System.Data.Common
             return currentPosition;
         }
 
-        private static bool IsValueValidInternal(string keyvalue)
+        private static bool IsValueValidInternal(string? keyvalue)
         {
             if (null != keyvalue)
             {
@@ -760,7 +761,7 @@ namespace System.Data.Common
             return true;
         }
 
-        private static bool IsKeyNameValid(string keyname)
+        private static bool IsKeyNameValid([NotNullWhen(true)] string? keyname)
         {
             if (null != keyname)
             {
@@ -774,7 +775,7 @@ namespace System.Data.Common
         }
 
 #if DEBUG
-        private static Hashtable SplitConnectionString(string connectionString, Hashtable synonyms, bool firstKey)
+        private static Hashtable SplitConnectionString(string connectionString, Hashtable? synonyms, bool firstKey)
         {
             Hashtable parsetable = new Hashtable();
             Regex parser = (firstKey ? ConnectionStringRegexOdbc : ConnectionStringRegex);
@@ -795,7 +796,7 @@ namespace System.Data.Common
                 foreach (Capture keypair in match.Groups[KeyIndex].Captures)
                 {
                     string keyname = (firstKey ? keypair.Value : keypair.Value.Replace("==", "=")).ToLowerInvariant();
-                    string keyvalue = keyvalues[indexValue++].Value;
+                    string? keyvalue = keyvalues[indexValue++].Value;
                     if (0 < keyvalue.Length)
                     {
                         if (!firstKey)
@@ -819,7 +820,7 @@ namespace System.Data.Common
                     }
                     DebugTraceKeyValuePair(keyname, keyvalue, synonyms);
 
-                    string realkeyname = ((null != synonyms) ? (string)synonyms[keyname] : keyname);
+                    string? realkeyname = ((null != synonyms) ? (string)synonyms[keyname]! : keyname);
                     if (!IsKeyNameValid(realkeyname))
                     {
                         throw ADP.KeywordNotSupported(keyname);
@@ -833,7 +834,7 @@ namespace System.Data.Common
             return parsetable;
         }
 
-        private static void ParseComparison(Hashtable parsetable, string connectionString, Hashtable synonyms, bool firstKey, Exception e)
+        private static void ParseComparison(Hashtable parsetable, string connectionString, Hashtable? synonyms, bool firstKey, Exception? e)
         {
             try
             {
@@ -841,8 +842,8 @@ namespace System.Data.Common
                 foreach (DictionaryEntry entry in parsedvalues)
                 {
                     string keyname = (string)entry.Key;
-                    string value1 = (string)entry.Value;
-                    string value2 = (string)parsetable[keyname];
+                    string? value1 = (string?)entry.Value;
+                    string? value2 = (string?)parsetable[keyname];
                     Debug.Assert(parsetable.Contains(keyname), "ParseInternal code vs. regex mismatch keyname <" + keyname + ">");
                     Debug.Assert(value1 == value2, "ParseInternal code vs. regex mismatch keyvalue <" + value1 + "> <" + value2 + ">");
                 }
@@ -884,11 +885,11 @@ namespace System.Data.Common
             }
         }
 #endif
-        private static NameValuePair ParseInternal(Hashtable parsetable, string connectionString, bool buildChain, Hashtable synonyms, bool firstKey)
+        private static NameValuePair? ParseInternal(Hashtable parsetable, string connectionString, bool buildChain, Hashtable? synonyms, bool firstKey)
         {
             Debug.Assert(null != connectionString, "null connectionstring");
             StringBuilder buffer = new StringBuilder();
-            NameValuePair localKeychain = null, keychain = null;
+            NameValuePair? localKeychain = null, keychain = null;
 #if DEBUG
             try
             {
@@ -899,7 +900,7 @@ namespace System.Data.Common
                 {
                     int startPosition = nextStartPosition;
 
-                    string keyname, keyvalue;
+                    string? keyname, keyvalue;
                     nextStartPosition = GetKeyValuePair(connectionString, startPosition, buffer, firstKey, out keyname, out keyvalue);
                     if (ADP.IsEmpty(keyname))
                     {
@@ -912,7 +913,7 @@ namespace System.Data.Common
                     Debug.Assert(IsKeyNameValid(keyname), "ParseFailure, invalid keyname");
                     Debug.Assert(IsValueValidInternal(keyvalue), "parse failure, invalid keyvalue");
 #endif
-                    string realkeyname = ((null != synonyms) ? (string)synonyms[keyname] : keyname);
+                    string? realkeyname = ((null != synonyms) ? (string)synonyms[keyname]! : keyname);
                     if (!IsKeyNameValid(realkeyname))
                     {
                         throw ADP.KeywordNotSupported(keyname);
@@ -943,13 +944,13 @@ namespace System.Data.Common
             return keychain;
         }
 
-        internal NameValuePair ReplacePasswordPwd(out string constr, bool fakePassword)
+        internal NameValuePair? ReplacePasswordPwd(out string constr, bool fakePassword)
         {
             bool expanded = false;
             int copyPosition = 0;
-            NameValuePair head = null, tail = null, next = null;
+            NameValuePair? head = null, tail = null, next = null;
             StringBuilder builder = new StringBuilder(_usersConnectionString.Length);
-            for (NameValuePair current = KeyChain; null != current; current = current.Next)
+            for (NameValuePair? current = KeyChain; null != current; current = current.Next)
             {
                 if ((KEY.Password != current.Name) && (SYNONYM.Pwd != current.Name))
                 {

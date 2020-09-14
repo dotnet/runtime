@@ -228,7 +228,7 @@ namespace System.Resources.Tests
             yield return new object[] { "Size", new Size(20, 30), true };
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported))]
         [MemberData(nameof(EnglishNonStringResourceData))]
         public static void GetObject(string key, object expectedValue, bool requiresBinaryFormatter)
         {
@@ -299,7 +299,7 @@ namespace System.Resources.Tests
             Assert.Equal(expectedValue, set.GetString(key));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported))]
         [MemberData(nameof(EnglishNonStringResourceData))]
         public static void GetResourceSet_NonStrings(string key, object expectedValue, bool requiresBinaryFormatter)
         {

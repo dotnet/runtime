@@ -42,6 +42,12 @@ namespace Internal.TypeSystem
         }
 
         [System.Diagnostics.DebuggerHidden]
+        public static void ThrowInvalidProgramException(ExceptionStringID id)
+        {
+            throw new TypeSystemException.InvalidProgramException(id);
+        }
+
+        [System.Diagnostics.DebuggerHidden]
         public static void ThrowInvalidProgramException(ExceptionStringID id, MethodDesc method)
         {
             throw new TypeSystemException.InvalidProgramException(id, Format.Method(method));

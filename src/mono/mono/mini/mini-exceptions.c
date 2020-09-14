@@ -61,6 +61,7 @@
 #include <mono/metadata/mono-endian.h>
 #include <mono/metadata/environment.h>
 #include <mono/metadata/mono-mlist.h>
+#include <mono/metadata/handle.h>
 #include <mono/utils/mono-merp.h>
 #include <mono/utils/mono-mmap.h>
 #include <mono/utils/mono-logger-internals.h>
@@ -1047,19 +1048,28 @@ ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info
 		return res;
 	}
 
+	HANDLE_FUNCTION_ENTER ();
+
+	MONO_HANDLE_PIN (ta);
+
 	len = mono_array_length_internal (ta) / TRACE_IP_ENTRY_SIZE;
 
 	res = mono_array_new_checked (domain, mono_defaults.stack_frame_class, len > skip ? len - skip : 0, error);
-	if (mono_error_set_pending_exception (error))
-		return NULL;
+	if (!is_ok (error))
+		goto fail;
+
+	MONO_HANDLE_PIN (res);
+
+	MonoObjectHandle sf_h;
+	sf_h = MONO_HANDLE_NEW (MonoObject, NULL);
 
 	for (i = skip; i < len; i++) {
 		MonoJitInfo *ji;
 		MonoStackFrame *sf = (MonoStackFrame *)mono_object_new_checked (domain, mono_defaults.stack_frame_class, error);
-		if (!is_ok (error)) {
-			mono_error_set_pending_exception (error);
-			return NULL;
-		}
+		if (!is_ok (error))
+			goto fail;
+		MONO_HANDLE_ASSIGN_RAW (sf_h, sf);
+
 		ExceptionTraceIp trace_ip;
 		memcpy (&trace_ip, mono_array_addr_fast (ta, ExceptionTraceIp, i), sizeof (ExceptionTraceIp));
 		gpointer ip = trace_ip.ip;
@@ -1091,18 +1101,14 @@ ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info
 			s = mono_method_get_name_full (method, TRUE, FALSE, MONO_TYPE_NAME_FORMAT_REFLECTION);
 			MonoString *name = mono_string_new_checked (domain, s, error);
 			g_free (s);
-			if (!is_ok (error)) {
-				mono_error_set_pending_exception (error);
-				return NULL;
-			}
+			if (!is_ok (error))
+				goto fail;
 			MONO_OBJECT_SETREF_INTERNAL (sf, internal_method_name, name);
 		}
 		else {
 			MonoReflectionMethod *rm = mono_method_get_object_checked (domain, method, NULL, error);
-			if (!is_ok (error)) {
-				mono_error_set_pending_exception (error);
-				return NULL;
-			}
+			if (!is_ok (error))
+				goto fail;
 			MONO_OBJECT_SETREF_INTERNAL (sf, method, rm);
 		}
 
@@ -1129,10 +1135,8 @@ ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info
 		if (need_file_info) {
 			if (location && location->source_file) {
 				MonoString *filename = mono_string_new_checked (domain, location->source_file, error);
-				if (!is_ok (error)) {
-					mono_error_set_pending_exception (error);
-					return NULL;
-				}
+				if (!is_ok (error))
+					goto fail;
 				MONO_OBJECT_SETREF_INTERNAL (sf, filename, filename);
 				sf->line = location->row;
 				sf->column = location->column;
@@ -1145,8 +1149,13 @@ ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info
 		mono_debug_free_source_location (location);
 		mono_array_setref_internal (res, i - skip, sf);
 	}
+	goto exit;
 
-	return res;
+ fail:
+	mono_error_set_pending_exception (error);
+	res = NULL;
+ exit:
+	HANDLE_FUNCTION_RETURN_VAL (res);
 }
 
 static void
@@ -3390,7 +3399,7 @@ print_stack_frame_to_string (StackFrameInfo *frame, MonoContext *ctx, gpointer d
  *   printing diagnostic information and aborting.
  */
 void
-mono_handle_native_crash (const char *signal, MonoContext *mctx, MONO_SIG_HANDLER_INFO_TYPE *info, void *context)
+mono_handle_native_crash (const char *signal, MonoContext *mctx, MONO_SIG_HANDLER_INFO_TYPE *info)
 {
 	MonoJitTlsData *jit_tls = mono_tls_get_jit_tls ();
 
@@ -3400,20 +3409,17 @@ mono_handle_native_crash (const char *signal, MonoContext *mctx, MONO_SIG_HANDLE
 	sigemptyset (&sa.sa_mask);
 	sa.sa_flags = 0;
 
-	/* Mono has crashed - remove our handlers except SIGTERM, which is used by crash reporting */
-	/*  TODO: Combine with mono_runtime_cleanup_handlers (but with an option to not de-allocate anything) */
-	if (mini_debug_options.handle_sigint) {
-		g_assert (sigaction (SIGINT, &sa, NULL) != -1);
-	}
-
+	/* Remove our SIGABRT handler */
 	g_assert (sigaction (SIGABRT, &sa, NULL) != -1);
-	g_assert (sigaction (SIGFPE, &sa, NULL) != -1);
-	g_assert (sigaction (SIGSYS, &sa, NULL) != -1);
-	g_assert (sigaction (SIGSEGV, &sa, NULL) != -1);
-	g_assert (sigaction (SIGQUIT, &sa, NULL) != -1);
-	g_assert (sigaction (SIGBUS, &sa, NULL) != -1);
+
+	/* On some systems we get a SIGILL when calling abort (), because it might
+	 * fail to raise SIGABRT */
 	g_assert (sigaction (SIGILL, &sa, NULL) != -1);
+
+	/* Remove SIGCHLD, it uses the finalizer thread */
 	g_assert (sigaction (SIGCHLD, &sa, NULL) != -1);
+
+	/* Remove SIGQUIT, we are already dumping threads */
 	g_assert (sigaction (SIGQUIT, &sa, NULL) != -1);
 
 #endif
@@ -3453,13 +3459,13 @@ mono_handle_native_crash (const char *signal, MonoContext *mctx, MONO_SIG_HANDLE
 		g_async_safe_printf ("=================================================================\n");
 	}
 
-	mono_post_native_crash_handler (signal, mctx, info, mono_do_crash_chaining, context);
+	mono_post_native_crash_handler (signal, mctx, info, mono_do_crash_chaining);
 }
 
 #else
 
 void
-mono_handle_native_crash (const char *signal, MonoContext *mctx, MONO_SIG_HANDLER_INFO_TYPE *info, void *context)
+mono_handle_native_crash (const char *signal, MonoContext *mctx, MONO_SIG_HANDLER_INFO_TYPE *info)
 {
 	g_assert_not_reached ();
 }

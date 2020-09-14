@@ -36,6 +36,7 @@ namespace System
 
         public AppDomainSetup SetupInformation => new AppDomainSetup();
 
+        [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public PermissionSet PermissionSet => new PermissionSet(PermissionState.Unrestricted);
 
         public event UnhandledExceptionEventHandler? UnhandledException

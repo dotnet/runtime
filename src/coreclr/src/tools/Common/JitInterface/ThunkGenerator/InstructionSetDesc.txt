@@ -15,6 +15,10 @@
 ; Copy instruction sets defined for other architecture at this point in the file.
 ; copyinstructionsets,<architecture>,<copytoarchitecture>
 
+; UPDATE JIT/EE INTERFACE GUID WHEN CHANGING THESE DEFINITIONS. The instruction set definitions are part of JIT/EE interface contract.
+
+; DO NOT CHANGE R2R NUMERIC VALUES OF THE EXISTING SETS. Changing R2R numberic values definitions would be R2R format breaking change.
+
 ; Definition of X86 instruction sets
 definearch         ,X86   ,32Bit     ,X64
 

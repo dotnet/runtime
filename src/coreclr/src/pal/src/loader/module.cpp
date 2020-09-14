@@ -67,13 +67,6 @@ using namespace CorUnix;
 /* get the full name of a module if available, and the short name otherwise*/
 #define MODNAME(x) ((x)->lib_name)
 
-/* Which path should FindLibrary search? */
-#if defined(__APPLE__)
-#define LIBSEARCHPATH "DYLD_LIBRARY_PATH"
-#else
-#define LIBSEARCHPATH "LD_LIBRARY_PATH"
-#endif
-
 #define LIBC_NAME_WITHOUT_EXTENSION "libc"
 
 /* static variables ***********************************************************/
@@ -602,6 +595,13 @@ PAL_LoadLibraryDirect(
     ENTRY("LoadLibraryDirect (lpLibFileName=%p (%S)) \n",
           lpLibFileName ? lpLibFileName : W16_NULLSTRING,
           lpLibFileName ? lpLibFileName : W16_NULLSTRING);
+
+    // Getting nullptr as name indicates redirection to current library
+    if (lpLibFileName == nullptr)
+    {
+        dl_handle = dlopen(NULL, RTLD_LAZY);
+        goto done;
+    }
 
     if (!LOADVerifyLibraryPath(lpLibFileName))
     {
@@ -1436,18 +1436,6 @@ static LPWSTR LOADGetModuleFileName(MODSTRUCT *module)
     return module->lib_name;
 }
 
-static bool ShouldRedirectToCurrentLibrary(LPCSTR libraryNameOrPath)
-{
-    if (!g_running_in_exe)
-        return false;
-
-    // Getting nullptr as name indicates redirection to current library
-    if (libraryNameOrPath == nullptr)
-        return true;
-
-    return false;
-}
-
 /*
 Function:
     LOADLoadLibraryDirect [internal]
@@ -1464,7 +1452,8 @@ static NATIVE_LIBRARY_HANDLE LOADLoadLibraryDirect(LPCSTR libraryNameOrPath)
 {
     NATIVE_LIBRARY_HANDLE dl_handle;
 
-    if (ShouldRedirectToCurrentLibrary(libraryNameOrPath))
+    // Getting nullptr as name indicates redirection to current library
+    if (libraryNameOrPath == nullptr)
     {
         dl_handle = dlopen(NULL, RTLD_LAZY);
     }

@@ -185,10 +185,11 @@ public class PInvokeTableGenerator : Task
         w.WriteLine("InterpFtnDesc wasm_native_to_interp_ftndescs[" + callbacks.Count + "];");
 
         foreach (var cb in callbacks) {
-            var method = cb.Method;
+            MethodInfo method = cb.Method;
+            bool isVoid = method.ReturnType.FullName == "System.Void";
 
-            if (method.ReturnType != typeof(void) && !IsBlittable(method.ReturnType))
-                Error("The return type of pinvoke callback method '" + method + "' needs to be blittable.");
+            if (!isVoid && !IsBlittable(method.ReturnType))
+                Error($"The return type '{method.ReturnType.FullName}' of pinvoke callback method '{method}' needs to be blittable.");
             foreach (var p in method.GetParameters()) {
                 if (!IsBlittable(p.ParameterType))
                     Error("Parameter types of pinvoke callback method '" + method + "' needs to be blittable.");

@@ -292,6 +292,6 @@
     <value>'pipeSecurity' must be null when 'options' contains 'PipeOptions.CurrentUserOnly'. </value>
   </data>
   <data name="Pipes_PlatformNotSupported" xml:space="preserve">
-    <value>System.IO.Pipes is not supported on this platform</value>
+    <value>System.IO.Pipes is not supported on this platform.</value>
   </data>
 </root>

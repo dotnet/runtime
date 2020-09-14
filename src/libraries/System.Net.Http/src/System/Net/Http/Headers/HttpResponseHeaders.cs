@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Net.Http.Headers
 {
@@ -36,7 +35,7 @@ namespace System.Net.Http.Headers
         }
 
         public HttpHeaderValueCollection<string> AcceptRanges =>
-            GetSpecializedCollection(AcceptRangesSlot, thisRef => new HttpHeaderValueCollection<string>(KnownHeaders.AcceptRanges.Descriptor, thisRef, HeaderUtilities.TokenValidator));
+            GetSpecializedCollection(AcceptRangesSlot, static thisRef => new HttpHeaderValueCollection<string>(KnownHeaders.AcceptRanges.Descriptor, thisRef, HeaderUtilities.TokenValidator));
 
         public TimeSpan? Age
         {
@@ -57,7 +56,7 @@ namespace System.Net.Http.Headers
         }
 
         public HttpHeaderValueCollection<AuthenticationHeaderValue> ProxyAuthenticate =>
-            GetSpecializedCollection(ProxyAuthenticateSlot, thisRef => new HttpHeaderValueCollection<AuthenticationHeaderValue>(KnownHeaders.ProxyAuthenticate.Descriptor, thisRef));
+            GetSpecializedCollection(ProxyAuthenticateSlot, static thisRef => new HttpHeaderValueCollection<AuthenticationHeaderValue>(KnownHeaders.ProxyAuthenticate.Descriptor, thisRef));
 
         public RetryConditionHeaderValue? RetryAfter
         {
@@ -66,13 +65,13 @@ namespace System.Net.Http.Headers
         }
 
         public HttpHeaderValueCollection<ProductInfoHeaderValue> Server =>
-            GetSpecializedCollection(ServerSlot, thisRef => new HttpHeaderValueCollection<ProductInfoHeaderValue>(KnownHeaders.Server.Descriptor, thisRef));
+            GetSpecializedCollection(ServerSlot, static thisRef => new HttpHeaderValueCollection<ProductInfoHeaderValue>(KnownHeaders.Server.Descriptor, thisRef));
 
         public HttpHeaderValueCollection<string> Vary =>
-            GetSpecializedCollection(VarySlot, thisRef => new HttpHeaderValueCollection<string>(KnownHeaders.Vary.Descriptor, thisRef, HeaderUtilities.TokenValidator));
+            GetSpecializedCollection(VarySlot, static thisRef => new HttpHeaderValueCollection<string>(KnownHeaders.Vary.Descriptor, thisRef, HeaderUtilities.TokenValidator));
 
         public HttpHeaderValueCollection<AuthenticationHeaderValue> WwwAuthenticate =>
-            GetSpecializedCollection(WwwAuthenticateSlot, thisRef => new HttpHeaderValueCollection<AuthenticationHeaderValue>(KnownHeaders.WWWAuthenticate.Descriptor, thisRef));
+            GetSpecializedCollection(WwwAuthenticateSlot, static thisRef => new HttpHeaderValueCollection<AuthenticationHeaderValue>(KnownHeaders.WWWAuthenticate.Descriptor, thisRef));
 
         #endregion
 

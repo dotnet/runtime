@@ -4,12 +4,7 @@
      <IsEligibleForNgenOptimization>true</IsEligibleForNgenOptimization>
      <IsEligibleForNgenOptimization Condition="'$(IsReferenceAssembly)' == 'true'">false</IsEligibleForNgenOptimization>
      <IsEligibleForNgenOptimization Condition="'$(GeneratePlatformNotSupportedAssembly)' == 'true' or '$(GeneratePlatformNotSupportedAssemblyMessage)' != ''">false</IsEligibleForNgenOptimization>
-      <!-- There's an issue causing IBCMerge failures because of mismatched MVIDs
-           across many of our assemblies on Mac, so disable
-           IBCMerge optimizations on Mac for now to unblock the offical build.
-           See issue https://github.com/dotnet/runtime/issues/33303
-      -->
-      <IsEligibleForNgenOptimization Condition="'$(TargetOS)' == 'OSX' or '$(TargetsMobile)' == 'true'">false</IsEligibleForNgenOptimization>
+     <IsEligibleForNgenOptimization Condition="'$(TargetsMobile)' == 'true'">false</IsEligibleForNgenOptimization>
   </PropertyGroup>
 
   <Target Name="SetApplyNgenOptimization"

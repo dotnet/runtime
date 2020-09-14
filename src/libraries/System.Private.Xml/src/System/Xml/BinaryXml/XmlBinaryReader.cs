@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -334,7 +333,6 @@ namespace System.Xml
         private readonly bool _ignoreComments;
         private readonly DtdProcessing _dtdProcessing;
 
-        private XmlCharType _xmlCharType;
         private readonly Encoding _unicode;
 
         // current version of the protocol
@@ -343,7 +341,6 @@ namespace System.Xml
         public XmlSqlBinaryReader(Stream stream, byte[] data, int len, string baseUri, bool closeInput, XmlReaderSettings settings)
         {
             _unicode = System.Text.Encoding.Unicode;
-            _xmlCharType = XmlCharType.Instance;
 
             _xnt = settings.NameTable!;
             if (_xnt == null)
@@ -670,7 +667,7 @@ namespace System.Xml
             }
         }
 
-        public override string? GetAttribute(string name, string ns)
+        public override string? GetAttribute(string name, string? ns)
         {
             if (ScanState.XmlText == _state)
             {
@@ -721,7 +718,7 @@ namespace System.Xml
             }
         }
 
-        public override bool MoveToAttribute(string name, string ns)
+        public override bool MoveToAttribute(string name, string? ns)
         {
             if (ScanState.XmlText == _state)
             {
@@ -1784,7 +1781,7 @@ namespace System.Xml
             return base.ReadContentAsObject();
         }
 
-        public override object ReadContentAs(Type returnType, IXmlNamespaceResolver namespaceResolver)
+        public override object ReadContentAs(Type returnType, IXmlNamespaceResolver? namespaceResolver)
         {
             int origPos = _pos;
             try
@@ -3532,7 +3529,6 @@ namespace System.Xml
             // assert that size is an even number
             Debug.Assert(0 == ((_pos - _tokDataPos) & 1), "Data size should not be odd");
             // grab local copy (perf)
-            XmlCharType xmlCharType = _xmlCharType;
 
             fixed (byte* pb = _data)
             {
@@ -3547,7 +3543,7 @@ namespace System.Xml
                         int posNext = pos + 2;
                         if (posNext > end)
                             return _xmlspacePreserve ? XmlNodeType.SignificantWhitespace : XmlNodeType.Whitespace;
-                        if (pb[pos + 1] != 0 || !xmlCharType.IsWhiteSpace((char)pb[pos]))
+                        if (pb[pos + 1] != 0 || !XmlCharType.IsWhiteSpace((char)pb[pos]))
                             break;
                         pos = posNext;
                     }
@@ -3562,7 +3558,7 @@ namespace System.Xml
                         if (posNext > end)
                             return XmlNodeType.Text;
                         ch = (char)(pb[pos] | ((int)(pb[pos + 1]) << 8));
-                        if (!_xmlCharType.IsCharData(ch))
+                        if (!XmlCharType.IsCharData(ch))
                             break;
                         pos = posNext;
                     }
@@ -4229,7 +4225,7 @@ namespace System.Xml
             return xsst.ValueConverter;
         }
 
-        private object ValueAs(BinXmlToken token, Type returnType, IXmlNamespaceResolver namespaceResolver)
+        private object ValueAs(BinXmlToken token, Type returnType, IXmlNamespaceResolver? namespaceResolver)
         {
             object value;
             CheckValueTokenBounds();

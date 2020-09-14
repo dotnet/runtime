@@ -10,8 +10,8 @@ namespace MS.Internal.Xml.XPath
     {
         internal XPathNavigator nav;
         internal XPathNodeType type;
-        internal string name;
-        internal string uri;
+        internal string? name;
+        internal string? uri;
         internal int position;
         internal bool matchSelf;
         internal bool first = true;

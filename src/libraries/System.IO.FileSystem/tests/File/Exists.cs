@@ -104,7 +104,7 @@ namespace System.IO.Tests
         public void PathAlreadyExistsAsDirectory()
         {
             string path = GetTestFilePath();
-            DirectoryInfo testDir = Directory.CreateDirectory(path);
+            Directory.CreateDirectory(path);
 
             Assert.False(Exists(IOServices.RemoveTrailingSlash(path)));
             Assert.False(Exists(IOServices.RemoveTrailingSlash(IOServices.RemoveTrailingSlash(path))));
@@ -247,7 +247,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Uses P/Invokes
+        [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Browser)]  // Uses P/Invokes
         public void FalseForNonRegularFile()
         {
             string fileName = GetTestFilePath();

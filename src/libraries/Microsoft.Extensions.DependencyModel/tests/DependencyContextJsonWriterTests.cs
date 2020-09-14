@@ -300,6 +300,68 @@ namespace Microsoft.Extensions.DependencyModel.Tests
         }
 
         [Fact]
+        public void WritesRuntimePackLibrariesWithFrameworkName()
+        {
+            var result = Save(Create(
+                "Target",
+                "win-x86",
+                false,
+                runtimeLibraries: new[]
+                {
+                    new RuntimeLibrary(
+                        "runtimepack",
+                        "RuntimePackName",
+                        "1.2.3",
+                        "HASH",
+                        new [] {
+                            new RuntimeAssetGroup(
+                                string.Empty,
+                                new []
+                                {
+                                    new RuntimeFile("System.Private.CoreLib.dll", "2.3.4", "3.4.5"),
+                                }),
+                        },
+                        new [] {
+                            new RuntimeAssetGroup(
+                                string.Empty,
+                                new []
+                                {
+                                    new RuntimeFile("coreclr.dll", "4.5.6", "5.6.7"),
+                                }),
+                        },
+                        new ResourceAssembly[0],
+                        new Dependency[0],
+                        false,
+                        "PackagePath",
+                        "PackageHashPath",
+                        "placeHolderManifest.xml"
+                    ),
+                }));
+
+            // targets
+            var targets = result.Should().HavePropertyAsObject("targets").Subject;
+            var target = targets.Should().HavePropertyAsObject("Target/win-x86").Subject;
+            var library = target.Should().HavePropertyAsObject("RuntimePackName/1.2.3").Subject;
+            library.Should().NotHaveProperty("dependencies");
+            library.Should().NotHaveProperty("resources");
+
+            library.Should().HavePropertyAsObject("runtime")
+                .Subject.Should().HaveProperty("System.Private.CoreLib.dll");
+            library.Should().HavePropertyAsObject("native")
+                .Subject.Should().HaveProperty("coreclr.dll");
+
+            //libraries
+            var libraries = result.Should().HavePropertyAsObject("libraries").Subject;
+            library = libraries.Should().HavePropertyAsObject("RuntimePackName/1.2.3").Subject;
+            library.Should().HavePropertyValue("sha512", "HASH");
+            library.Should().HavePropertyValue("type", "runtimepack");
+            library.Should().HavePropertyValue("serviceable", false);
+            library.Should().HavePropertyValue("path", "PackagePath");
+            library.Should().HavePropertyValue("hashPath", "PackageHashPath");
+            library.Should().HavePropertyValue("runtimeStoreManifestName", "placeHolderManifest.xml");
+        }
+
+        [Fact]
         public void MergesRuntimeAndCompileLibrariesForPortable()
         {
             var result = Save(Create(

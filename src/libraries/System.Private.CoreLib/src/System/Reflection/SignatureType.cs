@@ -97,31 +97,79 @@ namespace System.Reflection
         public sealed override Guid GUID => throw new NotSupportedException(SR.NotSupported_SignatureType);
         protected sealed override TypeCode GetTypeCodeImpl() => throw new NotSupportedException(SR.NotSupported_SignatureType);
         protected sealed override TypeAttributes GetAttributeFlagsImpl() => throw new NotSupportedException(SR.NotSupported_SignatureType);
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
         public sealed override ConstructorInfo[] GetConstructors(BindingFlags bindingAttr) => throw new NotSupportedException(SR.NotSupported_SignatureType);
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.NonPublicEvents)]
         public sealed override EventInfo GetEvent(string name, BindingFlags bindingAttr) => throw new NotSupportedException(SR.NotSupported_SignatureType);
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.NonPublicEvents)]
         public sealed override EventInfo[] GetEvents(BindingFlags bindingAttr) => throw new NotSupportedException(SR.NotSupported_SignatureType);
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
         public sealed override FieldInfo GetField(string name, BindingFlags bindingAttr) => throw new NotSupportedException(SR.NotSupported_SignatureType);
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
         public sealed override FieldInfo[] GetFields(BindingFlags bindingAttr) => throw new NotSupportedException(SR.NotSupported_SignatureType);
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         public sealed override MemberInfo[] GetMembers(BindingFlags bindingAttr) => throw new NotSupportedException(SR.NotSupported_SignatureType);
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
         public sealed override MethodInfo[] GetMethods(BindingFlags bindingAttr) => throw new NotSupportedException(SR.NotSupported_SignatureType);
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes)]
         public sealed override Type GetNestedType(string name, BindingFlags bindingAttr) => throw new NotSupportedException(SR.NotSupported_SignatureType);
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes)]
         public sealed override Type[] GetNestedTypes(BindingFlags bindingAttr) => throw new NotSupportedException(SR.NotSupported_SignatureType);
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
         public sealed override PropertyInfo[] GetProperties(BindingFlags bindingAttr) => throw new NotSupportedException(SR.NotSupported_SignatureType);
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         public sealed override object InvokeMember(string name, BindingFlags invokeAttr, Binder? binder, object? target, object?[]? args, ParameterModifier[]? modifiers, CultureInfo? culture, string[]? namedParameters) => throw new NotSupportedException(SR.NotSupported_SignatureType);
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
         protected sealed override MethodInfo GetMethodImpl(string name, BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[]? types, ParameterModifier[]? modifiers) => throw new NotSupportedException(SR.NotSupported_SignatureType);
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
         protected sealed override MethodInfo GetMethodImpl(string name, int genericParameterCount, BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[]? types, ParameterModifier[]? modifiers) => throw new NotSupportedException(SR.NotSupported_SignatureType);
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
         protected sealed override PropertyInfo GetPropertyImpl(string name, BindingFlags bindingAttr, Binder? binder, Type? returnType, Type[]? types, ParameterModifier[]? modifiers) => throw new NotSupportedException(SR.NotSupported_SignatureType);
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         public sealed override MemberInfo[] FindMembers(MemberTypes memberType, BindingFlags bindingAttr, MemberFilter? filter, object? filterCriteria) => throw new NotSupportedException(SR.NotSupported_SignatureType);
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         public sealed override MemberInfo[] GetMember(string name, BindingFlags bindingAttr) => throw new NotSupportedException(SR.NotSupported_SignatureType);
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         public sealed override MemberInfo[] GetMember(string name, MemberTypes type, BindingFlags bindingAttr) => throw new NotSupportedException(SR.NotSupported_SignatureType);
+
+        [DynamicallyAccessedMembers(
+            DynamicallyAccessedMemberTypes.PublicFields
+            | DynamicallyAccessedMemberTypes.PublicMethods
+            | DynamicallyAccessedMemberTypes.PublicEvents
+            | DynamicallyAccessedMemberTypes.PublicProperties
+            | DynamicallyAccessedMemberTypes.PublicConstructors
+            | DynamicallyAccessedMemberTypes.PublicNestedTypes)]
         public sealed override MemberInfo[] GetDefaultMembers() => throw new NotSupportedException(SR.NotSupported_SignatureType);
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents)]
         public sealed override EventInfo[] GetEvents() => throw new NotSupportedException(SR.NotSupported_SignatureType);
+
         public sealed override object[] GetCustomAttributes(bool inherit) => throw new NotSupportedException(SR.NotSupported_SignatureType);
         public sealed override object[] GetCustomAttributes(Type attributeType, bool inherit) => throw new NotSupportedException(SR.NotSupported_SignatureType);
         public sealed override bool IsDefined(Type attributeType, bool inherit) => throw new NotSupportedException(SR.NotSupported_SignatureType);
         public sealed override IList<CustomAttributeData> GetCustomAttributesData() => throw new NotSupportedException(SR.NotSupported_SignatureType);
         public sealed override Type GetInterface(string name, bool ignoreCase) => throw new NotSupportedException(SR.NotSupported_SignatureType);
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
         protected sealed override ConstructorInfo GetConstructorImpl(BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[] types, ParameterModifier[]? modifiers) => throw new NotSupportedException(SR.NotSupported_SignatureType);
+
         protected sealed override bool IsCOMObjectImpl() => throw new NotSupportedException(SR.NotSupported_SignatureType);
         protected sealed override bool IsPrimitiveImpl() => throw new NotSupportedException(SR.NotSupported_SignatureType);
         public sealed override IEnumerable<CustomAttributeData> CustomAttributes => throw new NotSupportedException(SR.NotSupported_SignatureType);

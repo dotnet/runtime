@@ -36,6 +36,8 @@ namespace System.Net.Http
         private readonly ConcurrentDictionary<HttpConnectionKey, HttpConnectionPool> _pools;
         /// <summary>Timer used to initiate cleaning of the pools.</summary>
         private readonly Timer? _cleaningTimer;
+        /// <summary>Heart beat timer currently used for Http2 ping only.</summary>
+        private readonly Timer? _heartBeatTimer;
         /// <summary>The maximum number of connections allowed per pool. <see cref="int.MaxValue"/> indicates unlimited.</summary>
         private readonly int _maxConnectionsPerServer;
         // Temporary
@@ -102,14 +104,32 @@ namespace System.Net.Http
                     // Create the timer.  Ensure the Timer has a weak reference to this manager; otherwise, it
                     // can introduce a cycle that keeps the HttpConnectionPoolManager rooted by the Timer
                     // implementation until the handler is Disposed (or indefinitely if it's not).
-                    _cleaningTimer = new Timer(s =>
+                    var thisRef = new WeakReference<HttpConnectionPoolManager>(this);
+
+                    _cleaningTimer = new Timer(static s =>
                     {
                         var wr = (WeakReference<HttpConnectionPoolManager>)s!;
                         if (wr.TryGetTarget(out HttpConnectionPoolManager? thisRef))
                         {
                             thisRef.RemoveStalePools();
                         }
-                    }, new WeakReference<HttpConnectionPoolManager>(this), Timeout.Infinite, Timeout.Infinite);
+                    }, thisRef, Timeout.Infinite, Timeout.Infinite);
+
+
+                    // For now heart beat is used only for ping functionality.
+                    if (_settings._keepAlivePingDelay != Timeout.InfiniteTimeSpan)
+                    {
+                        long heartBeatInterval = (long)Math.Max(1000, Math.Min(_settings._keepAlivePingDelay.TotalMilliseconds, _settings._keepAlivePingTimeout.TotalMilliseconds) / 4);
+
+                        _heartBeatTimer = new Timer(static state =>
+                        {
+                            var wr = (WeakReference<HttpConnectionPoolManager>)state!;
+                            if (wr.TryGetTarget(out HttpConnectionPoolManager? thisRef))
+                            {
+                                thisRef.HeartBeat();
+                            }
+                        }, thisRef, heartBeatInterval, heartBeatInterval);
+                    }
                 }
                 finally
                 {
@@ -252,7 +272,7 @@ namespace System.Net.Http
                 }
                 else
                 {
-                    // No explicit Host header.  Use host from uri.
+                    // No explicit Host header. Use host from uri.
                     sslHostName = uri.IdnHost;
                 }
             }
@@ -339,44 +359,6 @@ namespace System.Net.Http
 
         public ValueTask<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async, bool doRequestAuth, CancellationToken cancellationToken)
         {
-            return HttpTelemetry.Log.IsEnabled() && request.RequestUri != null ?
-                SendAsyncWithLogging(request, async, doRequestAuth, cancellationToken) :
-                SendAsyncHelper(request, async, doRequestAuth, cancellationToken);
-        }
-
-        private async ValueTask<HttpResponseMessage> SendAsyncWithLogging(HttpRequestMessage request, bool async, bool doRequestAuth, CancellationToken cancellationToken)
-        {
-            Debug.Assert(request.RequestUri != null);
-            HttpTelemetry.Log.RequestStart(
-                request.RequestUri.Scheme,
-                request.RequestUri.IdnHost,
-                request.RequestUri.Port,
-                request.RequestUri.PathAndQuery,
-                request.Version.Major,
-                request.Version.Minor);
-            try
-            {
-                return await SendAsyncHelper(request, async, doRequestAuth, cancellationToken).ConfigureAwait(false);
-            }
-            catch (Exception e) when (LogException(e))
-            {
-                // This code should never run.
-                throw;
-            }
-
-            static bool LogException(Exception e)
-            {
-                HttpTelemetry.Log.RequestAborted();
-                HttpTelemetry.Log.RequestStop();
-
-                // Returning false means the catch handler isn't run.
-                // So the exception isn't considered to be caught so it will now propagate up the stack.
-                return false;
-            }
-        }
-
-        private ValueTask<HttpResponseMessage> SendAsyncHelper(HttpRequestMessage request, bool async, bool doRequestAuth, CancellationToken cancellationToken)
-        {
             if (_proxy == null)
             {
                 return SendAsyncCore(request, null, async, doRequestAuth, isProxyConnect: false, cancellationToken);
@@ -453,7 +435,7 @@ namespace System.Net.Http
         public void Dispose()
         {
             _cleaningTimer?.Dispose();
-
+            _heartBeatTimer?.Dispose();
             foreach (KeyValuePair<HttpConnectionKey, HttpConnectionPool> pool in _pools)
             {
                 pool.Value.Dispose();
@@ -515,6 +497,14 @@ namespace System.Net.Http
             // than reused.  This should be a rare occurrence, so for now we don't worry about it.  In the
             // future, there are a variety of possible ways to address it, such as allowing connections to
             // be returned to pools they weren't associated with.
+        }
+
+        private void HeartBeat()
+        {
+            foreach (KeyValuePair<HttpConnectionKey, HttpConnectionPool> pool in _pools)
+            {
+                pool.Value.HeartBeat();
+            }
         }
 
         private static string GetIdentityIfDefaultCredentialsUsed(bool defaultCredentialsUsed)

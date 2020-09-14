@@ -765,7 +765,7 @@ public:
         DWORD dwTotalLocalNum = NewLocal(ELEMENT_TYPE_I4);
         DWORD dwLengthLocalNum = NewLocal(ELEMENT_TYPE_I4);
 
-        mdToken tokRawData = GetToken(MscorlibBinder::GetField(FIELD__RAW_DATA__DATA));
+        mdToken tokRawData = GetToken(CoreLibBinder::GetField(FIELD__RAW_DATA__DATA));
 
         ILCodeLabel * pRangeExceptionLabel = NewCodeLabel();
         ILCodeLabel * pRangeExceptionLabel1 = NewCodeLabel();
@@ -979,14 +979,14 @@ public:
         m_pCode->EmitLabel(pRangeExceptionLabel1); // Assumes that there is one "int" pushed on the stack
         m_pCode->EmitPOP();
 
-        mdToken tokIndexOutOfRangeCtorExcep = GetToken((MscorlibBinder::GetException(kIndexOutOfRangeException))->GetDefaultConstructor());
+        mdToken tokIndexOutOfRangeCtorExcep = GetToken((CoreLibBinder::GetException(kIndexOutOfRangeException))->GetDefaultConstructor());
         m_pCode->EmitLabel(pRangeExceptionLabel);
         m_pCode->EmitNEWOBJ(tokIndexOutOfRangeCtorExcep, 0);
         m_pCode->EmitTHROW();
 
         if(pTypeMismatchExceptionLabel != NULL)
         {
-            mdToken tokTypeMismatchExcepCtor = GetToken((MscorlibBinder::GetException(kArrayTypeMismatchException))->GetDefaultConstructor());
+            mdToken tokTypeMismatchExcepCtor = GetToken((CoreLibBinder::GetException(kArrayTypeMismatchException))->GetDefaultConstructor());
 
             m_pCode->EmitLabel(pTypeMismatchExceptionLabel);
             m_pCode->EmitNEWOBJ(tokTypeMismatchExcepCtor, 0);
@@ -1273,18 +1273,18 @@ BOOL IsImplicitInterfaceOfSZArray(MethodTable *pInterfaceMT)
     PRECONDITION(pInterfaceMT->IsInterface());
     PRECONDITION(pInterfaceMT->HasInstantiation());
 
-    // Is target interface Anything<T> in mscorlib?
+    // Is target interface Anything<T> in CoreLib?
     if (!pInterfaceMT->HasInstantiation() || !pInterfaceMT->GetModule()->IsSystem())
         return FALSE;
 
     unsigned rid = pInterfaceMT->GetTypeDefRid();
 
     // Is target interface IList<T> or one of its ancestors, or IReadOnlyList<T>?
-    return (rid == MscorlibBinder::GetExistingClass(CLASS__ILISTGENERIC)->GetTypeDefRid() ||
-            rid == MscorlibBinder::GetExistingClass(CLASS__ICOLLECTIONGENERIC)->GetTypeDefRid() ||
-            rid == MscorlibBinder::GetExistingClass(CLASS__IENUMERABLEGENERIC)->GetTypeDefRid() ||
-            rid == MscorlibBinder::GetExistingClass(CLASS__IREADONLYCOLLECTIONGENERIC)->GetTypeDefRid() ||
-            rid == MscorlibBinder::GetExistingClass(CLASS__IREADONLYLISTGENERIC)->GetTypeDefRid());
+    return (rid == CoreLibBinder::GetExistingClass(CLASS__ILISTGENERIC)->GetTypeDefRid() ||
+            rid == CoreLibBinder::GetExistingClass(CLASS__ICOLLECTIONGENERIC)->GetTypeDefRid() ||
+            rid == CoreLibBinder::GetExistingClass(CLASS__IENUMERABLEGENERIC)->GetTypeDefRid() ||
+            rid == CoreLibBinder::GetExistingClass(CLASS__IREADONLYCOLLECTIONGENERIC)->GetTypeDefRid() ||
+            rid == CoreLibBinder::GetExistingClass(CLASS__IREADONLYLISTGENERIC)->GetTypeDefRid());
 }
 
 //----------------------------------------------------------------------------------
@@ -1324,10 +1324,10 @@ MethodDesc* GetActualImplementationForArrayGenericIListOrIReadOnlyListMethod(Met
     unsigned int inheritanceDepth = pItfcMeth->GetMethodTable()->GetNumInterfaces() - 1;
     PREFIX_ASSUME(0 <= inheritanceDepth && inheritanceDepth < NumItems(startingMethod));
 
-    MethodDesc *pGenericImplementor = MscorlibBinder::GetMethod((BinderMethodID)(startingMethod[inheritanceDepth] + slot));
+    MethodDesc *pGenericImplementor = CoreLibBinder::GetMethod((BinderMethodID)(startingMethod[inheritanceDepth] + slot));
 
     // The most common reason for this assert is that the order of the SZArrayHelper methods in
-    // mscorlib.h does not match the order they are implemented on the generic interfaces.
+    // corelib.h does not match the order they are implemented on the generic interfaces.
     _ASSERTE(pGenericImplementor == MemberLoader::FindMethodByName(g_pSZArrayHelperClass, pItfcMeth->GetName()));
 
     // OPTIMIZATION: For any method other than GetEnumerator(), we can safely substitute

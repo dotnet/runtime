@@ -73,6 +73,9 @@ namespace System.Configuration.Tests
                     }
                 }
             };
+
+            // Validate the getting the hash code doesn't throw
+            _ = Element.GetHashCode();
         }
     }
 }

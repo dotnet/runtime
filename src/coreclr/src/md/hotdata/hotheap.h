@@ -13,6 +13,8 @@
 
 #include "external.h"
 
+class VerifyLayoutsMD;
+
 namespace MetaData
 {
 
@@ -25,7 +27,7 @@ struct HotHeapHeader;
 //
 class HotHeap
 {
-    friend class VerifyLayoutsMD;
+    friend class ::VerifyLayoutsMD;
 private:
     struct HotHeapHeader *m_pHotHeapHeader;
 

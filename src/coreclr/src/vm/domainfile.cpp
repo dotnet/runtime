@@ -286,7 +286,7 @@ CHECK DomainFile::CheckLoaded()
     if (IsLoaded())
         CHECK_OK;
 
-    // Mscorlib is allowed to run managed code much earlier than other
+    // CoreLib is allowed to run managed code much earlier than other
     // assemblies for bootstrapping purposes.  This is because it has no
     // dependencies, security checks, and doesn't rely on loader notifications.
 
@@ -314,7 +314,7 @@ CHECK DomainFile::CheckActivated()
     if (IsActive())
         CHECK_OK;
 
-    // Mscorlib is allowed to run managed code much earlier than other
+    // CoreLib is allowed to run managed code much earlier than other
     // assemblies for bootstrapping purposes.  This is because it has no
     // dependencies, security checks, and doesn't rely on loader notifications.
 
@@ -423,11 +423,11 @@ OBJECTREF DomainFile::GetExposedModuleObject()
 
         if (GetFile()->IsDynamic())
         {
-            refClass = (REFLECTMODULEBASEREF) AllocateObject(MscorlibBinder::GetClass(CLASS__MODULE_BUILDER));
+            refClass = (REFLECTMODULEBASEREF) AllocateObject(CoreLibBinder::GetClass(CLASS__MODULE_BUILDER));
         }
         else
         {
-            refClass = (REFLECTMODULEBASEREF) AllocateObject(MscorlibBinder::GetClass(CLASS__MODULE));
+            refClass = (REFLECTMODULEBASEREF) AllocateObject(CoreLibBinder::GetClass(CLASS__MODULE));
         }
         refClass->SetModule(m_pModule);
 
@@ -645,7 +645,7 @@ void DomainFile::VerifyNativeImageDependencies(bool verifyOnly)
 
 
         //
-        // CoreCLR hard binds to mscorlib.dll only. Avoid going through the full load.
+        // CoreCLR hard binds to CoreLib only. Avoid going through the full load.
         //
 
 #ifdef _DEBUG
@@ -653,7 +653,7 @@ void DomainFile::VerifyNativeImageDependencies(bool verifyOnly)
         name.InitializeSpec(pDependency->dwAssemblyRef,
                             ((pManifestNativeImage != NULL) ? pManifestNativeImage : pNativeImage)->GetNativeMDImport(),
                             GetDomainAssembly());
-        _ASSERTE(name.IsMscorlib());
+        _ASSERTE(name.IsCoreLib());
 #endif
 
         PEAssembly * pDependencyFile = SystemDomain::SystemFile();
@@ -753,8 +753,8 @@ BOOL DomainFile::IsZapRequired()
         }
         else if (IsSystem())
         {
-            // mscorlib gets loaded before the CompilationDomain gets created.
-            // However, we may be ngening mscorlib itself
+            // CoreLib gets loaded before the CompilationDomain gets created.
+            // However, we may be ngening CoreLib itself
             fileIsBeingNGened = true;
         }
 
@@ -1226,12 +1226,12 @@ OBJECTREF DomainAssembly::GetExposedAssemblyObject()
             // This is unnecessary because the managed InternalAssemblyBuilder object
             // should have already been created at the time of DefineDynamicAssembly
             OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOADED);
-            pMT = MscorlibBinder::GetClass(CLASS__INTERNAL_ASSEMBLY_BUILDER);
+            pMT = CoreLibBinder::GetClass(CLASS__INTERNAL_ASSEMBLY_BUILDER);
         }
         else
         {
             OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOADED);
-            pMT = MscorlibBinder::GetClass(CLASS__ASSEMBLY);
+            pMT = CoreLibBinder::GetClass(CLASS__ASSEMBLY);
         }
 
         // Will be TRUE only if LoaderAllocator managed object was already collected and therefore we should
@@ -1793,7 +1793,7 @@ BOOL DomainAssembly::CheckZapDependencyIdentities(PEImage *pNativeImage)
     spec.InitializeSpec(this->GetFile());
 
     // The assembly spec should have the binding context associated with it
-    _ASSERTE(spec.GetBindingContext()  || spec.IsAssemblySpecForMscorlib());
+    _ASSERTE(spec.GetBindingContext()  || spec.IsAssemblySpecForCoreLib());
 
     CORCOMPILE_VERSION_INFO *pVersionInfo = pNativeImage->GetLoadedLayout()->GetNativeVersionInfo();
 
@@ -1818,7 +1818,7 @@ BOOL DomainAssembly::CheckZapDependencyIdentities(PEImage *pNativeImage)
             AssemblySpec name;
             name.InitializeSpec(pDependencies->dwAssemblyDef, pNativeImage->GetNativeMDImport(), this);
 
-            if (!name.IsAssemblySpecForMscorlib())
+            if (!name.IsAssemblySpecForCoreLib())
             {
                 // We just initialized the assembly spec for the NI dependency. This will not have binding context
                 // associated with it, so set it from that of the parent.

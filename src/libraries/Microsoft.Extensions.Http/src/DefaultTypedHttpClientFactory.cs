@@ -2,13 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Net.Http;
 using System.Threading;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Microsoft.Extensions.Http
 {
-    internal class DefaultTypedHttpClientFactory<TClient> : ITypedHttpClientFactory<TClient>
+    internal class DefaultTypedHttpClientFactory<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TClient> :
+        ITypedHttpClientFactory<TClient>
     {
         private readonly Cache _cache;
         private readonly IServiceProvider _services;

@@ -4,108 +4,114 @@
 
 If you haven't already done so, please read [this document](../../README.md#Build_Requirements) to understand the build requirements for your operating system.
 
-An installation of the emsdk needs to be installed.  Follow the installation guide [here](https://emscripten.org/docs/getting_started/downloads.html#sdk-download-and-install).  Once installed the EMSDK_PATH needs to be set:
+The Emscripten SDK (emsdk) needs to be installed.  Follow the installation guide [here](https://emscripten.org/docs/getting_started/downloads.html#sdk-download-and-install) or run `make -C src/mono/wasm provision-wasm` to install emsdk into `src/mono/wasm/emsdk`.
 
-On Linux and MacOSX:
+Once installed the `EMSDK_PATH` environment variable needs to be set:
+
+On Linux and macOS:
 
 ```bash
-export EMSDK_PATH=PATH_TO_SDK_INSTALL/emsdk
+export EMSDK_PATH=<FULL_PATH_TO_SDK_INSTALL>/emsdk
 ```
 
 ## Building everything
 
-At this time no other build configurations are necessary to start building for WebAssembly.  The CoreLib for WebAssembly build configurations will be built by default using the WebAssembly configuration shown below. 
+At this time no other build dependencies are necessary to start building for WebAssembly.
 
-This document explains how to work on libraries. In order to work on library projects or run library tests it is necessary to have built the runtime to give the libraries something to run on. If you haven't already done so, please read [this document](../../README.md#Configurations) to understand configurations.
+This document explains how to work on the runtime or libraries. If you haven't already done so, please read [this document](../../README.md#Configurations) to understand configurations.
 
+For Linux and macOS:
 
-For Linux and MacOSX:
 ```bash
-./build.sh --arch wasm --os Browser --configuration release
+./build.sh -os Browser -configuration Release
 ```
 
-Detailed information about building and testing runtimes and the libraries is in the documents linked below.
+Artifacts will be placed in `artifacts/bin/microsoft.netcore.app.runtime.browser-wasm/Release/`. When rebuilding with `build.sh` after a code change, you need to ensure that the `mono.wasmruntime` and `libs.pretest` subsets are included even for a Mono-only change or this directory will not be updated (details below).
 
-## How to build native components only
+## Building Mono's System.Private.CoreLib or runtime
+
+If you are working on core parts of Mono you will probably need to build the Mono runtime and [System.Private.CoreLib](../../../design/coreclr/botr/corelib.md) which can be built with the following:
+
+```bash
+./build.sh mono -os Browser -c Debug|Release
+```
+
+To build just System.Private.CoreLib without the Mono runtime you can use the `Mono.CoreLib` subset:
+
+```bash
+./build.sh mono.corelib -os Browser -c Debug|Release
+```
+
+To build just the Mono runtime without System.Private.CoreLib use the `Mono.Runtime` subset:
+
+```bash
+./build.sh mono.runtime -os Browser -c Debug|Release
+```
+
+Building both Mono/System.Private.CoreLib and the managed libraries:
+
+```bash
+./build.sh mono+libs -os Browser -c Debug|Release
+```
+
+## Building the WebAssembly runtime files
+
+The WebAssembly implementation files are built after the libraries source build and made available in the artifacts folder.  If you are working on the code base and need to compile just these modules then building the `Mono.WasmRuntime` subset will allow one to do that:
+
+```bash
+./build.sh mono.wasmruntime -os Browser -c Debug|Release
+```
+
+## Updating in-tree runtime pack
+
+If you don't run the full `Libs` subset then you can use the `Libs.PreTest` subset to copy updated runtime/corelib binaries to the runtime pack which is used for running tests:
+
+```bash
+./build.sh libs.pretest -os Browser -c Debug|Release
+```
+
+## Building libraries native components only
 
 The libraries build contains some native code. This includes shims over libc, openssl, gssapi, and zlib. The build system uses CMake to generate Makefiles using clang. The build also uses git for generating some version information.
 
-**Examples**
-
-- Building in debug mode for platform wasm and Browser operating system
 ```bash
-./build.sh --arch wasm --os Browser --subset Libs.Native --configuration Debug
-```
-
-- Building in release mode for platform wasm and Browser operating system
-```bash
-./build.sh --arch wasm --os Browser --subset Libs.Native --configuration Release
-```
-
-## How to build mono System.Private.CoreLib
-
-If you are working on core parts of mono libraries you will probably need to build the [System.Private.CoreLib](../../../design/coreclr/botr/corelib.md) which can be built with the following:
-
-
-```bash
-./build.sh --arch wasm --os Browser --configuration release --subset Mono
-```
-
-To build just SPC without mono you can use the Mono.CoreLib subset.
-
-```bash
-./build.sh --arch wasm --os Browser --configuration release --subset Mono.CoreLib
-```
-
-
-Building the managed libraries as well:
-
-```bash
-./build.sh --arch wasm --os Browser --configuration release --subset Mono+Libs
+./build.sh libs.native -os Browser -c Debug|Release
 ```
 
 ## Building individual libraries
 
 Individual projects and libraries can be build by specifying the build configuration.
 
-Building individual libraries
 **Examples**
 
-- Build all projects for a given library (e.g.: System.Net.Http) including running the tests
+- Build all projects for a given library (e.g.: System.Net.Http) including the tests
 
 ```bash
- ./build.sh --arch wasm --os Browser --configuration release --projects src/libraries/System.Net.Http/System.Net.Http.sln
+./build.sh -os Browser -c Release --projects <full-repository-path>/src/libraries/System.Net.Http/System.Net.Http.sln
 ```
 
 - Build only the source project of a given library (e.g.: System.Net.Http)
 
 ```bash
- ./build.sh --arch wasm --os Browser --configuration release --projects src/libraries/System.Net.Http/src/System.Net.Http.csproj
+ ./build.sh -os Browser -c Release --projects <full-repository-path>/src/libraries/System.Net.Http/src/System.Net.Http.csproj
 ```
 
 More information and examples can be found in the [libraries](./README.md#building-individual-libraries) document.
 
-## Building the WebAssembly runtime files
+## Notes
 
-The WebAssembly implementation files are built and made available in the artifacts folder.  If you are working on the code base and need to compile just these modules then the following will allow one to do that.
-
-For Linux and MacOSX:
-```bash
-./dotnet.sh build /p:Configuration=Debug|Release /p:TargetArchitecture=wasm /p:TargetOS=Browser src/libraries/src.proj /t:NativeBinPlace 
-```
-
-__Note__: A `Debug` build sets the following environment variables by default.  When built from the command line this way the `Configuration` value is case sensitive.
+A `Debug` build sets the following environment variables by default:
 
 - debugging and logging which will log garbage collection information to the console.
 
 ```
-   monoeg_g_setenv ("MONO_LOG_LEVEL", "debug", 0);
-   monoeg_g_setenv ("MONO_LOG_MASK", "gc", 0);
+MONO_LOG_LEVEL=debug
+MONO_LOG_MASK=gc
 ```
 
   #### Example:
 ```
-L: GC_MAJOR_SWEEP: major size: 752K in use: 39K 
+L: GC_MAJOR_SWEEP: major size: 752K in use: 39K
 L: GC_MAJOR: (user request) time 3.00ms, stw 3.00ms los size: 0K in use: 0K
 ```
 
@@ -126,7 +132,7 @@ First update emscripten version in the [webassembly Dockerfile](https://github.c
 ENV EMSCRIPTEN_VERSION=1.39.16
 ```
 
-Submit a PR request with the updated version, wait for all checks to pass and for the request to be merged. A [master.json file](https://github.com/dotnet/versions/blob/master/build-info/docker/image-info.dotnet-dotnet-buildtools-prereqs-docker-master.json#L1126) will be updated with the a new docker image.  
+Submit a PR request with the updated version, wait for all checks to pass and for the request to be merged. A [master.json file](https://github.com/dotnet/versions/blob/master/build-info/docker/image-info.dotnet-dotnet-buildtools-prereqs-docker-master.json#L1126) will be updated with the a new docker image.
 
 ```
 {
@@ -155,4 +161,4 @@ container:
     registry: mcr
 ```
 
-Open a PR request with the new image. 
+Open a PR request with the new image.

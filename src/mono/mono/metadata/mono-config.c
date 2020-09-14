@@ -666,8 +666,7 @@ mono_config_for_assembly_internal (MonoImage *assembly)
 	MONO_REQ_GC_UNSAFE_MODE;
 
 	MonoConfigParseState state = {NULL};
-	int i;
-	char *aname, *cfg, *cfg_name;
+	char *cfg_name;
 	const char *bundled_config;
 	
 	state.assembly = assembly;
@@ -684,6 +683,7 @@ mono_config_for_assembly_internal (MonoImage *assembly)
 
 #ifndef DISABLE_CFGDIR_CONFIG
 	int got_it = 0;
+	char *aname, *cfg;
 	cfg_name = g_strdup_printf ("%s.config", mono_image_get_name (assembly));
 	const char *cfg_dir = mono_get_config_dir ();
 	if (!cfg_dir) {
@@ -691,7 +691,7 @@ mono_config_for_assembly_internal (MonoImage *assembly)
 		return;
 	}
 
-	for (i = 0; (aname = get_assembly_filename (assembly, i)) != NULL; ++i) {
+	for (int i = 0; (aname = get_assembly_filename (assembly, i)) != NULL; ++i) {
 		cfg = g_build_filename (cfg_dir, "mono", "assemblies", aname, cfg_name, (const char*)NULL);
 		got_it += mono_config_parse_file_with_context (&state, cfg);
 		g_free (cfg);

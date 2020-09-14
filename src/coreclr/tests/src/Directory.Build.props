@@ -40,7 +40,6 @@
 
   <!-- Disable some standard properties for building our projects -->
   <PropertyGroup>
-    <NoStdLib>true</NoStdLib>
     <NoExplicitReferenceToStdLib>true</NoExplicitReferenceToStdLib>
     <AddAdditionalExplicitAssemblyReferences>false</AddAdditionalExplicitAssemblyReferences>
     <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
@@ -139,6 +138,7 @@
   <PropertyGroup>
     <TargetsUnknownUnix Condition="'$(TargetsUnix)' == 'true' AND '$(TargetOS)' != 'FreeBSD' AND '$(TargetOS)' != 'Linux' AND '$(TargetOS)' != 'NetBSD' AND '$(TargetOS)' != 'OSX' AND '$(TargetOS)' != 'illumos' AND '$(TargetOS)' != 'Solaris'">true</TargetsUnknownUnix>
     <Language Condition="'$(Language)' == '' and  '$(MSBuildProjectExtension)' == '.csproj'">C#</Language>
+    <Language Condition="'$(Language)' == '' and  '$(MSBuildProjectExtension)' == '.fsproj'">F#</Language>
     <Language Condition="'$(Language)' == '' and  '$(MSBuildProjectExtension)' == '.ilproj'">IL</Language>
   </PropertyGroup>
 

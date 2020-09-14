@@ -1,4 +1,11 @@
 <Project>
+  <ItemGroup>
+    <!-- Upgrade the NETStandard.Library transitive xunit dependency to avoid transitive 1.x NS dependencies. -->
+    <PackageReference Include="NETStandard.Library"
+                      Version="$(NetStandardLibrary20Version)"
+                      Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
+  </ItemGroup>
+
   <!-- Run target (F5) support. -->
   <PropertyGroup>
     <RunWorkingDirectory>$(OutDir)</RunWorkingDirectory>

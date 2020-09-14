@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System;
 using System.IO;
 using System.Text;
@@ -1247,7 +1246,7 @@ namespace System.Xml
             }
 
             if (!XmlConvert.StrEqual(_ps.chars, _ps.charPos, 5, XmlDeclarationBeginning) ||
-                 _xmlCharType.IsNameSingleChar(_ps.chars[_ps.charPos + 5]))
+                 XmlCharType.IsNameSingleChar(_ps.chars[_ps.charPos + 5]))
             {
                 goto NoXmlDecl;
             }
@@ -1426,7 +1425,7 @@ namespace System.Xml
             Continue:
                 chars = _ps.chars;
 
-                while (_xmlCharType.IsAttributeValueChar(chars[pos]))
+                while (XmlCharType.IsAttributeValueChar(chars[pos]))
                 {
                     pos++;
                 }
@@ -1940,7 +1939,7 @@ namespace System.Xml
         // case occurs (like end of buffer, invalid name char)
         ContinueStartName:
             // check element name start char
-            if (_xmlCharType.IsStartNCNameSingleChar(chars[pos]))
+            if (XmlCharType.IsStartNCNameSingleChar(chars[pos]))
             {
                 pos++;
             }
@@ -1953,7 +1952,7 @@ namespace System.Xml
             // parse element name
             while (true)
             {
-                if (_xmlCharType.IsNCNameSingleChar(chars[pos]))
+                if (XmlCharType.IsNCNameSingleChar(chars[pos]))
                 {
                     pos++;
                 }
@@ -2059,7 +2058,7 @@ namespace System.Xml
             // whitespace after element name -> there are probably some attributes
             bool isWs;
 
-            isWs = _xmlCharType.IsWhiteSpace(ch);
+            isWs = XmlCharType.IsWhiteSpace(ch);
 
             _ps.charPos = pos;
             if (isWs)
@@ -2270,7 +2269,7 @@ namespace System.Xml
 
                 bool tagMismatch = false;
 
-                if (_xmlCharType.IsNCNameSingleChar(chars[pos]) || (chars[pos] == ':'))
+                if (XmlCharType.IsNCNameSingleChar(chars[pos]) || (chars[pos] == ':'))
                 {
                     tagMismatch = true;
                 }
@@ -2284,7 +2283,7 @@ namespace System.Xml
                 if (chars[pos] != '>')
                 {
                     char tmpCh;
-                    while (_xmlCharType.IsWhiteSpace(tmpCh = chars[pos]))
+                    while (XmlCharType.IsWhiteSpace(tmpCh = chars[pos]))
                     {
                         pos++;
                         switch (tmpCh)
@@ -2393,7 +2392,7 @@ namespace System.Xml
                 int lineNoDelta = 0;
                 char tmpch0;
 
-                while (_xmlCharType.IsWhiteSpace(tmpch0 = chars[pos]))
+                while (XmlCharType.IsWhiteSpace(tmpch0 = chars[pos]))
                 {
                     if (tmpch0 == (char)0xA)
                     {
@@ -2425,7 +2424,7 @@ namespace System.Xml
                 char tmpch1;
                 int startNameCharSize = 0;
 
-                if (_xmlCharType.IsStartNCNameSingleChar(tmpch1 = chars[pos]))
+                if (XmlCharType.IsStartNCNameSingleChar(tmpch1 = chars[pos]))
                 {
                     startNameCharSize = 1;
                 }
@@ -2497,7 +2496,7 @@ namespace System.Xml
 
                 while (true)
                 {
-                    if (_xmlCharType.IsNCNameSingleChar(tmpch2 = chars[pos]))
+                    if (XmlCharType.IsNCNameSingleChar(tmpch2 = chars[pos]))
                     {
                         pos++;
                     }
@@ -2527,7 +2526,7 @@ namespace System.Xml
                         colonPos = pos;
                         pos++;
 
-                        if (_xmlCharType.IsStartNCNameSingleChar(chars[pos]))
+                        if (XmlCharType.IsStartNCNameSingleChar(chars[pos]))
                         {
                             pos++;
                             goto ContinueParseName;
@@ -2593,7 +2592,7 @@ namespace System.Xml
 
                 // parse attribute value
                 char tmpch3;
-                while (_xmlCharType.IsAttributeValueChar(tmpch3 = chars[pos]))
+                while (XmlCharType.IsAttributeValueChar(tmpch3 = chars[pos]))
                 {
                     pos++;
                 }
@@ -2692,7 +2691,7 @@ namespace System.Xml
             while (true)
             {
                 // parse the rest of the attribute value
-                while (_xmlCharType.IsAttributeValueChar(chars[pos]))
+                while (XmlCharType.IsAttributeValueChar(chars[pos]))
                 {
                     pos++;
                 }
@@ -3326,7 +3325,7 @@ namespace System.Xml
             while (true)
             {
                 // parse text content
-                while (_xmlCharType.IsTextChar(c = chars[pos]))
+                while (XmlCharType.IsTextChar(c = chars[pos]))
                 {
                     orChars |= (int)c;
                     pos++;
@@ -3442,7 +3441,7 @@ namespace System.Xml
                 rcount += (charRefEndPos - pos - charCount);
                 pos = charRefEndPos;
 
-                if (!_xmlCharType.IsWhiteSpace(chars[charRefEndPos - charCount]) ||
+                if (!XmlCharType.IsWhiteSpace(chars[charRefEndPos - charCount]) ||
                      (_v1Compat && entityType == EntityType.CharacterDec))
                 {
                     orChars |= 0xFF;
@@ -3480,7 +3479,7 @@ namespace System.Xml
                         break;
                     case EntityType.CharacterHex:
                     case EntityType.CharacterNamed:
-                        if (!_xmlCharType.IsWhiteSpace(_ps.chars[pos - 1]))
+                        if (!XmlCharType.IsWhiteSpace(_ps.chars[pos - 1]))
                         {
                             orChars |= 0xFF;
                         }
@@ -3782,7 +3781,7 @@ namespace System.Xml
                 }
             }
 
-            if (_xmlCharType.IsCharData(_ps.chars[_ps.charPos]))
+            if (XmlCharType.IsCharData(_ps.chars[_ps.charPos]))
             {
                 Throw(SR.Xml_InvalidRootData);
             }
@@ -4119,7 +4118,7 @@ namespace System.Xml
             {
                 char tmpch;
 
-                while (_xmlCharType.IsTextChar(tmpch = chars[pos]) && tmpch != '?')
+                while (XmlCharType.IsTextChar(tmpch = chars[pos]) && tmpch != '?')
                 {
                     pos++;
                 }
@@ -4346,7 +4345,7 @@ namespace System.Xml
             while (true)
             {
                 char tmpch;
-                while (_xmlCharType.IsTextChar(tmpch = chars[pos]) && tmpch != stopChar)
+                while (XmlCharType.IsTextChar(tmpch = chars[pos]) && tmpch != stopChar)
                 {
                     pos++;
                 }
@@ -4509,7 +4508,7 @@ namespace System.Xml
             {
                 ThrowUnexpectedToken((!_rootElementParsed && _dtdInfo == null) ? "DOCTYPE" : "<!--");
             }
-            if (!_xmlCharType.IsWhiteSpace(_ps.chars[_ps.charPos + 7]))
+            if (!XmlCharType.IsWhiteSpace(_ps.chars[_ps.charPos + 7]))
             {
                 ThrowExpectingWhitespace(_ps.charPos + 7);
             }
@@ -4701,7 +4700,7 @@ namespace System.Xml
             {
                 char ch;
 
-                while (_xmlCharType.IsAttributeValueChar(ch = chars[pos]) && ch != stopChar && ch != '-' && ch != '?')
+                while (XmlCharType.IsAttributeValueChar(ch = chars[pos]) && ch != stopChar && ch != '-' && ch != '?')
                 {
                     pos++;
                 }
@@ -5077,7 +5076,7 @@ namespace System.Xml
             char[] chars = _ps.chars;
 
             // start name char
-            if (_xmlCharType.IsStartNCNameSingleChar(chars[pos]))
+            if (XmlCharType.IsStartNCNameSingleChar(chars[pos]))
             {
                 pos++;
             }
@@ -5104,7 +5103,7 @@ namespace System.Xml
             // parse name
             while (true)
             {
-                if (_xmlCharType.IsNCNameSingleChar(chars[pos]))
+                if (XmlCharType.IsNCNameSingleChar(chars[pos]))
                 {
                     pos++;
                 }

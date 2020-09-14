@@ -122,6 +122,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(typeof(uint))]
         [InlineData(typeof(ulong))]
         [InlineData(typeof(Uri))]
+        [InlineData(typeof(Version))]
         public static void PrimitivesShouldFailWithArrayOrObjectAssignment(Type primitiveType)
         {
             // This test lines up with the built in JsonConverters
@@ -309,6 +310,26 @@ namespace System.Text.Json.Serialization.Tests
 
             // This throws because Enum is an abstract type.
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Enum>(unexpectedString));
+        }
+
+        [Fact]
+        public static void ReadVersion()
+        {
+            Version version;
+
+            version = JsonSerializer.Deserialize<Version>(@"""1.2""");
+            Assert.Equal(new Version(1, 2), version);
+
+            version = JsonSerializer.Deserialize<Version>(@"""1.2.3""");
+            Assert.Equal(new Version(1, 2, 3), version);
+
+            version = JsonSerializer.Deserialize<Version>(@"""1.2.3.4""");
+            Assert.Equal(new Version(1, 2, 3, 4), version);
+
+            version = JsonSerializer.Deserialize<Version>("null");
+            Assert.Null(version);
+
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Version>(@""""""));
         }
 
         [Fact]

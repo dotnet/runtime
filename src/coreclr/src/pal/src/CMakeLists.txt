@@ -41,6 +41,10 @@ include_directories(include)
 
 # Compile options
 
+if(CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
+  add_definitions(-DFEATURE_USE_SYSTEM_LIBUNWIND)
+endif(CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
+
 if(CLR_CMAKE_TARGET_OSX)
   add_definitions(-DTARGET_OSX)
   add_definitions(-DXSTATE_SUPPORTED)
@@ -119,7 +123,6 @@ set(SOURCES
   cruntime/filecrt.cpp
   cruntime/malloc.cpp
   cruntime/math.cpp
-  cruntime/mbstring.cpp
   cruntime/misc.cpp
   cruntime/path.cpp
   cruntime/printf.cpp
@@ -242,12 +245,12 @@ if(CLR_CMAKE_TARGET_OSX)
     ${LIBUNWIND_DAC_OBJECTS}
   )
 
-  target_compile_definitions(coreclrpal_dac PUBLIC 
+  target_compile_definitions(coreclrpal_dac PUBLIC
     "-D_XOPEN_SOURCE"
     "-DUNW_REMOTE_ONLY"
   )
 
-  target_include_directories(coreclrpal_dac PUBLIC 
+  target_include_directories(coreclrpal_dac PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/libunwind/include
     ${CMAKE_CURRENT_SOURCE_DIR}/libunwind/include/tdep
     ${CMAKE_CURRENT_BINARY_DIR}
@@ -263,10 +266,12 @@ endif(CLR_CMAKE_TARGET_OSX)
 # > warning for library: libtracepointprovider.a the table of contents is empty (no object file members in the library define global symbols)
 #
 if(CLR_CMAKE_TARGET_LINUX)
-  add_library(tracepointprovider
+  add_library(tracepointprovider_obj
     OBJECT
     misc/tracepointprovider.cpp
   )
+  add_library(tracepointprovider INTERFACE)
+  target_sources(tracepointprovider INTERFACE $<TARGET_OBJECTS:tracepointprovider_obj>)
 endif(CLR_CMAKE_TARGET_LINUX)
 
 if(CLR_CMAKE_TARGET_OSX)

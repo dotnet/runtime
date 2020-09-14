@@ -15,6 +15,7 @@ namespace System.Security.Cryptography
             PaddingValue = PaddingMode.PKCS7;
         }
 
+        [Obsolete(Obsoletions.DefaultCryptoAlgorithmsMessage, DiagnosticId = Obsoletions.DefaultCryptoAlgorithmsDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static SymmetricAlgorithm Create() =>
             throw new PlatformNotSupportedException(SR.Cryptography_DefaultAlgorithm_NotSupported);
 
@@ -145,7 +146,7 @@ namespace System.Security.Cryptography
 
             set
             {
-                if (!(value == CipherMode.CBC || value == CipherMode.ECB))
+                if (!(value == CipherMode.CBC || value == CipherMode.ECB || value == CipherMode.CFB))
                     throw new CryptographicException(SR.Cryptography_InvalidCipherMode);
 
                 ModeValue = value;

@@ -9,11 +9,12 @@ configurations but their defaults might vary as any SDK can set the defaults dif
 | MSBuild Property Name | AppContext Setting | Description |
 |-|-|-|
 | DebuggerSupport | System.Diagnostics.Debugger.IsSupported | Any dependency that enables better debugging experience to be trimmed when set to false |
-| EnableUnsafeUTF7Encoding | System.Text.Encoding.EnableUnsafeUTF7Encoding |  Insecure UTF-7 encoding is trimmed when set to false |
+| EnableUnsafeUTF7Encoding | System.Text.Encoding.EnableUnsafeUTF7Encoding | Insecure UTF-7 encoding is trimmed when set to false |
+| EnableUnsafeBinaryFormatterSerialization | System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization | BinaryFormatter serialization support is trimmed when set to false |
 | EventSourceSupport | System.Diagnostics.Tracing.EventSource.IsSupported | Any EventSource related code or logic is trimmed when set to false |
 | InvariantGlobalization | System.Globalization.Invariant | All globalization specific code and data is trimmed when set to true |
 | UseSystemResourceKeys | System.Resources.UseSystemResourceKeys |  Any localizable resources for system assemblies is trimmed when set to true |
-| - | System.Net.Http.EnableActivityPropagation | Any dependency related to diagnostics support for System.Net.Http is trimmed when set to false |
+| HttpActivityPropagationSupport | System.Net.Http.EnableActivityPropagation | Any dependency related to diagnostics support for System.Net.Http is trimmed when set to false |
 
 Any feature-switch which defines property can be set in csproj file or
 on the command line as any other MSBuild property. Those without predefined property name

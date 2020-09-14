@@ -725,7 +725,9 @@ namespace System.Configuration
                     }
                 }
 
-                object temp = base[propertyName];
+                // we query the value first so that we initialize all values from value providers and so that we don't end up
+                // on an infinite recursion when calling Properties[propertyName] as that calls this.
+                _ = base[propertyName];
                 SettingsProperty setting = Properties[propertyName];
                 SettingsProvider provider = setting != null ? setting.Provider : null;
 

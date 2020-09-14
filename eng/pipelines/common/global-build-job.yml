@@ -25,8 +25,8 @@ jobs:
     dependsOn: checkout
     pool: ${{ parameters.pool }}
     container: ${{ parameters.container }}
-    timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
     condition: and(succeeded(), ${{ parameters.condition }})
+    timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
     workspace:
       clean: all
 

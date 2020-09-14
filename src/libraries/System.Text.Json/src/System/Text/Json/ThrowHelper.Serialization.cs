@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
@@ -46,6 +47,20 @@ namespace System.Text.Json
             var ex = new JsonException(SR.Format(SR.DeserializeUnableToConvertValue, propertyType));
             ex.AppendPathInformation = true;
             throw ex;
+        }
+
+        [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowInvalidCastException_DeserializeUnableToAssignValue(Type typeOfValue, Type declaredType)
+        {
+            throw new InvalidCastException(SR.Format(SR.DeserializeUnableToAssignValue, typeOfValue, declaredType));
+        }
+
+        [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowInvalidOperationException_DeserializeUnableToAssignNull(Type declaredType)
+        {
+            throw new InvalidOperationException(SR.Format(SR.DeserializeUnableToAssignNull, declaredType));
         }
 
         [DoesNotReturn]
@@ -214,6 +229,43 @@ namespace System.Text.Json
         public static void ThrowInvalidOperationException_JsonIncludeOnNonPublicInvalid(MemberInfo memberInfo, Type parentType)
         {
             throw new InvalidOperationException(SR.Format(SR.JsonIncludeOnNonPublicInvalid, memberInfo.Name, parentType));
+        }
+
+        [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowInvalidOperationException_IgnoreConditionOnValueTypeInvalid(JsonPropertyInfo jsonPropertyInfo)
+        {
+            MemberInfo memberInfo = jsonPropertyInfo.MemberInfo!;
+            throw new InvalidOperationException(SR.Format(SR.IgnoreConditionOnValueTypeInvalid, memberInfo.Name, memberInfo.DeclaringType));
+        }
+
+        [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowInvalidOperationException_NumberHandlingOnPropertyInvalid(JsonPropertyInfo jsonPropertyInfo)
+        {
+            MemberInfo? memberInfo = jsonPropertyInfo.MemberInfo;
+
+            if (!jsonPropertyInfo.ConverterBase.IsInternalConverter)
+            {
+                throw new InvalidOperationException(SR.Format(
+                    SR.NumberHandlingConverterMustBeBuiltIn,
+                    jsonPropertyInfo.ConverterBase.GetType(),
+                    jsonPropertyInfo.IsForClassInfo ? jsonPropertyInfo.DeclaredPropertyType : memberInfo!.DeclaringType));
+            }
+
+            // This exception is only thrown for object properties.
+            Debug.Assert(!jsonPropertyInfo.IsForClassInfo && memberInfo != null);
+            throw new InvalidOperationException(SR.Format(
+                SR.NumberHandlingOnPropertyTypeMustBeNumberOrCollection,
+                memberInfo.Name,
+                memberInfo.DeclaringType));
+        }
+
+        [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowInvalidOperationException_ConverterCanConvertNullableRedundant(Type runtimePropertyType, JsonConverter jsonConverter)
+        {
+            throw new InvalidOperationException(SR.Format(SR.ConverterCanConvertNullableRedundant, jsonConverter.GetType(), jsonConverter.TypeToConvert, runtimePropertyType));
         }
 
         [DoesNotReturn]
@@ -498,8 +550,9 @@ namespace System.Text.Json
 
         [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void ThrowJsonException_MetadataMissingIdBeforeValues()
+        public static void ThrowJsonException_MetadataMissingIdBeforeValues(ref ReadStack state, ReadOnlySpan<byte> propertyName)
         {
+            state.Current.JsonPropertyName = propertyName.ToArray();
             ThrowJsonException(SR.MetadataPreservedArrayPropertyNotFound);
         }
 
@@ -536,19 +589,23 @@ namespace System.Text.Json
 
         [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void ThrowJsonException_MetadataPreservedArrayInvalidProperty(Type propertyType, in Utf8JsonReader reader)
+        public static void ThrowJsonException_MetadataPreservedArrayInvalidProperty(ref ReadStack state, Type propertyType, in Utf8JsonReader reader)
         {
-            string propertyName = reader.GetString()!;
+            state.Current.JsonPropertyName = reader.HasValueSequence ? reader.ValueSequence.ToArray() : reader.ValueSpan.ToArray();
+            string propertyNameAsString = reader.GetString()!;
 
             ThrowJsonException(SR.Format(SR.MetadataPreservedArrayFailed,
-                SR.Format(SR.MetadataPreservedArrayInvalidProperty, propertyName),
+                SR.Format(SR.MetadataPreservedArrayInvalidProperty, propertyNameAsString),
                 SR.Format(SR.DeserializeUnableToConvertValue, propertyType)));
         }
 
         [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void ThrowJsonException_MetadataPreservedArrayValuesNotFound(Type propertyType)
+        public static void ThrowJsonException_MetadataPreservedArrayValuesNotFound(ref ReadStack state, Type propertyType)
         {
+            // Missing $values, JSON path should point to the property's object.
+            state.Current.JsonPropertyName = null;
+
             ThrowJsonException(SR.Format(SR.MetadataPreservedArrayFailed,
                 SR.MetadataPreservedArrayPropertyNotFound,
                 SR.Format(SR.DeserializeUnableToConvertValue, propertyType)));
@@ -559,6 +616,13 @@ namespace System.Text.Json
         public static void ThrowJsonException_MetadataCannotParsePreservedObjectIntoImmutable(Type propertyType)
         {
             ThrowJsonException(SR.Format(SR.MetadataCannotParsePreservedObjectToImmutable, propertyType));
+        }
+
+        [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowInvalidOperationException_MetadataReferenceOfTypeCannotBeAssignedToType(string referenceId, Type currentType, Type typeToConvert)
+        {
+            throw new InvalidOperationException(SR.Format(SR.MetadataReferenceOfTypeCannotBeAssignedToType, referenceId, currentType, typeToConvert));
         }
 
         [DoesNotReturn]

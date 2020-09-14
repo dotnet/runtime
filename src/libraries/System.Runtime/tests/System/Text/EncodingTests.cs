@@ -10,9 +10,9 @@ namespace System.Text.Tests
 {
     public class EncodingTests
     {
-#pragma warning disable MSLIB0001 // UTF7Encoding is obsolete
+#pragma warning disable SYSLIB0001 // UTF7Encoding is obsolete
         private static UTF7Encoding _utf7Encoding = new UTF7Encoding();
-#pragma warning restore MSLIB0001
+#pragma warning restore SYSLIB0001
 
         public static IEnumerable<object[]> DisallowedEncodings()
         {

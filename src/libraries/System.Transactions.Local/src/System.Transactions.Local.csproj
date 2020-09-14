@@ -33,6 +33,7 @@
     <Compile Include="System\Transactions\TransactionState.cs" />
     <Compile Include="System\Transactions\TransactionTable.cs" />
     <Compile Include="System\Transactions\TransactionTraceIdentifier.cs" />
+    <Compile Include="System\Transactions\TransactionsEtwProvider.cs" />
     <Compile Include="System\Transactions\VolatileEnlistmentMultiplexing.cs" />
     <Compile Include="System\Transactions\VolatileEnlistmentState.cs" />
     <Compile Include="System\Transactions\Configuration\AppSettings.cs" />
@@ -49,8 +50,5 @@
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Thread" />
     <Reference Include="System.Threading.ThreadPool" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="System\Transactions\TransactionsEtwProvider.cs" />
   </ItemGroup>
 </Project>

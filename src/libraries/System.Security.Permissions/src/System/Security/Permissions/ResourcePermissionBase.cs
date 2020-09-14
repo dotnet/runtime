@@ -5,6 +5,9 @@ using System.Collections;
 
 namespace System.Security.Permissions
 {
+#if NET50_OBSOLETIONS
+    [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+#endif
     public abstract class ResourcePermissionBase : CodeAccessPermission, IUnrestrictedPermission
     {
         public const string Any = "*";

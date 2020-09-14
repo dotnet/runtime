@@ -1,11 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Globalization;
 using System.Net.Internals;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Internal;
 
 namespace System.Net
 {
@@ -17,7 +19,22 @@ namespace System.Net
         {
             NameResolutionPal.EnsureSocketsAreInitialized();
 
-            string name = NameResolutionPal.GetHostName();
+            ValueStopwatch stopwatch = NameResolutionTelemetry.Log.BeforeResolution(string.Empty);
+
+            string name;
+            try
+            {
+                name = NameResolutionPal.GetHostName();
+            }
+            catch when (LogFailure(stopwatch))
+            {
+                Debug.Fail("LogFailure should return false");
+                throw;
+            }
+
+            if (NameResolutionTelemetry.Log.IsEnabled())
+                NameResolutionTelemetry.Log.AfterResolution(stopwatch, successful: true);
+
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, name);
             return name;
         }
@@ -293,22 +310,36 @@ namespace System.Net
         {
             ValidateHostName(hostName);
 
-            SocketError errorCode = NameResolutionPal.TryGetAddrInfo(hostName, justAddresses, out string? newHostName, out string[] aliases, out IPAddress[] addresses, out int nativeErrorCode);
+            ValueStopwatch stopwatch = NameResolutionTelemetry.Log.BeforeResolution(hostName);
 
-            if (errorCode != SocketError.Success)
+            object result;
+            try
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(hostName, $"{hostName} DNS lookup failed with {errorCode}");
-                throw SocketExceptionFactory.CreateSocketException(errorCode, nativeErrorCode);
+                SocketError errorCode = NameResolutionPal.TryGetAddrInfo(hostName, justAddresses, out string? newHostName, out string[] aliases, out IPAddress[] addresses, out int nativeErrorCode);
+
+                if (errorCode != SocketError.Success)
+                {
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(hostName, $"{hostName} DNS lookup failed with {errorCode}");
+                    throw SocketExceptionFactory.CreateSocketException(errorCode, nativeErrorCode);
+                }
+
+                result = justAddresses ? (object)
+                    addresses :
+                    new IPHostEntry
+                    {
+                        AddressList = addresses,
+                        HostName = newHostName!,
+                        Aliases = aliases
+                    };
+            }
+            catch when (LogFailure(stopwatch))
+            {
+                Debug.Fail("LogFailure should return false");
+                throw;
             }
 
-            object result = justAddresses ? (object)
-                addresses :
-                new IPHostEntry
-                {
-                    AddressList = addresses,
-                    HostName = newHostName!,
-                    Aliases = aliases
-                };
+            if (NameResolutionTelemetry.Log.IsEnabled())
+                NameResolutionTelemetry.Log.AfterResolution(stopwatch, successful: true);
 
             return result;
         }
@@ -327,20 +358,61 @@ namespace System.Net
             // will only return that address and not the full list.
 
             // Do a reverse lookup to get the host name.
-            string? name = NameResolutionPal.TryGetNameInfo(address, out SocketError errorCode, out int nativeErrorCode);
-            if (errorCode != SocketError.Success)
+            ValueStopwatch stopwatch = NameResolutionTelemetry.Log.BeforeResolution(address);
+
+            SocketError errorCode;
+            string? name;
+            try
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(address, $"{address} DNS lookup failed with {errorCode}");
-                throw SocketExceptionFactory.CreateSocketException(errorCode, nativeErrorCode);
+                name = NameResolutionPal.TryGetNameInfo(address, out errorCode, out int nativeErrorCode);
+                if (errorCode != SocketError.Success)
+                {
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(address, $"{address} DNS lookup failed with {errorCode}");
+                    throw SocketExceptionFactory.CreateSocketException(errorCode, nativeErrorCode);
+                }
+                Debug.Assert(name != null);
+            }
+            catch when (LogFailure(stopwatch))
+            {
+                Debug.Fail("LogFailure should return false");
+                throw;
             }
 
-            // Do the forward lookup to get the IPs for that host name
-            errorCode = NameResolutionPal.TryGetAddrInfo(name!, justAddresses, out string? hostName, out string[] aliases, out IPAddress[] addresses, out nativeErrorCode);
-
-            if (errorCode != SocketError.Success)
+            if (NameResolutionTelemetry.Log.IsEnabled())
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(address, $"forward lookup for '{name}' failed with {errorCode}");
+                NameResolutionTelemetry.Log.AfterResolution(stopwatch, successful: true);
+
+                // Do the forward lookup to get the IPs for that host name
+                stopwatch = NameResolutionTelemetry.Log.BeforeResolution(name);
             }
+
+            object result;
+            try
+            {
+                errorCode = NameResolutionPal.TryGetAddrInfo(name, justAddresses, out string? hostName, out string[] aliases, out IPAddress[] addresses, out int nativeErrorCode);
+
+                if (errorCode != SocketError.Success)
+                {
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(address, $"forward lookup for '{name}' failed with {errorCode}");
+                }
+
+                result = justAddresses ?
+                    (object)addresses :
+                    new IPHostEntry
+                    {
+                        HostName = hostName!,
+                        Aliases = aliases,
+                        AddressList = addresses
+                    };
+            }
+            catch when (LogFailure(stopwatch))
+            {
+                Debug.Fail("LogFailure should return false");
+                throw;
+            }
+
+            if (NameResolutionTelemetry.Log.IsEnabled())
+                NameResolutionTelemetry.Log.AfterResolution(stopwatch, successful: true);
 
             // One of three things happened:
             // 1. Success.
@@ -349,15 +421,7 @@ namespace System.Net
             //    - Workaround, Check "Use this connection's dns suffix in dns registration" on that network
             //      adapter's advanced dns settings.
             // Return whatever we got.
-
-            return justAddresses ?
-                (object)addresses :
-                new IPHostEntry
-                {
-                    HostName = hostName!,
-                    Aliases = aliases,
-                    AddressList = addresses
-                };
+            return result;
         }
 
         private static Task<IPHostEntry> GetHostEntryCoreAsync(string hostName, bool justReturnParsedIp, bool throwOnIIPAny) =>
@@ -399,7 +463,42 @@ namespace System.Net
             if (NameResolutionPal.SupportsGetAddrInfoAsync && ipAddress is null)
             {
                 ValidateHostName(hostName);
-                return NameResolutionPal.GetAddrInfoAsync(hostName, justAddresses);
+
+                if (NameResolutionTelemetry.Log.IsEnabled())
+                {
+                    ValueStopwatch stopwatch = NameResolutionTelemetry.Log.BeforeResolution(hostName);
+
+                    Task coreTask;
+                    try
+                    {
+                        coreTask = NameResolutionPal.GetAddrInfoAsync(hostName, justAddresses);
+                    }
+                    catch when (LogFailure(stopwatch))
+                    {
+                        Debug.Fail("LogFailure should return false");
+                        throw;
+                    }
+
+                    coreTask.ContinueWith(
+                        (task, state) =>
+                        {
+                            NameResolutionTelemetry.Log.AfterResolution(
+                                stopwatch: (ValueStopwatch)state!,
+                                successful: task.IsCompletedSuccessfully);
+                        },
+                        state: stopwatch,
+                        cancellationToken: default,
+                        TaskContinuationOptions.ExecuteSynchronously,
+                        TaskScheduler.Default);
+
+                    // coreTask is not actually a base Task, but Task<IPHostEntry> / Task<IPAddress[]>
+                    // We have to return it and not the continuation
+                    return coreTask;
+                }
+                else
+                {
+                    return NameResolutionPal.GetAddrInfoAsync(hostName, justAddresses);
+                }
             }
 
             return justAddresses ? (Task)
@@ -428,6 +527,15 @@ namespace System.Net
                 throw new ArgumentOutOfRangeException(nameof(hostName),
                     SR.Format(SR.net_toolong, nameof(hostName), MaxHostName.ToString(NumberFormatInfo.CurrentInfo)));
             }
+        }
+
+
+        private static bool LogFailure(ValueStopwatch stopwatch)
+        {
+            if (NameResolutionTelemetry.Log.IsEnabled())
+                NameResolutionTelemetry.Log.AfterResolution(stopwatch, successful: false);
+
+            return false;
         }
     }
 }

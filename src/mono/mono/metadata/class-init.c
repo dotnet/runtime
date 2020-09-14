@@ -2224,7 +2224,7 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 
 	/* Publish the data */
 	mono_loader_lock ();
-	if (klass->instance_size && !klass->image->dynamic) {
+	if (klass->instance_size && !klass->image->dynamic && klass_byval_arg->type != MONO_TYPE_FNPTR) {
 		/* Might be already set using cached info */
 		if (klass->instance_size != instance_size) {
 			/* Emit info to help debugging */

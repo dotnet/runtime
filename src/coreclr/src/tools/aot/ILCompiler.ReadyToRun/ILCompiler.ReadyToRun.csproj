@@ -98,6 +98,7 @@
     <Compile Include="ObjectWriter\MapFileBuilder.cs" />
     <Compile Include="CodeGen\ReadyToRunObjectWriter.cs" />
     <Compile Include="Compiler\CompilationModuleGroup.ReadyToRun.cs" />
+    <Compile Include="Compiler\CryptographicHashProvider.cs" />
     <Compile Include="Compiler\DependencyAnalysis\AllMethodsOnTypeNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ArrayOfEmbeddedDataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ArrayOfEmbeddedPointersNode.cs" />

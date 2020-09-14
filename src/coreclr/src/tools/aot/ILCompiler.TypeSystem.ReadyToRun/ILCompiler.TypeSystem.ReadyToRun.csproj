@@ -19,8 +19,7 @@
 
   <ItemGroup Label="Embedded Resources">
     <EmbeddedResource Include="..\..\Common\TypeSystem\Common\Properties\Resources.resx">
-      <GenerateSource>true</GenerateSource>
-      <ClassName>Internal.TypeSystem.SR</ClassName>
+      <LogicalName>Internal.TypeSystem.Strings.resources</LogicalName>
     </EmbeddedResource>
   </ItemGroup>
 
@@ -152,6 +151,9 @@
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\TypeSystemException.cs">
       <Link>TypeSystem\Common\TypeSystemException.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Common\TypeSystemException.Resources.cs">
+      <Link>TypeSystem\Common\TypeSystemException.Resources.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\ThrowHelper.cs">
       <Link>TypeSystem\Common\ThrowHelper.cs</Link>

@@ -90,7 +90,7 @@
   <data name="net_PInvokeError" xml:space="preserve">
     <value>An error was encountered while querying information from the operating system.</value>
   </data>
-  <data name="net_NetworkInformation_PlatformNotSupported" xml:space="preserve">
+  <data name="SystemNetNetworkInformation_PlatformNotSupported" xml:space="preserve">
     <value>System.Net.NetworkInformation is not supported on this platform.</value>
   </data>
 </root>

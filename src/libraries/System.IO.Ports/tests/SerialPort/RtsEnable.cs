@@ -190,7 +190,7 @@ namespace System.IO.Ports.Tests
 
                 Assert.Throws<InvalidOperationException>(() =>
                 {
-                    bool rtsEnable = com1.RtsEnable;
+                    _ = com1.RtsEnable;
                 });
             }
         }
@@ -208,7 +208,7 @@ namespace System.IO.Ports.Tests
 
                 Assert.Throws<InvalidOperationException>(() =>
                 {
-                    bool rtsEnable = com1.RtsEnable;
+                    _ = com1.RtsEnable;
                 });
             }
         }

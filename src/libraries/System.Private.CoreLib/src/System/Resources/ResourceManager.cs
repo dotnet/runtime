@@ -306,7 +306,9 @@ namespace System.Resources
             }
         }
 
-        public static ResourceManager CreateFileBasedResourceManager(string baseName, string resourceDir, Type? usingResourceSet)
+        public static ResourceManager CreateFileBasedResourceManager(string baseName, string resourceDir,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
+            Type? usingResourceSet)
         {
             return new ResourceManager(baseName, resourceDir, usingResourceSet);
         }

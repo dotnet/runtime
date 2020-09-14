@@ -51,14 +51,14 @@ namespace MS.Internal.Xml.XPath
             // sort makes sense only when we are dealing with a query that
             // returns a nodeset.
             Query evalExpr;
-            string query = expr as string;
+            string? query = expr as string;
             if (query != null)
             {
                 evalExpr = new QueryBuilder().Build(query, out _needContext); // this will throw if expr is invalid
             }
             else
             {
-                CompiledXpathExpr xpathExpr = expr as CompiledXpathExpr;
+                CompiledXpathExpr? xpathExpr = expr as CompiledXpathExpr;
                 if (xpathExpr != null)
                 {
                     evalExpr = xpathExpr.QueryTree;
@@ -68,7 +68,7 @@ namespace MS.Internal.Xml.XPath
                     throw XPathException.Create(SR.Xp_BadQueryObject);
                 }
             }
-            SortQuery sortQuery = _query as SortQuery;
+            SortQuery? sortQuery = _query as SortQuery;
             if (sortQuery == null)
             {
                 _query = sortQuery = new SortQuery(_query);
@@ -91,9 +91,9 @@ namespace MS.Internal.Xml.XPath
             SetContext((IXmlNamespaceResolver)nsManager);
         }
 
-        public override void SetContext(IXmlNamespaceResolver nsResolver)
+        public override void SetContext(IXmlNamespaceResolver? nsResolver)
         {
-            XsltContext xsltContext = nsResolver as XsltContext;
+            XsltContext? xsltContext = nsResolver as XsltContext;
             if (xsltContext == null)
             {
                 if (nsResolver == null)
@@ -129,7 +129,7 @@ namespace MS.Internal.Xml.XPath
                 {
                     return string.Empty;
                 }
-                string ns = _nsResolver.LookupNamespace(prefix);
+                string? ns = _nsResolver.LookupNamespace(prefix);
                 if (ns == null)
                 {
                     throw XPathException.Create(SR.XmlUndefinedAlias, prefix);
@@ -161,7 +161,7 @@ namespace MS.Internal.Xml.XPath
         private readonly CultureInfo _cinfo;
         private readonly XmlDataType _dataType;
 
-        public XPathComparerHelper(XmlSortOrder order, XmlCaseOrder caseOrder, string lang, XmlDataType dataType)
+        public XPathComparerHelper(XmlSortOrder order, XmlCaseOrder caseOrder, string? lang, XmlDataType dataType)
         {
             if (lang == null)
             {
@@ -196,13 +196,13 @@ namespace MS.Internal.Xml.XPath
             _dataType = dataType;
         }
 
-        public int Compare(object x, object y)
+        public int Compare(object? x, object? y)
         {
             switch (_dataType)
             {
                 case XmlDataType.Text:
-                    string s1 = Convert.ToString(x, _cinfo);
-                    string s2 = Convert.ToString(y, _cinfo);
+                    string? s1 = Convert.ToString(x, _cinfo);
+                    string? s2 = Convert.ToString(y, _cinfo);
                     int result = _cinfo.CompareInfo.Compare(s1, s2, _caseOrder != XmlCaseOrder.None ? CompareOptions.IgnoreCase : CompareOptions.None);
 
                     if (result != 0 || _caseOrder == XmlCaseOrder.None)

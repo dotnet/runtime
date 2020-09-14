@@ -27,6 +27,8 @@ namespace System.Text.Json
         // The name of the parameter as UTF-8 bytes.
         public byte[] NameAsUtf8Bytes { get; private set; } = null!;
 
+        public JsonNumberHandling? NumberHandling { get; private set; }
+
         // The zero-based position of the parameter in the formal parameter list.
         public int Position { get; private set; }
 
@@ -63,6 +65,7 @@ namespace System.Text.Json
             ShouldDeserialize = true;
             ConverterBase = matchingProperty.ConverterBase;
             IgnoreDefaultValuesOnRead = matchingProperty.IgnoreDefaultValuesOnRead;
+            NumberHandling = matchingProperty.NumberHandling;
         }
 
         // Create a parameter that is ignored at run-time. It uses the same type (typeof(sbyte)) to help

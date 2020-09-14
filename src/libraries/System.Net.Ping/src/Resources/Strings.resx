@@ -87,7 +87,7 @@
   <data name="net_ping_not_supported_uwp" xml:space="preserve">
     <value>Ping functionality is not currently supported in UWP.</value>
   </data>
-  <data name="Ping_PlatformNotSupported" xml:space="preserve">
+  <data name="SystemNetPing_PlatformNotSupported" xml:space="preserve">
     <value>System.Net.Ping is not supported on this platform.</value>
   </data>
 </root>

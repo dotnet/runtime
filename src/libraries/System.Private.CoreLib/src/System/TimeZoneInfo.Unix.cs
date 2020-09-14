@@ -107,53 +107,6 @@ namespace System
             ValidateTimeZoneInfo(_id, _baseUtcOffset, _adjustmentRules, out _supportsDaylightSavingTime);
         }
 
-        private unsafe void GetDisplayName(Interop.Globalization.TimeZoneDisplayNameType nameType, string uiCulture, ref string? displayName)
-        {
-            if (GlobalizationMode.Invariant)
-            {
-                displayName = _standardDisplayName;
-                return;
-            }
-
-            string? timeZoneDisplayName;
-            bool result = Interop.CallStringMethod(
-                (buffer, locale, id, type) =>
-                {
-                    fixed (char* bufferPtr = buffer)
-                    {
-                        return Interop.Globalization.GetTimeZoneDisplayName(locale, id, type, bufferPtr, buffer.Length);
-                    }
-                },
-                uiCulture,
-                _id,
-                nameType,
-                out timeZoneDisplayName);
-
-            if (!result && uiCulture != FallbackCultureName)
-            {
-                // Try to fallback using FallbackCultureName just in case we can make it work.
-                result = Interop.CallStringMethod(
-                    (buffer, locale, id, type) =>
-                    {
-                        fixed (char* bufferPtr = buffer)
-                        {
-                            return Interop.Globalization.GetTimeZoneDisplayName(locale, id, type, bufferPtr, buffer.Length);
-                        }
-                    },
-                    FallbackCultureName,
-                    _id,
-                    nameType,
-                    out timeZoneDisplayName);
-            }
-
-            // If there is an unknown error, don't set the displayName field.
-            // It will be set to the abbreviation that was read out of the tzfile.
-            if (result)
-            {
-                displayName = timeZoneDisplayName;
-            }
-        }
-
         /// <summary>
         /// Returns a cloned array of AdjustmentRule objects
         /// </summary>

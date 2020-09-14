@@ -3,8 +3,7 @@
 
 using System.Collections.Generic;
 using System.Globalization;
-using System.IO;
-using Newtonsoft.Json;
+using System.Linq;
 
 namespace System.Text.Json.Tests
 {
@@ -21,6 +20,19 @@ namespace System.Text.Json.Tests
         public static List<float> Floats { get; set; }
         public static List<double> Doubles { get; set; }
         public static List<decimal> Decimals { get; set; }
+
+        public static List<byte?> NullableBytes { get; set; }
+        public static List<sbyte?> NullableSBytes { get; set; }
+        public static List<short?> NullableShorts { get; set; }
+        public static List<int?> NullableInts { get; set; }
+        public static List<long?> NullableLongs { get; set; }
+        public static List<ushort?> NullableUShorts { get; set; }
+        public static List<uint?> NullableUInts { get; set; }
+        public static List<ulong?> NullableULongs { get; set; }
+        public static List<float?> NullableFloats { get; set; }
+        public static List<double?> NullableDoubles { get; set; }
+        public static List<decimal?> NullableDecimals { get; set; }
+
         public static byte[] JsonData { get; set; }
 
         static JsonNumberTestData()
@@ -294,6 +306,19 @@ namespace System.Text.Json.Tests
 
             builder.Append("\"intEnd\": 0}");
             #endregion
+
+            // Make collections of nullable numbers.
+            NullableBytes = new List<byte?>(Bytes.Select(num => (byte?)num));
+            NullableSBytes = new List<sbyte?>(SBytes.Select(num => (sbyte?)num));
+            NullableShorts = new List<short?>(Shorts.Select(num => (short?)num));
+            NullableInts = new List<int?>(Ints.Select(num => (int?)num));
+            NullableLongs = new List<long?>(Longs.Select(num => (long?)num));
+            NullableUShorts = new List<ushort?>(UShorts.Select(num => (ushort?)num));
+            NullableUInts = new List<uint?>(UInts.Select(num => (uint?)num));
+            NullableULongs = new List<ulong?>(ULongs.Select(num => (ulong?)num));
+            NullableFloats = new List<float?>(Floats.Select(num => (float?)num));
+            NullableDoubles = new List<double?>(Doubles.Select(num => (double?)num));
+            NullableDecimals = new List<decimal?>(Decimals.Select(num => (decimal?)num));
 
             string jsonString = builder.ToString();
             JsonData = Encoding.UTF8.GetBytes(jsonString);

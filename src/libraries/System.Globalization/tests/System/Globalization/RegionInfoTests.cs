@@ -79,6 +79,24 @@ namespace System.Globalization.Tests
             }).Dispose();
         }
 
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        // We are testing with "no" as it match a neutral culture name. We want ensure this not conflict with region name.
+        [InlineData("no")]
+        [InlineData("No")]
+        [InlineData("NO")]
+        public void ValidateUsingCasedRegionName(string regionName)
+        {
+            RemoteExecutor.Invoke(name =>
+            {
+                // It is important to do this test in the following order because we have internal cache for regions.
+                // creating the region with the original input name should be the first to do to ensure not cached before.
+                string resultedName = new RegionInfo(name).Name;
+                string expectedName = new RegionInfo(name.ToUpperInvariant()).Name;
+                Assert.Equal(expectedName, resultedName);
+            }, regionName).Dispose();
+        }
+
         [Theory]
         [InlineData("en-US", "United States")]
         [OuterLoop("May fail on machines with multiple language packs installed")] // see https://github.com/dotnet/runtime/issues/30132
@@ -90,20 +108,51 @@ namespace System.Globalization.Tests
             }
         }
 
+        public static IEnumerable<object[]> NativeName_TestData()
+        {
+            if (PlatformDetection.IsNotBrowser)
+            {
+                yield return new object[] { "GB", "United Kingdom" };
+                yield return new object[] { "SE", "Sverige" };
+                yield return new object[] { "FR", "France" };
+            }
+            else
+            {
+                // Browser's ICU doesn't contain RegionInfo.NativeName
+                yield return new object[] { "GB", "GB" };
+                yield return new object[] { "SE", "SE" };
+                yield return new object[] { "FR", "FR" };
+            }
+        }
+
         [Theory]
-        [InlineData("GB", "United Kingdom")]
-        [InlineData("SE", "Sverige")]
-        [InlineData("FR", "France")]
+        [MemberData(nameof(NativeName_TestData))]
         public void NativeName(string name, string expected)
         {
             Assert.Equal(expected, new RegionInfo(name).NativeName);
         }
 
+        public static IEnumerable<object[]> EnglishName_TestData()
+        {
+            if (PlatformDetection.IsNotBrowser)
+            {
+                yield return new object[] { "en-US", new string[] { "United States" } };
+                yield return new object[] { "US", new string[] { "United States" } };
+                yield return new object[] { "zh-CN", new string[] { "China", "People's Republic of China", "China mainland" }};
+                yield return new object[] { "CN", new string[] { "China", "People's Republic of China", "China mainland" } };
+            }
+            else
+            {
+                // Browser's ICU doesn't contain RegionInfo.EnglishName
+                yield return new object[] { "en-US", new string[] { "US" } };
+                yield return new object[] { "US", new string[] { "US" } };
+                yield return new object[] { "zh-CN", new string[] { "CN" }};
+                yield return new object[] { "CN", new string[] { "CN" } };
+            }
+        }
+
         [Theory]
-        [InlineData("en-US", new string[] { "United States" })]
-        [InlineData("US", new string[] { "United States" })]
-        [InlineData("zh-CN", new string[] { "China", "People's Republic of China", "China mainland" })]
-        [InlineData("CN", new string[] { "China", "People's Republic of China", "China mainland" })]
+        [MemberData(nameof(EnglishName_TestData))]
         public void EnglishName(string name, string[] expected)
         {
             string result = new RegionInfo(name).EnglishName;
@@ -128,13 +177,11 @@ namespace System.Globalization.Tests
             Assert.Equal(expected, new RegionInfo(name).ISOCurrencySymbol);
         }
 
-        [Theory]
-        [InlineData("en-US", new string[] { "$" })]
-        [InlineData("zh-CN", new string[] { "\u00A5", "\uffe5" })] // \u00A5 is Latin-1 Supplement(Windows), \uffe5 is Halfwidth and Fullwidth Forms(ICU)
-        public void CurrencySymbol(string name, string[] expected)
+        [Fact]
+        public void CurrencySymbol()
         {
-            string result = new RegionInfo(name).CurrencySymbol;
-            Assert.Contains(result, expected);
+            Assert.Equal("$", new RegionInfo("en-US").CurrencySymbol);
+            Assert.Contains(new RegionInfo("zh-CN").CurrencySymbol, new string[] { "\u00A5", "\uffe5" });
         }
 
         [Theory]
@@ -149,27 +196,36 @@ namespace System.Globalization.Tests
 
         public static IEnumerable<object[]> RegionInfo_TestData()
         {
-            yield return new object[] { 0x409, 244, "US Dollar", "US Dollar", "\u0055\u0053\u0020\u0044\u006f\u006c\u006c\u0061\u0072", "USA", "USA" };
-            yield return new object[] { 0x411, 122, "Japanese Yen", "Japanese Yen", PlatformDetection.IsNlsGlobalization ? "\u5186" : "\u65e5\u672c\u5186", "JPN", "JPN" };
-            yield return new object[] { 0x804, 45, "Chinese Yuan", "PRC Yuan Renminbi", "\u4eba\u6c11\u5e01", "CHN", "CHN" };
-            yield return new object[] { 0x401, 205, "Saudi Riyal", "Saudi Riyal", PlatformDetection.IsNlsGlobalization ?
+            yield return new object[] { 0x409, 244, "US Dollar", "USD", "US Dollar", "\u0055\u0053\u0020\u0044\u006f\u006c\u006c\u0061\u0072", "USA", "USA" };
+            yield return new object[] { 0x411, 122, "Japanese Yen", "JPY", "Japanese Yen", PlatformDetection.IsNlsGlobalization ? "\u5186" : "\u65e5\u672c\u5186", "JPN", "JPN" };
+            yield return new object[] { 0x804, 45, "Chinese Yuan", "CNY", "PRC Yuan Renminbi", "\u4eba\u6c11\u5e01", "CHN", "CHN" };
+            yield return new object[] { 0x401, 205, "Saudi Riyal", "SAR", "Saudi Riyal", PlatformDetection.IsNlsGlobalization ?
                                                     "\u0631\u064a\u0627\u0644\u00a0\u0633\u0639\u0648\u062f\u064a" :
                                                     "\u0631\u064a\u0627\u0644\u0020\u0633\u0639\u0648\u062f\u064a",
                                                     "SAU", "SAU" };
-            yield return new object[] { 0x412, 134, "South Korean Won", "Korean Won", PlatformDetection.IsNlsGlobalization ? "\uc6d0" : "\ub300\ud55c\ubbfc\uad6d\u0020\uc6d0", "KOR", "KOR" };
-            yield return new object[] { 0x40d, 117, "Israeli New Shekel", "Israeli New Sheqel",
+            yield return new object[] { 0x412, 134, "South Korean Won", "KRW", "Korean Won", PlatformDetection.IsNlsGlobalization ? "\uc6d0" : "\ub300\ud55c\ubbfc\uad6d\u0020\uc6d0", "KOR", "KOR" };
+            yield return new object[] { 0x40d, 117, "Israeli New Shekel", "ILS", "Israeli New Sheqel",
                                                     PlatformDetection.IsNlsGlobalization || PlatformDetection.ICUVersion.Major >= 58 ? "\u05e9\u05e7\u05dc\u0020\u05d7\u05d3\u05e9" : "\u05e9\u05f4\u05d7", "ISR", "ISR" };
         }
 
         [Theory]
         [MemberData(nameof(RegionInfo_TestData))]
-        public void MiscTest(int lcid, int geoId, string currencyEnglishName, string alternativeCurrencyEnglishName, string currencyNativeName, string threeLetterISORegionName, string threeLetterWindowsRegionName)
+        public void MiscTest(int lcid, int geoId, string currencyEnglishName, string currencyShortName, string alternativeCurrencyEnglishName, string currencyNativeName, string threeLetterISORegionName, string threeLetterWindowsRegionName)
         {
             RegionInfo ri = new RegionInfo(lcid); // create it with lcid
             Assert.Equal(geoId, ri.GeoId);
-            Assert.True(currencyEnglishName.Equals(ri.CurrencyEnglishName) ||
-                        alternativeCurrencyEnglishName.Equals(ri.CurrencyEnglishName), "Wrong currency English Name");
-            Assert.Equal(currencyNativeName, ri.CurrencyNativeName);
+
+            if (PlatformDetection.IsBrowser)
+            {
+                Assert.Equal(currencyShortName, ri.CurrencyEnglishName);
+                Assert.Equal(currencyShortName, ri.CurrencyNativeName);
+            }
+            else
+            {
+                Assert.True(currencyEnglishName.Equals(ri.CurrencyEnglishName) ||
+                            alternativeCurrencyEnglishName.Equals(ri.CurrencyEnglishName), "Wrong currency English Name");
+                Assert.Equal(currencyNativeName, ri.CurrencyNativeName);
+            }
             Assert.Equal(threeLetterISORegionName, ri.ThreeLetterISORegionName);
             Assert.Equal(threeLetterWindowsRegionName, ri.ThreeLetterWindowsRegionName);
         }

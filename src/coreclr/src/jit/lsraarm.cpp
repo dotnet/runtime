@@ -290,10 +290,10 @@ int LinearScan::BuildNode(GenTree* tree)
             BuildUse(op1);
             srcCount = 1;
 
-            switch (tree->AsIntrinsic()->gtIntrinsicId)
+            switch (tree->AsIntrinsic()->gtIntrinsicName)
             {
-                case CORINFO_INTRINSIC_Abs:
-                case CORINFO_INTRINSIC_Sqrt:
+                case NI_System_Math_Abs:
+                case NI_System_Math_Sqrt:
                     assert(dstCount == 1);
                     BuildDef(tree);
                     break;

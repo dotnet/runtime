@@ -1,8 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <RootNamespace />
-    <!-- CommonStrings needs RootNamespace to be empty -->
-    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;netcoreapp2.0;_$(NetFrameworkCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;netcoreapp2.0</TargetFrameworks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
     <Nullable>enable</Nullable>
   </PropertyGroup>
@@ -11,10 +9,8 @@
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetFramework)' == 'netstandard2.0'">SR.PlatformNotSupported_ComponentModel_Composition</GeneratePlatformNotSupportedAssemblyMessage>
     <NoWarn Condition="'$(TargetFramework)' == 'netcoreapp2.0'">$(NoWarn);nullable</NoWarn>
   </PropertyGroup>
-  <ItemGroup>
-    <Compile Include="TypeForwards.cs" />
-  </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' != 'netstandard2.0'">
+    <Compile Include="TypeForwards.cs" />
     <Compile Include="Microsoft\Internal\AttributeServices.cs" />
     <Compile Include="Microsoft\Internal\Collections\CollectionServices.cs" />
     <Compile Include="Microsoft\Internal\Collections\CollectionServices.CollectionOfObject.cs" />

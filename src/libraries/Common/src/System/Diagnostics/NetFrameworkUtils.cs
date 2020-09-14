@@ -63,7 +63,7 @@ namespace System.Diagnostics
         private static bool SafeWaitForMutexOnce(Mutex mutexIn, ref Mutex mutexOut)
         {
             bool ret;
-            RuntimeHelpers.PrepareConstrainedRegions();
+
             try
             { }
             finally

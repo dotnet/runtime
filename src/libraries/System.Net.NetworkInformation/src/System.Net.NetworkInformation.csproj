@@ -1,13 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <AssemblyName>System.Net.NetworkInformation</AssemblyName>
-    <OutputType>Library</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent)-FreeBSD</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <PropertyGroup>
-    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsBrowser)' == 'true'">SR.net_NetworkInformation_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsBrowser)' == 'true'">SR.SystemNetNetworkInformation_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsBrowser)' != 'true'">
     <Compile Include="System\Net\NetworkInformation\DuplicateAddressDetectionState.cs" />
@@ -82,9 +80,6 @@
     <Compile Include="System\Net\NetworkInformation\SystemUnicastIPAddressInformation.cs" />
     <Compile Include="System\Net\NetworkInformation\TeredoHelper.cs" />
     <!-- System.Net common -->
-    <Compile Include="$(CommonPath)System\Net\ContextAwareResult.cs" Link="Common\System\Net\ContextAwareResult.cs" />
-    <Compile Include="$(CommonPath)System\Net\ContextAwareResult.Windows.cs" Link="Common\System\Net\ContextAwareResult.Windows.cs" />
-    <Compile Include="$(CommonPath)System\Net\LazyAsyncResult.cs" Link="Common\System\Net\LazyAsyncResult.cs" />
     <Compile Include="$(CommonPath)System\Net\ByteOrder.cs" Link="Common\System\Net\ByteOrder.cs" />
     <Compile Include="$(CommonPath)System\Net\IPAddressParserStatics.cs" Link="Common\System\Net\IPAddressParserStatics.cs" />
     <Compile Include="$(CommonPath)System\Net\SocketAddress.cs" Link="Common\System\Net\SocketAddress.cs" />
@@ -200,10 +195,7 @@
     <Reference Include="System.Net.Primitives" />
     <Reference Include="System.Net.Sockets" />
     <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
-    <Reference Include="System.Security.Claims" />
-    <Reference Include="System.Security.Principal.Windows" />
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Overlapped" />
     <Reference Include="System.Threading.ThreadPool" />

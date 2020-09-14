@@ -427,7 +427,7 @@
   <data name="Cryptography_NotValidPrivateKey" xml:space="preserve">
     <value>Key is not a valid private key.</value>
   </data>
-  <data name="Cryptography_PlatformNotSupported" xml:space="preserve">
-    <value>System.Security.Cryptography is not supported on this platform.</value>
+  <data name="SystemSecurityCryptographyX509Certificates_PlatformNotSupported" xml:space="preserve">
+    <value>System.Security.Cryptography.X509Certificates is not supported on this platform.</value>
   </data>
 </root>

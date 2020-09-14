@@ -11,9 +11,9 @@ namespace System.Data.Odbc
         internal string _message;
         internal string _state;
         internal int _nativeerror;
-        internal string _source;
+        internal string? _source;
 
-        internal OdbcError(string source, string message, string state, int nativeerror)
+        internal OdbcError(string? source, string message, string state, int nativeerror)
         {
             _source = source;
             _message = message;

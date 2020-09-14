@@ -11,6 +11,10 @@ parameters:
   runtimeType: 'coreclr'
   pool: ''
   codeGenType: 'JIT'
+  projetFile: ''
+  runKind: ''
+  runJobTemplate: '/eng/pipelines/coreclr/templates/run-performance-job.yml'
+  additionalSetupParameters: ''
 
 ### Perf job
 
@@ -18,11 +22,11 @@ parameters:
 ### buildConfig and archType.
 
 jobs:
-- template: run-performance-job.yml
+- template: ${{ parameters.runJobTemplate }}
   parameters:
     # Compute job name from template parameters
-    jobName: ${{ format('perfbuild_{0}{1}_{2}_{3}_{4}_{5}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.runtimeType, parameters.codeGenType) }}
-    displayName: ${{ format('Performance {0}{1} {2} {3} {4} {5}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.runtimeType, parameters.codeGenType) }}
+    jobName: ${{ format('perfbuild_{0}{1}_{2}_{3}_{4}_{5}_{6}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.runtimeType, parameters.codeGenType, parameters.runKind) }}
+    displayName: ${{ format('Performance {0}{1} {2} {3} {4} {5} {6}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.runtimeType, parameters.codeGenType, parameters.runKind) }}
     pool: ${{ parameters.pool }}
     buildConfig: ${{ parameters.buildConfig }}
     archType: ${{ parameters.archType }}
@@ -32,6 +36,9 @@ jobs:
     liveLibrariesBuildConfig: ${{ parameters.liveLibrariesBuildConfig }}
     runtimeType: ${{ parameters.runtimeType }}
     codeGenType: ${{ parameters.codeGenType }}
+    projectFile: ${{ parameters.projectFile }}
+    runKind: ${{ parameters.runKind }}
+    additionalSetupParameters: ${{ parameters.additionalSetupParameters }}
     # Test job depends on the corresponding build job
     dependsOn:
     - ${{ format('coreclr_{0}_product_build_{1}{2}_{3}_{4}', parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
@@ -39,18 +46,22 @@ jobs:
       - ${{ format('libraries_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveLibrariesBuildConfig) }}
     - ${{ if eq(parameters.runtimeType, 'mono') }}:
       - ${{ format('mono_{0}_product_build_{1}{2}_{3}_{4}', parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+    - ${{ if eq(parameters.runtimeType, 'wasm') }}:
+      - ${{ format('build_{0}{1}_{2}_{3}_{4}', 'Browser', '', 'wasm', parameters.buildConfig, parameters.runtimeType) }}
 
     ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
       ${{ if eq(parameters.runtimeType, 'mono') }}:
-        extraSetupParameters: -Architecture ${{ parameters.archType }} -MonoDotnet $(Build.SourcesDirectory)\.dotnet-mono -Kind micro_mono
-      ${{ if ne(parameters.runtimeType, 'mono') }}:
+        extraSetupParameters: -Architecture ${{ parameters.archType }} -MonoDotnet $(Build.SourcesDirectory)\.dotnet-mono
+      ${{ if eq(parameters.runtimeType, 'coreclr') }}:
         extraSetupParameters: -CoreRootDirectory $(Build.SourcesDirectory)\artifacts\tests\coreclr\${{ parameters.osGroup }}.${{ parameters.archType }}.Release\Tests\Core_Root -Architecture ${{ parameters.archType }}
     ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
       ${{ if eq(parameters.runtimeType, 'mono') }}:
-        extraSetupParameters: --architecture ${{ parameters.archType }} --monodotnet $(Build.SourcesDirectory)/.dotnet-mono --kind micro_mono
-      ${{ if ne(parameters.runtimeType, 'mono') }}:
+        extraSetupParameters: --architecture ${{ parameters.archType }} --monodotnet $(Build.SourcesDirectory)/.dotnet-mono
+      ${{ if eq(parameters.runtimeType, 'wasm') }}:
+        extraSetupParameters: --architecture ${{ parameters.archType }} --wasm $(librariesDownloadDir)/bin/wasm
+      ${{ if eq(parameters.runtimeType, 'coreclr') }}:
         extraSetupParameters: --corerootdirectory $(Build.SourcesDirectory)/artifacts/tests/coreclr/${{ parameters.osGroup }}.${{ parameters.archType }}.Release/Tests/Core_Root --architecture ${{ parameters.archType }}
-
+    
     variables: ${{ parameters.variables }}
 
     frameworks:
@@ -68,15 +79,15 @@ jobs:
           artifactName: '$(librariesBuildArtifactName)'
           displayName: 'live-built libraries'
 
-
-    # Download product binaries directory
+    # Download coreclr
     - template: /eng/pipelines/common/download-artifact-step.yml
       parameters:
         unpackFolder: $(buildProductRootFolderPath)
         artifactFileName: '$(buildProductArtifactName)$(archiveExtension)'
         artifactName: '$(buildProductArtifactName)'
-        displayName: 'product build'
+        displayName: 'Coreclr product build'
 
+    # Download mono 
     - ${{ if eq(parameters.runtimeType, 'mono') }}:
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
@@ -86,15 +97,28 @@ jobs:
           artifactName: 'MonoProduct_${{ parameters.runtimeVariant }}_$(osGroup)_$(archType)_$(buildConfig)'
           displayName: 'Mono runtime'
 
+    # Download wasm
+    - ${{ if eq(parameters.runtimeType, 'wasm') }}:
+      - template: /eng/pipelines/common/download-artifact-step.yml
+        parameters:
+          unpackFolder: $(librariesDownloadDir)/BrowserWasm
+          artifactFileName: BrowserWasm.zip
+          artifactName: BrowserWasm
+          displayName: BrowserWasm
+
+      - script: "mkdir $(librariesDownloadDir)/bin/wasm;unzip -o $(librariesDownloadDir)/BrowserWasm/artifacts/packages/Release/Shipping/Microsoft.NETCore.App.Runtime.browser-wasm.6.0.0-ci.nupkg data/* runtimes/* -d $(librariesDownloadDir)/bin/wasm;cp src/mono/wasm/runtime-test.js $(librariesDownloadDir)/bin/wasm/runtime-test.js;find $(librariesDownloadDir)/bin/wasm -type f -exec chmod 664 {} \\;"
+        displayName: "Create wasm directory (Linux)"
+
     # Create Core_Root
-    - script: $(coreClrRepoRootDir)build-test$(scriptExt) $(buildConfig) $(archType) generatelayoutonly $(librariesOverrideArg)
+    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(buildConfig) $(archType) generatelayoutonly $(librariesOverrideArg)
       displayName: Create Core_Root
       condition: and(succeeded(), ne(variables.runtimeFlavorName, 'Mono'))
 
-    - script: "build.cmd -subset libs.pretest -configuration release -ci -arch $(archType) -testscope innerloop /p:RuntimeArtifactsPath=$(librariesDownloadDir)\\bin\\mono\\$(osGroup).$(archType).$(buildConfigUpper) /p:RuntimeFlavor=mono;xcopy $(Build.SourcesDirectory)\\artifacts\\bin\\testhost\\$(_Framework)-$(osGroup)-$(buildConfigUpper)-$(archType)\\* $(Build.SourcesDirectory)\\.dotnet-mono /E /I /Y;copy $(Build.SourcesDirectory)\\artifacts\\bin\\coreclr\\$(osGroup).$(archType).$(buildConfigUpper)\\corerun.exe $(Build.SourcesDirectory)\\.dotnet-mono\\shared\\Microsoft.NETCore.App\\5.0.0\\corerun.exe"
+    # Copy the runtime directory into the testhost folder to include OOBs.
+    - script: "build.cmd -subset libs.pretest -configuration release -ci -arch $(archType) -testscope innerloop /p:RuntimeArtifactsPath=$(librariesDownloadDir)\\bin\\mono\\$(osGroup).$(archType).$(buildConfigUpper) /p:RuntimeFlavor=mono;xcopy $(Build.SourcesDirectory)\\artifacts\\bin\\runtime\\$(_Framework)-$(osGroup)-$(buildConfigUpper)-$(archType)\\* $(Build.SourcesDirectory)\\artifacts\\bin\\testhost\\$(_Framework)-$(osGroup)-$(buildConfigUpper)-$(archType)\\shared\\Microsoft.NETCore.App\\6.0.0 /E /I /Y;xcopy $(Build.SourcesDirectory)\\artifacts\\bin\\testhost\\$(_Framework)-$(osGroup)-$(buildConfigUpper)-$(archType)\\* $(Build.SourcesDirectory)\\.dotnet-mono /E /I /Y;copy $(Build.SourcesDirectory)\\artifacts\\bin\\coreclr\\$(osGroup).$(archType).$(buildConfigUpper)\\corerun.exe $(Build.SourcesDirectory)\\.dotnet-mono\\shared\\Microsoft.NETCore.App\\6.0.0\\corerun.exe"
       displayName: "Create mono dotnet (Windows)"
       condition: and(and(succeeded(), eq(variables.runtimeFlavorName, 'Mono')), eq(variables.osGroup, 'Windows_NT'))
 
-    - script: "mkdir $(Build.SourcesDirectory)/.dotnet-mono;./build.sh -subset libs.pretest -configuration release -ci -arch $(archType) -testscope innerloop /p:RuntimeArtifactsPath=$(librariesDownloadDir)/bin/mono/$(osGroup).$(archType).$(buildConfigUpper) /p:RuntimeFlavor=mono;cp $(Build.SourcesDirectory)/artifacts/bin/testhost/$(_Framework)-$(osGroup)-$(buildConfigUpper)-$(archType)/* $(Build.SourcesDirectory)/.dotnet-mono -r;cp $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(buildConfigUpper)/corerun $(Build.SourcesDirectory)/.dotnet-mono/shared/Microsoft.NETCore.App/5.0.0/corerun"
+    - script: "mkdir $(Build.SourcesDirectory)/.dotnet-mono;./build.sh -subset libs.pretest -configuration release -ci -arch $(archType) -testscope innerloop /p:RuntimeArtifactsPath=$(librariesDownloadDir)/bin/mono/$(osGroup).$(archType).$(buildConfigUpper) /p:RuntimeFlavor=mono;cp $(Build.SourcesDirectory)/artifacts/bin/runtime/$(_Framework)-$(osGroup)-$(buildConfigUpper)-$(archType)/* $(Build.SourcesDirectory)/artifacts/bin/testhost/$(_Framework)-$(osGroup)-$(buildConfigUpper)-$(archType)/shared/Microsoft.NETCore.App/6.0.0 -rf;cp $(Build.SourcesDirectory)/artifacts/bin/testhost/$(_Framework)-$(osGroup)-$(buildConfigUpper)-$(archType)/* $(Build.SourcesDirectory)/.dotnet-mono -r;cp $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(buildConfigUpper)/corerun $(Build.SourcesDirectory)/.dotnet-mono/shared/Microsoft.NETCore.App/6.0.0/corerun"
       displayName: "Create mono dotnet (Linux)"
       condition: and(and(succeeded(), eq(variables.runtimeFlavorName, 'Mono')), ne(variables.osGroup, 'Windows_NT'))

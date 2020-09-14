@@ -49,7 +49,7 @@ namespace Internal.JitInterface
 #if SUPPORT_JIT
         private const string JitSupportLibrary = "*";
 #else
-        private const string JitSupportLibrary = "jitinterface";
+        internal const string JitSupportLibrary = "jitinterface";
 #endif
 
         private IntPtr _jit;
@@ -397,12 +397,19 @@ namespace Internal.JitInterface
         private const int handleMultipler = 8;
         private const int handleBase = 0x420000;
 
+#if DEBUG
+        private static readonly IntPtr s_handleHighBitSet = (sizeof(IntPtr) == 4) ? new IntPtr(0x40000000) : new IntPtr(0x4000000000000000);
+#endif
+
         private IntPtr ObjectToHandle(Object obj)
         {
             IntPtr handle;
             if (!_objectToHandle.TryGetValue(obj, out handle))
             {
                 handle = (IntPtr)(handleMultipler * _handleToObject.Count + handleBase);
+#if DEBUG
+                handle = new IntPtr((long)s_handleHighBitSet | (long)handle);
+#endif
                 _handleToObject.Add(obj);
                 _objectToHandle.Add(obj, handle);
             }
@@ -411,6 +418,9 @@ namespace Internal.JitInterface
 
         private Object HandleToObject(IntPtr handle)
         {
+#if DEBUG
+            handle = new IntPtr(~(long)s_handleHighBitSet & (long) handle);
+#endif
             int index = ((int)handle - handleBase) / handleMultipler;
             return _handleToObject[index];
         }
@@ -508,6 +518,7 @@ namespace Internal.JitInterface
             if (!signature.HasEmbeddedSignatureData || signature.GetEmbeddedSignatureData() == null)
                 return false;
 
+            bool found = false;
             foreach (EmbeddedSignatureData data in signature.GetEmbeddedSignatureData())
             {
                 if (data.kind != EmbeddedSignatureDataKind.OptionalCustomModifier)
@@ -524,25 +535,28 @@ namespace Internal.JitInterface
                 if (defType.Namespace != "System.Runtime.CompilerServices")
                     continue;
 
-                // Take the first recognized calling convention in metadata.
-                switch (defType.Name)
+                // Look for a recognized calling convention in metadata.
+                CorInfoCallConv? callConvLocal = defType.Name switch
                 {
-                    case "CallConvCdecl":
-                        callConv = CorInfoCallConv.CORINFO_CALLCONV_C;
-                        return true;
-                    case "CallConvStdcall":
-                        callConv = CorInfoCallConv.CORINFO_CALLCONV_STDCALL;
-                        return true;
-                    case "CallConvFastcall":
-                        callConv = CorInfoCallConv.CORINFO_CALLCONV_FASTCALL;
-                        return true;
-                    case "CallConvThiscall":
-                        callConv = CorInfoCallConv.CORINFO_CALLCONV_THISCALL;
-                        return true;
+                    "CallConvCdecl"     => CorInfoCallConv.CORINFO_CALLCONV_C,
+                    "CallConvStdcall"   => CorInfoCallConv.CORINFO_CALLCONV_STDCALL,
+                    "CallConvFastcall"  => CorInfoCallConv.CORINFO_CALLCONV_FASTCALL,
+                    "CallConvThiscall"  => CorInfoCallConv.CORINFO_CALLCONV_THISCALL,
+                    _ => null
+                };
+
+                if (callConvLocal.HasValue)
+                {
+                    // Error if there are multiple recognized calling conventions
+                    if (found)
+                        ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramMultipleCallConv, MethodBeingCompiled);
+ 
+                    callConv = callConvLocal.Value;
+                    found = true;
                 }
             }
 
-            return false;
+            return found;
         }
 
         private void Get_CORINFO_SIG_INFO(MethodSignature signature, CORINFO_SIG_INFO* sig)
@@ -811,7 +825,7 @@ namespace Internal.JitInterface
                 // do a dynamic check instead.
                 if (
                     !HardwareIntrinsicHelpers.IsIsSupportedMethod(method)
-                    || !_compilation.IsHardwareInstrinsicWithRuntimeDeterminedSupport(method))
+                    || !_compilation.IsHardwareIntrinsicWithRuntimeDeterminedSupport(method))
 #endif
                 {
                     result |= CorInfoFlag.CORINFO_FLG_JIT_INTRINSIC;
@@ -1243,6 +1257,7 @@ namespace Internal.JitInterface
         {
             var methodIL = (MethodIL)HandleToObject((IntPtr)module);
             var methodSig = (MethodSignature)methodIL.GetObject((int)sigTOK);
+
             Get_CORINFO_SIG_INFO(methodSig, sig);
 
             if (sig->callConv == CorInfoCallConv.CORINFO_CALLCONV_UNMANAGED)
@@ -1256,6 +1271,8 @@ namespace Internal.JitInterface
             {
                 sig->flags |= CorInfoSigInfoFlags.CORINFO_SIGFLAG_FAT_CALL;
             }
+#else
+            VerifyMethodSignatureIsStable(methodSig);
 #endif
         }
 
@@ -2496,12 +2513,6 @@ namespace Internal.JitInterface
         private void* getInlinedCallFrameVptr(ref void* ppIndirection)
         { throw new NotImplementedException("getInlinedCallFrameVptr"); }
 
-        private int* getAddrOfCaptureThreadGlobal(ref void* ppIndirection)
-        {
-            ppIndirection = null;
-            return null;
-        }
-
         private Dictionary<CorInfoHelpFunc, ISymbolNode> _helperCache = new Dictionary<CorInfoHelpFunc, ISymbolNode>();
         private void* getHelperFtn(CorInfoHelpFunc ftnNum, ref void* ppIndirection)
         {
@@ -2918,6 +2929,14 @@ namespace Internal.JitInterface
                 default:
                     // Reloc points to something outside of the generated blocks
                     var targetObject = HandleToObject((IntPtr)target);
+
+#if READYTORUN
+                    if (targetObject is RequiresRuntimeJitIfUsedSymbol requiresRuntimeSymbol)
+                    {
+                        throw new RequiresRuntimeJitException(requiresRuntimeSymbol.Message);
+                    }
+#endif
+
                     relocTarget = (ISymbolNode)targetObject;
                     break;
             }

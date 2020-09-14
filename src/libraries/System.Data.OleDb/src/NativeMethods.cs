@@ -27,7 +27,7 @@ namespace System.Data.Common
             int GetOptionsObject(IntPtr ppOptions);
 
             void JoinTransaction(
-                [In, MarshalAs(UnmanagedType.Interface)] object punkTransactionCoord,
+                [In, MarshalAs(UnmanagedType.Interface)] object? punkTransactionCoord,
                 [In] int isoLevel,
                 [In] int isoFlags,
                 [In] IntPtr pOtherOptions);

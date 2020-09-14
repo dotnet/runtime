@@ -6,6 +6,7 @@
 #pragma once
 #include "pal_types.h"
 
+int local_BIO_up_ref(BIO *a);
 const BIGNUM* local_DSA_get0_key(const DSA* dsa, const BIGNUM** pubKey, const BIGNUM** privKey);
 void local_DSA_get0_pqg(const DSA* dsa, const BIGNUM** p, const BIGNUM** q, const BIGNUM** g);
 const DSA_METHOD* local_DSA_get_method(const DSA* dsa);
@@ -26,6 +27,7 @@ int32_t local_RSA_set0_crt_params(RSA* rsa, BIGNUM* dmp1, BIGNUM* dmq1, BIGNUM* 
 int32_t local_RSA_set0_factors(RSA* rsa, BIGNUM* p, BIGNUM* q);
 int32_t local_RSA_set0_key(RSA* rsa, BIGNUM* n, BIGNUM* e, BIGNUM* d);
 int32_t local_SSL_is_init_finished(const SSL* ssl);
+int32_t local_SSL_CTX_config(SSL_CTX* ctx, const char* name);
 unsigned long local_SSL_CTX_set_options(SSL_CTX* ctx, unsigned long options);
 void local_SSL_CTX_set_security_level(SSL_CTX* ctx, int32_t level);
 int local_SSL_session_reused(SSL* ssl);
@@ -42,6 +44,8 @@ X509_VERIFY_PARAM* local_X509_STORE_get0_param(X509_STORE* ctx);
 const ASN1_TIME* local_X509_get0_notAfter(const X509* x509);
 const ASN1_TIME* local_X509_get0_notBefore(const X509* x509);
 ASN1_BIT_STRING* local_X509_get0_pubkey_bitstr(const X509* x509);
+int local_X509_set1_notBefore(X509* x509, const ASN1_TIME*);
+int local_X509_set1_notAfter(X509* x509, const ASN1_TIME*);
 const X509_ALGOR* local_X509_get0_tbs_sigalg(const X509* x509);
 X509_PUBKEY* local_X509_get_X509_PUBKEY(const X509* x509);
 int32_t local_X509_get_version(const X509* x509);

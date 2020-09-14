@@ -316,6 +316,7 @@ set(VM_SOURCES_WKS
     comthreadpool.cpp
     comutilnative.cpp
     comwaithandle.cpp
+    corelib.cpp # <DisablePrecompiledHeaders>true</DisablePrecompiledHeaders>
     customattribute.cpp
     custommarshalerinfo.cpp
     autotrace.cpp
@@ -356,6 +357,7 @@ set(VM_SOURCES_WKS
     gcenv.ee.common.cpp
     gcenv.os.cpp
     gchelpers.cpp
+    genanalysis.cpp
     genmeth.cpp
     hosting.cpp
     ibclogger.cpp
@@ -370,7 +372,6 @@ set(VM_SOURCES_WKS
     marshalnative.cpp
     methodtablebuilder.cpp
     mlinfo.cpp
-    mscorlib.cpp # <DisablePrecompiledHeaders>true</DisablePrecompiledHeaders>
     multicorejit.cpp # Condition="'$(FeatureMulticoreJIT)' == 'true'
     multicorejitplayer.cpp # Condition="'$(FeatureMulticoreJIT)' == 'true'
     nativeeventsource.cpp
@@ -379,6 +380,7 @@ set(VM_SOURCES_WKS
     objectlist.cpp
     olevariant.cpp
     pendingload.cpp
+    processdiagnosticsprotocolhelper.cpp
     profdetach.cpp
     profilermetadataemitvalidator.cpp
     profilingenumerators.cpp
@@ -490,7 +492,7 @@ set(VM_HEADERS_WKS
     marshalnative.h
     methodtablebuilder.h
     mlinfo.h
-    mscorlib.h
+    corelib.h
     multicorejit.h
     multicorejitimpl.h
     nativeeventsource.h
@@ -499,6 +501,7 @@ set(VM_HEADERS_WKS
     objectlist.h
     olevariant.h
     pendingload.h
+    processdiagnosticsprotocolhelper.h
     profdetach.h
     profilermetadataemitvalidator.h
     profilingenumerators.h
@@ -555,6 +558,7 @@ if (CLR_CMAKE_TARGET_ARCH_AMD64 AND CLR_CMAKE_TARGET_WIN32)
     ../gc/vxsort/smallsort/bitonic_sort.AVX2.int32_t.generated.cpp
     ../gc/vxsort/smallsort/bitonic_sort.AVX512.int64_t.generated.cpp
     ../gc/vxsort/smallsort/bitonic_sort.AVX512.int32_t.generated.cpp
+    ../gc/vxsort/smallsort/avx2_load_mask_tables.cpp
 )
 endif (CLR_CMAKE_TARGET_ARCH_AMD64 AND CLR_CMAKE_TARGET_WIN32)
 
@@ -921,7 +925,7 @@ list(APPEND VM_HEADERS_DAC
 
 if (CLR_CMAKE_TARGET_WIN32)
     list(APPEND VM_SOURCES_WKS ${VM_HEADERS_WKS})
-    list(APPEND VM_SOURCES_WKS_ARCH_ASM ${VM_HEADERS_WKS_ARCH_ASM})
+    list(APPEND VM_SOURCES_WKS ${VM_HEADERS_WKS_ARCH_ASM})
     list(APPEND VM_SOURCES_DAC ${VM_HEADERS_DAC})
 endif(CLR_CMAKE_TARGET_WIN32)
 
@@ -936,12 +940,14 @@ convert_to_absolute_path(VM_SOURCES_WKS_ARCH_ASM ${VM_SOURCES_WKS_ARCH_ASM})
 convert_to_absolute_path(VM_SOURCES_DAC ${VM_SOURCES_DAC})
 convert_to_absolute_path(VM_SOURCES_WKS_SPECIAL ${VM_SOURCES_WKS_SPECIAL})
 
-add_library_clr(cee_dac ${VM_SOURCES_DAC})
-add_dependencies(cee_dac eventing_headers)
-set_target_properties(cee_dac PROPERTIES DAC_COMPONENT TRUE)
-target_precompile_header(TARGET cee_dac HEADER common.h)
+if (CLR_CMAKE_BUILD_SUBSET_RUNTIME)
+  add_library_clr(cee_dac ${VM_SOURCES_DAC})
+  add_dependencies(cee_dac eventing_headers)
+  set_target_properties(cee_dac PROPERTIES DAC_COMPONENT TRUE)
+  target_precompile_header(TARGET cee_dac HEADER common.h)
 
-add_subdirectory(wks)
+  add_subdirectory(wks)
+endif(CLR_CMAKE_BUILD_SUBSET_RUNTIME)
 
 if(FEATURE_PERFTRACING)
     add_subdirectory(eventing)

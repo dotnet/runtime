@@ -195,6 +195,24 @@ inline Thread::CurrentPrepareCodeConfigHolder::~CurrentPrepareCodeConfigHolder()
     config->SetNextInSameThread(nullptr);
 }
 
+inline void Thread::EnterForbidSuspendForDebuggerRegion()
+{
+    WRAPPER_NO_CONTRACT;
+    _ASSERTE(this == GetThread());
+
+    _ASSERTE(!m_isInForbidSuspendForDebuggerRegion);
+    m_isInForbidSuspendForDebuggerRegion = true;
+}
+
+inline void Thread::ExitForbidSuspendForDebuggerRegion()
+{
+    WRAPPER_NO_CONTRACT;
+    _ASSERTE(this == GetThread());
+
+    _ASSERTE(m_isInForbidSuspendForDebuggerRegion);
+    m_isInForbidSuspendForDebuggerRegion = false;
+}
+
 #ifdef HOST_WINDOWS
 inline size_t Thread::GetOffsetOfThreadStatic(void* pThreadStatic)
 {

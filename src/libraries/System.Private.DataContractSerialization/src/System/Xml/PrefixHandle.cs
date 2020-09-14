@@ -177,7 +177,7 @@ namespace System.Xml
             return GetString().CompareTo(that.GetString());
         }
 
-        public bool Equals(PrefixHandle prefix2)
+        public bool Equals(PrefixHandle? prefix2)
         {
             if (ReferenceEquals(prefix2, null))
                 return false;
@@ -234,7 +234,7 @@ namespace System.Xml
         {
             return !prefix1.Equals(prefix2);
         }
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return Equals(obj as PrefixHandle);
         }

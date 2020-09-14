@@ -604,13 +604,13 @@ tp_cb (void)
 	mono_runtime_try_invoke (method, NULL, NULL, &exc, error);
 
 	if (!is_ok (error)) {
-		printf ("tp callback failed due to %s\n", mono_error_get_message (error));
+		printf ("ThreadPool Callback failed due to error: %s\n", mono_error_get_message (error));
 		mono_error_cleanup (error);
 	}
 
 	if (exc) {
 		char *type_name = mono_type_get_full_name (mono_object_class (exc));
-		printf ("tp callback threw a %s\n", type_name);
+		printf ("ThreadPool Callback threw an unhandled exception of type %s\n", type_name);
 		g_free (type_name);
 	}
 }

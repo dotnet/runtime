@@ -50,15 +50,15 @@ namespace System.Net.Sockets
                 // allowing non-blocking sockets could result in non-deterministic failures from those
                 // operations. A developer that requires using NetworkStream with a non-blocking socket can
                 // temporarily flip Socket.Blocking as a workaround.
-                throw new IOException(SR.net_sockets_blocking);
+                throw GetCustomException(SR.net_sockets_blocking);
             }
             if (!socket.Connected)
             {
-                throw new IOException(SR.net_notconnected);
+                throw GetCustomException(SR.net_notconnected);
             }
             if (socket.SocketType != SocketType.Stream)
             {
-                throw new IOException(SR.net_notstream);
+                throw GetCustomException(SR.net_notstream);
             }
 
             _streamSocket = socket;
@@ -241,11 +241,13 @@ namespace System.Net.Sockets
             {
                 return _streamSocket.Receive(buffer, offset, size, 0);
             }
+            catch (SocketException socketException)
+            {
+                throw GetExceptionFromSocketException(SR.Format(SR.net_io_readfailure, socketException.Message), socketException);
+            }
             catch (Exception exception) when (!(exception is OutOfMemoryException))
             {
-                // Some sort of error occurred on the socket call,
-                // set the SocketException as InnerException and throw.
-                throw new IOException(SR.Format(SR.net_io_readfailure, exception.Message), exception);
+                throw GetCustomException(SR.Format(SR.net_io_readfailure, exception.Message), exception);
             }
         }
 
@@ -265,8 +267,8 @@ namespace System.Net.Sockets
             int bytesRead = _streamSocket.Receive(buffer, SocketFlags.None, out SocketError errorCode);
             if (errorCode != SocketError.Success)
             {
-                var exception = new SocketException((int)errorCode);
-                throw new IOException(SR.Format(SR.net_io_readfailure, exception.Message), exception);
+                var socketException = new SocketException((int)errorCode);
+                throw GetExceptionFromSocketException(SR.Format(SR.net_io_readfailure, socketException.Message), socketException);
             }
             return bytesRead;
         }
@@ -322,11 +324,13 @@ namespace System.Net.Sockets
                 // after ALL the requested number of bytes was transferred.
                 _streamSocket.Send(buffer, offset, size, SocketFlags.None);
             }
+            catch (SocketException socketException)
+            {
+                throw GetExceptionFromSocketException(SR.Format(SR.net_io_writefailure, socketException.Message), socketException);
+            }
             catch (Exception exception) when (!(exception is OutOfMemoryException))
             {
-                // Some sort of error occurred on the socket call,
-                // set the SocketException as InnerException and throw.
-                throw new IOException(SR.Format(SR.net_io_writefailure, exception.Message), exception);
+                throw GetCustomException(SR.Format(SR.net_io_writefailure, exception.Message), exception);
             }
         }
 
@@ -347,8 +351,8 @@ namespace System.Net.Sockets
             _streamSocket.Send(buffer, SocketFlags.None, out SocketError errorCode);
             if (errorCode != SocketError.Success)
             {
-                var exception = new SocketException((int)errorCode);
-                throw new IOException(SR.Format(SR.net_io_writefailure, exception.Message), exception);
+                var socketException = new SocketException((int)errorCode);
+                throw GetExceptionFromSocketException(SR.Format(SR.net_io_writefailure, socketException.Message), socketException);
             }
         }
 
@@ -443,11 +447,13 @@ namespace System.Net.Sockets
                         callback,
                         state);
             }
+            catch (SocketException socketException)
+            {
+                throw GetExceptionFromSocketException(SR.Format(SR.net_io_readfailure, socketException.Message), socketException);
+            }
             catch (Exception exception) when (!(exception is OutOfMemoryException))
             {
-                // Some sort of error occurred on the socket call,
-                // set the SocketException as InnerException and throw.
-                throw new IOException(SR.Format(SR.net_io_readfailure, exception.Message), exception);
+                throw GetCustomException(SR.Format(SR.net_io_readfailure, exception.Message), exception);
             }
         }
 
@@ -473,11 +479,13 @@ namespace System.Net.Sockets
             {
                 return _streamSocket.EndReceive(asyncResult);
             }
+            catch (SocketException socketException)
+            {
+                throw GetExceptionFromSocketException(SR.Format(SR.net_io_readfailure, socketException.Message), socketException);
+            }
             catch (Exception exception) when (!(exception is OutOfMemoryException))
             {
-                // Some sort of error occurred on the socket call,
-                // set the SocketException as InnerException and throw.
-                throw new IOException(SR.Format(SR.net_io_readfailure, exception.Message), exception);
+                throw GetCustomException(SR.Format(SR.net_io_readfailure, exception.Message), exception);
             }
         }
 
@@ -529,11 +537,13 @@ namespace System.Net.Sockets
                         callback,
                         state);
             }
+            catch (SocketException socketException)
+            {
+                throw GetExceptionFromSocketException(SR.Format(SR.net_io_writefailure, socketException.Message), socketException);
+            }
             catch (Exception exception) when (!(exception is OutOfMemoryException))
             {
-                // Some sort of error occurred on the socket call,
-                // set the SocketException as InnerException and throw.
-                throw new IOException(SR.Format(SR.net_io_writefailure, exception.Message), exception);
+                throw GetCustomException(SR.Format(SR.net_io_writefailure, exception.Message), exception);
             }
         }
 
@@ -555,11 +565,13 @@ namespace System.Net.Sockets
             {
                 _streamSocket.EndSend(asyncResult);
             }
+            catch (SocketException socketException)
+            {
+                throw GetExceptionFromSocketException(SR.Format(SR.net_io_writefailure, socketException.Message), socketException);
+            }
             catch (Exception exception) when (!(exception is OutOfMemoryException))
             {
-                // Some sort of error occurred on the socket call,
-                // set the SocketException as InnerException and throw.
-                throw new IOException(SR.Format(SR.net_io_writefailure, exception.Message), exception);
+                throw GetCustomException(SR.Format(SR.net_io_writefailure, exception.Message), exception);
             }
         }
 
@@ -609,11 +621,13 @@ namespace System.Net.Sockets
                     fromNetworkStream: true,
                     cancellationToken).AsTask();
             }
+            catch (SocketException socketException)
+            {
+                throw GetExceptionFromSocketException(SR.Format(SR.net_io_readfailure, socketException.Message), socketException);
+            }
             catch (Exception exception) when (!(exception is OutOfMemoryException))
             {
-                // Some sort of error occurred on the socket call,
-                // set the SocketException as InnerException and throw.
-                throw new IOException(SR.Format(SR.net_io_readfailure, exception.Message), exception);
+                throw GetCustomException(SR.Format(SR.net_io_readfailure, exception.Message), exception);
             }
         }
 
@@ -634,11 +648,13 @@ namespace System.Net.Sockets
                     fromNetworkStream: true,
                     cancellationToken: cancellationToken);
             }
+            catch (SocketException socketException)
+            {
+                throw GetExceptionFromSocketException(SR.Format(SR.net_io_readfailure, socketException.Message), socketException);
+            }
             catch (Exception exception) when (!(exception is OutOfMemoryException))
             {
-                // Some sort of error occurred on the socket call,
-                // set the SocketException as InnerException and throw.
-                throw new IOException(SR.Format(SR.net_io_readfailure, exception.Message), exception);
+                throw GetCustomException(SR.Format(SR.net_io_readfailure, exception.Message), exception);
             }
         }
 
@@ -687,11 +703,13 @@ namespace System.Net.Sockets
                     SocketFlags.None,
                     cancellationToken).AsTask();
             }
+            catch (SocketException socketException)
+            {
+                throw GetExceptionFromSocketException(SR.Format(SR.net_io_writefailure, socketException.Message), socketException);
+            }
             catch (Exception exception) when (!(exception is OutOfMemoryException))
             {
-                // Some sort of error occurred on the socket call,
-                // set the SocketException as InnerException and throw.
-                throw new IOException(SR.Format(SR.net_io_writefailure, exception.Message), exception);
+                throw GetCustomException(SR.Format(SR.net_io_writefailure, exception.Message), exception);
             }
         }
 
@@ -711,11 +729,13 @@ namespace System.Net.Sockets
                     SocketFlags.None,
                     cancellationToken);
             }
+            catch (SocketException socketException)
+            {
+                throw GetExceptionFromSocketException(SR.Format(SR.net_io_writefailure, socketException.Message), socketException);
+            }
             catch (Exception exception) when (!(exception is OutOfMemoryException))
             {
-                // Some sort of error occurred on the socket call,
-                // set the SocketException as InnerException and throw.
-                throw new IOException(SR.Format(SR.net_io_writefailure, exception.Message), exception);
+                throw GetCustomException(SR.Format(SR.net_io_writefailure, exception.Message), exception);
             }
         }
 
@@ -771,6 +791,16 @@ namespace System.Net.Sockets
             }
 
             void ThrowObjectDisposedException() => throw new ObjectDisposedException(GetType().FullName);
+        }
+
+        private static IOException GetExceptionFromSocketException(string message, SocketException innerException)
+        {
+            return new IOException(message, innerException);
+        }
+
+        private static IOException GetCustomException(string message, Exception? innerException = null)
+        {
+            return new IOException(message, innerException);
         }
     }
 }

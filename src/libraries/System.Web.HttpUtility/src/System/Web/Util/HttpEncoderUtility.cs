@@ -8,15 +8,6 @@ namespace System.Web.Util
 {
     internal static class HttpEncoderUtility
     {
-        public static int HexToInt(char h) =>
-            h >= '0' && h <= '9'
-                ? h - '0'
-                : h >= 'a' && h <= 'f'
-                    ? h - 'a' + 10
-                    : h >= 'A' && h <= 'F'
-                        ? h - 'A' + 10
-                        : -1;
-
         // Set of safe chars, from RFC 1738.4 minus '+'
         public static bool IsUrlSafeChar(char ch)
         {

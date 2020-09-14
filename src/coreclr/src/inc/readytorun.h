@@ -219,6 +219,7 @@ enum ReadyToRunHelper
     // Not a real helper - handle to current module passed to delay load helpers.
     READYTORUN_HELPER_Module                    = 0x01,
     READYTORUN_HELPER_GSCookie                  = 0x02,
+    READYTORUN_HELPER_IndirectTrapThreads       = 0x03,
 
     //
     // Delay load helpers
@@ -392,6 +393,15 @@ enum ReadyToRunRuntimeConstants : DWORD
 {
     READYTORUN_PInvokeTransitionFrameSizeInPointerUnits = 11,
     READYTORUN_ReversePInvokeTransitionFrameSizeInPointerUnits = 2
+};
+
+enum ReadyToRunHFAElemType : DWORD
+{
+    READYTORUN_HFA_ELEMTYPE_None = 0,
+    READYTORUN_HFA_ELEMTYPE_Float32 = 1,
+    READYTORUN_HFA_ELEMTYPE_Float64 = 2,
+    READYTORUN_HFA_ELEMTYPE_Vector64 = 3,
+    READYTORUN_HFA_ELEMTYPE_Vector128 = 4,
 };
 
 #endif // __READYTORUN_H__

@@ -18,8 +18,8 @@ namespace System.Net.NetworkInformation
         private const int IcmpHeaderLengthInBytes = 8;
         private const int MinIpHeaderLengthInBytes = 20;
         private const int MaxIpHeaderLengthInBytes = 60;
-        private static readonly bool _sendIpHeader = RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
-        private static readonly bool _needsConnect = RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
+        private static bool SendIpHeader => OperatingSystem.IsMacOS();
+        private static bool NeedsConnect => OperatingSystem.IsLinux();
         [ThreadStatic]
         private static Random? t_idGenerator;
 
@@ -56,7 +56,7 @@ namespace System.Net.NetworkInformation
             IpHeader iph = default;
 
             bool ipv4 = address.AddressFamily == AddressFamily.InterNetwork;
-            bool sendIpHeader = ipv4 && options != null && _sendIpHeader;
+            bool sendIpHeader = ipv4 && options != null && SendIpHeader;
 
              if (sendIpHeader)
              {
@@ -91,7 +91,7 @@ namespace System.Net.NetworkInformation
             Socket socket = new Socket(addrFamily, SocketType.Raw, socketConfig.ProtocolType);
             socket.ReceiveTimeout = socketConfig.Timeout;
             socket.SendTimeout = socketConfig.Timeout;
-            if (addrFamily == AddressFamily.InterNetworkV6 && RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            if (addrFamily == AddressFamily.InterNetworkV6 && OperatingSystem.IsMacOS())
             {
                 socket.DualMode = false;
             }
@@ -103,7 +103,7 @@ namespace System.Net.NetworkInformation
 
             if (socketConfig.Options != null && addrFamily == AddressFamily.InterNetwork)
             {
-                if (_sendIpHeader)
+                if (SendIpHeader)
                 {
                     // some platforms like OSX don't support DontFragment so we construct IP header instead.
                     socket.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.HeaderIncluded, 1);
@@ -117,7 +117,7 @@ namespace System.Net.NetworkInformation
 #pragma warning disable 618
             // Disable warning about obsolete property. We could use GetAddressBytes but that allocates.
             // IPv4 multicast address starts with 1110 bits so mask rest and test if we get correct value e.g. 0xe0.
-            if (_needsConnect && !ep.Address.IsIPv6Multicast && !(addrFamily == AddressFamily.InterNetwork && (ep.Address.Address & 0xf0) == 0xe0))
+            if (NeedsConnect && !ep.Address.IsIPv6Multicast && !(addrFamily == AddressFamily.InterNetwork && (ep.Address.Address & 0xf0) == 0xe0))
             {
                 // If it is not multicast, use Connect to scope responses only to the target address.
                 socket.Connect(socketConfig.EndPoint);

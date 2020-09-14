@@ -56,7 +56,6 @@ namespace System.Net.Http
                     if (_connection == null)
                     {
                         // Fully consumed the response in ReadChunksFromConnectionBuffer.
-                        if (HttpTelemetry.Log.IsEnabled()) LogRequestStop();
                         return 0;
                     }
 
@@ -362,7 +361,6 @@ namespace System.Net.Http
                                     cancellationRegistration.Dispose();
                                     CancellationHelper.ThrowIfCancellationRequested(cancellationRegistration.Token);
 
-                                    if (HttpTelemetry.Log.IsEnabled()) LogRequestStop();
                                     _state = ParsingState.Done;
                                     _connection.CompleteResponse();
                                     _connection = null;
@@ -468,7 +466,7 @@ namespace System.Net.Http
                             if (drainTime != Timeout.InfiniteTimeSpan)
                             {
                                 cts = new CancellationTokenSource((int)drainTime.TotalMilliseconds);
-                                ctr = cts.Token.Register(s => ((HttpConnection)s!).Dispose(), _connection);
+                                ctr = cts.Token.Register(static s => ((HttpConnection)s!).Dispose(), _connection);
                             }
                         }
 

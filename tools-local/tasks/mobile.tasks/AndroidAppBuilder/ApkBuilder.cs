@@ -257,7 +257,7 @@ public class ApkBuilder
         string? buildTools = Directory.GetDirectories(Path.Combine(androidSdkDir, "build-tools"))
             .Select(Path.GetFileName)
             .Where(file => !file!.Contains("-"))
-            .Select(file => Version.TryParse(Path.GetFileName(file), out Version? version) ? version : default)
+            .Select(file => { Version.TryParse(Path.GetFileName(file), out Version? version); return version; })
             .OrderByDescending(v => v)
             .FirstOrDefault()?.ToString();
 

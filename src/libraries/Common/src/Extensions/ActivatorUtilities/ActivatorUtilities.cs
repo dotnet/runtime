@@ -40,7 +40,10 @@ namespace Microsoft.Extensions.Internal
         /// <param name="instanceType">The type to activate</param>
         /// <param name="parameters">Constructor arguments not provided by the <paramref name="provider"/>.</param>
         /// <returns>An activated object of type instanceType</returns>
-        public static object CreateInstance(IServiceProvider provider, Type instanceType, params object[] parameters)
+        public static object CreateInstance(
+            IServiceProvider provider,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type instanceType,
+            params object[] parameters)
         {
             int bestLength = -1;
             bool seenPreferred = false;
@@ -49,11 +52,9 @@ namespace Microsoft.Extensions.Internal
 
             if (!instanceType.GetTypeInfo().IsAbstract)
             {
-                foreach (ConstructorInfo? constructor in instanceType
-                    .GetTypeInfo()
-                    .DeclaredConstructors)
+                foreach (ConstructorInfo? constructor in instanceType.GetConstructors())
                 {
-                    if (!constructor.IsStatic && constructor.IsPublic)
+                    if (!constructor.IsStatic)
                     {
                         var matcher = new ConstructorMatcher(constructor);
                         bool isPreferred = constructor.IsDefined(typeof(ActivatorUtilitiesConstructorAttribute), false);
@@ -104,7 +105,9 @@ namespace Microsoft.Extensions.Internal
         /// A factory that will instantiate instanceType using an <see cref="IServiceProvider"/>
         /// and an argument array containing objects matching the types defined in argumentTypes
         /// </returns>
-        public static ObjectFactory CreateFactory(Type instanceType, Type[] argumentTypes)
+        public static ObjectFactory CreateFactory(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type instanceType,
+            Type[] argumentTypes)
         {
             FindApplicableConstructor(instanceType, argumentTypes, out ConstructorInfo? constructor, out int?[]? parameterMap);
 
@@ -126,11 +129,10 @@ namespace Microsoft.Extensions.Internal
         /// <param name="provider">The service provider used to resolve dependencies</param>
         /// <param name="parameters">Constructor arguments not provided by the <paramref name="provider"/>.</param>
         /// <returns>An activated object of type T</returns>
-        public static T CreateInstance<T>(IServiceProvider provider, params object[] parameters)
+        public static T CreateInstance<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] T>(IServiceProvider provider, params object[] parameters)
         {
             return (T)CreateInstance(provider, typeof(T), parameters);
         }
-
 
         /// <summary>
         /// Retrieve an instance of the given type from the service provider. If one is not found then instantiate it directly.
@@ -138,7 +140,7 @@ namespace Microsoft.Extensions.Internal
         /// <typeparam name="T">The type of the service</typeparam>
         /// <param name="provider">The service provider used to resolve dependencies</param>
         /// <returns>The resolved service or created instance</returns>
-        public static T GetServiceOrCreateInstance<T>(IServiceProvider provider)
+        public static T GetServiceOrCreateInstance<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] T>(IServiceProvider provider)
         {
             return (T)GetServiceOrCreateInstance(provider, typeof(T));
         }
@@ -149,7 +151,9 @@ namespace Microsoft.Extensions.Internal
         /// <param name="provider">The service provider</param>
         /// <param name="type">The type of the service</param>
         /// <returns>The resolved service or created instance</returns>
-        public static object GetServiceOrCreateInstance(IServiceProvider provider, Type type)
+        public static object GetServiceOrCreateInstance(
+            IServiceProvider provider,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type type)
         {
             return provider.GetService(type) ?? CreateInstance(provider, type);
         }
@@ -214,7 +218,7 @@ namespace Microsoft.Extensions.Internal
         }
 
         private static void FindApplicableConstructor(
-            Type instanceType,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type instanceType,
             Type[] argumentTypes,
             out ConstructorInfo matchingConstructor,
             out int?[] matchingParameterMap)
@@ -235,14 +239,14 @@ namespace Microsoft.Extensions.Internal
 
         // Tries to find constructor based on provided argument types
         private static bool TryFindMatchingConstructor(
-            Type instanceType,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type instanceType,
             Type[] argumentTypes,
             [NotNullWhen(true)] ref ConstructorInfo? matchingConstructor,
             [NotNullWhen(true)] ref int?[]? parameterMap)
         {
-            foreach (ConstructorInfo? constructor in instanceType.GetTypeInfo().DeclaredConstructors)
+            foreach (ConstructorInfo? constructor in instanceType.GetConstructors())
             {
-                if (constructor.IsStatic || !constructor.IsPublic)
+                if (constructor.IsStatic)
                 {
                     continue;
                 }
@@ -270,15 +274,15 @@ namespace Microsoft.Extensions.Internal
 
         // Tries to find constructor marked with ActivatorUtilitiesConstructorAttribute
         private static bool TryFindPreferredConstructor(
-            Type instanceType,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type instanceType,
             Type[] argumentTypes,
             [NotNullWhen(true)] ref ConstructorInfo? matchingConstructor,
             [NotNullWhen(true)] ref int?[]? parameterMap)
         {
             bool seenPreferred = false;
-            foreach (ConstructorInfo? constructor in instanceType.GetTypeInfo().DeclaredConstructors)
+            foreach (ConstructorInfo? constructor in instanceType.GetConstructors())
             {
-                if (constructor.IsStatic || !constructor.IsPublic)
+                if (constructor.IsStatic)
                 {
                     continue;
                 }

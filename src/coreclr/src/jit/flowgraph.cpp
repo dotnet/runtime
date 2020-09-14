@@ -175,6 +175,8 @@ void Compiler::fgInit()
 #ifdef FEATURE_SIMD
     fgPreviousCandidateSIMDFieldAsgStmt = nullptr;
 #endif
+
+    fgHasSwitch = false;
 }
 
 bool Compiler::fgHaveProfileData()
@@ -476,7 +478,8 @@ void Compiler::fgEnsureFirstBBisScratch()
 
     noway_assert(fgLastBB != nullptr);
 
-    block->bbFlags |= (BBF_INTERNAL | BBF_IMPORTED);
+    // Set the expected flags
+    block->bbFlags |= (BBF_INTERNAL | BBF_IMPORTED | BBF_JMP_TARGET | BBF_HAS_LABEL);
 
     // This new first BB has an implicit ref, and no others.
     block->bbRefs = 1;
@@ -1865,7 +1868,7 @@ bool Compiler::fgReachable(BasicBlock* b1, BasicBlock* b2)
  *  it again.
  */
 
-void Compiler::fgUpdateChangedFlowGraph()
+void Compiler::fgUpdateChangedFlowGraph(bool computeDoms)
 {
     // We need to clear this so we don't hit an assert calling fgRenumberBlocks().
     fgDomsComputed = false;
@@ -1876,7 +1879,10 @@ void Compiler::fgUpdateChangedFlowGraph()
     fgComputePreds();
     fgComputeEnterBlocksSet();
     fgComputeReachabilitySets();
-    fgComputeDoms();
+    if (computeDoms)
+    {
+        fgComputeDoms();
+    }
 }
 
 /*****************************************************************************
@@ -3557,6 +3563,49 @@ void Compiler::fgInitBlockVarSets()
     fgBBVarSetsInited = true;
 }
 
+//------------------------------------------------------------------------
+// blockNeedsGCPoll: Determine whether the block needs GC poll inserted
+//
+// Arguments:
+//   block         - the block to check
+//
+// Notes:
+//    The GC poll may not be required because of optimizations applied earlier
+//    or because of GC poll done implicitly by regular unmanaged calls.
+//
+// Returns:
+//    Whether the GC poll needs to be inserted after the block
+//
+static bool blockNeedsGCPoll(BasicBlock* block)
+{
+    bool blockMayNeedGCPoll = false;
+    for (Statement* stmt = block->FirstNonPhiDef(); stmt != nullptr; stmt = stmt->GetNextStmt())
+    {
+        if ((stmt->GetRootNode()->gtFlags & GTF_CALL) != 0)
+        {
+            for (GenTree* tree = stmt->GetTreeList(); tree != nullptr; tree = tree->gtNext)
+            {
+                if (tree->OperGet() == GT_CALL)
+                {
+                    GenTreeCall* call = tree->AsCall();
+                    if (call->IsUnmanaged())
+                    {
+                        if (!call->IsSuppressGCTransition())
+                        {
+                            // If the block contains regular unmanaged call, we can depend on it
+                            // to poll for GC. No need to scan further.
+                            return false;
+                        }
+
+                        blockMayNeedGCPoll = true;
+                    }
+                }
+            }
+        }
+    }
+    return blockMayNeedGCPoll;
+}
+
 //------------------------------------------------------------------------------
 // fgInsertGCPolls : Insert GC polls for basic blocks containing calls to methods
 //                   with SuppressGCTransitionAttribute.
@@ -3565,6 +3614,9 @@ void Compiler::fgInitBlockVarSets()
 //    When not optimizing, the method relies on BBF_HAS_SUPPRESSGC_CALL flag to
 //    find the basic blocks that require GC polls; when optimizing the tree nodes
 //    are scanned to find calls to methods with SuppressGCTransitionAttribute.
+//
+//    This must be done after any transformations that would add control flow between
+//    calls.
 //
 // Returns:
 //    PhaseStatus indicating what, if anything, was changed.
@@ -3592,43 +3644,12 @@ PhaseStatus Compiler::fgInsertGCPolls()
 
     BasicBlock* block;
 
-    // Walk through the blocks and hunt for a block that has needs a GC Poll
+    // Walk through the blocks and hunt for a block that needs a GC Poll
     for (block = fgFirstBB; block; block = block->bbNext)
     {
-        bool blockNeedsGCPoll = false;
-        if (opts.OptimizationDisabled())
-        {
-            if ((block->bbFlags & BBF_HAS_SUPPRESSGC_CALL) != 0)
-            {
-                blockNeedsGCPoll = true;
-            }
-        }
-        else
-        {
-            // When optimizations are enabled, we can't rely on BBF_HAS_SUPPRESSGC_CALL flag:
-            // the call could've been moved, e.g., hoisted from a loop, CSE'd, etc.
-            for (Statement* stmt = block->FirstNonPhiDef(); !blockNeedsGCPoll && (stmt != nullptr);
-                 stmt            = stmt->GetNextStmt())
-            {
-                if ((stmt->GetRootNode()->gtFlags & GTF_CALL) != 0)
-                {
-                    for (GenTree* tree = stmt->GetTreeList(); !blockNeedsGCPoll && (tree != nullptr);
-                         tree          = tree->gtNext)
-                    {
-                        if (tree->OperGet() == GT_CALL)
-                        {
-                            GenTreeCall* call = tree->AsCall();
-                            if (call->IsUnmanaged() && call->IsSuppressGCTransition())
-                            {
-                                blockNeedsGCPoll = true;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        if (!blockNeedsGCPoll)
+        // When optimizations are enabled, we can't rely on BBF_HAS_SUPPRESSGC_CALL flag:
+        // the call could've been moved, e.g., hoisted from a loop, CSE'd, etc.
+        if (opts.OptimizationDisabled() ? ((block->bbFlags & BBF_HAS_SUPPRESSGC_CALL) == 0) : !blockNeedsGCPoll(block))
         {
             continue;
         }
@@ -3650,6 +3671,7 @@ PhaseStatus Compiler::fgInsertGCPolls()
             case BBJ_SWITCH:
             case BBJ_NONE:
             case BBJ_THROW:
+            case BBJ_CALLFINALLY:
                 break;
             default:
                 assert(!"Unexpected block kind");
@@ -3698,6 +3720,18 @@ PhaseStatus Compiler::fgInsertGCPolls()
             // We don't want to deal with all the outgoing edges of a switch block.
             pollType = GCPOLL_CALL;
         }
+        else if ((block->bbFlags & BBF_COLD) != 0)
+        {
+#ifdef DEBUG
+            if (verbose)
+            {
+                printf("Selecting CALL poll in block " FMT_BB " because it is a cold block\n", block->bbNum);
+            }
+#endif // DEBUG
+
+            // We don't want to split a cold block.
+            pollType = GCPOLL_CALL;
+        }
 
         BasicBlock* curBasicBlock = fgCreateGCPoll(pollType, block);
         createdPollBlocks |= (block != curBasicBlock);
@@ -3710,7 +3744,8 @@ PhaseStatus Compiler::fgInsertGCPolls()
     {
         noway_assert(opts.OptimizationEnabled());
         fgReorderBlocks();
-        fgUpdateChangedFlowGraph();
+        constexpr bool computeDoms = false;
+        fgUpdateChangedFlowGraph(computeDoms);
     }
 #ifdef DEBUG
     if (verbose)
@@ -4058,9 +4093,11 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
         createdPollBlocks = false;
 
         Statement* newStmt = nullptr;
-        if (block->bbJumpKind == BBJ_ALWAYS)
+        if ((block->bbJumpKind == BBJ_ALWAYS) || (block->bbJumpKind == BBJ_CALLFINALLY) ||
+            (block->bbJumpKind == BBJ_NONE))
         {
-            // for BBJ_ALWAYS I don't need to insert it before the condition.  Just append it.
+            // For BBJ_ALWAYS, BBJ_CALLFINALLY, and BBJ_NONE and  we don't need to insert it before the condition.
+            // Just append it.
             newStmt = fgNewStmtAtEnd(block, call);
         }
         else
@@ -4138,9 +4175,12 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
 
         // We are allowed to split loops and we need to keep a few other flags...
         //
-        noway_assert((originalFlags & (BBF_SPLIT_NONEXIST & ~(BBF_LOOP_HEAD | BBF_LOOP_CALL0 | BBF_LOOP_CALL1))) == 0);
-        top->bbFlags = originalFlags & (~BBF_SPLIT_LOST | BBF_GC_SAFE_POINT);
-        bottom->bbFlags |= originalFlags & (BBF_SPLIT_GAINED | BBF_IMPORTED | BBF_GC_SAFE_POINT);
+        noway_assert((originalFlags & (BBF_SPLIT_NONEXIST &
+                                       ~(BBF_LOOP_HEAD | BBF_LOOP_CALL0 | BBF_LOOP_CALL1 | BBF_LOOP_PREHEADER |
+                                         BBF_RETLESS_CALL))) == 0);
+        top->bbFlags = originalFlags & (~(BBF_SPLIT_LOST | BBF_LOOP_PREHEADER | BBF_RETLESS_CALL) | BBF_GC_SAFE_POINT);
+        bottom->bbFlags |= originalFlags & (BBF_SPLIT_GAINED | BBF_IMPORTED | BBF_GC_SAFE_POINT | BBF_LOOP_PREHEADER |
+                                            BBF_RETLESS_CALL);
         bottom->inheritWeight(top);
         poll->bbFlags |= originalFlags & (BBF_SPLIT_GAINED | BBF_IMPORTED | BBF_GC_SAFE_POINT);
 
@@ -4265,6 +4305,7 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
                 __fallthrough;
 
             case BBJ_ALWAYS:
+            case BBJ_CALLFINALLY:
                 fgReplacePred(bottom->bbJumpDest, top, bottom);
                 break;
             case BBJ_SWITCH:
@@ -7232,7 +7273,7 @@ bool Compiler::fgIsThrow(GenTree* tree)
         return true;
     }
 
-    // TODO-CQ: there are a bunch of managed methods in [mscorlib]System.ThrowHelper
+    // TODO-CQ: there are a bunch of managed methods in System.ThrowHelper
     // that would be nice to recognize.
 
     return false;
@@ -7375,6 +7416,7 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
         case CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE_DYNAMICCLASS:
         case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE:
         case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_DYNAMICCLASS:
+        case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_DYNAMICCLASS:
             // type = TYP_BYREF;
             break;
 
@@ -7388,7 +7430,6 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
 
         case CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE:
         case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE:
-        case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_DYNAMICCLASS:
         case CORINFO_HELP_CLASSINIT_SHARED_DYNAMICCLASS:
             type = TYP_I_IMPL;
             break;
@@ -14678,9 +14719,9 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
             LIR::ReadOnlyRange range(zeroConstNode, switchTree);
             m_pLowering->LowerRange(block, range);
         }
-        else
+        else if (fgStmtListThreaded)
         {
-            // Re-link the nodes for this statement.
+            gtSetStmtInfo(switchStmt);
             fgSetStmtSeq(switchStmt);
         }
 
@@ -15335,16 +15376,16 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
         // Clone/substitute the expression.
         Statement* stmt = gtCloneStmt(curStmt);
 
-        if (fgStmtListThreaded)
-        {
-            gtSetStmtInfo(stmt);
-            fgSetStmtSeq(stmt);
-        }
-
         // cloneExpr doesn't handle everything.
         if (stmt == nullptr)
         {
             return false;
+        }
+
+        if (fgStmtListThreaded)
+        {
+            gtSetStmtInfo(stmt);
+            fgSetStmtSeq(stmt);
         }
 
         /* Append the expression to our list */
@@ -21582,6 +21623,10 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
                 chkFlags |= GTF_GLOB_REF | GTF_ASG;
                 break;
 
+            case GT_LCL_VAR:
+                assert((tree->gtFlags & GTF_VAR_FOLDED_IND) == 0);
+                break;
+
             default:
                 break;
         }
@@ -24855,7 +24900,7 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
                 GenTree* expr = stmt->GetRootNode();
                 if (expr->gtOper == GT_END_LFIN)
                 {
-                    const unsigned nestLevel = expr->AsVal()->gtVal1;
+                    const size_t nestLevel = expr->AsVal()->gtVal1;
                     assert(nestLevel > 0);
                     expr->AsVal()->gtVal1 = nestLevel - 1;
                 }

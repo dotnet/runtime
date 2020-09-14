@@ -3,6 +3,9 @@
 
 namespace System.Security.Permissions
 {
+#if NET50_OBSOLETIONS
+    [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+#endif
     public sealed partial class UIPermission : CodeAccessPermission, IUnrestrictedPermission
     {
         public UIPermission(PermissionState state) { }

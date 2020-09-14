@@ -10,7 +10,7 @@
   </PropertyGroup>
   <!-- Do not reference these assemblies from the TargetingPack since we are building part of the source code for tests. -->
   <ItemGroup>
-    <DefaultReferenceExclusions Include="System.Net.NameResolution" />
+    <DefaultReferenceExclusion Include="System.Net.NameResolution" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\..\src\System\Net\IPHostEntry.cs"
@@ -29,6 +29,7 @@
     <Compile Include="Fakes\FakeNameResolutionUtilities.cs" />
     <Compile Include="Fakes\FakeSocketExceptionFactory.cs" />
     <Compile Include="Fakes\FakeSocketProtocolSupportPal.cs" />
+    <Compile Include="Fakes\FakeNameResolutionTelemetry.cs" />
   </ItemGroup>
   <!-- Production Code under test-->
   <ItemGroup>
@@ -40,5 +41,7 @@
              Link="Common\System\Net\InternalException.cs" />
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
              Link="Common\System\Threading\Tasks\TaskToApm.cs" />
+    <Compile Include="$(CommonPath)Extensions\ValueStopwatch\ValueStopwatch.cs"
+             Link="Common\Extensions\ValueStopwatch\ValueStopwatch.cs" />
   </ItemGroup>
 </Project>

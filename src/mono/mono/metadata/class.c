@@ -3448,7 +3448,7 @@ mono_class_from_name (MonoImage *image, const char* name_space, const char *name
  *
  * This function works exactly like mono_class_from_name but it will abort if the class is not found.
  * This function should be used by the runtime for critical types to which there's no way to recover but crash
- * If they are missing. Thing of System.Object or System.String.
+ * if they are missing. For example, System.Object or System.String.
  */
 MonoClass *
 mono_class_load_from_name (MonoImage *image, const char* name_space, const char *name)

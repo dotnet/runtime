@@ -1784,7 +1784,7 @@ HRESULT MyICJI::allocMethodBlockCounts(UINT32          count, // The number of b
                                        BlockCounts**   pBlockCounts)
 {
     jitInstance->mc->cr->AddCall("allocMethodBlockCounts");
-    return jitInstance->mc->cr->repAllocMethodBlockCounts(count, pBlockCounts);
+    return jitInstance->mc->repAllocMethodBlockCounts(count, pBlockCounts);
 }
 
 // get profile information to be used for optimizing the current method.  The format

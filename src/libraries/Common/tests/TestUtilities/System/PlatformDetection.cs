@@ -1,8 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.IO;
 using System.Security;
+using System.Security.Authentication;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
@@ -20,6 +22,7 @@ namespace System
 
         public static bool IsNetCore => Environment.Version.Major >= 5 || RuntimeInformation.FrameworkDescription.StartsWith(".NET Core", StringComparison.OrdinalIgnoreCase);
         public static bool IsMonoRuntime => Type.GetType("Mono.RuntimeStructs") != null;
+        public static bool IsNotMonoRuntime => !IsMonoRuntime;
         public static bool IsMonoInterpreter => GetIsRunningOnMonoInterpreter();
         public static bool IsFreeBSD => RuntimeInformation.IsOSPlatform(OSPlatform.Create("FREEBSD"));
         public static bool IsNetBSD => RuntimeInformation.IsOSPlatform(OSPlatform.Create("NETBSD"));
@@ -29,6 +32,7 @@ namespace System
         public static bool IsSolaris => RuntimeInformation.IsOSPlatform(OSPlatform.Create("SOLARIS"));
         public static bool IsBrowser => RuntimeInformation.IsOSPlatform(OSPlatform.Create("BROWSER"));
         public static bool IsNotBrowser => !IsBrowser;
+        public static bool IsNotNetFramework => !IsNetFramework;
 
         public static bool IsArmProcess => RuntimeInformation.ProcessArchitecture == Architecture.Arm;
         public static bool IsNotArmProcess => !IsArmProcess;
@@ -125,8 +129,15 @@ namespace System
 
         public static bool SupportsClientAlpn => SupportsAlpn || IsOSX || IsiOS || IstvOS;
 
-        // OpenSSL 1.1.1 and above.
-        public static bool SupportsTls13 => GetTls13Support();
+        private static Lazy<bool> s_supportsTls10 = new Lazy<bool>(GetTls10Support);
+        private static Lazy<bool> s_supportsTls11 = new Lazy<bool>(GetTls11Support);
+        private static Lazy<bool> s_supportsTls12 = new Lazy<bool>(GetTls12Support);
+        private static Lazy<bool> s_supportsTls13 = new Lazy<bool>(GetTls13Support);
+
+        public static bool SupportsTls10 => s_supportsTls10.Value;
+        public static bool SupportsTls11 => s_supportsTls11.Value;
+        public static bool SupportsTls12 => s_supportsTls12.Value;
+        public static bool SupportsTls13 => s_supportsTls13.Value;
 
         private static Lazy<bool> s_largeArrayIsNotSupported = new Lazy<bool>(IsLargeArrayNotSupported);
 
@@ -262,6 +273,47 @@ namespace System
             }
 
             return (IsOSX || (IsLinux && OpenSslVersion < new Version(1, 0, 2) && !IsDebian));
+        }
+
+        private static bool OpenSslGetTlsSupport(SslProtocols protocol)
+        {
+            Debug.Assert(IsOpenSslSupported);
+
+            int ret = Interop.OpenSsl.OpenSslGetProtocolSupport((int)protocol);
+            return ret == 1;
+        }
+
+        private static bool GetTls10Support()
+        {
+            // on Windows and macOS TLS1.0/1.1 are supported.
+            if (IsWindows || IsOSXLike)
+            {
+                return true;
+            }
+
+            return OpenSslGetTlsSupport(SslProtocols.Tls);
+        }
+
+        private static bool GetTls11Support()
+        {
+            // on Windows and macOS TLS1.0/1.1 are supported.
+            // TLS 1.1 and 1.2 can work on Windows7 but it is not enabled by default.
+            if (IsWindows)
+            {
+                return !IsWindows7;
+            }
+            else if (IsOSXLike)
+            {
+                return true;
+            }
+
+            return OpenSslGetTlsSupport(SslProtocols.Tls11);
+        }
+
+        private static bool GetTls12Support()
+        {
+            // TLS 1.1 and 1.2 can work on Windows7 but it is not enabled by default.
+            return !IsWindows7;
         }
 
         private static bool GetTls13Support()

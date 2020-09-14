@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
+using System.Runtime.Versioning;
 
 namespace System.Diagnostics
 {
@@ -12,6 +13,7 @@ namespace System.Diagnostics
     ///       returned from the System.Diagnostics.Process.ProcessThread property of the System.Diagnostics.Process component.
     ///    </para>
     /// </devdoc>
+    [Designer("System.Diagnostics.Design.ProcessThreadDesigner, System.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public partial class ProcessThread : Component
     {
         private readonly bool _isRemoteMachine;
@@ -94,6 +96,7 @@ namespace System.Diagnostics
                 }
                 return _priorityLevel.Value;
             }
+            [SupportedOSPlatform("windows")]
             set
             {
                 PriorityLevelCore = value;

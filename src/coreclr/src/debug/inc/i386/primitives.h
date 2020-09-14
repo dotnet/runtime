@@ -48,7 +48,7 @@ inline CORDB_ADDRESS GetPatchEndAddr(CORDB_ADDRESS patchAddr)
     CORDbgInsertBreakpoint((CORDB_ADDRESS_TYPE *)((_buffer) + ((_patchAddr) - (_requestedAddr))));
 
 
-SELECTANY const CorDebugRegister g_JITToCorDbgReg[] =
+constexpr CorDebugRegister g_JITToCorDbgReg[] =
 {
     REGISTER_X86_EAX,
     REGISTER_X86_ECX,

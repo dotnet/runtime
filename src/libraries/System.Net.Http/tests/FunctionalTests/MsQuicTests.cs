@@ -3,7 +3,7 @@
 
 using System.Buffers;
 using System.Collections.Generic;
-using System.Diagnostics.Tracing;
+using System.Diagnostics;
 using System.Linq;
 using System.Net.Security;
 using System.Text;
@@ -216,41 +216,75 @@ namespace System.Net.Quic.Tests
         }
 
         [Fact]
-        public async Task TestStreams()
+        public async Task TestConnect()
         {
-            using (QuicListener listener = new QuicListener(
+            SslServerAuthenticationOptions serverOpts = GetSslServerAuthenticationOptions();
+
+            using QuicListener listener = new QuicListener(
                 QuicImplementationProviders.MsQuic,
                 new IPEndPoint(IPAddress.Loopback, 0),
-                GetSslServerAuthenticationOptions()))
-            {
-                listener.Start();
-                IPEndPoint listenEndPoint = listener.ListenEndPoint;
+                serverOpts);
 
-                using (QuicConnection clientConnection = new QuicConnection(
-                    QuicImplementationProviders.MsQuic,
-                    listenEndPoint,
-                    sslClientAuthenticationOptions: new SslClientAuthenticationOptions { ApplicationProtocols = new List<SslApplicationProtocol>() { new SslApplicationProtocol("quictest") } }))
-                {
-                    Assert.False(clientConnection.Connected);
-                    Assert.Equal(listenEndPoint, clientConnection.RemoteEndPoint);
+            listener.Start();
+            IPEndPoint listenEndPoint = listener.ListenEndPoint;
+            Assert.NotEqual(0, listenEndPoint.Port);
 
-                    ValueTask connectTask = clientConnection.ConnectAsync();
-                    QuicConnection serverConnection = await listener.AcceptConnectionAsync();
-                    await connectTask;
+            using QuicConnection clientConnection = new QuicConnection(
+                QuicImplementationProviders.MsQuic,
+                listenEndPoint,
+                GetSslClientAuthenticationOptions());
 
-                    Assert.True(clientConnection.Connected);
-                    Assert.True(serverConnection.Connected);
-                    Assert.Equal(listenEndPoint, serverConnection.LocalEndPoint);
-                    Assert.Equal(listenEndPoint, clientConnection.RemoteEndPoint);
-                    Assert.Equal(clientConnection.LocalEndPoint, serverConnection.RemoteEndPoint);
+            Assert.False(clientConnection.Connected);
+            Assert.Equal(listenEndPoint, clientConnection.RemoteEndPoint);
 
-                    await CreateAndTestBidirectionalStream(clientConnection, serverConnection);
-                    await CreateAndTestBidirectionalStream(serverConnection, clientConnection);
-                    await CreateAndTestUnidirectionalStream(serverConnection, clientConnection);
-                    await CreateAndTestUnidirectionalStream(clientConnection, serverConnection);
-                    await clientConnection.CloseAsync(errorCode: 0);
-                }
-            }
+            ValueTask connectTask = clientConnection.ConnectAsync();
+            QuicConnection serverConnection = await listener.AcceptConnectionAsync();
+            await connectTask;
+
+            Assert.True(clientConnection.Connected);
+            Assert.True(serverConnection.Connected);
+            Assert.Equal(listenEndPoint, serverConnection.LocalEndPoint);
+            Assert.Equal(listenEndPoint, clientConnection.RemoteEndPoint);
+            Assert.Equal(clientConnection.LocalEndPoint, serverConnection.RemoteEndPoint);
+            Assert.Equal(serverOpts.ApplicationProtocols[0].ToString(), clientConnection.NegotiatedApplicationProtocol.ToString());
+            Assert.Equal(serverOpts.ApplicationProtocols[0].ToString(), serverConnection.NegotiatedApplicationProtocol.ToString());
+        }
+
+        [Fact]
+        public async Task TestStreams()
+        {
+            using QuicListener listener = new QuicListener(
+                QuicImplementationProviders.MsQuic,
+                new IPEndPoint(IPAddress.Loopback, 0),
+                GetSslServerAuthenticationOptions());
+
+            listener.Start();
+            IPEndPoint listenEndPoint = listener.ListenEndPoint;
+            Assert.NotEqual(0, listenEndPoint.Port);
+
+            using QuicConnection clientConnection = new QuicConnection(
+                QuicImplementationProviders.MsQuic,
+                listenEndPoint,
+                GetSslClientAuthenticationOptions());
+
+            Assert.False(clientConnection.Connected);
+            Assert.Equal(listenEndPoint, clientConnection.RemoteEndPoint);
+
+            ValueTask connectTask = clientConnection.ConnectAsync();
+            QuicConnection serverConnection = await listener.AcceptConnectionAsync();
+            await connectTask;
+
+            Assert.True(clientConnection.Connected);
+            Assert.True(serverConnection.Connected);
+            Assert.Equal(listenEndPoint, serverConnection.LocalEndPoint);
+            Assert.Equal(listenEndPoint, clientConnection.RemoteEndPoint);
+            Assert.Equal(clientConnection.LocalEndPoint, serverConnection.RemoteEndPoint);
+
+            await CreateAndTestBidirectionalStream(clientConnection, serverConnection);
+            await CreateAndTestBidirectionalStream(serverConnection, clientConnection);
+            await CreateAndTestUnidirectionalStream(serverConnection, clientConnection);
+            await CreateAndTestUnidirectionalStream(clientConnection, serverConnection);
+            await clientConnection.CloseAsync(errorCode: 0);
         }
 
         [Fact]
@@ -288,6 +322,97 @@ namespace System.Net.Quic.Tests
             Assert.Equal(10, clientConnection.GetRemoteAvailableBidirectionalStreamCount());
             Assert.Equal(100, serverConnection.GetRemoteAvailableBidirectionalStreamCount());
             Assert.Equal(100, serverConnection.GetRemoteAvailableUnidirectionalStreamCount());
+        }
+
+        [Theory]
+        [MemberData(nameof(WriteData))]
+        public async Task WriteTests(int[][] writes, WriteType writeType)
+        {
+            await RunClientServer(
+                async clientConnection =>
+                {
+                    await using QuicStream stream = clientConnection.OpenUnidirectionalStream();
+
+                    foreach (int[] bufferLengths in writes)
+                    {
+                        switch (writeType)
+                        {
+                            case WriteType.SingleBuffer:
+                                foreach (int bufferLength in bufferLengths)
+                                {
+                                    await stream.WriteAsync(new byte[bufferLength]);
+                                }
+                                break;
+                            case WriteType.GatheredBuffers:
+                                var buffers = bufferLengths
+                                    .Select(bufferLength => new ReadOnlyMemory<byte>(new byte[bufferLength]))
+                                    .ToArray();
+                                await stream.WriteAsync(buffers);
+                                break;
+                            case WriteType.GatheredSequence:
+                                var firstSegment = new BufferSegment(new byte[bufferLengths[0]]);
+                                BufferSegment lastSegment = firstSegment;
+
+                                foreach (int bufferLength in bufferLengths.Skip(1))
+                                {
+                                    lastSegment = lastSegment.Append(new byte[bufferLength]);
+                                }
+
+                                var buffer = new ReadOnlySequence<byte>(firstSegment, 0, lastSegment, lastSegment.Memory.Length);
+                                await stream.WriteAsync(buffer);
+                                break;
+                            default:
+                                Debug.Fail("Unknown write type.");
+                                break;
+                        }
+                    }
+
+                    stream.Shutdown();
+                    await stream.ShutdownWriteCompleted();
+                },
+                async serverConnection =>
+                {
+                    await using QuicStream stream = await serverConnection.AcceptStreamAsync();
+
+                    var buffer = new byte[4096];
+                    int receivedBytes = 0, totalBytes = 0;
+
+                    while ((receivedBytes = await stream.ReadAsync(buffer)) != 0)
+                    {
+                        totalBytes += receivedBytes;
+                    }
+
+                    int expectedTotalBytes = writes.SelectMany(x => x).Sum();
+                    Assert.Equal(expectedTotalBytes, totalBytes);
+
+                    stream.Shutdown();
+                    await stream.ShutdownWriteCompleted();
+                });
+        }
+
+        public static IEnumerable<object[]> WriteData()
+        {
+            var bufferSizes = new[] { 1, 502, 15_003, 1_000_004 };
+            var r = new Random();
+
+            return
+                from bufferCount in new[] { 1, 2, 3, 10 }
+                from writeType in Enum.GetValues<WriteType>()
+                let writes =
+                    Enumerable.Range(0, 5)
+                    .Select(_ =>
+                        Enumerable.Range(0, bufferCount)
+                        .Select(_ => bufferSizes[r.Next(bufferSizes.Length)])
+                        .ToArray())
+                    .ToArray()
+                select new object[] { writes, writeType };
+        }
+
+        public enum WriteType
+        {
+            SingleBuffer,
+            GatheredBuffers,
+            GatheredSequence
         }
 
         [Fact]
@@ -336,36 +461,31 @@ namespace System.Net.Quic.Tests
 
         private static async Task CreateAndTestBidirectionalStream(QuicConnection c1, QuicConnection c2)
         {
-            using (QuicStream s1 = c1.OpenBidirectionalStream())
-            {
-                Assert.True(s1.CanRead);
-                Assert.True(s1.CanWrite);
+            using QuicStream s1 = c1.OpenBidirectionalStream();
+            Assert.True(s1.CanRead);
+            Assert.True(s1.CanWrite);
 
-                ValueTask writeTask = s1.WriteAsync(s_data);
-                using (QuicStream s2 = await c2.AcceptStreamAsync())
-                {
-                    await ReceiveDataAsync(s_data, s2);
-                    await writeTask;
-                    await TestBidirectionalStream(s1, s2);
-                }
-            }
+            ValueTask writeTask = s1.WriteAsync(s_data);
+
+            using QuicStream s2 = await c2.AcceptStreamAsync();
+            await ReceiveDataAsync(s_data, s2);
+            await writeTask;
+            await TestBidirectionalStream(s1, s2);
         }
 
         private static async Task CreateAndTestUnidirectionalStream(QuicConnection c1, QuicConnection c2)
         {
-            using (QuicStream s1 = c1.OpenUnidirectionalStream())
-            {
-                Assert.False(s1.CanRead);
-                Assert.True(s1.CanWrite);
+            using QuicStream s1 = c1.OpenUnidirectionalStream();
 
-                ValueTask writeTask = s1.WriteAsync(s_data);
-                using (QuicStream s2 = await c2.AcceptStreamAsync())
-                {
-                    await ReceiveDataAsync(s_data, s2);
-                    await writeTask;
-                    await TestUnidirectionalStream(s1, s2);
-                }
-            }
+            Assert.False(s1.CanRead);
+            Assert.True(s1.CanWrite);
+
+            ValueTask writeTask = s1.WriteAsync(s_data);
+
+            using QuicStream s2 = await c2.AcceptStreamAsync();
+            await ReceiveDataAsync(s_data, s2);
+            await writeTask;
+            await TestUnidirectionalStream(s1, s2);
         }
 
         private static async Task TestBidirectionalStream(QuicStream s1, QuicStream s2)
@@ -493,12 +613,12 @@ namespace System.Net.Quic.Tests
 
         internal class BufferSegment : ReadOnlySequenceSegment<byte>
         {
-            public BufferSegment(Memory<byte> memory)
+            public BufferSegment(ReadOnlyMemory<byte> memory)
             {
                 Memory = memory;
             }
 
-            public BufferSegment Append(Memory<byte> memory)
+            public BufferSegment Append(ReadOnlyMemory<byte> memory)
             {
                 var segment = new BufferSegment(memory)
                 {

@@ -1058,7 +1058,7 @@ HRESULT ClrDataAccess::GetMethodDescData(
                     OBJECTREF value = pResolver->GetManagedResolver();
                     if (value)
                     {
-                        FieldDesc *pField = (&g_Mscorlib)->GetField(FIELD__DYNAMICRESOLVER__DYNAMIC_METHOD);
+                        FieldDesc *pField = (&g_CoreLib)->GetField(FIELD__DYNAMICRESOLVER__DYNAMIC_METHOD);
                         _ASSERTE(pField);
                         value = pField->GetRefValue(value);
                         if (value)
@@ -4731,4 +4731,13 @@ HRESULT ClrDataAccess::GetAssemblyLoadContext(CLRDATA_ADDRESS methodTable, CLRDA
 
     SOSDacLeave();
     return hr;
+}
+
+HRESULT ClrDataAccess::GetBreakingChangeVersion(int* pVersion)
+{
+    if (pVersion == nullptr)
+        return E_INVALIDARG;
+
+    *pVersion = SOS_BREAKING_CHANGE_VERSION;
+    return S_OK;
 }

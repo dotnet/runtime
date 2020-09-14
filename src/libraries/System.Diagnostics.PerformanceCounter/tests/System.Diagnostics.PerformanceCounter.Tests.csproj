@@ -1,8 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Win32Resource>provider.res</Win32Resource>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetFrameworkCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;net461</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="PerformanceCounterTests.cs" />
@@ -18,9 +17,10 @@
     <Compile Include="PerformanceDataTests.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="provider.man">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
+    <Content Include="provider.man" CopyToOutputDirectory="Always" />
     <None Include="provider.res" />
+  </ItemGroup>
+  <ItemGroup Condition="$(TargetFramework.StartsWith('$(NetCoreAppCurrent)'))">
+    <ProjectReference Include="..\src\System.Diagnostics.PerformanceCounter.csproj" />
   </ItemGroup>
 </Project>

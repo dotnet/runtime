@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Microsoft.Extensions.Options
 {
@@ -10,7 +11,9 @@ namespace Microsoft.Extensions.Options
     /// Used to cache <typeparamref name="TOptions"/> instances.
     /// </summary>
     /// <typeparam name="TOptions">The type of options being requested.</typeparam>
-    public class OptionsCache<TOptions> : IOptionsMonitorCache<TOptions> where TOptions : class
+    public class OptionsCache<[DynamicallyAccessedMembers(Options.DynamicallyAccessedMembers)] TOptions> :
+        IOptionsMonitorCache<TOptions>
+        where TOptions : class
     {
         private readonly ConcurrentDictionary<string, Lazy<TOptions>> _cache = new ConcurrentDictionary<string, Lazy<TOptions>>(StringComparer.Ordinal);
 

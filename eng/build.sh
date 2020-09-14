@@ -60,7 +60,7 @@ usage()
   echo "Libraries settings:"
   echo "  --allconfigurations        Build packages for all build configurations."
   echo "  --coverage                 Collect code coverage when testing."
-  echo "  --framework (-f)           Build framework: net5.0 or net472."
+  echo "  --framework (-f)           Build framework: net5.0 or net48."
   echo "                             [Default: net5.0]"
   echo "  --testnobuild              Skip building tests when invoking -test."
   echo "  --testscope                Test scope, allowed values: innerloop, outerloop, all."
@@ -96,6 +96,9 @@ usage()
   echo ""
   echo "* Build CoreCLR for Linux x64 on Debug configuration using GCC 8.4."
   echo "./build.sh clr -gcc8.4"
+  echo ""
+  echo "* Build CoreCLR for Linux x64 using extra compiler flags (-fstack-clash-protection)."
+  echo "EXTRA_CFLAGS=-fstack-clash-protection EXTRA_CXXFLAGS=-fstack-clash-protection ./build.sh clr"
   echo ""
   echo "* Cross-compile CoreCLR runtime for Linux ARM64 on Release configuration."
   echo "./build.sh clr.runtime -arch arm64 -c release -cross"
@@ -386,6 +389,11 @@ done
 
 if [ ${#actInt[@]} -eq 0 ]; then
     arguments="-restore -build $arguments"
+fi
+
+if [ "$os" = "Browser" ] && [ "$arch" != "wasm" ]; then
+    # override default arch for Browser, we only support wasm
+    arch=wasm
 fi
 
 initDistroRid $os $arch $crossBuild $portableBuild

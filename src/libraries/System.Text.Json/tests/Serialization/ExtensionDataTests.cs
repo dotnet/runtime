@@ -55,7 +55,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void ExtensioFieldNotUsed()
+        public static void ExtensionFieldNotUsed()
         {
             string json = @"{""MyNestedClass"":" + SimpleTestClass.s_json + "}";
             ClassWithExtensionField obj = JsonSerializer.Deserialize<ClassWithExtensionField>(json);
@@ -1077,8 +1077,9 @@ namespace System.Text.Json.Serialization.Tests
 
             public override void Write(Utf8JsonWriter writer, object value, JsonSerializerOptions options)
             {
-                // Since we are converter for object, the string converter will be called instead of this.
-                throw new InvalidOperationException();
+                // Since we are in a user-provided (not internal to S.T.Json) object converter,
+                // this converter will be called, not the internal string converter.
+                writer.WriteStringValue((string)value);
             }
         }
 

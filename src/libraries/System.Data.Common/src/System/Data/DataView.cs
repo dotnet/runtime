@@ -5,6 +5,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -15,8 +16,11 @@ namespace System.Data
     /// Represents a databindable, customized view of a <see cref='System.Data.DataTable'/>
     /// for sorting, filtering, searching, editing, and navigation.
     /// </summary>
+    [Designer("Microsoft.VSDesigner.Data.VS.DataViewDesigner, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     [DefaultProperty(nameof(Table))]
     [DefaultEvent("PositionChanged")]
+    [Editor("Microsoft.VSDesigner.Data.Design.DataSourceEditor, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
+            "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public class DataView : MarshalByValueComponent, IBindingListView, System.ComponentModel.ITypedList, ISupportInitializeNotification
     {
         private DataViewManager? _dataViewManager;
@@ -411,6 +415,7 @@ namespace System.Data
         /// <summary>
         /// Gets or sets the sort column or columns, and sort order for the table.
         /// </summary>
+        [AllowNull]
         [DefaultValue("")]
         public string Sort
         {
@@ -719,11 +724,11 @@ namespace System.Data
         /// <summary>
         /// Finds a row in the <see cref='System.Data.DataView'/> by the specified primary key value.
         /// </summary>
-        public int Find(object key) => FindByKey(key);
+        public int Find(object? key) => FindByKey(key);
 
         /// <summary>Find index of a DataRowView instance that matches the specified primary key value.</summary>
         // TODO: This will throw NRE if _index isn't set (e.g. default ctor)
-        internal virtual int FindByKey(object key) => _index!.FindRecordByKey(key);
+        internal virtual int FindByKey(object? key) => _index!.FindRecordByKey(key);
 
         /// <summary>
         /// Finds a row in the <see cref='System.Data.DataView'/> by the specified primary key values.

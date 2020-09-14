@@ -3,8 +3,6 @@
 
 using System;
 using System.IO;
-using System.Text;
-using System.Collections.Concurrent;
 
 namespace Microsoft.Extensions.Logging.Console
 {

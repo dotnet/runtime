@@ -25,13 +25,13 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        public void Ctor_NotConnected_ThrowsIOException()
+        public void Ctor_NotConnected_Throws()
         {
             Assert.Throws<IOException>(() => new NetworkStream(new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp)));
         }
 
         [Fact]
-        public async Task Ctor_NotStream_ThrowsIOException()
+        public async Task Ctor_NotStream_Throws()
         {
             using (Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp))
             using (Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp))
@@ -43,7 +43,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        public async Task Ctor_NonBlockingSocket_ThrowsIOException()
+        public async Task Ctor_NonBlockingSocket_Throws()
         {
             using (Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             using (Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
@@ -302,7 +302,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        public async Task DisposeSocketDirectly_ReadWriteThrowIOException()
+        public async Task DisposeSocketDirectly_ReadWriteThrowNetworkException()
         {
             using (Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             using (Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
@@ -579,7 +579,7 @@ namespace System.Net.Sockets.Tests
 
         [OuterLoop("Timeouts")]
         [Fact]
-        public async Task ReadTimeout_Expires_ThrowsSocketException()
+        public async Task ReadTimeout_Expires_Throws()
         {
             await RunWithConnectedNetworkStreamsAsync((server, client) =>
             {

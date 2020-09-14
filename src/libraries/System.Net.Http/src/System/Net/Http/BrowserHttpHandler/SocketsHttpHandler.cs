@@ -11,6 +11,8 @@ namespace System.Net.Http
 {
     public sealed class SocketsHttpHandler : HttpMessageHandler
     {
+        public static bool IsSupported => false;
+
         public bool UseCookies
         {
             get => throw new PlatformNotSupportedException();
@@ -127,9 +129,46 @@ namespace System.Net.Http
             set => throw new PlatformNotSupportedException();
         }
 
+        public TimeSpan KeepAlivePingDelay
+        {
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
+        }
+
+        public TimeSpan KeepAlivePingTimeout
+        {
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
+        }
+
+
+        public HttpKeepAlivePingPolicy KeepAlivePingPolicy
+        {
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
+        }
+
         public IDictionary<string, object?> Properties => throw new PlatformNotSupportedException();
+
+        public HeaderEncodingSelector<HttpRequestMessage>? RequestHeaderEncodingSelector
+        {
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
+        }
+
+        public HeaderEncodingSelector<HttpRequestMessage>? ResponseHeaderEncodingSelector
+        {
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
+        }
 
         protected internal override Task<HttpResponseMessage> SendAsync(
             HttpRequestMessage request, CancellationToken cancellationToken) => throw new PlatformNotSupportedException();
+
+        public bool EnableMultipleHttp2Connections
+        {
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
+        }
     }
 }

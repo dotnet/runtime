@@ -217,7 +217,7 @@ namespace System.Data.ProviderBase
 
                     for (int i = 0; i < mapped.Length; ++i)
                     {
-                        if (mapped[i] is { } m)
+                        if (mapped[i] is object m)
                         {
                             dataRow[i] = m;
                         }
