@@ -3,7 +3,7 @@
   <Import Project="Directory.Build.props" />
 
   <ItemGroup>
-    <Project Include="$(CoreClrProjectRoot)tests\src\dirs.proj" />
+    <Project Include="$(MSBuildThisFileDirectory)Common\dirs.proj" />
   </ItemGroup>
 
   <Import Project="$(RepoRoot)\src\coreclr\tests\Directory.Build.targets" />
