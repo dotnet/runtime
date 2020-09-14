@@ -4,9 +4,10 @@
     <TargetArchitecture>wasm</TargetArchitecture>
     <TargetOS>Browser</TargetOS>
     <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.browser-wasm\Release\runtimes\browser-wasm\</MicrosoftNetCoreAppRuntimePackDir>
-    <BuildDir>$(MSBuildThisFileDirectory)obj\$(Configuration)\wasm</BuildDir>
-    <AppDir>$(MSBuildThisFileDirectory)bin\$(Configuration)\publish</AppDir>
-    <RuntimeBuildConfig Condition="'$(RuntimeBuildConfig)' == ''">$(Configuration)</RuntimeBuildConfig>
+    <Configuration>Debug</Configuration>
+    <AppDir>$(ArtifactsBinDir)debugger-test\$(Configuration)\publish</AppDir>
+    <OutDir>$(ArtifactsBinDir)debugger-test\$(Configuration)\wasm</OutDir>
+    <RuntimeConfiguration>Release</RuntimeConfiguration>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <OutputType>Library</OutputType>
     <NoWarn>219</NoWarn>
@@ -14,6 +15,12 @@
     <RunAnalyzers>false</RunAnalyzers>
     <DebugType>portable</DebugType>
   </PropertyGroup>
+
+  <ItemGroup>
+    <ExtraFileForPublish Include="debugger-driver.html" />
+    <ExtraFileForPublish Include="other.js" />
+    <ExtraFileForPublish Include="runtime-debugger.js" />
+  </ItemGroup>
 
   <Target Name="RebuildWasmAppBuilder">
     <ItemGroup>
@@ -40,11 +47,13 @@
     <WasmAppBuilder
       AppDir="$(AppDir)"
       MicrosoftNetCoreAppRuntimePackDir="$(MicrosoftNetCoreAppRuntimePackDir)"
-      MainAssembly="$(ArtifactsBinDir)debugger-test/wasm/Debug/debugger-test.dll"
+      MainAssembly="$(OutDir)/debugger-test.dll"
       MainJS="$(MonoProjectRoot)wasm\runtime-test.js"
       DebugLevel="1"
       AssemblySearchPaths="@(AssemblySearchPaths)"
       ExtraAssemblies="$(ArtifactsBinDir)\System.Private.Runtime.InteropServices.JavaScript\$(NetCoreAppCurrent)-Browser-$(RuntimeConfiguration)\System.Private.Runtime.InteropServices.JavaScript.dll"/>
+
+    <Copy SourceFiles="@(ExtraFileForPublish)" DestinationFolder="$(AppDir)" />
     <Exec Command="chmod a+x $(AppDir)/run-v8.sh" />
   </Target>
 

@@ -226,7 +226,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+mono.wasmruntime+'))">
-    <ProjectToBuild Include="$(MonoProjectRoot)wasm\wasm.proj" Category="mono" />
+    <ProjectToBuild Include="$(MonoProjectRoot)wasm\wasm.proj" Category="mono" Test="true" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+libs.pretest+'))">
