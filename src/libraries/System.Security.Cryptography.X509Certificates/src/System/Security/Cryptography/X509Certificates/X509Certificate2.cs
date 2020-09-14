@@ -686,16 +686,58 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
+        /// <summary>
+        /// Gets the <see cref="ECDiffieHellman" /> public key from this certificate.
+        /// </summary>
+        /// <returns>
+        /// The public key, or <see langword="null" /> if this certificate does not have
+        /// an ECDiffieHellman public key.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        /// The handle is invalid.
+        /// </exception>
         public ECDiffieHellman? GetECDiffieHellmanPublicKey()
         {
             return this.GetPublicKey<ECDiffieHellman>(cert => HasECDiffieHellmanKeyUsage(cert));
         }
 
+        /// <summary>
+        /// Gets the <see cref="ECDiffieHellman" /> private key from this certificate.
+        /// </summary>
+        /// <returns>
+        /// The private key, or <see langword="null" /> if this certificate does not have
+        /// an ECDiffieHellman private key.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        /// The handle is invalid.
+        /// </exception>
         public ECDiffieHellman? GetECDiffieHellmanPrivateKey()
         {
             return this.GetPrivateKey<ECDiffieHellman>(cert => HasECDiffieHellmanKeyUsage(cert));
         }
 
+        /// <summary>
+        /// Combines a private key with the public key of an <see cref="ECDiffieHellman" />
+        /// certificate to generate a new ECDiffieHellman certificate.
+        /// </summary>
+        /// <param name="privateKey">The private ECDiffieHellman key.</param>
+        /// <returns>
+        /// A new ECDiffieHellman certificate with the <see cref="HasPrivateKey" /> property set to true.
+        /// The current certificate isn't modified.
+        /// </returns>
+        /// <exception cref="ArgumentNullException"><paramref name="privateKey" /> is null.</exception>
+        /// <exception cref="InvalidOperationException">
+        /// The certificate already has an associated private key.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        /// <para>
+        ///   The certificate doesn't have a public key.
+        /// </para>
+        /// <para> -or- </para>
+        /// <para>
+        ///   The specified private key doesn't match the public key for this certificate.
+        /// </para>
+        /// </exception>
         public X509Certificate2 CopyWithPrivateKey(ECDiffieHellman privateKey)
         {
             if (privateKey is null)
