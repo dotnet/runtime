@@ -242,19 +242,6 @@ get_this_async_id (DbgEngineStackFrame *f)
 	return 0;
 }
 
-static gboolean
-set_set_notification_for_wait_completion_flag (DbgEngineStackFrame *f)
-{
-	g_error ("set_set_notification_for_wait_completion_flag");
-	return FALSE;
-}
-
-static MonoMethod*
-get_notify_debugger_of_wait_completion_method (void)
-{
-	g_error ("get_notify_debugger_of_wait_completion_method");
-}
-
 typedef struct {
 	gboolean is_ss; //do I need this?
 } BpEvents;
