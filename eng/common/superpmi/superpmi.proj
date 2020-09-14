@@ -4,7 +4,7 @@
     <Python>py -3</Python>
     <PmiAssembliesDirectory>%HELIX_CORRELATION_PAYLOAD%\PmiAssembliesDirectory</PmiAssembliesDirectory>
     <SuperPMIDirectory>%HELIX_CORRELATION_PAYLOAD%\superpmi</SuperPMIDirectory>
-    <OutputMchPath>%HELIX_CORRELATION_PAYLOAD%\artifacts</OutputMchPath>
+    <OutputMchPath>%HELIX_WORKITEM_UPLOAD_ROOT%\artifacts</OutputMchPath>
     <JitUtilsDirectory>%HELIX_CORRELATION_PAYLOAD%\jitutils\bin</JitUtilsDirectory>
 
     <!-- <CoreRun>%HELIX_CORRELATION_PAYLOAD%\PmiAssembliesDirectory\CoreRun.exe</CoreRun> -->
