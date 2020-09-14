@@ -129,7 +129,7 @@ namespace System.Security.Cryptography.X509Certificates
                     throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
                 }
 
-                oid = new Oid(spki.Algorithm.Algorithm);
+                oid = new Oid(spki.Algorithm.Algorithm, null);
                 parameters = new AsnEncodedData(spki.Algorithm.Parameters?.ToArray() ?? Array.Empty<byte>());
                 keyValue = new AsnEncodedData(spki.SubjectPublicKey.ToArray());
                 return read;
