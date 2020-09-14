@@ -557,14 +557,6 @@ _add_executable(paltests
   exception_handling/RaiseException/test1/test1.cpp
   exception_handling/RaiseException/test2/test2.cpp
   exception_handling/RaiseException/test3/test.cpp
-  filemapping_memmgt/CreateFileMappingA/test1/CreateFileMapping.cpp
-  filemapping_memmgt/CreateFileMappingA/test3/CreateFileMapping.cpp
-  filemapping_memmgt/CreateFileMappingA/test4/CreateFileMapping.cpp
-  filemapping_memmgt/CreateFileMappingA/test5/CreateFileMapping.cpp
-  filemapping_memmgt/CreateFileMappingA/test6/CreateFileMapping.cpp
-  filemapping_memmgt/CreateFileMappingA/test7/createfilemapping.cpp
-  filemapping_memmgt/CreateFileMappingA/test8/createfilemapping.cpp
-  filemapping_memmgt/CreateFileMappingA/test9/createfilemapping.cpp
   filemapping_memmgt/CreateFileMappingW/CreateFileMapping_neg1/CreateFileMapping_neg.cpp
   filemapping_memmgt/CreateFileMappingW/test1/CreateFileMappingW.cpp
   #filemapping_memmgt/CreateFileMappingW/test2/CreateFileMappingW.cpp
@@ -597,9 +589,6 @@ _add_executable(paltests
   filemapping_memmgt/MapViewOfFile/test4/mapviewoffile.cpp
   filemapping_memmgt/MapViewOfFile/test5/mapviewoffile.cpp
   filemapping_memmgt/MapViewOfFile/test6/mapviewoffile.cpp
-  filemapping_memmgt/OpenFileMappingA/test1/OpenFileMappingA.cpp
-  filemapping_memmgt/OpenFileMappingA/test2/OpenFileMappingA.cpp
-  filemapping_memmgt/OpenFileMappingA/test3/OpenFileMappingA.cpp
   filemapping_memmgt/OpenFileMappingW/test1/OpenFileMappingW.cpp
   filemapping_memmgt/OpenFileMappingW/test2/OpenFileMappingW.cpp
   filemapping_memmgt/OpenFileMappingW/test3/OpenFileMappingW.cpp
@@ -827,10 +816,6 @@ _add_executable(paltests
   threading/CreateEventW/test3/test3.cpp
   threading/CreateMutexW_ReleaseMutex/test1/CreateMutexW.cpp
   threading/CreateMutexW_ReleaseMutex/test2/CreateMutexW.cpp
-  threading/CreateProcessA/test1/childProcess.cpp
-  threading/CreateProcessA/test1/parentProcess.cpp
-  threading/CreateProcessA/test2/childprocess.cpp
-  threading/CreateProcessA/test2/parentprocess.cpp
   threading/CreateProcessW/test1/childProcess.cpp
   threading/CreateProcessW/test1/parentProcess.cpp
   threading/CreateProcessW/test2/childprocess.cpp
