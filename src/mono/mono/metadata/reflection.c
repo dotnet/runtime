@@ -189,7 +189,9 @@ clear_cached_object (MonoDomain *domain, gpointer o, MonoClass *klass)
 	mono_mem_manager_lock (memory_manager);
 
 	gpointer orig_pe, orig_value;
-	ReflectedEntry pe = { .item = o, .refclass = klass };
+	ReflectedEntry pe;
+	pe.item = o;
+	pe.refclass = klass;
 
 
 	if (mono_conc_g_hash_table_lookup_extended (memory_manager->refobject_hash, &pe, &orig_pe, &orig_value)) {
