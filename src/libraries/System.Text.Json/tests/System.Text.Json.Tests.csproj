@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);net461</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -60,7 +60,6 @@
     <Compile Include="Serialization\ConstructorTests\ConstructorTests.Exceptions.cs" />
     <Compile Include="Serialization\ConstructorTests\ConstructorTests.ParameterMatching.cs" />
     <Compile Include="Serialization\ConstructorTests\ConstructorTests.Stream.cs" />
-    <Compile Include="Serialization\ContinuationTests.cs" />
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.Array.cs" />
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.Attribute.cs" />
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.BadConverters.cs" />
@@ -119,6 +118,7 @@
     <Compile Include="Serialization\Stream.Collections.cs" />
     <Compile Include="Serialization\Stream.ReadTests.cs" />
     <Compile Include="Serialization\Stream.WriteTests.cs" />
+    <Compile Include="Serialization\StreamTests.cs" />
     <Compile Include="Serialization\TestClasses\TestClasses.ConcurrentCollections.cs" />
     <Compile Include="Serialization\TestClasses\TestClasses.Constructor.cs" />
     <Compile Include="Serialization\TestClasses\TestClasses.cs" />
