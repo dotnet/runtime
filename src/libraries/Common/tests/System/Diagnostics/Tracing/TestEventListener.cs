@@ -10,8 +10,14 @@ namespace System.Diagnostics.Tracing
     /// <summary>Simple event listener than invokes a callback for each event received.</summary>
     internal sealed class TestEventListener : EventListener
     {
-        private readonly Dictionary<string, (EventLevel Level, EventKeywords Keywords)> _names = new Dictionary<string, (EventLevel, EventKeywords)>();
-        private readonly Dictionary<Guid, (EventLevel Level, EventKeywords Keywords)> _guids = new Dictionary<Guid, (EventLevel, EventKeywords)>();
+        private class Settings
+        {
+            public EventLevel Level;
+            public EventKeywords Keywords;
+        }
+
+        private readonly Dictionary<string, Settings> _names = new Dictionary<string, Settings>();
+        private readonly Dictionary<Guid, Settings> _guids = new Dictionary<Guid, Settings>();
 
         private readonly double? _eventCounterInterval;
 
@@ -40,11 +46,17 @@ namespace System.Diagnostics.Tracing
         {
             lock (_eventSourceList)
             {
+                var settings = new Settings()
+                {
+                    Level = level,
+                    Keywords = keywords
+                };
+
                 if (name is not null)
-                    _names.Add(name, (level, keywords));
+                    _names.Add(name, settings);
 
                 if (guid.HasValue)
-                    _guids.Add(guid.Value, (level, keywords));
+                    _guids.Add(guid.Value, settings);
 
                 foreach (EventSource source in _eventSourceList)
                 {
@@ -65,7 +77,7 @@ namespace System.Diagnostics.Tracing
             {
                 _eventSourceList.Add(eventSource);
 
-                if (_names.TryGetValue(eventSource.Name, out (EventLevel Level, EventKeywords Keywords) settings) ||
+                if (_names.TryGetValue(eventSource.Name, out Settings settings) ||
                     _guids.TryGetValue(eventSource.Guid, out settings))
                 {
                     EnableEventSource(eventSource, settings.Level, settings.Keywords);
