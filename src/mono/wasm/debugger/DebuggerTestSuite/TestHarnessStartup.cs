@@ -125,7 +125,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                     builder => builder.AddConsole().AddFilter(null, LogLevel.Information));
 
                 List<String> urlSymbolServerList = new List<String>();
-                urlSymbolServerList.Add("http://msdl.microsoft.com/download/symbols");
                 
                 var proxy = new DebuggerProxy(loggerFactory, urlSymbolServerList);
                 var browserUri = new Uri(con_str);
