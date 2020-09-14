@@ -50,7 +50,7 @@ namespace System.Configuration
                 exeAssembly = Assembly.GetEntryAssembly();
 
                 // in case of SingleFile deployment, Assembly.Location is empty.
-                if (exeAssembly != null && string.IsNullOrEmpty(exeAssembly.Location))
+                if (exeAssembly?.Location.Length == 0)
                 {
                     isSingleFile = true;
                     HasEntryAssembly = true;
