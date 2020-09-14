@@ -78,6 +78,11 @@ namespace Microsoft.Extensions.FileProviders.Physical
             bool pollForChanges,
             ExclusionFilters filters)
         {
+            if (fileSystemWatcher == null && !pollForChanges)
+            {
+                throw new ArgumentNullException(nameof(fileSystemWatcher), SR.Error_FileSystemWatcherRequiredWithoutPolling);
+            }
+
             _root = root;
 
             if (fileSystemWatcher != null)
@@ -93,11 +98,6 @@ namespace Microsoft.Extensions.FileProviders.Physical
 
             PollForChanges = pollForChanges;
             _filters = filters;
-
-            if (fileSystemWatcher == null && !pollForChanges)
-            {
-                throw new ArgumentNullException(nameof(fileSystemWatcher), SR.Error_FileSystemWatcherRequiredWithoutPolling);
-            }
 
             PollingChangeTokens = new ConcurrentDictionary<IPollingChangeToken, IPollingChangeToken>();
             _timerFactory = () => NonCapturingTimer.Create(RaiseChangeEvents, state: PollingChangeTokens, dueTime: TimeSpan.Zero, period: DefaultPollingInterval);
