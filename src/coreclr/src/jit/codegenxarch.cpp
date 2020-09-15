@@ -6750,7 +6750,7 @@ void CodeGen::genSSE2BitwiseOp(GenTree* treeNode)
     assert(treeNode->gtGetOp1()->isUsedFromReg());
 
     CORINFO_FIELD_HANDLE* bitMask = nullptr;
-    UINT64                mask64    = 0;
+    UINT64                mask64  = 0;
     instruction           ins     = INS_invalid;
 
     if (treeNode->OperIs(GT_NEG))
