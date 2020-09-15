@@ -7,9 +7,9 @@ Function = OpenEventW
 Name = Positive test for OpenEventW
 TYPE = DEFAULT
 EXE1 = test5
-Description 
+Description
 = Test to ensure proper operation of the OpenEventW()
-= API by creating a new named event with CreateEventA()
+= API by creating a new named event with CreateEventW()
 = and verifying that it can be opened with OpenEventW().
 = It should be possible to use the event handles
 = interchangeably, we test by setting the event with the

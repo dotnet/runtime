@@ -192,7 +192,6 @@ namespace System.Xml
 
             char* pChar = pChars;
             byte* pByte = pBytes;
-            XmlCharType xmlCharType = XmlCharType.Instance;
             while (pChar < pCharsEndPos && pByte < pBytesEndPos)
             {
                 byte halfByte;
@@ -203,7 +202,7 @@ namespace System.Xml
                 {
                     halfByte = (byte)val;
                 }
-                else if (xmlCharType.IsWhiteSpace(ch))
+                else if (XmlCharType.IsWhiteSpace(ch))
                 {
                     continue;
                 }

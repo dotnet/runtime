@@ -15,6 +15,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Primitives;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
@@ -138,7 +139,10 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         using var loggerFactory = LoggerFactory.Create(
                             builder => builder.AddConsole().AddFilter(null, LogLevel.Information));
-                        var proxy = new DebuggerProxy(loggerFactory);
+
+                        context.Request.Query.TryGetValue("urlSymbolServer", out StringValues urlSymbolServerList);
+                        var proxy = new DebuggerProxy(loggerFactory, urlSymbolServerList.ToList());
+                        
                         var ideSocket = await context.WebSockets.AcceptWebSocketAsync();
 
                         await proxy.Run(endpoint, ideSocket);

@@ -25,6 +25,7 @@ namespace bundle
             : info_t(bundle_path, app_path, header_offset) {}
 
         const pal::string_t& extraction_path() const { return m_extraction_path; }
+        bool has_base(const pal::string_t& base) const { return base.compare(base_path()) == 0; }
 
         bool probe(const pal::string_t& relative_path, int64_t* offset, int64_t* size) const;
         const file_entry_t* probe(const pal::string_t& relative_path) const;
@@ -34,13 +35,15 @@ namespace bundle
             bool extracted_to_disk;
             return locate(relative_path, full_path, extracted_to_disk);
         }
+        bool disable(const pal::string_t& relative_path);
 
         static StatusCode process_manifest_and_extract()
         {
-            return ((runner_t*) the_app)->extract();
+            return mutable_app()->extract();
         }
         
         static const runner_t* app() { return (const runner_t*)the_app; }
+        static runner_t* mutable_app() { return (runner_t*)the_app; }
 
     private:
 

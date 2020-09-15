@@ -805,8 +805,18 @@ void Compiler::eeDispVar(ICorDebugInfo::NativeVarInfo* var)
 // Same parameters as ICorStaticInfo::setVars().
 void Compiler::eeDispVars(CORINFO_METHOD_HANDLE ftn, ULONG32 cVars, ICorDebugInfo::NativeVarInfo* vars)
 {
-    printf("*************** Variable debug info\n");
-    printf("%d live ranges\n", cVars);
+    ALLVARSET_TP uniqueVars(AllVarSetOps::MakeEmpty(this));
+    for (unsigned i = 0; i < cVars; i++)
+    {
+        // ignore "special vars" and out of bounds vars
+        if ((((int)vars[i].varNumber) >= 0) && (vars[i].varNumber < lclMAX_ALLSET_TRACKED))
+        {
+            AllVarSetOps::AddElemD(this, uniqueVars, vars[i].varNumber);
+        }
+    }
+    printf("; Variable debug info: %d live range(s), %d var(s) for method %s\n", cVars,
+           AllVarSetOps::Count(this, uniqueVars), info.compFullName);
+
     for (unsigned i = 0; i < cVars; i++)
     {
         eeDispVar(&vars[i]);
@@ -1317,7 +1327,7 @@ const char* Compiler::eeGetClassName(CORINFO_CLASS_HANDLE clsHnd)
 
 const WCHAR* Compiler::eeGetCPString(size_t strHandle)
 {
-#ifdef TARGET_UNIX
+#ifdef HOST_UNIX
     return nullptr;
 #else
     char buff[512 + sizeof(CORINFO_String)];
@@ -1341,7 +1351,7 @@ const WCHAR* Compiler::eeGetCPString(size_t strHandle)
     }
 
     return (asString->chars);
-#endif // TARGET_UNIX
+#endif // HOST_UNIX
 }
 
 #endif // DEBUG

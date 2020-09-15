@@ -8,6 +8,17 @@
 // Unified method of accessing configuration values from environment variables,
 // registry and config file.
 //
+// Given any config knob below that looks like this example:
+//    RETAIL_CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_LogEnable, W("LogEnable"), "Turns on the traditional CLR log.")
+//                                                                  ---------
+//                                                                     |
+//                                                 --------------------
+//                                                 |
+//                                                 V
+// You can set an environment variable COMPlus_LogEnable=1 to enable it.
+//
+// See below for more details
+//
 //*****************************************************************************
 
 // IMPORTANT: Before adding a new config value, please read up on naming conventions (see

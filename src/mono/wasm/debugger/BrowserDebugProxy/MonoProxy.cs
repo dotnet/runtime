@@ -10,17 +10,28 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Mono.Cecil.Cil;
+using Mono.Cecil.Pdb;
+using Mono.Cecil;
+using System.Net.Http;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
 
     internal class MonoProxy : DevToolsProxy
     {
+        IList<string> urlSymbolServerList;
+        static HttpClient client = new HttpClient();
         HashSet<SessionId> sessions = new HashSet<SessionId>();
         Dictionary<SessionId, ExecutionContext> contexts = new Dictionary<SessionId, ExecutionContext>();
 
-        public MonoProxy(ILoggerFactory loggerFactory, bool hideWebDriver = true) : base(loggerFactory) { this.hideWebDriver = hideWebDriver; }
+        public MonoProxy(ILoggerFactory loggerFactory, IList<string> urlSymbolServerList, bool hideWebDriver = true) : base(loggerFactory) 
+        { 
+            this.hideWebDriver = hideWebDriver;
+            this.urlSymbolServerList = urlSymbolServerList ?? new List<string>();
+        }
 
         readonly bool hideWebDriver;
 
@@ -72,7 +83,29 @@ namespace Microsoft.WebAssembly.Diagnostics
                                 }
                                 await RuntimeReady(sessionId, token);
                             }
+                            else if (a?[0]?["value"]?.ToString() == MonoConstants.EVENT_RAISED)
+                            {
+                                if (a.Type != JTokenType.Array)
+                                {
+                                    logger.LogDebug("Invalid event raised args, expected an array: {a}");
+                                }
+                                else
+                                {
+                                    if (JObjectTryParse(a?[2]?["value"]?.Value<string>(), out JObject raiseArgs) &&
+                                        JObjectTryParse(a?[1]?["value"]?.Value<string>(), out JObject eventArgs))
+                                    {
+                                        await OnJSEventRaised(sessionId, eventArgs, token);
 
+                                        if (raiseArgs?["trace"]?.Value<bool>() == true) {
+                                            // Let the message show up on the console
+                                            return false;
+                                        }
+                                    }
+                                }
+
+                                // Don't log this message in the console
+                                return true;
+                            }
                         }
                         break;
                     }
@@ -170,7 +203,6 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                 case "Debugger.enable":
                     {
-                        System.Console.WriteLine("recebi o Debugger.enable");
                         var resp = await SendCommand(id, method, args, token);
 
                         context.DebuggerId = resp.Value["debuggerId"]?.ToString();
@@ -338,6 +370,13 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
 
                 // Protocol extensions
+                case "DotnetDebugger.addSymbolServerUrl":
+                    {
+                        string url = args["url"]?.Value<string>();
+                        if (!String.IsNullOrEmpty(url) && !urlSymbolServerList.Contains(url))
+                            urlSymbolServerList.Add(url);
+                        return true;
+                    }
                 case "DotnetDebugger.getMethodLocation":
                     {
                         Console.WriteLine("set-breakpoint-by-method: " + id + " " + args);
@@ -458,7 +497,6 @@ namespace Microsoft.WebAssembly.Diagnostics
             return res;
         }
 
-        //static int frame_id=0;
         async Task<bool> OnPause(SessionId sessionId, JObject args, CancellationToken token)
         {
             //FIXME we should send release objects every now and then? Or intercept those we inject and deal in the runtime
@@ -519,12 +557,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
 
                     var frames = new List<Frame>();
-                    int frame_id = 0;
                     var the_mono_frames = res.Value?["result"]?["value"]?["frames"]?.Values<JObject>();
 
                     foreach (var mono_frame in the_mono_frames)
                     {
-                        ++frame_id;
+                        int frame_id = mono_frame["frame_id"].Value<int>();
                         var il_pos = mono_frame["il_pos"].Value<int>();
                         var method_token = mono_frame["method_token"].Value<uint>();
                         var assembly_name = mono_frame["assembly_name"].Value<string>();
@@ -541,6 +578,19 @@ namespace Microsoft.WebAssembly.Diagnostics
                         }
 
                         var method = asm.GetMethodByToken(method_token);
+
+                        if (method == null && !asm.Image.HasSymbols)
+                        {
+                            try
+                            {
+                                method = await LoadSymbolsOnDemand(asm, method_token, sessionId, token);
+                            }
+                            catch (Exception e)
+                            {
+                                Log("info", $"Unable to find il offset: {il_pos} in method token: {method_token} assembly name: {assembly_name} exception: {e.ToString()}");
+                                continue;
+                            }
+                        }
 
                         if (method == null)
                         {
@@ -561,12 +611,12 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                         Log("info", $"frame il offset: {il_pos} method token: {method_token} assembly name: {assembly_name}");
                         Log("info", $"\tmethod {method_name} location: {location}");
-                        frames.Add(new Frame(method, location, frame_id - 1));
+                        frames.Add(new Frame(method, location, frame_id));
 
                         callFrames.Add(new
                         {
                             functionName = method_name,
-                            callFrameId = $"dotnet:scope:{frame_id - 1}",
+                            callFrameId = $"dotnet:scope:{frame_id}",
                             functionLocation = method.StartLocation.AsLocation(),
 
                             location = location.AsLocation(),
@@ -583,7 +633,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                                                 @type = "object",
                                                     className = "Object",
                                                     description = "Object",
-                                                    objectId = $"dotnet:scope:{frame_id-1}",
+                                                    objectId = $"dotnet:scope:{frame_id}",
                                             },
                                             name = method_name,
                                             startLocation = method.StartLocation.AsLocation(),
@@ -619,6 +669,81 @@ namespace Microsoft.WebAssembly.Diagnostics
             return true;
         }
 
+        async Task<MethodInfo> LoadSymbolsOnDemand(AssemblyInfo asm, uint method_token, SessionId sessionId, CancellationToken token)
+        {
+            var context = GetContext(sessionId);
+            if (asm.TriedToLoadSymbolsOnDemand)
+                return null;
+            asm.TriedToLoadSymbolsOnDemand = true;
+            ImageDebugHeader header = asm.Image.GetDebugHeader();
+
+            for (var i = 0; i < header.Entries.Length; i++)
+            {
+                var entry = header.Entries[i];
+                if (entry.Directory.Type != ImageDebugType.CodeView)
+                {
+                    continue;
+                }
+
+                var data = entry.Data;
+
+                if (data.Length < 24)
+                    return null;
+
+                var pdbSignature = (data[0]
+                    | (data[1] << 8)
+                    | (data[2] << 16)
+                    | (data[3] << 24));
+
+                if (pdbSignature != 0x53445352) // "SDSR" mono/metadata/debug-mono-ppdb.c#L101
+                    return null;
+
+                var buffer = new byte[16];
+                Buffer.BlockCopy(data, 4, buffer, 0, 16);
+
+                var pdbAge = (data[20]
+                    | (data[21] << 8)
+                    | (data[22] << 16)
+                    | (data[23] << 24));
+
+                var pdbGuid = new Guid(buffer);
+                var buffer2 = new byte[(data.Length - 24) - 1];
+                Buffer.BlockCopy(data, 24, buffer2, 0, (data.Length - 24) - 1);
+                var pdbName = System.Text.Encoding.UTF8.GetString(buffer2, 0, buffer2.Length);
+                pdbName = Path.GetFileName(pdbName);
+
+                foreach (var urlSymbolServer in urlSymbolServerList) 
+                {
+                    var downloadURL = $"{urlSymbolServer}/{pdbName}/{pdbGuid.ToString("N").ToUpper() + pdbAge}/{pdbName}";
+
+                    try
+                    {
+                        using HttpResponseMessage response = await client.GetAsync(downloadURL);
+                        using Stream streamToReadFrom = await response.Content.ReadAsStreamAsync();
+                        var portablePdbReaderProvider = new PdbReaderProvider();
+                        var symbolReader = portablePdbReaderProvider.GetSymbolReader(asm.Image, streamToReadFrom);
+                        asm.ClearDebugInfo(); //workaround while cecil PR #686 is not merged
+                        asm.Image.ReadSymbols(symbolReader);
+                        asm.Populate();
+                        foreach (var source in asm.Sources)
+                        {
+                            var scriptSource = JObject.FromObject(source.ToScriptSource(context.Id, context.AuxData));
+                            SendEvent(sessionId, "Debugger.scriptParsed", scriptSource, token);
+                        }
+                        return asm.GetMethodByToken(method_token);
+                    }
+                    catch (Exception e)
+                    {
+                        Log("info", $"Unable to load symbols on demand exception: {e.ToString()} url:{downloadURL} assembly: {asm.Name}");
+                    }
+                }
+                break;
+            }
+
+            Log("info", "Unable to load symbols on demand assembly: {asm.Name}");
+            return null;
+        }
+        
         async Task OnDefaultContext(SessionId sessionId, ExecutionContext context, CancellationToken token)
         {
             Log("verbose", "Default context created, clearing state and sending events");
@@ -673,6 +798,27 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             await SendCommand(msg_id, "Debugger.resume", new JObject(), token);
             return true;
+        }
+
+        async Task<bool> OnJSEventRaised(SessionId sessionId, JObject eventArgs, CancellationToken token)
+        {
+            string eventName = eventArgs?["eventName"]?.Value<string>();
+            if (string.IsNullOrEmpty(eventName))
+            {
+                logger.LogDebug($"Missing name for raised js event: {eventArgs}");
+                return false;
+            }
+
+            logger.LogDebug($"OnJsEventRaised: args: {eventArgs}");
+
+            switch (eventName)
+            {
+                default:
+                {
+                    logger.LogDebug($"Unknown js event name: {eventName} with args {eventArgs}");
+                    return await Task.FromResult(false);
+                }
+            }
         }
 
         async Task<bool> OnEvaluateOnCallFrame(MessageId msg_id, int scope_id, string expression, CancellationToken token)
@@ -854,7 +1000,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     bp.State = BreakpointState.Disabled;
                 }
             }
-            breakpointRequest.Locations.Clear();
+            context.BreakpointRequests.Remove(bpid);
         }
 
         async Task SetBreakpoint(SessionId sessionId, DebugStore store, BreakpointRequest req, bool sendResolvedEvent, CancellationToken token)
@@ -971,6 +1117,25 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                 if (sessionId != SessionId.Null && !res.IsOk)
                     sessions.Remove(sessionId);
+            }
+        }
+
+        bool JObjectTryParse(string str, out JObject obj, bool log_exception = true)
+        {
+            obj = null;
+            if (string.IsNullOrEmpty(str))
+                return false;
+
+            try
+            {
+                obj = JObject.Parse(str);
+                return true;
+            }
+            catch (JsonReaderException jre)
+            {
+                if (log_exception)
+                    logger.LogDebug($"Could not parse {str}. Failed with {jre}");
+                return false;
             }
         }
     }

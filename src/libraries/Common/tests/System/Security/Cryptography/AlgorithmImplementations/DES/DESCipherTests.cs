@@ -9,6 +9,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.Encryption.Des.Tests
 {
+    [SkipOnMono("Not supported on Browser", TestPlatforms.Browser)]
     public static class DesCipherTests
     {
         // These are the expected output of many decryptions. Changing these values requires re-generating test input.

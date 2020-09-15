@@ -6,18 +6,13 @@
     <EnableTargetingPackDownload>false</EnableTargetingPackDownload>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and ('$(_ShortFrameworkIdentifier)' == '' or '$(_ShortFrameworkVersion)' == '')">
-    <_ShortFrameworkIdentifier>$(TargetFramework.TrimEnd('.0123456789'))</_ShortFrameworkIdentifier>
-    <_ShortFrameworkVersion>$(TargetFramework.Substring($(_ShortFrameworkIdentifier.Length)))</_ShortFrameworkVersion>
-  </PropertyGroup>
-
   <!-- .NETCoreApp 2.x DisableImplicitAssemblyReferences support. -->
   <Choose>
     <When Condition="'$(DisableImplicitAssemblyReferences)' == 'true' and
                      '$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
                      $([MSBuild]::VersionLessThan($(TargetFrameworkVersion), '3.0'))">
     <PropertyGroup>
-      <MicrosoftNetCoreAppRefPackRefDir>$(PkgMicrosoft_NETCore_App)\ref\$(_ShortFrameworkIdentifier)$(_ShortFrameworkVersion)\</MicrosoftNetCoreAppRefPackRefDir>
+      <MicrosoftNetCoreAppRefPackRefDir>$(PkgMicrosoft_NETCore_App)\ref\netcoreapp$(TargetFrameworkVersion.TrimStart('v'))\</MicrosoftNetCoreAppRefPackRefDir>
     </PropertyGroup>
     <ItemGroup>
       <PackageReference Update="Microsoft.NETCore.App"
@@ -42,7 +37,9 @@
                      '$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
                      $([MSBuild]::VersionGreaterThanOrEquals($(TargetFrameworkVersion), '3.0'))">
     <PropertyGroup>
-      <MicrosoftNetCoreAppRefPackRefDir>%(ResolvedFrameworkReference.TargetingPackPath)\ref\$(_ShortFrameworkIdentifier)$(_ShortFrameworkVersion)\</MicrosoftNetCoreAppRefPackRefDir>
+      <_NetCoreAppTargetFrameworkIdentifier Condition="$([MSBuild]::VersionLessThan($(TargetFrameworkVersion), '5.0'))">netcoreapp</_NetCoreAppTargetFrameworkIdentifier>
+      <_NetCoreAppTargetFrameworkIdentifier Condition="$([MSBuild]::VersionGreaterThanOrEquals($(TargetFrameworkVersion), '5.0'))">net</_NetCoreAppTargetFrameworkIdentifier>
+      <MicrosoftNetCoreAppRefPackRefDir>%(ResolvedFrameworkReference.TargetingPackPath)\ref\$(_NetCoreAppTargetFrameworkIdentifier)$(TargetFrameworkVersion.TrimStart('v'))\</MicrosoftNetCoreAppRefPackRefDir>
     </PropertyGroup>
     <ItemGroup>
       <Reference Remove="@(Reference)"

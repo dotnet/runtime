@@ -1962,9 +1962,9 @@ namespace System.Data
         }
         #endregion
 
-        public XmlReadMode ReadXml(XmlReader reader) => ReadXml(reader, false);
+        public XmlReadMode ReadXml(XmlReader? reader) => ReadXml(reader, false);
 
-        internal XmlReadMode ReadXml(XmlReader reader, bool denyResolving)
+        internal XmlReadMode ReadXml(XmlReader? reader, bool denyResolving)
         {
             IDisposable? restrictedScope = null;
             long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataSet.ReadXml|INFO> {0}, denyResolving={1}", ObjectID, denyResolving);
@@ -2243,7 +2243,7 @@ namespace System.Data
             }
         }
 
-        public XmlReadMode ReadXml(Stream stream)
+        public XmlReadMode ReadXml(Stream? stream)
         {
             if (stream == null)
             {
@@ -2258,7 +2258,7 @@ namespace System.Data
             return ReadXml(xr, false);
         }
 
-        public XmlReadMode ReadXml(TextReader reader)
+        public XmlReadMode ReadXml(TextReader? reader)
         {
             if (reader == null)
             {
@@ -3355,7 +3355,7 @@ namespace System.Data
 
         protected virtual System.Xml.Schema.XmlSchema? GetSchemaSerializable() => null;
 
-        public static XmlSchemaComplexType GetDataSetSchema(XmlSchemaSet schemaSet)
+        public static XmlSchemaComplexType GetDataSetSchema(XmlSchemaSet? schemaSet)
         {
             // For performance reasons we are exploiting the fact that config files content is constant
             // for a given appdomain so we can safely cache the prepared schema complex type and reuse it
@@ -3387,8 +3387,6 @@ namespace System.Data
 
         private static bool PublishLegacyWSDL() => false;
 
-// TODO: Enable after System.Private.Xml is annotated
-#nullable disable
 #pragma warning disable 8632
         XmlSchema? IXmlSerializable.GetSchema()
         {
@@ -3446,7 +3444,6 @@ namespace System.Data
             WriteXml(writer, XmlWriteMode.DiffGram);
         }
 #pragma warning restore 8632
-#nullable enable
 
         public virtual void Load(IDataReader reader, LoadOption loadOption, FillErrorEventHandler? errorHandler, params DataTable[] tables)
         {

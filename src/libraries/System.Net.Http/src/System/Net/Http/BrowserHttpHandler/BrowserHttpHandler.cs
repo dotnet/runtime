@@ -34,6 +34,9 @@ namespace System.Net.Http
 
         private static readonly HttpRequestOptionsKey<bool> EnableStreamingResponse = new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingResponse");
         private static readonly HttpRequestOptionsKey<IDictionary<string, object>> FetchOptions = new HttpRequestOptionsKey<IDictionary<string, object>>("WebAssemblyFetchOptions");
+        private bool _allowAutoRedirect = HttpHandlerDefaults.DefaultAutomaticRedirection;
+        // flag to determine if the _allowAutoRedirect was explicitly set or not.
+        private bool _isAllowAutoRedirectTouched;
 
         /// <summary>
         /// Gets whether the current Browser supports streaming responses
@@ -95,8 +98,12 @@ namespace System.Net.Http
 
         public bool AllowAutoRedirect
         {
-            get => throw new PlatformNotSupportedException();
-            set => throw new PlatformNotSupportedException();
+            get => _allowAutoRedirect;
+            set
+            {
+                _allowAutoRedirect = value;
+                _isAllowAutoRedirectTouched = true;
+            }
         }
 
         public int MaxAutomaticRedirections
@@ -125,7 +132,7 @@ namespace System.Net.Http
 
         public bool SupportsAutomaticDecompression => false;
         public bool SupportsProxy => false;
-        public bool SupportsRedirectConfiguration => false;
+        public bool SupportsRedirectConfiguration => true;
 
         private Dictionary<string, object?>? _properties;
         public IDictionary<string, object?> Properties => _properties ??= new Dictionary<string, object?>();
@@ -145,6 +152,22 @@ namespace System.Net.Http
                 }
 
                 requestObject.SetObjectProperty("method", request.Method.Method);
+
+                // Only set if property was specifically modified and is not default value
+                if (_isAllowAutoRedirectTouched)
+                {
+                    // Allowing or Disallowing redirects.
+                    // Here we will set redirect to `manual` instead of error if AllowAutoRedirect is
+                    // false so there is no exception thrown
+                    //
+                    // https://developer.mozilla.org/en-US/docs/Web/API/Response/type
+                    //
+                    // other issues from whatwg/fetch:
+                    //
+                    // https://github.com/whatwg/fetch/issues/763
+                    // https://github.com/whatwg/fetch/issues/601
+                    requestObject.SetObjectProperty("redirect", AllowAutoRedirect ? "follow" : "manual");
+                }
 
                 // We need to check for body content
                 if (request.Content != null)
@@ -224,8 +247,19 @@ namespace System.Net.Http
                 JSObject t = (JSObject)await response.ConfigureAwait(continueOnCapturedContext: true);
 
                 var status = new WasmFetchResponse(t, abortController, abortCts, abortRegistration);
-
                 HttpResponseMessage httpResponse = new HttpResponseMessage((HttpStatusCode)status.Status);
+
+                // Here we will set the ReasonPhrase so that it can be evaluated later.
+                // We do not have a status code but this will signal some type of what happened
+                // after interrogating the status code for success or not i.e. IsSuccessStatusCode
+                //
+                // https://developer.mozilla.org/en-US/docs/Web/API/Response/type
+                // opaqueredirect: The fetch request was made with redirect: "manual".
+                // The Response's status is 0, headers are empty, body is null and trailer is empty.
+                if (status.ResponseType == "opaqueredirect")
+                {
+                    httpResponse.SetReasonPhraseWithoutValidation(status.ResponseType);
+                }
 
                 bool streamingEnabled = false;
                 if (StreamingSupported)
