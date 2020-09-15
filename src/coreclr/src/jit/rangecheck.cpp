@@ -59,13 +59,29 @@ int RangeCheck::GetArrLength(ValueNum vn)
     return m_pCompiler->vnStore->GetNewArrSize(arrRefVN);
 }
 
-// Check if the computed range is within bounds.
-bool RangeCheck::BetweenBounds(Range& range, int lower, GenTree* upper, int arrSize)
+//------------------------------------------------------------------------
+// BetweenBounds: Check if the computed range is within bounds
+//
+// Arguments:
+//    Range - the computed range of upper
+//    upper - the array length vn
+//    arrSize - the length of the array if known, or <= 0
+//
+// Return Value:
+//    True iff range is between [0 and vn - 1] or [0, arrSize - 1]
+//
+// notes:
+//    This function assumes that the lower range is resolved and upper range is symbolic as in an
+//    increasing loop.
+//
+// TODO-CQ: This is not general enough.
+//
+bool RangeCheck::BetweenBounds(Range& range, GenTree* upper, int arrSize)
 {
 #ifdef DEBUG
     if (m_pCompiler->verbose)
     {
-        printf("%s BetweenBounds <%d, ", range.ToString(m_pCompiler->getAllocatorDebugOnly()), lower);
+        printf("%s BetweenBounds <%d, ", range.ToString(m_pCompiler->getAllocatorDebugOnly()), 0);
         Compiler::printTreeID(upper);
         printf(">\n");
     }
@@ -212,9 +228,11 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree*
 #endif // FEATURE_SIMD
     {
         arrSize = GetArrLength(arrLenVn);
+
+        // if we can't find the array length, see if there
+        // are any assertions about the array size we can use to get a minimum length
         if (arrSize <= 0)
         {
-            // see if there are any assertions about the array size we can use
             JITDUMP("Looking for array size assertions for: " FMT_VN "\n", arrLenVn);
             Range arrLength = Range(Limit(Limit::keDependent));
             MergeEdgeAssertions(arrLenVn, block->bbAssertionIn, &arrLength);
@@ -278,7 +296,7 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree*
     }
 
     // Is the range between the lower and upper bound values.
-    if (BetweenBounds(range, 0, bndsChk->gtArrLen, arrSize))
+    if (BetweenBounds(range, bndsChk->gtArrLen, arrSize))
     {
         JITDUMP("[RangeCheck::OptimizeRangeCheck] Between bounds\n");
         m_pCompiler->optRemoveRangeCheck(treeParent, stmt);
@@ -524,6 +542,14 @@ void RangeCheck::SetDef(UINT64 hash, Location* loc)
 }
 #endif
 
+//------------------------------------------------------------------------
+// MergeEdgeAssertions: Merge assertions on the edge flowing into the block about a variable
+//
+// Arguments:
+//    GenTreeLclVarCommon - the variable to look for assertions for
+//    assertions - the assertions to use
+//    pRange - the range to tighten with assertions
+//
 void RangeCheck::MergeEdgeAssertions(GenTreeLclVarCommon* lcl, ASSERT_VALARG_TP assertions, Range* pRange)
 {
     if (lcl->GetSsaNum() == SsaConfig::RESERVED_SSA_NUM)
@@ -541,7 +567,14 @@ void RangeCheck::MergeEdgeAssertions(GenTreeLclVarCommon* lcl, ASSERT_VALARG_TP 
     MergeEdgeAssertions(normalLclVN, assertions, pRange);
 }
 
-// Merge assertions on the edge flowing into the block about a variable.
+//------------------------------------------------------------------------
+// MergeEdgeAssertions: Merge assertions on the edge flowing into the block about a variable
+//
+// Arguments:
+//    normalLclVN - the value number to look for assertions for
+//    assertions - the assertions to use
+//    pRange - the range to tighten with assertions
+//
 void RangeCheck::MergeEdgeAssertions(ValueNum normalLclVN, ASSERT_VALARG_TP assertions, Range* pRange)
 {
     if (BitVecOps::IsEmpty(m_pCompiler->apTraits, assertions))

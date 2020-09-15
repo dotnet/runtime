@@ -434,11 +434,11 @@ public:
 
     int GetArrLength(ValueNum vn);
 
-    // Check whether the computed range is within lower and upper bounds. This function
+    // Check whether the computed range is within 0 and upper bounds. This function
     // assumes that the lower range is resolved and upper range is symbolic as in an
     // increasing loop.
     // TODO-CQ: This is not general enough.
-    bool BetweenBounds(Range& range, int lower, GenTree* upper, int arrSize);
+    bool BetweenBounds(Range& range, GenTree* upper, int arrSize);
 
     // Entry point to optimize range checks in the block. Assumes value numbering
     // and assertion prop phases are completed.

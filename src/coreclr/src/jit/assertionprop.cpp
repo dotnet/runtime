@@ -1969,10 +1969,15 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
     }
     else if (vnStore->IsVNCheckedBound(op1VN) && vnStore->IsVNInt32Constant(op2VN))
     {
+        assert(relop->OperIs(GT_EQ, GT_NE));
+
         int con = vnStore->ConstantValue<int>(op2VN);
         if (con >= 0)
         {
             AssertionDsc dsc;
+
+            // For arr.Length != 0, we know that 0 is a valid index
+            // For arr.Length == con, we know that con - 1 is the greatest valid index
             if (con == 0)
             {
                 dsc.assertionKind = OAK_NOT_EQUAL;
@@ -1992,12 +1997,17 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
             dsc.op2.u1.iconFlags = 0;
             dsc.op2.u1.iconVal   = 0;
 
+            // when con is not zero, create an assertion on the arr.Length == con edge
+            // when con is zero, create an assertion on the arr.Length != 0 edge
             AssertionIndex index = optAddAssertion(&dsc);
             if (relop->OperIs(GT_NE) != (con == 0))
             {
                 return AssertionInfo::ForNextEdge(index);
             }
-            return index;
+            else
+            {
+                return index;
+            }
         }
     }
 

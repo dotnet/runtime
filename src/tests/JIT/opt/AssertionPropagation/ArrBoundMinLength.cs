@@ -42,6 +42,9 @@ class Program
         RunTestNoThrow(TestsEarlyReturn.LessEqualsInBound);
         RunTestNoThrow(TestsEarlyReturn.NotEqualsInBound);
         RunTestNoThrow(TestsEarlyReturn.ZeroInBounds);
+        RunTestNoThrow((int[] arr) => Tests.EqualsAgainstBoundFiveIndex(arr, 6));
+        RunTestNoThrow((int[] arr) => TestsEarlyReturn.NotEqualsAgainstBoundFiveIndex(arr, 6));
+
 
         Tests.ModInBounds(arr, 11);
         try { Tests.ModOutOfBounds(arr, 6); returnCode--; } catch {}
@@ -49,10 +52,22 @@ class Program
         arr = new int[0];
         RunTestThrows(Tests.ZeroOutOfBounds);
         RunTestThrows(TestsEarlyReturn.ZeroOutOfBounds);
+        RunTestThrows((int[] arr) => Tests.EqualsAgainstBoundZeroIndex(arr, 0));
+        RunTestThrows((int[] arr) => TestsEarlyReturn.EqualsAgainstBoundZeroIndexOutOfBound(arr, 1));
+        RunTestThrows((int[] arr) => TestsEarlyReturn.EqualsAgainstBoundZeroIndex(arr, 0));
+        RunTestThrows((int[] arr) => TestsEarlyReturn.NotEqualsAgainstBoundFiveIndex(arr, 0));
+        RunTestThrows((int[] arr) => Tests.NotEqualsAgainstBoundZeroIndex(arr, 1));
+        RunTestNoThrow((int[] arr) => TestsEarlyReturn.NotEqualsAgainstBoundFiveIndex(arr, 6));
 
         arr = new int[1];
         RunTestThrows(Tests.OneOutOfBounds);
         RunTestThrows(Tests.OneEqualsOutOfBounds);
+        RunTestThrows((int[] arr) => TestsEarlyReturn.EqualsFiveIndexOutOfBound(arr, 6));
+        RunTestThrows((int[] arr) => Tests.NotEqualsAgainstBoundFiveIndex(arr, 0));
+        RunTestThrows((int[] arr) => Tests.NotEqualsAgainstBoundFiveIndex(arr, 5));
+        RunTestNoThrow((int[] arr) => TestsEarlyReturn.EqualsAgainstBoundZeroIndex(arr, 1));
+        RunTestNoThrow((int[] arr) => Tests.EqualsAgainstBoundZeroIndex(arr, 1));
+        RunTestNoThrow((int[] arr) => Tests.NotEqualsAgainstBoundZeroIndex(arr, 0));
 
         return returnCode;
     }
@@ -254,9 +269,45 @@ public static class Tests
 
     public static void NegativeIndexesThrows(int[] arr)
     {
-        if (arr.Length < 7)
+        if (arr.Length > 5)
         {
             arr[-1] = 0;
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void EqualsAgainstBoundFiveIndex(int[] arr, int bound)
+    {
+        if (arr.Length == bound)
+        {
+            arr[5] = 1;
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void NotEqualsAgainstBoundFiveIndex(int[] arr, int bound)
+    {
+        if (arr.Length != bound)
+        {
+            arr[5] = 1;
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void EqualsAgainstBoundZeroIndex(int[] arr, int bound)
+    {
+        if (arr.Length == bound)
+        {
+            arr[0] = 1;
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void NotEqualsAgainstBoundZeroIndex(int[] arr, int bound)
+    {
+        if (arr.Length != bound)
+        {
+            arr[0] = 1;
         }
     }
 }
@@ -391,5 +442,49 @@ public static class TestsEarlyReturn
         }
 
         arr[0] = 0;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void NotEqualsAgainstBoundFiveIndex(int[] arr, int bound)
+    {
+        if (arr.Length != bound)
+        {
+            return;
+        }
+
+        arr[5] = 1;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void EqualsAgainstBoundZeroIndex(int[] arr, int bound)
+    {
+        if (arr.Length != bound)
+        {
+            return;
+        }
+
+        arr[0] = 1;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void EqualsFiveIndexOutOfBound(int[] arr, int bound)
+    {
+        if (arr.Length == bound)
+        {
+            return;
+        }
+
+        arr[5] = 1;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void EqualsAgainstBoundZeroIndexOutOfBound(int[] arr, int bound)
+    {
+        if (arr.Length == bound)
+        {
+           return;
+        }
+
+        arr[0] = 1;
     }
 }
