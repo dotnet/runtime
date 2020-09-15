@@ -140,10 +140,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         using var loggerFactory = LoggerFactory.Create(
                             builder => builder.AddConsole().AddFilter(null, LogLevel.Information));
 
-                        StringValues urlSymbolServerList;
-                        
-                        context.Request.Query.TryGetValue("urlSymbolServer", out urlSymbolServerList);
-
+                        context.Request.Query.TryGetValue("urlSymbolServer", out StringValues urlSymbolServerList);
                         var proxy = new DebuggerProxy(loggerFactory, urlSymbolServerList.ToList());
                         
                         var ideSocket = await context.WebSockets.AcceptWebSocketAsync();
