@@ -24,7 +24,7 @@ namespace Internal.Cryptography
                 _ => throw new NotSupportedException(),
             };
 
-        private static Lazy<SafeAlgorithmHandle> OpenDesAlgorithm(string cipherMode, int feedback = 0)
+        private static Lazy<SafeAlgorithmHandle> OpenDesAlgorithm(string cipherMode)
         {
             return new Lazy<SafeAlgorithmHandle>(() =>
             {
