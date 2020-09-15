@@ -29,7 +29,8 @@
       <RunSettingsFileContent Condition="'$(TestDisableParallelization)' == 'true'">$(RunSettingsFileContent.Replace('$$MAXCPUCOUNT$$', '1'))</RunSettingsFileContent>
       <RunSettingsFileContent Condition="'$(TestDisableParallelization)' != 'true'">$(RunSettingsFileContent.Replace('$$MAXCPUCOUNT$$', '0'))</RunSettingsFileContent>
       <!-- Arm64 is currently not a known TargetPlatform value in VSTEST: https://github.com/microsoft/vstest/issues/2566 -->
-      <RunSettingsFileContent Condition="'$(TargetArchitecture)' != 'arm64'">$(RunSettingsFileContent.Replace('$$TARGETPLATFORM$$', '$(TargetArchitecture)'))</RunSettingsFileContent>
+      <RunSettingsFileContent Condition="'$(TargetArchitecture)' != 'arm64'">$(RunSettingsFileContent.Replace('$$TARGETPLATFORM$$', '<TargetPlatform>$(TargetArchitecture)</TargetPlatform>'))</RunSettingsFileContent>
+      <RunSettingsFileContent Condition="'$(TargetArchitecture)' == 'arm64'">$(RunSettingsFileContent.Replace('$$TARGETPLATFORM$$', ''))</RunSettingsFileContent>
       <RunSettingsFileContent>$(RunSettingsFileContent.Replace('$$COVERAGE_INCLUDE$$', '$(CoverageIncludeFilter)')
                                                       .Replace('$$COVERAGE_EXCLUDEBYFILE$$', '$(CoverageExcludeByFileFilter)')
                                                       .Replace('$$COVERAGE_INCLUDEDIRECTORY$$', '$(CoverageIncludeDirectoryFilter)')
