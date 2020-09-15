@@ -55,6 +55,7 @@
 
     <MSBuild Projects="$(MSBuildProjectFile)" Targets="PrepareCorrelationPayloadDirectory" />
     <MSBuild Projects="$(MSBuildProjectFile)" Targets="PreparePayloadsDirectories" Properties="Scenarios=$(_Scenarios)" StopOnFirstFailure="true" />
+    <MSBuild Projects="$(MSBuildProjectFile)" Targets="PreparePALTestArchive" Properties="$(_PropertiesToPass)" StopOnFirstFailure="true" />
 
     <ItemGroup>
       <_Scenarios Include="$(_Scenarios.Split(','))" />
@@ -87,6 +88,7 @@
     <BinDir>$([MSBuild]::NormalizeDirectory($(TestWorkingDir)))</BinDir>
     <CoreRootDirectory>$(BinDir)Tests\Core_Root\</CoreRootDirectory>
     <PayloadsRootDirectory>$(BinDir)Payloads\</PayloadsRootDirectory>
+    <PayloadsRootDirectory>$([MSBuild]::NormalizeDirectory($(PayloadsRootDirectory)))</PayloadsRootDirectory>
     <TestEnvFileName Condition=" '$(TargetsWindows)' == 'true' ">SetStressModes_$(Scenario).cmd</TestEnvFileName>
     <TestEnvFileName Condition=" '$(TargetsWindows)' != 'true' ">SetStressModes_$(Scenario).sh</TestEnvFileName>
 
@@ -197,10 +199,10 @@
   <Target Name="PreparePALTestArchive">
     <Exec Condition="'$(PALTestsDir)' != '' and '$(TargetsWindows)' != 'true'" 
           WorkingDirectory="$(PALTestsDir)"
-          Command="tar -czvf $(PayloadsRootDirectory)/paltests.tar.gz `ls -A`"/>
+          Command="tar -czvf $(PayloadsRootDirectory)paltests.tar.gz `ls -A`"/>
   </Target>
 
-  <Target Name="PreparePayloadsDirectories" DependsOnTargets="PreparePayloadDirectory;PreparePALTestArchive">
+  <Target Name="PreparePayloadsDirectories" DependsOnTargets="PreparePayloadDirectory">
     <PropertyGroup>
       <_PayloadGroups>@(_XUnitWrapperDll->Metadata('PayloadGroup')->DistinctWithCase())</_PayloadGroups>
     </PropertyGroup>
@@ -313,7 +315,7 @@
     </HelixWorkItem>
 
     <HelixWorkItem Condition="'$(PALTestsDir)' != '' and '$(TargetsWindows)' != 'true'" Include="PALTests">
-      <PayloadArchive >$(PayloadsRootDirectory)/paltests.tar.gz</PayloadArchive>
+      <PayloadArchive>$(PayloadsRootDirectory)paltests.tar.gz</PayloadArchive>
       <Command>./runpaltestshelix.sh</Command>
       <Timeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</Timeout>
     </HelixWorkItem>
