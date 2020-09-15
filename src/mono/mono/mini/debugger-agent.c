@@ -711,7 +711,6 @@ static void ss_calculate_framecount (void *tls, MonoContext *ctx, gboolean force
 static gboolean ensure_jit (DbgEngineStackFrame* the_frame);
 static int ensure_runtime_is_suspended (void);
 static int get_this_async_id (DbgEngineStackFrame *frame);
-static MonoMethod* get_notify_debugger_of_wait_completion_method (void);
 static void* create_breakpoint_events (GPtrArray *ss_reqs, GPtrArray *bp_reqs, MonoJitInfo *ji, EventKind kind);
 static void process_breakpoint_events (void *_evts, MonoMethod *method, MonoContext *ctx, int il_offset);
 static int ss_create_init_args (SingleStepReq *ss_req, SingleStepArgs *args);
