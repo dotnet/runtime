@@ -442,6 +442,20 @@ namespace Microsoft.WebAssembly.Diagnostics
         
         public ModuleDefinition Image => image;
 
+        public void ClearDebugInfo()
+        {
+            foreach (var type in image.GetTypes())
+            {
+                var typeInfo = new TypeInfo(this, type);
+                typesByName[type.FullName] = typeInfo;
+
+                foreach (var method in type.Methods)
+                {
+                    method.DebugInformation = null;
+                }
+            }
+        }
+        
         public void Populate()
         {
             ProcessSourceLink();

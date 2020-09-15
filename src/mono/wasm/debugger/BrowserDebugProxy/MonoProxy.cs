@@ -701,6 +701,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         using Stream streamToReadFrom = await response.Content.ReadAsStreamAsync();
                         var portablePdbReaderProvider = new PdbReaderProvider();
                         var symbolReader = portablePdbReaderProvider.GetSymbolReader(asm.Image, streamToReadFrom);
+                        asm.ClearDebugInfo(); //workaround while cecil PR #686 is not merged
                         asm.Image.ReadSymbols(symbolReader);
                         asm.Populate();
                         foreach (var source in asm.Sources)
