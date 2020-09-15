@@ -945,7 +945,11 @@ namespace System.Net.Http
 
             if (!HttpUtilities.IsHttpUri(baseAddress))
             {
+#if TARGETS_BROWSER
+                throw new ArgumentException(SR.net_http_client_http_browser_baseaddress_required, parameterName);
+#else
                 throw new ArgumentException(SR.net_http_client_http_baseaddress_required, parameterName);
+#endif
             }
         }
 

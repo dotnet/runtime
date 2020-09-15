@@ -103,7 +103,11 @@ namespace System.Net.Http
             {
                 if ((value != null) && (value.IsAbsoluteUri) && (!HttpUtilities.IsHttpUri(value)))
                 {
+#if TARGETS_BROWSER
+                    throw new ArgumentException(SR.net_http_client_http_browser_baseaddress_required, nameof(value));
+#else
                     throw new ArgumentException(SR.net_http_client_http_baseaddress_required, nameof(value));
+#endif
                 }
                 CheckDisposed();
 
