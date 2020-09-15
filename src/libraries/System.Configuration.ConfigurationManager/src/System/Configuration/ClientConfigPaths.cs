@@ -126,7 +126,7 @@ namespace System.Configuration
             string applicationUriLower = !string.IsNullOrEmpty(ApplicationUri)
                 ? ApplicationUri.ToLowerInvariant()
                 : null;
-            string hashSuffix = GetTypeAndHashSuffix(applicationUriLower);
+            string hashSuffix = GetTypeAndHashSuffix(applicationUriLower, isSingleFile);
             string part2 = !string.IsNullOrEmpty(namePrefix) && !string.IsNullOrEmpty(hashSuffix)
                 ? namePrefix + hashSuffix
                 : null;
@@ -219,7 +219,7 @@ namespace System.Configuration
         // The evidence we use, in priority order, is Strong Name, Url and Exe Path. If one of
         // these is found, we compute a SHA1 hash of it and return a suffix based on that.
         // If none is found, we return null.
-        private static string GetTypeAndHashSuffix(string exePath)
+        private static string GetTypeAndHashSuffix(string exePath, bool isSingleFile)
         {
             Assembly assembly = Assembly.GetEntryAssembly();
 
@@ -227,7 +227,7 @@ namespace System.Configuration
             string typeName = null;
             string hash = null;
 
-            if (assembly != null)
+            if (assembly != null && !isSingleFile)
             {
                 AssemblyName assemblyName = assembly.GetName();
                 Uri codeBase = new Uri(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, assembly.ManifestModule.Name));
