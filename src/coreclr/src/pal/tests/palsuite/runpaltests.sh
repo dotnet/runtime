@@ -75,7 +75,7 @@ then
   if [ "$COPY_TO_TEST_OUTPUT_DIR" != "$PAL_TEST_OUTPUT_DIR" ]; then
     # Output files were requested to be copied to a specific folder. In this mode, we need to support parallel runs of PAL tests
     # on the same machine. Make a unique temp folder for working output inside $PAL_TEST_RESULTS_DIR.
-    PAL_TEST_OUTPUT_DIR=$(mktemp -d $PAL_TEST_RESULTS_DIR/tmp.XXXXXXXX)
+    PAL_TEST_OUTPUT_DIR=$(mktemp -d /tmp/PalTestOutput/tmp.XXXXXXXX)
   fi
 fi
 
@@ -147,11 +147,13 @@ do
   fi
 
   echo -n .
+  STARTTIME=$(date +%s)
   # Redirect to temp file
   $TEST_COMMAND 2>&1 | tee ${PAL_OUT_FILE} ; ( exit ${PIPESTATUS[0]} )
-
   # Get exit code of the test process.
   TEST_EXIT_CODE=$?
+
+  ENDTIME=$(date +%s)
 
   # Change back to the output directory, and remove the test's working directory if it's empty
   cd $PAL_TEST_OUTPUT_DIR
@@ -165,7 +167,7 @@ do
   TEST_XUNIT_NAME=$(echo $TEST_XUNIT_NAME | tr / .)
   TEST_XUNIT_CLASSNAME=$(echo $TEST_XUNIT_CLASSNAME | tr / .)
   
-  echo -n "<test name=\"$TEST_XUNIT_CLASSNAME.$TEST_XUNIT_NAME\" type=\"$TEST_XUNIT_CLASSNAME\" method=\"$TEST_XUNIT_NAME\" result=\"" >> $PAL_XUNIT_TEST_LIST_TMP
+  echo -n "<test name=\"$TEST_XUNIT_CLASSNAME.$TEST_XUNIT_NAME\" type=\"$TEST_XUNIT_CLASSNAME\" method=\"$TEST_XUNIT_NAME\" time=\"$(($ENDTIME - $STARTTIME))\" result=\"" >> $PAL_XUNIT_TEST_LIST_TMP
 
   # If the exit code is 0 then the test passed, otherwise record a failure.
   if [ "$TEST_EXIT_CODE" -eq "0" ]; then
@@ -175,6 +177,7 @@ do
     echo "Fail\" >" >> $PAL_XUNIT_TEST_LIST_TMP
     echo "<failure exception-type=\"Exit code: $TEST_EXIT_CODE\">" >> $PAL_XUNIT_TEST_LIST_TMP  
     echo "<message><![CDATA[$(cat $PAL_OUT_FILE)]]></message>" >> $PAL_XUNIT_TEST_LIST_TMP  
+    echo "<output><![CDATA[$(cat $PAL_OUT_FILE)]]></output>" >> $PAL_XUNIT_TEST_LIST_TMP  
     echo "</failure>" >> $PAL_XUNIT_TEST_LIST_TMP  
     echo "</test>" >> $PAL_XUNIT_TEST_LIST_TMP
     FAILED_TEST="$TEST_NAME. Exit code: $TEST_EXIT_CODE"
