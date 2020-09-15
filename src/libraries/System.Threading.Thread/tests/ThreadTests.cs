@@ -735,7 +735,7 @@ namespace System.Threading.Threads.Tests
 #pragma warning disable SYSLIB0006, 618 // Obsolete: Abort, Suspend, Resume, ResetAbort
                 Assert.Throws<PlatformNotSupportedException>(() => t.Abort());
                 Assert.Throws<PlatformNotSupportedException>(() => t.Abort(t));
-                Assert.Throws<PlatformNotSupportedException>(() => t.ResetAbort());
+                Assert.Throws<PlatformNotSupportedException>(() => Thread.ResetAbort());
                 Assert.Throws<PlatformNotSupportedException>(() => t.Suspend());
                 Assert.Throws<PlatformNotSupportedException>(() => t.Resume());
 #pragma warning restore SYSLIB0006, 618 // Obsolete: Abort, Suspend, Resume, ResetAbort
