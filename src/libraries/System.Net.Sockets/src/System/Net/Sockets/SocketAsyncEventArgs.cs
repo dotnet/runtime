@@ -215,21 +215,18 @@ namespace System.Net.Sockets
 
         private void AfterConnectAcceptTelemetry()
         {
-            if (SocketsTelemetry.Log.IsEnabled())
+            switch (LastOperation)
             {
-                switch (LastOperation)
-                {
-                    case SocketAsyncOperation.Accept:
-                        SocketsTelemetry.Log.AfterAccept(SocketError);
-                        break;
+                case SocketAsyncOperation.Accept:
+                    SocketsTelemetry.Log.AfterAccept(SocketError);
+                    break;
 
-                    case SocketAsyncOperation.Connect:
-                        if (_multipleConnect is null)
-                        {
-                            SocketsTelemetry.Log.AfterConnect(SocketError);
-                        }
-                        break;
-                }
+                case SocketAsyncOperation.Connect:
+                    if (_multipleConnect is null)
+                    {
+                        SocketsTelemetry.Log.AfterConnect(SocketError);
+                    }
+                    break;
             }
         }
 
