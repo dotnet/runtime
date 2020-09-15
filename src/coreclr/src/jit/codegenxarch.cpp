@@ -6755,6 +6755,9 @@ void CodeGen::genSSE2BitwiseOp(GenTree* treeNode)
 
     if (treeNode->OperIs(GT_NEG))
     {
+        // Neg(x) = flip the sign bit.	
+        // Neg(f) = f ^ 0x80000000 x4 (packed)
+        // Neg(d) = d ^ 0x8000000000000000 x2 (packed)
         ins     = INS_xorps;
         mask64  = treeNode->TypeIs(TYP_FLOAT) ? 0x8000000080000000UL : 0x8000000000000000UL;
         bitMask = treeNode->TypeIs(TYP_FLOAT) ? &negBitmaskFlt : &negBitmaskDbl;
@@ -6762,6 +6765,9 @@ void CodeGen::genSSE2BitwiseOp(GenTree* treeNode)
     else if (treeNode->OperIs(GT_INTRINSIC))
     {
         assert(treeNode->AsIntrinsic()->gtIntrinsicName == NI_System_Math_Abs);
+        // Abs(x) = set sign-bit to zero	
+        // Abs(f) = f & 0x7fffffff x4 (packed)
+        // Abs(d) = d & 0x7fffffffffffffff x2 (packed)
         ins     = INS_andps;
         mask64  = treeNode->TypeIs(TYP_FLOAT) ? 0x7fffffff7fffffffUL : 0x7fffffffffffffffUL;
         bitMask = treeNode->TypeIs(TYP_FLOAT) ? &negBitmaskFlt : &negBitmaskDbl;
