@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
@@ -659,44 +658,22 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        //[OuterLoop]
-        //public static async Task RoundtripHumongousJsonPayload()
-        public static void RoundtripHumongousJsonPayload()
+        public static void DeserializeHumongousJsonPayload()
         {
-            string logPayload = @$"  {{
-    ""ID"": 0,
-    ""DateTime"": ""2018-08-09T08:57:34"",
-    ""Site"": null,
-    ""SiteID"": 1,
-    ""Lev"": [
-        {JsonSerializer.Serialize(80.3)},
-        0,
-        {JsonSerializer.Serialize(75.9)},
-        {JsonSerializer.Serialize(69.6)},
-        {JsonSerializer.Serialize(59.5)}
-    ]
-  }}";
-
             int logCount = 604621;
 
-            string payload = "[\n" + string.Join(",\n", Enumerable.Repeat(logPayload, logCount)) + "\n]";
+            string payload;
+            using (var sr = new StreamReader("Testdata-2018-08-09-15.json"))
+            {
+                payload = sr.ReadToEnd();
+            }
+
             byte[] payloadBytes = Encoding.UTF8.GetBytes(payload);
 
-            List<SiteLog> list = JsonSerializer.Deserialize<List<SiteLog>>(payloadBytes);
+            // This could simply be JsonSerializer.Deserialize<List<SiteLog>>(payloadBytes),
+            // but leaving to preserve original JSON payload.
+            List<SiteLog> list = JsonSerializer.Deserialize<SiteLog[]>(payloadBytes).ToList();
             Assert.Equal(logCount, list.Count);
-            //JsonTestHelper.AssertJsonEqual(payloadBytes, JsonSerializer.SerializeToUtf8Bytes(list));
-
-            //using (var stream = new MemoryStream(payloadBytes))
-            //{
-            //    list = await JsonSerializer.DeserializeAsync<List<SiteLog>>(stream);
-            //    Assert.Equal(logCount, list.Count);
-            //}
-
-            //using (var stream = new MemoryStream())
-            //{
-            //    await JsonSerializer.SerializeAsync(stream, list);
-            //    JsonTestHelper.AssertJsonEqual(payloadBytes, stream.ToArray());
-            //}
         }
 
         public class SiteLog

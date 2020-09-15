@@ -826,13 +826,6 @@ namespace System.Text.Json
             AssertJsonEqual(expectedDom.RootElement, actualDom.RootElement);
         }
 
-        public static void AssertJsonEqual(byte[] expected, byte[] actual)
-        {
-            using JsonDocument expectedDom = JsonDocument.Parse(expected);
-            using JsonDocument actualDom = JsonDocument.Parse(actual);
-            AssertJsonEqual(expectedDom.RootElement, actualDom.RootElement);
-        }
-
         private static void AssertJsonEqual(JsonElement expected, JsonElement actual)
         {
             JsonValueKind valueKind = expected.ValueKind;
