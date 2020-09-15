@@ -718,23 +718,17 @@ namespace Microsoft.WebAssembly.Diagnostics
             public Task<byte[][]> Data { get; set; }
         }
 
-        public async IAsyncEnumerable<SourceFile> Add(SessionId sessionId, byte[] assembly_data, byte[] pdb_data, [EnumeratorCancellation] CancellationToken token)
+        public IEnumerable<SourceFile> Add(SessionId sessionId, byte[] assembly_data, byte[] pdb_data)
         {
-            DebugItem debugItem = new DebugItem {
-                Url = "https://foo.com",
-                Data = Task.FromResult(new byte[][]{ assembly_data, pdb_data })
-            };
-
             var resolver = new DefaultAssemblyResolver();
             AssemblyInfo assembly = null;
             try
             {
-                var bytes = await debugItem.Data.ConfigureAwait(false);
-                assembly = new AssemblyInfo(resolver, debugItem.Url, bytes[0], bytes[1]);
+                assembly = new AssemblyInfo(resolver, sessionId.ToString(), assembly_data, pdb_data);
             }
             catch (Exception e)
             {
-                logger.LogDebug($"Failed to load {debugItem.Url} ({e.Message})");
+                logger.LogDebug($"Failed to load assembly: ({e.Message})");
             }
 
             if (assembly == null)
@@ -742,7 +736,9 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             assemblies.Add(assembly);
             foreach (var source in assembly.Sources)
+            {
                 yield return source;
+            }
         }
 
         public async IAsyncEnumerable<SourceFile> Load(SessionId sessionId, string[] loaded_files, [EnumeratorCancellation] CancellationToken token)

@@ -672,6 +672,69 @@ namespace Microsoft.WebAssembly.Diagnostics
             return true;
         }
 
+        async Task<bool> OnJSEventRaised(SessionId sessionId, JObject eventArgs, CancellationToken token)
+        {
+            string eventName = eventArgs?["eventName"]?.Value<string>();
+            if (string.IsNullOrEmpty(eventName))
+            {
+                logger.LogDebug($"Missing name for raised js event: {eventArgs}");
+                return false;
+            }
+
+            logger.LogDebug($"OnJsEventRaised: args: {eventArgs}");
+
+            switch (eventName)
+            {
+                case "ADD_ASSEMBLY_PDB":
+                    return await HandleAddAssemblyPdb(sessionId, eventArgs, token);
+                default:
+                {
+                    logger.LogDebug($"Unknown js event name: {eventName} with args {eventArgs}");
+                    return await Task.FromResult(false);
+                }
+            }
+        }
+
+        async Task<bool> HandleAddAssemblyPdb(SessionId sessionId, JObject eventArgs, CancellationToken token)
+        {
+            try
+            {
+                var context = GetContext(sessionId);
+                var assembly_data = eventArgs?["assembly_data"]?.ToObject<byte[]>();
+                var pdb_data = eventArgs?["pdb_data"]?.ToObject<byte[]>();
+
+                if (assembly_data == null)
+                {
+                    logger.LogDebug($"No assembly data provided to load.");
+                    return false;
+                }
+
+                var store = await LoadStore(sessionId, token);
+
+                foreach (var source in store.Add(sessionId, assembly_data, pdb_data))
+                {
+                    var scriptSource = JObject.FromObject(source.ToScriptSource(context.Id, context.AuxData));
+                    Log("verbose", $"\tsending {source.Url} {context.Id} {sessionId.sessionId}");
+
+                    SendEvent(sessionId, "Debugger.scriptParsed", scriptSource, token);
+
+                    foreach (var req in context.BreakpointRequests.Values)
+                    {
+                        if (req.TryResolve(source))
+                        {
+                            await SetBreakpoint(sessionId, context.store, req, true, token);
+                        }
+                    }
+                }
+                return true;
+            }
+            catch (Exception e)
+            {
+                logger.LogDebug($"Failed to load assemblies and PBDs: {e}");
+                return false;
+            }
+        }
+
         async Task<bool> OnEvaluateOnCallFrame(MessageId msg_id, int scope_id, string expression, CancellationToken token)
         {
             try
@@ -775,38 +838,6 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             if (Interlocked.CompareExchange(ref context.store, new DebugStore(logger), null) != null)
                 return await context.Source.Task;
-
-            try
-            {
-                var loaded_files = context.LoadedFiles;
-
-                if (loaded_files == null)
-                {
-                    var loaded = await SendMonoCommand(sessionId, MonoCommands.GetLoadedFiles(), token);
-                    loaded_files = loaded.Value?["result"]?["value"]?.ToObject<string[]>();
-                }
-
-                await
-                foreach (var source in context.store.Load(sessionId, loaded_files, token).WithCancellation(token))
-                {
-                    var scriptSource = JObject.FromObject(source.ToScriptSource(context.Id, context.AuxData));
-                    Log("verbose", $"\tsending {source.Url} {context.Id} {sessionId.sessionId}");
-
-                    SendEvent(sessionId, "Debugger.scriptParsed", scriptSource, token);
-
-                    foreach (var req in context.BreakpointRequests.Values)
-                    {
-                        if (req.TryResolve(source))
-                        {
-                            await SetBreakpoint(sessionId, context.store, req, true, token);
-                        }
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                context.Source.SetException(e);
-            }
 
             if (!context.Source.Task.IsCompleted)
                 context.Source.SetResult(context.store);
