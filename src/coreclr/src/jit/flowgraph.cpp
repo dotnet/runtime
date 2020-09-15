@@ -23386,7 +23386,6 @@ void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineRe
     // Store the link to inlineCandidateInfo into inlineInfo
     inlineInfo.inlineCandidateInfo = inlineCandidateInfo;
 
-
     unsigned inlineDepth = fgCheckInlineDepthAndRecursion(&inlineInfo);
 
     if (inlineResult->IsFailure())
@@ -23658,7 +23657,7 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
             noway_assert((inlineeBlockFlags & BBF_KEEP_BBJ_ALWAYS) == 0);
 
             // Todo: we may want to exclude other flags here.
-            iciBlock->bbFlags |= (inlineeBlockFlags & ~ BBF_RUN_RARELY);
+            iciBlock->bbFlags |= (inlineeBlockFlags & ~BBF_RUN_RARELY);
 
 #ifdef DEBUG
             if (verbose)
