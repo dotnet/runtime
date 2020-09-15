@@ -598,7 +598,7 @@ namespace System.Runtime.InteropServices
         {
             if (errorCode < 0)
             {
-                throw GetExceptionForHR(errorCode, IntPtr.Zero)!;
+                throw GetExceptionForHR(errorCode)!;
             }
         }
 
