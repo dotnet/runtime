@@ -25,10 +25,7 @@ steps:
 - template: /eng/pipelines/common/templates/runtimes/send-to-helix-inner-step.yml
   parameters:
     osGroup: $(Agent.Os)
-    ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-      sendParams: $(Build.SourcesDirectory)\eng\common\performance\${{ parameters.ProjectFile }} /restore /t:Test /bl:$(Build.SourcesDirectory)\artifacts\log\$(_BuildConfig)\SendToHelix.binlog
-    ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-      sendParams: $(Build.SourcesDirectory)/eng/common/performance/${{ parameters.ProjectFile }} /restore /t:Test /bl:$(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)/SendToHelix.binlog
+    sendParams: $(Build.SourcesDirectory)/eng/common/performance/${{ parameters.ProjectFile }} /restore /t:Test /bl:$(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)/SendToHelix.binlog
     displayName: ${{ parameters.DisplayNamePrefix }}
     condition: ${{ parameters.condition }}
     continueOnError: ${{ parameters.continueOnError }}
