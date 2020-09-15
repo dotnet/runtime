@@ -11,6 +11,9 @@ set( CORGUIDS_IDL_SOURCES
   corsym.idl
   sospriv.idl
 )
+if (MSVC)
+  add_compile_options(/TP) # compile all files as C++
+endif()
 
 if(CLR_CMAKE_HOST_WIN32)
     #Build for corguids is done in two steps:

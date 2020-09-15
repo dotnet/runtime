@@ -432,7 +432,6 @@ endif(CLR_CMAKE_HOST_UNIX)
 if (MSVC)
   # Compile options for targeting windows
 
-  add_compile_options(/TP) # compile all files as C++
   add_compile_options(/nologo) # Suppress Startup Banner
   add_compile_options(/W3) # set warning level to 3
   add_compile_options(/WX) # treat warnings as errors

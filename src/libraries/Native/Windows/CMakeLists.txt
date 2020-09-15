@@ -23,6 +23,8 @@ if("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_BINARY_DIR}")
     message(FATAL_ERROR "Binary directory isn't being correctly set before calling Cmake. Tree must be built in separate directory from source.")
 endif()
 
+set(GEN_SHARED_LIB 1)
+
 project(CoreFX)
 
 # The following options are set by the razzle build

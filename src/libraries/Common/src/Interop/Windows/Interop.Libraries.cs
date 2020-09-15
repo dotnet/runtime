@@ -31,7 +31,7 @@ internal static partial class Interop
         internal const string Wldap32 = "wldap32.dll";
         internal const string Ws2_32 = "ws2_32.dll";
         internal const string Wtsapi32 = "wtsapi32.dll";
-        internal const string CompressionNative = "clrcompression.dll";
+        internal const string CompressionNative = "clrcompression";
         internal const string MsQuic = "msquic.dll";
         internal const string HostPolicy = "hostpolicy.dll";
     }

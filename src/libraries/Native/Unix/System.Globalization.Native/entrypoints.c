@@ -23,6 +23,7 @@ typedef uint16_t UChar;
 #define QCFuncElement(name,impl) \
     (void*)0x8 /* FCFuncFlag_QCall */, (void*)(impl), (void*)name,
 
+
 FCFuncStart(gPalGlobalizationNative)
     QCFuncElement("ChangeCase", GlobalizationNative_ChangeCase)
     QCFuncElement("ChangeCaseInvariant", GlobalizationNative_ChangeCaseInvariant)

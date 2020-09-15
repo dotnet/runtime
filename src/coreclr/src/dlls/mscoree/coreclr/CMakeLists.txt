@@ -110,6 +110,7 @@ set(CORECLR_LIBRARIES
     utilcode
     v3binder
     System.Globalization.Native-static
+    clrcompression-static
     interop
 )
 
