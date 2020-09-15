@@ -1062,6 +1062,57 @@ namespace DebuggerTests
             });
 
         [Theory]
+        [InlineData("BoxedTypeObjectTest", false)]
+        [InlineData("BoxedTypeObjectTestAsync", true)]
+        public async Task InspectBoxedTypeObject(string method_name, bool is_async) => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTest",
+            method_name,
+            9,
+            is_async ? "MoveNext" : method_name,
+            $"window.setTimeout(function() {{ invoke_static_method_async('[debugger-test] DebuggerTest:{method_name}'); }}, 1);",
+            wait_for_event_fn: async (pause_location) =>
+            {
+                var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
+                var dt = new DateTime(2310, 1, 2, 3, 4, 5);
+                await CheckProps(locals, new
+                {
+                    i = TNumber(5),
+                    o0 = TNumber(5),
+                    o1 = TNumber(5),
+                    o2 = TNumber(5),
+                    o3 = TNumber(5),
+
+                    oo = TObject("object"),
+                    oo0 = TObject("object"),
+                }, "locals");
+            });
+
+        [Theory]
+        [InlineData("BoxedAsClass", false)]
+        [InlineData("BoxedAsClassAsync", true)]
+        public async Task InspectBoxedAsClassLocals(string method_name, bool is_async) => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTest",
+            method_name,
+            6,
+            is_async ? "MoveNext" : method_name,
+            $"window.setTimeout(function() {{ invoke_static_method_async('[debugger-test] DebuggerTest:{method_name}'); }}, 1);",
+            wait_for_event_fn: async (pause_location) =>
+            {
+                var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
+                var dt = new DateTime(2310, 1, 2, 3, 4, 5);
+                Console.WriteLine (locals);
+
+                await CheckProps(locals, new
+                {
+                    vt_dt = TDateTime(new DateTime(4819, 5, 6, 7, 8, 9)),
+                    vt_gs = TValueType("Math.GenericStruct<string>"),
+                    e     = TEnum("System.IO.FileMode", "0"),
+                    ee    = TEnum("System.IO.FileMode", "Append")
+                }, "locals");
+            });
+
+
+        [Theory]
         [InlineData(false)]
         [InlineData(true)]
         public async Task InspectValueTypeMethodArgs(bool use_cfo)

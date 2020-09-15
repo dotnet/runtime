@@ -382,6 +382,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         Dictionary<string, TypeInfo> typesByName = new Dictionary<string, TypeInfo>();
         readonly List<SourceFile> sources = new List<SourceFile>();
         internal string Url { get; }
+        public bool TriedToLoadSymbolsOnDemand { get; set; }
 
         public AssemblyInfo(IAssemblyResolver resolver, string url, byte[] assembly, byte[] pdb)
         {
@@ -438,8 +439,24 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             this.logger = logger;
         }
+        
+        public ModuleDefinition Image => image;
 
-        void Populate()
+        public void ClearDebugInfo()
+        {
+            foreach (var type in image.GetTypes())
+            {
+                var typeInfo = new TypeInfo(this, type);
+                typesByName[type.FullName] = typeInfo;
+
+                foreach (var method in type.Methods)
+                {
+                    method.DebugInformation = null;
+                }
+            }
+        }
+        
+        public void Populate()
         {
             ProcessSourceLink();
 
@@ -720,8 +737,6 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public async IAsyncEnumerable<SourceFile> Load(SessionId sessionId, string[] loaded_files, [EnumeratorCancellation] CancellationToken token)
         {
-            static bool MatchPdb(string asm, string pdb) => Path.ChangeExtension(asm, "pdb") == pdb;
-
             var asm_files = new List<string>();
             var pdb_files = new List<string>();
             foreach (var file_name in loaded_files)
@@ -737,7 +752,11 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 try
                 {
-                    var pdb = pdb_files.FirstOrDefault(n => MatchPdb(url, n));
+                    string candidate_pdb = Path.ChangeExtension(url, "pdb");
+                    string pdb = pdb_files.FirstOrDefault(n => n == candidate_pdb);
+                    if (pdb == null)
+                        continue;
+
                     steps.Add(
                         new DebugItem
                         {

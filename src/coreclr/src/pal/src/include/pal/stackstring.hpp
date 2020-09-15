@@ -256,9 +256,7 @@ typedef StackString<MAX_PATH, WCHAR> PathWCharString;
 BOOL
 PAL_GetPALDirectoryW(
         PathWCharString& lpDirectoryName);
-BOOL
-PAL_GetPALDirectoryA(
-        PathCharString& lpDirectoryName);
+
 DWORD
 GetCurrentDirectoryA(
          PathCharString& lpBuffer);
