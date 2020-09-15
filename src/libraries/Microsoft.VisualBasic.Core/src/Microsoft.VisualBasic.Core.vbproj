@@ -16,7 +16,7 @@
     <RemoveIntegerChecks>false</RemoveIntegerChecks>
     <RootNamespace />
     <!-- No plans to fix the analyzer issues. -->
-    <EnableAnalyzers>false</EnableAnalyzers>
+    <RunAnalyzers>false</RunAnalyzers>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-Windows_NT</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
