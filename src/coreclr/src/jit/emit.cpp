@@ -5355,7 +5355,7 @@ UNATIVE_OFFSET emitter::emitDataGenBeg(UNATIVE_OFFSET size, UNATIVE_OFFSET align
     /* Get hold of the current offset */
     secOffs = emitConsDsc.dsdOffs;
 
-    if (((secOffs % alignment) != 0) && (alignment > 4))
+    if (alignment > 4)
     {
         // As per the above comment, the minimum alignment is actually 4
         // bytes so we don't need to make any adjustments if the requested
@@ -5552,7 +5552,6 @@ CORINFO_FIELD_HANDLE emitter::emitAnyConst(const void* cnsAddr, UNATIVE_OFFSET c
 // Arguments:
 //    constValue - constant value
 //    attr       - constant size
-//    packSize   - emit multiple values if packSize > attr
 //
 // Return Value:
 //    A field handle representing the data offset to access the constant.
@@ -5561,7 +5560,7 @@ CORINFO_FIELD_HANDLE emitter::emitAnyConst(const void* cnsAddr, UNATIVE_OFFSET c
 //    If attr is EA_4BYTE then the double value is converted to a float value.
 //    If attr is EA_8BYTE then 8 byte alignment is automatically requested.
 //
-CORINFO_FIELD_HANDLE emitter::emitFltOrDblConst(double constValue, emitAttr attr, emitAttr packSize)
+CORINFO_FIELD_HANDLE emitter::emitFltOrDblConst(double constValue, emitAttr attr)
 {
     assert((attr == EA_4BYTE) || (attr == EA_8BYTE));
 
@@ -5594,20 +5593,6 @@ CORINFO_FIELD_HANDLE emitter::emitFltOrDblConst(double constValue, emitAttr attr
         cnsAlign = 1;
     }
 #endif // TARGET_XARCH
-
-    UNATIVE_OFFSET cnum;
-    if (packSize > attr)
-    {
-        cnum = emitDataConst(cnsAddr, cnsSize, packSize);
-        for (size_t i = 1; i < packSize / attr; i++)
-        {
-            emitDataConst(cnsAddr, cnsSize, 1);
-        }
-    }
-    else
-    {
-        cnum = emitDataConst(cnsAddr, cnsSize, cnsAlign);
-    }
 
     return emitComp->eeFindJitDataOffs(cnum);
 }

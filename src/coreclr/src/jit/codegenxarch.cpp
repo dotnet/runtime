@@ -6750,21 +6750,21 @@ void CodeGen::genSSE2BitwiseOp(GenTree* treeNode)
     assert(treeNode->gtGetOp1()->isUsedFromReg());
 
     CORINFO_FIELD_HANDLE* bitMask = nullptr;
-    UINT64                mask    = 0;
+    UINT64                mask64    = 0;
     instruction           ins     = INS_invalid;
 
     if (treeNode->OperIs(GT_NEG))
     {
-        ins  = INS_xorps;
-        mask = 0x8000000000000000UL;
+        ins     = INS_xorps;
+        mask64  = treeNode->TypeIs(TYP_FLOAT) ? 0x8000000080000000UL : 0x8000000000000000UL;
         bitMask = treeNode->TypeIs(TYP_FLOAT) ? &negBitmaskFlt : &negBitmaskDbl;
     }
     else if (treeNode->OperIs(GT_INTRINSIC))
     {
         assert(treeNode->AsIntrinsic()->gtIntrinsicName == NI_System_Math_Abs);
-        ins  = INS_andps;
-        mask = 0x7fffffffffffffffUL;
-        bitMask = treeNode->TypeIs(TYP_FLOAT) ? &absBitmaskFlt : &absBitmaskDbl;
+        ins     = INS_andps;
+        mask64  = treeNode->TypeIs(TYP_FLOAT) ? 0x7fffffff7fffffffUL : 0x7fffffffffffffffUL;
+        bitMask = treeNode->TypeIs(TYP_FLOAT) ? &negBitmaskFlt : &negBitmaskDbl;
     }
     else
     {
@@ -6773,7 +6773,8 @@ void CodeGen::genSSE2BitwiseOp(GenTree* treeNode)
 
     if (*bitMask == nullptr)
     {
-        *bitMask = GetEmitter()->emitFltOrDblConst(*(double*)&mask, size, EA_16BYTE);
+        UINT64 maskPack[] = { mask64, mask64 };
+        *bitMask          = GetEmitter()->emitAnyConst(&maskPack, 16, 16);
     }
 
     GetEmitter()->emitIns_SIMD_R_R_C(ins, size, targetReg, operandReg, *bitMask, 0);
