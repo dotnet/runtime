@@ -609,9 +609,6 @@ if %__BuildNative% EQU 1 (
     set "__Logging=!__MsbuildLog! !__MsbuildWrn! !__MsbuildErr! !__MsbuildBinLog! !__ConsoleLoggingParameters!"
 
     REM We pass the /m flag directly to MSBuild so that we can get both MSBuild and CL parallelism, which is fastest for our builds.
-    echo CMAKE
-    echo "%CMakePath%" --build %__IntermediatesDir% --target install --config %__BuildType% -- /nologo /m !__Logging!
-    echo CMAKE
     "%CMakePath%" --build %__IntermediatesDir% --target install --config %__BuildType% -- /nologo /m !__Logging!
 
     if not !errorlevel! == 0 (
