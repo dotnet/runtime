@@ -35,20 +35,6 @@ public class Program
         public static extern int PInvokeMarkedWithUnmanagedCallersOnly(int n);
     }
 
-    private const string InvalidCSharpAssemblyName = "InvalidCSharp";
-
-    public static Type GetCallbacksType()
-    {
-        var asm = Assembly.Load(InvalidCSharpAssemblyName);
-        return asm.GetType("InvalidCSharp.Callbacks");
-    }
-
-    public static Type GetGenericClassOfIntType()
-    {
-        var asm = Assembly.Load(InvalidCSharpAssemblyName);
-        return asm.GetType("InvalidCSharp.GenericClass`1").MakeGenericType(typeof(int));
-    }
-
     private delegate int IntNativeMethodInvoker();
     private delegate void NativeMethodInvoker();
 
@@ -362,7 +348,7 @@ public class Program
            {
                 .locals init ([0] native int ptr)
                 nop
-                ldftn      int GetCallbacksType().CallbackNonStatic(int)
+                ldftn      int InvalidCSharp.Callbacks.CallbackNonStatic(int)
                 stloc.0
 
                 ldloc.0
@@ -379,7 +365,7 @@ public class Program
         il.Emit(OpCodes.Nop);
 
         // Get native function pointer of the callback
-        il.Emit(OpCodes.Ldftn, GetCallbacksType().GetMethod("CallbackNonStatic"));
+        il.Emit(OpCodes.Ldftn, typeof(InvalidCSharp.Callbacks).GetMethod("CallbackNonStatic"));
         il.Emit(OpCodes.Stloc_0);
         il.Emit(OpCodes.Ldloc_0);
 
@@ -464,7 +450,7 @@ public class Program
         il.Emit(OpCodes.Nop);
 
         // Get native function pointer of the callback
-        il.Emit(OpCodes.Ldftn, GetCallbacksType().GetMethod("CallbackMethodGeneric"));
+        il.Emit(OpCodes.Ldftn, typeof(InvalidCSharp.Callbacks).GetMethod("CallbackMethodGeneric"));
         il.Emit(OpCodes.Stloc_0);
 
         il.Emit(OpCodes.Ret);
@@ -500,7 +486,7 @@ public class Program
         il.Emit(OpCodes.Nop);
 
         // Get native function pointer of the instantiated generic callback
-        il.Emit(OpCodes.Ldftn, GetCallbacksType().GetMethod("CallbackMethodGeneric").MakeGenericMethod(new [] { typeof(int) }));
+        il.Emit(OpCodes.Ldftn, typeof(InvalidCSharp.Callbacks).GetMethod("CallbackMethodGeneric").MakeGenericMethod(new [] { typeof(int) }));
         il.Emit(OpCodes.Stloc_0);
         il.Emit(OpCodes.Ldloc_0);
 
@@ -542,7 +528,7 @@ public class Program
         il.Emit(OpCodes.Nop);
 
         // Get native function pointer of the callback from the instantiated generic class.
-        il.Emit(OpCodes.Ldftn, GetGenericClassOfIntType().GetMethod("CallbackMethod"));
+        il.Emit(OpCodes.Ldftn, typeof(InvalidCSharp.GenericClass<int>).GetMethod("CallbackMethod"));
         il.Emit(OpCodes.Stloc_0);
         il.Emit(OpCodes.Ldloc_0);
 

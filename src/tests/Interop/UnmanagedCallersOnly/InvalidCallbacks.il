@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-.assembly extern System.Runtime { }
+.assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
 .assembly extern System.Runtime.InteropServices { }
 
 .assembly InvalidCSharp { }
@@ -12,7 +12,7 @@
     .method public hidebysig static 
         void CallbackMethod (
             int32 n
-        ) cil managed preservesig 
+        ) cil managed
     {
         .custom instance void [System.Runtime.InteropServices]System.Runtime.InteropServices.UnmanagedCallersOnlyAttribute::.ctor() = (
             01 00 00 00
@@ -39,7 +39,7 @@
     .method public hidebysig static 
         int32 CallbackMethodGeneric<T> (
             !!T arg
-        ) cil managed preservesig 
+        ) cil managed
     {
         .custom instance void [System.Runtime.InteropServices]System.Runtime.InteropServices.UnmanagedCallersOnlyAttribute::.ctor() = (
             01 00 00 00
@@ -53,7 +53,7 @@
     .method public hidebysig 
         instance int32 CallbackNonStatic (
             int32 val
-        ) cil managed preservesig 
+        ) cil managed
     {
         .custom instance void [System.Runtime.InteropServices]System.Runtime.InteropServices.UnmanagedCallersOnlyAttribute::.ctor() = (
             01 00 00 00
