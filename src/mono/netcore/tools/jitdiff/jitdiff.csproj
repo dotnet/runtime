@@ -3,5 +3,6 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <EnableSourceControlManagerQueries>false</EnableSourceControlManagerQueries>
+    <RunAnalyzers>false</RunAnalyzers>
   </PropertyGroup>
 </Project>
