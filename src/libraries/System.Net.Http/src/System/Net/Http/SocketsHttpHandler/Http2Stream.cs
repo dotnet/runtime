@@ -445,9 +445,9 @@ namespace System.Net.Http
             private const int FirstHPackNormalHeaderId = 15;
             private const int LastHPackNormalHeaderId = 61;
 
-            private static readonly int[] HPackStaticStatusCodeTable = new int[LastHPackStatusPseudoHeaderId - FirstHPackStatusPseudoHeaderId + 1] { 200, 204, 206, 304, 400, 404, 500 };
+            private static readonly int[] s_hpackStaticStatusCodeTable = new int[LastHPackStatusPseudoHeaderId - FirstHPackStatusPseudoHeaderId + 1] { 200, 204, 206, 304, 400, 404, 500 };
 
-            private static readonly (HeaderDescriptor descriptor, byte[] value)[] HPackStaticHeaderTable = new (HeaderDescriptor, byte[])[LastHPackNormalHeaderId - FirstHPackNormalHeaderId + 1]
+            private static readonly (HeaderDescriptor descriptor, byte[] value)[] s_hpackStaticHeaderTable = new (HeaderDescriptor, byte[])[LastHPackNormalHeaderId - FirstHPackNormalHeaderId + 1]
             {
                 (KnownHeaders.AcceptCharset.Descriptor, Array.Empty<byte>()),
                 (KnownHeaders.AcceptEncoding.Descriptor, Encoding.ASCII.GetBytes("gzip, deflate")),
@@ -509,13 +509,13 @@ namespace System.Net.Http
                 }
                 else if (index <= LastHPackStatusPseudoHeaderId)
                 {
-                    int statusCode = HPackStaticStatusCodeTable[index - FirstHPackStatusPseudoHeaderId];
+                    int statusCode = s_hpackStaticStatusCodeTable[index - FirstHPackStatusPseudoHeaderId];
 
                     OnStatus(statusCode);
                 }
                 else
                 {
-                    (HeaderDescriptor descriptor, byte[] value) = HPackStaticHeaderTable[index - FirstHPackNormalHeaderId];
+                    (HeaderDescriptor descriptor, byte[] value) = s_hpackStaticHeaderTable[index - FirstHPackNormalHeaderId];
 
                     OnHeader(descriptor, value);
                 }
@@ -538,7 +538,7 @@ namespace System.Net.Http
                 }
                 else
                 {
-                    (HeaderDescriptor descriptor, _) = HPackStaticHeaderTable[index - FirstHPackNormalHeaderId];
+                    (HeaderDescriptor descriptor, _) = s_hpackStaticHeaderTable[index - FirstHPackNormalHeaderId];
 
                     OnHeader(descriptor, value);
                 }
