@@ -56,51 +56,6 @@ namespace System.Net.Sockets.Tests
                    select new[] { m1[0], @bool };
         }
 
-        private static Task AcceptConnectionAsync(Socket server, string acceptMethod)
-        {
-            server.Bind(new IPEndPoint(IPAddress.Loopback, 0));
-            server.Listen();
-
-            switch (acceptMethod)
-            {
-                case "Sync":
-                    return Task.Run(server.Accept);
-
-                case "Task":
-                    return server.AcceptAsync();
-
-                case "Apm":
-                    return Task.Factory.FromAsync(server.BeginAccept, server.EndAccept, null);
-
-                case "Eap":
-                    var tcs = new TaskCompletionSource();
-                    var saea = new SocketAsyncEventArgs();
-
-                    void Callback()
-                    {
-                        if (saea.SocketError == SocketError.Success)
-                        {
-                            tcs.SetResult();
-                        }
-                        else
-                        {
-                            tcs.SetException(new SocketException((int)saea.SocketError));
-                        }
-                    }
-
-                    saea.Completed += (_, __) => Callback();
-                    if (!server.AcceptAsync(saea))
-                    {
-                        Callback();
-                    }
-
-                    return tcs.Task;
-
-                default:
-                    throw new ArgumentException(acceptMethod);
-            }
-        }
-
         private static async Task<EndPoint> GetRemoteEndPointAsync(string useDnsEndPointString, int port)
         {
             const string Address = "microsoft.com";
@@ -142,14 +97,15 @@ namespace System.Net.Sockets.Tests
                 await listener.RunWithCallbackAsync(events.Enqueue, async () =>
                 {
                     using var server = new Socket(SocketType.Stream, ProtocolType.Tcp);
+
                     using var client = new Socket(SocketType.Stream, ProtocolType.Tcp);
+                    server.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+                    server.Listen();
 
-                    SocketHelperBase socketHelper = GetHelperBase(connectMethod);
-
-                    Task acceptTask = AcceptConnectionAsync(server, acceptMethod);
+                    Task acceptTask = GetHelperBase(acceptMethod).AcceptAsync(server);
                     await WaitForEventAsync(events, "AcceptStart");
 
-                    await socketHelper.ConnectAsync(client, server.LocalEndPoint);
+                    await GetHelperBase(connectMethod).ConnectAsync(client, server.LocalEndPoint);
                     await acceptTask;
 
                     await WaitForEventAsync(events, "AcceptStop");
@@ -255,10 +211,12 @@ namespace System.Net.Sockets.Tests
                 await listener.RunWithCallbackAsync(events.Enqueue, async () =>
                 {
                     using var server = new Socket(SocketType.Stream, ProtocolType.Tcp);
+                    server.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+                    server.Listen();
 
                     await Assert.ThrowsAnyAsync<Exception>(async () =>
                     {
-                        Task acceptTask = AcceptConnectionAsync(server, acceptMethod);
+                        Task acceptTask = GetHelperBase(acceptMethod).AcceptAsync(server);
                         await WaitForEventAsync(events, "AcceptStart");
                         server.Dispose();
                         await acceptTask;
