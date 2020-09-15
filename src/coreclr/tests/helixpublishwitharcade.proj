@@ -194,7 +194,13 @@
     <MSBuild Projects="@(_ProjectsToBuild)" Targets="CreateTestEnvFile" StopOnFirstFailure="true" />
   </Target>
 
-  <Target Name="PreparePayloadsDirectories" DependsOnTargets="PreparePayloadDirectory">
+  <Target Name="PreparePALTestArchive">
+    <Exec Condition="'$(PALTestsDir)' != '' and '$(TargetsWindows)' != 'true'" 
+          WorkingDirectory="$(PALTestsDir)"
+          Command="tar -czvf $(PayloadsRootDirectory)/paltests.tar.gz `ls -A`"/>
+  </Target>
+
+  <Target Name="PreparePayloadsDirectories" DependsOnTargets="PreparePayloadDirectory;PreparePALTestArchive">
     <PropertyGroup>
       <_PayloadGroups>@(_XUnitWrapperDll->Metadata('PayloadGroup')->DistinctWithCase())</_PayloadGroups>
     </PropertyGroup>
@@ -307,8 +313,8 @@
     </HelixWorkItem>
 
     <HelixWorkItem Condition="'$(PALTestsDir)' != '' and '$(TargetsWindows)' != 'true'" Include="PALTests">
-      <PayloadDirectory>$(PALTestsDir)</PayloadDirectory>
-      <Command>runpaltestshelix.sh</Command>
+      <PayloadArchive >$(PayloadsRootDirectory)/paltests.tar.gz</PayloadArchive>
+      <Command>./runpaltestshelix.sh</Command>
       <Timeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</Timeout>
     </HelixWorkItem>
   </ItemGroup>
