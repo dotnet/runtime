@@ -536,7 +536,9 @@ namespace System.Net.Sockets
             _currentSocket = socket;
 
             // Capture execution context if needed (it is unless explicitly disabled).
-            if (_flowExecutionContext)
+            // If Telemetry is enabled, make sure to capture the context if we're making a Connect or Accept call to preserve the activity
+            if (_flowExecutionContext ||
+                (SocketsTelemetry.Log.IsEnabled() && (operation == SocketAsyncOperation.Connect || operation == SocketAsyncOperation.Accept)))
             {
                 _context = ExecutionContext.Capture();
             }
@@ -574,14 +576,6 @@ namespace System.Net.Sockets
                     _acceptBuffer = new byte[_acceptAddressBufferCount];
                 }
             }
-
-            if (SocketsTelemetry.Log.IsEnabled())
-            {
-                SocketsTelemetry.Log.AcceptStart(_currentSocket!._rightEndPoint!);
-
-                // Ignore _flowExecutionContext when using Telemetry to avoid losing Activity tracking
-                _context = ExecutionContext.Capture();
-            }
         }
 
         internal void StartOperationConnect(MultipleConnectAsync? multipleConnect, bool userSocket)
@@ -589,15 +583,6 @@ namespace System.Net.Sockets
             _multipleConnect = multipleConnect;
             _connectSocket = null;
             _userSocket = userSocket;
-
-            // Log only the actual connect operation to a remote endpoint.
-            if (SocketsTelemetry.Log.IsEnabled() && multipleConnect == null)
-            {
-                SocketsTelemetry.Log.ConnectStart(_socketAddress!);
-
-                // Ignore _flowExecutionContext when using Telemetry to avoid losing Activity tracking
-                _context = ExecutionContext.Capture();
-            }
         }
 
         internal void CancelConnectAsync()

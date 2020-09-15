@@ -3676,6 +3676,11 @@ namespace System.Net.Sockets
             SafeSocketHandle? acceptHandle;
             e.AcceptSocket = GetOrCreateAcceptSocket(e.AcceptSocket, true, "AcceptSocket", out acceptHandle);
 
+            if (SocketsTelemetry.Log.IsEnabled())
+            {
+                SocketsTelemetry.Log.AcceptStart(_rightEndPoint!);
+            }
+
             // Prepare for and make the native call.
             e.StartOperationCommon(this, SocketAsyncOperation.Accept);
             e.StartOperationAccept();
@@ -3774,6 +3779,11 @@ namespace System.Net.Sockets
                 if (_rightEndPoint == null)
                 {
                     _rightEndPoint = endPointSnapshot;
+                }
+
+                if (SocketsTelemetry.Log.IsEnabled())
+                {
+                    SocketsTelemetry.Log.ConnectStart(e._socketAddress!);
                 }
 
                 // Prepare for the native call.
