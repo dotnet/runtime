@@ -444,6 +444,9 @@
 /* Disable Threads */
 #cmakedefine DISABLE_THREADS 1
 
+/* Disable config directories */
+#cmakedefine DISABLE_CFGDIR_CONFIG 1
+
 /* Extension module enabled */
 #cmakedefine ENABLE_EXTENSION_MODULE 1
 
@@ -1366,7 +1369,7 @@
 #cmakedefine HAVE_EXECVP 1
 
 /* Name of /dev/random */
-#cmakedefine NAME_DEV_RANDOM 1
+#cmakedefine NAME_DEV_RANDOM "@NAME_DEV_RANDOM@"
 
 /* Have /dev/random */
 #cmakedefine HAVE_CRYPT_RNG 1
@@ -1381,7 +1384,7 @@
 #cmakedefine HAVE_SYS_SDT_H 1
 
 /* AOT cross offsets file */
-#cmakedefine MONO_OFFSETS_FILE 1
+#cmakedefine MONO_OFFSETS_FILE "@MONO_OFFSETS_FILE@"
 
 /* Enable the LLVM back end */
 #cmakedefine ENABLE_LLVM 1

@@ -160,7 +160,7 @@ public:
         return get_app(m_fx_definitions).get_deps_file();
     }
 
-    void get_app_fx_definition_range(fx_definition_vector_t::iterator *begin, fx_definition_vector_t::iterator *end) const;
+    void get_app_context_deps_files_range(fx_definition_vector_t::iterator *begin, fx_definition_vector_t::iterator *end) const;
 
     const fx_definition_vector_t& get_fx_definitions() const
     {
@@ -228,7 +228,7 @@ private:
         const pal::string_t& deps_dir,
         int fx_level,
         pal::string_t* candidate,
-        bool &loaded_from_bundle);
+        bool &found_in_bundle);
 
     fx_definition_vector_t& m_fx_definitions;
 

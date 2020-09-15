@@ -651,7 +651,8 @@ mono_domain_assembly_open_internal (MonoDomain *domain, MonoAssemblyLoadContext 
 MonoImage *mono_assembly_open_from_bundle (MonoAssemblyLoadContext *alc,
 					   const char *filename,
 					   MonoImageOpenStatus *status,
-					   gboolean refonly);
+					   gboolean refonly,
+					   const char *culture);
 
 MonoAssembly *
 mono_try_assembly_resolve (MonoAssemblyLoadContext *alc, const char *fname, MonoAssembly *requesting, gboolean refonly, MonoError *error);
@@ -696,8 +697,17 @@ MonoAssemblyLoadContext *
 mono_domain_default_alc (MonoDomain *domain);
 
 #ifdef ENABLE_NETCORE
-MonoAssemblyLoadContext *
-mono_domain_create_individual_alc (MonoDomain *domain, MonoGCHandle this_gchandle, gboolean collectible, MonoError *error);
+static inline void
+mono_domain_alcs_lock (MonoDomain *domain)
+{
+	mono_coop_mutex_lock (&domain->alcs_lock);
+}
+
+static inline void
+mono_domain_alcs_unlock (MonoDomain *domain)
+{
+	mono_coop_mutex_unlock (&domain->alcs_lock);
+}
 #endif
 
 static inline

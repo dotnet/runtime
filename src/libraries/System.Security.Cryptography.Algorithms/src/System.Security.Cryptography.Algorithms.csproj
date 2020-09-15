@@ -581,13 +581,29 @@
     <Compile Include="System\Security\Cryptography\AesGcm.Unix.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsBrowser)' == 'true'">
-    <Compile Include="System\Security\Cryptography\RandomNumberGenerator.cs" />
-    <Compile Include="Internal\Cryptography\RandomNumberGeneratorImplementation.cs" />
-    <Compile Include="Internal\Cryptography\RandomNumberGeneratorImplementation.Browser.cs" />
+    <Compile Include="$(CommonPath)Internal\Cryptography\HashProvider.cs"
+             Link="Internal\Cryptography\HashProvider.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetRandomBytes.cs"
              Link="Common\Interop\Unix\System.Native\Interop.GetRandomBytes.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
              Link="Common\Interop\Unix\Interop.Libraries.cs" />
+    <Compile Include="Internal\Cryptography\HashAlgorithmNames.cs" />
+    <Compile Include="Internal\Cryptography\HashProviderDispenser.Browser.cs" />
+    <Compile Include="Internal\Cryptography\HMACCommon.cs" />
+    <Compile Include="Internal\Cryptography\RandomNumberGeneratorImplementation.cs" />
+    <Compile Include="Internal\Cryptography\RandomNumberGeneratorImplementation.Browser.cs" />
+    <Compile Include="Internal\Cryptography\SHAHashProvider.Browser.cs" />
+    <Compile Include="System\Security\Cryptography\RandomNumberGenerator.cs" />
+    <Compile Include="System\Security\Cryptography\IncrementalHash.cs" />
+    <Compile Include="System\Security\Cryptography\MD5.cs" />
+    <Compile Include="System\Security\Cryptography\SHA1.cs" />
+    <Compile Include="System\Security\Cryptography\SHA1Managed.cs" />
+    <Compile Include="System\Security\Cryptography\SHA256.cs" />
+    <Compile Include="System\Security\Cryptography\SHA256Managed.cs" />
+    <Compile Include="System\Security\Cryptography\SHA384.cs" />
+    <Compile Include="System\Security\Cryptography\SHA384Managed.cs" />
+    <Compile Include="System\Security\Cryptography\SHA512.cs" />
+    <Compile Include="System\Security\Cryptography\SHA512Managed.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Collections" />

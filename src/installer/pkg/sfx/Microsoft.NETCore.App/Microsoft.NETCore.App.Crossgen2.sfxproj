@@ -34,8 +34,14 @@
     <Reference Include="$(CoreCLRCrossgen2Dir)ILCompiler*.dll" />
     <Reference Include="$(CoreCLRCrossgen2Dir)Microsoft.DiaSymReader.dll" />
     <Reference Include="$(CoreCLRCrossgen2Dir)System.CommandLine.dll" />
-    <NativeRuntimeAsset Include="$(CoreCLRCrossgen2Dir)$(LibraryFilePrefix)jitinterface$(LibraryFileExtension)" TargetPath="tools/" />
-    <NativeRuntimeAsset Include="$(CoreCLRCrossgen2Dir)$(LibraryFilePrefix)clrjit-$(TargetSpec)$(LibraryFileExtension)" TargetPath="tools/" />
+    <NativeRuntimeAsset Include="$(CoreCLRCrossgen2Dir)$(LibraryFilePrefix)jitinterface_$(TargetArchitecture)$(LibraryFileExtension)" TargetPath="tools/" />
+    <NativeRuntimeAsset Include="$(CoreCLRCrossgen2Dir)$(LibraryFilePrefix)clrjit_win_x86_$(TargetArchitecture)$(LibraryFileExtension)" TargetPath="tools/"  />
+    <NativeRuntimeAsset Include="$(CoreCLRCrossgen2Dir)$(LibraryFilePrefix)clrjit_win_arm_$(TargetArchitecture)$(LibraryFileExtension)" TargetPath="tools/"  />
+    <NativeRuntimeAsset Include="$(CoreCLRCrossgen2Dir)$(LibraryFilePrefix)clrjit_unix_arm_$(TargetArchitecture)$(LibraryFileExtension)" TargetPath="tools/"  />
+    <NativeRuntimeAsset Condition="'$(TargetArchitecture)' == 'arm64' or  '$(TargetArchitecture)' == 'x64'" Include="$(CoreCLRCrossgen2Dir)$(LibraryFilePrefix)clrjit_win_x64_$(TargetArchitecture)$(LibraryFileExtension)"  TargetPath="tools/" />
+    <NativeRuntimeAsset Condition="'$(TargetArchitecture)' == 'arm64' or  '$(TargetArchitecture)' == 'x64'" Include="$(CoreCLRCrossgen2Dir)$(LibraryFilePrefix)clrjit_win_arm64_$(TargetArchitecture)$(LibraryFileExtension)" TargetPath="tools/"  />
+    <NativeRuntimeAsset Condition="'$(TargetArchitecture)' == 'arm64' or  '$(TargetArchitecture)' == 'x64'" Include="$(CoreCLRCrossgen2Dir)$(LibraryFilePrefix)clrjit_unix_x64_$(TargetArchitecture)$(LibraryFileExtension)" TargetPath="tools/" />
+    <NativeRuntimeAsset Condition="'$(TargetArchitecture)' == 'arm64' or  '$(TargetArchitecture)' == 'x64'" Include="$(CoreCLRCrossgen2Dir)$(LibraryFilePrefix)clrjit_unix_arm64_$(TargetArchitecture)$(LibraryFileExtension)" TargetPath="tools/"  />
     <!-- Include the native hosting layer  -->
     <NativeRuntimeAsset Include="$(DotNetHostBinDir)/$(LibraryFilePrefix)hostfxr$(LibraryFileExtension)" TargetPath="tools/" />
     <NativeRuntimeAsset Include="$(DotNetHostBinDir)/$(LibraryFilePrefix)hostpolicy$(LibraryFileExtension)" TargetPath="tools/" />

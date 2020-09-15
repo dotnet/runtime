@@ -1529,7 +1529,7 @@ enum JIT_LOAD_JIT_ID
 {
     JIT_LOAD_MAIN = 500,    // The "main" JIT. Normally, this is named "clrjit.dll". Start at a number that is somewhat uncommon (i.e., not zero or 1) to help distinguish from garbage, in process dumps.
     // 501 is JIT_LOAD_LEGACY on some platforms; please do not reuse this value.
-    JIT_LOAD_ALTJIT = 502   // An "altjit". By default, named "protojit.dll". Used both internally, as well as externally for JIT CTP builds.
+    JIT_LOAD_ALTJIT = 502   // An "altjit". By default, named something like "clrjit_<targetos>_<target_arch>_<host_arch>.dll". Used both internally, as well as externally for JIT CTP builds.
 };
 
 enum JIT_LOAD_STATUS
@@ -1767,7 +1767,27 @@ BOOL EEJitManager::LoadJIT()
 
         if (altJitName == NULL)
         {
-            altJitName = MAKEDLLNAME_W(W("protojit"));
+#ifdef TARGET_WINDOWS
+#ifdef TARGET_X86
+            altJitName = MAKEDLLNAME_W(W("clrjit_win_x86_x86"));
+#elif defined(TARGET_AMD64)
+            altJitName = MAKEDLLNAME_W(W("clrjit_win_x64_x64"));
+#elif defined(TARGET_ARM)
+            altJitName = MAKEDLLNAME_W(W("clrjit_win_arm_arm"));
+#elif defined(TARGET_ARM64)
+            altJitName = MAKEDLLNAME_W(W("clrjit_win_arm64_arm64"));
+#endif
+#else // TARGET_WINDOWS
+#ifdef TARGET_X86
+            altJitName = MAKEDLLNAME_W(W("clrjit_unix_x86_x86"));
+#elif defined(TARGET_AMD64)
+            altJitName = MAKEDLLNAME_W(W("clrjit_unix_x64_x64"));
+#elif defined(TARGET_ARM)
+            altJitName = MAKEDLLNAME_W(W("clrjit_unix_arm_arm"));
+#elif defined(TARGET_ARM64)
+            altJitName = MAKEDLLNAME_W(W("clrjit_unix_arm64_arm64"));
+#endif
+#endif // TARGET_WINDOWS
         }
 
         g_JitLoadData.jld_id = JIT_LOAD_ALTJIT;

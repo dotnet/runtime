@@ -22,7 +22,7 @@ namespace System.Runtime.Serialization
         /// </SecurityNote>
         internal const BindingFlags ScanAllMembers = BindingFlags.Static | BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
 
-        private static XmlQualifiedName s_idQualifiedName;
+        private static XmlQualifiedName? s_idQualifiedName;
         internal static XmlQualifiedName IdQualifiedName
         {
             get
@@ -33,7 +33,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private static XmlQualifiedName s_refQualifiedName;
+        private static XmlQualifiedName? s_refQualifiedName;
         internal static XmlQualifiedName RefQualifiedName
         {
             get
@@ -44,7 +44,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private static Type s_typeOfObject;
+        private static Type? s_typeOfObject;
         internal static Type TypeOfObject
         {
             get
@@ -55,7 +55,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private static Type s_typeOfValueType;
+        private static Type? s_typeOfValueType;
         internal static Type TypeOfValueType
         {
             get
@@ -66,7 +66,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private static Type s_typeOfArray;
+        private static Type? s_typeOfArray;
         internal static Type TypeOfArray
         {
             get
@@ -77,7 +77,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private static Type s_typeOfString;
+        private static Type? s_typeOfString;
         internal static Type TypeOfString
         {
             get
@@ -88,7 +88,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private static Type s_typeOfInt;
+        private static Type? s_typeOfInt;
         internal static Type TypeOfInt
         {
             get
@@ -99,7 +99,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private static Type s_typeOfULong;
+        private static Type? s_typeOfULong;
         internal static Type TypeOfULong
         {
             get
@@ -110,7 +110,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private static Type s_typeOfVoid;
+        private static Type? s_typeOfVoid;
         internal static Type TypeOfVoid
         {
             get
@@ -121,7 +121,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private static Type s_typeOfByteArray;
+        private static Type? s_typeOfByteArray;
         internal static Type TypeOfByteArray
         {
             get
@@ -132,7 +132,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private static Type s_typeOfTimeSpan;
+        private static Type? s_typeOfTimeSpan;
         internal static Type TypeOfTimeSpan
         {
             get
@@ -143,7 +143,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private static Type s_typeOfGuid;
+        private static Type? s_typeOfGuid;
         internal static Type TypeOfGuid
         {
             get
@@ -154,7 +154,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private static Type s_typeOfDateTimeOffset;
+        private static Type? s_typeOfDateTimeOffset;
         internal static Type TypeOfDateTimeOffset
         {
             get
@@ -165,7 +165,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private static Type s_typeOfDateTimeOffsetAdapter;
+        private static Type? s_typeOfDateTimeOffsetAdapter;
         internal static Type TypeOfDateTimeOffsetAdapter
         {
             get
@@ -176,7 +176,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private static Type s_typeOfUri;
+        private static Type? s_typeOfUri;
         internal static Type TypeOfUri
         {
             get
@@ -187,7 +187,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private static Type s_typeOfTypeEnumerable;
+        private static Type? s_typeOfTypeEnumerable;
         internal static Type TypeOfTypeEnumerable
         {
             get
@@ -198,7 +198,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private static Type s_typeOfStreamingContext;
+        private static Type? s_typeOfStreamingContext;
         internal static Type TypeOfStreamingContext
         {
             get
@@ -209,7 +209,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private static Type s_typeOfISerializable;
+        private static Type? s_typeOfISerializable;
         internal static Type TypeOfISerializable
         {
             get
@@ -220,7 +220,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private static Type s_typeOfIDeserializationCallback;
+        private static Type? s_typeOfIDeserializationCallback;
         internal static Type TypeOfIDeserializationCallback
         {
             get
@@ -231,7 +231,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private static Type s_typeOfIObjectReference;
+        private static Type? s_typeOfIObjectReference;
         internal static Type TypeOfIObjectReference
         {
             get
@@ -242,7 +242,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private static Type s_typeOfXmlFormatClassWriterDelegate;
+        private static Type? s_typeOfXmlFormatClassWriterDelegate;
         internal static Type TypeOfXmlFormatClassWriterDelegate
         {
             get
@@ -253,7 +253,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private static Type s_typeOfXmlFormatCollectionWriterDelegate;
+        private static Type? s_typeOfXmlFormatCollectionWriterDelegate;
         internal static Type TypeOfXmlFormatCollectionWriterDelegate
         {
             get
@@ -264,7 +264,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private static Type s_typeOfXmlFormatClassReaderDelegate;
+        private static Type? s_typeOfXmlFormatClassReaderDelegate;
         internal static Type TypeOfXmlFormatClassReaderDelegate
         {
             get
@@ -275,7 +275,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private static Type s_typeOfXmlFormatCollectionReaderDelegate;
+        private static Type? s_typeOfXmlFormatCollectionReaderDelegate;
         internal static Type TypeOfXmlFormatCollectionReaderDelegate
         {
             get
@@ -286,7 +286,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private static Type s_typeOfXmlFormatGetOnlyCollectionReaderDelegate;
+        private static Type? s_typeOfXmlFormatGetOnlyCollectionReaderDelegate;
         internal static Type TypeOfXmlFormatGetOnlyCollectionReaderDelegate
         {
             get
@@ -297,7 +297,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private static Type s_typeOfKnownTypeAttribute;
+        private static Type? s_typeOfKnownTypeAttribute;
         internal static Type TypeOfKnownTypeAttribute
         {
             get
@@ -308,7 +308,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private static Type s_typeOfDataContractAttribute;
+        private static Type? s_typeOfDataContractAttribute;
         internal static Type TypeOfDataContractAttribute
         {
             get
@@ -319,7 +319,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private static Type s_typeOfDataMemberAttribute;
+        private static Type? s_typeOfDataMemberAttribute;
         internal static Type TypeOfDataMemberAttribute
         {
             get
@@ -330,7 +330,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private static Type s_typeOfEnumMemberAttribute;
+        private static Type? s_typeOfEnumMemberAttribute;
         internal static Type TypeOfEnumMemberAttribute
         {
             get
@@ -341,7 +341,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private static Type s_typeOfCollectionDataContractAttribute;
+        private static Type? s_typeOfCollectionDataContractAttribute;
         internal static Type TypeOfCollectionDataContractAttribute
         {
             get
@@ -352,7 +352,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private static Type s_typeOfOptionalFieldAttribute;
+        private static Type? s_typeOfOptionalFieldAttribute;
         internal static Type TypeOfOptionalFieldAttribute
         {
             get
@@ -366,7 +366,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private static Type s_typeOfObjectArray;
+        private static Type? s_typeOfObjectArray;
         internal static Type TypeOfObjectArray
         {
             get
@@ -377,7 +377,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private static Type s_typeOfOnSerializingAttribute;
+        private static Type? s_typeOfOnSerializingAttribute;
         internal static Type TypeOfOnSerializingAttribute
         {
             get
@@ -388,7 +388,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private static Type s_typeOfOnSerializedAttribute;
+        private static Type? s_typeOfOnSerializedAttribute;
         internal static Type TypeOfOnSerializedAttribute
         {
             get
@@ -399,7 +399,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private static Type s_typeOfOnDeserializingAttribute;
+        private static Type? s_typeOfOnDeserializingAttribute;
         internal static Type TypeOfOnDeserializingAttribute
         {
             get
@@ -410,7 +410,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private static Type s_typeOfOnDeserializedAttribute;
+        private static Type? s_typeOfOnDeserializedAttribute;
         internal static Type TypeOfOnDeserializedAttribute
         {
             get
@@ -421,7 +421,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private static Type s_typeOfFlagsAttribute;
+        private static Type? s_typeOfFlagsAttribute;
         internal static Type TypeOfFlagsAttribute
         {
             get
@@ -432,7 +432,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private static Type s_typeOfIXmlSerializable;
+        private static Type? s_typeOfIXmlSerializable;
         internal static Type TypeOfIXmlSerializable
         {
             get
@@ -443,7 +443,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private static Type s_typeOfXmlSchemaProviderAttribute;
+        private static Type? s_typeOfXmlSchemaProviderAttribute;
         internal static Type TypeOfXmlSchemaProviderAttribute
         {
             get
@@ -454,7 +454,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private static Type s_typeOfXmlRootAttribute;
+        private static Type? s_typeOfXmlRootAttribute;
         internal static Type TypeOfXmlRootAttribute
         {
             get
@@ -465,7 +465,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private static Type s_typeOfXmlQualifiedName;
+        private static Type? s_typeOfXmlQualifiedName;
         internal static Type TypeOfXmlQualifiedName
         {
             get
@@ -476,7 +476,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private static Type s_typeOfXmlSchemaType;
+        private static Type? s_typeOfXmlSchemaType;
         internal static Type TypeOfXmlSchemaType
         {
             get
@@ -490,13 +490,13 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private static Type s_typeOfIExtensibleDataObject;
+        private static Type? s_typeOfIExtensibleDataObject;
         internal static Type TypeOfIExtensibleDataObject => s_typeOfIExtensibleDataObject ?? (s_typeOfIExtensibleDataObject = typeof(IExtensibleDataObject));
 
-        private static Type s_typeOfExtensionDataObject;
+        private static Type? s_typeOfExtensionDataObject;
         internal static Type TypeOfExtensionDataObject => s_typeOfExtensionDataObject ?? (s_typeOfExtensionDataObject = typeof(ExtensionDataObject));
 
-        private static Type s_typeOfISerializableDataNode;
+        private static Type? s_typeOfISerializableDataNode;
         internal static Type TypeOfISerializableDataNode
         {
             get
@@ -507,7 +507,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private static Type s_typeOfClassDataNode;
+        private static Type? s_typeOfClassDataNode;
         internal static Type TypeOfClassDataNode
         {
             get
@@ -518,7 +518,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private static Type s_typeOfCollectionDataNode;
+        private static Type? s_typeOfCollectionDataNode;
         internal static Type TypeOfCollectionDataNode
         {
             get
@@ -529,10 +529,10 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private static Type s_typeOfXmlDataNode;
+        private static Type? s_typeOfXmlDataNode;
         internal static Type TypeOfXmlDataNode => s_typeOfXmlDataNode ?? (s_typeOfXmlDataNode = typeof(XmlDataNode));
 
-        private static Type s_typeOfNullable;
+        private static Type? s_typeOfNullable;
         internal static Type TypeOfNullable
         {
             get
@@ -543,7 +543,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private static Type s_typeOfIDictionaryGeneric;
+        private static Type? s_typeOfIDictionaryGeneric;
         internal static Type TypeOfIDictionaryGeneric
         {
             get
@@ -554,7 +554,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private static Type s_typeOfIDictionary;
+        private static Type? s_typeOfIDictionary;
         internal static Type TypeOfIDictionary
         {
             get
@@ -565,7 +565,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private static Type s_typeOfIListGeneric;
+        private static Type? s_typeOfIListGeneric;
         internal static Type TypeOfIListGeneric
         {
             get
@@ -576,7 +576,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private static Type s_typeOfIList;
+        private static Type? s_typeOfIList;
         internal static Type TypeOfIList
         {
             get
@@ -587,7 +587,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private static Type s_typeOfICollectionGeneric;
+        private static Type? s_typeOfICollectionGeneric;
         internal static Type TypeOfICollectionGeneric
         {
             get
@@ -598,7 +598,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private static Type s_typeOfICollection;
+        private static Type? s_typeOfICollection;
         internal static Type TypeOfICollection
         {
             get
@@ -609,7 +609,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private static Type s_typeOfIEnumerableGeneric;
+        private static Type? s_typeOfIEnumerableGeneric;
         internal static Type TypeOfIEnumerableGeneric
         {
             get
@@ -620,7 +620,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private static Type s_typeOfIEnumerable;
+        private static Type? s_typeOfIEnumerable;
         internal static Type TypeOfIEnumerable
         {
             get
@@ -631,7 +631,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private static Type s_typeOfIEnumeratorGeneric;
+        private static Type? s_typeOfIEnumeratorGeneric;
         internal static Type TypeOfIEnumeratorGeneric
         {
             get
@@ -642,7 +642,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private static Type s_typeOfIEnumerator;
+        private static Type? s_typeOfIEnumerator;
         internal static Type TypeOfIEnumerator
         {
             get
@@ -653,7 +653,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private static Type s_typeOfKeyValuePair;
+        private static Type? s_typeOfKeyValuePair;
         internal static Type TypeOfKeyValuePair
         {
             get
@@ -664,7 +664,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private static Type s_typeOfKeyValuePairAdapter;
+        private static Type? s_typeOfKeyValuePairAdapter;
         internal static Type TypeOfKeyValuePairAdapter
         {
             get
@@ -675,7 +675,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private static Type s_typeOfKeyValue;
+        private static Type? s_typeOfKeyValue;
         internal static Type TypeOfKeyValue
         {
             get
@@ -686,7 +686,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private static Type s_typeOfIDictionaryEnumerator;
+        private static Type? s_typeOfIDictionaryEnumerator;
         internal static Type TypeOfIDictionaryEnumerator
         {
             get
@@ -697,7 +697,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private static Type s_typeOfDictionaryEnumerator;
+        private static Type? s_typeOfDictionaryEnumerator;
         internal static Type TypeOfDictionaryEnumerator
         {
             get
@@ -708,7 +708,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private static Type s_typeOfGenericDictionaryEnumerator;
+        private static Type? s_typeOfGenericDictionaryEnumerator;
         internal static Type TypeOfGenericDictionaryEnumerator
         {
             get
@@ -719,7 +719,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private static Type s_typeOfDictionaryGeneric;
+        private static Type? s_typeOfDictionaryGeneric;
         internal static Type TypeOfDictionaryGeneric
         {
             get
@@ -730,7 +730,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private static Type s_typeOfHashtable;
+        private static Type? s_typeOfHashtable;
         internal static Type TypeOfHashtable
         {
             get
@@ -741,7 +741,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private static Type s_typeOfXmlElement;
+        private static Type? s_typeOfXmlElement;
         internal static Type TypeOfXmlElement
         {
             get
@@ -752,7 +752,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private static Type s_typeOfXmlNodeArray;
+        private static Type? s_typeOfXmlNodeArray;
         internal static Type TypeOfXmlNodeArray
         {
             get
@@ -763,7 +763,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private static Type s_typeOfDBNull;
+        private static Type? s_typeOfDBNull;
         internal static Type TypeOfDBNull
         {
             get
@@ -774,7 +774,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private static Uri s_dataContractXsdBaseNamespaceUri;
+        private static Uri? s_dataContractXsdBaseNamespaceUri;
         internal static Uri DataContractXsdBaseNamespaceUri
         {
             get
@@ -799,7 +799,7 @@ namespace System.Runtime.Serialization
             return true;
         }
 
-        private static MethodBase FilterMethodBases(MethodBase[] methodBases, Type[] parameterTypes, string methodName)
+        private static MethodBase? FilterMethodBases(MethodBase[]? methodBases, Type[] parameterTypes, string methodName)
         {
             if (methodBases == null || string.IsNullOrEmpty(methodName))
                 return null;
@@ -809,23 +809,23 @@ namespace System.Runtime.Serialization
             return matchedMethods.FirstOrDefault();
         }
 
-        internal static ConstructorInfo GetConstructor(this Type type, BindingFlags bindingFlags, Type[] parameterTypes)
+        internal static ConstructorInfo? GetConstructor(this Type type, BindingFlags bindingFlags, Type[] parameterTypes)
         {
-            var constructorInfos = type.GetConstructors(bindingFlags);
-            var constructorInfo = FilterMethodBases(constructorInfos.Cast<MethodBase>().ToArray(), parameterTypes, ".ctor");
+            ConstructorInfo[] constructorInfos = type.GetConstructors(bindingFlags);
+            var constructorInfo = FilterMethodBases(constructorInfos.Cast<MethodBase>().ToArray()!, parameterTypes, ".ctor");
             return constructorInfo != null ? (ConstructorInfo)constructorInfo : null;
         }
 
-        internal static MethodInfo GetMethod(this Type type, string methodName, BindingFlags bindingFlags, Type[] parameterTypes)
+        internal static MethodInfo? GetMethod(this Type type, string methodName, BindingFlags bindingFlags, Type[] parameterTypes)
         {
             var methodInfos = type.GetMethods(bindingFlags);
-            var methodInfo = FilterMethodBases(methodInfos.Cast<MethodBase>().ToArray(), parameterTypes, methodName);
+            var methodInfo = FilterMethodBases(methodInfos.Cast<MethodBase>().ToArray()!, parameterTypes, methodName);
             return methodInfo != null ? (MethodInfo)methodInfo : null;
         }
 
         #endregion
 
-        private static readonly Type s_typeOfScriptObject;
+        private static readonly Type? s_typeOfScriptObject;
 
         internal static ClassDataContract CreateScriptObjectClassDataContract()
         {

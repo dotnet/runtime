@@ -29,13 +29,11 @@ namespace Microsoft.NET.HostModel.Bundle
         readonly TargetInfo Target;
         readonly BundleOptions Options;
 
-        // Assemblies are 16 bytes aligned, so that their sections can be memory-mapped cache aligned.
-        public const int AssemblyAlignment = 16;
-
         public Bundler(string hostName,
                        string outputDir,
                        BundleOptions options = BundleOptions.None,
                        OSPlatform? targetOS = null,
+                       Architecture? targetArch = null,
                        Version targetFrameworkVersion = null,
                        bool diagnosticOutput = false,
                        string appAssemblyName = null)
@@ -44,7 +42,7 @@ namespace Microsoft.NET.HostModel.Bundle
 
             HostName = hostName;
             OutputDir = Path.GetFullPath(string.IsNullOrEmpty(outputDir) ? Environment.CurrentDirectory : outputDir);
-            Target = new TargetInfo(targetOS, targetFrameworkVersion);
+            Target = new TargetInfo(targetOS, targetArch, targetFrameworkVersion);
 
             appAssemblyName ??= Target.GetAssemblyName(hostName);
             DepsJson = appAssemblyName + ".deps.json";
@@ -64,11 +62,11 @@ namespace Microsoft.NET.HostModel.Bundle
         {
             if (type == FileType.Assembly)
             {
-                long misalignment = (bundle.Position % AssemblyAlignment);
+                long misalignment = (bundle.Position % Target.AssemblyAlignment);
 
                 if (misalignment != 0)
                 {
-                    long padding = AssemblyAlignment - misalignment;
+                    long padding = Target.AssemblyAlignment - misalignment;
                     bundle.Position += padding;
                 }
             }

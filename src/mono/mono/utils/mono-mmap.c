@@ -305,6 +305,9 @@ mono_valloc (void *addr, size_t length, int flags, MonoMemAccountType type)
 		}
 		if ((flags & MONO_MMAP_JIT) && (use_mmap_jit || is_hardened_runtime == 1))
 			mflags |= MAP_JIT;
+		/* Patching code on apple silicon seems to cause random crashes without this flag */
+		if (__builtin_available (macOS 11, *))
+			mflags |= MAP_JIT;
 	}
 #endif
 

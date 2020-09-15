@@ -3,7 +3,6 @@
 
 //#define XSLT2
 
-#nullable enable
 using System.Collections.Generic;
 using System.Diagnostics;
 
@@ -387,7 +386,7 @@ namespace System.Xml.Xsl.Xslt
                     case XmlNodeType.Text:
                     // XLinq reports WS nodes as Text so we need to analyze them here
                     case XmlNodeType.CDATA:
-                        if (textIsWhite && !XmlCharType.Instance.IsOnlyWhitespace(_reader.Value))
+                        if (textIsWhite && !XmlCharType.IsOnlyWhitespace(_reader.Value))
                         {
                             textIsWhite = false;
                         }
@@ -409,7 +408,7 @@ namespace System.Xml.Xsl.Xslt
                             // Special treatment for character and built-in entities
                             ExtendRecordBuffer(curTextNode);
                             FillupCharacterEntityRecord(ref _records[curTextNode]);
-                            if (textIsWhite && !XmlCharType.Instance.IsOnlyWhitespace(_records[curTextNode].value))
+                            if (textIsWhite && !XmlCharType.IsOnlyWhitespace(_records[curTextNode].value))
                             {
                                 textIsWhite = false;
                             }

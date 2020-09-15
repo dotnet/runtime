@@ -193,56 +193,6 @@ GetConsoleOutputCP(
 
 /*++
 Function:
-GetCPInfo
-
-See MSDN doc.
---*/
-BOOL
-PALAPI
-GetCPInfo(
-  IN UINT CodePage,
-  OUT LPCPINFO lpCPInfo)
-{
-    BOOL bRet = FALSE;
-
-    PERF_ENTRY(GetCPInfo);
-    ENTRY("GetCPInfo(CodePage=%hu, lpCPInfo=%p)\n", CodePage, lpCPInfo);
-
-    /*check if the input code page is valid*/
-    if( CP_ACP != CodePage && CP_UTF8 != CodePage )
-    {
-        /* error, invalid argument */
-        ERROR("CodePage(%d) parameter is invalid\n",CodePage);
-        SetLastError( ERROR_INVALID_PARAMETER );
-        goto done;
-    }
-
-    /*check if the lpCPInfo parameter is valid. */
-    if( !lpCPInfo )
-    {
-        /* error, invalid argument */
-        ERROR("lpCPInfo cannot be NULL\n" );
-        SetLastError( ERROR_INVALID_PARAMETER );
-        goto done;
-    }
-
-    lpCPInfo->MaxCharSize = 4;
-    memset( lpCPInfo->LeadByte, 0, MAX_LEADBYTES );
-
-    /* Don't need to be set, according to the spec. */
-    memset( lpCPInfo->DefaultChar, '?', MAX_DEFAULTCHAR );
-
-    bRet = TRUE;
-
-done:
-    LOGEXIT("GetCPInfo returns BOOL %d \n",bRet);
-    PERF_EXIT(GetCPInfo);
-    return bRet;
-}
-
-
-/*++
-Function:
 GetACP
 
 See MSDN doc.
@@ -258,70 +208,6 @@ GetACP(VOID)
     PERF_EXIT(GetACP);
 
     return CP_UTF8;
-}
-
-
-/*++
-Function:
-IsDBCSLeadByteEx
-
-See MSDN doc.
---*/
-BOOL
-PALAPI
-IsDBCSLeadByteEx(
-     IN UINT CodePage,
-     IN BYTE TestChar)
-{
-    CPINFO cpinfo;
-    SIZE_T i;
-    BOOL bRet = FALSE;
-
-    PERF_ENTRY(IsDBCSLeadByteEx);
-    ENTRY("IsDBCSLeadByteEx(CodePage=%#x, TestChar=%d)\n", CodePage, TestChar);
-
-    /* Get the lead byte info with respect to the given codepage*/
-    if( !GetCPInfo( CodePage, &cpinfo ) )
-    {
-        ERROR("Error CodePage(%#x) parameter is invalid\n", CodePage );
-        SetLastError( ERROR_INVALID_PARAMETER );
-        goto done;
-    }
-
-    for( i=0; i < sizeof(cpinfo.LeadByte)/sizeof(cpinfo.LeadByte[0]); i += 2 )
-    {
-        if( 0 == cpinfo.LeadByte[ i ] )
-        {
-            goto done;
-        }
-
-        /*check if the given char is in one of the lead byte ranges*/
-        if( cpinfo.LeadByte[i] <= TestChar && TestChar<= cpinfo.LeadByte[i+1] )
-        {
-            bRet = TRUE;
-            goto done;
-        }
-    }
-done:
-    LOGEXIT("IsDBCSLeadByteEx returns BOOL %d\n",bRet);
-    PERF_EXIT(IsDBCSLeadByteEx);
-    return bRet;
-}
-
-/*++
-Function:
-IsDBCSLeadByte
-
-See MSDN doc.
---*/
-BOOL
-PALAPI
-IsDBCSLeadByte(
-        IN BYTE TestChar)
-{
-    // UNIXTODO: Implement this!
-    ERROR("Needs Implementation!!!");
-    return FALSE;
 }
 
 /*++

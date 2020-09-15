@@ -10,23 +10,15 @@ using System.Runtime.Serialization.Json;
 using System.Runtime.Serialization;
 using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContract>;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Runtime.Serialization.Json
 {
     internal class XmlObjectSerializerReadContextComplexJson : XmlObjectSerializerReadContextComplex
     {
-        private string _extensionDataValueType;
-        private readonly DataContractJsonSerializer _jsonSerializer;
-        private readonly DateTimeFormat _dateTimeFormat;
+        private string? _extensionDataValueType;
+        private readonly DateTimeFormat? _dateTimeFormat;
         private readonly bool _useSimpleDictionaryFormat;
-
-        public XmlObjectSerializerReadContextComplexJson(DataContractJsonSerializer serializer, DataContract rootTypeDataContract)
-            : base(null, int.MaxValue, default(StreamingContext), true)
-        {
-            this.rootTypeDataContract = rootTypeDataContract;
-            this.serializerKnownTypeList = serializer.KnownTypes;
-            _jsonSerializer = serializer;
-        }
 
         internal XmlObjectSerializerReadContextComplexJson(DataContractJsonSerializerImpl serializer, DataContract rootTypeDataContract)
             : base(serializer, serializer.MaxItemsInObjectGraph, default(StreamingContext), false)
@@ -42,12 +34,12 @@ namespace System.Runtime.Serialization.Json
             return new XmlObjectSerializerReadContextComplexJson(serializer, rootTypeDataContract);
         }
 
-        protected override object ReadDataContractValue(DataContract dataContract, XmlReaderDelegator reader)
+        protected override object? ReadDataContractValue(DataContract dataContract, XmlReaderDelegator reader)
         {
             return DataContractJsonSerializerImpl.ReadJsonValue(dataContract, reader, this);
         }
 
-        public int GetJsonMemberIndex(XmlReaderDelegator xmlReader, XmlDictionaryString[] memberNames, int memberIndex, ExtensionDataObject extensionData)
+        public int GetJsonMemberIndex(XmlReaderDelegator xmlReader, XmlDictionaryString[] memberNames, int memberIndex, ExtensionDataObject? extensionData)
         {
             int length = memberNames.Length;
             if (length != 0)
@@ -59,7 +51,7 @@ namespace System.Runtime.Serialization.Json
                         return index;
                     }
                 }
-                string name;
+                string? name;
                 if (TryGetJsonLocalName(xmlReader, out name))
                 {
                     for (int i = 0, index = (memberIndex + 1) % length; i < length; i++, index = (index + 1) % length)
@@ -75,7 +67,7 @@ namespace System.Runtime.Serialization.Json
             return length;
         }
 
-        internal IList<Type> SerializerKnownTypeList
+        internal IList<Type>? SerializerKnownTypeList
         {
             get
             {
@@ -96,7 +88,7 @@ namespace System.Runtime.Serialization.Json
             _extensionDataValueType = xmlReader.GetAttribute(JsonGlobals.typeString);
         }
 
-        protected override IDataNode ReadPrimitiveExtensionDataValue(XmlReaderDelegator xmlReader, string dataContractName, string dataContractNamespace)
+        protected override IDataNode ReadPrimitiveExtensionDataValue(XmlReaderDelegator xmlReader, string? dataContractName, string? dataContractNamespace)
         {
             IDataNode dataNode;
 
@@ -244,14 +236,14 @@ namespace System.Runtime.Serialization.Json
             }
             return new XmlQualifiedName(name, ns);
         }
-        internal override DataContract GetDataContract(RuntimeTypeHandle typeHandle, Type type)
+        internal override DataContract GetDataContract(RuntimeTypeHandle typeHandle, Type? type)
         {
             DataContract dataContract = base.GetDataContract(typeHandle, type);
             DataContractJsonSerializer.CheckIfTypeIsReference(dataContract);
             return dataContract;
         }
 
-        internal override DataContract GetDataContractSkipValidation(int typeId, RuntimeTypeHandle typeHandle, Type type)
+        internal override DataContract GetDataContractSkipValidation(int typeId, RuntimeTypeHandle typeHandle, Type? type)
         {
             DataContract dataContract = base.GetDataContractSkipValidation(typeId, typeHandle, type);
             DataContractJsonSerializer.CheckIfTypeIsReference(dataContract);
@@ -265,7 +257,7 @@ namespace System.Runtime.Serialization.Json
             return dataContract;
         }
 
-        internal static bool TryGetJsonLocalName(XmlReaderDelegator xmlReader, out string name)
+        internal static bool TryGetJsonLocalName(XmlReaderDelegator xmlReader, [NotNullWhen(true)] out string? name)
         {
             if (xmlReader.IsStartElement(JsonGlobals.itemDictionaryString, JsonGlobals.itemDictionaryString))
             {
@@ -281,7 +273,7 @@ namespace System.Runtime.Serialization.Json
 
         public static string GetJsonMemberName(XmlReaderDelegator xmlReader)
         {
-            string name;
+            string? name;
             if (!TryGetJsonLocalName(xmlReader, out name))
             {
                 name = xmlReader.LocalName;
