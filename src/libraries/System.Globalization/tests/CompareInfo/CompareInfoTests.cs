@@ -365,6 +365,8 @@ namespace System.Globalization.Tests
         private static extern int CompareStringEx(string lpLocaleName, uint dwCmpFlags, string lpString1, int cchCount1, string lpString2, int cchCount2, IntPtr lpVersionInformation, IntPtr lpReserved, int lParam);
         private const int NORM_LINGUISTIC_CASING = 0x08000000;       // use linguistic rules for casing
 
+        // Windows has introduced a regression when comparing 2 strings containing zero sort weight characters (e.g. “” and “\u200C”) when using the NORM_LINGUISTIC_CASING flag.
+        // This code can be deleted after Windows fix the regression.
         private static bool WindowsVersionHasTheCompareStringRegression =>
                     PlatformDetection.IsNlsGlobalization && CompareStringEx("", NORM_LINGUISTIC_CASING, "", 0, "\u200C", 1, IntPtr.Zero, IntPtr.Zero, 0) != 2;
 
