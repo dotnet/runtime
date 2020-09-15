@@ -198,14 +198,14 @@ namespace System.Net.Sockets
 
         public event EventHandler<SocketAsyncEventArgs>? Completed;
 
-        private void OnCompletedInternal(SocketAsyncEventArgs e)
+        private void OnCompletedInternal()
         {
             if (SocketsTelemetry.Log.IsEnabled())
             {
-                e.AfterConnectAcceptTelemetry();
+                AfterConnectAcceptTelemetry();
             }
 
-            OnCompleted(e);
+            OnCompleted(this);
         }
 
         protected virtual void OnCompleted(SocketAsyncEventArgs e)
@@ -450,7 +450,7 @@ namespace System.Net.Sockets
         private static void ExecutionCallback(object? state)
         {
             var thisRef = (SocketAsyncEventArgs)state!;
-            thisRef.OnCompletedInternal(thisRef);
+            thisRef.OnCompletedInternal();
         }
 
         // Marks this object as no longer "in-use". Will also execute a Dispose deferred
@@ -674,7 +674,7 @@ namespace System.Net.Sockets
 
             if (context == null)
             {
-                OnCompletedInternal(this);
+                OnCompletedInternal();
             }
             else
             {
@@ -690,7 +690,7 @@ namespace System.Net.Sockets
 
             if (context == null)
             {
-                OnCompletedInternal(this);
+                OnCompletedInternal();
             }
             else
             {
@@ -711,7 +711,7 @@ namespace System.Net.Sockets
             Complete();
             if (context == null)
             {
-                OnCompletedInternal(this);
+                OnCompletedInternal();
             }
             else
             {
@@ -840,7 +840,7 @@ namespace System.Net.Sockets
             // Raise completion event.
             if (context == null)
             {
-                OnCompletedInternal(this);
+                OnCompletedInternal();
             }
             else
             {
