@@ -248,25 +248,16 @@ namespace System.Text.Json
             Type? elementType = ConverterBase.ElementType;
             Debug.Assert(elementType != null);
 
-            elementType = Nullable.GetUnderlyingType(elementType) ?? elementType;
-
-            if (elementType == typeof(byte) ||
-                elementType == typeof(decimal) ||
-                elementType == typeof(double) ||
-                elementType == typeof(short) ||
-                elementType == typeof(int) ||
-                elementType == typeof(long) ||
-                elementType == typeof(sbyte) ||
-                elementType == typeof(float) ||
-                elementType == typeof(ushort) ||
-                elementType == typeof(uint) ||
-                elementType == typeof(ulong) ||
-                elementType == JsonClassInfo.ObjectType)
+            try
             {
-                return true;
+                JsonConverter converter = Options.GetConverter(elementType);
+                return converter.IsInternalConverterForNumberType;
             }
-
-            return false;
+            catch (NotSupportedException)
+            {
+                // Allow NotSupportedException to be thrown with correct path information during (de)serialization.
+                return false;
+            }
         }
 
         public static TAttribute? GetAttribute<TAttribute>(MemberInfo memberInfo) where TAttribute : Attribute

@@ -243,22 +243,20 @@ namespace System.Text.Json
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowInvalidOperationException_NumberHandlingOnPropertyInvalid(JsonPropertyInfo jsonPropertyInfo)
         {
-            MemberInfo? memberInfo = jsonPropertyInfo.MemberInfo;
-
-            if (!jsonPropertyInfo.ConverterBase.IsInternalConverter)
+            if (jsonPropertyInfo.IsForClassInfo)
             {
-                throw new InvalidOperationException(SR.Format(
-                    SR.NumberHandlingConverterMustBeBuiltIn,
-                    jsonPropertyInfo.ConverterBase.GetType(),
-                    jsonPropertyInfo.IsForClassInfo ? jsonPropertyInfo.DeclaredPropertyType : memberInfo!.DeclaringType));
+                throw new InvalidOperationException(SR.Format(SR.NumberHandlingOnTypeInvalid, jsonPropertyInfo.DeclaredPropertyType));
             }
+            else
+            {
+                MemberInfo? memberInfo = jsonPropertyInfo.MemberInfo;
+                Debug.Assert(memberInfo != null);
 
-            // This exception is only thrown for object properties.
-            Debug.Assert(!jsonPropertyInfo.IsForClassInfo && memberInfo != null);
-            throw new InvalidOperationException(SR.Format(
-                SR.NumberHandlingOnPropertyTypeMustBeNumberOrCollection,
-                memberInfo.Name,
-                memberInfo.DeclaringType));
+                throw new InvalidOperationException(SR.Format(
+                    SR.NumberHandlingOnPropertyInvalid,
+                    memberInfo.Name,
+                    memberInfo.DeclaringType));
+            }
         }
 
         [DoesNotReturn]
