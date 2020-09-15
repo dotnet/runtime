@@ -23,6 +23,11 @@ namespace System.Text.Json
         /// </summary>
         private bool _converterIsExternalAndPolymorphic;
 
+        // Since a converter's TypeToConvert (which is the T value in this type) can be different than
+        // the property's type, we track that and whether the property type can be null.
+        private bool _propertyTypeEqualsTypeToConvert;
+        private bool _propertyTypeCanBeNull;
+
         public Func<object, T>? Get { get; private set; }
         public Action<object, T>? Set { get; private set; }
 
@@ -100,7 +105,10 @@ namespace System.Text.Json
             }
 
             _converterIsExternalAndPolymorphic = !converter.IsInternalConverter && DeclaredPropertyType != converter.TypeToConvert;
-            GetPolicies(ignoreCondition, parentTypeNumberHandling, defaultValueIsNull: Converter.CanBeNull);
+            _propertyTypeCanBeNull = !declaredPropertyType.IsValueType || Nullable.GetUnderlyingType(declaredPropertyType) != null;
+            _propertyTypeEqualsTypeToConvert = typeof(T) == DeclaredPropertyType;
+
+            GetPolicies(ignoreCondition, parentTypeNumberHandling, defaultValueIsNull: _propertyTypeCanBeNull);
         }
 
         public override JsonConverter ConverterBase
@@ -131,18 +139,39 @@ namespace System.Text.Json
         {
             T value = Get!(obj);
 
-            // Since devirtualization only works in non-shared generics,
-            // the default comparer is used only for value types for now.
-            // For reference types there is a quick check for null.
-            if (IgnoreDefaultValuesOnWrite && (
-                default(T) == null ? value == null : EqualityComparer<T>.Default.Equals(default, value)))
+            if (IgnoreDefaultValuesOnWrite)
             {
-                return true;
+                // If value is null, it is a reference type or nullable<T>.
+                if (value == null)
+                {
+                    return true;
+                }
+
+                if (!_propertyTypeCanBeNull)
+                {
+                    if (_propertyTypeEqualsTypeToConvert)
+                    {
+                        // The converter and property types are the same, so we can use T for EqualityComparer<>.
+                        if (EqualityComparer<T>.Default.Equals(default, value))
+                        {
+                            return true;
+                        }
+                    }
+                    else
+                    {
+                        // Use a late-bound call to EqualityComparer<DeclaredPropertyType>.
+                        if (RuntimeClassInfo.GenericMethods.IsDefaultValue(value))
+                        {
+                            Debug.Assert(RuntimeClassInfo.Type == DeclaredPropertyType);
+                            return true;
+                        }
+                    }
+                }
             }
 
             if (value == null)
             {
-                Debug.Assert(Converter.CanBeNull);
+                Debug.Assert(_propertyTypeCanBeNull);
 
                 if (Converter.HandleNullOnWrite)
                 {
@@ -205,7 +234,7 @@ namespace System.Text.Json
             bool isNullToken = reader.TokenType == JsonTokenType.Null;
             if (isNullToken && !Converter.HandleNullOnRead && !state.IsContinuation)
             {
-                if (!Converter.CanBeNull)
+                if (!_propertyTypeCanBeNull)
                 {
                     ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(Converter.TypeToConvert);
                 }
@@ -222,7 +251,7 @@ namespace System.Text.Json
             }
             else if (Converter.CanUseDirectReadOrWrite && state.Current.NumberHandling == null)
             {
-                if (!isNullToken || !IgnoreDefaultValuesOnRead || !Converter.CanBeNull)
+                if (!isNullToken || !IgnoreDefaultValuesOnRead || !_propertyTypeCanBeNull)
                 {
                     // Optimize for internal converters by avoiding the extra call to TryRead.
                     T fastValue = Converter.Read(ref reader, RuntimePropertyType!, Options);
@@ -234,7 +263,7 @@ namespace System.Text.Json
             else
             {
                 success = true;
-                if (!isNullToken || !IgnoreDefaultValuesOnRead || !Converter.CanBeNull)
+                if (!isNullToken || !IgnoreDefaultValuesOnRead || !_propertyTypeCanBeNull)
                 {
                     success = Converter.TryRead(ref reader, RuntimePropertyType!, Options, ref state, out T value);
                     if (success)
@@ -271,7 +300,7 @@ namespace System.Text.Json
             bool isNullToken = reader.TokenType == JsonTokenType.Null;
             if (isNullToken && !Converter.HandleNullOnRead && !state.IsContinuation)
             {
-                if (!Converter.CanBeNull)
+                if (!_propertyTypeCanBeNull)
                 {
                     ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(Converter.TypeToConvert);
                 }
