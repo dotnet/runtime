@@ -327,7 +327,7 @@ namespace System.Runtime.InteropServices.JavaScript.Http.Tests
         }
 
         [Fact]
-        public void ToString_DefaultPutInstance_DumpAllFields()
+        public void ToString_DefaultInstance_DumpAllFields()
         {
             var rm = new HttpRequestMessage();
             string expected =
