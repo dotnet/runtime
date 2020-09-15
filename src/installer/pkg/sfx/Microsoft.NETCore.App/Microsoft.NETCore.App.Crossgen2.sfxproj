@@ -92,4 +92,20 @@
                     DiaSymReader="$(_diaSymReaderPathIfExists)" />
     </ItemGroup>
   </Target>
+
+
+  <Target Name="GetFilesToPublish">
+    <MSBuild Projects="$(MSBuildProjectFullPath)"
+          Targets="_GetAllSharedFrameworkFiles"
+          RemoveProperties="OutputPath;SymbolsOutputPath">
+      <Output TaskParameter="TargetOutputs" ItemName="_FilesToPackage" />
+    </MSBuild>
+    <ItemGroup>
+      <_PackagedFilesToPublish Include="@(_FilesToPackage)" Condition="'%(_FilesToPackage.PackOnly)' != 'true'" />
+    </ItemGroup>
+    <ItemGroup>
+      <FilesToPublish Include="@(_PackagedFilesToPublish)"
+                       TargetPath="" />
+    </ItemGroup>
+  </Target>
 </Project>
