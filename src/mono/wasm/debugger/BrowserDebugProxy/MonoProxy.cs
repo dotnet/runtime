@@ -573,7 +573,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         var asm = store.GetAssemblyByName(assembly_name);
                         if (asm == null)
                         {
-                            Log("info", $"Unable to find assembly: {assembly_name}");
+                            Log("debug", $"Unable to find assembly: {assembly_name}");
                             continue;
                         }
 
@@ -594,7 +594,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                         if (method == null)
                         {
-                            Log("info", $"Unable to find il offset: {il_pos} in method token: {method_token} assembly name: {assembly_name}");
+                            Log("debug", $"Unable to find il offset: {il_pos} in method token: {method_token} assembly name: {assembly_name}");
                             continue;
                         }
 
@@ -609,8 +609,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                             continue;
                         }
 
-                        Log("info", $"frame il offset: {il_pos} method token: {method_token} assembly name: {assembly_name}");
-                        Log("info", $"\tmethod {method_name} location: {location}");
+                        Log("debug", $"frame il offset: {il_pos} method token: {method_token} assembly name: {assembly_name}");
+                        Log("debug", $"\tmethod {method_name} location: {location}");
                         frames.Add(new Frame(method, location, frame_id));
 
                         callFrames.Add(new
