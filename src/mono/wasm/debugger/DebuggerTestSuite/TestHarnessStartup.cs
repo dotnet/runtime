@@ -124,9 +124,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 using var loggerFactory = LoggerFactory.Create(
                     builder => builder.AddConsole().AddFilter(null, LogLevel.Information));
 
-                List<String> urlSymbolServerList = new List<String>();
-                
-                var proxy = new DebuggerProxy(loggerFactory, urlSymbolServerList);
+                var proxy = new DebuggerProxy(loggerFactory, null);
                 var browserUri = new Uri(con_str);
                 var ideSocket = await context.WebSockets.AcceptWebSocketAsync();
 
