@@ -29,7 +29,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         public MonoProxy(ILoggerFactory loggerFactory, IList<string> urlSymbolServerList, bool hideWebDriver = true) : base(loggerFactory) 
         { 
             this.hideWebDriver = hideWebDriver;
-            this.urlSymbolServerList = urlSymbolServerList;
+            this.urlSymbolServerList = urlSymbolServerList ?? new List<string>();
         }
 
         readonly bool hideWebDriver;
