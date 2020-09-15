@@ -222,6 +222,9 @@ namespace System.Text.Json
             }
             else if (Converter.CanUseDirectReadOrWrite && state.Current.NumberHandling == null)
             {
+                // CanUseDirectReadOrWrite == false when using streams
+                Debug.Assert(!state.IsContinuation);
+
                 if (!isNullToken || !IgnoreDefaultValuesOnRead || !Converter.CanBeNull)
                 {
                     // Optimize for internal converters by avoiding the extra call to TryRead.
@@ -284,6 +287,9 @@ namespace System.Text.Json
                 // Optimize for internal converters by avoiding the extra call to TryRead.
                 if (Converter.CanUseDirectReadOrWrite && state.Current.NumberHandling == null)
                 {
+                    // CanUseDirectReadOrWrite == false when using streams
+                    Debug.Assert(!state.IsContinuation);
+
                     value = Converter.Read(ref reader, RuntimePropertyType!, Options);
                     success = true;
                 }

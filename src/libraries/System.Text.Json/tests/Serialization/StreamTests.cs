@@ -13,23 +13,30 @@ namespace System.Text.Json.Serialization.Tests
     public static partial class StreamTests
     {
         // To hit all possible continuation positions inside the tested object,
-        // the outer-class spacer needs to be between 5 and 116 bytes long.
+        // the outer-class padding needs to be between 5 and 116 bytes long.
 
         // {"S":"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx","C":{"A":null,"B":"Hello","C":42,"D":null,"E":3.14E+17,"F":null,"G":true,"H":null,"I":[42,17],"J":{"A":null,"B":7}}}
         // |<------------------------------------------------128 byte buffer------------------------------------------------------------->|
         // {"S":"xxxxx","C":{"A":"Hello","B":null,"C":42,"D":null,"E":3.14E+17,"F":null,"G":true,"H":null,"I":[42,17],"J":{"A":null,"B":7}}}
-        public static IEnumerable<object[]> ContinuationSpacerLengths
-            => Enumerable.Range(5, 116 - 5 + 1).Select(length => new object[] { length });
+
+        private const int MinPaddingLength = 5;
+        private const int MaxPaddingLength = 116;
+
+        private static IEnumerable<int> ContinuationPaddingLengths
+            => Enumerable.Range(MinPaddingLength, MaxPaddingLength - MinPaddingLength + 1);
+
+        private static IEnumerable<bool> IgnoreNullValues
+            => new[] { true, false };
 
         [Theory]
-        [MemberData(nameof(ContinuationSpacerLengths))]
-        public static async Task ContinuationShouldWorkAtAnyPosition_Class_Class(int spacerLength)
+        [MemberData(nameof(TestData))]
+        public static async Task ContinuationShouldWorkAtAnyPosition_Class_Class(int paddingLength, bool ignoreNullValues)
         {
             var stream = new MemoryStream();
             {
                 var obj = new Outer<TestClass<NestedClass>>
                 {
-                    S = new string('x', spacerLength),
+                    S = new string('x', paddingLength),
                     C = new()
                     {
                         A = "Hello",
@@ -49,7 +56,6 @@ namespace System.Text.Json.Serialization.Tests
                     }
                 };
                 await JsonSerializer.SerializeAsync(stream, obj);
-                var json = Encoding.UTF8.GetString(stream.ToArray()); 
             }
 
             stream.Position = 0;
@@ -57,12 +63,12 @@ namespace System.Text.Json.Serialization.Tests
                 var readOptions = new JsonSerializerOptions
                 {
                     DefaultBufferSize = 128,
-                    IgnoreNullValues = true
+                    IgnoreNullValues = ignoreNullValues,
                 };
 
-                var obj = await JsonSerializer.DeserializeAsync<Outer<TestClass<NestedClass>>>(stream, readOptions);
+                Outer<TestClass<NestedClass>> obj = await JsonSerializer.DeserializeAsync<Outer<TestClass<NestedClass>>>(stream, readOptions);
 
-                Assert.Equal(new string('x', spacerLength), obj.S);
+                Assert.Equal(new string('x', paddingLength), obj.S);
                 Assert.Equal("Hello", obj.C.A);
                 Assert.Null(obj.C.B);
                 Assert.Equal(42, obj.C.C);
@@ -79,14 +85,14 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ContinuationSpacerLengths))]
-        public static async Task ContinuationShouldWorkAtAnyPosition_Class_ValueType(int spacerLength)
+        [MemberData(nameof(TestData))]
+        public static async Task ContinuationShouldWorkAtAnyPosition_Class_ValueType(int paddingLength, bool ignoreNullValues)
         {
             var stream = new MemoryStream();
             {
                 var obj = new Outer<TestClass<NestedValueType>>
                 {
-                    S = new string('x', spacerLength),
+                    S = new string('x', paddingLength),
                     C = new()
                     {
                         A = "Hello",
@@ -106,7 +112,6 @@ namespace System.Text.Json.Serialization.Tests
                     }
                 };
                 await JsonSerializer.SerializeAsync(stream, obj);
-                var json = Encoding.UTF8.GetString(stream.ToArray());
             }
 
             stream.Position = 0;
@@ -114,12 +119,12 @@ namespace System.Text.Json.Serialization.Tests
                 var readOptions = new JsonSerializerOptions
                 {
                     DefaultBufferSize = 128,
-                    IgnoreNullValues = true
+                    IgnoreNullValues = ignoreNullValues,
                 };
 
-                var obj = await JsonSerializer.DeserializeAsync<Outer<TestClass<NestedValueType>>>(stream, readOptions);
+                Outer<TestClass<NestedValueType>> obj = await JsonSerializer.DeserializeAsync<Outer<TestClass<NestedValueType>>>(stream, readOptions);
 
-                Assert.Equal(new string('x', spacerLength), obj.S);
+                Assert.Equal(new string('x', paddingLength), obj.S);
                 Assert.Equal("Hello", obj.C.A);
                 Assert.Null(obj.C.B);
                 Assert.Equal(42, obj.C.C);
@@ -135,14 +140,14 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ContinuationSpacerLengths))]
-        public static async Task ContinuationShouldWorkAtAnyPosition_ValueType_Class(int spacerLength)
+        [MemberData(nameof(TestData))]
+        public static async Task ContinuationShouldWorkAtAnyPosition_ValueType_Class(int paddingLength, bool ignoreNullValues)
         {
             var stream = new MemoryStream();
             {
                 var obj = new Outer<TestValueType<NestedClass>>
                 {
-                    S = new string('x', spacerLength),
+                    S = new string('x', paddingLength),
                     C = new()
                     {
                         A = "Hello",
@@ -162,7 +167,6 @@ namespace System.Text.Json.Serialization.Tests
                     }
                 };
                 await JsonSerializer.SerializeAsync(stream, obj);
-                var json = Encoding.UTF8.GetString(stream.ToArray());
             }
 
             stream.Position = 0;
@@ -170,12 +174,12 @@ namespace System.Text.Json.Serialization.Tests
                 var readOptions = new JsonSerializerOptions
                 {
                     DefaultBufferSize = 128,
-                    IgnoreNullValues = true
+                    IgnoreNullValues = ignoreNullValues,
                 };
 
-                var obj = await JsonSerializer.DeserializeAsync<Outer<TestValueType<NestedClass>>>(stream, readOptions);
+                Outer<TestValueType<NestedClass>> obj = await JsonSerializer.DeserializeAsync<Outer<TestValueType<NestedClass>>>(stream, readOptions);
 
-                Assert.Equal(new string('x', spacerLength), obj.S);
+                Assert.Equal(new string('x', paddingLength), obj.S);
                 Assert.Equal("Hello", obj.C.A);
                 Assert.Null(obj.C.B);
                 Assert.Equal(42, obj.C.C);
@@ -192,14 +196,14 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ContinuationSpacerLengths))]
-        public static async Task ContinuationShouldWorkAtAnyPosition_ValueType_ValueType(int spacerLength)
+        [MemberData(nameof(TestData))]
+        public static async Task ContinuationShouldWorkAtAnyPosition_ValueType_ValueType(int paddingLength, bool ignoreNullValues)
         {
             var stream = new MemoryStream();
             {
                 var obj = new Outer<TestValueType<NestedValueType>>
                 {
-                    S = new string('x', spacerLength),
+                    S = new string('x', paddingLength),
                     C = new()
                     {
                         A = "Hello",
@@ -219,7 +223,6 @@ namespace System.Text.Json.Serialization.Tests
                     }
                 };
                 await JsonSerializer.SerializeAsync(stream, obj);
-                var json = Encoding.UTF8.GetString(stream.ToArray());
             }
 
             stream.Position = 0;
@@ -227,12 +230,12 @@ namespace System.Text.Json.Serialization.Tests
                 var readOptions = new JsonSerializerOptions
                 {
                     DefaultBufferSize = 128,
-                    IgnoreNullValues = true
+                    IgnoreNullValues = ignoreNullValues,
                 };
 
-                var obj = await JsonSerializer.DeserializeAsync<Outer<TestValueType<NestedValueType>>>(stream, readOptions);
+                Outer<TestValueType<NestedValueType>> obj = await JsonSerializer.DeserializeAsync<Outer<TestValueType<NestedValueType>>>(stream, readOptions);
 
-                Assert.Equal(new string('x', spacerLength), obj.S);
+                Assert.Equal(new string('x', paddingLength), obj.S);
                 Assert.Equal("Hello", obj.C.A);
                 Assert.Null(obj.C.B);
                 Assert.Equal(42, obj.C.C);
@@ -248,14 +251,14 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ContinuationSpacerLengths))]
-        public static async Task ContinuationShouldWorkAtAnyPosition_ClassWithParamCtor_Class(int spacerLength)
+        [MemberData(nameof(TestData))]
+        public static async Task ContinuationShouldWorkAtAnyPosition_ClassWithParamCtor_Class(int paddingLength, bool ignoreNullValues)
         {
             var stream = new MemoryStream();
             {
                 var obj = new Outer<TestClassWithParamCtor<NestedClassWithParamCtor>>
                 {
-                    S = new string('x', spacerLength),
+                    S = new string('x', paddingLength),
                     C = new(null, 42, null, 3.14e+17f, null, true, null, new int[] { 42, 17 })
                     {
                         A = "Hello",
@@ -266,7 +269,6 @@ namespace System.Text.Json.Serialization.Tests
                     },
                 };
                 await JsonSerializer.SerializeAsync(stream, obj);
-                var json = Encoding.UTF8.GetString(stream.ToArray());
             }
 
             stream.Position = 0;
@@ -274,12 +276,12 @@ namespace System.Text.Json.Serialization.Tests
                 var readOptions = new JsonSerializerOptions
                 {
                     DefaultBufferSize = 128,
-                    IgnoreNullValues = true
+                    IgnoreNullValues = ignoreNullValues,
                 };
 
-                var obj = await JsonSerializer.DeserializeAsync<Outer<TestClassWithParamCtor<NestedClassWithParamCtor>>>(stream, readOptions);
+                Outer<TestClassWithParamCtor<NestedClassWithParamCtor>> obj = await JsonSerializer.DeserializeAsync<Outer<TestClassWithParamCtor<NestedClassWithParamCtor>>>(stream, readOptions);
 
-                Assert.Equal(new string('x', spacerLength), obj.S);
+                Assert.Equal(new string('x', paddingLength), obj.S);
                 Assert.Equal("Hello", obj.C.A);
                 Assert.Null(obj.C.B);
                 Assert.Equal(42, obj.C.C);
@@ -291,6 +293,17 @@ namespace System.Text.Json.Serialization.Tests
                 Assert.Collection(obj.C.I, v => Assert.Equal(42, v), v => Assert.Equal(17, v));
                 Assert.Null(obj.C.J.A);
                 Assert.Equal(7, obj.C.J.B);
+            }
+        }
+
+        private static IEnumerable<object[]> TestData()
+        {
+            foreach (int length in ContinuationPaddingLengths)
+            {
+                foreach (bool ignore in IgnoreNullValues)
+                {
+                    yield return new object[] { length, ignore };
+                }
             }
         }
 
