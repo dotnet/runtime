@@ -63,7 +63,7 @@ int RangeCheck::GetArrLength(ValueNum vn)
 // BetweenBounds: Check if the computed range is within bounds
 //
 // Arguments:
-//    Range - the computed range of upper
+//    Range - the range to check if in bounds
 //    upper - the array length vn
 //    arrSize - the length of the array if known, or <= 0
 //
