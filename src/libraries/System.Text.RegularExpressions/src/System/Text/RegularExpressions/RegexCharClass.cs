@@ -555,7 +555,21 @@ namespace System.Text.RegularExpressions
                     }
                     else
                     {
-                        AddLowercaseRange(range.First, range.Last);
+                        char lower = culture.TextInfo.ToLower(range.First);
+                        char upper = culture.TextInfo.ToLower(range.Last);
+                        if (range.Last - range.First == upper - lower)
+                        {
+                            // Bug fix: https://github.com/dotnet/runtime/issues/36149
+                            AddLowercaseRange(range.First, range.Last);
+                        }
+                        else
+                        {
+                            for (int j = range.First; j <= range.Last; j++)
+                            {
+                                char lowerInRange = culture.TextInfo.ToLower((char)j);
+                                AddRange(lowerInRange, lowerInRange);
+                            }
+                        }
                     }
                 }
             }

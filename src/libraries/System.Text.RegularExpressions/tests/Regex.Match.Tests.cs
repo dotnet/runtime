@@ -376,6 +376,9 @@ namespace System.Text.RegularExpressions.Tests
                 yield return new object[] { "\u05D0(?:\u05D1|\u05D2|\u05D3)", "\u05D0\u05D2", options, 0, 2, true, "\u05D0\u05D2" };
                 yield return new object[] { "\u05D0(?:\u05D1|\u05D2|\u05D3)", "\u05D0\u05D4", options, 0, 0, false, "" };
             }
+
+            // Edge case: Unicode symbol in range
+            yield return new object[] { @"^(?i:[\xD7-\xD8])$", @"\xF7", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, 1, false, "" };
         }
 
         [Theory]
