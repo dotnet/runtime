@@ -240,8 +240,8 @@ function GetDotNetInstallScript([string] $dotnetRoot) {
   return $installScript
 }
 
-function InstallDotNetSdk([string] $dotnetRoot, [string] $version, [string] $architecture = '') {
-  InstallDotNet $dotnetRoot $version $architecture '' $false $runtimeSourceFeed $runtimeSourceFeedKey
+function InstallDotNetSdk([string] $dotnetRoot, [string] $version, [string] $architecture = '', [switch] $noPath) {
+  InstallDotNet $dotnetRoot $version $architecture '' $false $runtimeSourceFeed $runtimeSourceFeedKey -noPath:$noPath
 }
 
 function InstallDotNet([string] $dotnetRoot,
@@ -250,7 +250,8 @@ function InstallDotNet([string] $dotnetRoot,
   [string] $runtime = '',
   [bool] $skipNonVersionedFiles = $false,
   [string] $runtimeSourceFeed = '',
-  [string] $runtimeSourceFeedKey = '') {
+  [string] $runtimeSourceFeedKey = '',
+  [switch] $noPath) {
 
   $installScript = GetDotNetInstallScript $dotnetRoot
   $installParameters = @{
@@ -261,6 +262,7 @@ function InstallDotNet([string] $dotnetRoot,
   if ($architecture) { $installParameters.Architecture = $architecture }
   if ($runtime) { $installParameters.Runtime = $runtime }
   if ($skipNonVersionedFiles) { $installParameters.SkipNonVersionedFiles = $skipNonVersionedFiles }
+  if ($noPath) { $installParameters.NoPath = $True }
 
   try {
     & $installScript @installParameters
@@ -714,6 +716,16 @@ function GetExecutableFileName($baseName) {
 
 function IsWindowsPlatform() {
   return [environment]::OSVersion.Platform -eq [PlatformID]::Win32NT
+}
+
+function Get-Darc($version) {
+  $darcPath  = "$TempDir\darc\$(New-Guid)"
+  if ($version -ne $null) {
+    & $PSScriptRoot\darc-init.ps1 -toolpath $darcPath -darcVersion $version | Out-Host
+  } else {
+    & $PSScriptRoot\darc-init.ps1 -toolpath $darcPath | Out-Host
+  }
+  return "$darcPath\darc.exe"
 }
 
 . $PSScriptRoot\pipeline-logging-functions.ps1

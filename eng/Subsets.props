@@ -91,7 +91,7 @@
     <SubsetName Include="Clr.Tools" Description="Managed tools that support CoreCLR development and testing." />
     <SubsetName Include="Clr.Packages" Description="The projects that produce NuGet packages for the CoreCLR runtime, crossgen, and IL tools." />
     <SubsetName Include="LinuxDac" Condition="$([MSBuild]::IsOsPlatform(Windows))" Description="The cross-OS Windows->libc-based Linux DAC. Skipped on x86." />
-    <SubsetName Include="AlpineDac" Condition="$([MSBuild]::IsOsPlatform(Windows))" OnDemand="true" Description="The cross-OS Windows->musl-libc-based Linux DAC. Skipped on x86 and arm." />
+    <SubsetName Include="AlpineDac" Condition="$([MSBuild]::IsOsPlatform(Windows))" OnDemand="true" Description="The cross-OS Windows->musl-libc-based Linux DAC. Skipped on x86" />
     <SubsetName Include="CrossDacPack" OnDemand="true"
             Description="Packaging of cross OS DAC. Requires all assets needed to be present at a folder specified by $(CrossDacArtifactsDir). See 'Microsoft.CrossOsDiag.Private.CoreCLR.proj' for details." />
 
@@ -159,7 +159,7 @@
     <ProjectToBuild Include="$(CoreClrProjectRoot)runtime.proj" AdditionalProperties="%(AdditionalProperties);$(ClrDefaultRuntimeBuildSubsets);CrossDac=linux" Category="clr" />
   </ItemGroup>
 
-  <ItemGroup Condition="$(_subset.Contains('+alpinedac+')) and $([MSBuild]::IsOsPlatform(Windows)) and '$(TargetArchitecture)' != 'x86' and '$(TargetArchitecture)' != 'arm'">
+  <ItemGroup Condition="$(_subset.Contains('+alpinedac+')) and $([MSBuild]::IsOsPlatform(Windows)) and '$(TargetArchitecture)' != 'x86'">
     <ProjectToBuild Include="$(CoreClrProjectRoot)runtime.proj" AdditionalProperties="%(AdditionalProperties);$(ClrDefaultRuntimeBuildSubsets);CrossDac=alpine" Category="clr" />
   </ItemGroup>
 

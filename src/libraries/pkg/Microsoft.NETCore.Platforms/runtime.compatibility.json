@@ -2758,6 +2758,14 @@
     "any",
     "base"
   ],
+  "linux-mips64": [
+    "linux-mips64",
+    "linux",
+    "unix-mips64",
+    "unix",
+    "any",
+    "base"
+  ],
   "linux-musl": [
     "linux-musl",
     "linux",
@@ -6404,6 +6412,12 @@
   ],
   "unix-armel": [
     "unix-armel",
+    "unix",
+    "any",
+    "base"
+  ],
+  "unix-mips64": [
+    "unix-mips64",
     "unix",
     "any",
     "base"

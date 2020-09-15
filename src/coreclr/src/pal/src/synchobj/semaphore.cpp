@@ -54,42 +54,7 @@ CAllowedObjectTypes aotSempahore(otiSemaphore);
 
 /*++
 Function:
-CreateSemaphoreExA
-
-Note:
-lpSemaphoreAttributes currently ignored:
--- Win32 object security not supported
--- handles to semaphore objects are not inheritable
-
-Parameters:
-See MSDN doc.
---*/
-
-HANDLE
-PALAPI
-CreateSemaphoreExA(
-        IN LPSECURITY_ATTRIBUTES lpSemaphoreAttributes,
-        IN LONG lInitialCount,
-        IN LONG lMaximumCount,
-        IN LPCSTR lpName,
-        IN /*_Reserved_*/  DWORD dwFlags,
-        IN DWORD dwDesiredAccess)
-{
-    // dwFlags is reserved and unused, and dwDesiredAccess is currently
-    // only ever used as SEMAPHORE_ALL_ACCESS.  The other parameters
-    // all map to CreateSemaphoreA.
-    _ASSERTE(SEMAPHORE_ALL_ACCESS == dwDesiredAccess);
-
-    return CreateSemaphoreA(
-        lpSemaphoreAttributes,
-        lInitialCount,
-        lMaximumCount,
-        lpName);
-}
-
-/*++
-Function:
-  CreateSemaphoreA
+  CreateSemaphoreW
 
 Note:
   lpSemaphoreAttributes currently ignored:
@@ -100,104 +65,7 @@ Parameters:
   See MSDN doc.
 --*/
 
-HANDLE
-PALAPI
-CreateSemaphoreA(
-         IN LPSECURITY_ATTRIBUTES lpSemaphoreAttributes,
-         IN LONG lInitialCount,
-         IN LONG lMaximumCount,
-         IN LPCSTR lpName)
-{
-    HANDLE hSemaphore = NULL;
-    CPalThread *pthr = NULL;
-    PAL_ERROR palError;
-
-    PERF_ENTRY(CreateSemaphoreA);
-    ENTRY("CreateSemaphoreA(lpSemaphoreAttributes=%p, lInitialCount=%d, "
-          "lMaximumCount=%d, lpName=%p (%s))\n",
-          lpSemaphoreAttributes, lInitialCount, lMaximumCount, lpName, lpName?lpName:"NULL");
-
-    pthr = InternalGetCurrentThread();
-
-    if (lpName != nullptr)
-    {
-        ASSERT("lpName: Cross-process named objects are not supported in PAL");
-        palError = ERROR_NOT_SUPPORTED;
-    }
-    else
-    {
-        palError = InternalCreateSemaphore(
-            pthr,
-            lpSemaphoreAttributes,
-            lInitialCount,
-            lMaximumCount,
-            NULL,
-            &hSemaphore
-            );
-    }
-
-    //
-    // We always need to set last error, even on success:
-    // we need to protect ourselves from the situation
-    // where last error is set to ERROR_ALREADY_EXISTS on
-    // entry to the function
-    //
-
-    pthr->SetLastError(palError);
-
-    LOGEXIT("CreateSemaphoreA returns HANDLE %p\n", hSemaphore);
-    PERF_EXIT(CreateSemaphoreA);
-    return hSemaphore;
-}
-
-/*++
-Function:
-CreateSemaphoreExW
-
-Note:
-lpSemaphoreAttributes currentely ignored:
--- Win32 object security not supported
--- handles to semaphore objects are not inheritable
-
-Parameters:
-See MSDN doc.
---*/
-
-HANDLE
-PALAPI
-CreateSemaphoreExW(
-        IN LPSECURITY_ATTRIBUTES lpSemaphoreAttributes,
-        IN LONG lInitialCount,
-        IN LONG lMaximumCount,
-        IN LPCWSTR lpName,
-        IN /*_Reserved_*/  DWORD dwFlags,
-        IN DWORD dwDesiredAccess)
-{
-    // dwFlags is reserved and unused
-
-    return CreateSemaphoreW(
-        lpSemaphoreAttributes,
-        lInitialCount,
-        lMaximumCount,
-        lpName);
-}
-
-/*++
-Function:
-  CreateSemaphoreW
-
-Note:
-  lpSemaphoreAttributes currentely ignored:
-  -- Win32 object security not supported
-  -- handles to semaphore objects are not inheritable
-
-Parameters:
-  See MSDN doc.
---*/
-
-HANDLE
-PALAPI
-CreateSemaphoreW(
+HANDLE CreateSemaphoreW(
          IN LPSECURITY_ATTRIBUTES lpSemaphoreAttributes,
          IN LONG lInitialCount,
          IN LONG lMaximumCount,
@@ -240,10 +108,42 @@ CreateSemaphoreW(
 
 /*++
 Function:
+CreateSemaphoreExW
+
+Note:
+lpSemaphoreAttributes currently ignored:
+-- Win32 object security not supported
+-- handles to semaphore objects are not inheritable
+
+Parameters:
+See MSDN doc.
+--*/
+
+HANDLE
+PALAPI
+CreateSemaphoreExW(
+        IN LPSECURITY_ATTRIBUTES lpSemaphoreAttributes,
+        IN LONG lInitialCount,
+        IN LONG lMaximumCount,
+        IN LPCWSTR lpName,
+        IN /*_Reserved_*/  DWORD dwFlags,
+        IN DWORD dwDesiredAccess)
+{
+    // dwFlags is reserved and unused
+
+    return CreateSemaphoreW(
+        lpSemaphoreAttributes,
+        lInitialCount,
+        lMaximumCount,
+        lpName);
+}
+
+/*++
+Function:
   InternalCreateSemaphore
 
 Note:
-  lpSemaphoreAttributes currentely ignored:
+  lpSemaphoreAttributes currently ignored:
   -- Win32 object security not supported
   -- handles to semaphore objects are not inheritable
 

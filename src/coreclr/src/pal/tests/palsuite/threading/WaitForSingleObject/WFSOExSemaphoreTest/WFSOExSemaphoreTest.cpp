@@ -5,7 +5,7 @@
 **
 ** Source:  	WFSOExSemaphore.c
 **
-** Purpose: 	Tests a child thread in the middle of a 
+** Purpose: 	Tests a child thread in the middle of a
 **          		WaitForSingleObjectEx call will be interrupted by QueueUserAPC
 **         		if the alert flag was set.
 **
@@ -26,7 +26,7 @@ DWORD PALAPI WaiterProc(LPVOID lpParameter);
 
 DWORD ThreadWaitDelta;
 
-int __cdecl main( int argc, char **argv ) 
+int __cdecl main( int argc, char **argv )
 {
     if (0 != (PAL_Initialize(argc, argv)))
     {
@@ -34,15 +34,15 @@ int __cdecl main( int argc, char **argv )
     }
 
 	/*
-      On some platforms (e.g. FreeBSD 4.9) the first call to some synch objects 
-      (such as conditions) involves some pthread internal initialization that 
+      On some platforms (e.g. FreeBSD 4.9) the first call to some synch objects
+      (such as conditions) involves some pthread internal initialization that
       can make the first wait slighty longer, potentially going above the
       acceptable delta for this test. Let's add a dummy wait to preinitialize
       internal structures
     */
     Sleep(100);
 
-      /* 
+      /*
      * Check that Queueing an APC in the middle of a wait does interrupt
      * it, if it's in an alertable state.
      */
@@ -51,20 +51,20 @@ int __cdecl main( int argc, char **argv )
     if ((ThreadWaitDelta - InterruptTime) > AcceptableDelta)
     {
         Fail("Expected thread to wait for %d ms (and get interrupted).\n"
-            "Thread waited for %d ms! (Acceptable delta: %d)\n", 
+            "Thread waited for %d ms! (Acceptable delta: %d)\n",
             InterruptTime, ThreadWaitDelta, AcceptableDelta);
     }
 
 
-     /* 
-     * Check that Queueing an APC in the middle of a wait does NOT interrupt 
+     /*
+     * Check that Queueing an APC in the middle of a wait does NOT interrupt
      * it, if it is not in an alertable state.
      */
     RunTest(FALSE);
     if ((ThreadWaitDelta - ChildThreadWaitTime) > AcceptableDelta)
     {
         Fail("Expected thread to wait for %d ms (and not be interrupted).\n"
-            "Thread waited for %d ms! (Acceptable delta: %d)\n", 
+            "Thread waited for %d ms! (Acceptable delta: %d)\n",
             ChildThreadWaitTime, ThreadWaitDelta, AcceptableDelta);
     }
 
@@ -79,8 +79,8 @@ void RunTest(BOOL AlertThread)
     DWORD dwThreadId = 0;
     int ret;
 
-    hThread = CreateThread( NULL, 
-                            0, 
+    hThread = CreateThread( NULL,
+                            0,
                             (LPTHREAD_START_ROUTINE)WaiterProc,
                             (LPVOID) AlertThread,
                             0,
@@ -97,27 +97,27 @@ void RunTest(BOOL AlertThread)
     ret = QueueUserAPC(APCFunc, hThread, 0);
     if (ret == 0)
     {
-        Fail("QueueUserAPC failed! GetLastError returned %d\n", 
+        Fail("QueueUserAPC failed! GetLastError returned %d\n",
             GetLastError());
     }
 
     ret = WaitForSingleObject(hThread, INFINITE);
     if (ret == WAIT_FAILED)
     {
-        Fail("Unable to wait on child thread!\nGetLastError returned %d.\n", 
+        Fail("Unable to wait on child thread!\nGetLastError returned %d.\n",
             GetLastError());
     }
 
   if (0==CloseHandle(hThread))
 	    	{
-	    	Trace("Could not close Thread handle\n"); 
-		Fail ( "GetLastError returned %d\n", GetLastError());  
-    	} 	
+	    	Trace("Could not close Thread handle\n");
+		Fail ( "GetLastError returned %d\n", GetLastError());
+    	}
 }
 
 /* Function doesn't do anything, just needed to interrupt the wait*/
 VOID PALAPI APCFunc(ULONG_PTR dwParam)
-{    
+{
 }
 
 /* Entry Point for child thread. */
@@ -136,7 +136,7 @@ DWORD PALAPI WaiterProc(LPVOID lpParameter)
     }
 
     /* Create a semaphore that is not in the signalled state */
-    hSemaphore = CreateSemaphoreW(NULL, 0, 1, NULL);
+    hSemaphore = CreateSemaphoreExW(NULL, 0, 1, NULL, 0, 0);
 
     if (hSemaphore == NULL)
     {
@@ -148,10 +148,10 @@ DWORD PALAPI WaiterProc(LPVOID lpParameter)
 
     OldTimeStamp = GetHighPrecisionTimeStamp(performanceFrequency);
 
-    ret = WaitForSingleObjectEx(	hSemaphore, 
-								ChildThreadWaitTime, 
+    ret = WaitForSingleObjectEx(	hSemaphore,
+								ChildThreadWaitTime,
         							Alertable);
-    
+
     NewTimeStamp = GetHighPrecisionTimeStamp(performanceFrequency);
 
 

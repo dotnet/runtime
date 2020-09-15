@@ -2629,7 +2629,7 @@ void CEEInfo::embedGenericHandle(
 
         // Runtime lookup is only required for stubs. Regular entrypoints are always the same shared MethodDescs.
         fRuntimeLookup = pMD->IsWrapperStub() &&
-            (pMD->GetMethodTable()->IsSharedByGenericInstantiations() || TypeHandle::IsCanonicalSubtypeInstantiation(methodInst));
+            (th.IsSharedByGenericInstantiations() || TypeHandle::IsCanonicalSubtypeInstantiation(methodInst));
     }
     else
     if (!fEmbedParent && pResolvedToken->hField != NULL)
