@@ -31,9 +31,9 @@ It helps in tracking issues effectively.
 
 ## Build Rotation for upcoming months
 
-| Month | Alias  | 
-|-------|-----------|
-| September |  @directhex  |
-| October  | @jkoritzinsky |
-| November  | @aik-jahoda  |
-| December  | @akoeplinger   |
+| Month     | Alias         | 
+|-----------|---------------|
+| September | @directhex    |
+| October   | @jkoritzinsky |
+| November  | @aik-jahoda   |
+| December  | @akoeplinger  |
