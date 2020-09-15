@@ -1201,35 +1201,8 @@ void CodeGen::inst_RV_RV_TT(
                 case GT_CNS_DBL:
                 {
                     GenTreeDblCon*        dblCns  = op2->AsDblCon();
-                    CORINFO_FIELD_HANDLE* bitMask = nullptr;
-                    CORINFO_FIELD_HANDLE  cnsDblHnd;
-
-                    // Cache constant masks used for GT_NEG and MathF.Abs
-                    // TODO: cache all constants https://github.com/dotnet/runtime/issues/42178
-                    UINT64 dCnsBits = *(UINT64*)&dblCns->gtDconVal;
-                    if ((ins == INS_xorps) && (dCnsBits == 0x8000000000000000UL))
-                    {
-                        bitMask = dblCns->TypeIs(TYP_FLOAT) ? &negBitmaskFlt : &negBitmaskDbl;
-                    }
-                    else if ((ins == INS_andps) && (dCnsBits == 0x7fffffffffffffffUL))
-                    {
-                        bitMask = dblCns->TypeIs(TYP_FLOAT) ? &absBitmaskFlt : &absBitmaskDbl;
-                    }
-
-                    if (bitMask != nullptr)
-                    {
-                        if (*bitMask == nullptr)
-                        {
-                            *bitMask =
-                                GetEmitter()->emitFltOrDblConst(dblCns->gtDconVal, emitTypeSize(dblCns), EA_16BYTE);
-                        }
-                        cnsDblHnd = *bitMask;
-                    }
-                    else
-                    {
-                        cnsDblHnd = GetEmitter()->emitFltOrDblConst(dblCns->gtDconVal, emitTypeSize(dblCns));
-                    }
-
+                    CORINFO_FIELD_HANDLE  cnsDblHnd =
+                        GetEmitter()->emitFltOrDblConst(dblCns->gtDconVal, emitTypeSize(dblCns));
                     GetEmitter()->emitIns_SIMD_R_R_C(ins, size, targetReg, op1Reg, cnsDblHnd, 0);
                     return;
                 }

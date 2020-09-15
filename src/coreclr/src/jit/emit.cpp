@@ -5552,8 +5552,7 @@ CORINFO_FIELD_HANDLE emitter::emitAnyConst(const void* cnsAddr, UNATIVE_OFFSET c
 // Arguments:
 //    constValue - constant value
 //    attr       - constant size
-//    packSize   - works as a multiplier if packSize > attr
-//    packAlignment - pack alignment
+//    packSize   - emit multiple values if packSize > attr
 //
 // Return Value:
 //    A field handle representing the data offset to access the constant.
@@ -5562,9 +5561,7 @@ CORINFO_FIELD_HANDLE emitter::emitAnyConst(const void* cnsAddr, UNATIVE_OFFSET c
 //    If attr is EA_4BYTE then the double value is converted to a float value.
 //    If attr is EA_8BYTE then 8 byte alignment is automatically requested.
 //
-CORINFO_FIELD_HANDLE emitter::emitFltOrDblConst(double   constValue,
-                                                emitAttr attr,
-                                                emitAttr packSize)
+CORINFO_FIELD_HANDLE emitter::emitFltOrDblConst(double constValue, emitAttr attr, emitAttr packSize)
 {
     assert((attr == EA_4BYTE) || (attr == EA_8BYTE));
 

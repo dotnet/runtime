@@ -6743,37 +6743,40 @@ int CodeGenInterface::genCallerSPtoInitialSPdelta() const
 void CodeGen::genSSE2BitwiseOp(GenTree* treeNode)
 {
     regNumber targetReg  = treeNode->GetRegNum();
-    var_types targetType = treeNode->TypeGet();
+    regNumber operandReg = genConsumeReg(treeNode->gtGetOp1());
+    emitAttr  size       = emitTypeSize(treeNode);
 
-    assert(varTypeIsFloating(targetType));
+    assert(varTypeIsFloating(treeNode->TypeGet()));
+    assert(treeNode->gtGetOp1()->isUsedFromReg());
 
-    UINT64      mask = 0;
-    instruction ins  = INS_invalid;
+    CORINFO_FIELD_HANDLE* bitMask = nullptr;
+    UINT64                mask    = 0;
+    instruction           ins     = INS_invalid;
 
     if (treeNode->OperIs(GT_NEG))
     {
         ins  = INS_xorps;
         mask = 0x8000000000000000UL;
+        bitMask = treeNode->TypeIs(TYP_FLOAT) ? &negBitmaskFlt : &negBitmaskDbl;
     }
     else if (treeNode->OperIs(GT_INTRINSIC))
     {
         assert(treeNode->AsIntrinsic()->gtIntrinsicName == NI_System_Math_Abs);
         ins  = INS_andps;
         mask = 0x7fffffffffffffffUL;
+        bitMask = treeNode->TypeIs(TYP_FLOAT) ? &absBitmaskFlt : &absBitmaskDbl;
     }
     else
     {
         assert(!"genSSE2BitwiseOp: unsupported oper");
     }
 
-    assert(treeNode->gtGetOp1()->isUsedFromReg());
+    if (*bitMask == nullptr)
+    {
+        *bitMask = GetEmitter()->emitFltOrDblConst(*(double*)&mask, size, EA_16BYTE);
+    }
 
-    // create fake Dcon node for inst_RV_RV_TT (should be contained)
-    GenTree* tmpZeroCns = compiler->gtNewDconNode(*(double*)&mask, treeNode->TypeGet());
-    tmpZeroCns->SetContained();
-
-    bool isRMW = !compiler->canUseVexEncoding();
-    inst_RV_RV_TT(ins, emitTypeSize(treeNode), targetReg, genConsumeReg(treeNode->gtGetOp1()), tmpZeroCns, isRMW);
+    GetEmitter()->emitIns_SIMD_R_R_C(ins, size, targetReg, operandReg, *bitMask, 0);
 }
 
 //-----------------------------------------------------------------------------------------
