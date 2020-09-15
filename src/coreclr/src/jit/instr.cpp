@@ -1200,8 +1200,8 @@ void CodeGen::inst_RV_RV_TT(
 
                 case GT_CNS_DBL:
                 {
-                    GenTreeDblCon*        dblCns  = op2->AsDblCon();
-                    CORINFO_FIELD_HANDLE  cnsDblHnd =
+                    GenTreeDblCon*       dblCns = op2->AsDblCon();
+                    CORINFO_FIELD_HANDLE cnsDblHnd =
                         GetEmitter()->emitFltOrDblConst(dblCns->gtDconVal, emitTypeSize(dblCns));
                     GetEmitter()->emitIns_SIMD_R_R_C(ins, size, targetReg, op1Reg, cnsDblHnd, 0);
                     return;
