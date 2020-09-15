@@ -571,7 +571,7 @@ namespace System.Net.Http
                     if (_responseProtocolState == ResponseProtocolState.ExpectingHeaders)
                     {
                         if (NetEventSource.Log.IsEnabled()) Trace("Received extra status header.");
-                        throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_status_code, "duplicate status"));
+                        throw new HttpRequestException(SR.net_http_invalid_response_multiple_status_codes);
                     }
 
                     if (_responseProtocolState != ResponseProtocolState.ExpectingStatus)
