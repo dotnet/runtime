@@ -4339,6 +4339,7 @@ assembly_binding_info_parsed (MonoAssemblyBindingInfo *info, void *user_data)
 	GSList *tmp;
 	MonoAssemblyBindingInfo *info_tmp;
 	MonoDomain *domain = (MonoDomain*)user_data;
+	MonoMemoryManager *memory_manager = mono_domain_ambient_memory_manager (domain); // linked with mono_domain_parse_assembly_bindings
 
 	if (!domain)
 		return;
@@ -4355,14 +4356,14 @@ assembly_binding_info_parsed (MonoAssemblyBindingInfo *info, void *user_data)
 			return;
 	}
 
-	info_copy = (MonoAssemblyBindingInfo *)mono_mempool_alloc0 (domain->mp, sizeof (MonoAssemblyBindingInfo));
+	info_copy = (MonoAssemblyBindingInfo *)mono_mem_manager_alloc0_nolock (memory_manager, sizeof (MonoAssemblyBindingInfo));
 	memcpy (info_copy, info, sizeof (MonoAssemblyBindingInfo));
 	if (info->name)
-		info_copy->name = mono_mempool_strdup (domain->mp, info->name);
+		info_copy->name = mono_mempool_strdup (memory_manager->mp, info->name);
 	if (info->culture)
-		info_copy->culture = mono_mempool_strdup (domain->mp, info->culture);
+		info_copy->culture = mono_mempool_strdup (memory_manager->mp, info->culture);
 
-	domain->assembly_bindings = g_slist_append_mempool (domain->mp, domain->assembly_bindings, info_copy);
+	domain->assembly_bindings = g_slist_append_mempool (memory_manager->mp, domain->assembly_bindings, info_copy);
 }
 
 static int
@@ -4425,7 +4426,11 @@ mono_domain_parse_assembly_bindings (MonoDomain *domain, int amajor, int aminor,
 {
 	if (domain->assembly_bindings_parsed)
 		return;
+
+	MonoMemoryManager *memory_manager = mono_domain_ambient_memory_manager (domain); // linked with assembly_binding_info_parsed
+
 	mono_domain_lock (domain);
+	mono_mem_manager_lock (memory_manager);
 	if (!domain->assembly_bindings_parsed) {
 
 		gchar *domain_config_file_path = mono_portability_find_file (domain_config_file_name, TRUE);
@@ -4439,6 +4444,7 @@ mono_domain_parse_assembly_bindings (MonoDomain *domain, int amajor, int aminor,
 			g_free (domain_config_file_path);
 	}
 
+	mono_mem_manager_unlock (memory_manager);
 	mono_domain_unlock (domain);
 }
 

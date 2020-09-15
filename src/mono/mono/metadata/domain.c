@@ -432,14 +432,15 @@ mono_domain_create (void)
 
 	MONO_PROFILER_RAISE (domain_loading, (domain));
 
-	domain->mp = mono_mempool_new ();
-	domain->code_mp = mono_code_manager_new ();
+#ifndef ENABLE_NETCORE
+	domain->memory_manager = (MonoMemoryManager *)mono_mem_manager_create_singleton (NULL, domain, TRUE);
+#endif
+
 	domain->lock_free_mp = lock_free_mempool_new ();
 	domain->env = mono_g_hash_table_new_type_internal ((GHashFunc)mono_string_hash_internal, (GCompareFunc)mono_string_equal_internal, MONO_HASH_KEY_VALUE_GC, MONO_ROOT_SOURCE_DOMAIN, domain, "Domain Environment Variable Table");
 	domain->domain_assemblies = NULL;
 	domain->assembly_bindings = NULL;
 	domain->assembly_bindings_parsed = FALSE;
-	domain->class_vtable_array = g_ptr_array_new ();
 	domain->proxy_vtable_hash = g_hash_table_new ((GHashFunc)mono_ptrarray_hash, (GCompareFunc)mono_ptrarray_equal);
 	mono_jit_code_hash_init (&domain->jit_code_hash);
 	domain->ldstr_table = mono_g_hash_table_new_type_internal ((GHashFunc)mono_string_hash_internal, (GCompareFunc)mono_string_equal_internal, MONO_HASH_KEY_VALUE_GC, MONO_ROOT_SOURCE_DOMAIN, domain, "Domain String Pool Table");
@@ -1086,15 +1087,6 @@ mono_domain_assembly_open_internal (MonoDomain *domain, MonoAssemblyLoadContext 
 	return ass;
 }
 
-static void
-unregister_vtable_reflection_type (MonoVTable *vtable)
-{
-	MonoObject *type = (MonoObject *)vtable->type;
-
-	if (type->vtable->klass != mono_defaults.runtimetype_class)
-		MONO_GC_UNREGISTER_ROOT_IF_MOVING (vtable->type);
-}
-
 /**
  * mono_domain_free:
  * \param domain the domain to release
@@ -1146,23 +1138,7 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 	mono_g_hash_table_destroy (domain->env);
 	domain->env = NULL;
 
-	mono_reflection_cleanup_domain (domain);
-
-	/* This must be done before type_hash is freed */
-	if (domain->class_vtable_array) {
-		int i;
-		for (i = 0; i < domain->class_vtable_array->len; ++i)
-			unregister_vtable_reflection_type ((MonoVTable *)g_ptr_array_index (domain->class_vtable_array, i));
-	}
-
-	if (domain->type_hash) {
-		mono_g_hash_table_destroy (domain->type_hash);
-		domain->type_hash = NULL;
-	}
-	if (domain->type_init_exception_hash) {
-		mono_g_hash_table_destroy (domain->type_init_exception_hash);
-		domain->type_init_exception_hash = NULL;
-	}
+	mono_mem_manager_free_objects_singleton ((MonoSingletonMemoryManager *)domain->memory_manager);
 
 	for (tmp = domain->domain_assemblies; tmp; tmp = tmp->next) {
 		MonoAssembly *ass = (MonoAssembly *)tmp->data;
@@ -1230,8 +1206,6 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 
 	g_free (domain->friendly_name);
 	domain->friendly_name = NULL;
-	g_ptr_array_free (domain->class_vtable_array, TRUE);
-	domain->class_vtable_array = NULL;
 	g_hash_table_destroy (domain->proxy_vtable_hash);
 	domain->proxy_vtable_hash = NULL;
 	mono_internal_hash_table_destroy (&domain->jit_code_hash);
@@ -1249,25 +1223,15 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 	domain->jit_info_table = NULL;
 	g_assert (!domain->jit_info_free_queue);
 
-	/* collect statistics */
-	code_alloc = mono_code_manager_size (domain->code_mp, &code_size);
+	// Collect statistics
+	code_alloc = mono_code_manager_size (domain->memory_manager->code_mp, &code_size);
 	total_domain_code_alloc += code_alloc;
 	max_domain_code_alloc = MAX (max_domain_code_alloc, code_alloc);
 	max_domain_code_size = MAX (max_domain_code_size, code_size);
 
-	if (debug_domain_unload) {
-		mono_mempool_invalidate (domain->mp);
-		mono_code_manager_invalidate (domain->code_mp);
-	} else {
-#ifndef DISABLE_PERFCOUNTERS
-		/* FIXME: use an explicit subtraction method as soon as it's available */
-		mono_atomic_fetch_add_i32 (&mono_perfcounters->loader_bytes, -1 * mono_mempool_get_allocated (domain->mp));
-#endif
-		mono_mempool_destroy (domain->mp);
-		domain->mp = NULL;
-		mono_code_manager_destroy (domain->code_mp);
-		domain->code_mp = NULL;
-	}
+	mono_mem_manager_free_singleton ((MonoSingletonMemoryManager *)domain->memory_manager, debug_domain_unload);
+	domain->memory_manager = NULL;
+
 	lock_free_mempool_free (domain->lock_free_mp);
 	domain->lock_free_mp = NULL;
 
@@ -1367,41 +1331,27 @@ mono_domain_get_friendly_name (MonoDomain *domain)
 /*
  * mono_domain_alloc:
  *
- * LOCKING: Acquires the domain lock.
+ * LOCKING: Acquires the default memory manager lock.
  */
 gpointer
 (mono_domain_alloc) (MonoDomain *domain, guint size)
 {
-	gpointer res;
+	MonoMemoryManager *memory_manager = mono_domain_memory_manager (domain);
 
-	mono_domain_lock (domain);
-#ifndef DISABLE_PERFCOUNTERS
-	mono_atomic_fetch_add_i32 (&mono_perfcounters->loader_bytes, size);
-#endif
-	res = mono_mempool_alloc (domain->mp, size);
-	mono_domain_unlock (domain);
-
-	return res;
+	return mono_mem_manager_alloc (memory_manager, size);
 }
 
 /*
  * mono_domain_alloc0:
  *
- * LOCKING: Acquires the domain lock.
+ * LOCKING: Acquires the default memory manager lock.
  */
 gpointer
 (mono_domain_alloc0) (MonoDomain *domain, guint size)
 {
-	gpointer res;
+	MonoMemoryManager *memory_manager = mono_domain_memory_manager (domain);
 
-	mono_domain_lock (domain);
-#ifndef DISABLE_PERFCOUNTERS
-	mono_atomic_fetch_add_i32 (&mono_perfcounters->loader_bytes, size);
-#endif
-	res = mono_mempool_alloc0 (domain->mp, size);
-	mono_domain_unlock (domain);
-
-	return res;
+	return mono_mem_manager_alloc0 (memory_manager, size);
 }
 
 gpointer
@@ -1413,48 +1363,40 @@ gpointer
 /*
  * mono_domain_code_reserve:
  *
- * LOCKING: Acquires the domain lock.
+ * LOCKING: Acquires the default memory manager lock.
  */
 void*
 (mono_domain_code_reserve) (MonoDomain *domain, int size)
 {
-	gpointer res;
+	MonoMemoryManager *memory_manager = mono_domain_memory_manager (domain);
 
-	mono_domain_lock (domain);
-	res = mono_code_manager_reserve (domain->code_mp, size);
-	mono_domain_unlock (domain);
-
-	return res;
+	return mono_mem_manager_code_reserve (memory_manager, size);
 }
 
 /*
  * mono_domain_code_reserve_align:
  *
- * LOCKING: Acquires the domain lock.
+ * LOCKING: Acquires the default memory manager lock.
  */
 void*
 (mono_domain_code_reserve_align) (MonoDomain *domain, int size, int alignment)
 {
-	gpointer res;
+	MonoMemoryManager *memory_manager = mono_domain_memory_manager (domain);
 
-	mono_domain_lock (domain);
-	res = mono_code_manager_reserve_align (domain->code_mp, size, alignment);
-	mono_domain_unlock (domain);
-
-	return res;
+	return mono_mem_manager_code_reserve_align (memory_manager, size, alignment);
 }
 
 /*
  * mono_domain_code_commit:
  *
- * LOCKING: Acquires the domain lock.
+ * LOCKING: Acquires the default memory manager lock.
  */
 void
 mono_domain_code_commit (MonoDomain *domain, void *data, int size, int newsize)
 {
-	mono_domain_lock (domain);
-	mono_code_manager_commit (domain->code_mp, data, size, newsize);
-	mono_domain_unlock (domain);
+	MonoMemoryManager *memory_manager = mono_domain_memory_manager (domain);
+
+	mono_mem_manager_code_commit (memory_manager, data, size, newsize);
 }
 
 /*
@@ -1463,15 +1405,15 @@ mono_domain_code_commit (MonoDomain *domain, void *data, int size, int newsize)
  * 
  * The @func callback MUST not take any locks. If it really needs to, it must respect
  * the locking rules of the runtime: http://www.mono-project.com/Mono:Runtime:Documentation:ThreadSafety 
- * LOCKING: Acquires the domain lock.
+ * LOCKING: Acquires the default memory manager lock.
  */
 
 void
 mono_domain_code_foreach (MonoDomain *domain, MonoCodeManagerFunc func, void *user_data)
 {
-	mono_domain_lock (domain);
-	mono_code_manager_foreach (domain->code_mp, func, user_data);
-	mono_domain_unlock (domain);
+	MonoMemoryManager *memory_manager = mono_domain_memory_manager (domain);
+
+	mono_mem_manager_code_foreach (memory_manager, func, user_data);
 }
 
 /**
