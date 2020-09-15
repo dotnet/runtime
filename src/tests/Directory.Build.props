@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="dir.sdkbuild.props" Condition="'$(UsingMicrosoftNETSdk)' == 'true'"  />
-  <Import Project="dir.common.props" Condition="'$(UsingMicrosoftNETSdk)' != 'true'"  />
+  <Import Project="$(MSBuildThisFileDirectory)\Common\dir.sdkbuild.props" Condition="'$(UsingMicrosoftNETSdk)' == 'true'"  />
+  <Import Project="$(MSBuildThisFileDirectory)\Common\dir.common.props" Condition="'$(UsingMicrosoftNETSdk)' != 'true'"  />
 
   <PropertyGroup>
     <RunningOnUnix Condition="('$(RunningOnUnix)' == '') And ('$(MSBuildRuntimeType)' == 'Core') And ('$(OS)'!='Windows_NT')">true</RunningOnUnix>
@@ -92,17 +92,6 @@
 
   <!-- Setup the default output and intermediate paths -->
   <PropertyGroup>
-    <BaseOutputPath>$(RepoRoot)\artifacts\tests\coreclr</BaseOutputPath>
-    <BaseOutputPath Condition="'$(__TestRootDir)' != ''">$(__TestRootDir)</BaseOutputPath>
-    <BaseOutputPathWithConfig>$(BaseOutputPath)\$(OSPlatformConfig)\</BaseOutputPathWithConfig>
-    <BinDir>$(BaseOutputPathWithConfig)</BinDir>
-    <BaseIntermediateOutputPath>$(RepoRoot)\artifacts\tests\coreclr\obj\$(OSPlatformConfig)\Managed\</BaseIntermediateOutputPath>
-    <BaseIntermediateOutputPath Condition="'$(__ManagedTestIntermediatesDir)' != ''">$(__ManagedTestIntermediatesDir)\</BaseIntermediateOutputPath>
-    <__NativeTestIntermediatesDir Condition="'$(__NativeTestIntermediatesDir)' == ''">$([System.IO.Path]::GetFullPath($(BaseOutputPathWithConfig)..\..\coreclr\obj\$(TargetOS).$(TargetArchitecture).$(Configuration)\Native\))</__NativeTestIntermediatesDir>
-    <BuildProjectRelativeDir>$(MSBuildProjectName)\</BuildProjectRelativeDir>
-    <BuildProjectRelativeDir Condition="'$(MSBuildProjectDirectory.Contains($(TestSourceDir)))'">$([System.String]::Copy('$(MSBuildProjectDirectory)').Replace($(TestSourceDir),''))\$(MSBuildProjectName)</BuildProjectRelativeDir>
-    <IntermediateOutputPath>$(BaseIntermediateOutputPath)$(BuildProjectRelativeDir)\</IntermediateOutputPath>
-    <OutputPath>$(BaseOutputPathWithConfig)$(BuildProjectRelativeDir)\</OutputPath>
     <SkipXunitDependencyCopying>true</SkipXunitDependencyCopying>
   </PropertyGroup>
 
@@ -222,8 +211,6 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <RestoreOutputPath>$(MSBuildProjectDirectory)\obj</RestoreOutputPath>
-
     <!-- Specify the target framework of the common test dependency project.json. -->
     <NuGetTargetMoniker>$(NetCoreAppCurrentTargetFrameworkMoniker)</NuGetTargetMoniker>
     <NuGetTargetMonikerShort>$(NetCoreAppCurrent)</NuGetTargetMonikerShort>

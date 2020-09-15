@@ -6,9 +6,9 @@
     <Project Include="$(MSBuildThisFileDirectory)Common\dirs.proj" />
   </ItemGroup>
 
-  <Import Project="$(RepoRoot)\src\coreclr\tests\Directory.Build.targets" />
+  <Import Project="$(RepoRoot)\src\tests\Directory.Build.targets" />
 
-  <Import Project="$(RepoRoot)\src\coreclr\tests\dir.traversal.targets" />
+  <Import Project="$(RepoRoot)\src\tests\Common\dir.traversal.targets" />
 
   <PropertyGroup>
     <TraversalBuildDependsOn>
