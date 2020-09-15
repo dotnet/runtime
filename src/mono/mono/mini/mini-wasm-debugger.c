@@ -65,7 +65,7 @@ extern void mono_wasm_add_properties_var (const char*, gint32);
 extern void mono_wasm_add_array_item (int);
 extern void mono_wasm_set_is_async_method (guint64);
 extern void mono_wasm_add_typed_value (const char *type, const char *str_value, double value);
-extern void mono_wasm_add_lazy_load_files(const char *assembly_data, const char *pdb_data);
+extern void mono_wasm_add_files(const char *assembly_data, guint32 assembly_len, const char *pdb_data, guint32 pdb_len);
 
 G_END_DECLS
 
@@ -171,7 +171,7 @@ free_frame_state (void)
 		for (i = 0; i < frames->len; ++i)
 			free_frame ((DbgEngineStackFrame*)g_ptr_array_index (frames, i));
 		g_ptr_array_set_size (frames, 0);
-	}
+	}	
 }
 
 static void
@@ -185,7 +185,7 @@ compute_frames (void) {
 		frames = g_ptr_array_new ();
 	}
 
-	mono_walk_stack_with_ctx (collect_frames, NULL, MONO_UNWIND_NONE, NULL);
+	mono_walk_stack_with_ctx (collect_frames, NULL, MONO_UNWIND_NONE, NULL);	
 }
 static MonoContext*
 tls_get_restore_state (void *tls)
@@ -316,7 +316,7 @@ ss_create_init_args (SingleStepReq *ss_req, SingleStepArgs *ss_args)
 static void
 ss_args_destroy (SingleStepArgs *ss_args)
 {
-	//nothing to do
+	//nothing to do	
 }
 
 static int
@@ -363,8 +363,7 @@ mono_wasm_debugger_init (void)
 	mono_profiler_set_jit_done_callback (prof, jit_done);
 	//FIXME support multiple appdomains
 	mono_profiler_set_domain_loaded_callback (prof, appdomain_load);
-	DEBUG_PRINTF(1, "adding callback\n");
-    mono_profiler_set_assembly_loaded_callback(prof, assembly_load);
+	mono_profiler_set_assembly_loaded_callback(prof, assembly_load);
 
 	obj_to_objref = g_hash_table_new (NULL, NULL);
 	objrefs = g_hash_table_new_full (NULL, NULL, NULL, mono_debugger_free_objref);
@@ -443,8 +442,8 @@ mono_wasm_setup_single_step (int kind)
 	return isBPOnNativeCode;
 }
 
-static int
-get_object_id(MonoObject *obj)
+static int 
+get_object_id(MonoObject *obj) 
 {
 	ObjRef *ref;
 	if (!obj)
@@ -464,7 +463,7 @@ get_object_id(MonoObject *obj)
 static void
 assembly_load(MonoProfiler *prof, MonoAssembly *assembly)
 {
-    DEBUG_PRINTF(1, "loading assembly\n");
+    DEBUG_PRINTF(1, "Running assembly_loaded callback for %s", assembly->aname.name);
     MonoImage *assembly_image = assembly->image;
     MonoImage *pdb_image = NULL;
     MonoDebugHandle *handle = mono_debug_get_handle(assembly_image);
@@ -472,9 +471,10 @@ assembly_load(MonoProfiler *prof, MonoAssembly *assembly)
     if (ppdb)
     {
         pdb_image = mono_ppdb_get_image(ppdb);
-        mono_wasm_add_lazy_load_files(assembly_image->raw_data, pdb_image->raw_data);
+        mono_wasm_add_files(assembly_image->raw_data, assembly_image->raw_data_len, pdb_image->raw_data, pdb_image->raw_data_len);
+        return;
     }
-    mono_wasm_add_lazy_load_files(assembly_image->raw_data, NULL);
+    mono_wasm_add_files(assembly_image->raw_data, assembly_image->raw_data_len, NULL, 0);
 }
 
 static void

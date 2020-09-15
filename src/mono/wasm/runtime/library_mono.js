@@ -1713,15 +1713,6 @@ var MonoSupportLib = {
 			return MONO.loaded_files;
 		},
 
-		mono_wasm_get_lazy_loaded_files: function() {
-			return MONO.lazy_loaded_files;
-		},
-
-		mono_wasm_add_lazy_load_files: function (assembly_data, pdb_data) {
-			const event_args = { assembly_data, pdb_data };
-			mono_wasm_raise_event('ADD_ASSEMBLY_PDB', event_args);
-		},
-
 		mono_wasm_get_loaded_asset_table: function() {
 			return MONO.loaded_assets;
 		},
@@ -2260,6 +2251,16 @@ var MonoSupportLib = {
 			uncaught    : uncaught
 		};
 		debugger;
+	},
+
+	mono_wasm_add_files: function (assembly_ptr, assemnly_len, pdb_ptr, pdb_len) {
+		const assembly_data = new Uint8Array(Module.HEAPU8.buffer, assembly_ptr, assemnly_len);
+		const pdb_data = pdb_ptr ? new Uint8Array(Module.HEAPU8.buffer, pdb_ptr, pdb_len) : null;
+		MONO.mono_wasm_raise_debug_event({
+			eventName: 'ADD_ASSEMBLY_PDB',
+			assembly_data: Array.from(assembly_data),
+			pdb_data: pdb_data ? Array.from(pdb_data) : pdb_data
+		});
 	},
 };
 
