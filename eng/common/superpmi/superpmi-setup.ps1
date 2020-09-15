@@ -33,7 +33,7 @@ $HelixSourcePrefix = "official"
 $Creator = $env:BUILD_DEFINITIONNAME
 robocopy $SourceDirectory\src\coreclr\scripts $SuperPmiDirectory /E /XD $PayloadDirectory $SourceDirectory\artifacts $SourceDirectory\.git
 robocopy $CoreRootDirectory $PmiAssembliesDirectory\Core_Root /E
-robocopy $ManagedTestArtifactDirectory $PmiAssembliesDirectory\Tests
+robocopy $ManagedTestArtifactDirectory $PmiAssembliesDirectory\Tests /E /XD $CoreRootDirectory
 
 New-Item -Path $WorkItemDirectory -Name "placeholder.txt" -ItemType "file" -Value "Placeholder file." -Force
 
