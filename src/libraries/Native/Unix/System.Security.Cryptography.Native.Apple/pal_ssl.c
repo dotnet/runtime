@@ -392,6 +392,7 @@ int32_t AppleCryptoNative_SslIsHostnameMatch(SSLContextRef sslContext, CFStringR
     if (anchors == NULL)
     {
         CFRelease(certs);
+        CFRelease(existingTrust);
         return -6;
     }
 
@@ -512,6 +513,9 @@ int32_t AppleCryptoNative_SslIsHostnameMatch(SSLContextRef sslContext, CFStringR
 
     if (anchors != NULL)
         CFRelease(anchors);
+
+    if (existingTrust != NULL)
+        CFRelease(existingTrust);
 
     CFRelease(sslPolicy);
     return ret;

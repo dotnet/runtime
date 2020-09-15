@@ -7,6 +7,8 @@ using System.Text;
 using System.Runtime.Serialization;
 using System.Collections.Generic;
 using System.Xml;
+using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics;
 
 namespace System.Runtime.Serialization.Json
 {
@@ -274,14 +276,14 @@ namespace System.Runtime.Serialization.Json
                 CharType.None | CharType.FirstName | CharType.Name, //  FF (?)
             };
         private bool _buffered;
-        private byte[] _charactersToSkipOnNextRead;
+        private byte[]? _charactersToSkipOnNextRead;
         private JsonComplexTextMode _complexTextMode = JsonComplexTextMode.None;
         private bool _expectingFirstElementInNonPrimitiveChild;
         private int _maxBytesPerRead;
-        private OnXmlDictionaryReaderClose _onReaderClose;
+        private OnXmlDictionaryReaderClose? _onReaderClose;
         private bool _readServerTypeElement;
         private int _scopeDepth;
-        private JsonNodeType[] _scopes;
+        private JsonNodeType[]? _scopes;
 
         private enum JsonComplexTextMode
         {
@@ -322,7 +324,7 @@ namespace System.Runtime.Serialization.Json
         {
             get
             {
-                return ((_scopeDepth > 0) && (_scopes[_scopeDepth] == JsonNodeType.Collection));
+                return ((_scopeDepth > 0) && (_scopes![_scopeDepth] == JsonNodeType.Collection));
             }
         }
 
@@ -337,7 +339,7 @@ namespace System.Runtime.Serialization.Json
 
         protected override void Dispose(bool disposing)
         {
-            OnXmlDictionaryReaderClose onClose = _onReaderClose;
+            OnXmlDictionaryReaderClose? onClose = _onReaderClose;
             _onReaderClose = null;
             ResetState();
             if (onClose != null)
@@ -348,11 +350,6 @@ namespace System.Runtime.Serialization.Json
                 }
                 catch (Exception e)
                 {
-                    if (DiagnosticUtility.IsFatal(e))
-                    {
-                        throw;
-                    }
-
                     throw new InvalidOperationException(SR.GenericCallbackException, e);
                 }
             }
@@ -369,7 +366,7 @@ namespace System.Runtime.Serialization.Json
             return UnescapeJsonString(base.GetAttribute(index));
         }
 
-        public override string GetAttribute(string localName, string namespaceUri)
+        public override string? GetAttribute(string localName, string? namespaceUri)
         {
             if (localName != JsonGlobals.typeString)
             {
@@ -377,7 +374,7 @@ namespace System.Runtime.Serialization.Json
             }
             return base.GetAttribute(localName, namespaceUri);
         }
-        public override string GetAttribute(string name)
+        public override string? GetAttribute(string name)
         {
             if (name != JsonGlobals.typeString)
             {
@@ -386,7 +383,7 @@ namespace System.Runtime.Serialization.Json
             return base.GetAttribute(name);
         }
 
-        public override string GetAttribute(XmlDictionaryString localName, XmlDictionaryString namespaceUri)
+        public override string? GetAttribute(XmlDictionaryString localName, XmlDictionaryString namespaceUri)
         {
             if (XmlDictionaryString.GetString(localName) != JsonGlobals.typeString)
             {
@@ -417,6 +414,7 @@ namespace System.Runtime.Serialization.Json
                 BufferReader.SetWindow(ElementNode.BufferOffset, _maxBytesPerRead);
             }
 
+            Debug.Assert(_charactersToSkipOnNextRead != null);
             byte ch;
 
             // Skip whitespace before checking EOF
@@ -806,8 +804,8 @@ namespace System.Runtime.Serialization.Json
             return base.ReadValueChunk(chars, offset, count);
         }
 
-        public void SetInput(byte[] buffer, int offset, int count, Encoding encoding, XmlDictionaryReaderQuotas quotas,
-            OnXmlDictionaryReaderClose onClose)
+        public void SetInput(byte[] buffer, int offset, int count, Encoding? encoding, XmlDictionaryReaderQuotas quotas,
+            OnXmlDictionaryReaderClose? onClose)
         {
             if (buffer == null)
             {
@@ -832,13 +830,13 @@ namespace System.Runtime.Serialization.Json
             MoveToInitial(quotas, onClose);
 
             ArraySegment<byte> seg = JsonEncodingStreamWrapper.ProcessBuffer(buffer, offset, count, encoding);
-            BufferReader.SetBuffer(seg.Array, seg.Offset, seg.Count, null, null);
+            BufferReader.SetBuffer(seg.Array!, seg.Offset, seg.Count, null, null);
             _buffered = true;
             ResetState();
         }
 
-        public void SetInput(Stream stream, Encoding encoding, XmlDictionaryReaderQuotas quotas,
-            OnXmlDictionaryReaderClose onClose)
+        public void SetInput(Stream stream, Encoding? encoding, XmlDictionaryReaderQuotas quotas,
+            OnXmlDictionaryReaderClose? onClose)
         {
             if (stream == null)
             {
@@ -853,7 +851,7 @@ namespace System.Runtime.Serialization.Json
             ResetState();
         }
 
-        public override void StartCanonicalization(Stream stream, bool includeComments, string[] inclusivePrefixes)
+        public override void StartCanonicalization(Stream stream, bool includeComments, string[]? inclusivePrefixes)
         {
             throw new NotSupportedException();
         }
@@ -1080,7 +1078,7 @@ namespace System.Runtime.Serialization.Json
 
         private JsonNodeType ExitJsonScope()
         {
-            JsonNodeType nodeTypeToReturn = _scopes[_scopeDepth];
+            JsonNodeType nodeTypeToReturn = _scopes![_scopeDepth];
             _scopes[_scopeDepth] = JsonNodeType.None;
             _scopeDepth--;
             return nodeTypeToReturn;
@@ -1092,7 +1090,7 @@ namespace System.Runtime.Serialization.Json
             base.MoveToEndElement();
         }
 
-        private void MoveToInitial(XmlDictionaryReaderQuotas quotas, OnXmlDictionaryReaderClose onClose)
+        private void MoveToInitial(XmlDictionaryReaderQuotas quotas, OnXmlDictionaryReaderClose? onClose)
         {
             MoveToInitial(quotas);
             _maxBytesPerRead = quotas.MaxBytesPerRead;
@@ -1611,14 +1609,15 @@ namespace System.Runtime.Serialization.Json
             }
         }
 
-        private string UnescapeJsonString(string val)
+        [return: NotNullIfNotNull("val")]
+        private string? UnescapeJsonString(string? val)
         {
             if (val == null)
             {
                 return null;
             }
 
-            StringBuilder sb = null;
+            StringBuilder? sb = null;
             int startIndex = 0, count = 0;
             for (int i = 0; i < val.Length; i++)
             {

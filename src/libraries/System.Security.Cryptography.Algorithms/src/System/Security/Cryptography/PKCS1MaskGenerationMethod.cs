@@ -3,10 +3,12 @@
 
 using System.Buffers.Binary;
 using System.Diagnostics;
+using System.Runtime.Versioning;
 using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
+    [UnsupportedOSPlatform("browser")]
     public class PKCS1MaskGenerationMethod : MaskGenerationMethod
     {
         private string _hashNameValue;

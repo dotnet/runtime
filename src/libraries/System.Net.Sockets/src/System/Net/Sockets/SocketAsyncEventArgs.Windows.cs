@@ -56,6 +56,7 @@ namespace System.Net.Sockets
             bool suppressFlow = !ExecutionContext.IsFlowSuppressed();
             try
             {
+                Debug.Assert(OperatingSystem.IsWindows());
                 if (suppressFlow) ExecutionContext.SuppressFlow();
                 _preAllocatedOverlapped = new PreAllocatedOverlapped(s_completionPortCallback, _strongThisRef, null);
             }
@@ -75,6 +76,7 @@ namespace System.Net.Sockets
 
         private unsafe NativeOverlapped* AllocateNativeOverlapped()
         {
+            Debug.Assert(OperatingSystem.IsWindows());
             Debug.Assert(_operating == InProgress, $"Expected {nameof(_operating)} == {nameof(InProgress)}, got {_operating}");
             Debug.Assert(_currentSocket != null, "_currentSocket is null");
             Debug.Assert(_currentSocket.SafeHandle != null, "_currentSocket.SafeHandle is null");
@@ -86,6 +88,7 @@ namespace System.Net.Sockets
 
         private unsafe void FreeNativeOverlapped(NativeOverlapped* overlapped)
         {
+            Debug.Assert(OperatingSystem.IsWindows());
             Debug.Assert(overlapped != null, "overlapped is null");
             Debug.Assert(_operating == InProgress, $"Expected _operating == InProgress, got {_operating}");
             Debug.Assert(_currentSocket != null, "_currentSocket is null");
@@ -904,6 +907,7 @@ namespace System.Net.Sockets
             // any pinned buffers.
             if (_preAllocatedOverlapped != null)
             {
+                Debug.Assert(OperatingSystem.IsWindows());
                 _preAllocatedOverlapped.Dispose();
                 _preAllocatedOverlapped = null!;
             }
@@ -1219,7 +1223,9 @@ namespace System.Net.Sockets
 
         private static readonly unsafe IOCompletionCallback s_completionPortCallback = delegate (uint errorCode, uint numBytes, NativeOverlapped* nativeOverlapped)
         {
-            var saeaBox = (StrongBox<SocketAsyncEventArgs>)ThreadPoolBoundHandle.GetNativeOverlappedState(nativeOverlapped)!;
+            Debug.Assert(OperatingSystem.IsWindows());
+            var saeaBox = (StrongBox<SocketAsyncEventArgs>)(ThreadPoolBoundHandle.GetNativeOverlappedState(nativeOverlapped)!);
+
             Debug.Assert(saeaBox.Value != null);
             SocketAsyncEventArgs saea = saeaBox.Value;
 

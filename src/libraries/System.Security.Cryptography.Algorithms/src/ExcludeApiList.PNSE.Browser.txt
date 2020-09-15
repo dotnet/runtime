@@ -1,2 +1,10 @@
 T:System.Security.Cryptography.RandomNumberGenerator
-T:System.Security.Cryptography.RandomNumberGeneratorImplementation
+T:System.Security.Cryptography.IncrementalHash
+T:System.Security.Cryptography.SHA1
+T:System.Security.Cryptography.SHA256
+T:System.Security.Cryptography.SHA384
+T:System.Security.Cryptography.SHA512
+T:System.Security.Cryptography.SHA1Managed
+T:System.Security.Cryptography.SHA256Managed
+T:System.Security.Cryptography.SHA384Managed
+T:System.Security.Cryptography.SHA512Managed

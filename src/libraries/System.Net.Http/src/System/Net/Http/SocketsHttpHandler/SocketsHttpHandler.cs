@@ -3,8 +3,9 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Net.Connections;
+using System.IO;
 using System.Net.Security;
+using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Diagnostics.CodeAnalysis;
@@ -12,6 +13,7 @@ using System.Text;
 
 namespace System.Net.Http
 {
+    [UnsupportedOSPlatform("browser")]
     public sealed class SocketsHttpHandler : HttpMessageHandler
     {
         private readonly HttpConnectionSettings _settings = new HttpConnectionSettings();
@@ -136,7 +138,7 @@ namespace System.Net.Http
             get => _settings._maxAutomaticRedirections;
             set
             {
-                if (value < 1)
+                if (value <= 0)
                 {
                     throw new ArgumentOutOfRangeException(nameof(value), value, SR.Format(SR.net_http_value_must_be_greater_than, 0));
                 }
@@ -364,29 +366,15 @@ namespace System.Net.Http
         internal bool SupportsRedirectConfiguration => true;
 
         /// <summary>
-        /// When non-null, a custom factory used to open new TCP connections.
-        /// When null, a <see cref="SocketsConnectionFactory"/> will be used.
+        /// When non-null, a custom callback used to open new connections.
         /// </summary>
-        public ConnectionFactory? ConnectionFactory
+        public Func<SocketsHttpConnectionContext, CancellationToken, ValueTask<Stream>>? ConnectCallback
         {
-            get => _settings._connectionFactory;
+            get => _settings._connectCallback;
             set
             {
                 CheckDisposedOrStarted();
-                _settings._connectionFactory = value;
-            }
-        }
-
-        /// <summary>
-        /// When non-null, a connection filter that is applied prior to any TLS encryption.
-        /// </summary>
-        public Func<HttpRequestMessage, Connection, CancellationToken, ValueTask<Connection>>? PlaintextFilter
-        {
-            get => _settings._plaintextFilter;
-            set
-            {
-                CheckDisposedOrStarted();
-                _settings._plaintextFilter = value;
+                _settings._connectCallback = value;
             }
         }
 

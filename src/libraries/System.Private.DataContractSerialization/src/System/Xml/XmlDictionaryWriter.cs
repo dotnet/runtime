@@ -22,17 +22,17 @@ namespace System.Xml
             return CreateBinaryWriter(stream, null);
         }
 
-        public static XmlDictionaryWriter CreateBinaryWriter(Stream stream, IXmlDictionary dictionary)
+        public static XmlDictionaryWriter CreateBinaryWriter(Stream stream, IXmlDictionary? dictionary)
         {
             return CreateBinaryWriter(stream, dictionary, null);
         }
 
-        public static XmlDictionaryWriter CreateBinaryWriter(Stream stream, IXmlDictionary dictionary, XmlBinaryWriterSession session)
+        public static XmlDictionaryWriter CreateBinaryWriter(Stream stream, IXmlDictionary? dictionary, XmlBinaryWriterSession? session)
         {
             return CreateBinaryWriter(stream, dictionary, session, true);
         }
 
-        public static XmlDictionaryWriter CreateBinaryWriter(Stream stream, IXmlDictionary dictionary, XmlBinaryWriterSession session, bool ownsStream)
+        public static XmlDictionaryWriter CreateBinaryWriter(Stream stream, IXmlDictionary? dictionary, XmlBinaryWriterSession? session, bool ownsStream)
         {
             XmlBinaryWriter writer = new XmlBinaryWriter();
             writer.SetOutput(stream, dictionary, session, ownsStream);
@@ -63,7 +63,7 @@ namespace System.Xml
             return CreateMtomWriter(stream, encoding, maxSizeInBytes, startInfo, null, null, true, true);
         }
 
-        public static XmlDictionaryWriter CreateMtomWriter(Stream stream, Encoding encoding, int maxSizeInBytes, string startInfo, string boundary, string startUri, bool writeMessageHeaders, bool ownsStream)
+        public static XmlDictionaryWriter CreateMtomWriter(Stream stream, Encoding encoding, int maxSizeInBytes, string startInfo, string? boundary, string? startUri, bool writeMessageHeaders, bool ownsStream)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_MtomEncoding);
         }
@@ -73,7 +73,7 @@ namespace System.Xml
             if (writer == null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(writer));
 
-            XmlDictionaryWriter dictionaryWriter = writer as XmlDictionaryWriter;
+            XmlDictionaryWriter? dictionaryWriter = writer as XmlDictionaryWriter;
 
             if (dictionaryWriter == null)
             {
@@ -89,32 +89,32 @@ namespace System.Xml
             return Task.CompletedTask;
         }
 
-        public void WriteStartElement(XmlDictionaryString localName, XmlDictionaryString namespaceUri)
+        public void WriteStartElement(XmlDictionaryString localName, XmlDictionaryString? namespaceUri)
         {
-            WriteStartElement((string)null, localName, namespaceUri);
+            WriteStartElement((string?)null, localName, namespaceUri);
         }
 
-        public virtual void WriteStartElement(string prefix, XmlDictionaryString localName, XmlDictionaryString namespaceUri)
+        public virtual void WriteStartElement(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri)
         {
             WriteStartElement(prefix, XmlDictionaryString.GetString(localName), XmlDictionaryString.GetString(namespaceUri));
         }
 
-        public void WriteStartAttribute(XmlDictionaryString localName, XmlDictionaryString namespaceUri)
+        public void WriteStartAttribute(XmlDictionaryString localName, XmlDictionaryString? namespaceUri)
         {
-            WriteStartAttribute((string)null, localName, namespaceUri);
+            WriteStartAttribute((string?)null, localName, namespaceUri);
         }
 
-        public virtual void WriteStartAttribute(string prefix, XmlDictionaryString localName, XmlDictionaryString namespaceUri)
+        public virtual void WriteStartAttribute(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri)
         {
             WriteStartAttribute(prefix, XmlDictionaryString.GetString(localName), XmlDictionaryString.GetString(namespaceUri));
         }
 
-        public void WriteAttributeString(XmlDictionaryString localName, XmlDictionaryString namespaceUri, string value)
+        public void WriteAttributeString(XmlDictionaryString localName, XmlDictionaryString? namespaceUri, string? value)
         {
-            WriteAttributeString((string)null, localName, namespaceUri, value);
+            WriteAttributeString((string?)null, localName, namespaceUri, value);
         }
 
-        public virtual void WriteXmlnsAttribute(string prefix, string namespaceUri)
+        public virtual void WriteXmlnsAttribute(string? prefix, string namespaceUri)
         {
             if (namespaceUri == null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(namespaceUri));
@@ -128,46 +128,46 @@ namespace System.Xml
             WriteAttributeString("xmlns", prefix, null, namespaceUri);
         }
 
-        public virtual void WriteXmlnsAttribute(string prefix, XmlDictionaryString namespaceUri)
+        public virtual void WriteXmlnsAttribute(string? prefix, XmlDictionaryString namespaceUri)
         {
             WriteXmlnsAttribute(prefix, XmlDictionaryString.GetString(namespaceUri));
         }
 
-        public virtual void WriteXmlAttribute(string localName, string value)
+        public virtual void WriteXmlAttribute(string localName, string? value)
         {
             WriteAttributeString("xml", localName, null, value);
         }
 
-        public virtual void WriteXmlAttribute(XmlDictionaryString localName, XmlDictionaryString value)
+        public virtual void WriteXmlAttribute(XmlDictionaryString localName, XmlDictionaryString? value)
         {
             WriteXmlAttribute(XmlDictionaryString.GetString(localName), XmlDictionaryString.GetString(value));
         }
 
-        public void WriteAttributeString(string prefix, XmlDictionaryString localName, XmlDictionaryString namespaceUri, string value)
+        public void WriteAttributeString(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri, string? value)
         {
             WriteStartAttribute(prefix, localName, namespaceUri);
             WriteString(value);
             WriteEndAttribute();
         }
 
-        public void WriteElementString(XmlDictionaryString localName, XmlDictionaryString namespaceUri, string value)
+        public void WriteElementString(XmlDictionaryString localName, XmlDictionaryString? namespaceUri, string? value)
         {
-            WriteElementString((string)null, localName, namespaceUri, value);
+            WriteElementString((string?)null, localName, namespaceUri, value);
         }
 
-        public void WriteElementString(string prefix, XmlDictionaryString localName, XmlDictionaryString namespaceUri, string value)
+        public void WriteElementString(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri, string? value)
         {
             WriteStartElement(prefix, localName, namespaceUri);
             WriteString(value);
             WriteEndElement();
         }
 
-        public virtual void WriteString(XmlDictionaryString value)
+        public virtual void WriteString(XmlDictionaryString? value)
         {
             WriteString(XmlDictionaryString.GetString(value));
         }
 
-        public virtual void WriteQualifiedName(XmlDictionaryString localName, XmlDictionaryString namespaceUri)
+        public virtual void WriteQualifiedName(XmlDictionaryString localName, XmlDictionaryString? namespaceUri)
         {
             if (localName == null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(localName)));
@@ -177,7 +177,7 @@ namespace System.Xml
             WriteQualifiedName(localName.Value, namespaceUri.Value);
         }
 
-        public virtual void WriteValue(XmlDictionaryString value)
+        public virtual void WriteValue(XmlDictionaryString? value)
         {
             WriteValue(XmlDictionaryString.GetString(value));
         }
@@ -242,7 +242,7 @@ namespace System.Xml
             }
         }
 
-        public virtual void StartCanonicalization(Stream stream, bool includeComments, string[] inclusivePrefixes)
+        public virtual void StartCanonicalization(Stream stream, bool includeComments, string[]? inclusivePrefixes)
         {
             throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new NotSupportedException());
         }
@@ -254,8 +254,8 @@ namespace System.Xml
 
         private void WriteElementNode(XmlDictionaryReader reader, bool defattr)
         {
-            XmlDictionaryString localName;
-            XmlDictionaryString namespaceUri;
+            XmlDictionaryString? localName;
+            XmlDictionaryString? namespaceUri;
             if (reader.TryGetLocalNameAsDictionaryString(out localName) && reader.TryGetNamespaceUriAsDictionaryString(out namespaceUri))
             {
                 WriteStartElement(reader.Prefix, localName, namespaceUri);
@@ -361,8 +361,8 @@ namespace System.Xml
 
         private void WriteArrayNode(XmlDictionaryReader reader, Type type)
         {
-            XmlDictionaryString localName;
-            XmlDictionaryString namespaceUri;
+            XmlDictionaryString? localName;
+            XmlDictionaryString? namespaceUri;
             if (reader.TryGetLocalNameAsDictionaryString(out localName) && reader.TryGetNamespaceUriAsDictionaryString(out namespaceUri))
                 WriteArrayNode(reader, reader.Prefix, localName, namespaceUri, type);
             else
@@ -371,7 +371,7 @@ namespace System.Xml
 
         protected virtual void WriteTextNode(XmlDictionaryReader reader, bool isAttribute)
         {
-            XmlDictionaryString value;
+            XmlDictionaryString? value;
             if (reader.TryGetValueAsDictionaryString(out value))
             {
                 WriteString(value);
@@ -388,7 +388,7 @@ namespace System.Xml
 
         public override void WriteNode(XmlReader reader, bool defattr)
         {
-            XmlDictionaryReader dictionaryReader = reader as XmlDictionaryReader;
+            XmlDictionaryReader? dictionaryReader = reader as XmlDictionaryReader;
             if (dictionaryReader != null)
                 WriteNode(dictionaryReader, defattr);
             else
@@ -403,7 +403,7 @@ namespace System.Xml
             do
             {
                 XmlNodeType nodeType = reader.NodeType;
-                Type type;
+                Type? type;
                 if (nodeType == XmlNodeType.Text || nodeType == XmlNodeType.Whitespace || nodeType == XmlNodeType.SignificantWhitespace)
                 {
                     // This will advance if necessary, so we don't need to call Read() explicitly
@@ -463,7 +463,7 @@ namespace System.Xml
         }
 
         // bool
-        public virtual void WriteArray(string prefix, string localName, string namespaceUri, bool[] array, int offset, int count)
+        public virtual void WriteArray(string? prefix, string localName, string? namespaceUri, bool[] array, int offset, int count)
         {
             CheckArray(array, offset, count);
             for (int i = 0; i < count; i++)
@@ -474,13 +474,13 @@ namespace System.Xml
             }
         }
 
-        public virtual void WriteArray(string prefix, XmlDictionaryString localName, XmlDictionaryString namespaceUri, bool[] array, int offset, int count)
+        public virtual void WriteArray(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri, bool[] array, int offset, int count)
         {
             WriteArray(prefix, XmlDictionaryString.GetString(localName), XmlDictionaryString.GetString(namespaceUri), array, offset, count);
         }
 
         // Int16
-        public virtual void WriteArray(string prefix, string localName, string namespaceUri, short[] array, int offset, int count)
+        public virtual void WriteArray(string? prefix, string localName, string? namespaceUri, short[] array, int offset, int count)
         {
             CheckArray(array, offset, count);
             for (int i = 0; i < count; i++)
@@ -491,13 +491,13 @@ namespace System.Xml
             }
         }
 
-        public virtual void WriteArray(string prefix, XmlDictionaryString localName, XmlDictionaryString namespaceUri, short[] array, int offset, int count)
+        public virtual void WriteArray(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri, short[] array, int offset, int count)
         {
             WriteArray(prefix, XmlDictionaryString.GetString(localName), XmlDictionaryString.GetString(namespaceUri), array, offset, count);
         }
 
         // Int32
-        public virtual void WriteArray(string prefix, string localName, string namespaceUri, int[] array, int offset, int count)
+        public virtual void WriteArray(string? prefix, string localName, string? namespaceUri, int[] array, int offset, int count)
         {
             CheckArray(array, offset, count);
             for (int i = 0; i < count; i++)
@@ -508,13 +508,13 @@ namespace System.Xml
             }
         }
 
-        public virtual void WriteArray(string prefix, XmlDictionaryString localName, XmlDictionaryString namespaceUri, int[] array, int offset, int count)
+        public virtual void WriteArray(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri, int[] array, int offset, int count)
         {
             WriteArray(prefix, XmlDictionaryString.GetString(localName), XmlDictionaryString.GetString(namespaceUri), array, offset, count);
         }
 
         // Int64
-        public virtual void WriteArray(string prefix, string localName, string namespaceUri, long[] array, int offset, int count)
+        public virtual void WriteArray(string? prefix, string localName, string? namespaceUri, long[] array, int offset, int count)
         {
             CheckArray(array, offset, count);
             for (int i = 0; i < count; i++)
@@ -525,13 +525,13 @@ namespace System.Xml
             }
         }
 
-        public virtual void WriteArray(string prefix, XmlDictionaryString localName, XmlDictionaryString namespaceUri, long[] array, int offset, int count)
+        public virtual void WriteArray(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri, long[] array, int offset, int count)
         {
             WriteArray(prefix, XmlDictionaryString.GetString(localName), XmlDictionaryString.GetString(namespaceUri), array, offset, count);
         }
 
         // float
-        public virtual void WriteArray(string prefix, string localName, string namespaceUri, float[] array, int offset, int count)
+        public virtual void WriteArray(string? prefix, string localName, string? namespaceUri, float[] array, int offset, int count)
         {
             CheckArray(array, offset, count);
             for (int i = 0; i < count; i++)
@@ -542,13 +542,13 @@ namespace System.Xml
             }
         }
 
-        public virtual void WriteArray(string prefix, XmlDictionaryString localName, XmlDictionaryString namespaceUri, float[] array, int offset, int count)
+        public virtual void WriteArray(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri, float[] array, int offset, int count)
         {
             WriteArray(prefix, XmlDictionaryString.GetString(localName), XmlDictionaryString.GetString(namespaceUri), array, offset, count);
         }
 
         // double
-        public virtual void WriteArray(string prefix, string localName, string namespaceUri, double[] array, int offset, int count)
+        public virtual void WriteArray(string? prefix, string localName, string? namespaceUri, double[] array, int offset, int count)
         {
             CheckArray(array, offset, count);
             for (int i = 0; i < count; i++)
@@ -559,13 +559,13 @@ namespace System.Xml
             }
         }
 
-        public virtual void WriteArray(string prefix, XmlDictionaryString localName, XmlDictionaryString namespaceUri, double[] array, int offset, int count)
+        public virtual void WriteArray(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri, double[] array, int offset, int count)
         {
             WriteArray(prefix, XmlDictionaryString.GetString(localName), XmlDictionaryString.GetString(namespaceUri), array, offset, count);
         }
 
         // decimal
-        public virtual void WriteArray(string prefix, string localName, string namespaceUri, decimal[] array, int offset, int count)
+        public virtual void WriteArray(string? prefix, string localName, string? namespaceUri, decimal[] array, int offset, int count)
         {
             CheckArray(array, offset, count);
             for (int i = 0; i < count; i++)
@@ -576,13 +576,13 @@ namespace System.Xml
             }
         }
 
-        public virtual void WriteArray(string prefix, XmlDictionaryString localName, XmlDictionaryString namespaceUri, decimal[] array, int offset, int count)
+        public virtual void WriteArray(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri, decimal[] array, int offset, int count)
         {
             WriteArray(prefix, XmlDictionaryString.GetString(localName), XmlDictionaryString.GetString(namespaceUri), array, offset, count);
         }
 
         // DateTime
-        public virtual void WriteArray(string prefix, string localName, string namespaceUri, DateTime[] array, int offset, int count)
+        public virtual void WriteArray(string? prefix, string localName, string? namespaceUri, DateTime[] array, int offset, int count)
         {
             CheckArray(array, offset, count);
             for (int i = 0; i < count; i++)
@@ -593,13 +593,13 @@ namespace System.Xml
             }
         }
 
-        public virtual void WriteArray(string prefix, XmlDictionaryString localName, XmlDictionaryString namespaceUri, DateTime[] array, int offset, int count)
+        public virtual void WriteArray(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri, DateTime[] array, int offset, int count)
         {
             WriteArray(prefix, XmlDictionaryString.GetString(localName), XmlDictionaryString.GetString(namespaceUri), array, offset, count);
         }
 
         // Guid
-        public virtual void WriteArray(string prefix, string localName, string namespaceUri, Guid[] array, int offset, int count)
+        public virtual void WriteArray(string? prefix, string localName, string? namespaceUri, Guid[] array, int offset, int count)
         {
             CheckArray(array, offset, count);
             for (int i = 0; i < count; i++)
@@ -610,13 +610,13 @@ namespace System.Xml
             }
         }
 
-        public virtual void WriteArray(string prefix, XmlDictionaryString localName, XmlDictionaryString namespaceUri, Guid[] array, int offset, int count)
+        public virtual void WriteArray(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri, Guid[] array, int offset, int count)
         {
             WriteArray(prefix, XmlDictionaryString.GetString(localName), XmlDictionaryString.GetString(namespaceUri), array, offset, count);
         }
 
         // TimeSpan
-        public virtual void WriteArray(string prefix, string localName, string namespaceUri, TimeSpan[] array, int offset, int count)
+        public virtual void WriteArray(string? prefix, string localName, string? namespaceUri, TimeSpan[] array, int offset, int count)
         {
             CheckArray(array, offset, count);
             for (int i = 0; i < count; i++)
@@ -627,7 +627,7 @@ namespace System.Xml
             }
         }
 
-        public virtual void WriteArray(string prefix, XmlDictionaryString localName, XmlDictionaryString namespaceUri, TimeSpan[] array, int offset, int count)
+        public virtual void WriteArray(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri, TimeSpan[] array, int offset, int count)
         {
             WriteArray(prefix, XmlDictionaryString.GetString(localName), XmlDictionaryString.GetString(namespaceUri), array, offset, count);
         }
@@ -664,7 +664,7 @@ namespace System.Xml
                 _writer.Flush();
             }
 
-            public override string LookupPrefix(string namespaceUri)
+            public override string? LookupPrefix(string namespaceUri)
             {
                 return _writer.LookupPrefix(namespaceUri);
             }
@@ -684,7 +684,7 @@ namespace System.Xml
                 _writer.WriteBinHex(buffer, index, count);
             }
 
-            public override void WriteCData(string text)
+            public override void WriteCData(string? text)
             {
                 _writer.WriteCData(text);
             }
@@ -699,12 +699,12 @@ namespace System.Xml
                 _writer.WriteChars(buffer, index, count);
             }
 
-            public override void WriteComment(string text)
+            public override void WriteComment(string? text)
             {
                 _writer.WriteComment(text);
             }
 
-            public override void WriteDocType(string name, string pubid, string sysid, string subset)
+            public override void WriteDocType(string name, string? pubid, string? sysid, string? subset)
             {
                 _writer.WriteDocType(name, pubid, sysid, subset);
             }
@@ -750,12 +750,12 @@ namespace System.Xml
                 _writer.WriteNode(reader, defattr);
             }
 
-            public override void WriteProcessingInstruction(string name, string text)
+            public override void WriteProcessingInstruction(string name, string? text)
             {
                 _writer.WriteProcessingInstruction(name, text);
             }
 
-            public override void WriteQualifiedName(string localName, string namespaceUri)
+            public override void WriteQualifiedName(string localName, string? namespaceUri)
             {
                 _writer.WriteQualifiedName(localName, namespaceUri);
             }
@@ -770,7 +770,7 @@ namespace System.Xml
                 _writer.WriteRaw(data);
             }
 
-            public override void WriteStartAttribute(string prefix, string localName, string namespaceUri)
+            public override void WriteStartAttribute(string? prefix, string localName, string? namespaceUri)
             {
                 _writer.WriteStartAttribute(prefix, localName, namespaceUri);
                 _prefix++;
@@ -786,7 +786,7 @@ namespace System.Xml
                 _writer.WriteStartDocument(standalone);
             }
 
-            public override void WriteStartElement(string prefix, string localName, string namespaceUri)
+            public override void WriteStartElement(string? prefix, string localName, string? namespaceUri)
             {
                 _writer.WriteStartElement(prefix, localName, namespaceUri);
                 _depth++;
@@ -801,7 +801,7 @@ namespace System.Xml
                 }
             }
 
-            public override void WriteString(string text)
+            public override void WriteString(string? text)
             {
                 _writer.WriteString(text);
             }
@@ -811,7 +811,7 @@ namespace System.Xml
                 _writer.WriteSurrogateCharEntity(lowChar, highChar);
             }
 
-            public override void WriteWhitespace(string whitespace)
+            public override void WriteWhitespace(string? whitespace)
             {
                 _writer.WriteWhitespace(whitespace);
             }
@@ -821,7 +821,7 @@ namespace System.Xml
                 _writer.WriteValue(value);
             }
 
-            public override void WriteValue(string value)
+            public override void WriteValue(string? value)
             {
                 _writer.WriteValue(value);
             }
@@ -851,7 +851,7 @@ namespace System.Xml
                 _writer.WriteValue(value);
             }
 
-            public override void WriteXmlnsAttribute(string prefix, string namespaceUri)
+            public override void WriteXmlnsAttribute(string? prefix, string namespaceUri)
             {
                 if (namespaceUri == null)
                     throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(namespaceUri));
@@ -874,7 +874,7 @@ namespace System.Xml
                 WriteAttributeString("xmlns", prefix, null, namespaceUri);
             }
 
-            public override string XmlLang
+            public override string? XmlLang
             {
                 get
                 {

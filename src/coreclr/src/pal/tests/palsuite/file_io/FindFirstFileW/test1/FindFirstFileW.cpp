@@ -35,23 +35,25 @@ BOOL CleanUp()
         if(!SetFileAttributesA (szFindName, FILE_ATTRIBUTE_NORMAL))
         {
             result = FALSE;
-            Trace("ERROR:%d: Error setting attributes [%s][%d]\n", szFindName, FILE_ATTRIBUTE_NORMAL); 
-        } 
+            Trace("ERROR:%d: Error setting attributes [%s][%d]\n", szFindName, FILE_ATTRIBUTE_NORMAL);
+        }
         if(!DeleteFileA (szFindName))
         {
             result = FALSE;
-            Trace("ERROR:%d: Error deleting file [%s][%d]\n", GetLastError(), szFindName, dwAtt);   
+            Trace("ERROR:%d: Error deleting file [%s][%d]\n", GetLastError(), szFindName, dwAtt);
         }
     }
 
     dwAtt = GetFileAttributesA(szDirName);
     if( dwAtt != INVALID_FILE_ATTRIBUTES )
     {
-        if(!RemoveDirectoryA (szDirName))
+        LPWSTR szDirNameW = convert(szDirName);
+        if(!RemoveDirectoryW (szDirNameW))
         {
             result = FALSE;
-            Trace("ERROR:%d: Error deleting file [%s][%d]\n", GetLastError(), szDirName, dwAtt);   
+            Trace("ERROR:%d: Error deleting file [%s][%d]\n", GetLastError(), szDirName, dwAtt);
         }
+        free(szDirNameW);
     }
 
     return result;
@@ -155,7 +157,7 @@ int __cdecl main(int argc, char *argv[])
     if (hFind != INVALID_HANDLE_VALUE)
     {
         Fail("FindFirstFileW: ERROR -> Able to find \"%s\": trailing "
-            "slash should have failed.\n", 
+            "slash should have failed.\n",
             szDirNameSlash);
     }
 
@@ -165,7 +167,7 @@ int __cdecl main(int argc, char *argv[])
     free(pTemp);
     if (hFind == INVALID_HANDLE_VALUE)
     {
-        Fail("FindFirstFileW: ERROR -> Unable to find \"%s\"\n", 
+        Fail("FindFirstFileW: ERROR -> Unable to find \"%s\"\n",
             szFindNameWldCard_01);
     }
 
@@ -174,7 +176,7 @@ int __cdecl main(int argc, char *argv[])
     free(pTemp);
     if (hFind == INVALID_HANDLE_VALUE)
     {
-        Fail("FindFirstFileW: ERROR -> Unable to find \"%s\"\n", 
+        Fail("FindFirstFileW: ERROR -> Unable to find \"%s\"\n",
             szFindNameWldCard_02);
     }
 
@@ -188,7 +190,7 @@ int __cdecl main(int argc, char *argv[])
     free(pTemp);
     if (hFind == INVALID_HANDLE_VALUE)
     {
-        Fail("FindFirstFileW: ERROR -> Unable to find \"%s\"\n", 
+        Fail("FindFirstFileW: ERROR -> Unable to find \"%s\"\n",
             szDirNameWldCard_01);
     }
 
@@ -197,7 +199,7 @@ int __cdecl main(int argc, char *argv[])
     free(pTemp);
     if (hFind == INVALID_HANDLE_VALUE)
     {
-        Fail("FindFirstFileW: ERROR -> Unable to find \"%s\"\n", 
+        Fail("FindFirstFileW: ERROR -> Unable to find \"%s\"\n",
             szDirNameWldCard_02);
     }
 
@@ -206,6 +208,6 @@ int __cdecl main(int argc, char *argv[])
         Fail("FindFirstFileW: ERROR : Final Clean Up failed\n");
     }
 
-    PAL_Terminate();  
+    PAL_Terminate();
     return PASS;
 }

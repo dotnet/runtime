@@ -72,6 +72,17 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        public void BinaryWriter_WriteHalfTest()
+        {
+            Half[] hlfArr = new Half[] {
+                Half.NegativeInfinity, Half.PositiveInfinity, Half.Epsilon, Half.MinValue, Half.MaxValue,
+                (Half)0.45, (Half)5.55
+            };
+
+            WriteTest(hlfArr, (bw, s) => bw.Write(s), (br) => br.ReadHalf());
+        }
+
+        [Fact]
         public void BinaryWriter_WriteInt16Test()
         {
             short[] i16Arr = new short[] { short.MinValue, short.MaxValue, 0, -10000, 10000, -50, 50 };

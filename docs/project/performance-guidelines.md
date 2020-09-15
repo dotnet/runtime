@@ -34,30 +34,14 @@ A microbenchmark is an application that executes a specific codepath multiple ti
 - **DO** run many iterations of the code in question to filter out noise.
 - **DO** minimize the effects of other applications on the performance of the microbenchmark by closing as many unnecessary applications as possible.
 
+The microbenchmarks used to test the performance of all .NET Runtimes live in [dotnet/performance repository](https://github.com/dotnet/performance/tree/master/src/benchmarks/micro). The benchmarking workflow is described [here](https://github.com/dotnet/performance/blob/master/docs/benchmarking-workflow-dotnet-runtime.md).
+
 # Profiling and Performance Tracing #
 Measuring performance is an important part of ensuring that changes do not regress the performance of a feature or scenario.
 
 Using a profiler allows you to run an existing workload without adding tracing statements or otherwise modifying it, and at the same time, get rich information on how the workload performs.
 
-On the .NET team, we use a tool called **PerfView**, which runs on Windows, and allows for collection of performance data across an entire machine.
-
-Capturing a trace using PerfView will allow you to:
-
-- Investigate CPU usage and blocked time.
-- Understand the performance of various runtime services (GC, JIT, etc.)
-- Compare the performance of a workload by diffing before and after traces.
-- Much, much more.
-
-PerfView is available at the [PerfView repo](https://github.com/microsoft/perfview/releases).  The help documentation is quite substantial and can help you get started.  Clicking the blue links throughout PerfView's UI will also take you to the appropriate help topic.  It is also recommended that you watch the [PerfView Tutorial Videos](http://channel9.msdn.com/Series/PerfView-Tutorial).
-
-# Running the CoreCLR Performance Tests on Windows #
-1. The first step to running the performance tests locally is to do a release build of CoreCLR and all of the performance tests.  You can do this with the command `build.cmd x64 Release`, this will of course build the x64 runtime, and you should use x86 if you want to test x86.
-
-2. After building the runtime you will need to generate a core root that contains all of the binaries we just built along with the required dependencies.  This can be done with the command `tests\runtest.cmd Release x64 GenerateLayoutOnly`, with the same caveat that x86 should be used if that is the platform that you are testing.
-
-3. Now we need to actually run the performance tests. The performance tests live in the [dotnet/performance](https://github.com/dotnet/performance) repo. Instructions for running them are [here](https://github.com/dotnet/performance/blob/master/docs/benchmarking-workflow-dotnet-runtime.md).
-
-4. Navigate to the `sandbox` directory in the root of your repo.  Inside that directory you will find a bunch of files that follow the name Perf-*.md.  These will contain the results, formatted as Markdown files, for each test that was run.
+The profiling workflow is described [here](https://github.com/dotnet/performance/blob/master/docs/profiling-workflow-dotnet-runtime.md).
 
 # Additional Help #
 If you have questions, run into any issues, or would like help with any performance related topics, please feel free to post a question.  Someone from the .NET performance team will be happy to help.

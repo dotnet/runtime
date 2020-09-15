@@ -190,7 +190,7 @@ namespace DebuggerTests
             DateTime dt0, DateTime dt1, TimeSpan ts, DateTimeOffset dto, decimal dec,
             Guid guid, DateTime[] dts, ClassForToStringTests obj, StructForToStringTests sst)
         {
-            Console.WriteLine($"MethodWithArgumentsForToStringTest: {dt0}, {dt1}, {ts}, {dec}, {guid}, {dts[0]}, {obj.DT}, {sst.DT}");
+            Console.WriteLine($"MethodWithArgumentsForToStringTest: {dt0}, {dt1}, {ts}, {dec}, {guid}, {dts[0]}, {obj.DT}, {sst.DT}"); await Task.CompletedTask;
         }
 
         public static void MethodUpdatingValueTypeMembers()
@@ -214,7 +214,7 @@ namespace DebuggerTests
             var dt = new DateTime(1, 2, 3, 4, 5, 6);
             Console.WriteLine($"#1");
             dt = new DateTime(9, 8, 7, 6, 5, 4);
-            Console.WriteLine($"#2");
+            Console.WriteLine($"#2"); await Task.CompletedTask;
         }
 
         public static void MethodUpdatingVTArrayMembers()

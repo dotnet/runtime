@@ -224,12 +224,12 @@ NativeImage *NativeImage::Open(
 #endif
 
 #ifndef DACCESS_COMPILE
-Assembly *NativeImage::LoadManifestAssembly(uint32_t rowid)
+Assembly *NativeImage::LoadManifestAssembly(uint32_t rowid, DomainAssembly *pParentAssembly)
 {
     STANDARD_VM_CONTRACT;
 
     AssemblySpec spec;
-    spec.InitializeSpec(TokenFromRid(rowid, mdtAssemblyRef), m_pManifestMetadata, NULL);
+    spec.InitializeSpec(TokenFromRid(rowid, mdtAssemblyRef), m_pManifestMetadata, pParentAssembly);
     return spec.LoadAssembly(FILE_LOADED);
 }
 #endif

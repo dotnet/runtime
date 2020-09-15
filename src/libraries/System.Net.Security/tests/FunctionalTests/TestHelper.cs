@@ -7,6 +7,7 @@ using System.Net.Test.Common;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Cryptography.X509Certificates.Tests.Common;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace System.Net.Security.Tests
@@ -107,7 +108,8 @@ namespace System.Net.Security.Tests
             }
             catch { };
         }
-        internal static (X509Certificate2 certificate, X509Certificate2Collection) GenerateCertificates(string targetName, string? testName = null)
+
+        internal static (X509Certificate2 certificate, X509Certificate2Collection) GenerateCertificates(string targetName, [CallerMemberName] string? testName = null)
         {
             if (PlatformDetection.IsWindows && testName != null)
             {

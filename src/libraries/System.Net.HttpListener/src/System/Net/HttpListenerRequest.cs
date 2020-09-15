@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Net.WebSockets;
 using System.Reflection;
+using System.Runtime.Versioning;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
@@ -110,6 +111,7 @@ namespace System.Net
 
         public string? ContentType => Headers[HttpKnownHeaderNames.ContentType];
 
+        [UnsupportedOSPlatform("browser")]
         public bool IsLocal => LocalEndPoint!.Address.Equals(RemoteEndPoint!.Address);
 
         public bool IsWebSocketRequest
@@ -206,6 +208,7 @@ namespace System.Net
 
         public string UserAgent => Headers[HttpKnownHeaderNames.UserAgent]!;
 
+        [UnsupportedOSPlatform("browser")]
         public string UserHostAddress => LocalEndPoint!.ToString();
 
         public string UserHostName => Headers[HttpKnownHeaderNames.Host]!;

@@ -4470,7 +4470,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
                                  unsigned* epilogSize,
                                  void**    codeAddr,
                                  void**    coldCodeAddr,
-                                 void**    consAddr)
+                                 void** consAddr DEBUGARG(unsigned* instrCount))
 {
 #ifdef DEBUG
     if (emitComp->verbose)
@@ -4874,6 +4874,9 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
 
 #define DEFAULT_CODE_BUFFER_INIT 0xcc
 
+#ifdef DEBUG
+    *instrCount = 0;
+#endif
     for (insGroup* ig = emitIGlist; ig != nullptr; ig = ig->igNext)
     {
         assert(!(ig->igFlags & IGF_PLACEHOLDER)); // There better not be any placeholder groups left
@@ -5014,6 +5017,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
         {
             printf("\t\t\t\t\t\t;; bbWeight=%s PerfScore %.2f", refCntWtd2str(ig->igWeight), ig->igPerfScore);
         }
+        *instrCount += ig->igInsCnt;
 #endif // DEBUG
 
         emitCurIG = nullptr;
@@ -5648,7 +5652,7 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, BYTE* dst)
 #ifdef TARGET_ARM
                 target = (BYTE*)((size_t)target | 1); // Or in thumb bit
 #endif
-                bDst[i] = (target_size_t)target;
+                bDst[i] = (target_size_t)(size_t)target;
                 if (emitComp->opts.compReloc)
                 {
                     emitRecordRelocation(&(bDst[i]), target, IMAGE_REL_BASED_HIGHLOW);
@@ -5779,7 +5783,7 @@ void emitter::emitDispDataSec(dataSecDsc* section)
                     }
                     else
                     {
-                        printf("dd\t%08Xh", reinterpret_cast<uint32_t>(emitOffsetToPtr(ig->igOffs)));
+                        printf("dd\t%08Xh", (uint32_t)(size_t)emitOffsetToPtr(ig->igOffs));
                     }
 #else  // TARGET_64BIT
                     // We have a 64-BIT target
@@ -6422,7 +6426,11 @@ unsigned char emitter::emitOutputLong(BYTE* dst, ssize_t val)
 
 unsigned char emitter::emitOutputSizeT(BYTE* dst, ssize_t val)
 {
+#if !defined(TARGET_64BIT)
+    MISALIGNED_WR_I4(dst, (int)val);
+#else
     MISALIGNED_WR_ST(dst, val);
+#endif
 
 #ifdef DEBUG
     if (emitComp->opts.dspEmit)
@@ -6450,6 +6458,7 @@ unsigned char emitter::emitOutputSizeT(BYTE* dst, ssize_t val)
 //    Same as wrapped function.
 //
 
+#if !defined(HOST_64BIT)
 #if defined(TARGET_X86)
 unsigned char emitter::emitOutputByte(BYTE* dst, size_t val)
 {
@@ -6491,6 +6500,7 @@ unsigned char emitter::emitOutputSizeT(BYTE* dst, unsigned __int64 val)
     return emitOutputSizeT(dst, (ssize_t)val);
 }
 #endif // defined(TARGET_X86)
+#endif // !defined(HOST_64BIT)
 
 /*****************************************************************************
  *
@@ -7022,7 +7032,7 @@ void emitter::emitNxtIG(bool extend)
  *  emitGetInsSC: Get the instruction's constant value.
  */
 
-target_ssize_t emitter::emitGetInsSC(instrDesc* id)
+cnsval_ssize_t emitter::emitGetInsSC(instrDesc* id)
 {
 #ifdef TARGET_ARM // should it be TARGET_ARMARCH? Why do we need this? Note that on ARM64 we store scaled immediates
                   // for some formats

@@ -195,7 +195,7 @@ namespace System.Net.Sockets
             Debug.Assert(saea.BufferList == null);
             saea.SetBuffer(buffer);
             saea.SocketFlags = socketFlags;
-            saea.WrapExceptionsInNetworkExceptions = fromNetworkStream;
+            saea.WrapExceptionsForNetworkStream = fromNetworkStream;
             return saea.ReceiveAsync(this, cancellationToken);
         }
 
@@ -278,7 +278,7 @@ namespace System.Net.Sockets
             Debug.Assert(saea.BufferList == null);
             saea.SetBuffer(MemoryMarshal.AsMemory(buffer));
             saea.SocketFlags = socketFlags;
-            saea.WrapExceptionsInNetworkExceptions = false;
+            saea.WrapExceptionsForNetworkStream = false;
             return saea.SendAsync(this, cancellationToken);
         }
 
@@ -296,7 +296,7 @@ namespace System.Net.Sockets
             Debug.Assert(saea.BufferList == null);
             saea.SetBuffer(MemoryMarshal.AsMemory(buffer));
             saea.SocketFlags = socketFlags;
-            saea.WrapExceptionsInNetworkExceptions = true;
+            saea.WrapExceptionsForNetworkStream = true;
             return saea.SendAsyncForNetworkStream(this, cancellationToken);
         }
 
@@ -618,7 +618,7 @@ namespace System.Net.Sockets
                 _isReadForCaching = isReceiveForCaching;
             }
 
-            public bool WrapExceptionsInNetworkExceptions { get; set; }
+            public bool WrapExceptionsForNetworkStream { get; set; }
 
             private void Release()
             {
@@ -926,8 +926,8 @@ namespace System.Net.Sockets
                     e = ExceptionDispatchInfo.SetCurrentStackTrace(e);
                 }
 
-                return WrapExceptionsInNetworkExceptions ?
-                    NetworkErrorHelper.MapSocketException((SocketException)e) :
+                return WrapExceptionsForNetworkStream ?
+                    new IOException(SR.Format(_isReadForCaching ? SR.net_io_readfailure : SR.net_io_writefailure, e.Message), e) :
                     e;
             }
         }

@@ -14,7 +14,7 @@ namespace System.Xml
 
     internal class XmlUTF8TextWriter : XmlBaseWriter, IXmlTextWriterInitializer
     {
-        private XmlUTF8NodeWriter _writer;
+        private XmlUTF8NodeWriter? _writer;
 
         public void SetOutput(Stream stream, Encoding encoding, bool ownsStream)
         {
@@ -43,14 +43,14 @@ namespace System.Xml
 
     internal class XmlUTF8NodeWriter : XmlStreamNodeWriter
     {
-        private byte[] _entityChars;
+        private byte[]? _entityChars;
         private readonly bool[] _isEscapedAttributeChar;
         private readonly bool[] _isEscapedElementChar;
         private bool _inAttribute;
         private const int bufferLength = 512;
         private const int maxEntityLength = 32;
-        private Encoding _encoding;
-        private char[] _chars;
+        private Encoding? _encoding;
+        private char[]? _chars;
 
         private static readonly byte[] s_startDecl =
         {
@@ -101,9 +101,9 @@ namespace System.Xml
             _inAttribute = false;
         }
 
-        public new void SetOutput(Stream stream, bool ownsStream, Encoding encoding)
+        public new void SetOutput(Stream stream, bool ownsStream, Encoding? encoding)
         {
-            Encoding utf8Encoding = null;
+            Encoding? utf8Encoding = null;
             if (encoding != null && encoding.CodePage == Encoding.UTF8.CodePage)
             {
                 utf8Encoding = encoding;
@@ -203,10 +203,10 @@ namespace System.Xml
             WriteEndComment();
         }
 
-        public override void WriteStartElement(string prefix, string localName)
+        public override void WriteStartElement(string? prefix, string localName)
         {
             WriteByte('<');
-            if (prefix.Length != 0)
+            if (!string.IsNullOrEmpty(prefix))
             {
                 WritePrefix(prefix);
                 WriteByte(':');
@@ -214,10 +214,10 @@ namespace System.Xml
             WriteLocalName(localName);
         }
 
-        public override async Task WriteStartElementAsync(string prefix, string localName)
+        public override async Task WriteStartElementAsync(string? prefix, string localName)
         {
             await WriteByteAsync('<').ConfigureAwait(false);
-            if (prefix.Length != 0)
+            if (!string.IsNullOrEmpty(prefix))
             {
                 // This method calls into unsafe method which cannot run asyncly.
                 WritePrefix(prefix);
@@ -228,7 +228,7 @@ namespace System.Xml
             WriteLocalName(localName);
         }
 
-        public override void WriteStartElement(string prefix, XmlDictionaryString localName)
+        public override void WriteStartElement(string? prefix, XmlDictionaryString localName)
         {
             WriteStartElement(prefix, localName.Value);
         }
@@ -268,10 +268,10 @@ namespace System.Xml
             }
         }
 
-        public override void WriteEndElement(string prefix, string localName)
+        public override void WriteEndElement(string? prefix, string localName)
         {
             WriteBytes('<', '/');
-            if (prefix.Length != 0)
+            if (!string.IsNullOrEmpty(prefix))
             {
                 WritePrefix(prefix);
                 WriteByte(':');
@@ -280,10 +280,10 @@ namespace System.Xml
             WriteByte('>');
         }
 
-        public override async Task WriteEndElementAsync(string prefix, string localName)
+        public override async Task WriteEndElementAsync(string? prefix, string localName)
         {
             await WriteBytesAsync('<', '/').ConfigureAwait(false);
-            if (prefix.Length != 0)
+            if (!string.IsNullOrEmpty(prefix))
             {
                 WritePrefix(prefix);
                 await WriteByteAsync(':').ConfigureAwait(false);
@@ -318,10 +318,10 @@ namespace System.Xml
             _inAttribute = true;
         }
 
-        public override void WriteXmlnsAttribute(string prefix, string ns)
+        public override void WriteXmlnsAttribute(string? prefix, string ns)
         {
             WriteStartXmlnsAttribute();
-            if (prefix.Length != 0)
+            if (!string.IsNullOrEmpty(prefix))
             {
                 WriteByte(':');
                 WritePrefix(prefix);
@@ -331,7 +331,7 @@ namespace System.Xml
             WriteEndAttribute();
         }
 
-        public override void WriteXmlnsAttribute(string prefix, XmlDictionaryString ns)
+        public override void WriteXmlnsAttribute(string? prefix, XmlDictionaryString ns)
         {
             WriteXmlnsAttribute(prefix, ns.Value);
         }

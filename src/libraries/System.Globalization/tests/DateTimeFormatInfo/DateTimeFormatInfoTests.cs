@@ -176,10 +176,6 @@ namespace System.Globalization.Tests
             DateTime dt = new DateTime(1989, 01, 08); // Start of Heisei Era
 
             string formattedDateWithGannen = "\u5E73\u6210 \u5143\u5E74 01\u6708 08\u65E5";
-            if (PlatformDetection.IsBrowser)
-            {
-                formattedDateWithGannen = "Heisei \u5143\u5E74 01\u6708 08\u65E5";
-            }
 
             string formattedDate = dt.ToString(pattern, jpnFormat);
 

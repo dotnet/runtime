@@ -39,7 +39,7 @@ void CodeGen::genStackPointerConstantAdjustment(ssize_t spDelta)
     // function that does a probe, which will in turn call this function.
     assert((target_size_t)(-spDelta) <= compiler->eeGetPageSize());
 
-    inst_RV_IV(INS_sub, REG_SPBASE, -spDelta, EA_PTRSIZE);
+    inst_RV_IV(INS_sub, REG_SPBASE, (target_ssize_t)-spDelta, EA_PTRSIZE);
 }
 
 //------------------------------------------------------------------------
