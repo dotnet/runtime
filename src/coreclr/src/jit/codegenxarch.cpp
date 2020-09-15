@@ -6749,8 +6749,8 @@ void CodeGen::genSSE2BitwiseOp(GenTree* treeNode)
     assert(varTypeIsFloating(treeNode->TypeGet()));
     assert(treeNode->gtGetOp1()->isUsedFromReg());
 
-    CORINFO_FIELD_HANDLE* bitMask = nullptr;
-    UINT64                mask64  = 0;
+    CORINFO_FIELD_HANDLE* maskFld = nullptr;
+    UINT64                mask    = 0;
     instruction           ins     = INS_invalid;
 
     if (treeNode->OperIs(GT_NEG))
@@ -6759,8 +6759,8 @@ void CodeGen::genSSE2BitwiseOp(GenTree* treeNode)
         // Neg(f) = f ^ 0x80000000 x4 (packed)
         // Neg(d) = d ^ 0x8000000000000000 x2 (packed)
         ins     = INS_xorps;
-        mask64  = treeNode->TypeIs(TYP_FLOAT) ? 0x8000000080000000UL : 0x8000000000000000UL;
-        bitMask = treeNode->TypeIs(TYP_FLOAT) ? &negBitmaskFlt : &negBitmaskDbl;
+        mask    = treeNode->TypeIs(TYP_FLOAT) ? 0x8000000080000000UL : 0x8000000000000000UL;
+        maskFld = treeNode->TypeIs(TYP_FLOAT) ? &negBitmaskFlt : &negBitmaskDbl;
     }
     else if (treeNode->OperIs(GT_INTRINSIC))
     {
@@ -6769,21 +6769,21 @@ void CodeGen::genSSE2BitwiseOp(GenTree* treeNode)
         // Abs(f) = f & 0x7fffffff x4 (packed)
         // Abs(d) = d & 0x7fffffffffffffff x2 (packed)
         ins     = INS_andps;
-        mask64  = treeNode->TypeIs(TYP_FLOAT) ? 0x7fffffff7fffffffUL : 0x7fffffffffffffffUL;
-        bitMask = treeNode->TypeIs(TYP_FLOAT) ? &negBitmaskFlt : &negBitmaskDbl;
+        mask    = treeNode->TypeIs(TYP_FLOAT) ? 0x7fffffff7fffffffUL : 0x7fffffffffffffffUL;
+        maskFld = treeNode->TypeIs(TYP_FLOAT) ? &negBitmaskFlt : &negBitmaskDbl;
     }
     else
     {
         assert(!"genSSE2BitwiseOp: unsupported oper");
     }
 
-    if (*bitMask == nullptr)
+    if (*maskFld == nullptr)
     {
-        UINT64 maskPack[] = {mask64, mask64};
-        *bitMask          = GetEmitter()->emitAnyConst(&maskPack, 16, 16);
+        UINT64 maskPack[] = {mask, mask};
+        *maskFld          = GetEmitter()->emitAnyConst(&maskPack, 16, 16);
     }
 
-    GetEmitter()->emitIns_SIMD_R_R_C(ins, size, targetReg, operandReg, *bitMask, 0);
+    GetEmitter()->emitIns_SIMD_R_R_C(ins, size, targetReg, operandReg, *maskFld, 0);
 }
 
 //-----------------------------------------------------------------------------------------
