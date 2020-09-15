@@ -11,16 +11,26 @@ using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
+using Mono.Cecil.Cil;
+using Mono.Cecil.Pdb;
+using Mono.Cecil;
+using System.Net.Http;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
 
     internal class MonoProxy : DevToolsProxy
     {
+        IList<string> urlSymbolServerList;
+        static HttpClient client = new HttpClient();
         HashSet<SessionId> sessions = new HashSet<SessionId>();
         Dictionary<SessionId, ExecutionContext> contexts = new Dictionary<SessionId, ExecutionContext>();
 
-        public MonoProxy(ILoggerFactory loggerFactory, bool hideWebDriver = true) : base(loggerFactory) { this.hideWebDriver = hideWebDriver; }
+        public MonoProxy(ILoggerFactory loggerFactory, IList<string> urlSymbolServerList, bool hideWebDriver = true) : base(loggerFactory) 
+        { 
+            this.hideWebDriver = hideWebDriver;
+            this.urlSymbolServerList = urlSymbolServerList ?? new List<string>();
+        }
 
         readonly bool hideWebDriver;
 
@@ -337,6 +347,13 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
 
                 // Protocol extensions
+                case "DotnetDebugger.addSymbolServerUrl":
+                    {
+                        string url = args["url"]?.Value<string>();
+                        if (!String.IsNullOrEmpty(url) && !urlSymbolServerList.Contains(url))
+                            urlSymbolServerList.Add(url);
+                        return true;
+                    }
                 case "DotnetDebugger.getMethodLocation":
                     {
                         Console.WriteLine("set-breakpoint-by-method: " + id + " " + args);
@@ -539,6 +556,19 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                         var method = asm.GetMethodByToken(method_token);
 
+                        if (method == null && !asm.Image.HasSymbols)
+                        {
+                            try
+                            {
+                                method = await LoadSymbolsOnDemand(asm, method_token, sessionId, token);
+                            }
+                            catch (Exception e)
+                            {
+                                Log("info", $"Unable to find il offset: {il_pos} in method token: {method_token} assembly name: {assembly_name} exception: {e.ToString()}");
+                                continue;
+                            }
+                        }
+
                         if (method == null)
                         {
                             Log("info", $"Unable to find il offset: {il_pos} in method token: {method_token} assembly name: {assembly_name}");
@@ -616,6 +646,81 @@ namespace Microsoft.WebAssembly.Diagnostics
             return true;
         }
 
+        async Task<MethodInfo> LoadSymbolsOnDemand(AssemblyInfo asm, uint method_token, SessionId sessionId, CancellationToken token)
+        {
+            var context = GetContext(sessionId);
+            if (asm.TriedToLoadSymbolsOnDemand)
+                return null;
+            asm.TriedToLoadSymbolsOnDemand = true;
+            ImageDebugHeader header = asm.Image.GetDebugHeader();
+
+            for (var i = 0; i < header.Entries.Length; i++)
+            {
+                var entry = header.Entries[i];
+                if (entry.Directory.Type != ImageDebugType.CodeView)
+                {
+                    continue;
+                }
+
+                var data = entry.Data;
+
+                if (data.Length < 24)
+                    return null;
+
+                var pdbSignature = (data[0]
+                    | (data[1] << 8)
+                    | (data[2] << 16)
+                    | (data[3] << 24));
+
+                if (pdbSignature != 0x53445352) // "SDSR" mono/metadata/debug-mono-ppdb.c#L101
+                    return null;
+
+                var buffer = new byte[16];
+                Buffer.BlockCopy(data, 4, buffer, 0, 16);
+
+                var pdbAge = (data[20]
+                    | (data[21] << 8)
+                    | (data[22] << 16)
+                    | (data[23] << 24));
+
+                var pdbGuid = new Guid(buffer);
+                var buffer2 = new byte[(data.Length - 24) - 1];
+                Buffer.BlockCopy(data, 24, buffer2, 0, (data.Length - 24) - 1);
+                var pdbName = System.Text.Encoding.UTF8.GetString(buffer2, 0, buffer2.Length);
+                pdbName = Path.GetFileName(pdbName);
+
+                foreach (var urlSymbolServer in urlSymbolServerList) 
+                {
+                    var downloadURL = $"{urlSymbolServer}/{pdbName}/{pdbGuid.ToString("N").ToUpper() + pdbAge}/{pdbName}";
+
+                    try
+                    {
+                        using HttpResponseMessage response = await client.GetAsync(downloadURL);
+                        using Stream streamToReadFrom = await response.Content.ReadAsStreamAsync();
+                        var portablePdbReaderProvider = new PdbReaderProvider();
+                        var symbolReader = portablePdbReaderProvider.GetSymbolReader(asm.Image, streamToReadFrom);
+                        asm.ClearDebugInfo(); //workaround while cecil PR #686 is not merged
+                        asm.Image.ReadSymbols(symbolReader);
+                        asm.Populate();
+                        foreach (var source in asm.Sources)
+                        {
+                            var scriptSource = JObject.FromObject(source.ToScriptSource(context.Id, context.AuxData));
+                            SendEvent(sessionId, "Debugger.scriptParsed", scriptSource, token);
+                        }
+                        return asm.GetMethodByToken(method_token);
+                    }
+                    catch (Exception e)
+                    {
+                        Log("info", $"Unable to load symbols on demand exception: {e.ToString()} url:{downloadURL} assembly: {asm.Name}");
+                    }
+                }
+                break;
+            }
+
+            Log("info", "Unable to load symbols on demand assembly: {asm.Name}");
+            return null;
+        }
+        
         async Task OnDefaultContext(SessionId sessionId, ExecutionContext context, CancellationToken token)
         {
             Log("verbose", "Default context created, clearing state and sending events");
