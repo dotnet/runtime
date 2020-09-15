@@ -79,9 +79,10 @@ int __cdecl main( int argc, char **argv )
         Fail ("Error: Insufficient lpCommandline for\n");
     }
 
+    LPWSTR lpCommandLineW = convert(lpCommandLine);
     /* launch the child process */
     if( !CreateProcess(     NULL,               /* module name to execute */
-                            lpCommandLine,    /* command line */
+                            lpCommandLineW,     /* command line */
                             NULL,               /* process handle not */
                                                 /* inheritable */
                             NULL,               /* thread handle not */
@@ -95,9 +96,13 @@ int __cdecl main( int argc, char **argv )
                             &pi )               /* process info struct */
         )
     {
+        DWORD dwError = GetLastError();
+        free(lpCommandLineW);
         Fail( "ERROR:%lu:CreateProcess call failed\n",
-              GetLastError() );
+              dwError);
     }
+
+    free(lpCommandLineW);
 
     /* verify that the event is signalled by the child process */
     dwRet = WaitForSingleObject( hEvent, TIMEOUT );

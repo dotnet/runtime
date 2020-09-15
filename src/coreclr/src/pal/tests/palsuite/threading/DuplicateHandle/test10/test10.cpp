@@ -21,7 +21,7 @@ enum wait_results
     WR_RELEASED
 };
 
-                               
+
 volatile int t1_result=WR_WAITING;
 volatile int t2_result=WR_WAITING;
 
@@ -72,7 +72,7 @@ DWORD PALAPI ThreadTest2(LPVOID lpParam)
 
 int __cdecl main(int argc, char **argv)
 {
-    
+
     HANDLE hDupSemaphore;
     HANDLE hSemaphore;
     HANDLE hThread;
@@ -84,22 +84,24 @@ int __cdecl main(int argc, char **argv)
     {
         return(FAIL);
     }
- 
-    hSemaphore = CreateSemaphoreW( NULL,
-                                   1,
-                                   1,
-                                   NULL); 
-    if (hSemaphore == NULL) 
+
+    hSemaphore = CreateSemaphoreExW( NULL,
+                                     1,
+                                     1,
+                                     NULL,
+                                     0,
+                                     0);
+    if (hSemaphore == NULL)
     {
-        Fail("PALSUITE ERROR:%u: Unable to create mutex\n", 
+        Fail("PALSUITE ERROR:%u: Unable to create mutex\n",
              GetLastError());
     }
 
     /*Create Duplicate of the Semaphore above*/
-    bDupHandle = DuplicateHandle(GetCurrentProcess(),       
-                                 hSemaphore,                    
-                                 GetCurrentProcess(),       
-                                 &hDupSemaphore,                
+    bDupHandle = DuplicateHandle(GetCurrentProcess(),
+                                 hSemaphore,
+                                 GetCurrentProcess(),
+                                 &hDupSemaphore,
                                  GENERIC_READ|GENERIC_WRITE,
                                  FALSE,
                                  DUPLICATE_SAME_ACCESS);
@@ -113,7 +115,7 @@ int __cdecl main(int argc, char **argv)
         Fail("");
     }
 
-    /*Create a thread to test the Semaphore*/       
+    /*Create a thread to test the Semaphore*/
     hThread = CreateThread(NULL,
                            0,
                            &ThreadTest1,
@@ -146,11 +148,11 @@ int __cdecl main(int argc, char **argv)
     /*Create a second thread to use the Semaphore's duplicate handle*/
     /*This thread should block since the Semaphore is owned by another
       thread*/
-    hThread2 = CreateThread(NULL,        
-                            0,           
-                            &ThreadTest2,  
-                            hDupSemaphore,   
-                            0,           
+    hThread2 = CreateThread(NULL,
+                            0,
+                            &ThreadTest2,
+                            hDupSemaphore,
+                            0,
                             &dwThreadId);
 
     if (hThread2 == NULL)
@@ -162,15 +164,15 @@ int __cdecl main(int argc, char **argv)
         CloseHandle(hThread);
         Fail("");
     }
-    
+
     /* wait until thread has tried to take the mutex */
     while (WR_WAITING == t2_result)
         Sleep(1);
-    
+
     if (WR_TIMED_OUT != t2_result )
     {
         Trace("PALSUITE ERROR:%u: Able to take mutex %#x while its "
-              "duplicate %#x is held\n", GetLastError(), hDupSemaphore, 
+              "duplicate %#x is held\n", GetLastError(), hDupSemaphore,
               hSemaphore);
         CloseHandle(hSemaphore);
         CloseHandle(hDupSemaphore);
@@ -188,17 +190,17 @@ int __cdecl main(int argc, char **argv)
     /* wait for thread 1 to release the mutex */
     while (WR_WAITING == t1_result)
         Sleep(1);
-    
+
     CloseHandle(hThread2);
 
     /*Re-Create the second thread to reuse the duplicated Semaphore*/
-    /*Since the Semaphore has since been released, the thread should 
+    /*Since the Semaphore has since been released, the thread should
       put WR_GOT_MUTEX into t2_result */
-    hThread2 = CreateThread(NULL,         
-                            0,            
-                            &ThreadTest2,   
-                            hDupSemaphore,    
-                            0,            
+    hThread2 = CreateThread(NULL,
+                            0,
+                            &ThreadTest2,
+                            hDupSemaphore,
+                            0,
                             &dwThreadId);
 
     if (hThread2 == NULL)
@@ -210,15 +212,15 @@ int __cdecl main(int argc, char **argv)
         CloseHandle(hThread);
         Fail("");
     }
-    
+
     /* wait until thread has taken the semaphore */
     while (WR_WAITING == t2_result)
         Sleep(1);
-    
+
     if (WR_GOT_MUTEX != t2_result )
     {
         Trace("PALSUITE ERROR:%u: Unable to take semaphore %#x after its"
-              " duplicate %#x was released\n", GetLastError(), hDupSemaphore, 
+              " duplicate %#x was released\n", GetLastError(), hDupSemaphore,
               hSemaphore);
         CloseHandle(hSemaphore);
         CloseHandle(hDupSemaphore);

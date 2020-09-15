@@ -141,9 +141,10 @@ int __cdecl main( int argc, char **argv )
               "not build absolute path name to file\n.  Exiting.\n" );
     }
 
+    LPWSTR rgchAbsPathNameW = convert(rgchAbsPathName);
     /* launch the child process    */
     if( !CreateProcess(     NULL,               /* module name to execute */
-                            rgchAbsPathName,    /* command line */
+                            rgchAbsPathNameW,   /* command line */
                             NULL,               /* process handle not */
                                                 /* inheritable */
                             NULL,               /* thread handle not */
@@ -158,6 +159,7 @@ int __cdecl main( int argc, char **argv )
         )
     {
         dwError = GetLastError();
+        free(rgchAbsPathNameW);
         if( ReleaseMutex( hMutex ) == 0 )
         {
             Trace( "ERROR:%lu:ReleaseMutex() call failed\n", GetLastError() );
@@ -169,6 +171,8 @@ int __cdecl main( int argc, char **argv )
         Fail( "CreateProcess call failed with error code %d\n",
               dwError );
     }
+
+    free(rgchAbsPathNameW);
 
     /* open another handle to the child process */
     hChildProcess = OpenProcess(    PROCESS_ALL_ACCESS,   /* access */

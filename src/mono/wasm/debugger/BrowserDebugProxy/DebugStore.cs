@@ -720,8 +720,6 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public async IAsyncEnumerable<SourceFile> Load(SessionId sessionId, string[] loaded_files, [EnumeratorCancellation] CancellationToken token)
         {
-            static bool MatchPdb(string asm, string pdb) => Path.ChangeExtension(asm, "pdb") == pdb;
-
             var asm_files = new List<string>();
             var pdb_files = new List<string>();
             foreach (var file_name in loaded_files)
@@ -737,7 +735,11 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 try
                 {
-                    var pdb = pdb_files.FirstOrDefault(n => MatchPdb(url, n));
+                    string candidate_pdb = Path.ChangeExtension(url, "pdb");
+                    string pdb = pdb_files.FirstOrDefault(n => n == candidate_pdb);
+                    if (pdb == null)
+                        continue;
+
                     steps.Add(
                         new DebugItem
                         {
