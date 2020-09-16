@@ -205,6 +205,10 @@ namespace System.ServiceModel.Syndication.Tests
         public void Clone_NoExtensions_ReturnsExpected()
         {
             var category = new SyndicationCategory();
+
+            SyndicationElementExtensionCollection elementExtensions = category.ElementExtensions;
+            Assert.Empty(elementExtensions);
+
             SyndicationElementExtensionCollection clone = category.Clone().ElementExtensions;
             Assert.Empty(clone);
         }
