@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.Numerics;
 using Xunit;
-using System.ComponentModel.DataAnnotations;
 
 namespace System.Text.Json.Serialization.Tests
 {
