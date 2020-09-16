@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <RunAnalyzers>false</RunAnalyzers>
+    <NoWarn>$(NoWarn),CA2007</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

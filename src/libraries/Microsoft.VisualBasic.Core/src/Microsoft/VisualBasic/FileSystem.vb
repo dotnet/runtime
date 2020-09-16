@@ -1247,7 +1247,7 @@ Namespace Microsoft.VisualBasic
 
             ' This exception should never be hit.
             ' We will throw Arguments are not valid.
-            Throw New ArgumentException(SR.Argument_InvalidValue, "om")
+            Throw New ArgumentException(SR.Argument_InvalidValue, NameOf(om))
         End Function
 
         Friend Sub CloseAllFiles(ByVal assem As System.Reflection.Assembly)

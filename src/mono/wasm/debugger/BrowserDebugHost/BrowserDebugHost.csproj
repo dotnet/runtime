@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
-    <RunAnalyzers>false</RunAnalyzers>
+    <NoWarn>$(NoWarn),CA2007</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

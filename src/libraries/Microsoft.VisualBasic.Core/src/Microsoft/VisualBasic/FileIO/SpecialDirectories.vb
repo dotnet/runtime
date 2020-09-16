@@ -6,7 +6,6 @@ Option Explicit On
 Imports System
 Imports System.Environment
 Imports System.Reflection
-Imports Microsoft.VisualBasic.CompilerServices.Utils
 Imports ExUtils = Microsoft.VisualBasic.CompilerServices.ExceptionUtils
 
 Namespace Microsoft.VisualBasic.FileIO
