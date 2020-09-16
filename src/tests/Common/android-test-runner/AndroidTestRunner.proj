@@ -7,6 +7,8 @@
     <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.android-$(TargetArchitecture)\$(Configuration)\runtimes\android-$(TargetArchitecture)</MicrosoftNetCoreAppRuntimePackDir>
     <AndroidAppBuilderDir>$(CORE_ROOT)/AndroidAppBuilder</AndroidAppBuilderDir>
     <EnableTargetingPackDownload>false</EnableTargetingPackDownload>
+    <InvariantGlobalization>true</InvariantGlobalization> <!-- workaround for https://github.com/dotnet/runtime/issues/41866 -->
+    <NoWarn>$(NoWarn),CA1050</NoWarn>
   </PropertyGroup>
 
   <!-- Redirect 'dotnet publish' to in-tree runtime pack -->
@@ -23,7 +25,7 @@
              AssemblyFile="$(AndroidAppBuilderDir)\AndroidAppBuilder.dll" />
 
   <!-- Build APK during 'dotnet publish' -->
-  <Target Name="BuildAppBundle" AfterTargets="CopyFilesToPublishDirectory">
+  <Target Name="BuildAppBundle" AfterTargets="Build">
     <PropertyGroup>
       <AndroidAbi Condition="'$(Platform)'=='arm64'">arm64-v8a</AndroidAbi>
       <AndroidAbi Condition="'$(Platform)'=='arm'">armeabi-v7a</AndroidAbi>
@@ -33,7 +35,14 @@
       <StripDebugSymbols>False</StripDebugSymbols>
       <StripDebugSymbols Condition="'$(Configuration)' == 'Release'">True</StripDebugSymbols>
       <AdbTool>$(ANDROID_SDK_ROOT)\platform-tools\adb</AdbTool>
+      <CopyDependencies>True</CopyDependencies>
     </PropertyGroup>
+
+    <ItemGroup>
+      <AssemblySearchPaths Include="bin"/>
+      <AssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackDir)native"/>
+      <AssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackDir)lib\$(NetCoreAppCurrent)"/>
+    </ItemGroup>
 
     <RemoveDir Directories="$(ApkDir)" />
 
@@ -48,8 +57,10 @@
         MonoRuntimeHeaders="%(ResolvedRuntimePack.PackageDirectory)\runtimes\android-$(Platform)\native\include\mono-2.0"
         MainLibraryFileName="$(TestAssembly)"
         StripDebugSymbols="$(StripDebugSymbols)"
-        SourceDir="$(MSBuildThisFileDirectory)$(PublishDir)"
-        OutputDir="$(ApkDir)">
+        SourceDir="$(MSBuildThisFileDirectory)/Dependency"
+        OutputDir="$(ApkDir)"
+        CopyDependencies="$(CopyDependencies)"
+        AssemblySearchPaths="@(AssemblySearchPaths)">
         <Output TaskParameter="ApkBundlePath" PropertyName="ApkBundlePath" />
         <Output TaskParameter="ApkPackageId" PropertyName="ApkPackageId" />
     </AndroidAppBuilderTask>

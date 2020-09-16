@@ -49,10 +49,11 @@ public class AndroidAppBuilderTask : Task
 
     public override bool Execute()
     {
-        if (LoadDependencies)
+        if (CopyDependencies)
         {
             var paths = new List<string>();
-            
+            _assemblies = new SortedDictionary<string, Assembly>();
+
             // Collect and load assemblies used by the app
             foreach (var v in AssemblySearchPaths!)
             {
@@ -64,7 +65,7 @@ public class AndroidAppBuilderTask : Task
             _resolver = new Resolver(paths);
             var mlc = new MetadataLoadContext(_resolver, "System.Private.CoreLib");
 
-            var mainAssembly = mlc.LoadFromAssemblyPath(MainAssembly);
+            var mainAssembly = mlc.LoadFromAssemblyPath(MainLibraryFileName);
             Add(mlc, mainAssembly);
 
             if (ExtraAssemblies != null)
@@ -85,6 +86,10 @@ public class AndroidAppBuilderTask : Task
             }
                 }
             }
+            
+            Directory.CreateDirectory(SourceDir!);
+            foreach (var assembly in _assemblies!.Values)
+                File.Copy(assembly.Location, Path.Join(SourceDir, Path.GetFileName(assembly.Location)), true);
         }
 
         Utils.Logger = Log;
