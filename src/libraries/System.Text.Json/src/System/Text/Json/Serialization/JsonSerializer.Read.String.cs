@@ -23,10 +23,15 @@ namespace System.Text.Json
         /// <paramref name="json"/> is <see langword="null"/>.
         /// </exception>
         /// <exception cref="JsonException">
-        /// Thrown when the JSON is invalid,
-        /// <typeparamref name="TValue"/> is not compatible with the JSON,
-        /// or when there is remaining data in the Stream.
-        /// </exception>
+        /// The JSON is invalid.
+        ///
+        /// -or-
+        ///
+        /// <typeparamref name="TValue" /> is not compatible with the JSON.
+        ///
+        /// -or-
+        ///
+        /// There is remaining data in the string beyond a single JSON value.</exception>
         /// <exception cref="NotSupportedException">
         /// There is no compatible <see cref="System.Text.Json.Serialization.JsonConverter"/>
         /// for <typeparamref name="TValue"/> or its serializable members.
@@ -51,10 +56,15 @@ namespace System.Text.Json
         /// <param name="json">JSON text to parse.</param>
         /// <param name="options">Options to control the behavior during parsing.</param>
         /// <exception cref="JsonException">
-        /// Thrown when the JSON is invalid,
-        /// <typeparamref name="TValue"/> is not compatible with the JSON,
-        /// or when there is remaining data in the Stream.
-        /// </exception>
+        /// The JSON is invalid.
+        ///
+        /// -or-
+        ///
+        /// <typeparamref name="TValue" /> is not compatible with the JSON.
+        ///
+        /// -or-
+        ///
+        /// There is remaining data in the span beyond a single JSON value.</exception>
         /// <exception cref="NotSupportedException">
         /// There is no compatible <see cref="System.Text.Json.Serialization.JsonConverter"/>
         /// for <typeparamref name="TValue"/> or its serializable members.
@@ -78,10 +88,15 @@ namespace System.Text.Json
         /// <paramref name="json"/> or <paramref name="returnType"/> is <see langword="null"/>.
         /// </exception>
         /// <exception cref="JsonException">
-        /// Thrown when the JSON is invalid,
-        /// the <paramref name="returnType"/> is not compatible with the JSON,
-        /// or when there is remaining data in the Stream.
-        /// </exception>
+        /// The JSON is invalid.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="returnType"/> is not compatible with the JSON.
+        ///
+        /// -or-
+        ///
+        /// There is remaining data in the string beyond a single JSON value.</exception>
         /// <exception cref="NotSupportedException">
         /// There is no compatible <see cref="System.Text.Json.Serialization.JsonConverter"/>
         /// for <paramref name="returnType"/> or its serializable members.
@@ -114,10 +129,15 @@ namespace System.Text.Json
         /// <param name="returnType">The type of the object to convert to and return.</param>
         /// <param name="options">Options to control the behavior during parsing.</param>
         /// <exception cref="JsonException">
-        /// Thrown when the JSON is invalid,
-        /// the <paramref name="returnType"/> is not compatible with the JSON,
-        /// or when there is remaining data in the Stream.
-        /// </exception>
+        /// The JSON is invalid.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="returnType"/> is not compatible with the JSON.
+        ///
+        /// -or-
+        ///
+        /// There is remaining data in the span beyond a single JSON value.</exception>
         /// <exception cref="NotSupportedException">
         /// There is no compatible <see cref="System.Text.Json.Serialization.JsonConverter"/>
         /// for <paramref name="returnType"/> or its serializable members.
