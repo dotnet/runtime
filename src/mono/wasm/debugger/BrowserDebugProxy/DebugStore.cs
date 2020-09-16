@@ -784,8 +784,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                 {
                     string candidate_pdb = Path.ChangeExtension(url, "pdb");
                     string pdb = pdb_files.FirstOrDefault(n => n == candidate_pdb);
-                    if (pdb == null)
-                        continue;
 
                     steps.Add(
                         new DebugItem
