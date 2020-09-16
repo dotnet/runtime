@@ -39,17 +39,17 @@
   </PropertyGroup>
   <ItemGroup>
     <!-- TODO: To save time, just do SuperPMI on System.Web.dll -->
-    <Partition Include="$(BuildConfig).Partition0" Name="Core_Root\System.Web.dll" />
-    <Partition Include="$(BuildConfig).Partition1" Name="Tests" />
+    <Partition Include="$(BuildConfig).Partition0" PmiAssemblies="Core_Root\System.Web.dll" OutputMchName="Libraries" />
+    <Partition Include="$(BuildConfig).Partition1" PmiAssemblies="Tests" OutputMchName="Tests" />
   </ItemGroup>
 
   <ItemGroup>
     <HelixWorkItem Include="@(Partition)">
     <!-- TODO: Here too make payload folder different for workitem.Name -->
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
-      <Command>$(WorkItemCommand) -pmi_assemblies $(PmiAssembliesDirectory)\%(HelixWorkItem.Name) -output_mch_path $(OutputMchPath)\%(HelixWorkItem.Name).$(AGENT_OS).$(Architecture).Checked.mch</Command>
+      <Command>$(WorkItemCommand) -pmi_assemblies $(PmiAssembliesDirectory)\%(HelixWorkItem.PmiAssemblies) -output_mch_path $(OutputMchPath)\%(HelixWorkItem.OutputMchName).$(AGENT_OS).$(Architecture).Checked.mch</Command>
       <Timeout>$(WorkItemTimeout)</Timeout>
-      <DownloadFilesFromResults>%(HelixWorkItem.Name).$(AGENT_OS).$(Architecture).Checked.mch</DownloadFilesFromResults>
+      <DownloadFilesFromResults>%(HelixWorkItem.OutputMchName).$(AGENT_OS).$(Architecture).Checked.mch</DownloadFilesFromResults>
     </HelixWorkItem>
   </ItemGroup>
 
