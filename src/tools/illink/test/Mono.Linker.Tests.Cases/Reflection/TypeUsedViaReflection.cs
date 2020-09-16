@@ -22,6 +22,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			TestReference ();
 			TestArray ();
 			TestArrayOfArray ();
+			TestGenericArray ();
+			TestGenericArrayFullString ();
 			TestMultiDimensionalArray ();
 			TestMultiDimensionalArrayFullString ();
 			TestMultiDimensionalArrayAsmName ();
@@ -69,6 +71,34 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		public static void TestGenericString ()
 		{
 			const string reflectionTypeKeptString = "Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+Generic`1, test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null";
+			var typeKept = Type.GetType (reflectionTypeKeptString, false);
+		}
+
+		[Kept]
+		public class GenericArray<T> { }
+
+		[Kept]
+		public class GenericArgument { }
+
+		[Kept]
+		public static void TestGenericArray ()
+		{
+			const string reflectionTypeKeptString = "Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+GenericArray`1[[Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+GenericArgument]]";
+			var typeKept = Type.GetType (reflectionTypeKeptString, false);
+		}
+
+		[Kept]
+		public class GenericArrayFullString<T> { }
+
+		[Kept]
+		public class GenericArgumentFullString { }
+
+		[Kept]
+		public static void TestGenericArrayFullString ()
+		{
+			const string reflectionTypeKeptString = "Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+GenericArrayFullString`1" +
+				"[[Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+GenericArgumentFullString, test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]," +
+				" test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null";
 			var typeKept = Type.GetType (reflectionTypeKeptString, false);
 		}
 

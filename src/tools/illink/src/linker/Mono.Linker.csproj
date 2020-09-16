@@ -23,6 +23,7 @@
 
   <ItemGroup>
     <Compile Remove="ref\**\*.cs" />
+    <Compile Include="..\..\external\corert\**\*.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(MonoBuild)' == ''">
