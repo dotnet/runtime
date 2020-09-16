@@ -1304,6 +1304,7 @@ namespace System.Net.Sockets
             try
             {
                 // This can throw ObjectDisposedException.
+                int bytesTransferred;
                 bool success = socket.AcceptEx(
                     handle,
                     acceptHandle,
@@ -1311,10 +1312,10 @@ namespace System.Net.Sockets
                     receiveSize,
                     addressBufferSize,
                     addressBufferSize,
-                    out int bytesReceived,
+                    out bytesTransferred,
                     asyncResult.DangerousOverlappedPointer); // SafeHandle was just created in SetUnmanagedStructures
 
-                return asyncResult.ProcessOverlappedResult(success, bytesReceived);
+                return asyncResult.ProcessOverlappedResult(success, 0);
             }
             catch
             {
