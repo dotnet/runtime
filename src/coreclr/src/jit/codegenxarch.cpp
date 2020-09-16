@@ -3689,8 +3689,8 @@ void CodeGen::genRangeCheck(GenTree* oper)
     noway_assert(oper->OperIsBoundsCheck());
     GenTreeBoundsChk* bndsChk = oper->AsBoundsChk();
 
-    GenTree* arrIndex  = bndsChk->gtIndex;
-    GenTree* arrLen    = bndsChk->gtArrLen;
+    GenTree* arrIndex = bndsChk->gtIndex;
+    GenTree* arrLen   = bndsChk->gtArrLen;
 
     GenTree *    src1, *src2;
     emitJumpKind jmpKind;
