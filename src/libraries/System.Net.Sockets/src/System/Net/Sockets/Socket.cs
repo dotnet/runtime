@@ -2361,7 +2361,7 @@ namespace System.Net.Sockets
             {
                 if (SocketsTelemetry.Log.IsEnabled() && asyncResult is ConnectOverlappedAsyncResult)
                 {
-                    SocketsTelemetry.Log.AfterConnect(SocketError.OperationAborted);
+                    SocketsTelemetry.Log.AfterConnect(SocketError.NotSocket);
                 }
 
                 ThrowObjectDisposedException();
@@ -2394,16 +2394,12 @@ namespace System.Net.Sockets
 
             Exception? ex = castedAsyncResult.Result as Exception;
 
-            if (SocketsTelemetry.Log.IsEnabled() && castedAsyncResult is ConnectOverlappedAsyncResult)
-            {
-                SocketsTelemetry.Log.AfterConnect((SocketError)castedAsyncResult.ErrorCode, ex?.Message);
-            }
-
             if (ex != null || (SocketError)castedAsyncResult.ErrorCode != SocketError.Success)
             {
+                SocketError errorCode = (SocketError)castedAsyncResult.ErrorCode;
+
                 if (ex == null)
                 {
-                    SocketError errorCode = (SocketError)castedAsyncResult.ErrorCode;
                     UpdateConnectSocketErrorForDisposed(ref errorCode);
                     // Update the internal state of this socket according to the error before throwing.
                     SocketException se = SocketExceptionFactory.CreateSocketException((int)errorCode, castedAsyncResult.RemoteEndPoint);
@@ -2411,8 +2407,18 @@ namespace System.Net.Sockets
                     ex = se;
                 }
 
+                if (SocketsTelemetry.Log.IsEnabled() && castedAsyncResult is ConnectOverlappedAsyncResult)
+                {
+                    SocketsTelemetry.Log.AfterConnect(errorCode, ex.Message);
+                }
+
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, ex);
                 ExceptionDispatchInfo.Throw(ex);
+            }
+
+            if (SocketsTelemetry.Log.IsEnabled() && castedAsyncResult is ConnectOverlappedAsyncResult)
+            {
+                SocketsTelemetry.Log.AfterConnect(SocketError.Success);
             }
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Connected(this, LocalEndPoint, RemoteEndPoint);
@@ -3577,7 +3583,7 @@ namespace System.Net.Sockets
         {
             if (Disposed)
             {
-                if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.AfterAccept(SocketError.OperationAborted);
+                if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.AfterAccept(SocketError.Interrupted);
 
                 ThrowObjectDisposedException();
             }
@@ -4239,8 +4245,6 @@ namespace System.Net.Sockets
 
             SocketError errorCode = SocketPal.Connect(_handle, socketAddress.Buffer, socketAddress.Size);
 
-            if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.AfterConnect(errorCode);
-
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)
             {
@@ -4249,8 +4253,13 @@ namespace System.Net.Sockets
                 SocketException socketException = SocketExceptionFactory.CreateSocketException((int)errorCode, endPointSnapshot);
                 UpdateStatusAfterSocketError(socketException);
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, socketException);
+
+                if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.AfterConnect(errorCode);
+
                 throw socketException;
             }
+
+            if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.AfterConnect(SocketError.Success);
 
             if (_rightEndPoint == null)
             {

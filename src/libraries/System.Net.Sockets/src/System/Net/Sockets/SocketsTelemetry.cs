@@ -111,7 +111,7 @@ namespace System.Net.Sockets
             }
             else
             {
-                if (error == SocketError.OperationAborted || error == SocketError.Interrupted)
+                if (error == SocketError.OperationAborted || error == SocketError.NotSocket)
                 {
                     ConnectCanceled();
                 }
