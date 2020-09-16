@@ -27,8 +27,8 @@ namespace Microsoft.WebAssembly.Diagnostics
         HashSet<SessionId> sessions = new HashSet<SessionId>();
         Dictionary<SessionId, ExecutionContext> contexts = new Dictionary<SessionId, ExecutionContext>();
 
-        public MonoProxy(ILoggerFactory loggerFactory, IList<string> urlSymbolServerList, bool hideWebDriver = true) : base(loggerFactory)
-        {
+        public MonoProxy(ILoggerFactory loggerFactory, IList<string> urlSymbolServerList, bool hideWebDriver = true) : base(loggerFactory) 
+        { 
             this.hideWebDriver = hideWebDriver;
             this.urlSymbolServerList = urlSymbolServerList ?? new List<string>();
         }
@@ -712,7 +712,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 var pdbName = System.Text.Encoding.UTF8.GetString(buffer2, 0, buffer2.Length);
                 pdbName = Path.GetFileName(pdbName);
 
-                foreach (var urlSymbolServer in urlSymbolServerList)
+                foreach (var urlSymbolServer in urlSymbolServerList) 
                 {
                     var downloadURL = $"{urlSymbolServer}/{pdbName}/{pdbGuid.ToString("N").ToUpper() + pdbAge}/{pdbName}";
 
@@ -743,7 +743,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             Log("info", "Unable to load symbols on demand assembly: {asm.Name}");
             return null;
         }
-
+        
         async Task OnDefaultContext(SessionId sessionId, ExecutionContext context, CancellationToken token)
         {
             Log("verbose", "Default context created, clearing state and sending events");
