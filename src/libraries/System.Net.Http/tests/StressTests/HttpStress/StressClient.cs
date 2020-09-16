@@ -19,14 +19,13 @@ namespace HttpStress
 {
     public class StressClient : IDisposable
     {
-        private const string UNENCRYPTED_HTTP2_ENV_VAR = "DOTNET_SYSTEM_NET_HTTP_SOCKETSHTTPHANDLER_HTTP2UNENCRYPTEDSUPPORT";
-
         private readonly (string name, Func<RequestContext, Task> operation)[] _clientOperations;
         private readonly Uri _baseAddress;
         private readonly Configuration _config;
         private readonly StressResultAggregator _aggregator;
         private readonly Stopwatch _stopwatch = new Stopwatch();
         private readonly CancellationTokenSource _cts = new CancellationTokenSource();
+        private HttpClient? _client;
         private Task? _clientTask;
         private EventListener? _eventListener;
 
@@ -56,6 +55,7 @@ namespace HttpStress
                     throw new InvalidOperationException("Stress client already running");
                 }
 
+                InitializeClient().Wait();
                 _stopwatch.Start();
                 _clientTask = StartCore();
             }
@@ -96,14 +96,8 @@ namespace HttpStress
             _eventListener?.Dispose();
         }
 
-        private async Task StartCore()
+        private async Task InitializeClient()
         {
-            // ToDo: set up exact version instead
-            if (_baseAddress.Scheme == "http")
-            {
-                Environment.SetEnvironmentVariable(UNENCRYPTED_HTTP2_ENV_VAR, "1");
-            }
-
             HttpMessageHandler CreateHttpHandler()
             {
                 if (_config.UseWinHttpHandler)
@@ -132,9 +126,10 @@ namespace HttpStress
                     BaseAddress = _baseAddress,
                     Timeout = _config.DefaultTimeout,
                     DefaultRequestVersion = _config.HttpVersion,
+                    DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact
                 };
 
-            using HttpClient client = CreateHttpClient();
+            _client = CreateHttpClient();
 
             Console.WriteLine($"Trying connect to the server {_baseAddress}.");
 
@@ -144,6 +139,33 @@ namespace HttpStress
 
             Console.WriteLine($"Connected succesfully.");
 
+            async Task SendTestRequestToServer(int maxRetries)
+            {
+                using HttpClient client = CreateHttpClient();
+                client.Timeout = TimeSpan.FromSeconds(5);
+                for (int remainingRetries = maxRetries; ; remainingRetries--)
+                {
+                    var sw = Stopwatch.StartNew();
+                    try
+                    {
+                        await client.GetAsync("/");
+                        break;
+                    }
+                    catch (HttpRequestException) when (remainingRetries > 0)
+                    {
+                        Console.WriteLine($"Stress client could not connect to host {_baseAddress}, {remainingRetries} attempts remaining");
+                        var delay = TimeSpan.FromSeconds(1) - sw.Elapsed;
+                        if (delay > TimeSpan.Zero)
+                        {
+                            await Task.Delay(delay);
+                        }
+                    }
+                }
+            }
+        }
+
+        private async Task StartCore()
+        {
             // Spin up a thread dedicated to outputting stats for each defined interval
             new Thread(() =>
             {
@@ -174,7 +196,7 @@ namespace HttpStress
 
                     int opIndex = (int)(i % _clientOperations.Length);
                     (string operation, Func<RequestContext, Task> func) = _clientOperations[opIndex];
-                    var requestContext = new RequestContext(_config, client, random, _cts.Token, taskNum);
+                    var requestContext = new RequestContext(_config, _client!, random, _cts.Token, taskNum);
                     stopwatch.Restart();
                     try
                     {
@@ -197,24 +219,6 @@ namespace HttpStress
                 {
                     uint rol5 = ((uint)h1 << 5) | ((uint)h1 >> 27);
                     return ((int)rol5 + h1) ^ h2;
-                }
-            }
-            
-            async Task SendTestRequestToServer(int maxRetries)
-            {
-                using HttpClient client = CreateHttpClient();
-                for (int remainingRetries = maxRetries; ; remainingRetries--)
-                {
-                    try
-                    {
-                        await client.GetAsync("/");
-                        break;
-                    }
-                    catch (HttpRequestException) when (remainingRetries > 0)
-                    {
-                        Console.WriteLine($"Stress client could not connect to host {_baseAddress}, {remainingRetries} attempts remaining");
-                        await Task.Delay(millisecondsDelay: 1000);
-                    }
                 }
             }
         }
