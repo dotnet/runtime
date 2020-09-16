@@ -1,10 +1,13 @@
-using Microsoft.CodeAnalysis;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
+
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 #nullable enable
 
@@ -44,7 +47,7 @@ namespace Microsoft.Interop
         }
 
         private static bool IsSpecialTypeBlittable(SpecialType specialType)
-         => specialType switch 
+         => specialType switch
          {
             SpecialType.System_SByte
             or SpecialType.System_Byte
@@ -60,14 +63,14 @@ namespace Microsoft.Interop
             or SpecialType.System_UIntPtr => true,
             _ => false
          };
-        
+
         public static bool IsConsideredBlittable(this ITypeSymbol type)
         {
             if (type.SpecialType != SpecialType.None)
             {
                 return IsSpecialTypeBlittable(type.SpecialType);
             }
-            
+
             if (!type.IsValueType || type.IsReferenceType)
             {
                 return false;
@@ -125,6 +128,14 @@ namespace Microsoft.Interop
                 }
             }
             return type.IsReferenceType;
+        }
+
+        public static TypeSyntax AsTypeSyntax(this ITypeSymbol type)
+        {
+            // [TODO] Use ParseTypeName overload with default values for offset and consumeFullText after switching
+            //        to Roslyn package that has the change from CSharpParseOptions -> ParseOptions in that overload
+            // return SyntaxFactory.ParseTypeName(type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat));
+            return SyntaxFactory.ParseTypeName(type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat), offset: 0, consumeFullText: true);
         }
     }
 }

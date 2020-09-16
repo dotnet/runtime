@@ -37,15 +37,16 @@ namespace DllImportGenerator.Test
         /// </summary>
         /// <param name="source">Source to compile</param>
         /// <param name="outputKind">Output type</param>
+        /// <param name="allowUnsafe">Whether or not use of the unsafe keyword should be allowed</param>
         /// <returns>The resulting compilation</returns>
-        public static async Task<Compilation> CreateCompilation(string source, OutputKind outputKind = OutputKind.DynamicallyLinkedLibrary)
+        public static async Task<Compilation> CreateCompilation(string source, OutputKind outputKind = OutputKind.DynamicallyLinkedLibrary, bool allowUnsafe = true)
         {
             var (mdRefs, ancillary) = GetReferenceAssemblies();
-            
+
             return CSharpCompilation.Create("compilation",
                 new[] { CSharpSyntaxTree.ParseText(source, new CSharpParseOptions(LanguageVersion.Preview)) },
                 (await mdRefs.ResolveAsync(LanguageNames.CSharp, CancellationToken.None)).Add(ancillary),
-                new CSharpCompilationOptions(outputKind));
+                new CSharpCompilationOptions(outputKind, allowUnsafe: allowUnsafe));
         }
 
         public static (ReferenceAssemblies, MetadataReference) GetReferenceAssemblies()

@@ -7,6 +7,9 @@ using System.Text;
 using System.Threading;
 
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop
 {
@@ -21,43 +24,30 @@ namespace Microsoft.Interop
 
         public string StubTypeNamespace { get; private set; }
 
-        public IEnumerable<string> StubContainingTypesDecl { get; private set; }
+        public IEnumerable<TypeDeclarationSyntax> StubContainingTypes { get; private set; }
 
-        public string StubReturnType { get => this.returnTypeInfo.ManagedTypeDecl; }
+        public TypeSyntax StubReturnType { get => this.returnTypeInfo.ManagedType.AsTypeSyntax(); }
 
-        public IEnumerable<(string Type, string Name)> StubParameters
+        public IEnumerable<ParameterSyntax> StubParameters
         {
             get
             {
                 foreach (var typeinfo in paramsTypeInfo)
                 {
-                    //if (typeinfo.ManagedIndex != TypePositionInfo.UnsetIndex)
+                    if (typeinfo.ManagedIndex != TypePositionInfo.UnsetIndex
+                        && typeinfo.ManagedIndex != TypePositionInfo.ReturnIndex)
                     {
-                        yield return (typeinfo.ManagedTypeDecl, typeinfo.InstanceIdentifier);
+                        yield return Parameter(Identifier(typeinfo.InstanceIdentifier))
+                            .WithType(typeinfo.ManagedType.AsTypeSyntax())
+                            .WithModifiers(TokenList(Token(typeinfo.RefKindSyntax)));
                     }
                 }
             }
         }
 
-        public IEnumerable<string> StubCode { get; private set; }
+        public BlockSyntax StubCode { get; private set; }
 
-        public string DllImportReturnType { get => this.returnTypeInfo.UnmanagedTypeDecl; }
-
-        public string DllImportMethodName { get; private set; }
-
-        public IEnumerable<(string Type, string Name)> DllImportParameters
-        {
-            get
-            {
-                foreach (var typeinfo in paramsTypeInfo)
-                {
-                    //if (typeinfo.UnmanagedIndex != TypePositionInfo.UnsetIndex)
-                    {
-                        yield return (typeinfo.UnmanagedTypeDecl, typeinfo.InstanceIdentifier);
-                    }
-                }
-            }
-        }
+        public MethodDeclarationSyntax DllImportDeclaration { get; private set; }
 
         public IEnumerable<Diagnostic> Diagnostics { get; private set; }
 
@@ -110,6 +100,7 @@ namespace Microsoft.Interop
         public static DllImportStub Create(
             IMethodSymbol method,
             GeneratedDllImportData dllImportData,
+            Compilation compilation,
             CancellationToken token = default)
         {
             // Cancel early if requested
@@ -123,76 +114,75 @@ namespace Microsoft.Interop
                 stubTypeNamespace = method.ContainingNamespace.ToString();
             }
 
-            // Determine type
-            var stubContainingTypes = new List<string>();
+            // Determine containing type(s)
+            var containingTypes = new List<TypeDeclarationSyntax>();
             INamedTypeSymbol currType = method.ContainingType;
             while (!(currType is null))
             {
                 var visibility = currType.DeclaredAccessibility switch
                 {
-                    Accessibility.Public => "public",
-                    Accessibility.Private => "private",
-                    Accessibility.Protected => "protected",
-                    Accessibility.Internal => "internal",
+                    Accessibility.Public => SyntaxKind.PublicKeyword,
+                    Accessibility.Private => SyntaxKind.PrivateKeyword,
+                    Accessibility.Protected => SyntaxKind.ProtectedKeyword,
+                    Accessibility.Internal => SyntaxKind.InternalKeyword,
                     _ => throw new NotSupportedException(), // [TODO] Proper error message
                 };
 
-                var typeKeyword = currType.TypeKind switch
+                TypeDeclarationSyntax typeDecl = currType.TypeKind switch
                 {
-                    TypeKind.Class => "class",
-                    TypeKind.Struct => "struct",
+                    TypeKind.Class => ClassDeclaration(currType.Name),
+                    TypeKind.Struct => StructDeclaration(currType.Name),
                     _ => throw new NotSupportedException(), // [TODO] Proper error message
                 };
 
-                stubContainingTypes.Add($"{visibility} partial {typeKeyword} {currType.Name}");
+                typeDecl = typeDecl.AddModifiers(
+                    Token(visibility),
+                    Token(SyntaxKind.PartialKeyword));
+                containingTypes.Add(typeDecl);
+
                 currType = currType.ContainingType;
             }
 
-            // Flip the order to that of how to declare the types
-            stubContainingTypes.Reverse();
-
-            // Determine parameter types
+            // Determine parameter and return types
             var paramsTypeInfo = new List<TypePositionInfo>();
-            foreach (var paramSymbol in method.Parameters)
+            for (int i = 0; i < method.Parameters.Length; i++)
             {
-                paramsTypeInfo.Add(TypePositionInfo.CreateForParameter(paramSymbol));
+                var param = method.Parameters[i];
+                var typeInfo = TypePositionInfo.CreateForParameter(param, compilation);
+                typeInfo.ManagedIndex = i;
+                typeInfo.NativeIndex = paramsTypeInfo.Count;
+                paramsTypeInfo.Add(typeInfo);
             }
 
-            var retTypeInfo = TypePositionInfo.CreateForType(method.ReturnType, method.GetReturnTypeAttributes());
-
-            string dllImportName = method.Name + "__PInvoke__";
-
-#if !GENERATE_FORWARDER
-            var dispatchCall = new StringBuilder($"throw new System.{nameof(NotSupportedException)}();");
-#else
-            // Forward call to generated P/Invoke
-            var returnMaybe = method.ReturnsVoid ? string.Empty : "return ";
-
-            var dispatchCall = new StringBuilder($"{returnMaybe}{dllImportName}");
-            if (!paramsTypeInfo.Any())
+            TypePositionInfo retTypeInfo = TypePositionInfo.CreateForType(method.ReturnType, method.GetReturnTypeAttributes(), compilation);
+            retTypeInfo.ManagedIndex = TypePositionInfo.ReturnIndex;
+            retTypeInfo.NativeIndex = TypePositionInfo.ReturnIndex;
+            if (!dllImportData.PreserveSig)
             {
-                dispatchCall.Append("();");
+                // [TODO] Create type info for native HRESULT return
+                // retTypeInfo = ...
+
+                // [TODO] Create type info for native out param
+                // if (!method.ReturnsVoid)
+                // {
+                //     TypePositionInfo nativeOutInfo = ...;
+                //     nativeOutInfo.ManagedIndex = TypePositionInfo.ReturnIndex;
+                //     nativeOutInfo.NativeIndex = paramsTypeInfo.Count;
+                //     paramsTypeInfo.Add(nativeOutInfo);
+                // }
             }
-            else
-            {
-                char delim = '(';
-                foreach (var param in paramsTypeInfo)
-                {
-                    dispatchCall.Append($"{delim}{param.RefKindDecl}{param.InstanceIdentifier}");
-                    delim = ',';
-                }
-                dispatchCall.Append(");");
-            }
-#endif
+
+            // Generate stub code
+            var (code, dllImport) = StubCodeGenerator.GenerateSyntax(method, paramsTypeInfo, retTypeInfo);
 
             return new DllImportStub()
             {
                 returnTypeInfo = retTypeInfo,
                 paramsTypeInfo = paramsTypeInfo,
                 StubTypeNamespace = stubTypeNamespace,
-                StubContainingTypesDecl = stubContainingTypes,
-                StubCode = new[] { dispatchCall.ToString() },
-                DllImportMethodName = dllImportName,
+                StubContainingTypes = containingTypes,
+                StubCode = code,
+                DllImportDeclaration = dllImport,
                 Diagnostics = Enumerable.Empty<Diagnostic>(),
             };
         }

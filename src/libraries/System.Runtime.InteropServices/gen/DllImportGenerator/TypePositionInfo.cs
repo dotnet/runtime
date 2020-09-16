@@ -1,8 +1,11 @@
-﻿using Microsoft.CodeAnalysis;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Microsoft.Interop
 {
@@ -31,36 +34,35 @@ namespace Microsoft.Interop
         private TypePositionInfo()
         {
             this.ManagedIndex = UnsetIndex;
-            this.UnmanagedIndex = UnsetIndex;
+            this.NativeIndex = UnsetIndex;
             this.UnmanagedLCIDConversionArgIndex = UnsetIndex;
         }
 
-        public ITypeSymbol TypeSymbol { get; private set; }
         public string InstanceIdentifier { get; private set; }
+        public ITypeSymbol ManagedType { get; private set; }
 
         public RefKind RefKind { get; private set; }
-        public string RefKindDecl { get => RefKindToString(this.RefKind); }
-        public string ManagedTypeDecl { get; private set; }
-        public string UnmanagedTypeDecl { get; private set; }
+        public SyntaxKind RefKindSyntax { get; private set; }
+        
+        public bool IsByRef => RefKind == RefKind.Ref || RefKind == RefKind.Out;
 
         public bool IsManagedReturnPosition { get => this.ManagedIndex == ReturnIndex; }
-        public bool IsUnmanagedReturnPosition { get => this.UnmanagedIndex == ReturnIndex; }
+        public bool IsNativeReturnPosition { get => this.NativeIndex == ReturnIndex; }
 
         public int ManagedIndex { get; set; }
-        public int UnmanagedIndex { get; set; }
+        public int NativeIndex { get; set; }
         public int UnmanagedLCIDConversionArgIndex { get; private set; }
 
         public MarshalAsInfo MarshalAsInfo { get; private set; }
 
-        public static TypePositionInfo CreateForParameter(IParameterSymbol paramSymbol)
+        public static TypePositionInfo CreateForParameter(IParameterSymbol paramSymbol, Compilation compilation)
         {
             var typeInfo = new TypePositionInfo()
             {
-                TypeSymbol = paramSymbol.Type,
+                ManagedType = paramSymbol.Type,
                 InstanceIdentifier = paramSymbol.Name,
-                ManagedTypeDecl = ComputeTypeForManaged(paramSymbol.Type, paramSymbol.RefKind),
-                UnmanagedTypeDecl = ComputeTypeForUnmanaged(paramSymbol.Type, paramSymbol.RefKind),
-                RefKind = paramSymbol.RefKind
+                RefKind = paramSymbol.RefKind,
+                RefKindSyntax = RefKindToSyntax(paramSymbol.RefKind)
             };
 
             UpdateWithAttributeData(paramSymbol.GetAttributes(), ref typeInfo);
@@ -68,15 +70,14 @@ namespace Microsoft.Interop
             return typeInfo;
         }
 
-        public static TypePositionInfo CreateForType(ITypeSymbol type, IEnumerable<AttributeData> attributes)
+        public static TypePositionInfo CreateForType(ITypeSymbol type, IEnumerable<AttributeData> attributes, Compilation compilation)
         {
             var typeInfo = new TypePositionInfo()
             {
-                TypeSymbol = type,
+                ManagedType = type,
                 InstanceIdentifier = string.Empty,
-                ManagedTypeDecl = ComputeTypeForManaged(type, RefKind.None),
-                UnmanagedTypeDecl = ComputeTypeForUnmanaged(type, RefKind.None),
-                RefKind = RefKind.None
+                RefKind = RefKind.None,
+                RefKindSyntax = SyntaxKind.None,
             };
 
             UpdateWithAttributeData(attributes, ref typeInfo);
@@ -147,87 +148,14 @@ namespace Microsoft.Interop
             }
         }
 
-        private static string ComputeTypeForManaged(ITypeSymbol type, RefKind refKind)
-        {
-            var typeAsString = type.SpecialType switch
-            {
-                SpecialType.System_Void => "void",
-                SpecialType.System_Boolean => "bool",
-                SpecialType.System_Char => "char",
-                SpecialType.System_SByte => "sbyte",
-                SpecialType.System_Byte => "byte",
-                SpecialType.System_Int16 => "short",
-                SpecialType.System_UInt16 => "ushort",
-                SpecialType.System_Int32 => "int",
-                SpecialType.System_UInt32 => "uint",
-                SpecialType.System_Int64 => "long",
-                SpecialType.System_UInt64 => "ulong",
-                SpecialType.System_Single => "float",
-                SpecialType.System_Double => "double",
-                SpecialType.System_String => "string",
-                SpecialType.System_IntPtr => "System.IntPtr",
-                SpecialType.System_UIntPtr => "System.UIntPtr",
-                _ => null,
-            };
-
-            var typePrefix = string.Empty;
-            if (typeAsString is null)
-            {
-                // Determine the namespace
-                if (!(type.ContainingNamespace is null)
-                    && !type.ContainingNamespace.IsGlobalNamespace)
-                {
-                    typePrefix = $"{type.ContainingNamespace}{Type.Delimiter}";
-                }
-
-                typeAsString = type.ToString();
-            }
-
-            string refKindAsString = RefKindToString(refKind);
-            return $"{refKindAsString}{typePrefix}{typeAsString}";
-        }
-
-        private static string ComputeTypeForUnmanaged(ITypeSymbol type, RefKind refKind)
-        {
-#if GENERATE_FORWARDER
-            return ComputeTypeForManaged(type, refKind);
-#else
-            if (!type.IsUnmanagedType)
-            {
-                return "void*";
-            }
-
-            return type.SpecialType switch
-            {
-                SpecialType.System_Void => "void",
-                SpecialType.System_Boolean => "byte", // [TODO] Determine marshalling default C++ bool or Windows' BOOL
-                SpecialType.System_Char => "ushort", // CLR character width (UTF-16)
-                SpecialType.System_SByte => "sbyte",
-                SpecialType.System_Byte => "byte",
-                SpecialType.System_Int16 => "short",
-                SpecialType.System_UInt16 => "ushort",
-                SpecialType.System_Int32 => "int",
-                SpecialType.System_UInt32 => "uint",
-                SpecialType.System_Int64 => "long",
-                SpecialType.System_UInt64 => "ulong",
-                SpecialType.System_Single => "float",
-                SpecialType.System_Double => "double",
-                SpecialType.System_String => "char*", // [TODO] Consider encoding here
-                SpecialType.System_IntPtr => "void*",
-                SpecialType.System_UIntPtr => "void*",
-                _ => "void*",
-            };
-#endif
-        }
-
-        private static string RefKindToString(RefKind refKind)
+        private static SyntaxKind RefKindToSyntax(RefKind refKind)
         {
             return refKind switch
             {
-                RefKind.In => "in ",
-                RefKind.Ref => "ref ",
-                RefKind.Out => "out ",
-                RefKind.None => string.Empty,
+                RefKind.In => SyntaxKind.InKeyword,
+                RefKind.Ref => SyntaxKind.RefKeyword,
+                RefKind.Out => SyntaxKind.OutKeyword,
+                RefKind.None => SyntaxKind.None,
                 _ => throw new NotImplementedException("Support for some RefKind"),
             };
         }

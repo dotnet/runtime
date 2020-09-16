@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection.Metadata;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Runtime.InteropServices;
 
 namespace DllImportGenerator.Test
 {
@@ -200,22 +195,6 @@ partial class Test
 ";
 
         /// <summary>
-        /// Declaration with basic parameters.
-        /// </summary>
-        public static readonly string BasicParametersAndModifiers = @"
-using System;
-using System.Runtime.InteropServices;
-partial class Test
-{
-    [GeneratedDllImport(""DoesNotExist"")]
-    public static partial void Method1(string s, IntPtr i, UIntPtr u);
-
-    [GeneratedDllImport(""DoesNotExist"")]
-    public static partial void Method2(in string s, ref IntPtr i, out UIntPtr u);
-}
-";
-
-        /// <summary>
         /// Declaration with default parameters.
         /// </summary>
         public static readonly string DefaultParameters = @"
@@ -301,5 +280,90 @@ partial class Test
     public static partial void Method3();
 }
 ";
+
+        /// <summary>
+        /// Declaration with parameters.
+        /// </summary>
+        public static string BasicParametersAndModifiers(string typeName) => @$"
+using System.Runtime.InteropServices;
+partial class Test
+{{
+    [GeneratedDllImport(""DoesNotExist"")]
+    public static partial {typeName} Method(
+        {typeName} p,
+        in {typeName} pIn,
+        ref {typeName} pRef,
+        out {typeName} pOut);
+}}";
+
+        public static string BasicParametersAndModifiers<T>() => BasicParametersAndModifiers(typeof(T).ToString());
+
+        /// <summary>
+        /// Declaration with parameters with MarshalAs.
+        /// </summary>
+        public static string MarshalAsParametersAndModifiers(string typeName, UnmanagedType unmanagedType) => @$"
+using System.Runtime.InteropServices;
+partial class Test
+{{
+    [GeneratedDllImport(""DoesNotExist"")]
+    [return: MarshalAs(UnmanagedType.{unmanagedType})]
+    public static partial {typeName} Method(
+        [MarshalAs(UnmanagedType.{unmanagedType})] {typeName} p,
+        [MarshalAs(UnmanagedType.{unmanagedType})] in {typeName} pIn,
+        [MarshalAs(UnmanagedType.{unmanagedType})] ref {typeName} pRef,
+        [MarshalAs(UnmanagedType.{unmanagedType})] out {typeName} pOut);
+}}
+";
+
+        public static string MarshalAsParametersAndModifiers<T>(UnmanagedType unmanagedType) => MarshalAsParametersAndModifiers(typeof(T).ToString(), unmanagedType);
+
+        /// <summary>
+        /// Declaration with enum parameters.
+        /// </summary>
+        public static string EnumParameters => @$"
+using System.Runtime.InteropServices;
+using NS;
+
+namespace NS
+{{
+    enum MyEnum {{ A, B, C }}
+}}
+
+partial class Test
+{{
+    [GeneratedDllImport(""DoesNotExist"")]
+    public static partial MyEnum Method(
+        MyEnum p,
+        in MyEnum pIn,
+        ref MyEnum pRef,
+        out MyEnum pOut);
+}}";
+
+        /// <summary>
+        /// Declaration with PreserveSig = false.
+        /// </summary>
+        public static string PreserveSigFalse(string typeName) => @$"
+using System.Runtime.InteropServices;
+partial class Test
+{{
+    [GeneratedDllImport(""DoesNotExist"", PreserveSig = false)]
+    public static partial {typeName} Method1();
+
+    [GeneratedDllImport(""DoesNotExist"", PreserveSig = false)]
+    public static partial {typeName} Method2({typeName} p);
+}}";
+
+        public static string PreserveSigFalse<T>() => PreserveSigFalse(typeof(T).ToString());
+
+        /// <summary>
+        /// Declaration with PreserveSig = false and void return.
+        /// </summary>
+        public static readonly string PreserveSigFalseVoidReturn = @$"
+using System.Runtime.InteropServices;
+partial class Test
+{{
+    [GeneratedDllImport(""DoesNotExist"", PreserveSig = false)]
+    public static partial void Method();
+}}";
     }
 }

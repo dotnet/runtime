@@ -6,8 +6,10 @@
     <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DefineConstants>GENERATE_FORWARDER</DefineConstants>
     <LangVersion>Preview</LangVersion>
+
+    <!-- Uncomment to generate stub code that simply forwards parameters to p/invoke (i.e. no marshalling) -->
+     <!--<DefineConstants>GENERATE_FORWARDER</DefineConstants>--> 
   </PropertyGroup>
 
   <PropertyGroup>
