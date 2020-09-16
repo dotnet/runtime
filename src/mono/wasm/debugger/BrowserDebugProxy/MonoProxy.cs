@@ -828,14 +828,17 @@ namespace Microsoft.WebAssembly.Diagnostics
             try
             {
                 var context = GetContext(sessionId);
-                var assembly_data = eventArgs?["assembly_data"]?.ToObject<byte[]>();
-                var pdb_data = eventArgs?["pdb_data"]?.ToObject<byte[]>();
+                var assembly_b64 = eventArgs?["assembly_b64"]?.ToObject<string>();
+                var pdb_b64 = eventArgs?["pdb_b64"]?.ToObject<string>();
 
-                if (assembly_data == null)
+                if (assembly_b64 == null)
                 {
-                    logger.LogDebug($"No assembly data provided to load.");
+                    logger.LogDebug("No assembly data provided to load.");
                     return false;
                 }
+
+                var assembly_data = Convert.FromBase64String(assembly_b64);
+                var pdb_data = pdb_b64 != null ? Convert.FromBase64String(pdb_b64) : null;
 
                 var store = await LoadStore(sessionId, token);
 

@@ -87,6 +87,113 @@ var MonoSupportLib = {
 			module ["mono_wasm_release_roots"] = MONO.mono_wasm_release_roots;
 		},
 
+		_base64Converter: {
+			// Code from JSIL:
+			// https://github.com/sq/JSIL/blob/1d57d5427c87ab92ffa3ca4b82429cd7509796ba/JSIL.Libraries/Includes/Bootstrap/Core/Classes/System.Convert.js#L149
+			// Thanks to Katelyn Gadd @kg
+
+			_base64Table: [
+				'A', 'B', 'C', 'D',
+				'E', 'F', 'G', 'H',
+				'I', 'J', 'K', 'L',
+				'M', 'N', 'O', 'P',
+				'Q', 'R', 'S', 'T',
+				'U', 'V', 'W', 'X',
+				'Y', 'Z',
+				'a', 'b', 'c', 'd',
+				'e', 'f', 'g', 'h',
+				'i', 'j', 'k', 'l',
+				'm', 'n', 'o', 'p',
+				'q', 'r', 's', 't',
+				'u', 'v', 'w', 'x',
+				'y', 'z',
+				'0', '1', '2', '3',
+				'4', '5', '6', '7',
+				'8', '9',
+				'+', '/'
+			],
+
+			_makeByteReader: function (bytes, index, count) {
+				var position = (typeof (index) === "number") ? index : 0;
+				var endpoint;
+
+				if (typeof (count) === "number")
+					endpoint = (position + count);
+				else
+					endpoint = (bytes.length - position);
+
+				var result = {
+					read: function () {
+						if (position >= endpoint)
+							return false;
+
+						var nextByte = bytes[position];
+						position += 1;
+						return nextByte;
+					}
+				};
+
+				Object.defineProperty(result, "eof", {
+					get: function () {
+						return (position >= endpoint);
+					},
+					configurable: true,
+					enumerable: true
+				});
+
+				return result;
+			},
+
+			toBase64StringImpl: function (inArray, offset, length) {
+				var reader = this._makeByteReader(inArray, offset, length);
+				var result = "";
+				var ch1 = 0, ch2 = 0, ch3 = 0, bits = 0, equalsCount = 0, sum = 0;
+				var mask1 = (1 << 24) - 1, mask2 = (1 << 18) - 1, mask3 = (1 << 12) - 1, mask4 = (1 << 6) - 1;
+				var shift1 = 18, shift2 = 12, shift3 = 6, shift4 = 0;
+
+				while (true) {
+					ch1 = reader.read();
+					ch2 = reader.read();
+					ch3 = reader.read();
+
+					if (ch1 === false)
+						break;
+					if (ch2 === false) {
+						ch2 = 0;
+						equalsCount += 1;
+					}
+					if (ch3 === false) {
+						ch3 = 0;
+						equalsCount += 1;
+					}
+
+					// Seems backwards, but is right!
+					sum = (ch1 << 16) | (ch2 << 8) | (ch3 << 0);
+
+					bits = (sum & mask1) >> shift1;
+					result += this._base64Table[bits];
+					bits = (sum & mask2) >> shift2;
+					result += this._base64Table[bits];
+
+					if (equalsCount < 2) {
+						bits = (sum & mask3) >> shift3;
+						result += this._base64Table[bits];
+					}
+
+					if (equalsCount === 2) {
+						result += "==";
+					} else if (equalsCount === 1) {
+						result += "=";
+					} else {
+						bits = (sum & mask4) >> shift4;
+						result += this._base64Table[bits];
+					}
+				}
+
+				return result;
+			},
+		},
+
 		_mono_wasm_root_buffer_prototype: {
 			_check_in_range: function (index) {
 				if ((index >= this.__count) || (index < 0))
@@ -104,7 +211,7 @@ var MonoSupportLib = {
 			},
 			/** @returns {ManagedPointer} */
 			get: function (index) {
-				this._check_in_range (index);
+				this._check_in_range (index);				
 				return Module.HEAP32[this.get_address_32 (index)];
 			},
 			set: function (index, value) {
@@ -210,7 +317,7 @@ var MonoSupportLib = {
 				throw new Error ("capacity >= 1");
 
 			capacity = capacity | 0;
-
+				
 			var capacityBytes = capacity * 4;
 			var offset = Module._malloc (capacityBytes);
 			if ((offset % 4) !== 0)
@@ -221,7 +328,7 @@ var MonoSupportLib = {
 			var result = Object.create (this._mono_wasm_root_buffer_prototype);
 			result.__offset = offset;
 			result.__offset32 = (offset / 4) | 0;
-			result.__count = capacity;
+			result.__count = capacity;	
 			result.length = capacity;
 			result.__handle = this.mono_wasm_register_root (offset, capacityBytes, msg || 0);
 
@@ -240,7 +347,7 @@ var MonoSupportLib = {
 		mono_wasm_new_root: function (value) {
 			var index = this._mono_wasm_claim_scratch_index ();
 			var buffer = this._scratch_root_buffer;
-
+				
 			var result = Object.create (this._mono_wasm_root_prototype);
 			result.__buffer = buffer;
 			result.__index = index;
@@ -288,7 +395,7 @@ var MonoSupportLib = {
 		 * Multiple objects may be passed on the argument list.
 		 * 'undefined' may be passed as an argument so it is safe to call this method from finally blocks
 		 *  even if you are not sure all of your roots have been created yet.
-		 * @param {... WasmRoot} roots
+		 * @param {... WasmRoot} roots 
 		 */
 		mono_wasm_release_roots: function () {
 			for (var i = 0; i < arguments.length; i++) {
@@ -2256,12 +2363,20 @@ var MonoSupportLib = {
 	mono_wasm_asm_loaded: function (assembly_ptr, assembly_len, pdb_ptr, pdb_len) {
 		if (!MONO.mono_wasm_runtime_is_ready)
 			return;
+
 		const assembly_data = new Uint8Array(Module.HEAPU8.buffer, assembly_ptr, assembly_len);
-		const pdb_data = pdb_ptr ? new Uint8Array(Module.HEAPU8.buffer, pdb_ptr, pdb_len) : null;
+		const assembly_b64 = MONO._base64Converter.toBase64StringImpl(assembly_data);
+
+		let pdb_b64;
+		if (pdb_ptr) {
+			const pdb_data = new Uint8Array(Module.HEAPU8.buffer, pdb_ptr, pdb_len);
+			pdb_b64 = MONO._base64Converter.toBase64StringImpl(pdb_data);
+		}
+
 		MONO.mono_wasm_raise_debug_event({
 			eventName: 'AssemblyLoaded',
-			assembly_data: Array.from(assembly_data),
-			pdb_data: pdb_data ? Array.from(pdb_data) : pdb_data
+			assembly_b64,
+			pdb_b64
 		});
 	},
 };
