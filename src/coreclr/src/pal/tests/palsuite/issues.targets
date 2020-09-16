@@ -13,6 +13,11 @@
             <Issue>https://github.com/dotnet/runtime/issues/42291</Issue>
         </ExcludeList>
     </ItemGroup>
+    <ItemGroup Condition="'$(TargetArchitecture)' == 'x64' and '$(TargetOS)' == 'Linux'">
+        <ExcludeList Include="eventprovider/eventprovidertest">
+            <Issue>https://github.com/dotnet/runtime/issues/42291</Issue>
+        </ExcludeList>
+    </ItemGroup>
     <ItemGroup Condition="'$(TargetArchitecture)' == 'arm64' and '$(TargetOS)' == 'Linux'">
         <ExcludeList Include="eventprovider/eventprovidertest">
             <Issue>https://github.com/dotnet/runtime/issues/42291</Issue>
