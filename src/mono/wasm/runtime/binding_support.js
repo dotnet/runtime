@@ -140,6 +140,8 @@ var BindingSupportLib = {
 			this.safehandle_release = get_method ("SafeHandleRelease");
 			this.safehandle_get_handle = get_method ("SafeHandleGetHandle");
 			this.safehandle_release_by_handle = get_method ("SafeHandleReleaseByHandle");
+
+			this._are_promises_supported = (typeof Promise === "object") && (typeof Promise.resolve === "function");
 		},
 
 		find_method: function (klass, name, n) {
@@ -254,8 +256,8 @@ var BindingSupportLib = {
 		},
 
 		_unbox_task_rooted: function (mono_obj) {
-			if (typeof Promise === "undefined" || typeof Promise.resolve === "undefined")
-			throw new Error ("Promises are not supported thus C# Tasks can not work in this context.");
+			if (!this._are_promises_supported)
+				throw new Error ("Promises are not supported thus 'System.Threading.Tasks.Task' can not work in this context.");
 
 			var obj = this.extract_js_obj (mono_obj);
 			var cont_obj = null;
@@ -407,12 +409,6 @@ var BindingSupportLib = {
 						result = this._box_js_int (js_obj);
 					else
 						result = this._box_js_double (js_obj);
-
-					/*
-						var unboxed = this.unbox_mono_obj (result);
-						if (unboxed != js_obj)
-							console.warn ("box->unbox cycle failed", js_obj, unboxed);
-					*/
 
 					return result;
 				} case typeof js_obj === "string":
