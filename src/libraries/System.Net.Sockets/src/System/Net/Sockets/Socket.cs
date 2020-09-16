@@ -2136,14 +2136,6 @@ namespace System.Net.Sockets
 
         internal IAsyncResult UnsafeBeginConnect(EndPoint remoteEP, AsyncCallback? callback, object? state, bool flowContext = false)
         {
-            if (SocketsTelemetry.Log.IsEnabled())
-            {
-                SocketsTelemetry.Log.ConnectStart(remoteEP);
-
-                // Ignore flowContext when using Telemetry to avoid losing Activity tracking
-                flowContext = true;
-            }
-
             if (CanUseConnectEx(remoteEP))
             {
                 return BeginConnectEx(remoteEP, flowContext, callback, state);
@@ -2367,7 +2359,7 @@ namespace System.Net.Sockets
         {
             if (Disposed)
             {
-                if (SocketsTelemetry.Log.IsEnabled() && asyncResult is not MultipleAddressConnectAsyncResult)
+                if (SocketsTelemetry.Log.IsEnabled() && asyncResult is ConnectOverlappedAsyncResult)
                 {
                     SocketsTelemetry.Log.AfterConnect(SocketError.OperationAborted);
                 }
@@ -2402,7 +2394,7 @@ namespace System.Net.Sockets
 
             Exception? ex = castedAsyncResult.Result as Exception;
 
-            if (SocketsTelemetry.Log.IsEnabled() && castedAsyncResult is not MultipleAddressConnectAsyncResult)
+            if (SocketsTelemetry.Log.IsEnabled() && castedAsyncResult is ConnectOverlappedAsyncResult)
             {
                 SocketsTelemetry.Log.AfterConnect((SocketError)castedAsyncResult.ErrorCode, ex?.Message);
             }
@@ -4636,6 +4628,14 @@ namespace System.Net.Sockets
         // Since this is private, the unsafe mode is specified with a flag instead of an overload.
         private IAsyncResult BeginConnectEx(EndPoint remoteEP, bool flowContext, AsyncCallback? callback, object? state)
         {
+            if (SocketsTelemetry.Log.IsEnabled())
+            {
+                SocketsTelemetry.Log.ConnectStart(remoteEP);
+
+                // Ignore flowContext when using Telemetry to avoid losing Activity tracking
+                flowContext = true;
+            }
+
             EndPoint endPointSnapshot = remoteEP;
             Internals.SocketAddress socketAddress = Serialize(ref endPointSnapshot);
 
