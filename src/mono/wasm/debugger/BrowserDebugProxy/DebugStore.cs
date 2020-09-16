@@ -439,7 +439,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             this.logger = logger;
         }
-        
+
         public ModuleDefinition Image => image;
 
         public void ClearDebugInfo()
@@ -455,7 +455,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
             }
         }
-        
+
         public void Populate()
         {
             ProcessSourceLink();
@@ -746,6 +746,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             catch (Exception e)
             {
                 logger.LogDebug($"Failed to load assembly: ({e.Message})");
+                yield break;
             }
 
             if (assembly == null)

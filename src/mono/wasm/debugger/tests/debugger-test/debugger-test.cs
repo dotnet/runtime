@@ -529,4 +529,12 @@ public class LoadDebuggerTest {
         Console.WriteLine($"Loaded - {loadedAssembly}");
     }
 
+    public static void LoadLazyAssemblyWithoutPDB(string asm_base64)
+    {
+        byte[] asm_bytes = Convert.FromBase64String(asm_base64);
+
+        var loadedAssembly = System.Runtime.Loader.AssemblyLoadContext.Default.LoadFromStream(new System.IO.MemoryStream(asm_bytes));
+        Console.WriteLine($"Loaded - {loadedAssembly}");
+    }
+
 }
