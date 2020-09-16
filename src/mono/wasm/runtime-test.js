@@ -141,7 +141,6 @@ while (args !== undefined && args.length > 0) {
 	} else if (args [0] == "--disable-on-demand-gc") {
 		enable_gc = false;
 		args = args.slice (1);
-	} else if (args [0] == "--working-dir=") {
 	} else if (args [0].startsWith ("--working-dir=")) {
 		var arg = args [0].substring ("--working-dir=".length);
 		working_dir = arg;
