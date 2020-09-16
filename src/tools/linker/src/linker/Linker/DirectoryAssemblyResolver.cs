@@ -20,23 +20,17 @@ namespace Mono.Linker {
 
 		readonly List<MemoryMappedViewStream> viewStreams = new List<MemoryMappedViewStream> ();
 
+		readonly ReaderParameters defaultReaderParameters;
+
 		public void AddSearchDirectory (string directory)
 		{
 			directories.Add (directory);
 		}
 
-		public void RemoveSearchDirectory (string directory)
-		{
-			directories.Remove (directory);
-		}
-
-		public string [] GetSearchDirectories ()
-		{
-			return this.directories.ToArray ();
-		}
-
 		protected DirectoryAssemblyResolver ()
 		{
+			defaultReaderParameters = new ReaderParameters ();
+			defaultReaderParameters.AssemblyResolver = this;
 			directories = new Collection<string> (2) { "." };
 		}
 
@@ -71,7 +65,7 @@ namespace Mono.Linker {
 
 		public virtual AssemblyDefinition Resolve (AssemblyNameReference name)
 		{
-			return Resolve (name, new ReaderParameters ());
+			return Resolve (name, defaultReaderParameters);
 		}
 
 		public virtual AssemblyDefinition Resolve (AssemblyNameReference name, ReaderParameters parameters)
@@ -98,7 +92,7 @@ namespace Mono.Linker {
 						continue;
 					try {
 						return GetAssembly (file, parameters);
-					} catch (System.BadImageFormatException) {
+					} catch (BadImageFormatException) {
 						continue;
 					}
 				}
