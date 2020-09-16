@@ -383,11 +383,11 @@ namespace System.Text.Json.Serialization.Tests
 
         // From https://github.com/dotnet/runtime/issues/42070
         [Theory]
-        [InlineData("Issue42070_0004.json")]
-        [InlineData("Issue42070_0228.json")]
+        [InlineData("CustomerSearchApi108KB")]
+        [InlineData("CustomerSearchApi107KB")]
         public static async Task ContinuationAtNullToken(string resourceName)
         {
-            using (Stream stream = typeof(StreamTests).Assembly.GetManifestResourceStream("System.Text.Json.Tests.Resources." + resourceName))
+            using (Stream stream = new MemoryStream(Encoding.UTF8.GetBytes(SR.GetResourceString(resourceName))))
             {
                 CustomerCollectionResponse response = await JsonSerializer.DeserializeAsync<CustomerCollectionResponse>(stream, new JsonSerializerOptions { IgnoreNullValues = true });
                 Assert.Equal(50, response.Customers.Count);
