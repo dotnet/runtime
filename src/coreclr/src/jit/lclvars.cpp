@@ -2615,6 +2615,7 @@ void Compiler::lvaSetStruct(unsigned varNum, CORINFO_CLASS_HANDLE typeHnd, bool 
 
         assert(varDsc->lvExactSize == 0);
         varDsc->lvExactSize = layout->GetSize();
+        assert(varDsc->lvExactSize != 0);
 
         if (layout->IsValueClass())
         {
@@ -2674,6 +2675,7 @@ void Compiler::lvaSetStruct(unsigned varNum, CORINFO_CLASS_HANDLE typeHnd, bool 
         assert(ClassLayout::AreCompatible(varDsc->GetLayout(), layout));
         // Inlining could replace a canon struct type with an exact one.
         varDsc->SetLayout(layout);
+        assert(varDsc->lvExactSize != 0);
     }
 
 #ifndef TARGET_64BIT

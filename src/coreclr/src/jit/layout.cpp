@@ -428,6 +428,7 @@ ClassLayout* ClassLayout::GetPPPQuirkLayout(CompAllocator alloc)
 // static
 bool ClassLayout::AreCompatible(const ClassLayout* layout1, const ClassLayout* layout2)
 {
+    assert((layout1 != nullptr) && (layout2 != nullptr));
     CORINFO_CLASS_HANDLE clsHnd1 = layout1->GetClassHandle();
     CORINFO_CLASS_HANDLE clsHnd2 = layout2->GetClassHandle();
 
