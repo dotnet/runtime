@@ -1,3 +1,4 @@
+using System.IO;
 using System.Net.Quic.Implementations.Managed.Internal;
 using System.Threading;
 using System.Threading.Channels;
@@ -14,6 +15,14 @@ namespace System.Net.Quic.Implementations.Managed
 
         public ManagedQuicListener(QuicListenerOptions options)
         {
+            if (options.ServerAuthenticationOptions?.ServerCertificate == null)
+            {
+                if (!File.Exists(options.CertificateFilePath))
+                    throw new FileNotFoundException("Certificate file not found", options.CertificateFilePath);
+                if (!File.Exists(options.PrivateKeyFilePath))
+                    throw new FileNotFoundException("Private key file not found", options.PrivateKeyFilePath);
+            }
+
             var listenEndPoint = options.ListenEndPoint ?? new IPEndPoint(IPAddress.Any, 0);
 
             var channel = Channel.CreateBounded<ManagedQuicConnection>(new BoundedChannelOptions(options.ListenBacklog)
