@@ -3691,8 +3691,6 @@ void CodeGen::genRangeCheck(GenTree* oper)
 
     GenTree* arrIndex  = bndsChk->gtIndex;
     GenTree* arrLen    = bndsChk->gtArrLen;
-    GenTree* arrRef    = nullptr;
-    int      lenOffset = 0;
 
     GenTree *    src1, *src2;
     emitJumpKind jmpKind;
