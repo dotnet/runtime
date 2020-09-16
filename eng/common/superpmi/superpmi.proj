@@ -39,8 +39,8 @@
   </PropertyGroup>
   <ItemGroup>
     <!-- TODO: To save time, just do SuperPMI on System.Web.dll -->
-    <Partition Include="$(BuildConfig).Partition0" PmiAssemblies="Core_Root\System.Web.dll" OutputMchName="Libraries" />
-    <Partition Include="$(BuildConfig).Partition1" PmiAssemblies="Tests" OutputMchName="Tests" />
+    <Partition Include="$(BuildConfig).Libraries" PmiAssemblies="Core_Root\System.Web.dll" OutputMchName="Libraries" />
+    <!-- <Partition Include="$(BuildConfig).Tests" PmiAssemblies="Tests" OutputMchName="Tests" /> -->
   </ItemGroup>
 
   <ItemGroup>
@@ -49,7 +49,7 @@
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
       <Command>$(WorkItemCommand) -pmi_assemblies $(PmiAssembliesDirectory)\%(HelixWorkItem.PmiAssemblies) -output_mch_path $(OutputMchPath)\%(HelixWorkItem.OutputMchName).$(AGENT_OS).$(Architecture).Checked.mch</Command>
       <Timeout>$(WorkItemTimeout)</Timeout>
-      <DownloadFilesFromResults>%(HelixWorkItem.OutputMchName).$(AGENT_OS).$(Architecture).Checked.mch</DownloadFilesFromResults>
+      <DownloadFilesFromResults>%(HelixWorkItem.OutputMchName).$(AGENT_OS).$(Architecture).Checked.mch;%(HelixWorkItem.OutputMchName).$(AGENT_OS).$(Architecture).Checked.mch.mct</DownloadFilesFromResults>
     </HelixWorkItem>
   </ItemGroup>
 
