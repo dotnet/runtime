@@ -343,7 +343,7 @@ namespace System.IO.Compression
 
         public IEnumerable<Func<Stream, Stream>> CtorFunctions()
         {
-            CompressionLevel[] legalValues = new CompressionLevel[] { CompressionLevel.Optimal, CompressionLevel.Fastest, CompressionLevel.NoCompression };
+            CompressionLevel[] legalValues = new CompressionLevel[] { CompressionLevel.Optimal, CompressionLevel.Fastest, CompressionLevel.NoCompression, CompressionLevel.SmallestSize };
             yield return new Func<Stream, Stream>((stream) => CreateStream(stream, CompressionMode.Compress));
 
             foreach (CompressionLevel level in legalValues)
@@ -650,7 +650,7 @@ namespace System.IO.Compression
             {
                 foreach (ReadWriteMode readWriteMode in new[] { ReadWriteMode.SyncArray, ReadWriteMode.SyncSpan, ReadWriteMode.AsyncArray, ReadWriteMode.AsyncMemory, ReadWriteMode.AsyncBeginEnd })
                 {
-                    foreach (var level in new[] { CompressionLevel.Fastest, CompressionLevel.Optimal, CompressionLevel.NoCompression }) // compression level
+                    foreach (var level in new[] { CompressionLevel.Fastest, CompressionLevel.Optimal, CompressionLevel.NoCompression, CompressionLevel.SmallestSize }) // compression level
                     {
                         yield return new object[] { readWriteMode, 1, 5, level }; // smallest possible writes
                         yield return new object[] { readWriteMode, 1023, 1023 * 10, level }; // overflowing internal buffer
