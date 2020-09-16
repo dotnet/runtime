@@ -559,14 +559,15 @@ namespace System.Text.RegularExpressions
                         char upper = culture.TextInfo.ToLower(range.Last);
                         if (range.Last - range.First == upper - lower)
                         {
-                            // Bug fix: https://github.com/dotnet/runtime/issues/36149
                             AddLowercaseRange(range.First, range.Last);
                         }
                         else
                         {
+                            // Bug fix: Unicode `Symbol`s sometimes exist in the middle of character ranges. char.ToLower(Symbol) returns Symbol. In these cases, we cannot use an offset to find the lowercase chars. For ex: https://github.com/dotnet/runtime/issues/36149
+                            TextInfo? cultureTextInfo = culture.TextInfo;
                             for (int j = range.First; j <= range.Last; j++)
                             {
-                                char lowerInRange = culture.TextInfo.ToLower((char)j);
+                                char lowerInRange = cultureTextInfo.ToLower((char)j);
                                 AddRange(lowerInRange, lowerInRange);
                             }
                         }
