@@ -40,7 +40,8 @@
          other feeds (in fact, that have identical identity to their non-symbol variant) -->
     <DownloadedSymbolPackages Include="$(DownloadDirectory)**\*.symbols.nupkg" />
     <DownloadedSymbolPackagesWithoutPaths Include="@(DownloadedSymbolPackages->'%(Filename)%(Extension)')" />
-    <FileSignInfo Include="@(DownloadedSymbolPackagesWithoutPaths->Distinct())" CertificateName="None" />
+    <!-- https://github.com/dotnet/arcade/issues/6192 -->
+    <!-- <FileSignInfo Include="@(DownloadedSymbolPackagesWithoutPaths->Distinct())" CertificateName="None" /> -->
 
     <FileExtensionSignInfo Include=".msi" CertificateName="Microsoft400" />
     <FileExtensionSignInfo Include=".pkg" CertificateName="8003" />
