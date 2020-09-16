@@ -55,7 +55,7 @@ namespace System.Text.Json.Serialization.Tests
                         }
                     }
                 };
-                await JsonSerializer.SerializeAsync(stream, obj);
+                await JsonSerializer.SerializeAsync(stream, obj, new JsonSerializerOptions { Converters = { new OuterConverter<TestClass<NestedClass>>() } });
             }
 
             stream.Position = 0;
@@ -111,7 +111,7 @@ namespace System.Text.Json.Serialization.Tests
                         }
                     }
                 };
-                await JsonSerializer.SerializeAsync(stream, obj);
+                await JsonSerializer.SerializeAsync(stream, obj, new JsonSerializerOptions { Converters = { new OuterConverter<TestClass<NestedClass>>() } });
             }
 
             stream.Position = 0;
@@ -166,7 +166,7 @@ namespace System.Text.Json.Serialization.Tests
                         }
                     }
                 };
-                await JsonSerializer.SerializeAsync(stream, obj);
+                await JsonSerializer.SerializeAsync(stream, obj, new JsonSerializerOptions { Converters = { new OuterConverter<TestClass<NestedClass>>() } });
             }
 
             stream.Position = 0;
@@ -222,7 +222,7 @@ namespace System.Text.Json.Serialization.Tests
                         }
                     }
                 };
-                await JsonSerializer.SerializeAsync(stream, obj);
+                await JsonSerializer.SerializeAsync(stream, obj, new JsonSerializerOptions { Converters = { new OuterConverter<TestClass<NestedClass>>() } });
             }
 
             stream.Position = 0;
@@ -268,7 +268,7 @@ namespace System.Text.Json.Serialization.Tests
                         },
                     },
                 };
-                await JsonSerializer.SerializeAsync(stream, obj);
+                await JsonSerializer.SerializeAsync(stream, obj, new JsonSerializerOptions { Converters = { new OuterConverter<TestClass<NestedClass>>() } });
             }
 
             stream.Position = 0;
@@ -359,10 +359,26 @@ namespace System.Text.Json.Serialization.Tests
                 => A = a;
         }
 
-        public struct NestedValueType
+        private struct NestedValueType
         {
             public string A { get; set; }
             public int B { get; set; }
+        }
+
+        // custom converter to ensure that the padding is written in front of the tested object.
+        private class OuterConverter<T> : JsonConverter<Outer<T>>
+        {
+            public override Outer<T> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+                => throw new NotImplementedException();
+
+            public override void Write(Utf8JsonWriter writer, Outer<T> value, JsonSerializerOptions options)
+            {
+                writer.WriteStartObject();
+                writer.WriteString("S", value.S);
+                writer.WritePropertyName("C");
+                JsonSerializer.Serialize(writer, value.C, typeof(T), options);
+                writer.WriteEndObject();
+            }
         }
 
         // From https://github.com/dotnet/runtime/issues/42070
