@@ -75,7 +75,7 @@ namespace System.Net.Sockets.Tests
         {
             return socketMethod switch
             {
-                "Sync" => new SocketHelperEap(),
+                "Sync" => new SocketHelperArraySync(),
                 "Task" => new SocketHelperTask(),
                 "Apm" => new SocketHelperApm(),
                 "Eap" => new SocketHelperEap(),
