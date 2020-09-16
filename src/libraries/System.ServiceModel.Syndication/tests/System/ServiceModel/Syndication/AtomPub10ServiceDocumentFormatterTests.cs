@@ -947,12 +947,12 @@ namespace System.ServiceModel.Syndication.Tests
             Assert.Empty(document.Workspaces);
 
             var typedFormatter = new GenericFormatter<ServiceDocumentSubclass>();
-            Assert.IsType<ServiceDocumentSubclass>(typedFormatter.CreateDocumentInstanceEntryPoint());
-            Assert.Empty(document.AttributeExtensions);
-            Assert.Null(document.BaseUri);
-            Assert.Empty(document.ElementExtensions);
-            Assert.Null(document.Language);
-            Assert.Empty(document.Workspaces);
+            ServiceDocumentSubclass item = Assert.IsType<ServiceDocumentSubclass>(typedFormatter.CreateDocumentInstanceEntryPoint());
+            Assert.Empty(item.AttributeExtensions);
+            Assert.Null(item.BaseUri);
+            Assert.Empty(item.ElementExtensions);
+            Assert.Null(item.Language);
+            Assert.Empty(item.Workspaces);
         }
 
         public class ServiceDocumentSubclass : ServiceDocument { }
