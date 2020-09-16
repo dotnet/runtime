@@ -3323,7 +3323,7 @@ public:
         return &lvaTable[lclNum];
     }
 
-    LclVarDsc* lvaGetDesc(GenTreeLclVarCommon* lclVar)
+    LclVarDsc* lvaGetDesc(const GenTreeLclVarCommon* lclVar)
     {
         assert(lclVar->GetLclNum() < lvaCount);
         return &lvaTable[lclVar->GetLclNum()];
