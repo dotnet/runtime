@@ -39,7 +39,8 @@
     <!-- Exclude symbol packages from have a NuGet signature. These are never pushed to NuGet.org or
          other feeds (in fact, that have identical identity to their non-symbol variant) -->
     <DownloadedSymbolPackages Include="$(DownloadDirectory)**\*.symbols.nupkg" />
-    <FileSignInfo Include="@(DownloadedSymbolPackages->'%(Filename)%(Extension)')" CertificateName="None" />
+    <DownloadedSymbolPackagesWithoutPaths Include="@(DownloadedSymbolPackages->'%(Filename)%(Extension)')" />
+    <FileSignInfo Include="@(DownloadedSymbolPackagesWithoutPaths->Distinct())" CertificateName="None" />
 
     <FileExtensionSignInfo Include=".msi" CertificateName="Microsoft400" />
     <FileExtensionSignInfo Include=".pkg" CertificateName="8003" />
@@ -138,17 +139,22 @@
     </When>
     
     <!-- When doing post build signing, we sign all artifacts we would push.
-         Symbol packages are included, but get no signature.
-         
-         TODO: Also keep signing the mscordaccore and mscordbi files during the build even
-         when post-build signing is enabled. These flow to other repos before flowing
-         into installer. -->
+         Symbol packages are included, but get no signature. -->
     <When Condition="'$(PostBuildSign)' == 'true'">
       <ItemGroup>
         <ItemsToSignWithPaths Include="$(DownloadDirectory)**" />
+        <!-- Exclude wixpdb files from the signing list. These are generated into the
+             shipping/nonshipping directories but should be generated into the obj dirs.
+             https://github.com/dotnet/arcade/issues/6187. -->
+        <ItemsToSignWithPaths Exclude="@(DownloadedWixPdbFile)" />
         <ItemsToSignWithoutPaths Include="@(ItemsToSignWithPaths->'%(Filename)%(Extension)')" />
-        <DistinctItemsToSignWithPaths Include="@(ItemsToSignWithoutPaths->Distinct())" />
-        <ItemsToSign Include="@(DistinctItemsToSignWithPaths)" />
+        <ItemsToSign Include="@(ItemsToSignWithoutPaths->Distinct())" />
+      </ItemGroup>
+
+      <!-- Even when doing post build signing, sign mscordaccore*.dll and mscordbi.dll -->
+      <ItemGroup Condition="'$(SignBinaries)' == 'true'">
+        <ItemsToSign Include="$(CoreCLRSharedFrameworkDir)mscordaccore*.dll" />
+        <ItemsToSign Include="$(CoreCLRSharedFrameworkDir)mscordbi.dll" />
       </ItemGroup>
     </When>
   </Choose>

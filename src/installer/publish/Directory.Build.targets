@@ -24,6 +24,7 @@
         Text="No downloaded artifacts found." />
 
       <DownloadedSymbolNupkgFile Include="$(DownloadDirectory)**\*.symbols.nupkg" />
+      <DownloadedWixPdbFile Include="$(DownloadDirectory)**\*.wixpdb" />
       <DownloadedNupkgFile
         Include="$(DownloadDirectory)**\*.nupkg"
         Exclude="@(DownloadedSymbolNupkgFile)" />
@@ -31,7 +32,7 @@
       <!-- Add files that are not affected by filtering. -->
       <UploadToBlobStorageFile
         Include="@(DownloadedArtifactFile)"
-        Exclude="@(DownloadedSymbolNupkgFile);@(DownloadedNupkgFile)" />
+        Exclude="@(DownloadedSymbolNupkgFile);@(DownloadedNupkgFile);@(DownloadedWixPdbFile)" />
 
       <!--
         Filter out the RID-specific (Runtime) nupkgs and RID-agnostic nupkgs. RID-specific packages
