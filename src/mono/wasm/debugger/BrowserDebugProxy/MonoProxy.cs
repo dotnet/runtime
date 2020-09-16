@@ -20,7 +20,15 @@ namespace Microsoft.WebAssembly.Diagnostics
         HashSet<SessionId> sessions = new HashSet<SessionId>();
         Dictionary<SessionId, ExecutionContext> contexts = new Dictionary<SessionId, ExecutionContext>();
 
+<<<<<<< HEAD
         public MonoProxy(ILoggerFactory loggerFactory, bool hideWebDriver = true) : base(loggerFactory) { this.hideWebDriver = hideWebDriver; }
+=======
+        public MonoProxy(ILoggerFactory loggerFactory, IList<string> urlSymbolServerList, bool hideWebDriver = true) : base(loggerFactory) 
+        { 
+            this.hideWebDriver = hideWebDriver;
+            this.urlSymbolServerList = urlSymbolServerList ?? new List<string>();
+        }
+>>>>>>> ff592294914... Revert automated whitespace changes
 
         readonly bool hideWebDriver;
 
