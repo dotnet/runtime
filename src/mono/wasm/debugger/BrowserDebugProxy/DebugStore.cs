@@ -528,6 +528,9 @@ namespace Microsoft.WebAssembly.Diagnostics
         public int Id => id;
         public string Name => image.Name;
 
+        // "System.Threading", instead of "System.Threading, Version=5.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a"
+        public string AssemblyNameUnqualified => image.Assembly.Name.Name;
+
         public SourceFile GetDocById(int document)
         {
             return sources.FirstOrDefault(s => s.SourceId.Document == document);
@@ -735,6 +738,9 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (assembly == null)
                 yield break;
 
+            if (GetAssemblyByUnqualifiedName(assembly.AssemblyNameUnqualified) != null)
+                yield break;
+
             assemblies.Add(assembly);
             foreach (var source in assembly.Sources)
             {
@@ -791,6 +797,12 @@ namespace Microsoft.WebAssembly.Diagnostics
                 if (assembly == null)
                     continue;
 
+                if (GetAssemblyByUnqualifiedName(assembly.Name) != null)
+                {
+                    logger.LogDebug($"Skipping loading {assembly.Name} into the debug store, as it already exists");
+                    continue;
+                }
+
                 assemblies.Add(assembly);
                 foreach (var source in assembly.Sources)
                     yield return source;
@@ -802,6 +814,8 @@ namespace Microsoft.WebAssembly.Diagnostics
         public SourceFile GetFileById(SourceId id) => AllSources().SingleOrDefault(f => f.SourceId.Equals(id));
 
         public AssemblyInfo GetAssemblyByName(string name) => assemblies.FirstOrDefault(a => a.Name.Equals(name, StringComparison.InvariantCultureIgnoreCase));
+
+        public AssemblyInfo GetAssemblyByUnqualifiedName(string name) => assemblies.FirstOrDefault(a => a.AssemblyNameUnqualified.Equals(name, StringComparison.InvariantCultureIgnoreCase));
 
         /*
         V8 uses zero based indexing for both line and column.

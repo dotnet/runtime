@@ -2240,9 +2240,39 @@ var MonoSupportLib = {
 		debugger;
 	},
 
-	mono_wasm_asm_loaded: function (assembly_ptr, assembly_len, pdb_ptr, pdb_len) {
-		if (!MONO.mono_wasm_runtime_is_ready)
+	mono_wasm_asm_loaded: function (assembly_name, assembly_ptr, assembly_len, pdb_ptr, pdb_len) {
+		if (MONO.mono_wasm_runtime_is_ready !== true)
 			return;
+
+		if (MONO._loaded_filenames === undefined) {
+			MONO._loaded_filenames = [];
+			MONO.loaded_files.forEach(file => {
+				try {
+						let url = new URL(file);
+						let filename = url.pathname.split('/').pop();
+						if (filename.length !== 0)
+								MONO._loaded_filenames.push(filename);
+				} catch (e) { }
+			});
+		}
+
+		const assembly_name_str = assembly_name !== 0 ? Module.UTF8ToString(assembly_name) : '';
+		if (assembly_name !== 0) {
+			if ((assembly_name_str.startsWith("System.") || assembly_name_str.startsWith("Microsoft."))
+				&& MONO._loaded_filenames.indexOf (assembly_name_str + '.dll') >= 0) {
+
+				// Hack: we don't have the assembly name in @_loaded_filenames, and we don't seem to
+				// be getting filenames from MonoImage.
+				// So, workaround: get assembly_name as an argument to this method,
+				// and if that happens to start with `System.`, or `Microsoft.`, then
+				// check for ${assembly_name}.dll in @loaded_files
+				//
+				// If it is found in it, then it's a bundle assembly which the debug
+				// proxy will load itself, so we don't need to send this!
+
+				return;
+			}
+		}
 
 		const assembly_data = new Uint8Array(Module.HEAPU8.buffer, assembly_ptr, assembly_len);
 		const assembly_b64 = MONO._base64Converter.toBase64StringImpl(assembly_data);
@@ -2255,6 +2285,7 @@ var MonoSupportLib = {
 
 		MONO.mono_wasm_raise_debug_event({
 			eventName: 'AssemblyLoaded',
+			assembly_name: assembly_name_str,
 			assembly_b64,
 			pdb_b64
 		});

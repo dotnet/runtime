@@ -707,36 +707,33 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             try
             {
-                var context = GetContext(sessionId);
+                var store = await LoadStore(sessionId, token);
+                var assembly_name = eventArgs?["assembly_name"]?.Value<string>();
+
+                if (store.GetAssemblyByUnqualifiedName(assembly_name) != null)
+                {
+                    Log("debug", $"Got AssemblyLoaded event for {assembly_name}, but skipping it as it has already been loaded.");
+                    return true;
+                }
+
                 var assembly_b64 = eventArgs?["assembly_b64"]?.ToObject<string>();
                 var pdb_b64 = eventArgs?["pdb_b64"]?.ToObject<string>();
 
-                if (assembly_b64 == null)
+                if (String.IsNullOrEmpty(assembly_b64))
                 {
                     logger.LogDebug("No assembly data provided to load.");
                     return false;
                 }
 
                 var assembly_data = Convert.FromBase64String(assembly_b64);
-                var pdb_data = pdb_b64 != null ? Convert.FromBase64String(pdb_b64) : null;
+                var pdb_data = String.IsNullOrEmpty(pdb_b64) ? null : Convert.FromBase64String(pdb_b64);
 
-                var store = await LoadStore(sessionId, token);
-
+                var context = GetContext(sessionId);
                 foreach (var source in store.Add(sessionId, assembly_data, pdb_data))
                 {
-                    var scriptSource = JObject.FromObject(source.ToScriptSource(context.Id, context.AuxData));
-                    Log("verbose", $"\tsending {source.Url} {context.Id} {sessionId.sessionId}");
-
-                    SendEvent(sessionId, "Debugger.scriptParsed", scriptSource, token);
-
-                    foreach (var req in context.BreakpointRequests.Values)
-                    {
-                        if (req.TryResolve(source))
-                        {
-                            await SetBreakpoint(sessionId, context.store, req, true, token);
-                        }
-                    }
+                    await OnSourceFileAdded(sessionId, source, context, token);
                 }
+
                 return true;
             }
             catch (Exception e)
@@ -843,6 +840,22 @@ namespace Microsoft.WebAssembly.Diagnostics
             return bp;
         }
 
+        async Task OnSourceFileAdded(SessionId sessionId, SourceFile source, ExecutionContext context, CancellationToken token)
+        {
+            JObject scriptSource = JObject.FromObject(source.ToScriptSource(context.Id, context.AuxData));
+            Log("debug", $"sending {source.Url} {context.Id} {sessionId.sessionId}");
+
+            SendEvent(sessionId, "Debugger.scriptParsed", scriptSource, token);
+
+            foreach (var req in context.BreakpointRequests.Values)
+            {
+                if (req.TryResolve(source))
+                {
+                    await SetBreakpoint(sessionId, context.store, req, true, token);
+                }
+            }
+        }
+
         async Task<DebugStore> LoadStore(SessionId sessionId, CancellationToken token)
         {
             var context = GetContext(sessionId);
@@ -863,18 +876,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 await
                 foreach (var source in context.store.Load(sessionId, loaded_files, token).WithCancellation(token))
                 {
-                    var scriptSource = JObject.FromObject(source.ToScriptSource(context.Id, context.AuxData));
-                    Log("verbose", $"\tsending {source.Url} {context.Id} {sessionId.sessionId}");
-
-                    SendEvent(sessionId, "Debugger.scriptParsed", scriptSource, token);
-
-                    foreach (var req in context.BreakpointRequests.Values)
-                    {
-                        if (req.TryResolve(source))
-                        {
-                            await SetBreakpoint(sessionId, context.store, req, true, token);
-                        }
-                    }
+                    await OnSourceFileAdded(sessionId, source, context, token);
                 }
             }
             catch (Exception e)

@@ -65,7 +65,7 @@ extern void mono_wasm_add_properties_var (const char*, gint32);
 extern void mono_wasm_add_array_item (int);
 extern void mono_wasm_set_is_async_method (guint64);
 extern void mono_wasm_add_typed_value (const char *type, const char *str_value, double value);
-extern void mono_wasm_asm_loaded (const char *assembly_data, guint32 assembly_len, const char *pdb_data, guint32 pdb_len);
+extern void mono_wasm_asm_loaded (const char* asm_name, const char *assembly_data, guint32 assembly_len, const char *pdb_data, guint32 pdb_len);
 
 G_END_DECLS
 
@@ -480,17 +480,19 @@ assembly_loaded (MonoProfiler *prof, MonoAssembly *assembly)
 	MonoImage *assembly_image = assembly->image;
 	MonoImage *pdb_image = NULL;
 	MonoDebugHandle *handle = mono_debug_get_handle (assembly_image);
-	if (!handle) {
-		DEBUG_PRINTF (1, "Could not resolve image handle...\n");
-		return;
+	if (handle) {
+		MonoPPDBFile *ppdb = handle->ppdb;
+		pdb_image = mono_ppdb_get_image (ppdb);
 	}
 
-	MonoPPDBFile *ppdb = handle->ppdb;
-	if (ppdb) {
-		pdb_image = mono_ppdb_get_image (ppdb);
-		mono_wasm_asm_loaded (assembly_image->raw_data, assembly_image->raw_data_len, pdb_image->raw_data, pdb_image->raw_data_len);
+	if (pdb_image) {
+		mono_wasm_asm_loaded (
+			assembly_image->assembly_name, assembly_image->raw_data, assembly_image->raw_data_len,
+			pdb_image->raw_data, pdb_image->raw_data_len);
 	} else {
-		mono_wasm_asm_loaded (assembly_image->raw_data, assembly_image->raw_data_len, NULL, 0);
+		mono_wasm_asm_loaded (
+			assembly_image->assembly_name, assembly_image->raw_data, assembly_image->raw_data_len,
+			NULL, 0);
 	}
 }
 
