@@ -3696,15 +3696,19 @@ void CodeGen::genRangeCheck(GenTree* oper)
 
     GenTree *    src1, *src2;
     emitJumpKind jmpKind;
-    instruction cmpKind;
+    instruction  cmpKind;
 
     genConsumeRegs(arrIndex);
     genConsumeRegs(arrLen);
 
     if (arrIndex->IsIntegralConst(0) && arrLen->isUsedFromReg())
     {
-        src1 = arrLen;
-        src2 = arrLen;
+        // arrIndex is 0 and arrLen is in a reg. In this case
+        // we can generate
+        //      test reg, reg
+        // since arrLen is non-negative
+        src1    = arrLen;
+        src2    = arrLen;
         jmpKind = EJ_je;
         cmpKind = INS_test;
     }
