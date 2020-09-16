@@ -55,7 +55,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             }
         }
 
-        protected override void OnConnectionStateChanged(ManagedQuicConnection connection, QuicConnectionState newState)
+        protected override bool OnConnectionStateChanged(ManagedQuicConnection connection, QuicConnectionState newState)
         {
             switch (newState)
             {
@@ -66,30 +66,53 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                 case QuicConnectionState.Closing:
                     break;
                 case QuicConnectionState.Draining:
-                case QuicConnectionState.Closed:
-                    // we can stop immediately and close the socket.
-                    DetachConnection(connection);
+                    if (!connection.IsServer)
+                    {
+                        // clients can stop earlier because there is no danger of packets being interpreted as belonging
+                        // to a new connection.
+                        DetachConnection(connection);
+                    }
                     break;
+                case QuicConnectionState.Closed:
+                    // draining timer elapsed, discard the state
+                    DetachConnection(connection);
+                    return true;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(newState), newState, null);
             }
+
+            return false;
         }
 
         protected override int ReceiveFrom(byte[] buffer, ref EndPoint sender)
         {
+            sender = _remoteEndPoint;
             // use method without explicit address because we use connected socket
-            return Socket.Receive(buffer);
+            return Socket.Receive(buffer, SocketFlags.None, out _);
         }
 
         protected override async Task<SocketReceiveFromResult> ReceiveFromAsync(byte[] buffer, EndPoint sender,
             CancellationToken token)
         {
+            // TOOD-RZ: Get rid of this try-catch block
+            int bytes;
+            try
+            {
+                bytes = await Socket.ReceiveAsync(buffer, SocketFlags.None, token);
+            }
+            catch (SocketException e)
+            {
+                bytes = 0;
+            }
             // use method without explicit address because we use connected socket
-            int i = await Socket.ReceiveAsync(buffer, SocketFlags.None, token);
-            return new SocketReceiveFromResult {ReceivedBytes = i, RemoteEndPoint = _remoteEndPoint};
+            return new SocketReceiveFromResult {ReceivedBytes = bytes, RemoteEndPoint = _remoteEndPoint};
         }
 
-        protected override void DetachConnection(ManagedQuicConnection connection)
+        protected override void SendTo(byte[] buffer, int size, EndPoint receiver)
+            // use method without explicit address because we use connected socket
+            => Socket.Send(buffer.AsSpan(0, size), SocketFlags.None, out _);
+
+        protected internal override void DetachConnection(ManagedQuicConnection connection)
         {
             Debug.Assert(connection.IsClosed);
             Debug.Assert(connection == _connection);

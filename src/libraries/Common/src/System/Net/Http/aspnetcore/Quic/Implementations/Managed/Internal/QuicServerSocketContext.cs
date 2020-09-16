@@ -119,23 +119,30 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             // drain all packets that are still queued for this context into the connection.
             ReceiveAllDatagramsForConnection(connection);
 
-            // transition to the new context
-            DetachConnection(connection);
-            connection.SetSocketContext(newContext);
-            newContext.Start();
+            if (connection.ConnectionState == QuicConnectionState.Connected)
+            {
+                // transition to the new context
+                DetachConnection(connection);
+                connection.SetSocketContext(newContext);
+                newContext.Start();
+            }
+            else
+            {
+                newContext.DetachConnection(connection);
+            }
         }
 
-        protected override void OnConnectionStateChanged(ManagedQuicConnection connection, QuicConnectionState newState)
+        protected override bool OnConnectionStateChanged(ManagedQuicConnection connection, QuicConnectionState newState)
         {
             switch (newState)
             {
                 case QuicConnectionState.None:
-                    break;
+                    return false;
                 case QuicConnectionState.Connected:
                     OnConnectionHandshakeCompleted(connection);
-                    break;
+                    return true;
                 case QuicConnectionState.Closing:
-                    break;
+                    return false;
                 case QuicConnectionState.Draining:
                     // RFC: Servers that retain an open socket for accepting new connections SHOULD NOT exit the closing
                     // or draining period early.
@@ -147,11 +154,11 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                         DetachConnection(connection);
                     }
 
-                    break;
+                    return false;
                 case QuicConnectionState.Closed:
                     // draining timer elapsed, discard the state
                     DetachConnection(connection);
-                    break;
+                    return true;
 
                 default:
                     throw new ArgumentOutOfRangeException(nameof(newState), newState, null);
@@ -164,7 +171,10 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             CancellationToken token)
             => Socket.ReceiveFromAsync(buffer, SocketFlags.None, sender);
 
-        protected override void DetachConnection(ManagedQuicConnection connection)
+        protected override void SendTo(byte[] buffer, int size, EndPoint receiver)
+            => Socket.SendTo(buffer, 0, size, SocketFlags.None, receiver);
+
+        protected internal override void DetachConnection(ManagedQuicConnection connection)
         {
             bool removed = ImmutableInterlocked.TryRemove(ref _connectionsByEndpoint, connection.RemoteEndPoint, out _);
             if (_connectionsByEndpoint.IsEmpty && !_acceptNewConnections)

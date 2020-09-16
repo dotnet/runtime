@@ -98,6 +98,10 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         protected void Stop()
         {
             _socketTaskCts.Cancel();
+            if (_backgroundWorkerTask == null)
+            {
+                Socket.Dispose();
+            }
         }
 
         /// <summary>
@@ -119,22 +123,22 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                 _sendContext.SentPacket.Reset();
                 connection.SendData(_writer, out var receiver, _sendContext);
 
-                var newState = connection.ConnectionState;
-                if (newState != previousState)
+                if (_writer.BytesWritten > 0)
                 {
-                    OnConnectionStateChanged(connection, newState);
+                    if (NetEventSource.IsEnabled) NetEventSource.DatagramSent(connection, _writer.Buffer.Span.Slice(0, _writer.BytesWritten));
+
+                    SendTo(_sendBuffer, _writer.BytesWritten, receiver!);
                 }
 
-                previousState = newState;
-
-                if (_writer.BytesWritten == 0)
+                var newState = connection.ConnectionState;
+                if (newState != previousState && OnConnectionStateChanged(connection, newState) ||
+                    _writer.BytesWritten == 0)
                 {
                     break;
                 }
 
-                if (NetEventSource.IsEnabled) NetEventSource.DatagramSent(connection, _writer.Buffer.Span.Slice(0, _writer.BytesWritten));
+                previousState = newState;
 
-                Socket.SendTo(_sendBuffer, 0, _writer.BytesWritten, SocketFlags.None, receiver!);
             }
         }
 
@@ -212,13 +216,21 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
         protected abstract void OnTimeout(long now);
 
-        protected abstract void
+        /// <summary>
+        ///     Called when a connections <see cref="ManagedQuicConnection.ConnectionState"/> changes.
+        /// </summary>
+        /// <param name="connection">The connection.</param>
+        /// <param name="newState">The new state of the connection.</param>
+        /// <returns>True if the processing of the connection should be stopped.</returns>
+        protected abstract bool
             OnConnectionStateChanged(ManagedQuicConnection connection, QuicConnectionState newState);
 
         protected abstract int ReceiveFrom(byte[] buffer, ref EndPoint sender);
 
         protected abstract Task<SocketReceiveFromResult> ReceiveFromAsync(byte[] buffer, EndPoint sender,
             CancellationToken token);
+
+        protected abstract void SendTo(byte[] buffer, int size, EndPoint receiver);
 
         private async Task BackgroundWorker()
         {
@@ -326,9 +338,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                     int length = Socket.ReceiveFrom(_recvBuffer, ref ep);
                     Debug.Assert(ep.Equals(connection.UnsafeRemoteEndPoint));
 
-                    _recvContext.Timestamp = Timestamp.Now;
-                    _reader.Reset(_recvBuffer.AsMemory(0, length));
-                    connection.ReceiveData(_reader, connection.UnsafeRemoteEndPoint, _recvContext);
+                    DoReceive(_recvBuffer.AsMemory(0, length), connection.UnsafeRemoteEndPoint);
                 }
             }
             catch (SocketException e)
@@ -342,7 +352,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         ///     thread running at this socket.
         /// </summary>
         /// <param name="connection"></param>
-        protected abstract void DetachConnection(ManagedQuicConnection connection);
+        protected internal abstract void DetachConnection(ManagedQuicConnection connection);
 
         internal class ContextBase
         {
