@@ -249,7 +249,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                                 break;
                             }
 
-                            EndPoint remoteEp = _localEndPoint;
+                            EndPoint remoteEp = _localEndPoint!;
                             int result = ReceiveFrom(_recvBuffer, ref remoteEp);
                             DoReceive(_recvBuffer.AsMemory(0, result), (IPEndPoint)remoteEp);
                             lastAction = now;
@@ -278,7 +278,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                             : _infiniteTimeoutTask;
 
                         // update the recv task only if there is no outstanding async recv
-                        socketReceiveTask ??= ReceiveFromAsync(_recvBuffer, _localEndPoint, CancellationToken.None);
+                        socketReceiveTask ??= ReceiveFromAsync(_recvBuffer, _localEndPoint!, CancellationToken.None);
 
                         _signalTcs = new TaskCompletionSource<int>();
                         Task signalTask = _signalTcs.Task;

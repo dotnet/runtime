@@ -16,6 +16,16 @@
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\**\*.cs">
       <link>Common\System\Net\Http\aspnetcore\Quic\%(RecursiveDir)%(Filename)%(Extension)</link>
     </Compile>
+
+    <Content Include="certs\cert.crt">
+      <Link>Certs\cert.crt</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="certs\cert.key">
+      <Link>Certs\cert.key</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+
     <Compile Include="$(CommonTestPath)System\Threading\Tasks\TaskTimeoutExtensions.cs"
              Link="Common\System\Threading\Tasks\TaskTimeoutExtensions.cs" />
     <Compile Include="$(CommonPath)System\HexConverter.cs"
