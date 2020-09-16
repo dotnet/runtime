@@ -10,7 +10,7 @@ using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
 {
-    public static partial class StreamTests
+    public static class ContinuationTests
     {
         // To hit all possible continuation positions inside the tested object,
         // the outer-class padding needs to be between 5 and 116 bytes long.
