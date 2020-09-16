@@ -82,7 +82,7 @@ PAL tests
 Build CoreCLR with PAL tests on the Unix machine:
 
 ```sh
-./src/test/build.sh -skipgenerateversion -nopgooptimize \
+./src/coreclr/build-runtime.sh -skipgenerateversion -nopgooptimize \
     -cmakeargs -DCLR_CMAKE_BUILD_TESTS=1
 ```
 
