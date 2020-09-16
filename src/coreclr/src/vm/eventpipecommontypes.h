@@ -178,37 +178,37 @@ public:
         }
     }
 
-    LPCWSTR GetFilterData()
+    LPCWSTR GetFilterData() const
     {
         return m_pFilterData;
     }
 
-    EventPipeCallback GetCallbackFunction()
+    EventPipeCallback GetCallbackFunction() const
     {
         return m_pCallbackFunction;
     }
 
-    bool GetEnabled()
+    bool GetEnabled() const
     {
         return m_enabled;
     }
 
-    INT64 GetKeywords()
+    INT64 GetKeywords() const
     {
         return m_keywords;
     }
 
-    EventPipeEventLevel GetProviderLevel()
+    EventPipeEventLevel GetProviderLevel() const
     {
         return m_providerLevel;
     }
 
-    void *GetCallbackData()
+    void *GetCallbackData() const
     {
         return m_pCallbackData;
     }
 
-    EventPipeProvider *GetProvider()
+    EventPipeProvider *GetProvider() const
     {
         return m_pProvider;
     }
