@@ -140,15 +140,9 @@ public:
     }
 
     EventPipeProviderCallbackData(EventPipeProviderCallbackData &&other)
-        : EventPipeProviderCallbackData(nullptr,
-                                        other.m_pCallbackFunction,
-                                        other.m_enabled,
-                                        other.m_keywords,
-                                        other.m_providerLevel,
-                                        other.m_pCallbackData,
-                                        other.m_pProvider)
+        : EventPipeProviderCallbackData()
     {
-        std::swap(m_pFilterData, other.m_pFilterData);
+        *this = std::move(other);
     }
 
     EventPipeProviderCallbackData &operator=(EventPipeProviderCallbackData &&other)
