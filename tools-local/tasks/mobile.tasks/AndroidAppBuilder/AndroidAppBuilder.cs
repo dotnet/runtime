@@ -6,6 +6,8 @@ using System.IO;
 using System.Linq;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
+using System.Reflection;
+using System.Collections.Generic;
 
 public class AndroidAppBuilderTask : Task
 {
@@ -47,6 +49,44 @@ public class AndroidAppBuilderTask : Task
 
     public override bool Execute()
     {
+        if (LoadDependencies)
+        {
+            var paths = new List<string>();
+            
+            // Collect and load assemblies used by the app
+            foreach (var v in AssemblySearchPaths!)
+            {
+                var dir = v.ItemSpec;
+                if (!Directory.Exists(dir))
+                    throw new ArgumentException($"Directory '{dir}' doesn't exist or not a directory.");
+                paths.Add(dir);
+            }
+            _resolver = new Resolver(paths);
+            var mlc = new MetadataLoadContext(_resolver, "System.Private.CoreLib");
+
+            var mainAssembly = mlc.LoadFromAssemblyPath(MainAssembly);
+            Add(mlc, mainAssembly);
+
+            if (ExtraAssemblies != null)
+            {
+                foreach (var item in ExtraAssemblies)
+                {
+            try
+                {
+                        var refAssembly = mlc.LoadFromAssemblyPath(item.ItemSpec);
+                        Add(mlc, refAssembly);
+            }
+            catch (System.IO.FileLoadException)
+            {
+                if (!SkipMissingAssemblies)
+                {
+                    throw;
+                }
+            }
+                }
+            }
+        }
+
         Utils.Logger = Log;
 
         string abi = DetermineAbi();
