@@ -50,6 +50,41 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
         }
 
         [Fact]
+        public void ComponentWithNoDependenciesAndCaseChanged()
+        {
+            var component = sharedTestState.ComponentWithNoDependencies.Copy();
+
+            // cahnge the case of the first letter of AppDll
+            string fileName = component.AppDll;
+            string nameWOExtension = Path.GetFileNameWithoutExtension(fileName);
+            string nameWOExtensionCaseChanged = (Char.IsUpper(nameWOExtension[0]) ? nameWOExtension[0].ToString().ToLower() : nameWOExtension[0].ToString().ToUpper()) + nameWOExtension.Substring(1);
+            string changeFile = Path.Combine(Path.GetDirectoryName(fileName), (nameWOExtensionCaseChanged + Path.GetExtension(fileName)));
+
+            // Rename
+            File.Move(fileName, changeFile);
+            File.Delete(component.DepsJson);
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                sharedTestState.RunComponentResolutionTest(component)
+                    .Should().Pass()
+                    .And.HaveStdOutContaining("corehost_resolve_component_dependencies:Success")
+                    .And.HaveStdOutContaining($"corehost_resolve_component_dependencies assemblies:[{component.AppDll}{Path.PathSeparator}{changeFile}{Path.PathSeparator}]")
+                    .And.HaveStdErrContaining($"app_root='{component.Location}{Path.DirectorySeparatorChar}'")
+                    .And.HaveStdErrContaining($"deps='{component.DepsJson}'")
+                    .And.HaveStdErrContaining($"mgd_app='{component.AppDll}'");
+            }
+            else
+            {
+                //we expect the test to fail due to the the case change of AppDll
+                sharedTestState.RunComponentResolutionTest(component)
+                    .Should().Fail()
+                    .And.HaveStdErrContaining($"Failed to locate managed application [{component.AppDll}]");
+            }
+
+        }
+
+        [Fact]
         public void ComponentWithNoDependencies()
         {
             sharedTestState.RunComponentResolutionTest(sharedTestState.ComponentWithNoDependencies)
