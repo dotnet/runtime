@@ -27,7 +27,4 @@
       <RuntimeCopyLocalItems Include="@(LibrariesRuntimeFiles)" />
     </ItemGroup>
   </Target>
-
-  <!-- Provides properties for dependency versions and configures dependency verification/auto-upgrade. -->
-  <Import Project="$(RepoRoot)src/coreclr/dependencies.props" />
 </Project>
