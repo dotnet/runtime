@@ -32,6 +32,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Reflection.Runtime.TypeParsing;
 using System.Text.RegularExpressions;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
@@ -741,8 +742,7 @@ namespace Mono.Linker.Steps
 
 			TypeDefinition td;
 			if (args.Count >= 2 && args[1].Value is string typeName) {
-				td = (assembly ?? context.Module.Assembly).FindType (typeName);
-
+				td = TypeNameResolver.ResolveTypeName (assembly ?? context.Module.Assembly, typeName)?.Resolve ();
 				if (td == null) {
 					_context.LogWarning (
 						$"Could not resolve dependency type '{typeName}' specified in a `PreserveDependency` attribute", 2004, context.Resolve ());
@@ -1556,25 +1556,23 @@ namespace Mono.Linker.Steps
 
 		TypeDefinition GetDebuggerAttributeTargetType (CustomAttribute ca, AssemblyDefinition asm)
 		{
-			TypeReference targetTypeReference = null;
 			foreach (var property in ca.Properties) {
-				if (property.Name == "Target") {
-					targetTypeReference = (TypeReference) property.Argument.Value;
-					break;
-				}
+				if (property.Name == "Target")
+					return ((TypeReference) property.Argument.Value)?.Resolve ();
 
 				if (property.Name == "TargetTypeName") {
-					if (TypeNameParser.TryParseTypeAssemblyQualifiedName ((string) property.Argument.Value, out string typeName, out string assemblyName)) {
-						if (string.IsNullOrEmpty (assemblyName))
-							targetTypeReference = asm.MainModule.GetType (typeName);
-						else
-							targetTypeReference = _context.GetAssemblies ().FirstOrDefault (a => a.Name.Name == assemblyName)?.MainModule.GetType (typeName);
+					string targetTypeName = (string) property.Argument.Value;
+					TypeName typeName = TypeParser.ParseTypeName (targetTypeName);
+					if (typeName is AssemblyQualifiedTypeName assemblyQualifiedTypeName) {
+						AssemblyDefinition assembly = _context.GetLoadedAssembly (assemblyQualifiedTypeName.AssemblyName.Name);
+						return TypeNameResolver.ResolveTypeName (assembly, targetTypeName)?.Resolve ();
 					}
-					break;
+
+					return TypeNameResolver.ResolveTypeName (asm, targetTypeName)?.Resolve ();
 				}
 			}
 
-			return targetTypeReference?.Resolve ();
+			return null;
 		}
 
 		void MarkTypeSpecialCustomAttributes (TypeDefinition type)
@@ -1658,7 +1656,7 @@ namespace Mono.Linker.Steps
 			TypeDefinition tdef = null;
 			switch (attribute.ConstructorArguments[0].Value) {
 			case string s:
-				tdef = AssemblyUtilities.ResolveFullyQualifiedTypeName (_context, s);
+				tdef = _context.TypeNameResolver.ResolveTypeName (s)?.Resolve ();
 				break;
 			case TypeReference type:
 				tdef = type.Resolve ();

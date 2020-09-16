@@ -172,7 +172,7 @@ namespace Mono.Linker.Steps
 					return false;
 				}
 
-				attributeType = assembly.FindType (attributeFullName);
+				attributeType = TypeNameResolver.ResolveTypeName (assembly, attributeFullName)?.Resolve ();
 			}
 
 			if (attributeType == null) {
