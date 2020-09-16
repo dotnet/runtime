@@ -189,9 +189,6 @@
     <!-- Microsoft.Extensions projects have a separate StrongNameKeyId -->
     <StrongNameKeyId Condition="$(MSBuildProjectName.StartsWith('Microsoft.Extensions.'))">MicrosoftAspNetCore</StrongNameKeyId>
 
-    <!-- Empty DebugType when building for netfx and in windows so that it is set to full or pdbonly later -->
-    <DebugType Condition="$(TargetFramework.StartsWith('net4')) and '$(TargetOS)' == 'Windows_NT'" />
-
     <!-- Workaround for codecov issue https://github.com/tonerdo/coverlet/issues/312 -->
     <EnableSourceLink Condition="'$(ContinuousIntegrationBuild)' != 'true' and '$(OfficialBuildId)' == ''">false</EnableSourceLink>
   </PropertyGroup>
@@ -202,7 +199,6 @@
       <PropertyGroup>
         <DebugSymbols Condition="'$(DebugSymbols)' == ''">true</DebugSymbols>
         <Optimize Condition="'$(Optimize)' == ''">false</Optimize>
-        <DebugType Condition="'$(DebugType)' == ''">full</DebugType>
         <DefineConstants>$(DefineConstants),TRACE,DEBUG</DefineConstants>
       </PropertyGroup>
     </When>
@@ -210,7 +206,6 @@
       <PropertyGroup>
         <DebugSymbols Condition="'$(DebugSymbols)' == ''">true</DebugSymbols>
         <Optimize Condition="'$(Optimize)' == ''">true</Optimize>
-        <DebugType Condition="'$(DebugType)' == ''">pdbonly</DebugType>
         <DefineConstants>$(DefineConstants),TRACE</DefineConstants>
       </PropertyGroup>
     </When>
