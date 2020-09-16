@@ -2133,11 +2133,13 @@ var MonoSupportLib = {
 		debugger;
 	},
 
-	mono_wasm_add_files: function (assembly_ptr, assemnly_len, pdb_ptr, pdb_len) {
-		const assembly_data = new Uint8Array(Module.HEAPU8.buffer, assembly_ptr, assemnly_len);
+	mono_wasm_asm_loaded: function (assembly_ptr, assembly_len, pdb_ptr, pdb_len) {
+		if (!MONO.mono_wasm_runtime_is_ready)
+			return;
+		const assembly_data = new Uint8Array(Module.HEAPU8.buffer, assembly_ptr, assembly_len);
 		const pdb_data = pdb_ptr ? new Uint8Array(Module.HEAPU8.buffer, pdb_ptr, pdb_len) : null;
 		MONO.mono_wasm_raise_debug_event({
-			eventName: 'ADD_ASSEMBLY_PDB',
+			eventName: 'AssemblyLoaded',
 			assembly_data: Array.from(assembly_data),
 			pdb_data: pdb_data ? Array.from(pdb_data) : pdb_data
 		});

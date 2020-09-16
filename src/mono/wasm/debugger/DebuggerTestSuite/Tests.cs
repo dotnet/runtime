@@ -1852,7 +1852,7 @@ namespace DebuggerTests
                     ?.FirstOrDefault();
 
         [Fact]
-        public async Task DebugLazyLoadedAssembly()
+        public async Task DebugLazyLoadedAssemblyWithPdb()
         {
             var insp = new Inspector();
             var scripts = SubscribeToScripts(insp);
@@ -1860,12 +1860,6 @@ namespace DebuggerTests
             await insp.Ready(async (cli, token) =>
             {
                 var source_location = "dotnet://lazy-debugger-test.dll/lazy-debugger-test.cs";
-                // Make sure that we've processed the lazily-loaded assemblies into the debugger
-                var tcs = new TaskCompletionSource<bool>();
-                insp.On("Debugger.resumed", async (args, token) =>
-                {
-                    tcs.SetResult(true);
-                });
 
                 ctx = new DebugTestContext(cli, insp, token, scripts);
 
@@ -1881,7 +1875,6 @@ namespace DebuggerTests
                 var load_assemblies_res = await cli.SendCommand("Runtime.evaluate", load_assemblies, token);
                 Assert.True(load_assemblies_res.IsOk);
 
-                await Task.WhenAny(tcs.Task, Task.Delay(2000));
                 Assert.Contains(source_location, scripts.Values);
 
                 await SetBreakpoint(source_location, 9, 8);
@@ -1893,6 +1886,32 @@ namespace DebuggerTests
                 var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
                 CheckNumber(locals, "a", 5);
                 CheckNumber(locals, "b", 10);
+            });
+        }
+
+        [Fact]
+        public async Task DebugLazyLoadedAssemblyWithoutPdb()
+        {
+            var insp = new Inspector();
+            var scripts = SubscribeToScripts(insp);
+            await Ready();
+            await insp.Ready(async (cli, token) =>
+            {
+                var source_location = "dotnet://lazy-debugger-test.dll/lazy-debugger-test.cs";
+
+                ctx = new DebugTestContext(cli, insp, token, scripts);
+
+                // Simulate loading an assembly into the framework
+                byte[] bytes = File.ReadAllBytes("../../../lazy-debugger-test/wasm/Debug/lazy-debugger-test.dll");
+                string asm_base64 = Convert.ToBase64String(bytes);
+                var load_assemblies = JObject.FromObject(new
+                {
+                    expression = $"{{ let asm_b64 = '{asm_base64}'; invoke_static_method('[debugger-test] LoadDebuggerTest:LoadLazyAssemblyWithoutPDB', asm_b64); }}"
+                });
+                var load_assemblies_res = await cli.SendCommand("Runtime.evaluate", load_assemblies, token);
+                Assert.True(load_assemblies_res.IsOk);
+
+                Assert.DoesNotContain(source_location, scripts.Values);
             });
         }
 

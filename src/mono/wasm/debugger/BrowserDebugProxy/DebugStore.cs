@@ -729,6 +729,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             catch (Exception e)
             {
                 logger.LogDebug($"Failed to load assembly: ({e.Message})");
+                yield break;
             }
 
             if (assembly == null)
