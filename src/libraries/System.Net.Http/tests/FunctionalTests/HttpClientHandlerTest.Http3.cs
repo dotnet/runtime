@@ -58,7 +58,7 @@ namespace System.Net.Http.Functional.Tests
                 Method = HttpMethod.Get,
                 RequestUri = new Uri(uri, UriKind.Absolute),
                 Version = HttpVersion30,
-                VersionPolicy = HttpVersionPolicy.RequestVersionOrHigher
+                VersionPolicy = HttpVersionPolicy.RequestVersionOrLower
             })
             {
                 using HttpResponseMessage responseA = await client.SendAsync(requestA).TimeoutAfter(20_000);
@@ -73,7 +73,7 @@ namespace System.Net.Http.Functional.Tests
                 Method = HttpMethod.Get,
                 RequestUri = new Uri(uri, UriKind.Absolute),
                 Version = HttpVersion30,
-                VersionPolicy = HttpVersionPolicy.RequestVersionOrHigher
+                VersionPolicy = HttpVersionPolicy.RequestVersionOrLower
             })
             {
                 using HttpResponseMessage responseB = await client.SendAsync(requestB).TimeoutAfter(20_000);
@@ -90,9 +90,9 @@ namespace System.Net.Http.Functional.Tests
         public static TheoryData<string> InteropUris() =>
             new TheoryData<string>
             {
-                //{ "https://quic.rocks:4433/" }, // Chromium
-                { "https://www.litespeedtech.com/" }, // LiteSpeed
-                //{ "https://quic.tech:8443/" } // Cloudflare
+                { "https://quic.rocks:4433/" }, // Chromium
+                { "https://http3-test.litespeedtech.com:4433/" }, // LiteSpeed
+                { "https://quic.tech:8443/" } // Cloudflare
             };
     }
 }
