@@ -105,7 +105,8 @@ namespace System.Text.Json
             }
 
             _converterIsExternalAndPolymorphic = !converter.IsInternalConverter && DeclaredPropertyType != converter.TypeToConvert;
-            _propertyTypeCanBeNull = !declaredPropertyType.IsValueType || Nullable.GetUnderlyingType(declaredPropertyType) != null;
+            _propertyTypeCanBeNull = !DeclaredPropertyType.IsValueType ||
+                (DeclaredPropertyType.IsGenericType && DeclaredPropertyType.GetGenericTypeDefinition() == s_NullableType);
             _propertyTypeEqualsTypeToConvert = typeof(T) == DeclaredPropertyType;
 
             GetPolicies(ignoreCondition, parentTypeNumberHandling, defaultValueIsNull: _propertyTypeCanBeNull);
@@ -159,10 +160,11 @@ namespace System.Text.Json
                     }
                     else
                     {
+                        Debug.Assert(RuntimeClassInfo.Type == DeclaredPropertyType);
+
                         // Use a late-bound call to EqualityComparer<DeclaredPropertyType>.
                         if (RuntimeClassInfo.GenericMethods.IsDefaultValue(value))
                         {
-                            Debug.Assert(RuntimeClassInfo.Type == DeclaredPropertyType);
                             return true;
                         }
                     }

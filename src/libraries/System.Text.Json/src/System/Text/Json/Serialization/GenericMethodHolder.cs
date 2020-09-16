@@ -24,9 +24,9 @@ namespace System.Text.Json.Serialization
     {
         public override bool IsDefaultValue(object value)
         {
-            // For performance, we only want to call this method for value types.
-            // Reference types should be checked againt 'null' before calling this method.
-            Debug.Assert(value.GetType().IsValueType);
+            // For performance, we only want to call this method for non-nullable value types.
+            // Nullable types should be checked againt 'null' before calling this method.
+            Debug.Assert(Nullable.GetUnderlyingType(value.GetType()) == null);
 
             return EqualityComparer<T>.Default.Equals(default, (T)value);
         }

@@ -2436,6 +2436,20 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public static void JsonIgnoreCondition_ConverterCalledOnDeserialize()
+        {
+            // Verify converter is called.
+            Assert.Throws<NotImplementedException>(() => JsonSerializer.Deserialize<MyValueTypeWithProperties>("{}"));
+
+            var options = new JsonSerializerOptions
+            {
+                IgnoreNullValues = true
+            };
+
+            Assert.Throws<NotImplementedException>(() => JsonSerializer.Deserialize<MyValueTypeWithProperties>("{}", options));
+        }
+
+        [Fact]
         public static void JsonIgnoreCondition_WhenWritingNull_OnValueTypeWithCustomConverter()
         {
             string json;
@@ -2451,7 +2465,7 @@ namespace System.Text.Json.Serialization.Tests
                 DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
             };
 
-            // Verify not ignored; MyValueType is not null.
+            // Verify not ignored; MyValueTypeWithProperties is not null.
             Assert.True(EqualityComparer<MyValueTypeWithProperties>.Default.Equals(default, obj.Value));
             json = JsonSerializer.Serialize(obj, options);
             Assert.Equal("{\"Value\":100}", json);
@@ -2506,13 +2520,36 @@ namespace System.Text.Json.Serialization.Tests
                 DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault
             };
 
-            // No check on the boxed object to see the value type is a default value (0 in this case).
+            // No check if the boxed object's value type is a default value (0 in this case).
             json = JsonSerializer.Serialize(obj, options);
             Assert.Equal("{\"BoxedPrimitive\":0}", json);
 
             obj = new MyValueTypeWithBoxedPrimitive();
             json = JsonSerializer.Serialize(obj, options);
             Assert.Equal("{}", json);
+        }
+
+        private class MyClassWithValueTypeInterfaceProperty
+        {
+            [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+            public IInterface MyProp { get; set; }
+
+            public interface IInterface { }
+            public struct MyStruct : IInterface { }
+        }
+
+        [Fact]
+        public static void JsonIgnoreCondition_WhenWritingDefault_OnInterface()
+        {
+            // MyProp should be ignored due to [JsonIgnore].
+            var obj = new MyClassWithValueTypeInterfaceProperty();
+            string json = JsonSerializer.Serialize(obj);
+            Assert.Equal("{}", json);
+
+            // No check if the interface property's value type is a default value.
+            obj = new MyClassWithValueTypeInterfaceProperty { MyProp = new MyClassWithValueTypeInterfaceProperty.MyStruct() };
+            json = JsonSerializer.Serialize(obj);
+            Assert.Equal("{\"MyProp\":{}}", json);
         }
     }
 }
