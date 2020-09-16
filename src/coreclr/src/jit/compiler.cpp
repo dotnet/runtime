@@ -4949,6 +4949,8 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
     {
 #if MEASURE_CLRAPI_CALLS
         EndPhase(PHASE_CLR_API);
+#else
+        EndPhase(PHASE_POST_EMIT);
 #endif
         pCompJitTimer->Terminate(this, CompTimeSummaryInfo::s_compTimeSummary, true);
     }

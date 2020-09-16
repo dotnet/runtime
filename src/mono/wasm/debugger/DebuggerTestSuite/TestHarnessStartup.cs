@@ -19,6 +19,7 @@ using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json.Linq;
+using System.Collections.Generic;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
@@ -122,7 +123,8 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                 using var loggerFactory = LoggerFactory.Create(
                     builder => builder.AddConsole().AddFilter(null, LogLevel.Information));
-                var proxy = new DebuggerProxy(loggerFactory);
+
+                var proxy = new DebuggerProxy(loggerFactory, null);
                 var browserUri = new Uri(con_str);
                 var ideSocket = await context.WebSockets.AcceptWebSocketAsync();
 
