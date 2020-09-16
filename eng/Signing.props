@@ -146,7 +146,7 @@
         <!-- Exclude wixpdb files from the signing list. These are generated into the
              shipping/nonshipping directories but should be generated into the obj dirs.
              https://github.com/dotnet/arcade/issues/6187. -->
-        <ItemsToSignWithPaths Exclude="@(DownloadedWixPdbFile)" />
+        <ItemsToSignWithPaths Remove="@(DownloadedWixPdbFile)" />
         <ItemsToSignWithoutPaths Include="@(ItemsToSignWithPaths->'%(Filename)%(Extension)')" />
         <ItemsToSign Include="@(ItemsToSignWithoutPaths->Distinct())" />
       </ItemGroup>
