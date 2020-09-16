@@ -4520,27 +4520,6 @@ breakpoint_matches_assembly (MonoBreakpoint *bp, MonoAssembly *assembly)
 	return bp->method && m_class_get_image (bp->method->klass)->assembly == assembly;
 }
 
-static MonoMethod*
-get_object_id_for_debugger_method (MonoClass* async_builder_class)
-{
-	ERROR_DECL (error);
-	GPtrArray *array = mono_class_get_methods_by_name (async_builder_class, "get_ObjectIdForDebugger", 0x24, 1, FALSE, error);
-	mono_error_assert_ok (error);
-	if (array->len != 1) {
-		g_ptr_array_free (array, TRUE);
-		//if we don't find method get_ObjectIdForDebugger we try to find the property Task to continue async debug.
-		MonoProperty *prop = mono_class_get_property_from_name_internal (async_builder_class, "Task");
-		if (!prop) {
-			DEBUG_PRINTF (1, "Impossible to debug async methods.\n");
-			return NULL;
-		}
-		return prop->get;
-	}
-	MonoMethod *method = (MonoMethod *)g_ptr_array_index (array, 0);
-	g_ptr_array_free (array, TRUE);
-	return method;
-}
-
 //This ID is used to figure out if breakpoint hit on resumeOffset belongs to us or not
 //since thread probably changed...
 static int
