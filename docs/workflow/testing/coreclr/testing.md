@@ -21,16 +21,16 @@ The CoreCLR tests have two priorities, 0 and 1. The priority 0 tests run by defa
 ### Examples
 
 * Build all tests priority 1 and higher
-  * `build-test.cmd -priority=1`
-  * `build-test.sh -priority1`
+  * `build.cmd -priority=1`
+  * `build.sh -priority1`
 
 ## Build Individual Test
 
 Note:  CoreCLR must be built prior to building an individual test. See the first step, above, for building all tests.
 
 * Native Test: Build the generated CMake projects
-  * Projects are auto-generated when the `build-test.sh`/`build-test.cmd` script is run
-    * It is possible to explicitly run only the native test build with `build-test.sh/cmd skipmanaged`
+  * Projects are auto-generated when the `build.sh`/`build.cmd` script is run
+    * It is possible to explicitly run only the native test build with `build.sh/cmd skipmanaged`
 * Managed Test: Invoke `dotnet build` on the project directly. `dotnet` can be the `dotnet.sh` or `dotnet.cmd` script in the repo root.
 ```
 <runtime-repo-root>/dotnet.sh build <runtime-repo-root>/src/coreclr/tests/src/JIT/CodegenBringupTests/Array1_d.csproj /p:Configuration=Release
