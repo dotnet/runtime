@@ -739,7 +739,10 @@ namespace Microsoft.WebAssembly.Diagnostics
                 yield break;
 
             if (GetAssemblyByUnqualifiedName(assembly.AssemblyNameUnqualified) != null)
+            {
+                logger.LogDebug($"Skipping adding {assembly.Name} into the debug store, as it already exists");
                 yield break;
+            }
 
             assemblies.Add(assembly);
             foreach (var source in assembly.Sources)
@@ -797,7 +800,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 if (assembly == null)
                     continue;
 
-                if (GetAssemblyByUnqualifiedName(assembly.Name) != null)
+                if (GetAssemblyByUnqualifiedName(assembly.AssemblyNameUnqualified) != null)
                 {
                     logger.LogDebug($"Skipping loading {assembly.Name} into the debug store, as it already exists");
                     continue;
