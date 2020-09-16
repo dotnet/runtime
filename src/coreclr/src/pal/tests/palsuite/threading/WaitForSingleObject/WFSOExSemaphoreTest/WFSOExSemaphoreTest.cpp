@@ -20,13 +20,13 @@ const int ChildThreadWaitTime = 4000;
 const int InterruptTime = 2000;
 const DWORD AcceptableDelta = 300;
 
-void RunTest(BOOL AlertThread);
-VOID PALAPI APCFunc(ULONG_PTR dwParam);
-DWORD PALAPI WaiterProc(LPVOID lpParameter);
+void RunTest_WFSOExSemaphoreTest(BOOL AlertThread);
+VOID PALAPI APCFunc_WFSOExSemaphoreTest(ULONG_PTR dwParam);
+DWORD PALAPI WaiterProc_WFSOExSemaphoreTest(LPVOID lpParameter);
 
-DWORD ThreadWaitDelta;
+DWORD ThreadWaitDelta_WFSOExSemaphoreTest;
 
-int __cdecl main( int argc, char **argv )
+PALTEST(threading_WaitForSingleObject_WFSOExSemaphoreTest_paltest_waitforsingleobject_wfsoexsemaphoretest, "threading/WaitForSingleObject/WFSOExSemaphoreTest/paltest_waitforsingleobject_wfsoexsemaphoretest")
 {
     if (0 != (PAL_Initialize(argc, argv)))
     {
@@ -47,12 +47,12 @@ int __cdecl main( int argc, char **argv )
      * it, if it's in an alertable state.
      */
 
-    RunTest(TRUE);
-    if ((ThreadWaitDelta - InterruptTime) > AcceptableDelta)
+    RunTest_WFSOExSemaphoreTest(TRUE);
+    if ((ThreadWaitDelta_WFSOExSemaphoreTest - InterruptTime) > AcceptableDelta)
     {
         Fail("Expected thread to wait for %d ms (and get interrupted).\n"
             "Thread waited for %d ms! (Acceptable delta: %d)\n",
-            InterruptTime, ThreadWaitDelta, AcceptableDelta);
+            InterruptTime, ThreadWaitDelta_WFSOExSemaphoreTest, AcceptableDelta);
     }
 
 
@@ -60,12 +60,12 @@ int __cdecl main( int argc, char **argv )
      * Check that Queueing an APC in the middle of a wait does NOT interrupt
      * it, if it is not in an alertable state.
      */
-    RunTest(FALSE);
-    if ((ThreadWaitDelta - ChildThreadWaitTime) > AcceptableDelta)
+    RunTest_WFSOExSemaphoreTest(FALSE);
+    if ((ThreadWaitDelta_WFSOExSemaphoreTest - ChildThreadWaitTime) > AcceptableDelta)
     {
         Fail("Expected thread to wait for %d ms (and not be interrupted).\n"
             "Thread waited for %d ms! (Acceptable delta: %d)\n",
-            ChildThreadWaitTime, ThreadWaitDelta, AcceptableDelta);
+            ChildThreadWaitTime, ThreadWaitDelta_WFSOExSemaphoreTest, AcceptableDelta);
     }
 
 
@@ -73,7 +73,7 @@ int __cdecl main( int argc, char **argv )
     return PASS;
 }
 
-void RunTest(BOOL AlertThread)
+void RunTest_WFSOExSemaphoreTest(BOOL AlertThread)
 {
     HANDLE hThread = 0;
     DWORD dwThreadId = 0;
@@ -81,7 +81,7 @@ void RunTest(BOOL AlertThread)
 
     hThread = CreateThread( NULL,
                             0,
-                            (LPTHREAD_START_ROUTINE)WaiterProc,
+                            (LPTHREAD_START_ROUTINE)WaiterProc_WFSOExSemaphoreTest,
                             (LPVOID) AlertThread,
                             0,
                             &dwThreadId);
@@ -94,7 +94,7 @@ void RunTest(BOOL AlertThread)
 
     Sleep(InterruptTime);
 
-    ret = QueueUserAPC(APCFunc, hThread, 0);
+    ret = QueueUserAPC(APCFunc_WFSOExSemaphoreTest, hThread, 0);
     if (ret == 0)
     {
         Fail("QueueUserAPC failed! GetLastError returned %d\n",
@@ -116,12 +116,12 @@ void RunTest(BOOL AlertThread)
 }
 
 /* Function doesn't do anything, just needed to interrupt the wait*/
-VOID PALAPI APCFunc(ULONG_PTR dwParam)
+VOID PALAPI APCFunc_WFSOExSemaphoreTest(ULONG_PTR dwParam)
 {
 }
 
 /* Entry Point for child thread. */
-DWORD PALAPI WaiterProc(LPVOID lpParameter)
+DWORD PALAPI WaiterProc_WFSOExSemaphoreTest(LPVOID lpParameter)
 {
     HANDLE hSemaphore;
     UINT64 OldTimeStamp;
@@ -167,7 +167,7 @@ DWORD PALAPI WaiterProc(LPVOID lpParameter)
     }
 
 
-    ThreadWaitDelta = NewTimeStamp - OldTimeStamp;
+    ThreadWaitDelta_WFSOExSemaphoreTest = NewTimeStamp - OldTimeStamp;
 
     ret = CloseHandle(hSemaphore);
     if (!ret)

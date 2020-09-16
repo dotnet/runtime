@@ -16,7 +16,7 @@
 #include <palsuite.h>
 #include "../printf.h"
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime_printf_test1_paltest_printf_test1, "c_runtime/printf/test1/paltest_printf_test1")
 {
     char checkstr[] = "hello world";
     int ret;

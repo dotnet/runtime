@@ -85,6 +85,7 @@ set __SkipCrossArchNative=0
 set __SkipGenerateVersion=0
 set __RestoreOptData=1
 set __BuildJit=1
+set __BuildPALTests=0
 set __BuildAllJits=1
 set __BuildRuntime=1
 set __CrossArch=

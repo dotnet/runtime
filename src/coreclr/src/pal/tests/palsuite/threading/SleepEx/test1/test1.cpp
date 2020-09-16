@@ -19,26 +19,26 @@ typedef struct
     BOOL Alertable;
 } testCase;
 
-testCase testCases[] =
+PALTEST(threading_SleepEx_test1_paltest_sleepex_test1, "threading/SleepEx/test1/paltest_sleepex_test1")
 {
-    {0, FALSE},
-    {50, FALSE},
-    {100, FALSE},
-    {500, FALSE},
-    {2000, FALSE},
+    /* Milliseconds of error which are acceptable Function execution time, etc. */
+    DWORD AcceptableTimeError = 150;
 
-    {0, TRUE},
-    {50, TRUE},
-    {100, TRUE},
-    {500, TRUE},
-    {2000, TRUE},
-};
+    testCase testCases[] =
+    {
+        {0, FALSE},
+        {50, FALSE},
+        {100, FALSE},
+        {500, FALSE},
+        {2000, FALSE},
 
-/* Milliseconds of error which are acceptable Function execution time, etc. */
-DWORD AcceptableTimeError = 150;
+        {0, TRUE},
+        {50, TRUE},
+        {100, TRUE},
+        {500, TRUE},
+        {2000, TRUE},
+    };
 
-int __cdecl main( int argc, char **argv ) 
-{
     UINT64 OldTimeStamp;
     UINT64 NewTimeStamp;
     DWORD MaxDelta;

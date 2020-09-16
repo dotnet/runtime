@@ -13,7 +13,7 @@
 #include <palsuite.h>
 
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime__strnicmp_test1_paltest_strnicmp_test1, "c_runtime/_strnicmp/test1/paltest_strnicmp_test1")
 {
     char str1[] = "foo";
     char str2[] = "foox";

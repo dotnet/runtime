@@ -17,7 +17,7 @@
 #include "../printf.h"
 
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime_printf_test12_paltest_printf_test12, "c_runtime/printf/test12/paltest_printf_test12")
 {
     int neg = -42;
     int pos = 0x1234ab;
