@@ -449,7 +449,8 @@ namespace System.ServiceModel.Syndication.Tests
                 writer.WriteEndElement();
             });
 
-            CompareHelper.AssertEqualWriteOutput(expectedFull, writer => formatter.WriteTo(writer));
+            var genericFormatter = new Rss20FeedFormatter<SyndicationFeed>(feed);
+            CompareHelper.AssertEqualWriteOutput(expectedFull, writer => genericFormatter.WriteTo(writer));
             CompareHelper.AssertEqualWriteOutput(expectedFull, writer => feed.SaveAsRss20(writer));
         }
 
