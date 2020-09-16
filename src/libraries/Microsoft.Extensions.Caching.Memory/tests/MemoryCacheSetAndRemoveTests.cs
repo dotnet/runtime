@@ -180,6 +180,9 @@ namespace Microsoft.Extensions.Caching.Memory
             }
 
             Assert.False(cache.TryGetValue(key, out int obj));
+
+            // verify that throwing an exception doesn't leak CacheEntry objects
+            Assert.Null(CacheEntryHelper.Current);
         }
 
         [Fact]
@@ -199,6 +202,9 @@ namespace Microsoft.Extensions.Caching.Memory
             }
 
             Assert.False(cache.TryGetValue(key, out int obj));
+
+            // verify that throwing an exception doesn't leak CacheEntry objects
+            Assert.Null(CacheEntryHelper.Current);
         }
 
         [Fact]

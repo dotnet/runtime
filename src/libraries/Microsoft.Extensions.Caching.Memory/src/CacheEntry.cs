@@ -27,6 +27,7 @@ namespace Microsoft.Extensions.Caching.Memory
         private TimeSpan? _slidingExpiration;
         private long? _size;
         private IDisposable _scope;
+        private object _value;
 
         internal readonly object _lock = new object();
 
@@ -182,7 +183,17 @@ namespace Microsoft.Extensions.Caching.Memory
 
         public object Key { get; private set; }
 
-        public object Value { get; set; }
+        public object Value
+        {
+            get => _value;
+            set
+            {
+                _value = value;
+                ValueHasBeenSet = true;
+            }
+        }
+
+        internal bool ValueHasBeenSet { get; private set; }
 
         internal DateTimeOffset LastAccessed { get; set; }
 
