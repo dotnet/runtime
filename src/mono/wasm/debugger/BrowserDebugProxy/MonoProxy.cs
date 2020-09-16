@@ -712,13 +712,19 @@ namespace Microsoft.WebAssembly.Diagnostics
                 var pdbName = System.Text.Encoding.UTF8.GetString(buffer2, 0, buffer2.Length);
                 pdbName = Path.GetFileName(pdbName);
 
-                foreach (var urlSymbolServer in urlSymbolServerList) 
+                foreach (var urlSymbolServer in urlSymbolServerList)
                 {
                     var downloadURL = $"{urlSymbolServer}/{pdbName}/{pdbGuid.ToString("N").ToUpper() + pdbAge}/{pdbName}";
 
                     try
                     {
                         using HttpResponseMessage response = await client.GetAsync(downloadURL);
+                        if (!response.IsSuccessStatusCode)
+                        {
+                            Log("info", $"Unable to download symbols on demand url:{downloadURL} assembly: {asm.Name}");
+                            continue;
+                        }
+
                         using Stream streamToReadFrom = await response.Content.ReadAsStreamAsync();
                         var portablePdbReaderProvider = new PdbReaderProvider();
                         var symbolReader = portablePdbReaderProvider.GetSymbolReader(asm.Image, streamToReadFrom);
@@ -740,10 +746,10 @@ namespace Microsoft.WebAssembly.Diagnostics
                 break;
             }
 
-            Log("info", "Unable to load symbols on demand assembly: {asm.Name}");
+            Log("info", $"Unable to load symbols on demand assembly: {asm.Name}");
             return null;
         }
-        
+
         async Task OnDefaultContext(SessionId sessionId, ExecutionContext context, CancellationToken token)
         {
             Log("verbose", "Default context created, clearing state and sending events");
