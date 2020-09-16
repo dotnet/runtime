@@ -7,7 +7,7 @@ using System.Threading;
 
 namespace System.Net.Http
 {
-    internal static class HttpUtilities
+    internal static partial class HttpUtilities
     {
         internal static Version DefaultRequestVersion => HttpVersion.Version11;
 
@@ -25,13 +25,6 @@ namespace System.Net.Http
             IsSupportedNonSecureScheme(scheme) ||
             IsSupportedSecureScheme(scheme);
 
-        internal static bool IsSupportedNonSecureScheme(string scheme) =>
-            string.Equals(scheme, "http", StringComparison.OrdinalIgnoreCase)
-#if TARGETS_BROWSER
-            || IsBlobScheme(scheme)
-#endif
-            || IsNonSecureWebSocketScheme(scheme);
-
         internal static bool IsSupportedSecureScheme(string scheme) =>
             string.Equals(scheme, "https", StringComparison.OrdinalIgnoreCase) || IsSecureWebSocketScheme(scheme);
 
@@ -40,11 +33,6 @@ namespace System.Net.Http
 
         internal static bool IsSecureWebSocketScheme(string scheme) =>
             string.Equals(scheme, "wss", StringComparison.OrdinalIgnoreCase);
-
-#if TARGETS_BROWSER
-        internal static bool IsBlobScheme(string scheme) =>
-            string.Equals(scheme, "blob", StringComparison.OrdinalIgnoreCase);
-#endif
 
         // Always specify TaskScheduler.Default to prevent us from using a user defined TaskScheduler.Current.
         //
