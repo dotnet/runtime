@@ -103,11 +103,7 @@ namespace System.Net.Http
             {
                 if ((value != null) && (value.IsAbsoluteUri) && (!HttpUtilities.IsHttpUri(value)))
                 {
-#if TARGETS_BROWSER
-                    throw new ArgumentException(SR.net_http_client_http_browser_baseaddress_required, nameof(value));
-#else
-                    throw new ArgumentException(SR.net_http_client_http_baseaddress_required, nameof(value));
-#endif
+                    throw new ArgumentException(HttpUtilities.InvalidUriMessage, nameof(value));
                 }
                 CheckDisposed();
 
@@ -193,11 +189,7 @@ namespace System.Net.Http
             }
             if ((requestUri != null) && (requestUri.IsAbsoluteUri) && (!HttpUtilities.IsHttpUri(requestUri)))
             {
-#if TARGETS_BROWSER
-                throw new ArgumentException(SR.net_http_client_http_browser_baseaddress_required, nameof(requestUri));
-#else
-                throw new ArgumentException(SR.net_http_client_http_baseaddress_required, nameof(requestUri));
-#endif
+                throw new ArgumentException(HttpUtilities.InvalidUriMessage, nameof(requestUri));
             }
 
             _method = method;
