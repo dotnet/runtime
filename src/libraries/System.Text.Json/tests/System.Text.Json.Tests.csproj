@@ -88,6 +88,7 @@
     <Compile Include="Serialization\CyclicTests.cs" />
     <Compile Include="Serialization\DeserializationWrapper.cs" />
     <Compile Include="Serialization\EnumConverterTests.cs" />
+    <Compile Include="Serialization\EnumConverterWithNamingPolicyTests.cs" />
     <Compile Include="Serialization\EnumTests.cs" />
     <Compile Include="Serialization\ExceptionTests.cs" />
     <Compile Include="Serialization\ExtensionDataTests.cs" />
