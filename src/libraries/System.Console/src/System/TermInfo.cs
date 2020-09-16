@@ -236,7 +236,7 @@ namespace System
             /// <param name="term">The identifier for the terminal.</param>
             /// <param name="directoryPath">The path to the directory containing terminfo database files.</param>
             /// <returns>The database, or null if it could not be found.</returns>
-            private static Database? ReadDatabase(string? term, string? directoryPath)
+            private static unsafe Database? ReadDatabase(string? term, string? directoryPath)
             {
                 if (string.IsNullOrEmpty(term) || string.IsNullOrEmpty(directoryPath))
                 {
@@ -264,9 +264,13 @@ namespace System
                     int fileLen = (int)termInfoLength;
 
                     byte[] data = new byte[fileLen];
-                    if (ConsolePal.Read(fd, data, 0, fileLen) != fileLen)
+                    fixed (byte* bufPtr = data)
                     {
-                        throw new InvalidOperationException(SR.IO_TermInfoInvalid);
+                        int result = Interop.CheckIo(Interop.Sys.Read(fd, bufPtr, fileLen));
+                        if (result != fileLen)
+                        {
+                            throw new InvalidOperationException(SR.IO_TermInfoInvalid);
+                        }
                     }
 
                     // Create the database from the data

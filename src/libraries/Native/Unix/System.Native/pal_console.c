@@ -91,6 +91,7 @@ static struct termios g_currentTermios;       // the latest attributes set
 static bool g_reading = false;                // tracks whether the application is performing a Console.Read operation
 static bool g_childUsesTerminal = false;      // tracks whether a child process is using the terminal
 static bool g_terminalUninitialized = false;  // tracks whether the application is terminating
+static bool g_terminalConfigured = false;     // tracks whether the application configured the terminal.
 
 static bool g_hasTty = false;                  // cache we are not a tty
 
@@ -153,6 +154,7 @@ static bool TcSetAttr(struct termios* termios, bool blockIfBackground)
     // On success, update the cached value.
     if (rv)
     {
+        g_terminalConfigured = true;
         g_hasCurrentTermios = true;
         g_currentTermios = *termios;
     }
@@ -217,7 +219,10 @@ void UninitializeTerminal()
     {
         if (!g_terminalUninitialized)
         {
-            TcSetAttr(&g_initTermios, /* blockIfBackground */ false);
+            if (g_terminalConfigured)
+            {
+                TcSetAttr(&g_initTermios, /* blockIfBackground */ false);
+            }
 
             g_terminalUninitialized = true;
         }
@@ -269,7 +274,11 @@ void SystemNative_ConfigureTerminalForChildProcess(int32_t childUsesTerminal)
             g_hasCurrentTermios = false;
         }
 
-        ConfigureTerminal(g_signalForBreak, /* forChild */ childUsesTerminal, /* minChars */ 1, /* decisecondsTimeout */ 0, /* blockIfBackground */ false, /* convertCrToNl */ false);
+        // Change terminal settings for child, or when there are no more children and the terminal was configured.
+        if (childUsesTerminal || g_terminalConfigured)
+        {
+            ConfigureTerminal(g_signalForBreak, /* forChild */ childUsesTerminal, /* minChars */ 1, /* decisecondsTimeout */ 0, /* blockIfBackground */ false, /* convertCrToNl */ false);
+        }
 
         // Redo "Application mode" when there are no more children using the terminal.
         if (!childUsesTerminal)
