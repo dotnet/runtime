@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.CompilerServices;
+using System.Runtime.Versioning;
 
 namespace System.Threading
 {
@@ -80,6 +81,7 @@ namespace System.Threading
             return IsEnteredNative(obj);
         }
 
+        [UnsupportedOSPlatform("browser")]
         public static bool Wait(object obj, int millisecondsTimeout, bool exitContext)
         {
             if (obj == null)
@@ -87,12 +89,16 @@ namespace System.Threading
             return ObjWait(exitContext, millisecondsTimeout, obj);
         }
 
+        [UnsupportedOSPlatform("browser")]
         public static bool Wait(object obj, TimeSpan timeout, bool exitContext) => Wait(obj, MillisecondsTimeoutFromTimeSpan(timeout), exitContext);
 
+        [UnsupportedOSPlatform("browser")]
         public static bool Wait(object obj, int millisecondsTimeout) => Wait(obj, millisecondsTimeout, false);
 
+        [UnsupportedOSPlatform("browser")]
         public static bool Wait(object obj, TimeSpan timeout) => Wait(obj, MillisecondsTimeoutFromTimeSpan(timeout), false);
 
+        [UnsupportedOSPlatform("browser")]
         public static bool Wait(object obj) => Wait(obj, Timeout.Infinite, false);
 
         public static void Pulse(object obj)

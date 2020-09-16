@@ -5,6 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 
 namespace System.Threading
 {
@@ -251,11 +252,13 @@ namespace System.Threading
 
         internal static void UninterruptibleSleep0() => SleepInternal(0, false);
 
+        [UnsupportedOSPlatform("browser")]
         public void Start()
         {
             StartInternal(this);
         }
 
+        [UnsupportedOSPlatform("browser")]
         public void Start(object parameter)
         {
             if (m_start is ThreadStart)
