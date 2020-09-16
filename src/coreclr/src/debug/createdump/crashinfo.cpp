@@ -477,6 +477,11 @@ CrashInfo::InsertMemoryRegion(const MemoryRegion& region)
             m_memoryRegions.insert(region);
             return;
         }
+        else 
+        {
+            TRACE("INVALID REGION #1 ");
+            region.Trace();
+        }
     }
     else
     {
@@ -504,6 +509,11 @@ CrashInfo::InsertMemoryRegion(const MemoryRegion& region)
             // All the single pages added here will be combined in CombineMemoryRegions()
             if (ValidRegion(memoryRegionPage)) {
                 m_memoryRegions.insert(memoryRegionPage);
+            }
+            else 
+            {
+                TRACE("INVALID REGION #2 ");
+                region.Trace();
             }
         }
         else {
