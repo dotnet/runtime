@@ -28,34 +28,26 @@ namespace System.Text.Json.Serialization.Tests
         private static IEnumerable<bool> IgnoreNullValues
             => new[] { true, false };
 
+        private static IEnumerable<Type> OuterTypes
+            => new[] {
+                typeof(Outer<TestClass<NestedClass>, NestedClass>),
+                typeof(Outer<TestClass<NestedValueType>, NestedValueType>),
+                typeof(Outer<TestValueType<NestedClass>, NestedClass>),
+                typeof(Outer<TestValueType<NestedValueType>, NestedValueType>),
+                typeof(OuterWithParamCtor),
+            };
+
         [Theory]
         [MemberData(nameof(TestData))]
-        public static async Task ContinuationShouldWorkAtAnyPosition_Class_Class(int paddingLength, bool ignoreNullValues)
+        public static async Task ContinuationShouldWorkAtAnyPosition(Type outerType, int paddingLength, bool ignoreNullValues)
         {
             var stream = new MemoryStream();
             {
-                var obj = new Outer<TestClass<NestedClass>>
-                {
-                    S = new string('x', paddingLength),
-                    C = new()
-                    {
-                        A = "Hello",
-                        B = null,
-                        C = 42,
-                        D = null,
-                        E = 3.14e+17f,
-                        F = null,
-                        G = true,
-                        H = null,
-                        I = new int[] {42, 17},
-                        J = new()
-                        {
-                            A = null,
-                            B = 7,
-                        }
-                    }
-                };
-                await JsonSerializer.SerializeAsync(stream, obj);
+                var outer = (IOuter)Activator.CreateInstance(outerType);
+                outer.S = new string('x', paddingLength);
+                outer.Initialize();
+                
+                await JsonSerializer.SerializeAsync(stream, outer, outerType);
             }
 
             stream.Position = 0;
@@ -66,233 +58,9 @@ namespace System.Text.Json.Serialization.Tests
                     IgnoreNullValues = ignoreNullValues,
                 };
 
-                Outer<TestClass<NestedClass>> obj = await JsonSerializer.DeserializeAsync<Outer<TestClass<NestedClass>>>(stream, readOptions);
-
-                Assert.Equal(new string('x', paddingLength), obj.S);
-                Assert.Equal("Hello", obj.C.A);
-                Assert.Null(obj.C.B);
-                Assert.Equal(42, obj.C.C);
-                Assert.Null(obj.C.D);
-                Assert.Equal(3.14e17f, obj.C.E);
-                Assert.Null(obj.C.F);
-                Assert.True(obj.C.G);
-                Assert.Null(obj.C.H);
-                Assert.Collection(obj.C.I, v => Assert.Equal(42, v), v => Assert.Equal(17, v));
-                Assert.NotNull(obj.C.J);
-                Assert.Null(obj.C.J.A);
-                Assert.Equal(7, obj.C.J.B);
-            }
-        }
-
-        [Theory]
-        [MemberData(nameof(TestData))]
-        public static async Task ContinuationShouldWorkAtAnyPosition_Class_ValueType(int paddingLength, bool ignoreNullValues)
-        {
-            var stream = new MemoryStream();
-            {
-                var obj = new Outer<TestClass<NestedValueType>>
-                {
-                    S = new string('x', paddingLength),
-                    C = new()
-                    {
-                        A = "Hello",
-                        B = null,
-                        C = 42,
-                        D = null,
-                        E = 3.14e+17f,
-                        F = null,
-                        G = true,
-                        H = null,
-                        I = new int[] { 42, 17 },
-                        J = new()
-                        {
-                            A = null,
-                            B = 7,
-                        }
-                    }
-                };
-                await JsonSerializer.SerializeAsync(stream, obj);
-            }
-
-            stream.Position = 0;
-            {
-                var readOptions = new JsonSerializerOptions
-                {
-                    DefaultBufferSize = 128,
-                    IgnoreNullValues = ignoreNullValues,
-                };
-
-                Outer<TestClass<NestedValueType>> obj = await JsonSerializer.DeserializeAsync<Outer<TestClass<NestedValueType>>>(stream, readOptions);
-
-                Assert.Equal(new string('x', paddingLength), obj.S);
-                Assert.Equal("Hello", obj.C.A);
-                Assert.Null(obj.C.B);
-                Assert.Equal(42, obj.C.C);
-                Assert.Null(obj.C.D);
-                Assert.Equal(3.14e17f, obj.C.E);
-                Assert.Null(obj.C.F);
-                Assert.True(obj.C.G);
-                Assert.Null(obj.C.H);
-                Assert.Collection(obj.C.I, v => Assert.Equal(42, v), v => Assert.Equal(17, v));
-                Assert.Null(obj.C.J.A);
-                Assert.Equal(7, obj.C.J.B);
-            }
-        }
-
-        [Theory]
-        [MemberData(nameof(TestData))]
-        public static async Task ContinuationShouldWorkAtAnyPosition_ValueType_Class(int paddingLength, bool ignoreNullValues)
-        {
-            var stream = new MemoryStream();
-            {
-                var obj = new Outer<TestValueType<NestedClass>>
-                {
-                    S = new string('x', paddingLength),
-                    C = new()
-                    {
-                        A = "Hello",
-                        B = null,
-                        C = 42,
-                        D = null,
-                        E = 3.14e+17f,
-                        F = null,
-                        G = true,
-                        H = null,
-                        I = new int[] { 42, 17 },
-                        J = new()
-                        {
-                            A = null,
-                            B = 7,
-                        }
-                    }
-                };
-                await JsonSerializer.SerializeAsync(stream, obj);
-            }
-
-            stream.Position = 0;
-            {
-                var readOptions = new JsonSerializerOptions
-                {
-                    DefaultBufferSize = 128,
-                    IgnoreNullValues = ignoreNullValues,
-                };
-
-                Outer<TestValueType<NestedClass>> obj = await JsonSerializer.DeserializeAsync<Outer<TestValueType<NestedClass>>>(stream, readOptions);
-
-                Assert.Equal(new string('x', paddingLength), obj.S);
-                Assert.Equal("Hello", obj.C.A);
-                Assert.Null(obj.C.B);
-                Assert.Equal(42, obj.C.C);
-                Assert.Null(obj.C.D);
-                Assert.Equal(3.14e17f, obj.C.E);
-                Assert.Null(obj.C.F);
-                Assert.True(obj.C.G);
-                Assert.Null(obj.C.H);
-                Assert.Collection(obj.C.I, v => Assert.Equal(42, v), v => Assert.Equal(17, v));
-                Assert.NotNull(obj.C.J);
-                Assert.Null(obj.C.J.A);
-                Assert.Equal(7, obj.C.J.B);
-            }
-        }
-
-        [Theory]
-        [MemberData(nameof(TestData))]
-        public static async Task ContinuationShouldWorkAtAnyPosition_ValueType_ValueType(int paddingLength, bool ignoreNullValues)
-        {
-            var stream = new MemoryStream();
-            {
-                var obj = new Outer<TestValueType<NestedValueType>>
-                {
-                    S = new string('x', paddingLength),
-                    C = new()
-                    {
-                        A = "Hello",
-                        B = null,
-                        C = 42,
-                        D = null,
-                        E = 3.14e+17f,
-                        F = null,
-                        G = true,
-                        H = null,
-                        I = new int[] { 42, 17 },
-                        J = new()
-                        {
-                            A = null,
-                            B = 7,
-                        }
-                    }
-                };
-                await JsonSerializer.SerializeAsync(stream, obj);
-            }
-
-            stream.Position = 0;
-            {
-                var readOptions = new JsonSerializerOptions
-                {
-                    DefaultBufferSize = 128,
-                    IgnoreNullValues = ignoreNullValues,
-                };
-
-                Outer<TestValueType<NestedValueType>> obj = await JsonSerializer.DeserializeAsync<Outer<TestValueType<NestedValueType>>>(stream, readOptions);
-
-                Assert.Equal(new string('x', paddingLength), obj.S);
-                Assert.Equal("Hello", obj.C.A);
-                Assert.Null(obj.C.B);
-                Assert.Equal(42, obj.C.C);
-                Assert.Null(obj.C.D);
-                Assert.Equal(3.14e17f, obj.C.E);
-                Assert.Null(obj.C.F);
-                Assert.True(obj.C.G);
-                Assert.Null(obj.C.H);
-                Assert.Collection(obj.C.I, v => Assert.Equal(42, v), v => Assert.Equal(17, v));
-                Assert.Null(obj.C.J.A);
-                Assert.Equal(7, obj.C.J.B);
-            }
-        }
-
-        [Theory]
-        [MemberData(nameof(TestData))]
-        public static async Task ContinuationShouldWorkAtAnyPosition_ClassWithParamCtor_Class(int paddingLength, bool ignoreNullValues)
-        {
-            var stream = new MemoryStream();
-            {
-                var obj = new Outer<TestClassWithParamCtor<NestedClassWithParamCtor>>
-                {
-                    S = new string('x', paddingLength),
-                    C = new(null, 42, null, 3.14e+17f, null, true, null, new int[] { 42, 17 })
-                    {
-                        A = "Hello",
-                        J = new(null)
-                        {
-                            B = 7,
-                        },
-                    },
-                };
-                await JsonSerializer.SerializeAsync(stream, obj);
-            }
-
-            stream.Position = 0;
-            {
-                var readOptions = new JsonSerializerOptions
-                {
-                    DefaultBufferSize = 128,
-                    IgnoreNullValues = ignoreNullValues,
-                };
-
-                Outer<TestClassWithParamCtor<NestedClassWithParamCtor>> obj = await JsonSerializer.DeserializeAsync<Outer<TestClassWithParamCtor<NestedClassWithParamCtor>>>(stream, readOptions);
-
-                Assert.Equal(new string('x', paddingLength), obj.S);
-                Assert.Equal("Hello", obj.C.A);
-                Assert.Null(obj.C.B);
-                Assert.Equal(42, obj.C.C);
-                Assert.Null(obj.C.D);
-                Assert.Equal(3.14e17f, obj.C.E);
-                Assert.Null(obj.C.F);
-                Assert.True(obj.C.G);
-                Assert.Null(obj.C.H);
-                Assert.Collection(obj.C.I, v => Assert.Equal(42, v), v => Assert.Equal(17, v));
-                Assert.Null(obj.C.J.A);
-                Assert.Equal(7, obj.C.J.B);
+                var outer = (IOuter)await JsonSerializer.DeserializeAsync(stream, outerType, readOptions);
+                Assert.Equal(new string('x', paddingLength), outer.S);
+                outer.Verify();
             }
         }
 
@@ -302,18 +70,85 @@ namespace System.Text.Json.Serialization.Tests
             {
                 foreach (bool ignore in IgnoreNullValues)
                 {
-                    yield return new object[] { length, ignore };
+                    foreach (Type outerType in OuterTypes)
+                    {
+                        yield return new object[] { outerType, length, ignore };
+                    }
                 }
             }
         }
 
-        private class Outer<TTest>
+        private interface IOuter
+        {
+            string S { get; set; }
+            void Initialize();
+            void Verify();
+        }
+
+        private interface ITestObject
+        {
+            string A { get; set; }
+            string B { get; set; }
+            int C { get; set; }
+            int? D { get; set; }
+            float E { get; set; }
+            float? F { get; set; }
+            bool G { get; set; }
+            bool? H { get; set; }
+            int[] I { get; set; }
+            INestedObject J { get; set; }
+        }
+
+        private interface INestedObject
+        {
+            string A { get; set; }
+            int B { get; set; }
+        }
+
+        private class Outer<TTest, TNested> : IOuter where TTest : ITestObject, new() where TNested : INestedObject, new()
         {
             public string S { get; set; }
             public TTest C { get; set; }
+
+            public void Initialize()
+            {
+                C = new()
+                {
+                    A = "Hello",
+                    B = null,
+                    C = 42,
+                    D = null,
+                    E = 3.14e+17f,
+                    F = null,
+                    G = true,
+                    H = null,
+                    I = new int[] { 42, 17 },
+                    J = new TNested()
+                    {
+                        A = null,
+                        B = 7,
+                    },
+                };
+            }
+
+            public void Verify()
+            {
+                Assert.Equal("Hello", C.A);
+                Assert.Null(C.B);
+                Assert.Equal(42, C.C);
+                Assert.Null(C.D);
+                Assert.Equal(3.14e17f, C.E);
+                Assert.Null(C.F);
+                Assert.True(C.G);
+                Assert.Null(C.H);
+                Assert.Collection(C.I, v => Assert.Equal(42, v), v => Assert.Equal(17, v));
+                Assert.NotNull(C.J);
+                Assert.Null(C.J.A);
+                Assert.Equal(7, C.J.B);
+            }
         }
 
-        private class TestClass<TNested>
+        private class TestClass<TNested> : ITestObject where TNested : INestedObject
         {
             public string A { get; set; }
             public string B { get; set; }
@@ -325,15 +160,14 @@ namespace System.Text.Json.Serialization.Tests
             public bool? H { get; set; }
             public int[] I { get; set; }
             public TNested J { get; set; }
+            INestedObject ITestObject.J
+            {
+                get => J;
+                set => J = (TNested)value;
+            }
         }
 
-        private class TestClassWithParamCtor<TNested> : TestClass<TNested>
-        {
-            public TestClassWithParamCtor(string b, int c, int? d, float e, float? f, bool g, bool? h, int[] i)
-                => (B, C, D, E, F, G, H, I) = (b, c, d, e, f, g, h, i);
-        }
-
-        private class TestValueType<TNested>
+        private class TestValueType<TNested> : ITestObject where TNested : INestedObject
         {
             public string A { get; set; }
             public string B { get; set; }
@@ -345,24 +179,69 @@ namespace System.Text.Json.Serialization.Tests
             public bool? H { get; set; }
             public int[] I { get; set; }
             public TNested J { get; set; }
+            INestedObject ITestObject.J
+            {
+                get => J;
+                set => J = (TNested)value;
+            }
         }
 
-        private class NestedClass
+        private class NestedClass : INestedObject
         {
             public string A { get; set; }
             public int B { get; set; }
+        }
+
+        public struct NestedValueType : INestedObject
+        {
+            public string A { get; set; }
+            public int B { get; set; }
+        }
+
+        private class OuterWithParamCtor : IOuter
+        {
+            public string S { get; set; }
+            public TestClassWithParamCtor C { get; set; }
+
+            public void Initialize()
+            {
+                C = new(null, 42, null, 3.14e+17f, null, true, null, new int[] { 42, 17 })
+                {
+                    A = "Hello",
+                    J = new(null)
+                    {
+                        B = 7,
+                    },
+                };
+            }
+
+            public void Verify()
+            {
+                Assert.Equal("Hello", C.A);
+                Assert.Null(C.B);
+                Assert.Equal(42, C.C);
+                Assert.Null(C.D);
+                Assert.Equal(3.14e17f, C.E);
+                Assert.Null(C.F);
+                Assert.True(C.G);
+                Assert.Null(C.H);
+                Assert.Collection(C.I, v => Assert.Equal(42, v), v => Assert.Equal(17, v));
+                Assert.NotNull(C.J);
+                Assert.Null(C.J.A);
+                Assert.Equal(7, C.J.B);
+            }
+        }
+
+        private class TestClassWithParamCtor : TestClass<NestedClassWithParamCtor>
+        {
+            public TestClassWithParamCtor(string b, int c, int? d, float e, float? f, bool g, bool? h, int[] i)
+                => (B, C, D, E, F, G, H, I) = (b, c, d, e, f, g, h, i);
         }
 
         private class NestedClassWithParamCtor : NestedClass
         {
             public NestedClassWithParamCtor(string a)
                 => A = a;
-        }
-
-        public struct NestedValueType
-        {
-            public string A { get; set; }
-            public int B { get; set; }
         }
     }
 }
