@@ -929,5 +929,4 @@ target_link_libraries(paltests
 )
 
 _install (TARGETS paltests DESTINATION paltests)
-_install (FILES paltestlist.txt DESTINATION paltests)
 _install (PROGRAMS runpaltests.sh runpaltestshelix.sh DESTINATION paltests)
