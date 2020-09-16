@@ -128,6 +128,7 @@ jobs:
         WorkItemDirectory: '$(WorkItemDirectory)' # WorkItemDirectory can not be empty, so we send it some docs to keep it happy
         CorrelationPayloadDirectory: '$(PayloadDirectory)' # it gets checked out to a folder with shorter path than WorkItemDirectory so we can avoid file name too long exceptions
         ProjectFile: ${{ parameters.projectFile }}
+        osGroup: ${{ parameters.osGroup }}
     - task: PublishPipelineArtifact@1
       displayName: Publish Logs
       inputs:
