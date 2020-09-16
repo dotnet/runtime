@@ -24,7 +24,7 @@ parameters:
 steps:
 - template: /eng/pipelines/common/templates/runtimes/send-to-helix-inner-step.yml
   parameters:
-    osGroup: $[ variables['Agent.Os'] ]
+    osGroup: $(Agent.Os)
     sendParams: $(Build.SourcesDirectory)/eng/common/performance/${{ parameters.ProjectFile }} /restore /t:Test /bl:$(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)/SendToHelix.binlog
     displayName: ${{ parameters.DisplayNamePrefix }}
     condition: ${{ parameters.condition }}
