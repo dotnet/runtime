@@ -844,7 +844,7 @@ namespace System.Xml.Xsl.Xslt
             QilName keyName = ParseQNameAttribute(0)!;
             string? match = ParseStringAttribute(1, "match");
             string? use = ParseStringAttribute(2, "use");
-            _ = ParseCollationAttribute(3);
+            ParseCollationAttribute(3);
 
             _input.MoveToElement();
 
@@ -2137,7 +2137,7 @@ namespace System.Xml.Xsl.Xslt
             string? select = ParseStringAttribute(0, "select");
             string? lang = ParseStringAttribute(1, "lang");
             string? order = ParseStringAttribute(2, "order");
-            _ = ParseCollationAttribute(3);
+            ParseCollationAttribute(3);
             TriState stable = ParseYesNoAttribute(4, "stable");
             string? caseOrder = ParseStringAttribute(5, "case-order");
             string? dataType = ParseStringAttribute(6, "data-type");

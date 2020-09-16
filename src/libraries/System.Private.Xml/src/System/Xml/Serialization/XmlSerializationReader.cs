@@ -186,8 +186,8 @@ namespace System.Xml.Serialization
         private void InitPrimitiveIDs()
         {
             if (_tokenID != null) return;
-            _ = _r.NameTable.Add(XmlSchema.Namespace);
-            _ = _r.NameTable.Add(UrtTypes.Namespace);
+            _r.NameTable.Add(XmlSchema.Namespace);
+            _r.NameTable.Add(UrtTypes.Namespace);
 
             _stringID = _r.NameTable.Add("string");
             _intID = _r.NameTable.Add("int");

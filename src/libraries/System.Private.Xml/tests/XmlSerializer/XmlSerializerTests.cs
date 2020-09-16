@@ -740,9 +740,7 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
 </TypeWithByteProperty>");
             writer.Flush();
             stream.Position = 0;
-            Assert.Throws<InvalidOperationException>(() => {
-                _ = (TypeWithByteProperty)serializer.Deserialize(stream);
-            });
+            Assert.Throws<InvalidOperationException>(() => (TypeWithByteProperty)serializer.Deserialize(stream));
         }
     }
 

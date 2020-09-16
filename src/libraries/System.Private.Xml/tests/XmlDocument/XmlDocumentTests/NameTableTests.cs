@@ -31,7 +31,7 @@ namespace System.Xml.Tests
         public static void RespectTypesDerivedFromNameTable()
         {
             var customNameTable = new CustomNameTable();
-            _ = new XmlDocument(customNameTable);
+            new XmlDocument(customNameTable);
             Assert.True(customNameTable.NumberOfCallsToAddStringMethod > 0);
         }
 

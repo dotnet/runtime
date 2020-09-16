@@ -275,7 +275,7 @@ namespace System.Xml.Xsl.Xslt
                     for (int prev = record + 1; prev < exAll; prev++)
                     {
                         string? prevPrefix;
-                        _ = GetName(ref _records[prev], out prevPrefix, out _);
+                        GetName(ref _records[prev], out prevPrefix, out _);
                         if (
                             (flags & ScopeFlags.NsDecl) != 0 &&
                             prevPrefix == recPrefix
