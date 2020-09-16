@@ -17,16 +17,16 @@ steps:
     condition: and(and(ne(${{ parameters.condition }}, false), ne(${{ parameters.sendParams }}, '')), eq(${{ parameters.osGroup }}, 'Windows_NT'))
     env: ${{ parameters.environment }}
 
-  # TODO: Remove and consolidate this when we move to arcade via init-tools.sh.
-  - script: $(Build.SourcesDirectory)/eng/common/build.sh --ci ${{ parameters.restoreParams }}
-    displayName: Restore blob feed tasks (Unix)
-    condition: ${{ and(ne(parameters.condition, false), ne(parameters.restoreParams, '')) }}
-    ${{ if eq(parameters.osGroup, 'FreeBSD') }}:
-      env:
-        # Arcade uses this SDK instead of trying to restore one.
-        DotNetCoreSdkDir: /usr/local/dotnet
+  # # TODO: Remove and consolidate this when we move to arcade via init-tools.sh.
+  # - script: $(Build.SourcesDirectory)/eng/common/build.sh --ci ${{ parameters.restoreParams }}
+  #   displayName: Restore blob feed tasks (Unix)
+  #   condition: ${{ and(ne(parameters.condition, false), ne(parameters.restoreParams, '')) }}
+  #   ${{ if eq(parameters.osGroup, 'FreeBSD') }}:
+  #     env:
+  #       # Arcade uses this SDK instead of trying to restore one.
+  #       DotNetCoreSdkDir: /usr/local/dotnet
 
-  - script: $(Build.SourcesDirectory)/eng/common/msbuild.sh --ci ${{ parameters.sendParams }}
-    displayName: ${{ parameters.displayName }} (Unix)
-    condition: ${{ and(ne(parameters.condition, false), ne(parameters.sendParams, '')) }}
-    env: ${{ parameters.environment }}
+  # - script: $(Build.SourcesDirectory)/eng/common/msbuild.sh --ci ${{ parameters.sendParams }}
+  #   displayName: ${{ parameters.displayName }} (Unix)
+  #   condition: ${{ and(ne(parameters.condition, false), ne(parameters.sendParams, '')) }}
+  #   env: ${{ parameters.environment }}
