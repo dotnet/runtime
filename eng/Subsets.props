@@ -20,20 +20,6 @@
 
         This builds and executes the installer test projects. (The '-test' argument is an Arcade SDK argument
         that indicates tests should be run. Otherwise, they'll only be built.)
-
-    Quirks:
-
-      This command looks useful, but doesn't work as expected:
-
-        ./build.sh -test /p:Subset=CoreHost-Test    # (Doesn't work!)
-
-      Intuitively, this should build the host, build the tests, then run the tests on the freshly
-      built host. What actually happens is the tests run on a previously built host. This is because
-      the depproj, pkgproj, and installer subsets process the host artifacts, and those didn't
-      rebuild because those subsets were disabled.
-
-      You can get around this limitation by running the corehost subset, manually copying host
-      artifacts to the test layout, then running the test subset.
   -->
 
   <PropertyGroup>
