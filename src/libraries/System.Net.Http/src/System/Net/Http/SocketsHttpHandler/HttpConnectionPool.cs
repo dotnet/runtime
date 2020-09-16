@@ -1286,19 +1286,41 @@ namespace System.Net.Http
             }
         }
 
-        private static readonly SocketsConnectionFactory s_defaultConnectionFactory = new SocketsConnectionFactory(SocketType.Stream, ProtocolType.Tcp);
+        private static async ValueTask<Stream> DefaultConnectAsync(SocketsHttpConnectionContext context, CancellationToken cancellationToken)
+        {
+            Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
+            socket.NoDelay = true;
+
+            try
+            {
+                await socket.ConnectAsync(context.DnsEndPoint, cancellationToken).ConfigureAwait(false);
+                return new NetworkStream(socket, ownsSocket: true);
+            }
+            catch
+            {
+                socket.Dispose();
+                throw;
+            }
+        }
+
+        private static readonly Func<SocketsHttpConnectionContext, CancellationToken, ValueTask<Stream>> s_defaultConnectCallback = DefaultConnectAsync;
 
         private ValueTask<Stream> ConnectToTcpHostAsync(string host, int port, HttpRequestMessage initialRequest, bool async, CancellationToken cancellationToken)
         {
             if (async)
             {
-                SocketsConnectionFactory connectionFactory = s_defaultConnectionFactory;
+                Func<SocketsHttpConnectionContext, CancellationToken, ValueTask<Stream>> connectCallback = Settings._connectCallback ?? s_defaultConnectCallback;
 
                 var endPoint = new DnsEndPoint(host, port);
-                return ConnectHelper.ConnectAsync(connectionFactory, endPoint, cancellationToken);
+                return ConnectHelper.ConnectAsync(connectCallback, endPoint, initialRequest, cancellationToken);
             }
 
             // Synchronous path.
+
+            if (Settings._connectCallback is not null)
+            {
+                throw new NotSupportedException(SR.net_http_sync_operations_not_allowed_with_connect_callback);
+            }
 
             try
             {

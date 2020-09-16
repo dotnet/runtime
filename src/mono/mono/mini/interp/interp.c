@@ -671,17 +671,17 @@ typedef struct {
 	InterpMethod *target_imethod;
 } InterpVTableEntry;
 
-/* domain lock must be held */
+/* memory manager lock must be held */
 static GSList*
-append_imethod (MonoDomain *domain, GSList *list, InterpMethod *imethod, InterpMethod *target_imethod)
+append_imethod (MonoMemoryManager *memory_manager, GSList *list, InterpMethod *imethod, InterpMethod *target_imethod)
 {
 	GSList *ret;
 	InterpVTableEntry *entry;
 
-	entry = (InterpVTableEntry*) mono_mempool_alloc (domain->mp, sizeof (InterpVTableEntry));
+	entry = (InterpVTableEntry*) mono_mem_manager_alloc_nolock (memory_manager, sizeof (InterpVTableEntry));
 	entry->imethod = imethod;
 	entry->target_imethod = target_imethod;
-	ret = g_slist_append_mempool (domain->mp, list, entry);
+	ret = g_slist_append_mempool (memory_manager->mp, list, entry);
 
 	return ret;
 }
@@ -726,6 +726,7 @@ static InterpMethod* // Inlining causes additional stack use in caller.
 get_virtual_method_fast (InterpMethod *imethod, MonoVTable *vtable, int offset)
 {
 	gpointer *table;
+	MonoMemoryManager *memory_manager = mono_domain_ambient_memory_manager (vtable->domain);
 
 #ifndef DISABLE_REMOTING
 	/* FIXME Remoting */
@@ -747,14 +748,14 @@ get_virtual_method_fast (InterpMethod *imethod, MonoVTable *vtable, int offset)
 	if (!table [offset]) {
 		InterpMethod *target_imethod = get_virtual_method (imethod, vtable);
 		/* Lazily initialize the method table slot */
-		mono_domain_lock (vtable->domain);
+		mono_mem_manager_lock (memory_manager);
 		if (!table [offset]) {
 			if (imethod->method->is_inflated || offset < 0)
-				table [offset] = append_imethod (vtable->domain, NULL, imethod, target_imethod);
+				table [offset] = append_imethod (memory_manager, NULL, imethod, target_imethod);
 			else
 				table [offset] = (gpointer) ((gsize)target_imethod | 0x1);
 		}
-		mono_domain_unlock (vtable->domain);
+		mono_mem_manager_unlock (memory_manager);
 	}
 
 	if ((gsize)table [offset] & 0x1) {
@@ -766,10 +767,10 @@ get_virtual_method_fast (InterpMethod *imethod, MonoVTable *vtable, int offset)
 
 		if (!target_imethod) {
 			target_imethod = get_virtual_method (imethod, vtable);
-			mono_domain_lock (vtable->domain);
+			mono_mem_manager_lock (memory_manager);
 			if (!get_target_imethod ((GSList*)table [offset], imethod))
-				table [offset] = append_imethod (vtable->domain, (GSList*)table [offset], imethod, target_imethod);
-			mono_domain_unlock (vtable->domain);
+				table [offset] = append_imethod (memory_manager, (GSList*)table [offset], imethod, target_imethod);
+			mono_mem_manager_unlock (memory_manager);
 		}
 		return target_imethod;
 	}

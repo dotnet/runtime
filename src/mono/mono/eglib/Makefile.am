@@ -6,7 +6,7 @@ SUBDIRS = . test
 
 noinst_LTLIBRARIES = libeglib.la
 
-AM_CFLAGS = $(WERROR_CFLAGS)
+AM_CFLAGS = $(SHARED_CFLAGS)
 
 win_files  = \
 	eglib-config.hw \

@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.Versioning;
+
 namespace System.Security.Cryptography
 {
     // NOTE: This is *currently* 1:1 with the enum, but it exists to reserve room for more options
@@ -10,6 +12,7 @@ namespace System.Security.Cryptography
     /// <summary>
     /// Specifies the padding mode  and parameters to use with RSA signature creation or verification operations.
     /// </summary>
+    [UnsupportedOSPlatform("browser")]
     public sealed class RSASignaturePadding : IEquatable<RSASignaturePadding>
     {
         private static readonly RSASignaturePadding s_pkcs1 = new RSASignaturePadding(RSASignaturePaddingMode.Pkcs1);

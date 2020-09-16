@@ -129,6 +129,10 @@ namespace Internal.Cryptography.Pal.Windows
 
                 if (keySpec == CryptKeySpec.CERT_NCRYPT_KEY_SPEC)
                 {
+#if NETSTANDARD || NETCOREAPP
+                    Debug.Assert(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
+#endif
+
                     using (SafeNCryptKeyHandle keyHandle = new SafeNCryptKeyHandle(handle.DangerousGetHandle(), handle))
                     {
                         CngKeyHandleOpenOptions options = CngKeyHandleOpenOptions.None;

@@ -1,4 +1,387 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="../coreclr/tests/src/Directory.Build.targets" />
+  <!--
+    Common files don't take part in the root tests\src\Directory.Build.targets
+    This file prevents them from including it as it gets included in its place
+    If they ever need to take part, we can conditionally include them as documented
+    here https://docs.microsoft.com/en-us/visualstudio/msbuild/customize-your-build#directorybuildprops-and-directorybuildtargets
+  -->
+  <Import Project="$(RepoRoot)src/coreclr/tests/disableversioncheck.targets"
+          Condition="'$(DisableVersionCheckImported)' != 'true'" />
+
+  <!-- Default priority building values. -->
+  <PropertyGroup>
+    <CLRTestKind Condition="'$(CLRTestKind)' == '' and '$(OutputType)' == 'Library'">SharedLibrary</CLRTestKind>
+    <CLRTestKind Condition="'$(CLRTestKind)' == ''">BuildAndRun</CLRTestKind>
+    <CLRTestPriority Condition="'$(CLRTestPriority)' == ''">0</CLRTestPriority>
+  </PropertyGroup>
+
+  <!-- All CLRTests need to be of a certain "kind". These kinds are enumerated below.
+  By default all tests are BuildAndRun. This means that the build system will Build them
+  and construct a run-batch-script for them. -->
+  <Choose>
+    <When Condition=" '$(CLRTestKind)'=='SharedLibrary'">
+      <PropertyGroup>
+        <_CLRTestCompilesSource>true</_CLRTestCompilesSource>
+        <_CLRTestNeedsToRun>false</_CLRTestNeedsToRun>
+        <GenerateRunScript>false</GenerateRunScript>
+        <_CLRTestBuildsExecutable>false</_CLRTestBuildsExecutable>
+      </PropertyGroup>
+    </When>
+    <When Condition=" '$(CLRTestKind)'=='BuildAndRun' ">
+      <PropertyGroup>
+        <GenerateRunScript>true</GenerateRunScript>
+        <_CLRTestNeedsToRun>true</_CLRTestNeedsToRun>
+        <_CLRTestCompilesSource>true</_CLRTestCompilesSource>
+        <_CLRTestBuildsExecutable>true</_CLRTestBuildsExecutable>
+      </PropertyGroup>
+    </When>
+    <When Condition=" '$(CLRTestKind)'=='BuildOnly'">
+      <PropertyGroup>
+        <_CLRTestNeedsToRun>false</_CLRTestNeedsToRun>
+        <GenerateRunScript>false</GenerateRunScript>
+        <_CLRTestCompilesSource>true</_CLRTestCompilesSource>
+        <_CLRTestBuildsExecutable>true</_CLRTestBuildsExecutable>
+      </PropertyGroup>
+    </When>
+    <When Condition=" '$(CLRTestKind)'=='RunOnly' ">
+      <PropertyGroup>
+        <GenerateRunScript>true</GenerateRunScript>
+        <SkipSigning>true</SkipSigning>
+        <_CLRTestBuildsExecutable>false</_CLRTestBuildsExecutable>
+        <_CLRTestNeedsToRun>true</_CLRTestNeedsToRun>
+        <_CLRTestCompilesSource>false</_CLRTestCompilesSource>
+      </PropertyGroup>
+    </When>
+  </Choose>
+
+  <PropertyGroup>
+    <_CLRTestNeedsProjectToRun>false</_CLRTestNeedsProjectToRun>
+    <_CLRTestNeedsProjectToRun Condition=" '$(_CLRTestNeedsToRun)' and '!$(_CLRTestBuildsExecutable)' ">true</_CLRTestNeedsProjectToRun>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!-- Since bug in Roslyn for Linux empty DebugType property leads to build failure. See issue Roslyn@20343 -->
+    <DebugType Condition=" '$(DebugType)' == '' and '$(RunningOnUnix)' == 'true' ">None</DebugType>
+  </PropertyGroup>
+
+  <!--
+  If it needs ProjectToRun, turn the project into a ProjectReference so it gets built
+  -->
+  <ItemGroup Condition=" $(_CLRTestNeedsProjectToRun) ">
+    <ProjectReference Include="$(CLRTestProjectToRun)">
+      <Private>false</Private>
+    </ProjectReference>
+  </ItemGroup>
+
+  <Import Project="$(RepoRoot)src\coreclr\tests\Directory.Build.targets" />
+
+  <!-- Determine if this project should be built or not -->
+  <PropertyGroup>
+    <BuildAllProjects Condition="'$(BuildAllProjects)' == ''">false</BuildAllProjects>
+    <_WillCLRTestProjectBuild Condition="'$(_WillCLRTestProjectBuild)' == ''">false</_WillCLRTestProjectBuild>
+    <_WillCLRTestProjectBuild Condition="'$(BuildAllProjects)' != 'true'">true</_WillCLRTestProjectBuild>
+    <_WillCLRTestProjectBuild Condition="'$(BuildAllProjects)' == 'true' And '$(CLRTestPriority)' &lt;= '$(CLRTestPriorityToBuild)'">true</_WillCLRTestProjectBuild>
+    <_WillCLRTestProjectBuild Condition="'$(CLRTestBuildAllTargets)' != 'allTargets' And '$(CLRTestTargetUnsupported)' == 'true'">false</_WillCLRTestProjectBuild>
+    <_WillCLRTestProjectBuild Condition="'$(DisableProjectBuild)' == 'true'">false</_WillCLRTestProjectBuild>
+  </PropertyGroup>
+  <PropertyGroup>
+    <_CopyNativeProjectBinaries>$(CopyNativeProjectBinaries)</_CopyNativeProjectBinaries>
+    <_CopyNativeProjectBinaries Condition="'$(_WillCLRTestProjectBuild)' != 'true'">false</_CopyNativeProjectBinaries>
+    <_CopyNativeProjectBinaries Condition="'$(_CopyNativeProjectBinaries)' == ''">true</_CopyNativeProjectBinaries>
+  </PropertyGroup>
+
+  <!-- if we have determined that there is nothing to build, overwrite the build targets so that nothing happens -->
+  <Import Project="$(MSBuildThisFileDirectory)Common\nobuild.targets" Condition="'$(_WillCLRTestProjectBuild)' == 'false'" />
+
+  <!-- RunOnly projects have a special build for dependent projects -->
+  <Import Project="$(MSBuildThisFileDirectory)Common\runonly.targets" Condition="'$(CLRTestKind)' == 'RunOnly'" />
+
+  <Import Project="$(RepoRoot)src\coreclr\tests\override.targets" />
+
+  <!-- We enable auto-unification of assembly references after importing the common targets.  Binding redirects are not needed
+       for coreclr since it auto-unifies, so the warnings we get without this setting are just noise -->
+  <PropertyGroup>
+    <AutoUnifyAssemblyReferences>true</AutoUnifyAssemblyReferences>
+  </PropertyGroup>
+
+  <!-- Project language -->
+  <!-- TODO: This might just be the Language property -->
+  <PropertyGroup Condition="'$(ProjectLanguage)' == ''">
+    <ProjectLanguage Condition="'$(MSBuildProjectExtension)' == '.ilproj' OR '$(Language)' == 'IL'">IL</ProjectLanguage>
+    <ProjectLanguage Condition="'$(MSBuildProjectExtension)' == '.csproj' OR '$(Language)' == 'C#' OR '$(ProjectLanguage)'==''">CSharp</ProjectLanguage>
+
+    <SkipImportILTargets Condition="'$(CLRTestPriority)' &gt; '$(CLRTestPriorityToBuild)'">true</SkipImportILTargets>
+    <SkipImportILTargets Condition="'$(CLRTestBuildAllTargets)' != '' And '$(CLRTestNeedTarget)' != '$(CLRTestBuildAllTargets)'">true</SkipImportILTargets>
+  </PropertyGroup>
+
+  <Target Name="CopyNativeProjectBinaries" Condition="'$(_CopyNativeProjectBinaries)' == 'true'">
+
+     <ItemGroup>
+        <NativeProjectBinaries Condition="'$(RunningOnUnix)' != 'true'" Include="$(NativeProjectOutputFolder)\**\*.*" />
+
+        <!-- ############################################################### -->
+        <!-- The following is unix only. It is required because the unix test-->
+        <!-- build, unlike the windows test build, do not place the binaries -->
+        <!-- built into a separate Debug/Checked/Release directory. Therefore-->
+        <!-- we must filter the folder to only include dynamic libraries,    -->
+        <!-- static libraries and executables.                               -->
+        <!--                                                                 -->
+        <!-- Please take care when modifying the following lines of code.    -->
+        <!-- At a minimum to test any changes to the below, please run a     -->
+        <!-- pri1 test build.                                                -->
+        <!-- ############################################################### -->
+
+        <!-- Include everything and then filter. -->
+        <NativeProjectBinariesMatched Condition="'$(RunningOnUnix)' == 'true'" Include="$(NativeProjectOutputFolder)\**\*.*" />
+
+        <!-- Filter executables on unix -->
+        <NativeProjectBinariesExeFilter Condition="'$(RunningOnUnix)' == 'true' and $([System.Text.RegularExpressions.Regex]::IsMatch(['%(Identity)', `(.*\/)([^.]+)$`))" Include="@(NativeProjectBinariesMatched)" />
+        <!-- Filter out the *Make* files -->
+        <NativeProjectBinariesExeFilterRemovedMakeFile Condition="'$(RunningOnUnix)' == 'true' and !$([System.Text.RegularExpressions.Regex]::IsMatch(['%(Identity)', `.*Makefile.*`))" Include="@(NativeProjectBinariesExeFilter)" />
+
+        <!-- Filter out the CMakeFiles files -->
+        <NativeProjectBinariesExeFilterRemovedCMakeFile Condition="'$(RunningOnUnix)' == 'true' and !$([System.Text.RegularExpressions.Regex]::IsMatch(['%(Identity)', `.*CMakeFiles.*`))" Include="@(NativeProjectBinariesExeFilterRemovedMakeFile)" />
+
+        <!-- Filter .dylib files on OSX -->
+        <NativeProjectBinariesDyLibFilter Condition="'$(TargetOS)' == 'OSX' and $([System.Text.RegularExpressions.Regex]::IsMatch(['%(Identity)', `(.*\/).*\.dylib`))" Include="@(NativeProjectBinariesMatched)" />
+
+        <!-- Filter .so files on non-OSX Unix -->
+        <NativeProjectBinariesDyLibFilter Condition="'$(RunningOnUnix)' == 'true' and '$(TargetOS)' != 'OSX' and $([System.Text.RegularExpressions.Regex]::IsMatch(['%(Identity)', `(.*\/).*\.so`))" Include="@(NativeProjectBinariesMatched)" />
+
+        <!-- Filter static lib files on Unix -->
+        <NativeProjectBinariesStaticLibFilter Condition="'$(RunningOnUnix)' == 'true' and $([System.Text.RegularExpressions.Regex]::IsMatch(['%(Identity)', `(.*\/).*\.a`))" Include="@(NativeProjectBinariesMatched)" />
+
+        <!-- Merge the filtered lists -->
+        <NativeProjectBinaries Condition="'$(RunningOnUnix)' == 'true'" Include="@(NativeProjectBinariesExeFilterRemovedCMakeFile)" />
+        <NativeProjectBinaries Condition="'$(RunningOnUnix)' == 'true'" Include="@(NativeProjectBinariesDyLibFilter)" />
+        <NativeProjectBinaries Condition="'$(RunningOnUnix)' == 'true'" Include="@(NativeProjectBinariesStaticLibFilter)" />
+
+     </ItemGroup>
+
+     <!-- There are currently no native project binaries on wasm -->
+     <Error  Text="The native project files are missing in $(NativeProjectOutputFolder) please run build from the root of the repo at least once"
+             Condition="'@(NativeProjectBinaries)' == '' And '$(TargetArchitecture)' != 'wasm'" />
+
+     <Copy
+        SourceFiles="@(NativeProjectBinaries)"
+        DestinationFiles="@(NativeProjectBinaries -> '$(OutDir)%(Filename)%(Extension)')"
+        SkipUnchangedFiles="$(SkipCopyUnchangedFiles)"
+        OverwriteReadOnlyFiles="$(OverwriteReadOnlyFiles)"
+        Retries="$(CopyRetryCount)"
+        RetryDelayMilliseconds="$(CopyRetryDelayMilliseconds)"
+        UseHardlinksIfPossible="$(CreateHardLinksForCopyFilesToOutputDirectoryIfPossible)">
+        <Output TaskParameter="DestinationFiles" ItemName="FileWrites" />
+     </Copy>
+  </Target>
+
+  <Target Name="ResolveCmakeNativeProjectReference"
+          Condition="'@(ProjectReference)' != ''"
+          BeforeTargets="ConsolidateNativeProjectReference;BeforeResolveReferences;BeforeClean" >
+     <ItemGroup>
+        <NativeProjectReference Include="%(ProjectReference.Identity)" Condition="$([System.String]::Copy(%(ProjectReference.FileName)).ToUpper()) == 'CMAKELISTS'" />
+        <ProjectReference Remove="%(NativeProjectReference.Identity)" />
+        <NativeProjectReferenceNormalized Include="@(NativeProjectReference -> '%(FullPath)')" />
+     </ItemGroup>
+  </Target>
+
+  <Target Name="ConsolidateNativeProjectReference"
+          Condition="'$(_CopyNativeProjectBinaries)' == 'true'"
+          BeforeTargets="Build" >
+     <ItemGroup Condition="'@(NativeProjectReferenceNormalized)' != ''">
+        <NativeProjectOutputFoldersToCopy Include="$([System.String]::Copy('%(NativeProjectReferenceNormalized.RelativeDir)').Replace($(TestSourceDir),$(__NativeTestIntermediatesDir)\))" Condition="'$(RunningOnUnix)' == 'true'" />
+        <NativeProjectOutputFoldersToCopy Include="$([System.String]::Copy('%(NativeProjectReferenceNormalized.RelativeDir)').Replace($(TestSourceDir),$(__NativeTestIntermediatesDir)\))$(Configuration)\" Condition="'$(RunningOnUnix)' != 'true'" />
+     </ItemGroup>
+
+    <Message Text= "Full native project references are :%(NativeProjectReferenceNormalized.Identity)" />
+    <Message Text= "Native binaries will be copied from :%(NativeProjectOutputFoldersToCopy.Identity)" />
+
+    <MSBuild Projects="$(MSBuildProjectFile)" Targets="CopyNativeProjectBinaries" Properties="NativeProjectOutputFolder=%(NativeProjectOutputFoldersToCopy.Identity)" Condition="'@(NativeProjectReference)' != ''" />
+
+  </Target>
+
+  <Target Name="CopyAllNativeProjectReferenceBinaries" DependsOnTargets="ResolveCmakeNativeProjectReference;ConsolidateNativeProjectReference" />
+
+  <!-- Build shell or command scripts whenever we copy native binaries -->
+  <Import Project="$(MSBuildThisFileDirectory)Common\CLRTest.Execute.targets" />
+  <Target Name="CreateExecuteScript"
+          BeforeTargets="Build;CopyAllNativeProjectReferenceBinaries"
+          Condition="'$(CLRTestBuildAllTargets)' != 'allTargets' And '$(GenerateRunScript)' != 'false' And ('$(_WillCLRTestProjectBuild)' == 'true')"
+          DependsOnTargets="GenerateExecutionScriptsInternal" />
+
+  <Target Name="UpdateReferenceItems"
+          BeforeTargets="BeforeResolveReferences"
+  >
+   <MSBuild Projects="$(MSBuildProjectFullPath)"
+            Targets="GetLiveRefAssemblies"
+            Condition="'$(ReferenceSystemPrivateCoreLib)' != 'true'">
+    <Output TaskParameter="TargetOutputs" ItemName="Reference" />
+   </MSBuild>
+
+    <ItemGroup>
+      <Reference Include="$(TargetingPackPath)/*.dll" >
+        <Private>false</Private>
+      </Reference>
+    </ItemGroup>
+
+  </Target>
+
+  <Target Name="GetLiveRefAssemblies" Returns="@(LibrariesRefAssembliesDlls)"
+          DependsOnTargets="ResolveLibrariesFromLocalBuild">
+    <ItemGroup>
+      <LibrariesRefAssembliesDlls Include="@(LibrariesRefAssemblies)" Condition="'%(Extension)' == '.dll'" Private="false" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="AfterBuild">
+     <Copy SourceFiles="$(AssemblyName).reflect.xml"
+           DestinationFolder="$(OutputPath)"
+       Condition="Exists('$(AssemblyName).reflect.xml')"/>
+  </Target>
+
+  <PropertyGroup>
+    <ProjectAssetsFile>$(RepoRoot)src\tests\Common\test_dependencies\obj\project.assets.json</ProjectAssetsFile>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(ReferenceSystemPrivateCoreLib)' == 'true' and '$(UsingMicrosoftNETSdk)' != 'true'">
+    <ProjectAssetsFile></ProjectAssetsFile>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <IncludeOOBLibraries>true</IncludeOOBLibraries>
+    <LibrariesConfiguration>Release</LibrariesConfiguration>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <KnownFrameworkReference Remove="Microsoft.AspNetCore.App" />
+    <KnownFrameworkReference Remove="Microsoft.WindowsDesktop.App" />
+  </ItemGroup>
+
+  <Target Name="CopyDependencyToCoreRoot"
+          DependsOnTargets="ResolveAssemblyReferences;ResolveRuntimeFilesFromLocalBuild">
+
+    <ItemGroup>
+      <RunTimeDependencyExclude Include="$(CORE_ROOT)\**\*.*"  />
+      <RunTimeDependencyExcludeFiles Include="@(RunTimeDependencyExclude -> '%(FileName)%(Extension)')" />
+      <RunTimeDependencyExcludeFiles Include="@(RunTimeDependencyExclude -> '%(FileName).ni%(Extension)')" />
+      <RunTimeDependencyExcludeFiles Include="@(RunTimeDependencyExclude -> '%(FileName).pdb')" />
+
+      <AllResolvedRuntimeDependencies Include="@(RuntimeCopyLocalItems -> '%(FileName)%(Extension)');@(NativeCopyLocalItems -> '%(FileName)%(Extension)')">
+        <File>%(Identity)</File>
+      </AllResolvedRuntimeDependencies>
+      
+      <RunTimeDependencyCopyLocalFile Include="@(AllResolvedRuntimeDependencies)"  Exclude="@(RunTimeDependencyExcludeFiles)"/>
+      <RunTimeDependencyCopyLocal Include="@(RunTimeDependencyCopyLocalFile -> '%(File)')"  />
+      <RunTimeDependencyCopyLocal Include="$(TargetingPackPath)/*" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <RunTimeArtifactsExcludeFiles Include="PDB/createdump.pdb" />
+      <RunTimeArtifactsExcludeFiles Include="PDB/dbgshim.pdb" />
+      <RunTimeArtifactsExcludeFiles Include="PDB/linuxonjit.pdb" />
+      <RunTimeArtifactsExcludeFiles Include="PDB/mcs.pdb" />
+      <RunTimeArtifactsExcludeFiles Include="PDB/mscordaccore.pdb" />
+      <RunTimeArtifactsExcludeFiles Include="PDB/mscordbi.pdb" />
+      <RunTimeArtifactsExcludeFiles Include="PDB/mscorrc.pdb" />
+      <RunTimeArtifactsExcludeFiles Include="PDB/protononjit.pdb" />
+      <RunTimeArtifactsExcludeFiles Include="PDB/superpmi.pdb" />
+      <RunTimeArtifactsExcludeFiles Include="PDB/superpmi-shim-collector.pdb" />
+      <RunTimeArtifactsExcludeFiles Include="PDB/superpmi-shim-counter.pdb" />
+      <RunTimeArtifactsExcludeFiles Include="PDB/superpmi-shim-simple.pdb" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(MinimalCoreRoot)' == 'true'">
+      <RunTimeArtifactsExcludeFiles Include="PDB/ilasm.pdb" />
+      <RunTimeArtifactsExcludeFiles Include="PDB/ildasm.pdb" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <RunTimeArtifactsIncludeFolders Include="/" />
+
+      <!-- Used by the Crossgen comparison job -->
+      <RunTimeArtifactsIncludeFolders Include="IL/" />
+
+      <!-- Used for Crossgen2 R2R tests -->
+      <RunTimeArtifactsIncludeFolders Include="crossgen2/">
+        <IncludeSubFolders>True</IncludeSubFolders>
+      </RunTimeArtifactsIncludeFolders>
+
+      <!-- Used for capturing symbolic stack traces using Watson -->
+      <RunTimeArtifactsIncludeFolders Include="PDB/" />
+
+      <!-- Used by the coreroot_determinism test -->
+      <RunTimeArtifactsIncludeFolders Include="R2RTest/">
+        <IncludeSubFolders>True</IncludeSubFolders>
+      </RunTimeArtifactsIncludeFolders>
+    </ItemGroup>
+
+    <ItemGroup>
+      <!-- Add binary dependencies to copy-local items -->
+      <RunTimeDependencyCopyLocal
+          Condition="'%(RuntimeArtifactsIncludeFolders.IncludeSubFolders)' != 'True'"
+          Include="$(CoreCLRArtifactsPath)%(RunTimeArtifactsIncludeFolders.Identity)*"
+          Exclude="@(RunTimeArtifactsExcludeFiles -> '$(CoreCLRArtifactsPath)%(Identity)')"
+          TargetDir="%(RunTimeArtifactsIncludeFolders.Identity)" />
+
+      <RunTimeDependencyCopyLocal
+          Condition="'%(RuntimeArtifactsIncludeFolders.IncludeSubFolders)' == 'True'"
+          Include="$(CoreCLRArtifactsPath)%(RunTimeArtifactsIncludeFolders.Identity)**/*"
+          Exclude="@(RunTimeArtifactsExcludeFiles -> '$(CoreCLRArtifactsPath)%(Identity)')"
+          TargetDir="%(RunTimeArtifactsIncludeFolders.Identity)" />
+
+
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(TargetArchitecture)' == 'wasm'">
+        <RunTimeDependencyCopyLocal
+          Include="@(RuntimeFiles)"
+          TargetDir="runtimepack/native/"/>
+
+        <!-- This throws everything in 'native', include many non-native assemblies.
+             This is done because LibrariesRuntimeFiles includes some .js files that
+             WasmAppBuilder expects in native/-->
+        <RunTimeDependencyCopyLocal
+          Include="@(LibrariesRuntimeFiles)"
+          TargetDir="runtimepack/native/"/>
+
+       <RunTimeDependencyCopyLocal
+          Include="$(ArtifactsDir)\TargetingPack\**"
+          TargetDir="TargetingPack/"/>
+
+        <!-- Wasm App Builder always builds in Debug -->
+        <RunTimeDependencyCopyLocal
+          Include="$(ArtifactsBinDir)\WasmAppBuilder\Debug\$(NetCoreAppCurrent)\publish\**"
+          TargetDir="WasmAppBuilder/"/>
+
+        <RunTimeDependencyCopyLocal
+          Include="$(RepoRoot)\src\tests\Common\wasm-test-runner\WasmTestRunner.proj"
+          TargetDir="wasm-test-runner/"/>
+  
+        <RunTimeDependencyCopyLocal
+          Include="$(MonoProjectRoot)\wasm\runtime-test.js"
+          TargetDir="runtime-test/"/>
+    </ItemGroup>
+
+    <Copy
+      SourceFiles="@(RunTimeDependencyCopyLocal)"
+      DestinationFiles="@(RunTimeDependencyCopyLocal -> '$(CORE_ROOT)/%(TargetDir)%(RecursiveDir)%(Filename)%(Extension)')"
+      SkipUnchangedFiles="$(SkipCopyUnchangedFiles)"
+      OverwriteReadOnlyFiles="$(OverwriteReadOnlyFiles)"
+      Retries="$(CopyRetryCount)"
+      RetryDelayMilliseconds="$(CopyRetryDelayMilliseconds)"
+      UseHardlinksIfPossible="$(CreateHardLinksForCopyFilesToOutputDirectoryIfPossible)">
+      <Output TaskParameter="DestinationFiles" ItemName="FileWrites" />
+    </Copy>
+
+  </Target>
+
+  <Import Project="$(RepoRoot)eng/liveBuilds.targets" />
+  <Import Project="$(MSBuildProjectFullPath).targets" Condition="Exists('$(MSBuildProjectFullPath).targets')"/>
+
+  <Import Project="$(RepoRoot)src\coreclr\clr.featuredefines.props" />
+
 </Project>
