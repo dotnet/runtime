@@ -116,7 +116,7 @@ namespace DebuggerTests
     {
         protected Task startTask;
 
-        static string FindTestPath()
+        static protected string FindTestPath()
         {
             //FIXME how would I locate it otherwise?
             var test_path = Environment.GetEnvironmentVariable("TEST_SUITE_PATH");
