@@ -240,7 +240,7 @@ ensure_runtime_is_suspended (void)
 }
 
 static int 
-get_object_id(MonoObject *obj) 
+get_object_id (MonoObject *obj) 
 {
 	ObjRef *ref;
 	if (!obj)
