@@ -9,6 +9,7 @@
 //
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
@@ -5469,39 +5470,7 @@ namespace System.Threading.Tasks
         /// <exception cref="System.ArgumentException">
         /// The <paramref name="tasks"/> collection contained a null task.
         /// </exception>
-        public static Task WhenAll(IEnumerable<Task> tasks)
-        {
-            // Take a more efficient path if tasks is actually an array
-            if (tasks is Task[] taskArray)
-            {
-                return WhenAll(taskArray);
-            }
-
-            // Skip a List allocation/copy if tasks is a collection
-            if (tasks is ICollection<Task> taskCollection)
-            {
-                int index = 0;
-                taskArray = new Task[taskCollection.Count];
-                foreach (Task task in tasks)
-                {
-                    if (task == null) ThrowHelper.ThrowArgumentException(ExceptionResource.Task_MultiTaskContinuation_NullTask, ExceptionArgument.tasks);
-                    taskArray[index++] = task;
-                }
-                return InternalWhenAll(taskArray);
-            }
-
-            // Do some argument checking and convert tasks to a List (and later an array).
-            if (tasks == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
-            List<Task> taskList = new List<Task>();
-            foreach (Task task in tasks)
-            {
-                if (task == null) ThrowHelper.ThrowArgumentException(ExceptionResource.Task_MultiTaskContinuation_NullTask, ExceptionArgument.tasks);
-                taskList.Add(task);
-            }
-
-            // Delegate the rest to InternalWhenAll()
-            return InternalWhenAll(taskList.ToArray());
-        }
+        public static Task WhenAll(IEnumerable<Task> tasks) => new WhenAllPromise(tasks);
 
         /// <summary>
         /// Creates a task that will complete when all of the supplied tasks have completed.
@@ -5530,35 +5499,7 @@ namespace System.Threading.Tasks
         /// <exception cref="System.ArgumentException">
         /// The <paramref name="tasks"/> array contained a null task.
         /// </exception>
-        public static Task WhenAll(params Task[] tasks)
-        {
-            // Do some argument checking and make a defensive copy of the tasks array
-            if (tasks == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
-
-            int taskCount = tasks.Length;
-            if (taskCount == 0) return InternalWhenAll(tasks); // Small optimization in the case of an empty array.
-
-            Task[] tasksCopy = new Task[taskCount];
-            for (int i = 0; i < taskCount; i++)
-            {
-                Task task = tasks[i];
-                if (task == null) ThrowHelper.ThrowArgumentException(ExceptionResource.Task_MultiTaskContinuation_NullTask, ExceptionArgument.tasks);
-                tasksCopy[i] = task;
-            }
-
-            // The rest can be delegated to InternalWhenAll()
-            return InternalWhenAll(tasksCopy);
-        }
-
-        // Some common logic to support WhenAll() methods
-        // tasks should be a defensive copy.
-        private static Task InternalWhenAll(Task[] tasks)
-        {
-            Debug.Assert(tasks != null, "Expected a non-null tasks array");
-            return (tasks.Length == 0) ? // take shortcut if there are no tasks upon which to wait
-                Task.CompletedTask :
-                new WhenAllPromise(tasks);
-        }
+        public static Task WhenAll(params Task[] tasks) => new WhenAllPromise(tasks);
 
         // A Task that gets completed when all of its constituent tasks complete.
         // Completion logic will analyze the antecedents in order to choose completion status.
@@ -5570,22 +5511,18 @@ namespace System.Threading.Tasks
         // which involves several allocations, with this logic:
         //      return new WhenAllPromise(tasksCopy);
         // which saves a couple of allocations and enables debugger notification specialization.
-        //
-        // Used in InternalWhenAll(Task[])
         private sealed class WhenAllPromise : Task, ITaskCompletionAction
         {
-            /// <summary>
-            /// Stores all of the constituent tasks.  Tasks clear themselves out of this
-            /// array as they complete, but only if they don't have their wait notification bit set.
-            /// </summary>
-            private readonly Task?[] m_tasks;
             /// <summary>The number of tasks remaining to complete.</summary>
             private int m_count;
+            /// <summary>The tasks that faulted.</summary>
+            private ConcurrentQueue<Task>? m_faultedTasks;
+            /// <summary>The first task that got canceled.</summary>
+            private Task? m_canceledTask;
 
-            internal WhenAllPromise(Task[] tasks)
+            internal WhenAllPromise(IEnumerable<Task?>? tasks)
             {
-                Debug.Assert(tasks != null, "Expected a non-null task array");
-                Debug.Assert(tasks.Length > 0, "Expected a non-zero length task array");
+                if (tasks == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
 
                 if (TplEventSource.Log.IsEnabled())
                     TplEventSource.Log.TraceOperationBegin(this.Id, "Task.WhenAll", 0);
@@ -5593,13 +5530,18 @@ namespace System.Threading.Tasks
                 if (s_asyncDebuggingEnabled)
                     AddToActiveTasks(this);
 
-                m_tasks = tasks;
-                m_count = tasks.Length;
-
-                foreach (Task task in tasks)
+                int count = 0;
+                foreach (Task? task in tasks)
                 {
+                    if (task == null) ThrowHelper.ThrowArgumentException(ExceptionResource.Task_MultiTaskContinuation_NullTask, ExceptionArgument.tasks);
                     if (task.IsCompleted) this.Invoke(task); // short-circuit the completion action, if possible
                     else task.AddCompletionAction(this); // simple completion action
+                    count += 1;
+                }
+
+                if ((m_count = Interlocked.Add(ref m_count, count)) == 0) // Condition is true if all tasks already completed
+                {
+                    this.Complete();
                 }
             }
 
@@ -5608,62 +5550,25 @@ namespace System.Threading.Tasks
                 if (TplEventSource.Log.IsEnabled())
                     TplEventSource.Log.TraceOperationRelation(this.Id, CausalityRelation.Join);
 
+                if (completedTask.IsFaulted)
+                {
+                    if (m_faultedTasks == null)
+                    {
+                        Interlocked.CompareExchange(ref m_faultedTasks, new ConcurrentQueue<Task>(), null);
+                    }
+
+                    m_faultedTasks.Enqueue(completedTask);
+                }
+                else if (completedTask.IsCanceled)
+                {
+                    Interlocked.CompareExchange(ref m_canceledTask, completedTask, null); // Use the first task that is canceled
+                }
+
                 // Decrement the count, and only continue to complete the promise if we're the last one.
                 if (Interlocked.Decrement(ref m_count) == 0)
                 {
-                    // Set up some accounting variables
-                    List<ExceptionDispatchInfo>? observedExceptions = null;
-                    Task? canceledTask = null;
-
-                    // Loop through antecedents:
-                    //   If any one of them faults, the result will be faulted
-                    //   If none fault, but at least one is canceled, the result will be canceled
-                    //   If none fault or are canceled, then result will be RanToCompletion
-                    for (int i = 0; i < m_tasks.Length; i++)
-                    {
-                        Task? task = m_tasks[i];
-                        Debug.Assert(task != null, "Constituent task in WhenAll should never be null");
-
-                        if (task.IsFaulted)
-                        {
-                            observedExceptions ??= new List<ExceptionDispatchInfo>();
-                            observedExceptions.AddRange(task.GetExceptionDispatchInfos());
-                        }
-                        else if (task.IsCanceled)
-                        {
-                            canceledTask ??= task; // use the first task that's canceled
-                        }
-
-                        // Regardless of completion state, if the task has its debug bit set, transfer it to the
-                        // WhenAll task.  We must do this before we complete the task.
-                        if (task.IsWaitNotificationEnabled) this.SetNotificationForWaitCompletion(enabled: true);
-                        else m_tasks[i] = null; // avoid holding onto tasks unnecessarily
-                    }
-
-                    if (observedExceptions != null)
-                    {
-                        Debug.Assert(observedExceptions.Count > 0, "Expected at least one exception");
-
-                        // We don't need to TraceOperationCompleted here because TrySetException will call Finish and we'll log it there
-
-                        TrySetException(observedExceptions);
-                    }
-                    else if (canceledTask != null)
-                    {
-                        TrySetCanceled(canceledTask.CancellationToken, canceledTask.GetCancellationExceptionDispatchInfo());
-                    }
-                    else
-                    {
-                        if (TplEventSource.Log.IsEnabled())
-                            TplEventSource.Log.TraceOperationEnd(this.Id, AsyncCausalityStatus.Completed);
-
-                        if (s_asyncDebuggingEnabled)
-                            RemoveFromActiveTasks(this);
-
-                        TrySetResult();
-                    }
+                    this.Complete();
                 }
-                Debug.Assert(m_count >= 0, "Count should never go below 0");
             }
 
             public bool InvokeMayRunArbitraryCode => true;
@@ -5675,6 +5580,41 @@ namespace System.Threading.Tasks
             internal override bool ShouldNotifyDebuggerOfWaitCompletion =>
                 base.ShouldNotifyDebuggerOfWaitCompletion &&
                 AnyTaskRequiresNotifyDebuggerOfWaitCompletion(m_tasks);
+
+            private void Complete()
+            {
+                // If any one of the tasks faults, the result will be faulted
+                // If none of the tasks fault, but at least one is canceled, the result will be canceled
+                // If none of the tasks fault or are canceled, then result will be RanToCompletion
+                if (m_faultedTasks != null)
+                {
+                    Debug.Assert(observedExceptions.Count > 0, "Expected at least one exception");
+
+                    // We don't need to TraceOperationCompleted here because TrySetException will call Finish and we'll log it there
+
+                    var observedExceptions = new List<ExceptionDispatchInfo>();
+                    foreach (Task faultedTask in m_faultedTasks)
+                    {
+                        observedExceptions.AddRange(faultedTask.GetCancellationExceptionDispatchInfo());
+                    }
+
+                    TrySetException(observedExceptions);
+                }
+                else if (m_canceledTask != null)
+                {
+                    TrySetCanceled(m_canceledTask.CancellationToken, m_canceledTask.GetCancellationExceptionDispatchInfo());
+                }
+                else
+                {
+                    if (TplEventSource.Log.IsEnabled())
+                        TplEventSource.Log.TraceOperationEnd(this.Id, AsyncCausalityStatus.Completed);
+
+                    if (s_asyncDebuggingEnabled)
+                        RemoveFromActiveTasks(this);
+
+                    TrySetResult();
+                }
+            }
         }
 
         /// <summary>
