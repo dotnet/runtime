@@ -517,12 +517,12 @@ namespace System.ServiceModel.Syndication.Tests
                 Assert.Null(fifthDocument.Language);
                 Assert.Equal(new Uri("http://emptyelement_link.com"), fifthDocument.Link);
 
-                Assert.IsType<ReferencedCategoriesDocument>(secondCollection.Categories[5]);
-                Assert.Empty(fifthDocument.AttributeExtensions);
-                Assert.Equal(new Uri("http://resourcecollectioninfo_url.com/relative_link"), fifthDocument.BaseUri);
-                Assert.Empty(fifthDocument.ElementExtensions);
-                Assert.Null(fifthDocument.Language);
-                Assert.Equal(new Uri("http://emptyelement_link.com"), fifthDocument.Link);
+                ReferencedCategoriesDocument sixthDocument = Assert.IsType<ReferencedCategoriesDocument>(secondCollection.Categories[5]);
+                Assert.Empty(sixthDocument.AttributeExtensions);
+                Assert.Equal(new Uri("http://resourcecollectioninfo_url.com/relative_link"), sixthDocument.BaseUri);
+                Assert.Empty(sixthDocument.ElementExtensions);
+                Assert.Null(sixthDocument.Language);
+                Assert.Equal(new Uri("http://emptyelement_link.com"), sixthDocument.Link);
             });
         }
 
@@ -690,12 +690,12 @@ namespace System.ServiceModel.Syndication.Tests
                 Assert.Null(fifthDocument.Language);
                 Assert.Equal(new Uri("http://emptyelement_link.com"), fifthDocument.Link);
 
-                Assert.IsType<ReferencedCategoriesDocumentTryParseTrueSubclass>(secondCollection.Categories[5]);
-                Assert.Empty(fifthDocument.AttributeExtensions);
-                Assert.Equal(new Uri("http://resourcecollectioninfo_url.com/relative_link"), fifthDocument.BaseUri);
-                Assert.Empty(fifthDocument.ElementExtensions);
-                Assert.Null(fifthDocument.Language);
-                Assert.Equal(new Uri("http://emptyelement_link.com"), fifthDocument.Link);
+                ReferencedCategoriesDocumentTryParseTrueSubclass sixthDocument = Assert.IsType<ReferencedCategoriesDocumentTryParseTrueSubclass>(secondCollection.Categories[5]);
+                Assert.Empty(sixthDocument.AttributeExtensions);
+                Assert.Equal(new Uri("http://resourcecollectioninfo_url.com/relative_link"), sixthDocument.BaseUri);
+                Assert.Empty(sixthDocument.ElementExtensions);
+                Assert.Null(sixthDocument.Language);
+                Assert.Equal(new Uri("http://emptyelement_link.com"), sixthDocument.Link);
             }
         }
 
