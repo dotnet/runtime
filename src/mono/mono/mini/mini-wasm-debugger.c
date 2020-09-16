@@ -65,13 +65,13 @@ extern void mono_wasm_add_properties_var (const char*, gint32);
 extern void mono_wasm_add_array_item (int);
 extern void mono_wasm_set_is_async_method (guint64);
 extern void mono_wasm_add_typed_value (const char *type, const char *str_value, double value);
-extern void mono_wasm_add_files(const char *assembly_data, guint32 assembly_len, const char *pdb_data, guint32 pdb_len);
+extern void mono_wasm_add_files (const char *assembly_data, guint32 assembly_len, const char *pdb_data, guint32 pdb_len);
 
 G_END_DECLS
 
 static void describe_object_properties_for_klass (void *obj, MonoClass *klass, gboolean isAsyncLocalThis, int gpflags);
 static void handle_exception (MonoException *exc, MonoContext *throw_ctx, MonoContext *catch_ctx, StackFrameInfo *catch_frame);
-static void assembly_load(MonoProfiler *prof, MonoAssembly *assembly);
+static void assembly_load (MonoProfiler *prof, MonoAssembly *assembly);
 
 //FIXME move all of those fields to the profiler object
 static gboolean debugger_enabled;
@@ -376,7 +376,7 @@ mono_wasm_debugger_init (void)
 	mono_profiler_set_jit_done_callback (prof, jit_done);
 	//FIXME support multiple appdomains
 	mono_profiler_set_domain_loaded_callback (prof, appdomain_load);
-	mono_profiler_set_assembly_loaded_callback(prof, assembly_load);
+	mono_profiler_set_assembly_loaded_callback (prof, assembly_load);
 
 	obj_to_objref = g_hash_table_new (NULL, NULL);
 	objrefs = g_hash_table_new_full (NULL, NULL, NULL, mono_debugger_free_objref);
@@ -474,20 +474,19 @@ get_object_id(MonoObject *obj)
 }
 
 static void
-assembly_load(MonoProfiler *prof, MonoAssembly *assembly)
+assembly_load (MonoProfiler *prof, MonoAssembly *assembly)
 {
-    DEBUG_PRINTF(1, "Running assembly_loaded callback for %s", assembly->aname.name);
-    MonoImage *assembly_image = assembly->image;
-    MonoImage *pdb_image = NULL;
-    MonoDebugHandle *handle = mono_debug_get_handle(assembly_image);
-    MonoPPDBFile *ppdb = handle->ppdb;
-    if (ppdb)
-    {
-        pdb_image = mono_ppdb_get_image(ppdb);
-        mono_wasm_add_files(assembly_image->raw_data, assembly_image->raw_data_len, pdb_image->raw_data, pdb_image->raw_data_len);
-        return;
-    }
-    mono_wasm_add_files(assembly_image->raw_data, assembly_image->raw_data_len, NULL, 0);
+	DEBUG_PRINTF(1, "Running assembly_loaded callback for %s", assembly->aname.name);
+	MonoImage *assembly_image = assembly->image;
+	MonoImage *pdb_image = NULL;
+	MonoDebugHandle *handle = mono_debug_get_handle(assembly_image);
+	MonoPPDBFile *ppdb = handle->ppdb;
+	if (ppdb) {
+		pdb_image = mono_ppdb_get_image(ppdb);
+		mono_wasm_add_files(assembly_image->raw_data, assembly_image->raw_data_len, pdb_image->raw_data, pdb_image->raw_data_len);
+		return;
+	}
+	mono_wasm_add_files(assembly_image->raw_data, assembly_image->raw_data_len, NULL, 0);
 }
 
 static void
