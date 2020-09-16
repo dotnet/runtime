@@ -40,12 +40,7 @@ namespace HttpStress
             _aggregator = new StressResultAggregator(clientOperations);
 
             // Handle command-line arguments.
-            _eventListener =
-                configuration.LogPath == null ?
-                null :
-                (configuration.LogPath == "console" ? 
-                    (EventListener)new ConsoleHttpEventListener() :
-                    (EventListener)new LogHttpEventListener(configuration.LogPath));
+            _eventListener = configuration.Trace ? new LogHttpEventListener() : null;
         }
 
         public void Start()
@@ -69,7 +64,14 @@ namespace HttpStress
         public void Stop()
         {
             _cts.Cancel();
-            _clientTask?.Wait();
+            for (int i = 0; i < 60; ++i)
+            {
+                if (_clientTask == null || _clientTask.Wait(TimeSpan.FromSeconds(1)))
+                {
+                    break;
+                }
+                Console.WriteLine("Client is stopping ...");
+            }
             _stopwatch.Stop();
             _cts.Dispose();
         }
@@ -96,6 +98,7 @@ namespace HttpStress
 
         private async Task StartCore()
         {
+            // ToDo: set up exact version instead
             if (_baseAddress.Scheme == "http")
             {
                 Environment.SetEnvironmentVariable(UNENCRYPTED_HTTP2_ENV_VAR, "1");
