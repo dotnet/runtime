@@ -54,7 +54,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
         {
             var component = sharedTestState.ComponentWithNoDependencies.Copy();
 
-            // cahnge the case of the first letter of AppDll
+            // change the case of the first letter of AppDll
             string fileName = component.AppDll;
             string nameWOExtension = Path.GetFileNameWithoutExtension(fileName);
             string nameWOExtensionCaseChanged = (Char.IsUpper(nameWOExtension[0]) ? nameWOExtension[0].ToString().ToLower() : nameWOExtension[0].ToString().ToUpper()) + nameWOExtension.Substring(1);
