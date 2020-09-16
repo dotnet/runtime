@@ -36,6 +36,11 @@
 
     <FileSignInfo Include="mscordaccore.dll" CertificateName="MicrosoftSHA2" />
 
+    <!-- Exclude symbol packages from have a NuGet signature. These are never pushed to NuGet.org or
+         other feeds (in fact, that have identical identity to their non-symbol variant) -->
+    <DownloadedSymbolPackages Include="$(DownloadDirectory)**\*.symbols.nupkg" />
+    <FileSignInfo Include="@(DownloadedSymbolPackages->'%(Filename)%(Extension)')" CertificateName="None" />
+
     <FileExtensionSignInfo Include=".msi" CertificateName="Microsoft400" />
     <FileExtensionSignInfo Include=".pkg" CertificateName="8003" />
     <FileExtensionSignInfo Include=".deb;.rpm" CertificateName="LinuxSign" />
@@ -132,23 +137,18 @@
       </ItemGroup>
     </When>
     
-    <!-- When doing post build signing, we sign:
-         All artifacts
-         - Excluding symbol packages
-         - Including *CrossOsDiag*.symbols.nupkg.
-         When doing post build signing we want no
-         relative file paths -->
+    <!-- When doing post build signing, we sign all artifacts we would push.
+         Symbol packages are included, but get no signature.
+         
+         TODO: Also keep signing the mscordaccore and mscordbi files during the build even
+         when post-build signing is enabled. These flow to other repos before flowing
+         into installer. -->
     <When Condition="'$(PostBuildSign)' == 'true'">
       <ItemGroup>
-        <DownloadedSymbolPackages Include="$(DownloadDirectory)**\*.symbols.nupkg" />
-        <ItemsToSignWithPaths Include="$(DownloadDirectory)**" Exclude="@(DownloadedSymbolPackages)" />
-
-        <!-- The cross OS diagnostics symbol packages need to be signed as they are the only packages
-        that have a specific version of assets that are only meant to be indexed in symbol servers.
-        Since only *symbols.nupkg get indexed, and installer doesn't produce these, we need to glob them for signing. -->
-        <ItemsToSignWithPaths Include="$(DownloadDirectory)**\*CrossOsDiag*.symbols.nupkg" />
-
-        <ItemsToSign Include="@(ItemsToSignWithPaths->'%(Filename)%(Extension)')" />
+        <ItemsToSignWithPaths Include="$(DownloadDirectory)**" />
+        <ItemsToSignWithoutPaths Include="@(ItemsToSignWithPaths->'%(Filename)%(Extension)')" />
+        <DistinctItemsToSignWithPaths Include="@(ItemsToSignWithoutPaths->Distinct())" />
+        <ItemsToSign Include="@(DistinctItemsToSignWithPaths)" />
       </ItemGroup>
     </When>
   </Choose>
