@@ -344,7 +344,7 @@ namespace System
         {
             if ((digits < 0) || (digits > maxRoundingDigits))
             {
-                throw new ArgumentOutOfRangeException(nameof(digits), SR.ArgumentOutOfRange_RoundingDigits);
+                throw new ArgumentOutOfRangeException(nameof(digits), SR.ArgumentOutOfRange_RoundingDigits_MathF);
             }
 
             if (mode < MidpointRounding.ToEven || mode > MidpointRounding.ToPositiveInfinity)
