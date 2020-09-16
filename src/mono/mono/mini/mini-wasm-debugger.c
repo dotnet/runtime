@@ -476,17 +476,17 @@ get_object_id(MonoObject *obj)
 static void
 assembly_load (MonoProfiler *prof, MonoAssembly *assembly)
 {
-	DEBUG_PRINTF(1, "Running assembly_loaded callback for %s", assembly->aname.name);
+	DEBUG_PRINTF (1, "Running assembly_loaded callback for %s", assembly->aname.name);
 	MonoImage *assembly_image = assembly->image;
 	MonoImage *pdb_image = NULL;
-	MonoDebugHandle *handle = mono_debug_get_handle(assembly_image);
+	MonoDebugHandle *handle = mono_debug_get_handle (assembly_image);
 	MonoPPDBFile *ppdb = handle->ppdb;
 	if (ppdb) {
-		pdb_image = mono_ppdb_get_image(ppdb);
-		mono_wasm_add_files(assembly_image->raw_data, assembly_image->raw_data_len, pdb_image->raw_data, pdb_image->raw_data_len);
+		pdb_image = mono_ppdb_get_image (ppdb);
+		mono_wasm_add_files (assembly_image->raw_data, assembly_image->raw_data_len, pdb_image->raw_data, pdb_image->raw_data_len);
 		return;
 	}
-	mono_wasm_add_files(assembly_image->raw_data, assembly_image->raw_data_len, NULL, 0);
+	mono_wasm_add_files (assembly_image->raw_data, assembly_image->raw_data_len, NULL, 0);
 }
 
 static void
