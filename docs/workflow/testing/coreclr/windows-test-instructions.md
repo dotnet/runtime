@@ -12,7 +12,7 @@ Building coreclr tests must be done using a specific script as follows:
 ## Building Precompiled Tests
 
 ```
-> src\coreclr\build-test.cmd crossgen
+> src\tests\build.cmd crossgen
 ```
 
 This will use `crossgen.exe` to precompile test executables before they are executed.
@@ -20,7 +20,7 @@ This will use `crossgen.exe` to precompile test executables before they are exec
 ## Building Specific Priority Tests
 
 ```
-> src\coreclr\build-test.cmd -priority=1
+> src\tests\build.cmd -priority=1
 ```
 
 The above is an example of requesting that priority '1' and below be built. The default priority value is '0'. If '1' is specified, all tests with `CLRTestPriorty` `0` **and** `1` will be built and run.
@@ -30,13 +30,13 @@ The above is an example of requesting that priority '1' and below be built. The 
 To run a priority '0' and '1' and crossgen'd test pass:
 
 ```
-> src\coreclr\build-test.cmd crossgen -priority=1
+> src\tests\build.cmd crossgen -priority=1
 ```
 
 For additional supported parameters use the following:
 
 ```
-> src\coreclr\build-test.cmd -?
+> src\tests\build.cmd -?
 ```
 
 ### Building Individual Tests
@@ -52,13 +52,13 @@ For additional supported parameters use the following:
 Will list supported parameters.
 
 ```
-> src\coreclr\tests\runtest.cmd /?
+> src\tests\run.cmd /?
 ```
 
 In order to run all of the tests using your checked build:
 
 ```
-> src\coreclr\tests\runtest.cmd checked
+> src\tests\run.cmd checked
 ```
 
 This will generate a report named `TestRun_<arch>_<flavor>.html` (e.g. `TestRun_Windows_NT_x64_Checked.html`) in the subdirectory `<repo_root>\artifacts\log`. Any tests that failed will be listed in `TestRunResults_Windows_NT_x64_Checked.err`.
