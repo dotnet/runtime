@@ -489,12 +489,14 @@ namespace System.ServiceModel.Syndication.Tests
                 Assert.Equal("category_scheme", secondDocumentSecondCategory.Scheme);
                 Assert.Equal("category_label", secondDocumentSecondCategory.Label);
 
-                Assert.IsType<InlineCategoriesDocument>(secondCollection.Categories[2]);
-                Assert.Empty(secondDocumentFirstCategory.AttributeExtensions);
-                Assert.Empty(secondDocumentFirstCategory.ElementExtensions);
-                Assert.Empty(secondDocumentFirstCategory.Name);
-                Assert.Equal("inlinecategories_scheme", secondDocumentFirstCategory.Scheme);
-                Assert.Null(secondDocumentFirstCategory.Label);
+                InlineCategoriesDocument thirdDocument = Assert.IsType<InlineCategoriesDocument>(secondCollection.Categories[2]);
+                Assert.Empty(thirdDocument.AttributeExtensions);
+                Assert.Equal(new Uri("http://resourcecollectioninfo_url.com/"), thirdDocument.BaseUri);
+                Assert.Empty(thirdDocument.Categories);
+                Assert.Empty(thirdDocument.ElementExtensions);
+                Assert.False(thirdDocument.IsFixed);
+                Assert.Null(thirdDocument.Language);
+                Assert.Null(thirdDocument.Scheme);
 
                 ReferencedCategoriesDocument fourthDocument = Assert.IsType<ReferencedCategoriesDocument>(secondCollection.Categories[3]);
                 Assert.Equal(4, fourthDocument.AttributeExtensions.Count);
@@ -665,12 +667,14 @@ namespace System.ServiceModel.Syndication.Tests
                 Assert.Equal("category_scheme", secondDocumentSecondCategory.Scheme);
                 Assert.Equal("category_label", secondDocumentSecondCategory.Label);
 
-                Assert.IsType<InlineCategoriesDocumentTryParseTrueSubclass>(secondCollection.Categories[2]);
-                Assert.Empty(secondDocumentFirstCategory.AttributeExtensions);
-                Assert.Empty(secondDocumentFirstCategory.ElementExtensions);
-                Assert.Empty(secondDocumentFirstCategory.Name);
-                Assert.Equal("inlinecategories_scheme", secondDocumentFirstCategory.Scheme);
-                Assert.Null(secondDocumentFirstCategory.Label);
+                InlineCategoriesDocumentTryParseTrueSubclass thirdDocument = Assert.IsType<InlineCategoriesDocumentTryParseTrueSubclass>(secondCollection.Categories[2]);
+                Assert.Empty(thirdDocument.AttributeExtensions);
+                Assert.Equal(new Uri("http://resourcecollectioninfo_url.com/"), thirdDocument.BaseUri);
+                Assert.Empty(thirdDocument.Categories);
+                Assert.Empty(thirdDocument.ElementExtensions);
+                Assert.False(thirdDocument.IsFixed);
+                Assert.Null(thirdDocument.Language);
+                Assert.Null(thirdDocument.Scheme);
 
                 ReferencedCategoriesDocumentTryParseTrueSubclass fourthDocument = Assert.IsType<ReferencedCategoriesDocumentTryParseTrueSubclass>(secondCollection.Categories[3]);
                 Assert.Empty(fourthDocument.AttributeExtensions);
