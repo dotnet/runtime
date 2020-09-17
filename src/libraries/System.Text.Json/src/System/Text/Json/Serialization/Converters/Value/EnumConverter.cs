@@ -72,7 +72,7 @@ namespace System.Text.Json.Serialization.Converters
 
                 if (namingPolicy != null)
                 {
-                    if(_sourceNameCache == null)
+                    if (_sourceNameCache == null)
                         _sourceNameCache = new ConcurrentDictionary<string, string>();
 
                     _sourceNameCache.TryAdd(FormatEnumValueToString(name, null), name);
@@ -293,6 +293,7 @@ namespace System.Text.Json.Serialization.Converters
         private string FormatNamingPolicy(string value, bool isWrite)
         {
             Debug.Assert(_namingPolicy != null);
+            Debug.Assert(_sourceNameCache != null);
 
             if (isWrite)
             {
