@@ -722,11 +722,13 @@ namespace Microsoft.WebAssembly.Diagnostics
         List<AssemblyInfo> assemblies = new List<AssemblyInfo>();
         readonly HttpClient client;
         readonly ILogger logger;
+        readonly IAssemblyResolver resolver;
 
         public DebugStore(ILogger logger, HttpClient client)
         {
             this.client = client;
             this.logger = logger;
+            this.resolver = new DefaultAssemblyResolver();
         }
 
         public DebugStore(ILogger logger) : this(logger, new HttpClient())
@@ -740,11 +742,10 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public IEnumerable<SourceFile> Add(SessionId sessionId, byte[] assembly_data, byte[] pdb_data)
         {
-            var resolver = new DefaultAssemblyResolver();
             AssemblyInfo assembly = null;
             try
             {
-                assembly = new AssemblyInfo(resolver, sessionId.ToString(), assembly_data, pdb_data);
+                assembly = new AssemblyInfo(this.resolver, sessionId.ToString(), assembly_data, pdb_data);
             }
             catch (Exception e)
             {
@@ -801,14 +802,13 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
             }
 
-            var resolver = new DefaultAssemblyResolver();
             foreach (var step in steps)
             {
                 AssemblyInfo assembly = null;
                 try
                 {
                     var bytes = await step.Data.ConfigureAwait(false);
-                    assembly = new AssemblyInfo(resolver, step.Url, bytes[0], bytes[1]);
+                    assembly = new AssemblyInfo(this.resolver, step.Url, bytes[0], bytes[1]);
                 }
                 catch (Exception e)
                 {
