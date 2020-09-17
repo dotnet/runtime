@@ -392,8 +392,8 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
     </ItemGroup>
   </Target>
 
-  <Import Project="$(RepoRoot)/src/coreclr/tests/tests.targets" />
-  <Import Project="$(RepoRoot)/src/coreclr/tests/publishdependency.targets" />
+  <Import Project="$(RepoRoot)/src/tests/Common/tests.targets" />
+  <Import Project="$(RepoRoot)/src/tests/Common/publishdependency.targets" />
 
   <Target Name="CreateTestOverlay">
     <MSBuild Projects="$(MSBuildProjectFile)"
