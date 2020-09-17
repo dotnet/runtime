@@ -397,8 +397,12 @@ namespace System.Net.Sockets.Tests
 
         private static async Task WaitForEventAsync(ConcurrentQueue<EventWrittenEventArgs> events, string name)
         {
+            DateTime startTime = DateTime.UtcNow;
             while (!events.Any(e => e.EventName == name))
             {
+                if (DateTime.UtcNow.Subtract(startTime) > TimeSpan.FromSeconds(30))
+                    throw new TimeoutException($"Timed out waiting for {name}");
+
                 await Task.Delay(100);
             }
         }
