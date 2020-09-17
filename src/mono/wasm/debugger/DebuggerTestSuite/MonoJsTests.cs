@@ -214,9 +214,6 @@ namespace DebuggerTests
             });
         }
 
-        static string DebuggerTestAppPath
-            => FindTestPath();
-
         [Theory]
         [InlineData(true, 1)]
         [InlineData(false, 0)]
@@ -239,6 +236,16 @@ namespace DebuggerTests
                 load_pdb ? Path.Combine(DebuggerTestAppPath, "managed/debugger-test.pdb") : null,
                 "/debugger-test.cs",
                 expected_count
+            );
+
+        [Fact]
+        public async Task DuplicateAssemblyLoadedEventWithEmbeddedPdbNotLoadedFromBundle()
+            => await AssemblyLoadedEventTest(
+                "lazy-debugger-test-embedded",
+                Path.Combine(DebuggerTestAppPath, "lazy-debugger-test-embedded.dll"),
+                null,
+                "/lazy-debugger-test-embedded.cs",
+                expected_count: 1
             );
 
         async Task AssemblyLoadedEventTest(string asm_name, string asm_path, string pdb_path, string source_file, int expected_count)
