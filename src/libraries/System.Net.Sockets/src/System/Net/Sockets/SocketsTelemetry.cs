@@ -93,15 +93,6 @@ namespace System.Net.Sockets
         }
 
         [NonEvent]
-        public void ConnectStart(EndPoint address)
-        {
-            if (IsEnabled(EventLevel.Informational, EventKeywords.All))
-            {
-                ConnectStart(address.ToString());
-            }
-        }
-
-        [NonEvent]
         public void AfterConnect(SocketError error, string? exceptionMessage = null)
         {
             if (error == SocketError.Success)

@@ -4637,16 +4637,16 @@ namespace System.Net.Sockets
         // Since this is private, the unsafe mode is specified with a flag instead of an overload.
         private IAsyncResult BeginConnectEx(EndPoint remoteEP, bool flowContext, AsyncCallback? callback, object? state)
         {
+            EndPoint endPointSnapshot = remoteEP;
+            Internals.SocketAddress socketAddress = Serialize(ref endPointSnapshot);
+
             if (SocketsTelemetry.Log.IsEnabled())
             {
-                SocketsTelemetry.Log.ConnectStart(remoteEP);
+                SocketsTelemetry.Log.ConnectStart(socketAddress);
 
                 // Ignore flowContext when using Telemetry to avoid losing Activity tracking
                 flowContext = true;
             }
-
-            EndPoint endPointSnapshot = remoteEP;
-            Internals.SocketAddress socketAddress = Serialize(ref endPointSnapshot);
 
             WildcardBindForConnectIfNecessary(endPointSnapshot.AddressFamily);
 
@@ -4692,6 +4692,8 @@ namespace System.Net.Sockets
                 // Update the internal state of this socket according to the error before throwing.
                 _rightEndPoint = oldEndPoint;
                 _localEndPoint = null;
+
+                if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.AfterConnect(errorCode);
 
                 throw new SocketException((int)errorCode);
             }
