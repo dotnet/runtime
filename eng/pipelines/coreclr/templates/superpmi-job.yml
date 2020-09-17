@@ -53,7 +53,8 @@ jobs:
       - ${{ parameters.framework }}
     steps:
     # Extra steps that will be passed to the superpmi template and run before sending the job to helix (all of which is done in the template)
-
+      - script: |
+          echo Temporary skipping download of coreclr/libraries and creating core_root
     # # Optionally download live-built libraries
     # - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
     #   - template: /eng/pipelines/common/download-artifact-step.yml
