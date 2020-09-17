@@ -31,8 +31,19 @@ $WorkItemDirectory = (Join-Path $SourceDirectory "workitem")
 $Queue = "Windows.10.Amd64.ClientRS4.DevEx.15.8.Open"
 $HelixSourcePrefix = "official"
 $Creator = $env:BUILD_DEFINITIONNAME
+
 robocopy $SourceDirectory\src\coreclr\scripts $SuperPmiDirectory /E /XD $PayloadDirectory $SourceDirectory\artifacts $SourceDirectory\.git
-robocopy $CoreRootDirectory $PmiAssembliesDirectory\Core_Root /E
+
+Write-Host "Downloading CoreClr_Build"
+$url = "https://dev.azure.com/dnceng/_apis/resources/Containers/5103993/CoreCLRProduct__Windows_NT_x64_checked?itemPath=CoreCLRProduct__Windows_NT_x64_checked%2FCoreCLRProduct__Windows_NT_x64_checked.zip"
+$tmp = New-TemporaryFile | Rename-Item -NewName { $_ -replace 'tmp$', 'zip' } -PassThru
+
+$start_time = Get-Date
+(New-Object System.Net.WebClient).DownloadFile($url, $tmp)
+$tmp | Expand-Archive -DestinationPath $PmiAssembliesDirectory\Core_Root -Force
+Write-Host "Time taken: $((Get-Date).Subtract($start_time).Seconds) second(s)"
+
+# robocopy $CoreRootDirectory $PmiAssembliesDirectory\Core_Root /E
 # robocopy $ManagedTestArtifactDirectory $PmiAssembliesDirectory\Tests /E /XD $CoreRootDirectory
 
 New-Item -Path $WorkItemDirectory -Name "placeholder.txt" -ItemType "file" -Value "Placeholder file." -Force
