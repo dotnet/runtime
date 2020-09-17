@@ -254,12 +254,10 @@ namespace System.Diagnostics
             }
         }
 
-        /// <devdoc>
-        ///    <para>
-        ///       Gets or sets the maximum allowable working set for the associated
-        ///       process.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Gets or sets the maximum allowable working set for the associated process.
+        /// </summary>
+        /// <remarks>Setting the maximum working set on macOS and FreeBSD works only for the current process.</remarks>
         public IntPtr MaxWorkingSet
         {
             get
@@ -268,6 +266,8 @@ namespace System.Diagnostics
                 return _maxWorkingSet;
             }
             [SupportedOSPlatform("windows")]
+            [SupportedOSPlatform("macos")]
+            [SupportedOSPlatform("freebsd")]
             set
             {
                 SetWorkingSetLimits(null, value);
