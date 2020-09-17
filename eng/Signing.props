@@ -1,7 +1,5 @@
 <Project>
 
-  <!-- When PostBuildSign is true, these ends up being pulled in through 
-       the import of arcade's Sign.props in prepare-artifacts.proj (via Directory.Build.props and targets) -->
   <Import Project="$(RepositoryEngineeringDir)Configurations.props" />
   <Import Project="$(RepositoryEngineeringDir)liveBuilds.targets" />
 
@@ -9,8 +7,10 @@
     <!--
       Windows arm/arm64 jobs don't have MSIs to sign. Keep it simple: allow not finding any matches
       here and rely on overall signing validation.
+
+      During post build signing, there are no packages to sign during SignFinalPackages.
     -->
-    <AllowEmptySignList Condition="'$(SignFinalPackages)' != 'true'">true</AllowEmptySignList>
+    <AllowEmptySignList Condition="'$(SignFinalPackages)' != 'true' or '$(PostBuildSign)' == 'true'">true</AllowEmptySignList>
   </PropertyGroup>
 
   <ItemGroup>
