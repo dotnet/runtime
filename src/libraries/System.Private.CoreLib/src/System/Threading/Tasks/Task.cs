@@ -5515,6 +5515,8 @@ namespace System.Threading.Tasks
         {
             /// <summary>The number of tasks remaining to complete.</summary>
             private int m_count;
+            /// <summary>True if any of the supplied tasks require wait notification.</summary>
+            private bool m_anyTaskRequiresNotifyDebuggerOfWaitCompletion;
             /// <summary>The tasks that faulted.</summary>
             private ConcurrentQueue<Task>? m_faultedTasks;
             /// <summary>The first task that got canceled.</summary>
@@ -5536,6 +5538,7 @@ namespace System.Threading.Tasks
                     if (task == null) ThrowHelper.ThrowArgumentException(ExceptionResource.Task_MultiTaskContinuation_NullTask, ExceptionArgument.tasks);
                     if (task.IsCompleted) this.Invoke(task); // short-circuit the completion action, if possible
                     else task.AddCompletionAction(this); // simple completion action
+                    m_anyTaskRequiresNotifyDebuggerOfWaitCompletion |= task.IsWaitNotificationEnabled && task.ShouldNotifyDebuggerOfWaitCompletion; // potential recursion
                     count += 1;
                 }
 
@@ -5564,6 +5567,13 @@ namespace System.Threading.Tasks
                     Interlocked.CompareExchange(ref m_canceledTask, completedTask, null); // Use the first task that is canceled
                 }
 
+                // Regardless of completion state, if the task has its debug bit set, transfer it to the
+                // WhenAll task. We must do this before we complete the task.
+                if (completedTask.IsWaitNotificationEnabled)
+                {
+                    this.SetNotificationForWaitCompletion(enabled: true);
+                }
+
                 // Decrement the count, and only continue to complete the promise if we're the last one.
                 if (Interlocked.Decrement(ref m_count) == 0)
                 {
@@ -5577,7 +5587,8 @@ namespace System.Threading.Tasks
             /// Returns whether we should notify the debugger of a wait completion.  This returns
             /// true iff at least one constituent task has its bit set.
             /// </summary>
-            internal override bool ShouldNotifyDebuggerOfWaitCompletion => base.ShouldNotifyDebuggerOfWaitCompletion;
+            internal override bool ShouldNotifyDebuggerOfWaitCompletion =>
+                base.ShouldNotifyDebuggerOfWaitCompletion && m_anyTaskRequiresNotifyDebuggerOfWaitCompletion;
 
             private void Complete()
             {
