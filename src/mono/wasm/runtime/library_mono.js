@@ -2241,38 +2241,17 @@ var MonoSupportLib = {
 	},
 
 	mono_wasm_asm_loaded: function (assembly_name, assembly_ptr, assembly_len, pdb_ptr, pdb_len) {
+		// Only trigger this codepath for assemblies loaded after app is ready
 		if (MONO.mono_wasm_runtime_is_ready !== true)
 			return;
 
-		if (MONO._loaded_filenames === undefined) {
-			MONO._loaded_filenames = [];
-			MONO.loaded_files.forEach(file => {
-				try {
-						let url = new URL(file);
-						let filename = url.pathname.split('/').pop();
-						if (filename.length !== 0)
-								MONO._loaded_filenames.push(filename);
-				} catch (e) { }
-			});
-		}
+		if (!this.mono_wasm_assembly_already_added)
+			this.mono_wasm_assembly_already_added = Module.cwrap ("mono_wasm_assembly_already_added", 'number', ['string']);
 
-		const assembly_name_str = assembly_name !== 0 ? Module.UTF8ToString(assembly_name) : '';
-		if (assembly_name !== 0) {
-			if ((assembly_name_str.startsWith("System.") || assembly_name_str.startsWith("Microsoft."))
-				&& MONO._loaded_filenames.indexOf (assembly_name_str + '.dll') >= 0) {
-
-				// Hack: we don't have the assembly name in @_loaded_filenames, and we don't seem to
-				// be getting filenames from MonoImage.
-				// So, workaround: get assembly_name as an argument to this method,
-				// and if that happens to start with `System.`, or `Microsoft.`, then
-				// check for ${assembly_name}.dll in @loaded_files
-				//
-				// If it is found in it, then it's a bundle assembly which the debug
-				// proxy will load itself, so we don't need to send this!
-
-				return;
-			}
-		}
+		// And for assemblies that have not already been loaded
+		const assembly_name_str = assembly_name !== 0 ? Module.UTF8ToString(assembly_name).concat('.dll') : '';
+		if (this.mono_wasm_assembly_already_added(assembly_name_str))
+			return;
 
 		const assembly_data = new Uint8Array(Module.HEAPU8.buffer, assembly_ptr, assembly_len);
 		const assembly_b64 = MONO._base64Converter.toBase64StringImpl(assembly_data);
