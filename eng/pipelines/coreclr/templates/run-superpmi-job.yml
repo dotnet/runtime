@@ -95,7 +95,7 @@ jobs:
     - task: ExtractFiles@1
       displayName: 'Unzip SuperPmi_Min'
       inputs:
-        archiveFilePatterns: 'superpmi_min.zip'
+        archiveFilePatterns: '**/zipped/superpmi_min.zip'
         destinationFolder: $(PmiAssembliesDirectory)\Core_Root
         cleanDestinationFolder: false
     # - script: $(Build.SourcesDirectory)/eng/common/superpmi/superpmi-setup.sh $(IsInternal)$(Interpreter) --framework $(_Framework) --kind ${{ parameters.runKind }} ${{ parameters.extraSetupParameters }}
