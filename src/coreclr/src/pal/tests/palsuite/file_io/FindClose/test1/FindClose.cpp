@@ -15,18 +15,18 @@
 
 
 
-const WCHAR szFindName[] =          {'t','e', 's', 't', '0', '1', '.', 't', 'x', 't', '\0'};
-const WCHAR szFindName_02[] =       {'t','e', 's', 't', '0', '2', '.', 't', 'x', 't', '\0'};
-const WCHAR szFindName_03[] =       {'t','e', 's', 't', '0', '3', '.', 't', 'x', 't', '\0'};
-const WCHAR szFindNameWldCard_01[] =  {'t','e', 's', 't', '0', '?', '.', 't', 'x', 't', '\0'};
-const WCHAR szFindNameWldCard_02[] =  {'*', '.', 't', 'x', 't', '\0'};
-const WCHAR szDirName[] =             {'t','e', 's', 't', '_', 'd', 'i', 'r', '\0'};
-const WCHAR szDirName_02[] =          {'t','e', 's', 't', '_', 'd', 'i', 'r', '0', '2', '\0'};
-const WCHAR szDirNameWldCard[] =      {'t','e', 's', 't', '_', '*', '\0'};
+const WCHAR szFindName_FindClose_test1[] =          {'t','e', 's', 't', '0', '1', '.', 't', 'x', 't', '\0'};
+const WCHAR szFindName_02_FindClose_test1[] =       {'t','e', 's', 't', '0', '2', '.', 't', 'x', 't', '\0'};
+const WCHAR szFindName_03_FindClose_test1[] =       {'t','e', 's', 't', '0', '3', '.', 't', 'x', 't', '\0'};
+const WCHAR szFindNameWldCard_01_FindClose_test1[] =  {'t','e', 's', 't', '0', '?', '.', 't', 'x', 't', '\0'};
+const WCHAR szFindNameWldCard_02_FindClose_test1[] =  {'*', '.', 't', 'x', 't', '\0'};
+const WCHAR szDirName_FindClose_test1[] =             {'t','e', 's', 't', '_', 'd', 'i', 'r', '\0'};
+const WCHAR szDirName_02_FindClose_test1[] =          {'t','e', 's', 't', '_', 'd', 'i', 'r', '0', '2', '\0'};
+const WCHAR szDirNameWldCard_FindClose_test1[] =      {'t','e', 's', 't', '_', '*', '\0'};
 
 
 
-BOOL createTestFile(const WCHAR* szName)
+BOOL createTestFile_FindClose_test1(const WCHAR* szName)
 {
     FILE *pFile = NULL;
     char* pTemp = NULL;
@@ -51,16 +51,16 @@ BOOL createTestFile(const WCHAR* szName)
 
 void removeAll()
 {
-    RemoveDirectoryW(szDirName);
-    RemoveDirectoryW(szDirName_02);
+    RemoveDirectoryW(szDirName_FindClose_test1);
+    RemoveDirectoryW(szDirName_02_FindClose_test1);
 
-    DeleteFileW(szFindName);
-    DeleteFileW(szFindName_02);
-    DeleteFileW(szFindName_03);
+    DeleteFileW(szFindName_FindClose_test1);
+    DeleteFileW(szFindName_02_FindClose_test1);
+    DeleteFileW(szFindName_03_FindClose_test1);
 }
 
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(file_io_FindClose_test1_paltest_findclose_test1, "file_io/FindClose/test1/paltest_findclose_test1")
 {
     WIN32_FIND_DATAW findFileData;
     WIN32_FIND_DATAW findFileData_02;
@@ -84,19 +84,19 @@ int __cdecl main(int argc, char *argv[])
     }
 
     /* find a file that exists */
-    if(createTestFile(szFindName) == FALSE)
+    if(createTestFile_FindClose_test1(szFindName_FindClose_test1) == FALSE)
     {
         removeAll();
         PAL_TerminateEx(FAIL);
         return FAIL;
     }
-    if(createTestFile(szFindName_02) == FALSE)
+    if(createTestFile_FindClose_test1(szFindName_02_FindClose_test1) == FALSE)
     {
         removeAll();
         PAL_TerminateEx(FAIL);
         return FAIL;
     }
-    if(createTestFile(szFindName_03) == FALSE)
+    if(createTestFile_FindClose_test1(szFindName_03_FindClose_test1) == FALSE)
     {
         removeAll();
         PAL_TerminateEx(FAIL);
@@ -104,10 +104,10 @@ int __cdecl main(int argc, char *argv[])
     }
 
     // close a FindFirstFileW handle
-    hFind = FindFirstFileW(szFindName, &findFileData);
+    hFind = FindFirstFileW(szFindName_FindClose_test1, &findFileData);
     if (hFind == INVALID_HANDLE_VALUE)
     {
-        pTemp = convertC((WCHAR*)szFindName);
+        pTemp = convertC((WCHAR*)szFindName_FindClose_test1);
         Trace("FindClose: ERROR -> Unable to find \"%s\"\n", pTemp);
         free(pTemp);
         removeAll();
@@ -124,10 +124,10 @@ int __cdecl main(int argc, char *argv[])
                 " FindFirstFileW handle.\n");
         }
     }
-    hFind = FindFirstFileW(szFindName, &findFileData);
+    hFind = FindFirstFileW(szFindName_FindClose_test1, &findFileData);
     if (hFind == INVALID_HANDLE_VALUE)
     {
-        pTemp = convertC((WCHAR*)szFindName);
+        pTemp = convertC((WCHAR*)szFindName_FindClose_test1);
         Trace("FindClose: ERROR -> Unable to find \"%s\"\n", pTemp);
         free(pTemp);
         removeAll();
@@ -155,10 +155,10 @@ int __cdecl main(int argc, char *argv[])
     }
 
     /* find a directory that exists */
-    bRc = CreateDirectoryW(szDirName, NULL);
+    bRc = CreateDirectoryW(szDirName_FindClose_test1, NULL);
     if (bRc == FALSE)
     {
-        pTemp = convertC((WCHAR*)szDirName);
+        pTemp = convertC((WCHAR*)szDirName_FindClose_test1);
         Trace("FindClose: ERROR -> Failed to create the directory \"%s\"\n", 
             pTemp);
         free(pTemp);
@@ -167,10 +167,10 @@ int __cdecl main(int argc, char *argv[])
         return FAIL;
     }
 
-    bRc = CreateDirectoryW(szDirName_02, NULL);
+    bRc = CreateDirectoryW(szDirName_02_FindClose_test1, NULL);
     if (bRc == FALSE)
     {
-        pTemp = convertC((WCHAR*)szDirName_02);
+        pTemp = convertC((WCHAR*)szDirName_02_FindClose_test1);
         Trace("FindClose: ERROR -> Failed to create the directory \"%s\"\n",
             pTemp);
         free(pTemp);
@@ -179,10 +179,10 @@ int __cdecl main(int argc, char *argv[])
         return FAIL;
     }
 
-    hFind = FindFirstFileW(szDirName, &findFileData);
+    hFind = FindFirstFileW(szDirName_FindClose_test1, &findFileData);
     if (hFind == INVALID_HANDLE_VALUE)
     {
-        pTemp = convertC((WCHAR*)szDirName);
+        pTemp = convertC((WCHAR*)szDirName_FindClose_test1);
         Trace("FindClose: ERROR. FindFirstFileW was unable to find \"%s\"\n",
             pTemp);
         free(pTemp);
@@ -202,10 +202,10 @@ int __cdecl main(int argc, char *argv[])
     }
 
     /* find a file using wild cards */
-    hFind = FindFirstFileW(szFindNameWldCard_01, &findFileData);
+    hFind = FindFirstFileW(szFindNameWldCard_01_FindClose_test1, &findFileData);
     if (hFind == INVALID_HANDLE_VALUE)
     {
-        pTemp = convertC((WCHAR*)szFindNameWldCard_01);
+        pTemp = convertC((WCHAR*)szFindNameWldCard_01_FindClose_test1);
         Trace("FindClose: ERROR -> FindFirstFileW was unable to find \"%s\"\n",
             pTemp);
         free(pTemp);
@@ -234,10 +234,10 @@ int __cdecl main(int argc, char *argv[])
     }
 
     /* find a directory using wild cards */
-    hFind = FindFirstFileW(szDirNameWldCard, &findFileData);
+    hFind = FindFirstFileW(szDirNameWldCard_FindClose_test1, &findFileData);
     if (hFind == INVALID_HANDLE_VALUE)
     {
-        pTemp = convertC((WCHAR*)szDirNameWldCard);
+        pTemp = convertC((WCHAR*)szDirNameWldCard_FindClose_test1);
         Trace("FindClose: ERROR -> Unable to find \"%s\"\n",
             pTemp);
         free(pTemp);

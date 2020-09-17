@@ -11,6 +11,7 @@
     <OutputType>Library</OutputType>
     <NoWarn>219</NoWarn>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <RunAnalyzers>false</RunAnalyzers>
     <DebugType>portable</DebugType>
   </PropertyGroup>
 

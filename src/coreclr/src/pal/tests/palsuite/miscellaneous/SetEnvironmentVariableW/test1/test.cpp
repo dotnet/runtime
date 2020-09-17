@@ -21,7 +21,7 @@
 
 /* Depends on GetEnvironmentVariable */
 
-int __cdecl main(int argc, char *argv[]) 
+PALTEST(miscellaneous_SetEnvironmentVariableW_test1_paltest_setenvironmentvariablew_test1, "miscellaneous/SetEnvironmentVariableW/test1/paltest_setenvironmentvariablew_test1")
 {
   
     /* Define some buffers needed for the function */

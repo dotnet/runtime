@@ -12,7 +12,7 @@
 #include <palsuite.h>
 
 
-int __cdecl main(int argc, char **argv)
+PALTEST(c_runtime_malloc_test2_paltest_malloc_test2, "c_runtime/malloc/test2/paltest_malloc_test2")
 {
 
     char *testA;

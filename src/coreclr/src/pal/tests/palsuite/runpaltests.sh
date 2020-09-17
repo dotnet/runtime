@@ -6,7 +6,7 @@
 if [ $# -lt 1 -o $# -gt 3 ]
 then
   echo "Usage..."
-  echo "runpaltests.sh <path to root build directory> [<path to temp folder for PAL tests>]"
+  echo "runpaltests.sh <path to root build directory of the pal tests>  [<path to test output folder>] [<path to temp folder for PAL tests>]"
   echo
   echo "For example:"
   echo "runpaltests.sh /projectk/build/debug"
@@ -19,10 +19,18 @@ echo "***** Testing PAL *****"
 echo
 
 # Store the location of the root of build directory
-BUILD_ROOD_DIR=$1
+BUILD_ROOT_DIR=$1
+if [ -d "$(pwd)/$BUILD_ROOT_DIR" ]; then
+  BUILD_ROOT_DIR="$(pwd)/$BUILD_ROOT_DIR"
+fi
+
 # Create path to the compiled PAL tets in the build directory
-PAL_TEST_BUILD=$BUILD_ROOD_DIR/src/pal/tests/palsuite
+PAL_TEST_BUILD=$BUILD_ROOT_DIR
 echo Running PAL tests from $PAL_TEST_BUILD
+
+pushd $BUILD_ROOT_DIR
+
+export LD_LIBRARY_PATH=$BUILD_ROOT_DIR:$LD_LIBRARY_PATH
 
 # Create absolute path to the file that contains a list of PAL tests to execute.
 # This file is located next to this script in the source tree
@@ -33,22 +41,27 @@ RELATIVE_PATH_TO_PAL_TESTS=${RELATIVE_PATH_TO_PAL_TESTS%/*.*}
 cd $RELATIVE_PATH_TO_PAL_TESTS
 # Environment variable PWD contains absolute path to the current folder
 # so use it to create absolute path to the file with a list of tests.
-PAL_TEST_LIST=$PWD/paltestlist.txt
+PAL_TEST_LIST=$BUILD_ROOT_DIR/paltestlist.txt
 # Change current directory back to the original location
-cd $OLDPWD
 echo The list of PAL tests to run will be read from $PAL_TEST_LIST
 
 # Create the test output root directory
-mkdir -p /tmp/PalTestOutput
-if [ ! -d /tmp/PalTestOutput ]; then
-  rm -f -r /tmp/PalTestOutput
+if [ $# -gt 2 ]
+then
+  PAL_TEST_OUTPUT_DIR=$3
+  mkdir -p $PAL_TEST_OUTPUT_DIR
+else
   mkdir -p /tmp/PalTestOutput
+  if [ ! -d /tmp/PalTestOutput ]; then
+    rm -f -r /tmp/PalTestOutput
+    mkdir -p /tmp/PalTestOutput
+  fi
+  PAL_TEST_OUTPUT_DIR=/tmp/PalTestOutput/default
 fi
 
 # Determine the folder to use for PAL test output during the run, and the folder where output files were requested to be copied.
 # First check if the output folder was passed as a parameter to the script. It is supposed be the second parameter so check if
 # we have more than 1 argument.
-PAL_TEST_OUTPUT_DIR=/tmp/PalTestOutput/default
 if [ $# -gt 1 ]
 then
   COPY_TO_TEST_OUTPUT_DIR=$2
@@ -57,11 +70,16 @@ else
 fi
 
 # Determine the folder to use for PAL test output during the run
-if [ "$COPY_TO_TEST_OUTPUT_DIR" != "$PAL_TEST_OUTPUT_DIR" ]; then
-  # Output files were requested to be copied to a specific folder. In this mode, we need to support parallel runs of PAL tests
-  # on the same machine. Make a unique temp folder for working output inside /tmp/PalTestOutput.
-  PAL_TEST_OUTPUT_DIR=$(mktemp -d /tmp/PalTestOutput/tmp.XXXXXXXX)
+if [ ! $# -gt 2 ]
+then
+  if [ "$COPY_TO_TEST_OUTPUT_DIR" != "$PAL_TEST_OUTPUT_DIR" ]; then
+    # Output files were requested to be copied to a specific folder. In this mode, we need to support parallel runs of PAL tests
+    # on the same machine. Make a unique temp folder for working output inside $PAL_TEST_RESULTS_DIR.
+    PAL_TEST_OUTPUT_DIR=$(mktemp -d /tmp/PalTestOutput/tmp.XXXXXXXX)
+  fi
 fi
+
+cd $PAL_TEST_OUTPUT_DIR
 
 echo PAL tests will store their temporary files and output in $PAL_TEST_OUTPUT_DIR.
 if [ "$COPY_TO_TEST_OUTPUT_DIR" != "$PAL_TEST_OUTPUT_DIR" ]; then
@@ -124,12 +142,18 @@ do
 
   # Create path to a test executable to run
   TEST_COMMAND="$PAL_TEST_BUILD/$TEST_NAME"
+  if [ ! -f $TEST_COMMAND ]; then
+    TEST_COMMAND="$PAL_TEST_BUILD/paltests $TEST_NAME"
+  fi
+
   echo -n .
+  STARTTIME=$(date +%s)
   # Redirect to temp file
   $TEST_COMMAND 2>&1 | tee ${PAL_OUT_FILE} ; ( exit ${PIPESTATUS[0]} )
-
   # Get exit code of the test process.
   TEST_EXIT_CODE=$?
+
+  ENDTIME=$(date +%s)
 
   # Change back to the output directory, and remove the test's working directory if it's empty
   cd $PAL_TEST_OUTPUT_DIR
@@ -143,7 +167,7 @@ do
   TEST_XUNIT_NAME=$(echo $TEST_XUNIT_NAME | tr / .)
   TEST_XUNIT_CLASSNAME=$(echo $TEST_XUNIT_CLASSNAME | tr / .)
   
-  echo -n "<test name=\"$TEST_XUNIT_CLASSNAME.$TEST_XUNIT_NAME\" type=\"$TEST_XUNIT_CLASSNAME\" method=\"$TEST_XUNIT_NAME\" result=\"" >> $PAL_XUNIT_TEST_LIST_TMP
+  echo -n "<test name=\"$TEST_XUNIT_CLASSNAME.$TEST_XUNIT_NAME\" type=\"$TEST_XUNIT_CLASSNAME\" method=\"$TEST_XUNIT_NAME\" time=\"$(($ENDTIME - $STARTTIME))\" result=\"" >> $PAL_XUNIT_TEST_LIST_TMP
 
   # If the exit code is 0 then the test passed, otherwise record a failure.
   if [ "$TEST_EXIT_CODE" -eq "0" ]; then
@@ -153,6 +177,7 @@ do
     echo "Fail\" >" >> $PAL_XUNIT_TEST_LIST_TMP
     echo "<failure exception-type=\"Exit code: $TEST_EXIT_CODE\">" >> $PAL_XUNIT_TEST_LIST_TMP  
     echo "<message><![CDATA[$(cat $PAL_OUT_FILE)]]></message>" >> $PAL_XUNIT_TEST_LIST_TMP  
+    echo "<output><![CDATA[$(cat $PAL_OUT_FILE)]]></output>" >> $PAL_XUNIT_TEST_LIST_TMP  
     echo "</failure>" >> $PAL_XUNIT_TEST_LIST_TMP  
     echo "</test>" >> $PAL_XUNIT_TEST_LIST_TMP
     FAILED_TEST="$TEST_NAME. Exit code: $TEST_EXIT_CODE"
@@ -207,6 +232,8 @@ if [ "$COPY_TO_TEST_OUTPUT_DIR" != "$PAL_TEST_OUTPUT_DIR" ]; then
   rm -f -r $PAL_TEST_OUTPUT_DIR
   echo Copied PAL test output files to $COPY_TO_TEST_OUTPUT_DIR.
 fi
+
+popd
 
 # Set exit code to be equal to the number PAL tests that have failed.
 # Exit code 0 indicates success.
