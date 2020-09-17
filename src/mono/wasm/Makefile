@@ -149,10 +149,12 @@ run-tests-%:
 build-debugger-test-app:
 	$(DOTNET) build --configuration debug --nologo /p:TargetArchitecture=wasm /p:TargetOS=Browser /p:Configuration=Debug /p:RuntimeConfiguration=$(CONFIG) $(TOP)/src/mono/wasm/debugger/tests/debugger-test
 	$(DOTNET) build --configuration debug --nologo /p:TargetArchitecture=wasm /p:TargetOS=Browser /p:Configuration=Debug /p:RuntimeConfiguration=$(CONFIG) $(TOP)/src/mono/wasm/debugger/tests/lazy-debugger-test
+	$(DOTNET) build --configuration debug --nologo /p:TargetArchitecture=wasm /p:TargetOS=Browser /p:Configuration=Debug /p:RuntimeConfiguration=$(CONFIG) $(TOP)/src/mono/wasm/debugger/tests/lazy-debugger-test-embedded
 	cp $(TOP)/src/mono/wasm/debugger/tests/debugger-test/debugger-driver.html $(TOP)/src/mono/wasm/debugger/tests/debugger-test/bin/Debug/publish
 	cp $(TOP)/src/mono/wasm/debugger/tests/debugger-test/other.js $(TOP)/src/mono/wasm/debugger/tests/debugger-test/bin/Debug/publish
 	cp $(TOP)/src/mono/wasm/debugger/tests/debugger-test/runtime-debugger.js $(TOP)/src/mono/wasm/debugger/tests/debugger-test/bin/Debug/publish
 	cp $(TOP)/src/mono/wasm/debugger/tests/lazy-debugger-test/bin/Debug/publish/managed/* $(TOP)/src/mono/wasm/debugger/tests/debugger-test/bin/Debug/publish
+	cp $(TOP)/src/mono/wasm/debugger/tests/lazy-debugger-test-embedded/bin/Debug/publish/managed/* $(TOP)/src/mono/wasm/debugger/tests/debugger-test/bin/Debug/publish
 
 run-debugger-tests: build-debugger-test-app build-dbg-testsuite
 	if [ ! -z "$(TEST_FILTER)" ]; then \

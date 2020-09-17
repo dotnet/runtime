@@ -1890,6 +1890,44 @@ namespace DebuggerTests
         }
 
         [Fact]
+        public async Task DebugLazyLoadedAssemblyWithEmbeddedPdb()
+        {
+            var insp = new Inspector();
+            var scripts = SubscribeToScripts(insp);
+            await Ready();
+
+            await insp.Ready(async (cli, token) =>
+            {
+                var source_location = "dotnet://lazy-debugger-test-embedded.dll/lazy-debugger-test-embedded.cs";
+
+                ctx = new DebugTestContext(cli, insp, token, scripts);
+
+                // Simulate loading an assembly into the framework
+                byte[] bytes = File.ReadAllBytes("../../../lazy-debugger-test-embedded/wasm/Debug/lazy-debugger-test-embedded.dll");
+                string asm_base64 = Convert.ToBase64String(bytes);
+                var load_assemblies = JObject.FromObject(new
+                {
+                    expression = $"{{ let asm_b64 = '{asm_base64}'; invoke_static_method('[debugger-test] LoadDebuggerTest:LoadLazyAssemblyWithoutPDB', asm_b64); }}"
+                });
+                var load_assemblies_res = await cli.SendCommand("Runtime.evaluate", load_assemblies, token);
+                Assert.True(load_assemblies_res.IsOk);
+
+                Assert.Contains(source_location, scripts.Values);
+
+                await SetBreakpoint(source_location, 9, 8);
+
+                var pause_location = await EvaluateAndCheck(
+                   "window.setTimeout(function () { invoke_static_method('[lazy-debugger-test-embedded] LazyMath:IntAdd', 5, 10); }, 1);",
+                   source_location, 9, 8,
+                   "IntAdd");
+                var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
+                CheckNumber(locals, "a", 5);
+                CheckNumber(locals, "b", 10);
+            });
+        }
+
+
+        [Fact]
         public async Task DebugLazyLoadedAssemblyWithoutPdb()
         {
             var insp = new Inspector();
