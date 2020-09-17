@@ -151,9 +151,9 @@ mono_mobile_runtime_init (void)
 {
     // uncomment for debug output:
     //
-    // setenv ("XUNIT_VERBOSE", "true", true);
-    // setenv ("MONO_LOG_LEVEL", "debug", true);
-    // setenv ("MONO_LOG_MASK", "all", true);
+    setenv ("XUNIT_VERBOSE", "true", true);
+    setenv ("MONO_LOG_LEVEL", "debug", true);
+    setenv ("MONO_LOG_MASK", "all", true);
 
     bool wait_for_debugger = false;
     chdir (bundle_path);

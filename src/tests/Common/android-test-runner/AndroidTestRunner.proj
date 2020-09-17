@@ -35,7 +35,6 @@
       <StripDebugSymbols>False</StripDebugSymbols>
       <StripDebugSymbols Condition="'$(Configuration)' == 'Release'">True</StripDebugSymbols>
       <AdbTool>$(ANDROID_SDK_ROOT)\platform-tools\adb</AdbTool>
-      <CopyDependencies>True</CopyDependencies>
     </PropertyGroup>
 
     <ItemGroup>
@@ -57,10 +56,8 @@
         MonoRuntimeHeaders="%(ResolvedRuntimePack.PackageDirectory)\runtimes\android-$(Platform)\native\include\mono-2.0"
         MainLibraryFileName="$(TestAssembly)"
         StripDebugSymbols="$(StripDebugSymbols)"
-        SourceDir="$(MSBuildThisFileDirectory)/Dependency"
-        OutputDir="$(ApkDir)"
-        CopyDependencies="$(CopyDependencies)"
-        AssemblySearchPaths="@(AssemblySearchPaths)">
+        SourceDir="$(CORE_ROOT)/runtimepack/native"
+        OutputDir="$(ApkDir)">
         <Output TaskParameter="ApkBundlePath" PropertyName="ApkBundlePath" />
         <Output TaskParameter="ApkPackageId" PropertyName="ApkPackageId" />
     </AndroidAppBuilderTask>

@@ -6,8 +6,6 @@ using System.IO;
 using System.Linq;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
-using System.Reflection;
-using System.Collections.Generic;
 
 public class AndroidAppBuilderTask : Task
 {
@@ -49,49 +47,6 @@ public class AndroidAppBuilderTask : Task
 
     public override bool Execute()
     {
-        if (CopyDependencies)
-        {
-            var paths = new List<string>();
-            _assemblies = new SortedDictionary<string, Assembly>();
-
-            // Collect and load assemblies used by the app
-            foreach (var v in AssemblySearchPaths!)
-            {
-                var dir = v.ItemSpec;
-                if (!Directory.Exists(dir))
-                    throw new ArgumentException($"Directory '{dir}' doesn't exist or not a directory.");
-                paths.Add(dir);
-            }
-            _resolver = new Resolver(paths);
-            var mlc = new MetadataLoadContext(_resolver, "System.Private.CoreLib");
-
-            var mainAssembly = mlc.LoadFromAssemblyPath(MainLibraryFileName);
-            Add(mlc, mainAssembly);
-
-            if (ExtraAssemblies != null)
-            {
-                foreach (var item in ExtraAssemblies)
-                {
-            try
-                {
-                        var refAssembly = mlc.LoadFromAssemblyPath(item.ItemSpec);
-                        Add(mlc, refAssembly);
-            }
-            catch (System.IO.FileLoadException)
-            {
-                if (!SkipMissingAssemblies)
-                {
-                    throw;
-                }
-            }
-                }
-            }
-            
-            Directory.CreateDirectory(SourceDir!);
-            foreach (var assembly in _assemblies!.Values)
-                File.Copy(assembly.Location, Path.Join(SourceDir, Path.GetFileName(assembly.Location)), true);
-        }
-
         Utils.Logger = Log;
 
         string abi = DetermineAbi();
