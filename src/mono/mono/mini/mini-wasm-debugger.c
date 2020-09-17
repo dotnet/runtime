@@ -466,21 +466,17 @@ assembly_loaded (MonoProfiler *prof, MonoAssembly *assembly)
 	DEBUG_PRINTF (2, "assembly_loaded callback called for %s\n", assembly->aname.name);
 	MonoImage *assembly_image = assembly->image;
 	MonoImage *pdb_image = NULL;
-	MonoDebugHandle *handle = mono_debug_get_handle (assembly_image);
-	if (handle) {
-		MonoPPDBFile *ppdb = handle->ppdb;
-		if (!mono_ppdb_is_embedded (ppdb)) //if it's an embedded pdb we don't need to send pdb extrated to DebuggerProxy.
-			pdb_image = mono_ppdb_get_image (ppdb); 
-	}
-
-	if (pdb_image) {
-		mono_wasm_asm_loaded (
-			assembly_image->assembly_name, assembly_image->raw_data, assembly_image->raw_data_len,
-			pdb_image->raw_data, pdb_image->raw_data_len);
-	} else if (mono_has_pdb_checksum (assembly_image->raw_data, assembly_image->raw_data_len)) { //if it's a release assembly we don't need to send to DebuggerProxy
-		mono_wasm_asm_loaded (
-			assembly_image->assembly_name, assembly_image->raw_data, assembly_image->raw_data_len,
-			NULL, 0);
+	if (mono_has_pdb_checksum ((char *) assembly_image->raw_data, assembly_image->raw_data_len)) { //if it's a release assembly we don't need to send to DebuggerProxy
+		MonoDebugHandle *handle = mono_debug_get_handle (assembly_image);
+		if (handle) {
+			MonoPPDBFile *ppdb = handle->ppdb;
+			if (!mono_ppdb_is_embedded (ppdb)) { //if it's an embedded pdb we don't need to send pdb extrated to DebuggerProxy. 
+				pdb_image = mono_ppdb_get_image (ppdb);
+				mono_wasm_asm_loaded (assembly_image->assembly_name, assembly_image->raw_data, assembly_image->raw_data_len, pdb_image->raw_data, pdb_image->raw_data_len);
+				return;
+			}
+		}
+		mono_wasm_asm_loaded (assembly_image->assembly_name, assembly_image->raw_data, assembly_image->raw_data_len, NULL, 0);
 	}
 }
 
