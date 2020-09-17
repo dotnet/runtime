@@ -806,12 +806,12 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
             }
 
-            foreach (var step in steps)
+            foreach (DebugItem step in steps)
             {
                 AssemblyInfo assembly = null;
                 try
                 {
-                    var bytes = await step.Data.ConfigureAwait(false);
+                    byte[][]  bytes = await step.Data.ConfigureAwait(false);
                     assembly = new AssemblyInfo(this.resolver, step.Url, bytes[0], bytes[1]);
                 }
                 catch (Exception e)
