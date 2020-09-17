@@ -44,7 +44,7 @@ New-Item -Type dir $zipPath -Force
 $tmp = New-TemporaryFile | Rename-Item -NewName { $_ -replace 'tmp$', 'zip' } -PassThru
 Write-Host "Temp location is $tmp"
 
-New-Item -Name $PmiAssembliesDirectory\zipped\superpmi_min.zip -ItemType File -Force
+New-Item -Name $zipPath\superpmi_min.zip -ItemType File -Force
 $start_time = Get-Date
 (New-Object System.Net.WebClient).DownloadFile($url, $tmp)
 Copy-Item $tmp -Destination $zipPath\superpmi_min.zip
