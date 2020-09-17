@@ -119,25 +119,14 @@ namespace Microsoft.Interop
             INamedTypeSymbol currType = method.ContainingType;
             while (!(currType is null))
             {
-                var visibility = currType.DeclaredAccessibility switch
-                {
-                    Accessibility.Public => SyntaxKind.PublicKeyword,
-                    Accessibility.Private => SyntaxKind.PrivateKeyword,
-                    Accessibility.Protected => SyntaxKind.ProtectedKeyword,
-                    Accessibility.Internal => SyntaxKind.InternalKeyword,
-                    _ => throw new NotSupportedException(), // [TODO] Proper error message
-                };
+                // Use the declaring syntax as a basis for this type declaration.
+                // Since we're generating source for the method, we know that the current type
+                // has to be declared in source.
+                TypeDeclarationSyntax typeDecl = (TypeDeclarationSyntax)currType.DeclaringSyntaxReferences[0].GetSyntax();
+                // Remove current members and attributes so we don't double declare them.
+                typeDecl = typeDecl.WithMembers(List<MemberDeclarationSyntax>())
+                                   .WithAttributeLists(List<AttributeListSyntax>());
 
-                TypeDeclarationSyntax typeDecl = currType.TypeKind switch
-                {
-                    TypeKind.Class => ClassDeclaration(currType.Name),
-                    TypeKind.Struct => StructDeclaration(currType.Name),
-                    _ => throw new NotSupportedException(), // [TODO] Proper error message
-                };
-
-                typeDecl = typeDecl.AddModifiers(
-                    Token(visibility),
-                    Token(SyntaxKind.PartialKeyword));
                 containingTypes.Add(typeDecl);
 
                 currType = currType.ContainingType;
