@@ -68,7 +68,6 @@ namespace System.Xml.Tests
         public void PassNullXmlSchemaInfo__Valid()
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_VALIDATE_ATTRIBUTE);
-            XmlSchemaInfo info = new XmlSchemaInfo();
 
             val.Initialize();
             val.ValidateElement("OneAttributeElement", "", null);
