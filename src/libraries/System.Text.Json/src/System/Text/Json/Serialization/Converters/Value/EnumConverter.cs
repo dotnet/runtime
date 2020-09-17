@@ -24,9 +24,8 @@ namespace System.Text.Json.Serialization.Converters
         private readonly JsonNamingPolicy? _namingPolicy;
 
         private readonly ConcurrentDictionary<ulong, JsonEncodedText> _nameCache;
-        private readonly ConcurrentDictionary<JsonEncodedText, string> _sourceNameCache;
+        private ConcurrentDictionary<string, string>? _sourceNameCache;
         private readonly bool _needRestoreSourceName;
-        private readonly JsonSerializerOptions _serializerOptions;
 
         // This is used to prevent flooding the cache due to exponential bitwise combinations of flags.
         // Since multiple threads can add to the cache, a few more values might be added.
@@ -46,9 +45,7 @@ namespace System.Text.Json.Serialization.Converters
         {
             _converterOptions = converterOptions;
             _namingPolicy = namingPolicy;
-            _serializerOptions = serializerOptions;
             _nameCache = new ConcurrentDictionary<ulong, JsonEncodedText>();
-            _sourceNameCache = new ConcurrentDictionary<JsonEncodedText, string>();
 
             string[] names = Enum.GetNames(TypeToConvert);
             Array values = Enum.GetValues(TypeToConvert);
@@ -74,7 +71,12 @@ namespace System.Text.Json.Serialization.Converters
                         : FormatEnumValue(name, encoder));
 
                 if (namingPolicy != null)
-                    _sourceNameCache.TryAdd(FormatEnumValue(name, encoder), name);
+                {
+                    if(_sourceNameCache == null)
+                        _sourceNameCache = new ConcurrentDictionary<string, string>();
+
+                    _sourceNameCache.TryAdd(FormatEnumValueToString(name, null), name);
+                }
             }
 
             _needRestoreSourceName = namingPolicy != null;
@@ -288,14 +290,33 @@ namespace System.Text.Json.Serialization.Converters
             return JsonEncodedText.Encode(formatted, encoder);
         }
 
-        private string FormatEnumValueToString(string value, JavaScriptEncoder? encoder)
+        private string FormatNamingPolicy(string value, bool isWrite)
+        {
+            Debug.Assert(_namingPolicy != null);
+
+            if (isWrite)
+            {
+                return _namingPolicy.ConvertName(value);
+            }
+            else
+            {
+                if (_sourceNameCache.ContainsKey(value))
+                    return _sourceNameCache[value];
+
+                ThrowHelper.ThrowJsonException();
+            }
+
+            return default;
+        }
+
+        private string FormatEnumValueToString(string value, JavaScriptEncoder? encoder, bool isWrite = true)
         {
             Debug.Assert(_namingPolicy != null);
 
             string converted;
             if (!value.Contains(ValueSeparator))
             {
-                converted = _namingPolicy.ConvertName(value);
+                converted = FormatNamingPolicy(value, isWrite);
             }
             else
             {
@@ -310,7 +331,7 @@ namespace System.Text.Json.Serialization.Converters
 
                 for (int i = 0; i < enumValues.Length; i++)
                 {
-                    enumValues[i] = _namingPolicy.ConvertName(enumValues[i]);
+                    enumValues[i] = FormatNamingPolicy(enumValues[i], isWrite);
                 }
 
                 converted = string.Join(ValueSeparator, enumValues);
@@ -324,7 +345,7 @@ namespace System.Text.Json.Serialization.Converters
             string? enumString = reader.GetString();
 
             if (_needRestoreSourceName && enumString != null)
-                _sourceNameCache.TryGetValue(FormatEnumValue(enumString, _serializerOptions.Encoder), out enumString);
+                enumString = FormatEnumValueToString(enumString, null, false);
 
             // Try parsing case sensitive first
             if (!Enum.TryParse(enumString, out T value)

@@ -51,6 +51,8 @@ namespace System.Text.Json.Serialization.Tests
             }
 
         }
+
+        [Flags]
         public enum TestType
         {
             None,
@@ -91,6 +93,37 @@ namespace System.Text.Json.Serialization.Tests
                 var deserializedObject = JsonSerializer.Deserialize<ObjectWithEnumProperty>(json, opts);
                 Assert.Equal(sourceObject.TestType, deserializedObject.TestType);
             }
+        }
+
+
+        [Fact]
+        public void TestFlagsEnumValuesWithNamingPolicy()
+        {
+            var namingPolicy = new SnakeCaseNamingPolicy();
+
+            var opts = new JsonSerializerOptions()
+            {
+                PropertyNamingPolicy = namingPolicy,
+                DictionaryKeyPolicy = namingPolicy,
+                Converters =
+                {
+                    new JsonStringEnumConverter(namingPolicy)
+                }
+            };
+
+            var sourceObject = new ObjectWithEnumProperty()
+            {
+                TestType = TestType.ValueOne | TestType.ValueTwo
+            };
+
+            var json = JsonSerializer.Serialize(sourceObject, opts);
+            _outputHelper.WriteLine(json);
+
+            Assert.Equal(@"{""test_type"":""value_one, value_two""}", json);
+
+            var restoredObject = JsonSerializer.Deserialize<ObjectWithEnumProperty>(json, opts);
+
+            Assert.Equal(sourceObject.TestType, restoredObject.TestType);
         }
     }
 }
