@@ -203,7 +203,11 @@ namespace Microsoft.Extensions.Caching.Memory
             if (!_disposed)
             {
                 _disposed = true;
+
+                // Ensure the _scope reference is cleared because it can reference other CacheEntry instances.
+                // This CacheEntry is going to be put into a MemoryCache, and we don't want to root unnecessary objects.
                 _scope.Dispose();
+                _scope = null;
 
                 // Don't commit or propagate options if the CacheEntry Value was never set.
                 // We assume an exception occurred causing the caller to not set the Value successfully,
