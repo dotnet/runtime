@@ -13,7 +13,7 @@
 #include <palsuite.h>
 
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(file_io_GetStdHandle_test1_paltest_getstdhandle_test1, "file_io/GetStdHandle/test1/paltest_getstdhandle_test1")
 {
     HANDLE hFile = NULL;
     DWORD dwBytesWritten = 0;

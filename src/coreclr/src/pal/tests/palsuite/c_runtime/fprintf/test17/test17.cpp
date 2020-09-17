@@ -18,7 +18,7 @@
  * Depends on memcmp, strlen, fopen, fseek and fgets.
  */
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime_fprintf_test17_paltest_fprintf_test17, "c_runtime/fprintf/test17/paltest_fprintf_test17")
 {
     double val = 2560.001;
     double neg = -2560.001;

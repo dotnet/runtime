@@ -12,9 +12,9 @@
 
 #include <palsuite.h>
 
-const char* szTextFile = "text.txt";
 
-void CleanUp(HANDLE hFile)
+
+void CleanUp_GetFileSize_test1(HANDLE hFile)
 {
     if (CloseHandle(hFile) != TRUE)
     {
@@ -28,7 +28,7 @@ void CleanUp(HANDLE hFile)
     }
 }
 
-void CheckFileSize(HANDLE hFile, DWORD dwOffset, DWORD dwHighOrder)
+void CheckFileSize_GetFileSize_test1(HANDLE hFile, DWORD dwOffset, DWORD dwHighOrder)
 {
     DWORD dwRc = 0;
     DWORD dwReturnedHighOrder = 0;
@@ -39,7 +39,7 @@ void CheckFileSize(HANDLE hFile, DWORD dwOffset, DWORD dwHighOrder)
     {
         Trace("GetFileSize: ERROR -> Call to SetFilePointer failed with %ld.\n", 
             GetLastError());
-        CleanUp(hFile);
+        CleanUp_GetFileSize_test1(hFile);
         Fail("");
     }
     else
@@ -48,21 +48,21 @@ void CheckFileSize(HANDLE hFile, DWORD dwOffset, DWORD dwHighOrder)
         {
             Trace("GetFileSize: ERROR -> Call to SetEndOfFile failed with %ld.\n", 
                 GetLastError());
-            CleanUp(hFile);
+            CleanUp_GetFileSize_test1(hFile);
             Fail("");
         }
         dwReturnedOffset = GetFileSize(hFile, &dwReturnedHighOrder);
         if ((dwReturnedOffset != dwOffset) || 
             (dwReturnedHighOrder != dwHighOrder))
         {
-            CleanUp(hFile);
+            CleanUp_GetFileSize_test1(hFile);
             Fail("GetFileSize: ERROR -> File sizes do not match up.\n");
         }
     }
 }
 
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(file_io_GetFileSize_test1_paltest_getfilesize_test1, "file_io/GetFileSize/test1/paltest_getfilesize_test1")
 {
     HANDLE hFile = NULL;
     DWORD dwRc = 0;
@@ -126,14 +126,14 @@ int __cdecl main(int argc, char *argv[])
     }
 
     /* give the file a size */
-    CheckFileSize(hFile, 256, 0);
+    CheckFileSize_GetFileSize_test1(hFile, 256, 0);
 
     /* make the file large using the high order option */
-    CheckFileSize(hFile, 256, 1);
+    CheckFileSize_GetFileSize_test1(hFile, 256, 1);
 
 
     /* set the file size to zero */
-    CheckFileSize(hFile, 0, 0);
+    CheckFileSize_GetFileSize_test1(hFile, 0, 0);
 
     /*  test if file size changes by writing to it. */
     /* get file size */
@@ -144,7 +144,7 @@ int __cdecl main(int argc, char *argv[])
     {
         Trace("GetFileSize: ERROR -> Call to WriteFile failed with %ld.\n", 
              GetLastError());
-        CleanUp(hFile);
+        CleanUp_GetFileSize_test1(hFile);
         Fail("");
     }
     
@@ -153,7 +153,7 @@ int __cdecl main(int argc, char *argv[])
     {
         Trace("GetFileSize: ERROR -> Call to FlushFileBuffers failed with %ld.\n", 
              GetLastError());
-        CleanUp(hFile);
+        CleanUp_GetFileSize_test1(hFile);
         Fail("");
     }
 
@@ -161,12 +161,12 @@ int __cdecl main(int argc, char *argv[])
     dwRc2 = GetFileSize(hFile, NULL);
     if((dwRc2-dwRc) !=strlen(data))
     {
-        CleanUp(hFile);
+        CleanUp_GetFileSize_test1(hFile);
         Fail("GetFileSize: ERROR -> File size did not increase properly after.\n"
              "writing %d chars\n", strlen(data));        
     }
 
-    CleanUp(hFile);
+    CleanUp_GetFileSize_test1(hFile);
     PAL_Terminate();
     return PASS;
 }

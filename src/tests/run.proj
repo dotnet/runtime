@@ -403,10 +403,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
   <Target Name="Build">
 
     <!-- generate project.lock.json file corresponding to above json file -->
-    <MSBuild Projects="$(RepoRoot)/src/coreclr/tests/src/Common/test_dependencies/test_dependencies.csproj"
-             Condition=" '$(BuildWrappers)'=='true' " />
-
-    <MSBuild Projects="$(RepoRoot)/src/coreclr/tests/src/Common/test_dependencies_fs/test_dependencies.fsproj"
+    <MSBuild Projects="$(RepoRoot)/src/tests/Common/test_dependencies/test_dependencies.csproj"
              Condition=" '$(BuildWrappers)'=='true' " />
 
     <MSBuild Projects="$(MSBuildProjectFile)"

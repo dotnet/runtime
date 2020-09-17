@@ -19,7 +19,7 @@
 #include <palsuite.h>
 #include "myexitcode.h"
 
-int __cdecl main( int argc, char **argv ) 
+PALTEST(threading_ExitThread_test2_paltest_exitthread_test2_child, "threading/ExitThread/test2/paltest_exitthread_test2_child")
 {
     /* initialize the PAL */
     if( PAL_Initialize(argc, argv) != 0 )

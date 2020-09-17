@@ -12,7 +12,7 @@ steps:
 
 
   - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-    - ${{ if notin(parameters.archType, 'x86', 'arm') }}:
+    - ${{ if notin(parameters.archType, 'x86') }}:
       - script: set __TestIntermediateDir=int&&$(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) -ci -alpinedac $(officialBuildIdArg)
         displayName: Build Cross OS Linux-musl DAC for Windows
 
@@ -25,15 +25,14 @@ steps:
           !**/sharedFramework/**/*
         TargetFolder: $(buildLinuxDacStagingPath)
 
-    - ${{ if ne(parameters.archType, 'arm') }}:
-      - task: CopyFiles@2
-        displayName: Gather CrossDac Artifacts (Linux_musl)
-        inputs:
-          SourceFolder: $(buildMuslDacRootFolderPath)
-          Contents: |
-            **/*
-            !**/sharedFramework/**/*
-          TargetFolder: '$(buildMuslDacStagingPath)'
+    - task: CopyFiles@2
+      displayName: Gather CrossDac Artifacts (Linux_musl)
+      inputs:
+        SourceFolder: $(buildMuslDacRootFolderPath)
+        Contents: |
+          **/*
+          !**/sharedFramework/**/*
+        TargetFolder: '$(buildMuslDacStagingPath)'
 
   - ${{ if eq(parameters.osGroup, 'Linux') }}:
     - task: CopyFiles@2

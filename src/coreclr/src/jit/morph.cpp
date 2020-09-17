@@ -4262,10 +4262,9 @@ GenTree* Compiler::fgMorphMultiregStructArg(GenTree* arg, fgArgTabEntry* fgEntry
 #if FEATURE_MULTIREG_ARGS
     // Examine 'arg' and setup argValue objClass and structSize
     //
-    CORINFO_CLASS_HANDLE objClass = gtGetStructHandleIfPresent(arg);
-    noway_assert(objClass != NO_CLASS_HANDLE);
-    GenTree* argValue   = arg; // normally argValue will be arg, but see right below
-    unsigned structSize = 0;
+    const CORINFO_CLASS_HANDLE objClass   = gtGetStructHandle(arg);
+    GenTree*                   argValue   = arg; // normally argValue will be arg, but see right below
+    unsigned                   structSize = 0;
 
     if (arg->TypeGet() != TYP_STRUCT)
     {
@@ -4274,8 +4273,9 @@ GenTree* Compiler::fgMorphMultiregStructArg(GenTree* arg, fgArgTabEntry* fgEntry
     }
     else if (arg->OperGet() == GT_OBJ)
     {
-        GenTreeObj* argObj = arg->AsObj();
-        structSize         = argObj->GetLayout()->GetSize();
+        GenTreeObj*        argObj    = arg->AsObj();
+        const ClassLayout* objLayout = argObj->GetLayout();
+        structSize                   = objLayout->GetSize();
         assert(structSize == info.compCompHnd->getClassSize(objClass));
 
         // If we have a GT_OBJ of a GT_ADDR then we set argValue to the child node of the GT_ADDR.
@@ -4285,10 +4285,14 @@ GenTree* Compiler::fgMorphMultiregStructArg(GenTree* arg, fgArgTabEntry* fgEntry
             GenTree* underlyingTree = op1->AsOp()->gtOp1;
 
             // Only update to the same type.
-            if (underlyingTree->OperIs(GT_LCL_VAR) && (underlyingTree->TypeGet() == argValue->TypeGet()) &&
-                (objClass == gtGetStructHandleIfPresent(underlyingTree)))
+            if (underlyingTree->OperIs(GT_LCL_VAR))
             {
-                argValue = underlyingTree;
+                const GenTreeLclVar* lclVar = underlyingTree->AsLclVar();
+                const LclVarDsc*     varDsc = lvaGetDesc(lclVar);
+                if (ClassLayout::AreCompatible(varDsc->GetLayout(), objLayout))
+                {
+                    argValue = underlyingTree;
+                }
             }
         }
     }
@@ -4306,7 +4310,6 @@ GenTree* Compiler::fgMorphMultiregStructArg(GenTree* arg, fgArgTabEntry* fgEntry
     {
         structSize = info.compCompHnd->getClassSize(objClass);
     }
-    noway_assert(objClass != NO_CLASS_HANDLE);
 
     var_types hfaType                 = TYP_UNDEF;
     var_types elemType                = TYP_UNDEF;

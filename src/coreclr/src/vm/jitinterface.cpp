@@ -2629,7 +2629,7 @@ void CEEInfo::embedGenericHandle(
 
         // Runtime lookup is only required for stubs. Regular entrypoints are always the same shared MethodDescs.
         fRuntimeLookup = pMD->IsWrapperStub() &&
-            (pMD->GetMethodTable()->IsSharedByGenericInstantiations() || TypeHandle::IsCanonicalSubtypeInstantiation(methodInst));
+            (th.IsSharedByGenericInstantiations() || TypeHandle::IsCanonicalSubtypeInstantiation(methodInst));
     }
     else
     if (!fEmbedParent && pResolvedToken->hField != NULL)
@@ -11900,31 +11900,22 @@ HRESULT CEEJitInfo::getMethodBlockCounts (
 
 #ifdef FEATURE_PGO
 
-    // For now, only return the info for the method being jitted.
-    // Will need to fix this to gain access to pgo data for inlinees.
     MethodDesc* pMD = (MethodDesc*)ftnHnd;
-
-    if (pMD == m_pMethodBeingCompiled)
+    unsigned codeSize = 0;
+    if (pMD->IsDynamicMethod())
     {
-        unsigned codeSize = 0;
-        if (pMD->IsDynamicMethod())
-        {
-            unsigned stackSize, ehSize;
-            CorInfoOptions options;
-            DynamicResolver * pResolver = m_pMethodBeingCompiled->AsDynamicMethodDesc()->GetResolver();
-            pResolver->GetCodeInfo(&codeSize, &stackSize, &options, &ehSize);
-        }
-        else
-        {
-            codeSize = m_ILHeader->GetCodeSize();
-        }
-
-        hr = PgoManager::getMethodBlockCounts(pMD, codeSize, pCount, pBlockCounts, pNumRuns);
+        unsigned stackSize, ehSize;
+        CorInfoOptions options;
+        DynamicResolver * pResolver = m_pMethodBeingCompiled->AsDynamicMethodDesc()->GetResolver();
+        pResolver->GetCodeInfo(&codeSize, &stackSize, &options, &ehSize);
     }
-    else
+    else if (pMD->HasILHeader())
     {
-        hr = E_NOTIMPL;
+        COR_ILMETHOD_DECODER decoder(pMD->GetILHeader());
+        codeSize = decoder.GetCodeSize();
     }
+
+    hr = PgoManager::getMethodBlockCounts(pMD, codeSize, pCount, pBlockCounts, pNumRuns);
 
 #else
     _ASSERTE(!"getMethodBlockCounts not implemented on CEEJitInfo!");
