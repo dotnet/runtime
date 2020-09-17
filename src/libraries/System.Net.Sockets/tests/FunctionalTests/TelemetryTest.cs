@@ -71,6 +71,8 @@ namespace System.Net.Sockets.Tests
             }
         }
 
+        // RemoteExecutor only supports simple argument types such as strings
+        // That's why we use this helper method instead of returning SocketHelperBases from MemberDatas directly
         private static SocketHelperBase GetHelperBase(string socketMethod)
         {
             return socketMethod switch
