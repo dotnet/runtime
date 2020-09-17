@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -30,47 +31,11 @@ namespace System.Text.Json.Serialization.Tests
         private static IEnumerable<bool> IgnoreNullValues
             => new[] { true, false };
 
-        [Theory]
-        [MemberData(nameof(TestData), /* enumeratePayloadTweaks: */ false)]
-        public static async Task ShouldWorkAtAnyPosition(string json, int bufferSize, Type type, bool ignoreNullValues)
-        {
-            var stream = new MemoryStream(Encoding.UTF8.GetBytes(json));
-            {
-                var readOptions = new JsonSerializerOptions
-                {
-                    DefaultBufferSize = bufferSize,
-                    IgnoreNullValues = ignoreNullValues,
-                };
-
-                var array = (ITestObject[])await JsonSerializer.DeserializeAsync(stream, type, readOptions);
-
-                Assert.NotNull(array);
-                Assert.Equal(1, array.Length);
-                array[0].Verify();
-            }
-        }
-
-        [Theory]
-        [MemberData(nameof(TestData), /* enumeratePayloadTweaks: */ true)]
-        public static async Task InvalidNullTokenShouldFailAtAnyPosition(string json, int bufferSize, Type type, bool ignoreNullValues)
-        {
-            var stream = new MemoryStream(Encoding.UTF8.GetBytes(json));
-            {
-                var readOptions = new JsonSerializerOptions
-                {
-                    DefaultBufferSize = bufferSize,
-                    IgnoreNullValues = ignoreNullValues,
-                };
-
-                await Assert.ThrowsAsync<JsonException>(async () => await JsonSerializer.DeserializeAsync(stream, type, readOptions));
-            }
-        }
-
         private static IEnumerable<object[]> TestData(bool enumeratePayloadTweaks)
         {
-            // The payload gets padded with leading ' ' chars, so that a continuation
-            // happens at every position of the payload. The resulting string is then 
-            // passed to the test method.
+            // The serialized json gets padded with leading ' ' chars. The length of the
+            // incrementing paddings, leads to continuations at every position of the payload.
+            // The complete strings (padding + payload) are then passed to the test method.
 
             // <------min-padding------>[{--payload--}]               min-padding = buffer - payload + 1
             // <-----------2^n byte buffer----------->
@@ -109,6 +74,93 @@ namespace System.Text.Json.Serialization.Tests
                     }
                 }
             }
+        }
+
+        [Theory]
+        [MemberData(nameof(TestData), /* enumeratePayloadTweaks: */ false)]
+        public static async Task ShouldWorkAtAnyPosition_Stream(string json, int bufferSize, Type type, bool ignoreNullValues)
+        {
+            var stream = new MemoryStream(Encoding.UTF8.GetBytes(json));
+            {
+                var readOptions = new JsonSerializerOptions
+                {
+                    DefaultBufferSize = bufferSize,
+                    IgnoreNullValues = ignoreNullValues,
+                };
+
+                var array = (ITestObject[])await JsonSerializer.DeserializeAsync(stream, type, readOptions);
+
+                Assert.NotNull(array);
+                Assert.Equal(1, array.Length);
+                array[0].Verify();
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(TestData), /* enumeratePayloadTweaks: */ true)]
+        public static async Task InvalidJsonShouldFailAtAnyPosition_Stream(string json, int bufferSize, Type type, bool ignoreNullValues)
+        {
+            var stream = new MemoryStream(Encoding.UTF8.GetBytes(json));
+            {
+                var readOptions = new JsonSerializerOptions
+                {
+                    DefaultBufferSize = bufferSize,
+                    IgnoreNullValues = ignoreNullValues,
+                };
+
+                await Assert.ThrowsAsync<JsonException>(async () => await JsonSerializer.DeserializeAsync(stream, type, readOptions));
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(TestData), /* enumeratePayloadTweaks: */ false)]
+        public static void ShouldWorkAtAnyPosition_Sequence(string json, int bufferSize, Type type, bool ignoreNullValues)
+        {
+            var readOptions = new JsonSerializerOptions { IgnoreNullValues = ignoreNullValues, };
+
+            var chunk = new Chunk(json, bufferSize);
+            var sequence = new ReadOnlySequence<byte>(chunk, 0, chunk.Next, chunk.Next.Memory.Length);
+
+            var reader = new Utf8JsonReader(sequence, true, default);
+            var array = (ITestObject[])JsonSerializer.Deserialize(ref reader, type, readOptions);
+
+            Assert.NotNull(array);
+            Assert.Equal(1, array.Length);
+            array[0].Verify();
+        }
+
+        [Theory]
+        [MemberData(nameof(TestData), /* enumeratePayloadTweaks: */ true)]
+        public static void InvalidJsonShouldFailAtAnyPosition_Sequence(string json, int bufferSize, Type type, bool ignoreNullValues)
+        {
+            var readOptions = new JsonSerializerOptions { IgnoreNullValues = ignoreNullValues, };
+
+            var chunk = new Chunk(json, bufferSize);
+            var sequence = new ReadOnlySequence<byte>(chunk, 0, chunk.Next, chunk.Next.Memory.Length);
+
+            Assert.Throws<JsonException>(() =>
+            {
+                var reader = new Utf8JsonReader(sequence, true, default);
+                JsonSerializer.Deserialize(ref reader, type, readOptions);
+            });
+        }
+
+        private class Chunk : ReadOnlySequenceSegment<byte>
+        {
+            public Chunk(string json, int firstSegmentLength)
+            {
+                Memory<byte> bytes = Encoding.UTF8.GetBytes(json);
+                Memory = bytes.Slice(0, firstSegmentLength);
+                RunningIndex = 0;
+                Next = new Chunk()
+                {
+                    Memory = bytes.Slice(firstSegmentLength),
+                    RunningIndex = firstSegmentLength,
+                    Next = null,
+                };
+            }
+            private Chunk()
+            { }
         }
 
         private interface ITestObject
