@@ -5577,9 +5577,7 @@ namespace System.Threading.Tasks
             /// Returns whether we should notify the debugger of a wait completion.  This returns
             /// true iff at least one constituent task has its bit set.
             /// </summary>
-            internal override bool ShouldNotifyDebuggerOfWaitCompletion =>
-                base.ShouldNotifyDebuggerOfWaitCompletion &&
-                AnyTaskRequiresNotifyDebuggerOfWaitCompletion(m_tasks);
+            internal override bool ShouldNotifyDebuggerOfWaitCompletion => base.ShouldNotifyDebuggerOfWaitCompletion;
 
             private void Complete()
             {
@@ -5588,14 +5586,14 @@ namespace System.Threading.Tasks
                 // If none of the tasks fault or are canceled, then result will be RanToCompletion
                 if (m_faultedTasks != null)
                 {
-                    Debug.Assert(observedExceptions.Count > 0, "Expected at least one exception");
+                    Debug.Assert(m_faultedTasks.IsEmpty, "Expected at least one exception");
 
                     // We don't need to TraceOperationCompleted here because TrySetException will call Finish and we'll log it there
 
                     var observedExceptions = new List<ExceptionDispatchInfo>();
                     foreach (Task faultedTask in m_faultedTasks)
                     {
-                        observedExceptions.AddRange(faultedTask.GetCancellationExceptionDispatchInfo());
+                        observedExceptions.AddRange(faultedTask.GetExceptionDispatchInfos());
                     }
 
                     TrySetException(observedExceptions);
