@@ -273,16 +273,22 @@ namespace System.Text.Json.Serialization.Tests
 
         // From https://github.com/dotnet/runtime/issues/42070
         [Theory]
-        [InlineData("CustomerSearchApi108KB")]
-        [InlineData("CustomerSearchApi107KB")]
-        public static async Task ContinuationAtNullToken(string resourceName)
+        [MemberData(nameof(ContinuationAtNullTokenTestData))]
+        public static async Task ContinuationAtNullToken(string payload)
         {
-            using (Stream stream = new MemoryStream(Encoding.UTF8.GetBytes(SR.GetResourceString(resourceName))))
+            using (Stream stream = new MemoryStream(Encoding.UTF8.GetBytes(payload)))
             {
                 CustomerCollectionResponse response = await JsonSerializer.DeserializeAsync<CustomerCollectionResponse>(stream, new JsonSerializerOptions { IgnoreNullValues = true });
                 Assert.Equal(50, response.Customers.Count);
             }
         }
+
+        public static IEnumerable<object[]> ContinuationAtNullTokenTestData
+            => new[]
+            {
+                new[] { SR.CustomerSearchApi108KB },
+                new[] { SR.CustomerSearchApi107KB },
+            };
 
         private class CustomerCollectionResponse
         {
