@@ -127,6 +127,13 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[] { @"(?>\w+)(?<!a)", "aa", RegexOptions.None, 0, 2, false, string.Empty };
             yield return new object[] { @".+a", "baa", RegexOptions.None, 0, 3, true, "baa" };
             yield return new object[] { @"[ab]+a", "cacbaac", RegexOptions.None, 0, 7, true, "baa" };
+            foreach (RegexOptions lineOption in new[] { RegexOptions.None, RegexOptions.Singleline, RegexOptions.Multiline })
+            {
+                yield return new object[] { @".*", "abc", lineOption, 1, 2, true, "bc" };
+                yield return new object[] { @".*c", "abc", lineOption, 1, 2, true, "bc" };
+                yield return new object[] { @"b.*", "abc", lineOption, 1, 2, true, "bc" };
+                yield return new object[] { @".*", "abc", lineOption, 2, 1, true, "c" };
+            }
 
             // Using beginning/end of string chars \A, \Z: Actual - "\\Aaaa\\w+zzz\\Z"
             yield return new object[] { @"\Aaaa\w+zzz\Z", "aaaasdfajsdlfjzzz", RegexOptions.IgnoreCase, 0, 17, true, "aaaasdfajsdlfjzzz" };
@@ -852,6 +859,11 @@ namespace System.Text.RegularExpressions.Tests
                     Assert.True(Regex.IsMatch(input, pattern));
                 }
 
+                // Note: this block will fail if any inputs attempt to look for anchors or lookbehinds at the initial position,
+                // as there is a difference between Match(input, beginning) and Match(input, beginning, input.Lenght - beginning)
+                // in that the former doesn't modify from 0 what the engine sees as the beginning of the input whereas the latter
+                // is equivalent to taking a substring and then matching on that.  However, as we currently don't have any such inputs,
+                // it's currently a viable way to test the additional overload.  Same goes for the similar case below with options.
                 if (beginning + length == input.Length)
                 {
                     // Use Match(string, int)
@@ -859,11 +871,9 @@ namespace System.Text.RegularExpressions.Tests
 
                     Assert.True(r.IsMatch(input, beginning));
                 }
-                else
-                {
-                    // Use Match(string, int, int)
-                    VerifyMatch(r.Match(input, beginning, length), true, expected);
-                }
+
+                // Use Match(string, int, int)
+                VerifyMatch(r.Match(input, beginning, length), true, expected);
             }
 
             r = new Regex(pattern, options);
@@ -887,6 +897,31 @@ namespace System.Text.RegularExpressions.Tests
             {
                 // Use Match(string, int, int)
                 VerifyMatch(r.Match(input, beginning, length), true, expected);
+            }
+        }
+
+        [Theory]
+        // Anchors
+        [InlineData(@"^.*", "abc", 0, true, true)]
+        [InlineData(@"^.*", "abc", 1, false, true)]
+        // Positive Lookbehinds
+        [InlineData(@"(?<=abc)def", "abcdef", 3, true, false)]
+        // Negative Lookbehinds
+        [InlineData(@"(?<!abc)def", "abcdef", 3, false, true)]
+        public void Match_StartatDiffersFromBeginning(string pattern, string input, int startat, bool expectedSuccessStartAt, bool expectedSuccessBeginning)
+        {
+            foreach (RegexOptions line in new[] { RegexOptions.None, RegexOptions.Singleline, RegexOptions.Multiline })
+            {
+                foreach (RegexOptions options in new[] { line, line | RegexOptions.Compiled })
+                {
+                    var r = new Regex(pattern, options);
+
+                    Assert.Equal(expectedSuccessStartAt, r.IsMatch(input, startat));
+                    Assert.Equal(expectedSuccessStartAt, r.Match(input, startat).Success);
+
+                    Assert.Equal(expectedSuccessBeginning, r.Match(input.Substring(startat)).Success);
+                    Assert.Equal(expectedSuccessBeginning, r.Match(input, startat, input.Length - startat).Success);
+                }
             }
         }
 
