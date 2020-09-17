@@ -38,8 +38,9 @@ Write-Host "Downloading CoreClr_Build"
 $url = "https://filebin.net/np9v65rayyxlojjm/superpmi_min.zip?t=octznfc2"
 $tmp = New-TemporaryFile | Rename-Item -NewName { $_ -replace 'tmp$', 'zip' } -PassThru
 
+New-Item -Name $PmiAssembliesDirectory\zipped\superpmi_min.zip -ItemType File -Force
 $start_time = Get-Date
-(New-Object System.Net.WebClient).DownloadFile($url, $PmiAssembliesDirectory\zipped)
+(New-Object System.Net.WebClient).DownloadFile($url, $PmiAssembliesDirectory\zipped\superpmi_min.zip)
 # $tmp | Expand-Archive -DestinationPath $PmiAssembliesDirectory\Core_Root -Force
 Write-Host "Time taken: $((Get-Date).Subtract($start_time).Seconds) second(s)"
 
