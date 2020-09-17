@@ -15,6 +15,13 @@ Param(
     [string] $Configurations="CompilationMode=$CompilationMode RunKind=$Kind"
 )
 
+function Extract-Cab ($CabFilePath, $Destination){
+    $Shell = New-Object -Comobject "Shell.Application"
+    $SourceCab = $Shell.Namespace($CabFilePath).items()
+    $DestinationFolder = $Shell.Namespace($Destination)
+    $DestinationFolder.CopyHere($SourceCab)
+}
+
 # 1. clone the repo
 # 2. do setup on dotnet/runtime
 # 3. copy 
@@ -40,7 +47,8 @@ $tmp = New-TemporaryFile | Rename-Item -NewName { $_ -replace 'tmp$', 'zip' } -P
 
 $start_time = Get-Date
 (New-Object System.Net.WebClient).DownloadFile($url, $tmp)
-$tmp | Expand-Archive -DestinationPath $PmiAssembliesDirectory\Core_Root -Force
+Extract-Cab -CabFilePath $tmp -Destination $PmiAssembliesDirectory\Core_Root
+# $tmp | Expand-Archive -DestinationPath $PmiAssembliesDirectory\Core_Root -Force
 Write-Host "Time taken: $((Get-Date).Subtract($start_time).Seconds) second(s)"
 
 # robocopy $CoreRootDirectory $PmiAssembliesDirectory\Core_Root /E
@@ -48,13 +56,13 @@ Write-Host "Time taken: $((Get-Date).Subtract($start_time).Seconds) second(s)"
 
 New-Item -Path $WorkItemDirectory -Name "placeholder.txt" -ItemType "file" -Value "Placeholder file." -Force
 
-Write-Host "Cloning into JitUtilsDirectory"
+# Write-Host "Cloning into JitUtilsDirectory"
 
-git clone --branch master --depth 1 --quiet https://github.com/dotnet/jitutils $JitUtilsDirectory
-pushd $JitUtilsDirectory
-$env:PATH = "$SourceDirectory\.dotnet;$env:PATH"
-Write-Host "dotnet PATH: $env:PATH"
-.\bootstrap.cmd
+# git clone --branch master --depth 1 --quiet https://github.com/dotnet/jitutils $JitUtilsDirectory
+# pushd $JitUtilsDirectory
+# $env:PATH = "$SourceDirectory\.dotnet;$env:PATH"
+# Write-Host "dotnet PATH: $env:PATH"
+# .\bootstrap.cmd
 
 # Set variables that we will need to have in future steps
 $ci = $true
