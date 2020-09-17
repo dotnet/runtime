@@ -25,7 +25,6 @@ namespace System.Text.Json.Serialization.Converters
 
         private readonly ConcurrentDictionary<ulong, JsonEncodedText> _nameCache;
         private ConcurrentDictionary<string, string>? _sourceNameCache;
-        private readonly bool _needRestoreSourceName;
 
         // This is used to prevent flooding the cache due to exponential bitwise combinations of flags.
         // Since multiple threads can add to the cache, a few more values might be added.
@@ -78,8 +77,6 @@ namespace System.Text.Json.Serialization.Converters
                     _sourceNameCache.TryAdd(FormatEnumValueToString(name, null), name);
                 }
             }
-
-            _needRestoreSourceName = namingPolicy != null;
         }
 
         public override T Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
@@ -344,7 +341,7 @@ namespace System.Text.Json.Serialization.Converters
         {
             string? enumString = reader.GetString();
 
-            if (_needRestoreSourceName && enumString != null)
+            if (_sourceNameCache != null && enumString != null)
                 enumString = FormatEnumValueToString(enumString, null, false);
 
             // Try parsing case sensitive first
