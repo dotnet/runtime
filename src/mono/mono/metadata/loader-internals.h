@@ -241,4 +241,7 @@ mono_mem_manager_code_commit (MonoMemoryManager *memory_manager, void *data, int
 void
 mono_mem_manager_code_foreach (MonoMemoryManager *memory_manager, MonoCodeManagerFunc func, void *user_data);
 
+char*
+mono_mem_manager_strdup (MonoMemoryManager *memory_manager, const char *s);
+
 #endif
