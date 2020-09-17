@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using System.Text;
+using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 [module: UnconditionalSuppressMessage ("Test", "IL2072", Scope = "type", Target = "T:Mono.Linker.Tests.Cases.Warnings.WarningSuppression.WarningsInType")]
 [module: UnconditionalSuppressMessage ("Test", "IL2072", Scope = "member", Target = "M:Mono.Linker.Tests.Cases.Warnings.WarningSuppression.WarningsInMembers.Method")]
@@ -11,6 +12,9 @@ using System.Text;
 
 namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 {
+#if !ILLINK
+	[Reference ("System.Core.dll")]
+#endif
 	[SkipKeptItemsValidation]
 	[LogDoesNotContain ("TriggerUnrecognizedPattern()")]
 	public class SuppressWarningsInMembersAndTypesUsingTarget
