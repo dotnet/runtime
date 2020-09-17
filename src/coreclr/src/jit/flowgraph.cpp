@@ -4380,7 +4380,7 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
         else
         {
             // Use a single indirection
-            value = gtNewIndOfIconHandleNode(TYP_INT, (size_t)addrTrap, GTF_ICON_PTR_GLOBAL, false);
+            value = gtNewIndOfIconHandleNode(TYP_INT, (size_t)addrTrap, GTF_ICON_GLOBAL_PTR, false);
         }
 
         // Treat the reading of g_TrapReturningThreads as volatile.
@@ -9526,7 +9526,7 @@ void Compiler::fgAddInternal()
     if (dbgHandle || pDbgHandle)
     {
         // Test the JustMyCode VM global state variable
-        GenTree* embNode        = gtNewIconEmbHndNode(dbgHandle, pDbgHandle, GTF_ICON_PTR_GLOBAL, info.compMethodHnd);
+        GenTree* embNode        = gtNewIconEmbHndNode(dbgHandle, pDbgHandle, GTF_ICON_GLOBAL_PTR, info.compMethodHnd);
         GenTree* guardCheckVal  = gtNewOperNode(GT_IND, TYP_INT, embNode);
         GenTree* guardCheckCond = gtNewOperNode(GT_EQ, TYP_INT, guardCheckVal, gtNewZeroConNode(TYP_INT));
 
@@ -21888,7 +21888,7 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
                         //
                         if ((handleKind == GTF_ICON_STATIC_HDL) || // Pointer to a mutable class Static variable
                             (handleKind == GTF_ICON_BBC_PTR) ||    // Pointer to a mutable basic block count value
-                            (handleKind == GTF_ICON_PTR_GLOBAL))   // Pointer to mutable data from the VM state
+                            (handleKind == GTF_ICON_GLOBAL_PTR))   // Pointer to mutable data from the VM state
 
                         {
                             // We expect the Invariant flag to be unset for this handleKind

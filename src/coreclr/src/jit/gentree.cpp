@@ -6004,7 +6004,7 @@ GenTree* Compiler::gtNewIndOfIconHandleNode(var_types indType, size_t addr, unsi
     {
         assert(iconFlags != GTF_ICON_STATIC_HDL); // Pointer to a mutable class Static variable
         assert(iconFlags != GTF_ICON_BBC_PTR);    // Pointer to a mutable basic block count value
-        assert(iconFlags != GTF_ICON_PTR_GLOBAL); // Pointer to mutable data from the VM state
+        assert(iconFlags != GTF_ICON_GLOBAL_PTR); // Pointer to mutable data from the VM state
 
         // This indirection also is invariant.
         indNode->gtFlags |= GTF_IND_INVARIANT;
@@ -10981,8 +10981,8 @@ void Compiler::gtDispConst(GenTree* tree)
                         case GTF_ICON_CONST_PTR:
                             printf(" const ptr");
                             break;
-                        case GTF_ICON_PTR_GLOBAL:
-                            printf(" ptr global");
+                        case GTF_ICON_GLOBAL_PTR:
+                            printf(" global ptr");
                             break;
                         case GTF_ICON_VARG_HDL:
                             printf(" vararg");
