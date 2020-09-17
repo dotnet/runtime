@@ -5898,6 +5898,16 @@ void ThreadSuspend::RestartEE(BOOL bFinishedGC, BOOL SuspendSucceded)
 
     FireEtwGCRestartEEBegin_V1(GetClrInstanceId());
 
+#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+    // Flush the store buffers on all CPUs, to ensure that they all see changes made
+    // by the GC threads. This only matters on weak memory ordered processors as 
+    // the strong memory ordered processors wouldn't have reordered the relevant reads.
+    // This is needed to synchronize threads that were running in preemptive mode while
+    // the runtime was suspended and that will return to cooperative mode after the runtime 
+    // is restarted. 
+    ::FlushProcessWriteBuffers();
+#endif //TARGET_ARM || TARGET_ARM64
+
     //
     // SyncClean holds a list of things to be cleaned up when it's possible.
     // SyncClean uses the GC mode to synchronize access to this list.  Threads must be

@@ -27,20 +27,19 @@ typedef struct
     ULONG result;
 } TestCase;
 
-TestCase TestCases[] = 
+PALTEST(c_runtime_strtoul_test1_paltest_strtoul_test1, "c_runtime/strtoul/test1/paltest_strtoul_test1")
 {
-    { teststr1, teststr1 + 3, 4, 27},
-    { teststr1, teststr1 + 5, 10, 12345},
-    { teststr2, teststr2, 10, 0},
-    { teststr3, teststr3+10, 10, 4294967295ul},
-    { teststr4, teststr4+10, 10, 4294967295ul}
-};
+    TestCase TestCases[] = 
+    {
+        { teststr1, teststr1 + 3, 4, 27},
+        { teststr1, teststr1 + 5, 10, 12345},
+        { teststr2, teststr2, 10, 0},
+        { teststr3, teststr3+10, 10, 4294967295ul},
+        { teststr4, teststr4+10, 10, 4294967295ul}
+    };
 
-int NumCases = sizeof(TestCases) / sizeof(TestCases[0]);
+    int NumCases = sizeof(TestCases) / sizeof(TestCases[0]);
 
-
-int __cdecl main(int argc, char *argv[])
-{
     char *end;
     ULONG l;
     int i;

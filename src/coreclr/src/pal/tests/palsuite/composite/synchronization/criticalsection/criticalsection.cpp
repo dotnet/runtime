@@ -210,7 +210,7 @@ enterandleavecs( LPVOID lpParam )
 }
 
 
-int __cdecl main (int argc, char **argv) 
+PALTEST(composite_synchronization_criticalsection_paltest_synchronization_criticalsection, "composite/synchronization/criticalsection/paltest_synchronization_criticalsection")
 {
 
 /*

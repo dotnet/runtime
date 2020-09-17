@@ -26,7 +26,7 @@
 #define Delimiter    "\\"
 #endif
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(filemapping_memmgt_GetModuleFileNameA_test1_paltest_getmodulefilenamea_test1, "filemapping_memmgt/GetModuleFileNameA/test1/paltest_getmodulefilenamea_test1")
 {
     HMODULE ModuleHandle;
     int err;

@@ -21,7 +21,7 @@
 #include "myexitcode.h"
 
 
-int __cdecl main( int argc, char **argv )
+PALTEST(threading_OpenProcess_test1_paltest_openprocess_test1_child, "threading/OpenProcess/test1/paltest_openprocess_test1_child")
 {
     HANDLE hMutex;
     WCHAR wszMutexName[] = { 'T','E','S','T','1','\0' };

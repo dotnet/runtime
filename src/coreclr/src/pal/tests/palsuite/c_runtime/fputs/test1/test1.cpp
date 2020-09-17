@@ -17,7 +17,7 @@
 #include <palsuite.h>
 
 
-int __cdecl main(int argc, char **argv)
+PALTEST(c_runtime_fputs_test1_paltest_fputs_test1, "c_runtime/fputs/test1/paltest_fputs_test1")
 {
     
     FILE* TheFile;

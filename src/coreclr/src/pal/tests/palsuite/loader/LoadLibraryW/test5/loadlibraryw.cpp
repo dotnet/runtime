@@ -14,7 +14,7 @@
 #define UNICODE
 #include <palsuite.h>
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(loader_LoadLibraryW_test5_paltest_loadlibraryw_test5, "loader/LoadLibraryW/test5/paltest_loadlibraryw_test5")
 {
     HMODULE ModuleHandle;
     int err;

@@ -83,7 +83,7 @@ int GetParameters( int argc, char **argv)
     return 0;
 }
 
- int __cdecl main(INT argc, CHAR **argv)
+PALTEST(composite_object_management_semaphore_nonshared_paltest_semaphore_nonshared, "composite/object_management/semaphore/nonshared/paltest_semaphore_nonshared")
 {
     unsigned int i = 0;
     HANDLE hProcess[MAXIMUM_WAIT_OBJECTS];

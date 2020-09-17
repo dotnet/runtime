@@ -25,7 +25,7 @@
 
 BOOL  PALAPI TestDll(HMODULE, int);
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(filemapping_memmgt_FreeLibrary_test1_paltest_freelibrary_test1, "filemapping_memmgt/FreeLibrary/test1/paltest_freelibrary_test1")
 {
     HANDLE hLib;
 

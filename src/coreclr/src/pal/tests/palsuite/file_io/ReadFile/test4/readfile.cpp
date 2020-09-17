@@ -15,7 +15,7 @@
 **===================================================================*/
 #include <palsuite.h>
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(file_io_ReadFile_test4_paltest_readfile_test4, "file_io/ReadFile/test4/paltest_readfile_test4")
 {
     HANDLE  hFile = NULL;
     DWORD   dwBytesWritten;
