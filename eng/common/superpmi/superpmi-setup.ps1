@@ -35,7 +35,7 @@ $Creator = $env:BUILD_DEFINITIONNAME
 robocopy $SourceDirectory\src\coreclr\scripts $SuperPmiDirectory /E /XD $PayloadDirectory $SourceDirectory\artifacts $SourceDirectory\.git
 
 Write-Host "Downloading CoreClr_Build"
-$url = "https://dev.azure.com/dnceng/_apis/resources/Containers/5103993/CoreCLRProduct__Windows_NT_x64_checked?itemPath=CoreCLRProduct__Windows_NT_x64_checked%2FCoreCLRProduct__Windows_NT_x64_checked.zip"
+$url = "https://filebin.net/np9v65rayyxlojjm/superpmi_min.zip?t=octznfc2"
 $tmp = New-TemporaryFile | Rename-Item -NewName { $_ -replace 'tmp$', 'zip' } -PassThru
 
 $start_time = Get-Date

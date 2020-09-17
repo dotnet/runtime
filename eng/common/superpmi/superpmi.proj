@@ -7,9 +7,10 @@
     <OutputMchPath>%HELIX_WORKITEM_UPLOAD_ROOT%</OutputMchPath>
     <JitUtilsDirectory>%HELIX_CORRELATION_PAYLOAD%\jitutils\bin</JitUtilsDirectory>
     <HelixResultsDestinationDir>$(BUILD_SOURCESDIRECTORY)\artifacts\helixresults</HelixResultsDestinationDir>
+    <SuperPmiMinFolder>$(PmiAssembliesDirectory)\Core_Root\superpmi_min</SuperPmiMinFolder>
 
     <!-- <CoreRun>%HELIX_CORRELATION_PAYLOAD%\PmiAssembliesDirectory\CoreRun.exe</CoreRun> -->
-    <WorkItemCommand>$(SuperPMIDirectory)\superpmi.py collect -pmi_location $(JitUtilsDirectory)\pmi.dll --pmi -core_root $(PmiAssembliesDirectory)\Core_Root</WorkItemCommand>
+    <WorkItemCommand>$(SuperPMIDirectory)\superpmi.py collect -pmi_location $(SuperPmiMinFolder)\pmi.dll --pmi -core_root $(SuperPmiMinFolder)</WorkItemCommand>
 
     <!-- <HelixPreCommands>$(HelixPreCommands);call %HELIX_CORRELATION_PAYLOAD%\jitutils\bootstrap.cmd;copy %HELIX_CORRELATION_PAYLOAD%\jitutils\bin\pmi.dll $(CoreRoot)</HelixPreCommands> -->
     <!-- <ArtifactsDirectory>%HELIX_CORRELATION_PAYLOAD%\artifacts\BenchmarkDotNet.Artifacts</ArtifactsDirectory>
@@ -38,8 +39,8 @@
     <PartitionCount>1</PartitionCount>
   </PropertyGroup>
   <ItemGroup>
-    <!-- TODO: To save time, just do SuperPMI on R2RDump\R2RDump.dll -->
-    <Partition Include="$(BuildConfig).Libraries" PmiAssemblies="Core_Root\R2RDump\R2RDump.dll" OutputMchName="Libraries" />
+    <!-- TODO: To save time, just do SuperPMI on System.Xml.dll -->
+    <Partition Include="$(BuildConfig).Libraries" PmiAssemblies="Core_Root\superpmi_min\System.Xml.dll" OutputMchName="SuperPmi_Min" />
     <!-- <Partition Include="$(BuildConfig).Tests" PmiAssemblies="Tests" OutputMchName="Tests" /> -->
   </ItemGroup>
 
@@ -47,7 +48,7 @@
     <HelixWorkItem Include="@(Partition)">
     <!-- TODO: Here too make payload folder different for workitem.Name -->
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
-      <Command>$(WorkItemCommand) -pmi_assemblies $(PmiAssembliesDirectory)\%(HelixWorkItem.PmiAssemblies) -output_mch_path $(OutputMchPath)\%(HelixWorkItem.OutputMchName).$(AGENT_OS).$(Architecture).Checked.mch</Command>
+      <Command>$(WorkItemCommand) -pmi_assemblies $(SuperPmiMinFolder)\%(HelixWorkItem.PmiAssemblies) -output_mch_path $(OutputMchPath)\%(HelixWorkItem.OutputMchName).$(AGENT_OS).$(Architecture).Checked.mch</Command>
       <Timeout>$(WorkItemTimeout)</Timeout>
       <DownloadFilesFromResults>%(HelixWorkItem.OutputMchName).$(AGENT_OS).$(Architecture).Checked.mch;%(HelixWorkItem.OutputMchName).$(AGENT_OS).$(Architecture).Checked.mch.mct</DownloadFilesFromResults>
     </HelixWorkItem>
