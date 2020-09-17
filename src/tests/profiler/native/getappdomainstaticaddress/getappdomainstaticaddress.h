@@ -21,25 +21,25 @@
 
 typedef HRESULT (*GetDispenserFunc) (const CLSID &pClsid, const IID &pIid, void **ppv);
 
-class ManualEvent
+class AutoEvent
 {
 private:
     std::mutex m_mtx;
     std::condition_variable m_cv;
     bool m_set = false;
 
-    static void DoNothing()
+    static VOID DoNothing()
     {
 
     }
 
 public:
-    ManualEvent() = default;
-    ~ManualEvent() = default;
-    ManualEvent(ManualEvent& other) = delete;
-    ManualEvent(ManualEvent&& other) = delete;
-    ManualEvent& operator= (ManualEvent& other) = delete;
-    ManualEvent& operator= (ManualEvent&& other) = delete;
+    AutoEvent() = default;
+    ~AutoEvent() = default;
+    AutoEvent(AutoEvent& other) = delete;
+    AutoEvent(AutoEvent &&other) = delete;
+    AutoEvent &operator=(AutoEvent &other) = delete;
+    AutoEvent &operator=(AutoEvent &&other) = delete;
 
     void Wait(std::function<void()> spuriousCallback = DoNothing)
     {
@@ -52,18 +52,28 @@ public:
                 spuriousCallback();
             }
         }
+        m_set = false;
+    }
+
+    void WaitFor(int milliseconds, std::function<void()> spuriousCallback = DoNothing)
+    {
+        std::unique_lock<std::mutex> lock(m_mtx);
+        while (!m_set)
+        {
+            m_cv.wait_for(lock, std::chrono::milliseconds(milliseconds), [&]() { return m_set; });
+            if (!m_set)
+            {
+                spuriousCallback();
+            }
+        }
+        m_set = false;
     }
 
     void Signal()
     {
         std::unique_lock<std::mutex> lock(m_mtx);
         m_set = true;
-    }
-
-    void Reset()
-    {
-        std::unique_lock<std::mutex> lock(m_mtx);
-        m_set = false;
+        m_cv.notify_one();
     }
 };
 
@@ -93,7 +103,7 @@ private:
 
     std::atomic<int> jitEventCount;
     std::thread gcTriggerThread;
-    ManualEvent gcWaitEvent;
+    AutoEvent gcWaitEvent;
 
     typedef std::map<ClassID, AppDomainID>ClassAppDomainMap;
     ClassAppDomainMap classADMap;
