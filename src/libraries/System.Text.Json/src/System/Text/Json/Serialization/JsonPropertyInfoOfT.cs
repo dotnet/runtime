@@ -255,7 +255,7 @@ namespace System.Text.Json
             {
                 // CanUseDirectReadOrWrite == false when using streams
                 Debug.Assert(!state.IsContinuation);
-                
+
                 if (!isNullToken || !IgnoreDefaultValuesOnRead || !_propertyTypeCanBeNull)
                 {
                     // Optimize for internal converters by avoiding the extra call to TryRead.
