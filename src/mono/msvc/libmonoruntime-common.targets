@@ -73,6 +73,7 @@
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\marshal-ilgen.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\marshal-ilgen.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\marshal-internals.h" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\metadata\memory-manager.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\mempool.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\mempool.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\mempool-internals.h" />

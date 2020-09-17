@@ -15,7 +15,7 @@
 
 #define REGIONSIZE 1024
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(filemapping_memmgt_VirtualProtect_test1_paltest_virtualprotect_test1, "filemapping_memmgt/VirtualProtect/test1/paltest_virtualprotect_test1")
 {
     int err;
     LPVOID lpVirtualAddress;

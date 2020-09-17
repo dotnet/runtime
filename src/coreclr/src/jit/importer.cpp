@@ -16370,6 +16370,12 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             case CEE_MACRO_END:
 
             default:
+                if (compIsForInlining())
+                {
+                    compInlineResult->NoteFatal(InlineObservation::CALLEE_COMPILATION_ERROR);
+                    return;
+                }
+
                 BADCODE3("unknown opcode", ": %02X", (int)opcode);
         }
 

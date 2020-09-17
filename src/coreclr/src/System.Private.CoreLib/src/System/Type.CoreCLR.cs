@@ -4,6 +4,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.Versioning;
 using StackCrawlMark = System.Threading.StackCrawlMark;
 
 namespace System
@@ -89,6 +90,7 @@ namespace System
         //   param progID:     the progID of the class to retrieve
         //   returns:          the class object associated to the progID
         ////
+        [SupportedOSPlatform("windows")]
         public static Type? GetTypeFromProgID(string progID, string? server, bool throwOnError)
         {
             return RuntimeType.GetTypeFromProgIDImpl(progID, server, throwOnError);
@@ -101,6 +103,7 @@ namespace System
         //   param CLSID:      the CLSID of the class to retrieve
         //   returns:          the class object associated to the CLSID
         ////
+        [SupportedOSPlatform("windows")]
         public static Type? GetTypeFromCLSID(Guid clsid, string? server, bool throwOnError)
         {
             return RuntimeType.GetTypeFromCLSIDImpl(clsid, server, throwOnError);

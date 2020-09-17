@@ -3,7 +3,7 @@
 
 /*============================================================
 **
-** Source: CreateSemaphoreW_ReleaseSemaphore/test1/CreateSemaphore.c
+** Source: CreateSemaphoreW_ReleaseSemaphore/test2/CreateSemaphore.c
 **
 ** Purpose: Test Semaphore operation using classic IPC problem:
 ** "Producer-Consumer Problem".
@@ -25,15 +25,15 @@
 
 #define _BUF_SIZE 10
 
-DWORD dwThreadId;  /* consumer thread identifier */
+DWORD dwThreadId_CreateSemaphoreW_test2;  /* consumer thread identifier */
 
-HANDLE hThread; /* handle to consumer thread */
+HANDLE hThread_CreateSemaphoreW_test2; /* handle to consumer thread */
 
-HANDLE hSemaphoreM; /* handle to mutual exclusion semaphore */
+HANDLE hSemaphoreM_CreateSemaphoreW_test2; /* handle to mutual exclusion semaphore */
 
-HANDLE hSemaphoreE; /* handle to semaphore that counts empty buffer slots */
+HANDLE hSemaphoreE_CreateSemaphoreW_test2; /* handle to semaphore that counts empty buffer slots */
 
-HANDLE hSemaphoreF; /* handle to semaphore that counts full buffer slots */
+HANDLE hSemaphoreF_CreateSemaphoreW_test2; /* handle to semaphore that counts full buffer slots */
 
 typedef struct Buffer
 {
@@ -43,16 +43,16 @@ typedef struct Buffer
 
 } BufferStructure;
 
-CHAR producerItems[PRODUCTION_TOTAL + 1];
+CHAR producerItems_CreateSemaphoreW_test2[PRODUCTION_TOTAL + 1];
 
-CHAR consumerItems[PRODUCTION_TOTAL + 1];
+CHAR consumerItems_CreateSemaphoreW_test2[PRODUCTION_TOTAL + 1];
 
 /*
  * Read next message from the Buffer into provided pointer.
  * Returns:  0 on failure, 1 on success.
  */
 int
-readBuf(BufferStructure *Buffer, char *c)
+readBuf_CreateSemaphoreW_test2(BufferStructure *Buffer, char *c)
 {
     if( Buffer -> writeIndex == Buffer -> readIndex )
     {
@@ -68,7 +68,7 @@ readBuf(BufferStructure *Buffer, char *c)
  * Returns:  0 on failure, 1 on success.
  */
 int
-writeBuf(BufferStructure *Buffer, CHAR c)
+writeBuf_CreateSemaphoreW_test2(BufferStructure *Buffer, CHAR c)
 {
     if( ( ((Buffer -> writeIndex) + 1) % _BUF_SIZE) ==
 	(Buffer -> readIndex) )
@@ -84,14 +84,15 @@ writeBuf(BufferStructure *Buffer, CHAR c)
  * Atomic decrement of semaphore value.
  */
 VOID
-down(HANDLE hSemaphore)
+down_CreateSemaphoreW_test2(HANDLE hSemaphore)
 {
     switch ( (WaitForSingleObject (
 		  hSemaphore,
-		  10000)))
+		  10000)))      /* Wait 10 seconds */
     {
     case WAIT_OBJECT_0:  /*
-			  * Semaphore was signaled.  OK to access semaphore.
+			  * Semaphore was signaled. OK to access
+			  * semaphore.
 			  */
 	break;
     case WAIT_ABANDONED: /*
@@ -117,7 +118,7 @@ down(HANDLE hSemaphore)
  * Atomic increment of semaphore value.
  */
 VOID
-up(HANDLE hSemaphore)
+up_CreateSemaphoreW_test2(HANDLE hSemaphore)
 {
     if (!ReleaseSemaphore (
 	    hSemaphore,
@@ -131,19 +132,19 @@ up(HANDLE hSemaphore)
 }
 
 /*
- * Sleep 10 milleseconds.
+ * Sleep 500 milleseconds.
  */
 VOID
-consumerSleep(VOID)
+consumerSleep_CreateSemaphoreW_test2(VOID)
 {
     Sleep(10);
 }
 
 /*
- * Sleep 500 milleseconds.
+ * Sleep between 10 milleseconds.
  */
 VOID
-producerSleep(VOID)
+producerSleep_CreateSemaphoreW_test2(VOID)
 {
     Sleep(500);
 }
@@ -152,7 +153,7 @@ producerSleep(VOID)
  * Produce a message and write the message to Buffer.
  */
 VOID
-producer(BufferStructure *Buffer)
+producer_CreateSemaphoreW_test2(BufferStructure *Buffer)
 {
 
     int n = 0;
@@ -162,21 +163,22 @@ producer(BufferStructure *Buffer)
     {
 	c = 'A' + n ;   /* Produce Item */
 
-	down(hSemaphoreE);
-	down(hSemaphoreM);
+	down_CreateSemaphoreW_test2(hSemaphoreE_CreateSemaphoreW_test2);
+	down_CreateSemaphoreW_test2(hSemaphoreM_CreateSemaphoreW_test2);
 
-	if (writeBuf(Buffer, c))
+	if (writeBuf_CreateSemaphoreW_test2(Buffer, c))
 	{
             Trace("Producer produces %c.\n", c);
 	    fflush(stdout);
-	    producerItems[n++] = c;
+	    producerItems_CreateSemaphoreW_test2[n++] = c;
 	}
 
-	up(hSemaphoreM);
-	up(hSemaphoreF);
+	up_CreateSemaphoreW_test2(hSemaphoreM_CreateSemaphoreW_test2);
+	up_CreateSemaphoreW_test2(hSemaphoreF_CreateSemaphoreW_test2);
 
-	producerSleep();
+	producerSleep_CreateSemaphoreW_test2();
     }
+
     return;
 }
 
@@ -185,37 +187,37 @@ producer(BufferStructure *Buffer)
  */
 DWORD
 PALAPI
-consumer( LPVOID lpParam )
+consumer_CreateSemaphoreW_test2( LPVOID lpParam )
 {
     int n = 0;
     char c;
 
-    consumerSleep();
+    consumerSleep_CreateSemaphoreW_test2();
 
     while (n < PRODUCTION_TOTAL)
     {
 
-	down(hSemaphoreF);
-	down(hSemaphoreM);
+	down_CreateSemaphoreW_test2(hSemaphoreF_CreateSemaphoreW_test2);
+	down_CreateSemaphoreW_test2(hSemaphoreM_CreateSemaphoreW_test2);
 
-	if (readBuf((BufferStructure*)lpParam, &c))
+	if (readBuf_CreateSemaphoreW_test2((BufferStructure*)lpParam, &c))
 	{
 	    Trace("\tConsumer consumes %c.\n", c);
 	    fflush(stdout);
-	    consumerItems[n++] = c;
+	    consumerItems_CreateSemaphoreW_test2[n++] = c;
 	}
 
-	up(hSemaphoreM);
-	up(hSemaphoreE);
+	up_CreateSemaphoreW_test2(hSemaphoreM_CreateSemaphoreW_test2);
+	up_CreateSemaphoreW_test2(hSemaphoreE_CreateSemaphoreW_test2);
 
-	consumerSleep();
+	consumerSleep_CreateSemaphoreW_test2();
     }
+
     return 0;
 }
 
-int __cdecl main (int argc, char **argv)
+PALTEST(threading_CreateSemaphoreW_ReleaseSemaphore_test2_paltest_createsemaphorew_releasesemaphore_test2, "threading/CreateSemaphoreW_ReleaseSemaphore/test2/paltest_createsemaphorew_releasesemaphore_test2")
 {
-
     BufferStructure Buffer, *pBuffer;
 
     pBuffer = &Buffer;
@@ -228,7 +230,7 @@ int __cdecl main (int argc, char **argv)
     /*
      * Create Semaphores
      */
-    hSemaphoreM = CreateSemaphoreExW (
+    hSemaphoreM_CreateSemaphoreW_test2 = CreateSemaphoreExW (
 	NULL,
 	1,
 	1,
@@ -236,13 +238,13 @@ int __cdecl main (int argc, char **argv)
 	0,
 	0);
 
-    if ( NULL == hSemaphoreM )
+    if ( NULL == hSemaphoreM_CreateSemaphoreW_test2 )
     {
-	Fail ( "hSemaphoreM = CreateSemaphoreExW () - returned NULL\n"
+	Fail ( "hSemaphoreM_CreateSemaphoreW_test2 = CreateSemaphoreExW () - returned NULL\n"
 	       "Failing Test.\n");
     }
 
-    hSemaphoreE = CreateSemaphoreExW (
+    hSemaphoreE_CreateSemaphoreW_test2 = CreateSemaphoreExW (
 	NULL,
 	_BUF_SIZE ,
 	_BUF_SIZE ,
@@ -250,13 +252,13 @@ int __cdecl main (int argc, char **argv)
 	0,
 	0);
 
-    if ( NULL == hSemaphoreE )
+    if ( NULL == hSemaphoreE_CreateSemaphoreW_test2 )
     {
-	Fail ( "hSemaphoreE = CreateSemaphoreExW () - returned NULL\n"
+	Fail ( "hSemaphoreE_CreateSemaphoreW_test2 = CreateSemaphoreExW () - returned NULL\n"
 	       "Failing Test.\n");
     }
 
-    hSemaphoreF = CreateSemaphoreExW (
+    hSemaphoreF_CreateSemaphoreW_test2 = CreateSemaphoreExW (
 	NULL,
 	0,
 	_BUF_SIZE ,
@@ -264,9 +266,9 @@ int __cdecl main (int argc, char **argv)
 	0,
 	0);
 
-    if ( NULL == hSemaphoreF )
+    if ( NULL == hSemaphoreF_CreateSemaphoreW_test2 )
     {
-	Fail ( "hSemaphoreF = CreateSemaphoreExW () - returned NULL\n"
+	Fail ( "hSemaphoreF_CreateSemaphoreW_test2 = CreateSemaphoreExW () - returned NULL\n"
 	       "Failing Test.\n");
     }
 
@@ -278,15 +280,15 @@ int __cdecl main (int argc, char **argv)
     /*
      * Create Consumer
      */
-    hThread = CreateThread(
+    hThread_CreateSemaphoreW_test2 = CreateThread(
 	NULL,
 	0,
-	consumer,
+	consumer_CreateSemaphoreW_test2,
 	&Buffer,
 	0,
-	&dwThreadId);
+	&dwThreadId_CreateSemaphoreW_test2);
 
-    if ( NULL == hThread )
+    if ( NULL == hThread_CreateSemaphoreW_test2 )
     {
 	Fail ( "CreateThread() returned NULL.  Failing test.\n");
     }
@@ -294,22 +296,22 @@ int __cdecl main (int argc, char **argv)
     /*
      * Start producing
      */
-    producer(pBuffer);
+    producer_CreateSemaphoreW_test2(pBuffer);
 
     /*
      * Wait for consumer to complete
      */
-    WaitForSingleObject (hThread, INFINITE);
+    WaitForSingleObject (hThread_CreateSemaphoreW_test2, INFINITE);
 
-    if ( 0 != strncmp (producerItems, consumerItems, PRODUCTION_TOTAL) )
+    if ( 0 != strncmp (producerItems_CreateSemaphoreW_test2, consumerItems_CreateSemaphoreW_test2, PRODUCTION_TOTAL) )
     {
-	Fail("The producerItems string %s\n and the consumerItems string "
+	Fail("The producerItems_CreateSemaphoreW_test2 string %s\n and the consumerItems_CreateSemaphoreW_test2 string "
 	     "%s\ndo not match. This could be a problem with the strncmp()"
 	     " function\n FailingTest\nGetLastError() returned %d\n",
-	     producerItems, consumerItems, GetLastError());
+	     producerItems_CreateSemaphoreW_test2, consumerItems_CreateSemaphoreW_test2, GetLastError());
     }
 
-    Trace ("producerItems and consumerItems arrays match.  All %d\nitems "
+    Trace ("producerItems_CreateSemaphoreW_test2 and consumerItems_CreateSemaphoreW_test2 arrays match.  All %d\nitems "
 	   "were produced and consumed in order.\nTest passed.\n",
 	   PRODUCTION_TOTAL);
 

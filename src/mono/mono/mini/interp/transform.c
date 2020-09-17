@@ -1046,8 +1046,9 @@ static void
 interp_generate_ipe_throw_with_msg (TransformData *td, MonoError *error_msg)
 {
 	MonoJitICallInfo *info = &mono_get_jit_icall_info ()->mono_throw_invalid_program;
+	MonoMemoryManager *memory_manager = mono_domain_ambient_memory_manager (td->rtm->domain);
 
-	char *msg = mono_mempool_strdup (td->rtm->domain->mp, mono_error_get_message (error_msg));
+	char *msg = mono_mempool_strdup (memory_manager->mp, mono_error_get_message (error_msg));
 
 	interp_add_ins (td, MINT_MONO_LDPTR);
 	td->last_ins->data [0] = get_data_item_index (td, msg);
