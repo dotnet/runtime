@@ -35,26 +35,26 @@ namespace Microsoft.WebAssembly.Diagnostics
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IOptionsMonitor<ProxyOptions> optionsAccessor, IWebHostEnvironment env)
         {
-            var options = optionsAccessor.CurrentValue;
+            ProxyOptions options = optionsAccessor.CurrentValue;
             app.UseDeveloperExceptionPage()
                 .UseWebSockets()
                 .UseDebugProxy(options);
         }
     }
 
-    static class DebugExtensions
+    internal static class DebugExtensions
     {
         public static Dictionary<string, string> MapValues(Dictionary<string, string> response, HttpContext context, Uri debuggerHost)
         {
             var filtered = new Dictionary<string, string>();
-            var request = context.Request;
+            HttpRequest request = context.Request;
 
-            foreach (var key in response.Keys)
+            foreach (string key in response.Keys)
             {
                 switch (key)
                 {
                     case "devtoolsFrontendUrl":
-                        var front = response[key];
+                        string front = response[key];
                         filtered[key] = $"{debuggerHost.Scheme}://{debuggerHost.Authority}{front.Replace($"ws={debuggerHost.Authority}", $"ws={request.Host}")}";
                         break;
                     case "webSocketDebuggerUrl":
@@ -77,7 +77,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             ProxyOptions options,
             Func<Dictionary<string, string>, HttpContext, Uri, Dictionary<string, string>> mapFunc)
         {
-            var devToolsHost = options.DevToolsUrl;
+            Uri devToolsHost = options.DevToolsUrl;
             app.UseRouter(router =>
             {
                 router.MapGet("/", Copy);
@@ -91,8 +91,8 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                 string GetEndpoint(HttpContext context)
                 {
-                    var request = context.Request;
-                    var requestPath = request.Path;
+                    HttpRequest request = context.Request;
+                    PathString requestPath = request.Path;
                     return $"{devToolsHost.Scheme}://{devToolsHost.Authority}{request.Path}{request.QueryString}";
                 }
 
@@ -100,11 +100,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                 {
                     using (var httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(5) })
                     {
-                        var response = await httpClient.GetAsync(GetEndpoint(context));
+                        HttpResponseMessage response = await httpClient.GetAsync(GetEndpoint(context));
                         context.Response.ContentType = response.Content.Headers.ContentType.ToString();
                         if ((response.Content.Headers.ContentLength ?? 0) > 0)
                             context.Response.ContentLength = response.Content.Headers.ContentLength;
-                        var bytes = await response.Content.ReadAsByteArrayAsync();
+                        byte[] bytes = await response.Content.ReadAsByteArrayAsync();
                         await context.Response.Body.WriteAsync(bytes);
 
                     }
@@ -112,7 +112,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                 async Task RewriteSingle(HttpContext context)
                 {
-                    var version = await ProxyGetJsonAsync<Dictionary<string, string>>(GetEndpoint(context));
+                    Dictionary<string, string> version = await ProxyGetJsonAsync<Dictionary<string, string>>(GetEndpoint(context));
                     context.Response.ContentType = "application/json";
                     await context.Response.WriteAsync(
                         JsonSerializer.Serialize(mapFunc(version, context, devToolsHost)));
@@ -120,8 +120,8 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                 async Task RewriteArray(HttpContext context)
                 {
-                    var tabs = await ProxyGetJsonAsync<Dictionary<string, string>[]>(GetEndpoint(context));
-                    var alteredTabs = tabs.Select(t => mapFunc(t, context, devToolsHost)).ToArray();
+                    Dictionary<string, string>[] tabs = await ProxyGetJsonAsync<Dictionary<string, string>[]>(GetEndpoint(context));
+                    Dictionary<string, string>[] alteredTabs = tabs.Select(t => mapFunc(t, context, devToolsHost)).ToArray();
                     context.Response.ContentType = "application/json";
                     await context.Response.WriteAsync(JsonSerializer.Serialize(alteredTabs));
                 }
@@ -137,13 +137,13 @@ namespace Microsoft.WebAssembly.Diagnostics
                     var endpoint = new Uri($"ws://{devToolsHost.Authority}{context.Request.Path.ToString()}");
                     try
                     {
-                        using var loggerFactory = LoggerFactory.Create(
+                        using ILoggerFactory loggerFactory = LoggerFactory.Create(
                             builder => builder.AddConsole().AddFilter(null, LogLevel.Information));
 
                         context.Request.Query.TryGetValue("urlSymbolServer", out StringValues urlSymbolServerList);
                         var proxy = new DebuggerProxy(loggerFactory, urlSymbolServerList.ToList());
-                        
-                        var ideSocket = await context.WebSockets.AcceptWebSocketAsync();
+
+                        System.Net.WebSockets.WebSocket ideSocket = await context.WebSockets.AcceptWebSocketAsync();
 
                         await proxy.Run(endpoint, ideSocket);
                     }
@@ -156,11 +156,11 @@ namespace Microsoft.WebAssembly.Diagnostics
             return app;
         }
 
-        static async Task<T> ProxyGetJsonAsync<T>(string url)
+        private static async Task<T> ProxyGetJsonAsync<T>(string url)
         {
             using (var httpClient = new HttpClient())
             {
-                var response = await httpClient.GetAsync(url);
+                HttpResponseMessage response = await httpClient.GetAsync(url);
                 return await JsonSerializer.DeserializeAsync<T>(await response.Content.ReadAsStreamAsync());
             }
         }

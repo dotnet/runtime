@@ -96,7 +96,7 @@ namespace Microsoft.NET.HostModel
                                                  ushort wLang,
                                                  IntPtr lParam);
 
-            [DllImport(nameof(Kernel32),SetLastError=true)]
+            [DllImport(nameof(Kernel32), SetLastError=true)]
             [return: MarshalAs(UnmanagedType.Bool)]
             public static extern bool EnumResourceTypes(IntPtr hModule,
                                                          EnumResTypeProc lpEnumFunc,

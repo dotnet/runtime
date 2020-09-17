@@ -142,11 +142,6 @@
 
   </PropertyGroup>
 
-  <!-- Set up handling of build warnings -->
-  <PropertyGroup>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-  </PropertyGroup>
-
   <PropertyGroup>
     <TargetsWindows>false</TargetsWindows>
     <TargetsOSX>false</TargetsOSX>
