@@ -19,22 +19,22 @@
 
     <BinDir>$(ArtifactsDir)bin\coreclr\$(OSPlatformConfig)\</BinDir>
 
-    <BaseTestOutputPath>$(ArtifactsDir)tests\coreclr</BaseTestOutputPath>
-    <BaseTestOutputPath Condition="'$(__TestRootDir)' != ''">$(__TestRootDir)</BaseTestOutputPath>
-    <BaseTestOutputPathWithConfig>$(BaseTestOutputPath)\$(OSPlatformConfig)\</BaseTestOutputPathWithConfig>
+    <BaseOutputPath>$(ArtifactsDir)tests\coreclr</BaseOutputPath>
+    <BaseOutputPath Condition="'$(__TestRootDir)' != ''">$(__TestRootDir)</BaseOutputPath>
+    <BaseOutputPathWithConfig>$(BaseOutputPath)\$(OSPlatformConfig)\</BaseOutputPathWithConfig>
 
-    <TestWorkingDir>$(BaseTestOutputPathWithConfig)\</TestWorkingDir>
+    <TestWorkingDir>$(BaseOutputPathWithConfig)\</TestWorkingDir>
 
     <TestSourceDir Condition="'$(TestSourceDir)' == ''">$([MSBuild]::NormalizePath('$(RepoRoot)/src/tests/'))</TestSourceDir>
     <BuildProjectRelativeDir>$([MSBuild]::MakeRelative($(TestSourceDir), $(MSBuildProjectDirectory)))\$(MSBuildProjectName)\</BuildProjectRelativeDir>
 
     <!-- BaseIntermediateOutputPath is used by the SDK as the location
          for the lock file, and props/targets from nuget packages. -->
-    <BaseIntermediateOutputPath>$(BaseTestOutputPath)\obj\$(OSPlatformConfig)\Managed\</BaseIntermediateOutputPath>
+    <BaseIntermediateOutputPath>$(BaseOutputPath)\obj\$(OSPlatformConfig)\Managed\</BaseIntermediateOutputPath>
     <IntermediateOutputPath>$(BaseIntermediateOutputPath)$(BuildProjectRelativeDir)\</IntermediateOutputPath>
-    <__NativeTestIntermediatesDir Condition="'$(__NativeTestIntermediatesDir)' == ''">$(BaseTestOutputPath)\obj\$(OSPlatformConfig)\Native\</__NativeTestIntermediatesDir>
+    <__NativeTestIntermediatesDir Condition="'$(__NativeTestIntermediatesDir)' == ''">$(BaseOutputPath)\obj\$(OSPlatformConfig)\Native\</__NativeTestIntermediatesDir>
 
-    <OutputPath>$(BaseTestOutputPathWithConfig)$(BuildProjectRelativeDir)</OutputPath>
+    <OutputPath>$(BaseOutputPathWithConfig)$(BuildProjectRelativeDir)</OutputPath>
 
     <BasePackagePath>$(IntermediateOutputPath)</BasePackagePath>
     <BasePackagePath Condition="'$(PackageRuntimeIdentifier)' != ''">$([System.IO.Path]::GetFullPath($(IntermediateOutputPath)\$(PackageRuntimeIdentifier)))</BasePackagePath>
