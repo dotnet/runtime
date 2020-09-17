@@ -55,7 +55,7 @@ See the instructions in [../libraries/webassembly-instructions.md].
 
 ### Android
 
-See the instructions in [../../testing/libraries/testing-android.md]
+See the instructions for [Testing Android](../../testing/libraries/testing-android.md)
 
 ## Packages
 
