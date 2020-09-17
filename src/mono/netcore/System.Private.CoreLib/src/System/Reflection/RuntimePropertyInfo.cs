@@ -371,6 +371,8 @@ namespace System.Reflection
          */
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2060:UnrecognizedReflectionPattern",
             Justification = "MethodInfo used with MakeGenericMethod doesn't have DynamicallyAccessedMembers generic parameters")]
+        [DynamicDependency("GetterAdapterFrame`2")]
+        [DynamicDependency("StaticGetterAdapterFrame`1")]
         private static GetterAdapter CreateGetterDelegate(MethodInfo method)
         {
             Type[] typeVector;
