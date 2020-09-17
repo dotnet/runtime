@@ -9,11 +9,6 @@
        SDK. Some test projects still bypass this by importing
        tests/dir.props directly - these should eventually go away. -->
 
-  <!-- Disable analyzers by default -->
-  <PropertyGroup>
-    <EnableAnalyzers>false</EnableAnalyzers>
-  </PropertyGroup>
-
   <PropertyGroup>
     <OSPlatformConfig>$(TargetOS).$(TargetArchitecture).$(Configuration)</OSPlatformConfig>
 
