@@ -9,82 +9,14 @@
   </head>
   <body>
     <h3 id="header">Wasm Browser Sample</h3>
-    Result from Sample.Test.TestMeaning: <span id="out"></span><br>
-    Progress: <span id="progress">Starting...</span><br>
-    Avg. Speed: <span id="speed"></span>
+    Result from Sample.Test.TestMeaning: <span id="out"></span>
     <script type='text/javascript'>
       var App = {
         init: function () {
-          var ret = BINDING.call_static_method("[WasmSample]Sample.Test:TestMeaning", []);
+          var ret = BINDING.call_static_method("[WasmSample] Sample.Test:TestMeaning", []);
           document.getElementById("out").innerHTML = ret;
           console.log ("ready");
-
-          console.log ("warming");
-
-          var method = BINDING.bind_static_method("[WasmSample]Sample.Test:BenchmarkMethod", "ifd");
-          method(0, 0, 0);
-
-          var started = performance.now ();
-          for (var i = 0; i < 300; i++)
-            App.benchmarkIter(method, i);
-          var ended = performance.now ();
-          var elapsed = ended - started;
-
-          var speedAdjustment = (Math.max(0, 110 - elapsed) / 50) + 1;
-
-          console.log ("warming took", (ended - started), "starting benchmark in 4 seconds");
-
-          window.setTimeout(App.runBenchmark.bind(App, method, speedAdjustment), 4000);
         },
-
-        iterFailed: function (expected, actual) {
-          throw new Error("Result mismatch, expected " + expected + " but got " + actual);
-        },
-
-        benchmarkIter: function (method, i) {
-          var expected = i + i + i + 0.03;
-
-          for (var j = 0; j < 100; j++) {
-            var res = method(i, i + 0.01, i + 0.02);
-            if (Math.abs(expected - res) >= 0.5)
-              this.iterFailed(expected, res);
-          }
-        },
-
-        runBenchmark: function (method, speedAdjustment) {
-          var iterationCount = ((250 * speedAdjustment) | 0) * 1000, callbackCount = 10000;
-
-          var elapsed = 0;
-          var i = 0;
-
-          var benchmarkCallback;
-          
-          benchmarkCallback = (function () {
-            var started = performance.now ();
-
-            for (var j = 0; j < callbackCount; j++)
-              this.benchmarkIter(method, i);
-
-            var ended = performance.now();
-            elapsed += (ended - started);
-
-            i += callbackCount;
-            console.log(i);
-            document.querySelector("#progress").innerHTML = String(i) + " / " + iterationCount;
-            document.querySelector("#speed").innerHTML = (elapsed / i).toFixed(3) + "ms/iter";
-
-            if (i < iterationCount) {
-              window.setTimeout(benchmarkCallback, 1);
-            } else {
-              console.log("ran", i, "iterations in", elapsed);
-              console.log(elapsed / i, "ms/iter");
-              document.querySelector("#progress").innerHTML = String(i);
-              document.querySelector("#speed").innerHTML = (elapsed / i).toFixed(3) + "ms/iter";
-            }
-          }).bind(this);
-
-          window.setTimeout(benchmarkCallback, 1);
-        }
       };
     </script>
     <script type="text/javascript" src="mono-config.js"></script>
