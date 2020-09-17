@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -205,6 +206,25 @@ namespace Microsoft.Extensions.Caching.Memory
 
             // verify that throwing an exception doesn't leak CacheEntry objects
             Assert.Null(CacheEntryHelper.Current);
+        }
+
+        [Fact]
+        public void DisposingCacheEntryReleasesScope()
+        {
+            object GetScope(ICacheEntry entry)
+            {
+                return entry.GetType()
+                    .GetField("_scope", BindingFlags.NonPublic | BindingFlags.Instance)
+                    .GetValue(entry);
+            }
+
+            var cache = CreateCache();
+
+            ICacheEntry entry = cache.CreateEntry("myKey");
+            Assert.NotNull(GetScope(entry));
+
+            entry.Dispose();
+            Assert.Null(GetScope(entry));
         }
 
         [Fact]
