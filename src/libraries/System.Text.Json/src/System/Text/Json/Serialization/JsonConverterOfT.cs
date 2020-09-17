@@ -21,7 +21,7 @@ namespace System.Text.Json.Serialization
             // In the future, this will be check for !IsSealed (and excluding value types).
             CanBePolymorphic = TypeToConvert == JsonClassInfo.ObjectType;
             IsValueType = TypeToConvert.IsValueType;
-            CanBeNull = !IsValueType || Nullable.GetUnderlyingType(TypeToConvert) != null;
+            CanBeNull = !IsValueType || TypeToConvert.IsNullableOfT();
             IsInternalConverter = GetType().Assembly == typeof(JsonConverter).Assembly;
 
             if (HandleNull)

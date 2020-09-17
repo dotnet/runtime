@@ -7,31 +7,29 @@ namespace System.Text.Json
 {
     internal static class TypeExtensions
     {
+        private static readonly Type s_NullableType = typeof(Nullable<>);
+
         /// <summary>
         /// Returns <see langword="true" /> when the given type is of type <see cref="Nullable{T}"/>.
         /// </summary>
-        public static bool IsNullableValueType(this Type type)
-        {
-            return Nullable.GetUnderlyingType(type) != null;
-        }
+        public static bool IsNullableOfT(this Type type) =>
+            type.IsGenericType && type.GetGenericTypeDefinition() == s_NullableType;
 
         /// <summary>
         /// Returns <see langword="true" /> when the given type is either a reference type or of type <see cref="Nullable{T}"/>.
         /// </summary>
-        public static bool IsNullableType(this Type type)
-        {
-            return !type.IsValueType || IsNullableValueType(type);
-        }
+        /// <remarks>This calls <see cref="Type.IsValueType"/> which is slow. If knowledge already exists
+        /// that the type is a value type, call <see cref="IsNullableOfT"/> instead.</remarks>
+        public static bool CanBeNull(this Type type) =>
+            !type.IsValueType || (type.IsGenericType && type.GetGenericTypeDefinition() == s_NullableType);
 
         /// <summary>
-        /// Returns <see langword="true" /> when the given type is assignable from <paramref name="from"/>.
+        /// Returns <see langword="true" /> when the given type is assignable from <paramref name="from"/> including support
+        /// when <paramref name="from"/> is <see cref="Nullable{T}"/> by using the {T} generic parameter for <paramref name="from"/>.
         /// </summary>
-        /// <remarks>
-        /// Other than <see cref="Type.IsAssignableFrom(Type)"/> also returns <see langword="true" /> when <paramref name="type"/> is of type <see cref="Nullable{T}"/> where <see langword="T" /> : <see langword="IInterface" /> and <paramref name="from"/> is of type <see langword="IInterface" />.
-        /// </remarks>
         public static bool IsAssignableFromInternal(this Type type, Type from)
         {
-            if (IsNullableValueType(from) && type.IsInterface)
+            if (IsNullableOfT(from) && type.IsInterface)
             {
                 return type.IsAssignableFrom(from.GetGenericArguments()[0]);
             }
