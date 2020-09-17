@@ -446,14 +446,14 @@ mono_ppdb_lookup_location (MonoDebugMethodInfo *minfo, uint32_t offset)
 MonoImage *
 mono_ppdb_get_image (MonoPPDBFile *ppdb)
 {
-    return ppdb->image;
+	return ppdb->image;
 }
 
 
 gboolean
 mono_ppdb_is_embedded (MonoPPDBFile *ppdb)
 {
-    return ppdb->is_embedded;
+	return ppdb->is_embedded;
 }
 
 void
