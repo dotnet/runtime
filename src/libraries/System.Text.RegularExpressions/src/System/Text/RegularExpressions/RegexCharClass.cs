@@ -300,7 +300,8 @@ namespace System.Text.RegularExpressions
         private static readonly LowerCaseMapping[] s_lcTable = new LowerCaseMapping[]
         {
             new LowerCaseMapping('\u0041', '\u005A', LowercaseAdd, 32),
-            new LowerCaseMapping('\u00C0', '\u00DE', LowercaseAdd, 32),
+            new LowerCaseMapping('\u00C0', '\u00D6', LowercaseAdd, 32),
+            new LowerCaseMapping('\u00D8', '\u00DE', LowercaseAdd, 32),
             new LowerCaseMapping('\u0100', '\u012E', LowercaseBor, 0),
             new LowerCaseMapping('\u0130', '\u0130', LowercaseSet, 0x0069),
             new LowerCaseMapping('\u0132', '\u0136', LowercaseBor, 0),
@@ -349,7 +350,8 @@ namespace System.Text.RegularExpressions
             new LowerCaseMapping('\u0388', '\u038A', LowercaseAdd, 37),
             new LowerCaseMapping('\u038C', '\u038C', LowercaseSet, 0x03CC),
             new LowerCaseMapping('\u038E', '\u038F', LowercaseAdd, 63),
-            new LowerCaseMapping('\u0391', '\u03AB', LowercaseAdd, 32),
+            new LowerCaseMapping('\u0391', '\u03A1', LowercaseAdd, 32),
+            new LowerCaseMapping('\u03A3', '\u03AB', LowercaseAdd, 32),
             new LowerCaseMapping('\u03E2', '\u03EE', LowercaseBor, 0),
             new LowerCaseMapping('\u0401', '\u040F', LowercaseAdd, 80),
             new LowerCaseMapping('\u0410', '\u042F', LowercaseAdd, 32),
@@ -362,10 +364,10 @@ namespace System.Text.RegularExpressions
             new LowerCaseMapping('\u04EE', '\u04F4', LowercaseBor, 0),
             new LowerCaseMapping('\u04F8', '\u04F8', LowercaseSet, 0x04F9),
             new LowerCaseMapping('\u0531', '\u0556', LowercaseAdd, 48),
-            new LowerCaseMapping('\u10A0', '\u10C5', LowercaseAdd, 48),
+            new LowerCaseMapping('\u10A0', '\u10C5', LowercaseAdd, 7264),
             new LowerCaseMapping('\u1E00', '\u1EF8', LowercaseBor, 0),
             new LowerCaseMapping('\u1F08', '\u1F0F', LowercaseAdd, -8),
-            new LowerCaseMapping('\u1F18', '\u1F1F', LowercaseAdd, -8),
+            new LowerCaseMapping('\u1F18', '\u1F1D', LowercaseAdd, -8),
             new LowerCaseMapping('\u1F28', '\u1F2F', LowercaseAdd, -8),
             new LowerCaseMapping('\u1F38', '\u1F3F', LowercaseAdd, -8),
             new LowerCaseMapping('\u1F48', '\u1F4D', LowercaseAdd, -8),
@@ -391,7 +393,7 @@ namespace System.Text.RegularExpressions
             new LowerCaseMapping('\u1FFA', '\u1FFB', LowercaseAdd, -126),
             new LowerCaseMapping('\u1FFC', '\u1FFC', LowercaseSet, 0x1FF3),
             new LowerCaseMapping('\u2160', '\u216F', LowercaseAdd, 16),
-            new LowerCaseMapping('\u24B6', '\u24D0', LowercaseAdd, 26),
+            new LowerCaseMapping('\u24B6', '\u24CF', LowercaseAdd, 26),
             new LowerCaseMapping('\uFF21', '\uFF3A', LowercaseAdd, 32),
         };
 
