@@ -24,17 +24,17 @@
 #define NUMBER_OF_WORKER_THREADS 2
 
 //Declaring Variables
-HANDLE hMutex = NULL;
-unsigned int globalcounter =0;
-int testReturnCode = PASS;
+HANDLE hMutex_WFSOMutexTest = NULL;
+unsigned int globalcounter_WFSOMutexTest =0;
+int testReturnCode_WFSOMutexTest = PASS;
 
 //Declaring Function Prototypes
 DWORD PALAPI WFSOMutexTest(LPVOID params);
-void incrementCounter(void);
+void incrementCounter_WFSOMutexTest(void);
 
 
 
-int __cdecl main(int argc, char **argv)
+PALTEST(threading_WaitForSingleObject_WFSOMutexTest_paltest_waitforsingleobject_wfsomutextest, "threading/WaitForSingleObject/WFSOMutexTest/paltest_waitforsingleobject_wfsomutextest")
 {
 
 	//Declare local variables
@@ -52,13 +52,13 @@ int __cdecl main(int argc, char **argv)
 		    }
 
    //Create Mutex
-		hMutex = CreateMutex(NULL,      // no security attributes
+		hMutex_WFSOMutexTest = CreateMutex(NULL,      // no security attributes
                              FALSE,     // initially not owned
                              NULL);     // name of mutex
 
    //Check for Mutex Creation
 
-		if (hMutex == NULL) 
+		if (hMutex_WFSOMutexTest == NULL) 
 		{
 		 	Fail("Create Mutex Failed, GetLastError: %d\n", GetLastError());
 		}
@@ -90,7 +90,7 @@ int __cdecl main(int argc, char **argv)
     if( WAIT_OBJECT_0 != returnCode )
     {
         Trace("Wait for Object(s) returned %d, and GetLastError value is %d\n", returnCode, GetLastError());
-        testReturnCode = FAIL;
+        testReturnCode_WFSOMutexTest = FAIL;
     }
 
 //Close thread handles
@@ -105,28 +105,28 @@ for (i=0;i<NUMBER_OF_WORKER_THREADS;i++)
 	}
 
 //Close Mutex Handle 
-if (0==CloseHandle(hMutex))
+if (0==CloseHandle(hMutex_WFSOMutexTest))
 	    	{
 	    		Trace("Could not close mutex handle\n"); 
 		Fail ( "GetLastError returned %d\n", GetLastError());  
     	}
 
 
-PAL_TerminateEx(testReturnCode);
-return ( testReturnCode );
+PAL_TerminateEx(testReturnCode_WFSOMutexTest);
+return ( testReturnCode_WFSOMutexTest );
 
 }
 
 
-void incrementCounter(void)
+void incrementCounter_WFSOMutexTest(void)
 {
-	if (INT_MAX == globalcounter)
+	if (INT_MAX == globalcounter_WFSOMutexTest)
 		{
-			globalcounter = 0;
+			globalcounter_WFSOMutexTest = 0;
 		}
 	
-	globalcounter++;	
-	Trace("Global Counter Value: %d \n", globalcounter);
+	globalcounter_WFSOMutexTest++;	
+	Trace("Global Counter Value: %d \n", globalcounter_WFSOMutexTest);
 }
 
 
@@ -138,7 +138,7 @@ DWORD PALAPI WFSOMutexTest(LPVOID params)
     // Request ownership of mutex.
  
     dwWaitResult = WaitForSingleObject( 
-        hMutex,   // handle to mutex
+        hMutex_WFSOMutexTest,   // handle to mutex
         5000L);   // five-second time-out interval
 
     switch (dwWaitResult) 
@@ -147,10 +147,10 @@ DWORD PALAPI WFSOMutexTest(LPVOID params)
         case WAIT_OBJECT_0: 
             	  		{
 
-				incrementCounter();
+				incrementCounter_WFSOMutexTest();
 
 				//Release ownership of the mutex object.
-				if (! ReleaseMutex(hMutex)) 
+				if (! ReleaseMutex(hMutex_WFSOMutexTest)) 
 				{ 
 				   Fail ( "ReleaseMutex() returned NULL.  Failing test.\n"
 		       			"GetLastError returned %d\n", GetLastError());    

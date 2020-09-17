@@ -55,13 +55,13 @@
 #define OP_NONE 2
 
 
-HANDLE hMutex;      /* handle to mutex */
+static HANDLE hMutex;      /* handle to mutex */
 
-BOOL bProdErr;      /* Producer error Flag */
-BOOL bConErr;       /* Consumer error Flag */
+static BOOL bProdErr;      /* Producer error Flag */
+static BOOL bConErr;       /* Consumer error Flag */
 
 /* Test Buffer */
-char Buffer[MAIN_BUF_SIZE];
+static char Buffer[MAIN_BUF_SIZE];
 
 /*
  *  EmptyBuffer implements the empty operation for test buffer.
@@ -230,7 +230,7 @@ DWORD PALAPI Consumer( LPVOID lpParam )
 }
 
 
-int __cdecl main (int argc, char **argv) 
+PALTEST(threading_CreateMutexW_ReleaseMutex_test1_paltest_createmutexw_releasemutex_test1, "threading/CreateMutexW_ReleaseMutex/test1/paltest_createmutexw_releasemutex_test1")
 {
     DWORD dwThreadId;
     DWORD dwWaitRet;

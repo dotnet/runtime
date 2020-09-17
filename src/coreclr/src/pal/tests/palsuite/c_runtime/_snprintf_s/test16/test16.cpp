@@ -19,7 +19,7 @@
  * Notes: memcmp is used, as is strlen.
  */
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime__snprintf_s_test16_paltest_snprintf_test16, "c_runtime/_snprintf_s/test16/paltest_snprintf_test16")
 {
     double val = 2560.001;
     double neg = -2560.001;

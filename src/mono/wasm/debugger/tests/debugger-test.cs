@@ -382,6 +382,53 @@ public class DebuggerTest
         Console.WriteLine ($"break here");
         await Task.CompletedTask;
     }
+
+    public static void BoxedTypeObjectTest()
+    {
+        int i = 5;
+        object o0 = i;
+        object o1 = o0;
+        object o2 = o1;
+        object o3 = o2;
+
+        object oo = new object();
+        object oo0 = oo;
+        Console.WriteLine ($"break here");
+    }
+    public static async Task BoxedTypeObjectTestAsync()
+    {
+        int i = 5;
+        object o0 = i;
+        object o1 = o0;
+        object o2 = o1;
+        object o3 = o2;
+
+        object oo = new object();
+        object oo0 = oo;
+        Console.WriteLine ($"break here");
+        await Task.CompletedTask;
+    }
+
+    public static void BoxedAsClass()
+    {
+        ValueType vt_dt = new DateTime(4819, 5, 6, 7, 8, 9);
+        ValueType vt_gs = new Math.GenericStruct<string> { StringField = "vt_gs#StringField" };
+        Enum e = new System.IO.FileMode();
+        Enum ee = System.IO.FileMode.Append;
+
+        Console.WriteLine ($"break here");
+    }
+
+    public static async Task BoxedAsClassAsync()
+    {
+        ValueType vt_dt = new DateTime(4819, 5, 6, 7, 8, 9);
+        ValueType vt_gs = new Math.GenericStruct<string> { StringField = "vt_gs#StringField" };
+        Enum e = new System.IO.FileMode();
+        Enum ee = System.IO.FileMode.Append;
+
+        Console.WriteLine ($"break here");
+        await Task.CompletedTask;
+    }
 }
 
 public class MulticastDelegateTestClass

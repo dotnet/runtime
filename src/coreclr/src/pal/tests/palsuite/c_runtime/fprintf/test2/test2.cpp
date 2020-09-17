@@ -18,7 +18,7 @@
  * Depends on memcmp, strlen, fopen, fseek and fgets.
  */
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime_fprintf_test2_paltest_fprintf_test2, "c_runtime/fprintf/test2/paltest_fprintf_test2")
 {
 
     if (PAL_Initialize(argc, argv) != 0)

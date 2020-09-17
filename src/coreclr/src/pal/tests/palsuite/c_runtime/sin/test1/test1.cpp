@@ -45,11 +45,11 @@ struct test
 };
 
 /**
- * validate
+ * sin_test1_validate
  *
  * test validation function
  */
-void __cdecl validate(double value, double expected, double variance)
+void __cdecl sin_test1_validate(double value, double expected, double variance)
 {
     double result = sin(value);
 
@@ -67,11 +67,11 @@ void __cdecl validate(double value, double expected, double variance)
 }
 
 /**
- * validate
+ * sin_test1_validate
  *
  * test validation function for values returning NaN
  */
-void __cdecl validate_isnan(double value)
+void __cdecl sin_test1_validate_isnan(double value)
 {
     double result = sin(value);
 
@@ -87,7 +87,7 @@ void __cdecl validate_isnan(double value)
  * 
  * executable entry point
  */
-int __cdecl main(int argc, char **argv)
+PALTEST(c_runtime_sin_test1_paltest_sin_test1, "c_runtime/sin/test1/paltest_sin_test1")
 {
     struct test tests[] = 
     {
@@ -117,13 +117,13 @@ int __cdecl main(int argc, char **argv)
 
     for (int i = 0; i < (sizeof(tests) / sizeof(struct test)); i++)
     {
-        validate( tests[i].value,  tests[i].expected, tests[i].variance);
-        validate(-tests[i].value, -tests[i].expected, tests[i].variance);
+        sin_test1_validate( tests[i].value,  tests[i].expected, tests[i].variance);
+        sin_test1_validate(-tests[i].value, -tests[i].expected, tests[i].variance);
     }
     
-    validate_isnan(PAL_NEGINF);
-    validate_isnan(PAL_NAN);
-    validate_isnan(PAL_POSINF);
+    sin_test1_validate_isnan(PAL_NEGINF);
+    sin_test1_validate_isnan(PAL_NAN);
+    sin_test1_validate_isnan(PAL_POSINF);
 
     PAL_Terminate();
     return PASS;

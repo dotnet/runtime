@@ -2485,7 +2485,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     {
         // The following flags are lost when inlining. (They are removed in
         // Compiler::fgInvokeInlineeCompiler().)
-        assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT));
         assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR));
         assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_PROF_ENTERLEAVE));
         assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_DEBUG_EnC));
@@ -2739,6 +2738,49 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     // By default fast tail calls are enabled.
     opts.compFastTailCalls = true;
 #endif // FEATURE_FASTTAILCALL
+
+    // Profile data
+    //
+    fgBlockCounts                = nullptr;
+    fgProfileData_ILSizeMismatch = false;
+    fgNumProfileRuns             = 0;
+    if (jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT))
+    {
+        HRESULT hr;
+        hr = info.compCompHnd->getMethodBlockCounts(info.compMethodHnd, &fgBlockCountsCount, &fgBlockCounts,
+                                                    &fgNumProfileRuns);
+
+        JITDUMP("BBOPT set -- VM query for profile data for %s returned: hr=%0x; counts at %p, %d blocks, %d runs\n",
+                info.compFullName, hr, fgBlockCounts, fgBlockCountsCount, fgNumProfileRuns);
+
+        // a failed result that also has a non-NULL fgBlockCounts
+        // indicates that the ILSize for the method no longer matches
+        // the ILSize for the method when profile data was collected.
+        //
+        // We will discard the IBC data in this case
+        //
+        if (FAILED(hr) && (fgBlockCounts != nullptr))
+        {
+            fgProfileData_ILSizeMismatch = true;
+            fgBlockCounts                = nullptr;
+        }
+#ifdef DEBUG
+        // A successful result implies a non-NULL fgBlockCounts
+        //
+        if (SUCCEEDED(hr))
+        {
+            assert(fgBlockCounts != nullptr);
+        }
+
+        // A failed result implies a NULL fgBlockCounts
+        //   see implementation of Compiler::fgHaveProfileData()
+        //
+        if (FAILED(hr))
+        {
+            assert(fgBlockCounts == nullptr);
+        }
+#endif
+    }
 
     if (compIsForInlining())
     {
@@ -3143,45 +3185,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
                                                            &info.compMethodInfo->args))
         {
             opts.compProcedureSplittingEH = false;
-        }
-#endif
-    }
-
-    fgBlockCounts                = nullptr;
-    fgProfileData_ILSizeMismatch = false;
-    fgNumProfileRuns             = 0;
-    if (jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT))
-    {
-        assert(!compIsForInlining());
-        HRESULT hr;
-        hr = info.compCompHnd->getMethodBlockCounts(info.compMethodHnd, &fgBlockCountsCount, &fgBlockCounts,
-                                                    &fgNumProfileRuns);
-
-        // a failed result that also has a non-NULL fgBlockCounts
-        // indicates that the ILSize for the method no longer matches
-        // the ILSize for the method when profile data was collected.
-        //
-        // We will discard the IBC data in this case
-        //
-        if (FAILED(hr) && (fgBlockCounts != nullptr))
-        {
-            fgProfileData_ILSizeMismatch = true;
-            fgBlockCounts                = nullptr;
-        }
-#ifdef DEBUG
-        // A successful result implies a non-NULL fgBlockCounts
-        //
-        if (SUCCEEDED(hr))
-        {
-            assert(fgBlockCounts != nullptr);
-        }
-
-        // A failed result implies a NULL fgBlockCounts
-        //   see implementation of Compiler::fgHaveProfileData()
-        //
-        if (FAILED(hr))
-        {
-            assert(fgBlockCounts == nullptr);
         }
 #endif
     }
@@ -4949,6 +4952,8 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
     {
 #if MEASURE_CLRAPI_CALLS
         EndPhase(PHASE_CLR_API);
+#else
+        EndPhase(PHASE_POST_EMIT);
 #endif
         pCompJitTimer->Terminate(this, CompTimeSummaryInfo::s_compTimeSummary, true);
     }

@@ -151,6 +151,7 @@ jobs:
         WorkItemDirectory: '$(WorkItemDirectory)' # contains scenario tools, shared python scripts, dotnet tool
         CorrelationPayloadDirectory: '$(PayloadDirectory)' # contains performance repo and built product
         ProjectFile: ${{ parameters.projectFile }}
+        osGroup: ${{ parameters.osGroup }}
 
     # publish logs
     - task: PublishPipelineArtifact@1

@@ -253,6 +253,9 @@ namespace System.Text.Json
             }
             else if (Converter.CanUseDirectReadOrWrite && state.Current.NumberHandling == null)
             {
+                // CanUseDirectReadOrWrite == false when using streams
+                Debug.Assert(!state.IsContinuation);
+                
                 if (!isNullToken || !IgnoreDefaultValuesOnRead || !_propertyTypeCanBeNull)
                 {
                     // Optimize for internal converters by avoiding the extra call to TryRead.
@@ -265,7 +268,7 @@ namespace System.Text.Json
             else
             {
                 success = true;
-                if (!isNullToken || !IgnoreDefaultValuesOnRead || !_propertyTypeCanBeNull)
+                if (!isNullToken || !IgnoreDefaultValuesOnRead || !_propertyTypeCanBeNull || state.IsContinuation)
                 {
                     success = Converter.TryRead(ref reader, RuntimePropertyType!, Options, ref state, out T value);
                     if (success)
@@ -315,6 +318,9 @@ namespace System.Text.Json
                 // Optimize for internal converters by avoiding the extra call to TryRead.
                 if (Converter.CanUseDirectReadOrWrite && state.Current.NumberHandling == null)
                 {
+                    // CanUseDirectReadOrWrite == false when using streams
+                    Debug.Assert(!state.IsContinuation);
+
                     value = Converter.Read(ref reader, RuntimePropertyType!, Options);
                     success = true;
                 }

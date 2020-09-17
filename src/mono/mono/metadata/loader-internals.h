@@ -8,10 +8,14 @@
 #include <glib.h>
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/image.h>
+#include <mono/metadata/mempool-internals.h>
+#include <mono/metadata/mono-conc-hash.h>
+#include <mono/metadata/mono-hash.h>
 #include <mono/metadata/object-forward.h>
-#include <mono/utils/mono-forward.h>
-#include <mono/utils/mono-error.h>
+#include <mono/utils/mono-codeman.h>
 #include <mono/utils/mono-coop-mutex.h>
+#include <mono/utils/mono-error.h>
+#include <mono/utils/mono-forward.h>
 
 #ifdef ENABLE_NETCORE
 #if defined(TARGET_OSX)
@@ -25,6 +29,11 @@
 
 typedef struct _MonoLoadedImages MonoLoadedImages;
 typedef struct _MonoAssemblyLoadContext MonoAssemblyLoadContext;
+typedef struct _MonoMemoryManager MonoMemoryManager;
+typedef struct _MonoSingletonMemoryManager MonoSingletonMemoryManager;
+#ifdef ENABLE_NETCORE
+typedef struct _MonoGenericMemoryManager MonoGenericMemoryManager;
+#endif
 
 struct _MonoBundledSatelliteAssembly {
 	const char *name;
@@ -45,22 +54,23 @@ struct _MonoDllMap {
 #endif
 
 #ifdef ENABLE_NETCORE
-/* FIXME: this probably belongs somewhere else */
 struct _MonoAssemblyLoadContext {
 	MonoDomain *domain;
 	MonoLoadedImages *loaded_images;
 	GSList *loaded_assemblies;
 	// If taking this with the domain assemblies_lock, always take this second
 	MonoCoopMutex assemblies_lock;
-	/* Handle of the corresponding managed object.  If the ALC is
-	 * collectible, the handle is weak, otherwise it's strong.
-	 */
+	// Holds ALC-specific memory
+	MonoSingletonMemoryManager *memory_manager;
+	GPtrArray *generic_memory_managers;
+	// Protects generic_memory_managers; if taking this with the domain alcs_lock, always take this second
+	MonoCoopMutex memory_managers_lock;
+	// Handle of the corresponding managed object.  If the ALC is
+	// collectible, the handle is weak, otherwise it's strong.
 	MonoGCHandle gchandle;
 	// Whether the ALC can be unloaded; should only be set at creation
 	gboolean collectible;
-	// Set to TRUE when the unloading process has begun, ensures nothing else will use that ALC
-	// Maybe remove this? for now, should be helpful for debugging
-	// Alternatively, check for it in the various ALC functions and error if it's true when calling them
+	// Set to TRUE when the unloading process has begun
 	gboolean unloading;
 	// Used in native-library.c for the hash table below; do not access anywhere else
 	MonoCoopMutex pinvoke_lock;
@@ -68,6 +78,52 @@ struct _MonoAssemblyLoadContext {
 	GHashTable *pinvoke_scopes;
 };
 #endif /* ENABLE_NETCORE */
+
+struct _MonoMemoryManager {
+	MonoDomain *domain;
+	// Whether the MemoryManager can be unloaded on netcore; should only be set at creation
+	gboolean collectible;
+	// Whether this is a singleton or generic MemoryManager
+	gboolean is_generic;
+	// Whether the MemoryManager is in the process of being freed
+	gboolean freeing;
+
+	// If taking this with the loader lock, always take this second
+	// Currently unused, we take the domain lock instead
+	MonoCoopMutex lock;
+
+	MonoMemPool *mp;
+	MonoCodeManager *code_mp;
+
+	GPtrArray *class_vtable_array;
+
+	// !!! REGISTERED AS GC ROOTS !!!
+	// Hashtables for Reflection handles
+	MonoGHashTable *type_hash;
+	MonoConcGHashTable *refobject_hash;
+	// Maps class -> type initializaiton exception object
+	MonoGHashTable *type_init_exception_hash;
+	// Maps delegate trampoline addr -> delegate object
+	//MonoGHashTable *delegate_hash_table;
+	// End of GC roots
+};
+
+struct _MonoSingletonMemoryManager {
+	MonoMemoryManager memory_manager;
+
+	// Parent ALC, NULL on framework
+	MonoAssemblyLoadContext *alc;
+};
+
+#ifdef ENABLE_NETCORE
+struct _MonoGenericMemoryManager {
+	MonoMemoryManager memory_manager;
+
+	// Parent ALCs
+	int n_alcs;
+	MonoAssemblyLoadContext **alcs;
+};
+#endif
 
 void
 mono_global_loader_data_lock (void);
@@ -108,6 +164,12 @@ mono_alc_assemblies_lock (MonoAssemblyLoadContext *alc);
 void
 mono_alc_assemblies_unlock (MonoAssemblyLoadContext *alc);
 
+void
+mono_alc_memory_managers_lock (MonoAssemblyLoadContext *alc);
+
+void
+mono_alc_memory_managers_unlock (MonoAssemblyLoadContext *alc);
+
 gboolean
 mono_alc_is_default (MonoAssemblyLoadContext *alc);
 
@@ -139,5 +201,44 @@ mono_alc_get_loaded_images (MonoAssemblyLoadContext *alc);
 
 MONO_API void
 mono_loader_save_bundled_library (int fd, uint64_t offset, uint64_t size, const char *destfname);
+
+MonoSingletonMemoryManager *
+mono_mem_manager_create_singleton (MonoAssemblyLoadContext *alc, MonoDomain *domain, gboolean collectible);
+
+void
+mono_mem_manager_free_singleton (MonoSingletonMemoryManager *memory_manager, gboolean debug_unload);
+
+void
+mono_mem_manager_free_objects_singleton (MonoSingletonMemoryManager *memory_manager);
+
+void
+mono_mem_manager_lock (MonoMemoryManager *memory_manager);
+
+void
+mono_mem_manager_unlock (MonoMemoryManager *memory_manager);
+
+void *
+mono_mem_manager_alloc (MonoMemoryManager *memory_manager, guint size);
+
+void *
+mono_mem_manager_alloc_nolock (MonoMemoryManager *memory_manager, guint size);
+
+void *
+mono_mem_manager_alloc0 (MonoMemoryManager *memory_manager, guint size);
+
+void *
+mono_mem_manager_alloc0_nolock (MonoMemoryManager *memory_manager, guint size);
+
+void *
+mono_mem_manager_code_reserve (MonoMemoryManager *memory_manager, int size);
+
+void *
+mono_mem_manager_code_reserve_align (MonoMemoryManager *memory_manager, int size, int newsize);
+
+void
+mono_mem_manager_code_commit (MonoMemoryManager *memory_manager, void *data, int size, int newsize);
+
+void
+mono_mem_manager_code_foreach (MonoMemoryManager *memory_manager, MonoCodeManagerFunc func, void *user_data);
 
 #endif

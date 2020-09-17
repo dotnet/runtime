@@ -45,11 +45,11 @@ struct test
 };
 
 /**
- * validate
+ * fmodf_test1_validate
  *
  * test validation function
  */
-void __cdecl validate(float numerator, float denominator, float expected, float variance)
+void __cdecl fmodf_test1_validate(float numerator, float denominator, float expected, float variance)
 {
     float result = fmodf(numerator, denominator);
 
@@ -67,11 +67,11 @@ void __cdecl validate(float numerator, float denominator, float expected, float 
 }
 
 /**
- * validate
+ * fmodf_test1_validate
  *
  * test validation function for values returning NaN
  */
-void __cdecl validate_isnan(float numerator, float denominator)
+void __cdecl fmodf_test1_validate_isnan(float numerator, float denominator)
 {
     float result = fmodf(numerator, denominator);
 
@@ -87,7 +87,7 @@ void __cdecl validate_isnan(float numerator, float denominator)
  * 
  * executable entry point
  */
-INT __cdecl main(INT argc, CHAR **argv)
+PALTEST(c_runtime_fmodf_test1_paltest_fmodf_test1, "c_runtime/fmodf/test1/paltest_fmodf_test1")
 {
     struct test tests[] = 
     {
@@ -119,36 +119,36 @@ INT __cdecl main(INT argc, CHAR **argv)
 
     for (int i = 0; i < (sizeof(tests) / sizeof(struct test)); i++)
     {
-        validate( tests[i].numerator,  tests[i].denominator,  tests[i].expected, tests[i].variance);
-        validate(-tests[i].numerator,  tests[i].denominator, -tests[i].expected, tests[i].variance);
-        validate( tests[i].numerator, -tests[i].denominator,  tests[i].expected, tests[i].variance);
-        validate(-tests[i].numerator, -tests[i].denominator, -tests[i].expected, tests[i].variance);
+        fmodf_test1_validate( tests[i].numerator,  tests[i].denominator,  tests[i].expected, tests[i].variance);
+        fmodf_test1_validate(-tests[i].numerator,  tests[i].denominator, -tests[i].expected, tests[i].variance);
+        fmodf_test1_validate( tests[i].numerator, -tests[i].denominator,  tests[i].expected, tests[i].variance);
+        fmodf_test1_validate(-tests[i].numerator, -tests[i].denominator, -tests[i].expected, tests[i].variance);
     }
 
-    validate_isnan( 0,     0);
-    validate_isnan(-0.0f,  0);
-    validate_isnan( 0,    -0.0f);
-    validate_isnan(-0.0f, -0.0f);
+    fmodf_test1_validate_isnan( 0,     0);
+    fmodf_test1_validate_isnan(-0.0f,  0);
+    fmodf_test1_validate_isnan( 0,    -0.0f);
+    fmodf_test1_validate_isnan(-0.0f, -0.0f);
     
-    validate_isnan( 1,     0);
-    validate_isnan(-1,     0);
-    validate_isnan( 1,    -0.0f);
-    validate_isnan(-1,    -0.0f);
+    fmodf_test1_validate_isnan( 1,     0);
+    fmodf_test1_validate_isnan(-1,     0);
+    fmodf_test1_validate_isnan( 1,    -0.0f);
+    fmodf_test1_validate_isnan(-1,    -0.0f);
     
-    validate_isnan(PAL_POSINF, PAL_POSINF);
-    validate_isnan(PAL_NEGINF, PAL_POSINF);
-    validate_isnan(PAL_POSINF, PAL_NEGINF);
-    validate_isnan(PAL_NEGINF, PAL_NEGINF);
+    fmodf_test1_validate_isnan(PAL_POSINF, PAL_POSINF);
+    fmodf_test1_validate_isnan(PAL_NEGINF, PAL_POSINF);
+    fmodf_test1_validate_isnan(PAL_POSINF, PAL_NEGINF);
+    fmodf_test1_validate_isnan(PAL_NEGINF, PAL_NEGINF);
     
-    validate_isnan(PAL_POSINF,  0);
-    validate_isnan(PAL_NEGINF,  0);
-    validate_isnan(PAL_POSINF, -0.0f);
-    validate_isnan(PAL_NEGINF, -0.0f);
+    fmodf_test1_validate_isnan(PAL_POSINF,  0);
+    fmodf_test1_validate_isnan(PAL_NEGINF,  0);
+    fmodf_test1_validate_isnan(PAL_POSINF, -0.0f);
+    fmodf_test1_validate_isnan(PAL_NEGINF, -0.0f);
     
-    validate_isnan(PAL_POSINF,  1);
-    validate_isnan(PAL_NEGINF,  1);
-    validate_isnan(PAL_POSINF, -1);
-    validate_isnan(PAL_NEGINF, -1);
+    fmodf_test1_validate_isnan(PAL_POSINF,  1);
+    fmodf_test1_validate_isnan(PAL_NEGINF,  1);
+    fmodf_test1_validate_isnan(PAL_POSINF, -1);
+    fmodf_test1_validate_isnan(PAL_NEGINF, -1);
     
     PAL_Terminate();
     return PASS;
