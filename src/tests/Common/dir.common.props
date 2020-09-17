@@ -12,6 +12,11 @@
        SDK. Some test projects still bypass this by importing
        tests/dir.props directly - these should eventually go away. -->
 
+  <!-- Disable analyzers by default -->
+  <PropertyGroup>
+    <EnableAnalyzers>false</EnableAnalyzers>
+  </PropertyGroup>
+
   <PropertyGroup>
     <OSPlatformConfig>$(TargetOS).$(TargetArchitecture).$(Configuration)</OSPlatformConfig>
 
@@ -32,7 +37,7 @@
     <IntermediateOutputPath>$(BaseIntermediateOutputPath)$(BuildProjectRelativeDir)\</IntermediateOutputPath>
     <__NativeTestIntermediatesDir Condition="'$(__NativeTestIntermediatesDir)' == ''">$(BaseTestOutputPath)\obj\$(OSPlatformConfig)\Native\</__NativeTestIntermediatesDir>
 
-    <OutputPath Condition="'$(OutputPath)' == ''">$(BaseTestOutputPathWithConfig)$(BuildProjectRelativeDir)</OutputPath>
+    <OutputPath>$(BaseTestOutputPathWithConfig)$(BuildProjectRelativeDir)</OutputPath>
 
     <BasePackagePath>$(IntermediateOutputPath)</BasePackagePath>
     <BasePackagePath Condition="'$(PackageRuntimeIdentifier)' != ''">$([System.IO.Path]::GetFullPath($(IntermediateOutputPath)\$(PackageRuntimeIdentifier)))</BasePackagePath>
