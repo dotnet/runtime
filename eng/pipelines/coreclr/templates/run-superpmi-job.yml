@@ -98,6 +98,12 @@ jobs:
         archiveFilePatterns: '**/zipped/superpmi_min.zip'
         destinationFolder: $(PmiAssembliesDirectory)\Core_Root
         cleanDestinationFolder: false
+
+    - task: PythonScript@0
+      displayName: Run eng\common\superpmi\superpmi_test.py
+      inputs:
+        scriptSource: 'filePath'
+        scriptPath: $(Build.SourcesDirectory)/eng/common/superpmi/superpmi_test.py
     # - script: $(Build.SourcesDirectory)/eng/common/superpmi/superpmi-setup.sh $(IsInternal)$(Interpreter) --framework $(_Framework) --kind ${{ parameters.runKind }} ${{ parameters.extraSetupParameters }}
     #   displayName: SuperPMI Setup (Unix)
     #   condition: and(succeeded(), ne(variables['Agent.Os'], 'Windows_NT'))

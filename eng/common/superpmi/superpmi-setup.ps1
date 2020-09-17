@@ -28,9 +28,9 @@ $SuperPmiDirectory = (Join-Path $PayloadDirectory "superpmi")
 $JitUtilsDirectory = (Join-Path $PayloadDirectory "jitutils")
 $PmiAssembliesDirectory = (Join-Path $PayloadDirectory "PmiAssembliesDirectory")
 $WorkItemDirectory = (Join-Path $SourceDirectory "workitem")
-$Queue = "windows.10.amd64.clientrs5"
+$Queue = "Windows.10.Amd64.19H1.Tiger.Perf"
 $HelixSourcePrefix = "official"
-$Creator = $env:BUILD_DEFINITIONNAME
+$Creator = ""
 
 robocopy $SourceDirectory\src\coreclr\scripts $SuperPmiDirectory /E /XD $PayloadDirectory $SourceDirectory\artifacts $SourceDirectory\.git
 
