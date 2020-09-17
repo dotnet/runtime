@@ -3,25 +3,28 @@
 <!-- The .NET Foundation licenses this file to you under the MIT license. -->
 <html>
   <head>
-    <title>TESTS</title>
+    <title>Bindings Benchmark</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
   </head>
   <body>
-    <h3 id="header">Wasm Browser Sample</h3>
-    Result from Sample.Test.TestMeaning: <span id="out"></span><br>
-    Progress: <span id="progress">Starting...</span><br>
+    <h3 id="header">Wasm Bindings Benchmark</h3>
+    Progress: <span id="progress">Loading...</span><br>
     Avg. Speed: <span id="speed"></span>
     <script type='text/javascript'>
       var App = {
         init: function () {
-          var ret = BINDING.call_static_method("[WasmSample]Sample.Test:TestMeaning", []);
-          document.getElementById("out").innerHTML = ret;
-          console.log ("ready");
+          console.log ("pausing to give JIT time before warming");
 
-          console.log ("warming");
+          document.querySelector("#progress").innerHTML = "Waiting for compile...";
 
-          var method = BINDING.bind_static_method("[WasmSample]Sample.Test:BenchmarkMethod", "ifd");
+          window.setTimeout(App.warmBenchmark.bind(App), 3000);
+        },
+
+        warmBenchmark: function () {
+          console.log ("warming benchmark");
+          document.querySelector("#progress").innerHTML = "Warming runtime...";
+          var method = BINDING.bind_static_method("[BindingsBenchmark]Sample.Test:BenchmarkMethod", "ifd");
           method(0, 0, 0);
 
           var started = performance.now ();
@@ -32,9 +35,10 @@
 
           var speedAdjustment = (Math.max(0, 110 - elapsed) / 50) + 1;
 
-          console.log ("warming took", (ended - started), "starting benchmark in 4 seconds");
+          document.querySelector("#progress").innerHTML = "Waiting for compile again...";
 
-          window.setTimeout(App.runBenchmark.bind(App, method, speedAdjustment), 4000);
+          console.log ("warming took", (ended - started), "starting benchmark in 2 seconds");
+          window.setTimeout(App.runBenchmark.bind(App, method, speedAdjustment), 2000);
         },
 
         iterFailed: function (expected, actual) {

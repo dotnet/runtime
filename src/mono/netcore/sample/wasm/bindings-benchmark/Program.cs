@@ -15,12 +15,8 @@ namespace Sample
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static int TestMeaning()
+        public static float BenchmarkMethod (int i, float f, double d) 
         {
-            return 42;
-        }
-
-        public static float BenchmarkMethod (int i, float f, double d) {
             return (float)(i + f + d);
         }
     }

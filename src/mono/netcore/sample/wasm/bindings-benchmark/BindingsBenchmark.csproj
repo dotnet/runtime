@@ -38,7 +38,7 @@
       AppDir="$(AppDir)"
       ExtraAssemblies="$(MicrosoftNetCoreAppRuntimePackDir)lib\$(NetCoreAppCurrent)\System.Private.Runtime.InteropServices.JavaScript.dll"
       MicrosoftNetCoreAppRuntimePackDir="$(MicrosoftNetCoreAppRuntimePackDir)"
-      MainAssembly="bin\WasmSample.dll"
+      MainAssembly="bin\BindingsBenchmark.dll"
       MainJS="runtime.js"
       AssemblySearchPaths="@(AssemblySearchPaths)"/>
     <Exec Command="chmod a+x $(AppDir)/run-v8.sh" />
