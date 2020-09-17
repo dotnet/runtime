@@ -8,6 +8,9 @@ using System.Text;
 
 namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 {
+#if !ILLINK
+	[Reference ("System.Core.dll")]
+#endif
 	[SetupLinkerCoreAction ("skip")]
 	[SetupCompileBefore ("library.dll", new[] { "Dependencies/TriggerWarnings_Lib.cs" })]
 	[KeptAssembly ("library.dll")]

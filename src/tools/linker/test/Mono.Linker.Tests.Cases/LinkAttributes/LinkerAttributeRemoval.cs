@@ -15,6 +15,9 @@ namespace Mono.Linker.Tests.Cases.LinkAttributes
 	[SetupLinkAttributesFile ("LinkerAttributeRemoval.xml")]
 	[IgnoreLinkAttributes (false)]
 
+#if !ILLINK
+	[Reference ("System.dll")]
+#endif
 	[SetupCompileBefore ("attribute.dll", new[] { "Dependencies/LinkerAttributeRemovalAttributeToRemove.cs" })]
 	[SetupCompileBefore ("copyattribute.dll", new[] { "Dependencies/LinkerAttributeRemovalAttributeFromCopyAssembly.cs" })]
 	[SetupLinkerAction ("copy", "copyattribute")]

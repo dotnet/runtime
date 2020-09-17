@@ -8,6 +8,9 @@ using System.Linq.Expressions;
 
 namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 {
+#if !ILLINK
+	[Reference ("System.Core.dll")]
+#endif
 	[SkipKeptItemsValidation]
 	[LogDoesNotContain ("TriggerUnrecognizedPattern()")]
 	public class SuppressWarningsInAssembly
