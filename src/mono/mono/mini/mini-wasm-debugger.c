@@ -469,14 +469,15 @@ assembly_loaded (MonoProfiler *prof, MonoAssembly *assembly)
 	MonoDebugHandle *handle = mono_debug_get_handle (assembly_image);
 	if (handle) {
 		MonoPPDBFile *ppdb = handle->ppdb;
-		pdb_image = mono_ppdb_get_image (ppdb);
+		if (!mono_ppdb_is_embedded (ppdb)) //if it's an embedded pdb we don't need to send pdb extrated to DebuggerProxy.
+			pdb_image = mono_ppdb_get_image (ppdb); 
 	}
 
 	if (pdb_image) {
 		mono_wasm_asm_loaded (
 			assembly_image->assembly_name, assembly_image->raw_data, assembly_image->raw_data_len,
 			pdb_image->raw_data, pdb_image->raw_data_len);
-	} else {
+	} else if (mono_has_pdb_checksum (assembly_image->raw_data, assembly_image->raw_data_len)) { //if it's a release assembly we don't need to send to DebuggerProxy
 		mono_wasm_asm_loaded (
 			assembly_image->assembly_name, assembly_image->raw_data, assembly_image->raw_data_len,
 			NULL, 0);
