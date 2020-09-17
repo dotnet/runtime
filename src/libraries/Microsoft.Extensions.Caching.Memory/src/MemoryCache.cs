@@ -116,13 +116,6 @@ namespace Microsoft.Extensions.Caching.Memory
                 return;
             }
 
-            if (!entry.ValueHasBeenSet)
-            {
-                // No-op if the CacheEntry Value was never set. We assume an exception occurred and the caller
-                // never set the Value successfully, so don't use this entry.
-                return;
-            }
-
             if (_options.SizeLimit.HasValue && !entry.Size.HasValue)
             {
                 throw new InvalidOperationException($"Cache entry must specify a value for {nameof(entry.Size)} when {nameof(_options.SizeLimit)} is set.");
