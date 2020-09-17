@@ -1,8 +1,8 @@
 <Project DefaultTargets="Build">
-  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
   <!-- When doing post build sign, pull in the arcade sign.props file, which will
        create some initial sign groups and then pulls in the repo's custom Signing.props overrides. -->
-  <Import Project="../tools/Sign.props" Sdk="Microsoft.DotNet.Arcade.Sdk" Condition="'$(PostBuildSign)' == 'true'" />
+  <Import Project="../tools/Sign.props" Sdk="Microsoft.DotNet.Arcade.Sdk" />
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
 
   <UsingTask TaskName="GenerateChecksums" AssemblyFile="$(InstallerTasksAssemblyPath)" />
 

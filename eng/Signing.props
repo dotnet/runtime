@@ -2,8 +2,8 @@
 
   <!-- When PostBuildSign is true, these ends up being pulled in through 
        the import of arcade's Sign.props in prepare-artifacts.proj (via Directory.Build.props and targets) -->
-  <Import Project="$(RepositoryEngineeringDir)Configurations.props" Condition="'$(PostBuildSign)' != 'true'" />
-  <Import Project="$(RepositoryEngineeringDir)liveBuilds.targets" Condition="'$(PostBuildSign)' != 'true'" />
+  <Import Project="$(RepositoryEngineeringDir)Configurations.props" />
+  <Import Project="$(RepositoryEngineeringDir)liveBuilds.targets" />
 
   <PropertyGroup>
     <!--
@@ -138,7 +138,7 @@
         <ItemsToSign Include="$(DownloadDirectory)**\*.rpm" />
       </ItemGroup>
     </When>
-    
+
     <!-- When doing post build signing, we sign all artifacts we would push.
          Symbol packages are included, but get no signature. -->
     <When Condition="'$(PostBuildSign)' == 'true'">
