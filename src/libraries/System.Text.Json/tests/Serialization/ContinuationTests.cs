@@ -27,12 +27,6 @@ namespace System.Text.Json.Serialization.Tests
                 (new TestClass<NestedClassWithParamCtor>(), new NestedClassWithParamCtor(null)),
             };
 
-        private const int MinPaddingLength = 5;
-        private const int MaxPaddingLength = 116;
-
-        private static IEnumerable<int> ContinuationPaddingLengths
-            => Enumerable.Range(MinPaddingLength, MaxPaddingLength - MinPaddingLength + 1);
-
         private static IEnumerable<bool> IgnoreNullValues
             => new[] { true, false };
 
@@ -41,32 +35,6 @@ namespace System.Text.Json.Serialization.Tests
         public static async Task ShouldWorkAtAnyPosition(string json, int bufferSize, Type type, bool ignoreNullValues)
         {
             var stream = new MemoryStream(Encoding.UTF8.GetBytes(json));
-            {
-                var obj = new Outer<TestClass<NestedClass>>
-                {
-                    S = new string('x', paddingLength),
-                    C = new()
-                    {
-                        A = "Hello",
-                        B = null,
-                        C = 42,
-                        D = null,
-                        E = 3.14e+17f,
-                        F = null,
-                        G = true,
-                        H = null,
-                        I = new int[] {42, 17},
-                        J = new()
-                        {
-                            A = null,
-                            B = 7,
-                        }
-                    }
-                };
-                await JsonSerializer.SerializeAsync(stream, obj, new JsonSerializerOptions { Converters = { new OuterConverter<TestClass<NestedClass>>() } });
-            }
-
-            stream.Position = 0;
             {
                 var readOptions = new JsonSerializerOptions
                 {
@@ -87,32 +55,6 @@ namespace System.Text.Json.Serialization.Tests
         public static async Task InvalidNullTokenShouldFailAtAnyPosition(string json, int bufferSize, Type type, bool ignoreNullValues)
         {
             var stream = new MemoryStream(Encoding.UTF8.GetBytes(json));
-            {
-                var obj = new Outer<TestClass<NestedValueType>>
-                {
-                    S = new string('x', paddingLength),
-                    C = new()
-                    {
-                        A = "Hello",
-                        B = null,
-                        C = 42,
-                        D = null,
-                        E = 3.14e+17f,
-                        F = null,
-                        G = true,
-                        H = null,
-                        I = new int[] { 42, 17 },
-                        J = new()
-                        {
-                            A = null,
-                            B = 7,
-                        }
-                    }
-                };
-                await JsonSerializer.SerializeAsync(stream, obj, new JsonSerializerOptions { Converters = { new OuterConverter<TestClass<NestedClass>>() } });
-            }
-
-            stream.Position = 0;
             {
                 var readOptions = new JsonSerializerOptions
                 {
@@ -152,68 +94,25 @@ namespace System.Text.Json.Serialization.Tests
                     // Determine the DefaultBufferSize that is required to contain the complete json.
                     int bufferSize = 16;
                     while (payload.Length > bufferSize)
-        {
+                    {
                         bufferSize *= 2;
-                        }
+                    }
                     int minPaddingLength = bufferSize - payload.Length + 1;
                     int maxPaddingLength = bufferSize - 1;
 
                     foreach (int length in Enumerable.Range(minPaddingLength, maxPaddingLength - minPaddingLength + 1))
-            {
-                        foreach (bool ignore in IgnoreNullValues)
-                {
-                            yield return new object[] { new string(' ', length) + payload, bufferSize, arrayType, ignore };
-            }
-        }
-
-        [Theory]
-        [MemberData(nameof(TestData))]
-        public static async Task ContinuationShouldWorkAtAnyPosition_ClassWithParamCtor_Class(int paddingLength, bool ignoreNullValues)
-        {
-            var stream = new MemoryStream();
-            {
-                var obj = new Outer<TestClassWithParamCtor<NestedClassWithParamCtor>>
-                {
-                    S = new string('x', paddingLength),
-                    C = new(null, 42, null, 3.14e+17f, null, true, null, new int[] { 42, 17 })
                     {
-                        A = "Hello",
-                        J = new(null)
+                        foreach (bool ignore in IgnoreNullValues)
                         {
-                            B = 7,
-                        },
-                    },
-                };
-                await JsonSerializer.SerializeAsync(stream, obj, new JsonSerializerOptions { Converters = { new OuterConverter<TestClass<NestedClass>>() } });
-            }
-
-            stream.Position = 0;
-            {
-                var readOptions = new JsonSerializerOptions
-                {
-                    DefaultBufferSize = 128,
-                    IgnoreNullValues = ignoreNullValues,
-                };
-
-                Outer<TestClassWithParamCtor<NestedClassWithParamCtor>> obj = await JsonSerializer.DeserializeAsync<Outer<TestClassWithParamCtor<NestedClassWithParamCtor>>>(stream, readOptions);
-
-                Assert.Equal(new string('x', paddingLength), obj.S);
-                Assert.Equal("Hello", obj.C.A);
-                Assert.Null(obj.C.B);
-                Assert.Equal(42, obj.C.C);
-                Assert.Null(obj.C.D);
-                Assert.Equal(3.14e17f, obj.C.E);
-                Assert.Null(obj.C.F);
-                Assert.True(obj.C.G);
-                Assert.Null(obj.C.H);
-                Assert.Collection(obj.C.I, v => Assert.Equal(42, v), v => Assert.Equal(17, v));
-                Assert.Null(obj.C.J.A);
-                Assert.Equal(7, obj.C.J.B);
+                            yield return new object[] { new string(' ', length) + payload, bufferSize, arrayType, ignore };
+                        }
+                    }
+                }
             }
         }
 
         private interface ITestObject
-                {
+        {
             string A { get; set; }
             string B { get; set; }
             int C { get; set; }
@@ -266,10 +165,10 @@ namespace System.Text.Json.Serialization.Tests
                 H = null;
                 I = new int[] { 42, 17 };
                 (J = (TNested)nested).Initialize();
-        }
+            }
 
             void ITestObject.Verify()
-        {
+            {
                 Assert.Equal("Hello", A);
                 Assert.Null(B);
                 Assert.Equal(42, C);
@@ -300,10 +199,10 @@ namespace System.Text.Json.Serialization.Tests
             {
                 get => J;
                 set => J = (TNested)value;
-        }
+            }
 
             void ITestObject.Initialize(INestedObject nested)
-        {
+            {
                 A = "Hello";
                 B = null;
                 C = 42;
@@ -314,10 +213,10 @@ namespace System.Text.Json.Serialization.Tests
                 H = null;
                 I = new int[] { 42, 17 };
                 (J = (TNested)nested).Initialize();
-        }
+            }
 
             void ITestObject.Verify()
-        {
+            {
                 Assert.Equal("Hello", A);
                 Assert.Null(B);
                 Assert.Equal(42, C);
@@ -336,82 +235,18 @@ namespace System.Text.Json.Serialization.Tests
         {
             public string A { get; set; }
             public int B { get; set; }
-        }
-
-        // custom converter to ensure that the padding is written in front of the tested object.
-        private class OuterConverter<T> : JsonConverter<Outer<T>>
-        {
-            public override Outer<T> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
-                => throw new NotImplementedException();
-
-            public override void Write(Utf8JsonWriter writer, Outer<T> value, JsonSerializerOptions options)
-            {
-                writer.WriteStartObject();
-                writer.WriteString("S", value.S);
-                writer.WritePropertyName("C");
-                JsonSerializer.Serialize(writer, value.C, typeof(T), options);
-                writer.WriteEndObject();
-            }
-        }
 
             void INestedObject.Initialize()
             {
                 A = null;
                 B = 7;
-        }
+            }
 
             void INestedObject.Verify()
-        {
+            {
                 Assert.Null(A);
                 Assert.Equal(7, B);
-        }
-
-        private class CustomerAddress
-        {
-            [JsonPropertyName("first_name")]
-            public string FirstName { get; set; }
-
-            [JsonPropertyName("address1")]
-            public string Address1 { get; set; }
-
-            [JsonPropertyName("phone")]
-            public string Phone { get; set; }
-
-            [JsonPropertyName("city")]
-            public string City { get; set; }
-
-            [JsonPropertyName("zip")]
-            public string Zip { get; set; }
-
-            [JsonPropertyName("province")]
-            public string Province { get; set; }
-
-            [JsonPropertyName("country")]
-            public string Country { get; set; }
-
-            [JsonPropertyName("last_name")]
-            public string LastName { get; set; }
-
-            [JsonPropertyName("address2")]
-            public string Address2 { get; set; }
-
-            [JsonPropertyName("company")]
-            public string Company { get; set; }
-
-            [JsonPropertyName("latitude")]
-            public float? Latitude { get; set; }
-
-            [JsonPropertyName("longitude")]
-            public float? Longitude { get; set; }
-
-            [JsonPropertyName("name")]
-            public string Name { get; set; }
-
-            [JsonPropertyName("country_code")]
-            public string CountryCode { get; set; }
-
-            [JsonPropertyName("province_code")]
-            public string ProvinceCode { get; set; }
+            }
         }
 
         private class NestedClassWithParamCtor : NestedClass

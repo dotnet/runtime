@@ -16,13 +16,11 @@ namespace System.Text.Json.Serialization.Tests
         [MemberData(nameof(ContinuationAtNullTokenTestData))]
         public static async Task ContinuationAtNullToken(string payload)
         {
-            await Task.Yield();
-            payload.ToString();
-            //using (Stream stream = new MemoryStream(Encoding.UTF8.GetBytes(payload)))
-            //{
-            //    CustomerCollectionResponse response = await JsonSerializer.DeserializeAsync<CustomerCollectionResponse>(stream, new JsonSerializerOptions { IgnoreNullValues = true });
-            //    Assert.Equal(50, response.Customers.Count);
-            //}
+            using (Stream stream = new MemoryStream(Encoding.UTF8.GetBytes(payload)))
+            {
+                CustomerCollectionResponse response = await JsonSerializer.DeserializeAsync<CustomerCollectionResponse>(stream, new JsonSerializerOptions { IgnoreNullValues = true });
+                Assert.Equal(50, response.Customers.Count);
+            }
         }
 
         public static IEnumerable<object[]> ContinuationAtNullTokenTestData
