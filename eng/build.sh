@@ -130,8 +130,8 @@ initDistroRid()
     local isCrossBuild="$3"
     local isPortableBuild="$4"
 
-    # Only pass ROOTFS_DIR if __DoCrossArchBuild is specified.
-    if (( isCrossBuild == 1 )); then
+    # Only pass ROOTFS_DIR if __DoCrossArchBuild is specified and the current platform is not OSX that doesn't use rootfs
+    if [[ $isCrossBuild == 1 && "$targetOs" != "OSX" ]]; then
         passedRootfsDir=${ROOTFS_DIR}
     fi
     initDistroRidGlobal ${targetOs} ${buildArch} ${isPortableBuild} ${passedRootfsDir}

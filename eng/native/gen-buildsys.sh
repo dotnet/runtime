@@ -63,7 +63,9 @@ done
 
 cmake_extra_defines=
 if [[ "$CROSSCOMPILE" == "1" ]]; then
-    if ! [[ -n "$ROOTFS_DIR" ]]; then
+    platform="$(uname)"
+    # OSX doesn't use rootfs
+    if ! [[ -n "$ROOTFS_DIR" || "$platform" == "Darwin" ]]; then
         echo "ROOTFS_DIR not set for crosscompile"
         exit 1
     fi
@@ -74,7 +76,12 @@ if [[ "$CROSSCOMPILE" == "1" ]]; then
     if [[ -n "$tryrun_dir" ]]; then
         cmake_extra_defines="$cmake_extra_defines -C $tryrun_dir/tryrun.cmake"
     fi
-    cmake_extra_defines="$cmake_extra_defines -DCMAKE_TOOLCHAIN_FILE=$scriptroot/../common/cross/toolchain.cmake"
+
+    if [[ "$platform" == "Darwin" ]]; then
+        cmake_extra_defines="$cmake_extra_defines -DCMAKE_SYSTEM_NAME=Darwin"
+    else
+        cmake_extra_defines="$cmake_extra_defines -DCMAKE_TOOLCHAIN_FILE=$scriptroot/../common/cross/toolchain.cmake"
+    fi
 fi
 
 if [[ "$build_arch" == "armel" ]]; then

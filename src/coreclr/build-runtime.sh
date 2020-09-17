@@ -97,19 +97,7 @@ build_cross_architecture_components()
     CROSSCOMPILE=0
     export __CMakeBinDir CROSSCOMPILE
 
-    __CMakeArgs="-DCLR_CMAKE_TARGET_ARCH=$__BuildArch -DCLR_CROSS_COMPONENTS_BUILD=1 $__CMakeArgs"
-    if [[ "$__TargetOS" == OSX ]]; then
-        if [[ "$__CrossArch" == x64 ]]; then
-            __CMakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"x86_64\" $__CMakeArgs"
-        elif [[ "$__CrossArch" == arm64 ]]; then
-            __CMakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"arm64\" $__CMakeArgs"
-        else
-            echo "Error: Unknown OSX architecture $__BuildArch."
-            exit 1
-        fi
-    fi
-
-    build_native "$__CrossArch" "$__ProjectRoot" "$__ProjectRoot" "$intermediatesForBuild" "cross-architecture components"
+    build_native "$__TargetOS" "$__CrossArch" "$__ProjectRoot" "$__ProjectRoot" "$intermediatesForBuild" "$__CMakeArgs" "cross-architecture components"
 
     CROSSCOMPILE=1
     export CROSSCOMPILE
@@ -202,11 +190,11 @@ __BuildJit=1
 __BuildAllJits=1
 __BuildRuntime=1
 
-source "$__ProjectRoot"/_build-commons.sh
+#if [[ "${__BuildArch}" != "${__HostArch}" && "${__BuildOS}" == "OSX" ]]; then
+#    __CrossBuild=1
+#fi
 
-if [[ "${__BuildArch}" != "${__HostArch}" ]]; then
-    __CrossBuild=1
-fi
+source "$__ProjectRoot"/_build-commons.sh
 
 # Set dependent variables
 
@@ -263,21 +251,10 @@ if [[ "$__SkipConfigure" == 0 && "$__CodeCoverage" == 1 ]]; then
     __CMakeArgs="-DCLR_CMAKE_ENABLE_CODE_COVERAGE=1 $__CMakeArgs"
 fi
 
-if [[ "$__TargetOS" == OSX ]]; then
-    if [[ "$__BuildArch" == x64 ]]; then
-        __CMakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"x86_64\" $__CMakeArgs"
-    elif [[ "$__BuildArch" == arm64 ]]; then
-        __CMakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"arm64\" $__CMakeArgs"
-    else
-        echo "Error: Unknown OSX architecture $__BuildArch."
-        exit 1
-    fi
-fi
-
 if [[ "$__SkipNative" == 1 ]]; then
     echo "Skipping CoreCLR component build."
 else
-    build_native "$__BuildArch" "$__ProjectRoot" "$__ProjectRoot" "$__IntermediatesDir" "CoreCLR component"
+    build_native "$__TargetOS" "$__BuildArch" "$__ProjectRoot" "$__ProjectRoot" "$__IntermediatesDir" "$__CMakeArgs" "CoreCLR component"
 
     # Build cross-architecture components
     if [[ "$__SkipCrossArchNative" != 1 ]]; then

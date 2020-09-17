@@ -1760,7 +1760,7 @@ ExitVirtualProtect:
     return bRetVal;
 }
 
-#if defined(TARGET_OSX) && defined(TARGET_ARM64)
+#if defined(HOST_OSX) && defined(HOST_ARM64)
 bool
 PAL_JITWriteEnableHolder::JITWriteEnable(bool writeEnable)
 {
