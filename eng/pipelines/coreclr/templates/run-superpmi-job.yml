@@ -104,6 +104,9 @@ jobs:
       inputs:
         scriptSource: 'filePath'
         scriptPath: $(Build.SourcesDirectory)/eng/common/superpmi/superpmi_test.py
+      env:
+        KUNAL_KEY: $(kunal_key) # secret key
+
     # - script: $(Build.SourcesDirectory)/eng/common/superpmi/superpmi-setup.sh $(IsInternal)$(Interpreter) --framework $(_Framework) --kind ${{ parameters.runKind }} ${{ parameters.extraSetupParameters }}
     #   displayName: SuperPMI Setup (Unix)
     #   condition: and(succeeded(), ne(variables['Agent.Os'], 'Windows_NT'))
