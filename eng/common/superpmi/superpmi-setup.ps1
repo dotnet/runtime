@@ -35,14 +35,19 @@ $Creator = $env:BUILD_DEFINITIONNAME
 robocopy $SourceDirectory\src\coreclr\scripts $SuperPmiDirectory /E /XD $PayloadDirectory $SourceDirectory\artifacts $SourceDirectory\.git
 
 Write-Host "Downloading CoreClr_Build"
-$url = "https://filebin.net/np9v65rayyxlojjm/superpmi_min.zip?t=octznfc2"
+$url = "https://github.com/kunalspathak/runtime/raw/master/superpmi_min.zip"
+$zipPath = "$PmiAssembliesDirectory\zipped"
+New-Item -Type dir $zipPath -Force
+
 $tmp = New-TemporaryFile | Rename-Item -NewName { $_ -replace 'tmp$', 'zip' } -PassThru
+Write-Host "Temp location is $tmp"
 
 New-Item -Name $PmiAssembliesDirectory\zipped\superpmi_min.zip -ItemType File -Force
 $start_time = Get-Date
-(New-Object System.Net.WebClient).DownloadFile($url, $PmiAssembliesDirectory\zipped\superpmi_min.zip)
-# $tmp | Expand-Archive -DestinationPath $PmiAssembliesDirectory\Core_Root -Force
+(New-Object System.Net.WebClient).DownloadFile($url, $tmp)
+Copy-Item $tmp -Destination $zipPath\superpmi_min.zip
 Write-Host "Time taken: $((Get-Date).Subtract($start_time).Seconds) second(s)"
+$tmp | Remove-Item
 
 # robocopy $CoreRootDirectory $PmiAssembliesDirectory\Core_Root /E
 # robocopy $ManagedTestArtifactDirectory $PmiAssembliesDirectory\Tests /E /XD $CoreRootDirectory
