@@ -15,13 +15,6 @@ Param(
     [string] $Configurations="CompilationMode=$CompilationMode RunKind=$Kind"
 )
 
-function Extract-Cab ($CabFilePath, $Destination){
-    $Shell = New-Object -Comobject "Shell.Application"
-    $SourceCab = $Shell.Namespace($CabFilePath).items()
-    $DestinationFolder = $Shell.Namespace($Destination)
-    $DestinationFolder.CopyHere($SourceCab)
-}
-
 # 1. clone the repo
 # 2. do setup on dotnet/runtime
 # 3. copy 
@@ -46,8 +39,7 @@ $url = "https://filebin.net/np9v65rayyxlojjm/superpmi_min.zip?t=octznfc2"
 $tmp = New-TemporaryFile | Rename-Item -NewName { $_ -replace 'tmp$', 'zip' } -PassThru
 
 $start_time = Get-Date
-(New-Object System.Net.WebClient).DownloadFile($url, $tmp)
-Extract-Cab -CabFilePath $tmp -Destination $PmiAssembliesDirectory\Core_Root
+(New-Object System.Net.WebClient).DownloadFile($url, $PmiAssembliesDirectory\zipped)
 # $tmp | Expand-Archive -DestinationPath $PmiAssembliesDirectory\Core_Root -Force
 Write-Host "Time taken: $((Get-Date).Subtract($start_time).Seconds) second(s)"
 

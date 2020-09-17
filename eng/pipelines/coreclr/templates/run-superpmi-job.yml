@@ -91,6 +91,13 @@ jobs:
       displayName: SuperPMI Setup (Windows)
       condition: and(succeeded(), eq(variables['Agent.Os'], 'Windows_NT'))
       continueOnError: ${{ parameters.continueOnError }}
+
+    - task: ExtractFiles@1
+      displayName: 'Unzip SuperPmi_Min'
+      inputs:
+        archiveFilePatterns: $(PmiAssembliesDirectory)/zipped}
+        destinationFolder: $(PmiAssembliesDirectory)\Core_Root
+        cleanDestinationFolder: false
     # - script: $(Build.SourcesDirectory)/eng/common/superpmi/superpmi-setup.sh $(IsInternal)$(Interpreter) --framework $(_Framework) --kind ${{ parameters.runKind }} ${{ parameters.extraSetupParameters }}
     #   displayName: SuperPMI Setup (Unix)
     #   condition: and(succeeded(), ne(variables['Agent.Os'], 'Windows_NT'))
