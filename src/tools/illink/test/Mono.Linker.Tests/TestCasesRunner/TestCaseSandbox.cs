@@ -127,7 +127,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		private static NPath GetExpectationsAssemblyPath ()
 		{
-			return new Uri (typeof (KeptAttribute).Assembly.CodeBase).LocalPath.ToNPath ();
+			return new Uri (typeof (KeptAttribute).Assembly.Location).LocalPath.ToNPath ();
 		}
 
 		protected void CopyToInputAndExpectations (NPath source)

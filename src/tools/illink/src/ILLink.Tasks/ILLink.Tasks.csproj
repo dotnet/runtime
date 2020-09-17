@@ -2,7 +2,7 @@
   <PropertyGroup>
     <!-- Keep these in sync with _ILLinkTasksTFM in Sdk.props. -->
     <!-- Keep the netcoreapp TFM in sync with the Mono.Linker.csproj condition below. -->
-    <TargetFrameworks>netcoreapp3.0;net472</TargetFrameworks>
+    <TargetFrameworks>net5.0;net472</TargetFrameworks>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <Description>MSBuild tasks for running the IL Linker</Description>
     <LangVersion>latest</LangVersion>
@@ -36,7 +36,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../linker/Mono.Linker.csproj" PrivateAssets="All" Condition=" '$(TargetFramework)' == 'netcoreapp3.0' " />
+    <ProjectReference Include="../linker/Mono.Linker.csproj" PrivateAssets="All" Condition=" '$(TargetFramework)' == 'net5.0' " />
     <PackageReference Condition="'$(UseCecilPackage)' == 'true'" Include="Mono.Cecil" Version="$(MonoCecilVersion)" PrivateAssets="All" Publish="True" />
     <ProjectReference Condition="'$(UseCecilPackage)' != 'true'" Include="../../external/cecil/Mono.Cecil.csproj" PrivateAssets="All" />
   </ItemGroup>

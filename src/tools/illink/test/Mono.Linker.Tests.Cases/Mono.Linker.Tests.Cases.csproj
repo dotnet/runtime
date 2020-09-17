@@ -5,11 +5,11 @@
     <WarningLevel>0</WarningLevel>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-    <LangVersion>8.0</LangVersion>
+    <LangVersion>Latest</LangVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(MonoBuild)' == ''">
-    <TargetFramework>netcoreapp3.0</TargetFramework>
+    <TargetFramework>net5.0</TargetFramework>
     <DefineConstants>$(DefineConstants);ILLINK</DefineConstants>
   </PropertyGroup>
 

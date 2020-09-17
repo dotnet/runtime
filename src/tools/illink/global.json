@@ -1,14 +1,14 @@
 {
   "tools": {
-    "dotnet": "5.0.100-preview.6.20310.4",
+    "dotnet": "5.0.100-rc.1.20454.5",
     "runtimes": {
       "dotnet": [
-        "3.0.0"
+        "5.0.0-rc.1.20451.14"
       ]
     }
   },
   "msbuild-sdks": {
-    "Microsoft.DotNet.Arcade.Sdk": "5.0.0-beta.20464.13",
+    "Microsoft.DotNet.Arcade.Sdk": "5.0.0-beta.20466.13",
     "Microsoft.FIX-85B6-MERGE-9C38-CONFLICT": "1.0.0",
     "Microsoft.NET.Sdk.IL": "6.0.0-alpha.1.20463.3"
   }

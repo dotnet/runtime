@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <linker>
   <assembly fullname="Test">
-      <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute" assembly="Mono.Linker.Tests.Cases.Expectations">
+      <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
         <argument>ILLink</argument>
         <argument>IL2067</argument>
         <property name="Scope">member</property>
@@ -18,45 +18,45 @@
       </field>
       <method signature="System.Void TwoAnnotatedParameters(System.Type,System.Type)">
         <parameter name="type">
-          <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute" assembly="Mono.Linker.Tests.Cases.Expectations">
+          <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute">
             <argument>PublicParameterlessConstructor</argument>
           </attribute>
         </parameter>
         <parameter name="type2">
-          <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute" assembly="Mono.Linker.Tests.Cases.Expectations">
+          <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute">
             <argument>PublicConstructors</argument>
           </attribute>
         </parameter>
       </method>
       <method signature="SpacesBetweenParametersWrongArgument (System.Type, System.Boolean)">
         <parameter name="type">
-          <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute" assembly="Mono.Linker.Tests.Cases.Expectations">
+          <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute">
             <argument>NonValidArgument</argument>
           </attribute>
         </parameter>
       </method>
       <method signature="GenericMethod&lt;T&gt;(T,System.Type)">
         <parameter name="type">
-          <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute" assembly="Mono.Linker.Tests.Cases.Expectations">
+          <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute">
             <argument>PublicParameterlessConstructor</argument>
           </attribute>
         </parameter>
       </method>
       <method name="ReturnConstructorsFailure">
         <return>
-          <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute" assembly="Mono.Linker.Tests.Cases.Expectations">
+          <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute">
             <argument>PublicParameterlessConstructor</argument>
           </attribute>
         </return>
       </method>
       <property name="PropertyWithPublicParameterlessConstructor">
-        <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute" assembly="Mono.Linker.Tests.Cases.Expectations">
+        <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute">
           <argument>PublicParameterlessConstructor</argument>
         </attribute>
       </property>
       <type name="NestedType">
         <field name="_typeWithPublicParameterlessConstructor">
-          <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute" assembly="Mono.Linker.Tests.Cases.Expectations">
+          <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute">
             <argument>PublicParameterlessConstructor</argument>
           </attribute>
         </field>

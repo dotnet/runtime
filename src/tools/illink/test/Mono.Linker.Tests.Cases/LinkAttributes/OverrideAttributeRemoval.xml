@@ -3,4 +3,7 @@
   <assembly fullname="Mono.Linker.Tests.Cases.Expectations">
     <type fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute"/>
   </assembly>
+  <assembly fullname="System.Runtime">
+    <type fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute"/>
+  </assembly>
 </linker>

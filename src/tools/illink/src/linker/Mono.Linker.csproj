@@ -6,6 +6,7 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(MonoBuild)' == ''">
+    <TargetFramework>net5.0</TargetFramework>
     <DefineConstants>$(DefineConstants);FEATURE_ILLINK</DefineConstants>
     <IsPackable>true</IsPackable>
     <!-- Nuget issues a warning about missing <reference> items in the generated nuspec,
@@ -33,6 +34,7 @@
     <Compile Remove="Linker.Steps\PreserveCalendarsStep.cs" />
     <Compile Remove="Linker.Steps\RemoveFeaturesStep.cs" />
     <Compile Remove="Linker.Steps\ResolveFromXApiStep.cs" />
+    <Compile Remove="System.Diagnostics.CodeAnalysis\*.cs" />
   </ItemGroup>
 
   <ItemGroup>

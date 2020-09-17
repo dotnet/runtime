@@ -3,7 +3,7 @@
   <assembly fullname="test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
     <type fullname="Mono.Linker.Tests.Cases.DynamicDependencies.DynamicDependencyFromAttributeXml">
       <method name="DependencyToUnusedMethod">
-        <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute" assembly="Mono.Linker.Tests.Cases.Expectations">
+        <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute">
           <argument>UnusedMethod</argument>
         </attribute>
       </method>
