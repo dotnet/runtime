@@ -414,9 +414,19 @@ namespace System.Net.Sockets.Tests
         {
             int startCount = events.Count;
 
-            while (events.Skip(startCount).Count(e => e.EventName == "EventCounters") < 2)
+            while (events.Skip(startCount).Count(IsBytesSentEventCounter) < 2)
             {
                 await Task.Delay(100);
+            }
+
+            static bool IsBytesSentEventCounter(EventWrittenEventArgs e)
+            {
+                if (e.EventName != "EventCounters")
+                    return false;
+
+                var dictionary = (IDictionary<string, object>)e.Payload.Single();
+
+                return (string)dictionary["Name"] == "bytes-sent";
             }
         }
 
