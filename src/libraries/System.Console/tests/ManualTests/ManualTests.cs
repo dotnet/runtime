@@ -89,6 +89,28 @@ namespace System
             AssertUserExpectedResults("\"console\" correctly not echoed as you typed it");
         }
 
+        [ConditionalFact(nameof(ManualTestsEnabled))]
+        public static void EnterKeyIsEnterAfterKeyAvailableCheck()
+        {
+            Console.WriteLine("Please hold down the 'Enter' key for some time. You shouldn't see new lines appear:");
+            int keysRead = 0;
+            while (keysRead < 50)
+            {
+                if (Console.KeyAvailable)
+                {
+                    ConsoleKeyInfo keyInfo = Console.ReadKey(true);
+                    Assert.Equal(ConsoleKey.Enter, keyInfo.Key);
+                    keysRead++;
+                }
+            }
+            while (Console.KeyAvailable)
+            {
+                ConsoleKeyInfo keyInfo = Console.ReadKey(true);
+                Assert.Equal(ConsoleKey.Enter, keyInfo.Key);
+            }
+            AssertUserExpectedResults("no empty newlines appear");
+        }
+
         [ConditionalTheory(nameof(ManualTestsEnabled))]
         [MemberData(nameof(GetKeyChords))]
         public static void ReadKey_KeyChords(ConsoleKeyInfo expected)
