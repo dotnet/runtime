@@ -18,7 +18,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <RestoreProjects Include="$(RepoRoot)src\coreclr\tests\scripts\scripts.csproj" />
+    <RestoreProjects Include="$(MSBuildThisFileDirectory)Common\scripts\scripts.csproj" />
     <RestoreProjects Include="$(MSBuildThisFileDirectory)Common\test_dependencies_fs\test_dependencies.fsproj" />
     <RestoreProjects Include="$(MSBuildThisFileDirectory)Common\test_dependencies\test_dependencies.csproj" />
     <RestoreProjects Include="$(MSBuildThisFileDirectory)Common\CoreCLRTestLibrary\CoreCLRTestLibrary.csproj" />
