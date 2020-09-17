@@ -72,6 +72,7 @@ namespace HttpStress
                 }
                 Console.WriteLine("Client is stopping ...");
             }
+            _client.Dispose();
             _stopwatch.Stop();
             _cts.Dispose();
         }

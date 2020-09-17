@@ -46,7 +46,7 @@ public static class Program
         cmd.AddOption(new Option("-ops", "Indices of the operations to use") { Argument = new Argument<int[]?>("space-delimited indices", null) });
         cmd.AddOption(new Option("-xops", "Indices of the operations to exclude") { Argument = new Argument<int[]?>("space-delimited indices", null) });
         cmd.AddOption(new Option("-trace", "Enable System.Net.Http.InternalDiagnostics (client) and/or ASP.NET dignostics (server) tracing.") { Argument = new Argument<bool>("enable", false) });
-        cmd.AddOption(new Option("-aspnetlog", "Enable ASP.NET warning and error console logging.") { Argument = new Argument<bool>("enable", false) });
+        cmd.AddOption(new Option("-aspnetlog", "Enable ASP.NET warning and error logging.") { Argument = new Argument<bool>("enable", false) });
         cmd.AddOption(new Option("-listOps", "List available options.") { Argument = new Argument<bool>("enable", false) });
         cmd.AddOption(new Option("-seed", "Seed for generating pseudo-random parameters for a given -n argument.") { Argument = new Argument<int?>("seed", null) });
         cmd.AddOption(new Option("-numParameters", "Max number of query parameters or form fields for a request.") { Argument = new Argument<int>("queryParameters", 1) });
