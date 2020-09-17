@@ -748,7 +748,7 @@ namespace Mono.Options
 			get {return this.option;}
 		}
 
-#if !PCL
+#if !PCL && !NETCOREAPP
 #pragma warning disable 618 // SecurityPermissionAttribute is obsolete
 		[SecurityPermission (SecurityAction.LinkDemand, SerializationFormatter = true)]
 #pragma warning restore 618

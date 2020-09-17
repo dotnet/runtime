@@ -10,7 +10,6 @@
   <PropertyGroup Condition="'$(MonoBuild)' == ''">
     <AssemblyName>illink</AssemblyName>
     <Description>IL Linker</Description>
-    <TargetFramework>netcoreapp3.0</TargetFramework>
     <PackageId>Microsoft.NET.ILLink</PackageId>
   </PropertyGroup>
 

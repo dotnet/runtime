@@ -9,7 +9,7 @@
 
   <PropertyGroup Condition="'$(MonoBuild)' == ''">
     <DefineConstants>$(DefineConstants);FEATURE_ILLINK</DefineConstants>
-    <TargetFramework>netcoreapp3.0</TargetFramework>
+    <TargetFramework>net5.0</TargetFramework>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(MonoBuild)' != ''">

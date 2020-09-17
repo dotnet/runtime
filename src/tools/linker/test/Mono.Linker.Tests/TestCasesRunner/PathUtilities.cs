@@ -15,12 +15,14 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		public const string ConfigDirectoryName = "Release";
 #endif
 
-#if NETCOREAPP3_0
+#if NET5_0
+		public const string TFMDirectoryName = "net5.0";
+#elif NETCOREAPP3_0
 		public const string TFMDirectoryName = "netcoreapp3.0";
 #elif NET471
 		public const string TFMDirectoryName = "net471";
 #else
-		public const string TFMDirectoryName = "";
+#error "Unknown TFM"
 #endif
 
 		public static string GetTestsSourceRootDirectory ([CallerFilePath] string thisFile = null)
