@@ -57,7 +57,7 @@ namespace DebuggerTests
             Console.WriteLine($"done!");
         }
 
-        public static unsafe async Task LocalPointersAsync()
+        public static unsafe Task LocalPointersAsync()
         {
             int ivalue0 = 5;
             int ivalue1 = 10;
@@ -91,7 +91,7 @@ namespace DebuggerTests
 
             var cwp = new GenericClassWithPointers<DateTime> { Ptr = dtp };
             var cwp_null = new GenericClassWithPointers<DateTime>();
-            Console.WriteLine($"{(int)*ip}, {(int)**ipp}, {ipp_null == null}, {ip_null == null}, {ippa == null}, {ipa}, {(char)*cp}, {(vp == null ? "null" : "not null")}, {dtp->Second}, {gsp->IntField}, {cwp}, {cwp_null}, {gs_null}");
+            Console.WriteLine($"{(int)*ip}, {(int)**ipp}, {ipp_null == null}, {ip_null == null}, {ippa == null}, {ipa}, {(char)*cp}, {(vp == null ? "null" : "not null")}, {dtp->Second}, {gsp->IntField}, {cwp}, {cwp_null}, {gs_null}"); return Task.CompletedTask;
         }
 
         // async methods cannot have unsafe params, so no test for that

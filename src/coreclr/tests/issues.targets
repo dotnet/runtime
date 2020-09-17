@@ -2719,4 +2719,9 @@
         </ExcludeList>
         <!-- End interpreter issues -->
     </ItemGroup>
+    <ItemGroup Condition=" '$(TargetArchitecture)' == 'wasm' " >
+        <ExcludeList Include = "$(XunitTestBinBase)/Interop/UnmanagedCallersOnly/UnmanagedCallersOnlyTest/**">
+            <Issue>https://github.com/dotnet/runtime/issues/41519</Issue>
+        </ExcludeList>
+    </ItemGroup>
 </Project>
