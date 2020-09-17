@@ -54,7 +54,10 @@ namespace System.CodeDom.Compiler
                         case 4: _s = tabString + tabString + tabString + tabString; break;
                         default:
                             var args = new string[_indent];
-                            Array.Fill(args, tabString);
+                            for (int i = 0; i < args.Length; i++)
+                            {
+                                args[i] = tabString;
+                            }
                             return string.Concat(args);
                     }
                 }
