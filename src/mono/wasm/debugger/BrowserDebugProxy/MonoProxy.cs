@@ -717,14 +717,14 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                     try
                     {
-                        using HttpResponseMessage response = await client.GetAsync(downloadURL);
+                        using HttpResponseMessage response = await client.GetAsync(downloadURL, token);
                         if (!response.IsSuccessStatusCode)
                         {
                             Log("info", $"Unable to download symbols on demand url:{downloadURL} assembly: {asm.Name}");
                             continue;
                         }
 
-                        using Stream streamToReadFrom = await response.Content.ReadAsStreamAsync();
+                        using Stream streamToReadFrom = await response.Content.ReadAsStreamAsync(token);
                         var portablePdbReaderProvider = new PdbReaderProvider();
                         ISymbolReader symbolReader = portablePdbReaderProvider.GetSymbolReader(asm.Image, streamToReadFrom);
                         asm.ClearDebugInfo(); //workaround while cecil PR #686 is not merged
@@ -828,7 +828,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
         }
 
-        async Task<bool> OnAssemblyLoadedJSEvent(SessionId sessionId, JObject eventArgs, CancellationToken token)
+        private async Task<bool> OnAssemblyLoadedJSEvent(SessionId sessionId, JObject eventArgs, CancellationToken token)
         {
             try
             {
@@ -844,14 +844,14 @@ namespace Microsoft.WebAssembly.Diagnostics
                 var assembly_b64 = eventArgs?["assembly_b64"]?.ToObject<string>();
                 var pdb_b64 = eventArgs?["pdb_b64"]?.ToObject<string>();
 
-                if (String.IsNullOrEmpty(assembly_b64))
+                if (string.IsNullOrEmpty(assembly_b64))
                 {
                     logger.LogDebug("No assembly data provided to load.");
                     return false;
                 }
 
                 var assembly_data = Convert.FromBase64String(assembly_b64);
-                var pdb_data = String.IsNullOrEmpty(pdb_b64) ? null : Convert.FromBase64String(pdb_b64);
+                var pdb_data = string.IsNullOrEmpty(pdb_b64) ? null : Convert.FromBase64String(pdb_b64);
 
                 var context = GetContext(sessionId);
                 foreach (var source in store.Add(sessionId, assembly_data, pdb_data))
@@ -965,7 +965,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             return bp;
         }
 
-        async Task OnSourceFileAdded(SessionId sessionId, SourceFile source, ExecutionContext context, CancellationToken token)
+        private async Task OnSourceFileAdded(SessionId sessionId, SourceFile source, ExecutionContext context, CancellationToken token)
         {
             JObject scriptSource = JObject.FromObject(source.ToScriptSource(context.Id, context.AuxData));
             Log("debug", $"sending {source.Url} {context.Id} {sessionId.sessionId}");

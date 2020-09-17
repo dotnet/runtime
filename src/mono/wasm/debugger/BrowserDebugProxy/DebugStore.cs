@@ -723,10 +723,10 @@ namespace Microsoft.WebAssembly.Diagnostics
 
     internal class DebugStore
     {
-        List<AssemblyInfo> assemblies = new List<AssemblyInfo>();
-        readonly HttpClient client;
-        readonly ILogger logger;
-        readonly IAssemblyResolver resolver;
+        private List<AssemblyInfo> assemblies = new List<AssemblyInfo>();
+        private readonly HttpClient client;
+        private readonly ILogger logger;
+        private readonly IAssemblyResolver resolver;
 
         public DebugStore(ILogger logger, HttpClient client)
         {
@@ -811,7 +811,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 AssemblyInfo assembly = null;
                 try
                 {
-                    byte[][]  bytes = await step.Data.ConfigureAwait(false);
+                    byte[][] bytes = await step.Data.ConfigureAwait(false);
                     assembly = new AssemblyInfo(this.resolver, step.Url, bytes[0], bytes[1]);
                 }
                 catch (Exception e)
