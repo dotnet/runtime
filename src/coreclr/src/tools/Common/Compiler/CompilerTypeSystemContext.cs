@@ -11,6 +11,7 @@ using System.Reflection.PortableExecutable;
 
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
+using System.Runtime.InteropServices;
 
 namespace ILCompiler
 {
@@ -329,6 +330,68 @@ namespace ILCompiler
             }
 
             return reader;
+        }
+
+        private object _normalizedLock = new object();
+        private HashSet<TypeDesc> _nonNormalizedTypes = new HashSet<TypeDesc>();
+        private Dictionary<TypeDesc, TypeFlags> _normalizedTypeCategory = new Dictionary<TypeDesc, TypeFlags>();
+
+        public TypeFlags NormalizedCategoryFor4ByteStructOnX86(TypeDesc type)
+        {
+            lock(_normalizedLock)
+            {
+                if (_nonNormalizedTypes.Contains(type))
+                    return type.Category;
+                
+                if (_normalizedTypeCategory.TryGetValue(type, out TypeFlags category))
+                    return category;
+
+                if (Target.Architecture != TargetArchitecture.X86)
+                {
+                    throw new NotSupportedException();
+                }
+
+                if ((type.Category != TypeFlags.ValueType) || (type.GetElementSize().AsInt != 4))
+                {
+                    _nonNormalizedTypes.Add(type);
+                    return type.Category;
+                }
+
+                TypeDesc typeOfEmbeddedField = null;
+                foreach (var field in type.GetFields())
+                {
+                    if (field.IsStatic)
+                        continue;
+                    if (typeOfEmbeddedField != null)
+                    {
+                        // Type has more than one instance field
+                        _nonNormalizedTypes.Add(type);
+                        return type.Category;
+                    }
+
+                    typeOfEmbeddedField = field.FieldType;
+                }
+
+                if ((typeOfEmbeddedField.IsValueType) || (typeOfEmbeddedField.IsPointer))
+                {
+                    TypeFlags singleElementFieldType = NormalizedCategoryFor4ByteStructOnX86(typeOfEmbeddedField);
+                    if (singleElementFieldType == TypeFlags.Pointer)
+                        singleElementFieldType = TypeFlags.UIntPtr;
+                    
+                    switch (singleElementFieldType)
+                    {
+                        case TypeFlags.IntPtr:
+                        case TypeFlags.UIntPtr:
+                        case TypeFlags.Int32:
+                        case TypeFlags.UInt32:
+                            _normalizedTypeCategory.Add(type, singleElementFieldType);
+                            return singleElementFieldType;
+                    }
+                }
+
+                _nonNormalizedTypes.Add(type);
+                return type.Category;
+            }
         }
     }
 
