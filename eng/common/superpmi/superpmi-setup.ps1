@@ -28,7 +28,7 @@ $SuperPmiDirectory = (Join-Path $PayloadDirectory "superpmi")
 $JitUtilsDirectory = (Join-Path $PayloadDirectory "jitutils")
 $PmiAssembliesDirectory = (Join-Path $PayloadDirectory "PmiAssembliesDirectory")
 $WorkItemDirectory = (Join-Path $SourceDirectory "workitem")
-$Queue = "Windows.10.Amd64.ClientRS4.DevEx.15.8.Open"
+$Queue = "windows.10.amd64.clientrs5"
 $HelixSourcePrefix = "official"
 $Creator = $env:BUILD_DEFINITIONNAME
 
