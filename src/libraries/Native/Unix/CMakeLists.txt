@@ -102,7 +102,12 @@ endif()
 string(TOUPPER ${CMAKE_BUILD_TYPE} UPPERCASE_CMAKE_BUILD_TYPE)
 
 if (UPPERCASE_CMAKE_BUILD_TYPE STREQUAL DEBUG OR UPPERCASE_CMAKE_BUILD_TYPE STREQUAL CHECKED)
-    add_compile_options(-O0)
+    if (UPPERCASE_CMAKE_BUILD_TYPE STREQUAL DEBUG)
+        add_compile_options(-O0)
+    elseif (UPPERCASE_CMAKE_BUILD_TYPE STREQUAL CHECKED)
+        add_compile_options(-O2)
+    endif ()
+
     add_definitions(-DDEBUG)
 
     # obtain settings from running coreclr\enablesanitizers.sh

@@ -70,11 +70,18 @@ list(APPEND __SharedLinkArgs /GUARD:CF)
 # For Release builds, we shall dynamically link into uCRT [ucrtbase.dll] (which is pushed down as a Windows Update on downlevel OS) but
 # won't do the same for debug/checked builds since ucrtbased.dll is not redistributable and Debug/Checked builds are not
 # production-time scenarios.
-add_compile_options(/MT$<$<OR:$<CONFIG:DEBUG>,$<CONFIG:CHECKED>>:d>)
+
+add_compile_options($<$<CONFIG:DEBUG>:/MTd>)
+add_compile_options($<$<CONFIG:RELEASE>:/MT>)
+
 add_compile_options($<$<CONFIG:RELEASE>:/GL>)
 add_compile_options($<$<CONFIG:RELEASE>:/O1>)
-list(APPEND __LinkLibraries libcmt$<$<OR:$<CONFIG:DEBUG>,$<CONFIG:CHECKED>>:d>.lib)
-list(APPEND __LinkLibraries libvcruntime$<$<OR:$<CONFIG:DEBUG>,$<CONFIG:CHECKED>>:d>.lib)
+
+list(APPEND __LinkLibraries $<$<CONFIG:DEBUG>:libcmtd.lib>)
+list(APPEND __LinkLibraries $<$<CONFIG:RELEASE>:libcmt.lib>)
+
+list(APPEND __LinkLibraries $<$<CONFIG:DEBUG>:libvcruntimed.lib>)
+list(APPEND __LinkLibraries $<$<CONFIG:RELEASE>:libvcruntime.lib>)
 
 # Linker flags
 list(APPEND __SharedLinkArgs /INCREMENTAL:NO)
