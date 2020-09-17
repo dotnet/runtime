@@ -57,6 +57,10 @@ See the instructions in [../libraries/webassembly-instructions.md].
 
 See the instructions for [Testing Android](../../testing/libraries/testing-android.md)
 
+### IOS
+
+See the instructions for [Testing IOS](../../testing/libraries/testing-apple.md)
+
 ## Packages
 
 To generate nuget packages:
