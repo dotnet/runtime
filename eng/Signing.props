@@ -142,14 +142,14 @@
     <!-- When doing post build signing, we sign all artifacts we would push.
          Symbol packages are included, but get no signature. -->
     <When Condition="'$(PostBuildSign)' == 'true'">
-      <ItemGroup>
-        <ItemsToSignWithPaths Include="@(DownloadedArtifactFile)" />
+      <ItemGroup Condition="'$(prepare-artifacts)' == 'true'">
+        <ItemsToSignWithPaths Include="@(DownloadDirectory)" />
         <!-- Exclude wixpdb files from the signing list. These are generated into the
              shipping/nonshipping directories but should be generated into the obj dirs.
              https://github.com/dotnet/arcade/issues/6187. -->
         <ItemsToSignWithPaths Remove="@(DownloadedWixPdbFile)" />
         <ItemsToSignWithoutPaths Include="@(ItemsToSignWithPaths->'%(Filename)%(Extension)')" />
-        <ItemsToSign Include="@(ItemsToSignWithoutPaths->Distinct())" />
+        <ItemsToSignPostBuild Include="@(ItemsToSignWithoutPaths->Distinct())" />
       </ItemGroup>
 
       <!-- Even when doing post build signing, sign mscordaccore*.dll and mscordbi.dll -->

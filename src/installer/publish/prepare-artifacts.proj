@@ -112,7 +112,7 @@
       AzureDevOpsCollectionUri="$(SYSTEM_TEAMFOUNDATIONCOLLECTIONURI)"
       AzureDevOpsProject="$(SYSTEM_TEAMPROJECT)"
       AzureDevOpsBuildId="$(BUILD_BUILDID)"
-      ItemsToSign="@(ItemsToSign)"
+      ItemsToSign="@(ItemsToSignPostBuild)"
       StrongNameSignInfo="@(StrongNameSignInfo)"
       FileSignInfo="@(FileSignInfo)"
       FileExtensionSignInfo="@(FileExtensionSignInfo)"
