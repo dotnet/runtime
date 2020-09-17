@@ -119,35 +119,28 @@ namespace System.Text.Json.Serialization.Converters
                         return Unsafe.As<long, T>(ref int64);
                     }
                     break;
-
-                // When utf8reader/writer will support all primitive types we should remove custom bound checks
-                // https://github.com/dotnet/runtime/issues/29000
                 case TypeCode.SByte:
-                    if (reader.TryGetInt32(out int byte8) && JsonHelpers.IsInRangeInclusive(byte8, sbyte.MinValue, sbyte.MaxValue))
+                    if (reader.TryGetSByte(out sbyte byte8))
                     {
-                        sbyte byte8Value = (sbyte)byte8;
-                        return Unsafe.As<sbyte, T>(ref byte8Value);
+                        return Unsafe.As<sbyte, T>(ref byte8);
                     }
                     break;
                 case TypeCode.Byte:
-                    if (reader.TryGetUInt32(out uint ubyte8) && JsonHelpers.IsInRangeInclusive(ubyte8, byte.MinValue, byte.MaxValue))
+                    if (reader.TryGetByte(out byte ubyte8))
                     {
-                        byte ubyte8Value = (byte)ubyte8;
-                        return Unsafe.As<byte, T>(ref ubyte8Value);
+                        return Unsafe.As<byte, T>(ref ubyte8);
                     }
                     break;
                 case TypeCode.Int16:
-                    if (reader.TryGetInt32(out int int16) && JsonHelpers.IsInRangeInclusive(int16, short.MinValue, short.MaxValue))
+                    if (reader.TryGetInt16(out short int16))
                     {
-                        short shortValue = (short)int16;
-                        return Unsafe.As<short, T>(ref shortValue);
+                        return Unsafe.As<short, T>(ref int16);
                     }
                     break;
                 case TypeCode.UInt16:
-                    if (reader.TryGetUInt32(out uint uint16) && JsonHelpers.IsInRangeInclusive(uint16, ushort.MinValue, ushort.MaxValue))
+                    if (reader.TryGetUInt16(out ushort uint16))
                     {
-                        ushort ushortValue = (ushort)uint16;
-                        return Unsafe.As<ushort, T>(ref ushortValue);
+                        return Unsafe.As<ushort, T>(ref uint16);
                     }
                     break;
             }
