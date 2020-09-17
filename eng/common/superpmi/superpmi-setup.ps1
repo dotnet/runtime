@@ -36,7 +36,9 @@ robocopy $SourceDirectory\src\coreclr\scripts $SuperPmiDirectory /E /XD $Payload
 
 Write-Host "Downloading CoreClr_Build"
 $url = "https://github.com/kunalspathak/runtime/raw/master/superpmi_min.zip"
-$zipPath = "$PmiAssembliesDirectory\zipped"
+
+$zipPath = "zipped"
+pushd $PmiAssembliesDirectory
 New-Item -Type dir $zipPath -Force
 
 $tmp = New-TemporaryFile | Rename-Item -NewName { $_ -replace 'tmp$', 'zip' } -PassThru
