@@ -5,7 +5,7 @@
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
 
-    <!-- TODO: (Consolidation) Skip signing steps by default for non-official builds (or official builds with post-build signing enabled). https://github.com/dotnet/runtime/issues/1026 -->
+    <!-- TODO: (Consolidation) Skip signing steps by default for non-official builds . https://github.com/dotnet/runtime/issues/1026 -->
     <SkipSigning Condition="'$(DotNetSignType)' == ''">true</SkipSigning>
   </PropertyGroup>
 </Project>
