@@ -5470,7 +5470,7 @@ namespace System.Threading.Tasks
         /// <exception cref="System.ArgumentException">
         /// The <paramref name="tasks"/> collection contained a null task.
         /// </exception>
-        public static Task WhenAll(IEnumerable<Task> tasks) => new WhenAllPromise(tasks);
+        public static Task WhenAll(IEnumerable<Task> tasks) => InternalWhenAll(tasks);
 
         /// <summary>
         /// Creates a task that will complete when all of the supplied tasks have completed.
@@ -5499,7 +5499,23 @@ namespace System.Threading.Tasks
         /// <exception cref="System.ArgumentException">
         /// The <paramref name="tasks"/> array contained a null task.
         /// </exception>
-        public static Task WhenAll(params Task[] tasks) => new WhenAllPromise(tasks);
+        public static Task WhenAll(params Task[] tasks) => InternalWhenAll(tasks);
+
+        // Some common logic to support WhenAll() methods
+        private static Task InternalWhenAll(IEnumerable<Task> tasks)
+        {
+            if (tasks == null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
+            }
+
+            if (tasks is ICollection<Task> taskCollection && taskCollection.Count == 0) // Small optimization in the case of an empty collection
+            {
+                return Task.CompletedTask;
+            }
+
+            return new WhenAllPromise(tasks);
+        }
 
         // A Task that gets completed when all of its constituent tasks complete.
         // Completion logic will analyze the antecedents in order to choose completion status.
@@ -5511,26 +5527,32 @@ namespace System.Threading.Tasks
         // which involves several allocations, with this logic:
         //      return new WhenAllPromise(tasksCopy);
         // which saves a couple of allocations and enables debugger notification specialization.
+        //
+        // Used in InternalWhenAll(IEnumerable<Task>)
         private sealed class WhenAllPromise : Task, ITaskCompletionAction
         {
+            /// <summary>Stores all of the constituent tasks. This field is present only for debugging purposes.</summary>
+            private readonly IEnumerable<Task?> m_tasks;
             /// <summary>The number of tasks remaining to complete.</summary>
             private int m_count;
-            /// <summary>True if any of the supplied tasks require wait notification.</summary>
+            /// <summary>True if any of the supplied tasks requires wait notification.</summary>
             private bool m_anyTaskRequiresNotifyDebuggerOfWaitCompletion;
             /// <summary>The tasks that faulted.</summary>
             private ConcurrentQueue<Task>? m_faultedTasks;
             /// <summary>The first task that got canceled.</summary>
             private Task? m_canceledTask;
 
-            internal WhenAllPromise(IEnumerable<Task?>? tasks)
+            internal WhenAllPromise(IEnumerable<Task?> tasks)
             {
-                if (tasks == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
+                Debug.Assert(tasks != null, "Expected a non-null task enumerable");
 
                 if (TplEventSource.Log.IsEnabled())
                     TplEventSource.Log.TraceOperationBegin(this.Id, "Task.WhenAll", 0);
 
                 if (s_asyncDebuggingEnabled)
                     AddToActiveTasks(this);
+
+                m_tasks = tasks;
 
                 int count = 0;
                 foreach (Task? task in tasks)
@@ -5542,7 +5564,7 @@ namespace System.Threading.Tasks
                     count += 1;
                 }
 
-                if ((m_count = Interlocked.Add(ref m_count, count)) == 0) // Condition is true if all tasks already completed
+                if (Interlocked.Add(ref m_count, count) == 0) // Condition is true if all tasks already completed
                 {
                     this.Complete();
                 }
@@ -5564,7 +5586,7 @@ namespace System.Threading.Tasks
                 }
                 else if (completedTask.IsCanceled)
                 {
-                    Interlocked.CompareExchange(ref m_canceledTask, completedTask, null); // Use the first task that is canceled
+                    Interlocked.CompareExchange(ref m_canceledTask, completedTask, null); // Use the first task that got canceled
                 }
 
                 // Regardless of completion state, if the task has its debug bit set, transfer it to the
