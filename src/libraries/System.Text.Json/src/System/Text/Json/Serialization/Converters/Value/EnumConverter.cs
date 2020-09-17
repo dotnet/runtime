@@ -292,15 +292,14 @@ namespace System.Text.Json.Serialization.Converters
 
         private string FormatNamingPolicy(string value, bool isWrite)
         {
-            Debug.Assert(_namingPolicy != null);
-            Debug.Assert(_sourceNameCache != null);
-
             if (isWrite)
             {
+                Debug.Assert(_namingPolicy != null);
                 return _namingPolicy.ConvertName(value);
             }
             else
             {
+                Debug.Assert(_sourceNameCache != null);
                 if (_sourceNameCache.ContainsKey(value))
                     return _sourceNameCache[value];
 
