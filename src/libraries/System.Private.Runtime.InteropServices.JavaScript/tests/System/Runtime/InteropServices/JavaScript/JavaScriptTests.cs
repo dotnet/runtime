@@ -85,7 +85,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             // The difference is:
             //      The call() method takes arguments separately.
             //      The apply() method takes arguments as an array.
-            var sum = new Function("a", "b", "console.log('args', a, b); return a + b;");
+            var sum = new Function("a", "b", "return a + b");
             Assert.Equal(8, (int)sum.Call(null, 3, 5));
 
             Assert.Equal(13, (int)sum.Apply(null, new object[] { 6, 7 }));
