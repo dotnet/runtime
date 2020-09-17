@@ -2439,6 +2439,98 @@ namespace System.Xml.Schema
             }
         }
 
+#if DEBUG
+        private string DumpContentModel(XmlSchemaParticle particle)
+        {
+            StringBuilder sb = new StringBuilder();
+            DumpContentModelTo(sb, particle);
+            return sb.ToString();
+        }
+
+        private void DumpContentModelTo(StringBuilder sb, XmlSchemaParticle particle)
+        {
+            if (particle is XmlSchemaElement)
+            {
+                sb.Append(((XmlSchemaElement)particle).QualifiedName);
+            }
+            else if (particle is XmlSchemaAny)
+            {
+                sb.Append('<');
+                sb.Append(((XmlSchemaAny)particle!).NamespaceList!.ToString());
+                sb.Append('>');
+            }
+            else if (particle is XmlSchemaAll)
+            {
+                XmlSchemaAll all = (XmlSchemaAll)particle;
+                sb.Append('[');
+                bool first = true;
+                for (int i = 0; i < all.Items.Count; ++i)
+                {
+                    XmlSchemaElement localElement = (XmlSchemaElement)all.Items[i];
+                    if (first)
+                    {
+                        first = false;
+                    }
+                    else
+                    {
+                        sb.Append(", ");
+                    }
+                    sb.Append(localElement.QualifiedName.Name);
+                    if (localElement.MinOccurs == decimal.Zero)
+                    {
+                        sb.Append('?');
+                    }
+                }
+                sb.Append(']');
+            }
+            else if (particle is XmlSchemaGroupBase)
+            {
+                XmlSchemaGroupBase gb = (XmlSchemaGroupBase)particle;
+                sb.Append('(');
+                string delimeter = (particle is XmlSchemaChoice) ? " | " : ", ";
+                bool first = true;
+                for (int i = 0; i < gb.Items.Count; ++i)
+                {
+                    if (first)
+                    {
+                        first = false;
+                    }
+                    else
+                    {
+                        sb.Append(delimeter);
+                    }
+                    DumpContentModelTo(sb, (XmlSchemaParticle)gb.Items[i]);
+                }
+                sb.Append(')');
+            }
+            else
+            {
+                Debug.Assert(particle == XmlSchemaParticle.Empty);
+                sb.Append("<>");
+            }
+            if (particle.MinOccurs == decimal.One && particle.MaxOccurs == decimal.One)
+            {
+                // nothing
+            }
+            else if (particle.MinOccurs == decimal.Zero && particle.MaxOccurs == decimal.One)
+            {
+                sb.Append('?');
+            }
+            else if (particle.MinOccurs == decimal.Zero && particle.MaxOccurs == decimal.MaxValue)
+            {
+                sb.Append('*');
+            }
+            else if (particle.MinOccurs == decimal.One && particle.MaxOccurs == decimal.MaxValue)
+            {
+                sb.Append('+');
+            }
+            else
+            {
+                sb.Append("{" + particle.MinOccurs.ToString(NumberFormatInfo.InvariantInfo) + ", " + particle.MaxOccurs.ToString(NumberFormatInfo.InvariantInfo) + "}");
+            }
+        }
+#endif
+
         private void BuildParticleContentModel(ParticleContentValidator contentValidator, XmlSchemaParticle particle)
         {
             if (particle is XmlSchemaElement)

@@ -1534,6 +1534,50 @@ namespace System.Xml.Schema
             // now convert transition table to array
             return (int[][])transitionTable.ToArray(typeof(int[]));
         }
+
+#if DEBUG
+        private void Dump(StringBuilder bb, BitSet[] followpos, int[][] transitionTable)
+        {
+            // Temporary printout
+            bb.AppendLine("Positions");
+            for (int i = 0; i < _positions!.Count; i++)
+            {
+                bb.AppendLine(i + " " + _positions[i].symbol.ToString(NumberFormatInfo.InvariantInfo) + " " + _symbols!.NameOf(_positions[i].symbol));
+            }
+
+            bb.AppendLine("Followpos");
+            for (int i = 0; i < _positions.Count; i++)
+            {
+                for (int j = 0; j < _positions.Count; j++)
+                {
+                    bb.Append(followpos[i][j] ? "X" : "O");
+                }
+                bb.AppendLine();
+            }
+
+            if (transitionTable != null)
+            {
+                // Temporary printout
+                bb.AppendLine("Transitions");
+                for (int i = 0; i < transitionTable.Length; i++)
+                {
+                    for (int j = 0; j < _symbols!.Count; j++)
+                    {
+                        if (transitionTable[i][j] == -1)
+                        {
+                            bb.Append("  x  ");
+                        }
+                        else
+                        {
+                            bb.AppendFormat(" {0:000} ", transitionTable[i][j]);
+                        }
+                    }
+
+                    bb.AppendLine(transitionTable[i][_symbols.Count] == 1 ? "+" : "");
+                }
+            }
+        }
+#endif
     }
 
     /// <summary>
