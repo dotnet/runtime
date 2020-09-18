@@ -29,7 +29,7 @@ internal partial class Interop
 
             // Note that the file name is not null terminated
             internal readonly uint FileNameLength;
-            internal readonly char FileName;
+            // internal readonly char FileName[1];
         }
 
         internal enum FileAction : uint
