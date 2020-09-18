@@ -12,7 +12,7 @@
 
 #include <palsuite.h>
 
-BOOL Cleanup(void)
+BOOL Cleanup_CreateFileW_test1(void)
 {
     char FileName[20];
     int i;
@@ -31,7 +31,7 @@ BOOL Cleanup(void)
 }
 
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(file_io_CreateFileW_test1_paltest_createfilew_test1, "file_io/CreateFileW/test1/paltest_createfilew_test1")
 {
     BOOL bSuccess = TRUE;
     int nCounter = 0;
@@ -72,7 +72,7 @@ int __cdecl main(int argc, char *argv[])
         return FAIL;
     }
 
-    if (!Cleanup()) {
+    if (!Cleanup_CreateFileW_test1()) {
 	Trace("Pre-test Cleanup() failed.  LastError=%d\n", GetLastError());
 	return FAIL;
     }
@@ -139,7 +139,7 @@ int __cdecl main(int argc, char *argv[])
         }
     }
 
-    if (!Cleanup())
+    if (!Cleanup_CreateFileW_test1())
     {
         Trace("Post-test Cleanup() failed.  LastError=%d\n", GetLastError());
         return FAIL;

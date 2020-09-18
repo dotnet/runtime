@@ -60,7 +60,7 @@
     <Compile Include="Serialization\ConstructorTests\ConstructorTests.Exceptions.cs" />
     <Compile Include="Serialization\ConstructorTests\ConstructorTests.ParameterMatching.cs" />
     <Compile Include="Serialization\ConstructorTests\ConstructorTests.Stream.cs" />
-    <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.Dynamic.Sample.Tests.cs" />
+    <Compile Include="Serialization\ContinuationTests.cs" />
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.Array.cs" />
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.Attribute.cs" />
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.BadConverters.cs" />
@@ -72,6 +72,7 @@
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.DictionaryInt32StringConverter.cs" />
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.DictionaryInt32StringKeyValueConverter.cs" />
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.DictionaryKeyValueConverter.cs" />
+    <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.Dynamic.Sample.Tests.cs" />
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.Enum.cs" />
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.Exceptions.cs" />
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.Dynamic.Sample.cs" />

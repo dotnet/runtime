@@ -1062,6 +1062,57 @@ namespace DebuggerTests
             });
 
         [Theory]
+        [InlineData("BoxedTypeObjectTest", false)]
+        [InlineData("BoxedTypeObjectTestAsync", true)]
+        public async Task InspectBoxedTypeObject(string method_name, bool is_async) => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTest",
+            method_name,
+            9,
+            is_async ? "MoveNext" : method_name,
+            $"window.setTimeout(function() {{ invoke_static_method_async('[debugger-test] DebuggerTest:{method_name}'); }}, 1);",
+            wait_for_event_fn: async (pause_location) =>
+            {
+                var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
+                var dt = new DateTime(2310, 1, 2, 3, 4, 5);
+                await CheckProps(locals, new
+                {
+                    i = TNumber(5),
+                    o0 = TNumber(5),
+                    o1 = TNumber(5),
+                    o2 = TNumber(5),
+                    o3 = TNumber(5),
+
+                    oo = TObject("object"),
+                    oo0 = TObject("object"),
+                }, "locals");
+            });
+
+        [Theory]
+        [InlineData("BoxedAsClass", false)]
+        [InlineData("BoxedAsClassAsync", true)]
+        public async Task InspectBoxedAsClassLocals(string method_name, bool is_async) => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTest",
+            method_name,
+            6,
+            is_async ? "MoveNext" : method_name,
+            $"window.setTimeout(function() {{ invoke_static_method_async('[debugger-test] DebuggerTest:{method_name}'); }}, 1);",
+            wait_for_event_fn: async (pause_location) =>
+            {
+                var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
+                var dt = new DateTime(2310, 1, 2, 3, 4, 5);
+                Console.WriteLine (locals);
+
+                await CheckProps(locals, new
+                {
+                    vt_dt = TDateTime(new DateTime(4819, 5, 6, 7, 8, 9)),
+                    vt_gs = TValueType("Math.GenericStruct<string>"),
+                    e     = TEnum("System.IO.FileMode", "0"),
+                    ee    = TEnum("System.IO.FileMode", "Append")
+                }, "locals");
+            });
+
+
+        [Theory]
         [InlineData(false)]
         [InlineData(true)]
         public async Task InspectValueTypeMethodArgs(bool use_cfo)
@@ -1763,6 +1814,34 @@ namespace DebuggerTests
                 var es_props = await GetProperties(es["value"]["objectId"]?.Value<string>());
                 AssertEqual(0, es_props.Values<JToken>().Count(), "es_props");
             });
+
+        [Fact]
+        public async Task StepOverAsyncMethod()
+        {
+            var insp = new Inspector();
+            //Collect events
+            var scripts = SubscribeToScripts(insp);
+
+            await Ready();
+            await insp.Ready(async (cli, token) =>
+            {
+                ctx = new DebugTestContext(cli, insp, token, scripts);
+
+                var bp = await SetBreakpointInMethod("debugger-test.dll", "AsyncStepClass", "TestAsyncStepOut2", 2);
+                System.Console.WriteLine(bp);
+                await EvaluateAndCheck(
+                    "window.setTimeout(function() { invoke_static_method_async('[debugger-test] AsyncStepClass:TestAsyncStepOut'); }, 1);",
+                    "dotnet://debugger-test.dll/debugger-async-step.cs", 19, 8,
+                    "MoveNext");
+
+                await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-async-step.cs", 21, 8, "MoveNext");
+
+                await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-async-step.cs", 22, 4, "MoveNext");
+
+                await StepAndCheck(StepKind.Over, null, 0, 0, "get_IsCompletedSuccessfully"); //not check the line number and the file name because this can be changed
+
+            });
+        }
 
         [Fact]
         public async Task PreviousFrameForAReflectedCall() => await CheckInspectLocalsAtBreakpointSite(

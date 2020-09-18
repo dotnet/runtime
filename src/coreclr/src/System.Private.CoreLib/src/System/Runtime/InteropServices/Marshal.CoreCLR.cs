@@ -606,7 +606,7 @@ namespace System.Runtime.InteropServices
             fixed (Guid* pIID = &iid)
             fixed (IntPtr* p = &ppv)
             {
-                return ((delegate * stdcall <IntPtr, Guid*, IntPtr*, int>)(*(*(void***)pUnk + 0 /* IUnknown.QueryInterface slot */)))(pUnk, pIID, p);
+                return ((delegate* unmanaged<IntPtr, Guid*, IntPtr*, int>)(*(*(void***)pUnk + 0 /* IUnknown.QueryInterface slot */)))(pUnk, pIID, p);
             }
         }
 
@@ -616,7 +616,7 @@ namespace System.Runtime.InteropServices
             if (pUnk == IntPtr.Zero)
                 throw new ArgumentNullException(nameof(pUnk));
 
-            return ((delegate * stdcall <IntPtr, int>)(*(*(void***)pUnk + 1 /* IUnknown.AddRef slot */)))(pUnk);
+            return ((delegate* unmanaged<IntPtr, int>)(*(*(void***)pUnk + 1 /* IUnknown.AddRef slot */)))(pUnk);
         }
 
         [SupportedOSPlatform("windows")]
@@ -625,7 +625,7 @@ namespace System.Runtime.InteropServices
             if (pUnk == IntPtr.Zero)
                 throw new ArgumentNullException(nameof(pUnk));
 
-            return ((delegate * stdcall <IntPtr, int>)(*(*(void***)pUnk + 2 /* IUnknown.Release slot */)))(pUnk);
+            return ((delegate* unmanaged<IntPtr, int>)(*(*(void***)pUnk + 2 /* IUnknown.Release slot */)))(pUnk);
         }
 
         [SupportedOSPlatform("windows")]

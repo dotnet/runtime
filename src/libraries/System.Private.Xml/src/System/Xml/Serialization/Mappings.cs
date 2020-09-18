@@ -998,18 +998,6 @@ namespace System.Xml.Serialization
             set { _sequenceId = value; }
         }
 
-        private string GetNullableType(TypeDesc td)
-        {
-            // SOAP encoded arrays not mapped to Nullable<T> since they always derive from soapenc:Array
-            if (td.IsMappedType || (!td.IsValueType && (Elements![0].IsSoap || td.ArrayElementTypeDesc == null)))
-                return td.FullName;
-            if (td.ArrayElementTypeDesc != null)
-            {
-                return GetNullableType(td.ArrayElementTypeDesc) + "[]";
-            }
-            return "System.Nullable`1[" + td.FullName + "]";
-        }
-
         internal MemberMapping Clone()
         {
             return new MemberMapping(this);

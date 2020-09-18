@@ -25,18 +25,18 @@
 
 
 //Declaring Variables
-HANDLE hSemaphore = NULL;
-unsigned int globalcounter =0;
-int testReturnCode = PASS;
+HANDLE hSemaphore_WFSOSemaphore = NULL;
+unsigned int globalcounter_WFSOSemaphore =0;
 
 //Declaring Function Prototypes
 DWORD PALAPI WFSOSemaphoreTest(LPVOID params);
-void incrementCounter(void);
+void incrementCounter_WFSOSemaphore(void);
 
-int __cdecl main(int argc, char **argv)
+PALTEST(threading_WaitForSingleObject_WFSOSemaphoreTest_paltest_waitforsingleobject_wfsosemaphoretest, "threading/WaitForSingleObject/WFSOSemaphoreTest/paltest_waitforsingleobject_wfsosemaphoretest")
 {
 
 	//Declare local variables
+		int testReturnCode = PASS;
 		int i =0;
 		int cMax = 2;
 
@@ -53,7 +53,7 @@ int __cdecl main(int argc, char **argv)
 		    }
 
    //Create Semaphore
-		hSemaphore = CreateSemaphoreExW(
+		hSemaphore_WFSOSemaphore = CreateSemaphoreExW( 
 			NULL,   // no security attributes
 			cMax,   // initial count
 			cMax,   // maximum count
@@ -61,7 +61,7 @@ int __cdecl main(int argc, char **argv)
 			0,
 			0);
 
-		if (hSemaphore == NULL)
+		if (hSemaphore_WFSOSemaphore == NULL)
 		{
 		    // Check for error.
 		    Fail("Create Semaphore Failed, GetLastError: %d\n", GetLastError());
@@ -110,8 +110,8 @@ for (i=0;i<NUMBER_OF_WORKER_THREADS;i++)
 	    	}
 	}
 
-//Close Semaphore Handle
-if (0==CloseHandle(hSemaphore))
+//Close Semaphore Handle 
+if (0==CloseHandle(hSemaphore_WFSOSemaphore))
 	    	{
 	    		Trace("Could not close semaphore handle\n");
 		Fail ( "GetLastError returned %d\n", GetLastError());
@@ -123,15 +123,15 @@ return ( testReturnCode );
 }
 
 
-void incrementCounter(void)
+void incrementCounter_WFSOSemaphore(void)
 {
-	if (INT_MAX == globalcounter)
+	if (INT_MAX == globalcounter_WFSOSemaphore)
 		{
-			globalcounter = 0;
+			globalcounter_WFSOSemaphore = 0;
 		}
 
-	globalcounter++;
-	Trace("Global Counter Value: %d \n", globalcounter);
+	globalcounter_WFSOSemaphore++;	
+	Trace("Global Counter Value: %d \n", globalcounter_WFSOSemaphore);
 }
 
 
@@ -142,8 +142,8 @@ DWORD PALAPI WFSOSemaphoreTest(LPVOID params)
 
     // Request ownership of Semaphore
 
- dwWaitResult = WaitForSingleObject(
-        hSemaphore,   // handle to semaphore
+    dwWaitResult = WaitForSingleObject( 
+        hSemaphore_WFSOSemaphore,   // handle to semaphore
         0L);          // zero-second time-out interval
 
 
@@ -153,11 +153,11 @@ DWORD PALAPI WFSOSemaphoreTest(LPVOID params)
         case WAIT_OBJECT_0:
             	  		{
 
-				incrementCounter();
+				incrementCounter_WFSOSemaphore();
 				// Increment the count of the semaphore.
 
 				if (!ReleaseSemaphore(
-				        hSemaphore,  // handle to semaphore
+				        hSemaphore_WFSOSemaphore,  // handle to semaphore
 				        1,           // increase count by one
 				        NULL) )      // not interested in previous count
 				{

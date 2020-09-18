@@ -6,11 +6,10 @@ using System;
 namespace Microsoft.NET.HostModel.AppHost
 {
     /// <summary>
-    ///  Unable to use the input file as an application host executable 
+    ///  Unable to use the input file as an application host executable
     ///  because it's not a Windows PE file
     /// </summary>
     public class AppHostNotPEFileException : AppHostUpdateException
     {
     }
 }
-

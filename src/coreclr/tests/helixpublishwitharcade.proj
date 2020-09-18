@@ -35,7 +35,8 @@
         TimeoutPerTestInMinutes=$(_TimeoutPerTestInMinutes);
         RuntimeVariant=$(_RuntimeVariant);
         BundledNETCoreAppPackageVersion=$(BundledNETCoreAppPackageVersion);
-        HelixRuntimeRid=$(HelixRuntimeRid)
+        HelixRuntimeRid=$(HelixRuntimeRid);
+        PALTestsDir=$(_PALTestsDir)
       </_PropertiesToPass>
 
       
@@ -54,6 +55,7 @@
 
     <MSBuild Projects="$(MSBuildProjectFile)" Targets="PrepareCorrelationPayloadDirectory" />
     <MSBuild Projects="$(MSBuildProjectFile)" Targets="PreparePayloadsDirectories" Properties="Scenarios=$(_Scenarios)" StopOnFirstFailure="true" />
+    <MSBuild Projects="$(MSBuildProjectFile)" Targets="PreparePALTestArchive" Properties="$(_PropertiesToPass)" StopOnFirstFailure="true" />
 
     <ItemGroup>
       <_Scenarios Include="$(_Scenarios.Split(','))" />
@@ -86,6 +88,7 @@
     <BinDir>$([MSBuild]::NormalizeDirectory($(TestWorkingDir)))</BinDir>
     <CoreRootDirectory>$(BinDir)Tests\Core_Root\</CoreRootDirectory>
     <PayloadsRootDirectory>$(BinDir)Payloads\</PayloadsRootDirectory>
+    <PayloadsRootDirectory>$([MSBuild]::NormalizeDirectory($(PayloadsRootDirectory)))</PayloadsRootDirectory>
     <TestEnvFileName Condition=" '$(TargetsWindows)' == 'true' ">SetStressModes_$(Scenario).cmd</TestEnvFileName>
     <TestEnvFileName Condition=" '$(TargetsWindows)' != 'true' ">SetStressModes_$(Scenario).sh</TestEnvFileName>
 
@@ -169,7 +172,7 @@
   </Target>
 
   <Target Name="PrepareCorrelationPayloadDirectory">
-    <MSBuild Projects="src\xunitconsolerunner.depproj" Targets="Restore" />
+    <MSBuild Projects="$(RepoRoot)src\tests\Common\xunitconsolerunner.depproj" Targets="Restore" />
 
     <ItemGroup>
       <_XUnitConsoleRunnerFiles Include="$(NuGetPackageRoot)$(MicrosoftDotNetXUnitConsoleRunnerPackage)\$(MicrosoftDotNetXUnitConsoleRunnerVersion)\**\xunit.console.*" />
@@ -191,6 +194,12 @@
     </ItemGroup>
 
     <MSBuild Projects="@(_ProjectsToBuild)" Targets="CreateTestEnvFile" StopOnFirstFailure="true" />
+  </Target>
+
+  <Target Name="PreparePALTestArchive">
+    <Exec Condition="'$(PALTestsDir)' != '' and '$(TargetsWindows)' != 'true'" 
+          WorkingDirectory="$(PALTestsDir)"
+          Command="tar -czvf $(PayloadsRootDirectory)paltests.tar.gz `ls -A`"/>
   </Target>
 
   <Target Name="PreparePayloadsDirectories" DependsOnTargets="PreparePayloadDirectory">
@@ -302,6 +311,12 @@
       <PayloadDirectory>%(PayloadDirectory)</PayloadDirectory>
       <Command>dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs)</Command>
       <Command Condition=" '%(TestGroup)' != '' ">dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs) -trait TestGroup=%(TestGroup)</Command>
+      <Timeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</Timeout>
+    </HelixWorkItem>
+
+    <HelixWorkItem Condition="'$(PALTestsDir)' != '' and '$(TargetsWindows)' != 'true'" Include="PALTests">
+      <PayloadArchive>$(PayloadsRootDirectory)paltests.tar.gz</PayloadArchive>
+      <Command>./runpaltestshelix.sh</Command>
       <Timeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</Timeout>
     </HelixWorkItem>
   </ItemGroup>

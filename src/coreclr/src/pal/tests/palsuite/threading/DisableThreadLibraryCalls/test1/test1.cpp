@@ -25,11 +25,13 @@
 #define GETCALLCOUNT "_GetCallCount@0"
 #endif
 
-DWORD PALAPI ThreadFunc(LPVOID lpParam);
-int RunTest(int DisableThreadCalls);
+DWORD PALAPI ThreadFunc_DisableThreadLibraryCalls_test1(LPVOID lpParam);
+int RunTest_DisableThreadLibraryCalls_test1(int DisableThreadCalls);
 
-int __cdecl main(int argc, char **argv)
-{    
+int __cdecl threading_DisableThreadLibraryCalls_test1(int argc, char* argv[]);
+static PALTest threading_DisableThreadLibraryCalls_test1_lookup(threading_DisableThreadLibraryCalls_test1, "threading/DisableThreadLibraryCalls/test1");
+int __cdecl threading_DisableThreadLibraryCalls_test1(int argc, char* argv[])
+{
     int ret;
 
     if ((PAL_Initialize(argc,argv)) != 0)
@@ -54,7 +56,7 @@ int __cdecl main(int argc, char **argv)
      * Test once without calling DisableThreadLibraryCalls and make sure we 
      * get expected results.
      */
-    ret = RunTest(0);
+    ret = RunTest_DisableThreadLibraryCalls_test1(0);
     if (ret != 2)
     {
         Fail("Expected to get 2 thread library calls, got %d!\n", ret);
@@ -64,7 +66,7 @@ int __cdecl main(int argc, char **argv)
     /*
      * Test again, this time calling DisableThreadLibraryCalls.
      */
-    ret = RunTest(1);
+    ret = RunTest_DisableThreadLibraryCalls_test1(1);
     if (ret != 0)
     {
         Fail("Expected to get 0 thread library calls, got %d!\n", ret);
@@ -77,7 +79,7 @@ int __cdecl main(int argc, char **argv)
 /*
  * Thread entry point.  Doesn't do anything.
  */
-DWORD PALAPI ThreadFunc(LPVOID lpParam)
+DWORD PALAPI ThreadFunc_DisableThreadLibraryCalls_test1(LPVOID lpParam)
 {
     return 0;
 }
@@ -115,7 +117,7 @@ int RunTest(int DisableThreadCalls)
         }
     }
 
-    hThread = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE) ThreadFunc,
+    hThread = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE) ThreadFunc_DisableThreadLibraryCalls_test1,
         NULL, 0, &threadID);
 
     if (hThread == NULL)

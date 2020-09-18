@@ -498,11 +498,8 @@ PALAPI
 PAL_GetPALDirectoryW(
     OUT LPWSTR lpDirectoryName,
     IN OUT UINT* cchDirectoryName);
-#ifdef UNICODE
+
 #define PAL_GetPALDirectory PAL_GetPALDirectoryW
-#else
-#define PAL_GetPALDirectory PAL_GetPALDirectoryA
-#endif
 
 PALIMPORT
 VOID
@@ -711,13 +708,8 @@ SearchPathW(
     OUT LPWSTR lpBuffer,
     OUT LPWSTR *lpFilePart
     );
-#ifdef UNICODE
+
 #define SearchPath  SearchPathW
-#else
-#define SearchPath  SearchPathA
-#endif // !UNICODE
-
-
 
 PALIMPORT
 BOOL
@@ -733,7 +725,6 @@ CopyFileW(
 #define CopyFile CopyFileA
 #endif
 
-
 PALIMPORT
 BOOL
 PALAPI
@@ -746,11 +737,8 @@ DeleteFileW(
 #define DeleteFile DeleteFileA
 #endif
 
-
-
 #define MOVEFILE_REPLACE_EXISTING      0x00000001
 #define MOVEFILE_COPY_ALLOWED          0x00000002
-
 
 PALIMPORT
 BOOL
@@ -1252,34 +1240,8 @@ typedef struct _STARTUPINFOW {
     HANDLE hStdError;
 } STARTUPINFOW, *LPSTARTUPINFOW;
 
-typedef struct _STARTUPINFOA {
-    DWORD cb;
-    LPSTR lpReserved_PAL_Undefined;
-    LPSTR lpDesktop_PAL_Undefined;
-    LPSTR lpTitle_PAL_Undefined;
-    DWORD dwX_PAL_Undefined;
-    DWORD dwY_PAL_Undefined;
-    DWORD dwXSize_PAL_Undefined;
-    DWORD dwYSize_PAL_Undefined;
-    DWORD dwXCountChars_PAL_Undefined;
-    DWORD dwYCountChars_PAL_Undefined;
-    DWORD dwFillAttribute_PAL_Undefined;
-    DWORD dwFlags;
-    WORD wShowWindow_PAL_Undefined;
-    WORD cbReserved2_PAL_Undefined;
-    LPBYTE lpReserved2_PAL_Undefined;
-    HANDLE hStdInput;
-    HANDLE hStdOutput;
-    HANDLE hStdError;
-} STARTUPINFOA, *LPSTARTUPINFOA;
-
-#ifdef UNICODE
 typedef STARTUPINFOW STARTUPINFO;
 typedef LPSTARTUPINFOW LPSTARTUPINFO;
-#else
-typedef STARTUPINFOA STARTUPINFO;
-typedef LPSTARTUPINFOW LPSTARTUPINFO;
-#endif
 
 #define CREATE_NEW_CONSOLE          0x00000010
 
@@ -1307,11 +1269,7 @@ CreateProcessW(
            IN LPSTARTUPINFOW lpStartupInfo,
            OUT LPPROCESS_INFORMATION lpProcessInformation);
 
-#ifdef UNICODE
 #define CreateProcess CreateProcessW
-#else
-#define CreateProcess CreateProcessA
-#endif
 
 PALIMPORT
 PAL_NORETURN
@@ -2442,11 +2400,7 @@ CreateFileMappingW(
            IN DWORD dwMaximumSizeLow,
            IN LPCWSTR lpName);
 
-#ifdef UNICODE
 #define CreateFileMapping CreateFileMappingW
-#else
-#define CreateFileMapping CreateFileMappingA
-#endif
 
 #define SECTION_QUERY       0x0001
 #define SECTION_MAP_WRITE   0x0002
@@ -2466,11 +2420,7 @@ OpenFileMappingW(
          IN BOOL bInheritHandle,
          IN LPCWSTR lpName);
 
-#ifdef UNICODE
 #define OpenFileMapping OpenFileMappingW
-#else
-#define OpenFileMapping OpenFileMappingA
-#endif
 
 typedef INT_PTR (PALAPI_NOEXPORT *FARPROC)();
 
@@ -2970,11 +2920,7 @@ LPWSTR
 PALAPI
 GetEnvironmentStringsW();
 
-#ifdef UNICODE
 #define GetEnvironmentStrings GetEnvironmentStringsW
-#else
-#define GetEnvironmentStrings GetEnvironmentStringsA
-#endif
 
 PALIMPORT
 BOOL
@@ -2982,11 +2928,7 @@ PALAPI
 FreeEnvironmentStringsW(
             IN LPWSTR);
 
-#ifdef UNICODE
 #define FreeEnvironmentStrings FreeEnvironmentStringsW
-#else
-#define FreeEnvironmentStrings FreeEnvironmentStringsA
-#endif
 
 PALIMPORT
 BOOL

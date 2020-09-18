@@ -9,7 +9,7 @@ namespace Sample
 {
     public class Test
     {
-        public static void Main(String[] args)
+        public static void Main(string[] args)
         {
             Console.WriteLine ("Hello, World!");
         }

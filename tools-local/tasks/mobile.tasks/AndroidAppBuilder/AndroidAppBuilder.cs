@@ -31,20 +31,20 @@ public class AndroidAppBuilderTask : Task
     public string? OutputDir { get; set; }
 
     public string? AndroidSdk { get; set; }
-    
+
     public string? AndroidNdk { get; set; }
-    
+
     public string? MinApiLevel { get; set; }
-    
+
     public string? BuildApiLevel { get; set; }
-    
+
     public string? BuildToolsVersion { get; set; }
 
     public bool StripDebugSymbols { get; set; }
 
     [Output]
     public string ApkBundlePath { get; set; } = ""!;
-    
+
     [Output]
     public string ApkPackageId { get; set; } = ""!;
 
@@ -62,7 +62,7 @@ public class AndroidAppBuilderTask : Task
         apkBuilder.BuildToolsVersion = BuildToolsVersion;
         apkBuilder.StripDebugSymbols = StripDebugSymbols;
         (ApkBundlePath, ApkPackageId) = apkBuilder.BuildApk(SourceDir, Abi, MainLibraryFileName, MonoRuntimeHeaders);
-        
+
         return true;
     }
 }

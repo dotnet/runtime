@@ -19,12 +19,13 @@ parameters:
   DisplayNamePrefix: 'Send job to Helix' # optional -- rename the beginning of the displayName of the steps in AzDO 
   condition: succeeded()                 # optional -- condition for step to execute; defaults to succeeded()
   continueOnError: false                 # optional -- determines whether to continue the build if the step errors; defaults to false
+  osGroup: ''                            # required -- operating system for the job
             
 
 steps:
 - template: /eng/pipelines/common/templates/runtimes/send-to-helix-inner-step.yml
   parameters:
-    osGroup: ${{ variables['Agent.Os'] }}
+    osGroup: ${{ parameters.osGroup }}
     sendParams: $(Build.SourcesDirectory)/eng/common/performance/${{ parameters.ProjectFile }} /restore /t:Test /bl:$(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)/SendToHelix.binlog
     displayName: ${{ parameters.DisplayNamePrefix }}
     condition: ${{ parameters.condition }}
