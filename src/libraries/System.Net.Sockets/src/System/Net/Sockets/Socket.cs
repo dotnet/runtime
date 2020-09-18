@@ -2357,6 +2357,14 @@ namespace System.Net.Sockets
         //    int - Return code from async Connect, 0 for success, SocketError.NotConnected otherwise
         public void EndConnect(IAsyncResult asyncResult)
         {
+            // There are three AsyncResult types we support in EndConnect:
+            // - ConnectAsyncResult - a fully synchronous operation that already completed, wrapped in an AsyncResult
+            // - MultipleAddressConnectAsyncResult - a parent operation for other Connects (connecting to DnsEndPoint)
+            // - ConnectOverlappedAsyncResult - a connect to an IPEndPoint
+            // For Telemetry, we already logged everything for ConnectAsyncResult in DoConnect,
+            // and we want to avoid logging duplicated events for MultipleAddressConnect.
+            // Therefore, we always check that asyncResult is ConnectOverlapped before logging.
+
             if (Disposed)
             {
                 if (SocketsTelemetry.Log.IsEnabled() && asyncResult is ConnectOverlappedAsyncResult)
