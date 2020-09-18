@@ -41,7 +41,7 @@ namespace System.Text.Json
         /// </exception>
         public static JsonDocument Parse(ReadOnlyMemory<byte> utf8Json, JsonDocumentOptions options = default)
         {
-            return Parse(utf8Json, options.GetReaderOptions(), null);
+            return Parse(utf8Json, options.GetReaderOptions(), null, useArrayPools: true);
         }
 
         /// <summary>
@@ -75,7 +75,7 @@ namespace System.Text.Json
 
             if (utf8Json.IsSingleSegment)
             {
-                return Parse(utf8Json.First, readerOptions, null);
+                return Parse(utf8Json.First, readerOptions, null, useArrayPools: true);
             }
 
             int length = checked((int)utf8Json.Length);
@@ -84,7 +84,7 @@ namespace System.Text.Json
             try
             {
                 utf8Json.CopyTo(utf8Bytes.AsSpan());
-                return Parse(utf8Bytes.AsMemory(0, length), readerOptions, utf8Bytes);
+                return Parse(utf8Bytes.AsMemory(0, length), readerOptions, utf8Bytes, useArrayPools: true);
             }
             catch
             {
@@ -121,7 +121,7 @@ namespace System.Text.Json
             Debug.Assert(drained.Array != null);
             try
             {
-                return Parse(drained.AsMemory(), options.GetReaderOptions(), drained.Array);
+                return Parse(drained.AsMemory(), options.GetReaderOptions(), drained.Array, useArrayPools: true);
             }
             catch
             {
@@ -170,7 +170,7 @@ namespace System.Text.Json
             Debug.Assert(drained.Array != null);
             try
             {
-                return Parse(drained.AsMemory(), options.GetReaderOptions(), drained.Array);
+                return Parse(drained.AsMemory(), options.GetReaderOptions(), drained.Array, useArrayPools: true);
             }
             catch
             {
@@ -211,7 +211,11 @@ namespace System.Text.Json
                 int actualByteCount = JsonReaderHelper.GetUtf8FromText(jsonChars, utf8Bytes);
                 Debug.Assert(expectedByteCount == actualByteCount);
 
-                return Parse(utf8Bytes.AsMemory(0, actualByteCount), options.GetReaderOptions(), utf8Bytes);
+                return Parse(
+                    utf8Bytes.AsMemory(0, actualByteCount),
+                    options.GetReaderOptions(),
+                    utf8Bytes,
+                    useArrayPools: true);
             }
             catch
             {
@@ -286,7 +290,7 @@ namespace System.Text.Json
         /// </exception>
         public static bool TryParseValue(ref Utf8JsonReader reader, [NotNullWhen(true)] out JsonDocument? document)
         {
-            return TryParseValue(ref reader, out document, shouldThrow: false);
+            return TryParseValue(ref reader, out document, shouldThrow: false, useArrayPools: true);
         }
 
         /// <summary>
@@ -326,12 +330,21 @@ namespace System.Text.Json
         /// </exception>
         public static JsonDocument ParseValue(ref Utf8JsonReader reader)
         {
-            bool ret = TryParseValue(ref reader, out JsonDocument? document, shouldThrow: true);
+            bool ret = TryParseValue(
+                ref reader,
+                out JsonDocument? document,
+                shouldThrow: true,
+                useArrayPools: true);
+
             Debug.Assert(ret, "TryParseValue returned false with shouldThrow: true.");
             return document!;
         }
 
-        private static bool TryParseValue(ref Utf8JsonReader reader, [NotNullWhen(true)] out JsonDocument? document, bool shouldThrow)
+        internal static bool TryParseValue(
+            ref Utf8JsonReader reader,
+            [NotNullWhen(true)] out JsonDocument? document,
+            bool shouldThrow,
+            bool useArrayPools)
         {
             JsonReaderState state = reader.CurrentState;
             CheckSupportedOptions(state.Options, nameof(reader));
@@ -507,38 +520,58 @@ namespace System.Text.Json
             }
 
             int length = valueSpan.IsEmpty ? checked((int)valueSequence.Length) : valueSpan.Length;
-            byte[] rented = ArrayPool<byte>.Shared.Rent(length);
-            Span<byte> rentedSpan = rented.AsSpan(0, length);
-
-            try
+            if (useArrayPools)
             {
+                byte[] rented = ArrayPool<byte>.Shared.Rent(length);
+                Span<byte> rentedSpan = rented.AsSpan(0, length);
+
+                try
+                {
+                    if (valueSpan.IsEmpty)
+                    {
+                        valueSequence.CopyTo(rentedSpan);
+                    }
+                    else
+                    {
+                        valueSpan.CopyTo(rentedSpan);
+                    }
+
+                    document = Parse(rented.AsMemory(0, length), state.Options, rented, useArrayPools);
+                }
+                catch
+                {
+                    // This really shouldn't happen since the document was already checked
+                    // for consistency by Skip.  But if data mutations happened just after
+                    // the calls to Read then the copy may not be valid.
+                    rentedSpan.Clear();
+                    ArrayPool<byte>.Shared.Return(rented);
+                    throw;
+                }
+            }
+            else
+            {
+                byte[] utf8Json = new byte[length];
+
                 if (valueSpan.IsEmpty)
                 {
-                    valueSequence.CopyTo(rentedSpan);
+                    valueSequence.CopyTo(utf8Json);
                 }
                 else
                 {
-                    valueSpan.CopyTo(rentedSpan);
+                    valueSpan.CopyTo(utf8Json);
                 }
 
-                document = Parse(rented.AsMemory(0, length), state.Options, rented);
-                return true;
+                document = Parse(utf8Json, state.Options, extraRentedBytes: null, useArrayPools);
             }
-            catch
-            {
-                // This really shouldn't happen since the document was already checked
-                // for consistency by Skip.  But if data mutations happened just after
-                // the calls to Read then the copy may not be valid.
-                rentedSpan.Clear();
-                ArrayPool<byte>.Shared.Return(rented);
-                throw;
-            }
+
+            return true;
         }
 
         private static JsonDocument Parse(
             ReadOnlyMemory<byte> utf8Json,
             JsonReaderOptions readerOptions,
-            byte[]? extraRentedBytes)
+            byte[]? extraRentedBytes,
+            bool useArrayPools)
         {
             ReadOnlySpan<byte> utf8JsonSpan = utf8Json.Span;
             var database = new MetadataDb(utf8Json.Length);
@@ -546,7 +579,7 @@ namespace System.Text.Json
 
             try
             {
-                Parse(utf8JsonSpan, readerOptions, ref database, ref stack);
+                Parse(utf8JsonSpan, readerOptions, ref database, ref stack, useArrayPools);
             }
             catch
             {

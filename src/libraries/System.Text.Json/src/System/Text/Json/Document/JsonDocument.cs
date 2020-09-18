@@ -922,7 +922,8 @@ namespace System.Text.Json
             ReadOnlySpan<byte> utf8JsonSpan,
             JsonReaderOptions readerOptions,
             ref MetadataDb database,
-            ref StackRowStack stack)
+            ref StackRowStack stack,
+            bool useArrayPools)
         {
             bool inArray = false;
             int arrayItemsCount = 0;
@@ -1068,7 +1069,8 @@ namespace System.Text.Json
             }
 
             Debug.Assert(reader.BytesConsumed == utf8JsonSpan.Length);
-            database.TrimExcess();
+
+            database.CompleteAllocations(useArrayPools);
         }
 
         private void CheckNotDisposed()

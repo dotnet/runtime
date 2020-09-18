@@ -27,6 +27,56 @@ namespace System.Text.Json
             _idx = idx;
         }
 
+        /// <summary>
+        ///   Parses one JSON value (including objects or arrays) from the provided reader.
+        ///   For performance, the JsonDocument Parse() methods should be used instead when the
+        ///   Dispose pattern is applicable.
+        /// </summary>
+        /// <param name="reader">The reader to read.</param>
+        /// <returns>
+        ///   A JsonElement representing the value (and nested values) read from the reader.
+        /// </returns>
+        /// <remarks>
+        ///   <para>
+        ///     If the <see cref="Utf8JsonReader.TokenType"/> property of <paramref name="reader"/>
+        ///     is <see cref="JsonTokenType.PropertyName"/> or <see cref="JsonTokenType.None"/>, the
+        ///     reader will be advanced by one call to <see cref="Utf8JsonReader.Read"/> to determine
+        ///     the start of the value.
+        ///   </para>
+        ///
+        ///   <para>
+        ///     Upon completion of this method <paramref name="reader"/> will be positioned at the
+        ///     final token in the JSON value.  If an exception is thrown the reader is reset to
+        ///     the state it was in when the method was called.
+        ///   </para>
+        ///
+        ///   <para>
+        ///     This method makes a copy of the data the reader acted on, so there is no caller
+        ///     requirement to maintain data integrity beyond the return of this method.
+        ///   </para>
+        /// </remarks>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="reader"/> is using unsupported options.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   The current <paramref name="reader"/> token does not start or represent a value.
+        /// </exception>
+        /// <exception cref="JsonException">
+        ///   A value could not be read from the reader.
+        /// </exception>
+
+        internal static JsonElement Parse(ref Utf8JsonReader reader)
+        {
+            bool ret = JsonDocument.TryParseValue(
+                ref reader,
+                out JsonDocument? document,
+                shouldThrow: true,
+                useArrayPools: false);
+
+            Debug.Assert(ret, "Parse returned false with shouldThrow: true.");
+            return document!.RootElement;
+        }
+
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         private JsonTokenType TokenType
         {

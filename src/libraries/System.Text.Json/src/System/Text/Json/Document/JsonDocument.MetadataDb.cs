@@ -87,7 +87,7 @@ namespace System.Text.Json
             internal int Length { get; private set; }
             private byte[] _data;
 #if DEBUG
-            private readonly bool _isLocked;
+            private bool _isLocked;
 #endif
 
             internal MetadataDb(byte[] completeDb)
@@ -127,25 +127,6 @@ namespace System.Text.Json
 #endif
             }
 
-            internal MetadataDb(MetadataDb source, bool useArrayPools)
-            {
-                Length = source.Length;
-
-#if DEBUG
-                _isLocked = !useArrayPools;
-#endif
-
-                if (useArrayPools)
-                {
-                    _data = ArrayPool<byte>.Shared.Rent(Length);
-                    source._data.AsSpan(0, Length).CopyTo(_data);
-                }
-                else
-                {
-                    _data = source._data.AsSpan(0, Length).ToArray();
-                }
-            }
-
             public void Dispose()
             {
                 byte[]? data = Interlocked.Exchange(ref _data, null!);
@@ -165,23 +146,52 @@ namespace System.Text.Json
                 Length = 0;
             }
 
-            internal void TrimExcess()
+            /// <summary>
+            /// If using array pools, trim excess if necessary.
+            /// If not using array pools, release the temporary array pool and alloc.
+            /// </summary>
+            /// <param name="useArrayPools"></param>
+            internal void CompleteAllocations(bool useArrayPools)
             {
-                // There's a chance that the size we have is the size we'd get for this
-                // amount of usage (particularly if Enlarge ever got called); and there's
-                // the small copy-cost associated with trimming anyways. "Is half-empty" is
-                // just a rough metric for "is trimming worth it?".
-                if (Length <= _data.Length / 2)
+                if (useArrayPools)
                 {
-                    byte[] newRent = ArrayPool<byte>.Shared.Rent(Length);
-                    byte[] returnBuf = newRent;
-
-                    if (newRent.Length < _data.Length)
+                    // There's a chance that the size we have is the size we'd get for this
+                    // amount of usage (particularly if Enlarge ever got called); and there's
+                    // the small copy-cost associated with trimming anyways. "Is half-empty" is
+                    // just a rough metric for "is trimming worth it?".
+                    if (Length <= _data.Length / 2)
                     {
-                        Buffer.BlockCopy(_data, 0, newRent, 0, Length);
-                        returnBuf = _data;
-                        _data = newRent;
+                        byte[] newRent = ArrayPool<byte>.Shared.Rent(Length);
+                        byte[] returnBuf = newRent;
+
+                        if (newRent.Length < _data.Length)
+                        {
+                            Buffer.BlockCopy(_data, 0, newRent, 0, Length);
+                            returnBuf = _data;
+                            _data = newRent;
+                        }
+
+                        // The data in this rented buffer only conveys the positions and
+                        // lengths of tokens in a document, but no content; so it does not
+                        // need to be cleared.
+                        ArrayPool<byte>.Shared.Return(returnBuf);
                     }
+                }
+                else
+                {
+                    // This is faster and allocates less than creating a new MetadataDb.
+                    // This is used internally by JsonElement.Parse() so there are no concurrency concerns.
+#if DEBUG
+                    Debug.Assert(!_isLocked);
+#endif
+
+                    Debug.Assert(_data != null);
+                    byte[] returnBuf = _data;
+                    _data = _data.AsSpan(0, Length).ToArray();
+
+#if DEBUG
+                    _isLocked = true;
+#endif
 
                     // The data in this rented buffer only conveys the positions and
                     // lengths of tokens in a document, but no content; so it does not

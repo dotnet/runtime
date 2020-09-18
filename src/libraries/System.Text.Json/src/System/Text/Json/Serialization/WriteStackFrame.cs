@@ -94,16 +94,16 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Initializes the state for polymorphic or re-entry cases.
+        /// Initializes the state for polymorphic cases.
         /// </summary>
-        public JsonConverter InitializeReEntry(Type type, JsonSerializerOptions options, string? propertyName = null)
+        public JsonConverter InitializeReEntry(Type type, JsonSerializerOptions options)
         {
-            JsonClassInfo classInfo = options.GetOrAddClass(type);
+            if (PolymorphicJsonPropertyInfo?.RuntimePropertyType != type)
+            {
+                JsonClassInfo classInfo = options.GetOrAddClass(type);
+                PolymorphicJsonPropertyInfo = classInfo.PropertyInfoForClassInfo;
+            }
 
-            // Set for exception handling calculation of JsonPath.
-            JsonPropertyNameAsString = propertyName;
-
-            PolymorphicJsonPropertyInfo = classInfo.PropertyInfoForClassInfo;
             return PolymorphicJsonPropertyInfo.ConverterBase;
         }
 
