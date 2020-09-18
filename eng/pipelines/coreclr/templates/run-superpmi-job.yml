@@ -65,18 +65,16 @@ jobs:
             _Framework: ${{ framework }}
     steps:
     - ${{ parameters.steps }}
-    - powershell: $(Build.SourcesDirectory)\eng\common\superpmi\superpmi-setup.ps1 -CoreRootDirectory $(Build.SourcesDirectory)\artifacts\tests\coreclr\${{ parameters.osGroup }}.${{ parameters.archType }}.Checked\Tests\Core_Root -ManagedTestArtifactDirectory $(managedTestArtifactRootFolderPath)
+    - powershell: $(Build.SourcesDirectory)\eng\common\superpmi\superpmi-setup.ps1 -CoreRootDirectory $(Build.SourcesDirectory)\artifacts\tests\coreclr\${{ parameters.osGroup }}.${{ parameters.archType }}.${{ parameters.buildConfig }}\Tests\Core_Root -ManagedTestArtifactDirectory $(managedTestArtifactRootFolderPath) -Architecture $(archType)
       displayName: SuperPMI Setup (Windows)
       condition: and(succeeded(), eq(variables['Agent.Os'], 'Windows_NT'))
       continueOnError: ${{ parameters.continueOnError }}
 
-    # - script: $(Build.SourcesDirectory)/eng/common/superpmi/superpmi-setup.sh $(IsInternal)$(Interpreter) --framework $(_Framework) --kind ${{ parameters.runKind }} ${{ parameters.extraSetupParameters }}
-    #   displayName: SuperPMI Setup (Unix)
-    #   condition: and(succeeded(), ne(variables['Agent.Os'], 'Windows_NT'))
-    #   continueOnError: ${{ parameters.continueOnError }}
-    #   # call bootstrap.cmd or something of dotnet/jitutils
-    # - script: $(Python) $(JitUtils)/scripts/ci_setup.py $(SetupArguments)
-    #   displayName: Run bootstrap setup script
+    - script: $(Build.SourcesDirectory)/eng/common/superpmi/superpmi-setup.sh -core_root_directory $(Build.SourcesDirectory)/artifacts/tests/coreclr/${{ parameters.osGroup }}.${{ parameters.archType }}.${{ parameters.buildConfig }}/Tests/Core_Root --managed_test_artifact_directory $(managedTestArtifactRootFolderPath) --architecture $(archType)
+      displayName: SuperPMI Setup (Unix)
+      condition: and(succeeded(), ne(variables['Agent.Os'], 'Windows_NT'))
+      continueOnError: ${{ parameters.continueOnError }}
+
       # Run superpmi collection in helix
     - template: /eng/common/templates/steps/superpmi-send-to-helix.yml
       parameters:
