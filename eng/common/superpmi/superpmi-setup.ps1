@@ -22,7 +22,7 @@ $SuperPmiDirectory = (Join-Path $PayloadDirectory "superpmi")
 $JitUtilsDirectory = (Join-Path $PayloadDirectory "jitutils")
 $PmiAssembliesDirectory = (Join-Path $PayloadDirectory "PmiAssembliesDirectory")
 $WorkItemDirectory = (Join-Path $SourceDirectory "workitem")
-$Queue = "Windows.10.Amd64.ServerRS4"
+$Queue = "Windows.10.Amd64"
 
 if($Architecture -eq 'arm64') {
     $Queue = "Windows.10.Arm64"

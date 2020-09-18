@@ -59,10 +59,12 @@ superpmi_directory=$payload_directory/superpmi
 jitutils_directory=$payload_directory/jitutils
 pmi_assemblies_directory=$payload_directory
 workitem_directory=$source_directory/workitem
-queue="Ubuntu.1604.Amd64"
+queue="Ubuntu.1804.Amd64"
 
-if [[ "$architecture" = "arm" || "$architecture" = "arm64" ]]; then
-  queue="Ubuntu.1804.ArmArch"
+if [[ "$architecture" = "arm" ]]; then
+  queue="(Ubuntu.1804.Arm32)Ubuntu.1804.Armarch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm32v7-bfcd90a-20200121150440"
+elif [[ "$architecture" = "arm64" ]]; then
+  queue="(Ubuntu.1804.Arm64)Ubuntu.1804.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm64v8-a45aeeb-20190620155855"
 fi
 
 helix_source_prefix="official"

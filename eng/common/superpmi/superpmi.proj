@@ -1,10 +1,10 @@
 <Project Sdk="Microsoft.DotNet.Helix.Sdk" DefaultTargets="Test">
 
   <PropertyGroup Condition="'$(AGENT_OS)' == 'Windows_NT'">
-    <FileSeparatorChar>\<FileSeparatorChar>
+    <FileSeparatorChar>\</FileSeparatorChar>
   </PropertyGroup>
   <PropertyGroup Condition="'$(AGENT_OS)' != 'Windows_NT'">
-    <FileSeparatorChar>/<FileSeparatorChar>
+    <FileSeparatorChar>/</FileSeparatorChar>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -37,7 +37,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Partition Include="$(BuildConfig).Libraries" PmiAssemblies="Core_Root" OutputMchName="libraries" />
+    <Partition Include="$(BuildConfig).Libraries" PmiAssemblies="Core_Root" OutputMchName="libraries.pmi" />
     <!-- <Partition Include="$(BuildConfig).Tests" PmiAssemblies="Tests" OutputMchName="tests" /> -->
   </ItemGroup>
 
@@ -50,5 +50,23 @@
       <DownloadFilesFromResults>%(HelixWorkItem.OutputMchName).$(AGENT_OS).$(Architecture).$(BuildConfig).mch;%(HelixWorkItem.OutputMchName).$(AGENT_OS).$(Architecture).$(BuildConfig).mch.mct</DownloadFilesFromResults>
     </HelixWorkItem>
   </ItemGroup>
+
+    <!--
+    This is useful for local testing to print the produced helix items
+    To use this when you are changing how items are produced, uncomment the target
+    and replace the Project item at the top of the file with this:
+    <Project DefaultTargets="printItems">
+    
+    Once you've done that you can run this to see the results:
+    dotnet msbuild .\scenarios.proj /v:n
+   -->
+  <!-- <Target Name="printItems">
+        <Message Text="@(HelixWorkItem -> 'name: %(HelixWorkItem.Identity)
+     dir: %(HelixWorkItem.PayloadDirectory)
+     pre: %(HelixWorkItem.PreCommands)
+     command: %(HelixWorkItem.Command)
+     post: %(HelixWorkItem.PostCommands)
+     timeout: %(HelixWorkItem.Timeout)  '"/>
+  </Target> -->
 
 </Project>
