@@ -19,6 +19,6 @@ steps:
   - task: ExtractFiles@1
     displayName: 'Unzip ${{ parameters.displayName }}'
     inputs:
-      archiveFilePatterns: $(Build.SourcesDirectory)/__download__/${{ parameters.artifactName }}/${{ parameters.artifactFileName }}
+      archiveFilePatterns: $(Build.SourcesDirectory)/__download__/${{ parameters.artifactName }}/**/${{ parameters.artifactFileName }}
       destinationFolder: ${{ parameters.unpackFolder }}
       cleanDestinationFolder: ${{ parameters.cleanUnpackFolder }}
