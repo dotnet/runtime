@@ -97,6 +97,7 @@ build_cross_architecture_components()
     CROSSCOMPILE=0
     export __CMakeBinDir CROSSCOMPILE
 
+    __CMakeArgs="-DCLR_CMAKE_TARGET_ARCH=$__BuildArch -DCLR_CROSS_COMPONENTS_BUILD=1 $__CMakeArgs"
     build_native "$__TargetOS" "$__CrossArch" "$__ProjectRoot" "$__ProjectRoot" "$intermediatesForBuild" "$__CMakeArgs" "cross-architecture components"
 
     CROSSCOMPILE=1

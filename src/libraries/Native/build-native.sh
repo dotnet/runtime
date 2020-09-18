@@ -78,14 +78,6 @@ fi
 if [[ "$__TargetOS" == OSX ]]; then
     # set default OSX deployment target
     __CMakeArgs="-DCMAKE_OSX_DEPLOYMENT_TARGET=10.13 $__CMakeArgs"
-    if [[ "$__BuildArch" == x64 ]]; then
-        __CMakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"x86_64\" $__CMakeArgs"
-    elif [[ "$__BuildArch" == arm64 ]]; then
-        __CMakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"arm64\" $__CMakeArgs"
-    else
-        echo "Error: Unknown OSX architecture $__BuildArch."
-        exit 1
-    fi
 elif [[ "$__TargetOS" == Android && -z "$ROOTFS_DIR" ]]; then
     if [[ -z "$ANDROID_NDK_ROOT" ]]; then
         echo "Error: You need to set the ANDROID_NDK_ROOT environment variable pointing to the Android NDK root."
@@ -165,4 +157,4 @@ setup_dirs
 check_prereqs
 
 # Build the corefx native components.
-build_native "$__BuildArch" "$__nativeroot" "$__nativeroot" "$__IntermediatesDir" "native libraries component"
+build_native "$__TargetOS" "$__BuildArch" "$__nativeroot" "$__nativeroot" "$__IntermediatesDir" "$__CMakeArgs" "native libraries component"
