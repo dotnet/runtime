@@ -712,6 +712,8 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner)
         if (m_FileMap == NULL)
             ThrowLastError();
 
+        // - Windows - MapViewOfFileEx requires offset to be allocation granularity aligned (typically 64KB)
+        // - Linux/OSX - mmap requires offset to be page aligned (PAL sets allocation granularity to page size)
         UINT32 alignment = g_SystemInfo.dwAllocationGranularity;
         UINT64 mapBegin = AlignDown((UINT64)offset, alignment);
         UINT64 mapSize = ((UINT64)(offset + size)) - mapBegin;
