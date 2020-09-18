@@ -645,6 +645,17 @@ mono_wasm_string_from_js (const char *str)
 		return NULL;
 }
 
+EMSCRIPTEN_KEEPALIVE MonoString *
+mono_wasm_string_from_utf16 (const mono_unichar2 * chars, int length)
+{
+	assert (length >= 0);
+
+	if (chars)
+		return mono_string_new_utf16 (root_domain, chars, length);
+	else
+		return NULL;
+}
+
 static int
 class_is_task (MonoClass *klass)
 {
