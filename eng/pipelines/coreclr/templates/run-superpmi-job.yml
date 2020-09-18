@@ -139,12 +139,11 @@ jobs:
       continueOnError: true
       condition: always()
 
-    - task: DownloadBuildArtifacts@0
+    - task: DownloadPipelineArtifact@2
       displayName: 'Download superpmi results'
       inputs:
         buildType: current
-        downloadType: single
-        downloadPath: '$(PmiAssembliesDirectory)\superpmi_results'
+        targetPath: '$(PmiAssembliesDirectory)\superpmi_results'
         artifactName: 'SuperPMI_Run_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.runtimeType }}_${{ parameters.codeGenType }}_CoreRoot'
 
     - script: |
