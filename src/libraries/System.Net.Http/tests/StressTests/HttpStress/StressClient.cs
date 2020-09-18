@@ -25,7 +25,6 @@ namespace HttpStress
         private readonly StressResultAggregator _aggregator;
         private readonly Stopwatch _stopwatch = new Stopwatch();
         private readonly CancellationTokenSource _cts = new CancellationTokenSource();
-        private HttpClient? _client;
         private Task? _clientTask;
         private EventListener? _eventListener;
 
@@ -40,6 +39,39 @@ namespace HttpStress
 
             // Handle command-line arguments.
             _eventListener = configuration.Trace ? new LogHttpEventListener() : null;
+        }
+
+        private HttpClient CreateHttpClient()
+        {
+            HttpMessageHandler CreateHttpHandler()
+            {
+                if (_config.UseWinHttpHandler)
+                {
+                    return new System.Net.Http.WinHttpHandler()
+                    {
+                        ServerCertificateValidationCallback = delegate { return true; }
+                    };
+                }
+                else
+                {
+                    return new SocketsHttpHandler()
+                    {
+                        PooledConnectionLifetime = _config.ConnectionLifetime.GetValueOrDefault(Timeout.InfiniteTimeSpan),
+                        SslOptions = new SslClientAuthenticationOptions
+                        {
+                            RemoteCertificateValidationCallback = delegate { return true; }
+                        }
+                    };
+                }
+            }
+
+            return new HttpClient(CreateHttpHandler()) 
+            { 
+                BaseAddress = _baseAddress,
+                Timeout = _config.DefaultTimeout,
+                DefaultRequestVersion = _config.HttpVersion,
+                DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact
+            };
         }
 
         public void Start()
@@ -72,14 +104,13 @@ namespace HttpStress
                 }
                 Console.WriteLine("Client is stopping ...");
             }
-            _client.Dispose();
             _stopwatch.Stop();
             _cts.Dispose();
         }
 
         public void PrintFinalReport()
         {
-            lock(Console.Out)
+            lock (Console.Out)
             {
                 Console.ForegroundColor = ConsoleColor.Magenta;
                 Console.WriteLine("HttpStress Run Final Report");
@@ -99,46 +130,13 @@ namespace HttpStress
 
         private async Task InitializeClient()
         {
-            HttpMessageHandler CreateHttpHandler()
-            {
-                if (_config.UseWinHttpHandler)
-                {
-                    return new System.Net.Http.WinHttpHandler()
-                    {
-                        ServerCertificateValidationCallback = delegate { return true; }
-                    };
-                }
-                else
-                {
-                    return new SocketsHttpHandler()
-                    {
-                        PooledConnectionLifetime = _config.ConnectionLifetime.GetValueOrDefault(Timeout.InfiniteTimeSpan),
-                        SslOptions = new SslClientAuthenticationOptions
-                        {
-                            RemoteCertificateValidationCallback = delegate { return true; }
-                        }
-                    };
-                }
-            }
-
-            HttpClient CreateHttpClient() => 
-                new HttpClient(CreateHttpHandler()) 
-                { 
-                    BaseAddress = _baseAddress,
-                    Timeout = _config.DefaultTimeout,
-                    DefaultRequestVersion = _config.HttpVersion,
-                    DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact
-                };
-
-            _client = CreateHttpClient();
-
             Console.WriteLine($"Trying connect to the server {_baseAddress}.");
 
             // Before starting the full-blown test, make sure can communicate with the server
             // Needed for scenaria where we're deploying server & client in separate containers, simultaneously.
             await SendTestRequestToServer(maxRetries: 10);
 
-            Console.WriteLine($"Connected succesfully.");
+            Console.WriteLine($"Connected successfully.");
 
             async Task SendTestRequestToServer(int maxRetries)
             {
@@ -167,6 +165,8 @@ namespace HttpStress
 
         private async Task StartCore()
         {
+            using HttpClient client = CreateHttpClient();
+
             // Spin up a thread dedicated to outputting stats for each defined interval
             new Thread(() =>
             {
@@ -197,7 +197,7 @@ namespace HttpStress
 
                     int opIndex = (int)(i % _clientOperations.Length);
                     (string operation, Func<RequestContext, Task> func) = _clientOperations[opIndex];
-                    var requestContext = new RequestContext(_config, _client!, random, _cts.Token, taskNum);
+                    var requestContext = new RequestContext(_config, client, random, _cts.Token, taskNum);
                     stopwatch.Restart();
                     try
                     {
