@@ -37,6 +37,12 @@ namespace System
 
         private const float singleRoundLimit = 1e8f;
 
+        private const float SCALEB_C1 = 1.7014118E+38f; // 0x1p127f
+
+        private const float SCALEB_C2 = 1.1754944E-38f; // 0x1p-126f
+
+        private const float SCALEB_C3 = 16777216f; // 0x1p24f
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Abs(float x)
         {
@@ -420,6 +426,37 @@ namespace System
         {
             ModF(x, &x);
             return x;
+        }
+
+        public static float ScaleB(float f, int n)
+        {
+            float y = f;
+            if (n > 127)
+            {
+                y *= SCALEB_C1;
+                n -= 127;
+                if (n > 127)
+                {
+                    y *= SCALEB_C1;
+                    n -= 127;
+                    if (n > 127)
+                        n = 127;
+                }
+            }
+            else if (n < -126)
+            {
+                y *= SCALEB_C2 * SCALEB_C3;
+                n += 126 - 24;
+                if (n < -126)
+                {
+                    y *= SCALEB_C2 * SCALEB_C3;
+                    n += 126 - 24;
+                    if (n < -126)
+                        n = -126;
+                }
+            }
+            float u = BitConverter.Int32BitsToSingle(((int)(0x7f + n) << 23));
+            return y * u;
         }
     }
 }

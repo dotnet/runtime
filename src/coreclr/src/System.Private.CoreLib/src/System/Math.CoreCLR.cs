@@ -97,9 +97,6 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern double Pow(double x, double y);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern double ScaleB(double x, int n);
-
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern double Sin(double a);

@@ -43,6 +43,12 @@ namespace System
           1E9, 1E10, 1E11, 1E12, 1E13, 1E14, 1E15
         };
 
+        private const double SCALEB_C1 = 8.98846567431158E+307; // 0x1p1023
+
+        private const double SCALEB_C2 = 2.2250738585072014E-308; // 0x1p-1022
+
+        private const double SCALEB_C3 = 9007199254740992; // 0x1p53
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static short Abs(short value)
         {
@@ -1095,6 +1101,37 @@ namespace System
         private static void ThrowMinMaxException<T>(T min, T max)
         {
             throw new ArgumentException(SR.Format(SR.Argument_MinMaxValue, min, max));
+        }
+
+        public static double ScaleB(double f, int n)
+        {
+            double y = f;
+            if (n > 1023)
+            {
+                y *= SCALEB_C1;
+                n -= 1023;
+                if (n > 1023)
+                {
+                    y *= SCALEB_C1;
+                    n -= 1023;
+                    if (n > 1023)
+                        n = 1023;
+                }
+            }
+            else if (n < -1022)
+            {
+                y *= SCALEB_C2 * SCALEB_C3;
+                n += 1022 - 53;
+                if (n < -1022)
+                {
+                    y *= SCALEB_C2 * SCALEB_C3;
+                    n += 1022 - 53;
+                    if (n < -1022)
+                        n = -1022;
+                }
+            }
+            double u = BitConverter.Int64BitsToDouble(((long)(0x3ff + n) << 52));
+            return y * u;
         }
     }
 }
