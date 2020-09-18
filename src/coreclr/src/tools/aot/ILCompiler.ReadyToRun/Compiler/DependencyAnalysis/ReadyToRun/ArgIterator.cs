@@ -1347,7 +1347,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                 if (HasRetBuffArg() && _transitionBlock.IsRetBuffPassedAsFirstArg)
                 {
-                    numRegistersUsed++;
 #if PROJECTN
                     // On ProjectN ret buff arg is passed on the call stack as the top stack arg
                     nSizeOfArgStack += _transitionBlock.PointerSize;
