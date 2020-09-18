@@ -249,6 +249,7 @@ namespace System.IO
         {
             Debug.Assert(buffer != null);
             Debug.Assert(buffer.Length > 0);
+            Debug.Assert(numBytes <= buffer.Length);
 
             numBytes = Math.Min(numBytes, (uint)buffer.Length);
 
