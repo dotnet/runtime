@@ -167,6 +167,7 @@ typedef struct
 	InterpBasicBlock *entry_bb, *cbb;
 	int bb_count;
 	MonoMemPool     *mempool;
+	MonoMemoryManager *mem_manager;
 	GList *basic_blocks;
 	GPtrArray *relocs;
 	gboolean verbose_level;
