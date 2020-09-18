@@ -9,7 +9,7 @@ using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
 {
-    partial class ContinuationTests
+    public static partial class ContinuationTests
     {
         // From https://github.com/dotnet/runtime/issues/42070
         [Theory]

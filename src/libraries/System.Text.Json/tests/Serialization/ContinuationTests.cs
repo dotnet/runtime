@@ -28,6 +28,7 @@ namespace System.Text.Json.Serialization.Tests
                 (new TestValueType<NestedClass>(), new NestedClass()),
                 (new TestValueType<NestedValueType>(), new NestedValueType()),
                 (new TestClass<NestedClassWithParamCtor>(), new NestedClassWithParamCtor(null)),
+                (new DictionaryTestClass<NestedClass>(), new NestedClass()),
             };
 
         private static IEnumerable<bool> IgnoreNullValues
@@ -129,7 +130,7 @@ namespace System.Text.Json.Serialization.Tests
             var chunk = new Chunk(json, bufferSize);
             var sequence = new ReadOnlySequence<byte>(chunk, 0, chunk.Next, chunk.Next.Memory.Length);
 
-            var reader = new Utf8JsonReader(sequence, true, default);
+            var reader = new Utf8JsonReader(sequence);
             var array = (ITestObject[])JsonSerializer.Deserialize(ref reader, type, readOptions);
 
             Assert.NotNull(array);
@@ -148,7 +149,7 @@ namespace System.Text.Json.Serialization.Tests
 
             Assert.Throws<JsonException>(() =>
             {
-                var reader = new Utf8JsonReader(sequence, true, default);
+                var reader = new Utf8JsonReader(sequence);
                 JsonSerializer.Deserialize(ref reader, type, readOptions);
             });
         }
@@ -173,22 +174,12 @@ namespace System.Text.Json.Serialization.Tests
 
         private interface ITestObject
         {
-            string A { get; set; }
-            string B { get; set; }
-            int C { get; set; }
-            int? D { get; set; }
-            float E { get; set; }
-            bool G { get; set; }
-            int[] I { get; set; }
-            INestedObject J { get; set; }
             void Initialize(INestedObject nested);
             void Verify();
         }
 
         private interface INestedObject
         {
-            string A { get; set; }
-            int B { get; set; }
             void Initialize();
             void Verify();
         }
@@ -203,11 +194,6 @@ namespace System.Text.Json.Serialization.Tests
             public bool G { get; set; }
             public int[] I { get; set; }
             public TNested J { get; set; }
-            INestedObject ITestObject.J
-            {
-                get => J;
-                set => J = (TNested)value;
-            }
 
             void ITestObject.Initialize(INestedObject nested)
             {
@@ -230,7 +216,8 @@ namespace System.Text.Json.Serialization.Tests
                 Assert.Null(D);
                 Assert.Equal(3.14e17f, E);
                 Assert.True(G);
-                Assert.Collection(I, v => Assert.Equal(42, v), v => Assert.Equal(17, v));
+                Assert.NotNull(I);
+                Assert.True(I.SequenceEqual(new[] { 42, 17 }));
                 Assert.NotNull(J);
                 J.Verify();
             }
@@ -246,11 +233,6 @@ namespace System.Text.Json.Serialization.Tests
             public bool G { get; set; }
             public int[] I { get; set; }
             public TNested J { get; set; }
-            INestedObject ITestObject.J
-            {
-                get => J;
-                set => J = (TNested)value;
-            }
 
             void ITestObject.Initialize(INestedObject nested)
             {
@@ -273,7 +255,8 @@ namespace System.Text.Json.Serialization.Tests
                 Assert.Null(D);
                 Assert.Equal(3.14e17f, E);
                 Assert.True(G);
-                Assert.Collection(I, v => Assert.Equal(42, v), v => Assert.Equal(17, v));
+                Assert.NotNull(I);
+                Assert.True(I.SequenceEqual(new[] { 42, 17 }));
                 Assert.NotNull(J);
                 J.Verify();
             }
@@ -319,6 +302,33 @@ namespace System.Text.Json.Serialization.Tests
         {
             public NestedClassWithParamCtor(string a)
                 => A = a;
+        }
+
+        private class DictionaryTestClass<TNested> : ITestObject where TNested : INestedObject
+        {
+            public Dictionary<string, TNested> A { get; set; }
+
+            void ITestObject.Initialize(INestedObject nested)
+            {
+                nested.Initialize();
+                A = new() { { "a", (TNested)nested }, { "b", (TNested)nested } };
+            }
+
+            void ITestObject.Verify()
+            {
+                Assert.NotNull(A);
+                Assert.Collection(A,
+                    kv =>
+                    {
+                        Assert.Equal("a", kv.Key);
+                        kv.Value.Verify();
+                    },
+                    kv =>
+                    {
+                        Assert.Equal("b", kv.Key);
+                        kv.Value.Verify();
+                    });
+            }
         }
     }
 }
