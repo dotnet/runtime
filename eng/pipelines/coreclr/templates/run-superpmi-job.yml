@@ -150,3 +150,13 @@ jobs:
     - script: |
           echo listing files in $(PmiAssembliesDirectory)\superpmi_results
           dir /s /b $(PmiAssembliesDirectory)\superpmi_results
+
+    - task: PythonScript@0
+      displayName: Run superpmi.py upload
+      inputs:
+        scriptSource: 'filePath'
+        scriptPath: $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py
+        arguments: upload -arch x64 -mch_files $(PmiAssembliesDirectory)\superpmi_results -core_root $(PmiAssembliesDirectory)\Core_Root\superpmi_min
+      env:
+        KUNAL_KEY: $(kunal_key) # secret key
+# python superpmi.py upload -arch x64 -core_root E:\temp\power\core_root\superpmi_min -mch_files E:\temp\power\_2
