@@ -10,6 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace Microsoft.WebAssembly.Diagnostics
@@ -72,7 +73,29 @@ namespace Microsoft.WebAssembly.Diagnostics
                                 }
                                 await RuntimeReady(sessionId, token);
                             }
+                            else if (a?[0]?["value"]?.ToString() == MonoConstants.EVENT_RAISED)
+                            {
+                                if (a.Type != JTokenType.Array)
+                                {
+                                    logger.LogDebug("Invalid event raised args, expected an array: {a}");
+                                }
+                                else
+                                {
+                                    if (JObjectTryParse(a?[2]?["value"]?.Value<string>(), out JObject raiseArgs) &&
+                                        JObjectTryParse(a?[1]?["value"]?.Value<string>(), out JObject eventArgs))
+                                    {
+                                        await OnJSEventRaised(sessionId, eventArgs, token);
 
+                                        if (raiseArgs?["trace"]?.Value<bool>() == true) {
+                                            // Let the message show up on the console
+                                            return false;
+                                        }
+                                    }
+                                }
+
+                                // Don't log this message in the console
+                                return true;
+                            }
                         }
                         break;
                     }
@@ -1036,6 +1059,25 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                 if (sessionId != SessionId.Null && !res.IsOk)
                     sessions.Remove(sessionId);
+            }
+        }
+
+        bool JObjectTryParse(string str, out JObject obj, bool log_exception = true)
+        {
+            obj = null;
+            if (string.IsNullOrEmpty(str))
+                return false;
+
+            try
+            {
+                obj = JObject.Parse(str);
+                return true;
+            }
+            catch (JsonReaderException jre)
+            {
+                if (log_exception)
+                    logger.LogDebug($"Could not parse {str}. Failed with {jre}");
+                return false;
             }
         }
     }
