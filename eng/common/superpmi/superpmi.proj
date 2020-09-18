@@ -11,8 +11,7 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(WorkItemCommand)' != ''">
-    <!-- TODO: Pass Buildtype as parameter -->
-    <WorkItemCommand>$(Python) $(WorkItemCommand) -arch $(Architecture) -build_type Checked </WorkItemCommand>
+    <WorkItemCommand>$(Python) $(WorkItemCommand) -arch $(Architecture) -build_type $(BuildConfig) </WorkItemCommand>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -38,9 +37,9 @@
     <HelixWorkItem Include="@(Partition)">
     <!-- TODO: Here too make payload folder different for workitem.Name -->
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
-      <Command>$(WorkItemCommand) -pmi_assemblies %(HelixWorkItem.PmiAssemblies) -output_mch_path $(OutputMchPath)\%(HelixWorkItem.OutputMchName).$(AGENT_OS).$(Architecture).Checked.mch</Command>
+      <Command>$(WorkItemCommand) -pmi_assemblies %(HelixWorkItem.PmiAssemblies) -output_mch_path $(OutputMchPath)\%(HelixWorkItem.OutputMchName).$(AGENT_OS).$(Architecture).$(BuildConfig).mch</Command>
       <Timeout>$(WorkItemTimeout)</Timeout>
-      <DownloadFilesFromResults>%(HelixWorkItem.OutputMchName).$(AGENT_OS).$(Architecture).Checked.mch;%(HelixWorkItem.OutputMchName).$(AGENT_OS).$(Architecture).Checked.mch.mct</DownloadFilesFromResults>
+      <DownloadFilesFromResults>%(HelixWorkItem.OutputMchName).$(AGENT_OS).$(Architecture).$(BuildConfig).mch;%(HelixWorkItem.OutputMchName).$(AGENT_OS).$(Architecture).$(BuildConfig).mch.mct</DownloadFilesFromResults>
     </HelixWorkItem>
   </ItemGroup>
 
