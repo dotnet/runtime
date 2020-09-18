@@ -437,6 +437,7 @@ namespace Internal.TypeSystem
             var layoutMetadata = type.GetClassLayout();
 
             int packingSize = ComputePackingSize(type, layoutMetadata);
+            packingSize = Math.Min(type.Context.Target.MaximumAutoLayoutPackingSize, packingSize);
 
             var offsets = new FieldAndOffset[numInstanceFields];
             int fieldOrdinal = 0;
