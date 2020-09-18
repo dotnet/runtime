@@ -518,3 +518,16 @@ public struct EmptyStruct
         StaticMethodWithLocalEmptyStructAsync().Wait();
     }
 }
+
+public class LoadDebuggerTest {
+    public static void LoadLazyAssembly(string asm_base64, string pdb_base64)
+    {
+        byte[] asm_bytes = Convert.FromBase64String(asm_base64);
+        byte[] pdb_bytes = null;
+        if (pdb_base64 != null)
+            pdb_bytes = Convert.FromBase64String(pdb_base64);
+
+        var loadedAssembly = System.Runtime.Loader.AssemblyLoadContext.Default.LoadFromStream(new System.IO.MemoryStream(asm_bytes), new System.IO.MemoryStream(pdb_bytes));
+        Console.WriteLine($"Loaded - {loadedAssembly}");
+    }
+}
