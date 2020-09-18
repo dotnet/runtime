@@ -6,18 +6,19 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
 {
     public static partial class ContinuationTests
     {
-        private static readonly Func<string, string>[] s_payloadTweaks = new Func<string, string>[]
+        private static readonly (Func<string, string>, Func<string, int>, int)[] s_payloadTweaks = new (Func<string, string>, Func<string, int>, int)[]
         {
-            payload => payload,
-            payload => payload.Replace("null", "nullX"),
-            payload => payload.Replace("e+17", "e+-17"),
+            (payload => payload, payload => -1, 0),
+            (payload => payload.Replace("null", "nullX"), payload => payload.IndexOf("nullX"), "null".Length),
+            (payload => payload.Replace("true", "trueX"), payload => payload.IndexOf("trueX"), "true".Length),
+            (payload => payload.Replace("false", "falseX"), payload => payload.IndexOf("falseX"), "false".Length),
+            (payload => payload.Replace("E+17", "E+-17"), payload => payload.IndexOf("E+-17"), "E+".Length)
         };
 
         private static IEnumerable<(ITestObject, INestedObject)> TestObjects
@@ -56,38 +57,78 @@ namespace System.Text.Json.Serialization.Tests
                 {
                     string payload = JsonSerializer.Serialize(TestObject, testObjectType, new JsonSerializerOptions { WriteIndented = writeIndented });
 
-                    foreach (Func<string, string> tweak in enumeratePayloadTweaks ? s_payloadTweaks.Skip(1) : s_payloadTweaks.Take(1))
+                    foreach ((Func<string, string> Tweak, Func<string, int> Position, int Offset) tweak in enumeratePayloadTweaks ? s_payloadTweaks.Skip(1) : s_payloadTweaks.Take(1))
                     {
-                        payload = tweak(payload);
+                        string tweaked = tweak.Tweak(payload);
 
                         // Wrap the payload inside an array to have something to read before/after.
-                        payload = '[' + payload + ']';
+                        tweaked = '[' + tweaked + ']';
                         Type arrayType = Type.GetType(testObjectType.FullName + "[]");
+
+                        (int Line, int Col) failurePosition = GetExpectedFailure(tweaked, tweak.Position(tweaked), tweak.Offset);
 
                         // Determine the DefaultBufferSize that is required to contain the complete json.
                         int bufferSize = 16;
-                        while (payload.Length > bufferSize)
+                        while (tweaked.Length > bufferSize)
                         {
                             bufferSize *= 2;
                         }
-                        int minPaddingLength = bufferSize - payload.Length + 1;
+                        int minPaddingLength = bufferSize - tweaked.Length + 1;
                         int maxPaddingLength = bufferSize - 1;
 
                         foreach (int length in Enumerable.Range(minPaddingLength, maxPaddingLength - minPaddingLength + 1))
                         {
-                            foreach (bool ignore in IgnoreNullValues)
+                            (int Line, int Col) paddedFailurePosition = failurePosition;
+                            if (failurePosition != default && failurePosition.Line == 0)
+                                paddedFailurePosition = (failurePosition.Line, failurePosition.Col + length);
+
+                            foreach (bool ignoreNull in IgnoreNullValues)
                             {
-                                yield return new object[] { new string(' ', length) + payload, bufferSize, arrayType, ignore };
+                                yield return new object[]
+                                {
+                                    new string(' ', length) + tweaked,
+                                    bufferSize,
+                                    arrayType,
+                                    ignoreNull,
+                                    paddedFailurePosition
+                                };
                             }
                         }
                     }
                 }
             }
+
+            static (int Line, int Col) GetExpectedFailure(string payload, int position, int offset)
+            {
+                if (position < 0)
+                    return default;
+
+                position += offset;
+                ReadOnlySpan<byte> utf8 = Encoding.UTF8.GetBytes(payload);
+                utf8 = utf8.Slice(0, position);
+                int positionInLine = position;
+                int lastNewLine;
+                int newLineCount = 0;
+                while ((lastNewLine = utf8.LastIndexOf((byte)'\n')) >= 0)
+                {
+                    if (newLineCount == 0)
+                        positionInLine -= lastNewLine + 1;
+                    newLineCount++;
+                    utf8 = utf8.Slice(0, lastNewLine);
+                }
+
+                return (newLineCount, positionInLine);
+            }
         }
 
         [Theory]
         [MemberData(nameof(TestData), /* enumeratePayloadTweaks: */ false)]
-        public static async Task ShouldWorkAtAnyPosition_Stream(string json, int bufferSize, Type type, bool ignoreNullValues)
+        public static async Task ShouldWorkAtAnyPosition_Stream(
+            string json,
+            int bufferSize,
+            Type type,
+            bool ignoreNullValues,
+            (int Line, int Column) expectedFailure)
         {
             var stream = new MemoryStream(Encoding.UTF8.GetBytes(json));
             {
@@ -103,12 +144,24 @@ namespace System.Text.Json.Serialization.Tests
                 Assert.Equal(1, array.Length);
                 array[0].Verify();
             }
+            Assert.Equal(default, expectedFailure);
         }
 
         [Theory]
         [MemberData(nameof(TestData), /* enumeratePayloadTweaks: */ true)]
-        public static async Task InvalidJsonShouldFailAtAnyPosition_Stream(string json, int bufferSize, Type type, bool ignoreNullValues)
+        public static async Task InvalidJsonShouldFailAtAnyPosition_Stream(
+            string json,
+            int bufferSize,
+            Type type,
+            bool ignoreNullValues,
+            (int Line, int Column) expectedFailure)
         {
+            if (expectedFailure == default)
+            {
+                // The tweak didn't find something to tweak in the payload
+                return;
+            }
+
             var stream = new MemoryStream(Encoding.UTF8.GetBytes(json));
             {
                 var readOptions = new JsonSerializerOptions
@@ -117,13 +170,20 @@ namespace System.Text.Json.Serialization.Tests
                     IgnoreNullValues = ignoreNullValues,
                 };
 
-                await Assert.ThrowsAsync<JsonException>(async () => await JsonSerializer.DeserializeAsync(stream, type, readOptions));
+                JsonException ex = await Assert.ThrowsAsync<JsonException>(async () => await JsonSerializer.DeserializeAsync(stream, type, readOptions));
+                Assert.Equal(expectedFailure.Line, ex.LineNumber);
+                Assert.Equal(expectedFailure.Column, ex.BytePositionInLine);
             }
         }
 
         [Theory]
         [MemberData(nameof(TestData), /* enumeratePayloadTweaks: */ false)]
-        public static void ShouldWorkAtAnyPosition_Sequence(string json, int bufferSize, Type type, bool ignoreNullValues)
+        public static void ShouldWorkAtAnyPosition_Sequence(
+            string json,
+            int bufferSize,
+            Type type,
+            bool ignoreNullValues,
+            (int Line, int Column) expectedFailure)
         {
             var readOptions = new JsonSerializerOptions { IgnoreNullValues = ignoreNullValues, };
 
@@ -136,22 +196,36 @@ namespace System.Text.Json.Serialization.Tests
             Assert.NotNull(array);
             Assert.Equal(1, array.Length);
             array[0].Verify();
+            Assert.Equal(default, expectedFailure);
         }
 
         [Theory]
         [MemberData(nameof(TestData), /* enumeratePayloadTweaks: */ true)]
-        public static void InvalidJsonShouldFailAtAnyPosition_Sequence(string json, int bufferSize, Type type, bool ignoreNullValues)
+        public static void InvalidJsonShouldFailAtAnyPosition_Sequence(
+            string json,
+            int bufferSize,
+            Type type,
+            bool ignoreNullValues,
+            (int Line, int Column) expectedFailure)
         {
+            if (expectedFailure == default)
+            {
+                // The tweak didn't find something to tweak in the payload
+                return;
+            }
+
             var readOptions = new JsonSerializerOptions { IgnoreNullValues = ignoreNullValues, };
 
             var chunk = new Chunk(json, bufferSize);
             var sequence = new ReadOnlySequence<byte>(chunk, 0, chunk.Next, chunk.Next.Memory.Length);
 
-            Assert.Throws<JsonException>(() =>
+            JsonException ex = Assert.Throws<JsonException>(() =>
             {
                 var reader = new Utf8JsonReader(sequence);
                 JsonSerializer.Deserialize(ref reader, type, readOptions);
             });
+            Assert.Equal(expectedFailure.Line, ex.LineNumber);
+            Assert.Equal(expectedFailure.Column, ex.BytePositionInLine);
         }
 
         private class Chunk : ReadOnlySequenceSegment<byte>
