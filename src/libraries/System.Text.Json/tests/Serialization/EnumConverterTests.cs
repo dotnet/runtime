@@ -362,11 +362,6 @@ namespace System.Text.Json.Serialization.Tests
             [Fact]
             public void SerilizeDictionaryWhenCacheIsFull()
             {
-                // var options = new JsonSerializerOptions
-                // {
-                //     Converters = { new JsonStringEnumConverter() }
-                // };
-
                 Dictionary<T, int> dictionary;
                 for (int i = 1; i <= 64; i++)
                 {
