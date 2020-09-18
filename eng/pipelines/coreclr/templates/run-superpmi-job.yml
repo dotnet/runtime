@@ -70,25 +70,6 @@ jobs:
       condition: and(succeeded(), eq(variables['Agent.Os'], 'Windows_NT'))
       continueOnError: ${{ parameters.continueOnError }}
 
-    - task: ExtractFiles@1
-      displayName: 'Unzip SuperPmi_Min'
-      inputs:
-        archiveFilePatterns: '**/zipped/superpmi_min.zip'
-        destinationFolder: $(PmiAssembliesDirectory)\Core_Root
-        cleanDestinationFolder: false
-
-    - script: |
-          echo listing files in $(PmiAssembliesDirectory)\Core_Root
-          dir /s /b $(PmiAssembliesDirectory)\Core_Root
-
-    - task: PythonScript@0
-      displayName: Run eng\common\superpmi\superpmi_test.py
-      inputs:
-        scriptSource: 'filePath'
-        scriptPath: $(Build.SourcesDirectory)/eng/common/superpmi/superpmi_test.py
-      env:
-        KUNAL_KEY: $(kunal_key) # secret key
-
     # - script: $(Build.SourcesDirectory)/eng/common/superpmi/superpmi-setup.sh $(IsInternal)$(Interpreter) --framework $(_Framework) --kind ${{ parameters.runKind }} ${{ parameters.extraSetupParameters }}
     #   displayName: SuperPMI Setup (Unix)
     #   condition: and(succeeded(), ne(variables['Agent.Os'], 'Windows_NT'))
@@ -119,16 +100,12 @@ jobs:
       continueOnError: true
       condition: always()
 
-    - script: |
-          echo listing files in $(Build.SourcesDirectory)\artifacts\helixresults
-          dir /s /b $(Build.SourcesDirectory)\artifacts\helixresults
-
     - task: PythonScript@0
-      displayName: Run superpmi.py upload
+      displayName: Upload SuperPMI collection
       inputs:
         scriptSource: 'filePath'
         scriptPath: $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py
-        arguments: upload -arch x64 -mch_files $(Build.SourcesDirectory)\artifacts\helixresults -core_root $(PmiAssembliesDirectory)\Core_Root\superpmi_min
+        arguments: upload -arch $(archType) -build_type $(buildConfig) -mch_files $(Build.SourcesDirectory)\artifacts\helixresults -core_root $(Build.SourcesDirectory)\artifacts\tests\coreclr\${{ parameters.osGroup }}.${{ parameters.archType }}.Checked\Tests\Core_Root
       env:
         CLRJIT_AZ_KEY: $(clrjit_key1) # secret key
 # python superpmi.py upload -arch x64 -core_root E:\temp\power\core_root\superpmi_min -mch_files E:\temp\power\_2

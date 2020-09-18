@@ -7,20 +7,11 @@
     <OutputMchPath>%HELIX_WORKITEM_UPLOAD_ROOT%</OutputMchPath>
     <JitUtilsDirectory>%HELIX_CORRELATION_PAYLOAD%\jitutils\bin</JitUtilsDirectory>
     <HelixResultsDestinationDir>$(BUILD_SOURCESDIRECTORY)\artifacts\helixresults</HelixResultsDestinationDir>
-    <SuperPmiMinFolder>$(PmiAssembliesDirectory)\Core_Root\superpmi_min</SuperPmiMinFolder>
-
-    <!-- <CoreRun>%HELIX_CORRELATION_PAYLOAD%\PmiAssembliesDirectory\CoreRun.exe</CoreRun> -->
-    <WorkItemCommand>$(SuperPMIDirectory)\superpmi.py collect -pmi_location $(SuperPmiMinFolder)\pmi.dll --pmi -core_root $(SuperPmiMinFolder)</WorkItemCommand>
-
-    <!-- <HelixPreCommands>$(HelixPreCommands);call %HELIX_CORRELATION_PAYLOAD%\jitutils\bootstrap.cmd;copy %HELIX_CORRELATION_PAYLOAD%\jitutils\bin\pmi.dll $(CoreRoot)</HelixPreCommands> -->
-    <!-- <ArtifactsDirectory>%HELIX_CORRELATION_PAYLOAD%\artifacts\BenchmarkDotNet.Artifacts</ArtifactsDirectory>
-    <DotnetExe>%HELIX_CORRELATION_PAYLOAD%\performance\tools\dotnet\$(Architecture)\dotnet.exe</DotnetExe> -->
-    <Percent>%25%25</Percent>
-    <XMLResults>%HELIX_WORKITEM_ROOT%\testResults.xml</XMLResults>
-    
+    <WorkItemCommand>$(SuperPMIDirectory)\superpmi.py collect -pmi_location $(JitUtilsDirectory)\pmi.dll --pmi -core_root $(PmiAssembliesDirectory)\Core_Root</WorkItemCommand>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(WorkItemCommand)' != ''">
+    <!-- TODO: Pass Buildtype as parameter -->
     <WorkItemCommand>$(Python) $(WorkItemCommand) -arch $(Architecture) -build_type Checked </WorkItemCommand>
   </PropertyGroup>
 
@@ -39,16 +30,15 @@
     <PartitionCount>1</PartitionCount>
   </PropertyGroup>
   <ItemGroup>
-    <!-- TODO: To save time, just do SuperPMI on System.Xml.dll -->
-    <Partition Include="$(BuildConfig).Libraries" PmiAssemblies="System.Xml.dll" OutputMchName="SuperPmi_Min" />
-    <!-- <Partition Include="$(BuildConfig).Tests" PmiAssemblies="Tests" OutputMchName="Tests" /> -->
+    <Partition Include="$(BuildConfig).Libraries" PmiAssemblies="$(PmiAssembliesDirectory)\Core_Root" OutputMchName="Libraries" />
+    <!-- <Partition Include="$(BuildConfig).Tests" PmiAssemblies="$(PmiAssembliesDirectory)\Tests" OutputMchName="Tests" /> -->
   </ItemGroup>
 
   <ItemGroup>
     <HelixWorkItem Include="@(Partition)">
     <!-- TODO: Here too make payload folder different for workitem.Name -->
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
-      <Command>$(WorkItemCommand) -pmi_assemblies $(SuperPmiMinFolder)\%(HelixWorkItem.PmiAssemblies) -output_mch_path $(OutputMchPath)\%(HelixWorkItem.OutputMchName).$(AGENT_OS).$(Architecture).Checked.mch</Command>
+      <Command>$(WorkItemCommand) -pmi_assemblies %(HelixWorkItem.PmiAssemblies) -output_mch_path $(OutputMchPath)\%(HelixWorkItem.OutputMchName).$(AGENT_OS).$(Architecture).Checked.mch</Command>
       <Timeout>$(WorkItemTimeout)</Timeout>
       <DownloadFilesFromResults>%(HelixWorkItem.OutputMchName).$(AGENT_OS).$(Architecture).Checked.mch;%(HelixWorkItem.OutputMchName).$(AGENT_OS).$(Architecture).Checked.mch.mct</DownloadFilesFromResults>
     </HelixWorkItem>

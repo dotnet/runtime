@@ -1,28 +1,22 @@
+# Setups up machine to send payload to Helix machine to do superpmi collection
+#
+# 1. Copies CORE_ROOT in Payload\PmiAssembliesDirectory\Core_Root directory.
+# 2. Copies Test binaries in Payload\PmiAssembliesDirectory\Tests directory.
+# 3. Copies Sources\src\coreclr\scripts in Payload\superpmi directory.
+# 4. Clones dotnet/jitutils repo in Payload/jitutils directory.
+# 5. Build jitutils
+
 Param(
     [string] $SourceDirectory=$env:BUILD_SOURCESDIRECTORY,
     [string] $CoreRootDirectory,
     [string] $ManagedTestArtifactDirectory,
-    [string] $BaselineCoreRootDirectory,
     [string] $Architecture="x64",
-    [string] $Framework="net5.0",
-    [string] $CompilationMode="Tiered",
-    [string] $Repository=$env:BUILD_REPOSITORY_NAME,
-    [string] $Branch=$env:BUILD_SOURCEBRANCH,
-    [string] $CommitSha=$env:BUILD_SOURCEVERSION,
-    [string] $BuildNumber=$env:BUILD_BUILDNUMBER,
-    [string] $RunCategories="Libraries Runtime",
-    [string] $Csproj="src\benchmarks\micro\MicroBenchmarks.csproj",
-    [string] $Configurations="CompilationMode=$CompilationMode RunKind=$Kind"
+    [string] $Framework="net5.0"
 )
-
-# 1. clone the repo
-# 2. do setup on dotnet/runtime
-# 3. copy 
 
 Write-Host "CORE_ROOT is" $CoreRootDirectory
 Write-Host "Test artifacts is " $ManagedTestArtifactDirectory
 
-$RunFromPerformanceRepo = ($Repository -eq "dotnet/jitutils") -or ($Repository -eq "dotnet-jitutils")
 $PayloadDirectory = (Join-Path $SourceDirectory "Payload")
 $SuperPmiDirectory = (Join-Path $PayloadDirectory "superpmi")
 $JitUtilsDirectory = (Join-Path $PayloadDirectory "jitutils")
@@ -32,37 +26,22 @@ $Queue = "Windows.10.Amd64.19H1.Tiger.Perf"
 $HelixSourcePrefix = "official"
 $Creator = ""
 
+# Prepare payloads
 robocopy $SourceDirectory\src\coreclr\scripts $SuperPmiDirectory /E /XD $PayloadDirectory $SourceDirectory\artifacts $SourceDirectory\.git
-
-Write-Host "Downloading CoreClr_Build"
-$superpmi_url = "https://github.com/kunalspathak/runtime/raw/master/superpmi_min.zip"
-
-$zipPath = "zipped"
-New-Item -Type dir $PmiAssembliesDirectory -Force
-pushd $PmiAssembliesDirectory
-New-Item -Type dir $zipPath -Force
-
-$tmp = New-TemporaryFile | Rename-Item -NewName { $_ -replace 'tmp$', 'zip' } -PassThru
-Write-Host "Temp location is $tmp"
-
-$start_time = Get-Date
-(New-Object System.Net.WebClient).DownloadFile($superpmi_url, $tmp)
-Copy-Item $tmp -Destination $zipPath\superpmi_min.zip
-Write-Host "Time taken: $((Get-Date).Subtract($start_time).Seconds) second(s)"
-$tmp | Remove-Item
-
-# robocopy $CoreRootDirectory $PmiAssembliesDirectory\Core_Root /E
+robocopy $CoreRootDirectory $PmiAssembliesDirectory\Core_Root /E
 # robocopy $ManagedTestArtifactDirectory $PmiAssembliesDirectory\Tests /E /XD $CoreRootDirectory
 
 New-Item -Path $WorkItemDirectory -Name "placeholder.txt" -ItemType "file" -Value "Placeholder file." -Force
 
-# Write-Host "Cloning into JitUtilsDirectory"
+Write-Host "Cloning and building JitUtilsDirectory"
 
-# git clone --branch master --depth 1 --quiet https://github.com/dotnet/jitutils $JitUtilsDirectory
-# pushd $JitUtilsDirectory
-# $env:PATH = "$SourceDirectory\.dotnet;$env:PATH"
-# Write-Host "dotnet PATH: $env:PATH"
-# .\bootstrap.cmd
+git clone --branch master --depth 1 --quiet https://github.com/dotnet/jitutils $JitUtilsDirectory
+pushd $JitUtilsDirectory
+
+#TODO: Try using UseDotNet so we don't have to do this
+$env:PATH = "$SourceDirectory\.dotnet;$env:PATH"
+Write-Host "dotnet PATH: $env:PATH"
+.\bootstrap.cmd
 
 # Set variables that we will need to have in future steps
 $ci = $true
