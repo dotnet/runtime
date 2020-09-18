@@ -557,22 +557,7 @@ namespace System.Text.RegularExpressions
                     }
                     else
                     {
-                        char lower = culture.TextInfo.ToLower(range.First);
-                        char upper = culture.TextInfo.ToLower(range.Last);
-                        if (range.Last - range.First == upper - lower)
-                        {
-                            AddLowercaseRange(range.First, range.Last);
-                        }
-                        else
-                        {
-                            // Bug fix: Unicode `Symbol`s sometimes exist in the middle of character ranges. char.ToLower(Symbol) returns Symbol. In these cases, we cannot use an offset to find the lowercase chars. For ex: https://github.com/dotnet/runtime/issues/36149
-                            TextInfo? cultureTextInfo = culture.TextInfo;
-                            for (int j = range.First; j <= range.Last; j++)
-                            {
-                                char lowerInRange = cultureTextInfo.ToLower((char)j);
-                                AddRange(lowerInRange, lowerInRange);
-                            }
-                        }
+                        AddLowercaseRange(range.First, range.Last);
                     }
                 }
             }
@@ -586,7 +571,7 @@ namespace System.Text.RegularExpressions
         {
             int i = 0;
 
-            for (int iMax = s_lcTable.Length; i < iMax; )
+            for (int iMax = s_lcTable.Length; i < iMax;)
             {
                 int iMid = (i + iMax) >> 1;
                 if (s_lcTable[iMid].ChMax < chMin)
