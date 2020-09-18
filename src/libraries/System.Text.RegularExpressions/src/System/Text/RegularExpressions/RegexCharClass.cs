@@ -414,6 +414,24 @@ namespace System.Text.RegularExpressions
             int len = s_propTable.Length;
             for (int i = 0; i < len - 1; i++)
                 Debug.Assert(string.Compare(s_propTable[i][0], s_propTable[i + 1][0], StringComparison.Ordinal) < 0, $"RegexCharClass s_propTable is out of order at ({s_propTable[i][0]}, {s_propTable[i + 1][0]})");
+
+            CultureInfo culture = CultureInfo.InvariantCulture;
+            for (int k = 0; k < s_lcTable.Length; k++)
+            {
+                LowerCaseMapping loc = s_lcTable[k];
+                if (loc.LcOp == 1)
+                {
+                    // Validate only the LowercaseAdd cases
+                    int offset = loc.Data;
+                    for (int l = loc.ChMin; l <= loc.ChMax; l++)
+                    {
+                        if (culture.TextInfo.ToLower((char)l) != (char)(l + offset))
+                        {
+                            Debug.Assert(false, $"The Unicode character range at index {k} in s_lcTable contains the character {(char)l} (decimal value: {l}) whose lowercase value cannot be obtained by using the specified offset.");
+                        }
+                    }
+                }
+            }
         }
 #endif
 
