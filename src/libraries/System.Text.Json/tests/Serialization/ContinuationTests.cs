@@ -24,7 +24,9 @@ namespace System.Text.Json.Serialization.Tests
             => new (ITestObject, INestedObject)[]
             {
                 (new TestClass<NestedClass>(), new NestedClass()),
+                (new TestClass<NestedValueType>(), new NestedValueType()),
                 (new TestValueType<NestedClass>(), new NestedClass()),
+                (new TestValueType<NestedValueType>(), new NestedValueType()),
                 (new TestClass<NestedClassWithParamCtor>(), new NestedClassWithParamCtor(null)),
             };
 
@@ -216,7 +218,8 @@ namespace System.Text.Json.Serialization.Tests
                 G = true;
                 H = null;
                 I = new int[] { 42, 17 };
-                (J = (TNested)nested).Initialize();
+                nested.Initialize();
+                J = (TNested)nested;
             }
 
             void ITestObject.Verify()
@@ -264,7 +267,8 @@ namespace System.Text.Json.Serialization.Tests
                 G = true;
                 H = null;
                 I = new int[] { 42, 17 };
-                (J = (TNested)nested).Initialize();
+                nested.Initialize();
+                J = (TNested)nested;
             }
 
             void ITestObject.Verify()
@@ -284,6 +288,24 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         private class NestedClass : INestedObject
+        {
+            public string A { get; set; }
+            public int B { get; set; }
+
+            void INestedObject.Initialize()
+            {
+                A = null;
+                B = 7;
+            }
+
+            void INestedObject.Verify()
+            {
+                Assert.Null(A);
+                Assert.Equal(7, B);
+            }
+        }
+
+        private struct NestedValueType : INestedObject
         {
             public string A { get; set; }
             public int B { get; set; }
