@@ -1816,6 +1816,34 @@ namespace DebuggerTests
             });
 
         [Fact]
+        public async Task StepOverAsyncMethod()
+        {
+            var insp = new Inspector();
+            //Collect events
+            var scripts = SubscribeToScripts(insp);
+
+            await Ready();
+            await insp.Ready(async (cli, token) =>
+            {
+                ctx = new DebugTestContext(cli, insp, token, scripts);
+
+                var bp = await SetBreakpointInMethod("debugger-test.dll", "AsyncStepClass", "TestAsyncStepOut2", 2);
+                System.Console.WriteLine(bp);
+                await EvaluateAndCheck(
+                    "window.setTimeout(function() { invoke_static_method_async('[debugger-test] AsyncStepClass:TestAsyncStepOut'); }, 1);",
+                    "dotnet://debugger-test.dll/debugger-async-step.cs", 19, 8,
+                    "MoveNext");
+
+                await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-async-step.cs", 21, 8, "MoveNext");
+
+                await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-async-step.cs", 22, 4, "MoveNext");
+
+                await StepAndCheck(StepKind.Over, null, 0, 0, "get_IsCompletedSuccessfully"); //not check the line number and the file name because this can be changed
+
+            });
+        }
+
+        [Fact]
         public async Task PreviousFrameForAReflectedCall() => await CheckInspectLocalsAtBreakpointSite(
              "DebuggerTests.GetPropertiesTests.CloneableStruct", "SimpleStaticMethod", 1, "SimpleStaticMethod",
              "window.setTimeout(function() { invoke_static_method('[debugger-test] DebuggerTests.GetPropertiesTests.TestWithReflection:run'); })",

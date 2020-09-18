@@ -148,13 +148,17 @@ collect_frames (MonoStackFrameInfo *info, MonoContext *ctx, gpointer data)
 	if (!mono_find_prev_seq_point_for_native_offset (mono_get_root_domain (), method, info->native_offset, NULL, &sp))
 		DEBUG_PRINTF (2, "collect_frames: Failed to lookup sequence point. method: %s, native_offset: %d \n", method->name, info->native_offset);
 
-	DbgEngineStackFrame *frame = g_new0 (DbgEngineStackFrame, 1);
+ 
+	StackFrame *frame = g_new0 (StackFrame, 1);
+	frame->de.ji = info->ji;
+	frame->de.domain = info->domain;
+	frame->de.method = method;
+	frame->de.native_offset = info->native_offset;
 
-	frame->ji = info->ji;
-	frame->domain = info->domain;
-	frame->method = method;
-	frame->native_offset = info->native_offset;
-
+	frame->il_offset = info->il_offset;
+	frame->interp_frame = info->interp_frame;
+	frame->frame_addr = info->frame_addr;
+	
 	g_ptr_array_add (frames, frame);
 
 	return FALSE;
@@ -235,11 +239,56 @@ ensure_runtime_is_suspended (void)
 	return DE_ERR_NONE;
 }
 
-static int
-get_this_async_id (DbgEngineStackFrame *f)
+static int 
+get_object_id (MonoObject *obj) 
 {
-	g_error ("get_this_async_id");
-	return 0;
+	ObjRef *ref;
+	if (!obj)
+		return 0;
+
+	ref = (ObjRef *)g_hash_table_lookup (obj_to_objref, GINT_TO_POINTER (~((gsize)obj)));
+	if (ref)
+		return ref->id;
+	ref = g_new0 (ObjRef, 1);
+	ref->id = mono_atomic_inc_i32 (&objref_id);
+	ref->handle = mono_gchandle_new_weakref_internal (obj, FALSE);
+	g_hash_table_insert (objrefs, GINT_TO_POINTER (ref->id), ref);
+	g_hash_table_insert (obj_to_objref, GINT_TO_POINTER (~((gsize)obj)), ref);
+	return ref->id;
+}
+
+
+static int
+get_this_async_id (DbgEngineStackFrame *frame)
+{
+	MonoClassField *builder_field;
+	gpointer builder;
+	MonoMethod *method;
+	MonoObject *ex;
+	ERROR_DECL (error);
+	MonoObject *obj;
+	
+	/*
+	 * FRAME points to a method in a state machine class/struct.
+	 * Call the ObjectIdForDebugger method of the associated method builder type.
+	 */
+	builder = get_async_method_builder (frame);
+	if (!builder)
+		return 0;
+
+	builder_field = mono_class_get_field_from_name_full (get_class_to_get_builder_field(frame), "<>t__builder", NULL);
+	if (!builder_field)
+		return 0;
+
+	method = get_object_id_for_debugger_method (mono_class_from_mono_type_internal (builder_field->type));
+	if (!method) {
+		return 0;
+	}
+
+	obj = mono_runtime_try_invoke (method, builder, NULL, &ex, error);
+	mono_error_assert_ok (error);
+
+	return get_object_id (obj);
 }
 
 typedef struct {
@@ -436,24 +485,6 @@ mono_wasm_setup_single_step (int kind)
 		mono_de_cancel_all_ss ();
 	}
 	return isBPOnNativeCode;
-}
-
-static int 
-get_object_id(MonoObject *obj) 
-{
-	ObjRef *ref;
-	if (!obj)
-		return 0;
-
-	ref = (ObjRef *)g_hash_table_lookup (obj_to_objref, GINT_TO_POINTER (~((gsize)obj)));
-	if (ref)
-		return ref->id;
-	ref = g_new0 (ObjRef, 1);
-	ref->id = mono_atomic_inc_i32 (&objref_id);
-	ref->handle = mono_gchandle_new_weakref_internal (obj, FALSE);
-	g_hash_table_insert (objrefs, GINT_TO_POINTER (ref->id), ref);
-	g_hash_table_insert (obj_to_objref, GINT_TO_POINTER (~((gsize)obj)), ref);
-	return ref->id;
 }
 
 static void
