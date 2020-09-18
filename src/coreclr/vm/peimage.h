@@ -276,7 +276,7 @@ private:
     LONG        m_refCount;
 
     BundleFileLocation m_bundleFileLocation; // If this image is located within a single-file bundle, 
-                                             // the location within the bundle. If m_bundleFileLocation is vaild, 
+                                             // the location within the bundle. If m_bundleFileLocation is valid,
                                              // it takes precedence over m_path for loading.
 
     // This variable will have the data of module name.
