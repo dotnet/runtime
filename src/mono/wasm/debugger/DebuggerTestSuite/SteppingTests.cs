@@ -805,8 +805,9 @@ namespace DebuggerTests
             });
         }
 
-        [Fact]
-        public async Task StepOverAsyncMethod()
+        // [Fact]
+        //https://github.com/dotnet/runtime/issues/42421
+        public async Task BreakAfterAwaitThenStepOverTillBackToCaller()
         {
             var insp = new Inspector();
             //Collect events
@@ -817,19 +818,187 @@ namespace DebuggerTests
             {
                 ctx = new DebugTestContext(cli, insp, token, scripts);
 
-                var bp = await SetBreakpointInMethod("debugger-test.dll", "AsyncStepClass", "TestAsyncStepOut2", 2);
-                System.Console.WriteLine(bp);
+                var bp = await SetBreakpointInMethod("debugger-test.dll", "DebuggerTests.AsyncStepClass", "TestAsyncStepOut2", 2);
                 await EvaluateAndCheck(
-                    "window.setTimeout(function() { invoke_static_method_async('[debugger-test] AsyncStepClass:TestAsyncStepOut'); }, 1);",
-                    "dotnet://debugger-test.dll/debugger-async-step.cs", 19, 8,
+                    "window.setTimeout(function() { invoke_static_method_async('[debugger-test] DebuggerTests.AsyncStepClass:TestAsyncStepOut'); }, 1);",
+                    "dotnet://debugger-test.dll/debugger-async-step.cs", 21, 12,
                     "MoveNext");
 
-                await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-async-step.cs", 21, 8, "MoveNext");
+                await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-async-step.cs", 23, 12, "MoveNext");
 
-                await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-async-step.cs", 22, 4, "MoveNext");
+                await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-async-step.cs", 24, 8, "MoveNext");
 
-                await StepAndCheck(StepKind.Over, null, 0, 0, "get_IsCompletedSuccessfully"); //not check the line number and the file name because this can be changed
+                await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-async-step.cs", 15, 12, "MoveNext");
+            });
+        }
 
+        // [Fact]
+        //[ActiveIssue("https://github.com/dotnet/runtime/issues/42421")]
+        public async Task StepOutOfAsyncMethod()
+        {
+            var insp = new Inspector();
+            //Collect events
+            var scripts = SubscribeToScripts(insp);
+
+            await Ready();
+            await insp.Ready(async (cli, token) =>
+            {
+                ctx = new DebugTestContext(cli, insp, token, scripts);
+                string source_file = "dotnet://debugger-test.dll/debugger-async-step.cs";
+
+                await SetBreakpointInMethod("debugger-test.dll", "DebuggerTests.AsyncStepClass", "TestAsyncStepOut2", 2);
+                await EvaluateAndCheck(
+                    "window.setTimeout(function() { invoke_static_method_async('[debugger-test] DebuggerTests.AsyncStepClass:TestAsyncStepOut'); }, 1);",
+                    "dotnet://debugger-test.dll/debugger-async-step.cs", 21, 12,
+                    "MoveNext");
+
+                await StepAndCheck(StepKind.Out, source_file, 15, 4, "TestAsyncStepOut");
+            });
+        }
+
+        [Fact]
+        public async Task ResumeOutOfAsyncMethodToAsyncCallerWithBreakpoint()
+        {
+            var insp = new Inspector();
+            //Collect events
+            var scripts = SubscribeToScripts(insp);
+
+            await Ready();
+            await insp.Ready(async (cli, token) =>
+            {
+                ctx = new DebugTestContext(cli, insp, token, scripts);
+                string source_file = "dotnet://debugger-test.dll/debugger-async-step.cs";
+
+                await SetBreakpointInMethod("debugger-test.dll", "DebuggerTests.AsyncStepClass", "TestAsyncStepOut2", 2);
+                await EvaluateAndCheck(
+                    "window.setTimeout(function() { invoke_static_method_async('[debugger-test] DebuggerTests.AsyncStepClass:TestAsyncStepOut'); }, 1);",
+                    "dotnet://debugger-test.dll/debugger-async-step.cs", 21, 12,
+                    "MoveNext");
+
+                await SetBreakpointInMethod("debugger-test.dll", "DebuggerTests.AsyncStepClass", "TestAsyncStepOut", 2);
+                await SendCommandAndCheck(null, "Debugger.resume", source_file, 16, 8, "MoveNext");
+            });
+        }
+
+        [Fact]
+        public async Task StepOutOfNonAsyncMethod()
+        {
+            var insp = new Inspector();
+            //Collect events
+            var scripts = SubscribeToScripts(insp);
+
+            await Ready();
+            await insp.Ready(async (cli, token) =>
+            {
+                ctx = new DebugTestContext(cli, insp, token, scripts);
+                string source_file = "dotnet://debugger-test.dll/debugger-async-step.cs";
+
+                await SetBreakpointInMethod("debugger-test.dll", "DebuggerTests.AsyncStepClass", "OtherMethod0", 1);
+                await EvaluateAndCheck(
+                    "window.setTimeout(function() { invoke_static_method_async('[debugger-test] DebuggerTests.AsyncStepClass:SimpleMethod'); }, 1);",
+                    source_file, -1, -1,
+                    "OtherMethod0");
+
+                await StepAndCheck(StepKind.Out, source_file, 29, 12, "SimpleMethod");
+            });
+        }
+
+        // [Fact]
+        // [ActiveIssue("https://github.com/dotnet/runtime/issues/42424")]
+        public async Task BreakOnAwaitThenStepOverToNextAwaitCall()
+        {
+            var insp = new Inspector();
+            //Collect events
+            var scripts = SubscribeToScripts(insp);
+
+            await Ready();
+            await insp.Ready(async (cli, token) =>
+            {
+                ctx = new DebugTestContext(cli, insp, token, scripts);
+                string source_file = "dotnet://debugger-test.dll/debugger-async-step.cs";
+
+                await SetBreakpointInMethod("debugger-test.dll", "DebuggerTests.AsyncStepClass", "MethodWithTwoAwaitsAsync", 2);
+                await EvaluateAndCheck(
+                    "window.setTimeout(function() { invoke_static_method_async('[debugger-test] DebuggerTests.AsyncStepClass:StepOverTestAsync'); }, 1);",
+                    "dotnet://debugger-test.dll/debugger-async-step.cs", 53, 12,
+                    "MoveNext");
+
+                await StepAndCheck(StepKind.Over, source_file, 54, 12, "MoveNext");
+            });
+        }
+
+        // [Fact]
+        // [ActiveIssue("https://github.com/dotnet/runtime/issues/42424")]
+        public async Task BreakOnAwaitThenStepOverToNextLine()
+        {
+            var insp = new Inspector();
+            //Collect events
+            var scripts = SubscribeToScripts(insp);
+
+            await Ready();
+            await insp.Ready(async (cli, token) =>
+            {
+                ctx = new DebugTestContext(cli, insp, token, scripts);
+                string source_file = "dotnet://debugger-test.dll/debugger-async-step.cs";
+
+                await SetBreakpointInMethod("debugger-test.dll", "DebuggerTests.AsyncStepClass", "StepOverTestAsync", 1);
+                await EvaluateAndCheck(
+                    "window.setTimeout(function() { invoke_static_method_async('[debugger-test] DebuggerTests.AsyncStepClass:StepOverTestAsync'); }, 1);",
+                    "dotnet://debugger-test.dll/debugger-async-step.cs", 46, 12,
+                    "MoveNext");
+
+                // BUG: chrome: not able to show any bp line indicator
+                await StepAndCheck(StepKind.Over, source_file, 47, 12, "MoveNext");
+            });
+        }
+
+        [Fact]
+        public async Task BreakOnAwaitThenResumeToNextBreakpoint()
+        {
+            var insp = new Inspector();
+            //Collect events
+            var scripts = SubscribeToScripts(insp);
+
+            await Ready();
+            await insp.Ready(async (cli, token) =>
+            {
+                ctx = new DebugTestContext(cli, insp, token, scripts);
+                string source_file = "dotnet://debugger-test.dll/debugger-async-step.cs";
+
+                await SetBreakpointInMethod("debugger-test.dll", "DebuggerTests.AsyncStepClass", "StepOverTestAsync", 1);
+                await SetBreakpointInMethod("debugger-test.dll", "DebuggerTests.AsyncStepClass", "StepOverTestAsync", 3);
+
+                await EvaluateAndCheck(
+                    "window.setTimeout(function() { invoke_static_method_async('[debugger-test] DebuggerTests.AsyncStepClass:StepOverTestAsync'); }, 1);",
+                    "dotnet://debugger-test.dll/debugger-async-step.cs", 46, 12,
+                    "MoveNext");
+
+                await StepAndCheck(StepKind.Resume, source_file, 48, 8, "MoveNext");
+            });
+        }
+
+        [Fact]
+        public async Task BreakOnAwaitThenResumeToNextBreakpointAfterSecondAwaitInSameMethod()
+        {
+            var insp = new Inspector();
+            //Collect events
+            var scripts = SubscribeToScripts(insp);
+
+            await Ready();
+            await insp.Ready(async (cli, token) =>
+            {
+                ctx = new DebugTestContext(cli, insp, token, scripts);
+                string source_file = "dotnet://debugger-test.dll/debugger-async-step.cs";
+
+                await SetBreakpointInMethod("debugger-test.dll", "DebuggerTests.AsyncStepClass", "MethodWithTwoAwaitsAsync", 1);
+                await SetBreakpointInMethod("debugger-test.dll", "DebuggerTests.AsyncStepClass", "MethodWithTwoAwaitsAsync", 5);
+
+                await EvaluateAndCheck(
+                    "window.setTimeout(function() { invoke_static_method_async('[debugger-test] DebuggerTests.AsyncStepClass:StepOverTestAsync'); }, 1);",
+                    "dotnet://debugger-test.dll/debugger-async-step.cs", 52, 12,
+                    "MoveNext");
+
+                await StepAndCheck(StepKind.Resume, source_file, 56, 12, "MoveNext");
             });
         }
     }
