@@ -204,7 +204,7 @@ void extractor_t::extract_new(reader_t& reader)
     begin();
     for (const file_entry_t& entry : m_manifest.files) 
     {
-        if (entry.needs_extraction())
+        if (m_manifest.is_netcoreapp3_compat_mode() || entry.needs_extraction())
         {
             extract(entry, reader);
         }

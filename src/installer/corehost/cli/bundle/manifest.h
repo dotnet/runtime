@@ -6,6 +6,7 @@
 
 #include <list>
 #include "file_entry.h"
+#include "header.h"
 
 namespace bundle
 {
@@ -16,16 +17,28 @@ namespace bundle
     {
     public:
         manifest_t()
-            : m_need_extraction(false) {}
+            : m_files_need_extraction(false)
+            , m_netcoreapp3_compat_mode(false)
+        {
+        }
 
         std::vector<file_entry_t> files;
 
-        static manifest_t read(reader_t &reader, int32_t num_files);
+        static manifest_t read(reader_t &reader, header_t &header);
 
-        bool files_need_extraction() { return m_need_extraction; }
+        bool files_need_extraction() const
+        {
+            return m_files_need_extraction;
+        }
+
+        bool is_netcoreapp3_compat_mode() const
+        {
+            return m_netcoreapp3_compat_mode;
+        }
 
     private:
-        bool m_need_extraction;
+        bool m_files_need_extraction;
+        bool m_netcoreapp3_compat_mode;
     };
 }
 #endif // __MANIFEST_H__
