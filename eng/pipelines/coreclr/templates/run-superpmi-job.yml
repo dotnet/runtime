@@ -150,6 +150,7 @@ jobs:
     - script: |
           echo listing files in $(PmiAssembliesDirectory)
           dir /s /b $(PmiAssembliesDirectory)
+          dir /s /b $(Build.SourcesDirectory)\artifacts
 
     - task: PythonScript@0
       displayName: Run superpmi.py upload
