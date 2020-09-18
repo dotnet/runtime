@@ -137,7 +137,7 @@ replay_mch_files_help = """\
 MCH files, or directories containing MCH files, to use for replay. For each directory passed,
 all recursively found MCH files in that directory root will be used. Files may either be a path
 on disk or a URI to a MCH file to download. Use these MCH files instead of a collection from
-the Azure Storage MCH file store.
+the Azure Storage MCH file store. UNC paths will be downloaded and cached locally.
 """
 
 filter_help = """\
@@ -267,6 +267,7 @@ download_parser.add_argument("-filter", nargs='+', help=filter_help)
 download_parser.add_argument("-jit_ee_version", help=jit_ee_version_help)
 download_parser.add_argument("--skip_cleanup", action="store_true", help=skip_cleanup_help)
 download_parser.add_argument("--force_download", action="store_true", help=force_download_help)
+download_parser.add_argument("-mch_files", metavar="MCH_FILE", nargs='+', help=replay_mch_files_help)
 
 # subparser for list-collections
 list_collections_parser = subparsers.add_parser("list-collections", description=list_collections_description, parents=[core_root_parser])
@@ -1761,6 +1762,59 @@ def list_superpmi_collections_container_via_rest_api(coreclr_args, filter=lambda
 
     return urls
 
+def process_mch_files_arg(coreclr_args):
+    """ Process the -mch_files argument. If the argument is empty, then download files from Azure Storage.
+        If the argument is non-empty, check it for UNC paths and download/cache those files, replacing
+        them with a reference to the newly cached local paths (this is on Windows only).
+
+    Args:
+        coreclr_args (CoreclrArguments): parsed args
+
+    Returns:
+        nothing
+
+        coreclr_args.mch_files is updated
+
+    """
+
+    if coreclr_args.mch_files is None:
+        coreclr_args.mch_files = download_mch(coreclr_args, include_baseline_jit=True)
+        return
+
+    # On Windows only, see if any of the mch_files are UNC paths (i.e., "\\server\share\...").
+    # If so, download and cache all the files found there to our usual local cache location, to avoid future network access.
+    if coreclr_args.host_os == "Windows_NT":
+        local_mch_files = []
+        for item in coreclr_args.mch_files:
+            if item.startswith("\\\\"):
+                # Special case: if the user specifies a .mch file, we'll also look for and cache a .mch.mct file next to it, if one exists.
+                # This happens naturally if a directory is passed and we search for all .mch and .mct files in that directory.
+                mch_file = os.path.abspath(item)
+                if os.path.isfile(mch_file) and mch_file.endswith(".mch"):
+                    files = [ mch_file ]
+                    mct_file = mch_file + ".mct"
+                    if os.path.isfile(mct_file):
+                        files.append(mct_file)
+                else:
+                    files = get_files_from_path(mch_file, matchFunc=lambda path: any(path.endswith(extension) for extension in [".mch", ".mct"]))
+
+                if len(files) != 0:
+                    default_mch_root_dir = os.path.join(coreclr_args.spmi_location, "mch")
+                    default_mch_dir = os.path.join(default_mch_root_dir, "{}.{}.{}".format(coreclr_args.jit_ee_version, coreclr_args.host_os, coreclr_args.arch))
+                    if not os.path.isdir(default_mch_dir):
+                        os.makedirs(default_mch_dir)
+
+                    for file in files:
+                        # Download file to cache, and report that as the file to use.
+                        cache_file = os.path.join(default_mch_dir, os.path.basename(file))
+                        print("Cache {} => {}".format(file, cache_file))
+                        local_mch_file = shutil.copy2(file, cache_file)
+                        local_mch_files.append(local_mch_file)
+            else:
+                local_mch_files.append(item)
+        coreclr_args.mch_files = local_mch_files
+
+
 def download_mch(coreclr_args, include_baseline_jit=False):
     """ Download the mch files. This can be called to re-download files and
         overwrite them in the target location.
@@ -2064,11 +2118,6 @@ def setup_args(args):
     def setup_spmi_location_arg(spmi_location):
         return os.path.abspath(os.path.join(coreclr_args.artifacts_location, "spmi")) if spmi_location is None else spmi_location
 
-    def setup_replay_mch_files_arg(mch_files):
-        if mch_files is not None:
-            return mch_files
-        return download_mch(coreclr_args, include_baseline_jit=True)
-
     def setup_jit_ee_version_arg(jit_ee_version):
         if jit_ee_version is not None:
             # The user passed a specific jit_ee_version on the command-line, so use that
@@ -2171,12 +2220,10 @@ def setup_args(args):
                             lambda unused: True,
                             "Unable to set filter.")
 
-        # mch_files depends on jit_ee_version
         coreclr_args.verify(args,
                             "mch_files",
                             lambda unused: True,
-                            "Unable to set mch_files",
-                            modify_arg=lambda arg: setup_replay_mch_files_arg(arg))
+                            "Unable to set mch_files")
 
     if coreclr_args.mode == "collect":
 
@@ -2430,11 +2477,6 @@ def setup_args(args):
                             modify_arg=lambda arg: os.environ["CLRJIT_AZ_KEY"] if arg is None and "CLRJIT_AZ_KEY" in os.environ else arg)
 
         coreclr_args.verify(args,
-                            "mch_files",
-                            lambda unused: True,
-                            "Unable to set mch_files")
-
-        coreclr_args.verify(args,
                             "jit_location",
                             lambda unused: True,
                             "Unable to set jit_location.")
@@ -2444,6 +2486,11 @@ def setup_args(args):
                             lambda unused: True,
                             "Invalid JIT-EE Version.",
                             modify_arg=lambda arg: setup_jit_ee_version_arg(arg))
+
+        coreclr_args.verify(args,
+                            "mch_files",
+                            lambda unused: True,
+                            "Unable to set mch_files")
 
     elif coreclr_args.mode == "download":
 
@@ -2468,6 +2515,11 @@ def setup_args(args):
                             "filter",
                             lambda unused: True,
                             "Unable to set filter.")
+
+        coreclr_args.verify(args,
+                            "mch_files",
+                            lambda unused: True,
+                            "Unable to set mch_files")
 
     elif coreclr_args.mode == "list-collections":
 
@@ -2545,6 +2597,7 @@ def main(args):
     elif coreclr_args.mode == "replay":
         # Start a new SuperPMI Replay
 
+        process_mch_files_arg(coreclr_args)
         mch_files = get_mch_files_for_replay(coreclr_args)
         if mch_files is None:
             return 1
@@ -2578,6 +2631,7 @@ def main(args):
     elif coreclr_args.mode == "asmdiffs":
         # Start a new SuperPMI Replay with AsmDiffs
 
+        process_mch_files_arg(coreclr_args)
         mch_files = get_mch_files_for_replay(coreclr_args)
         if mch_files is None:
             return 1
@@ -2634,7 +2688,8 @@ def main(args):
         print("------------------------------------------------------------")
         print("Start time: {}".format(begin_time.strftime("%H:%M:%S")))
 
-        download_mch(coreclr_args, include_baseline_jit=True)
+        # Processing the arg does the download and caching
+        process_mch_files_arg(coreclr_args)
 
         print("Finished SuperPMI download")
 
