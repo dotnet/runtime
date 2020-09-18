@@ -1781,38 +1781,47 @@ def process_mch_files_arg(coreclr_args):
         coreclr_args.mch_files = download_mch(coreclr_args, include_baseline_jit=True)
         return
 
-    # On Windows only, see if any of the mch_files are UNC paths (i.e., "\\server\share\...").
-    # If so, download and cache all the files found there to our usual local cache location, to avoid future network access.
-    if coreclr_args.host_os == "Windows_NT":
-        local_mch_files = []
-        for item in coreclr_args.mch_files:
-            if item.startswith("\\\\"):
-                # Special case: if the user specifies a .mch file, we'll also look for and cache a .mch.mct file next to it, if one exists.
-                # This happens naturally if a directory is passed and we search for all .mch and .mct files in that directory.
-                mch_file = os.path.abspath(item)
-                if os.path.isfile(mch_file) and mch_file.endswith(".mch"):
-                    files = [ mch_file ]
-                    mct_file = mch_file + ".mct"
-                    if os.path.isfile(mct_file):
-                        files.append(mct_file)
-                else:
-                    files = get_files_from_path(mch_file, matchFunc=lambda path: any(path.endswith(extension) for extension in [".mch", ".mct"]))
+    # Create the cache location. Note that we'll create it even if we end up not copying anything.
+    default_mch_root_dir = os.path.join(coreclr_args.spmi_location, "mch")
+    default_mch_dir = os.path.join(default_mch_root_dir, "{}.{}.{}".format(coreclr_args.jit_ee_version, coreclr_args.host_os, coreclr_args.arch))
+    if not os.path.isdir(default_mch_dir):
+        os.makedirs(default_mch_dir)
 
-                if len(files) != 0:
-                    default_mch_root_dir = os.path.join(coreclr_args.spmi_location, "mch")
-                    default_mch_dir = os.path.join(default_mch_root_dir, "{}.{}.{}".format(coreclr_args.jit_ee_version, coreclr_args.host_os, coreclr_args.arch))
-                    if not os.path.isdir(default_mch_dir):
-                        os.makedirs(default_mch_dir)
-
-                    for file in files:
-                        # Download file to cache, and report that as the file to use.
-                        cache_file = os.path.join(default_mch_dir, os.path.basename(file))
-                        print("Cache {} => {}".format(file, cache_file))
-                        local_mch_file = shutil.copy2(file, cache_file)
-                        local_mch_files.append(local_mch_file)
+    # Process the mch_files list. Download and cache UNC and HTTP files.
+    urls = []
+    local_mch_files = []
+    for item in coreclr_args.mch_files:
+        # On Windows only, see if any of the mch_files are UNC paths (i.e., "\\server\share\...").
+        # If so, download and cache all the files found there to our usual local cache location, to avoid future network access.
+        if coreclr_args.host_os == "Windows_NT" and item.startswith("\\\\"):
+            # Special case: if the user specifies a .mch file, we'll also look for and cache a .mch.mct file next to it, if one exists.
+            # This happens naturally if a directory is passed and we search for all .mch and .mct files in that directory.
+            mch_file = os.path.abspath(item)
+            if os.path.isfile(mch_file) and mch_file.endswith(".mch"):
+                files = [ mch_file ]
+                mct_file = mch_file + ".mct"
+                if os.path.isfile(mct_file):
+                    files.append(mct_file)
             else:
-                local_mch_files.append(item)
-        coreclr_args.mch_files = local_mch_files
+                files = get_files_from_path(mch_file, matchFunc=lambda path: any(path.endswith(extension) for extension in [".mch", ".mct"]))
+
+            for file in files:
+                # Download file to cache, and report that as the file to use.
+                cache_file = os.path.join(default_mch_dir, os.path.basename(file))
+                print("Cache {} => {}".format(file, cache_file))
+                local_mch_file = shutil.copy2(file, cache_file)
+                local_mch_files.append(local_mch_file)
+        elif item.lower().startswith("http:") or item.lower().startswith("https:"): # probably could use urllib.parse to be more precise
+            urls.append(item)
+        else:
+            # Doesn't appear to be a URL (on Windows) or a URL, so just use it as-is.
+            local_mch_files.append(item)
+
+    # Download all the urls at once, and add the local cache filenames to our accumulated list of local file names.
+    if len(urls) != 0:
+        local_mch_files += download_mch_urls(urls, default_mch_dir)
+
+    coreclr_args.mch_files = local_mch_files
 
 
 def download_mch(coreclr_args, include_baseline_jit=False):
@@ -1859,12 +1868,31 @@ def download_mch(coreclr_args, include_baseline_jit=False):
     if urls is None:
         return []
 
+    download_mch_urls(urls, default_mch_dir)
+    return [ default_mch_dir ]
+
+
+def download_mch_urls(urls, target_dir):
+    """ Download a set of MCH files specified as URLs to a target directory.
+        If the URLs are to .ZIP files, then uncompress them and copy all contents
+        to the target directory.
+
+    Args:
+        urls (list): the URLs to download
+        target_dir (str): target directory where files are copied
+
+    Returns:
+        list of local filenames of downloaded files
+    """
+
     print("Downloading:")
     for url in urls:
         print("  {}".format(url))
 
-    if not os.path.isdir(default_mch_dir):
-        os.makedirs(default_mch_dir)
+    if not os.path.isdir(target_dir):
+        os.makedirs(target_dir)
+
+    local_mch_files = []
 
     with TempDir() as temp_location:
         for url in urls:
@@ -1890,10 +1918,12 @@ def download_mch(coreclr_args, include_baseline_jit=False):
             # Copy everything that was extracted to the target directory.
             items = [ os.path.join(temp_location, item) for item in os.listdir(temp_location) if not item.endswith(".zip") ]
             for item in items:
-                print("Copying: {} -> {}".format(item, default_mch_dir))
-                shutil.copy2(item, default_mch_dir)
+                cache_file = os.path.join(target_dir, os.path.basename(item))
+                print("Cache {} => {}".format(item, cache_file))
+                shutil.copy2(item, target_dir)
+                local_mch_files.append(cache_file)
 
-    return [ default_mch_dir ]
+    return local_mch_files
 
 
 def upload_mch(coreclr_args):
