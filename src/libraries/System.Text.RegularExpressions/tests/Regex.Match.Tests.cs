@@ -860,7 +860,7 @@ namespace System.Text.RegularExpressions.Tests
                 }
 
                 // Note: this block will fail if any inputs attempt to look for anchors or lookbehinds at the initial position,
-                // as there is a difference between Match(input, beginning) and Match(input, beginning, input.Lenght - beginning)
+                // as there is a difference between Match(input, beginning) and Match(input, beginning, input.Length - beginning)
                 // in that the former doesn't modify from 0 what the engine sees as the beginning of the input whereas the latter
                 // is equivalent to taking a substring and then matching on that.  However, as we currently don't have any such inputs,
                 // it's currently a viable way to test the additional overload.  Same goes for the similar case below with options.
@@ -900,29 +900,34 @@ namespace System.Text.RegularExpressions.Tests
             }
         }
 
-        [Theory]
-        // Anchors
-        [InlineData(@"^.*", "abc", 0, true, true)]
-        [InlineData(@"^.*", "abc", 1, false, true)]
-        // Positive Lookbehinds
-        [InlineData(@"(?<=abc)def", "abcdef", 3, true, false)]
-        // Negative Lookbehinds
-        [InlineData(@"(?<!abc)def", "abcdef", 3, false, true)]
-        public void Match_StartatDiffersFromBeginning(string pattern, string input, int startat, bool expectedSuccessStartAt, bool expectedSuccessBeginning)
+        public static IEnumerable<object[]> Match_StartatDiffersFromBeginning_MemberData()
         {
-            foreach (RegexOptions line in new[] { RegexOptions.None, RegexOptions.Singleline, RegexOptions.Multiline })
+            foreach (RegexOptions options in new[] { RegexOptions.None, RegexOptions.Singleline, RegexOptions.Multiline })
             {
-                foreach (RegexOptions options in new[] { line, line | RegexOptions.Compiled })
-                {
-                    var r = new Regex(pattern, options);
+                // Anchors
+                yield return new object[] { @"^.*", "abc", options, 0, true, true };
+                yield return new object[] { @"^.*", "abc", options, 1, false, true };
 
-                    Assert.Equal(expectedSuccessStartAt, r.IsMatch(input, startat));
-                    Assert.Equal(expectedSuccessStartAt, r.Match(input, startat).Success);
+                // Positive Lookbehinds
+                yield return new object[] { @"(?<=abc)def", "abcdef", options, 3, true, false };
 
-                    Assert.Equal(expectedSuccessBeginning, r.Match(input.Substring(startat)).Success);
-                    Assert.Equal(expectedSuccessBeginning, r.Match(input, startat, input.Length - startat).Success);
-                }
+                // Negative Lookbehinds
+                yield return new object[] { @"(?<!abc)def", "abcdef", options, 3, false, true };
             }
+        }
+
+        [Theory]
+        [MemberData(nameof(Match_StartatDiffersFromBeginning_MemberData))]
+        [MemberData(nameof(RegexCompilationHelper.TransformRegexOptions), nameof(Match_StartatDiffersFromBeginning_MemberData), 2, MemberType = typeof(RegexCompilationHelper))]
+        public void Match_StartatDiffersFromBeginning(string pattern, string input, RegexOptions options, int startat, bool expectedSuccessStartAt, bool expectedSuccessBeginning)
+        {
+            var r = new Regex(pattern, options);
+
+            Assert.Equal(expectedSuccessStartAt, r.IsMatch(input, startat));
+            Assert.Equal(expectedSuccessStartAt, r.Match(input, startat).Success);
+
+            Assert.Equal(expectedSuccessBeginning, r.Match(input.Substring(startat)).Success);
+            Assert.Equal(expectedSuccessBeginning, r.Match(input, startat, input.Length - startat).Success);
         }
 
         private static void VerifyMatch(Match match, bool expectedSuccess, CaptureData[] expected)
