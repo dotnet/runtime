@@ -99,10 +99,10 @@ namespace System.Net.Sockets.Tests
                 await listener.RunWithCallbackAsync(events.Enqueue, async () =>
                 {
                     using var server = new Socket(SocketType.Stream, ProtocolType.Tcp);
-
-                    using var client = new Socket(SocketType.Stream, ProtocolType.Tcp);
                     server.Bind(new IPEndPoint(IPAddress.Loopback, 0));
                     server.Listen();
+
+                    using var client = new Socket(SocketType.Stream, ProtocolType.Tcp);
 
                     Task acceptTask = GetHelperBase(acceptMethod).AcceptAsync(server);
                     await WaitForEventAsync(events, "AcceptStart");
@@ -183,13 +183,18 @@ namespace System.Net.Sockets.Tests
 
                     SocketHelperBase socketHelper = GetHelperBase(connectMethod);
 
-                    await Assert.ThrowsAnyAsync<Exception>(async () =>
+                    Exception ex = await Assert.ThrowsAnyAsync<Exception>(async () =>
                     {
                         Task connectTask = socketHelper.ConnectAsync(client, endPoint);
                         await WaitForEventAsync(events, "ConnectStart");
                         client.Dispose();
                         await connectTask;
                     });
+
+                    if (ex is SocketException se)
+                    {
+                        Assert.NotEqual(SocketError.TimedOut, se.SocketErrorCode);
+                    }
 
                     await WaitForEventAsync(events, "ConnectStop");
 
