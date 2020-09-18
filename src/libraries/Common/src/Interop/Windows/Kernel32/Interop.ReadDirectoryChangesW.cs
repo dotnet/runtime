@@ -28,8 +28,8 @@ internal partial class Interop
             internal FileAction Action;
 
             // Note that the file name is not null terminated
-            private uint FileNameLength;
-            private char _FileName;
+            internal uint FileNameLength;
+            internal char _FileName;
 
             internal unsafe ReadOnlySpan<char> FileName
             {

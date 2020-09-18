@@ -235,7 +235,7 @@ namespace System.IO
                 }
                 else
                 {
-                    ParseEventBufferAndNotifyForEach(state.Buffer);
+                    ParseEventBufferAndNotifyForEach(state.Buffer, numBytes);
                 }
             }
             finally
@@ -245,13 +245,16 @@ namespace System.IO
             }
         }
 
-        private unsafe void ParseEventBufferAndNotifyForEach(byte[] buffer)
+        private unsafe void ParseEventBufferAndNotifyForEach(byte[] buffer, uint numBytes)
         {
             Debug.Assert(buffer != null);
             Debug.Assert(buffer.Length > 0);
+            Debug.Assert(numBytes <= buffer.Length);
 
             fixed (byte* b = buffer)
             {
+                byte* pBufferLimit = b + numBytes;
+
                 Interop.Kernel32.FILE_NOTIFY_INFORMATION* info = (Interop.Kernel32.FILE_NOTIFY_INFORMATION*)b;
 
                 ReadOnlySpan<char> oldName = ReadOnlySpan<char>.Empty;
@@ -259,6 +262,22 @@ namespace System.IO
                 // Parse each event from the buffer and notify appropriate delegates
                 do
                 {
+                    // Validate the data we received in case it's corrupted. This can happen
+                    // if we are watching files over the network with a poor connection.
+
+                    // Verify the info object is within the expected bounds
+                    if (info < b || (((byte*)info) + sizeof(Interop.Kernel32.FILE_NOTIFY_INFORMATION)) > pBufferLimit)
+                    {
+                        break;
+                    }
+
+                    // Verify the file path is within the bounds
+                    byte* pFileEnd = ((byte*)&(info->_FileName)) + info->FileNameLength;
+                    if (pFileEnd < &(info->_FileName) || pFileEnd > pBufferLimit)
+                    {
+                        break;
+                    }
+
                     // A slightly convoluted piece of code follows.  Here's what's happening:
                     //
                     // We wish to collapse the poorly done rename notifications from the
