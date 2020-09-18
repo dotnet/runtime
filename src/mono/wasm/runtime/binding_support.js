@@ -144,6 +144,17 @@ var BindingSupportLib = {
 			this._are_promises_supported = (typeof Promise === "object") && (typeof Promise.resolve === "function");
 		},
 
+		js_string_to_mono_string: function (string) {
+			var buffer = Module._malloc ((string.length + 1) * 2);
+			var buffer16 = (buffer / 2) | 0;
+			for (var i = 0; i < string.length; i++)
+				Module.HEAP16[buffer16 + i] = string.charCodeAt (i);
+			Module.HEAP16[buffer16 + string.length] = 0;
+			var result = this.mono_wasm_string_from_utf16 (buffer, string.length);
+			Module._free (buffer);
+			return result;
+		},
+
 		find_method: function (klass, name, n) {
 			var result = this._find_method(klass, name, n);
 			if (!this._method_descriptions)
@@ -771,9 +782,9 @@ var BindingSupportLib = {
 		_create_primitive_converters: function () {
 			var result = new Map ();
 			result.set ('m', { steps: [{ }], size: 0});
-			result.set ('s', { steps: [{ convert: this.js_string_to_mono_string.bind (this)}], size: 0, needsRoot: true });
-			result.set ('o', { steps: [{ convert: this.js_to_mono_obj.bind (this)}], size: 0, needsRoot: true });
-			result.set ('u', { steps: [{ convert: this.js_to_mono_uri.bind (this)}], size: 0, needsRoot: true });
+			result.set ('s', { steps: [{ convert: this.js_string_to_mono_string.bind (this) }], size: 0, needsRoot: true });
+			result.set ('o', { steps: [{ convert: this.js_to_mono_obj.bind (this) }], size: 0, needsRoot: true });
+			result.set ('u', { steps: [{ convert: this.js_to_mono_uri.bind (this) }], size: 0, needsRoot: true });
 
 			var enumAdapter = (function js_to_mono_enum_adapter (obj, method, parmIdx) {
 				return this.js_to_mono_enum(method, parmIdx, obj);
@@ -823,6 +834,7 @@ var BindingSupportLib = {
 
 				var localStep = Object.create (conv.steps[0]);
 				localStep.size = conv.size;
+				localStep.needsRoot = conv.needsRoot;
 				localStep.key = args_marshal[i];
 				steps.push (localStep);
 				size += conv.size;
@@ -883,7 +895,6 @@ var BindingSupportLib = {
 				"var indirectStart = buffer + " + indirectBaseOffset + ";",
 				"var indirect32 = (indirectStart / 4) | 0, indirect64 = (indirectStart / 8) | 0;",
 				"var buffer32 = (buffer / 4) | 0;",
-				"var valueAddress = 0;",
 				""
 			);
 
@@ -897,13 +908,16 @@ var BindingSupportLib = {
 
 				if (step.convert) {
 					closure[closureKey] = step.convert;
-					// body.push ("console.log('calling converter '" + step.key + ", " + closureKey + ", 'with value', obj);"); 
+					// body.push ("console.log('calling converter " + step.key + "', " + closureKey + ", 'with value', " + argKey + ");"); 
 					body.push ("var " + valueKey + " = " + closureKey + "(" + argKey + ", method, " + i + ");");
 					// body.push ("console.log('converter result', " + valueKey + ");");
 				} else {
 					body.push ("var " + valueKey + " = " + argKey + ";");
 					// body.push ("console.log('arg" + i + " value', " + valueKey + ");");
 				}
+
+				if (step.needsRoot)
+					body.push ("rootBuffer.set (" + i + ", " + valueKey + ");");
 
 				if (step.indirect) {
 					switch (step.indirect) {
@@ -926,17 +940,12 @@ var BindingSupportLib = {
 							throw new Error ("Unimplemented indirect type: " + step.indirect);
 					}
 
-					body.push ("valueAddress = indirectStart + " + indirectLocalOffset + ";");
+					body.push ("Module.HEAP32[buffer32 + " + i + "] = indirectStart + " + indirectLocalOffset + ";", "");
 					indirectLocalOffset += step.size;
+				} else {
+					body.push ("Module.HEAP32[buffer32 + " + i + "] = " + valueKey + ";");
+					indirectLocalOffset += 4;
 				}
-
-				if (!step.convert && !step.indirect)
-					body.push ("valueAddress = " + valueKey + " | 0;");
-
-				if (step.needsRoot)
-					body.push ("rootBuffer.set (" + i + ", valueAddress);");
-
-				body.push ("Module.HEAP32[buffer32 + " + i + "] = valueAddress;", "");
 
 				// body.push ("console.log ('wrote ptr', valueAddress, 'to address', (buffer32 + " + i + ") * 4);");
 			}
