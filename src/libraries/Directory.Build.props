@@ -221,11 +221,11 @@
   <!-- Language configuration -->
   <PropertyGroup>
     <Features>strict;nullablePublicOnly</Features>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <!-- We decided to keep this disabled by default: https://github.com/dotnet/runtime/issues/15152 -->
     <CheckForOverflowUnderflow>false</CheckForOverflowUnderflow>
     <GenFacadesIgnoreBuildAndRevisionMismatch>true</GenFacadesIgnoreBuildAndRevisionMismatch>
-    <EnableAnalyzers Condition="'$(EnableAnalyzers)' == '' and '$(IsSourceProject)' == 'true' and '$(MSBuildProjectExtension)' != '.ilproj'">true</EnableAnalyzers>
+    <!-- Disable analyzers for tests and unsupported projects -->
+    <RunAnalyzers Condition="'$(IsSourceProject)' != 'true' or '$(MSBuildProjectExtension)' == '.ilproj'">false</RunAnalyzers>
   </PropertyGroup>
 
   <!-- Set up common paths -->

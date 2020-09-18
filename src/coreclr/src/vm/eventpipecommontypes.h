@@ -98,20 +98,129 @@ typedef void (*EventPipeCallback)(
     EventFilterDescriptor *FilterData,
     void *CallbackContext);
 
-struct EventPipeProviderCallbackData
+class EventPipeProviderCallbackData
 {
-    LPCWSTR pFilterData;
-    EventPipeCallback pCallbackFunction;
-    bool enabled;
-    INT64 keywords;
-    EventPipeEventLevel providerLevel;
-    void* pCallbackData;
+public:
+    EventPipeProviderCallbackData():
+        m_pFilterData(nullptr),
+        m_pCallbackFunction(nullptr),
+        m_enabled(false),
+        m_keywords(0),
+        m_providerLevel(EventPipeEventLevel::LogAlways),
+        m_pCallbackData(nullptr),
+        m_pProvider(nullptr)
+    {
+
+    }
+
+    EventPipeProviderCallbackData(LPCWSTR pFilterData,
+                                  EventPipeCallback pCallbackFunction,
+                                  bool enabled,
+                                  INT64 keywords,
+                                  EventPipeEventLevel providerLevel,
+                                  void* pCallbackData,
+                                  EventPipeProvider *pProvider) :
+        m_pFilterData(nullptr),
+        m_pCallbackFunction(pCallbackFunction),
+        m_enabled(enabled),
+        m_keywords(keywords),
+        m_providerLevel(providerLevel),
+        m_pCallbackData(pCallbackData),
+        m_pProvider(pProvider)
+    {
+        if (pFilterData != nullptr)
+        {
+            // This is the only way to create an EventPipeProviderCallbackData that will copy the
+            // filter data. The copying is intentional, because sessions die before callbacks happen
+            // so we cannot cache a pointer to the session's filter data.
+            size_t bufSize = wcslen(pFilterData) + 1;
+            m_pFilterData = new WCHAR[bufSize];
+            wcscpy_s(m_pFilterData, bufSize, pFilterData);
+        }
+    }
+
+    EventPipeProviderCallbackData(EventPipeProviderCallbackData &&other)
+        : EventPipeProviderCallbackData()
+    {
+        *this = std::move(other);
+    }
+
+    EventPipeProviderCallbackData &operator=(EventPipeProviderCallbackData &&other)
+    {
+        std::swap(m_pFilterData, other.m_pFilterData);
+        m_pCallbackFunction = other.m_pCallbackFunction;
+        m_enabled = other.m_enabled;
+        m_keywords = other.m_keywords;
+        m_providerLevel = other.m_providerLevel;
+        m_pCallbackData = other.m_pCallbackData;
+        m_pProvider = other.m_pProvider;
+
+        return *this;
+    }
+
+    // We don't want to be unintentionally copying and deleting the filter data any more
+    // than we have to. Moving (above) is fine, but copying should be avoided.
+    EventPipeProviderCallbackData(const EventPipeProviderCallbackData &other) = delete;
+    EventPipeProviderCallbackData &operator=(const EventPipeProviderCallbackData &other) = delete;
+
+    ~EventPipeProviderCallbackData()
+    {
+        if (m_pFilterData != nullptr)
+        {
+            delete[] m_pFilterData;
+            m_pFilterData = nullptr;
+        }
+    }
+
+    LPCWSTR GetFilterData() const
+    {
+        return m_pFilterData;
+    }
+
+    EventPipeCallback GetCallbackFunction() const
+    {
+        return m_pCallbackFunction;
+    }
+
+    bool GetEnabled() const
+    {
+        return m_enabled;
+    }
+
+    INT64 GetKeywords() const
+    {
+        return m_keywords;
+    }
+
+    EventPipeEventLevel GetProviderLevel() const
+    {
+        return m_providerLevel;
+    }
+
+    void *GetCallbackData() const
+    {
+        return m_pCallbackData;
+    }
+
+    EventPipeProvider *GetProvider() const
+    {
+        return m_pProvider;
+    }
+
+private:
+    WCHAR *m_pFilterData;
+    EventPipeCallback m_pCallbackFunction;
+    bool m_enabled;
+    INT64 m_keywords;
+    EventPipeEventLevel m_providerLevel;
+    void* m_pCallbackData;
+    EventPipeProvider *m_pProvider;
 };
 
 class EventPipeProviderCallbackDataQueue
 {
 public:
-    void Enqueue(EventPipeProviderCallbackData* pEventPipeProviderCallbackData);
+    void Enqueue(EventPipeProviderCallbackData *pEventPipeProviderCallbackData);
     bool TryDequeue(EventPipeProviderCallbackData* pEventPipeProviderCallbackData);
 
 private:
