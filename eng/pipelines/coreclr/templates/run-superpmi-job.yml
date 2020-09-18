@@ -50,28 +50,8 @@ jobs:
       - ${{ if ne(variable.group, '') }}:
         - group: ${{ variable.group }}
 
-    - IsInternal: ''
     - HelixApiAccessToken: ''
-    - ExtraMSBuildLogsWindows: 'set MSBUILDDEBUGCOMM=1;set "MSBUILDDEBUGPATH=%HELIX_WORKITEM_UPLOAD_ROOT%"'
-    - ExtraMSBuildLogsLinux: 'export MSBUILDDEBUGCOMM=1;export "MSBUILDDEBUGPATH=$HELIX_WORKITEM_UPLOAD_ROOT"'
     - HelixPreCommand: ''
-    - Interpreter: ''
-
-    - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
-      - ${{ if eq( parameters.osGroup, 'Windows_NT') }}:
-        - HelixPreCommand: $(HelixPreCommandStemWindows);$(ExtraMSBuildLogsWindows)
-        - IsInternal: -Internal
-      - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-        - HelixPreCommand: $(HelixPreCommandStemLinux);$(ExtraMSBuildLogsLinux)
-        - IsInternal: --internal
-      - group: DotNet-HelixApi-Access
-      - group: dotnet-benchview
-
-    - ${{ if not(and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest'))) }}:
-      - ${{ if eq( parameters.osGroup, 'Windows_NT') }}:
-        - HelixPreCommand: $(ExtraMSBuildLogsWindows)
-      - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-          - HelixPreCommand: $(ExtraMSBuildLogsLinux);npm install --prefix $HELIX_WORKITEM_PAYLOAD jsvu -g;$HELIX_WORKITEM_PAYLOAD/bin/jsvu --os=linux64 --engines=v8
 
     workspace:
       clean: all
