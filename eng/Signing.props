@@ -142,8 +142,8 @@
     <!-- When doing post build signing, we sign all artifacts we would push.
          Symbol packages are included too. -->
     <When Condition="'$(PostBuildSign)' == 'true'">
-      <ItemGroup Condition="'$(prepare-artifacts)' == 'true'">
-        <ItemsToSignWithPaths Include="@(DownloadDirectory)**" />
+      <ItemGroup>
+        <ItemsToSignWithPaths Include="@(DownloadedArtifactFile)" />
         <!-- Exclude wixpdb files from the signing list. These are generated into the
              shipping/nonshipping directories but should be generated into the obj dirs.
              https://github.com/dotnet/arcade/issues/6187. -->
