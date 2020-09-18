@@ -1104,21 +1104,37 @@ namespace System.Net.Sockets
 
             // This may throw ObjectDisposedException.
             SafeSocketHandle acceptedSocketHandle;
-            SocketError errorCode = SocketPal.Accept(
-                _handle,
-                socketAddress.Buffer,
-                ref socketAddress.InternalSize,
-                out acceptedSocketHandle);
+            SocketError errorCode;
+            try
+            {
+                errorCode = SocketPal.Accept(
+                    _handle,
+                    socketAddress.Buffer,
+                    ref socketAddress.InternalSize,
+                    out acceptedSocketHandle);
+            }
+            catch (Exception ex)
+            {
+                if (SocketsTelemetry.Log.IsEnabled())
+                {
+                    SocketsTelemetry.Log.AfterAccept(SocketError.Interrupted, ex.Message);
+                }
 
-            if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.AfterAccept(errorCode);
+                throw;
+            }
 
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)
             {
                 Debug.Assert(acceptedSocketHandle.IsInvalid);
                 UpdateAcceptSocketErrorForDisposed(ref errorCode);
+
+                if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.AfterAccept(errorCode);
+
                 UpdateStatusAfterSocketErrorAndThrowException(errorCode);
             }
+
+            if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.AfterAccept(SocketError.Success);
 
             Debug.Assert(!acceptedSocketHandle.IsInvalid);
 
@@ -3551,16 +3567,30 @@ namespace System.Net.Sockets
             if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.AcceptStart(_rightEndPoint);
 
             int socketAddressSize = GetAddressSize(_rightEndPoint);
-            SocketError errorCode = SocketPal.AcceptAsync(this, _handle, acceptHandle, receiveSize, socketAddressSize, asyncResult);
+            SocketError errorCode;
+            try
+            {
+                errorCode = SocketPal.AcceptAsync(this, _handle, acceptHandle, receiveSize, socketAddressSize, asyncResult);
+            }
+            catch (Exception ex)
+            {
+                if (SocketsTelemetry.Log.IsEnabled())
+                {
+                    SocketsTelemetry.Log.AfterAccept(SocketError.Interrupted, ex.Message);
+                }
+
+                throw;
+            }
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"AcceptAsync returns:{errorCode} {asyncResult}");
 
             // Throw an appropriate SocketException if the native call fails synchronously.
             if (!CheckErrorAndUpdateStatus(errorCode))
             {
+                UpdateAcceptSocketErrorForDisposed(ref errorCode);
+
                 if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.AfterAccept(errorCode);
 
-                UpdateAcceptSocketErrorForDisposed(ref errorCode);
                 throw new SocketException((int)errorCode);
             }
 
@@ -3622,13 +3652,16 @@ namespace System.Net.Sockets
             // Throw an appropriate SocketException if the native call failed asynchronously.
             SocketError errorCode = (SocketError)castedAsyncResult.ErrorCode;
 
-            if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.AfterAccept(errorCode);
-
             if (errorCode != SocketError.Success)
             {
                 UpdateAcceptSocketErrorForDisposed(ref errorCode);
+
+                if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.AfterAccept(errorCode);
+
                 UpdateStatusAfterSocketErrorAndThrowException(errorCode);
             }
+
+            if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.AfterAccept(SocketError.Success);
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Accepted(socket, socket.RemoteEndPoint, socket.LocalEndPoint);
             return socket;
@@ -3682,21 +3715,23 @@ namespace System.Net.Sockets
             SafeSocketHandle? acceptHandle;
             e.AcceptSocket = GetOrCreateAcceptSocket(e.AcceptSocket, true, "AcceptSocket", out acceptHandle);
 
-            if (SocketsTelemetry.Log.IsEnabled())
-            {
-                SocketsTelemetry.Log.AcceptStart(_rightEndPoint!);
-            }
+            if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.AcceptStart(_rightEndPoint!);
 
             // Prepare for and make the native call.
             e.StartOperationCommon(this, SocketAsyncOperation.Accept);
             e.StartOperationAccept();
-            SocketError socketError = SocketError.Success;
+            SocketError socketError;
             try
             {
                 socketError = e.DoOperationAccept(this, _handle, acceptHandle);
             }
-            catch
+            catch (Exception ex)
             {
+                if (SocketsTelemetry.Log.IsEnabled())
+                {
+                    SocketsTelemetry.Log.AfterAccept(SocketError.Interrupted, ex.Message);
+                }
+
                 // Clear in-use flag on event args object.
                 e.Complete();
                 throw;
@@ -3797,7 +3832,7 @@ namespace System.Net.Sockets
                 e.StartOperationConnect(multipleConnect: null, userSocket);
 
                 // Make the native call.
-                SocketError socketError = SocketError.Success;
+                SocketError socketError;
                 try
                 {
                     if (CanUseConnectEx(endPointSnapshot))
@@ -3810,8 +3845,13 @@ namespace System.Net.Sockets
                         socketError = e.DoOperationConnect(this, _handle);
                     }
                 }
-                catch
+                catch (Exception ex)
                 {
+                    if (SocketsTelemetry.Log.IsEnabled())
+                    {
+                        SocketsTelemetry.Log.AfterConnect(SocketError.NotSocket, ex.Message);
+                    }
+
                     _rightEndPoint = oldEndPoint;
                     _localEndPoint = null;
 
@@ -4251,7 +4291,20 @@ namespace System.Net.Sockets
         {
             if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.ConnectStart(socketAddress);
 
-            SocketError errorCode = SocketPal.Connect(_handle, socketAddress.Buffer, socketAddress.Size);
+            SocketError errorCode;
+            try
+            {
+                errorCode = SocketPal.Connect(_handle, socketAddress.Buffer, socketAddress.Size);
+            }
+            catch (Exception ex)
+            {
+                if (SocketsTelemetry.Log.IsEnabled())
+                {
+                    SocketsTelemetry.Log.AfterConnect(SocketError.NotSocket, ex.Message);
+                }
+
+                throw;
+            }
 
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)
@@ -4678,8 +4731,13 @@ namespace System.Net.Sockets
             {
                 errorCode = SocketPal.ConnectAsync(this, _handle, socketAddress.Buffer, socketAddress.Size, asyncResult);
             }
-            catch
+            catch (Exception ex)
             {
+                if (SocketsTelemetry.Log.IsEnabled())
+                {
+                    SocketsTelemetry.Log.AfterConnect(SocketError.NotSocket, ex.Message);
+                }
+
                 // _rightEndPoint will always equal oldEndPoint.
                 _rightEndPoint = oldEndPoint;
                 _localEndPoint = null;

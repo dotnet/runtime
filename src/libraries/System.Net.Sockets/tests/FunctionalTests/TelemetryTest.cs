@@ -417,10 +417,14 @@ namespace System.Net.Sockets.Tests
 
         private static async Task WaitForEventCountersAsync(ConcurrentQueue<EventWrittenEventArgs> events)
         {
+            DateTime startTime = DateTime.UtcNow;
             int startCount = events.Count;
 
             while (events.Skip(startCount).Count(IsBytesSentEventCounter) < 2)
             {
+                if (DateTime.UtcNow.Subtract(startTime) > TimeSpan.FromSeconds(30))
+                    throw new TimeoutException($"Timed out waiting for EventCounters");
+
                 await Task.Delay(100);
             }
 
