@@ -33,6 +33,9 @@ namespace System.Text.Json.Serialization.Tests
         private static IEnumerable<bool> IgnoreNullValues
             => new[] { true, false };
 
+        private static IEnumerable<bool> WriteIndented
+            => new[] { true, false };
+
         private static IEnumerable<object[]> TestData(bool enumeratePayloadTweaks)
         {
             // The serialized json gets padded with leading ' ' chars. The length of the
@@ -48,30 +51,33 @@ namespace System.Text.Json.Serialization.Tests
                 Type testObjectType = TestObject.GetType();
                 TestObject.Initialize(Nested);
 
-                string payload = JsonSerializer.Serialize(TestObject, testObjectType);
-
-                foreach (Func<string, string> tweak in enumeratePayloadTweaks ? s_payloadTweaks.Skip(1) : s_payloadTweaks.Take(1))
+                foreach (bool writeIndented in WriteIndented)
                 {
-                    payload = tweak(payload);
+                    string payload = JsonSerializer.Serialize(TestObject, testObjectType, new JsonSerializerOptions { WriteIndented = writeIndented });
 
-                    // Wrap the payload inside an array to have something to read before/after.
-                    payload = '[' + payload + ']';
-                    Type arrayType = Type.GetType(testObjectType.FullName + "[]");
-
-                    // Determine the DefaultBufferSize that is required to contain the complete json.
-                    int bufferSize = 16;
-                    while (payload.Length > bufferSize)
+                    foreach (Func<string, string> tweak in enumeratePayloadTweaks ? s_payloadTweaks.Skip(1) : s_payloadTweaks.Take(1))
                     {
-                        bufferSize *= 2;
-                    }
-                    int minPaddingLength = bufferSize - payload.Length + 1;
-                    int maxPaddingLength = bufferSize - 1;
+                        payload = tweak(payload);
 
-                    foreach (int length in Enumerable.Range(minPaddingLength, maxPaddingLength - minPaddingLength + 1))
-                    {
-                        foreach (bool ignore in IgnoreNullValues)
+                        // Wrap the payload inside an array to have something to read before/after.
+                        payload = '[' + payload + ']';
+                        Type arrayType = Type.GetType(testObjectType.FullName + "[]");
+
+                        // Determine the DefaultBufferSize that is required to contain the complete json.
+                        int bufferSize = 16;
+                        while (payload.Length > bufferSize)
                         {
-                            yield return new object[] { new string(' ', length) + payload, bufferSize, arrayType, ignore };
+                            bufferSize *= 2;
+                        }
+                        int minPaddingLength = bufferSize - payload.Length + 1;
+                        int maxPaddingLength = bufferSize - 1;
+
+                        foreach (int length in Enumerable.Range(minPaddingLength, maxPaddingLength - minPaddingLength + 1))
+                        {
+                            foreach (bool ignore in IgnoreNullValues)
+                            {
+                                yield return new object[] { new string(' ', length) + payload, bufferSize, arrayType, ignore };
+                            }
                         }
                     }
                 }
@@ -172,9 +178,7 @@ namespace System.Text.Json.Serialization.Tests
             int C { get; set; }
             int? D { get; set; }
             float E { get; set; }
-            float? F { get; set; }
             bool G { get; set; }
-            bool? H { get; set; }
             int[] I { get; set; }
             INestedObject J { get; set; }
             void Initialize(INestedObject nested);
@@ -196,9 +200,7 @@ namespace System.Text.Json.Serialization.Tests
             public int C { get; set; }
             public int? D { get; set; }
             public float E { get; set; }
-            public float? F { get; set; }
             public bool G { get; set; }
-            public bool? H { get; set; }
             public int[] I { get; set; }
             public TNested J { get; set; }
             INestedObject ITestObject.J
@@ -214,9 +216,7 @@ namespace System.Text.Json.Serialization.Tests
                 C = 42;
                 D = null;
                 E = 3.14e+17f;
-                F = null;
                 G = true;
-                H = null;
                 I = new int[] { 42, 17 };
                 nested.Initialize();
                 J = (TNested)nested;
@@ -229,9 +229,7 @@ namespace System.Text.Json.Serialization.Tests
                 Assert.Equal(42, C);
                 Assert.Null(D);
                 Assert.Equal(3.14e17f, E);
-                Assert.Null(F);
                 Assert.True(G);
-                Assert.Null(H);
                 Assert.Collection(I, v => Assert.Equal(42, v), v => Assert.Equal(17, v));
                 Assert.NotNull(J);
                 J.Verify();
@@ -245,9 +243,7 @@ namespace System.Text.Json.Serialization.Tests
             public int C { get; set; }
             public int? D { get; set; }
             public float E { get; set; }
-            public float? F { get; set; }
             public bool G { get; set; }
-            public bool? H { get; set; }
             public int[] I { get; set; }
             public TNested J { get; set; }
             INestedObject ITestObject.J
@@ -263,9 +259,7 @@ namespace System.Text.Json.Serialization.Tests
                 C = 42;
                 D = null;
                 E = 3.14e+17f;
-                F = null;
                 G = true;
-                H = null;
                 I = new int[] { 42, 17 };
                 nested.Initialize();
                 J = (TNested)nested;
@@ -278,9 +272,7 @@ namespace System.Text.Json.Serialization.Tests
                 Assert.Equal(42, C);
                 Assert.Null(D);
                 Assert.Equal(3.14e17f, E);
-                Assert.Null(F);
                 Assert.True(G);
-                Assert.Null(H);
                 Assert.Collection(I, v => Assert.Equal(42, v), v => Assert.Equal(17, v));
                 Assert.NotNull(J);
                 J.Verify();
