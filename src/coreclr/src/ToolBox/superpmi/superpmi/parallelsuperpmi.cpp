@@ -398,7 +398,6 @@ char* ConstructChildProcessArgs(const CommandLine::Options& o)
     ADDARG_STRING(o.reproName, "-reproName");
     ADDARG_STRING(o.writeLogFile, "-writeLogFile");
     ADDARG_STRING(o.methodStatsTypes, "-emitMethodStats");
-    ADDARG_STRING(o.reproName, "-reproName");
     ADDARG_STRING(o.hash, "-matchHash");
     ADDARG_STRING(o.targetArchitecture, "-target");
     ADDARG_STRING(o.compileList, "-compile");
