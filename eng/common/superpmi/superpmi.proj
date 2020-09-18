@@ -25,7 +25,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <WorkItemTimeout>12:00</WorkItemTimeout>
+    <WorkItemTimeout>1:00</WorkItemTimeout>
     <WorkItemTimeout Condition="'$(HelixSourcePrefix)' != 'official'">0:15</WorkItemTimeout>
   </PropertyGroup>
 
@@ -40,7 +40,7 @@
   </PropertyGroup>
   <ItemGroup>
     <!-- TODO: To save time, just do SuperPMI on System.Xml.dll -->
-    <Partition Include="$(BuildConfig).Libraries" PmiAssemblies="Core_Root\superpmi_min\System.Xml.dll" OutputMchName="SuperPmi_Min" />
+    <Partition Include="$(BuildConfig).Libraries" PmiAssemblies="System.Xml.dll" OutputMchName="SuperPmi_Min" />
     <!-- <Partition Include="$(BuildConfig).Tests" PmiAssemblies="Tests" OutputMchName="Tests" /> -->
   </ItemGroup>
 
