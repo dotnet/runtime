@@ -1271,7 +1271,7 @@ namespace System.Net.Http
                 Debug.Assert(stream != null);
 
                 TransportContext? transportContext = null;
-                if (IsSecure)
+                if (IsSecure && !(stream is SslStream))
                 {
                     SslStream sslStream = await ConnectHelper.EstablishSslConnectionAsync(GetSslOptionsForRequest(request), request, async, stream, cancellationToken).ConfigureAwait(false);
                     transportContext = sslStream.TransportContext;
