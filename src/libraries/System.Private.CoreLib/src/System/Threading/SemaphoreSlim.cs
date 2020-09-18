@@ -33,7 +33,7 @@ namespace System.Threading
         private volatile int m_currentCount;
 
         // The maximum semaphore value, it is initialized to Int.MaxValue if the client didn't specify it. it is used
-        // to check if the count exceeded the maxi value or not.
+        // to check if the count exceeded the maximum value or not.
         private readonly int m_maxCount;
 
         // The number of synchronously waiting threads, it is set to zero in the constructor and increments before blocking the
