@@ -1,13 +1,20 @@
 <Project Sdk="Microsoft.DotNet.Helix.Sdk" DefaultTargets="Test">
 
   <PropertyGroup Condition="'$(AGENT_OS)' == 'Windows_NT'">
+    <FileSeparatorChar>\<FileSeparatorChar>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(AGENT_OS)' != 'Windows_NT'">
+    <FileSeparatorChar>/<FileSeparatorChar>
+  </PropertyGroup>
+
+  <PropertyGroup>
     <Python>py -3</Python>
-    <PmiAssembliesDirectory>%HELIX_CORRELATION_PAYLOAD%\PmiAssembliesDirectory</PmiAssembliesDirectory>
-    <SuperPMIDirectory>%HELIX_CORRELATION_PAYLOAD%\superpmi</SuperPMIDirectory>
+    <PmiAssembliesDirectory>%HELIX_CORRELATION_PAYLOAD%$(FileSeparatorChar)PmiAssembliesDirectory</PmiAssembliesDirectory>
+    <SuperPMIDirectory>%HELIX_CORRELATION_PAYLOAD%$(FileSeparatorChar)superpmi</SuperPMIDirectory>
     <OutputMchPath>%HELIX_WORKITEM_UPLOAD_ROOT%</OutputMchPath>
-    <JitUtilsDirectory>%HELIX_CORRELATION_PAYLOAD%\jitutils\bin</JitUtilsDirectory>
-    <HelixResultsDestinationDir>$(BUILD_SOURCESDIRECTORY)\artifacts\helixresults</HelixResultsDestinationDir>
-    <WorkItemCommand>$(SuperPMIDirectory)\superpmi.py collect -pmi_location $(JitUtilsDirectory)\pmi.dll --pmi -core_root $(PmiAssembliesDirectory)\Core_Root</WorkItemCommand>
+    <JitUtilsDirectory>%HELIX_CORRELATION_PAYLOAD%$(FileSeparatorChar)jitutils$(FileSeparatorChar)bin</JitUtilsDirectory>
+    <HelixResultsDestinationDir>$(BUILD_SOURCESDIRECTORY)$(FileSeparatorChar)artifacts$(FileSeparatorChar)helixresults</HelixResultsDestinationDir>
+    <WorkItemCommand>$(SuperPMIDirectory)$(FileSeparatorChar)superpmi.py collect --pmi -pmi_location $(JitUtilsDirectory)$(FileSeparatorChar)pmi.dll -core_root $(PmiAssembliesDirectory)$(FileSeparatorChar)Core_Root</WorkItemCommand>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(WorkItemCommand)' != ''">
@@ -28,16 +35,17 @@
   <PropertyGroup>
     <PartitionCount>1</PartitionCount>
   </PropertyGroup>
+
   <ItemGroup>
-    <Partition Include="$(BuildConfig).Libraries" PmiAssemblies="$(PmiAssembliesDirectory)\Core_Root" OutputMchName="Libraries" />
-    <!-- <Partition Include="$(BuildConfig).Tests" PmiAssemblies="$(PmiAssembliesDirectory)\Tests" OutputMchName="Tests" /> -->
+    <Partition Include="$(BuildConfig).Libraries" PmiAssemblies="Core_Root" OutputMchName="libraries" />
+    <!-- <Partition Include="$(BuildConfig).Tests" PmiAssemblies="Tests" OutputMchName="tests" /> -->
   </ItemGroup>
 
   <ItemGroup>
     <HelixWorkItem Include="@(Partition)">
     <!-- TODO: Here too make payload folder different for workitem.Name -->
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
-      <Command>$(WorkItemCommand) -pmi_assemblies %(HelixWorkItem.PmiAssemblies) -output_mch_path $(OutputMchPath)\%(HelixWorkItem.OutputMchName).$(AGENT_OS).$(Architecture).$(BuildConfig).mch</Command>
+      <Command>$(WorkItemCommand) -pmi_assemblies $(PmiAssembliesDirectory)$(FileSeparatorChar)%(HelixWorkItem.PmiAssemblies) -output_mch_path $(OutputMchPath)$(FileSeparatorChar)%(HelixWorkItem.OutputMchName).$(AGENT_OS).$(Architecture).$(BuildConfig).mch</Command>
       <Timeout>$(WorkItemTimeout)</Timeout>
       <DownloadFilesFromResults>%(HelixWorkItem.OutputMchName).$(AGENT_OS).$(Architecture).$(BuildConfig).mch;%(HelixWorkItem.OutputMchName).$(AGENT_OS).$(Architecture).$(BuildConfig).mch.mct</DownloadFilesFromResults>
     </HelixWorkItem>
