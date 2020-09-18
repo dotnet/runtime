@@ -123,7 +123,7 @@ jobs:
       displayName: Create cross-platform crossgen baseline
       inputs:
         scriptSource: 'filePath'
-        scriptPath: $(Build.SourcesDirectory)/src/coreclr/tests/scripts/crossgen_comparison.py
+        scriptPath: $(Build.SourcesDirectory)/src/tests/Common/scripts/crossgen_comparison.py
         pythonInterpreter: /usr/bin/python3
         ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
           arguments:

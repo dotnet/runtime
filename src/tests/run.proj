@@ -381,7 +381,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
   </Target>
 
   <Target Name="CreateAllWrappers" DependsOnTargets="GetListOfTestCmds;FindCmdDirectories">
-    <MSBuild Projects="$(MSBuildProjectFile)" Targets="CreateXunitWrapper;BuildXunitWrapper" Properties="_CMDDIR=%(TestDirectories.Identity);TestSrcDir=$(XunitTestBinBase)" />
+    <MSBuild Projects="$(MSBuildProjectFile)" Targets="CreateXunitWrapper;BuildXunitWrapper" Properties="_CMDDIR=%(TestDirectories.Identity);TestSourceDir=$(XunitTestBinBase)" />
   </Target>
 
   <Target Name="GetListOfTestCmds">
