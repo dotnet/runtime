@@ -22,7 +22,12 @@ $SuperPmiDirectory = (Join-Path $PayloadDirectory "superpmi")
 $JitUtilsDirectory = (Join-Path $PayloadDirectory "jitutils")
 $PmiAssembliesDirectory = (Join-Path $PayloadDirectory "PmiAssembliesDirectory")
 $WorkItemDirectory = (Join-Path $SourceDirectory "workitem")
-$Queue = "Windows.10.Amd64.19H1.Tiger.Perf"
+$Queue = "Windows.10.Amd64.ServerRS4"
+
+if($Architecture -eq 'arm64') {
+    $Queue = "Windows.10.Arm64"
+}
+
 $HelixSourcePrefix = "official"
 $Creator = ""
 
