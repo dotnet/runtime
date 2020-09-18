@@ -173,7 +173,7 @@ if(GCC)
 
   check_c_compiler_flag("-Werror=incompatible-pointer-types" WERROR_INCOMPATIBLE_POINTER_TYPES)
   if(WERROR_INCOMPATIBLE_POINTER_TYPES)
-	set(WERROR "${WERROR} -Werror=incompatible-pointer-types")
+    set(WERROR "${WERROR} -Werror=incompatible-pointer-types")
   endif()
   set(WERROR "${WERROR} -Werror=return-type -Werror-implicit-function-declaration")
 
@@ -214,7 +214,7 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "iOS" OR CMAKE_SYSTEM_NAME STREQUAL "tvOS")
   set(HAVE_SYSTEM 0)
   set(MONO_DL_NEED_USCORE 1)
   if(CMAKE_SYSTEM_NAME STREQUAL "tvOS")
-	set(HOST_TVOS 1)
+    set(HOST_TVOS 1)
   endif()
 
   # Force some defines
