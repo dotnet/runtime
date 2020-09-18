@@ -34,7 +34,7 @@ namespace System.Text.Json.Serialization.Tests
 
             // Try a unique naming policy
             options = new JsonSerializerOptions();
-            options.Converters.Add(new JsonStringEnumConverter(new ToLower()));
+            options.Converters.Add(new JsonStringEnumConverter(new ToLowerNamingPolicy()));
 
             json = JsonSerializer.Serialize(DayOfWeek.Friday, options);
             Assert.Equal(@"""friday""", json);
@@ -49,7 +49,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<JsonException>(() => JsonSerializer.Serialize((DayOfWeek)(-1), options));
         }
 
-        public class ToLower : JsonNamingPolicy
+        public class ToLowerNamingPolicy : JsonNamingPolicy
         {
             public override string ConvertName(string name) => name.ToLowerInvariant();
         }
@@ -93,7 +93,7 @@ namespace System.Text.Json.Serialization.Tests
 
             // Try a unique casing
             options = new JsonSerializerOptions();
-            options.Converters.Add(new JsonStringEnumConverter(new ToLower()));
+            options.Converters.Add(new JsonStringEnumConverter(new ToLowerNamingPolicy()));
 
             json = JsonSerializer.Serialize(FileAttributes.NoScrubData, options);
             Assert.Equal(@"""noscrubdata""", json);
@@ -145,7 +145,7 @@ namespace System.Text.Json.Serialization.Tests
             public LowerCaseEnumAttribute() { }
 
             public override JsonConverter CreateConverter(Type typeToConvert)
-                => new JsonStringEnumConverter(new ToLower());
+                => new JsonStringEnumConverter(new ToLowerNamingPolicy());
         }
 
         [Fact]
@@ -238,7 +238,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             var options = new JsonSerializerOptions
             {
-                Converters = { new JsonStringEnumConverter(new ToLower()) }
+                Converters = { new JsonStringEnumConverter(new ToLowerNamingPolicy()) }
             };
 
             for (int i = 0; i < 128; i++)
@@ -362,20 +362,20 @@ namespace System.Text.Json.Serialization.Tests
             [Fact]
             public void SerilizeDictionaryWhenCacheIsFull()
             {
-                var options = new JsonSerializerOptions
-                {
-                    Converters = { new JsonStringEnumConverter() }
-                };
+                // var options = new JsonSerializerOptions
+                // {
+                //     Converters = { new JsonStringEnumConverter() }
+                // };
 
                 Dictionary<T, int> dictionary;
                 for (int i = 1; i <= 64; i++)
                 {
                     dictionary = BuildDictionary(i);
-                    JsonSerializer.Serialize(dictionary, options);
+                    JsonSerializer.Serialize(dictionary);
                 }
 
                 dictionary = BuildDictionary(0);
-                string json = JsonSerializer.Serialize(dictionary, options);
+                string json = JsonSerializer.Serialize(dictionary);
                 Assert.Equal($"{{\"0\":0}}", json);
             }
         }
