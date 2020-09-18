@@ -535,7 +535,7 @@ namespace System.Net.Security
                                 new Span<byte>((byte*)outUnmanagedBuffer.pvBuffer, outUnmanagedBuffer.cbBuffer).ToArray() :
                                 null;
 
-                            if (inSecBuffers.Count > 0 && inUnmanagedBuffer[1].BufferType == SecurityBufferType.SECBUFFER_EXTRA && inSecBuffers._item1.Type == SecurityBufferType.SECBUFFER_EMPTY)
+                            if (inSecBuffers.Count > 1 && inUnmanagedBuffer[1].BufferType == SecurityBufferType.SECBUFFER_EXTRA && inSecBuffers._item1.Type == SecurityBufferType.SECBUFFER_EMPTY)
                             {
                                 // OS function did not use all provied data and turnerd EMPTY to EXTRA
                                 // https://docs.microsoft.com/en-us/windows/win32/secauthn/extra-buffers-returned-by-schannel
@@ -845,7 +845,7 @@ namespace System.Net.Security
                                     new Span<byte>((byte*)outUnmanagedBuffer[index].pvBuffer, outUnmanagedBuffer[0].cbBuffer).ToArray() :
                                     null;
 
-                        if (inSecBuffers.Count > 0 && inUnmanagedBuffer[1].BufferType == SecurityBufferType.SECBUFFER_EXTRA && inSecBuffers._item1.Type == SecurityBufferType.SECBUFFER_EMPTY)
+                        if (inSecBuffers.Count > 1 && inUnmanagedBuffer[1].BufferType == SecurityBufferType.SECBUFFER_EXTRA && inSecBuffers._item1.Type == SecurityBufferType.SECBUFFER_EMPTY)
                         {
                             // OS function did not use all provied data and turnerd EMPTY to EXTRA
                             // https://docs.microsoft.com/en-us/windows/win32/secauthn/extra-buffers-returned-by-schannel
