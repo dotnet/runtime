@@ -8,6 +8,8 @@
 # 4. Clones dotnet/jitutils repo in Payload/jitutils directory.
 # 5. Build jitutils
 
+echo "Inside superpmi-setup.sh"
+
 source_directory=$BUILD_SOURCESDIRECTORY
 core_root_directory=
 managed_test_artifact_directory=
@@ -69,6 +71,8 @@ fi
 
 helix_source_prefix="official"
 creator=""
+
+echo "Done setting queue"
 
 # Prepare payloads
 mkdir -p $workitem_directory
