@@ -88,14 +88,14 @@ namespace Microsoft.Extensions.Http.Logging
         public LoggingHttpMessageHandler(Microsoft.Extensions.Logging.ILogger logger) { }
         public LoggingHttpMessageHandler(Microsoft.Extensions.Logging.ILogger logger, Microsoft.Extensions.Http.HttpClientFactoryOptions options) { }
         [System.Diagnostics.DebuggerStepThroughAttribute]
-        protected override System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> SendAsync(System.Net.Http.HttpRequestMessage request, System.Threading.CancellationToken cancellationToken) { throw null; }
+        protected internal override System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> SendAsync(System.Net.Http.HttpRequestMessage request, System.Threading.CancellationToken cancellationToken) { throw null; }
     }
     public partial class LoggingScopeHttpMessageHandler : System.Net.Http.DelegatingHandler
     {
         public LoggingScopeHttpMessageHandler(Microsoft.Extensions.Logging.ILogger logger) { }
         public LoggingScopeHttpMessageHandler(Microsoft.Extensions.Logging.ILogger logger, Microsoft.Extensions.Http.HttpClientFactoryOptions options) { }
         [System.Diagnostics.DebuggerStepThroughAttribute]
-        protected override System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> SendAsync(System.Net.Http.HttpRequestMessage request, System.Threading.CancellationToken cancellationToken) { throw null; }
+        protected internal override System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> SendAsync(System.Net.Http.HttpRequestMessage request, System.Threading.CancellationToken cancellationToken) { throw null; }
     }
 }
 namespace System.Net.Http

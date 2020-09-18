@@ -46,6 +46,6 @@ namespace System.Net.Http
         public System.Security.Authentication.SslProtocols SslProtocols { get { throw null; } set { } }
         public System.Net.Http.WindowsProxyUsePolicy WindowsProxyUsePolicy { get { throw null; } set { } }
         protected override void Dispose(bool disposing) { }
-        protected override System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> SendAsync(System.Net.Http.HttpRequestMessage request, System.Threading.CancellationToken cancellationToken) { throw null; }
+        protected internal override System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> SendAsync(System.Net.Http.HttpRequestMessage request, System.Threading.CancellationToken cancellationToken) { throw null; }
     }
 }
