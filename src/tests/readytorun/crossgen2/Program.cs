@@ -1443,7 +1443,7 @@ internal class Program
         }
     }
 
-    [StructLayout(LayoutKind.Auto, Size = 0x14)]
+    [StructLayout(LayoutKind.Auto, Size = 0x18)]
     public struct ExplicitlySizedStructAuto
     {
         private long A;
@@ -1483,6 +1483,7 @@ internal class Program
     private unsafe static bool ExplicitlySizedStructTest()
     {
         {
+            Console.WriteLine($"sizeof(ExplicitlySizedStructSequential) != 0x14 {sizeof(ExplicitlySizedStructSequential)} != 0x14");
             if (sizeof(ExplicitlySizedStructSequential) != 0x14)
                 return false;
             
@@ -1494,6 +1495,7 @@ internal class Program
         }
 
         {
+            Console.WriteLine($"sizeof(ExplicitlySizedStructSequentialSizeTooSmall) != 0x14 {sizeof(ExplicitlySizedStructSequentialSizeTooSmall)} != 0x14");
             if (sizeof(ExplicitlySizedStructSequentialSizeTooSmall) != 0x14)
                 return false;
             
@@ -1505,6 +1507,7 @@ internal class Program
         }
 
         {
+            Console.WriteLine($"sizeof(ExplicitlySizedStructExplicit) != 0x15 {sizeof(ExplicitlySizedStructExplicit)} != 0x15");
             if (sizeof(ExplicitlySizedStructExplicit) != 0x15)
                 return false;
             
@@ -1516,6 +1519,7 @@ internal class Program
         }
 
         {
+            Console.WriteLine($"sizeof(ExplicitlySizedStructExplicitSizeTooSmall) != 0x15 {sizeof(ExplicitlySizedStructExplicitSizeTooSmall)} != 0x15");
             if (sizeof(ExplicitlySizedStructExplicitSizeTooSmall) != 0x15)
                 return false;
             
@@ -1527,6 +1531,7 @@ internal class Program
         }
 
         {
+            Console.WriteLine($"sizeof(ExplicitlySizedStructExplicitSizeZero) != sizeof(NormalStruct) {sizeof(ExplicitlySizedStructExplicitSizeZero)} != {sizeof(NormalStruct)}");
             if (sizeof(ExplicitlySizedStructExplicitSizeZero) != sizeof(NormalStruct))
                 return false;
             
@@ -1537,7 +1542,9 @@ internal class Program
                 return false;
         }
 
+        if (sizeof(IntPtr) == 8) // This test isn't right for 32 bit platforms
         {
+            Console.WriteLine($"sizeof(ExplicitlySizedStructAuto) != sizeof(NormalStruct) {sizeof(ExplicitlySizedStructAuto)} != {sizeof(NormalStruct)}");
             if (sizeof(ExplicitlySizedStructAuto) != sizeof(NormalStruct))
                 return false;
             
@@ -1548,7 +1555,9 @@ internal class Program
                 return false;
         }
 
+        if (sizeof(IntPtr) == 8) // This test isn't right for 32 bit platforms
         {
+            Console.WriteLine($"sizeof(ExplicitlySizedStructAutoSizeTooSmall) != sizeof(NormalStruct) {sizeof(ExplicitlySizedStructAutoSizeTooSmall)} != {sizeof(NormalStruct)}");
             if (sizeof(ExplicitlySizedStructAutoSizeTooSmall) != sizeof(NormalStruct))
                 return false;
             
