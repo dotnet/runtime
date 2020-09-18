@@ -130,6 +130,7 @@ jobs:
         WorkItemDirectory: '$(WorkItemDirectory)' # WorkItemDirectory can not be empty, so we send it some docs to keep it happy
         CorrelationPayloadDirectory: '$(PayloadDirectory)' # it gets checked out to a folder with shorter path than WorkItemDirectory so we can avoid file name too long exceptions
         ProjectFile: ${{ parameters.projectFile }}
+
     - task: PublishPipelineArtifact@1
       displayName: Publish Logs
       inputs:
@@ -137,3 +138,15 @@ jobs:
         artifactName: 'SuperPMI_Run_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.runtimeType }}_${{ parameters.codeGenType }}_CoreRoot'
       continueOnError: true
       condition: always()
+
+    - task: DownloadBuildArtifacts@0
+      displayName: 'Download superpmi results'
+      inputs:
+        buildType: current
+        downloadType: single
+        downloadPath: '$(PmiAssembliesDirectory)\superpmi_results'
+        artifactName: 'SuperPMI_Run_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.runtimeType }}_${{ parameters.codeGenType }}_CoreRoot'
+
+    - script: |
+          echo listing files in $(PmiAssembliesDirectory)\superpmi_results
+          dir /s /b $(PmiAssembliesDirectory)\superpmi_results
