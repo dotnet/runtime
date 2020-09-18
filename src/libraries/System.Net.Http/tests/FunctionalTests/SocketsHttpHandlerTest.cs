@@ -2271,7 +2271,6 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
-
     public abstract class SocketsHttpHandlerTest_ConnectCallback : HttpClientHandlerTestBase
     {
         public SocketsHttpHandlerTest_ConnectCallback(ITestOutputHelper output) : base(output) { }
@@ -2383,6 +2382,49 @@ namespace System.Net.Http.Functional.Tests
                 using HttpClient client = CreateHttpClient(handler);
 
                 string response = await client.GetStringAsync($"{(options.UseSsl ? "https" : "http")}://nowhere.invalid/foo");
+                Assert.Equal("foo", response);
+            });
+
+            await new[] { serverTask, clientTask }.WhenAllOrAnyFailed(60_000);
+        }
+
+        [Fact]
+        public async Task ConnectCallback_UseVirtualNetwork_ProduceSslStream_Success()
+        {
+            var vn = new VirtualNetwork();
+            using var clientStream = new VirtualNetworkStream(vn, isServer: false, gracefulShutdown: true);
+            using var serverStream = new VirtualNetworkStream(vn, isServer: true, gracefulShutdown: true);
+
+            GenericLoopbackOptions options = new GenericLoopbackOptions() { UseSsl = true };
+
+            Task serverTask = Task.Run(async () =>
+            {
+                using GenericLoopbackConnection loopbackConnection = await LoopbackServerFactory.CreateConnectionAsync(socket: null, serverStream, options);
+                await loopbackConnection.InitializeConnectionAsync();
+
+                HttpRequestData requestData = await loopbackConnection.ReadRequestDataAsync();
+                await loopbackConnection.SendResponseAsync(content: "foo");
+
+                Assert.Equal("/foo", requestData.Path);
+            });
+
+            Task clientTask = Task.Run(async () =>
+            {
+                using HttpClientHandler handler = CreateHttpClientHandler();
+                handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+                var socketsHandler = (SocketsHttpHandler)GetUnderlyingSocketsHttpHandler(handler);
+                socketsHandler.ConnectCallback = async (context, token) =>
+                {
+                    var stream = new SslStream(clientStream, false, (sender, cert, chain, policy) => true);
+                    
+                    await stream.AuthenticateAsClientAsync("foo");
+
+                    return stream;
+                };
+
+                using HttpClient client = CreateHttpClient(handler);
+
+                string response = await client.GetStringAsync("https://nowhere.invalid/foo");
                 Assert.Equal("foo", response);
             });
 
