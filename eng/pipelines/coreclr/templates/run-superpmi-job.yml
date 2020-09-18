@@ -139,24 +139,16 @@ jobs:
       continueOnError: true
       condition: always()
 
-    - task: DownloadPipelineArtifact@2
-      displayName: 'Download superpmi results'
-      inputs:
-        buildType: current
-        targetPath: '$(PmiAssembliesDirectory)\superpmi_results'
-        artifactName: 'SuperPMI_Run_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.runtimeType }}_${{ parameters.codeGenType }}_CoreRoot'
-
     - script: |
-          echo listing files in $(PmiAssembliesDirectory)
-          dir /s /b $(PmiAssembliesDirectory)
-          dir /s /b $(Build.SourcesDirectory)\artifacts
+          echo listing files in $(Build.SourcesDirectory)\artifacts\helixresults
+          dir /s /b $(Build.SourcesDirectory)\artifacts\helixresults
 
     - task: PythonScript@0
       displayName: Run superpmi.py upload
       inputs:
         scriptSource: 'filePath'
         scriptPath: $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py
-        arguments: upload -arch x64 -mch_files $(PmiAssembliesDirectory)\superpmi_results -core_root $(PmiAssembliesDirectory)\Core_Root\superpmi_min
+        arguments: upload -arch x64 -mch_files $(Build.SourcesDirectory)\artifacts\helixresults -core_root $(PmiAssembliesDirectory)\Core_Root\superpmi_min
       env:
         CLRJIT_AZ_KEY: $(clrjit_key1) # secret key
 # python superpmi.py upload -arch x64 -core_root E:\temp\power\core_root\superpmi_min -mch_files E:\temp\power\_2
