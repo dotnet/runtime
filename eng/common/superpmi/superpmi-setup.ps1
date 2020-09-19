@@ -63,6 +63,9 @@ $env:PATH = "$SourceDirectory\.dotnet;$env:PATH"
 Write-Host "dotnet PATH: $env:PATH"
 .\bootstrap.cmd
 
+Write-Host "Printing files in $WorkItemDirectory"
+Get-ChildItem -Path $WorkItemDirectory -Recurse -Name
+
 # Set variables that we will need to have in future steps
 $ci = $true
 

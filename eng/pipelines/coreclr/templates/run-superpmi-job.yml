@@ -86,8 +86,8 @@ jobs:
         HelixPreCommands: $(HelixPreCommand)
         Creator: $(Creator)
         WorkItemTimeout: 4:00 # 4 hours
-        WorkItemDirectory: '$(WorkItemDirectory)' # WorkItemDirectory can not be empty, so we send it some docs to keep it happy
-        CorrelationPayloadDirectory: '$(CorrelationPayloadDirectory)' # it gets checked out to a folder with shorter path than WorkItemDirectory so we can avoid file name too long exceptions
+        WorkItemDirectory: '$(WorkItemDirectory)'
+        CorrelationPayloadDirectory: '$(CorrelationPayloadDirectory)'
         ProjectFile: ${{ parameters.projectFile }}
 
     - task: PublishPipelineArtifact@1

@@ -9,19 +9,19 @@
 
   <PropertyGroup Condition="'$(AGENT_OS)' == 'Windows_NT'">
     <Python>py -3</Python>
-    <PmiAssembliesDirectory>%WorkItemDirectory%\PmiAssembliesDirectory</PmiAssembliesDirectory>
+    <PmiAssembliesDirectory>%WorkItemDirectory%\pmiAssembliesDirectory</PmiAssembliesDirectory>
     <SuperPMIDirectory>%HELIX_CORRELATION_PAYLOAD%\superpmi</SuperPMIDirectory>
     <OutputMchPath>%HELIX_WORKITEM_UPLOAD_ROOT%</OutputMchPath>
     <JitUtilsDirectory>%HELIX_CORRELATION_PAYLOAD%\jitutils\bin</JitUtilsDirectory>
-    <WorkItemCommand>$(SuperPMIDirectory)\superpmi.py collect --pmi -pmi_location $(JitUtilsDirectory)\pmi.dll -core_root $(PmiAssembliesDirectory)\$(SuperPMIDirectory)</WorkItemCommand>
+    <WorkItemCommand>$(SuperPMIDirectory)\superpmi.py collect --pmi -pmi_location $(JitUtilsDirectory)\pmi.dll -core_root $(SuperPMIDirectory)</WorkItemCommand>
   </PropertyGroup>
   <PropertyGroup Condition="'$(AGENT_OS)' != 'Windows_NT'">
     <Python>py -3</Python>
-    <PmiAssembliesDirectory>$WorkItemDirectory/PmiAssembliesDirectory</PmiAssembliesDirectory>
+    <PmiAssembliesDirectory>$WorkItemDirectory/pmiAssembliesDirectory</PmiAssembliesDirectory>
     <SuperPMIDirectory>$HELIX_CORRELATION_PAYLOAD/superpmi</SuperPMIDirectory>
     <OutputMchPath>$HELIX_WORKITEM_UPLOAD_ROOT</OutputMchPath>
     <JitUtilsDirectory>$HELIX_CORRELATION_PAYLOAD/jitutils/bin</JitUtilsDirectory>
-    <WorkItemCommand>$(SuperPMIDirectory)/superpmi.py collect --pmi -pmi_location $(JitUtilsDirectory)/pmi.dll -core_root $(PmiAssembliesDirectory)/$(SuperPMIDirectory)</WorkItemCommand>
+    <WorkItemCommand>$(SuperPMIDirectory)/superpmi.py collect --pmi -pmi_location $(JitUtilsDirectory)/pmi.dll -core_root $(SuperPMIDirectory)</WorkItemCommand>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(WorkItemCommand)' != ''">
@@ -45,7 +45,7 @@
 
   <ItemGroup>
     <Partition Include="$(BuildConfig).Libraries" PmiAssemblies="Core_Root" OutputMchName="libraries.pmi" />
-    <!-- <Partition Include="$(BuildConfig).Tests" PmiAssemblies="Tests" OutputMchName="tests" /> -->
+    <!-- <Partition Include="$(BuildConfig).Tests" PmiAssemblies="Tests" OutputMchName="tests.pmi" /> -->
   </ItemGroup>
 
   <ItemGroup>
@@ -64,13 +64,13 @@
     and replace the Project item at the top of the file with this:
     <Project DefaultTargets="printItems">
 
-    Add this in one of the property
-    <HelixTargetQueues>Some_Queue</HelixTargetQueues>
-
     Once you've done that you can run this to see the results:
     dotnet msbuild .\scenarios.proj /v:n
    -->
-  <!-- <Target Name="printItems">
+   <!-- <PropertyGroup>
+     <HelixTargetQueues>Some_Queue</HelixTargetQueues>
+   </PropertyGroup>
+  <Target Name="printItems">
         <Message Text="@(HelixWorkItem -> 'name: %(HelixWorkItem.Identity)
      dir: %(HelixWorkItem.PayloadDirectory)
      pre: %(HelixWorkItem.PreCommands)
