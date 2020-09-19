@@ -9,7 +9,7 @@
 
   <PropertyGroup Condition="'$(AGENT_OS)' == 'Windows_NT'">
     <Python>py -3</Python>
-    <PmiAssembliesDirectory>%WorkItemDirectory%\pmiAssembliesDirectory</PmiAssembliesDirectory>
+    <PmiAssembliesDirectory>$(WorkItemDirectory)\pmiAssembliesDirectory</PmiAssembliesDirectory>
     <SuperPMIDirectory>%HELIX_CORRELATION_PAYLOAD%\superpmi</SuperPMIDirectory>
     <OutputMchPath>%HELIX_WORKITEM_UPLOAD_ROOT%</OutputMchPath>
     <JitUtilsDirectory>%HELIX_CORRELATION_PAYLOAD%\jitutils\bin</JitUtilsDirectory>
@@ -17,7 +17,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(AGENT_OS)' != 'Windows_NT'">
     <Python>py -3</Python>
-    <PmiAssembliesDirectory>$WorkItemDirectory/pmiAssembliesDirectory</PmiAssembliesDirectory>
+    <PmiAssembliesDirectory>$(WorkItemDirectory)/pmiAssembliesDirectory</PmiAssembliesDirectory>
     <SuperPMIDirectory>$HELIX_CORRELATION_PAYLOAD/superpmi</SuperPMIDirectory>
     <OutputMchPath>$HELIX_WORKITEM_UPLOAD_ROOT</OutputMchPath>
     <JitUtilsDirectory>$HELIX_CORRELATION_PAYLOAD/jitutils/bin</JitUtilsDirectory>
