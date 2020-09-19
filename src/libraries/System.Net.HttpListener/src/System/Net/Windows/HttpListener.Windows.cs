@@ -607,7 +607,7 @@ namespace System.Net
             return true;
         }
 
-        public IAsyncResult BeginGetContext(AsyncCallback callback, object state)
+        public IAsyncResult BeginGetContext(AsyncCallback? callback, object? state)
         {
             ListenerAsyncResult? asyncResult = null;
             try
