@@ -255,24 +255,25 @@ namespace System.IO
             // Parse each event from the buffer and notify appropriate delegates
             while (true)
             {
-                // Validate the data we received in case it's corrupted. This can happen
-                // if we are watching files over the network with a poor connection.
-
-                // Verify the info object is within the expected bounds
+                // Validate the data we received isn't truncated. This can happen if we are watching files over
+                // the network with a poor connection (https://github.com/dotnet/runtime/issues/40412).
                 if (sizeof(FILE_NOTIFY_INFORMATION) > (uint)buffer.Length)
                 {
-                    // Defensive check. We have not observed this corruption in practice.
+                    // This is defensive check. We do not expect to receive truncated data under normal circumstances.
                     Debug.Assert(false);
                     break;
                 }
                 ref readonly FILE_NOTIFY_INFORMATION info = ref MemoryMarshal.AsRef<FILE_NOTIFY_INFORMATION>(buffer);
 
+                // Validate the data we received isn't truncated.
                 if (info.FileNameLength > (uint)buffer.Length - sizeof(FILE_NOTIFY_INFORMATION))
                 {
-                    // We have observed this corruption in practice (https://github.com/dotnet/runtime/issues/40412)
+                    // This is defensive check. We do not expect to receive truncated data under normal circumstances.
+                    Debug.Assert(false);
                     break;
                 }
-                ReadOnlySpan<char> fileName = MemoryMarshal.Cast<byte, char>(buffer.Slice(sizeof(FILE_NOTIFY_INFORMATION), (int)info.FileNameLength));
+                ReadOnlySpan<char> fileName = MemoryMarshal.Cast<byte, char>(
+                    buffer.Slice(sizeof(FILE_NOTIFY_INFORMATION), (int)info.FileNameLength));
 
                 // A slightly convoluted piece of code follows.  Here's what's happening:
                 //
@@ -345,9 +346,10 @@ namespace System.IO
                     break;
                 }
 
+                // Validate the data we received isn't truncated.
                 if (info.NextEntryOffset > (uint)buffer.Length)
                 {
-                    // Defensive check. We have not observed this corruption in practice.
+                    // This is defensive check. We do not expect to receive truncated data under normal circumstances.
                     Debug.Assert(false);
                     break;
                 }
