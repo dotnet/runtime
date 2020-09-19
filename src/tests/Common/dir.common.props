@@ -20,7 +20,8 @@
 
     <TestWorkingDir>$(BaseOutputPathWithConfig)\</TestWorkingDir>
 
-    <TestSourceDir Condition="'$(TestSourceDir)' == ''">$([MSBuild]::NormalizePath('$(RepoRoot)/src/tests/'))</TestSourceDir>
+    <TestSourceDir>$([MSBuild]::NormalizePath('$(RepoRoot)/src/tests/'))</TestSourceDir>
+    <TestSourceDir Condition="$([System.String]::new('$(MSBuildProjectDirectory)').StartsWith('$(BaseOutputPathWithConfig)'))">$(BaseOutputPathWithConfig)</TestSourceDir>
     <BuildProjectRelativeDir>$([MSBuild]::MakeRelative($(TestSourceDir), $(MSBuildProjectDirectory)))\$(MSBuildProjectName)\</BuildProjectRelativeDir>
 
     <!-- BaseIntermediateOutputPath is used by the SDK as the location
