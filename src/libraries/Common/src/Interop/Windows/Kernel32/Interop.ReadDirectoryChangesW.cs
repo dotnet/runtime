@@ -22,14 +22,17 @@ internal partial class Interop
             void* lpCompletionRoutine);
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-        internal struct FILE_NOTIFY_INFORMATION
+        internal readonly struct FILE_NOTIFY_INFORMATION
         {
-            internal uint NextEntryOffset;
-            internal FileAction Action;
+            internal readonly uint NextEntryOffset;
+            internal readonly FileAction Action;
 
-            // Note that the file name is not null terminated
+            // The size of FileName portion of the record, in bytes. The value does not include the terminating null character.
             internal readonly uint FileNameLength;
-            internal readonly char FileName;
+
+            // A variable-length field that contains the file name. This field is part of Windows SDK definition of this structure.
+            // It is intentionally omitted in the managed definition given how it is used.
+            // internal readonly fixed char FileName[1];
         }
 
         internal enum FileAction : uint
