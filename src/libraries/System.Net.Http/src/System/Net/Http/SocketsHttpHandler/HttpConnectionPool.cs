@@ -614,10 +614,7 @@ namespace System.Net.Http
 
                     if (_kind == HttpConnectionKind.Http)
                     {
-                        http2Connection = new Http2Connection(this, stream);
-                        await http2Connection.SetupAsync().ConfigureAwait(false);
-
-                        AddHttp2Connection(http2Connection);
+                        http2Connection = await ConstructHttp2Connection(stream, request, cancellationToken).ConfigureAwait(false);
 
                         if (NetEventSource.Log.IsEnabled())
                         {
@@ -638,10 +635,7 @@ namespace System.Net.Http
                             throw new HttpRequestException(SR.Format(SR.net_ssl_http2_requires_tls12, sslStream.SslProtocol));
                         }
 
-                        http2Connection = new Http2Connection(this, stream);
-                        await http2Connection.SetupAsync().ConfigureAwait(false);
-
-                        AddHttp2Connection(http2Connection);
+                        http2Connection = await ConstructHttp2Connection(stream, request, cancellationToken).ConfigureAwait(false);
 
                         if (NetEventSource.Log.IsEnabled())
                         {
@@ -695,7 +689,7 @@ namespace System.Net.Http
 
                 if (canUse)
                 {
-                    return (ConstructHttp11Connection(stream!, transportContext), true, null);
+                    return (await ConstructHttp11Connection(stream!, transportContext, request, cancellationToken).ConfigureAwait(false), true, null);
                 }
                 else
                 {
@@ -1342,7 +1336,7 @@ namespace System.Net.Http
                 return (null, failureResponse);
             }
 
-            return (ConstructHttp11Connection(stream!, transportContext), null);
+            return (await ConstructHttp11Connection(stream!, transportContext, request, cancellationToken).ConfigureAwait(false), null);
         }
 
         private SslClientAuthenticationOptions GetSslOptionsForRequest(HttpRequestMessage request)
@@ -1362,10 +1356,31 @@ namespace System.Net.Http
             return _sslOptionsHttp11!;
         }
 
-        private HttpConnection ConstructHttp11Connection(Stream stream, TransportContext? transportContext)
+        private async ValueTask<HttpConnection> ConstructHttp11Connection(Stream stream, TransportContext? transportContext, HttpRequestMessage request, CancellationToken cancellationToken)
         {
+            if (Settings._plaintextStreamFilter is not null)
+            {
+                stream = await Settings._plaintextStreamFilter(new SocketsHttpPlaintextStreamFilterContext(stream, HttpVersion.Version11, request), cancellationToken).ConfigureAwait(false);
+            }
+
             return new HttpConnection(this, stream, transportContext);
         }
+
+        private async ValueTask<Http2Connection> ConstructHttp2Connection(Stream stream, HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            if (Settings._plaintextStreamFilter is not null)
+            {
+                stream = await Settings._plaintextStreamFilter(new SocketsHttpPlaintextStreamFilterContext(stream, HttpVersion.Version20, request), cancellationToken).ConfigureAwait(false);
+            }
+
+            Http2Connection http2Connection = new Http2Connection(this, stream);
+            await http2Connection.SetupAsync().ConfigureAwait(false);
+
+            AddHttp2Connection(http2Connection);
+
+            return http2Connection;
+        }
+
 
         // Returns the established stream or an HttpResponseMessage from the proxy indicating failure.
         private async ValueTask<(Stream?, HttpResponseMessage?)> EstablishProxyTunnel(bool async, HttpRequestHeaders? headers, CancellationToken cancellationToken)
