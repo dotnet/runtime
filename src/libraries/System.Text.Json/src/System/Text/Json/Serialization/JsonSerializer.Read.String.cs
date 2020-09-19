@@ -50,7 +50,7 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Parse the text representing a single JSON value into a <typeparamref name="TValue"/>.
+        /// Parse the text representing a single JSON value into an instance of a specified type.
         /// </summary>
         /// <returns>A <typeparamref name="TValue"/> representation of the JSON value.</returns>
         /// <param name="json">JSON text to parse.</param>
@@ -127,10 +127,10 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Parse the text representing a single JSON value into a <paramref name="returnType"/>.
+        /// Parse the text representing a single JSON value into an instance of a specified type.
         /// </summary>
         /// <returns>A <paramref name="returnType"/> representation of the JSON value.</returns>
-        /// <param name="json">JSON text to parse.</param>
+        /// <param name="json">The JSON text to parse.</param>
         /// <param name="returnType">The type of the object to convert to and return.</param>
         /// <param name="options">Options to control the behavior during parsing.</param>
         /// <exception cref="JsonException">
