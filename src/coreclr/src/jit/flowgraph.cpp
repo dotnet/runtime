@@ -22175,9 +22175,15 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
 }
 
 //------------------------------------------------------------------------------
-// fgDebugCheckDispFlags : Display the flags that we are checking
+// fgDebugCheckDispFlags:
+//    Wrapper function that displays two GTF_IND_ flags
+//      and then calls ftDispFlags to display the rest.
 //
 // Arguments:
+//    tree       - Tree whose flags are being checked
+//    dispFlags  - the first argument for gtDispFlags
+//                 ands hold GTF_IND_INVARIANT and GTF_IND_NONFLUALTING
+//    debugFlags - the second argument to gtDispFlags
 //
 void Compiler::fgDebugCheckDispFlags(GenTree* tree, unsigned dispFlags, unsigned debugFlags)
 {

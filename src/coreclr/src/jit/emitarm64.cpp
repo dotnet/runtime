@@ -12313,9 +12313,9 @@ void emitter::emitDispIns(
                     {
                         targetName = "const ptr";
                     }
-                    else if (idFlags == GTF_ICON_PTR_GLOBAL)
+                    else if (idFlags == GTF_ICON_GLOBAL_PTR)
                     {
-                        targetName = "ptr global";
+                        targetName = "global ptr";
                     }
                     else if (idFlags == GTF_ICON_STR_HDL)
                     {
