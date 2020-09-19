@@ -317,6 +317,8 @@ var BindingSupportLib = {
 					return this.mono_unbox_float64 (mono_obj);
 				case 3: //string
 					return this.conv_string (mono_obj);
+				case 28: // char
+					return String.fromCharCode(this.mono_unbox_int (mono_obj));
 				case 4: //vts
 					throw new Error ("no idea on how to unbox value types");
 				case 5: // delegate
@@ -1285,8 +1287,10 @@ var BindingSupportLib = {
 				"        result = Module.HEAPF64[buffer / 8]; break;",
 				"    case 8:", // boolean
 				"        result = (Module.HEAP32[buffer / 4]) !== 0; break;",
+				"    case 28:", // char
+				"        result = String.fromCharCode(Module.HEAP32[buffer / 4]); break;",
 				"    default:",
-				"        result = binding_support._unbox_mono_obj_rooted (resultRoot); break;",
+				"        result = binding_support._unbox_mono_obj_rooted_with_known_type (resultRoot, resultType); break;",
 				"    }",
 				"}",
 				"",

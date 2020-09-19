@@ -749,6 +749,7 @@ MonoClass* mono_get_uri_class(MonoException** exc)
 #define MARSHAL_TYPE_UINT32 25
 #define MARSHAL_TYPE_INT64 26
 #define MARSHAL_TYPE_UINT64 27
+#define MARSHAL_TYPE_CHAR 28
 
 void mono_wasm_ensure_classes_resolved ()
 {
@@ -785,6 +786,8 @@ mono_wasm_marshal_type_from_mono_type (int mono_type, MonoClass *klass, MonoType
 	case MONO_TYPE_I4:
 	case MONO_TYPE_I:	// IntPtr
 		return MARSHAL_TYPE_INT;
+	case MONO_TYPE_CHAR:
+		return MARSHAL_TYPE_CHAR;
 	case MONO_TYPE_U4:  // The distinction between this and signed int is
 						// important due to how numbers work in JavaScript
 		return MARSHAL_TYPE_UINT32;
@@ -893,6 +896,7 @@ mono_wasm_try_unbox_primitive_and_get_type (MonoObject *obj, void *result)
 			*resultI = *(unsigned char*)mono_object_unbox (obj);
 			break;
 		case MONO_TYPE_I2:
+		case MONO_TYPE_CHAR:
 			*resultI = *(short*)mono_object_unbox (obj);
 			break;
 		case MONO_TYPE_U2:
@@ -950,6 +954,8 @@ mono_unbox_int (MonoObject *obj)
 		return *(int*)ptr;
 	case MONO_TYPE_U4:
 		return *(unsigned int*)ptr;
+	case MONO_TYPE_CHAR:
+		return *(short*)ptr;
 	// WASM doesn't support returning longs to JS
 	// case MONO_TYPE_I8:
 	// case MONO_TYPE_U8:
