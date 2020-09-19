@@ -1,7 +1,7 @@
 # Setups up machine to send payload to Helix machine to do superpmi collection
 #
-# 1. Copies CORE_ROOT in Payload\PmiAssembliesDirectory\Core_Root directory.
-# 2. Copies Test binaries in Payload\PmiAssembliesDirectory\Tests directory.
+# 1. Copies CORE_ROOT in Payload\pmiAssembliesDirectory\Core_Root directory.
+# 2. Copies Test binaries in Payload\pmiAssembliesDirectory\Tests directory.
 # 3. Copies Sources\src\coreclr\scripts in Payload\superpmi directory.
 # 4. Clones dotnet/jitutils repo in Payload/jitutils directory.
 # 5. Build jitutils
@@ -17,11 +17,15 @@ Param(
 Write-Host "CORE_ROOT is" $CoreRootDirectory
 Write-Host "Test artifacts is " $ManagedTestArtifactDirectory
 
-$PayloadDirectory = (Join-Path $SourceDirectory "Payload")
-$SuperPmiDirectory = (Join-Path $PayloadDirectory "superpmi")
-$JitUtilsDirectory = (Join-Path $PayloadDirectory "jitutils")
-$PmiAssembliesDirectory = (Join-Path $PayloadDirectory "PmiAssembliesDirectory")
+# WorkItem Directories
 $WorkItemDirectory = (Join-Path $SourceDirectory "workitem")
+$PmiAssembliesDirectory = (Join-Path $WorkItemDirectory "pmiAssembliesDirectory")
+
+# CorrelationPayload Directories
+$CorrelationPayloadDirectory = (Join-Path $SourceDirectory "Payload")
+$SuperPmiDirectory = (Join-Path $CorrelationPayloadDirectory "superpmi")
+$JitUtilsDirectory = (Join-Path $CorrelationPayloadDirectory "jitutils")
+
 $Queue = "Windows.10.Amd64"
 
 if($Architecture -eq 'arm64') {
@@ -31,12 +35,23 @@ if($Architecture -eq 'arm64') {
 $HelixSourcePrefix = "official"
 $Creator = ""
 
-# Prepare payloads
-robocopy $SourceDirectory\src\coreclr\scripts $SuperPmiDirectory /E /XD $PayloadDirectory $SourceDirectory\artifacts $SourceDirectory\.git
-robocopy $CoreRootDirectory $PmiAssembliesDirectory\Core_Root /E
-# robocopy $ManagedTestArtifactDirectory $PmiAssembliesDirectory\Tests /E /XD $CoreRootDirectory
+# Minimum binaries from CORE_ROOT needed to run superpmi.py
+$super_pmi_dlls = @(
+ "clrjit.dll",
+ "coreclr.dll",
+ "CoreRun.exe",
+ "mcs.exe",
+ "superpmi.exe",
+ "System.Private.CoreLib.dll"
+)
 
-New-Item -Path $WorkItemDirectory -Name "placeholder.txt" -ItemType "file" -Value "Placeholder file." -Force
+# Prepare WorkItemDirectories
+robocopy $CoreRootDirectory $PmiAssembliesDirectory\Core_Root /E /XF *.pdb
+# robocopy $ManagedTestArtifactDirectory $PmiAssembliesDirectory\Tests /E /XD $CoreRootDirectory /XF *.pdb
+
+# Prepare CorrelationPayloadDirectories
+robocopy $SourceDirectory\src\coreclr\scripts $SuperPmiDirectory /E
+robocopy $CoreRootDirectory $SuperPmiDirectory $($super_pmi_dlls) /E
 
 Write-Host "Cloning and building JitUtilsDirectory"
 
@@ -54,7 +69,7 @@ $ci = $true
 . "$PSScriptRoot\..\pipeline-logging-functions.ps1"
 
 # Directories
-Write-PipelineSetVariable -Name 'PayloadDirectory' -Value "$PayloadDirectory" -IsMultiJobVariable $false
+Write-PipelineSetVariable -Name 'CorrelationPayloadDirectory' -Value "$CorrelationPayloadDirectory" -IsMultiJobVariable $false
 Write-PipelineSetVariable -Name 'SuperPMIDirectory' -Value "$SuperPMIDirectory" -IsMultiJobVariable $false
 Write-PipelineSetVariable -Name 'JitUtilsDirectory' -Value "$JitUtilsDirectory" -IsMultiJobVariable $false
 Write-PipelineSetVariable -Name 'PmiAssembliesDirectory' -Value "$PmiAssembliesDirectory" -IsMultiJobVariable $false

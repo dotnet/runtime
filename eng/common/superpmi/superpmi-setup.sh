@@ -16,7 +16,6 @@ managed_test_artifact_directory=
 architecture=x64
 framework=net5.0
 
-
 while (($# > 0)); do
   lowerI="$(echo $1 | awk '{print tolower($0)}')"
   case $lowerI in
@@ -56,11 +55,15 @@ while (($# > 0)); do
   esac
 done
 
-payload_directory=$source_directory/Payload
-superpmi_directory=$payload_directory/superpmi
-jitutils_directory=$payload_directory/jitutils
-pmi_assemblies_directory=$payload_directory
+# WorkItem Directories
 workitem_directory=$source_directory/workitem
+pmi_assemblies_directory=$workitem_directory/pmiAssembliesDirectory
+
+# CorrelationPayload Directories
+correlation_payload_directory=$source_directory/Payload
+superpmi_directory=$correlation_payload_directory/superpmi
+jitutils_directory=$correlation_payload_directory/jitutils
+
 queue="Ubuntu.1804.Amd64"
 
 if [[ "$architecture" = "arm" ]]; then
@@ -74,17 +77,31 @@ creator=""
 
 echo "Done setting queue"
 
-# Prepare payloads
-mkdir -p $workitem_directory
-mkdir -p $superpmi_directory
-mkdir -p $jitutils_directory
+# Prepare WorkItemDirectories
 mkdir -p $pmi_assemblies_directory/Core_Root
-# mkdir -p $pmi_assemblies_directory/Tests
+rsync -avr --exclude='*.pdb' $core_root_directory/* $pmi_assemblies_directory/Core_Root
 
-cp -R $source_directory/src/coreclr/scripts $superpmi_directory
-cp -R $core_root_directory $pmi_assemblies_directory/Core_Root
-# robocopy $ManagedTestArtifactDirectory $PmiAssembliesDirectory\Tests /E /XD $CoreRootDirectory
-echo 'Placeholder file.' > $workitem_directory/placeholder.txt
+# mkdir -p $pmi_assemblies_directory/Tests
+# rsync -avr --exclude='*.pdb' $managed_test_artifact_directory/* $pmi_assemblies_directory/Tests
+
+# Prepare CorrelationPayloadDirectories
+
+mkdir -p $superpmi_directory
+
+super_pmi_dlls = (
+ "clrjit.dll"
+ "coreclr.dll"
+ "CoreRun.exe"
+ "mcs.exe"
+ "superpmi.exe"
+ "System.Private.CoreLib.dll"
+)
+printf "%s\n" "${super_pmi_dlls[@]}" > $superpmi_directory/super_pmi_dlls.txt
+
+rsync -avr $source_directory/src/coreclr/scripts/* $superpmi_directory
+rsync -av --files-from=$superpmi_directory/super_pmi_dlls.txt $core_root_directory $superpmi_directory
+
+mkdir -p $jitutils_directory
 
 echo "Cloning and building JitUtilsDirectory"
 git clone --branch master --depth 1 --quiet https://github.com/dotnet/jitutils $jitutils_directory
@@ -100,7 +117,7 @@ _script_dir=$(pwd)/eng/common
 . "$_script_dir/pipeline-logging-functions.sh"
 
 # Directories
-Write-PipelineSetVariable -name "PayloadDirectory" -value "$payload_directory" -is_multi_job_variable false
+Write-PipelineSetVariable -name "CorrelationPayloadDirectory" -value "$correlation_payload_directory" -is_multi_job_variable false
 Write-PipelineSetVariable -name "SuperPMIDirectory" -value "$superpmi_directory" -is_multi_job_variable false
 Write-PipelineSetVariable -name "JitUtilsDirectory" -value "$jitutils_directory" -is_multi_job_variable false
 Write-PipelineSetVariable -name "PmiAssembliesDirectory" -value "$pmi_assemblies_directory" -is_multi_job_variable false

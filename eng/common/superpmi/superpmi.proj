@@ -7,14 +7,21 @@
     <FileSeparatorChar>/</FileSeparatorChar>
   </PropertyGroup>
 
-  <PropertyGroup>
+  <PropertyGroup Condition="'$(AGENT_OS)' == 'Windows_NT'">
     <Python>py -3</Python>
-    <PmiAssembliesDirectory>%HELIX_CORRELATION_PAYLOAD%$(FileSeparatorChar)PmiAssembliesDirectory</PmiAssembliesDirectory>
-    <SuperPMIDirectory>%HELIX_CORRELATION_PAYLOAD%$(FileSeparatorChar)superpmi</SuperPMIDirectory>
+    <PmiAssembliesDirectory>%WorkItemDirectory%\PmiAssembliesDirectory</PmiAssembliesDirectory>
+    <SuperPMIDirectory>%HELIX_CORRELATION_PAYLOAD%\superpmi</SuperPMIDirectory>
     <OutputMchPath>%HELIX_WORKITEM_UPLOAD_ROOT%</OutputMchPath>
-    <JitUtilsDirectory>%HELIX_CORRELATION_PAYLOAD%$(FileSeparatorChar)jitutils$(FileSeparatorChar)bin</JitUtilsDirectory>
-    <HelixResultsDestinationDir>$(BUILD_SOURCESDIRECTORY)$(FileSeparatorChar)artifacts$(FileSeparatorChar)helixresults</HelixResultsDestinationDir>
-    <WorkItemCommand>$(SuperPMIDirectory)$(FileSeparatorChar)superpmi.py collect --pmi -pmi_location $(JitUtilsDirectory)$(FileSeparatorChar)pmi.dll -core_root $(PmiAssembliesDirectory)$(FileSeparatorChar)Core_Root</WorkItemCommand>
+    <JitUtilsDirectory>%HELIX_CORRELATION_PAYLOAD%\jitutils\bin</JitUtilsDirectory>
+    <WorkItemCommand>$(SuperPMIDirectory)\superpmi.py collect --pmi -pmi_location $(JitUtilsDirectory)\pmi.dll -core_root $(PmiAssembliesDirectory)\$(SuperPMIDirectory)</WorkItemCommand>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(AGENT_OS)' != 'Windows_NT'">
+    <Python>py -3</Python>
+    <PmiAssembliesDirectory>$WorkItemDirectory/PmiAssembliesDirectory</PmiAssembliesDirectory>
+    <SuperPMIDirectory>$HELIX_CORRELATION_PAYLOAD/superpmi</SuperPMIDirectory>
+    <OutputMchPath>$HELIX_WORKITEM_UPLOAD_ROOT</OutputMchPath>
+    <JitUtilsDirectory>$HELIX_CORRELATION_PAYLOAD/jitutils/bin</JitUtilsDirectory>
+    <WorkItemCommand>$(SuperPMIDirectory)/superpmi.py collect --pmi -pmi_location $(JitUtilsDirectory)/pmi.dll -core_root $(PmiAssembliesDirectory)/$(SuperPMIDirectory)</WorkItemCommand>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(WorkItemCommand)' != ''">
@@ -44,7 +51,7 @@
   <ItemGroup>
     <HelixWorkItem Include="@(Partition)">
     <!-- TODO: Here too make payload folder different for workitem.Name -->
-      <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
+      <PayloadDirectory>$(PmiAssembliesDirectory)$(FileSeparatorChar)%(HelixWorkItem.PmiAssemblies)</PayloadDirectory>
       <Command>$(WorkItemCommand) -pmi_assemblies $(PmiAssembliesDirectory)$(FileSeparatorChar)%(HelixWorkItem.PmiAssemblies) -output_mch_path $(OutputMchPath)$(FileSeparatorChar)%(HelixWorkItem.OutputMchName).$(AGENT_OS).$(Architecture).$(BuildConfig).mch</Command>
       <Timeout>$(WorkItemTimeout)</Timeout>
       <DownloadFilesFromResults>%(HelixWorkItem.OutputMchName).$(AGENT_OS).$(Architecture).$(BuildConfig).mch;%(HelixWorkItem.OutputMchName).$(AGENT_OS).$(Architecture).$(BuildConfig).mch.mct</DownloadFilesFromResults>
@@ -56,7 +63,10 @@
     To use this when you are changing how items are produced, uncomment the target
     and replace the Project item at the top of the file with this:
     <Project DefaultTargets="printItems">
-    
+
+    Add this in one of the property
+    <HelixTargetQueues>Some_Queue</HelixTargetQueues>
+
     Once you've done that you can run this to see the results:
     dotnet msbuild .\scenarios.proj /v:n
    -->
