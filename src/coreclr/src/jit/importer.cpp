@@ -16885,7 +16885,7 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
                                 info.compCompHnd->getChildType(info.compMethodInfo->args.retTypeClass,
                                                                &referentClassHandle);
                             if (varTypeIsStruct(JITtype2varType(referentType)) &&
-                                (varDsc->lvVerTypeInfo.GetClassHandle() != referentClassHandle))
+                                (varDsc->GetStructHnd() != referentClassHandle))
                             {
                                 // We are returning a byref to struct1; the method signature specifies return type as
                                 // byref
