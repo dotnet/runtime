@@ -19,7 +19,7 @@
 **============================================================*/
 #include <palsuite.h>
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(filemapping_memmgt_MapViewOfFile_test4_paltest_mapviewoffile_test4, "filemapping_memmgt/MapViewOfFile/test4/paltest_mapviewoffile_test4")
 {
 
     HANDLE hFile;

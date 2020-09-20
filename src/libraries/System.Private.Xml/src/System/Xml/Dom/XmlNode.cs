@@ -474,7 +474,7 @@ namespace System.Xml
         {
             XmlNode? nextNode = oldChild.NextSibling;
             RemoveChild(oldChild);
-            XmlNode? node = InsertBefore(newChild, nextNode);
+            InsertBefore(newChild, nextNode);
             return oldChild;
         }
 
@@ -846,7 +846,6 @@ namespace System.Xml
         {
             get
             {
-                XmlDocument? doc = OwnerDocument;
                 return HasReadOnlyParent(this);
             }
         }

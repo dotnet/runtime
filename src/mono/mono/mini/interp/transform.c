@@ -1046,9 +1046,8 @@ static void
 interp_generate_ipe_throw_with_msg (TransformData *td, MonoError *error_msg)
 {
 	MonoJitICallInfo *info = &mono_get_jit_icall_info ()->mono_throw_invalid_program;
-	MonoMemoryManager *memory_manager = mono_domain_ambient_memory_manager (td->rtm->domain);
 
-	char *msg = mono_mempool_strdup (memory_manager->mp, mono_error_get_message (error_msg));
+	char *msg = mono_mem_manager_strdup (td->mem_manager, mono_error_get_message (error_msg));
 
 	interp_add_ins (td, MINT_MONO_LDPTR);
 	td->last_ins->data [0] = get_data_item_index (td, msg);
@@ -6246,7 +6245,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				interp_add_ins (td, MINT_MONO_LDPTR);
 				g_assert (method->wrapper_type != MONO_WRAPPER_NONE);
 				/* This is a memory slot used by the wrapper */
-				gpointer addr = mono_domain_alloc0 (td->rtm->domain, sizeof (gpointer));
+				gpointer addr = mono_mem_manager_alloc0 (td->mem_manager, sizeof (gpointer));
 				td->last_ins->data [0] = get_data_item_index (td, addr);
 				PUSH_SIMPLE_TYPE (td, STACK_TYPE_I);
 				break;
@@ -7022,7 +7021,7 @@ generate_compacted_code (TransformData *td)
 	}
 
 	// Generate the compacted stream of instructions
-	td->new_code = ip = (guint16*)mono_domain_alloc0 (td->rtm->domain, size * sizeof (guint16));
+	td->new_code = ip = (guint16*)mono_mem_manager_alloc0 (td->mem_manager, size * sizeof (guint16));
 
 	for (bb = td->entry_bb; bb != NULL; bb = bb->next_bb) {
 		InterpInst *ins = bb->first_ins;
@@ -8047,7 +8046,6 @@ get_native_offset (TransformData *td, int il_offset)
 static void
 generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, MonoGenericContext *generic_context, MonoError *error)
 {
-	MonoDomain *domain = rtm->domain;
 	int i;
 	TransformData transform_data;
 	TransformData *td;
@@ -8070,6 +8068,7 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, MonoG
 	td->in_offsets = (int*)g_malloc0((header->code_size + 1) * sizeof(int));
 	td->clause_indexes = (int*)g_malloc (header->code_size * sizeof (int));
 	td->mempool = mono_mempool_new ();
+	td->mem_manager = m_method_get_mem_manager (rtm->domain, method);
 	td->n_data_items = 0;
 	td->max_data_items = 0;
 	td->data_items = NULL;
@@ -8140,7 +8139,7 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, MonoG
 	code_len_u8 = (guint8 *) td->new_code_end - (guint8 *) td->new_code;
 	code_len_u16 = td->new_code_end - td->new_code;
 
-	rtm->clauses = (MonoExceptionClause*)mono_domain_alloc0 (domain, header->num_clauses * sizeof (MonoExceptionClause));
+	rtm->clauses = (MonoExceptionClause*)mono_mem_manager_alloc0 (td->mem_manager, header->num_clauses * sizeof (MonoExceptionClause));
 	memcpy (rtm->clauses, header->clauses, header->num_clauses * sizeof(MonoExceptionClause));
 	rtm->code = (gushort*)td->new_code;
 	rtm->init_locals = header->init_locals;
@@ -8163,7 +8162,7 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, MonoG
 	rtm->vt_stack_size = td->max_vt_sp;
 	rtm->total_locals_size = ALIGN_TO (td->total_locals_size, MINT_VT_ALIGNMENT);
 	rtm->alloca_size = ALIGN_TO (rtm->total_locals_size + rtm->vt_stack_size + rtm->stack_size, 8);
-	rtm->data_items = (gpointer*)mono_domain_alloc0 (domain, td->n_data_items * sizeof (td->data_items [0]));
+	rtm->data_items = (gpointer*)mono_mem_manager_alloc0 (td->mem_manager, td->n_data_items * sizeof (td->data_items [0]));
 	memcpy (rtm->data_items, td->data_items, td->n_data_items * sizeof (td->data_items [0]));
 
 	/* Save debug info */
@@ -8173,7 +8172,7 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, MonoG
 	int jinfo_len;
 	jinfo_len = mono_jit_info_size ((MonoJitInfoFlags)0, header->num_clauses, 0);
 	MonoJitInfo *jinfo;
-	jinfo = (MonoJitInfo *)mono_domain_alloc0 (domain, jinfo_len);
+	jinfo = (MonoJitInfo *)mono_mem_manager_alloc0 (td->mem_manager, jinfo_len);
 	jinfo->is_interp = 1;
 	rtm->jinfo = jinfo;
 	mono_jit_info_init (jinfo, method, (guint8*)rtm->code, code_len_u8, (MonoJitInfoFlags)0, header->num_clauses, 0);

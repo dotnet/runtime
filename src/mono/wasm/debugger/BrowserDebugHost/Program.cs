@@ -22,7 +22,7 @@ namespace Microsoft.WebAssembly.Diagnostics
     {
         public static void Main(string[] args)
         {
-            var host = new WebHostBuilder()
+            IWebHost host = new WebHostBuilder()
                 .UseSetting("UseIISIntegration", false.ToString())
                 .UseKestrel()
                 .UseContentRoot(Directory.GetCurrentDirectory())

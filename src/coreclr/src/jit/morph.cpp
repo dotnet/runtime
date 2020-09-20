@@ -767,7 +767,7 @@ REMOVE_CAST:
 #endif
 
 #ifdef DEBUG
-void fgArgTabEntry::Dump()
+void fgArgTabEntry::Dump() const
 {
     printf("fgArgTabEntry[arg %u", argNum);
     printf(" %d.%s", GetNode()->gtTreeID, GenTree::OpName(GetNode()->OperGet()));
@@ -1859,7 +1859,7 @@ void fgArgInfo::SortArgs()
 }
 
 #ifdef DEBUG
-void fgArgInfo::Dump(Compiler* compiler)
+void fgArgInfo::Dump(Compiler* compiler) const
 {
     for (unsigned curInx = 0; curInx < ArgCount(); curInx++)
     {
@@ -1903,7 +1903,7 @@ GenTree* Compiler::fgMakeTmpArgNode(fgArgTabEntry* curArgTabEntry)
         bool passedAsPrimitive = false;
         if (curArgTabEntry->isSingleRegOrSlot())
         {
-            CORINFO_CLASS_HANDLE clsHnd = varDsc->lvVerTypeInfo.GetClassHandle();
+            CORINFO_CLASS_HANDLE clsHnd = varDsc->GetStructHnd();
             var_types            structBaseType =
                 getPrimitiveTypeForStruct(lvaLclExactSize(tmpVarNum), clsHnd, curArgTabEntry->IsVararg());
 
@@ -4262,10 +4262,9 @@ GenTree* Compiler::fgMorphMultiregStructArg(GenTree* arg, fgArgTabEntry* fgEntry
 #if FEATURE_MULTIREG_ARGS
     // Examine 'arg' and setup argValue objClass and structSize
     //
-    CORINFO_CLASS_HANDLE objClass = gtGetStructHandleIfPresent(arg);
-    noway_assert(objClass != NO_CLASS_HANDLE);
-    GenTree* argValue   = arg; // normally argValue will be arg, but see right below
-    unsigned structSize = 0;
+    const CORINFO_CLASS_HANDLE objClass   = gtGetStructHandle(arg);
+    GenTree*                   argValue   = arg; // normally argValue will be arg, but see right below
+    unsigned                   structSize = 0;
 
     if (arg->TypeGet() != TYP_STRUCT)
     {
@@ -4274,8 +4273,9 @@ GenTree* Compiler::fgMorphMultiregStructArg(GenTree* arg, fgArgTabEntry* fgEntry
     }
     else if (arg->OperGet() == GT_OBJ)
     {
-        GenTreeObj* argObj = arg->AsObj();
-        structSize         = argObj->GetLayout()->GetSize();
+        GenTreeObj*        argObj    = arg->AsObj();
+        const ClassLayout* objLayout = argObj->GetLayout();
+        structSize                   = objLayout->GetSize();
         assert(structSize == info.compCompHnd->getClassSize(objClass));
 
         // If we have a GT_OBJ of a GT_ADDR then we set argValue to the child node of the GT_ADDR.
@@ -4285,10 +4285,14 @@ GenTree* Compiler::fgMorphMultiregStructArg(GenTree* arg, fgArgTabEntry* fgEntry
             GenTree* underlyingTree = op1->AsOp()->gtOp1;
 
             // Only update to the same type.
-            if (underlyingTree->OperIs(GT_LCL_VAR) && (underlyingTree->TypeGet() == argValue->TypeGet()) &&
-                (objClass == gtGetStructHandleIfPresent(underlyingTree)))
+            if (underlyingTree->OperIs(GT_LCL_VAR))
             {
-                argValue = underlyingTree;
+                const GenTreeLclVar* lclVar = underlyingTree->AsLclVar();
+                const LclVarDsc*     varDsc = lvaGetDesc(lclVar);
+                if (ClassLayout::AreCompatible(varDsc->GetLayout(), objLayout))
+                {
+                    argValue = underlyingTree;
+                }
             }
         }
     }
@@ -4306,7 +4310,6 @@ GenTree* Compiler::fgMorphMultiregStructArg(GenTree* arg, fgArgTabEntry* fgEntry
     {
         structSize = info.compCompHnd->getClassSize(objClass);
     }
-    noway_assert(objClass != NO_CLASS_HANDLE);
 
     var_types hfaType                 = TYP_UNDEF;
     var_types elemType                = TYP_UNDEF;
@@ -5742,7 +5745,7 @@ GenTree* Compiler::fgMorphStackArgForVarArgs(unsigned lclNum, var_types varType,
         GenTree* tree;
         if (varTypeIsStruct(varType))
         {
-            CORINFO_CLASS_HANDLE typeHnd = varDsc->lvVerTypeInfo.GetClassHandle();
+            CORINFO_CLASS_HANDLE typeHnd = varDsc->GetStructHnd();
             assert(typeHnd != nullptr);
             tree = gtNewObjNode(typeHnd, ptrArg);
         }
@@ -9393,7 +9396,7 @@ GenTree* Compiler::fgMorphOneAsgBlockOp(GenTree* tree)
             destVarDsc = &(lvaTable[destVarNum]);
             if (asgType == TYP_STRUCT)
             {
-                clsHnd = destVarDsc->lvVerTypeInfo.GetClassHandle();
+                clsHnd = destVarDsc->GetStructHnd();
                 size   = destVarDsc->lvExactSize;
             }
         }
@@ -10531,7 +10534,7 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
                     // but it doesn't always for the temps that the importer creates when it spills side
                     // effects.
                     // TODO-Cleanup: Determine when this happens, and whether it can be changed.
-                    blockWidth = info.compCompHnd->getClassSize(destLclVar->lvVerTypeInfo.GetClassHandle());
+                    blockWidth = info.compCompHnd->getClassSize(destLclVar->GetStructHnd());
                 }
                 else
                 {
@@ -10748,7 +10751,7 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
                 // Both structs should be of the same type, or have the same number of fields of the same type.
                 // If not we will use a copy block.
                 bool misMatchedTypes = false;
-                if (destLclVar->lvVerTypeInfo.GetClassHandle() != srcLclVar->lvVerTypeInfo.GetClassHandle())
+                if (destLclVar->GetStructHnd() != srcLclVar->GetStructHnd())
                 {
                     if (destLclVar->lvFieldCnt != srcLclVar->lvFieldCnt)
                     {
@@ -10933,7 +10936,7 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
             src      = fgMorphBlockOperand(src, asgType, blockWidth, false /*isBlkReqd*/);
             if (srcAddr == nullptr)
             {
-                srcAddr = fgMorphGetStructAddr(&src, destLclVar->lvVerTypeInfo.GetClassHandle(), true /* rValue */);
+                srcAddr = fgMorphGetStructAddr(&src, destLclVar->GetStructHnd(), true /* rValue */);
             }
         }
         else
@@ -11126,7 +11129,7 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
                     LclVarDsc* srcFieldVarDsc = lvaGetDesc(srcFieldLclNum);
 
                     // Have to set the field sequence -- which means we need the field handle.
-                    CORINFO_CLASS_HANDLE classHnd = srcVarDsc->lvVerTypeInfo.GetClassHandle();
+                    CORINFO_CLASS_HANDLE classHnd = srcVarDsc->GetStructHnd();
                     CORINFO_FIELD_HANDLE fieldHnd =
                         info.compCompHnd->getFieldInClass(classHnd, srcFieldVarDsc->lvFldOrdinal);
                     FieldSeqNode* curFieldSeq = GetFieldSeqStore()->CreateSingleton(fieldHnd);
@@ -11188,7 +11191,7 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
                         noway_assert(srcFld != nullptr);
                     }
 
-                    CORINFO_CLASS_HANDLE classHnd = lvaTable[destLclNum].lvVerTypeInfo.GetClassHandle();
+                    CORINFO_CLASS_HANDLE classHnd = lvaTable[destLclNum].GetStructHnd();
                     CORINFO_FIELD_HANDLE fieldHnd =
                         info.compCompHnd->getFieldInClass(classHnd, lvaTable[dstFieldLclNum].lvFldOrdinal);
                     FieldSeqNode* curFieldSeq = GetFieldSeqStore()->CreateSingleton(fieldHnd);
@@ -17871,7 +17874,7 @@ void Compiler::fgRetypeImplicitByRefArgs()
             }
             else
             {
-                CORINFO_CLASS_HANDLE typeHnd = varDsc->lvVerTypeInfo.GetClassHandle();
+                CORINFO_CLASS_HANDLE typeHnd = varDsc->GetStructHnd();
                 size                         = info.compCompHnd->getClassSize(typeHnd);
             }
 
@@ -18262,7 +18265,7 @@ GenTree* Compiler::fgMorphImplicitByRefArgs(GenTree* tree, bool isAddr)
         }
         else
         {
-            tree = gtNewObjNode(lclVarDsc->lvVerTypeInfo.GetClassHandle(), tree);
+            tree = gtNewObjNode(lclVarDsc->GetStructHnd(), tree);
 
             if (structType == TYP_STRUCT)
             {

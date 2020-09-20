@@ -15,7 +15,8 @@
 #include <palsuite.h>
 
 
-int __cdecl main(int argc, char *argv[]) {
+PALTEST(miscellaneous_FormatMessageW_test6_paltest_formatmessagew_test6, "miscellaneous/FormatMessageW/test6/paltest_formatmessagew_test6")
+{
 
 
     LPWSTR OutBuffer;

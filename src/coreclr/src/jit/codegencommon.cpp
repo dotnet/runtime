@@ -3425,7 +3425,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
 #if defined(UNIX_AMD64_ABI)
         if (varTypeIsStruct(varDsc))
         {
-            CORINFO_CLASS_HANDLE typeHnd = varDsc->lvVerTypeInfo.GetClassHandle();
+            CORINFO_CLASS_HANDLE typeHnd = varDsc->GetStructHnd();
             assert(typeHnd != nullptr);
             SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
             compiler->eeGetSystemVAmd64PassStructInRegisterDescriptor(typeHnd, &structDesc);
@@ -10108,7 +10108,7 @@ var_types Compiler::GetHfaType(GenTree* tree)
 
 unsigned Compiler::GetHfaCount(GenTree* tree)
 {
-    return GetHfaCount(gtGetStructHandleIfPresent(tree));
+    return GetHfaCount(gtGetStructHandle(tree));
 }
 
 var_types Compiler::GetHfaType(CORINFO_CLASS_HANDLE hClass)
@@ -11651,7 +11651,7 @@ void CodeGen::genStructReturn(GenTree* treeNode)
     if (actualOp1->OperIs(GT_LCL_VAR))
     {
         varDsc = compiler->lvaGetDesc(actualOp1->AsLclVar()->GetLclNum());
-        retTypeDesc.InitializeStructReturnType(compiler, varDsc->lvVerTypeInfo.GetClassHandle());
+        retTypeDesc.InitializeStructReturnType(compiler, varDsc->GetStructHnd());
         assert(varDsc->lvIsMultiRegRet);
     }
     else

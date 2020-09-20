@@ -176,12 +176,41 @@ void Compiler::fgInit()
     fgPreviousCandidateSIMDFieldAsgStmt = nullptr;
 #endif
 
-    fgHasSwitch = false;
+    fgHasSwitch   = false;
+    fgBlockCounts = nullptr;
 }
 
+//------------------------------------------------------------------------
+// fgHaveProfileData: check if profile data is available
+//
+// Returns:
+//   true if so
+//
+// Note:
+//   This now returns true for inlinees. We might consider preserving the
+//   old behavior for crossgen, since crossgen BBINSTRs still do inlining
+//   and don't instrument the inlinees.
+//
+//   Thus if BBINSTR and BBOPT do the same inlines (which can happen)
+//   profile data for an inlinee (if available) will not fully reflect
+//   the behavior of the inlinee when called from this method.
+//
+//   If this inlinee was not inlined by the BBINSTR run then the
+//   profile data for the inlinee will reflect this method's influence.
+//
+//   * for ALWAYS_INLINE and FORCE_INLINE cases it is unlikely we'll find
+//     any profile data, as BBINSTR and BBOPT callers will both inline;
+//     only indirect callers will invoke the instrumented version to run.
+//   * for DISCRETIONARY_INLINE cases we may or may not find relevant
+//     data, depending, but chances are the data is relevant.
+//
+//  TieredPGO data comes from Tier0 methods, which currently do not do
+//  any inlining; thus inlinee profile data should be available and
+//  representative.
+//
 bool Compiler::fgHaveProfileData()
 {
-    if (compIsForInlining() || compIsForImportOnly())
+    if (compIsForImportOnly())
     {
         return false;
     }
@@ -189,6 +218,111 @@ bool Compiler::fgHaveProfileData()
     return (fgBlockCounts != nullptr);
 }
 
+//------------------------------------------------------------------------
+// fgComputeProfileScale: determine how much scaling to apply
+//   to raw profile count data.
+//
+// Notes:
+//   Scaling is only needed for inlinees, and the results of this
+//   computation are recorded in fields of impInlineInfo.
+//
+void Compiler::fgComputeProfileScale()
+{
+    // Only applicable to inlinees
+    assert(compIsForInlining());
+
+    // Have we already determined the scale?
+    if (impInlineInfo->profileScaleState != InlineInfo::ProfileScaleState::UNDETERMINED)
+    {
+        return;
+    }
+
+    // No, not yet -- try and compute the scale.
+    JITDUMP("Computing inlinee profile scale:\n");
+
+    // Call site has profile weight?
+    //
+    // Todo: handle case of unprofiled caller invoking profiled callee.
+    //
+    const BasicBlock* callSiteBlock = impInlineInfo->iciBlock;
+    if (!callSiteBlock->hasProfileWeight())
+    {
+        JITDUMP("   ... call site not profiled\n");
+        impInlineInfo->profileScaleState = InlineInfo::ProfileScaleState::UNAVAILABLE;
+        return;
+    }
+
+    const BasicBlock::weight_t callSiteWeight = callSiteBlock->bbWeight;
+
+    // Call site has zero count?
+    //
+    // Todo: perhaps retain some semblance of callee profile data,
+    // possibly scaled down severely.
+    //
+    if (callSiteWeight == 0)
+    {
+        JITDUMP("   ... zero call site count\n");
+        impInlineInfo->profileScaleState = InlineInfo::ProfileScaleState::UNAVAILABLE;
+        return;
+    }
+
+    // Callee has profile data?
+    //
+    if (!fgHaveProfileData())
+    {
+        JITDUMP("   ... no callee profile data\n");
+        impInlineInfo->profileScaleState = InlineInfo::ProfileScaleState::UNAVAILABLE;
+        return;
+    }
+
+    // Find callee's unscaled entry weight.
+    //
+    // Ostensibly this should be fgCalledCount for the callee, but that's not available
+    // as it requires some analysis.
+    //
+    // For most callees it will be the same as the entry block count.
+    //
+    BasicBlock::weight_t calleeWeight = 0;
+
+    if (!fgGetProfileWeightForBasicBlock(0, &calleeWeight))
+    {
+        JITDUMP("   ... no callee profile data for entry block\n");
+        impInlineInfo->profileScaleState = InlineInfo::ProfileScaleState::UNAVAILABLE;
+        return;
+    }
+
+    // We should generally be able to assume calleeWeight >= callSiteWeight.
+    // If this isn't so, perhaps something is wrong with the profile data
+    // collection or retrieval.
+    //
+    // For now, ignore callee data if we'd need to upscale.
+    //
+    if (calleeWeight < callSiteWeight)
+    {
+        JITDUMP("   ... callee entry count %d is less than call site count %d\n", calleeWeight, callSiteWeight);
+        impInlineInfo->profileScaleState = InlineInfo::ProfileScaleState::UNAVAILABLE;
+        return;
+    }
+
+    // Hence, scale is always in the range (0.0...1.0] -- we are always scaling down callee counts.
+    //
+    const double scale                = ((double)callSiteWeight) / calleeWeight;
+    impInlineInfo->profileScaleFactor = scale;
+    impInlineInfo->profileScaleState  = InlineInfo::ProfileScaleState::KNOWN;
+
+    JITDUMP("   call site count %u callee entry count %u scale %f\n", callSiteWeight, calleeWeight, scale);
+}
+
+//------------------------------------------------------------------------
+// fgGetProfileWeightForBasicBlock: obtain profile data for a block
+//
+// Arguments:
+//   offset       - IL offset of the block
+//   weightWB     - [OUT] weight obtained
+//
+// Returns:
+//   true if data was found
+//
 bool Compiler::fgGetProfileWeightForBasicBlock(IL_OFFSET offset, unsigned* weightWB)
 {
     noway_assert(weightWB != nullptr);
@@ -229,19 +363,16 @@ bool Compiler::fgGetProfileWeightForBasicBlock(IL_OFFSET offset, unsigned* weigh
     }
 #endif // DEBUG
 
-    if (fgHaveProfileData() == false)
+    if (!fgHaveProfileData())
     {
         return false;
     }
 
-    noway_assert(!compIsForInlining());
     for (UINT32 i = 0; i < fgBlockCountsCount; i++)
     {
         if (fgBlockCounts[i].ILOffset == offset)
         {
-            weight = fgBlockCounts[i].ExecutionCount;
-
-            *weightWB = weight;
+            *weightWB = fgBlockCounts[i].ExecutionCount;
             return true;
         }
     }
@@ -5621,6 +5752,11 @@ unsigned Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, F
         }
     }
 
+    if (compIsForInlining())
+    {
+        fgComputeProfileScale();
+    }
+
     do
     {
         unsigned   jmpAddr = DUMMY_INIT(BAD_IL_OFFSET);
@@ -6043,9 +6179,19 @@ unsigned Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, F
         curBBdesc->bbCodeOffsEnd = nxtBBoffs;
 
         unsigned profileWeight;
+
         if (fgGetProfileWeightForBasicBlock(curBBoffs, &profileWeight))
         {
+            if (compIsForInlining())
+            {
+                if (impInlineInfo->profileScaleState == InlineInfo::ProfileScaleState::KNOWN)
+                {
+                    profileWeight = (unsigned)(impInlineInfo->profileScaleFactor * profileWeight);
+                }
+            }
+
             curBBdesc->setBBProfileWeight(profileWeight);
+
             if (profileWeight == 0)
             {
                 curBBdesc->bbSetRunRarely();
@@ -7182,7 +7328,7 @@ unsigned Compiler::fgGetNestingLevel(BasicBlock* block, unsigned* pFinallyNestin
 }
 
 //------------------------------------------------------------------------
-// fgImport: read the IL forf the method and create jit IR
+// fgImport: read the IL for the method and create jit IR
 //
 // Returns:
 //    phase status
@@ -23229,6 +23375,8 @@ void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineRe
     inlineInfo.retExprClassHnd        = nullptr;
     inlineInfo.retExprClassHndIsExact = false;
     inlineInfo.inlineResult           = inlineResult;
+    inlineInfo.profileScaleState      = InlineInfo::ProfileScaleState::UNDETERMINED;
+    inlineInfo.profileScaleFactor     = 0.0;
 #ifdef FEATURE_SIMD
     inlineInfo.hasSIMDTypeArgLocalOrReturn = false;
 #endif // FEATURE_SIMD
@@ -23302,7 +23450,6 @@ void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineRe
 
                 // The following flags are lost when inlining.
                 // (This is checked in Compiler::compInitOptions().)
-                compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_BBOPT);
                 compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_BBINSTR);
                 compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_PROF_ENTERLEAVE);
                 compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_DEBUG_EnC);
@@ -23508,7 +23655,9 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
             const unsigned __int64 inlineeBlockFlags = InlineeCompiler->fgFirstBB->bbFlags;
             noway_assert((inlineeBlockFlags & BBF_HAS_JMP) == 0);
             noway_assert((inlineeBlockFlags & BBF_KEEP_BBJ_ALWAYS) == 0);
-            iciBlock->bbFlags |= inlineeBlockFlags;
+
+            // Todo: we may want to exclude other flags here.
+            iciBlock->bbFlags |= (inlineeBlockFlags & ~BBF_RUN_RARELY);
 
 #ifdef DEBUG
             if (verbose)
@@ -23667,6 +23816,13 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
                 block->bbJumpKind = BBJ_NONE;
             }
         }
+
+        // Update profile weight for callee blocks, if we didn't do it already.
+        if (pInlineInfo->profileScaleState == InlineInfo::ProfileScaleState::KNOWN)
+        {
+            continue;
+        }
+
         if (inheritWeight)
         {
             block->inheritWeight(iciBlock);

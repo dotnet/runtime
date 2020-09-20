@@ -116,7 +116,19 @@ namespace DebuggerTests
     {
         protected Task startTask;
 
-        static string FindTestPath()
+        static string s_debuggerTestAppPath;
+        protected static string DebuggerTestAppPath
+        {
+            get
+            {
+                if (s_debuggerTestAppPath == null)
+                    s_debuggerTestAppPath = FindTestPath();
+
+                return s_debuggerTestAppPath;
+            }
+        }
+
+        static protected string FindTestPath()
         {
             //FIXME how would I locate it otherwise?
             var test_path = Environment.GetEnvironmentVariable("TEST_SUITE_PATH");
@@ -162,7 +174,7 @@ namespace DebuggerTests
 
         public DebuggerTestBase(string driver = "debugger-driver.html")
         {
-            startTask = TestHarnessProxy.Start(FindChromePath(), FindTestPath(), driver);
+            startTask = TestHarnessProxy.Start(FindChromePath(), DebuggerTestAppPath, driver);
         }
 
         public Task Ready() => startTask;
