@@ -5,6 +5,7 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Text.Json.Serialization;
 
 namespace System.Text.Json
 {
@@ -133,6 +134,11 @@ namespace System.Text.Json
 #else
             return !(float.IsNaN(value) || float.IsInfinity(value));
 #endif
+        }
+
+        public static bool IsValidNumberHandlingValue(JsonNumberHandling handling)
+        {
+            return JsonHelpers.IsInRangeInclusive((int)handling, 0, 7);
         }
     }
 }

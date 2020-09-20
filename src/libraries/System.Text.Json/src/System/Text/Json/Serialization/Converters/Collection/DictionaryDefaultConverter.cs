@@ -29,14 +29,15 @@ namespace System.Text.Json.Serialization.Converters
         /// </summary>
         protected virtual void CreateCollection(ref Utf8JsonReader reader, ref ReadStack state) { }
 
-        private static Type s_valueType = typeof(TValue);
+        private static readonly Type s_valueType = typeof(TValue);
 
         internal override Type ElementType => s_valueType;
 
-        protected Type KeyType = typeof(TKey);
+        protected static readonly Type KeyType = typeof(TKey);
+
         // For string keys we don't use a key converter
         // in order to avoid performance regression on already supported types.
-        protected bool IsStringKey = typeof(TKey) == typeof(string);
+        private static readonly bool s_isStringKey = KeyType == typeof(string);
 
         protected JsonConverter<TKey>? _keyConverter;
         protected JsonConverter<TValue>? _valueConverter;
@@ -243,7 +244,7 @@ namespace System.Text.Json.Serialization.Converters
                 string unescapedPropertyNameAsString;
 
                 // Special case string to avoid calling GetString twice and save one allocation.
-                if (IsStringKey)
+                if (s_isStringKey)
                 {
                     unescapedPropertyNameAsString = reader.GetString()!;
                     key = (TKey)(object)unescapedPropertyNameAsString;
