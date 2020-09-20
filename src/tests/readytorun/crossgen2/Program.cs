@@ -1443,7 +1443,7 @@ internal class Program
         }
     }
 
-    [StructLayout(LayoutKind.Auto, Size = 0x18)]
+    [StructLayout(LayoutKind.Auto, Size = 0x14)]
     public struct ExplicitlySizedStructAuto
     {
         private long A;
@@ -1542,10 +1542,9 @@ internal class Program
                 return false;
         }
 
-        if (sizeof(IntPtr) == 8) // This test isn't right for 32 bit platforms
         {
             Console.WriteLine($"sizeof(ExplicitlySizedStructAuto) != sizeof(NormalStruct) {sizeof(ExplicitlySizedStructAuto)} != {sizeof(NormalStruct)}");
-            if (sizeof(ExplicitlySizedStructAuto) != sizeof(NormalStruct))
+            if ((sizeof(IntPtr) == 8) && sizeof(ExplicitlySizedStructAuto) != sizeof(NormalStruct)) // This test isn't right for 32 bit platforms
                 return false;
             
             ExplicitlySizedStructAuto str6 = new ExplicitlySizedStructAuto();
@@ -1555,10 +1554,9 @@ internal class Program
                 return false;
         }
 
-        if (sizeof(IntPtr) == 8) // This test isn't right for 32 bit platforms
         {
             Console.WriteLine($"sizeof(ExplicitlySizedStructAutoSizeTooSmall) != sizeof(NormalStruct) {sizeof(ExplicitlySizedStructAutoSizeTooSmall)} != {sizeof(NormalStruct)}");
-            if (sizeof(ExplicitlySizedStructAutoSizeTooSmall) != sizeof(NormalStruct))
+            if ((sizeof(IntPtr) == 8) && sizeof(ExplicitlySizedStructAutoSizeTooSmall) != sizeof(NormalStruct)) // This test isn't right for 32 bit platforms
                 return false;
             
             ExplicitlySizedStructAutoSizeTooSmall str7 = new ExplicitlySizedStructAutoSizeTooSmall();
