@@ -245,6 +245,20 @@
 #define UNIX_AMD64_ABI_ONLY(x)
 #endif // defined(UNIX_AMD64_ABI)
 
+#if defined(DEBUG) && !defined(OSX_ARM64_ABI)
+#define DEBUG_NOT_OSX_ARM64_ABI
+#endif
+
+#if defined(DEBUG_NOT_OSX_ARM64_ABI)
+#define DEBUG_NOT_OSX_ARM64_ARG(x) , x
+#define DEBUG_NOT_OSX_ARM64(x) x
+#define DEBUG_NOT_OSX_ARM64_ASSERT(x) assert(x)
+#else
+#define DEBUG_NOT_OSX_ARM64_ARG(x)
+#define DEBUG_NOT_OSX_ARM64(x)
+#define DEBUG_NOT_OSX_ARM64_ASSERT(x)
+#endif
+
 #if defined(UNIX_AMD64_ABI) || !defined(TARGET_64BIT) || defined(TARGET_ARM64)
 #define FEATURE_PUT_STRUCT_ARG_STK 1
 #define PUT_STRUCT_ARG_STK_ONLY_ARG(x) , x
