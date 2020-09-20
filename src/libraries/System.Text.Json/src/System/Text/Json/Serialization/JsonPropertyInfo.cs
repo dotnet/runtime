@@ -184,15 +184,10 @@ namespace System.Text.Json
 
         private void DetermineNumberHandling(JsonNumberHandling? parentTypeNumberHandling)
         {
-            bool numberHandlingIsApplicable = ConverterBase.IsInternalConverterForNumberType || TypeIsCollectionOfNumbersWithInternalConverter();
+            bool numberHandlingIsApplicable = NumberHandlingIsApplicable();
 
             if (IsForClassInfo)
             {
-                if (parentTypeNumberHandling != null && !ConverterBase.IsInternalConverter)
-                {
-                    ThrowHelper.ThrowInvalidOperationException_NumberHandlingOnPropertyInvalid(this);
-                }
-
                 if (numberHandlingIsApplicable)
                 {
                     // This logic is to honor JsonNumberHandlingAttribute placed on
@@ -211,53 +206,60 @@ namespace System.Text.Json
             else
             {
                 Debug.Assert(MemberInfo != null);
-
                 JsonNumberHandlingAttribute? attribute = GetAttribute<JsonNumberHandlingAttribute>(MemberInfo);
-                if (attribute != null && !numberHandlingIsApplicable)
-                {
-                    ThrowHelper.ThrowInvalidOperationException_NumberHandlingOnPropertyInvalid(this);
-                }
 
-                if (numberHandlingIsApplicable)
+                if (!numberHandlingIsApplicable)
+                {
+                    if (attribute != null)
+                    {
+                        ThrowHelper.ThrowInvalidOperationException_NumberHandlingOnPropertyInvalid(this);
+                    }
+                }
+                else
                 {
                     // Priority 1: Get handling from attribute on property or field.
-                    JsonNumberHandling? handling = attribute?.Handling;
+                    NumberHandling = attribute?.Handling;
 
                     // Priority 2: Get handling from attribute on parent class type.
-                    handling ??= parentTypeNumberHandling;
+                    NumberHandling ??= parentTypeNumberHandling;
 
                     // Priority 3: Get handling from JsonSerializerOptions instance.
-                    if (!handling.HasValue && Options.NumberHandling != JsonNumberHandling.Strict)
+                    if (!NumberHandling.HasValue && Options.NumberHandling != JsonNumberHandling.Strict)
                     {
-                        handling = Options.NumberHandling;
+                        NumberHandling = Options.NumberHandling;
                     }
-
-                    NumberHandling = handling;
                 }
             }
         }
 
-        private bool TypeIsCollectionOfNumbersWithInternalConverter()
+        private bool NumberHandlingIsApplicable()
         {
-            if (!ConverterBase.IsInternalConverter ||
-                ((ClassType.Enumerable | ClassType.Dictionary) & ClassType) == 0)
+            Type potentialNumberType;
+
+            if (((ClassType.Enumerable | ClassType.Dictionary) & ClassType) == 0)
             {
-                return false;
+                potentialNumberType = DeclaredPropertyType;
+            }
+            else
+            {
+                Debug.Assert(ConverterBase.ElementType != null);
+                potentialNumberType = ConverterBase.ElementType;
             }
 
-            Type? elementType = ConverterBase.ElementType;
-            Debug.Assert(elementType != null);
+            potentialNumberType = Nullable.GetUnderlyingType(potentialNumberType) ?? potentialNumberType;
 
-            try
-            {
-                JsonConverter converter = Options.GetConverter(elementType);
-                return converter.IsInternalConverterForNumberType;
-            }
-            catch (NotSupportedException)
-            {
-                // Allow NotSupportedException to be thrown with correct path information during (de)serialization.
-                return false;
-            }
+            return potentialNumberType == typeof(byte) ||
+                potentialNumberType == typeof(decimal) ||
+                potentialNumberType == typeof(double) ||
+                potentialNumberType == typeof(short) ||
+                potentialNumberType == typeof(int) ||
+                potentialNumberType == typeof(long) ||
+                potentialNumberType == typeof(sbyte) ||
+                potentialNumberType == typeof(float) ||
+                potentialNumberType == typeof(ushort) ||
+                potentialNumberType == typeof(uint) ||
+                potentialNumberType == typeof(ulong) ||
+                potentialNumberType == JsonClassInfo.ObjectType;
         }
 
         public static TAttribute? GetAttribute<TAttribute>(MemberInfo memberInfo) where TAttribute : Attribute
