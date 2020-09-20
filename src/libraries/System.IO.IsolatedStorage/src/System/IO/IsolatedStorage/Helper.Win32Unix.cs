@@ -51,14 +51,13 @@ namespace System.IO.IsolatedStorage
             Assembly? assembly = Assembly.GetEntryAssembly();
 
             if (assembly == null)
+            {
                 throw new IsolatedStorageException(SR.IsolatedStorage_Init);
+            }
 
             AssemblyName assemblyName = assembly.GetName();
-#pragma warning disable SYSLIB0012
-            Uri codeBase = new Uri(assembly.CodeBase!);
-#pragma warning restore SYSLIB0012
-
             hash = IdentityHelper.GetNormalizedStrongNameHash(assemblyName)!;
+
             if (hash != null)
             {
                 hash = "StrongName" + separator + hash;
@@ -66,8 +65,11 @@ namespace System.IO.IsolatedStorage
             }
             else
             {
-                hash = "Url" + separator + IdentityHelper.GetNormalizedUriHash(codeBase);
-                identity = codeBase;
+                // in case of SingleFile, Location.Length returns 0.
+                string fileName = assembly.Location.Length == 0 ? assemblyName.Name! : Path.GetFileName(assembly.Location);
+                Uri assemblyPath = new Uri(Path.Combine(AppContext.BaseDirectory, fileName));
+                hash = "Url" + separator + IdentityHelper.GetNormalizedUriHash(assemblyPath);
+                identity = assemblyPath;
             }
         }
 
