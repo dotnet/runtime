@@ -1386,15 +1386,15 @@ namespace System.Text.Json.Tests
         [InlineData(true, false)]
         [InlineData(false, true)]
         [InlineData(false, false)]
-        public async Task GrowBeyondBufferSize(bool formatted, bool skipValidation)
+        public void GrowBeyondBufferSize(bool formatted, bool skipValidation)
         {
             const int InitialGrowthSize = 256;
-            var writer = new FixedSizedBufferWriter(InitialGrowthSize);
+            var output = new FixedSizedBufferWriter(InitialGrowthSize);
             var options = new JsonWriterOptions { Indented = formatted, SkipValidation = skipValidation };
 
             byte[] utf8String = Encoding.UTF8.GetBytes("this is a string long enough to overflow the buffer and cause an exception to be thrown.");
 
-            await using var jsonUtf8 = new Utf8JsonWriter(writer, options);
+            using var jsonUtf8 = new Utf8JsonWriter(output, options);
 
             jsonUtf8.WriteStartArray();
 
