@@ -16,7 +16,7 @@
 
     <BaseOutputPath>$(ArtifactsDir)tests\coreclr</BaseOutputPath>
     <BaseOutputPath Condition="'$(__TestRootDir)' != ''">$(__TestRootDir)</BaseOutputPath>
-    <BaseOutputPathWithConfig>$(BaseOutputPath)\$(OSPlatformConfig)\</BaseOutputPathWithConfig>
+    <BaseOutputPathWithConfig>$([MSBuild]::NormalizePath('$(BaseOutputPath)\$(OSPlatformConfig)\'))</BaseOutputPathWithConfig>
 
     <TestWorkingDir>$(BaseOutputPathWithConfig)\</TestWorkingDir>
 
