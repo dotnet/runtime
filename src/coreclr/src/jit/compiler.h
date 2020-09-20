@@ -805,7 +805,20 @@ public:
     void incLvRefCntWtd(BasicBlock::weight_t delta, RefCountState state = RCS_NORMAL);
     void setLvRefCntWtd(BasicBlock::weight_t newValue, RefCountState state = RCS_NORMAL);
 
-    int      lvStkOffs;   // stack offset of home
+private:
+    int lvStkOffs; // stack offset of home in bytes.
+
+public:
+    int GetStackOffset() const
+    {
+        return lvStkOffs;
+    }
+
+    void SetStackOffset(int offset)
+    {
+        lvStkOffs = offset;
+    }
+
     unsigned lvExactSize; // (exact) size of the type in bytes
 
     // Is this a promoted struct?

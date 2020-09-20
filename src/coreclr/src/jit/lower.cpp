@@ -1895,19 +1895,19 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
                 unsigned int argStart = callerArgLclNum * TARGET_POINTER_SIZE;
                 unsigned int argEnd   = argStart + static_cast<unsigned int>(callerArgDsc->lvArgStackSize());
 #else
-                assert(callerArgDsc->lvStkOffs != BAD_STK_OFFS);
+                assert(callerArgDsc->GetStackOffset() != BAD_STK_OFFS);
 
                 if (baseOff == -1)
                 {
-                    baseOff = callerArgDsc->lvStkOffs;
+                    baseOff = callerArgDsc->GetStackOffset();
                 }
 
                 // On all ABIs where we fast tail call the stack args should come in order.
-                assert(baseOff <= callerArgDsc->lvStkOffs);
+                assert(baseOff <= callerArgDsc->GetStackOffset());
 
                 // Compute offset of this stack argument relative to the first stack arg.
                 // This will be its offset into the incoming arg space area.
-                unsigned int argStart = static_cast<unsigned int>(callerArgDsc->lvStkOffs - baseOff);
+                unsigned int argStart = static_cast<unsigned int>(callerArgDsc->GetStackOffset() - baseOff);
                 unsigned int argEnd   = argStart + comp->lvaLclSize(callerArgLclNum);
 #endif
 

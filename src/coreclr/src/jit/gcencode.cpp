@@ -1597,7 +1597,7 @@ size_t GCInfo::gcInfoBlockHdrSave(
     if (compiler->getNeedsGSSecurityCookie())
     {
         assert(compiler->lvaGSSecurityCookie != BAD_VAR_NUM);
-        int stkOffs            = compiler->lvaTable[compiler->lvaGSSecurityCookie].lvStkOffs;
+        int stkOffs            = compiler->lvaTable[compiler->lvaGSSecurityCookie].GetStackOffset();
         header->gsCookieOffset = compiler->isFramePointerUsed() ? -stkOffs : stkOffs;
         assert(header->gsCookieOffset != INVALID_GS_COOKIE_OFFSET);
     }
@@ -2198,7 +2198,7 @@ size_t GCInfo::gcMakeRegPtrTable(BYTE* dest, int mask, const InfoHdr& header, un
                     continue;
                 }
 
-                int offset = varDsc->lvStkOffs;
+                int offset = varDsc->GetStackOffset();
 #if DOUBLE_ALIGN
                 // For genDoubleAlign(), locals are addressed relative to ESP and
                 // arguments are addressed relative to EBP.
@@ -2247,7 +2247,7 @@ size_t GCInfo::gcMakeRegPtrTable(BYTE* dest, int mask, const InfoHdr& header, un
                         continue;
                     }
 
-                    unsigned offset = varDsc->lvStkOffs + i * TARGET_POINTER_SIZE;
+                    unsigned offset = varDsc->GetStackOffset() + i * TARGET_POINTER_SIZE;
 #if DOUBLE_ALIGN
                     // For genDoubleAlign(), locals are addressed relative to ESP and
                     // arguments are addressed relative to EBP.
@@ -2352,7 +2352,7 @@ size_t GCInfo::gcMakeRegPtrTable(BYTE* dest, int mask, const InfoHdr& header, un
 
             assert(compiler->lvaTable[compiler->info.compThisArg].TypeGet() == TYP_REF);
 
-            unsigned varOffs = compiler->lvaTable[compiler->info.compThisArg].lvStkOffs;
+            unsigned varOffs = compiler->lvaTable[compiler->info.compThisArg].GetStackOffset();
 
             /* For negative stack offsets we must reset the low bits,
                 * take abs and then set them back */
@@ -4169,18 +4169,19 @@ void GCInfo::gcMakeRegPtrTable(
                 // No need to hash/lookup untracked GC refs; just grab a new Slot Id.
                 if (mode == MAKE_REG_PTR_MODE_ASSIGN_SLOTS)
                 {
-                    gcInfoEncoderWithLog->GetStackSlotId(varDsc->lvStkOffs, flags, stackSlotBase);
+                    gcInfoEncoderWithLog->GetStackSlotId(varDsc->GetStackOffset(), flags, stackSlotBase);
                 }
             }
             else
             {
-                StackSlotIdKey sskey(varDsc->lvStkOffs, (stackSlotBase == GC_FRAMEREG_REL), flags);
+                StackSlotIdKey sskey(varDsc->GetStackOffset(), (stackSlotBase == GC_FRAMEREG_REL), flags);
                 GcSlotId       varSlotId;
                 if (mode == MAKE_REG_PTR_MODE_ASSIGN_SLOTS)
                 {
                     if (!m_stackSlotMap->Lookup(sskey, &varSlotId))
                     {
-                        varSlotId = gcInfoEncoderWithLog->GetStackSlotId(varDsc->lvStkOffs, flags, stackSlotBase);
+                        varSlotId =
+                            gcInfoEncoderWithLog->GetStackSlotId(varDsc->GetStackOffset(), flags, stackSlotBase);
                         m_stackSlotMap->Set(sskey, varSlotId);
                     }
                 }
@@ -4201,7 +4202,7 @@ void GCInfo::gcMakeRegPtrTable(
                     continue;
                 }
 
-                int offset = varDsc->lvStkOffs + i * TARGET_POINTER_SIZE;
+                int offset = varDsc->GetStackOffset() + i * TARGET_POINTER_SIZE;
 #if DOUBLE_ALIGN
                 // For genDoubleAlign(), locals are addressed relative to ESP and
                 // arguments are addressed relative to EBP.

@@ -6763,15 +6763,15 @@ void CodeGen::genReportGenericContextArg(regNumber initReg, bool* pInitRegZeroed
         if (isFramePointerUsed())
         {
 #if defined(TARGET_ARM)
-            // lvStkOffs is always valid for incoming stack-arguments, even if the argument
+            // GetStackOffset() is always valid for incoming stack-arguments, even if the argument
             // will become enregistered.
             // On Arm compiler->compArgSize doesn't include r11 and lr sizes and hence we need to add 2*REGSIZE_BYTES
-            noway_assert((2 * REGSIZE_BYTES <= varDsc->lvStkOffs) &&
-                         (size_t(varDsc->lvStkOffs) < compiler->compArgSize + 2 * REGSIZE_BYTES));
+            noway_assert((2 * REGSIZE_BYTES <= varDsc->GetStackOffset()) &&
+                         (size_t(varDsc->GetStackOffset()) < compiler->compArgSize + 2 * REGSIZE_BYTES));
 #else
-            // lvStkOffs is always valid for incoming stack-arguments, even if the argument
+            // GetStackOffset() is always valid for incoming stack-arguments, even if the argument
             // will become enregistered.
-            noway_assert((0 < varDsc->lvStkOffs) && (size_t(varDsc->lvStkOffs) < compiler->compArgSize));
+            noway_assert((0 < varDsc->GetStackOffset()) && (size_t(varDsc->GetStackOffset()) < compiler->compArgSize));
 #endif
         }
 
@@ -6781,7 +6781,8 @@ void CodeGen::genReportGenericContextArg(regNumber initReg, bool* pInitRegZeroed
         *pInitRegZeroed = false;
 
         // mov reg, [compiler->info.compTypeCtxtArg]
-        GetEmitter()->emitIns_R_AR(ins_Load(TYP_I_IMPL), EA_PTRSIZE, reg, genFramePointerReg(), varDsc->lvStkOffs);
+        GetEmitter()->emitIns_R_AR(ins_Load(TYP_I_IMPL), EA_PTRSIZE, reg, genFramePointerReg(),
+                                   varDsc->GetStackOffset());
         regSet.verifyRegUsed(reg);
     }
 
@@ -7459,8 +7460,8 @@ void CodeGen::genFnProlog()
             continue;
         }
 
-        signed int loOffs = varDsc->lvStkOffs;
-        signed int hiOffs = varDsc->lvStkOffs + compiler->lvaLclSize(varNum);
+        signed int loOffs = varDsc->GetStackOffset();
+        signed int hiOffs = varDsc->GetStackOffset() + compiler->lvaLclSize(varNum);
 
         /* We need to know the offset range of tracked stack GC refs */
         /* We assume that the GC reference can be anywhere in the TYP_STRUCT */
@@ -7860,7 +7861,7 @@ void CodeGen::genFnProlog()
 #else
         // mov [lvaStubArgumentVar], EAX
         GetEmitter()->emitIns_AR_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_SECRET_STUB_PARAM, genFramePointerReg(),
-                                   compiler->lvaTable[compiler->lvaStubArgumentVar].lvStkOffs);
+                                   compiler->lvaTable[compiler->lvaStubArgumentVar].GetStackOffset());
 #endif
         assert(intRegState.rsCalleeRegArgMaskLiveIn & RBM_SECRET_STUB_PARAM);
 
@@ -8109,7 +8110,7 @@ void CodeGen::genFnProlog()
 
         LclVarDsc* lastArg = &compiler->lvaTable[compiler->info.compArgsCount - 1];
         noway_assert(!lastArg->lvRegister);
-        signed offset = lastArg->lvStkOffs;
+        signed offset = lastArg->GetStackOffset();
         assert(offset != BAD_STK_OFFS);
         noway_assert(lastArg->lvFramePointerBased);
 
@@ -10617,8 +10618,8 @@ void CodeGen::genSetScopeInfo(unsigned       which,
         // Can't check compiler->lvaTable[varNum].lvOnFrame as we don't set it for
         // arguments of vararg functions to avoid reporting them to GC.
         noway_assert(!compiler->lvaTable[varNum].lvRegister);
-        unsigned cookieOffset = compiler->lvaTable[compiler->lvaVarargsHandleArg].lvStkOffs;
-        unsigned varOffset    = compiler->lvaTable[varNum].lvStkOffs;
+        unsigned cookieOffset = compiler->lvaTable[compiler->lvaVarargsHandleArg].GetStackOffset();
+        unsigned varOffset    = compiler->lvaTable[varNum].GetStackOffset();
 
         noway_assert(cookieOffset < varOffset);
         unsigned offset     = varOffset - cookieOffset;

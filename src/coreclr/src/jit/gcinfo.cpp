@@ -394,7 +394,7 @@ void GCInfo::gcCountForHeader(UNALIGNED unsigned int* pUntrackedCount, UNALIGNED
 #ifdef DEBUG
             if (compiler->verbose)
             {
-                int offs = varDsc->lvStkOffs;
+                int offs = varDsc->GetStackOffset();
 
                 printf("GCINFO: untrckd %s lcl at [%s", varTypeGCstring(varDsc->TypeGet()),
                        compiler->GetEmitter()->emitGetFrameReg());

@@ -5738,8 +5738,8 @@ GenTree* Compiler::fgMorphStackArgForVarArgs(unsigned lclNum, var_types varType,
         // Create a node representing the local pointing to the base of the args
         GenTree* ptrArg =
             gtNewOperNode(GT_SUB, TYP_I_IMPL, gtNewLclvNode(lvaVarargsBaseOfStkArgs, TYP_I_IMPL),
-                          gtNewIconNode(varDsc->lvStkOffs - codeGen->intRegState.rsCalleeRegArgCount * REGSIZE_BYTES -
-                                        lclOffs));
+                          gtNewIconNode(varDsc->GetStackOffset() -
+                                        codeGen->intRegState.rsCalleeRegArgCount * REGSIZE_BYTES - lclOffs));
 
         // Access the argument through the local
         GenTree* tree;

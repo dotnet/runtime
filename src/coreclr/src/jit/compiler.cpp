@@ -5028,7 +5028,7 @@ void Compiler::generatePatchpointInfo()
         assert(varDsc->lvFramePointerBased);
 
         // Record FramePtr relative offset (no localloc yet)
-        patchpointInfo->SetOffset(lclNum, varDsc->lvStkOffs);
+        patchpointInfo->SetOffset(lclNum, varDsc->GetStackOffset());
 
         // Note if IL stream contained an address-of that potentially leads to exposure.
         // This bit of IL may be skipped by OSR partial importation.
@@ -5061,7 +5061,7 @@ void Compiler::generatePatchpointInfo()
     {
         assert(lvaGSSecurityCookie != BAD_VAR_NUM);
         LclVarDsc* const varDsc = lvaGetDesc(lvaGSSecurityCookie);
-        patchpointInfo->SetSecurityCookieOffset(varDsc->lvStkOffs);
+        patchpointInfo->SetSecurityCookieOffset(varDsc->GetStackOffset());
         JITDUMP("--OSR-- security cookie V%02u offset is FP %d\n", lvaGSSecurityCookie,
                 patchpointInfo->SecurityCookieOffset());
     }
