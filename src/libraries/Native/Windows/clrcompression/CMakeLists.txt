@@ -71,7 +71,7 @@ set (NATIVECOMPRESSION_SOURCES
     ../../AnyOS/brotli/enc/metablock.c
     ../../AnyOS/brotli/enc/static_dict.c
     ../../AnyOS/brotli/enc/utf8_util.c
-    entrypoints.c
+    ../../AnyOS/System.IO.Compression.Native/entrypoints.c
 )
 
 #Include Brotli include files

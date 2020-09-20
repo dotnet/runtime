@@ -23,7 +23,13 @@ if("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_BINARY_DIR}")
     message(FATAL_ERROR "Binary directory isn't being correctly set before calling Cmake. Tree must be built in separate directory from source.")
 endif()
 
-set(GEN_SHARED_LIB 1)
+if(NATIVE_LIBS_ONLY)
+    set(GEN_SHARED_LIB 0)
+    set(STATIC_LIB_DESTINATION libs)
+else()
+    set(GEN_SHARED_LIB 1)
+    set(STATIC_LIB_DESTINATION .)
+endif()
 
 project(CoreFX)
 
