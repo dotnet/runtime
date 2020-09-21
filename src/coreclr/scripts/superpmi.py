@@ -2706,11 +2706,21 @@ def setup_args(args):
                             lambda unused: True,
                             "Unable to set pmi")
 
+        def pmi_assemblies_verifier(items):
+            print('pmi_assemblies_verifier:items= %s' % items)
+            return len(items) > 0
+
+        def pmi_assemblies_modifier(items):
+            print ('pmi_assemblies_modifier:items= %s ' % items)
+            modified_items = [item for item in items if os.path.isdir(item) or os.path.isfile(item)]
+            print ('pmi_assemblies_modifier:modified_items= %s ' % modified_items)
+            return modified_items
+
         coreclr_args.verify(args,
                             "pmi_assemblies",
-                            lambda items: args.pmi is False or len(items) > 0,
+                            pmi_assemblies_verifier,
                             "Unable to set pmi_assemblies",
-                            modify_arg=lambda items: [item for item in items if os.path.isdir(item) or os.path.isfile(item)])
+                            pmi_assemblies_modifier)
 
         coreclr_args.verify(args,
                             "pmi_location",
