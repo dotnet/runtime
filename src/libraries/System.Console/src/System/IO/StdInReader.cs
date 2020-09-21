@@ -298,6 +298,7 @@ namespace System.IO
                     return ConsoleKey.Tab;
 
                 case '\n':
+                case '\r':
                     return ConsoleKey.Enter;
 
                 case (char)(0x1B):
