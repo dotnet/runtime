@@ -5159,11 +5159,12 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
                     emitUpdateLiveGCregs(GCT_BYREF, byrefRegs, cp);
                 }
             }
-
+#ifdef DEBUG
             if (EMIT_GC_VERBOSE || emitComp->opts.disasmWithGC)
             {
                 emitDispGCInfoDelta();
             }
+#endif // DEBUG
         }
         else
         {
