@@ -51,7 +51,7 @@ robocopy $CoreRootDirectory $PmiAssembliesDirectory\Core_Root /E /XF *.pdb
 
 # Prepare CorrelationPayloadDirectories
 robocopy $SourceDirectory\src\coreclr\scripts $SuperPmiDirectory /E
-robocopy $CoreRootDirectory $SuperPmiDirectory $($super_pmi_dlls) /E
+robocopy $CoreRootDirectory $SuperPmiDirectory $($super_pmi_dlls)
 
 Write-Host "Cloning and building JitUtilsDirectory"
 
@@ -63,7 +63,8 @@ $env:PATH = "$SourceDirectory\.dotnet;$env:PATH"
 Write-Host "dotnet PATH: $env:PATH"
 .\bootstrap.cmd
 
-robocopy $JitUtilsDirectory\bin $SuperPmiDirectory "pmi.dll" /E
+robocopy $JitUtilsDirectory\bin $SuperPmiDirectory "pmi.dll"
+pushd $SourceDirectory
 Remove-Item $JitUtilsDirectory -Recurse -Force
 
 Write-Host "Printing files in $WorkItemDirectory"
