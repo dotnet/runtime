@@ -11114,8 +11114,6 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
 
     switch (tree->gtOper)
     {
-        unsigned   varNum;
-        LclVarDsc* varDsc;
 
         case GT_LCL_FLD:
         case GT_LCL_FLD_ADDR:
@@ -11127,9 +11125,10 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
         case GT_LCL_VAR:
         case GT_LCL_VAR_ADDR:
         case GT_STORE_LCL_VAR:
+        {
             printf(" ");
-            varNum = tree->AsLclVarCommon()->GetLclNum();
-            varDsc = &lvaTable[varNum];
+            const unsigned   varNum = tree->AsLclVarCommon()->GetLclNum();
+            const LclVarDsc* varDsc = lvaGetDesc(varNum);
             gtDispLclVar(varNum);
             if (tree->AsLclVarCommon()->HasSsaName())
             {
@@ -11170,8 +11169,6 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
                 }
                 else
                 {
-                    CORINFO_CLASS_HANDLE typeHnd = varDsc->GetStructHnd();
-                    CORINFO_FIELD_HANDLE fldHnd;
 
                     for (unsigned i = varDsc->lvFieldLclStart; i < varDsc->lvFieldLclStart + varDsc->lvFieldCnt; ++i)
                     {
@@ -11185,7 +11182,9 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
                         else
 #endif // !defined(TARGET_64BIT)
                         {
-                            fldHnd    = info.compCompHnd->getFieldInClass(typeHnd, fieldVarDsc->lvFldOrdinal);
+                            CORINFO_CLASS_HANDLE typeHnd = varDsc->GetStructHnd();
+                            CORINFO_FIELD_HANDLE fldHnd =
+                                info.compCompHnd->getFieldInClass(typeHnd, fieldVarDsc->lvFldOrdinal);
                             fieldName = eeGetFieldName(fldHnd);
                         }
 
@@ -11217,7 +11216,8 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
                     printf(" (last use)");
                 }
             }
-            break;
+        }
+        break;
 
         case GT_JMP:
         {
