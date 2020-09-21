@@ -381,7 +381,6 @@ int corehost_main_init(
             auto extracted_assembly = bundle->extraction_path();
             auto app_name = hostpolicy_init.host_info.get_app_name() + _X(".dll");
             append_path(&extracted_assembly, app_name.c_str());
-            remove_trailing_dir_seperator(&extracted_assembly);
             assert(pal::file_exists(extracted_assembly));
             hostpolicy_init.host_info.app_path = extracted_assembly;
         }

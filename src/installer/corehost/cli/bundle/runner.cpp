@@ -65,7 +65,8 @@ bool runner_t::probe(const pal::string_t& relative_path, int64_t* offset, int64_
 {
     const bundle::file_entry_t* entry = probe(relative_path);
 
-    if (entry == nullptr)
+    // Do not report extracted entries - those should be reported through either TPA or resource paths
+    if (entry == nullptr || entry->needs_extraction())
     {
         return false;
     }

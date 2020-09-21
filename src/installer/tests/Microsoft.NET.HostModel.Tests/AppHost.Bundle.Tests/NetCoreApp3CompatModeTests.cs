@@ -30,15 +30,19 @@ namespace AppHost.Bundle.Tests
             Bundler bundler = BundleHelper.BundleApp(fixture, out singleFile, BundleOptions.BundleAllContent);
             var extractionBaseDir = BundleHelper.GetExtractionRootDir(fixture);
 
-            Command.Create(singleFile, "assembly_location")
-                .CaptureStdErr()
+            Command.Create(singleFile, "executing_assembly_location trusted_platform_assemblies assembly_location System.Console")
                 .CaptureStdOut()
+                .CaptureStdErr()
                 .EnvironmentVariable(BundleHelper.DotnetBundleExtractBaseEnvVariable, extractionBaseDir.FullName)
                 .Execute()
                 .Should()
                 .Pass()
-                .And
-                .HaveStdOutContaining(extractionBaseDir.FullName);
+                // Validate that the main assembly is running from disk (and not from bundle)
+                .And.HaveStdOutContaining("ExecutingAssembly.Location: " + extractionBaseDir.FullName)
+                // Validate that TPA contains at least one framework assembly from the extraction directory
+                .And.HaveStdOutContaining("System.Runtime.dll")
+                // Validate that framework assembly is actually loaded from the extraction directory
+                .And.HaveStdOutContaining("System.Console location: " + extractionBaseDir.FullName);
 
             var extractionDir = BundleHelper.GetExtractionDir(fixture, bundler);
             var bundleFiles = BundleHelper.GetBundleDir(fixture).GetFiles().Select(file => file.Name).ToArray();
@@ -62,6 +66,20 @@ namespace AppHost.Bundle.Tests
                 TestFixture
                     .EnsureRestoredForRid(TestFixture.CurrentRid, RepoDirectories.CorehostPackages)
                     .PublishProject(runtime: TestFixture.CurrentRid, outputDirectory: BundleHelper.GetPublishPath(TestFixture));
+
+                // The above will publish the app as self-contained using the stock .NET Core SDK (typically from Program Files)
+                // In order to test the hosting components we need the hostpolicy and hostfxr built by the repo
+                string hostFxrFileName = RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("hostfxr");
+                File.Copy(
+                    Path.Combine(RepoDirectories.Artifacts, "corehost", hostFxrFileName),
+                    Path.Combine(BundleHelper.GetPublishPath(TestFixture), hostFxrFileName),
+                    overwrite: true);
+
+                string hostPolicyFileName = RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("hostpolicy");
+                File.Copy(
+                    Path.Combine(RepoDirectories.Artifacts, "corehost", hostPolicyFileName),
+                    Path.Combine(BundleHelper.GetPublishPath(TestFixture), hostPolicyFileName),
+                    overwrite: true);
             }
 
             public void Dispose()
