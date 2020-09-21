@@ -12,16 +12,14 @@
     <PmiAssembliesDirectory>$(WorkItemDirectory)\pmiAssembliesDirectory</PmiAssembliesDirectory>
     <SuperPMIDirectory>%HELIX_CORRELATION_PAYLOAD%\superpmi</SuperPMIDirectory>
     <OutputMchPath>%HELIX_WORKITEM_UPLOAD_ROOT%</OutputMchPath>
-    <JitUtilsDirectory>%HELIX_CORRELATION_PAYLOAD%\jitutils\bin</JitUtilsDirectory>
-    <WorkItemCommand>$(SuperPMIDirectory)\superpmi.py collect --pmi -pmi_location $(JitUtilsDirectory)\pmi.dll -core_root $(SuperPMIDirectory)</WorkItemCommand>
+    <WorkItemCommand>$(SuperPMIDirectory)\superpmi.py collect --pmi -pmi_location $(SuperPMIDirectory)\pmi.dll -core_root $(SuperPMIDirectory)</WorkItemCommand>
   </PropertyGroup>
   <PropertyGroup Condition="'$(AGENT_OS)' != 'Windows_NT'">
     <Python>py -3</Python>
     <PmiAssembliesDirectory>$(WorkItemDirectory)/pmiAssembliesDirectory</PmiAssembliesDirectory>
     <SuperPMIDirectory>$HELIX_CORRELATION_PAYLOAD/superpmi</SuperPMIDirectory>
     <OutputMchPath>$HELIX_WORKITEM_UPLOAD_ROOT</OutputMchPath>
-    <JitUtilsDirectory>$HELIX_CORRELATION_PAYLOAD/jitutils/bin</JitUtilsDirectory>
-    <WorkItemCommand>$(SuperPMIDirectory)/superpmi.py collect --pmi -pmi_location $(JitUtilsDirectory)/pmi.dll -core_root $(SuperPMIDirectory)</WorkItemCommand>
+    <WorkItemCommand>$(SuperPMIDirectory)/superpmi.py collect --pmi -pmi_location $(SuperPMIDirectory)/pmi.dll -core_root $(SuperPMIDirectory)</WorkItemCommand>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(WorkItemCommand)' != ''">

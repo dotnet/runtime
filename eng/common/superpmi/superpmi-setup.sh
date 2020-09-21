@@ -73,7 +73,7 @@ elif [[ "$architecture" = "arm64" ]]; then
 fi
 
 helix_source_prefix="official"
-creator=""
+creator=
 
 echo "Done setting queue"
 

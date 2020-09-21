@@ -63,6 +63,9 @@ $env:PATH = "$SourceDirectory\.dotnet;$env:PATH"
 Write-Host "dotnet PATH: $env:PATH"
 .\bootstrap.cmd
 
+robocopy $JitUtilsDirectory\bin $SuperPmiDirectory "pmi.dll" /E
+Remove-Item $JitUtilsDirectory -Recurse -Force
+
 Write-Host "Printing files in $WorkItemDirectory"
 Get-ChildItem -Path $WorkItemDirectory -Recurse -Name
 
