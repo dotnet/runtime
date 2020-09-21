@@ -1370,7 +1370,7 @@ namespace System.Net.Http
             }
             catch (Exception e)
             {
-                throw new HttpRequestException("An exception occurred while calling the PlaintextStreamFilter callback.", e);
+                throw new HttpRequestException(SR.net_http_exception_during_plaintext_filter, e);
             }
         }
 
