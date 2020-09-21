@@ -61,10 +61,14 @@ from coreclr_arguments import *
 #    NuGet packages (like the setup-stress-dependencies scripts do).
 
 az_account_name = "clrjit2"
-az_container_name = "superpmi"
+az_superpmi_container_name = "superpmi"
 az_collections_root_folder = "collections"
 az_blob_storage_account_uri = "https://" + az_account_name + ".blob.core.windows.net/"
-az_blob_storage_container_uri = az_blob_storage_account_uri + az_container_name
+az_blob_storage_superpmi_container_uri = az_blob_storage_account_uri + az_superpmi_container_name
+
+az_jitrollingbuild_container_name = "jitrollingbuild"
+az_builds_root_folder = "builds"
+az_blob_storage_jitrollingbuild_container_uri = az_blob_storage_account_uri + az_jitrollingbuild_container_name
 
 ################################################################################
 # Argument Parser
@@ -167,7 +171,7 @@ target directory already exists.
 
 parser = argparse.ArgumentParser(description=description)
 
-subparsers = parser.add_subparsers(dest='mode', help="Command to invoke")
+subparsers = parser.add_subparsers(dest='mode', required=True, help="Command to invoke")
 
 # Create a parser for core_root. It can be specified directly,
 # or computed from the script location and host OS, architecture, and build type:
@@ -243,8 +247,11 @@ replay_parser.add_argument("-jit_path", help="Path to clrjit. Defaults to Core_R
 asm_diff_parser = subparsers.add_parser("asmdiffs", description=asm_diff_description, parents=[core_root_parser, superpmi_common_parser, replay_common_parser])
 
 # Add required arguments
-asm_diff_parser.add_argument("-base_jit_path", required=True, help="Path to baseline clrjit.")
-asm_diff_parser.add_argument("-diff_jit_path", nargs='?', help="Path to diff clrjit. Defaults to Core_Root JIT.")
+asm_diff_parser.add_argument("-base_jit_path", help="Path to baseline clrjit. Defaults to baseline JIT from rolling build, by computing baseline git hash.")
+asm_diff_parser.add_argument("-diff_jit_path", help="Path to diff clrjit. Defaults to Core_Root JIT.")
+asm_diff_parser.add_argument("-git_hash", help="Use this git hash as the current to use to find a baseline JIT. Defaults to current git hash of source tree.")
+asm_diff_parser.add_argument("-base_git_hash", help="Use this git hash as the baseline JIT hash. Default: search for the baseline hash.")
+
 asm_diff_parser.add_argument("--diff_with_code", action="store_true", help="Invoke Visual Studio Code to view any diffs.")
 asm_diff_parser.add_argument("--diff_with_code_only", action="store_true", help="Invoke Visual Studio Code to view any diffs. Only run the diff command, do not run SuperPMI to regenerate diffs.")
 asm_diff_parser.add_argument("--diff_jit_dump", action="store_true", help="Generate JitDump output for diffs. Default: only generate asm, not JitDump.")
@@ -1584,7 +1591,7 @@ def determine_coredis_tools(coreclr_args):
     if os.path.isfile(coredistools_location):
         print("Using coredistools found at {}".format(coredistools_location))
     else:
-        coredistools_uri = az_blob_storage_container_uri + "/libcoredistools/{}-{}/{}".format(coreclr_args.host_os.lower(), coreclr_args.arch.lower(), coredistools_dll_name)
+        coredistools_uri = az_blob_storage_superpmi_container_uri + "/libcoredistools/{}-{}/{}".format(coreclr_args.host_os.lower(), coreclr_args.arch.lower(), coredistools_dll_name)
         print("Download: {} -> {}".format(coredistools_uri, coredistools_location))
         urllib.request.urlretrieve(coredistools_uri, coredistools_location)
 
@@ -1620,7 +1627,7 @@ def determine_pmi_location(coreclr_args):
             if os.path.isfile(pmi_location):
                 print("Using PMI found at {}".format(pmi_location))
             else:
-                pmi_uri = az_blob_storage_container_uri + "/pmi/pmi.dll"
+                pmi_uri = az_blob_storage_superpmi_container_uri + "/pmi/pmi.dll"
                 print("Download: {} -> {}".format(pmi_uri, pmi_location))
                 urllib.request.urlretrieve(pmi_uri, pmi_location)
 
@@ -1723,7 +1730,7 @@ def list_superpmi_collections_container_via_rest_api(coreclr_args, filter=lambda
 
     # This URI will return *all* the blobs, for all jit-ee-version/OS/architecture combinations.
     # pass "prefix=foo/bar/..." to only show a subset. Or, we can filter later using string search.
-    list_superpmi_container_uri = az_blob_storage_container_uri + "?restype=container&comp=list&prefix=" + az_collections_root_folder + "/"
+    list_superpmi_container_uri = az_blob_storage_superpmi_container_uri + "?restype=container&comp=list&prefix=" + az_collections_root_folder + "/"
 
     try:
         contents = urllib.request.urlopen(list_superpmi_container_uri).read().decode('utf-8')
@@ -1819,7 +1826,7 @@ def process_mch_files_arg(coreclr_args):
 
     # Download all the urls at once, and add the local cache filenames to our accumulated list of local file names.
     if len(urls) != 0:
-        local_mch_files += download_mch_urls(urls, default_mch_dir)
+        local_mch_files += download_urls(urls, default_mch_dir)
 
     coreclr_args.mch_files = local_mch_files
 
@@ -1851,7 +1858,7 @@ def download_mch(coreclr_args, include_baseline_jit=False):
         return [ default_mch_dir ]
 
     blob_filter_string = "{}/{}/{}".format(coreclr_args.jit_ee_version, coreclr_args.host_os, coreclr_args.arch)
-    blob_prefix_filter = "{}/{}/{}".format(az_blob_storage_container_uri, az_collections_root_folder, blob_filter_string).lower()
+    blob_prefix_filter = "{}/{}/{}".format(az_blob_storage_superpmi_container_uri, az_collections_root_folder, blob_filter_string).lower()
 
     # Determine if a URL in Azure Storage should be allowed. The URL looks like:
     #   https://clrjit.blob.core.windows.net/superpmi/jit-ee-guid/Linux/x64/Linux.x64.Checked.frameworks.mch.zip
@@ -1868,62 +1875,91 @@ def download_mch(coreclr_args, include_baseline_jit=False):
     if urls is None:
         return []
 
-    download_mch_urls(urls, default_mch_dir)
+    download_urls(urls, default_mch_dir)
     return [ default_mch_dir ]
 
 
-def download_mch_urls(urls, target_dir):
-    """ Download a set of MCH files specified as URLs to a target directory.
+def download_urls(urls, target_dir, verbose=True, fail_if_not_found=True):
+    """ Download a set of files, specified as URLs, to a target directory.
         If the URLs are to .ZIP files, then uncompress them and copy all contents
         to the target directory.
 
     Args:
         urls (list): the URLs to download
-        target_dir (str): target directory where files are copied
+        target_dir (str): target directory where files are copied. Directory must exist
+        fail_if_not_found (bool): if True, fail if a download fails due to file not found (HTTP error 404).
+                                  Otherwise, ignore the failure.
 
     Returns:
         list of local filenames of downloaded files
     """
 
-    print("Downloading:")
-    for url in urls:
-        print("  {}".format(url))
+    if verbose:
+        print("Downloading:")
+        for url in urls:
+            print("  {}".format(url))
 
-    if not os.path.isdir(target_dir):
-        os.makedirs(target_dir)
+    local_files = []
 
-    local_mch_files = []
-
+    # In case we'll need a temp directory for ZIP file processing, create it first.
     with TempDir() as temp_location:
         for url in urls:
-            # Delete everything in the temp_location (from previous iterations of this loop, so previous URL downloads).
-            temp_location_items = [os.path.join(temp_location, item) for item in os.listdir(temp_location)]
-            for item in temp_location_items:
-                if os.path.isdir(item):
-                    shutil.rmtree(item)
-                else:
-                    os.remove(item)
-
             item_name = url.split("/")[-1]
-            download_path = os.path.join(temp_location, item_name)
-
-            print("Download: {} -> {}".format(url, download_path))
-            urllib.request.urlretrieve(url, download_path)
 
             if url.lower().endswith(".zip"):
-                print("Uncompress {}".format(download_path))
+                # Delete everything in the temp_location (from previous iterations of this loop, so previous URL downloads).
+                temp_location_items = [os.path.join(temp_location, item) for item in os.listdir(temp_location)]
+                for item in temp_location_items:
+                    if os.path.isdir(item):
+                        shutil.rmtree(item)
+                    else:
+                        os.remove(item)
+
+                download_path = os.path.join(temp_location, item_name)
+
+                try:
+                    if verbose:
+                        print("Download: {} -> {}".format(url, download_path))
+                    urllib.request.urlretrieve(url, download_path)
+                except urllib.error.HTTPError as httperror:
+                    if (httperror == 404) and fail_if_not_found:
+                        raise httperror
+                    # Otherwise, swallow the error and continue to next file.
+                    continue
+
+                if verbose:
+                    print("Uncompress {}".format(download_path))
                 with zipfile.ZipFile(download_path, "r") as file_handle:
                     file_handle.extractall(temp_location)
 
-            # Copy everything that was extracted to the target directory.
-            items = [ os.path.join(temp_location, item) for item in os.listdir(temp_location) if not item.endswith(".zip") ]
-            for item in items:
-                cache_file = os.path.join(target_dir, os.path.basename(item))
-                print("Cache {} => {}".format(item, cache_file))
-                shutil.copy2(item, target_dir)
-                local_mch_files.append(cache_file)
+                # Copy everything that was extracted to the target directory.
+                if not os.path.isdir(target_dir):
+                    os.makedirs(target_dir)
+                items = [ os.path.join(temp_location, item) for item in os.listdir(temp_location) if not item.endswith(".zip") ]
+                for item in items:
+                    target_path = os.path.join(target_dir, os.path.basename(item))
+                    if verbose:
+                        print("Copy {} -> {}".format(item, target_path))
+                    shutil.copy2(item, target_dir)
+                    local_files.append(target_path)
+            else:
+                # Not a zip file; download directory to target directory
+                if not os.path.isdir(target_dir):
+                    os.makedirs(target_dir)
+                download_path = os.path.join(target_dir, item_name)
 
-    return local_mch_files
+                try:
+                    if verbose:
+                        print("Download: {} -> {}".format(url, download_path))
+                    urllib.request.urlretrieve(url, download_path)
+                    local_files.append(download_path)
+                except urllib.error.HTTPError as httperror:
+                    if (httperror == 404) and fail_if_not_found:
+                        raise httperror
+                    # Otherwise, swallow the error and continue to next file.
+                    continue
+
+    return local_files
 
 
 def upload_mch(coreclr_args):
@@ -1936,7 +1972,7 @@ def upload_mch(coreclr_args):
     """
 
     def upload_blob(file, blob_name):
-        blob_client = blob_service_client.get_blob_client(container=az_container_name, blob=blob_name)
+        blob_client = blob_service_client.get_blob_client(container=az_superpmi_container_name, blob=blob_name)
 
         # Check if the blob already exists, and delete it if it does, before uploading / replacing it.
         try:
@@ -1988,7 +2024,7 @@ def upload_mch(coreclr_args):
             total_bytes_uploaded += zip_stat_result.st_size
 
             blob_name = "{}/{}".format(blob_folder_name, zip_name)
-            print("Uploading: {} ({}) -> {}".format(file, zip_path, az_blob_storage_container_uri + "/" + blob_name))
+            print("Uploading: {} ({}) -> {}".format(file, zip_path, az_blob_storage_superpmi_container_uri + "/" + blob_name))
             upload_blob(zip_path, blob_name)
 
         # Upload a JIT matching the MCH files just collected.
@@ -2003,7 +2039,7 @@ def upload_mch(coreclr_args):
 
         jit_name = os.path.basename(jit_location)
         jit_blob_name = "{}/{}".format(blob_folder_name, jit_name)
-        print("Uploading: {} -> {}".format(jit_location, az_blob_storage_container_uri + "/" + jit_blob_name))
+        print("Uploading: {} -> {}".format(jit_location, az_blob_storage_superpmi_container_uri + "/" + jit_blob_name))
         upload_blob(jit_location, jit_blob_name)
 
         jit_stat_result = os.stat(jit_location)
@@ -2020,7 +2056,7 @@ def list_collections_command(coreclr_args):
     """
 
     blob_filter_string = "{}/{}/{}".format(coreclr_args.jit_ee_version, coreclr_args.host_os, coreclr_args.arch)
-    blob_prefix_filter = "{}/{}/{}".format(az_blob_storage_container_uri, az_collections_root_folder, blob_filter_string).lower()
+    blob_prefix_filter = "{}/{}/{}".format(az_blob_storage_superpmi_container_uri, az_collections_root_folder, blob_filter_string).lower()
 
     # Determine if a URL in Azure Storage should be allowed. The URL looks like:
     #   https://clrjit.blob.core.windows.net/superpmi/jit-ee-guid/Linux/x64/Linux.x64.Checked.frameworks.mch.zip
@@ -2126,6 +2162,151 @@ def get_mch_files_for_replay(coreclr_args):
         return None
 
     return mch_files
+
+
+def process_base_jit_path_arg(coreclr_args):
+    """ Process the -base_jit_path argument coreclr_args.base_jit_path.
+        If the argument is present, check it for being a path to a file.
+        If not present, try to find and download a baseline JIT based on the current environment:
+        1. Determine the current git hash using:
+             git rev-parse HEAD
+           or use the `-git_hash` argument (call the result `git_hash`).
+        2. Determine the baseline: where does this hash meet `master` using:
+             git merge-base `git_hash` master
+           or use the `-base_git_hash` argument (call the result `base_git_hash`).
+        3. If the `-base_git_hash` argument is used, use that directly as the exact git
+           hash of the baseline JIT to use.
+        4. Otherwise, figure out the latest hash, starting with `base_git_hash`, that contains any changes to
+           the src\coreclr\src\jit directory. (We do this because the JIT rolling build only includes
+           builds for changes to this directory. So, this logic needs to stay in sync with the logic
+           that determines what causes the JIT directory to be rebuilt. E.g., it should also get
+           rebuilt if the JIT-EE interface GUID changes. Alternatively, we can take the entire list
+           of changes, and probe the rolling build drop for all of them.)
+        5. Check if we've already downloaded a JIT that matches `base_git_hash`, and use that if available.
+        6. Starting with `base_git_hash`, and possibly walking to older changes, look for matching builds
+           in the JIT rolling build drops.
+        7. If a baseline clrjit is found, download it to the `spmi/basejit/git-hash.os.architecture.build_type`
+           cache directory.
+        8. Set coreclr_args.base_jit_path to the full path to the downloaded baseline JIT.
+
+    Args:
+        coreclr_args (CoreclrArguments) : parsed args
+
+    Returns:
+        Nothing
+
+        coreclr_args.base_jit_path is set to the path to the JIT to use for the baseline JIT.
+    """
+
+    if coreclr_args.base_jit_path is not None:
+        if not os.path.isfile(coreclr_args.base_jit_path):
+            raise RuntimeError("Specified -base_jit_path does not point to a file")
+        return
+
+    # Used for debugging
+    verbose = False
+
+    # We cache baseline jits under the following directory. Note that we can't create the full directory path
+    # until we know the baseline JIT hash.
+    default_basejit_root_dir = os.path.join(coreclr_args.spmi_location, "basejit")
+
+    # Do all the remaining commands, including a number of 'git' commands including relative paths,
+    # from the root of the runtime repo.
+
+    with ChangeDir(coreclr_args.runtime_repo_location) as dir:
+        if coreclr_args.git_hash is None:
+            command = [ "git", "rev-parse", "HEAD" ]
+            if verbose:
+                print("Invoking: " + " ".join(command))
+            proc = subprocess.Popen(command, stdout=subprocess.PIPE)
+            stdout_git_rev_parse, stderr_git_rev_parse = proc.communicate()
+            return_code = proc.returncode
+            if return_code == 0:
+                current_hash = stdout_git_rev_parse.decode('utf-8').strip()
+                if verbose:
+                    print("Current hash: {}".format(current_hash))
+            else:
+                raise RuntimeError("Couldn't determine current git hash")
+        else:
+            current_hash = coreclr_args.git_hash
+
+        if coreclr_args.base_git_hash is None:
+            # We've got the current hash; figure out the baseline hash.
+            command = [ "git", "merge-base", current_hash, "master" ]
+            if verbose:
+                print("Invoking: " + " ".join(command))
+            proc = subprocess.Popen(command, stdout=subprocess.PIPE)
+            stdout_git_merge_base, stderr_git_merge_base = proc.communicate()
+            return_code = proc.returncode
+            if return_code == 0:
+                baseline_hash = stdout_git_merge_base.decode('utf-8').strip()
+                print("Baseline hash: {}".format(current_hash))
+            else:
+                raise RuntimeError("Couldn't determine baseline git hash")
+        else:
+            baseline_hash = coreclr_args.base_git_hash
+
+        if coreclr_args.base_git_hash is None:
+            # Enumerate the last 20 changes, starting with the baseline, that included JIT changes.
+            command = [ "git", "log", "--pretty=format:%H", baseline_hash, "-20", "--", "src/coreclr/src/jit/*" ]
+            if verbose:
+                print("Invoking: " + " ".join(command))
+            proc = subprocess.Popen(command, stdout=subprocess.PIPE)
+            stdout_change_list, stderr_change_list = proc.communicate()
+            return_code = proc.returncode
+            change_list_hashes = []
+            if return_code == 0:
+                change_list_hashes = stdout_change_list.decode('utf-8').strip().splitlines()
+            else:
+                raise RuntimeError("Couldn't determine list of JIT changes starting with baseline hash")
+
+            if len(change_list_hashes) == 0:
+                raise RuntimeError("No JIT changes found starting with baseline hash")
+        else:
+            # If `-base_git_hash` is specified, then we use exactly that hash and no other for the baseline.
+            change_list_hashes = [ coreclr_args.base_git_hash ]
+        
+        # For each hash, (1) see if we have the JIT already, and if not (2) try to download the corresponding JIT from the rolling build.
+
+        hashnum = 1
+        for hash in change_list_hashes:
+            if verbose:
+                print("{}: {}".format(hashnum, hash))
+
+            jit_name = determine_jit_name(coreclr_args)
+            basejit_dir = os.path.join(default_basejit_root_dir, "{}.{}.{}.{}".format(hash, coreclr_args.host_os, coreclr_args.arch, coreclr_args.build_type))
+            basejit_path = os.path.join(basejit_dir, jit_name)
+            if os.path.isfile(basejit_path):
+                # We found this baseline JIT in our cache; use it!
+                coreclr_args.base_jit_path = basejit_path
+                print("Using baseline {}".format(coreclr_args.base_jit_path))
+                return
+
+            # It's not in our cache; is there one built by the rolling build to download?
+            blob_folder_name = "{}/{}/{}/{}/{}/{}".format(az_builds_root_folder, hash, coreclr_args.host_os, coreclr_args.arch, coreclr_args.build_type, jit_name)
+            blob_uri = "{}/{}".format(az_blob_storage_jitrollingbuild_container_uri, blob_folder_name)
+            urls = [ blob_uri ]
+            local_files = download_urls(urls, basejit_dir, verbose=verbose, fail_if_not_found=False)
+
+            if len(local_files) > 0:
+                if hashnum > 1:
+                    print("Warning: the baseline found is not built with the first hash with JIT code changes; there may be extraneous diffs")
+                # We expect local_files to be length 1, since we only attempted to download a single file.
+                if len(local_files) > 1:
+                    print("Error: downloaded more than one file?")
+
+                coreclr_args.base_jit_path = local_files[0]
+                print("Downloaded {}".format(blob_uri))
+                print("Using baseline {}".format(coreclr_args.base_jit_path))
+                return
+
+            # We didn't find a baseline; keep looking
+            hashnum += 1
+
+        # We ran out of hashes of JIT changes, and didn't find a baseline. Give up.
+        print("Error: no baseline JIT found")
+
+    raise RuntimeError("No baseline JIT found")
 
 
 def setup_args(args):
@@ -2400,9 +2581,6 @@ def setup_args(args):
         verify_superpmi_common_args()
         verify_replay_common_args()
 
-        # TODO: Is there any reasonable baseline JIT that could be found, downloaded, etc.?
-        # E.g., figure out the merge point of the current branch and download a built baseline
-        # from the CI system?
         coreclr_args.verify(args,
                             "base_jit_path",
                             lambda unused: True,
@@ -2413,6 +2591,16 @@ def setup_args(args):
                             lambda jit_path: os.path.isfile(jit_path),
                             "Unable to set diff_jit_path",
                             modify_arg=lambda arg: os.path.join(coreclr_args.core_root, determine_jit_name(coreclr_args)) if arg is None else os.path.abspath(arg))
+
+        coreclr_args.verify(args,
+                            "git_hash",
+                            lambda unused: True,
+                            "Unable to set git_hash")
+
+        coreclr_args.verify(args,
+                            "base_git_hash",
+                            lambda unused: True,
+                            "Unable to set base_git_hash")
 
         coreclr_args.verify(args,
                             "diff_with_code",
@@ -2452,6 +2640,8 @@ def setup_args(args):
                                 "diff_jit_dump",
                                 lambda unused: True,
                                 "Unable to set diff_jit_dump.")
+
+        process_base_jit_path_arg(coreclr_args)
 
         standard_location = False
         if coreclr_args.product_location.lower() in coreclr_args.base_jit_path.lower():
