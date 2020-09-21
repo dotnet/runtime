@@ -28,13 +28,8 @@ internal partial class Interop
             internal FileAction Action;
 
             // Note that the file name is not null terminated
-            private uint FileNameLength;
-            private char _FileName;
-
-            internal unsafe ReadOnlySpan<char> FileName
-            {
-                get { fixed (char* c = &_FileName) { return new ReadOnlySpan<char>(c, (int)FileNameLength / sizeof(char)); } }
-            }
+            internal readonly uint FileNameLength;
+            internal readonly char FileName;
         }
 
         internal enum FileAction : uint

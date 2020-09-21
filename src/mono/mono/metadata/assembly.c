@@ -1684,37 +1684,33 @@ netcore_load_reference (MonoAssemblyName *aname, MonoAssemblyLoadContext *alc, M
 	 * Try these until one of them succeeds (by returning a non-NULL reference):
 	 * 1. Check if it's already loaded by the ALC.
 	 *
-	 * 2. If we have a bundle registered, search the images for a matching name.
+	 * 2. If it's a non-default ALC, call the Load() method.
 	 *
-	 * 3. If it's a non-default ALC, call the Load() method.
-	 *
-	 * 4. If the ALC is not the default and this is not a satellite request,
+	 * 3. If the ALC is not the default and this is not a satellite request,
 	 *    check if it's already loaded by the default ALC.
 	 *
-	 * 5. If the ALC is the default or this is not a satellite request,
+	 * 4. If we have a bundle registered and this is not a satellite request, search the images for a matching name
+	 *    and load into the default ALC.
+	 *
+	 * 5. If we have a bundle registered and this is a satellite request, search the images for a matching name
+	 *    and load into the parent assembly's ALC.
+	 *
+	 * 6. If the ALC is the default or this is not a satellite request,
 	 *    check the TPA list, APP_PATHS, and ApplicationBase.
 	 *
-	 * 6. If this is a satellite request, call the ALC ResolveSatelliteAssembly method.
+	 * 7. If this is a satellite request, call the ALC ResolveSatelliteAssembly method.
 	 *
-	 * 7. Call the ALC Resolving event.
+	 * 8. Call the ALC Resolving event.
 	 *
-	 * 8. Call the ALC AssemblyResolve event (except for corlib satellite assemblies).
+	 * 9. Call the ALC AssemblyResolve event (except for corlib satellite assemblies).
 	 *
-	 * 9. Return NULL.
+	 * 10. Return NULL.
 	 */
 
 	reference = mono_assembly_loaded_internal (alc, aname, FALSE);
 	if (reference) {
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Assembly already loaded in the active ALC: '%s'.", aname->name);
 		goto leave;
-	}
-
-	if (bundles != NULL) {
-		reference = search_bundle_for_assembly (alc, aname);
-		if (reference) {
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Assembly found in the bundle: '%s'.", aname->name);
-			goto leave;
-		}
 	}
 
 	if (!is_default) {
@@ -1729,6 +1725,38 @@ netcore_load_reference (MonoAssemblyName *aname, MonoAssemblyLoadContext *alc, M
 		reference = mono_assembly_loaded_internal (mono_domain_default_alc (mono_alc_domain (alc)), aname, FALSE);
 		if (reference) {
 			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Assembly already loaded in the default ALC: '%s'.", aname->name);
+			goto leave;
+		}
+	}
+
+	if (bundles != NULL && !is_satellite) {
+		reference = search_bundle_for_assembly (mono_domain_default_alc (mono_alc_domain (alc)), aname);
+		if (reference) {
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Assembly found in the bundle: '%s'.", aname->name);
+			goto leave;
+		}
+	}
+
+	if (bundles != NULL && is_satellite) {
+		// Satellite assembly byname requests should be loaded in the same ALC as their parent assembly
+		size_t name_len = strlen (aname->name);
+		char *parent_name = NULL;
+		MonoAssemblyLoadContext *parent_alc = NULL;
+		if (g_str_has_suffix (aname->name, MONO_ASSEMBLY_RESOURCE_SUFFIX))
+			parent_name = g_strdup_printf ("%s.dll", g_strndup (aname->name, name_len - strlen (MONO_ASSEMBLY_RESOURCE_SUFFIX)));
+
+		if (parent_name) {
+			MonoAssemblyOpenRequest req;
+			mono_assembly_request_prepare_open (&req, MONO_ASMCTX_DEFAULT, alc);
+			MonoAssembly *parent_assembly = mono_assembly_request_open (parent_name, &req, NULL);
+			parent_alc = mono_assembly_get_alc (parent_assembly);
+		}
+
+		if (parent_alc)
+			reference = search_bundle_for_assembly (parent_alc, aname);
+
+		if (reference) {
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Satellite assembly found in the bundle: '%s'.", aname->name);
 			goto leave;
 		}
 	}
