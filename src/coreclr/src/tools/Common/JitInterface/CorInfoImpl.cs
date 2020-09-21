@@ -668,6 +668,7 @@ namespace Internal.JitInterface
                         throw new RequiresRuntimeJitException(type);
                     }
 #endif
+#if READYTORUN
                     if (elementSize.AsInt == 4)
                     {
                         var normalizedCategory = _compilation.TypeSystemContext.NormalizedCategoryFor4ByteStructOnX86(type);
@@ -681,6 +682,7 @@ namespace Internal.JitInterface
                             return (CorInfoType)normalizedCategory;
                         }
                     }
+#endif
                 }
                 return CorInfoType.CORINFO_TYPE_VALUECLASS;
             }

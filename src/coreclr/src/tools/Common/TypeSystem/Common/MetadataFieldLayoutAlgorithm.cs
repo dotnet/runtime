@@ -381,7 +381,7 @@ namespace Internal.TypeSystem
 
         private static LayoutInt AlignUpInstanceFieldOffset(TypeDesc typeWithField, LayoutInt cumulativeInstanceFieldPos, LayoutInt alignment, TargetDetails target)
         {
-            if (!typeWithField.IsValueType && target.Architecture == TargetArchitecture.X86)
+            if (!typeWithField.IsValueType && target.Architecture == TargetArchitecture.X86 && cumulativeInstanceFieldPos != new LayoutInt(0))
             {
                 // Alignment of fields is relative to the start of the field list, not the start of the object
                 //
@@ -450,16 +450,16 @@ namespace Internal.TypeSystem
         {
             // For types inheriting from another type, field offsets continue on from where they left off
             LayoutInt cumulativeInstanceFieldPos = ComputeBytesUsedInParentType(type);
+            TypeSystemContext context = type.Context;
 
             var layoutMetadata = type.GetClassLayout();
 
             int packingSize = ComputePackingSize(type, layoutMetadata);
-            packingSize = Math.Min(type.Context.Target.MaximumAutoLayoutPackingSize, packingSize);
+            packingSize = Math.Min(context.Target.MaximumAutoLayoutPackingSize, packingSize);
 
             var offsets = new FieldAndOffset[numInstanceFields];
             int fieldOrdinal = 0;
 
-            TypeSystemContext context = type.Context;
 
             // Iterate over the instance fields and keep track of the number of fields of each category
             // For the non-GC Pointer fields, we will keep track of the number of fields by log2(size)
@@ -546,7 +546,7 @@ namespace Internal.TypeSystem
                 }
             }
 
-            largestAlignmentRequired = type.Context.Target.GetObjectAlignment(largestAlignmentRequired);
+            largestAlignmentRequired = context.Target.GetObjectAlignment(largestAlignmentRequired);
             bool requiresAlign8 = !largestAlignmentRequired.IsIndeterminate && largestAlignmentRequired.AsInt > 4;
             AlignBaseOffsetIfNecessary(type, ref cumulativeInstanceFieldPos, requiresAlign8);
 
@@ -688,9 +688,9 @@ namespace Internal.TypeSystem
             {
                 minAlign = LayoutInt.Indeterminate;
             }
-            else if (cumulativeInstanceFieldPos.AsInt > type.Context.Target.PointerSize)
+            else if (cumulativeInstanceFieldPos.AsInt > context.Target.PointerSize)
             {
-                minAlign = type.Context.Target.LayoutPointerSize;
+                minAlign = context.Target.LayoutPointerSize;
             }
             else
             {
