@@ -6126,7 +6126,7 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
             if (tree->AsField()->gtFieldLookup.accessType == IAT_PVALUE)
             {
                 offsetNode = gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)tree->AsField()->gtFieldLookup.addr,
-                                                      GTF_ICON_FIELD_HDL, false);
+                                                      GTF_ICON_CONST_PTR, true);
 #ifdef DEBUG
                 offsetNode->gtGetOp1()->AsIntCon()->gtTargetHandle = (size_t)symHnd;
 #endif
@@ -6228,7 +6228,7 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
             }
             else
             {
-                dllRef = gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)pIdAddr, GTF_ICON_STATIC_HDL, true);
+                dllRef = gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)pIdAddr, GTF_ICON_CONST_PTR, true);
 
                 // Next we multiply by 4
                 dllRef = gtNewOperNode(GT_MUL, TYP_I_IMPL, dllRef, gtNewIconNode(4, TYP_I_IMPL));
@@ -6288,51 +6288,21 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
             void** pFldAddr = nullptr;
             void*  fldAddr  = info.compCompHnd->getFieldAddress(symHnd, (void**)&pFldAddr);
 
-            if (pFldAddr == nullptr)
-            {
+            // We should always be able to access this static field address directly
+            //
+            assert(pFldAddr == nullptr);
+
 #ifdef TARGET_64BIT
-                if (IMAGE_REL_BASED_REL32 != eeGetRelocTypeHint(fldAddr))
-                {
-                    // The address is not directly addressible, so force it into a
-                    // constant, so we handle it properly
-
-                    GenTree* addr = gtNewIconHandleNode((size_t)fldAddr, GTF_ICON_STATIC_HDL);
-                    addr->gtType  = TYP_I_IMPL;
-                    FieldSeqNode* fieldSeq =
-                        fieldMayOverlap ? FieldSeqStore::NotAField() : GetFieldSeqStore()->CreateSingleton(symHnd);
-                    addr->AsIntCon()->gtFieldSeq = fieldSeq;
-                    // Translate GTF_FLD_INITCLASS to GTF_ICON_INITCLASS
-                    if ((tree->gtFlags & GTF_FLD_INITCLASS) != 0)
-                    {
-                        tree->gtFlags &= ~GTF_FLD_INITCLASS;
-                        addr->gtFlags |= GTF_ICON_INITCLASS;
-                    }
-
-                    tree->SetOper(GT_IND);
-                    tree->AsOp()->gtOp1 = addr;
-
-                    return fgMorphSmpOp(tree);
-                }
-                else
-#endif // TARGET_64BIT
-                {
-                    // Only volatile or classinit could be set, and they map over
-                    noway_assert((tree->gtFlags & ~(GTF_FLD_VOLATILE | GTF_FLD_INITCLASS | GTF_COMMON_MASK)) == 0);
-                    static_assert_no_msg(GTF_FLD_VOLATILE == GTF_CLS_VAR_VOLATILE);
-                    static_assert_no_msg(GTF_FLD_INITCLASS == GTF_CLS_VAR_INITCLASS);
-                    tree->SetOper(GT_CLS_VAR);
-                    tree->AsClsVar()->gtClsVarHnd = symHnd;
-                    FieldSeqNode* fieldSeq =
-                        fieldMayOverlap ? FieldSeqStore::NotAField() : GetFieldSeqStore()->CreateSingleton(symHnd);
-                    tree->AsClsVar()->gtFieldSeq = fieldSeq;
-                }
-
-                return tree;
-            }
-            else
+            if (IMAGE_REL_BASED_REL32 != eeGetRelocTypeHint(fldAddr))
             {
-                GenTree* addr = gtNewIconHandleNode((size_t)pFldAddr, GTF_ICON_STATIC_HDL);
+                // The address is not directly addressible, so force it into a
+                // constant, so we handle it properly
 
+                GenTree* addr = gtNewIconHandleNode((size_t)fldAddr, GTF_ICON_STATIC_HDL);
+                addr->gtType  = TYP_I_IMPL;
+                FieldSeqNode* fieldSeq =
+                    fieldMayOverlap ? FieldSeqStore::NotAField() : GetFieldSeqStore()->CreateSingleton(symHnd);
+                addr->AsIntCon()->gtFieldSeq = fieldSeq;
                 // Translate GTF_FLD_INITCLASS to GTF_ICON_INITCLASS
                 if ((tree->gtFlags & GTF_FLD_INITCLASS) != 0)
                 {
@@ -6340,19 +6310,26 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
                     addr->gtFlags |= GTF_ICON_INITCLASS;
                 }
 
-                // There are two cases here, either the static is RVA based,
-                // in which case the type of the FIELD node is not a GC type
-                // and the handle to the RVA is a TYP_I_IMPL.  Or the FIELD node is
-                // a GC type and the handle to it is a TYP_BYREF in the GC heap
-                // because handles to statics now go into the large object heap
-
-                var_types handleTyp = (var_types)(varTypeIsGC(tree->TypeGet()) ? TYP_BYREF : TYP_I_IMPL);
-                GenTree*  op1       = gtNewOperNode(GT_IND, handleTyp, addr);
-                op1->gtFlags |= GTF_IND_INVARIANT;
-
                 tree->SetOper(GT_IND);
-                tree->AsOp()->gtOp1 = op1;
+                tree->AsOp()->gtOp1 = addr;
+
+                return fgMorphSmpOp(tree);
             }
+            else
+#endif // TARGET_64BIT
+            {
+                // Only volatile or classinit could be set, and they map over
+                noway_assert((tree->gtFlags & ~(GTF_FLD_VOLATILE | GTF_FLD_INITCLASS | GTF_COMMON_MASK)) == 0);
+                static_assert_no_msg(GTF_FLD_VOLATILE == GTF_CLS_VAR_VOLATILE);
+                static_assert_no_msg(GTF_FLD_INITCLASS == GTF_CLS_VAR_INITCLASS);
+                tree->SetOper(GT_CLS_VAR);
+                tree->AsClsVar()->gtClsVarHnd = symHnd;
+                FieldSeqNode* fieldSeq =
+                    fieldMayOverlap ? FieldSeqStore::NotAField() : GetFieldSeqStore()->CreateSingleton(symHnd);
+                tree->AsClsVar()->gtFieldSeq = fieldSeq;
+            }
+
+            return tree;
         }
     }
     noway_assert(tree->gtOper == GT_IND);
@@ -9265,33 +9242,41 @@ GenTree* Compiler::fgMorphLeaf(GenTree* tree)
             info.compCompHnd->getFunctionFixedEntryPoint(tree->AsFptrVal()->gtFptrMethod, &addrInfo);
         }
 
-        // Refer to gtNewIconHandleNode() as the template for constructing a constant handle
-        //
-        tree->SetOper(GT_CNS_INT);
-        tree->AsIntConCommon()->SetIconValue(ssize_t(addrInfo.handle));
-        tree->gtFlags |= GTF_ICON_FTN_ADDR;
-
+        GenTree* indNode = nullptr;
         switch (addrInfo.accessType)
         {
             case IAT_PPVALUE:
-                tree = gtNewOperNode(GT_IND, TYP_I_IMPL, tree);
-                tree->gtFlags |= GTF_IND_INVARIANT;
+                indNode = gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)addrInfo.handle, GTF_ICON_CONST_PTR, true);
 
-                __fallthrough;
+                // Add the second indirection
+                indNode = gtNewOperNode(GT_IND, TYP_I_IMPL, indNode);
+                // This indirection won't cause an exception.
+                indNode->gtFlags |= GTF_IND_NONFAULTING;
+                // This indirection also is invariant.
+                indNode->gtFlags |= GTF_IND_INVARIANT;
+                break;
 
             case IAT_PVALUE:
-                tree = gtNewOperNode(GT_IND, TYP_I_IMPL, tree);
+                indNode = gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)addrInfo.handle, GTF_ICON_FTN_ADDR, true);
                 break;
 
             case IAT_VALUE:
-                tree = gtNewOperNode(GT_NOP, tree->TypeGet(), tree); // prevents constant folding
+                // Refer to gtNewIconHandleNode() as the template for constructing a constant handle
+                //
+                tree->SetOper(GT_CNS_INT);
+                tree->AsIntConCommon()->SetIconValue(ssize_t(addrInfo.handle));
+                tree->gtFlags |= GTF_ICON_FTN_ADDR;
                 break;
 
             default:
                 noway_assert(!"Unknown addrInfo.accessType");
         }
 
-        return fgMorphTree(tree);
+        if (indNode != nullptr)
+        {
+            DEBUG_DESTROY_NODE(tree);
+            tree = fgMorphTree(indNode);
+        }
     }
 
     return tree;

@@ -2081,7 +2081,9 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
                                           void*                   compileTimeHandle)
 {
     GenTree* ctxTree = getRuntimeContextTree(pLookup->lookupKind.runtimeLookupKind);
-
+#if 0
+    ctxTree->gtFlags |= GTF_DONT_CSE;   // ToDo Remove this
+#endif
     CORINFO_RUNTIME_LOOKUP* pRuntimeLookup = &pLookup->runtimeLookup;
     // It's available only via the run-time helper function
     if (pRuntimeLookup->indirections == CORINFO_USEHELPER)
@@ -2201,8 +2203,9 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
     GenTree* handleForNullCheck = gtNewOperNode(GT_IND, TYP_I_IMPL, slotPtrTree);
     handleForNullCheck->gtFlags |= GTF_IND_NONFAULTING;
 
-    // Call to helper
-    GenTree* argNode = gtNewIconEmbHndNode(pRuntimeLookup->signature, nullptr, GTF_ICON_TOKEN_HDL, compileTimeHandle);
+    // Call the helper
+    // - Setup argNode with the pointer to the signature returned by the lookup
+    GenTree* argNode = gtNewIconEmbHndNode(pRuntimeLookup->signature, nullptr, GTF_ICON_GLOBAL_PTR, compileTimeHandle);
 
     GenTreeCall::Use* helperArgs = gtNewCallArgs(ctxTree, argNode);
     GenTreeCall*      helperCall = gtNewHelperCallNode(pRuntimeLookup->helper, TYP_I_IMPL, helperArgs);
@@ -3440,7 +3443,8 @@ GenTree* Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
 
     GenTree* dstAddr = gtNewOperNode(GT_ADD, TYP_BYREF, arrayLocalNode, gtNewIconNode(dataOffset, TYP_I_IMPL));
     GenTree* dst     = new (this, GT_BLK) GenTreeBlk(GT_BLK, TYP_STRUCT, dstAddr, typGetBlkLayout(blkSize));
-    GenTree* src     = gtNewIndOfIconHandleNode(TYP_STRUCT, (size_t)initData, GTF_ICON_STATIC_HDL, false);
+    GenTree* src     = gtNewIndOfIconHandleNode(TYP_STRUCT, (size_t)initData, GTF_ICON_CONST_PTR, true);
+
 #ifdef DEBUG
     src->gtGetOp1()->AsIntCon()->gtTargetHandle = THT_IntializeArrayIntrinsics;
 #endif
@@ -7291,7 +7295,32 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
 
         default:
         {
-            if (!(access & CORINFO_ACCESS_ADDRESS))
+            // Do we need the addrees of a static field?
+            //
+            if (access & CORINFO_ACCESS_ADDRESS)
+            {
+                void** pFldAddr = nullptr;
+                void*  fldAddr  = info.compCompHnd->getFieldAddress(pResolvedToken->hField, (void**)&pFldAddr);
+
+                // We should always be able to access this static's address directly
+                //
+                assert(pFldAddr == nullptr);
+
+                FieldSeqNode* fldSeq = GetFieldSeqStore()->CreateSingleton(pResolvedToken->hField);
+
+                /* Create the data member node */
+                op1 = gtNewIconHandleNode(pFldAddr == nullptr ? (size_t)fldAddr : (size_t)pFldAddr, GTF_ICON_STATIC_HDL,
+                                          fldSeq);
+#ifdef DEBUG
+                op1->AsIntCon()->gtTargetHandle = op1->AsIntCon()->gtIconVal;
+#endif
+
+                if (pFieldInfo->fieldFlags & CORINFO_FLG_FIELD_INITCLASS)
+                {
+                    op1->gtFlags |= GTF_ICON_INITCLASS;
+                }
+            }
+            else // We need the value of a static field
             {
                 // In future, it may be better to just create the right tree here instead of folding it later.
                 op1 = gtNewFieldRef(lclTyp, pResolvedToken->hField);
@@ -7324,38 +7353,7 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
 
                 return op1;
             }
-            else
-            {
-                void** pFldAddr = nullptr;
-                void*  fldAddr  = info.compCompHnd->getFieldAddress(pResolvedToken->hField, (void**)&pFldAddr);
 
-                FieldSeqNode* fldSeq = GetFieldSeqStore()->CreateSingleton(pResolvedToken->hField);
-
-                /* Create the data member node */
-                op1 = gtNewIconHandleNode(pFldAddr == nullptr ? (size_t)fldAddr : (size_t)pFldAddr, GTF_ICON_STATIC_HDL,
-                                          fldSeq);
-#ifdef DEBUG
-                op1->AsIntCon()->gtTargetHandle = op1->AsIntCon()->gtIconVal;
-#endif
-
-                if (pFieldInfo->fieldFlags & CORINFO_FLG_FIELD_INITCLASS)
-                {
-                    op1->gtFlags |= GTF_ICON_INITCLASS;
-                }
-
-                if (pFldAddr != nullptr)
-                {
-                    // There are two cases here, either the static is RVA based,
-                    // in which case the type of the FIELD node is not a GC type
-                    // and the handle to the RVA is a TYP_I_IMPL.  Or the FIELD node is
-                    // a GC type and the handle to it is a TYP_BYREF in the GC heap
-                    // because handles to statics now go into the large object heap
-
-                    var_types handleTyp = (var_types)(varTypeIsGC(lclTyp) ? TYP_BYREF : TYP_I_IMPL);
-                    op1                 = gtNewOperNode(GT_IND, handleTyp, op1);
-                    op1->gtFlags |= GTF_IND_INVARIANT | GTF_IND_NONFAULTING;
-                }
-            }
             break;
         }
     }
@@ -14582,6 +14580,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                                     info.compCompHnd->getFieldAddress(resolvedToken.hField, (void**)&pFldAddr);
 
                                 // We should always be able to access this static's address directly
+                                //
                                 assert(pFldAddr == nullptr);
 
                                 op1 = impImportStaticReadOnlyField(fldAddr, lclTyp);
