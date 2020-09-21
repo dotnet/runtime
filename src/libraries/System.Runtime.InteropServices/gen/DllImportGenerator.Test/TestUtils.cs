@@ -1,7 +1,6 @@
 ﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Testing;
-using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Reflection;
@@ -70,14 +69,13 @@ namespace DllImportGenerator.Test
         /// <returns>The resulting compilation</returns>
         public static Compilation RunGenerators(Compilation comp, out ImmutableArray<Diagnostic> diagnostics, params ISourceGenerator[] generators)
         {
-            CreateDriver(comp, generators).RunFullGeneration(comp, out var d, out diagnostics);
+            CreateDriver(comp, generators).RunGeneratorsAndUpdateCompilation(comp, out var d, out diagnostics);
             return d;
         }
 
         private static GeneratorDriver CreateDriver(Compilation c, params ISourceGenerator[] generators)
-            => new CSharpGeneratorDriver(c.SyntaxTrees.First().Options,
+            => CSharpGeneratorDriver.Create(
                 ImmutableArray.Create(generators),
-                null,
-                ImmutableArray<AdditionalText>.Empty);
+                parseOptions: (CSharpParseOptions)c.SyntaxTrees.First().Options);
     }
 }

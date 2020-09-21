@@ -20,7 +20,7 @@ namespace Microsoft.Interop
         private const string GeneratedDllImport = nameof(GeneratedDllImport);
         private const string GeneratedDllImportAttribute = nameof(GeneratedDllImportAttribute);
 
-        public void Execute(SourceGeneratorContext context)
+        public void Execute(GeneratorExecutionContext context)
         {
             var synRec = context.SyntaxReceiver as SyntaxReceiver;
             if (synRec is null)
@@ -70,7 +70,7 @@ namespace Microsoft.Interop
             context.AddSource("DllImportGenerator.g.cs", SourceText.From(generatedDllImports.ToString(), Encoding.UTF8));
         }
 
-        public void Initialize(InitializationContext context)
+        public void Initialize(GeneratorInitializationContext context)
         {
             context.RegisterForSyntaxNotifications(() => new SyntaxReceiver());
         }
