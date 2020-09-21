@@ -632,6 +632,7 @@ namespace System.Net.Http
 
                         if (sslStream.SslProtocol < SslProtocols.Tls12)
                         {
+                            sslStream.Dispose();
                             throw new HttpRequestException(SR.Format(SR.net_ssl_http2_requires_tls12, sslStream.SslProtocol));
                         }
 
