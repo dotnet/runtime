@@ -15,7 +15,6 @@
     <BinDir>$(ArtifactsDir)bin\coreclr\$(OSPlatformConfig)\</BinDir>
 
     <BaseOutputPath>$(ArtifactsDir)tests\coreclr</BaseOutputPath>
-    <BaseOutputPath Condition="'$(__TestRootDir)' != ''">$(__TestRootDir)</BaseOutputPath>
     <BaseOutputPathWithConfig>$([MSBuild]::NormalizePath('$(BaseOutputPath)\$(OSPlatformConfig)\'))</BaseOutputPathWithConfig>
 
     <TestWorkingDir>$(BaseOutputPathWithConfig)\</TestWorkingDir>
@@ -38,8 +37,7 @@
 
     <ProjectAssetsFile>$(RestoreOutputPath)/project.assets.json</ProjectAssetsFile>
 
-    <BaseOutputPath>$(BaseOutputPathWithConfig)$(BuildProjectRelativeDir)</BaseOutputPath>
-    <OutputPath>$(BaseOutputPath)</OutputPath>
+    <OutputPath>$(BaseOutputPathWithConfig)$(BuildProjectRelativeDir)</OutputPath>
   </PropertyGroup>
   
   <PropertyGroup>
