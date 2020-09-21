@@ -323,4 +323,5 @@ gpointer get_this_addr (DbgEngineStackFrame *the_frame);
 gpointer get_async_method_builder (DbgEngineStackFrame *frame);
 MonoMethod* get_set_notification_method (MonoClass* async_builder_class);
 MonoMethod* get_notify_debugger_of_wait_completion_method (void);
+MonoMethod* get_object_id_for_debugger_method (MonoClass* async_builder_class);
 #endif

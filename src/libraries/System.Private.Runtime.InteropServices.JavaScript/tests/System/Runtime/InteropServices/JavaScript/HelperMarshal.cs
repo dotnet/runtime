@@ -380,5 +380,18 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             styleColorEnums[5] = redNoExport;
             styleColorEnums[6] = redWithJustExport;
         }
+
+        internal static Uri _blobURL;
+        public static void SetBlobUrl(string blobUrl)
+        {
+            _blobURL = new Uri(blobUrl);
+        }
+
+        internal static Uri _blobURI;
+        public static void SetBlobAsUri(Uri blobUri)
+        {
+            _blobURI = blobUri;
+        }
+
     }
 }

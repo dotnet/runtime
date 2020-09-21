@@ -505,7 +505,7 @@ mono_interp_get_imethod (MonoDomain *domain, MonoMethod *method, MonoError *erro
 
 	sig = mono_method_signature_internal (method);
 
-	imethod = (InterpMethod*)mono_domain_alloc0 (domain, sizeof (InterpMethod));
+	imethod = (InterpMethod*)m_method_alloc0 (domain, method, sizeof (InterpMethod));
 	imethod->method = method;
 	imethod->domain = domain;
 	imethod->param_count = sig->param_count;
@@ -516,7 +516,7 @@ mono_interp_get_imethod (MonoDomain *domain, MonoMethod *method, MonoError *erro
 		imethod->rtype = m_class_get_byval_arg (mono_defaults.string_class);
 	else
 		imethod->rtype = mini_get_underlying_type (sig->ret);
-	imethod->param_types = (MonoType**)mono_domain_alloc0 (domain, sizeof (MonoType*) * sig->param_count);
+	imethod->param_types = (MonoType**)m_method_alloc0 (domain, method, sizeof (MonoType*) * sig->param_count);
 	for (i = 0; i < sig->param_count; ++i)
 		imethod->param_types [i] = mini_get_underlying_type (sig->params [i]);
 
@@ -713,7 +713,7 @@ alloc_method_table (MonoVTable *vtable, int offset)
 	gpointer *table;
 
 	if (offset >= 0) {
-		table = mono_domain_alloc0 (vtable->domain, m_class_get_vtable_size (vtable->klass) * sizeof (gpointer));
+		table = (gpointer*)m_class_alloc0 (vtable->domain, vtable->klass, m_class_get_vtable_size (vtable->klass) * sizeof (gpointer));
 		vtable->interp_vtable = table;
 	} else {
 		table = (gpointer*)vtable;
@@ -726,7 +726,7 @@ static InterpMethod* // Inlining causes additional stack use in caller.
 get_virtual_method_fast (InterpMethod *imethod, MonoVTable *vtable, int offset)
 {
 	gpointer *table;
-	MonoMemoryManager *memory_manager = mono_domain_ambient_memory_manager (vtable->domain);
+	MonoMemoryManager *memory_manager = m_class_get_mem_manager (vtable->domain, vtable->klass);
 
 #ifndef DISABLE_REMOTING
 	/* FIXME Remoting */

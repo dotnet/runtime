@@ -6685,8 +6685,7 @@ GenTree* Compiler::gtNewStructVal(CORINFO_CLASS_HANDLE structHnd, GenTree* addr)
         {
             unsigned   lclNum = addr->gtGetOp1()->AsLclVarCommon()->GetLclNum();
             LclVarDsc* varDsc = &(lvaTable[lclNum]);
-            if (varTypeIsStruct(varDsc) && (varDsc->lvVerTypeInfo.GetClassHandle() == structHnd) &&
-                !lvaIsImplicitByRefLocal(lclNum))
+            if (varTypeIsStruct(varDsc) && (varDsc->GetStructHnd() == structHnd) && !lvaIsImplicitByRefLocal(lclNum))
             {
                 return addr->gtGetOp1();
             }
@@ -11134,7 +11133,7 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
                 }
                 else
                 {
-                    CORINFO_CLASS_HANDLE typeHnd = varDsc->lvVerTypeInfo.GetClassHandle();
+                    CORINFO_CLASS_HANDLE typeHnd = varDsc->GetStructHnd();
                     CORINFO_FIELD_HANDLE fldHnd;
 
                     for (unsigned i = varDsc->lvFieldLclStart; i < varDsc->lvFieldLclStart + varDsc->lvFieldCnt; ++i)
@@ -17594,8 +17593,11 @@ CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleIfPresent(GenTree* tree)
 #endif
                 break;
             case GT_LCL_VAR:
-                structHnd = lvaTable[tree->AsLclVarCommon()->GetLclNum()].lvVerTypeInfo.GetClassHandle();
+            {
+                unsigned lclNum = tree->AsLclVarCommon()->GetLclNum();
+                structHnd       = lvaGetStruct(lclNum);
                 break;
+            }
             case GT_RETURN:
                 structHnd = gtGetStructHandleIfPresent(tree->AsOp()->gtOp1);
                 break;

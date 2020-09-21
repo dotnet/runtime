@@ -5635,7 +5635,7 @@ void CodeGen::genJmpMethod(GenTree* jmp)
 #if defined(UNIX_AMD64_ABI)
         if (varTypeIsStruct(varDsc))
         {
-            CORINFO_CLASS_HANDLE typeHnd = varDsc->lvVerTypeInfo.GetClassHandle();
+            CORINFO_CLASS_HANDLE typeHnd = varDsc->GetStructHnd();
             assert(typeHnd != nullptr);
 
             SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
