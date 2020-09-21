@@ -27,6 +27,8 @@
   </PropertyGroup>
 
   <PropertyGroup>
+    <EnableAzurePipelinesReporter>false</EnableAzurePipelinesReporter>
+    <EnableXUnitReporter>false</EnableXUnitReporter>
     <WorkItemTimeout>5:00</WorkItemTimeout>
     <WorkItemTimeout Condition="'$(HelixSourcePrefix)' != 'official'">0:15</WorkItemTimeout>
   </PropertyGroup>
