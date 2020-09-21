@@ -13585,6 +13585,12 @@ DONE_MORPHING_CHILDREN:
 
         case GT_NOT:
         case GT_NEG:
+            // Remove double negation/not
+            if (op1->OperIs(oper) && opts.OptimizationEnabled())
+            {
+                GenTree* child = op1->AsOp()->gtGetOp1();
+                return child;
+            }
 
             /* Any constant cases should have been folded earlier */
             noway_assert(!op1->OperIsConst() || !opts.OptEnabled(CLFLG_CONSTANTFOLD) || optValnumCSE_phase);
