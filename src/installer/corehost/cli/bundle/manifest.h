@@ -18,7 +18,6 @@ namespace bundle
     public:
         manifest_t()
             : m_files_need_extraction(false)
-            , m_netcoreapp3_compat_mode(false)
         {
         }
 
@@ -31,14 +30,8 @@ namespace bundle
             return m_files_need_extraction;
         }
 
-        bool is_netcoreapp3_compat_mode() const
-        {
-            return m_netcoreapp3_compat_mode;
-        }
-
     private:
         bool m_files_need_extraction;
-        bool m_netcoreapp3_compat_mode;
     };
 }
 #endif // __MANIFEST_H__

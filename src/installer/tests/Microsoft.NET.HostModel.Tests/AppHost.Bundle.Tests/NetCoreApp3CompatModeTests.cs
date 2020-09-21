@@ -30,7 +30,7 @@ namespace AppHost.Bundle.Tests
             Bundler bundler = BundleHelper.BundleApp(fixture, out singleFile, BundleOptions.BundleAllContent);
             var extractionBaseDir = BundleHelper.GetExtractionRootDir(fixture);
 
-            Command.Create(singleFile)
+            Command.Create(singleFile, "assembly_location")
                 .CaptureStdErr()
                 .CaptureStdOut()
                 .EnvironmentVariable(BundleHelper.DotnetBundleExtractBaseEnvVariable, extractionBaseDir.FullName)
@@ -38,7 +38,7 @@ namespace AppHost.Bundle.Tests
                 .Should()
                 .Pass()
                 .And
-                .HaveStdOutContaining("Hello World");
+                .HaveStdOutContaining(extractionBaseDir.FullName);
 
             var extractionDir = BundleHelper.GetExtractionDir(fixture, bundler);
             var bundleFiles = BundleHelper.GetBundleDir(fixture).GetFiles().Select(file => file.Name).ToArray();
@@ -58,7 +58,7 @@ namespace AppHost.Bundle.Tests
             public SharedTestState()
             {
                 RepoDirectories = new RepoDirectoriesProvider();
-                TestFixture = new TestProjectFixture("StandaloneApp", RepoDirectories);
+                TestFixture = new TestProjectFixture("SingleFileApiTests", RepoDirectories);
                 TestFixture
                     .EnsureRestoredForRid(TestFixture.CurrentRid, RepoDirectories.CorehostPackages)
                     .PublishProject(runtime: TestFixture.CurrentRid, outputDirectory: BundleHelper.GetPublishPath(TestFixture));

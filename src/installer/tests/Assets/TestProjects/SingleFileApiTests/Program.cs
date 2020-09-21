@@ -1,4 +1,5 @@
 using System;
+using System.Reflection;
 
 namespace SingleFileApiTests
 {
@@ -8,10 +9,13 @@ namespace SingleFileApiTests
         {
             switch (args[0])
             {
-                case "fullyqualifiedname":
-                    var module = typeof(object).Assembly.GetModules()[0];
-                    Console.WriteLine("FullyQualifiedName: " + module.FullyQualifiedName);
-                    Console.WriteLine("Name: " + module.Name);
+                case "appcontext":
+                    var deps_files = AppContext.GetData("APP_CONTEXT_DEPS_FILES");
+                    Console.WriteLine("APP_CONTEXT_DEPS_FILES: " + deps_files);
+                    return;
+
+                case "assembly_location":
+                    Console.WriteLine(Assembly.GetExecutingAssembly().Location);
                     return;
 
                 case "cmdlineargs":
@@ -32,10 +36,14 @@ namespace SingleFileApiTests
                     }
                     break;
 
-                case "appcontext":
-                    var deps_files = AppContext.GetData("APP_CONTEXT_DEPS_FILES");
-                    Console.WriteLine("APP_CONTEXT_DEPS_FILES: " + deps_files);
+                case "fullyqualifiedname":
+                    var module = typeof(object).Assembly.GetModules()[0];
+                    Console.WriteLine("FullyQualifiedName: " + module.FullyQualifiedName);
+                    Console.WriteLine("Name: " + module.Name);
                     return;
+
+                default:
+                    break;
             }
 
             Console.WriteLine("test failure");

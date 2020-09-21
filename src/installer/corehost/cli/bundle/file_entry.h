@@ -38,12 +38,16 @@ namespace bundle
             , m_type(file_type_t::__last)
             , m_relative_path()
             , m_disabled(false)
+            , m_force_extraction(false)
         {
         }
 
-        file_entry_t(const file_entry_fixed_t *fixed_data)
-            :m_relative_path()
+        file_entry_t(
+            const file_entry_fixed_t *fixed_data,
+            const bool force_extraction = false)
+            : m_relative_path()
             , m_disabled(false)
+            , m_force_extraction(force_extraction)
         {
             // File_entries in the bundle-manifest are expected to be used 
             // beyond startup (for loading files directly from bundle, lazy extraction, etc.).
@@ -64,7 +68,7 @@ namespace bundle
         bool needs_extraction() const;
         bool matches(const pal::string_t& path) const { return (pal::pathcmp(relative_path(), path) == 0) && !is_disabled(); }
 
-        static file_entry_t read(reader_t &reader);
+        static file_entry_t read(reader_t &reader, bool force_extraction);
 
     private:
         int64_t m_offset;
@@ -76,6 +80,7 @@ namespace bundle
         // So in order to make sure that the servicing location is used, the file entry in the bundle is marked as "disabled"
         // in such case, and the lookup logic will behave as if the file is not present in the bundle.
         bool m_disabled;
+        bool m_force_extraction;
         bool is_valid() const;
     };
 }

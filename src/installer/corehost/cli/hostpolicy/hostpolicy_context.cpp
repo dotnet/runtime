@@ -225,7 +225,7 @@ int hostpolicy_context_t::initialize(hostpolicy_init_t &hostpolicy_init, const a
     }
 
     // Single-File Bundle Probe
-    if (bundle::info_t::is_single_file_bundle())
+    if (bundle::info_t::is_single_file_bundle() && !(bundle::runner_t::app()->is_netcoreapp3_compat_mode()))
     {
         // Encode the bundle_probe function pointer as a string, and pass it to the runtime.
         pal::stringstream_t ptr_stream;
