@@ -27,6 +27,7 @@
          for the lock file, and props/targets from nuget packages. -->
     <BaseIntermediateOutputPath>$(BaseOutputPath)/obj/$(OSPlatformConfig)/Managed/$(BuildProjectRelativeDir)</BaseIntermediateOutputPath>
     <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
+    <__NativeTestIntermediatesDir Condition="'$(__NativeTestIntermediatesDir)' == ''">$(BaseOutputPath)\obj\$(OSPlatformConfig)\Native\</__NativeTestIntermediatesDir>
 
     <BasePackagePath>$(BaseOutputPath)\packages\$(BuildProjectRelativeDir)</BasePackagePath>
     <BasePackagePath Condition="'$(PackageRuntimeIdentifier)' != ''">$([System.IO.Path]::GetFullPath($(IntermediateOutputPath)\$(PackageRuntimeIdentifier)))</BasePackagePath>

@@ -238,7 +238,7 @@
   </Target>
 
   <PropertyGroup>
-    <ProjectAssetsFile>$(BaseOutputPath)\obj\$(OSPlatformConfig)\Managed\Common\test_dependencies\test_dependencies\project.assets.json</ProjectAssetsFile>
+    <ProjectAssetsFile>$(BaseOutputPath)\packages\Common\test_dependencies\test_dependencies\project.assets.json</ProjectAssetsFile>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(ReferenceSystemPrivateCoreLib)' == 'true' and '$(UsingMicrosoftNETSdk)' != 'true'">
