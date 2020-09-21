@@ -1,7 +1,9 @@
 <Project>
 
-  <Import Project="$(RepositoryEngineeringDir)Configurations.props" />
-  <Import Project="$(RepositoryEngineeringDir)liveBuilds.targets" />
+  <!-- If this file was pulled in via prepare-artifacts.proj (a non-SDK project, these files are already
+       imported. -->
+  <Import Project="$(RepositoryEngineeringDir)Configurations.props" Condition="'$(PrepareArtifacts)' != 'true'" />
+  <Import Project="$(RepositoryEngineeringDir)liveBuilds.targets" Condition="'$(PrepareArtifacts)' != 'true'" />
 
   <PropertyGroup>
     <!--
@@ -143,11 +145,11 @@
          Symbol packages are included too. -->
     <When Condition="'$(PostBuildSign)' == 'true'">
       <ItemGroup>
-        <ItemsToSignWithPaths Include="@(DownloadedArtifactFile)" />
-        <!-- Exclude wixpdb files from the signing list. These are generated into the
-             shipping/nonshipping directories but should be generated into the obj dirs.
-             https://github.com/dotnet/arcade/issues/6187. -->
-        <ItemsToSignWithPaths Remove="@(DownloadedWixPdbFile)" />
+        <ItemsToSignWithPaths Include="$(DownloadDirectory)**/*.msi" Condition="'$(PrepareArtifacts)' == 'true'" />
+        <ItemsToSignWithPaths Include="$(DownloadDirectory)**/*.exe" Condition="'$(PrepareArtifacts)' == 'true'" />
+        <ItemsToSignWithPaths Include="$(DownloadDirectory)**/*.nupkg" Condition="'$(PrepareArtifacts)' == 'true'" />
+        <ItemsToSignWithPaths Include="$(DownloadDirectory)**/*.zip" Condition="'$(PrepareArtifacts)' == 'true'" />
+
         <ItemsToSignWithoutPaths Include="@(ItemsToSignWithPaths->'%(Filename)%(Extension)')" />
         <ItemsToSignPostBuild Include="@(ItemsToSignWithoutPaths->Distinct())" />
       </ItemGroup>
