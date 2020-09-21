@@ -136,9 +136,12 @@ namespace System.Text.Json
 #endif
         }
 
-        public static bool IsValidNumberHandlingValue(JsonNumberHandling handling)
-        {
-            return JsonHelpers.IsInRangeInclusive((int)handling, 0, 7);
-        }
+        public static bool IsValidNumberHandlingValue(JsonNumberHandling handling) =>
+            IsInRangeInclusive((int)handling, 0,
+                (int)(
+                JsonNumberHandling.Strict |
+                JsonNumberHandling.AllowReadingFromString |
+                JsonNumberHandling.WriteAsString |
+                JsonNumberHandling.AllowNamedFloatingPointLiterals));
     }
 }

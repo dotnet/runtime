@@ -16,8 +16,8 @@ namespace System.Text.Json.Serialization
         /// <summary>
         /// Numbers can be read from <see cref="JsonTokenType.String"/> tokens.
         /// Does not prevent numbers from being read from <see cref="JsonTokenType.Number"/> token.
-        /// Strings that have escaped characters will be unescaped before reading. Leading or trailing trivia,
-        /// including whitespace, is not allowed.
+        /// Strings that have escaped characters will be unescaped before reading.
+        /// Leading or trailing trivia within the string token, including whitespace, is not allowed.
         /// </summary>
         AllowReadingFromString = 0x1,
         /// <summary>
@@ -30,7 +30,7 @@ namespace System.Text.Json.Serialization
         /// constants (such as <see cref="float.PositiveInfinity"/> and <see cref="double.NaN"/>)
         /// will be written as their corresponding JSON string representations.
         /// Strings that have escaped characters will be unescaped before reading.
-        /// Leading or trailing trivia, including whitespace, is not allowed.
+        /// Leading or trailing trivia within the string token, including whitespace, is not allowed.
         /// </summary>
         AllowNamedFloatingPointLiterals = 0x4
     }
