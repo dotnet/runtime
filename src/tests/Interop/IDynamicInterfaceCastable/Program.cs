@@ -69,7 +69,7 @@ namespace IDynamicInterfaceCastableTests
             return GetNumberStaticReturnValue;
         }
 
-        int GetNumberHelper()
+        public int GetNumberHelper()
         {
             Asssert.Fail("Calling a public interface method with a default implementation should go through IDynamicInterfaceCastable for interface dispatch.");
         }
