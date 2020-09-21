@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="UnmanagedCallersOnlyTest.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- This is needed to make sure native binary gets installed in the right location -->
+    <ProjectReference Include="CMakeLists.txt" />
+    <ProjectReference Include="$(TestSourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
+    <ProjectReference Include="InvalidCSharp.ilproj" />
+  </ItemGroup>
+</Project>

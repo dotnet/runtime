@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable enable
 namespace System.Net
@@ -17,7 +16,7 @@ namespace System.Net
         internal InternalException(object unexpectedValue)
         {
             _unexpectedValue = unexpectedValue;
-            if (NetEventSource.IsEnabled)
+            if (NetEventSource.Log.IsEnabled())
             {
                 NetEventSource.Fail(this, $"InternalException thrown for unexpected value: {unexpectedValue}");
             }

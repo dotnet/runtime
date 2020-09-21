@@ -127,6 +127,11 @@
     "CommonTypes": []
   },
   {
+    "Name": "Microsoft.Extensions.HostFactoryResolver.Sources",
+    "Description": "Internal package for sharing Microsoft.Extensions.Hosting.HostFactoryResolver type.",
+    "CommonTypes": []
+  },
+  {
     "Name": "Microsoft.Extensions.Hosting",
     "Description": "Hosting and startup infrastructures for applications.",
     "CommonTypes": []
@@ -258,11 +263,6 @@
   {
     "Name": "Microsoft.NETCore.Platforms",
     "Description": "Provides runtime information required to resolve target framework, platform, and runtime specific implementations of .NETCore packages.",
-    "CommonTypes": []
-  },
-  {
-    "Name": "Microsoft.NETCore.Platforms.Future",
-    "Description": "Provides runtime information required to resolve target framework, platform, and runtime specific implementations of .NETCore packages.  This package represents future platforms not yet supported in .NETCore stable release and is subject to change.",
     "CommonTypes": []
   },
   {
@@ -941,6 +941,22 @@
     ]
   },
   {
+    "Name": "System.Formats.Asn1",
+    "Description": "Provides classes that can read and write the ASN.1 BER, CER, and DER data formats.",
+    "CommonTypes": [
+        "System.Formats.Asn1.AsnReader",
+        "System.Formats.Asn1.AsnWriter"
+    ]
+  },
+  {
+    "Name": "System.Formats.Cbor",
+    "Description": "Provides classes that can read and write the CBOR data format.",
+    "CommonTypes": [
+        "System.Formats.Cbor.CborReader",
+        "System.Formats.Cbor.CborWriter"
+    ]
+  },
+  {
     "Name": "System.Globalization",
     "Description": "Provides classes that define culture-related information, including language, country/region, calendars in use, format patterns for dates, currency, and numbers, and sort order for strings.",
     "CommonTypes": [
@@ -1219,6 +1235,15 @@
     ]
   },
   {
+    "Name": "Microsoft.Bcl.AsyncInterfaces",
+    "Description": "Provides the IAsyncEnumerable<T> and IAsyncDisposable interfaces and helper types for .NET Standard 2.0. This package is not required starting with .NET Standard 2.1 and .NET Core 3.0.",
+    "CommonTypes": [
+      "System.IAsyncDisposable",
+      "System.Collections.Generic.IAsyncEnumerable",
+      "System.Collections.Generic.IAsyncEnumerator"
+    ]
+  },
+  {
     "Name": "System.Net.Http",
     "Description": "Provides a programming interface for modern HTTP applications, including HTTP client components that allow applications to consume web services over HTTP and HTTP components that can be used by both clients and servers for parsing HTTP headers.",
     "CommonTypes": [
@@ -1482,13 +1507,6 @@
     ]
   },
   {
-    "Name": "System.Reflection.DispatchProxy",
-    "Description": "Provides a class to dynamically create proxy types that implement a specified interface and derive from a specified DispatchProxy type. Method invocations on the generated proxyinstance are dispatched to that DispatchProxy base type.",
-    "CommonTypes": [
-      "System.Reflection.DispatchProxy"
-    ]
-  },
-  {
     "Name": "System.Reflection.Emit",
     "Description": "Provides classes that allow a compiler or tool to emit metadata and optionally generate a PE file on disk. The primary clients of these classes are script engines and compilers.",
     "CommonTypes": [
@@ -1689,13 +1707,6 @@
     ]
   },
   {
-    "Name": "System.Runtime.Intrinsics.Experimental",
-    "Description": "Provides APIs for accessing processor specific instructions.",
-    "CommonTypes": [
-        "System.Runtime.Intrinsics.Arm.Arm64"
-    ]
-  },
-  {
     "Name": "System.Runtime.Handles",
     "Description": "Provides base classes, including System.Runtime.InteropServices.CriticalHandle and System.Runtime.InteropServices.SafeHandle, for types that represent operating system handles.",
     "CommonTypes": [
@@ -1795,34 +1806,6 @@
       "System.Xml.XmlDictionaryReaderQuotas",
       "System.Runtime.Serialization.DataContractResolver",
       "System.Xml.IXmlDictionary"
-    ]
-  },
-  {
-    "Name": "System.Runtime.WindowsRuntime",
-    "Description": "Provides extensions methods that improve interoperation between managed code and the Windows Runtime.",
-    "CommonTypes": [
-      "System.WindowsRuntimeSystemExtensions",
-      "System.IO.WindowsRuntimeStorageExtensions",
-      "System.IO.WindowsRuntimeStreamExtensions",
-      "System.Runtime.InteropServices.WindowsRuntime.AsyncInfo",
-      "System.Runtime.InteropServices.WindowsRuntime.WindowsRuntimeBuffer"
-    ]
-  },
-  {
-    "Name": "System.Runtime.WindowsRuntime.UI.Xaml",
-    "Description": "Provides managed equivalents of Extensible Application Markup Language (XAML) UI types from Windows Runtime.",
-    "CommonTypes": [
-      "Windows.UI.Xaml.CornerRadius",
-      "Windows.UI.Xaml.Duration",
-      "Windows.UI.Xaml.DurationType",
-      "Windows.UI.Xaml.GridLength",
-      "Windows.UI.Xaml.GridUnitType",
-      "Windows.UI.Xaml.Thickness",
-      "Windows.UI.Xaml.Media.Matrix",
-      "Windows.UI.Xaml.Media.Animation.KeyTime",
-      "Windows.UI.Xaml.Media.Animation.RepeatBehavior",
-      "Windows.UI.Xaml.Media.Animation.RepeatBehaviorType",
-      "Windows.UI.Xaml.Media.Media3D.Matrix3D"
     ]
   },
   {

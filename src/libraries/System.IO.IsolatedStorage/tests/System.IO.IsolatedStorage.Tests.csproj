@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\IO\IsolatedStorage\IdentityTests.cs" />
@@ -16,7 +16,7 @@
     <Compile Include="..\src\System\IO\IsolatedStorage\Helper.Win32.cs"
              Link="Internals\Helper.Win32.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true'">
     <Compile Include="..\src\System\IO\IsolatedStorage\Helper.Unix.cs"
              Link="Internals\Helper.Unix.cs" />
   </ItemGroup>
@@ -51,5 +51,8 @@
     <Compile Include="System\IO\IsolatedStorage\OpenFileTests.cs" />
     <Compile Include="System\IO\IsolatedStorage\TestHelper.cs" />
     <Compile Include="System\IO\IsolatedStorage\RemoveTests.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="$(TargetFramework.StartsWith('$(NetCoreAppCurrent)'))">
+    <ProjectReference Include="$(LibrariesProjectRoot)System.DirectoryServices\src\System.DirectoryServices.csproj" />
   </ItemGroup>
 </Project>

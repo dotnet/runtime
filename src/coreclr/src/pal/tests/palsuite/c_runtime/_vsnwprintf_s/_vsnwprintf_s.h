@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================================
 **
@@ -15,7 +14,7 @@
 #define ___VSNWPRINTF_H__
 
 /* These functions leaks memory a lot. C'est la vie. */
-int TestVsnwprintf_s(char16_t* buf, size_t count, const char16_t* format, ...)
+inline int TestVsnwprintf_s(char16_t* buf, size_t count, const char16_t* format, ...)
 {
     int retVal = 0;
     va_list arglist;
@@ -27,8 +26,7 @@ int TestVsnwprintf_s(char16_t* buf, size_t count, const char16_t* format, ...)
     return( retVal);
 }
 
-
-void DoWStrTest(const WCHAR *formatstr, WCHAR *param, const WCHAR *checkstr)
+inline void DoWStrTest_vsnwprintf_s(const WCHAR *formatstr, WCHAR *param, const WCHAR *checkstr)
 {
     WCHAR buf[256] = { 0 };
 
@@ -42,8 +40,9 @@ void DoWStrTest(const WCHAR *formatstr, WCHAR *param, const WCHAR *checkstr)
             convertC(checkstr), convertC(buf));
     }
 }
+#define DoWStrTest DoWStrTest_vsnwprintf_s
 
-void DoStrTest(const WCHAR *formatstr, char *param, const WCHAR *checkstr)
+inline void DoStrTest_vsnwprintf_s(const WCHAR *formatstr, char *param, const WCHAR *checkstr)
 {
     WCHAR buf[256] = { 0 };
 
@@ -57,8 +56,9 @@ void DoStrTest(const WCHAR *formatstr, char *param, const WCHAR *checkstr)
             convertC(buf));
     }
 }
+#define DoStrTest DoStrTest_vsnwprintf_s
 
-void DoCharTest(const WCHAR *formatstr, char param, const WCHAR *checkstr)
+inline void DoCharTest_vsnwprintf_s(const WCHAR *formatstr, char param, const WCHAR *checkstr)
 {
     WCHAR buf[256] = { 0 };
 
@@ -71,8 +71,9 @@ void DoCharTest(const WCHAR *formatstr, char param, const WCHAR *checkstr)
             convertC(buf));
     }
 }
+#define DoCharTest DoCharTest_vsnwprintf_s
 
-void DoWCharTest(const WCHAR *formatstr, WCHAR param, const WCHAR *checkstr)
+inline void DoWCharTest_vsnwprintf_s(const WCHAR *formatstr, WCHAR param, const WCHAR *checkstr)
 {
     WCHAR buf[256] = { 0 };
 
@@ -85,8 +86,9 @@ void DoWCharTest(const WCHAR *formatstr, WCHAR param, const WCHAR *checkstr)
             convertC(checkstr), convertC(buf));
     }    
 }
+#define DoWCharTest DoWCharTest_vsnwprintf_s
 
-void DoNumTest(const WCHAR *formatstr, int value, const WCHAR *checkstr)
+inline void DoNumTest_vsnwprintf_s(const WCHAR *formatstr, int value, const WCHAR *checkstr)
 {
     WCHAR buf[256] = { 0 };
 
@@ -98,8 +100,9 @@ void DoNumTest(const WCHAR *formatstr, int value, const WCHAR *checkstr)
             convertC(checkstr), convertC(buf));
     }    
 }
+#define DoNumTest DoNumTest_vsnwprintf_s
 
-void DoI64NumTest(const WCHAR *formatstr, INT64 value, char *valuestr, const WCHAR *checkstr)
+inline void DoI64NumTest_vsnwprintf_s(const WCHAR *formatstr, INT64 value, char *valuestr, const WCHAR *checkstr)
 {
     WCHAR buf[256] = { 0 };
 
@@ -111,7 +114,9 @@ void DoI64NumTest(const WCHAR *formatstr, INT64 value, char *valuestr, const WCH
             convertC(checkstr), convertC(buf));
     }    
 }
-void DoDoubleTest(const WCHAR *formatstr, double value,
+#define DoI64NumTest DoI64NumTest_vsnwprintf_s
+
+inline void DoDoubleTest_vsnwprintf_s(const WCHAR *formatstr, double value,
                   const WCHAR *checkstr1, const WCHAR *checkstr2)
 {
     WCHAR buf[256] = { 0 };
@@ -129,5 +134,6 @@ void DoDoubleTest(const WCHAR *formatstr, double value,
                 convertC(buf));
     }
 }
+#define DoDoubleTest DoDoubleTest_vsnwprintf_s
 
 #endif

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 using System.Text;
@@ -87,13 +86,13 @@ namespace System.Xml.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/18258")]
-        public static void InitializationWithUriOnNonAsyncReaderTrows()
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux), nameof(PlatformDetection.IsThreadingSupported))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/18258")]
+        public static void InitializationWithUriOnNonAsyncReaderThrows()
         {
             Assert.Throws<System.Net.Http.HttpRequestException>(() => XmlReader.Create("http://test.test/test.html", new XmlReaderSettings() { Async = false }));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void SynchronizationContextCurrent_NotUsedForAsyncOperations()
         {
             Task.Run(() =>

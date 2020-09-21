@@ -25,10 +25,9 @@
         <Text Name="WelcomeText" X="155" Y="80" Width="-11" Height="-70" FontId="2" HexStyle="0x800000" DisablePrefix="yes" />
         <Text Name="WelcomeHeaderMessage" X="160" Y="81" Width="300" Height="30" FontId="2">#(loc.WelcomeHeaderMessage)</Text>
         <Text Name="WelcomeDescription" X="160" Y="125" Width="460" Height="65" FontId="3">#(loc.WelcomeDescription)</Text>
-        <Text Name="LearnMoreTitle" X="160" Y="200" Width="460" Height="30" FontId="2">#(loc.LearnMoreTitle)</Text>
-        <Hypertext Name="WelcomeDocumentationLink" X="185" Y="238" Width="400" Height="22" FontId="3" TabStop="yes" HideWhenDisabled="yes" DisablePrefix="yes">#(loc.DocumentationLink)</Hypertext>
-        <Hypertext Name="PrivacyStatementLink" X="185" Y="259" Width="400" Height="22" FontId="3" TabStop="yes" HideWhenDisabled="yes" DisablePrefix="yes">#(loc.PrivacyStatementLink)</Hypertext>
-        <Hypertext Name="EulaLink" X="185" Y="281" Width="400" Height="22" FontId="3" TabStop="yes" HideWhenDisabled="yes" DisablePrefix="yes">#(loc.EulaLink)</Hypertext>
+        <Text Name="LicenseAssent" X="160" Y="244" Width="460" Height="30" FontId="3">#(loc.LicenseAssent)</Text>
+        <Hypertext Name="PrivacyStatementLink" X="185" Y="281" Width="400" Height="22" FontId="3" TabStop="yes" HideWhenDisabled="yes" DisablePrefix="yes">#(loc.PrivacyStatementLink)</Hypertext>
+        <Hypertext Name="EulaLink" X="185" Y="303" Width="400" Height="22" FontId="3" TabStop="yes" HideWhenDisabled="yes" DisablePrefix="yes">#(loc.EulaLink)</Hypertext>
         <Button Name="InstallButton" X="-131" Y="-11" Width="95" Height="23" TabStop="yes" FontId="0">#(loc.InstallInstallButton)</Button>
         <Button Name="WelcomeCancelButton" X="-31" Y="-11" Width="95" Height="23" TabStop="yes" FontId="0">#(loc.InstallCloseButton)</Button>
     </Page>

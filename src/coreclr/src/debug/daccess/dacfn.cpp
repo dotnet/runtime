@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: dacfn.cpp
 //
@@ -21,7 +20,6 @@
 
 #include "gcinterface.h"
 #include "gcinterface.dac.h"
-
 
 DacTableInfo g_dacTableInfo;
 DacGlobals g_dacGlobals;
@@ -245,6 +243,16 @@ static BOOL DacReadAllAdapter(PVOID address, PVOID buffer, SIZE_T size)
     return TRUE;
 }
 
+#ifdef HOST_WINDOWS
+// For the cross OS dac, we don't have the full pal layer
+// Use these minimal prototypes instead of the full pal header
+typedef BOOL(*UnwindReadMemoryCallback)(PVOID address, PVOID buffer, SIZE_T size);
+
+extern
+BOOL
+PAL_VirtualUnwindOutOfProc(PT_CONTEXT context, PT_KNONVOLATILE_CONTEXT_POINTERS contextPointers, SIZE_T baseAddress, UnwindReadMemoryCallback readMemoryCallback);
+#endif
+
 HRESULT
 DacVirtualUnwind(ULONG32 threadId, PT_CONTEXT context, PT_KNONVOLATILE_CONTEXT_POINTERS contextPointers)
 {
@@ -260,7 +268,7 @@ DacVirtualUnwind(ULONG32 threadId, PT_CONTEXT context, PT_KNONVOLATILE_CONTEXT_P
         memset(contextPointers, 0, sizeof(T_KNONVOLATILE_CONTEXT_POINTERS));
     }
 
-    HRESULT hr = S_OK;
+    HRESULT hr = E_NOINTERFACE;
 
 #ifdef FEATURE_DATATARGET4
     ReleaseHolder<ICorDebugDataTarget4> dt;
@@ -269,13 +277,14 @@ DacVirtualUnwind(ULONG32 threadId, PT_CONTEXT context, PT_KNONVOLATILE_CONTEXT_P
     {
         hr = dt->VirtualUnwind(threadId, sizeof(CONTEXT), (BYTE*)context);
     }
-    else
 #endif
+
+    if (hr == E_NOINTERFACE || hr == E_NOTIMPL)
     {
+        hr = S_OK;
+
         SIZE_T baseAddress = DacGlobalBase();
-#ifdef HOST_UNIX
         if (baseAddress == 0 || !PAL_VirtualUnwindOutOfProc(context, contextPointers, baseAddress, DacReadAllAdapter))
-#endif
         {
             hr = E_FAIL;
         }

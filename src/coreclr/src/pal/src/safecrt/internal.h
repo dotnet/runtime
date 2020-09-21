@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /***
 *internal.h - contains declarations of internal routines and variables
@@ -459,10 +458,6 @@ void __cdecl __setmbctable(unsigned int);   /* mbctype.c */
 _MRTIMP int __cdecl _onexit_process(_CPVFV);
 _MRTIMP int __cdecl _onexit_app_domain(_CPVFV);
 #endif  /* MRTDLL */
-
-#ifdef _MBCS
-int  __cdecl __initmbctable(void);      /* mbctype.c */
-#endif  /* _MBCS */
 
 #ifndef _MANAGED_MAIN
 int __CRTDECL main(__in int _Argc, __in_ecount_z(_Argc) char ** _Argv, __in_z char ** _Env);

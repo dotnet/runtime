@@ -1,0 +1,147 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+/******************************************************************************
+ * This file is auto-generated from a template file by the GenerateTests.csx  *
+ * script in tests\src\JIT\HardwareIntrinsics\General\Shared. In order to make    *
+ * changes, please update the corresponding template and run according to the *
+ * directions listed in the file.                                             *
+ ******************************************************************************/
+
+using System;
+using System.Numerics;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+
+namespace JIT.HardwareIntrinsics.General
+{
+    public static partial class Program
+    {
+        private static void {Method}{BaseType}()
+        {
+            var test = new VectorAs__{Method}{BaseType}();
+
+            // Validates basic functionality works
+            test.RunBasicScenario();
+
+            // Validates calling via reflection works
+            test.RunReflectionScenario();
+
+            if (!test.Succeeded)
+            {
+                throw new Exception("One or more scenarios did not complete as expected.");
+            }
+        }
+    }
+
+    public sealed unsafe class VectorAs__{Method}{BaseType}
+    {
+        private static readonly int LargestVectorSize = {LargestVectorSize};
+
+        private static readonly int VectorElementCount = Unsafe.SizeOf<{VectorType}<{BaseType}>>() / sizeof({BaseType});
+
+        private static readonly int NumericsElementCount = Unsafe.SizeOf<{NumericsType}>() / sizeof({BaseType});
+
+        public bool Succeeded { get; set; } = true;
+
+        public void RunBasicScenario()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario));
+            {VectorType}<{BaseType}> value;
+
+            value = {VectorType}.Create({NextValueOp});
+            {NumericsType} result = value.As{NumericsType}();
+            ValidateResult(result, value);
+
+            value = result.As{VectorType}();
+            ValidateResult(value, result);
+        }
+
+        public void RunReflectionScenario()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario));
+            {VectorType}<{BaseType}> value;
+
+            value = {VectorType}.Create({NextValueOp});
+            object Result = typeof({VectorType})
+                                .GetMethod(nameof({VectorType}.As{NumericsType}))
+                                .Invoke(null, new object[] { value });
+            ValidateResult(({NumericsType})(Result), value);
+
+            value = ({VectorType}<{BaseType}>)typeof({VectorType})
+                                .GetMethod(nameof({VectorType}.As{VectorType}), new Type[] { typeof({NumericsType}) })
+                                .Invoke(null, new object[] { Result });
+            ValidateResult(value, ({NumericsType})(Result));
+        }
+
+        private void ValidateResult({NumericsType} result, {VectorType}<{BaseType}> value, [CallerMemberName] string method = "")
+        {
+            {BaseType}[] resultElements = new {BaseType}[NumericsElementCount];
+            Unsafe.WriteUnaligned(ref Unsafe.As<{BaseType}, byte>(ref resultElements[0]), result);
+
+            {BaseType}[] valueElements = new {BaseType}[VectorElementCount];
+            Unsafe.WriteUnaligned(ref Unsafe.As<{BaseType}, byte>(ref valueElements[0]), value);
+
+            ValidateResult(resultElements, valueElements, method);
+        }
+
+        private void ValidateResult({VectorType}<{BaseType}> result, {NumericsType} value, [CallerMemberName] string method = "")
+        {
+            {BaseType}[] resultElements = new {BaseType}[VectorElementCount];
+            Unsafe.WriteUnaligned(ref Unsafe.As<{BaseType}, byte>(ref resultElements[0]), result);
+
+            {BaseType}[] valueElements = new {BaseType}[NumericsElementCount];
+            Unsafe.WriteUnaligned(ref Unsafe.As<{BaseType}, byte>(ref valueElements[0]), value);
+
+            ValidateResult(resultElements, valueElements, method);
+        }
+
+        private void ValidateResult({BaseType}[] resultElements, {BaseType}[] valueElements, [CallerMemberName] string method = "")
+        {
+            bool succeeded = true;
+
+            if (resultElements.Length <= valueElements.Length)
+            {
+                for (var i = 0; i < resultElements.Length; i++)
+                {
+                    if (resultElements[i] != valueElements[i])
+                    {
+                        succeeded = false;
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                for (var i = 0; i < valueElements.Length; i++)
+                {
+                    if (resultElements[i] != valueElements[i])
+                    {
+                        succeeded = false;
+                        break;
+                    }
+                }
+
+                for (var i = valueElements.Length; i < resultElements.Length; i++)
+                {
+                    if (resultElements[i] != default)
+                    {
+                        succeeded = false;
+                        break;
+                    }
+                }
+            }
+
+            if (!succeeded)
+            {
+                TestLibrary.TestFramework.LogInformation($"{VectorType}<{BaseType}>.{Method}: {method} failed:");
+                TestLibrary.TestFramework.LogInformation($"   value: ({string.Join(", ", valueElements)})");
+                TestLibrary.TestFramework.LogInformation($"  result: ({string.Join(", ", resultElements)})");
+                TestLibrary.TestFramework.LogInformation(string.Empty);
+
+                Succeeded = false;
+            }
+        }
+    }
+}

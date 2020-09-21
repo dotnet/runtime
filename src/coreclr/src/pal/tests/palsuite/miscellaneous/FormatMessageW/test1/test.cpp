@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================
 **
@@ -15,7 +14,8 @@
 #include <palsuite.h>
 
 
-int __cdecl main(int argc, char *argv[]) {
+PALTEST(miscellaneous_FormatMessageW_test1_paltest_formatmessagew_test1, "miscellaneous/FormatMessageW/test1/paltest_formatmessagew_test1")
+{
 
     WCHAR TheString[] = {'P','a','l',' ','T','e','s','t','\0'};
     WCHAR OutBuffer[128];

@@ -1,14 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
+using System.Net.Sockets;
 using System.Security;
 using System.Text;
 using System.Threading;
+using System.Runtime.Versioning;
 
 namespace System.Diagnostics
 {
@@ -16,7 +17,7 @@ namespace System.Diagnostics
     {
         private static readonly UTF8Encoding s_utf8NoBom =
             new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
-        private static volatile bool s_initialized = false;
+        private static volatile bool s_initialized;
         private static readonly object s_initializedGate = new object();
         private static readonly Interop.Sys.SigChldCallback s_sigChildHandler = OnSigChild;
         private static readonly ReaderWriterLockSlim s_processStartLock = new ReaderWriterLockSlim();
@@ -41,12 +42,14 @@ namespace System.Diagnostics
         }
 
         [CLSCompliant(false)]
+        [SupportedOSPlatform("windows")]
         public static Process Start(string fileName, string userName, SecureString password, string domain)
         {
             throw new PlatformNotSupportedException(SR.ProcessStartWithPasswordAndDomainNotSupported);
         }
 
         [CLSCompliant(false)]
+        [SupportedOSPlatform("windows")]
         public static Process Start(string fileName, string arguments, string userName, SecureString password, string domain)
         {
             throw new PlatformNotSupportedException(SR.ProcessStartWithPasswordAndDomainNotSupported);
@@ -305,12 +308,6 @@ namespace System.Diagnostics
             }
         }
 
-        /// <summary>Gets the ID of the current process.</summary>
-        private static int GetCurrentProcessId()
-        {
-            return Interop.Sys.GetPid();
-        }
-
         /// <summary>Checks whether the argument is a direct child of this process.</summary>
         private bool IsParentOf(Process possibleChildProcess) =>
             Id == possibleChildProcess.ParentProcessId;
@@ -545,10 +542,6 @@ namespace System.Diagnostics
             }
         }
 
-        // -----------------------------
-        // ---- PAL layer ends here ----
-        // -----------------------------
-
         /// <summary>Finalizable holder for the underlying shared wait state object.</summary>
         private ProcessWaitState.Holder? _waitStateHolder;
 
@@ -761,16 +754,31 @@ namespace System.Diagnostics
             return TimeSpan.FromSeconds(ticks / (double)ticksPerSecond);
         }
 
-        /// <summary>Opens a stream around the specified file descriptor and with the specified access.</summary>
-        /// <param name="fd">The file descriptor.</param>
+        /// <summary>Opens a stream around the specified socket file descriptor and with the specified access.</summary>
+        /// <param name="fd">The socket file descriptor.</param>
         /// <param name="access">The access mode.</param>
         /// <returns>The opened stream.</returns>
-        private static FileStream OpenStream(int fd, FileAccess access)
+        private static Stream OpenStream(int fd, FileAccess access)
         {
             Debug.Assert(fd >= 0);
-            return new FileStream(
-                new SafeFileHandle((IntPtr)fd, ownsHandle: true),
-                access, StreamBufferSize, isAsync: false);
+            var socketHandle = new SafeSocketHandle((IntPtr)fd, ownsHandle: true);
+            var socket = new Socket(socketHandle);
+
+            if (!socket.Connected)
+            {
+                // WSL1 workaround -- due to issues with sockets syscalls
+                // socket pairs fd's are erroneously inferred as not connected.
+                // Fall back to using FileStream instead.
+
+                GC.SuppressFinalize(socket);
+                GC.SuppressFinalize(socketHandle);
+
+                return new FileStream(
+                    new SafeFileHandle((IntPtr)fd, ownsHandle: true),
+                    access, StreamBufferSize, isAsync: false);
+            }
+
+            return new NetworkStream(socket, access, ownsSocket: true);
         }
 
         /// <summary>Parses a command-line argument string into a list of arguments.</summary>

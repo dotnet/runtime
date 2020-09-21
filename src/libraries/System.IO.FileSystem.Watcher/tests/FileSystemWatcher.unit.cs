@@ -1,10 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.ObjectModel;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -241,7 +239,7 @@ namespace System.IO.Tests
             watcher.Filter = "abc.dll";
             Assert.Equal("abc.dll", watcher.Filter);
 
-            if (!(PlatformDetection.IsOSX))
+            if (!PlatformDetection.IsOSXLike)
             {
                 watcher.Filter = "ABC.DLL";
                 Assert.Equal("ABC.DLL", watcher.Filter);
@@ -508,8 +506,8 @@ namespace System.IO.Tests
             watcher.Path = currentDir;
             Assert.Equal(currentDir, watcher.Path);
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || // expect no change for OrdinalIgnoreCase-equal strings
-                RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            if (OperatingSystem.IsWindows() || // expect no change for OrdinalIgnoreCase-equal strings
+                OperatingSystem.IsMacOS())
             {
                 watcher.Path = currentDir.ToUpperInvariant();
                 Assert.Equal(currentDir, watcher.Path);
@@ -1054,7 +1052,7 @@ namespace System.IO.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void FileSystemWatcher_ModifyFiltersConcurrentWithEvents()
         {
             DirectoryInfo directory = Directory.CreateDirectory(GetTestFilePath());

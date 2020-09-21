@@ -2,7 +2,8 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
+    <IgnoreForCI Condition="'$(TargetOS)' == 'Browser'">true</IgnoreForCI>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Accept.cs" />
@@ -18,9 +19,11 @@
     <Compile Include="DnsEndPointTest.cs" />
     <Compile Include="DualModeSocketTest.cs" />
     <Compile Include="ExecutionContextFlowTest.cs" />
+    <Compile Include="InlineCompletions.Unix.cs" Condition="'$(TargetsUnix)' == 'true'"/>
     <Compile Include="IPPacketInformationTest.cs" />
     <Compile Include="KeepAliveTest.cs" />
     <Compile Include="LingerStateTest.cs" />
+    <Compile Include="LocalEndPointTest.cs" />
     <Compile Include="LoggingTest.cs" />
     <Compile Include="NetworkStreamTest.cs" />
     <Compile Include="ReceiveMessageFrom.cs" />
@@ -38,6 +41,7 @@
     <Compile Include="SelectAndPollTests.cs" />
     <Compile Include="SocketInformationTest.cs" />
     <Compile Include="TcpListenerTest.cs" />
+    <Compile Include="TelemetryTest.cs" />
     <Compile Include="TimeoutTest.cs" />
     <Compile Include="TcpClientTest.cs" />
     <Compile Include="Shutdown.cs" />

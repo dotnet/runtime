@@ -1,13 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Formats.Asn1;
 using System.Numerics;
 using System.Security.Cryptography;
-using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Cryptography.X509Certificates.Asn1;
 
@@ -52,7 +51,7 @@ namespace Internal.Cryptography.Pal
                 {
                     string formedSubject = X500NameEncoder.X500DistinguishedNameDecode(cert.SubjectName.RawData, false, X500DistinguishedNameFlags.None);
 
-                    return formedSubject.IndexOf(subjectName, StringComparison.OrdinalIgnoreCase) >= 0;
+                    return formedSubject.Contains(subjectName, StringComparison.OrdinalIgnoreCase);
                 });
         }
 
@@ -68,7 +67,7 @@ namespace Internal.Cryptography.Pal
                 {
                     string formedIssuer = X500NameEncoder.X500DistinguishedNameDecode(cert.IssuerName.RawData, false, X500DistinguishedNameFlags.None);
 
-                    return formedIssuer.IndexOf(issuerName, StringComparison.OrdinalIgnoreCase) >= 0;
+                    return formedIssuer.Contains(issuerName, StringComparison.OrdinalIgnoreCase);
                 });
         }
 
@@ -134,10 +133,19 @@ namespace Internal.Cryptography.Pal
 
                     if (ext != null)
                     {
-                        // Try a V1 template structure, just a string:
-                        AsnReader reader = new AsnReader(ext.RawData, AsnEncodingRules.DER);
-                        string decodedName = reader.ReadAnyAsnString();
-                        reader.ThrowIfNotEmpty();
+                        string decodedName;
+
+                        try
+                        {
+                            // Try a V1 template structure, just a string:
+                            AsnReader reader = new AsnReader(ext.RawData, AsnEncodingRules.DER);
+                            decodedName = reader.ReadAnyAsnString();
+                            reader.ThrowIfNotEmpty();
+                        }
+                        catch (AsnContentException e)
+                        {
+                            throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+                        }
 
                         // If this doesn't match, maybe a V2 template will
                         if (StringComparer.OrdinalIgnoreCase.Equals(templateName, decodedName))
@@ -258,13 +266,8 @@ namespace Internal.Cryptography.Pal
                         // SubjectPublicKeyInfo block, and returns that.
                         //
                         // https://msdn.microsoft.com/en-us/library/windows/desktop/aa376079%28v=vs.85%29.aspx
-
-                        using (HashAlgorithm hash = SHA1.Create())
-                        {
-                            byte[] publicKeyInfoBytes = GetSubjectPublicKeyInfo(cert);
-
-                            certKeyId = hash.ComputeHash(publicKeyInfoBytes);
-                        }
+                        byte[] publicKeyInfoBytes = GetSubjectPublicKeyInfo(cert);
+                        certKeyId = SHA1.HashData(publicKeyInfoBytes);
                     }
 
                     return keyIdentifier.ContentsEqual(certKeyId);

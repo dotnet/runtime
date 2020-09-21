@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #ifndef __STACKSTRING_H_
 #define __STACKSTRING_H_
@@ -257,9 +256,7 @@ typedef StackString<MAX_PATH, WCHAR> PathWCharString;
 BOOL
 PAL_GetPALDirectoryW(
         PathWCharString& lpDirectoryName);
-BOOL
-PAL_GetPALDirectoryA(
-        PathCharString& lpDirectoryName);
+
 DWORD
 GetCurrentDirectoryA(
          PathCharString& lpBuffer);

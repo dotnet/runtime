@@ -1,10 +1,8 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
 
 namespace System.Text.Json.Serialization.Converters
 {
@@ -13,13 +11,12 @@ namespace System.Text.Json.Serialization.Converters
         : IEnumerableDefaultConverter<TCollection, object?>
         where TCollection : IList
     {
-        protected override void Add(object? value, ref ReadStack state)
+        protected override void Add(in object? value, ref ReadStack state)
         {
-            Debug.Assert(state.Current.ReturnValue is IList);
-            ((IList)state.Current.ReturnValue).Add(value);
+            ((IList)state.Current.ReturnValue!).Add(value);
         }
 
-        protected override void CreateCollection(ref ReadStack state, JsonSerializerOptions options)
+        protected override void CreateCollection(ref Utf8JsonReader reader, ref ReadStack state, JsonSerializerOptions options)
         {
             JsonClassInfo classInfo = state.Current.JsonClassInfo;
 
@@ -27,7 +24,7 @@ namespace System.Text.Json.Serialization.Converters
             {
                 if (!TypeToConvert.IsAssignableFrom(RuntimeType))
                 {
-                    ThrowHelper.ThrowNotSupportedException_DeserializeNoDeserializationConstructor(TypeToConvert);
+                    ThrowHelper.ThrowNotSupportedException_CannotPopulateCollection(TypeToConvert, ref reader, ref state);
                 }
 
                 state.Current.ReturnValue = new List<object?>();
@@ -36,14 +33,14 @@ namespace System.Text.Json.Serialization.Converters
             {
                 if (classInfo.CreateObject == null)
                 {
-                    ThrowHelper.ThrowNotSupportedException_DeserializeNoDeserializationConstructor(TypeToConvert);
+                    ThrowHelper.ThrowNotSupportedException_DeserializeNoConstructor(TypeToConvert, ref reader, ref state);
                 }
 
                 TCollection returnValue = (TCollection)classInfo.CreateObject()!;
 
                 if (returnValue.IsReadOnly)
                 {
-                    ThrowHelper.ThrowNotSupportedException_SerializationNotSupported(TypeToConvert);
+                    ThrowHelper.ThrowNotSupportedException_CannotPopulateCollection(TypeToConvert, ref reader, ref state);
                 }
 
                 state.Current.ReturnValue = returnValue;
@@ -52,37 +49,38 @@ namespace System.Text.Json.Serialization.Converters
 
         protected override bool OnWriteResume(Utf8JsonWriter writer, TCollection value, JsonSerializerOptions options, ref WriteStack state)
         {
-            IEnumerator enumerator;
-            if (state.Current.CollectionEnumerator == null)
+            IList list = value;
+
+            // Using an index is 2x faster than using an enumerator.
+            int index = state.Current.EnumeratorIndex;
+            JsonConverter<object?> elementConverter = GetElementConverter(ref state);
+
+            if (elementConverter.CanUseDirectReadOrWrite && state.Current.NumberHandling == null)
             {
-                enumerator = value.GetEnumerator();
-                if (!enumerator.MoveNext())
+                // Fast path that avoids validation and extra indirection.
+                for (; index < list.Count; index++)
                 {
-                    return true;
+                    elementConverter.Write(writer, list[index], options);
                 }
             }
             else
             {
-                enumerator = state.Current.CollectionEnumerator;
+                for (; index < list.Count; index++)
+                {
+                    object? element = list[index];
+                    if (!elementConverter.TryWrite(writer, element, options, ref state))
+                    {
+                        state.Current.EnumeratorIndex = index;
+                        return false;
+                    }
+
+                    if (ShouldFlush(writer, ref state))
+                    {
+                        state.Current.EnumeratorIndex = ++index;
+                        return false;
+                    }
+                }
             }
-
-            JsonConverter<object?> converter = GetElementConverter(ref state);
-            do
-            {
-                if (ShouldFlush(writer, ref state))
-                {
-                    state.Current.CollectionEnumerator = enumerator;
-                    return false;
-                }
-
-                object? element = enumerator.Current;
-
-                if (!converter.TryWrite(writer, element, options, ref state))
-                {
-                    state.Current.CollectionEnumerator = enumerator;
-                    return false;
-                }
-            } while (enumerator.MoveNext());
 
             return true;
         }

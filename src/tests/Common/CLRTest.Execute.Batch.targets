@@ -1,0 +1,439 @@
+<!--
+***********************************************************************************************
+CLRTest.Execute.Batch.targets
+
+WARNING:  DO NOT MODIFY this file unless you are knowledgeable about MSBuild and have
+          created a backup copy.  Incorrect changes to this file will make it
+          impossible to load or build your projects from the command-line or the IDE.
+
+This file contains the logic for providing Execution Script generation.
+
+WARNING:   When setting properties based on their current state (for example:
+           <Foo Condition="'$(Foo)'==''>Bar</Foo>).  Be very careful.  Another script generation
+           target might be trying to do the same thing.  It's better to avoid this by instead setting a new property.
+           
+           Additionally, be careful with itemgroups.  Include will propagate outside of the target too!
+
+***********************************************************************************************
+-->
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <!-- This is here because of this bug: https://docs.microsoft.com/en-us/archive/blogs/msbuild/well-known-limitation-dynamic-items-and-properties-not-emitted-until-target-execution-completes -->
+  <Target Name="FetchExternalProperties">
+    <!--Call GetExecuteCmdFullPath to get ToRunProject cmd file Path  -->
+    <MSBuild Projects="$(CLRTestProjectToRun)" 
+             Targets="GetExecuteCmdFullPath"
+             Properties="GenerateRunScript=True"
+             Condition="'$(_CLRTestNeedsProjectToRun)' == 'True'">
+      <Output TaskParameter="TargetOutputs" PropertyName="_CLRTestToRunFileFullPath"/>
+    </MSBuild>
+  </Target>
+  
+  <!--
+    Target: GetExecuteCmdFullPath
+    Return Executed Cmd Relative Full Path
+    We can use this target get its toRun Project's Cmd Full Path to avoid hard-code
+  -->
+  <Target
+    Name="GetExecuteCmdFullPath"
+    Returns="$(ExecuteCmdFullPath)">
+    <PropertyGroup Condition="$(GenerateRunScript)">
+        <ExecuteCmdFullPath>$(OutputPath)$(MSBuildProjectName).cmd</ExecuteCmdFullPath>
+    </PropertyGroup>
+    <!-- In order to avoid the overhead of calling MSBuild (as it may result in chains of MSBuild calls) I am assuming the extension in this circumstance. -->
+    <PropertyGroup Condition="$(CLRTestProjectToRun) != '' AND $(GenerateRunScript)">
+      <ExecuteCmdFullPath>$(OutputPath)$([System.IO.Path]::GetFilenameWithoutExtension(&quot;$(CLRTestProjectToRun)&quot;)).dll</ExecuteCmdFullPath>
+    </PropertyGroup>
+    <PropertyGroup Condition="!$(GenerateRunScript)">
+        <ExecuteCmdFullPath>$(OutputPath)$(MSBuildProjectName).$(OutputType.ToLower())</ExecuteCmdFullPath>
+    </PropertyGroup>
+  </Target>
+
+  <!--
+  *******************************************************************************************
+  TARGET: GenerateExecutionScriptInternal
+  
+  For tests that "run" we will generate an execution script that wraps any arguments or other
+  goo.  This allows generated .lst files to be very simple and reusable to invoke any "stage"
+  of test execution.
+  
+  Notice this is hooked up to run after targets that generate the stores that are marked with GenerateScripts metadata.
+  Note also that this means it will run after the first of such targets.
+  -->
+  <Target Name="GenerateBatchExecutionScript"
+    Inputs="$(MSBuildProjectFullPath)"
+    Outputs="$(OutputPath)\$(MSBuildProjectName).cmd"
+    DependsOnTargets="FetchExternalProperties;$(BatchScriptSnippetGen);GetJitDisasmBatchScript;GetIlasmRoundTripBatchScript">
+
+    <Message Text="Project depends on $(_CLRTestToRunFileFullPath)." Condition="'$(_CLRTestNeedsProjectToRun)' == 'True'" />
+
+    <PropertyGroup>
+      <BatchCLRTestEnvironmentCompatibilityCheck Condition="'$(GCStressIncompatible)' == 'true'"><![CDATA[
+$(BatchCLRTestEnvironmentCompatibilityCheck)
+IF NOT "%COMPlus_GCStress%"=="" (
+  ECHO SKIPPING EXECUTION BECAUSE COMPlus_GCStress IS SET
+  popd
+  Exit /b 0
+)
+      ]]></BatchCLRTestEnvironmentCompatibilityCheck>
+      <BatchCLRTestEnvironmentCompatibilityCheck Condition="'$(UnloadabilityIncompatible)' == 'true'"><![CDATA[
+$(BatchCLRTestEnvironmentCompatibilityCheck)
+IF NOT "%RunInUnloadableContext%"=="" (
+  ECHO SKIPPING EXECUTION BECAUSE the test is incompatible with unloadability
+  popd
+  Exit /b 0
+)
+      ]]></BatchCLRTestEnvironmentCompatibilityCheck>
+      <BatchCLRTestEnvironmentCompatibilityCheck Condition="'$(JitOptimizationSensitive)' == 'true'">
+    <![CDATA[
+$(BatchCLRTestEnvironmentCompatibilityCheck)
+REM JitOptimizationSensitive includes our set of tests which cannot run under:
+REM     JitMinOpts=1
+REM     JitStress=*
+REM     JitStressRegs=*
+REM     TailcallStress=1
+REM
+REM TieredCompilation will use minopts. Therefore it is also included in this
+REM set. Unlike the rest, TieredCompilation=0 should run the JitOptimizationSensitive
+REM tests. The following cannot run the test.
+REM
+REM     TieredCompilation=1
+REM     TieredCompilation=
+IF "%COMPlus_JitStress%"=="" IF "%COMPlus_JitStressRegs%"=="" IF "%COMPlus_JITMinOpts%"=="" IF "%COMPlus_TailcallStress%"=="" goto :Compatible
+  ECHO SKIPPING EXECUTION BECAUSE ONE OR MORE OF (COMPlus_JitStress, COMPlus_JitStressRegs, COMPlus_JITMinOpts, COMPlus_TailcallStress, COMPlus_TieredCompilation) IS SET
+  popd
+  Exit /b 0
+:Compatible
+IF "%COMPlus_TieredCompilation%"=="0" goto :TieredCompilationDisabledCorrectly
+  ECHO SKIPPING EXECUTION BECAUSE COMPlus_TieredCompilation has not been disabled and this test is marked JitOptimizationSensitive
+  popd
+  Exit /b 0
+:TieredCompilationDisabledCorrectly
+      ]]></BatchCLRTestEnvironmentCompatibilityCheck>
+      <BatchCLRTestEnvironmentCompatibilityCheck Condition="'$(HeapVerifyIncompatible)' == 'true'"><![CDATA[
+$(BatchCLRTestEnvironmentCompatibilityCheck)
+IF NOT "%COMPlus_HeapVerify%"=="" (
+  ECHO SKIPPING EXECUTION BECAUSE COMPlus_HeapVerify IS SET
+  popd
+  Exit /b 0
+)
+      ]]></BatchCLRTestEnvironmentCompatibilityCheck>
+      <BatchCLRTestEnvironmentCompatibilityCheck Condition="'$(IlasmRoundTripIncompatible)' == 'true'"><![CDATA[
+$(BatchCLRTestEnvironmentCompatibilityCheck)
+IF NOT "%RunningIlasmRoundTrip%"=="" (
+  ECHO SKIPPING EXECUTION BECAUSE RunningIlasmRoundTrip IS SET
+  popd
+  Exit /b 0
+)
+      ]]></BatchCLRTestEnvironmentCompatibilityCheck>
+      
+      <BatchCLRTestExitCodePrep Condition="$(_CLRTestNeedsToRun)">
+        <![CDATA[
+if not defined CLRTestExpectedExitCode (set CLRTestExpectedExitCode=$(CLRTestExitCode))
+ECHO BEGIN EXECUTION
+      ]]>
+      </BatchCLRTestExitCodePrep>
+
+      <BatchCLRTestArgPrep Condition=" '$(CLRTestExecutionArguments)'!='' "><![CDATA[
+if not defined CLRTestExecutionArguments (set CLRTestExecutionArguments=$(CLRTestExecutionArguments) )
+      ]]></BatchCLRTestArgPrep>
+    
+      <!-- By default, be prepared to do a full check -->
+      <BatchCLRTestExitCodeCheck><![CDATA[
+ECHO Expected: %CLRTestExpectedExitCode%
+ECHO Actual: %CLRTestExitCode%
+IF NOT "%CLRTestExitCode%"=="%CLRTestExpectedExitCode%" (
+  ECHO END EXECUTION - FAILED
+  ECHO FAILED
+  popd
+  Exit /b 1
+) ELSE (
+  ECHO END EXECUTION - PASSED
+  ECHO PASSED
+  popd
+  Exit /b 0
+)
+
+:TakeLock
+md %lockFolder%
+IF NOT "!ERRORLEVEL!"=="0" (
+timeout /t 10 /nobreak
+goto :TakeLock
+)
+Exit /b 2
+
+
+:ReleaseLock
+if exist %lockFolder% rd /s /q %lockFolder%
+Exit /b 0
+      ]]></BatchCLRTestExitCodeCheck>
+    </PropertyGroup>
+  
+    <ItemGroup Condition="$(_CLRTestNeedsToRun)">
+      <Clean Include="$(OutputPath)\$(MSBuildProjectName).cmd"/>
+
+      <BatchCLRTestExecutionScriptArgument Include="debug">
+        <HasParam>true</HasParam>
+        <ParamName>debuggerFullPath</ParamName>
+        <Command><![CDATA[
+    IF EXIST "%2" (
+        set _DebuggerFullPath=%2
+        shift
+    ) ELSE (
+        ECHO The Debugger FullPath "%2" doesn't exist
+        GOTO :USAGE
+    )
+        ]]></Command>
+        <Description>Run testcases under debugger.</Description>
+      </BatchCLRTestExecutionScriptArgument>
+
+      <BatchCLRTestExecutionScriptArgument Include="env">
+        <HasParam>true</HasParam>
+        <ParamName>envScriptFullPath</ParamName>
+        <Command><![CDATA[
+    IF EXIST "%2" (
+        set __TestEnv=%2
+    ) ELSE (
+        ECHO The environment script "%2" does not exist
+        GOTO :USAGE
+    )
+        ]]></Command>
+        <Description>Run the specified script to set environment variables before running the test.</Description>
+      </BatchCLRTestExecutionScriptArgument>
+
+      <BatchCLRTestExecutionScriptArgument Include="coreroot">
+        <HasParam>true</HasParam>
+        <ParamName>CoreRootFullPath</ParamName>
+        <Command><![CDATA[
+    set CORE_ROOT=%2
+        ]]></Command>
+        <Description>Set CORE_ROOT to the specified value before running the test.</Description>
+      </BatchCLRTestExecutionScriptArgument>
+    </ItemGroup>
+
+      <PropertyGroup>
+          <ReflectionRootsXml>$(MSBuildProjectName).reflect.xml</ReflectionRootsXml>
+          <BatchLinkerTestLaunchCmds><![CDATA[
+REM Linker commands
+
+set LinkBin=__Link
+set Assemblies=-a System.Private.CoreLib
+
+IF defined DoLink ( 
+    IF NOT EXIST !ILLINK! (
+      ECHO ILLink executable [%ILLINK%] Invalid
+      popd
+      Exit /b 1
+    )
+    
+    REM Clean up old Linked binaries, if any
+    IF EXIST %LinkBin% rmdir /s /q %LinkBin%
+    
+    REM Remove Native images, since the goal is to run from Linked binaries
+    del /q /f *.ni.* 2> nul
+
+    REM Use hints for reflection roots, if provided in $(ReflectionRootsXml)
+    IF EXIST $(ReflectionRootsXml) set ReflectionRoots=-x $(ReflectionRootsXml)
+
+    REM Include all .exe files in this directory as entry points (some tests had multiple .exe file modules)
+    FOR /F "delims=" %%E IN ('dir /b *.exe *.dll') DO SET Assemblies=!Assemblies! -a %%~nE
+
+    REM Run dotnet-linker
+    REM Run the Linker such that all assemblies except System.Private.Corlib.dll are linked
+    REM Debug symbol generation needs some fixes, and is currently omitted.
+    REM Once this is fixed, add -b true option.
+    ECHO %ILLINK% -out %LinkBin% -d %CORE_ROOT% -c link -l none -t !Assemblies! !ReflectionRoots!
+    %ILLINK% -out %LinkBin% -d %CORE_ROOT% -c link -l none -t !Assemblies! !ReflectionRoots!
+    IF NOT "!ERRORLEVEL!"=="0" (
+      ECHO ILLINK FAILED !ERRORLEVEL!
+      IF NOT defined KeepLinkedBinaries (
+          IF EXIST %LinkBin% rmdir /s /q %LinkBin%
+      )
+      popd
+      Exit /b 1
+    )
+
+    REM Copy CORECLR native binaries to %LinkBin%, so that we can run the test based on that directory
+    copy %CORE_ROOT%\clrjit.dll %LinkBin% > nul 2> nul
+    copy %CORE_ROOT%\coreclr.dll %LinkBin% > nul 2> nul
+    copy %CORE_ROOT%\mscorrc.dll %LinkBin% > nul 2> nul
+    copy %CORE_ROOT%\CoreRun.exe %LinkBin% > nul 2> nul
+
+    REM Copy some files that may be arguments
+    copy *.txt %LinkBin% > nul 2> nul
+
+    set ExePath=%LinkBin%\$(InputAssemblyName)
+    set CORE_ROOT=%scriptPath%LinkBin%
+)
+]]>
+          </BatchLinkerTestLaunchCmds>
+          <BatchLinkerTestCleanupCmds>
+              <![CDATA[
+REM Clean up the LinkBin directories after test execution.
+REM Otherwise, RunTests may run out of disk space.
+
+if defined DoLink (
+    if not defined KeepLinkedBinaries (
+        IF EXIST %LinkBin% rmdir /s /q %LinkBin%
+    )
+)              
+]]>
+          </BatchLinkerTestCleanupCmds>
+      </PropertyGroup>
+      <PropertyGroup>      
+      <_CLRTestRunFile Condition="'$(CLRTestIsHosted)'=='true'">"%CORE_ROOT%\corerun.exe"</_CLRTestRunFile>
+      <BatchCopyCoreShimLocalCmds Condition="'$(CLRTestScriptLocalCoreShim)' == 'true'"><![CDATA[
+REM Local CoreShim requested - see MSBuild property 'CLRTestScriptLocalCoreShim'
+ECHO Copying '%CORE_ROOT%\CoreShim.dll'...
+COPY /y %CORE_ROOT%\CoreShim.dll .
+      ]]></BatchCopyCoreShimLocalCmds>
+      <BatchCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun'">
+    <![CDATA[
+$(BatchLinkerTestLaunchCmds)
+$(BatchCopyCoreShimLocalCmds)
+
+IF NOT "%CLRCustomTestLauncher%"=="" (
+  set LAUNCHER=call %CLRCustomTestLauncher% %scriptPath%
+) ELSE (
+  set LAUNCHER=%_DebuggerFullPath% $(_CLRTestRunFile)
+)
+
+$(BatchIlrtTestLaunchCmds)
+
+if defined RunCrossGen (
+  call :TakeLock
+)
+ECHO %LAUNCHER% %ExePath% %CLRTestExecutionArguments%
+%LAUNCHER% %ExePath% %CLRTestExecutionArguments%
+set CLRTestExitCode=!ERRORLEVEL!
+if defined RunCrossGen (
+  call :ReleaseLock
+)
+$(BatchLinkerTestCleanupCmds)
+      ]]></BatchCLRTestLaunchCmds>
+
+      <BatchCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'RunOnly'"><![CDATA[
+$(BatchCopyCoreShimLocalCmds)
+ECHO  cmd /c $(InputAssemblyName)
+cmd /c $(InputAssemblyName)
+set CLRTestExitCode=!ERRORLEVEL!
+set CLRTestExpectedExitCode=0
+      ]]></BatchCLRTestLaunchCmds>
+    </PropertyGroup>
+    <PropertyGroup>
+      <BatchEnvironmentVariables>
+@(CLRTestBatchEnvironmentVariable -> '%(Identity)', '%0d%0a')
+      </BatchEnvironmentVariables>
+    </PropertyGroup>
+    
+    <Message Text="MSBuildProjectDirectory:$(MSBuildProjectDirectory)" />
+    <Message Text="_CLRTestToRunFileFullPath:$(_CLRTestToRunFileFullPath)"/>
+    <Message Text="_CLRTestRunFile:$(_CLRTestRunFile)" />
+    
+    <ItemGroup>
+      <_RequiredProperties Include="_CLRTestRunFile">
+        <Value>$(_CLRTestRunFile)</Value>
+      </_RequiredProperties>
+    </ItemGroup>
+    
+    <!-- Raise an error if any value in _RequiredProperties is missing  -->
+    <Error Condition=" '%(_RequiredProperties.Value)'=='' "
+      Text="Missing required test property [%(_RequiredProperties.Identity)]. Something isn't plumbed through correctly.  Contact $(_CLRTestBuildSystemOwner)." />
+    <PropertyGroup>
+      <!--
+      This generates the script portion to parse all of the command line arguments.
+      The Command metadata for BatchCLRTestExecutionScriptArgument items is executed
+      when the argument is found.
+      -->
+      <BatchCLRTestArgPrep><![CDATA[
+REM Parse Command Line
+:NextArg
+
+IF /I '%1' == '-?'     GOTO :USAGE
+IF /I '%1' == '/?'     GOTO :USAGE
+IF /I '%1' == '-h'     GOTO :USAGE
+IF /I '%1' == '/h'     GOTO :USAGE
+
+@(BatchCLRTestExecutionScriptArgument -> 'set cond=0
+IF /I [%1] == [-%(Identity)] set cond=1
+IF /I [%1] == [/%(Identity)] set cond=1
+IF %cond% EQU 1 (
+%(Command)
+shift
+IF /I [%(HasParam)] == [true] shift
+goto NextArg
+)','
+')
+
+if NOT "%1" == "" (
+set CLRTestExecutionArguments=%*
+goto :ArgsDone
+)
+
+goto ArgsDone
+
+:USAGE
+ECHO.Usage
+ECHO %0 @(BatchCLRTestExecutionScriptArgument -> '[-%(Identity) %(ParamName)]', ' ')
+ECHO.
+ECHO                         - OPTIONS -
+@(BatchCLRTestExecutionScriptArgument -> 'ECHO -%(Identity) %(ParamName)
+ECHO      %(Description)', '
+')
+popd
+Exit /b 1
+
+:ArgsDone
+$(BatchCLRTestArgPrep)
+      ]]></BatchCLRTestArgPrep>
+      <!-- NOTE! semicolons must be escaped with %3B boooo -->
+      <_CLRTestExecutionScriptText>
+  <![CDATA[
+@ECHO OFF
+setlocal ENABLEDELAYEDEXPANSION
+set "lockFolder=%~dp0\lock"
+pushd %~dp0
+set "scriptPath=%~dp0"
+
+$(BatchCLRTestArgPrep)
+$(BatchCLRTestExitCodePrep)
+
+REM The __TestEnv variable may be used to specify something to run before the test.
+IF NOT "%__TestEnv%"=="" (
+    call %__TestEnv%
+    IF NOT "!ERRORLEVEL!"=="0" (
+        ECHO CALLING __TestEnv SCRIPT FAILED
+        popd
+        Exit /b 1
+    )
+)
+
+REM Environment Variables
+$(BatchEnvironmentVariables)
+
+$(BatchCLRTestEnvironmentCompatibilityCheck)
+
+$(JitDisasmBatchScript)
+
+$(IlasmRoundTripBatchScript)
+
+REM Allow precommands to override the ExePath
+set ExePath=$(InputAssemblyName)
+
+REM Precommands
+$(CLRTestBatchPreCommands)
+REM Launch
+$(BatchCLRTestLaunchCmds)
+REM PostCommands
+$(CLRTestBatchPostCommands)
+$(BatchCLRTestExitCodeCheck)
+      ]]></_CLRTestExecutionScriptText>
+    </PropertyGroup>
+    <!-- Write the file -->
+    <WriteLinesToFile
+      File="$(OutputPath)\$(MSBuildProjectName).cmd"
+      Lines="$(_CLRTestExecutionScriptText)"
+      Overwrite="true" />
+  </Target>
+  
+</Project>

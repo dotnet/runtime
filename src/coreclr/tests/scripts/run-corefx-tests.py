@@ -2,7 +2,6 @@
 #
 # Licensed to the .NET Foundation under one or more agreements.
 # The .NET Foundation licenses this file to you under the MIT license.
-# See the LICENSE file in the project root for more information.
 #
 ##########################################################################
 ##########################################################################
@@ -298,7 +297,7 @@ def main(args):
 
     # Gather up some arguments to pass to the different build scripts.
 
-    common_config_args = '-configuration Release -framework netcoreapp5.0 -os %s -arch %s' % (clr_os, arch)
+    common_config_args = '-configuration Release -framework net5.0 -os %s -arch %s' % (clr_os, arch)
     build_args = '-build -restore'
     build_test_args = '-buildtests  /p:ArchiveTests=true'
 
@@ -339,7 +338,7 @@ def main(args):
                                     'artifacts',
                                     'bin',
                                     'testhost',
-                                    'netcoreapp5.0-%s-%s-%s' % (clr_os, 'Release', arch),
+                                    'net5.0-%s-%s-%s' % (clr_os, 'Release', arch),
                                     'shared',
                                     'Microsoft.NETCore.App')
 

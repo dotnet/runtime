@@ -1,14 +1,15 @@
 set(SOURCES
+  EnableEventLogging.cpp
   ${CMAKE_CURRENT_BINARY_DIR}/clralltestevents.cpp
 )
 
 set(EVENT_MANIFEST ${VM_DIR}/ClrEtwAll.man)
 set(TEST_GENERATOR ${CLR_DIR}/src/scripts/genEventingTests.py)
 
-include(FindPython)
+include(FindPythonInterp)
 
 add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/clralltestevents.cpp
-  COMMAND ${Python_EXECUTABLE} ${TEST_GENERATOR} --testdir "${CMAKE_CURRENT_BINARY_DIR}" --man "${EVENT_MANIFEST}"
+  COMMAND ${PYTHON_EXECUTABLE} ${TEST_GENERATOR} --testdir "${CMAKE_CURRENT_BINARY_DIR}" --man "${EVENT_MANIFEST}"
   DEPENDS ${EVENT_MANIFEST} ${TEST_GENERATOR}
   COMMENT "Updating clralltestevents.cpp"
 )
@@ -19,7 +20,7 @@ if(TARGET_UNIX)
     include_directories(${COREPAL_SOURCE_DIR}/inc/rt)
 endif(TARGET_UNIX)
 
-add_executable(eventprovidertest
+_add_executable(eventprovidertest
             ${SOURCES}
             )
 set(EVENT_PROVIDER_DEPENDENCIES "")
@@ -37,3 +38,5 @@ endif(FEATURE_EVENT_TRACE)
 
 target_link_libraries(eventprovidertest  ${EVENT_PROVIDER_DEPENDENCIES} coreclrpal)
 add_dependencies(eventprovidertest eventing_headers)
+
+_install (TARGETS eventprovidertest DESTINATION paltests/eventprovider)

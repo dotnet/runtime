@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "pal_config.h"
 #include "pal_time.h"
@@ -33,13 +32,13 @@ int32_t SystemNative_UTimensat(const char* path, TimeSpec* times)
     updatedTimes[0].tv_nsec = (long)times[0].tv_nsec;
 
     updatedTimes[1].tv_sec = (time_t)times[1].tv_sec;
-    updatedTimes[1].tv_nsec = (long)times[1].tv_nsec;    
+    updatedTimes[1].tv_nsec = (long)times[1].tv_nsec;
     while (CheckInterrupted(result = utimensat(AT_FDCWD, path, updatedTimes, 0)));
 #else
     struct timeval updatedTimes[2];
     updatedTimes[0].tv_sec = (long)times[0].tv_sec;
     updatedTimes[0].tv_usec = (int)times[0].tv_nsec / 1000;
-    
+
     updatedTimes[1].tv_sec = (long)times[1].tv_sec;
     updatedTimes[1].tv_usec = (int)times[1].tv_nsec / 1000;
     while (CheckInterrupted(result = utimes(path, updatedTimes)));

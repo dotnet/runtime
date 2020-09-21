@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);net461</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Composition\Hosting\Core\CompositionContractTests.cs" />
@@ -9,5 +9,11 @@
     <Compile Include="System\Composition\ExportFactoryTMetadataTests.cs" />
     <Compile Include="System\Composition\ExportFactoryTests.cs" />
     <Compile Include="System\Composition\ExportTests.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Composition.Runtime.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
+    <PackageReference Include="System.ValueTuple" Version="$(SystemValueTupleVersion)" />
   </ItemGroup>
 </Project>

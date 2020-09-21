@@ -24,7 +24,7 @@
 
   <PropertyGroup>
     <!-- Central place to set the versions of all nuget packages produced in the repo -->
-    <PackageVersion Condition="'$(PackageVersion)' == ''">5.0.0</PackageVersion>
+    <PackageVersion Condition="'$(PackageVersion)' == ''">6.0.0</PackageVersion>
 
     <!-- Set the boolean below to true to generate packages with stabilized versions -->
     <StabilizePackageVersion Condition="'$(StabilizePackageVersion)' == ''">false</StabilizePackageVersion>
@@ -34,17 +34,19 @@
   <!-- Set up common target properties that we use to conditionally include sources -->
   <PropertyGroup>
     <TargetsFreeBSD Condition="'$(TargetOS)' == 'FreeBSD'">true</TargetsFreeBSD>
+    <TargetsIllumos Condition="'$(TargetOS)' == 'illumos'">true</TargetsIllumos>
+    <TargetsSolaris Condition="'$(TargetOS)' == 'Solaris'">true</TargetsSolaris>
     <TargetsLinux Condition="'$(TargetOS)' == 'Linux' or '$(TargetOS)' == 'Android'">true</TargetsLinux>
     <TargetsNetBSD Condition="'$(TargetOS)' == 'NetBSD'">true</TargetsNetBSD>
     <TargetsOSX Condition="'$(TargetOS)' == 'OSX'">true</TargetsOSX>
     <TargetsiOS Condition="'$(TargetOS)' == 'iOS'">true</TargetsiOS>
     <TargetstvOS Condition="'$(TargetOS)' == 'tvOS'">true</TargetstvOS>
-    <TargetsiOSSimulator Condition="'$(TargetsiOS)' == 'true' and '$(Platform)' == 'x64'">true</TargetsiOSSimulator>
+    <TargetsiOSSimulator Condition="'$(TargetsiOS)' == 'true' and ('$(Platform)' == 'x64' or '$(Platform)' == 'x86')">true</TargetsiOSSimulator>
     <TargetstvOSSimulator Condition="'$(TargetstvOS)' == 'true' and '$(Platform)' == 'x64'">true</TargetstvOSSimulator>
     <TargetsAndroid Condition="'$(TargetOS)' == 'Android'">true</TargetsAndroid>
     <TargetsBrowser Condition="'$(TargetOS)' == 'Browser'">true</TargetsBrowser>
     <TargetsWindows Condition="'$(TargetOS)' == 'Windows_NT'">true</TargetsWindows>
-    <TargetsUnix Condition="'$(TargetsFreeBSD)' == 'true' or '$(TargetsLinux)' == 'true' or '$(TargetsNetBSD)' == 'true' or '$(TargetsOSX)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetsAndroid)' == 'true' or '$(TargetsBrowser)' == 'true'">true</TargetsUnix>
+    <TargetsUnix Condition="'$(TargetsFreeBSD)' == 'true' or '$(TargetsIllumos)' == 'true' or '$(TargetsSolaris)' == 'true' or '$(TargetsLinux)' == 'true' or '$(TargetsNetBSD)' == 'true' or '$(TargetsOSX)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetsAndroid)' == 'true'">true</TargetsUnix>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -100,5 +102,14 @@
   <PropertyGroup>
     <MonoObjDir>$(ArtifactsObjDir)mono/$(PlatformConfigPathPart)/</MonoObjDir>
     <MonoLLVMDir Condition="('$(MonoEnableLLVM)' == 'true' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'Browser') and '$(MonoLLVMDir)' == ''">$(MonoObjDir)llvm</MonoLLVMDir>
+  </PropertyGroup>
+
+  <!-- Paths for Mobile App Projects  -->
+  <PropertyGroup>
+    <AppleAppBuilderProjDirectory>$([MSBuild]::NormalizeDirectory('$(RepoTasksDir)', 'mobile.tasks', 'AppleAppBuilder'))</AppleAppBuilderProjDirectory>
+    <AppleTestRunnerProjDirectory>$([MSBuild]::NormalizeDirectory('$(LibrariesProjectRoot)', 'Common', tests, 'AppleTestRunner'))</AppleTestRunnerProjDirectory>
+    <AndroidAppBuilderProjDirectory>$([MSBuild]::NormalizeDirectory('$(RepoTasksDir)', 'mobile.tasks', 'AndroidAppBuilder'))</AndroidAppBuilderProjDirectory>
+    <AndroidTestRunnerProjDirectory>$([MSBuild]::NormalizeDirectory('$(LibrariesProjectRoot)', 'Common', tests, 'AndroidTestRunner'))</AndroidTestRunnerProjDirectory>
+    <MonoAOTCompilerProjDirectory>$([MSBuild]::NormalizeDirectory('$(RepoTasksDir)', 'mobile.tasks', 'AotCompilerTask'))</MonoAOTCompilerProjDirectory>
   </PropertyGroup>
 </Project>

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
+
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.ComponentModel
 {
@@ -10,7 +11,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Creates a new TypeDescriptionProviderAttribute object.
         /// </summary>
-        public TypeDescriptionProviderAttribute(string typeName)
+        public TypeDescriptionProviderAttribute([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] string typeName)
         {
             if (typeName == null)
             {
@@ -23,7 +24,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Creates a new TypeDescriptionProviderAttribute object.
         /// </summary>
-        public TypeDescriptionProviderAttribute(Type type)
+        public TypeDescriptionProviderAttribute([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type type)
         {
             if (type == null)
             {
@@ -37,6 +38,7 @@ namespace System.ComponentModel
         /// The TypeName property returns the assembly qualified type name
         /// for the type description provider.
         /// </summary>
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
         public string TypeName { get; }
     }
 }

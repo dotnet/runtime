@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Runtime.InteropServices;
@@ -85,16 +84,6 @@ internal static partial class Interop
             // SSL Policy errors (CERT_CHAIN_POLICY_SSL).
             internal const uint CERT_E_CN_NO_MATCH = 0x800B010F;
             internal const uint CERT_E_ROLE = 0x800B0103;
-        }
-
-        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-        internal struct CERT_CONTEXT
-        {
-            internal uint dwCertEncodingType;
-            internal IntPtr pbCertEncoded;
-            internal uint cbCertEncoded;
-            internal IntPtr pCertInfo;
-            internal IntPtr hCertStore;
         }
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]

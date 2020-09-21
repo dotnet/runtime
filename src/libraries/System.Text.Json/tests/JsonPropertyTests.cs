@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Linq;
@@ -98,7 +97,7 @@ namespace System.Text.Json.Tests
         [InlineData(null)]
         public static void NameEquals_InvalidInstance_Throws(string text)
         {
-            const string ErrorMessage = "Operation is not valid due to the current state of the object.";
+            string ErrorMessage = new InvalidOperationException().Message;
             JsonProperty prop = default;
             AssertExtensions.Throws<InvalidOperationException>(() => prop.NameEquals(text), ErrorMessage);
             AssertExtensions.Throws<InvalidOperationException>(() => prop.NameEquals(text.AsSpan()), ErrorMessage);

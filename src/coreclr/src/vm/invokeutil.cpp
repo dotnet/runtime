@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 
 //
@@ -54,7 +53,7 @@ BOOL InvokeUtil::IsVoidPtr(TypeHandle th)
     if (!th.IsPointer())
         return FALSE;
 
-    return th.AsTypeDesc()->GetTypeParam() == MscorlibBinder::GetElementType(ELEMENT_TYPE_VOID);
+    return th.AsTypeDesc()->GetTypeParam() == CoreLibBinder::GetElementType(ELEMENT_TYPE_VOID);
 }
 
 OBJECTREF InvokeUtil::CreatePointer(TypeHandle th, void * p)
@@ -71,7 +70,7 @@ OBJECTREF InvokeUtil::CreatePointer(TypeHandle th, void * p)
     OBJECTREF refObj = NULL;
     GCPROTECT_BEGIN(refObj);
 
-    refObj = AllocateObject(MscorlibBinder::GetClass(CLASS__POINTER));
+    refObj = AllocateObject(CoreLibBinder::GetClass(CLASS__POINTER));
 
     ((ReflectionPointer *)OBJECTREFToObject(refObj))->_ptr = p;
 
@@ -300,9 +299,9 @@ void InvokeUtil::CopyArg(TypeHandle th, OBJECTREF *pObjUNSAFE, ArgDestination *a
             *(PVOID *)pArgDst = 0;
         }
         else {
-            if (rObj->GetMethodTable() == MscorlibBinder::GetClassIfExist(CLASS__POINTER) && type == ELEMENT_TYPE_PTR)
+            if (rObj->GetMethodTable() == CoreLibBinder::GetClassIfExist(CLASS__POINTER) && type == ELEMENT_TYPE_PTR)
                 *(PVOID *)pArgDst = GetPointerValue(rObj);
-            else if (rObj->GetTypeHandle().AsMethodTable() == MscorlibBinder::GetElementType(ELEMENT_TYPE_I))
+            else if (rObj->GetTypeHandle().AsMethodTable() == CoreLibBinder::GetElementType(ELEMENT_TYPE_I))
             {
                 ARG_SLOT slot;
                 CreatePrimitiveValue(oType, oType, rObj, &slot);
@@ -593,7 +592,7 @@ void InvokeUtil::ValidField(TypeHandle th, OBJECTREF* value)
 
     // handle pointers
     if (type == ELEMENT_TYPE_PTR || type == ELEMENT_TYPE_FNPTR) {
-        if (MscorlibBinder::IsClass((*value)->GetMethodTable(), CLASS__POINTER) && type == ELEMENT_TYPE_PTR) {
+        if (CoreLibBinder::IsClass((*value)->GetMethodTable(), CLASS__POINTER) && type == ELEMENT_TYPE_PTR) {
             TypeHandle srcTH = GetPointerType(*value);
 
             if (!IsVoidPtr(th)) {
@@ -602,7 +601,7 @@ void InvokeUtil::ValidField(TypeHandle th, OBJECTREF* value)
             }
             return;
         }
-        else if (MscorlibBinder::IsClass((*value)->GetMethodTable(), CLASS__INTPTR)) {
+        else if (CoreLibBinder::IsClass((*value)->GetMethodTable(), CLASS__INTPTR)) {
             return;
         }
 
@@ -697,7 +696,7 @@ OBJECTREF InvokeUtil::CreateObjectAfterInvoke(TypeHandle th, void * pValue) {
         {
             LPVOID capturedValue = *(LPVOID*)pValue;
             INDEBUG(pValue = (LPVOID)(size_t)0xcccccccc); // We're about to allocate a GC object - can no longer trust pValue
-            obj = AllocateObject(MscorlibBinder::GetElementType(ELEMENT_TYPE_I));
+            obj = AllocateObject(CoreLibBinder::GetElementType(ELEMENT_TYPE_I));
             *(LPVOID*)(obj->UnBox()) = capturedValue;
         }
         break;
@@ -737,7 +736,7 @@ OBJECTREF InvokeUtil::CreateClassLoadExcept(OBJECTREF* classes, OBJECTREF* excep
     } gc;
     ZeroMemory(&gc, sizeof(gc));
 
-    MethodTable *pVMClassLoadExcept = MscorlibBinder::GetException(kReflectionTypeLoadException);
+    MethodTable *pVMClassLoadExcept = CoreLibBinder::GetException(kReflectionTypeLoadException);
     gc.o = AllocateObject(pVMClassLoadExcept);
     GCPROTECT_BEGIN(gc);
     ARG_SLOT args[4];
@@ -787,7 +786,7 @@ OBJECTREF InvokeUtil::CreateTargetExcept(OBJECTREF* except) {
     OBJECTREF o;
     OBJECTREF oRet = 0;
 
-    MethodTable *pVMTargetExcept = MscorlibBinder::GetException(kTargetInvocationException);
+    MethodTable *pVMTargetExcept = CoreLibBinder::GetException(kTargetInvocationException);
     o = AllocateObject(pVMTargetExcept);
     GCPROTECT_BEGIN(o);
     ARG_SLOT args[2];
@@ -941,11 +940,6 @@ void InvokeUtil::SetValidField(CorElementType fldType,
     }
     CONTRACTL_END;
 
-    // We don't allow setting the field of nullable<T> (hasValue and value)
-    // Because you can't independantly set them for this type.
-    if (!declaringType.IsNull() && Nullable::IsNullableType(declaringType.GetMethodTable()))
-        COMPlusThrow(kNotSupportedException);
-
     // call the <cinit>
     OBJECTREF Throwable = NULL;
 
@@ -954,26 +948,27 @@ void InvokeUtil::SetValidField(CorElementType fldType,
     {
         pDeclMT = declaringType.GetMethodTable();
 
+        // We don't allow setting the field of nullable<T> (hasValue and value)
+        // Because you can't independently set them for this type.
+        if (Nullable::IsNullableType(pDeclMT))
+            COMPlusThrow(kNotSupportedException);
+
         if (pDeclMT->IsSharedByGenericInstantiations())
             COMPlusThrow(kNotSupportedException, W("NotSupported_Type"));
+    }
+    else
+    {
+        pDeclMT = pField->GetModule()->GetGlobalMethodTable();
     }
 
     if (*pDomainInitialized == FALSE)
     {
         EX_TRY
         {
-        if (declaringType.IsNull())
-        {
-            pField->GetModule()->GetGlobalMethodTable()->EnsureInstanceActive();
-            pField->GetModule()->GetGlobalMethodTable()->CheckRunClassInitThrowing();
-        }
-        else
-        {
             pDeclMT->EnsureInstanceActive();
             pDeclMT->CheckRunClassInitThrowing();
 
             *pDomainInitialized = TRUE;
-        }
         }
         EX_CATCH_THROWABLE(&Throwable);
     }
@@ -988,6 +983,18 @@ void InvokeUtil::SetValidField(CorElementType fldType,
         OBJECTREF except = CreateTargetExcept(&Throwable);
         COMPlusThrow(except);
         GCPROTECT_END();
+    }
+
+    // Verify we're not trying to set the value of a static initonly field
+    // once the class has been initialized.
+    if (pField->IsStatic() && pDeclMT->IsClassInited() && IsFdInitOnly(pField->GetAttributes()))
+    {
+        DefineFullyQualifiedNameForClassW();
+        SString ssFieldName(SString::Utf8, pField->GetName());
+        COMPlusThrow(kFieldAccessException,
+            IDS_EE_CANNOT_SET_INITONLY_STATIC_FIELD,
+            ssFieldName.GetUnicode(),
+            GetFullyQualifiedNameForClassW(pDeclMT));
     }
 
     // Set the field
@@ -1048,7 +1055,7 @@ void InvokeUtil::SetValidField(CorElementType fldType,
         break;
 
     case ELEMENT_TYPE_PTR:      // pointers
-        if (*valueObj != 0 && MscorlibBinder::IsClass((*valueObj)->GetMethodTable(), CLASS__POINTER)) {
+        if (*valueObj != 0 && CoreLibBinder::IsClass((*valueObj)->GetMethodTable(), CLASS__POINTER)) {
             valueptr = GetPointerValue(*valueObj);
             if (pField->IsStatic())
                 pField->SetStaticValuePtr(valueptr);
@@ -1162,26 +1169,28 @@ OBJECTREF InvokeUtil::GetFieldValue(FieldDesc* pField, TypeHandle fieldType, OBJ
     {
         pDeclMT = declaringType.GetMethodTable();
 
+        // We don't allow getting the field just so we don't have more specical
+        // cases than we need to.  Then we need at least the throw check to ensure
+        // we don't allow data corruption.
+        if (Nullable::IsNullableType(pDeclMT))
+            COMPlusThrow(kNotSupportedException);
+
         if (pDeclMT->IsSharedByGenericInstantiations())
             COMPlusThrow(kNotSupportedException, W("NotSupported_Type"));
+    }
+    else
+    {
+        pDeclMT = pField->GetModule()->GetGlobalMethodTable();
     }
 
     if (*pDomainInitialized == FALSE)
     {
         EX_TRY
         {
-        if (declaringType.IsNull())
-        {
-            pField->GetModule()->GetGlobalMethodTable()->EnsureInstanceActive();
-            pField->GetModule()->GetGlobalMethodTable()->CheckRunClassInitThrowing();
-        }
-        else
-        {
             pDeclMT->EnsureInstanceActive();
             pDeclMT->CheckRunClassInitThrowing();
 
             *pDomainInitialized = TRUE;
-        }
         }
         EX_CATCH_THROWABLE(&Throwable);
     }
@@ -1198,12 +1207,6 @@ OBJECTREF InvokeUtil::GetFieldValue(FieldDesc* pField, TypeHandle fieldType, OBJ
         COMPlusThrow(except);
         GCPROTECT_END();
     }
-
-    // We don't allow getting the field just so we don't have more specical
-    // cases than we need to.  The we need at least the throw check to insure
-    // we don't allow data corruption, but
-    if (!declaringType.IsNull() && Nullable::IsNullableType(pDeclMT))
-        COMPlusThrow(kNotSupportedException);
 
     CorElementType fieldElementType = pField->GetFieldType();
 
@@ -1288,7 +1291,7 @@ OBJECTREF InvokeUtil::GetFieldValue(FieldDesc* pField, TypeHandle fieldType, OBJ
         else
             value = pField->GetValuePtr(*target);
 
-        MethodTable *pIntPtrMT = MscorlibBinder::GetClass(CLASS__INTPTR);
+        MethodTable *pIntPtrMT = CoreLibBinder::GetClass(CLASS__INTPTR);
         obj = AllocateObject(pIntPtrMT);
         CopyValueClass(obj->UnBox(), &value, pIntPtrMT);
         break;

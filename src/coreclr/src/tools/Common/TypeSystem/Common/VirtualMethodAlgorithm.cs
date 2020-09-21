@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 
@@ -18,7 +17,7 @@ namespace Internal.TypeSystem
     public abstract class VirtualMethodAlgorithm
     {
         /// <summary>
-        /// Resolves interface method '<paramref name="interfaceMethod"/>' to a method on '<paramref name="type"/>'
+        /// Resolves interface method '<paramref name="interfaceMethod"/>' to a method on '<paramref name="currentType"/>'
         /// that implements the the method.
         /// </summary>
         public abstract MethodDesc ResolveInterfaceMethodToVirtualMethodOnType(MethodDesc interfaceMethod, TypeDesc currentType);

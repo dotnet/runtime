@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #pragma once
 
@@ -11,6 +10,7 @@
 #include <stdio.h>
 #include <dirent.h>
 #include <sys/types.h>
+#include <pal_io_common.h>
 
 /**
  * File status returned by Stat or FStat.
@@ -260,20 +260,6 @@ typedef enum
 } SysConfName;
 
 /**
- * Constants passed to and from poll describing what to poll for and what
- * kind of data was received from poll.
- */
-typedef enum
-{
-    PAL_POLLIN = 0x0001,   /* non-urgent readable data available */
-    PAL_POLLPRI = 0x0002,  /* urgent readable data available */
-    PAL_POLLOUT = 0x0004,  /* data can be written without blocked */
-    PAL_POLLERR = 0x0008,  /* an error occurred */
-    PAL_POLLHUP = 0x0010,  /* the file descriptor hung up */
-    PAL_POLLNVAL = 0x0020, /* the requested events were invalid */
-} PollEvents;
-
-/**
  * Constants passed to posix_advise to give hints to the kernel about the type of I/O
  * operations that will occur.
  */
@@ -296,16 +282,6 @@ typedef struct
     int32_t NameLength; // Length (in chars) of the inode name
     int32_t InodeType; // The inode type as described in the NodeType enum
 } DirectoryEntry;
-
-/**
- * Our intermediate pollfd struct to normalize the data types
- */
-typedef struct
-{
-    int32_t FileDescriptor;  // The file descriptor to poll
-    int16_t Events;          // The events to poll for
-    int16_t TriggeredEvents; // The events that triggered the poll
-} PollEvent;
 
 /**
 * Constants passed in the mask argument of INotifyAddWatch which identify inotify events.
@@ -674,11 +650,11 @@ PALEXPORT void SystemNative_Sync(void);
 PALEXPORT int32_t SystemNative_Write(intptr_t fd, const void* buffer, int32_t bufferSize);
 
 /**
- * Copies all data from the source file descriptor/path to the destination file path.
+ * Copies all data from the source file descriptor to the destination file descriptor.
  *
  * Returns 0 on success; otherwise, returns -1 and sets errno.
  */
-PALEXPORT int32_t SystemNative_CopyFile(intptr_t sourceFd, const char* srcPath, const char* destPath, int32_t overwrite);
+PALEXPORT int32_t SystemNative_CopyFile(intptr_t sourceFd, intptr_t destinationFd);
 
 /**
 * Initializes a new inotify instance and returns a file

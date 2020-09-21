@@ -55,36 +55,49 @@ Please use the following command for help.
 
 ### Unsupported and temporarily disabled tests
 
-Unsupported tests outside of Windows have two annotations in their csproj to
-ignore them when run.
+To support building all tests for all targets on single target, we use
+the conditional property
 
 ```xml
-<TestUnsupportedOutsideWindows>true</TestUnsupportedOutsideWindows>
+<CLRTestTargetUnsupported Condition="...">true</CLRTestTargetUnsupported>
 ```
 
-This will write in the bash target to skip the test by returning a passing value if run outside Windows.
+This property disables building of a test in a default build. It also
+disables running a test in the bash/batch wrapper scripts. It allows the
+test to be built on any target in CI when the `allTargets` option is
+passed to the `build-test.*` scripts.
 
-In addition:
+Tests which never should be built or run are marked
+
 ```xml
-<DisableProjectBuild Condition="'$(TargetsUnix)' == 'true'">true</DisableProjectBuild>
+<DisableProjectBuild>true</DisableProjectBuild>
 ```
 
-Is used to disable the build, that way if building on Unix cycles are saved building/running.
+This propoerty should not be conditioned on Target properties to allow
+all tests to be built for `allTargets`.
 
 PAL tests
 ---------
 
 Build CoreCLR with PAL tests on the Unix machine:
 
-```sh
-./src/coreclr/build-runtime.sh -skipgenerateversion -nopgooptimize \
-    -cmakeargs -DCLR_CMAKE_BUILD_TESTS=1
+```sh ./build.sh clr.paltests
 ```
 
 Run tests:
 
+To run all tests including disabled tests
 ```sh
-./src/coreclr/src/pal/tests/palsuite/runpaltests.sh $(pwd)/artifacts/obj/coreclr/$(uname).x64.Debug
+./src/coreclr/src/pal/tests/palsuite/runpaltests.sh $(pwd)/artifacts/bin/coreclr/$(uname).x64.Debug/paltests
+# on macOS, replace $(uname) with OSX
+```
+To only run enabled tests for the platform the tests were built for:
+```sh
+artifacts/bin/coreclr/$(uname).x64.Debug/paltests/runpaltests.sh $(pwd)/artifacts/bin/coreclr/$(uname).x64.Debug/paltests
+# on macOS, replace $(uname) with OSX
 ```
 
 Test results will go into: `/tmp/PalTestOutput/default/pal_tests.xml`
+
+To disable tests in the CI edit
+`src/coreclr/src/pal/tests/palsuite/issues.targets`

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*=============================================================
 **
@@ -21,7 +20,7 @@
 
 #include <palsuite.h>
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(debug_api_WriteProcessMemory_test3_paltest_writeprocessmemory_test3, "debug_api/WriteProcessMemory/test3/paltest_writeprocessmemory_test3")
 {
 
     PROCESS_INFORMATION pi;
@@ -200,6 +199,6 @@ int __cdecl main(int argc, char *argv[])
     PEDANTIC(CloseHandle, (pi.hThread));
     PEDANTIC(CloseHandle, (pi.hProcess));
 
-    PAL_Terminate(dwExitCode);
+    PAL_TerminateEx(dwExitCode);
     return dwExitCode;
 }

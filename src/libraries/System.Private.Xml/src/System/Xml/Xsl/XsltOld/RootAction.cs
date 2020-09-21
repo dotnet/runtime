@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Xml.Xsl.XsltOld
 {
@@ -20,7 +19,7 @@ namespace System.Xml.Xsl.XsltOld
         private readonly XmlQualifiedName _name;
         private readonly int _matchKey;
         private readonly int _useKey;
-        private ArrayList _keyNodes;
+        private ArrayList? _keyNodes;
 
         public Key(XmlQualifiedName name, int matchkey, int usekey)
         {
@@ -43,15 +42,15 @@ namespace System.Xml.Xsl.XsltOld
             _keyNodes.Add(new DocumentKeyList(root, table));
         }
 
-        public Hashtable GetKeys(XPathNavigator root)
+        public Hashtable? GetKeys(XPathNavigator root)
         {
             if (_keyNodes != null)
             {
                 for (int i = 0; i < _keyNodes.Count; i++)
                 {
-                    if (((DocumentKeyList)_keyNodes[i]).RootNav.IsSamePosition(root))
+                    if (((DocumentKeyList)_keyNodes[i]!).RootNav.IsSamePosition(root))
                     {
-                        return ((DocumentKeyList)_keyNodes[i]).KeyTable;
+                        return ((DocumentKeyList)_keyNodes[i]!).KeyTable;
                     }
                 }
             }
@@ -86,9 +85,9 @@ namespace System.Xml.Xsl.XsltOld
 
         private readonly Hashtable _attributeSetTable = new Hashtable();
         private readonly Hashtable _decimalFormatTable = new Hashtable();
-        private List<Key> _keyList;
-        private XsltOutput _output;
-        public Stylesheet builtInSheet;
+        private List<Key>? _keyList;
+        private XsltOutput? _output;
+        public Stylesheet? builtInSheet;
 
         internal XsltOutput Output
         {
@@ -121,7 +120,7 @@ namespace System.Xml.Xsl.XsltOld
 
         internal AttributeSetAction GetAttributeSet(XmlQualifiedName name)
         {
-            AttributeSetAction action = (AttributeSetAction)_attributeSetTable[name];
+            AttributeSetAction? action = (AttributeSetAction?)_attributeSetTable[name];
             if (action == null)
             {
                 throw XsltException.Create(SR.Xslt_NoAttributeSet, name.ToString());
@@ -155,8 +154,8 @@ namespace System.Xml.Xsl.XsltOld
             {
                 foreach (AttributeSetAction srcAttSet in stylesheet.AttributeSetTable.Values)
                 {
-                    ArrayList srcAttList = srcAttSet.containedActions;
-                    AttributeSetAction dstAttSet = (AttributeSetAction)_attributeSetTable[srcAttSet.Name];
+                    ArrayList? srcAttList = srcAttSet.containedActions;
+                    AttributeSetAction? dstAttSet = (AttributeSetAction?)_attributeSetTable[srcAttSet.Name!];
                     if (dstAttSet == null)
                     {
                         dstAttSet = new AttributeSetAction();
@@ -164,9 +163,10 @@ namespace System.Xml.Xsl.XsltOld
                             dstAttSet.name = srcAttSet.Name;
                             dstAttSet.containedActions = new ArrayList();
                         }
-                        _attributeSetTable[srcAttSet.Name] = dstAttSet;
+                        _attributeSetTable[srcAttSet.Name!] = dstAttSet;
                     }
-                    ArrayList dstAttList = dstAttSet.containedActions;
+
+                    ArrayList? dstAttList = dstAttSet.containedActions;
                     // We adding attributes in reverse order for purpuse. In the mirged list most importent attset shoud go last one
                     // so we'll need to invert dstAttList finaly.
                     if (srcAttList != null)
@@ -174,7 +174,7 @@ namespace System.Xml.Xsl.XsltOld
                         for (int src = srcAttList.Count - 1; 0 <= src; src--)
                         {
                             // We can ignore duplicate attibutes here.
-                            dstAttList.Add(srcAttList[src]);
+                            dstAttList!.Add(srcAttList[src]);
                         }
                     }
                 }
@@ -193,7 +193,7 @@ namespace System.Xml.Xsl.XsltOld
 
             foreach (XmlQualifiedName qname in setQNames)
             {
-                object mark = markTable[qname];
+                object? mark = markTable[qname];
                 if (mark == (object)PROCESSING)
                 {
                     throw XsltException.Create(SR.Xslt_CircularAttributeSet, qname.ToString());
@@ -223,7 +223,7 @@ namespace System.Xml.Xsl.XsltOld
             {
                 if (action is UseAttributeSetsAction)
                 {
-                    CheckAttributeSets_RecurceInList(markTable, ((UseAttributeSetsAction)action).UsedSets);
+                    CheckAttributeSets_RecurceInList(markTable, ((UseAttributeSetsAction)action).UsedSets!);
                 }
                 else if (action is ContainerAction)
                 {
@@ -234,7 +234,7 @@ namespace System.Xml.Xsl.XsltOld
 
         internal void AddDecimalFormat(XmlQualifiedName name, DecimalFormat formatinfo)
         {
-            DecimalFormat exist = (DecimalFormat)_decimalFormatTable[name];
+            DecimalFormat? exist = (DecimalFormat?)_decimalFormatTable[name];
             if (exist != null)
             {
                 NumberFormatInfo info = exist.info;
@@ -257,12 +257,12 @@ namespace System.Xml.Xsl.XsltOld
             _decimalFormatTable[name] = formatinfo;
         }
 
-        internal DecimalFormat GetDecimalFormat(XmlQualifiedName name)
+        internal DecimalFormat? GetDecimalFormat(XmlQualifiedName name)
         {
             return _decimalFormatTable[name] as DecimalFormat;
         }
 
-        internal List<Key> KeyList
+        internal List<Key>? KeyList
         {
             get { return _keyList; }
         }
@@ -288,7 +288,7 @@ namespace System.Xml.Xsl.XsltOld
                 case QueryInitialized:
                     Debug.Assert(frame.State == QueryInitialized);
                     frame.NextNode(processor);
-                    Debug.Assert(Processor.IsRoot(frame.Node));
+                    Debug.Assert(Processor.IsRoot(frame.Node!));
                     if (processor.Debugger != null)
                     {
                         // this is like apply-templates, but we don't have it on stack.

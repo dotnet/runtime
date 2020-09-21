@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.ComponentModel;
@@ -156,7 +155,7 @@ namespace Microsoft.NET.HostModel.AppHost
             long bundleHeaderOffset)
         {
             byte[] bundleHeaderPlaceholder = {
-                // 8 bytes represent the bundle header-offset 
+                // 8 bytes represent the bundle header-offset
                 // Zero for non-bundle apphosts (default).
                 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
                 // 32 bytes represent the bundle signature: SHA-256 for ".net core bundle"
@@ -207,7 +206,7 @@ namespace Microsoft.NET.HostModel.AppHost
                             throw new PlaceHolderNotFoundInAppHostException(bundleSignature);
                         }
 
-                        headerOffset = accessor.ReadInt64(position - sizeof(Int64));
+                        headerOffset = accessor.ReadInt64(position - sizeof(long));
                     }
                 }
             }

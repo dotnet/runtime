@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.IO;
@@ -10,6 +9,7 @@ using System.Diagnostics;
 using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml
 {
@@ -120,7 +120,7 @@ namespace System.Xml
             internal string name;
             internal int lineNo;
             internal int linePos;
-            internal UndeclaredNotation next;
+            internal UndeclaredNotation? next;
 
             internal UndeclaredNotation(string name, int lineNo, int linePos)
             {
@@ -135,30 +135,27 @@ namespace System.Xml
         // Fields
         //
         // connector to reader
-        private IDtdParserAdapter _readerAdapter;
-        private IDtdParserAdapterWithValidation _readerAdapterWithValidation;
+        private IDtdParserAdapter _readerAdapter = null!;
+        private IDtdParserAdapterWithValidation? _readerAdapterWithValidation;
 
         // name table
-        private XmlNameTable _nameTable;
+        private XmlNameTable _nameTable = null!;
 
         // final schema info
-        private SchemaInfo _schemaInfo;
-
-        // XmlCharType instance
-        private XmlCharType _xmlCharType = XmlCharType.Instance;
+        private SchemaInfo _schemaInfo = null!;
 
         // system & public id
-        private string _systemId = string.Empty;
-        private string _publicId = string.Empty;
+        private string? _systemId = string.Empty;
+        private string? _publicId = string.Empty;
 
         // flags
         private bool _normalize = true;
-        private bool _validate = false;
+        private bool _validate;
         private bool _supportNamespaces = true;
-        private bool _v1Compat = false;
+        private bool _v1Compat;
 
         // cached character buffer
-        private char[] _chars;
+        private char[] _chars = null!;
         private int _charsUsed;
         private int _curPos;
 
@@ -177,26 +174,26 @@ namespace System.Xml
         private int _colonPos;
 
         // value of the internal subset
-        private StringBuilder _internalSubsetValueSb = null;
+        private StringBuilder? _internalSubsetValueSb;
 
         // entities
-        private int _externalEntitiesDepth = 0;
-        private int _currentEntityId = 0;
+        private int _externalEntitiesDepth;
+        private int _currentEntityId;
 
         // free-floating DTD support
-        private bool _freeFloatingDtd = false;
-        private bool _hasFreeFloatingInternalSubset = false;
+        private bool _freeFloatingDtd;
+        private bool _hasFreeFloatingInternalSubset;
 
         // misc
-        private StringBuilder _stringBuilder;
-        private int _condSectionDepth = 0;
+        private StringBuilder _stringBuilder = null!;
+        private int _condSectionDepth;
         private LineInfo _literalLineInfo = new LineInfo(0, 0);
         private char _literalQuoteChar = '"';
         private string _documentBaseUri = string.Empty;
         private string _externalDtdBaseUri = string.Empty;
 
-        private Dictionary<string, UndeclaredNotation> _undeclaredNotations = null;
-        private int[] _condSectionEntityIds = null;
+        private Dictionary<string, UndeclaredNotation>? _undeclaredNotations;
+        private int[]? _condSectionEntityIds;
 
         private const int CondSectionEntityIdsInitialSize = 2;
 
@@ -241,12 +238,12 @@ namespace System.Xml
 
             _nameTable = readerAdapter.NameTable;
 
-            IDtdParserAdapterWithValidation raWithValidation = readerAdapter as IDtdParserAdapterWithValidation;
+            IDtdParserAdapterWithValidation? raWithValidation = readerAdapter as IDtdParserAdapterWithValidation;
             if (raWithValidation != null)
             {
                 _validate = raWithValidation.DtdValidation;
             }
-            IDtdParserAdapterV1 raV1 = readerAdapter as IDtdParserAdapterV1;
+            IDtdParserAdapterV1? raV1 = readerAdapter as IDtdParserAdapterV1;
             if (raV1 != null)
             {
                 _v1Compat = raV1.V1CompatibilityMode;
@@ -259,7 +256,7 @@ namespace System.Xml
 
             _stringBuilder = new StringBuilder();
 
-            Uri baseUri = readerAdapter.BaseUri;
+            Uri? baseUri = readerAdapter.BaseUri;
             if (baseUri != null)
             {
                 _documentBaseUri = baseUri.ToString();
@@ -268,7 +265,7 @@ namespace System.Xml
             _freeFloatingDtd = false;
         }
 
-        private void InitializeFreeFloatingDtd(string baseUri, string docTypeName, string publicId, string systemId, string internalSubset, IDtdParserAdapter adapter)
+        private void InitializeFreeFloatingDtd(string baseUri, string docTypeName, string? publicId, string? systemId, string? internalSubset, IDtdParserAdapter adapter)
         {
             Initialize(adapter);
 
@@ -294,7 +291,7 @@ namespace System.Xml
             // check system id
             if (systemId != null && systemId.Length > 0)
             {
-                if ((i = _xmlCharType.IsOnlyCharData(systemId)) >= 0)
+                if ((i = XmlCharType.IsOnlyCharData(systemId)) >= 0)
                 {
                     ThrowInvalidChar(_curPos, systemId, i);
                 }
@@ -304,7 +301,7 @@ namespace System.Xml
             // check public id
             if (publicId != null && publicId.Length > 0)
             {
-                if ((i = _xmlCharType.IsPublicId(publicId)) >= 0)
+                if ((i = XmlCharType.IsPublicId(publicId)) >= 0)
                 {
                     ThrowInvalidChar(_curPos, publicId, i);
                 }
@@ -318,7 +315,7 @@ namespace System.Xml
                 _hasFreeFloatingInternalSubset = true;
             }
 
-            Uri baseUriOb = _readerAdapter.BaseUri;
+            Uri? baseUriOb = _readerAdapter.BaseUri;
             if (baseUriOb != null)
             {
                 _documentBaseUri = baseUriOb.ToString();
@@ -339,7 +336,7 @@ namespace System.Xml
             return _schemaInfo;
         }
 
-        IDtdInfo IDtdParser.ParseFreeFloatingDtd(string baseUri, string docTypeName, string publicId, string systemId, string internalSubset, IDtdParserAdapter adapter)
+        IDtdInfo IDtdParser.ParseFreeFloatingDtd(string baseUri, string docTypeName, string? publicId, string? systemId, string? internalSubset, IDtdParserAdapter adapter)
         {
             InitializeFreeFloatingDtd(baseUri, docTypeName, publicId, systemId, internalSubset, adapter);
             Parse(false);
@@ -421,7 +418,7 @@ namespace System.Xml
             {
                 foreach (UndeclaredNotation un in _undeclaredNotations.Values)
                 {
-                    UndeclaredNotation tmpUn = un;
+                    UndeclaredNotation? tmpUn = un;
                     while (tmpUn != null)
                     {
                         SendValidationEvent(XmlSeverityType.Error, new XmlSchemaException(SR.Sch_UndeclaredNotation, un.name, BaseUriStr, (int)un.lineNo, (int)un.linePos));
@@ -509,7 +506,7 @@ namespace System.Xml
                 return;
             }
 
-            Uri baseUri = _readerAdapter.BaseUri;
+            Uri? baseUri = _readerAdapter.BaseUri;
             if (baseUri != null)
             {
                 _externalDtdBaseUri = baseUri.ToString();
@@ -572,7 +569,7 @@ namespace System.Xml
                         if (_condSectionDepth > 0)
                         {
                             _condSectionDepth--;
-                            if (_validate && _currentEntityId != _condSectionEntityIds[_condSectionDepth])
+                            if (_validate && _currentEntityId != _condSectionEntityIds![_condSectionDepth])
                             {
                                 SendValidationEvent(_curPos, XmlSeverityType.Error, SR.Sch_ParEntityRefNesting, string.Empty);
                             }
@@ -656,7 +653,7 @@ namespace System.Xml
 
             // element name
             XmlQualifiedName elementName = GetNameQualified(true);
-            SchemaElementDecl elementDecl;
+            SchemaElementDecl? elementDecl;
             if (!_schemaInfo.ElementDecls.TryGetValue(elementName, out elementDecl))
             {
                 if (!_schemaInfo.UndeclaredElementDecls.TryGetValue(elementName, out elementDecl))
@@ -666,7 +663,7 @@ namespace System.Xml
                 }
             }
 
-            SchemaAttDef attrDef = null;
+            SchemaAttDef? attrDef = null;
             while (true)
             {
                 switch (GetToken(false))
@@ -694,7 +691,7 @@ namespace System.Xml
                                 }
                                 if (_validate)
                                 {
-                                    attrDef.CheckXmlSpace(_readerAdapterWithValidation.ValidationEventHandling);
+                                    attrDef.CheckXmlSpace(_readerAdapterWithValidation!.ValidationEventHandling!);
                                 }
                             }
                         }
@@ -734,7 +731,7 @@ namespace System.Xml
                             }
                             if (_validate)
                             {
-                                attrDef.CheckXmlSpace(_readerAdapterWithValidation.ValidationEventHandling);
+                                attrDef.CheckXmlSpace(_readerAdapterWithValidation!.ValidationEventHandling!);
                             }
                         }
                     }
@@ -776,7 +773,7 @@ namespace System.Xml
                     case Token.ID:
                         if (_validate && elementDecl.IsIdDeclared)
                         {
-                            SchemaAttDef idAttrDef = elementDecl.GetAttDef(attrDef.Name);
+                            SchemaAttDef? idAttrDef = elementDecl.GetAttDef(attrDef.Name);
                             if ((idAttrDef == null || idAttrDef.Datatype.TokenizedType != XmlTokenizedType.ID) && !ignoreErrors)
                             {
                                 SendValidationEvent(XmlSeverityType.Error, SR.Sch_IdAttrDeclared, elementDecl.Name.ToString());
@@ -940,7 +937,7 @@ namespace System.Xml
             }
 
             // get schema decl for element
-            SchemaElementDecl elementDecl = null;
+            SchemaElementDecl? elementDecl = null;
             XmlQualifiedName name = GetNameQualified(true);
 
             if (_schemaInfo.ElementDecls.TryGetValue(name, out elementDecl))
@@ -990,7 +987,7 @@ namespace System.Xml
                             }
                         case Token.None:
                             {
-                                ParticleContentValidator pcv = null;
+                                ParticleContentValidator? pcv = null;
                                 pcv = new ParticleContentValidator(XmlSchemaContentType.ElementOnly);
                                 pcv.Start();
                                 pcv.OpenGroup();
@@ -1213,7 +1210,7 @@ namespace System.Xml
         private void ParseEntityDecl()
         {
             bool isParamEntity = false;
-            SchemaEntity entity = null;
+            SchemaEntity? entity = null;
 
             // get entity name and type
             switch (GetToken(true))
@@ -1259,8 +1256,8 @@ namespace System.Xml
             {
                 case Token.PUBLIC:
                 case Token.SYSTEM:
-                    string systemId;
-                    string publicId;
+                    string? systemId;
+                    string? publicId;
 
                     ParseExternalId(token, Token.EntityDecl, out publicId, out systemId);
 
@@ -1320,7 +1317,7 @@ namespace System.Xml
             }
 
             XmlQualifiedName notationName = GetNameQualified(false);
-            SchemaNotation notation = null;
+            SchemaNotation? notation = null;
             if (!_schemaInfo.Notations.ContainsKey(notationName.Name))
             {
                 if (_undeclaredNotations != null)
@@ -1343,7 +1340,7 @@ namespace System.Xml
             Token token = GetToken(true);
             if (token == Token.SYSTEM || token == Token.PUBLIC)
             {
-                string notationPublicId, notationSystemId;
+                string? notationPublicId, notationSystemId;
 
                 ParseExternalId(token, Token.NOTATION, out notationPublicId, out notationSystemId);
 
@@ -1369,7 +1366,7 @@ namespace System.Xml
                 _undeclaredNotations = new Dictionary<string, UndeclaredNotation>();
             }
             UndeclaredNotation un = new UndeclaredNotation(notationName, LineNo, LinePos - notationName.Length);
-            UndeclaredNotation loggedUn;
+            UndeclaredNotation? loggedUn;
             if (_undeclaredNotations.TryGetValue(notationName, out loggedUn))
             {
                 un.next = loggedUn.next;
@@ -1389,7 +1386,7 @@ namespace System.Xml
                 if (SaveInternalSubsetValue)
                 {
                     _readerAdapter.ParseComment(_internalSubsetValueSb);
-                    _internalSubsetValueSb.Append("-->");
+                    _internalSubsetValueSb!.Append("-->");
                 }
                 else
                 {
@@ -1416,7 +1413,7 @@ namespace System.Xml
             if (SaveInternalSubsetValue)
             {
                 _readerAdapter.ParsePI(_internalSubsetValueSb);
-                _internalSubsetValueSb.Append("?>");
+                _internalSubsetValueSb!.Append("?>");
             }
             else
             {
@@ -1481,7 +1478,7 @@ namespace System.Xml
             }
         }
 
-        private void ParseExternalId(Token idTokenType, Token declType, out string publicId, out string systemId)
+        private void ParseExternalId(Token idTokenType, Token declType, out string? publicId, out string? systemId)
         {
             LineInfo keywordLineInfo = new LineInfo(LineNo, LinePos - 6);
             publicId = null;
@@ -1514,7 +1511,7 @@ namespace System.Xml
 
                 // verify if it contains chars valid for public ids
                 int i;
-                if ((i = _xmlCharType.IsPublicId(publicId)) >= 0)
+                if ((i = XmlCharType.IsPublicId(publicId)) >= 0)
                 {
                     ThrowInvalidChar(_curPos - 1 - publicId.Length + i, publicId, i);
                 }
@@ -1613,7 +1610,7 @@ namespace System.Xml
                         {
                             goto ReadData;
                         }
-                        if (!_xmlCharType.IsWhiteSpace(_chars[_curPos + 1]))
+                        if (!XmlCharType.IsWhiteSpace(_chars[_curPos + 1]))
                         {
                             if (IgnoreEntityReferences)
                             {
@@ -2424,7 +2421,7 @@ namespace System.Xml
 
             while (true)
             {
-                while (_xmlCharType.IsAttributeValueChar(_chars[_curPos]) && _chars[_curPos] != '%')
+                while (XmlCharType.IsAttributeValueChar(_chars[_curPos]) && _chars[_curPos] != '%')
                 {
                     _curPos++;
                 }
@@ -2823,11 +2820,7 @@ namespace System.Xml
                         }
                         if (_chars[_curPos + 1] != 'C' || _chars[_curPos + 2] != 'L' ||
                              _chars[_curPos + 3] != 'U' || _chars[_curPos + 4] != 'D' ||
-                             _chars[_curPos + 5] != 'E' || _xmlCharType.IsNameSingleChar(_chars[_curPos + 6])
-#if XML10_FIFTH_EDITION
-                             || xmlCharType.IsNCNameHighSurrogateChar( chars[curPos+6] )
-#endif
-                            )
+                             _chars[_curPos + 5] != 'E' || XmlCharType.IsNameSingleChar(_chars[_curPos + 6]))
                         {
                             goto default;
                         }
@@ -2838,11 +2831,7 @@ namespace System.Xml
                     case 'G':
                         if (_chars[_curPos + 1] != 'N' || _chars[_curPos + 2] != 'O' ||
                              _chars[_curPos + 3] != 'R' || _chars[_curPos + 4] != 'E' ||
-                             _xmlCharType.IsNameSingleChar(_chars[_curPos + 5])
-#if XML10_FIFTH_EDITION
-                            ||xmlCharType.IsNCNameHighSurrogateChar( chars[curPos+5] )
-#endif
-                            )
+                             XmlCharType.IsNameSingleChar(_chars[_curPos + 5]))
                         {
                             goto default;
                         }
@@ -2880,7 +2869,7 @@ namespace System.Xml
             // skip ignored part
             while (true)
             {
-                while (_xmlCharType.IsTextChar(_chars[_curPos]) && _chars[_curPos] != ']')
+                while (XmlCharType.IsTextChar(_chars[_curPos]) && _chars[_curPos] != ']')
                 {
                     _curPos++;
                 }
@@ -3007,15 +2996,10 @@ namespace System.Xml
 
             while (true)
             {
-                if (_xmlCharType.IsStartNCNameSingleChar(_chars[_curPos]) || _chars[_curPos] == ':')
+                if (XmlCharType.IsStartNCNameSingleChar(_chars[_curPos]) || _chars[_curPos] == ':')
                 {
                     _curPos++;
                 }
-#if XML10_FIFTH_EDITION
-                else if ( curPos + 1 < charsUsed && xmlCharType.IsNCNameSurrogateChar(chars[curPos+1], chars[curPos])) {
-                    curPos += 2;
-                }
-#endif
                 else
                 {
                     if (_curPos + 1 >= _charsUsed)
@@ -3036,15 +3020,10 @@ namespace System.Xml
 
                 while (true)
                 {
-                    if (_xmlCharType.IsNCNameSingleChar(_chars[_curPos]))
+                    if (XmlCharType.IsNCNameSingleChar(_chars[_curPos]))
                     {
                         _curPos++;
                     }
-#if XML10_FIFTH_EDITION
-                    else if ( curPos + 1 < charsUsed && xmlCharType.IsNameSurrogateChar(chars[curPos + 1], chars[curPos]) ) {
-                        curPos += 2;
-                    }
-#endif
                     else
                     {
                         break;
@@ -3070,11 +3049,7 @@ namespace System.Xml
                     }
                 }
                 // end of buffer
-                else if (_curPos == _charsUsed
-#if XML10_FIFTH_EDITION
-                    || ( curPos + 1 == charsUsed && xmlCharType.IsNCNameHighSurrogateChar( chars[curPos] ) )
-#endif
-                    )
+                else if (_curPos == _charsUsed)
                 {
                     if (ReadDataInName())
                     {
@@ -3109,26 +3084,17 @@ namespace System.Xml
             {
                 while (true)
                 {
-                    if (_xmlCharType.IsNCNameSingleChar(_chars[_curPos]) || _chars[_curPos] == ':')
+                    if (XmlCharType.IsNCNameSingleChar(_chars[_curPos]) || _chars[_curPos] == ':')
                     {
                         _curPos++;
                     }
-#if XML10_FIFTH_EDITION
-                    else if (curPos + 1 < charsUsed && xmlCharType.IsNCNameSurrogateChar(chars[curPos + 1], chars[curPos])) {
-                        curPos += 2;
-                    }
-#endif
                     else
                     {
                         break;
                     }
                 }
 
-                if (_curPos < _charsUsed
-#if XML10_FIFTH_EDITION
-                    && ( !xmlCharType.IsNCNameHighSurrogateChar( chars[curPos] ) || curPos + 1 < charsUsed )
-#endif
-                    )
+                if (_curPos < _charsUsed)
                 {
                     if (_curPos - _tokenStartPos == 0)
                     {
@@ -3309,7 +3275,7 @@ namespace System.Xml
                 Throw(_curPos - entityName.Name.Length - 1, SR.Xml_InvalidParEntityRef);
             }
 
-            SchemaEntity entity = VerifyEntityReference(entityName, paramEntity, true, inAttribute);
+            SchemaEntity? entity = VerifyEntityReference(entityName, paramEntity, true, inAttribute);
             if (entity == null)
             {
                 return false;
@@ -3330,7 +3296,7 @@ namespace System.Xml
             }
             else
             {
-                if (entity.Text.Length == 0)
+                if (entity.Text!.Length == 0)
                 {
                     return false;
                 }
@@ -3356,7 +3322,7 @@ namespace System.Xml
         {
             SaveParsingBuffer();
 
-            IDtdEntityInfo oldEntity;
+            IDtdEntityInfo? oldEntity;
             if (!_readerAdapter.PopEntity(out oldEntity, out _currentEntityId))
             {
                 return false;
@@ -3389,11 +3355,11 @@ namespace System.Xml
             return true;
         }
 
-        private SchemaEntity VerifyEntityReference(XmlQualifiedName entityName, bool paramEntity, bool mustBeDeclared, bool inAttribute)
+        private SchemaEntity? VerifyEntityReference(XmlQualifiedName entityName, bool paramEntity, bool mustBeDeclared, bool inAttribute)
         {
             Debug.Assert(_chars[_curPos - 1] == ';');
 
-            SchemaEntity entity;
+            SchemaEntity? entity;
             if (paramEntity)
             {
                 _schemaInfo.ParameterEntities.TryGetValue(entityName, out entity);
@@ -3445,13 +3411,13 @@ namespace System.Xml
         //
         // Helper methods and properties
         //
-        private void SendValidationEvent(int pos, XmlSeverityType severity, string code, string arg)
+        private void SendValidationEvent(int pos, XmlSeverityType severity, string code, string? arg)
         {
             Debug.Assert(_validate);
             SendValidationEvent(severity, new XmlSchemaException(code, arg, BaseUriStr, (int)LineNo, (int)LinePos + (pos - _curPos)));
         }
 
-        private void SendValidationEvent(XmlSeverityType severity, string code, string arg)
+        private void SendValidationEvent(XmlSeverityType severity, string code, string? arg)
         {
             Debug.Assert(_validate);
             SendValidationEvent(severity, new XmlSchemaException(code, arg, BaseUriStr, (int)LineNo, (int)LinePos));
@@ -3460,7 +3426,7 @@ namespace System.Xml
         private void SendValidationEvent(XmlSeverityType severity, XmlSchemaException e)
         {
             Debug.Assert(_validate);
-            IValidationEventHandling eventHandling = _readerAdapterWithValidation.ValidationEventHandling;
+            IValidationEventHandling? eventHandling = _readerAdapterWithValidation!.ValidationEventHandling;
             if (eventHandling != null)
             {
                 eventHandling.SendEvent(e, severity);
@@ -3492,7 +3458,7 @@ namespace System.Xml
         {
             get
             {
-                Uri tmp = _readerAdapter.BaseUri;
+                Uri? tmp = _readerAdapter.BaseUri;
                 return (tmp != null) ? tmp.ToString() : string.Empty;
             }
         }
@@ -3508,22 +3474,26 @@ namespace System.Xml
             Throw(curPos, res, string.Empty);
         }
 
+        [DoesNotReturn]
         private void Throw(int curPos, string res, string arg)
         {
             _curPos = curPos;
-            Uri baseUri = _readerAdapter.BaseUri;
+            Uri? baseUri = _readerAdapter.BaseUri;
             _readerAdapter.Throw(new XmlException(res, arg, (int)LineNo, (int)LinePos, baseUri == null ? null : baseUri.ToString()));
         }
+
+        [DoesNotReturn]
         private void Throw(int curPos, string res, string[] args)
         {
             _curPos = curPos;
-            Uri baseUri = _readerAdapter.BaseUri;
+            Uri? baseUri = _readerAdapter.BaseUri;
             _readerAdapter.Throw(new XmlException(res, args, (int)LineNo, (int)LinePos, baseUri == null ? null : baseUri.ToString()));
         }
 
+        [DoesNotReturn]
         private void Throw(string res, string arg, int lineNo, int linePos)
         {
-            Uri baseUri = _readerAdapter.BaseUri;
+            Uri? baseUri = _readerAdapter.BaseUri;
             _readerAdapter.Throw(new XmlException(res, arg, (int)lineNo, (int)linePos, baseUri == null ? null : baseUri.ToString()));
         }
 
@@ -3542,7 +3512,7 @@ namespace System.Xml
             ThrowUnexpectedToken(pos, expectedToken, null);
         }
 
-        private void ThrowUnexpectedToken(int pos, string expectedToken1, string expectedToken2)
+        private void ThrowUnexpectedToken(int pos, string expectedToken1, string? expectedToken2)
         {
             string unexpectedToken = ParseUnexpectedToken(pos);
             if (expectedToken2 != null)
@@ -3557,25 +3527,15 @@ namespace System.Xml
 
         private string ParseUnexpectedToken(int startPos)
         {
-            if (_xmlCharType.IsNCNameSingleChar(_chars[startPos])
-#if XML10_FIFTH_EDITION
-                || xmlCharType.IsNCNameHighSurrogateChar( chars[startPos] )
-#endif
-                )
+            if (XmlCharType.IsNCNameSingleChar(_chars[startPos]))
             { // postpone the proper surrogate checking to the loop below
                 int endPos = startPos;
                 while (true)
                 {
-                    if (_xmlCharType.IsNCNameSingleChar(_chars[endPos]))
+                    if (XmlCharType.IsNCNameSingleChar(_chars[endPos]))
                     {
                         endPos++;
                     }
-#if XML10_FIFTH_EDITION
-                    else if ( chars[endPos] != 0 && // check for end of the buffer
-                              xmlCharType.IsNCNameSurrogateChar( chars[endPos], chars[endPos + 1] ) ) {
-                        endPos += 2;
-                    }
-#endif
                     else
                     {
                         break;
@@ -3604,7 +3564,7 @@ namespace System.Xml
             }
 
             int startPos = 0;
-            StringBuilder norValue = null;
+            StringBuilder? norValue = null;
 
             while (value[startPos] == 0x20)
             {

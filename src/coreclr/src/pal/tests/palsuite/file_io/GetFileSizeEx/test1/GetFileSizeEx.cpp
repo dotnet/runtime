@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*=====================================================================
 **
@@ -13,9 +12,9 @@
 
 #include <palsuite.h>
 
-const char* szTextFile = "text.txt";
 
-void CleanUp(HANDLE hFile)
+
+void CleanUp_GetFileSizeEx_test1(HANDLE hFile)
 {
     if (CloseHandle(hFile) != TRUE)
     {
@@ -31,7 +30,7 @@ void CleanUp(HANDLE hFile)
     }
 }
 
-void CheckFileSize(HANDLE hFile, DWORD dwOffset, DWORD dwHighOrder)
+void CheckFileSize_GetFileSizeEx_test1(HANDLE hFile, DWORD dwOffset, DWORD dwHighOrder)
 {
     DWORD dwRc = 0;
     DWORD dwError = 0;
@@ -42,7 +41,7 @@ void CheckFileSize(HANDLE hFile, DWORD dwOffset, DWORD dwHighOrder)
     {
         Trace("GetFileSizeEx: ERROR -> Call to SetFilePointer failed with %ld.\n", 
             GetLastError());
-        CleanUp(hFile);
+        CleanUp_GetFileSizeEx_test1(hFile);
         Fail("");
     }
     else
@@ -50,7 +49,7 @@ void CheckFileSize(HANDLE hFile, DWORD dwOffset, DWORD dwHighOrder)
         if (!SetEndOfFile(hFile))
         {
             dwError = GetLastError();
-            CleanUp(hFile);
+            CleanUp_GetFileSizeEx_test1(hFile);
             if (dwError == 112)
             {
                 Fail("GetFileSizeEx: ERROR -> SetEndOfFile failed due to lack of "
@@ -68,14 +67,14 @@ void CheckFileSize(HANDLE hFile, DWORD dwOffset, DWORD dwHighOrder)
             if ((qwFileSize.u.LowPart != dwOffset) || 
                 (qwFileSize.u.HighPart != dwHighOrder))
             {
-                CleanUp(hFile);
+                CleanUp_GetFileSizeEx_test1(hFile);
                 Fail("GetFileSizeEx: ERROR -> File sizes do not match up.\n");
             }
         }
     }
 }
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(file_io_GetFileSizeEx_test1_paltest_getfilesizeex_test1, "file_io/GetFileSizeEx/test1/paltest_getfilesizeex_test1")
 {
     HANDLE hFile = NULL;
     BOOL bRc = FALSE;
@@ -127,14 +126,14 @@ int __cdecl main(int argc, char *argv[])
     }
 
     /* give the file a size */
-    CheckFileSize(hFile, 256, 0);
+    CheckFileSize_GetFileSizeEx_test1(hFile, 256, 0);
 
     /* make the file large using the high order option */
-    CheckFileSize(hFile, 256, 1);
+    CheckFileSize_GetFileSizeEx_test1(hFile, 256, 1);
 
 
     /* set the file size to zero */
-    CheckFileSize(hFile, 0, 0);
+    CheckFileSize_GetFileSizeEx_test1(hFile, 0, 0);
 
     /*  test if file size changes by writing to it. */
     /* get file size */
@@ -145,7 +144,7 @@ int __cdecl main(int argc, char *argv[])
     {
         Trace("GetFileSizeEx: ERROR -> Call to WriteFile failed with %ld.\n", 
              GetLastError());
-        CleanUp(hFile);
+        CleanUp_GetFileSizeEx_test1(hFile);
         Fail("");
     }
     
@@ -154,7 +153,7 @@ int __cdecl main(int argc, char *argv[])
     {
         Trace("GetFileSizeEx: ERROR -> Call to FlushFileBuffers failed with %ld.\n", 
              GetLastError());
-        CleanUp(hFile);
+        CleanUp_GetFileSizeEx_test1(hFile);
         Fail("");
     }
 
@@ -162,12 +161,12 @@ int __cdecl main(int argc, char *argv[])
     GetFileSizeEx(hFile, &qwFileSize2);
     if((qwFileSize2.QuadPart-qwFileSize.QuadPart) !=strlen(data))
     {
-        CleanUp(hFile);
+        CleanUp_GetFileSizeEx_test1(hFile);
         Fail("GetFileSizeEx: ERROR -> File size did not increase properly after.\n"
              "writing %d chars\n", strlen(data));        
     }
 
-    CleanUp(hFile);
+    CleanUp_GetFileSizeEx_test1(hFile);
     PAL_Terminate();
     return PASS;
 }

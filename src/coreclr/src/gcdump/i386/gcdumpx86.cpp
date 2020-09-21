@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 /*****************************************************************************
  *                               GCDumpX86.cpp
  */
@@ -62,10 +61,10 @@ const char *        CalleeSavedRegName(unsigned reg)
 
 /*****************************************************************************/
 
-unsigned            GCDump::DumpInfoHdr (PTR_CBYTE      gcInfoBlock,
-                                         InfoHdr*       header,
-                                         unsigned *     methodSize,
-                                         bool           verifyGCTables)
+size_t            GCDump::DumpInfoHdr (PTR_CBYTE      gcInfoBlock,
+                                       InfoHdr*       header,
+                                       unsigned *     methodSize,
+                                       bool           verifyGCTables)
 {
     unsigned        count;
     PTR_CBYTE       table       = gcInfoBlock;
@@ -186,11 +185,11 @@ unsigned            GCDump::DumpInfoHdr (PTR_CBYTE      gcInfoBlock,
     }
 
     {
-        unsigned cur  = 0;
-        unsigned last = table-bp;
+        size_t cur  = 0;
+        size_t last = table-bp;
         while (cur < last)
         {
-            unsigned amount = last - cur;
+            size_t amount = last - cur;
             if (amount>5)
                 amount = 5;
 

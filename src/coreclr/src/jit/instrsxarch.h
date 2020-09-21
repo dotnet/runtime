@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 //
 //  This file was previously known as instrs.h
@@ -86,6 +85,9 @@ INST4(lea,              "lea",              IUM_WR, BAD_CODE,     BAD_CODE,     
 // Note that emitter has only partial support for BT. It can only emit the reg,reg form
 // and the registers need to be reversed to get the correct encoding.
 INST3(bt,               "bt",               IUM_RD, 0x0F00A3,     BAD_CODE,     0x0F00A3,                                INS_FLAGS_WritesFlags)
+
+INST3(bsf,              "bsf",              IUM_WR, BAD_CODE,     BAD_CODE,     0x0F00BC,                                INS_FLAGS_WritesFlags)
+INST3(bsr,              "bsr",              IUM_WR, BAD_CODE,     BAD_CODE,     0x0F00BD,                                INS_FLAGS_WritesFlags)
 
 INST3(movsx,            "movsx",            IUM_WR, BAD_CODE,     BAD_CODE,     0x0F00BE,                                INS_FLAGS_None)
 #ifdef TARGET_AMD64

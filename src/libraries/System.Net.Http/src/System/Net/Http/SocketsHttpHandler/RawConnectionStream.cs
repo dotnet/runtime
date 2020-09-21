@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 using System.Runtime.ExceptionServices;
@@ -15,7 +14,7 @@ namespace System.Net.Http
         {
             public RawConnectionStream(HttpConnection connection) : base(connection)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this);
             }
 
             public sealed override bool CanRead => true;
@@ -104,7 +103,7 @@ namespace System.Net.Http
                     return Task.CompletedTask;
                 }
 
-                Task copyTask = connection.CopyToUntilEofAsync(destination, bufferSize, cancellationToken);
+                Task copyTask = connection.CopyToUntilEofAsync(destination, async: true, bufferSize, cancellationToken);
                 if (copyTask.IsCompletedSuccessfully)
                 {
                     Finish(connection);
@@ -146,12 +145,6 @@ namespace System.Net.Http
                 _connection = null;
             }
 
-            public override void Write(byte[] buffer, int offset, int count)
-            {
-                ValidateBufferArgs(buffer, offset, count);
-                Write(buffer.AsSpan(offset, count));
-            }
-
             public override void Write(ReadOnlySpan<byte> buffer)
             {
                 HttpConnection? connection = _connection;
@@ -170,13 +163,13 @@ namespace System.Net.Http
             {
                 if (cancellationToken.IsCancellationRequested)
                 {
-                    return new ValueTask(Task.FromCanceled(cancellationToken));
+                    return ValueTask.FromCanceled(cancellationToken);
                 }
 
                 HttpConnection? connection = _connection;
                 if (connection == null)
                 {
-                    return new ValueTask(Task.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new IOException(SR.ObjectDisposed_StreamClosed))));
+                    return ValueTask.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new IOException(SR.ObjectDisposed_StreamClosed)));
                 }
 
                 if (buffer.Length == 0)
@@ -184,7 +177,7 @@ namespace System.Net.Http
                     return default;
                 }
 
-                ValueTask writeTask = connection.WriteWithoutBufferingAsync(buffer);
+                ValueTask writeTask = connection.WriteWithoutBufferingAsync(buffer, async: true);
                 return writeTask.IsCompleted ?
                     writeTask :
                     new ValueTask(WaitWithConnectionCancellationAsync(writeTask, connection, cancellationToken));
@@ -205,7 +198,7 @@ namespace System.Net.Http
                     return Task.CompletedTask;
                 }
 
-                ValueTask flushTask = connection.FlushAsync();
+                ValueTask flushTask = connection.FlushAsync(async: true);
                 return flushTask.IsCompleted ?
                     flushTask.AsTask() :
                     WaitWithConnectionCancellationAsync(flushTask, connection, cancellationToken);

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================
 **
@@ -15,7 +14,8 @@
 
 #define MEMORY_AMOUNT 16
 
-int __cdecl main(int argc, char *argv[]) {
+PALTEST(miscellaneous_IsBadWritePtr_test1_paltest_isbadwriteptr_test1, "miscellaneous/IsBadWritePtr/test1/paltest_isbadwriteptr_test1")
+{
     
     void * TestingPointer = NULL;
     BOOL ResultValue = 0;

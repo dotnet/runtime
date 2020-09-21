@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Reflection;
 using System.Reflection.Emit;
@@ -141,6 +140,7 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
+        [SkipOnMono("Marshal.ReadByte will not be implemented in Mono, see https://github.com/mono/mono/issues/15085.")]
         public void ReadInt64_ZeroPointer_ThrowsException()
         {
             AssertExtensions.ThrowsAny<AccessViolationException, NullReferenceException>(() => Marshal.ReadInt64(IntPtr.Zero));
@@ -168,6 +168,7 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
+        [SkipOnMono("Marshal.ReadByte will not be implemented in Mono, see https://github.com/mono/mono/issues/15085.")]
         public void WriteInt64_ZeroPointer_ThrowsException()
         {
             AssertExtensions.ThrowsAny<AccessViolationException, NullReferenceException>(() => Marshal.WriteInt64(IntPtr.Zero, 0));

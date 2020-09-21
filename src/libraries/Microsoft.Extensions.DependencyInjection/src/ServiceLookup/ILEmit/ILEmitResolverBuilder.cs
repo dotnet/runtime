@@ -1,11 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -67,7 +65,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             // Optimize singleton case
             if (callSite.Cache.Location == CallSiteResultCacheLocation.Root)
             {
-                var value = _runtimeResolver.Resolve(callSite, _rootScope);
+                object value = _runtimeResolver.Resolve(callSite, _rootScope);
                 return scope => value;
             }
 
@@ -100,9 +98,9 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 owner: GetType(),
                 skipVisibility: true);
 
-            var info = ILEmitCallSiteAnalyzer.Instance.CollectGenerationInfo(callSite);
-            var ilGenerator = dynamicMethod.GetILGenerator(info.Size);
-            var runtimeContext = GenerateMethodBody(callSite, ilGenerator);
+            ILEmitCallSiteAnalysisResult info = ILEmitCallSiteAnalyzer.Instance.CollectGenerationInfo(callSite);
+            ILGenerator ilGenerator = dynamicMethod.GetILGenerator(info.Size);
+            ILEmitResolverBuilderRuntimeContext runtimeContext = GenerateMethodBody(callSite, ilGenerator);
 
 #if SAVE_ASSEMBLIES
             var assemblyName = "Test" + DateTime.Now.Ticks;
@@ -149,10 +147,15 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         protected override object VisitConstructor(ConstructorCallSite constructorCallSite, ILEmitResolverBuilderContext argument)
         {
             // new T([create arguments])
-            foreach (var parameterCallSite in constructorCallSite.ParameterCallSites)
+            foreach (ServiceCallSite parameterCallSite in constructorCallSite.ParameterCallSites)
             {
                 VisitCallSite(parameterCallSite, argument);
+                if (parameterCallSite.ServiceType.IsValueType)
+                {
+                    argument.Generator.Emit(OpCodes.Unbox_Any, parameterCallSite.ServiceType);
+                }
             }
+
             argument.Generator.Emit(OpCodes.Newobj, constructorCallSite.ConstructorInfo);
             return null;
         }
@@ -165,7 +168,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         protected override object VisitScopeCache(ServiceCallSite scopedCallSite, ILEmitResolverBuilderContext argument)
         {
-            var generatedMethod = BuildType(scopedCallSite);
+            GeneratedMethod generatedMethod = BuildType(scopedCallSite);
 
             // Type builder doesn't support invoking dynamic methods, replace them with delegate.Invoke calls
 #if SAVE_ASSEMBLIES
@@ -186,12 +189,6 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         protected override object VisitConstant(ConstantCallSite constantCallSite, ILEmitResolverBuilderContext argument)
         {
             AddConstant(argument, constantCallSite.DefaultValue);
-
-            if (constantCallSite.ServiceType.IsValueType)
-            {
-                argument.Generator.Emit(OpCodes.Unbox_Any, constantCallSite.ServiceType);
-            }
-
             return null;
         }
 
@@ -214,11 +211,10 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         {
             if (enumerableCallSite.ServiceCallSites.Length == 0)
             {
-                argument.Generator.Emit(OpCodes.Call, ExpressionResolverBuilder.ArrayEmptyMethodInfo.MakeGenericMethod(enumerableCallSite.ItemType));
+                argument.Generator.Emit(OpCodes.Call, ExpressionResolverBuilder.GetArrayEmptyMethodInfo(enumerableCallSite.ItemType));
             }
             else
             {
-
                 // var array = new ItemType[];
                 // array[0] = [Create argument0];
                 // array[1] = [Create argument1];
@@ -232,7 +228,13 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                     // push index
                     argument.Generator.Emit(OpCodes.Ldc_I4, i);
                     // create parameter
-                    VisitCallSite(enumerableCallSite.ServiceCallSites[i], argument);
+                    ServiceCallSite parameterCallSite = enumerableCallSite.ServiceCallSites[i];
+                    VisitCallSite(parameterCallSite, argument);
+                    if (parameterCallSite.ServiceType.IsValueType)
+                    {
+                        argument.Generator.Emit(OpCodes.Unbox_Any, parameterCallSite.ServiceType);
+                    }
+
                     // store
                     argument.Generator.Emit(OpCodes.Stelem, enumerableCallSite.ItemType);
                 }
@@ -316,13 +318,13 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
             if (callSite.Cache.Location == CallSiteResultCacheLocation.Scope)
             {
-                var cacheKeyLocal = context.Generator.DeclareLocal(typeof(ServiceCacheKey));
-                var resolvedServicesLocal = context.Generator.DeclareLocal(typeof(IDictionary<ServiceCacheKey, object>));
-                var lockTakenLocal = context.Generator.DeclareLocal(typeof(bool));
-                var resultLocal = context.Generator.DeclareLocal(typeof(object));
+                LocalBuilder cacheKeyLocal = context.Generator.DeclareLocal(typeof(ServiceCacheKey));
+                LocalBuilder resolvedServicesLocal = context.Generator.DeclareLocal(typeof(IDictionary<ServiceCacheKey, object>));
+                LocalBuilder lockTakenLocal = context.Generator.DeclareLocal(typeof(bool));
+                LocalBuilder resultLocal = context.Generator.DeclareLocal(typeof(object));
 
-                var skipCreationLabel = context.Generator.DefineLabel();
-                var returnLabel = context.Generator.DefineLabel();
+                Label skipCreationLabel = context.Generator.DefineLabel();
+                Label returnLabel = context.Generator.DefineLabel();
 
                 // Generate cache key
                 AddCacheKey(context, callSite.Cache.Key);

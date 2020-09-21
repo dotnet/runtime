@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ============================================================
 //
 // Assembly.hpp
@@ -27,15 +26,18 @@
 #include "clrprivbinderassemblyloadcontext.h"
 #endif // !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
 
-STDAPI BinderAcquirePEImage(LPCTSTR   szAssemblyPath,
-                            PEImage **ppPEImage,
-                            PEImage **ppNativeImage,
-                            BOOL      fExplicitBindToNativeImage);
+#include "bundle.h"
 
-STDAPI BinderAcquireImport(PEImage                  *pPEImage,
-                           IMDInternalImport       **pIMetaDataAssemblyImport,
-                           DWORD                    *pdwPAFlags,
-                           BOOL                     bNativeImage);
+STDAPI BinderAcquirePEImage(LPCTSTR            szAssemblyPath,
+                            PEImage          **ppPEImage,
+                            PEImage          **ppNativeImage,
+                            BOOL               fExplicitBindToNativeImage,
+                            BundleFileLocation bundleFileLocation);
+
+STDAPI BinderAcquireImport(PEImage            *pPEImage,
+                           IMDInternalImport **pIMetaDataAssemblyImport,
+                           DWORD              *pdwPAFlags,
+                           BOOL                bNativeImage);
 
 STDAPI BinderHasNativeHeader(PEImage *pPEImage,
                              BOOL    *result);
@@ -74,11 +76,6 @@ namespace BINDER_SPACE
                 ICLRPrivAssembly ** ppAssembly);
 
         STDMETHOD(GetAvailableImageTypes)(PDWORD pdwImageTypes);
-
-        STDMETHOD(GetImageResource)(
-                DWORD dwImageType,
-                DWORD *pdwImageType,
-                ICLRPrivResource ** ppIResource);
 
         STDMETHOD(GetBinderID)(UINT_PTR *pBinderId);
 
@@ -146,18 +143,6 @@ namespace BINDER_SPACE
         SString                  m_assemblyPath;
         DWORD                    m_dwAssemblyFlags;
         ICLRPrivBinder          *m_pBinder;
-
-        // Nested class used to implement ICLRPriv binder related interfaces
-        class CLRPrivResourceAssembly :
-            public ICLRPrivResource, public ICLRPrivResourceAssembly
-        {
-public:
-            STDMETHOD(QueryInterface)(REFIID riid, void ** ppv);
-            STDMETHOD_(ULONG, AddRef)();
-            STDMETHOD_(ULONG, Release)();
-            STDMETHOD(GetResourceType)(IID *pIID);
-            STDMETHOD(GetAssembly)(LPVOID *ppAssembly);
-         } m_clrPrivRes;
 
         inline void SetBinder(ICLRPrivBinder *pBinder)
         {

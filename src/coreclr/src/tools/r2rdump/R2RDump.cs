@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.CommandLine;
 using System.CommandLine.Invocation;
 using System.IO;
 using System.Linq;
@@ -15,6 +15,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using ILCompiler.Reflection.ReadyToRun;
+using ILCompiler.PdbWriter;
 
 using Internal.Runtime;
 
@@ -46,6 +47,9 @@ namespace R2RDump
         public bool DiffHideSameDisasm { get; set; }
         public bool IgnoreSensitive { get; set; }
 
+        public bool CreatePDB { get; set; }
+        public string PdbPath { get; set; }
+
         public FileInfo[] Reference { get; set; }
         public DirectoryInfo[] ReferencePath { get; set; }
 
@@ -66,7 +70,7 @@ namespace R2RDump
         /// <param name="parentFile">Name of assembly from which we're performing the lookup</param>
         /// <returns></returns>
 
-        public MetadataReader FindAssembly(MetadataReader metadataReader, AssemblyReferenceHandle assemblyReferenceHandle, string parentFile)
+        public IAssemblyMetadata FindAssembly(MetadataReader metadataReader, AssemblyReferenceHandle assemblyReferenceHandle, string parentFile)
         {
             string simpleName = metadataReader.GetString(metadataReader.GetAssemblyReference(assemblyReferenceHandle).Name);
             return FindAssembly(simpleName, parentFile);
@@ -79,7 +83,7 @@ namespace R2RDump
         /// <param name="simpleName">Simple name of the assembly to look up</param>
         /// <param name="parentFile">Name of assembly from which we're performing the lookup</param>
         /// <returns></returns>
-        public MetadataReader FindAssembly(string simpleName, string parentFile)
+        public IAssemblyMetadata FindAssembly(string simpleName, string parentFile)
         {
             foreach (FileInfo refAsm in Reference ?? Enumerable.Empty<FileInfo>())
             {
@@ -113,7 +117,7 @@ namespace R2RDump
             return null;
         }
 
-        private static unsafe MetadataReader Open(string filename)
+        private static unsafe IAssemblyMetadata Open(string filename)
         {
             byte[] image = File.ReadAllBytes(filename);
 
@@ -124,7 +128,7 @@ namespace R2RDump
                 throw new BadImageFormatException($"ECMA metadata not found in file '{filename}'");
             }
 
-            return peReader.GetMetadataReader();
+            return new StandaloneAssemblyMetadata(peReader);
         }
     }
 
@@ -199,12 +203,14 @@ namespace R2RDump
     {
         private readonly DumpOptions _options;
         private readonly Dictionary<ReadyToRunSectionType, bool> _selectedSections = new Dictionary<ReadyToRunSectionType, bool>();
+        private readonly Encoding _encoding;
         private readonly TextWriter _writer;
         private Dumper _dumper;
 
         private R2RDump(DumpOptions options)
         {
             _options = options;
+            _encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: false);
 
             if (_options.Verbose)
             {
@@ -216,7 +222,7 @@ namespace R2RDump
 
             if (_options.Out != null)
             {
-                _writer = new StreamWriter(_options.Out.FullName, append: false, encoding: new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: false));
+                _writer = new StreamWriter(_options.Out.FullName, append: false, _encoding);
             }
             else
             {
@@ -337,8 +343,9 @@ namespace R2RDump
         public void Dump(ReadyToRunReader r2r)
         {
             _dumper.Begin();
+            bool standardDump = !(_options.EntryPoints || _options.CreatePDB);
 
-            if (_options.Header || !_options.EntryPoints)
+            if (_options.Header && standardDump)
             {
                 _dumper.WriteDivider("R2R Header");
                 _dumper.DumpHeader(true);
@@ -377,13 +384,39 @@ namespace R2RDump
                     _dumper.DumpEntryPoints();
                 }
 
-                if (!_options.Header && !_options.EntryPoints)
+                if (_options.CreatePDB)
+                {
+                    string pdbPath = _options.PdbPath;
+                    if (String.IsNullOrEmpty(pdbPath))
+                    {
+                        pdbPath = Path.GetDirectoryName(r2r.Filename);
+                    }
+                    var pdbWriter = new PdbWriter(pdbPath, PDBExtraData.None);
+                    pdbWriter.WritePDBData(r2r.Filename, ProducePdbWriterMethods(r2r));
+                }
+
+                if (standardDump)
                 {
                     _dumper.DumpAllMethods();
                 }
             }
 
             _dumper.End();
+        }
+
+        IEnumerable<MethodInfo> ProducePdbWriterMethods(ReadyToRunReader r2r)
+        {
+            foreach (var method in _dumper.NormalizedMethods())
+            {
+                MethodInfo mi = new MethodInfo();
+                mi.Name = method.SignatureString;
+                mi.HotRVA = (uint)method.RuntimeFunctions[0].StartAddress;
+                mi.MethodToken = (uint)MetadataTokens.GetToken(method.ComponentReader.MetadataReader, method.MethodHandle);
+                mi.AssemblyName = method.ComponentReader.MetadataReader.GetString(method.ComponentReader.MetadataReader.GetAssemblyDefinition().Name);
+                mi.ColdRVA = 0;
+                
+                yield return mi;
+            }
         }
 
         /// <summary>
@@ -395,7 +428,7 @@ namespace R2RDump
         {
             int id;
             bool isNum = ArgStringToInt(query, out id);
-            bool idMatch = isNum && (method.Rid == id || MetadataTokens.GetRowNumber(method.MetadataReader, method.MethodHandle) == id);
+            bool idMatch = isNum && (method.Rid == id || MetadataTokens.GetRowNumber(method.ComponentReader.MetadataReader, method.MethodHandle) == id);
 
             bool sigMatch = false;
             if (exact)
@@ -538,7 +571,7 @@ namespace R2RDump
                     else
                     {
                         string perFileOutput = filename.FullName + ".common-methods.r2r";
-                        _dumper = new TextDumper(r2r, new StreamWriter(perFileOutput), disassembler, _options);
+                        _dumper = new TextDumper(r2r, new StreamWriter(perFileOutput, append: false, _encoding), disassembler, _options);
                         if (previousDumper != null)
                         {
                             new R2RDiff(previousDumper, _dumper, _writer).Run();

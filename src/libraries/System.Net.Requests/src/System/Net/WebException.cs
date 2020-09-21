@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Net.Http;
@@ -97,15 +96,15 @@ namespace System.Net
 
         private static WebExceptionStatus GetStatusFromExceptionHelper(HttpRequestException ex)
         {
-            SocketException? socketEx = ex.InnerException as SocketException;
+            SocketException? socketException = ex.InnerException as SocketException;
 
-            if (socketEx is null)
+            if (socketException is null)
             {
                 return WebExceptionStatus.UnknownError;
             }
 
             WebExceptionStatus status;
-            switch (socketEx.SocketErrorCode)
+            switch (socketException.SocketErrorCode)
             {
                 case SocketError.NoData:
                 case SocketError.HostNotFound:

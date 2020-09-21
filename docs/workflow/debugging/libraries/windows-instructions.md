@@ -3,7 +3,7 @@ Debugging CoreFX on Windows
 
 You can Debug .NET via Visual Studio or WinDBG.
 
-For Visual Studio debugging, follow the instructions at [Debugging tests in Visual Studio](../../testing/libraries/testing-vs.md) to run and debug tests.
+For Visual Studio debugging, follow the instructions at [Debugging tests in Visual Studio](../../testing/visualstudio.md) to run and debug tests.
 For bugs that cannot be reproduced within Visual Studio (certain low-probability race conditions, SafeHandle life-time problems, etc) you will need to use WinDBG.
 
 ## Required Software
@@ -25,16 +25,16 @@ As Administrator:
 windbg -I
 ```
 
-You may need to do this for both x64 and x86 versions. 
+You may need to do this for both x64 and x86 versions.
 Any application that crashes should now automatically start a WinDBG session.
 
 ## Debugging tests
 To run a single test from command line:
 
-* Locate the test binary folder based on the CSPROJ name. 
+* Locate the test binary folder based on the CSPROJ name.
 
 For example: `src\System.Net.Sockets\tests\Functional\System.Net.Sockets.Tests.csproj` will build and output binaries at  `bin\tests\Windows_NT.AnyCPU.Debug\System.Net.Sockets.Tests\netcoreapp1.0`.
- 
+
 * Execute the test
 
 Assuming that your repo is at `C:\corefx`:
@@ -44,7 +44,7 @@ cd C:\corefx\bin\tests\Windows_NT.AnyCPU.Debug\System.Net.Sockets.Tests\netcorea
 C:\corefx\bin\tests\Windows_NT.AnyCPU.Debug\System.Net.Sockets.Tests\netcoreapp1.0\CoreRun.exe xunit.console.dll System.Net.Sockets.Tests.dll -xml testResults.xml -notrait category=nonwindowstests -notrait category=OuterLoop -notrait category=failing
 ```
 
-* If the test crashes or encounters a `Debugger.Launch()` method call, WinDBG will automatically start and attach to the `CoreRun.exe` process 
+* If the test crashes or encounters a `Debugger.Launch()` method call, WinDBG will automatically start and attach to the `CoreRun.exe` process
 
 The following commands will properly configure the debugging extension and fix symbol and source-code references:
 
@@ -129,7 +129,7 @@ Logs are going to be placed in %SYSTEMDRIVE%\sockets.etl.
 
 1. Install [PerfView](https://github.com/Microsoft/perfview/blob/master/documentation/Downloading.md)
 2. Run PerfView as Administrator
-3. Press Alt+C to collect events 
+3. Press Alt+C to collect events
 4. Disable all other collection parameters
 5. Add Additional Providers (see below - Important: keep the "*" wildcard before the names.)
 
@@ -137,7 +137,7 @@ Logs are going to be placed in %SYSTEMDRIVE%\sockets.etl.
 
 ### Built-in EventSource tracing
 
-The following EventSources are built-in to CoreFX. The ones that are not marked as [__TestCode__] can be enabled in production scenarios for log collection. 
+The following EventSources are built-in to CoreFX. The ones that are not marked as [__TestCode__] can be enabled in production scenarios for log collection.
 
 #### Global
 * `*System.Diagnostics.Eventing.FrameworkEventSource {8E9F5090-2D75-4d03-8A81-E5AFBF85DAF1}`: Global EventSource used by multiple namespaces.
@@ -162,9 +162,6 @@ Helper scripts are available at https://github.com/dotnet/runtime/tree/master/sr
 * `*Microsoft-System-Net-Requests {3763dc7e-7046-5576-9041-5616e21cc2cf}`: WebRequest-related traces.
 * `*Microsoft-System-Net-Sockets {e03c0352-f9c9-56ff-0ea7-b94ba8cabc6b}`: Sockets-related traces.
 * `*Microsoft-System-Net-Security {066c0e27-a02d-5a98-9a4d-078cc3b1a896}`: Security-related traces.
-* `*Microsoft-System-Net-WebHeaderCollection {fd36452f-9f2b-5850-d212-6c436231e3dc}`: WebHeaderCollection-related traces.
-* `*Microsoft-System-Net-WebSockets-Client {71cddde3-cf58-52d5-094f-927828a09337}`: ClientWebSocket-related traces.
-* `*Microsoft-System-Net-TestLogging {18579866-5c03-5954-91ff-bdc63681458c}`: [__TestCode__] Test-code tracing (I/O async completions, performance test reporting).
 
 #### System.Threading
 * `*System.Threading.SynchronizationEventSource {EC631D38-466B-4290-9306-834971BA0217}`: Provides an event source for tracing Coordination Data Structure synchronization information.
@@ -172,5 +169,5 @@ Helper scripts are available at https://github.com/dotnet/runtime/tree/master/sr
 * `*System.Threading.Tasks.Parallel.EventSource`: Provides an event source for tracing TPL information.
 * `*System.Threading.Tasks.Dataflow.DataflowEventSource {16F53577-E41D-43D4-B47E-C17025BF4025}`: Provides an event source for tracing Dataflow information.
 
-## Notes 
+## Notes
 * You can find the test invocation command-line by looking at the logs generated after the `dotnet build /t:test` within the test folder.

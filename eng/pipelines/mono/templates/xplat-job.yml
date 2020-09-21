@@ -70,17 +70,6 @@ jobs:
     - name: buildConfig
       value: ${{ parameters.buildConfig }}
 
-    - ${{ if eq(parameters.buildConfig, 'debug') }}:
-      - name: buildConfigUpper
-        value: 'Debug'
-
-    - ${{ if eq(parameters.buildConfig, 'release') }}:
-      - name: buildConfigUpper
-        value: 'Release'
-
-    - name: _BuildConfig
-      value: $(buildConfigUpper)
-
     - name: archType
       value: ${{ parameters.archType }}
 
@@ -89,12 +78,6 @@ jobs:
 
     - name: osSubgroup
       value: ${{ parameters.osSubgroup }}
-
-    - name: coreClrRepoRoot
-      value: '$(Build.SourcesDirectory)/src/coreclr'
-
-    - name: coreClrRepoRootDir
-      value: '$(coreClrRepoRoot)$(dir)'
 
     - ${{ if and(eq(variables['System.TeamProject'], 'internal'), ne(variables['Build.Reason'], 'PullRequest')) }}:
       - name: _HelixSource

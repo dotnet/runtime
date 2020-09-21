@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*=====================================================================
 **
@@ -28,12 +27,12 @@ static HANDLE hSyncEvent2 = NULL;
 static BOOL bThreadResult = FAIL;
 
 
-VOID PALAPI APCFunc(ULONG_PTR dwParam)
+VOID PALAPI APCFunc_QueueUserAPC_test2(ULONG_PTR dwParam)
 {
     InAPC = TRUE;
 }
 
-DWORD PALAPI SleeperProc(LPVOID lpParameter)
+DWORD PALAPI SleeperProc_QueueUserAPC_test2(LPVOID lpParameter)
 {
     DWORD ret;
 
@@ -77,7 +76,7 @@ done:
 }
 
 
-int __cdecl main (int argc, char **argv)
+PALTEST(threading_QueueUserAPC_test2_paltest_queueuserapc_test2, "threading/QueueUserAPC/test2/paltest_queueuserapc_test2")
 {
     /* local variables */
     HANDLE hThread = 0;
@@ -110,7 +109,7 @@ int __cdecl main (int argc, char **argv)
     /* create a child thread */
     hThread = CreateThread( NULL,
                             0,
-                            (LPTHREAD_START_ROUTINE)SleeperProc,
+                            (LPTHREAD_START_ROUTINE)SleeperProc_QueueUserAPC_test2,
                             0,
                             0,
                             &ChildThread);
@@ -134,7 +133,7 @@ int __cdecl main (int argc, char **argv)
     }
 
     /* queue a user APC on the child thread */
-    ret = QueueUserAPC(APCFunc, hThread, 0);
+    ret = QueueUserAPC(APCFunc_QueueUserAPC_test2, hThread, 0);
     if (ret == 0)
     {
         Trace( "ERROR:%lu:QueueUserAPC() call failed\n",

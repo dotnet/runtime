@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Data;
 using System.Diagnostics;
@@ -22,7 +21,7 @@ namespace System.Xml
 
     internal sealed class XmlBoundElement : XmlElement
     {
-        private DataRow _row;
+        private DataRow? _row;
         private ElementState _state;
 
         internal XmlBoundElement(string prefix, string localName, string namespaceURI, XmlDocument doc) : base(prefix, localName, namespaceURI, doc)
@@ -41,7 +40,7 @@ namespace System.Xml
 
         public override bool HasAttributes => Attributes.Count > 0;
 
-        public override XmlNode FirstChild
+        public override XmlNode? FirstChild
         {
             get
             {
@@ -50,9 +49,9 @@ namespace System.Xml
             }
         }
 
-        internal XmlNode SafeFirstChild => base.FirstChild;
+        internal XmlNode? SafeFirstChild => base.FirstChild;
 
-        public override XmlNode LastChild
+        public override XmlNode? LastChild
         {
             get
             {
@@ -61,14 +60,14 @@ namespace System.Xml
             }
         }
 
-        public override XmlNode PreviousSibling
+        public override XmlNode? PreviousSibling
         {
             get
             {
-                XmlNode prev = base.PreviousSibling;
+                XmlNode? prev = base.PreviousSibling;
                 if (prev == null)
                 {
-                    XmlBoundElement parent = ParentNode as XmlBoundElement;
+                    XmlBoundElement? parent = ParentNode as XmlBoundElement;
                     if (parent != null)
                     {
                         parent.AutoFoliate();
@@ -79,16 +78,16 @@ namespace System.Xml
             }
         }
 
-        internal XmlNode SafePreviousSibling => base.PreviousSibling;
+        internal XmlNode? SafePreviousSibling => base.PreviousSibling;
 
-        public override XmlNode NextSibling
+        public override XmlNode? NextSibling
         {
             get
             {
-                XmlNode next = base.NextSibling;
+                XmlNode? next = base.NextSibling;
                 if (next == null)
                 {
-                    XmlBoundElement parent = ParentNode as XmlBoundElement;
+                    XmlBoundElement? parent = ParentNode as XmlBoundElement;
                     if (parent != null)
                     {
                         parent.AutoFoliate();
@@ -99,7 +98,7 @@ namespace System.Xml
             }
         }
 
-        internal XmlNode SafeNextSibling => base.NextSibling;
+        internal XmlNode? SafeNextSibling => base.NextSibling;
 
         public override bool HasChildNodes
         {
@@ -110,13 +109,13 @@ namespace System.Xml
             }
         }
 
-        public override XmlNode InsertBefore(XmlNode newChild, XmlNode refChild)
+        public override XmlNode? InsertBefore(XmlNode newChild, XmlNode? refChild)
         {
             AutoFoliate();
             return base.InsertBefore(newChild, refChild);
         }
 
-        public override XmlNode InsertAfter(XmlNode newChild, XmlNode refChild)
+        public override XmlNode? InsertAfter(XmlNode newChild, XmlNode? refChild)
         {
             AutoFoliate();
             return base.InsertAfter(newChild, refChild);
@@ -128,7 +127,7 @@ namespace System.Xml
             return base.ReplaceChild(newChild, oldChild);
         }
 
-        public override XmlNode AppendChild(XmlNode newChild)
+        public override XmlNode? AppendChild(XmlNode newChild)
         {
             AutoFoliate();
             return base.AppendChild(newChild);
@@ -136,8 +135,8 @@ namespace System.Xml
 
         internal void RemoveAllChildren()
         {
-            XmlNode child = FirstChild;
-            XmlNode sibling = null;
+            XmlNode? child = FirstChild;
+            XmlNode? sibling = null;
 
             while (child != null)
             {
@@ -171,7 +170,7 @@ namespace System.Xml
             }
         }
 
-        internal DataRow Row
+        internal DataRow? Row
         {
             get { return _row; }
             set { _row = value; }

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.IO;
@@ -13,6 +12,7 @@ using Xunit;
 public class Color
 {
     [Fact]
+    [PlatformSpecific(~TestPlatforms.Browser)]
     public static void InvalidColors()
     {
         AssertExtensions.Throws<ArgumentException>(null, () => Console.BackgroundColor = (ConsoleColor)42);
@@ -20,6 +20,7 @@ public class Color
     }
 
     [Fact]
+    [PlatformSpecific(~TestPlatforms.Browser)]
     public static void RoundtrippingColor()
     {
         Console.BackgroundColor = Console.BackgroundColor;
@@ -32,6 +33,23 @@ public class Color
     }
 
     [Fact]
+    [PlatformSpecific(TestPlatforms.Browser)]
+    public static void ForegroundColor_Throws_PlatformNotSupportedException()
+    {
+        Assert.Throws<PlatformNotSupportedException>(() => Console.ForegroundColor);
+        Assert.Throws<PlatformNotSupportedException>(() => Console.ForegroundColor = ConsoleColor.Red);
+    }
+
+    [Fact]
+    [PlatformSpecific(TestPlatforms.Browser)]
+    public static void BackgroundColor_Throws_PlatformNotSupportedException()
+    {
+        Assert.Throws<PlatformNotSupportedException>(() => Console.BackgroundColor);
+        Assert.Throws<PlatformNotSupportedException>(() => Console.BackgroundColor = ConsoleColor.Red);
+    }
+
+    [Fact]
+    [PlatformSpecific(~TestPlatforms.Browser)]
     public static void RedirectedOutputDoesNotUseAnsiSequences()
     {
         // Make sure that redirecting to a memory stream causes Console not to write out the ANSI sequences

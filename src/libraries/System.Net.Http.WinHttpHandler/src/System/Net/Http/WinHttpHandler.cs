@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -49,13 +48,14 @@ namespace System.Net.Http
         private static StringBuilder t_requestHeadersBuilder;
 
         private readonly object _lockObject = new object();
-        private bool _doManualDecompressionCheck = false;
-        private WinInetProxyHelper _proxyHelper = null;
+        private bool _doManualDecompressionCheck;
+        private WinInetProxyHelper _proxyHelper;
         private bool _automaticRedirection = HttpHandlerDefaults.DefaultAutomaticRedirection;
         private int _maxAutomaticRedirections = HttpHandlerDefaults.DefaultMaxAutomaticRedirections;
         private DecompressionMethods _automaticDecompression = HttpHandlerDefaults.DefaultAutomaticDecompression;
         private CookieUsePolicy _cookieUsePolicy = CookieUsePolicy.UseInternalCookieStoreOnly;
-        private CookieContainer _cookieContainer = null;
+        private CookieContainer _cookieContainer;
+        private bool _enableMultipleHttp2Connections;
 
         private SslProtocols _sslProtocols = SslProtocols.None; // Use most secure protocols available.
         private Func<
@@ -63,15 +63,15 @@ namespace System.Net.Http
             X509Certificate2,
             X509Chain,
             SslPolicyErrors,
-            bool> _serverCertificateValidationCallback = null;
-        private bool _checkCertificateRevocationList = false;
+            bool> _serverCertificateValidationCallback;
+        private bool _checkCertificateRevocationList;
         private ClientCertificateOption _clientCertificateOption = ClientCertificateOption.Manual;
-        private X509Certificate2Collection _clientCertificates = null; // Only create collection when required.
-        private ICredentials _serverCredentials = null;
-        private bool _preAuthenticate = false;
+        private X509Certificate2Collection _clientCertificates; // Only create collection when required.
+        private ICredentials _serverCredentials;
+        private bool _preAuthenticate;
         private WindowsProxyUsePolicy _windowsProxyUsePolicy = WindowsProxyUsePolicy.UseWinHttpProxy;
-        private ICredentials _defaultProxyCredentials = null;
-        private IWebProxy _proxy = null;
+        private ICredentials _defaultProxyCredentials;
+        private IWebProxy _proxy;
         private int _maxConnectionsPerServer = int.MaxValue;
         private TimeSpan _sendTimeout = TimeSpan.FromSeconds(30);
         private TimeSpan _receiveHeadersTimeout = TimeSpan.FromSeconds(30);
@@ -160,7 +160,7 @@ namespace System.Net.Http
             }
         }
 
-        public CookieContainer CookieContainer
+        public CookieContainer? CookieContainer
         {
             get
             {
@@ -193,7 +193,7 @@ namespace System.Net.Http
             X509Certificate2,
             X509Chain,
             SslPolicyErrors,
-            bool> ServerCertificateValidationCallback
+            bool>? ServerCertificateValidationCallback
         {
             get
             {
@@ -273,7 +273,7 @@ namespace System.Net.Http
             }
         }
 
-        public ICredentials ServerCredentials
+        public ICredentials? ServerCredentials
         {
             get
             {
@@ -308,7 +308,7 @@ namespace System.Net.Http
             }
         }
 
-        public ICredentials DefaultProxyCredentials
+        public ICredentials? DefaultProxyCredentials
         {
             get
             {
@@ -322,7 +322,7 @@ namespace System.Net.Http
             }
         }
 
-        public IWebProxy Proxy
+        public IWebProxy? Proxy
         {
             get
             {
@@ -458,6 +458,19 @@ namespace System.Net.Http
 
                 CheckDisposedOrStarted();
                 _maxResponseDrainSize = value;
+            }
+        }
+
+        public bool EnableMultipleHttp2Connections
+        {
+            get
+            {
+                return _enableMultipleHttp2Connections;
+            }
+            set
+            {
+                CheckDisposedOrStarted();
+                _enableMultipleHttp2Connections = value;
             }
         }
 
@@ -717,7 +730,7 @@ namespace System.Net.Http
                             accessType = Interop.WinHttp.WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY;
                         }
 
-                        if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Proxy accessType={accessType}");
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Proxy accessType={accessType}");
 
                         sessionHandle = Interop.WinHttp.WinHttpOpen(
                             IntPtr.Zero,
@@ -729,7 +742,7 @@ namespace System.Net.Http
                         if (sessionHandle.IsInvalid)
                         {
                             int lastError = Marshal.GetLastWin32Error();
-                            if (NetEventSource.IsEnabled) NetEventSource.Error(this, $"error={lastError}");
+                            if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"error={lastError}");
                             if (lastError != Interop.WinHttp.ERROR_INVALID_PARAMETER)
                             {
                                 ThrowOnInvalidHandle(sessionHandle, nameof(Interop.WinHttp.WinHttpOpen));
@@ -898,7 +911,7 @@ namespace System.Net.Http
                 state.Tcs.TrySetResult(responseMessage);
 
                 // HttpStatusCode cast is needed for 308 Moved Permenantly, which we support but is not included in NetStandard status codes.
-                if (NetEventSource.IsEnabled &&
+                if (NetEventSource.Log.IsEnabled() &&
                     ((responseMessage.StatusCode >= HttpStatusCode.MultipleChoices && responseMessage.StatusCode <= HttpStatusCode.SeeOther) ||
                      (responseMessage.StatusCode >= HttpStatusCode.RedirectKeepVerb && responseMessage.StatusCode <= (HttpStatusCode)308)) &&
                     state.RequestMessage.RequestUri.Scheme == Uri.UriSchemeHttps && responseMessage.Headers.Location?.Scheme == Uri.UriSchemeHttp)
@@ -922,6 +935,7 @@ namespace System.Net.Http
             SetSessionHandleConnectionOptions(sessionHandle);
             SetSessionHandleTlsOptions(sessionHandle);
             SetSessionHandleTimeoutOptions(sessionHandle);
+            SetDisableHttp2StreamQueue(sessionHandle);
         }
 
         private void SetSessionHandleConnectionOptions(SafeWinHttpHandle sessionHandle)
@@ -1201,11 +1215,27 @@ namespace System.Net.Http
                 Interop.WinHttp.WINHTTP_OPTION_ENABLE_HTTP2_PLUS_CLIENT_CERT,
                 ref optionData))
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, "HTTP/2 with TLS client cert supported");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "HTTP/2 with TLS client cert supported");
             }
             else
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, "HTTP/2 with TLS client cert not supported");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "HTTP/2 with TLS client cert not supported");
+            }
+        }
+
+        private void SetDisableHttp2StreamQueue(SafeWinHttpHandle sessionHandle)
+        {
+            if (_enableMultipleHttp2Connections)
+            {
+                uint optionData = 1;
+                if (Interop.WinHttp.WinHttpSetOption(sessionHandle, Interop.WinHttp.WINHTTP_OPTION_DISABLE_STREAM_QUEUE, ref optionData))
+                {
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Multiple HTTP/2 connections enabled.");
+                }
+                else
+                {
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Multiple HTTP/2 connections cannot be enabled.");
+                }
             }
         }
 
@@ -1251,11 +1281,11 @@ namespace System.Net.Http
                 Interop.WinHttp.WINHTTP_OPTION_ENABLE_HTTP_PROTOCOL,
                 ref optionData))
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"HTTP/2 option supported, setting to {optionData}");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"HTTP/2 option supported, setting to {optionData}");
             }
             else
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, "HTTP/2 option not supported");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "HTTP/2 option not supported");
             }
         }
 
@@ -1364,7 +1394,7 @@ namespace System.Net.Http
             if (handle.IsInvalid)
             {
                 int lastError = Marshal.GetLastWin32Error();
-                if (NetEventSource.IsEnabled) NetEventSource.Error(this, $"error={lastError}");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"error={lastError}");
                 throw WinHttpException.CreateExceptionUsingError(lastError, nameOfCalledFunction);
             }
         }
@@ -1376,7 +1406,7 @@ namespace System.Net.Http
                 state.Pin();
                 if (!Interop.WinHttp.WinHttpSendRequest(
                     state.RequestHandle,
-                    null,
+                    IntPtr.Zero,
                     0,
                     IntPtr.Zero,
                     0,

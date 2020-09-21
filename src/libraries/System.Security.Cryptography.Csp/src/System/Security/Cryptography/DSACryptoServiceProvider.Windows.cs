@@ -1,9 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
+using System.Buffers.Binary;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.Versioning;
 using Internal.NativeCrypto;
 
 namespace System.Security.Cryptography
@@ -16,7 +17,7 @@ namespace System.Security.Cryptography
         private SafeKeyHandle? _safeKeyHandle;
         private SafeProvHandle? _safeProvHandle;
         private readonly SHA1 _sha1;
-        private static volatile CspProviderFlags s_useMachineKeyStore = 0;
+        private static volatile CspProviderFlags s_useMachineKeyStore;
         private bool _disposed;
 
         /// <summary>
@@ -49,6 +50,7 @@ namespace System.Security.Cryptography
         /// for the cryptographic service provider (CSP).
         /// </summary>
         /// <param name="parameters">The parameters for the CSP.</param>
+        [SupportedOSPlatform("windows")]
         public DSACryptoServiceProvider(CspParameters? parameters)
             : this(0, parameters)
         {
@@ -61,6 +63,7 @@ namespace System.Security.Cryptography
         /// <param name="dwKeySize">The size of the key for the cryptographic algorithm in bits.</param>
         /// <param name="parameters">The parameters for the CSP.</param>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350", Justification = "SHA1 is required by the FIPS 186-2 DSA spec.")]
+        [SupportedOSPlatform("windows")]
         public DSACryptoServiceProvider(int dwKeySize, CspParameters? parameters)
         {
             if (dwKeySize < 0)
@@ -182,6 +185,7 @@ namespace System.Security.Cryptography
         /// <summary>
         /// Gets a CspKeyContainerInfo object that describes additional information about a cryptographic key pair.
         /// </summary>
+        [SupportedOSPlatform("windows")]
         public CspKeyContainerInfo CspKeyContainerInfo
         {
             get
@@ -200,7 +204,7 @@ namespace System.Security.Cryptography
             get
             {
                 byte[] keySize = CapiHelper.GetKeyParameter(SafeKeyHandle, Constants.CLR_KEYLEN);
-                _keySize = (keySize[0] | (keySize[1] << 8) | (keySize[2] << 16) | (keySize[3] << 24));
+                _keySize = BinaryPrimitives.ReadInt32LittleEndian(keySize);
                 return _keySize;
             }
         }

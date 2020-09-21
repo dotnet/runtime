@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // WinWrap.h
 //
@@ -180,7 +179,6 @@
 #define WszRegQueryValueExTrue RegQueryValueExW
 #define WszRegQueryStringValueEx RegQueryValueExW
 
-
 #define WszRegQueryInfoKey RegQueryInfoKeyW
 #define WszRegEnumValue RegEnumValueW
 #define WszRegEnumKeyEx RegEnumKeyExW
@@ -190,16 +188,11 @@
 #define WszLCMapString LCMapStringW
 #define WszMultiByteToWideChar MultiByteToWideChar
 #define WszWideCharToMultiByte WideCharToMultiByte
-#define WszCreateSemaphore CreateSemaphoreW
-
+#define WszCreateSemaphore(_secattr, _count, _maxcount, _name) CreateSemaphoreExW((_secattr), (_count), (_maxcount), (_name), 0, MAXIMUM_ALLOWED | SYNCHRONIZE | SEMAPHORE_MODIFY_STATE)
 
 #ifdef FEATURE_CORESYSTEM
 
-// CoreSystem has CreateSemaphoreExW but not CreateSemaphoreW.
-#undef WszCreateSemaphore
-#define WszCreateSemaphore(_secattr, _count, _maxcount, _name) CreateSemaphoreExW((_secattr), (_count), (_maxcount), (_name), 0, MAXIMUM_ALLOWED | SYNCHRONIZE | SEMAPHORE_MODIFY_STATE)
-
-// Same deal as above for GetFileVersionInfo/GetFileVersionInfoSize.
+// CoreSystem has GetFileVersionInfo{Size}Ex but not GetFileVersionInfoSize{Size}
 #undef GetFileVersionInfo
 #define GetFileVersionInfo(_filename, _handle, _len, _data) GetFileVersionInfoEx(0, (_filename), (_handle), (_len), (_data))
 #undef GetFileVersionInfoSize

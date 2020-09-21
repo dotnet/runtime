@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -801,7 +804,6 @@ namespace Amd64InstructionTableGenerator
 
             Console.WriteLine("// Licensed to the .NET Foundation under one or more agreements.");
             Console.WriteLine("// The .NET Foundation licenses this file to you under the MIT license.");
-            Console.WriteLine("// See the LICENSE file in the project root for more information.");
             Console.WriteLine();
             Console.WriteLine();
             Console.WriteLine("// File machine generated. See gen_amd64InstrDecode/README.md");
@@ -865,7 +867,7 @@ namespace Amd64InstructionTableGenerator
             Console.WriteLine("    // Since there are 8 modrm.reg values, they occur is groups of 8.");
             Console.WriteLine("    // Each group is referenced from the other tables below using Extension|(index >> 3).");
             currentExtension += 8;
-            Console.WriteLine($"    static InstrForm instrFormExtension[{currentExtension + 1}]");
+            Console.WriteLine($"    static const InstrForm instrFormExtension[{currentExtension + 1}]");
             Console.WriteLine("    {");
             for (int i = 0; i < currentExtension; i++)
             {
@@ -877,7 +879,7 @@ namespace Amd64InstructionTableGenerator
             Console.WriteLine("    };");
 
             Console.WriteLine();
-            Console.WriteLine($"    static InstrForm instrFormPrimary[256]");
+            Console.WriteLine($"    static const InstrForm instrFormPrimary[256]");
             Console.WriteLine("    {");
             for (int i = 0; i < 4096; i+= 16)
             {
@@ -889,7 +891,7 @@ namespace Amd64InstructionTableGenerator
             Console.WriteLine("    };");
 
             Console.WriteLine();
-            Console.WriteLine($"    static InstrForm instrForm3DNow[256]");
+            Console.WriteLine($"    static const InstrForm instrForm3DNow[256]");
             Console.WriteLine("    {");
             for (int i = 0; i < 4096; i+= 16)
             {
@@ -906,7 +908,7 @@ namespace Amd64InstructionTableGenerator
             foreach((string name, Map map) in mapTuples)
             {
                 Console.WriteLine();
-                Console.WriteLine($"    static InstrForm instrForm{name}[1024]");
+                Console.WriteLine($"    static const InstrForm instrForm{name}[1024]");
                 Console.WriteLine("    {");
                 for (int i = 0; i < 4096; i+= 16)
                 {

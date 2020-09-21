@@ -1,0 +1,249 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Argument_EncodeDestinationTooSmall" xml:space="preserve">
+    <value>The destination is too small to hold the encoded value.</value>
+  </data>
+  <data name="Cbor_PopMajorTypeMismatch" xml:space="preserve">
+    <value>Cannot perform the requested operation, the current major type context is '{0}'.</value>
+  </data>
+  <data name="Cbor_NotAtEndOfDefiniteLengthDataItem" xml:space="preserve">
+    <value>Not at end of the definite-length data item.</value>
+  </data>
+  <data name="Cbor_NotAtEndOfIndefiniteLengthDataItem" xml:space="preserve">
+    <value>Not at end of the indefinite-length data item.</value>
+  </data>
+  <data name="Cbor_ConformanceMode_IndefiniteLengthItemsNotSupported" xml:space="preserve">
+    <value>CBOR Conformance mode '{0}' does not support indefinite-length data items.</value>
+  </data>
+  <data name="Cbor_ConformanceMode_NonCanonicalIntegerRepresentation" xml:space="preserve">
+    <value>CBOR Conformance mode '{0}' does not support non-canonical integer representations.</value>
+  </data>
+  <data name="Cbor_ConformanceMode_RequiresDefiniteLengthItems" xml:space="preserve">
+    <value>CBOR Conformance mode '{0}' does not support indefinite-length items.</value>
+  </data>
+  <data name="Cbor_ConformanceMode_ContainsDuplicateKeys" xml:space="preserve">
+    <value>CBOR Conformance mode '{0}' does not support duplicate keys.</value>
+  </data>
+  <data name="Cbor_ConformanceMode_KeysNotInSortedOrder" xml:space="preserve">
+    <value>CBOR keys not sorted in accordance with conformance mode '{0}'.</value>
+  </data>
+  <data name="Cbor_ConformanceMode_TagsNotSupported" xml:space="preserve">
+    <value>CBOR Conformance mode '{0}' does not support tagged values.</value>
+  </data>
+  <data name="Cbor_Reader_DefiniteLengthExceedsBufferSize" xml:space="preserve">
+    <value>Declared definite length of CBOR data item exceeds available buffer size.</value>
+  </data>
+  <data name="Cbor_Reader_NoMoreDataItemsToRead" xml:space="preserve">
+    <value>No more CBOR data items to read in the current context.</value>
+  </data>
+  <data name="Cbor_Reader_InvalidCbor_UnexpectedEndOfBuffer" xml:space="preserve">
+    <value>Unexpected end of CBOR encoding data.</value>
+  </data>
+  <data name="Cbor_Reader_InvalidCbor_IndefiniteLengthStringContainsInvalidDataItem" xml:space="preserve">
+    <value>Indefinite-length CBOR string nests an invalid data item of major type {0}.</value>
+  </data>
+  <data name="Cbor_Reader_MajorTypeMismatch" xml:space="preserve">
+    <value>Cannot perform the requested operation, the next CBOR data item is of major type '{0}'.</value>
+  </data>
+  <data name="Cbor_Reader_IsAtRootContext" xml:space="preserve">
+    <value>CBOR reader is already at the root data item context.</value>
+  </data>
+  <data name="Cbor_Reader_InvalidCbor_TagNotFollowedByValue" xml:space="preserve">
+    <value>A CBOR tag should always be followed by a data item.</value>
+  </data>
+  <data name="Cbor_Reader_InvalidCbor_InvalidIntegerEncoding" xml:space="preserve">
+    <value>CBOR initial byte contains invalid integer encoding</value>
+  </data>
+  <data name="Cbor_Reader_InvalidCbor_KeyMissingValue" xml:space="preserve">
+    <value>The current CBOR map contains an incomplete key/value pair.</value>
+  </data>
+  <data name="Cbor_Reader_NotAFloatEncoding" xml:space="preserve">
+    <value>Data item does not encode a floating point number.</value>
+  </data>
+  <data name="Cbor_Reader_ReadingAsLowerPrecision" xml:space="preserve">
+    <value>Attempting to read floating point encoding as a lower-precision value.</value>
+  </data>
+  <data name="Cbor_Reader_NotABooleanEncoding" xml:space="preserve">
+    <value>CBOR simple value does not encode a boolean value.</value>
+  </data>
+  <data name="Cbor_Reader_NotASimpleValueEncoding" xml:space="preserve">
+    <value>CBOR data item does not encode a simple value.</value>
+  </data>
+  <data name="Cbor_Reader_NotANullEncoding" xml:space="preserve">
+    <value>CBOR simple value does not encode null.</value>
+  </data>
+  <data name="Cbor_ConformanceMode_InvalidSimpleValueEncoding" xml:space="preserve">
+    <value>CBOR Conformance mode '{0}' does not support simple values in the range 24-31 and must be encoded as small as possible.</value>
+  </data>
+  <data name="Cbor_Reader_InvalidCbor_UnexpectedBreakByte" xml:space="preserve">
+    <value>CBOR definite-length data items contains unexpected break byte.</value>
+  </data>
+  <data name="Cbor_Reader_Skip_InvalidState" xml:space="preserve">
+    <value>Reader state '{0}' is not at the start of a data item.</value>
+  </data>
+  <data name="Cbor_Reader_InvalidCbor_InvalidUtf8StringEncoding" xml:space="preserve">
+    <value>CBOR text string payload is not valid a UTF-8 encoding.</value>
+  </data>
+  <data name="Cbor_Reader_NotIndefiniteLengthString" xml:space="preserve">
+    <value>CBOR string is not of indefinite length.</value>
+  </data>
+  <data name="Cbor_Reader_TagMismatch" xml:space="preserve">
+    <value>CBOR tag does not match expected value.</value>
+  </data>
+  <data name="Cbor_Reader_InvalidDateTimeEncoding" xml:space="preserve">
+    <value>Not a valid tagged RFC3339 DateTime encoding.</value>
+  </data>
+  <data name="Cbor_Reader_InvalidUnixTimeEncoding" xml:space="preserve">
+    <value>Not a valid tagged unix time encoding.</value>
+  </data>
+  <data name="Cbor_Reader_InvalidBigNumEncoding" xml:space="preserve">
+    <value>Not a valid tagged bignum encoding.</value>
+  </data>
+  <data name="Cbor_Reader_InvalidDecimalEncoding" xml:space="preserve">
+    <value>Not a valid tagged decimal encoding.</value>
+  </data>
+  <data name="Cbor_Writer_PayloadIsNotValidCbor" xml:space="preserve">
+    <value>Not a valid CBOR value encoding.</value>
+  </data>
+  <data name="Cbor_Writer_IncompleteCborDocument" xml:space="preserve">
+    <value>Writer contains an incomplete CBOR document.</value>
+  </data>
+  <data name="Cbor_Writer_DefiniteLengthExceeded" xml:space="preserve">
+    <value>Adding a CBOR data item to the current context exceeds its definite length.</value>
+  </data>
+  <data name="Cbor_Writer_CannotNestDataItemsInIndefiniteLengthStrings" xml:space="preserve">
+    <value>Cannot nest data items in indefinite-length CBOR string contexts.</value>
+  </data>
+  <data name="Cbor_Writer_MapIncompleteKeyValuePair" xml:space="preserve">
+    <value>CBOR map incomplete; each key must be followed by a corresponding value.</value>
+  </data>
+  <data name="Cbor_Writer_InvalidUtf8String" xml:space="preserve">
+    <value>Not a valid UTF-8 encoding.</value>
+  </data>
+  <data name="Cbor_Writer_ValueCannotBeInfiniteOrNaN" xml:space="preserve">
+    <value>Value cannot be infinite or NaN.</value>
+  </data>
+  <data name="Cbor_Writer_DecimalOverflow" xml:space="preserve">
+    <value>Value was either too large or too small for a Decimal.</value>
+  </data>
+  <data name="CborContentException_DefaultMessage" xml:space="preserve">
+    <value>The CBOR encoding is invalid.</value>
+  </data>
+</root>

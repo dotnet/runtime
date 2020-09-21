@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /***
 *tsplitpath_s.inl - general implementation of _tsplitpath_s
@@ -103,26 +102,14 @@ errno_t __cdecl _FUNC_NAME(
     tmp = _Path;
     for (; *tmp != 0; ++tmp)
     {
-#if _MBS_SUPPORT
-#pragma warning(push)
-#pragma warning(disable:4127)
-        if (_ISMBBLEAD(*tmp))
-#pragma warning(pop)
+        if (*tmp == _T('/') || *tmp == _T('\\'))
         {
-            tmp++;
+            /* point to one beyond for later copy */
+            last_slash = tmp + 1;
         }
-        else
-#endif  /* _MBS_SUPPORT */
+        else if (*tmp == _T('.'))
         {
-            if (*tmp == _T('/') || *tmp == _T('\\'))
-            {
-                /* point to one beyond for later copy */
-                last_slash = tmp + 1;
-            }
-            else if (*tmp == _T('.'))
-            {
-                dot = tmp;
-            }
+            dot = tmp;
         }
     }
 

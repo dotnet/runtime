@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================================
 **
@@ -17,7 +16,7 @@
 #include "../swscanf.h"
 
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime_swscanf_test8_paltest_swscanf_test8, "c_runtime/swscanf/test8/paltest_swscanf_test8")
 {
     int n65535 = 65535; /* Walkaround compiler strictness */
 

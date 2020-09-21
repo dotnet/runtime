@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml.Xsl.Qil
 {
@@ -18,7 +18,7 @@ namespace System.Xml.Xsl.Qil
         //   the truncation.
         private const int MaxDebugNameLength = 1000;
 
-        private string _debugName;
+        private string? _debugName;
 
         //-----------------------------------------------
         // Constructor
@@ -39,7 +39,8 @@ namespace System.Xml.Xsl.Qil
         /// <summary>
         /// Name of this reference, preserved for debugging (may be null).
         /// </summary>
-        public string DebugName
+        [DisallowNull]
+        public string? DebugName
         {
             get { return _debugName; }
             set

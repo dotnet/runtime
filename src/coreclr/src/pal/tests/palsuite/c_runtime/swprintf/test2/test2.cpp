@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================================
 **
@@ -21,7 +20,7 @@
  */
 
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime_swprintf_test2_paltest_swprintf_test2, "c_runtime/swprintf/test2/paltest_swprintf_test2")
 {
 
     if (PAL_Initialize(argc, argv) != 0)

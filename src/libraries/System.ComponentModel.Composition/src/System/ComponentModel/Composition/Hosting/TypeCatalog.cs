@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.ComponentModel.Composition.AttributedModel;
@@ -26,9 +25,9 @@ namespace System.ComponentModel.Composition.Hosting
     public class TypeCatalog : ComposablePartCatalog, ICompositionElement
     {
         private readonly object _thisLock = new object();
-        private Type[]? _types = null;
+        private Type[]? _types;
         private volatile List<ComposablePartDefinition>? _parts;
-        private volatile bool _isDisposed = false;
+        private volatile bool _isDisposed;
         private readonly ICompositionElement _definitionOrigin;
         private readonly Lazy<IDictionary<string, List<ComposablePartDefinition>>> _contractPartIndex;
 

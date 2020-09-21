@@ -1,10 +1,8 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 using System.Linq;
 using System.Reflection;
 
@@ -35,9 +33,7 @@ namespace System.Text.Json.Serialization
             Type type = typeof(T);
 
             Debug.Assert(!type.IsAbstract);
-            // If ctor is non-public, we've verified upstream that it has the [JsonConstructorAttribute].
-            Debug.Assert(type.GetConstructors(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
-                .Contains(constructor));
+            Debug.Assert(type.GetConstructors(BindingFlags.Public | BindingFlags.Instance).Contains(constructor));
 
             int parameterCount = constructor.GetParameters().Length;
 
@@ -77,13 +73,11 @@ namespace System.Text.Json.Serialization
             Type type = typeof(T);
 
             Debug.Assert(!type.IsAbstract);
-            // If ctor is non-public, we've verified upstream that it has the [JsonConstructorAttribute].
-            Debug.Assert(type.GetConstructors(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
-                .Contains(constructor));
+            Debug.Assert(type.GetConstructors(BindingFlags.Public | BindingFlags.Instance).Contains(constructor));
 
             int parameterCount = constructor.GetParameters().Length;
 
-            Debug.Assert(parameterCount < JsonConstants.UnboxedParameterCountThreshold);
+            Debug.Assert(parameterCount <= JsonConstants.UnboxedParameterCountThreshold);
 
             return (arg0, arg1, arg2, arg3) =>
             {
@@ -118,7 +112,7 @@ namespace System.Text.Json.Serialization
         public override Action<TCollection, object?> CreateAddMethodDelegate<TCollection>()
         {
             Type collectionType = typeof(TCollection);
-            Type elementType = typeof(object);
+            Type elementType = JsonClassInfo.ObjectType;
 
             // We verified this won't be null when we created the converter for the collection type.
             MethodInfo addMethod = (collectionType.GetMethod("Push") ?? collectionType.GetMethod("Enqueue"))!;
@@ -162,5 +156,17 @@ namespace System.Text.Json.Serialization
                 setMethodInfo.Invoke(obj, new object[] { value! });
             };
         }
+
+        public override Func<object, TProperty> CreateFieldGetter<TProperty>(FieldInfo fieldInfo) =>
+            delegate (object obj)
+            {
+                return (TProperty)fieldInfo.GetValue(obj)!;
+            };
+
+        public override Action<object, TProperty> CreateFieldSetter<TProperty>(FieldInfo fieldInfo) =>
+            delegate (object obj, TProperty value)
+            {
+                fieldInfo.SetValue(obj, value);
+            };
     }
 }

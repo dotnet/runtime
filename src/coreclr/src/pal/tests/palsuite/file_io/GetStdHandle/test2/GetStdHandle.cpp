@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*=====================================================================
 **
@@ -14,7 +13,7 @@
 #include <palsuite.h>
 
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(file_io_GetStdHandle_test2_paltest_getstdhandle_test2, "file_io/GetStdHandle/test2/paltest_getstdhandle_test2")
 {
     HANDLE hFile = NULL;
 

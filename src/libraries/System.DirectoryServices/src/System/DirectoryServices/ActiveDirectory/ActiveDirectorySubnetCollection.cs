@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.InteropServices;
 using System.Collections;
@@ -10,10 +9,10 @@ namespace System.DirectoryServices.ActiveDirectory
 {
     public class ActiveDirectorySubnetCollection : CollectionBase
     {
-        internal readonly Hashtable changeList = null;
-        internal bool initialized = false;
-        private readonly string _siteDN = null;
-        private readonly DirectoryContext _context = null;
+        internal readonly Hashtable changeList;
+        internal bool initialized;
+        private readonly string _siteDN;
+        private readonly DirectoryContext _context;
         private readonly ArrayList _copyList = new ArrayList();
 
         internal ActiveDirectorySubnetCollection(DirectoryContext context, string siteDN)
@@ -68,7 +67,7 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 if (s == null)
                 {
-                    throw new ArgumentException(nameof(subnets));
+                    throw new ArgumentException(null, nameof(subnets));
                 }
             }
 
@@ -263,7 +262,7 @@ namespace System.DirectoryServices.ActiveDirectory
             if (value == null) throw new ArgumentNullException(nameof(value));
 
             if (!(value is ActiveDirectorySubnet))
-                throw new ArgumentException(nameof(value));
+                throw new ArgumentException(null, nameof(value));
 
             if (!((ActiveDirectorySubnet)value).existing)
                 throw new InvalidOperationException(SR.Format(SR.SubnetNotCommitted, ((ActiveDirectorySubnet)value).Name));

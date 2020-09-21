@@ -1,7 +1,3 @@
-// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
-
 
 
 /* this ALWAYS GENERATED file contains the IIDs and CLSIDs */
@@ -10,6 +6,16 @@
 
 
  /* File created by MIDL compiler version 8.01.0622 */
+/* at Mon Jan 18 19:14:07 2038
+ */
+/* Compiler settings for runtime/src/coreclr/src/inc/cordebug.idl:
+    Oicf, W1, Zp8, env=Win32 (32b run), target_arch=X86 8.01.0622
+    protocol : dce , ms_ext, c_ext, robust
+    error checks: allocation ref bounds_check enum stub_data
+    VC __declspec() decoration level:
+         __declspec(uuid()), __declspec(selectany), __declspec(novtable)
+         DECLSPEC_UUID(), MIDL_INTERFACE()
+*/
 /* @@MIDL_FILE_HEADING(  ) */
 
 #pragma warning( disable: 4049 )  /* more than 64k source lines */
@@ -17,7 +23,7 @@
 
 #ifdef __cplusplus
 extern "C"{
-#endif 
+#endif
 
 
 #include <rpc.h>
@@ -199,6 +205,12 @@ MIDL_DEFINE_GUID(IID, IID_ICorDebugProcess8,0x2E6F28C1,0x85EB,0x4141,0x80,0xAD,0
 MIDL_DEFINE_GUID(IID, IID_ICorDebugProcess10,0x8F378F6F,0x1017,0x4461,0x98,0x90,0xEC,0xF6,0x4C,0x54,0x07,0x9F);
 
 
+MIDL_DEFINE_GUID(IID, IID_ICorDebugMemoryRangeEnum,0xD1A0BCFC,0x5865,0x4437,0xBE,0x3F,0x36,0xF0,0x22,0x95,0x1F,0x8A);
+
+
+MIDL_DEFINE_GUID(IID, IID_ICorDebugProcess11,0x344B37AA,0xF2C0,0x4D3B,0x99,0x09,0x91,0xCC,0xF7,0x87,0xDA,0x8C);
+
+
 MIDL_DEFINE_GUID(IID, IID_ICorDebugModuleDebugEvent,0x51A15E8D,0x9FFF,0x4864,0x9B,0x87,0xF4,0xFB,0xDE,0xA7,0x47,0xA2);
 
 
@@ -275,6 +287,9 @@ MIDL_DEFINE_GUID(IID, IID_ICorDebugNativeFrame2,0x35389FF1,0x3684,0x4c55,0xA2,0x
 
 
 MIDL_DEFINE_GUID(IID, IID_ICorDebugModule3,0x86F012BF,0xFF15,0x4372,0xBD,0x30,0xB6,0xF1,0x1C,0xAA,0xE1,0xDD);
+
+
+MIDL_DEFINE_GUID(IID, IID_ICorDebugModule4,0xFF8B8EAF,0x25CD,0x4316,0x88,0x59,0x84,0x41,0x6D,0xE4,0x40,0x2E);
 
 
 MIDL_DEFINE_GUID(IID, IID_ICorDebugRuntimeUnwindableFrame,0x879CAC0A,0x4A53,0x4668,0xB8,0xE3,0xCB,0x84,0x73,0xCB,0x18,0x7F);
@@ -464,6 +479,3 @@ MIDL_DEFINE_GUID(CLSID, CLSID_EmbeddedCLRCorDebug,0x211f1254,0xbc7e,0x4af5,0xb9,
 #ifdef __cplusplus
 }
 #endif
-
-
-

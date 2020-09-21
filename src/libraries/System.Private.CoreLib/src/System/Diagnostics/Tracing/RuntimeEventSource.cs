@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Threading;
 
@@ -27,6 +26,7 @@ namespace System.Diagnostics.Tracing
         private IncrementingPollingCounter? _completedItemsCounter;
         private IncrementingPollingCounter? _allocRateCounter;
         private PollingCounter? _timerCounter;
+        private PollingCounter? _fragmentationCounter;
 
 #if !MONO
         private IncrementingPollingCounter? _exceptionCounter;
@@ -35,7 +35,10 @@ namespace System.Diagnostics.Tracing
         private PollingCounter? _gen1SizeCounter;
         private PollingCounter? _gen2SizeCounter;
         private PollingCounter? _lohSizeCounter;
+        private PollingCounter? _pohSizeCounter;
         private PollingCounter? _assemblyCounter;
+        private PollingCounter? _ilBytesJittedCounter;
+        private PollingCounter? _methodsJittedCounter;
 #endif
 
         public static void Initialize()
@@ -68,7 +71,10 @@ namespace System.Diagnostics.Tracing
                 _completedItemsCounter ??= new IncrementingPollingCounter("threadpool-completed-items-count", this, () => ThreadPool.CompletedWorkItemCount) { DisplayName = "ThreadPool Completed Work Item Count", DisplayRateTimeScale = new TimeSpan(0, 0, 1) };
                 _allocRateCounter ??= new IncrementingPollingCounter("alloc-rate", this, () => GC.GetTotalAllocatedBytes()) { DisplayName = "Allocation Rate", DisplayUnits = "B", DisplayRateTimeScale = new TimeSpan(0, 0, 1) };
                 _timerCounter ??= new PollingCounter("active-timer-count", this, () => Timer.ActiveCount) { DisplayName = "Number of Active Timers" };
-
+                _fragmentationCounter ??= new PollingCounter("gc-fragmentation", this, () => {
+                    var gcInfo = GC.GetGCMemoryInfo();
+                    return gcInfo.FragmentedBytes * 100d / gcInfo.HeapSizeBytes;
+                 }) { DisplayName = "GC Fragmentation", DisplayUnits = "%" };
 #if !MONO
                 _exceptionCounter ??= new IncrementingPollingCounter("exception-count", this, () => Exception.GetExceptionCount()) { DisplayName = "Exception Count", DisplayRateTimeScale = new TimeSpan(0, 0, 1) };
                 _gcTimeCounter ??= new PollingCounter("time-in-gc", this, () => GC.GetLastGCPercentTimeInGC()) { DisplayName = "% Time in GC since last GC", DisplayUnits = "%" };
@@ -76,7 +82,10 @@ namespace System.Diagnostics.Tracing
                 _gen1SizeCounter ??= new PollingCounter("gen-1-size", this, () => GC.GetGenerationSize(1)) { DisplayName = "Gen 1 Size", DisplayUnits = "B" };
                 _gen2SizeCounter ??= new PollingCounter("gen-2-size", this, () => GC.GetGenerationSize(2)) { DisplayName = "Gen 2 Size", DisplayUnits = "B" };
                 _lohSizeCounter ??= new PollingCounter("loh-size", this, () => GC.GetGenerationSize(3)) { DisplayName = "LOH Size", DisplayUnits = "B" };
+                _pohSizeCounter ??= new PollingCounter("poh-size", this, () => GC.GetGenerationSize(4)) { DisplayName = "POH (Pinned Object Heap) Size", DisplayUnits = "B" };
                 _assemblyCounter ??= new PollingCounter("assembly-count", this, () => System.Reflection.Assembly.GetAssemblyCount()) { DisplayName = "Number of Assemblies Loaded" };
+                _ilBytesJittedCounter ??= new PollingCounter("il-bytes-jitted", this, () => System.Runtime.CompilerServices.RuntimeHelpers.GetILBytesJitted()) { DisplayName = "IL Bytes Jitted", DisplayUnits = "B" };
+                _methodsJittedCounter ??= new PollingCounter("methods-jitted-count", this, () => System.Runtime.CompilerServices.RuntimeHelpers.GetMethodsJittedCount()) { DisplayName = "Number of Methods Jitted" };
 #endif
             }
 

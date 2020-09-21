@@ -67,13 +67,6 @@ function print_usage {
     echo '                                     is zero when launching this script. This option is intended for use in CI.'
     echo '  --xunitOutputPath=<path>         : Create xUnit XML report at the specifed path (default: <test root>/coreclrtests.xml)'
     echo ''
-    echo 'CoreFX Test Options '
-    echo '  --corefxtests                    : Runs CoreFX tests'
-    echo '  --corefxtestsall                 : Runs all available CoreFX tests'
-    echo '  --corefxtestlist=<path>          : Runs the CoreFX tests specified in the passed list'   
-    echo '  --testHostDir=<path>             : Directory containing a built test host including core binaries, test dependencies' 
-    echo '                                     and a dotnet executable'
-    echo ''
     echo 'Runtime Code Coverage options:'
     echo '  --coreclr-coverage               : Optional argument to get coreclr code coverage reports'
     echo '  --coreclr-objs=<path>            : Location of root of the object directory'
@@ -439,80 +432,6 @@ function create_core_overlay {
         rm -f "$coreOverlayDir/System.Private.CoreLib.ni.dll"
     fi
     copy_test_native_bin_to_test_root $coreOverlayDir
-}
-
-function create_testhost
-{
-    if [ ! -d "$testHostDir" ]; then
-        exit_with_error "$errorSource" "Did not find the test host directory: $testHostDir"
-    fi
-
-    # Initialize test variables
-    local dotnetExe=$coreClrSrc/../../dotnet.sh
-    local coreClrSrcTestDir=$coreClrSrc/tests
-    
-    if [ -z $coreClrBinDir ]; then
-        local coreClrBinDir=${coreClrSrc}/bin
-        export __CoreFXTestDir=${coreClrSrc}/artifacts/tests/CoreFX
-    else
-        export __CoreFXTestDir=${coreClrBinDir}/tests/CoreFX    
-    fi
-
-    local coreFXTestSetupUtilityName=CoreFX.TestUtils.TestFileSetup
-    local coreFXTestSetupUtility="${coreClrSrcTestDir}/src/Common/CoreFX/TestFileSetup/${coreFXTestSetupUtilityName}.csproj"
-    local coreFXTestSetupUtilityOutputPath=${__CoreFXTestDir}/TestUtilities
-    local coreFXTestBinariesOutputPath=${__CoreFXTestDir}/tests_downloaded
-    
-    if [ -z $CoreFXTestList]; then
-        local CoreFXTestList="${coreClrSrcTestDir}/CoreFX/CoreFX.issues.json"
-    fi
-
-    case "${OSName}" in
-        # Check if we're running under OSX        
-        Darwin)
-            local coreFXTestRemoteURL=$(<${coreClrSrcTestDir}/CoreFX/CoreFXTestListURL_OSX.txt)
-            local coreFXTestExclusionDef=nonosxtests
-        ;;        
-        # Default to Linux        
-        *)
-            local coreFXTestRemoteURL=$(<${coreClrSrcTestDir}/CoreFX/CoreFXTestListURL_Linux.txt)
-            local coreFXTestExclusionDef=nonlinuxtests
-        ;;
-    esac
-
-    local coreFXTestExecutable=xunit.console.netcore.exe
-    local coreFXLogDir=${coreClrBinDir}/log/CoreFX/
-    local coreFXTestExecutableArgs="--notrait category=nonnetcoreapptests --notrait category=${coreFXTestExclusionDef} --notrait category=failing --notrait category=IgnoreForCI --notrait category=OuterLoop --notrait Benchmark=true"
-
-    chmod +x ${dotnetExe}
-    resetCommandArgs=("msbuild /t:Restore ${coreFXTestSetupUtility}")
-    echo "${dotnetExe} $resetCommandArgs"
-    "${dotnetExe}" $resetCommandArgs
-
-    buildCommandArgs=("msbuild ${coreFXTestSetupUtility} /p:OutputPath=${coreFXTestSetupUtilityOutputPath} /p:Platform=${_arch} /p:Configuration=Release")
-    echo "${dotnetExe} $buildCommandArgs"
-    "${dotnetExe}" $buildCommandArgs
-    
-    if [ "${RunCoreFXTestsAll}" == "1" ]; then
-        local coreFXRunCommand=--runAllTests
-    else
-        local coreFXRunCommand=--runSpecifiedTests
-    fi
-
-    local buildTestSetupUtilArgs=("${coreFXTestSetupUtilityOutputPath}/${coreFXTestSetupUtilityName}.dll --clean --outputDirectory ${coreFXTestBinariesOutputPath} --testListJsonPath ${CoreFXTestList} ${coreFXRunCommand} --dotnetPath ${testHostDir}/dotnet --testUrl ${coreFXTestRemoteURL} --executable ${coreFXTestExecutable} --log ${coreFXLogDir} ${coreFXTestExecutableArgs}")
-    echo "${dotnetExe} $buildTestSetupUtilArgs"
-    "${dotnetExe}" $buildTestSetupUtilArgs
-
-    local exitCode=$?
-    if [ $exitCode != 0 ]; then
-        echo Running CoreFX tests finished with failures
-    else
-        echo Running CoreFX tests finished successfully
-    fi    
-    
-    echo Check ${coreFXLogDir} for test run logs
-
-    exit ${exitCode}
 }
 
 declare -a skipCrossGenFiles
@@ -1188,20 +1107,6 @@ do
         --runcrossgentests)
             export RunCrossGen=1
             ;;
-        --corefxtests)
-            export RunCoreFXTests=1
-            ;;
-        --corefxtestsall)
-            export RunCoreFXTests=1
-            export RunCoreFXTestsAll=1
-            ;;
-        --corefxtestlist)
-            export RunCoreFXTests=1
-            export CoreFXTestList=${i#*=} 
-            ;;
-        --testHostDir=*)
-            export testHostDir=${i#*=}
-            ;;
         --sequential)
             ((maxProcesses = 1))
             ;;
@@ -1271,36 +1176,6 @@ if ((disableEventLogging == 0)); then
 fi
 
 export COMPlus_gcServer="$serverGC"
-
-if [ "$RunCoreFXTests" == 1 ];
-then 
-    if [ -z "$coreClrSrc" ]
-    then
-        echo "Coreclr src files are required to run CoreFX tests"
-        echo "Coreclr src files root path can be passed using '--coreclr-src' argument"
-        print_usage
-        exit $EXIT_CODE_EXCEPTION
-    fi
-
-    if [ -z "$testHostDir" ]; then
-        echo "--testHostDir is required to run CoreFX tests"
-        print_usage
-        exit $EXIT_CODE_EXCEPTION
-    fi
-    
-    if [ ! -f "$testHostDir/dotnet" ]; then
-        echo "Executable dotnet not found in $testHostDir"
-        exit $EXIT_CODE_EXCEPTION
-    fi
-
-    if [ ! -d "$testHostDir" ]; then
-        echo "Directory specified by --testHostDir does not exist: $testRootDir"
-        exit $EXIT_CODE_EXCEPTION
-    fi
-
-    create_testhost
-    exit 0
-fi
 
 if [ -z "$testRootDir" ]; then
     echo "--testRootDir is required."

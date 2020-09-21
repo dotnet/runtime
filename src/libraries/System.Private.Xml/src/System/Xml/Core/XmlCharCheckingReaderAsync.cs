@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Xml;
@@ -163,8 +162,7 @@ namespace System.Xml
                             ValidateQName(base.reader.Name);
                             CheckCharacters(base.reader.Value);
 
-                            string str;
-                            str = base.reader.GetAttribute("SYSTEM");
+                            string? str = base.reader.GetAttribute("SYSTEM");
                             if (str != null)
                             {
                                 CheckCharacters(str);
@@ -174,7 +172,7 @@ namespace System.Xml
                             if (str != null)
                             {
                                 int i;
-                                if ((i = _xmlCharType.IsPublicId(str)) >= 0)
+                                if ((i = XmlCharType.IsPublicId(str)) >= 0)
                                 {
                                     Throw(SR.Xml_InvalidCharacter, XmlException.BuildCharExceptionArgs(str, i));
                                 }

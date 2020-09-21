@@ -32,6 +32,14 @@ extern "C" {
 #include <inttypes.h>
 #include <stddef.h>
 
+#ifndef UNW_EMPTY_STRUCT
+#  ifdef __GNUC__
+#    define UNW_EMPTY_STRUCT
+#  else
+#    define UNW_EMPTY_STRUCT uint8_t unused;
+#  endif
+#endif
+
 #define UNW_TARGET      arm
 #define UNW_TARGET_ARM  1
 
@@ -247,6 +255,7 @@ arm_regnum_t;
 typedef struct unw_tdep_save_loc
   {
     /* Additional target-dependent info on a save location.  */
+    UNW_EMPTY_STRUCT
   }
 unw_tdep_save_loc_t;
 
@@ -288,6 +297,7 @@ unw_tdep_context_t;
 typedef struct
   {
     /* no arm-specific auxiliary proc-info */
+    UNW_EMPTY_STRUCT
   }
 unw_tdep_proc_info_t;
 

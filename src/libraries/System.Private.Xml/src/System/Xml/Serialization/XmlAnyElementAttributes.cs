@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Xml.Serialization
 {
@@ -17,16 +16,16 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public XmlAnyElementAttribute this[int index]
+        public XmlAnyElementAttribute? this[int index]
         {
-            get { return (XmlAnyElementAttribute)List[index]; }
+            get { return (XmlAnyElementAttribute?)List[index]; }
             set { List[index] = value; }
         }
 
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public int Add(XmlAnyElementAttribute attribute)
+        public int Add(XmlAnyElementAttribute? attribute)
         {
             return List.Add(attribute);
         }
@@ -34,7 +33,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public void Insert(int index, XmlAnyElementAttribute attribute)
+        public void Insert(int index, XmlAnyElementAttribute? attribute)
         {
             List.Insert(index, attribute);
         }
@@ -42,7 +41,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public int IndexOf(XmlAnyElementAttribute attribute)
+        public int IndexOf(XmlAnyElementAttribute? attribute)
         {
             return List.IndexOf(attribute);
         }
@@ -50,7 +49,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public bool Contains(XmlAnyElementAttribute attribute)
+        public bool Contains(XmlAnyElementAttribute? attribute)
         {
             return List.Contains(attribute);
         }
@@ -58,7 +57,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public void Remove(XmlAnyElementAttribute attribute)
+        public void Remove(XmlAnyElementAttribute? attribute)
         {
             List.Remove(attribute);
         }

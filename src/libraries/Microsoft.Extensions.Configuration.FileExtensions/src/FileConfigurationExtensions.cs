@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using Microsoft.Extensions.FileProviders;
@@ -36,7 +35,7 @@ namespace Microsoft.Extensions.Configuration
         /// Gets the default <see cref="IFileProvider"/> to be used for file-based providers.
         /// </summary>
         /// <param name="builder">The <see cref="IConfigurationBuilder"/>.</param>
-        /// <returns>The <see cref="IConfigurationBuilder"/>.</returns>
+        /// <returns>The default <see cref="IFileProvider"/>.</returns>
         public static IFileProvider GetFileProvider(this IConfigurationBuilder builder)
         {
             if (builder == null)

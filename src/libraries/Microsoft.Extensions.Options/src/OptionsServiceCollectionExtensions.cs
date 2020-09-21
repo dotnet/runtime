@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -134,44 +134,56 @@ namespace Microsoft.Extensions.DependencyInjection
             => services.PostConfigure(name: null, configureOptions: configureOptions);
 
         /// <summary>
-        /// Registers a type that will have all of its I[Post]ConfigureOptions registered.
+        /// Registers a type that will have all of its <see cref="IConfigureOptions{TOptions}"/>,
+        /// <see cref="IPostConfigureOptions{TOptions}"/>, and <see cref="IValidateOptions{TOptions}"/>
+        /// registered.
         /// </summary>
         /// <typeparam name="TConfigureOptions">The type that will configure options.</typeparam>
         /// <param name="services">The <see cref="IServiceCollection"/> to add the services to.</param>
         /// <returns>The <see cref="IServiceCollection"/> so that additional calls can be chained.</returns>
-        public static IServiceCollection ConfigureOptions<TConfigureOptions>(this IServiceCollection services) where TConfigureOptions : class
-            => services.ConfigureOptions(typeof(TConfigureOptions));
+        public static IServiceCollection ConfigureOptions<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TConfigureOptions>(
+            this IServiceCollection services)
+            where TConfigureOptions : class
+                => services.ConfigureOptions(typeof(TConfigureOptions));
 
         private static bool IsAction(Type type)
             => (type.GetTypeInfo().IsGenericType && type.GetGenericTypeDefinition() == typeof(Action<>));
 
-        private static IEnumerable<Type> FindIConfigureOptions(Type type)
+        private static IEnumerable<Type> FindConfigurationServices(Type type)
         {
-            var serviceTypes = type.GetTypeInfo().ImplementedInterfaces
-                .Where(t => t.GetTypeInfo().IsGenericType && 
-                (t.GetGenericTypeDefinition() == typeof(IConfigureOptions<>)
-                || t.GetGenericTypeDefinition() == typeof(IPostConfigureOptions<>)));
+            IEnumerable<Type> serviceTypes = type
+                .GetTypeInfo()
+                .ImplementedInterfaces
+                .Where(t => t.GetTypeInfo().IsGenericType)
+                .Where(t =>
+                    t.GetGenericTypeDefinition() == typeof(IConfigureOptions<>) ||
+                    t.GetGenericTypeDefinition() == typeof(IPostConfigureOptions<>) ||
+                    t.GetGenericTypeDefinition() == typeof(IValidateOptions<>));
             if (!serviceTypes.Any())
             {
                 throw new InvalidOperationException(
                     IsAction(type)
-                    ? SR.Error_NoIConfigureOptionsAndAction
-                    : SR.Error_NoIConfigureOptions);
+                    ? SR.Error_NoConfigurationServicesAndAction
+                    : SR.Error_NoConfigurationServices);
             }
             return serviceTypes;
         }
 
         /// <summary>
-        /// Registers a type that will have all of its I[Post]ConfigureOptions registered.
+        /// Registers a type that will have all of its <see cref="IConfigureOptions{TOptions}"/>,
+        /// <see cref="IPostConfigureOptions{TOptions}"/>, and <see cref="IValidateOptions{TOptions}"/>
+        /// registered.
         /// </summary>
         /// <param name="services">The <see cref="IServiceCollection"/> to add the services to.</param>
         /// <param name="configureType">The type that will configure options.</param>
         /// <returns>The <see cref="IServiceCollection"/> so that additional calls can be chained.</returns>
-        public static IServiceCollection ConfigureOptions(this IServiceCollection services, Type configureType)
+        public static IServiceCollection ConfigureOptions(
+            this IServiceCollection services,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type configureType)
         {
             services.AddOptions();
-            var serviceTypes = FindIConfigureOptions(configureType);
-            foreach (var serviceType in serviceTypes)
+            IEnumerable<Type> serviceTypes = FindConfigurationServices(configureType);
+            foreach (Type serviceType in serviceTypes)
             {
                 services.AddTransient(serviceType, configureType);
             }
@@ -179,7 +191,9 @@ namespace Microsoft.Extensions.DependencyInjection
         }
 
         /// <summary>
-        /// Registers an object that will have all of its I[Post]ConfigureOptions registered.
+        /// Registers an object that will have all of its <see cref="IConfigureOptions{TOptions}"/>,
+        /// <see cref="IPostConfigureOptions{TOptions}"/>, and <see cref="IValidateOptions{TOptions}"/>
+        /// registered.
         /// </summary>
         /// <param name="services">The <see cref="IServiceCollection"/> to add the services to.</param>
         /// <param name="configureInstance">The instance that will configure options.</param>
@@ -187,8 +201,8 @@ namespace Microsoft.Extensions.DependencyInjection
         public static IServiceCollection ConfigureOptions(this IServiceCollection services, object configureInstance)
         {
             services.AddOptions();
-            var serviceTypes = FindIConfigureOptions(configureInstance.GetType());
-            foreach (var serviceType in serviceTypes)
+            IEnumerable<Type> serviceTypes = FindConfigurationServices(configureInstance.GetType());
+            foreach (Type serviceType in serviceTypes)
             {
                 services.AddSingleton(serviceType, configureInstance);
             }

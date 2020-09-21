@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================================
 **
@@ -37,7 +36,7 @@ If E=0 and F is zero and S is 0, then V=0
 
 #define TO_DOUBLE(x)    (*((double*)((void*)&x)))
 
-int __cdecl main(int argc, char **argv)
+PALTEST(c_runtime__finite_test1_paltest_finite_test1, "c_runtime/_finite/test1/paltest_finite_test1")
 {
     /*non-finite numbers*/
     UINT64 lsnan =              UI64(0xffffffffffffffff);

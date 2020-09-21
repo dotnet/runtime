@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
-#nullable enable
 using System;
 using System.IO;
 using System.Text;
@@ -84,13 +82,13 @@ namespace System.Xml
             _impl.OuterReader = this;
         }
 
-        public XmlTextReader(Stream xmlFragment, XmlNodeType fragType, XmlParserContext context)
+        public XmlTextReader(Stream xmlFragment, XmlNodeType fragType, XmlParserContext? context)
         {
             _impl = new XmlTextReaderImpl(xmlFragment, fragType, context);
             _impl.OuterReader = this;
         }
 
-        public XmlTextReader(string xmlFragment, XmlNodeType fragType, XmlParserContext context)
+        public XmlTextReader(string xmlFragment, XmlNodeType fragType, XmlParserContext? context)
         {
             _impl = new XmlTextReaderImpl(xmlFragment, fragType, context);
             _impl.OuterReader = this;
@@ -204,7 +202,7 @@ namespace System.Xml
             return _impl.MoveToAttribute(name);
         }
 
-        public override bool MoveToAttribute(string localName, string namespaceURI)
+        public override bool MoveToAttribute(string localName, string? namespaceURI)
         {
             return _impl.MoveToAttribute(localName, namespaceURI);
         }
@@ -353,15 +351,12 @@ namespace System.Xml
             return _impl.LookupPrefix(namespaceName);
         }
 
-        // This pragma disables a warning that the return type is not CLS-compliant, but generics are part of CLS in Whidbey.
-#pragma warning disable 3002
         // FXCOP: ExplicitMethodImplementationsInUnsealedClassesHaveVisibleAlternates
         // public versions of IXmlNamespaceResolver methods, so that XmlTextReader subclasses can access them
         public IDictionary<string, string> GetNamespacesInScope(XmlNamespaceScope scope)
         {
             return _impl.GetNamespacesInScope(scope);
         }
-#pragma warning restore 3002
 
         //
         // XmlTextReader
@@ -408,7 +403,7 @@ namespace System.Xml
             set { _impl.EntityHandling = value; }
         }
 
-        public XmlResolver XmlResolver
+        public XmlResolver? XmlResolver
         {
             set { _impl.XmlResolver = value; }
         }

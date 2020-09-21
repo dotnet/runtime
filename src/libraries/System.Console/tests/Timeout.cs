@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.IO;
@@ -12,6 +11,7 @@ using Xunit;
 public class TimeOut
 {
     [Fact]
+    [PlatformSpecific(~TestPlatforms.Browser)]
     public static void OpenStandardXXX_WriteTimeOut()
     {
         using (Stream standardOut = Console.OpenStandardOutput(), standardIn = Console.OpenStandardInput(), standardError = Console.OpenStandardError())
@@ -27,6 +27,7 @@ public class TimeOut
     }
 
     [Fact]
+    [PlatformSpecific(~TestPlatforms.Browser)]
     public static void OpenStandardXXX_ReadTimeOut()
     {
         using (Stream standardOut = Console.OpenStandardOutput(), standardIn = Console.OpenStandardInput(), standardError = Console.OpenStandardError())
@@ -42,6 +43,7 @@ public class TimeOut
     }
 
     [Fact]
+    [PlatformSpecific(~TestPlatforms.Browser)]
     public static void OpenStandardXXX_CanTimeOut()
     {
         using (Stream standardOut = Console.OpenStandardOutput(), standardIn = Console.OpenStandardInput(), standardError = Console.OpenStandardError())
@@ -50,5 +52,12 @@ public class TimeOut
             Assert.False(standardIn.CanTimeout);
             Assert.False(standardError.CanTimeout);
         }
+    }
+
+    [Fact]
+    [PlatformSpecific(TestPlatforms.Browser)]
+    public static void OpenStandardInput_Throws_PlatformNotSupportedException()
+    {
+        Assert.Throws<PlatformNotSupportedException>(() => Console.OpenStandardInput());
     }
 }

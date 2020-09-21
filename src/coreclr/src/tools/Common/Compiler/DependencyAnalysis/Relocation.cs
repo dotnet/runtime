@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 
@@ -326,6 +325,27 @@ namespace ILCompiler.DependencyAnalysis
                 default:
                     Debug.Fail("Invalid RelocType: " + relocType);
                     return 0;
+            }
+        }
+
+        /// <summary>
+        /// Return file relocation type for the given relocation type. If the relocation
+        /// doesn't require a file-level relocation entry in the .reloc section, 0 is returned
+        /// corresponding to the IMAGE_REL_BASED_ABSOLUTE no-op relocation record.
+        /// </summary>
+        /// <param name="relocationType">Relocation type</param>
+        /// <returns>File-level relocation type or 0 (IMAGE_REL_BASED_ABSOLUTE) if none is required</returns>
+        public static RelocType GetFileRelocationType(RelocType relocationType)
+        {
+            switch (relocationType)
+            {
+                case RelocType.IMAGE_REL_BASED_HIGHLOW:
+                case RelocType.IMAGE_REL_BASED_DIR64:
+                case RelocType.IMAGE_REL_BASED_THUMB_MOV32:
+                    return relocationType;
+
+                default:
+                    return RelocType.IMAGE_REL_BASED_ABSOLUTE;
             }
         }
 

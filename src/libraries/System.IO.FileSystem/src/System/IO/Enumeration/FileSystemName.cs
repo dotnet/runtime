@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Text;
@@ -38,8 +37,7 @@ namespace System.IO.Enumeration
                 return "*";
 
             bool modified = false;
-            Span<char> stackSpace = stackalloc char[32];
-            ValueStringBuilder sb = new ValueStringBuilder(stackSpace);
+            ValueStringBuilder sb = new ValueStringBuilder(stackalloc char[32]);
             int length = expression.Length;
             for (int i = 0; i < length; i++)
             {

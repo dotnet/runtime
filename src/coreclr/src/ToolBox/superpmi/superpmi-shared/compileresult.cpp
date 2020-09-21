@@ -796,6 +796,16 @@ void CompileResult::applyRelocs(unsigned char* block1, ULONG blocksize1, void* o
                 size_t address = section_begin + (size_t)fixupLocation - (size_t)originalAddr;
                 if ((section_begin <= address) && (address < section_end)) // A reloc for our section?
                 {
+#if defined(TARGET_AMD64)
+                    // During an actual compile, recordRelocation() will be called before the compile
+                    // is actually finished, and it will write the relative offset into the fixupLocation.
+                    // Then, emitEndCodeGen() will patch forward jumps by subtracting any adjustment due
+                    // to overestimation of instruction sizes. Because we're applying the relocs after the
+                    // compile has finished, we need to reverse that: i.e. add in the (negative) adjustment
+                    // that's now in the fixupLocation.
+                    INT32 adjustment = *(INT32*)address;
+                    delta += adjustment;
+#endif
                     LogDebug("  fixupLoc-%016llX (@%p) : %08X => %08X", fixupLocation, address, *(DWORD*)address,
                              delta);
                     *(DWORD*)address = (DWORD)delta;
@@ -885,9 +895,17 @@ void* CompileResult::repAddressMap(void* replayAddress)
 {
     if (AddressMap == nullptr)
         return nullptr;
-    Agnostic_AddressMap value;
-    value = AddressMap->Get((DWORDLONG)replayAddress);
-    return (void*)value.Address;
+
+    int index = AddressMap->GetIndex((DWORDLONG)replayAddress);
+
+    if (index != -1)
+    {
+        Agnostic_AddressMap value;
+        value = AddressMap->Get((DWORDLONG)replayAddress);
+        return (void*)value.Address;
+    }
+
+    return nullptr;
 }
 void* CompileResult::searchAddressMap(void* newAddress)
 {
@@ -952,45 +970,12 @@ void CompileResult::dmpAllocUnwindInfo(DWORD key, const Agnostic_AllocUnwindInfo
            value.pUnwindBlock_index, value.funcKind);
 }
 
-void CompileResult::recAllocMethodBlockCounts(ULONG count, ICorJitInfo::BlockCounts** pBlockCounts, HRESULT result)
-{
-    if (AllocMethodBlockCounts == nullptr)
-        AllocMethodBlockCounts = new LightWeightMap<DWORD, Agnostic_AllocMethodBlockCounts>();
-
-    Agnostic_AllocMethodBlockCounts value;
-
-    value.count  = (DWORD)count;
-    value.result = (DWORD)result;
-    value.pBlockCounts_index =
-        AllocMethodBlockCounts->AddBuffer((unsigned char*)*pBlockCounts, count * sizeof(ICorJitInfo::BlockCounts));
-
-    AllocMethodBlockCounts->Add((DWORD)0, value);
-}
-void CompileResult::dmpAllocMethodBlockCounts(DWORD key, const Agnostic_AllocMethodBlockCounts& value)
-{
-    printf("AllocMethodBlockCounts key %u, value cnt-%u ind-%u res-%08X", key, value.count, value.pBlockCounts_index,
-           value.result);
-}
-HRESULT CompileResult::repAllocMethodBlockCounts(ULONG count, ICorJitInfo::BlockCounts** pBlockCounts)
-{
-    Agnostic_AllocMethodBlockCounts value;
-    value = AllocMethodBlockCounts->Get((DWORD)0);
-
-    if (count != value.count)
-        __debugbreak();
-
-    HRESULT result = (HRESULT)value.result;
-    *pBlockCounts = (ICorJitInfo::BlockCounts*)AllocMethodBlockCounts->GetBuffer(value.pBlockCounts_index);
-    recAddressMap((void*)0x4242, (void*)*pBlockCounts, count * (sizeof(ICorJitInfo::BlockCounts)));
-    return result;
-}
-
 void CompileResult::recRecordCallSite(ULONG instrOffset, CORINFO_SIG_INFO* callSig, CORINFO_METHOD_HANDLE methodHandle)
 {
     repRecordCallSite(instrOffset, callSig, methodHandle);
 }
 
-void CompileResult::dmpRecordCallSite(DWORD key, const Agnostic_RecordCallSite& value)
+void CompileResult::dmpRecordCallSiteWithSignature(DWORD key, const Agnostic_RecordCallSite& value) const
 {
     printf("RecordCallSite key %u, callSig{cc-%u rtc-%016llX rts-%016llX rt-%u flg-%u na-%u cc-%u ci-%u mc-%u mi-%u "
            "sig-%u pSig-%u scp-%016llX tok-%08X} ftn-%016llX",
@@ -1001,16 +986,26 @@ void CompileResult::dmpRecordCallSite(DWORD key, const Agnostic_RecordCallSite& 
            value.callSig.token, value.methodHandle);
 }
 
+void CompileResult::dmpRecordCallSiteWithoutSignature(DWORD key, DWORDLONG methodHandle) const
+{
+    printf("RecordCallSite without call signature key %u, ftn-%016llX", key, methodHandle);
+}
+
 void CompileResult::repRecordCallSite(ULONG instrOffset, CORINFO_SIG_INFO* callSig, CORINFO_METHOD_HANDLE methodHandle)
 {
-    if (RecordCallSite == nullptr)
-        RecordCallSite = new LightWeightMap<DWORD, Agnostic_RecordCallSite>();
-
-    Agnostic_RecordCallSite value;
-    ZeroMemory(&value, sizeof(Agnostic_RecordCallSite));
+    
+    if (RecordCallSiteWithSignature == nullptr)
+    {
+        // The most call site records have only `methodHandle`, so creating two separate maps give us better perfomance
+        // and smaller memory consumption. Note: we are not reading values from these maps during a normal replay.
+        RecordCallSiteWithSignature = new LightWeightMap<DWORD, Agnostic_RecordCallSite>();
+        RecordCallSiteWithoutSignature = new LightWeightMap<DWORD, DWORDLONG>();
+    }
 
     if (callSig != nullptr)
     {
+        Agnostic_RecordCallSite value;
+        ZeroMemory(&value, sizeof(Agnostic_RecordCallSite));
         value.callSig.callConv               = (DWORD)callSig->callConv;
         value.callSig.retTypeClass           = (DWORDLONG)callSig->retTypeClass;
         value.callSig.retTypeSigClass        = (DWORDLONG)callSig->retTypeSigClass;
@@ -1019,51 +1014,35 @@ void CompileResult::repRecordCallSite(ULONG instrOffset, CORINFO_SIG_INFO* callS
         value.callSig.numArgs                = (DWORD)callSig->numArgs;
         value.callSig.sigInst_classInstCount = (DWORD)callSig->sigInst.classInstCount;
         value.callSig.sigInst_classInst_Index =
-            RecordCallSite->AddBuffer((unsigned char*)callSig->sigInst.classInst,
+            RecordCallSiteWithSignature->AddBuffer((unsigned char*)callSig->sigInst.classInst,
                                       callSig->sigInst.classInstCount * 8); // porting issue
         value.callSig.sigInst_methInstCount = (DWORD)callSig->sigInst.methInstCount;
         value.callSig.sigInst_methInst_Index =
-            RecordCallSite->AddBuffer((unsigned char*)callSig->sigInst.methInst,
+            RecordCallSiteWithSignature->AddBuffer((unsigned char*)callSig->sigInst.methInst,
                                       callSig->sigInst.methInstCount * 8); // porting issue
         value.callSig.args       = (DWORDLONG)callSig->args;
         value.callSig.cbSig      = (DWORD)callSig->cbSig;
-        value.callSig.pSig_Index = (DWORD)RecordCallSite->AddBuffer((unsigned char*)callSig->pSig, callSig->cbSig);
+        value.callSig.pSig_Index = (DWORD)RecordCallSiteWithSignature->AddBuffer((unsigned char*)callSig->pSig, callSig->cbSig);
         value.callSig.scope      = (DWORDLONG)callSig->scope;
         value.callSig.token      = (DWORD)callSig->token;
+        value.methodHandle = (DWORDLONG)methodHandle;
+        RecordCallSiteWithSignature->Add(instrOffset, value);
     }
     else
     {
-        value.callSig.callConv                = (DWORD)-1;
-        value.callSig.retTypeClass            = (DWORDLONG)-1;
-        value.callSig.retTypeSigClass         = (DWORDLONG)-1;
-        value.callSig.retType                 = (DWORD)-1;
-        value.callSig.flags                   = (DWORD)-1;
-        value.callSig.numArgs                 = (DWORD)-1;
-        value.callSig.sigInst_classInstCount  = (DWORD)-1;
-        value.callSig.sigInst_classInst_Index = (DWORD)-1;
-        value.callSig.sigInst_methInstCount   = (DWORD)-1;
-        value.callSig.sigInst_methInst_Index  = (DWORD)-1;
-        value.callSig.args                    = (DWORDLONG)-1;
-        value.callSig.cbSig                   = (DWORD)-1;
-        value.callSig.pSig_Index              = (DWORD)-1;
-        value.callSig.scope                   = (DWORDLONG)-1;
-        value.callSig.token                   = (DWORD)-1;
+        RecordCallSiteWithoutSignature->Add(instrOffset, (DWORDLONG)methodHandle);
     }
-
-    value.methodHandle = (DWORDLONG)methodHandle;
-
-    RecordCallSite->Add(instrOffset, value);
 }
 
 bool CompileResult::fndRecordCallSiteSigInfo(ULONG instrOffset, CORINFO_SIG_INFO* pCallSig)
 {
-    if (RecordCallSite == nullptr)
+    if (RecordCallSiteWithSignature == nullptr)
         return false;
 
-    if (RecordCallSite->GetIndex(instrOffset) == -1)
+    if (RecordCallSiteWithSignature->GetIndex(instrOffset) == -1)
         return false;
 
-    Agnostic_RecordCallSite value = RecordCallSite->Get(instrOffset);
+    Agnostic_RecordCallSite value = RecordCallSiteWithSignature->Get(instrOffset);
 
     if (value.callSig.callConv == (DWORD)-1)
         return false;
@@ -1076,12 +1055,12 @@ bool CompileResult::fndRecordCallSiteSigInfo(ULONG instrOffset, CORINFO_SIG_INFO
     pCallSig->numArgs                = (unsigned)value.callSig.numArgs;
     pCallSig->sigInst.classInstCount = (unsigned)value.callSig.sigInst_classInstCount;
     pCallSig->sigInst.classInst =
-        (CORINFO_CLASS_HANDLE*)RecordCallSite->GetBuffer(value.callSig.sigInst_classInst_Index);
+        (CORINFO_CLASS_HANDLE*)RecordCallSiteWithSignature->GetBuffer(value.callSig.sigInst_classInst_Index);
     pCallSig->sigInst.methInstCount = (unsigned)value.callSig.sigInst_methInstCount;
-    pCallSig->sigInst.methInst = (CORINFO_CLASS_HANDLE*)RecordCallSite->GetBuffer(value.callSig.sigInst_methInst_Index);
+    pCallSig->sigInst.methInst = (CORINFO_CLASS_HANDLE*)RecordCallSiteWithSignature->GetBuffer(value.callSig.sigInst_methInst_Index);
     pCallSig->args             = (CORINFO_ARG_LIST_HANDLE)value.callSig.args;
     pCallSig->cbSig            = (unsigned int)value.callSig.cbSig;
-    pCallSig->pSig             = (PCCOR_SIGNATURE)RecordCallSite->GetBuffer(value.callSig.pSig_Index);
+    pCallSig->pSig             = (PCCOR_SIGNATURE)RecordCallSiteWithSignature->GetBuffer(value.callSig.pSig_Index);
     pCallSig->scope            = (CORINFO_MODULE_HANDLE)value.callSig.scope;
     pCallSig->token            = (mdToken)value.callSig.token;
 
@@ -1090,14 +1069,16 @@ bool CompileResult::fndRecordCallSiteSigInfo(ULONG instrOffset, CORINFO_SIG_INFO
 
 bool CompileResult::fndRecordCallSiteMethodHandle(ULONG instrOffset, CORINFO_METHOD_HANDLE* pMethodHandle)
 {
-    if (RecordCallSite == nullptr)
-        return false;
-
-    if (RecordCallSite->GetIndex(instrOffset) == -1)
-        return false;
-
-    Agnostic_RecordCallSite value = RecordCallSite->Get(instrOffset);
-    *pMethodHandle                = (CORINFO_METHOD_HANDLE)value.methodHandle;
-
-    return true;
+    
+    if (RecordCallSiteWithSignature != nullptr && RecordCallSiteWithSignature->GetIndex(instrOffset) != -1)
+    {
+        Agnostic_RecordCallSite value = RecordCallSiteWithSignature->Get(instrOffset);
+        *pMethodHandle = (CORINFO_METHOD_HANDLE)value.methodHandle;
+    }
+    else if (RecordCallSiteWithoutSignature != nullptr && RecordCallSiteWithoutSignature->GetIndex(instrOffset) != -1)
+    {
+        CORINFO_METHOD_HANDLE value = (CORINFO_METHOD_HANDLE)RecordCallSiteWithoutSignature->Get(instrOffset);
+        *pMethodHandle = value;
+    }
+    return false;
 }

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*=====================================================================
 **
@@ -32,7 +31,7 @@
 
 #include <palsuite.h>
 
-int __cdecl main(int argc, char **argv)
+PALTEST(c_runtime_fread_test2_paltest_fread_test2, "c_runtime/fread/test2/paltest_fread_test2")
 {
     const char filename[] = "testfile";
     char buffer[128];

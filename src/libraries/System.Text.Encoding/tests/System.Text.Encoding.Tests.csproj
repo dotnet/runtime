@@ -4,6 +4,8 @@
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <!-- Encoding.UTF7 and UTF7Encoding are obsolete, but we're the unit test project for it, so suppress warnings -->
+    <NoWarn>$(NoWarn),SYSLIB0001</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ASCIIEncoding\ASCIIEncodingEncode.cs" />
@@ -34,6 +36,7 @@
     <Compile Include="Encoding\EncodingGetEncodingTests.cs" />
     <Compile Include="Encoding\EncodingConvertTests.cs" />
     <Compile Include="Encoding\EncodingVirtualTests.cs" />
+    <Compile Include="Encoding\TranscodingStreamTests.cs" />
     <Compile Include="Fallback\DecoderReplacementFallbackTests.cs" />
     <Compile Include="Fallback\EncoderReplacementFallbackTests.cs" />
     <Compile Include="Fallback\EncoderExceptionFallbackTests.cs" />
@@ -76,5 +79,11 @@
     <Compile Include="UnicodeEncoding\UnicodeEncoding.cs" />
     <Compile Include="Decoder\Decoder.cs" />
     <Compile Include="Encoder\Encoder.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="runtimeconfig.template.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Moq" Version="$(MoqVersion)" />
   </ItemGroup>
 </Project>

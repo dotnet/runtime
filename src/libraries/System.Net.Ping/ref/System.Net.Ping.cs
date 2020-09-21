@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ------------------------------------------------------------------------------
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
@@ -69,7 +68,7 @@ namespace System.Net.NetworkInformation
     public partial class PingCompletedEventArgs : System.ComponentModel.AsyncCompletedEventArgs
     {
         internal PingCompletedEventArgs() : base (default(System.Exception), default(bool), default(object)) { }
-        public System.Net.NetworkInformation.PingReply Reply { get { throw null; } }
+        public System.Net.NetworkInformation.PingReply? Reply { get { throw null; } }
     }
     public delegate void PingCompletedEventHandler(object sender, System.Net.NetworkInformation.PingCompletedEventArgs e);
     public partial class PingException : System.InvalidOperationException

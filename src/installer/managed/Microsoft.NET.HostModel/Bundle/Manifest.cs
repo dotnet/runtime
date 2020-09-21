@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -12,22 +11,22 @@ namespace Microsoft.NET.HostModel.Bundle
     /// <summary>
     ///  BundleManifest is a description of the contents of a bundle file.
     ///  This class handles creation and consumption of bundle-manifests.
-    ///  
+    ///
     ///  Here is the description of the Bundle Layout:
     ///  _______________________________________________
-    ///  AppHost 
+    ///  AppHost
     ///
     ///
     /// ------------Embedded Files ---------------------
     /// The embedded files including the app, its
-    /// configuration files, dependencies, and 
+    /// configuration files, dependencies, and
     /// possibly the runtime.
-    /// 
-    /// 
-    /// 
-    /// 
-    /// 
-    /// 
+    ///
+    ///
+    ///
+    ///
+    ///
+    ///
     ///
     /// ------------ Bundle Header -------------
     ///     MajorVersion
@@ -44,9 +43,9 @@ namespace Microsoft.NET.HostModel.Bundle
     /// - - - - - - Manifest Entries - - - - - - - - - - -
     ///     Series of FileEntries (for each embedded file)
     ///     [File Type, Name, Offset, Size information]
-    ///     
-    ///     
-    /// 
+    ///
+    ///
+    ///
     /// _________________________________________________
     /// </summary>
     public class Manifest
@@ -56,13 +55,13 @@ namespace Microsoft.NET.HostModel.Bundle
         // by constructing the bundler with BundleAllConent option.
         // This mode is expected to be deprecated in future versions of .NET.
         [Flags]
-        enum HeaderFlags : ulong
+        private enum HeaderFlags : ulong
         {
             None = 0,
             NetcoreApp3CompatMode = 1
         }
 
-        // Bundle ID is a string that is used to uniquely 
+        // Bundle ID is a string that is used to uniquely
         // identify this bundle. It is choosen to be compatible
         // with path-names so that the AppHost can use it in
         // extraction path.
@@ -76,9 +75,9 @@ namespace Microsoft.NET.HostModel.Bundle
         public static string CurrentVersion => $"{CurrentMajorVersion}.{MinorVersion}";
         public string DesiredVersion => $"{DesiredMajorVersion}.{MinorVersion}";
 
-        FileEntry DepsJsonEntry = null;
-        FileEntry RuntimeConfigJsonEntry = null;
-        HeaderFlags Flags;
+        private FileEntry DepsJsonEntry;
+        private FileEntry RuntimeConfigJsonEntry;
+        private HeaderFlags Flags;
 
         public List<FileEntry> Files;
 
@@ -95,7 +94,7 @@ namespace Microsoft.NET.HostModel.Bundle
             FileEntry entry = new FileEntry(type, relativePath, offset, size);
             Files.Add(entry);
 
-            switch(entry.Type)
+            switch (entry.Type)
             {
                 case FileType.DepsJson:
                     DepsJsonEntry = entry;
@@ -119,9 +118,9 @@ namespace Microsoft.NET.HostModel.Bundle
             long startOffset = writer.BaseStream.Position;
 
             // Write the bundle header
-            writer.Write(DesiredMajorVersion); 
+            writer.Write(DesiredMajorVersion);
             writer.Write(MinorVersion);
-            writer.Write(Files.Count());
+            writer.Write(Files.Count);
             writer.Write(BundleID);
 
             if (DesiredMajorVersion == 2)

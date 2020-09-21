@@ -1,0 +1,80 @@
+<!--
+***********************************************************************************************
+CLRTest.Execute.targets
+
+WARNING:  DO NOT MODIFY this file unless you are knowledgeable about MSBuild and have
+          created a backup copy.  Incorrect changes to this file will make it
+          impossible to load or build your projects from the command-line or the IDE.
+
+This file contains the logic for providing Execution Script generation.
+
+***********************************************************************************************
+-->
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <!--
+  *******************************************************************************************
+  PROPERTIES/ITEMS: Used when prepping a test for execution
+  -->
+  <!-- Temporary Defaults -->
+  <PropertyGroup>
+      <_CLRTestNeedsToRun Condition=" '$(_CLRTestNeedsToRun)' == '' ">true</_CLRTestNeedsToRun>
+      <_CLRTestBuildsExecutable Condition=" '$(_CLRTestBuildsExecutable)' == '' ">true</_CLRTestBuildsExecutable>
+      <CLRTestIsHosted Condition=" '$(CLRTestIsHosted)' == '' ">true</CLRTestIsHosted>
+      <_CLRTestNeedsProjectToRun Condition=" '$(_CLRTestNeedsProjectToRun)' == '' ">false</_CLRTestNeedsProjectToRun>
+  </PropertyGroup>
+
+  <PropertyGroup> 
+    <!-- TODO:1 Get the right guidance for overriding the default -->
+    <CLRTestExitCode Condition=" '$(CLRTestExitCode)' == '' ">100</CLRTestExitCode>
+  </PropertyGroup>
+
+  <ItemDefinitionGroup>
+    <CLRTestExecutionScriptArgument>
+      <HasParam>false</HasParam>
+    </CLRTestExecutionScriptArgument>
+  </ItemDefinitionGroup>
+    
+    <!--
+  *******************************************************************************************
+  TARGET: GenerateExecutionScript
+  
+  TODO: get rid of this!
+  
+  The PreCheckin system depends directly on this target (boo).  This makes sure the script ends up in the right place.
+  -->
+  <Target Name="GenerateExecutionScript"
+    DependsOnTargets="GenerateExecutionScriptsInternal"/>
+
+  <!--
+  *******************************************************************************************
+  TARGET: GenerateExecutionScriptsInternal
+  
+  For tests that "run" we will generate an execution script that wraps any arguments or other
+  goo.  This allows generated .lst files to be very simple and reusable to invoke any "stage"
+  of test execution.
+  
+  Notice this is hooked up to run after targets that generate the stores that are marked with GenerateScripts metadata.
+  Note also that this means it will run after the first of such targets.
+  -->
+  
+  <ItemGroup>
+    <ExecutionScriptKind Include="Batch" Condition="'$(TargetsWindows)' == 'true'" />
+    <ExecutionScriptKind Include="Bash"  Condition="'$(TargetsWindows)' != 'true'" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <BashScriptSnippetGen></BashScriptSnippetGen>
+    <BatchScriptSnippetGen></BatchScriptSnippetGen>
+  </PropertyGroup>
+ 
+  <Import Project="CLRTest.Jit.targets" />
+  <Import Project="CLRTest.CrossGen.targets" />
+  <Import Project="CLRTest.GC.targets" />
+  <Import Project="CLRTest.Execute.*.targets" />
+  <Import Project="CLRTest.MockHosting.targets" Condition="'$(RequiresMockHostPolicy)' == 'true'" />
+  
+  <Target Name="GenerateExecutionScriptsInternal"
+    Condition="$(_CLRTestNeedsToRun) or $(_CLRTestBuildsExecutable)"
+    DependsOnTargets="Generate@(ExecutionScriptKind, 'ExecutionScript;Generate')ExecutionScript;" />
+  
+</Project>

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 
@@ -72,7 +71,7 @@ namespace System.Diagnostics
         {
             private readonly EventLogEntryCollection entries;
             private int num = -1;
-            private EventLogEntry cachedEntry = null;
+            private EventLogEntry cachedEntry;
 
             internal EntriesEnumerator(EventLogEntryCollection entries)
             {

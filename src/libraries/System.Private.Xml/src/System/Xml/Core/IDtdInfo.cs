@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
-#nullable enable
 using System;
 using System.Collections.Generic;
 
@@ -58,7 +56,7 @@ namespace System.Xml
         /// </summary>
         /// <param name="name">The name of the entity to look for</param>
         /// <returns>Interface representing an entity or null if none was found.</returns>
-        IDtdEntityInfo LookupEntity(string name);
+        IDtdEntityInfo? LookupEntity(string name);
     };
 
     //
@@ -90,7 +88,7 @@ namespace System.Xml
         /// <param name="prefix">The prefix of the attribute to look for</param>
         /// <param name="localName">The local name of the attribute to look for</param>
         /// <returns>Interface representing an attribute or null is none was found</returns>
-        IDtdAttributeInfo LookupAttribute(string prefix, string localName);
+        IDtdAttributeInfo? LookupAttribute(string prefix, string localName);
         /// <summary>
         /// Returns enumeration of all default attributes
         /// defined in this attribute list.
@@ -101,7 +99,7 @@ namespace System.Xml
         /// Looks up a ID attribute defined in the attribute list. Returns
         /// null if the attribute list does define an ID attribute.
         /// </summary>
-        IDtdAttributeInfo LookupIdAttribute();
+        IDtdAttributeInfo? LookupIdAttribute();
     }
 
     //
@@ -162,13 +160,17 @@ namespace System.Xml
         /// is correctly normalized.
         /// </summary>
         string DefaultValueExpanded { get; }
+
         /// <summary>
         /// The typed default value of the attribute.
         /// </summary>
-        object DefaultValueTyped { get; }        /// <summary>
-                                                 /// The line number of the default value (in the DTD)
-                                                 /// </summary>
+        object? DefaultValueTyped { get; }
+
+        /// <summary>
+        /// The line number of the default value (in the DTD)
+        /// </summary>
         int ValueLineNumber { get; }
+
         /// <summary>
         /// The line position of the default value (in the DTD)
         /// </summary>
@@ -216,15 +218,15 @@ namespace System.Xml
         /// <summary>
         /// SYSTEM identifier (URI) of the entity value - only used for external entities
         /// </summary>
-        string SystemId { get; }
+        string? SystemId { get; }
         /// <summary>
         /// PUBLIC identifier of the entity value - only used for external entities
         /// </summary>
-        string PublicId { get; }
+        string? PublicId { get; }
         /// <summary>
         /// Replacement text of an entity. Valid only for internal entities.
         /// </summary>
-        string Text { get; }
+        string? Text { get; }
         /// <summary>
         /// The line number of the entity value
         /// </summary>

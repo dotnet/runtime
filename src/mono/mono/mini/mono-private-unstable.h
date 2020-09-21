@@ -29,4 +29,11 @@ mono_install_load_aot_data_hook (MonoLoadAotDataFunc load_func, MonoFreeAotDataF
 MONO_API int
 monovm_initialize (int propertyCount, const char **propertyKeys, const char **propertyValues);
 
+//#ifdef HOST_WASM
+typedef void* (*MonoWasmGetNativeToInterpTramp) (MonoMethod *method, void *extra_arg);
+
+MONO_API void
+mono_wasm_install_get_native_to_interp_tramp (MonoWasmGetNativeToInterpTramp cb);
+//#endif
+
 #endif /*__MONO_JIT_MONO_PRIVATE_UNSTABLE_H__*/

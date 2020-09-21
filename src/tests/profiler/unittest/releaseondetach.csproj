@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworkIdentifier>.NETCoreApp</TargetFrameworkIdentifier>
+    <OutputType>exe</OutputType>
+    <CLRTestKind>BuildAndRun</CLRTestKind>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <CLRTestPriority>0</CLRTestPriority>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildProjectName).cs" />
+    <ProjectReference Include="$(TestSourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
+    <ProjectReference Include="../common/profiler_common.csproj" />
+    <ProjectReference Include="$(MSBuildThisFileDirectory)/../native/CMakeLists.txt" />
+  </ItemGroup>
+</Project>

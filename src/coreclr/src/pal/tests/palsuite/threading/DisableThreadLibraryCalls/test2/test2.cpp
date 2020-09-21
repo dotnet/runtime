@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*=============================================================================
 **
@@ -47,7 +46,7 @@ typedef int ( PALAPI *LPTESTFUNC )( void );
  *
  * Dummy thread function for causing DLL thread notifications.
  */
-DWORD PALAPI ThreadFunc( LPVOID param )
+DWORD PALAPI ThreadFunc_DisableThreadLibraryCalls_test2( LPVOID param )
 {
     /* simulate some brief "work" */
     int i;
@@ -146,7 +145,7 @@ int __cdecl main( int argc, char **argv )
     /* run another dummy thread to cause notification of the libraries     */
     hThread = CreateThread(    NULL,             /* no security attributes */
                                0,                /* use default stack size */
-      (LPTHREAD_START_ROUTINE) ThreadFunc,       /* thread function        */
+      (LPTHREAD_START_ROUTINE) ThreadFunc_DisableThreadLibraryCalls_test2,       /* thread function        */
                       (LPVOID) NULL,             /* pass thread index as   */
                                                  /* function argument      */
                                CREATE_SUSPENDED, /* create suspended       */

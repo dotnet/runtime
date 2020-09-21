@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
-#nullable enable
 using System;
 using System.Xml;
 using System.Diagnostics;
@@ -260,14 +258,13 @@ namespace System.Xml
             {
                 if (name == _nsAttributes![i].name)
                 {
-                    // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34644
                     return _nsAttributes[i].value;
                 }
             }
             return null;
         }
 
-        public override string? GetAttribute(string name, string namespaceURI)
+        public override string? GetAttribute(string name, string? namespaceURI)
         {
             if (!InAttributeActiveState)
             {
@@ -284,7 +281,6 @@ namespace System.Xml
             {
                 if (name == _nsAttributes![i].localName && namespaceURI == _xmlnsUri)
                 {
-                    // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34644
                     return _nsAttributes[i].value;
                 }
             }
@@ -337,7 +333,7 @@ namespace System.Xml
             return false;
         }
 
-        public override bool MoveToAttribute(string name, string ns)
+        public override bool MoveToAttribute(string name, string? ns)
         {
             if (!InAttributeActiveState)
             {
@@ -802,7 +798,7 @@ namespace System.Xml
             }
         }
 
-        public override object ReadContentAs(Type returnType, IXmlNamespaceResolver namespaceResolver)
+        public override object ReadContentAs(Type returnType, IXmlNamespaceResolver? namespaceResolver)
         {
             try
             {
@@ -1353,12 +1349,12 @@ namespace System.Xml
             for (int i = 0; i < _nsAttrCount; i++)
             {
                 if (Ref.Equal(prefix, _nsAttributes![i].prefix) &&
-                     Ref.Equal(localName, _nsAttributes![i].localName)) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34644
+                    Ref.Equal(localName, _nsAttributes[i].localName))
                 {
                     if (i < _nsAttrCount - 1)
                     {
                         // swap
-                        NodeData tmpNodeData = _nsAttributes![i]; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34644
+                        NodeData tmpNodeData = _nsAttributes[i];
                         _nsAttributes[i] = _nsAttributes[_nsAttrCount - 1];
                         _nsAttributes[_nsAttrCount - 1] = tmpNodeData;
                     }

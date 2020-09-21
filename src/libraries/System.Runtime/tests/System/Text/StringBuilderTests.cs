@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -2230,6 +2229,25 @@ namespace System.Text.Tests
             sb2.Append("12345");
 
             Assert.True(sb1.Equals(sb2));
+        }
+
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/40625")] // Hangs expanding the SB
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static unsafe void FailureOnLargeString()
+        {
+            RemoteExecutor.Invoke(() => // Uses lots of memory
+            {
+                AssertExtensions.ThrowsAny<ArgumentOutOfRangeException, OutOfMemoryException>(() =>
+                {
+                    StringBuilder sb = new StringBuilder();
+                    sb.Append(new char[2_000_000_000]);
+                    sb.Length--;
+                    string s = new string('x', 500_000_000);
+                    sb.Append(s); // This should throw, not AV
+                });
+
+                return RemoteExecutor.SuccessExitCode; // workaround https://github.com/dotnet/arcade/issues/5865
+            }).Dispose();
         }
     }
 }

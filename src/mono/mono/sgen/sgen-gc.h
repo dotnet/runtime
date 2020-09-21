@@ -476,20 +476,37 @@ void sgen_free_internal (void *addr, int type);
 void* sgen_alloc_internal_dynamic (size_t size, int type, gboolean assert_on_failure);
 void sgen_free_internal_dynamic (void *addr, size_t size, int type);
 
+#ifndef DISABLE_SGEN_DEBUG_HELPERS
 void sgen_pin_stats_enable (void);
 void sgen_pin_stats_register_object (GCObject *obj, int generation);
 void sgen_pin_stats_register_global_remset (GCObject *obj);
 void sgen_pin_stats_report (void);
+#else
+static inline void sgen_pin_stats_enable (void) { }
+static inline void sgen_pin_stats_register_object (GCObject *obj, int generation) { }
+static inline void sgen_pin_stats_register_global_remset (GCObject *obj) { }
+static inline void sgen_pin_stats_report (void) { }
+#endif
 
+#ifndef DISABLE_SGEN_DEBUG_HELPERS
 void sgen_gchandle_stats_enable (void);
 void sgen_gchandle_stats_report (void);
+#else
+static inline void sgen_gchandle_stats_enable (void) { }
+static inline void sgen_gchandle_stats_report (void) { }
+#endif
 
 void sgen_sort_addresses (void **array, size_t size);
 void sgen_add_to_global_remset (gpointer ptr, GCObject *obj);
 
 int sgen_get_current_collection_generation (void);
+#ifndef DISABLE_SGEN_MAJOR_MARKSWEEP_CONC
 gboolean sgen_collection_is_concurrent (void);
 gboolean sgen_get_concurrent_collection_in_progress (void);
+#else
+#define sgen_collection_is_concurrent() FALSE
+#define sgen_get_concurrent_collection_in_progress() FALSE
+#endif
 
 void sgen_set_bytes_allocated_attached (guint64 bytes);
 void sgen_increment_bytes_allocated_detached (guint64 bytes);
@@ -837,8 +854,14 @@ void sgen_register_obj_with_weak_fields (GCObject *obj);
 void sgen_mark_togglerefs (char *start, char *end, ScanCopyContext ctx);
 void sgen_clear_togglerefs (char *start, char *end, ScanCopyContext ctx);
 
+#ifndef DISABLE_SGEN_TOGGLEREF
 void sgen_process_togglerefs (void);
 void sgen_register_test_toggleref_callback (void);
+#else
+static inline void sgen_process_togglerefs (void) { }
+static inline void sgen_register_test_toggleref_callback (void) { }
+#endif
+
 
 void sgen_mark_bridge_object (GCObject *obj)
 	MONO_PERMIT (need (sgen_gc_locked));
@@ -1074,7 +1097,11 @@ extern mword sgen_total_promoted_size;
 extern mword sgen_total_allocated_major;
 extern volatile gboolean sgen_suspend_finalizers;
 extern MonoCoopMutex sgen_gc_mutex;
+#ifndef DISABLE_SGEN_MAJOR_MARKSWEEP_CONC
 extern volatile gboolean sgen_concurrent_collection_in_progress;
+#else
+static const gboolean sgen_concurrent_collection_in_progress = FALSE;
+#endif
 
 /* Nursery helpers. */
 

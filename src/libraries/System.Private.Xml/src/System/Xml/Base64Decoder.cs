@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
-using System;
 using System.Diagnostics;
 
 namespace System.Xml
@@ -12,7 +10,7 @@ namespace System.Xml
         //
         // Fields
         //
-        private byte[] _buffer;
+        private byte[]? _buffer;
         private int _startIndex;
         private int _curIndex;
         private int _endIndex;
@@ -70,7 +68,7 @@ namespace System.Xml
             int bytesDecoded, charsDecoded;
             fixed (char* pChars = &chars[startPos])
             {
-                fixed (byte* pBytes = &_buffer[_curIndex])
+                fixed (byte* pBytes = &_buffer![_curIndex])
                 {
                     Decode(pChars, pChars + len, pBytes, pBytes + (_endIndex - _curIndex), out charsDecoded, out bytesDecoded);
                 }
@@ -102,14 +100,16 @@ namespace System.Xml
             {
                 return 0;
             }
+
             int bytesDecoded, charsDecoded;
             fixed (char* pChars = str)
             {
-                fixed (byte* pBytes = &_buffer[_curIndex])
+                fixed (byte* pBytes = &_buffer![_curIndex])
                 {
                     Decode(pChars + startPos, pChars + startPos + len, pBytes, pBytes + (_endIndex - _curIndex), out charsDecoded, out bytesDecoded);
                 }
             }
+
             _curIndex += bytesDecoded;
             return charsDecoded;
         }
@@ -165,7 +165,6 @@ namespace System.Xml
             char* pChar = pChars;
             int b = _bits;
             int bFilled = _bitsFilled;
-            XmlCharType xmlCharType = XmlCharType.Instance;
             while (pChar < pCharsEndPos && pByte < pBytesEndPos)
             {
                 char ch = *pChar;
@@ -177,7 +176,7 @@ namespace System.Xml
                 pChar++;
 
                 // ignore whitespace
-                if (xmlCharType.IsWhiteSpace(ch))
+                if (XmlCharType.IsWhiteSpace(ch))
                 {
                     continue;
                 }
@@ -218,7 +217,7 @@ namespace System.Xml
                 {
                     do
                     {
-                        if (!(xmlCharType.IsWhiteSpace(*pChar++)))
+                        if (!XmlCharType.IsWhiteSpace(*pChar++))
                         {
                             throw new XmlException(SR.Xml_InvalidBase64Value, new string(pChars, 0, (int)(pCharsEndPos - pChars)));
                         }

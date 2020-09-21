@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -175,25 +174,55 @@ namespace System.Tests
             Assert.Null(Type.GetTypeFromHandle(default(RuntimeTypeHandle)));
         }
 
-        [Theory]
-        [InlineData(typeof(int[]), 1)]
-        [InlineData(typeof(int[,,]), 3)]
-        public void GetArrayRank_Get_ReturnsExpected(Type t, int expected)
+        public static IEnumerable<object[]> MakeArrayType_TestData()
         {
-            Assert.Equal(expected, t.GetArrayRank());
+            return new object[][]
+            {
+                // Primitives
+                new object[] { typeof(string), typeof(string[]) },
+                new object[] { typeof(sbyte), typeof(sbyte[]) },
+                new object[] { typeof(byte), typeof(byte[]) },
+                new object[] { typeof(short), typeof(short[]) },
+                new object[] { typeof(ushort), typeof(ushort[]) },
+                new object[] { typeof(int), typeof(int[]) },
+                new object[] { typeof(uint), typeof(uint[]) },
+                new object[] { typeof(long), typeof(long[]) },
+                new object[] { typeof(ulong), typeof(ulong[]) },
+                new object[] { typeof(char), typeof(char[]) },
+                new object[] { typeof(bool), typeof(bool[]) },
+                new object[] { typeof(float), typeof(float[]) },
+                new object[] { typeof(double), typeof(double[]) },
+                new object[] { typeof(IntPtr), typeof(IntPtr[]) },
+                new object[] { typeof(UIntPtr), typeof(UIntPtr[]) },
+
+                // Primitives enums
+                new object[] { typeof(SByteEnum), typeof(SByteEnum[]) },
+                new object[] { typeof(ByteEnum), typeof(ByteEnum[]) },
+                new object[] { typeof(Int16Enum), typeof(Int16Enum[]) },
+                new object[] { typeof(UInt16Enum), typeof(UInt16Enum[]) },
+                new object[] { typeof(Int32Enum), typeof(Int32Enum[]) },
+                new object[] { typeof(UInt32Enum), typeof(UInt32Enum[]) },
+                new object[] { typeof(Int64Enum), typeof(Int64Enum[]) },
+                new object[] { typeof(UInt64Enum), typeof(UInt64Enum[]) },
+
+                // Array, pointers
+                new object[] { typeof(string[]), typeof(string[][]) },
+                new object[] { typeof(int[]), typeof(int[][]) },
+                new object[] { typeof(int*), typeof(int*[]) },
+
+                // Classes, structs, interfaces, enums
+                new object[] { typeof(NonGenericClass), typeof(NonGenericClass[]) },
+                new object[] { typeof(GenericClass<int>), typeof(GenericClass<int>[]) },
+                new object[] { typeof(NonGenericStruct), typeof(NonGenericStruct[]) },
+                new object[] { typeof(GenericStruct<int>), typeof(GenericStruct<int>[]) },
+                new object[] { typeof(NonGenericInterface), typeof(NonGenericInterface[]) },
+                new object[] { typeof(GenericInterface<int>), typeof(GenericInterface<int>[]) },
+                new object[] { typeof(AbstractClass), typeof(AbstractClass[]) }
+            };
         }
 
         [Theory]
-        [InlineData(typeof(int))]
-        [InlineData(typeof(IList<int>))]
-        [InlineData(typeof(IList<>))]
-        public void GetArrayRank_NonArrayType_ThrowsArgumentException(Type t)
-        {
-            AssertExtensions.Throws<ArgumentException>(null, () => t.GetArrayRank());
-        }
-
-        [Theory]
-        [InlineData(typeof(int), typeof(int[]))]
+        [MemberData(nameof(MakeArrayType_TestData))]
         public void MakeArrayType_Invoke_ReturnsExpected(Type t, Type tArrayExpected)
         {
             Type tArray = t.MakeArrayType();
@@ -203,29 +232,265 @@ namespace System.Tests
 
             Assert.True(tArray.IsArray);
             Assert.True(tArray.HasElementType);
+            Assert.Equal(1, tArray.GetArrayRank());
 
-            string s1 = t.ToString();
-            string s2 = tArray.ToString();
-            Assert.Equal(s2, s1 + "[]");
+            Assert.Equal(t.ToString() + "[]", tArray.ToString());
+        }
+
+        public static IEnumerable<object[]> MakeArray_UnusualTypes_TestData()
+        {
+            yield return new object[] { typeof(StaticClass) };
+            yield return new object[] { typeof(void) };
+            yield return new object[] { typeof(GenericClass<>) };
+            yield return new object[] { typeof(GenericClass<>).MakeGenericType(typeof(GenericClass<>)) };
+            yield return new object[] { typeof(GenericClass<>).GetTypeInfo().GetGenericArguments()[0] };
         }
 
         [Theory]
-        [InlineData(typeof(int))]
+        [MemberData(nameof(MakeArray_UnusualTypes_TestData))]
+        public void MakeArrayType_UnusualTypes_ReturnsExpected(Type t)
+        {
+            Type tArray = t.MakeArrayType();
+
+            Assert.Equal(t, tArray.GetElementType());
+
+            Assert.True(tArray.IsArray);
+            Assert.True(tArray.HasElementType);
+            Assert.Equal(1, tArray.GetArrayRank());
+
+            Assert.Equal(t.ToString() + "[]", tArray.ToString());
+        }
+
+        [Theory]
+        [MemberData(nameof(MakeArrayType_TestData))]
+        public void MakeArrayType_InvokeRankOne_ReturnsExpected(Type t, Type tArrayExpected)
+        {
+            Type tArray = t.MakeArrayType(1);
+
+            Assert.NotEqual(tArrayExpected, tArray);
+            Assert.Equal(t, tArray.GetElementType());
+
+            Assert.True(tArray.IsArray);
+            Assert.True(tArray.HasElementType);
+            Assert.Equal(1, tArray.GetArrayRank());
+
+            Assert.Equal(t.ToString() + "[*]", tArray.ToString());
+        }
+
+        [Theory]
+        [MemberData(nameof(MakeArrayType_TestData))]
+        public void MakeArrayType_InvokeRankTwo_ReturnsExpected(Type t, Type tArrayExpected)
+        {
+            Type tArray = t.MakeArrayType(2);
+
+            Assert.NotEqual(tArrayExpected, tArray);
+            Assert.Equal(t, tArray.GetElementType());
+
+            Assert.True(tArray.IsArray);
+            Assert.True(tArray.HasElementType);
+            Assert.Equal(2, tArray.GetArrayRank());
+
+            Assert.Equal(t.ToString() + "[,]", tArray.ToString());
+        }
+
+        public static IEnumerable<object[]> MakeArrayType_ByRef_TestData()
+        {
+            yield return new object[] { typeof(int).MakeByRefType() };
+            yield return new object[] { typeof(TypedReference) };
+            yield return new object[] { typeof(ArgIterator) };
+            yield return new object[] { typeof(RuntimeArgumentHandle) };
+            yield return new object[] { typeof(Span<int>) };
+        }
+
+        [Theory]
+        [MemberData(nameof(MakeArrayType_ByRef_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/39001", TestRuntimes.Mono)]
+        public void MakeArrayType_ByRef_ThrowsTypeLoadException(Type t)
+        {
+            Assert.Throws<TypeLoadException>(() => t.MakeArrayType());
+        }
+
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(0)]
+        public void MakeArrayType_NegativeOrZeroArrayRank_ThrowsIndexOutOfRangeException(int rank)
+        {
+            Type t = typeof(int);
+            Assert.Throws<IndexOutOfRangeException>(() => t.MakeArrayType(rank));
+        }
+
+        [Theory]
+        [InlineData(33)]
+        [InlineData(256)]
+        [InlineData(257)]
+        public void MakeArrayType_InvalidArrayRank_ThrowsTypeLoadException(int rank)
+        {
+            Type t = typeof(int);
+            Assert.Throws<TypeLoadException>(() => t.MakeArrayType(rank));
+        }
+
+        public static IEnumerable<object[]> MakeByRefType_TestData()
+        {
+            return new object[][]
+            {
+                // Primitives
+                new object[] { typeof(string) },
+                new object[] { typeof(sbyte) },
+                new object[] { typeof(byte) },
+                new object[] { typeof(short) },
+                new object[] { typeof(ushort) },
+                new object[] { typeof(int) },
+                new object[] { typeof(uint) },
+                new object[] { typeof(long) },
+                new object[] { typeof(ulong) },
+                new object[] { typeof(char) },
+                new object[] { typeof(bool) },
+                new object[] { typeof(float) },
+                new object[] { typeof(double) },
+                new object[] { typeof(IntPtr) },
+                new object[] { typeof(UIntPtr) },
+                new object[] { typeof(void) },
+
+                // Primitives enums
+                new object[] { typeof(SByteEnum) },
+                new object[] { typeof(ByteEnum) },
+                new object[] { typeof(Int16Enum) },
+                new object[] { typeof(UInt16Enum) },
+                new object[] { typeof(Int32Enum) },
+                new object[] { typeof(UInt32Enum) },
+                new object[] { typeof(Int64Enum) },
+                new object[] { typeof(UInt64Enum) },
+
+                // Array, pointers
+                new object[] { typeof(string[]) },
+                new object[] { typeof(int[]) },
+                new object[] { typeof(int*) },
+
+                // Classes, structs, interfaces, enums
+                new object[] { typeof(NonGenericClass) },
+                new object[] { typeof(GenericClass<int>) },
+                new object[] { typeof(NonGenericStruct) },
+                new object[] { typeof(GenericStruct<int>) },
+                new object[] { typeof(NonGenericInterface) },
+                new object[] { typeof(GenericInterface<int>) },
+                new object[] { typeof(AbstractClass) },
+                new object[] { typeof(StaticClass) },
+
+                // Generic types.
+                new object[] { typeof(GenericClass<>) },
+                new object[] { typeof(GenericClass<>).MakeGenericType(typeof(GenericClass<>)) },
+                new object[] { typeof(GenericClass<>).GetTypeInfo().GetGenericArguments()[0] },
+
+                // By-Ref Like.
+                new object[] { typeof(TypedReference) },
+                new object[] { typeof(ArgIterator) },
+                new object[] { typeof(RuntimeArgumentHandle) },
+                new object[] { typeof(Span<int>) },
+            };
+        }
+
+        [Theory]
+        [MemberData(nameof(MakeByRefType_TestData))]
         public void MakeByRefType_Invoke_ReturnsExpected(Type t)
         {
-            Type tRef1 = t.MakeByRefType();
-            Type tRef2 = t.MakeByRefType();
+            Type tPointer = t.MakeByRefType();
+            Assert.Equal(tPointer, t.MakeByRefType());
 
-            Assert.Equal(tRef1, tRef2);
+            Assert.True(tPointer.IsByRef);
+            Assert.False(tPointer.IsPointer);
+            Assert.True(tPointer.HasElementType);
+            Assert.Equal(t, tPointer.GetElementType());
 
-            Assert.True(tRef1.IsByRef);
-            Assert.True(tRef1.HasElementType);
+            Assert.Equal(t.ToString() + "&", tPointer.ToString());
+        }
 
-            Assert.Equal(t, tRef1.GetElementType());
+        [Fact]
+        public void MakeByRefType_ByRef_ThrowsTypeLoadException()
+        {
+            Type t = typeof(int).MakeByRefType();
+            Assert.Throws<TypeLoadException>(() => t.MakeByRefType());
+        }
 
-            string s1 = t.ToString();
-            string s2 = tRef1.ToString();
-            Assert.Equal(s2, s1 + "&");
+        public static IEnumerable<object[]> MakePointerType_TestData()
+        {
+            return new object[][]
+            {
+                // Primitives
+                new object[] { typeof(string) },
+                new object[] { typeof(sbyte) },
+                new object[] { typeof(byte) },
+                new object[] { typeof(short) },
+                new object[] { typeof(ushort) },
+                new object[] { typeof(int) },
+                new object[] { typeof(uint) },
+                new object[] { typeof(long) },
+                new object[] { typeof(ulong) },
+                new object[] { typeof(char) },
+                new object[] { typeof(bool) },
+                new object[] { typeof(float) },
+                new object[] { typeof(double) },
+                new object[] { typeof(IntPtr) },
+                new object[] { typeof(UIntPtr) },
+                new object[] { typeof(void) },
+
+                // Primitives enums
+                new object[] { typeof(SByteEnum) },
+                new object[] { typeof(ByteEnum) },
+                new object[] { typeof(Int16Enum) },
+                new object[] { typeof(UInt16Enum) },
+                new object[] { typeof(Int32Enum) },
+                new object[] { typeof(UInt32Enum) },
+                new object[] { typeof(Int64Enum) },
+                new object[] { typeof(UInt64Enum) },
+
+                // Array, pointers
+                new object[] { typeof(string[]) },
+                new object[] { typeof(int[]) },
+                new object[] { typeof(int*) },
+
+                // Classes, structs, interfaces, enums
+                new object[] { typeof(NonGenericClass) },
+                new object[] { typeof(GenericClass<int>) },
+                new object[] { typeof(NonGenericStruct) },
+                new object[] { typeof(GenericStruct<int>) },
+                new object[] { typeof(NonGenericInterface) },
+                new object[] { typeof(GenericInterface<int>) },
+                new object[] { typeof(AbstractClass) },
+                new object[] { typeof(StaticClass) },
+
+                // Generic types.
+                new object[] { typeof(GenericClass<>) },
+                new object[] { typeof(GenericClass<>).MakeGenericType(typeof(GenericClass<>)) },
+                new object[] { typeof(GenericClass<>).GetTypeInfo().GetGenericArguments()[0] },
+
+                // ByRef Like.
+                new object[] { typeof(TypedReference) },
+                new object[] { typeof(ArgIterator) },
+                new object[] { typeof(RuntimeArgumentHandle) },
+                new object[] { typeof(Span<int>) },
+            };
+        }
+
+        [Theory]
+        [MemberData(nameof(MakePointerType_TestData))]
+        public void MakePointerType_Invoke_ReturnsExpected(Type t)
+        {
+            Type tPointer = t.MakePointerType();
+            Assert.Equal(tPointer, t.MakePointerType());
+
+            Assert.False(tPointer.IsByRef);
+            Assert.True(tPointer.IsPointer);
+            Assert.True(tPointer.HasElementType);
+            Assert.Equal(t, tPointer.GetElementType());
+
+            Assert.Equal(t.ToString() + "*", tPointer.ToString());
+        }
+
+        [Fact]
+        public void MakePointerType_ByRef_ThrowsTypeLoadException()
+        {
+            Type t = typeof(int).MakeByRefType();
+            Assert.Throws<TypeLoadException>(() => t.MakePointerType());
         }
 
         [Theory]
@@ -582,7 +847,7 @@ namespace System.Tests
         private static Func<Assembly, string, bool, Type> typeloader = (assem, name, ignore) => assem == null ?
                              Type.GetType(name, false, ignore) :
                                  assem.GetType(name, false, ignore);
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void GetTypeByName()
         {
             RemoteInvokeOptions options = new RemoteInvokeOptions();
@@ -606,7 +871,7 @@ namespace System.Tests
                }, options).Dispose();
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData("System.Collections.Generic.Dictionary`2[[Program, TestLoadAssembly], [Program2, TestLoadAssembly]]")]
         [InlineData("")]
         public void GetTypeByName_NoSuchType_ThrowsTypeLoadException(string typeName)
@@ -618,7 +883,7 @@ namespace System.Tests
             }, typeName).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void GetTypeByNameCaseSensitiveTypeloadFailure()
         {
             RemoteInvokeOptions options = new RemoteInvokeOptions();
@@ -688,6 +953,8 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(GetInterfaceMap_TestData))]
+        // Android-only, change to TestPlatforms.Android once arcade dependency is updated
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36653", TestRuntimes.Mono)]
         public void GetInterfaceMap(Type interfaceType, Type classType, Tuple<MethodInfo, MethodInfo>[] expectedMap)
         {
             InterfaceMapping actualMapping = classType.GetInterfaceMap(interfaceType);
@@ -746,6 +1013,7 @@ namespace System.Tests
 
     public class GenericClass<T, U> { }
     public abstract class AbstractClass { }
+    public static class StaticClass { }
 
     public struct NonGenericStruct { }
 

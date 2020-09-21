@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
@@ -19,7 +18,7 @@ namespace System.IO.Pipelines
         private SynchronizationContext? _synchronizationContext;
         private ExecutionContext? _executionContext;
 
-#if !NETSTANDARD2_0
+#if (!NETSTANDARD2_0 && !NETFRAMEWORK)
         private CancellationToken CancellationToken => _cancellationTokenRegistration.Token;
 #else
         private CancellationToken _cancellationToken;
@@ -35,7 +34,7 @@ namespace System.IO.Pipelines
             _cancellationTokenRegistration = default;
             _synchronizationContext = null;
             _executionContext = null;
-#if NETSTANDARD2_0
+#if (NETSTANDARD2_0 || NETFRAMEWORK)
             _cancellationToken = CancellationToken.None;
 #endif
         }
@@ -54,7 +53,7 @@ namespace System.IO.Pipelines
             // Don't register if already completed, we would immediately unregistered in ObserveCancellation
             if (cancellationToken.CanBeCanceled && !IsCompleted)
             {
-#if NETSTANDARD2_0
+#if (NETSTANDARD2_0 || NETFRAMEWORK)
                 _cancellationToken = cancellationToken;
 #endif
                 _cancellationTokenRegistration = cancellationToken.UnsafeRegister(callback, state);
@@ -166,7 +165,7 @@ namespace System.IO.Pipelines
             cancellationToken = CancellationToken;
             CancellationTokenRegistration cancellationTokenRegistration = _cancellationTokenRegistration;
 
-#if NETSTANDARD2_0
+#if (NETSTANDARD2_0 || NETFRAMEWORK)
             _cancellationToken = default;
 #endif
             _cancellationTokenRegistration = default;

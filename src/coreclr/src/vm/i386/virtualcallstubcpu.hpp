@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // File: virtualcallstubcpu.hpp
 //
@@ -696,11 +695,16 @@ extern "C" void STDCALL JIT_TailCallReturnFromVSD();
 PCODE StubCallSite::GetCallerAddress()
 {
     LIMITED_METHOD_CONTRACT;
+
+#ifdef UNIX_X86_ABI
+    return m_returnAddr;
+#else // UNIX_X86_ABI
     if (m_returnAddr != (PCODE)JIT_TailCallReturnFromVSD)
         return m_returnAddr;
 
     // Find the tailcallframe in the frame chain and get the actual caller from the first TailCallFrame
     return TailCallFrame::FindTailCallFrame(GetThread()->GetFrame())->GetCallerAddress();
+#endif // UNIX_X86_ABI
 }
 
 #ifdef STUB_LOGGING

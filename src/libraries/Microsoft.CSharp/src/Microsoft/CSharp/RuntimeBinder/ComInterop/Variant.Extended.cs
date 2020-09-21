@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Globalization;
@@ -70,14 +69,14 @@ namespace System.Runtime.InteropServices
 
         // VT_INT
 
-        public void SetAsByrefInt(ref IntPtr value)
+        public void SetAsByrefInt(ref int value)
         {
             SetAsByref(ref value, VarEnum.VT_INT);
         }
 
         // VT_UINT
 
-        public void SetAsByrefUint(ref UIntPtr value)
+        public void SetAsByrefUint(ref uint value)
         {
             SetAsByref(ref value, VarEnum.VT_UINT);
         }

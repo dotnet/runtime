@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.ComponentModel.Composition.Primitives;
@@ -15,9 +14,9 @@ namespace System.ComponentModel.Composition.Hosting
     public class CompositionScopeDefinition : ComposablePartCatalog, INotifyComposablePartCatalogChanged
     {
         private ComposablePartCatalog? _catalog;
-        private IEnumerable<ExportDefinition>? _publicSurface = null;
+        private IEnumerable<ExportDefinition>? _publicSurface;
         private IEnumerable<CompositionScopeDefinition> _children = Enumerable.Empty<CompositionScopeDefinition>();
-        private volatile int _isDisposed = 0;
+        private volatile int _isDisposed;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CompositionScopeDefinition"/> class.
@@ -57,6 +56,7 @@ namespace System.ComponentModel.Composition.Hosting
         /// </summary>
         /// <param name="catalog">The catalog.</param>
         /// <param name="children">The children.</param>
+        /// <param name="publicSurface">The exports that can be used to create new scopes.</param>
         private void InitializeCompositionScopeDefinition(ComposablePartCatalog catalog, IEnumerable<CompositionScopeDefinition>? children, IEnumerable<ExportDefinition>? publicSurface)
         {
             _catalog = catalog;

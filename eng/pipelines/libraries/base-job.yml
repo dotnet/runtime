@@ -4,9 +4,9 @@ parameters:
   archType: ''
   osSubgroup: ''
   crossrootfsDir: ''
-  framework: ''
-  isOfficialBuild: false
+  framework: 'net5.0'
   isOfficialAllConfigurations: false
+  isSourceBuild: false
   liveRuntimeBuildConfig: ''
   runtimeFlavor: 'coreclr'
   timeoutInMinutes: 150
@@ -17,16 +17,18 @@ parameters:
   variables: {}
   name: ''
   displayName: ''
+  testDisplayName: ''
   testScope: ''
   pool: ''
+  runTests: false
 
 jobs:
   - template: /eng/common/templates/job/job.yml
     parameters:
-      ${{ if notIn(parameters.framework, 'allConfigurations', 'net472') }}:
+      ${{ if notIn(parameters.framework, 'allConfigurations', 'net48') }}:
         displayName: ${{ format('Libraries {0} {1}{2} {3} {4}', parameters.displayName, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
         name: ${{ format('libraries_{0}_{1}{2}_{3}_{4}', parameters.name, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-      ${{ if in(parameters.framework, 'allConfigurations', 'net472') }}:
+      ${{ if in(parameters.framework, 'allConfigurations', 'net48') }}:
         displayName: ${{ format('Libraries {0} {1} {2} {3} {4}', parameters.displayName, parameters.osGroup, parameters.framework, parameters.archType, parameters.buildConfig) }}
         name: ${{ format('libraries_{0}_{1}_{2}{3}_{4}_{5}', parameters.name, parameters.framework, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
 
@@ -37,12 +39,12 @@ jobs:
       pool: ${{ parameters.pool }}
       variables:
         - _buildScriptFileName: build
-        - _BuildConfig: ${{ parameters.buildConfig }}
 
         - _msbuildCommonParameters: ''
         # rename this variable, due to collision with build-native.proj
         - _runtimeOSArg: ''
         - _finalFrameworkArg: ''
+        - _testModeArg: ''
         - _buildScript: $(_buildScriptFileName)$(scriptExt)
         - _testScopeArg: ''
         - _extraHelixArguments: ''
@@ -73,7 +75,8 @@ jobs:
 
         - ${{ if eq(parameters.framework, 'allConfigurations') }}:
           - _finalFrameworkArg: -allConfigurations
-          - _extraHelixArguments: /p:BuildAllConfigurations=true
+          - _testModeArg: /p:TestAssemblies=false /p:TestPackages=true
+          - _extraHelixArguments: /p:TestPackages=true
 
         - ${{ if eq(parameters.isOfficialAllConfigurations, true) }}:
           - librariesBuildArtifactName: 'libraries_bin_official_allconfigurations'
@@ -89,11 +92,13 @@ jobs:
         - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
           - _runtimeDownloadPath: '$(Build.SourcesDirectory)/artifacts/transport/${{ parameters.runtimeFlavor }}'
           - _runtimeConfigurationArg: -rc ${{ parameters.liveRuntimeBuildConfig }}
-          # Download full product dependencies for mono or test
-          - ${{ if or(ne(parameters.runtimeFlavor, 'coreclr'), ne(parameters.testScope, '')) }}:
-            - _runtimeArtifactName: '$(runtimeFlavorName)Product_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.liveRuntimeBuildConfig }}'
+          - ${{ if eq(parameters.runTests, true) }}:
+            - _runtimeArtifactName: '$(runtimeFlavorName)Product_${{ parameters.runtimeVariant}}_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.liveRuntimeBuildConfig }}'
             - _runtimeArtifactsPathArg: ' /p:RuntimeArtifactsPath=$(_runtimeDownloadPath)'
-          - _testRunNamePrefixSuffix: $(runtimeFlavorName)_${{ parameters.liveRuntimeBuildConfig }}
+          - ${{ if eq(parameters.testDisplayName, '') }}:
+            - _testRunNamePrefixSuffix: $(runtimeFlavorName)_${{ parameters.liveRuntimeBuildConfig }}
+          - ${{ if ne(parameters.testDisplayName, '') }}:
+            - _testRunNamePrefixSuffix: ${{ parameters.testDisplayName }}
 
         # Windows variables
         - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
@@ -103,8 +108,11 @@ jobs:
         - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
           - _buildScript: ./$(_buildScriptFileName)$(scriptExt)
 
-        - _buildArguments: $(_runtimeConfigurationArg) -configuration ${{ parameters.buildConfig }} -ci -arch ${{ parameters.archType }} $(_finalFrameworkArg) $(_testScopeArg) $(_runtimeOSArg) $(_msbuildCommonParameters) $(_runtimeArtifactsPathArg) $(_crossBuildPropertyArg)
+        - _buildArguments: $(_runtimeConfigurationArg) -configuration ${{ parameters.buildConfig }} -ci -arch ${{ parameters.archType }} $(_finalFrameworkArg) $(_testModeArg) $(_testScopeArg) $(_runtimeOSArg) $(_msbuildCommonParameters) $(_runtimeArtifactsPathArg) $(_crossBuildPropertyArg)
         - ${{ parameters.variables }}
+
+        # we need to override this value to support build-coreclr-and-libraries-job.yml
+        - _BuildConfig: ${{ parameters.buildConfig }}
 
       dependsOn:
       - checkout
@@ -118,7 +126,7 @@ jobs:
       steps:
       - template: /eng/pipelines/common/clone-checkout-bundle-step.yml
 
-      - ${{ if and(ne(parameters.liveRuntimeBuildConfig, ''), or(ne(parameters.runtimeFlavor, 'coreclr'), ne(parameters.testScope, ''))) }}:
+      - ${{ if and(ne(parameters.liveRuntimeBuildConfig, ''), eq(parameters.runTests, true)) }}:
         - template: /eng/pipelines/common/download-artifact-step.yml
           parameters:
             unpackFolder: $(_runtimeDownloadPath)

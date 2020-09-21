@@ -14,7 +14,7 @@ Getting Started
 - [Installing the .NET SDK](https://dotnet.microsoft.com/download)
 - [Official .NET Docs](https://docs.microsoft.com/dotnet/core/)
 
-Workflow (Building, testing, etc.)
+Workflow (Building, testing, benchmarking, profiling, etc.)
 ===============
 
 If you want to contribute a code change to this repo, start here.
@@ -58,7 +58,6 @@ Coding Guidelines
 - [Breaking Change Rules](coding-guidelines/breaking-change-rules.md)
 - [Project Guidelines](coding-guidelines/project-guidelines.md)
 - [Adding APIs Guidelines](coding-guidelines/adding-api-guidelines.md)
-- [Legal Native calls](coding-guidelines/pinvoke-checker.md)
 
 Project Docs
 =================

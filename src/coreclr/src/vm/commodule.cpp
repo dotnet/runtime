@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 
 #include "common.h"
@@ -644,6 +643,12 @@ void QCALLTYPE COMModule::SetFieldRVAContent(QCall::ModuleHandle pModule, INT32 
     if (pContent != NULL)
         memcpy(pvBlob, pContent, length);
 
+    if (pReflectionModule->IsCollectible())
+    {
+        GCX_COOP();
+        LoaderAllocator::AssociateMemoryWithLoaderAllocator((BYTE*)pvBlob, ((BYTE*)pvBlob) + length, pReflectionModule->GetLoaderAllocator());
+    }
+
     // set FieldRVA into metadata. Note that this is not final RVA in the image if save to disk. We will do another round of fix up upon save.
     IfFailThrow( pRCW->GetEmitter()->SetFieldRVA(tkField, dwRVA) );
 
@@ -767,7 +772,7 @@ void QCALLTYPE COMModule::GetType(QCall::ModuleHandle pModule, LPCWSTR wszName, 
     BOOL prohibitAsmQualifiedName = TRUE;
 
     // Load the class from this assembly (fail if it is in a different one).
-    retTypeHandle = TypeName::GetTypeManaged(wszName, pAssembly, bThrowOnError, bIgnoreCase, prohibitAsmQualifiedName, NULL, FALSE, (OBJECTREF*)keepAlive.m_ppObject);
+    retTypeHandle = TypeName::GetTypeManaged(wszName, pAssembly, bThrowOnError, bIgnoreCase, prohibitAsmQualifiedName, NULL, (OBJECTREF*)keepAlive.m_ppObject);
 
     // Verify that it's in 'this' module
     // But, if it's in a different assembly than expected, that's okay, because
@@ -888,7 +893,7 @@ HINSTANCE QCALLTYPE COMModule::GetHINSTANCE(QCall::ModuleHandle pModule)
 
     BEGIN_QCALL;
 
-    // This returns the base address - this will work for either HMODULE or HCORMODULES
+    // This returns the base address
     // Other modules should have zero base
     PEFile *pPEFile = pModule->GetFile();
     if (!pPEFile->IsDynamic() && !pPEFile->IsResource())
@@ -959,7 +964,7 @@ Object* GetTypesInner(Module* pModule)
 
     if (pModule->IsResource())
     {
-        refArrClasses = (PTRARRAYREF) AllocateObjectArray(0, MscorlibBinder::GetClass(CLASS__CLASS));
+        refArrClasses = (PTRARRAYREF) AllocateObjectArray(0, CoreLibBinder::GetClass(CLASS__CLASS));
         RETURN(OBJECTREFToObject(refArrClasses));
     }
 
@@ -977,7 +982,7 @@ Object* GetTypesInner(Module* pModule)
     // Allocate the COM+ array
     bSystemAssembly = (pModule->GetAssembly() == SystemDomain::SystemAssembly());
     AllocSize = dwNumTypeDefs;
-    refArrClasses = (PTRARRAYREF) AllocateObjectArray(AllocSize, MscorlibBinder::GetClass(CLASS__CLASS));
+    refArrClasses = (PTRARRAYREF) AllocateObjectArray(AllocSize, CoreLibBinder::GetClass(CLASS__CLASS));
 
     int curPos = 0;
     OBJECTREF throwable = 0;
@@ -1092,5 +1097,4 @@ FCIMPL0(void*, COMPunkSafeHandle::nGetDReleaseTarget)
     return (void*)DReleaseTarget;
 }
 FCIMPLEND
-
 

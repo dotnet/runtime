@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
-// See the LICENSE file in the project root for more information.
+// The .NET Foundation licenses this file to you under the MIT license.
 
 //
-// ExtensionsTest.cs - NUnit Test Cases for Extensions.cs class under
+// ExtensionsTest.cs - Unit Test Cases for Extensions.cs class under
 // System.Xml.Schema namespace found in System.Xml.Linq assembly
 // (System.Xml.Linq.dll)
 //

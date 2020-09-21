@@ -1,9 +1,9 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Security.Cryptography.Asn1;
 
 namespace System.Security.Cryptography
@@ -11,6 +11,7 @@ namespace System.Security.Cryptography
     /// <summary>
     /// Represents the public and private key of the specified elliptic curve.
     /// </summary>
+    [UnsupportedOSPlatform("browser")]
     public struct ECParameters
     {
         /// <summary>

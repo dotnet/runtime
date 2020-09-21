@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Globalization;
@@ -12,7 +11,7 @@ namespace System.Security.AccessControl
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public sealed class PrivilegeNotHeldException : UnauthorizedAccessException, ISerializable
     {
-        private readonly string? _privilegeName = null;
+        private readonly string? _privilegeName;
 
         public PrivilegeNotHeldException()
             : base(SR.PrivilegeNotHeld_Default)

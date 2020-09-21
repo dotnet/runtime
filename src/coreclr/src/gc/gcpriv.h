@@ -1,15 +1,9 @@
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-//
-//
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-//
-// optimize for speed
-
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
 #ifndef _DEBUG
 #ifdef _MSC_VER
+// optimize for speed
 #pragma optimize( "t", on )
 #endif
 #endif
@@ -223,6 +217,7 @@ const int policy_expand  = 2;
 #define JOIN_LOG (MIN_CUSTOM_LOG_LEVEL + 6)
 #define SPINLOCK_LOG (MIN_CUSTOM_LOG_LEVEL + 7)
 #define SNOOP_LOG (MIN_CUSTOM_LOG_LEVEL + 8)
+#define COMMIT_ACCOUNTING_LOG (MIN_CUSTOM_LOG_LEVEL + 9)
 
 // NOTE! This is for HEAP_BALANCE_INSTRUMENTATION
 // This particular one is special and needs to be well formatted because we
@@ -238,7 +233,7 @@ const int policy_expand  = 2;
 #ifdef SIMPLE_DPRINTF
 
 void GCLog (const char *fmt, ... );
-#define dprintf(l,x) {if ((l <= 1) || (l == GTC_LOG)) {GCLog x;}}
+#define dprintf(l,x) {if ((l == 1) || (l == GTC_LOG)) {GCLog x;}}
 #else //SIMPLE_DPRINTF
 // Nobody used the logging mechanism that used to be here. If we find ourselves
 // wanting to inspect GC logs on unmodified builds, we can use this define here
@@ -397,6 +392,17 @@ enum gc_tuning_point
     tuning_deciding_promote_ephemeral = 4,
     tuning_deciding_short_on_seg = 5
 };
+
+enum gc_oh_num
+{
+    soh = 0,
+    loh = 1,
+    poh = 2,
+    none = 3,
+    total_oh_count = 4
+};
+
+gc_oh_num gen_to_oh (int gen);
 
 #if defined(TRACE_GC) && defined(BACKGROUND_GC)
 static const char * const str_bgc_state[] =
@@ -750,7 +756,7 @@ struct static_data
     float fragmentation_burden_limit;
     float limit;
     float max_limit;
-    size_t time_clock; // time after which to collect generation, in performance counts (see QueryPerformanceCounter)
+    uint64_t time_clock; // time after which to collect generation, in performance counts (see QueryPerformanceCounter)
     size_t gc_clock; // nubmer of gcs after which to collect generation
 };
 
@@ -791,13 +797,39 @@ public:
     size_t    freach_previous_promotion;
     size_t    fragmentation;    //fragmentation when we don't compact
     size_t    gc_clock;         //gc# when last GC happened
-    size_t    time_clock;       //time when last gc started
+    uint64_t  time_clock;       //time when last gc started
     size_t    gc_elapsed_time;  // Time it took for the gc to complete
     float     gc_speed;         //  speed in bytes/msec for the gc to complete
 
     size_t    min_size;
 
     static_data* sdata;
+};
+
+struct recorded_generation_info
+{
+    size_t size_before;
+    size_t fragmentation_before;
+    size_t size_after;
+    size_t fragmentation_after;
+};
+
+struct last_recorded_gc_info
+{
+    VOLATILE(size_t) index;
+    size_t total_committed;
+    size_t promoted;
+    size_t pinned_objects;
+    size_t finalize_promoted_objects;
+    size_t pause_durations[2];
+    float pause_percentage;
+    recorded_generation_info gen_info[total_generation_count];
+    size_t heap_size;
+    size_t fragmentation;
+    uint32_t memory_load;
+    uint8_t condemned_generation;
+    bool compaction;
+    bool concurrent;
 };
 
 #define ro_in_entry 0x1
@@ -1138,6 +1170,7 @@ public:
     static
     heap_segment* make_heap_segment (uint8_t* new_pages,
                                      size_t size,
+                                     gc_oh_num oh,
                                      int h_number);
 
     static
@@ -1215,6 +1248,21 @@ public:
     PER_HEAP_ISOLATED
     void do_post_gc();
 
+    PER_HEAP_ISOLATED
+    void update_recorded_gen_data (last_recorded_gc_info* gc_info);
+
+    PER_HEAP
+    void update_end_gc_time_per_heap();
+
+    PER_HEAP_ISOLATED
+    void update_end_ngc_time();
+
+    PER_HEAP
+    void add_to_history_per_heap();
+
+    PER_HEAP_ISOLATED
+    void add_to_history();
+
 #ifdef BGC_SERVO_TUNING
     PER_HEAP_ISOLATED
     void check_and_adjust_bgc_tuning (int gen_number, size_t physical_size, ptrdiff_t virtual_fl_size);
@@ -1269,6 +1317,11 @@ public:
 #endif // FEATURE_BASICFREEZE
 
 protected:
+    PER_HEAP_ISOLATED
+    BOOL reserve_initial_memory (size_t normal_size, size_t large_size, size_t pinned_size, int num_heaps, bool use_large_pages_p, bool separated_poh_p, uint16_t* heap_no_to_numa_node);
+
+    PER_HEAP_ISOLATED
+    void destroy_initial_memory();
 
     PER_HEAP_ISOLATED
     void walk_heap (walk_fn fn, void* context, int gen_number, BOOL walk_large_object_heap_p);
@@ -1508,7 +1561,7 @@ protected:
                               int align_const,
                               BOOL* commit_failed_p);
     PER_HEAP
-    BOOL loh_a_fit_segment_end_p (int gen_number,
+    BOOL uoh_a_fit_segment_end_p (int gen_number,
                                   size_t size,
                                   alloc_context* acontext,
                                   uint32_t flags,
@@ -1631,7 +1684,9 @@ protected:
     PER_HEAP
     heap_segment* soh_get_segment_to_expand();
     PER_HEAP
-    heap_segment* get_segment (size_t size, BOOL loh_p);
+    heap_segment* get_segment (size_t size, gc_oh_num oh);
+    PER_HEAP_ISOLATED
+    void release_segment (heap_segment* sg);
     PER_HEAP_ISOLATED
     void seg_mapping_table_add_segment (heap_segment* seg, gc_heap* hp);
     PER_HEAP_ISOLATED
@@ -1651,13 +1706,21 @@ protected:
     PER_HEAP
     void decommit_heap_segment_pages (heap_segment* seg, size_t extra_space);
     PER_HEAP
+    size_t decommit_ephemeral_segment_pages_step ();
+    PER_HEAP
+    size_t decommit_heap_segment_pages_worker (heap_segment* seg, uint8_t *new_committed);
+    PER_HEAP_ISOLATED
+    bool decommit_step ();
+    PER_HEAP
     void decommit_heap_segment (heap_segment* seg);
     PER_HEAP_ISOLATED
     bool virtual_alloc_commit_for_heap (void* addr, size_t size, int h_number);
     PER_HEAP_ISOLATED
-    bool virtual_commit (void* address, size_t size, int h_number=-1, bool* hard_limit_exceeded_p=NULL);
+    bool virtual_commit (void* address, size_t size, gc_oh_num oh, int h_number=-1, bool* hard_limit_exceeded_p=NULL);
     PER_HEAP_ISOLATED
-    bool virtual_decommit (void* address, size_t size, int h_number=-1);
+    bool virtual_decommit (void* address, size_t size, gc_oh_num oh, int h_number=-1);
+    PER_HEAP_ISOLATED
+    void virtual_free (void* add, size_t size, heap_segment* sg=NULL);
     PER_HEAP
     void clear_gen0_bricks();
 #ifdef BACKGROUND_GC
@@ -2327,10 +2390,8 @@ protected:
     PER_HEAP
     void pin_object (uint8_t* o, uint8_t** ppObject);
 
-#if defined(ENABLE_PERF_COUNTERS) || defined(FEATURE_EVENT_TRACE)
     PER_HEAP_ISOLATED
     size_t get_total_pinned_objects();
-#endif //ENABLE_PERF_COUNTERS || FEATURE_EVENT_TRACE
 
     PER_HEAP
     void reset_mark_stack ();
@@ -2446,8 +2507,6 @@ protected:
     void check_loh_compact_mode  (BOOL all_heaps_compacted_p);
 #endif //FEATURE_LOH_COMPACTION
 
-    PER_HEAP
-    void decommit_ephemeral_segment_pages (int condemned_gen_number);
     PER_HEAP
     void fix_generation_bounds (int condemned_gen_number,
                                 generation* consing_gen);
@@ -2773,6 +2832,8 @@ protected:
     size_t get_current_allocated();
     PER_HEAP_ISOLATED
     size_t get_total_allocated();
+    PER_HEAP_ISOLATED
+    size_t get_total_promoted();
 #ifdef BGC_SERVO_TUNING
     PER_HEAP_ISOLATED
     size_t get_total_generation_size (int gen_number);
@@ -2868,6 +2929,11 @@ protected:
 #endif //PARALLEL_MARK_LIST_SORT
 #endif
 #endif //MULTIPLE_HEAPS
+
+#ifdef MARK_LIST
+    PER_HEAP_ISOLATED
+    void grow_mark_list();
+#endif //MARK_LIST
 
 #ifdef BACKGROUND_GC
 
@@ -3253,10 +3319,7 @@ public:
     gc_history_global gc_data_global;
 
     PER_HEAP_ISOLATED
-    size_t gc_last_ephemeral_decommit_time;
-
-    PER_HEAP_ISOLATED
-    size_t gc_gen0_desired_high;
+    uint64_t gc_last_ephemeral_decommit_time;
 
     PER_HEAP
     size_t gen0_big_free_spaces;
@@ -3266,19 +3329,70 @@ public:
     double short_plugs_pad_ratio;
 #endif //SHORT_PLUGS
 
+    // We record the time GC work is done while EE is suspended.
+    // suspended_start_ts is what we get right before we call
+    // SuspendEE. We omit the time between GC end and RestartEE
+    // because it's very short and by the time we are calling it
+    // the settings may have changed and we'd have to do more work
+    // to figure out the right GC to record info of.
+    // 
+    // The complications are the GCs triggered without their own
+    // SuspendEE, in which case we will record that GC's duration
+    // as its pause duration and the rest toward the GC that
+    // the SuspendEE was for. The ephemeral GC we might trigger
+    // at the beginning of a BGC and the PM triggered full GCs
+    // fall into this case.
+    PER_HEAP_ISOLATED
+    uint64_t suspended_start_time;
+
+    PER_HEAP_ISOLATED
+    uint64_t end_gc_time;
+
+    PER_HEAP_ISOLATED
+    uint64_t total_suspended_time;
+
+    PER_HEAP_ISOLATED
+    uint64_t process_start_time;
+
+    PER_HEAP_ISOLATED
+    last_recorded_gc_info last_ephemeral_gc_info;
+
+    PER_HEAP_ISOLATED
+    last_recorded_gc_info last_full_blocking_gc_info;
+
+#ifdef BACKGROUND_GC
+    // If the user didn't specify which kind of GC info to return, we need
+    // to return the last recorded one. There's a complication with BGC as BGC
+    // end runs concurrently. If 2 BGCs run back to back, we can't have one
+    // update the info while the user thread is reading it (and we'd still like
+    // to return the last BGC info otherwise if we only did BGCs we could frequently
+    // return nothing). So we maintain 2 of these for BGC and the older one is
+    // guaranteed to be consistent.
+    PER_HEAP_ISOLATED
+    last_recorded_gc_info last_bgc_info[2];
+    // This is either 0 or 1.
+    PER_HEAP_ISOLATED
+    VOLATILE(int) last_bgc_info_index;
+    // Since a BGC can finish later than blocking GCs with larger indices,
+    // we can't just compare the index recorded in the GC info. We use this
+    // to know whether we should be looking for a bgc info or a blocking GC,
+    // if the user asks for the latest GC info of any kind.
+    // This can only go from false to true concurrently so if it is true,
+    // it means the bgc info is ready.
+    PER_HEAP_ISOLATED
+    VOLATILE(bool) is_last_recorded_bgc;
+
+    PER_HEAP_ISOLATED
+    void add_bgc_pause_duration_0();
+
+    PER_HEAP_ISOLATED
+    last_recorded_gc_info* get_completed_bgc_info();
+#endif //BACKGROUND_GC
+
 #ifdef HOST_64BIT
     PER_HEAP_ISOLATED
-    size_t youngest_gen_desired_th;
+        size_t youngest_gen_desired_th;
 #endif //HOST_64BIT
-
-    PER_HEAP_ISOLATED
-    uint32_t last_gc_memory_load;
-
-    PER_HEAP_ISOLATED
-    size_t last_gc_heap_size;
-
-    PER_HEAP_ISOLATED
-    size_t last_gc_fragmentation;
 
     PER_HEAP_ISOLATED
     uint32_t high_memory_load_th;
@@ -3288,6 +3402,9 @@ public:
 
     PER_HEAP_ISOLATED
     uint32_t v_high_memory_load_th;
+
+    PER_HEAP_ISOLATED
+    bool is_restricted_physical_mem;
 
     PER_HEAP_ISOLATED
     uint64_t mem_one_percent;
@@ -3358,10 +3475,16 @@ public:
     size_t heap_hard_limit;
 
     PER_HEAP_ISOLATED
+    size_t heap_hard_limit_oh[total_oh_count - 1];
+
+    PER_HEAP_ISOLATED
     CLRCriticalSection check_commit_cs;
 
     PER_HEAP_ISOLATED
     size_t current_total_committed;
+
+    PER_HEAP_ISOLATED
+    size_t committed_by_oh[total_oh_count];
 
     // This is what GC uses for its own bookkeeping.
     PER_HEAP_ISOLATED
@@ -3377,7 +3500,7 @@ public:
 
 #ifdef HEAP_BALANCE_INSTRUMENTATION
     PER_HEAP_ISOLATED
-    size_t last_gc_end_time_ms;
+    size_t last_gc_end_time_us;
 #endif //HEAP_BALANCE_INSTRUMENTATION
 
     PER_HEAP_ISOLATED
@@ -3424,7 +3547,7 @@ protected:
 #endif //MULTIPLE_HEAPS
 
     PER_HEAP
-    size_t time_bgc_last;
+    uint64_t time_bgc_last;
 
     PER_HEAP
     uint8_t*       gc_low; // lowest address being condemned
@@ -3452,10 +3575,8 @@ protected:
     PER_HEAP
     uint8_t*    oldest_pinned_plug;
 
-#if defined(ENABLE_PERF_COUNTERS) || defined(FEATURE_EVENT_TRACE)
     PER_HEAP
     size_t      num_pinned_objects;
-#endif //ENABLE_PERF_COUNTERS || FEATURE_EVENT_TRACE
 
 #ifdef FEATURE_LOH_COMPACTION
     PER_HEAP
@@ -3593,12 +3714,6 @@ protected:
     gc_mechanisms_store gchist[max_history_count];
 
     PER_HEAP
-    void add_to_history_per_heap();
-
-    PER_HEAP_ISOLATED
-    void add_to_history();
-
-    PER_HEAP
     size_t total_promoted_bytes;
 
     PER_HEAP
@@ -3727,6 +3842,9 @@ protected:
     PER_HEAP_ISOLATED
     size_t mark_list_size;
 
+    PER_HEAP_ISOLATED
+    bool mark_list_overflow;
+
     PER_HEAP
     uint8_t** mark_list_end;
 
@@ -3781,6 +3899,14 @@ protected:
 
     PER_HEAP_ISOLATED
     BOOL proceed_with_gc_p;
+
+#ifdef MULTIPLE_HEAPS
+    PER_HEAP_ISOLATED
+    BOOL gradual_decommit_in_progress_p;
+
+    PER_HEAP_ISOLATED
+    size_t max_decommit_step_size;
+#endif //MULTIPLE_HEAPS
 
 #define youngest_generation (generation_of (0))
 #define large_object_generation (generation_of (loh_generation))
@@ -3913,6 +4039,20 @@ protected:
     PER_HEAP
     int generation_skip_ratio;//in %
 
+#ifdef FEATURE_CARD_MARKING_STEALING
+    PER_HEAP
+    VOLATILE(size_t) n_eph_soh;
+    PER_HEAP
+    VOLATILE(size_t) n_gen_soh;
+    PER_HEAP
+    VOLATILE(size_t) n_eph_loh;
+    PER_HEAP
+    VOLATILE(size_t) n_gen_loh;
+#endif //FEATURE_CARD_MARKING_STEALING
+
+    PER_HEAP_ISOLATED
+    int generation_skip_ratio_threshold; 
+
     PER_HEAP
     BOOL gen0_bricks_cleared;
     PER_HEAP
@@ -4017,12 +4157,6 @@ protected:
     size_t eph_gen_starts_size;
 
 #ifdef GC_CONFIG_DRIVEN
-    PER_HEAP_ISOLATED
-    size_t time_init;
-
-    PER_HEAP_ISOLATED
-    size_t time_since_init;
-
     // 0 stores compacting GCs;
     // 1 stores sweeping GCs;
     PER_HEAP_ISOLATED
@@ -4282,9 +4416,7 @@ public:
     size_t GetPromotedCount();
 
     //Methods used by the shutdown code to call every finalizer
-    void SetSegForShutDown(BOOL fHasLock);
     size_t GetNumberFinalizableObjects();
-    void DiscardNonCriticalObjects();
 
     void CheckFinalizerObjects();
 };
@@ -4420,7 +4552,7 @@ size_t& dd_gc_clock (dynamic_data* inst)
   return inst->gc_clock;
 }
 inline
-size_t& dd_time_clock (dynamic_data* inst)
+uint64_t& dd_time_clock (dynamic_data* inst)
 {
   return inst->time_clock;
 }
@@ -4431,7 +4563,7 @@ size_t& dd_gc_clock_interval (dynamic_data* inst)
   return inst->sdata->gc_clock;
 }
 inline
-size_t& dd_time_clock_interval (dynamic_data* inst)
+uint64_t& dd_time_clock_interval (dynamic_data* inst)
 {
   return inst->sdata->time_clock;
 }
@@ -4695,7 +4827,12 @@ public:
     uint8_t*        background_allocated;
 #ifdef MULTIPLE_HEAPS
     gc_heap*        heap;
+#ifdef _DEBUG
+    uint8_t*        saved_committed;
+    size_t          saved_desired_allocation;
+#endif // _DEBUG
 #endif //MULTIPLE_HEAPS
+    uint8_t*        decommit_target;
     uint8_t*        plan_allocated;
     uint8_t*        saved_bg_allocated;
 
@@ -4732,6 +4869,11 @@ uint8_t*& heap_segment_committed (heap_segment* inst)
   return inst->committed;
 }
 inline
+uint8_t*& heap_segment_decommit_target (heap_segment* inst)
+{
+    return inst->decommit_target;
+}
+inline
 uint8_t*& heap_segment_used (heap_segment* inst)
 {
   return inst->used;
@@ -4766,6 +4908,22 @@ inline
 BOOL heap_segment_uoh_p (heap_segment * inst)
 {
     return !!(inst->flags & (heap_segment_flags_loh | heap_segment_flags_poh));
+}
+
+inline gc_oh_num heap_segment_oh (heap_segment * inst)
+{
+    if ((inst->flags & heap_segment_flags_loh) != 0)
+    {
+        return gc_oh_num::loh;
+    }
+    else if ((inst->flags & heap_segment_flags_poh) != 0)
+    {
+        return gc_oh_num::poh;
+    }
+    else
+    {
+        return gc_oh_num::soh;
+    }
 }
 
 #ifdef BACKGROUND_GC

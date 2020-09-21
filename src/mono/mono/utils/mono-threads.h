@@ -643,6 +643,9 @@ void mono_threads_coop_end_global_suspend (void);
 MONO_API MonoNativeThreadId
 mono_native_thread_id_get (void);
 
+gboolean
+mono_native_thread_id_main_thread_known (MonoNativeThreadId *main_thread_tid);
+
 /*
  * This does _not_ return the same value as mono_native_thread_id_get, except on Windows.
  * On POSIX, mono_native_thread_id_get returns the value from pthread_self, which is then

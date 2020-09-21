@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Xml.Schema;
 using System.Xml.XPath;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml
 {
@@ -14,7 +14,7 @@ namespace System.Xml
     public class XmlAttribute : XmlNode
     {
         private XmlName _name;
-        private XmlLinkedNode _lastChild;
+        private XmlLinkedNode? _lastChild;
 
         internal XmlAttribute(XmlName name, XmlDocument doc) : base(doc)
         {
@@ -36,7 +36,7 @@ namespace System.Xml
             get { return _name.HashCode; }
         }
 
-        protected internal XmlAttribute(string prefix, string localName, string namespaceURI, XmlDocument doc)
+        protected internal XmlAttribute(string? prefix, string localName, string? namespaceURI, XmlDocument doc)
         : this(doc.AddAttrXmlName(prefix, localName, namespaceURI, null), doc)
         {
         }
@@ -59,7 +59,7 @@ namespace System.Xml
         }
 
         // Gets the parent of this node (for nodes that can have parents).
-        public override XmlNode ParentNode
+        public override XmlNode? ParentNode
         {
             get { return null; }
         }
@@ -105,10 +105,11 @@ namespace System.Xml
         }
 
         // Gets or sets the value of the node.
+        [AllowNull]
         public override string Value
         {
             get { return InnerText; }
-            set { InnerText = value; } //use InnerText which has perf optimization
+            set { InnerText = value!; } //use InnerText which has perf optimization
         }
 
         public override IXmlSchemaInfo SchemaInfo
@@ -141,18 +142,19 @@ namespace System.Xml
             XmlDocument ownerDocument = OwnerDocument;
             if (ownerDocument.DtdSchemaInfo != null)
             { // DTD exists
-                XmlElement ownerElement = OwnerElement;
+                XmlElement? ownerElement = OwnerElement;
                 if (ownerElement != null)
                 {
                     return ownerElement.Attributes.PrepareParentInElementIdAttrMap(Prefix, LocalName);
                 }
             }
+
             return false;
         }
 
         internal void ResetOwnerElementInElementIdAttrMap(string oldInnerText)
         {
-            XmlElement ownerElement = OwnerElement;
+            XmlElement? ownerElement = OwnerElement;
             if (ownerElement != null)
             {
                 ownerElement.Attributes.ResetParentInElementIdAttrMap(oldInnerText, InnerText);
@@ -167,7 +169,7 @@ namespace System.Xml
         //the function is provided only at Load time to speed up Load process
         internal override XmlNode AppendChildForLoad(XmlNode newChild, XmlDocument doc)
         {
-            XmlNodeChangedEventArgs args = doc.GetInsertEventArgsForLoad(newChild, this);
+            XmlNodeChangedEventArgs? args = doc.GetInsertEventArgsForLoad(newChild, this);
 
             if (args != null)
                 doc.BeforeEvent(args);
@@ -203,7 +205,7 @@ namespace System.Xml
             return newNode;
         }
 
-        internal override XmlLinkedNode LastNode
+        internal override XmlLinkedNode? LastNode
         {
             get { return _lastChild; }
             set { _lastChild = value; }
@@ -220,12 +222,12 @@ namespace System.Xml
             get { return true; }
         }
 
-        public override XmlNode InsertBefore(XmlNode newChild, XmlNode refChild)
+        public override XmlNode? InsertBefore(XmlNode newChild, XmlNode? refChild)
         {
-            XmlNode node;
+            XmlNode? node;
             if (PrepareOwnerElementInElementIdAttrMap())
             {
-                string innerText = InnerText;
+                string? innerText = InnerText;
                 node = base.InsertBefore(newChild, refChild);
                 ResetOwnerElementInElementIdAttrMap(innerText);
             }
@@ -233,15 +235,16 @@ namespace System.Xml
             {
                 node = base.InsertBefore(newChild, refChild);
             }
+
             return node;
         }
 
-        public override XmlNode InsertAfter(XmlNode newChild, XmlNode refChild)
+        public override XmlNode? InsertAfter(XmlNode newChild, XmlNode? refChild)
         {
-            XmlNode node;
+            XmlNode? node;
             if (PrepareOwnerElementInElementIdAttrMap())
             {
-                string innerText = InnerText;
+                string? innerText = InnerText;
                 node = base.InsertAfter(newChild, refChild);
                 ResetOwnerElementInElementIdAttrMap(innerText);
             }
@@ -249,6 +252,7 @@ namespace System.Xml
             {
                 node = base.InsertAfter(newChild, refChild);
             }
+
             return node;
         }
 
@@ -257,7 +261,7 @@ namespace System.Xml
             XmlNode node;
             if (PrepareOwnerElementInElementIdAttrMap())
             {
-                string innerText = InnerText;
+                string? innerText = InnerText;
                 node = base.ReplaceChild(newChild, oldChild);
                 ResetOwnerElementInElementIdAttrMap(innerText);
             }
@@ -273,7 +277,7 @@ namespace System.Xml
             XmlNode node;
             if (PrepareOwnerElementInElementIdAttrMap())
             {
-                string innerText = InnerText;
+                string? innerText = InnerText;
                 node = base.RemoveChild(oldChild);
                 ResetOwnerElementInElementIdAttrMap(innerText);
             }
@@ -284,12 +288,12 @@ namespace System.Xml
             return node;
         }
 
-        public override XmlNode PrependChild(XmlNode newChild)
+        public override XmlNode? PrependChild(XmlNode newChild)
         {
-            XmlNode node;
+            XmlNode? node;
             if (PrepareOwnerElementInElementIdAttrMap())
             {
-                string innerText = InnerText;
+                string? innerText = InnerText;
                 node = base.PrependChild(newChild);
                 ResetOwnerElementInElementIdAttrMap(innerText);
             }
@@ -297,15 +301,16 @@ namespace System.Xml
             {
                 node = base.PrependChild(newChild);
             }
+
             return node;
         }
 
-        public override XmlNode AppendChild(XmlNode newChild)
+        public override XmlNode? AppendChild(XmlNode newChild)
         {
-            XmlNode node;
+            XmlNode? node;
             if (PrepareOwnerElementInElementIdAttrMap())
             {
-                string innerText = InnerText;
+                string? innerText = InnerText;
                 node = base.AppendChild(newChild);
                 ResetOwnerElementInElementIdAttrMap(innerText);
             }
@@ -313,13 +318,14 @@ namespace System.Xml
             {
                 node = base.AppendChild(newChild);
             }
+
             return node;
         }
 
         // DOM Level 2
 
         // Gets the XmlElement node that contains this attribute.
-        public virtual XmlElement OwnerElement
+        public virtual XmlElement? OwnerElement
         {
             get
             {
@@ -349,7 +355,7 @@ namespace System.Xml
         // Saves all the children of the node to the specified XmlWriter.
         public override void WriteContentTo(XmlWriter w)
         {
-            for (XmlNode node = FirstChild; node != null; node = node.NextSibling)
+            for (XmlNode? node = FirstChild; node != null; node = node.NextSibling)
             {
                 node.WriteTo(w);
             }
@@ -365,7 +371,7 @@ namespace System.Xml
             }
         }
 
-        internal override void SetParent(XmlNode node)
+        internal override void SetParent(XmlNode? node)
         {
             this.parentNode = node;
         }

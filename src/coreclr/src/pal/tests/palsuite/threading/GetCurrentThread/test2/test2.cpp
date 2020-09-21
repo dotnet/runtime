@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*=============================================================================
 **
@@ -43,7 +42,7 @@ static int g_priority = 0;
  * Thread function that calls GetCurrentThread() to get a pseudo-handle
  * to itself, then checks its priority and exits with that value.
  */
-DWORD PALAPI ThreadFunc( LPVOID param )
+DWORD PALAPI ThreadFunc_GetCurrentThread_test2( LPVOID param )
 {
     int      priority;
     HANDLE   hThread;
@@ -76,7 +75,7 @@ DWORD PALAPI ThreadFunc( LPVOID param )
  *
  * executable entry point
  */
-INT __cdecl main( INT argc, CHAR **argv )
+PALTEST(threading_GetCurrentThread_test2_paltest_getcurrentthread_test2, "threading/GetCurrentThread/test2/paltest_getcurrentthread_test2")
 {
     HANDLE   hThread = NULL;
     DWORD    IDThread;
@@ -99,7 +98,7 @@ INT __cdecl main( INT argc, CHAR **argv )
     /* Create multiple threads. */
     hThread = CreateThread(    NULL,         /* no security attributes    */
                                0,            /* use default stack size    */
-      (LPTHREAD_START_ROUTINE) ThreadFunc,   /* thread function           */
+      (LPTHREAD_START_ROUTINE) ThreadFunc_GetCurrentThread_test2,   /* thread function           */
                       (LPVOID) i,            /* pass thread index as      */
                                              /* function argument         */
                                CREATE_SUSPENDED, /* create suspended      */

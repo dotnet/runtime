@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -682,7 +681,7 @@ namespace System.Threading
                             if (node.SynchronizationContext != null)
                             {
                                 // Transition to the target syncContext and continue there.
-                                node.SynchronizationContext.Send(s =>
+                                node.SynchronizationContext.Send(static s =>
                                 {
                                     var n = (CallbackNode)s!;
                                     n.Partition.Source.ThreadIDExecutingCallbacks = Environment.CurrentManagedThreadId;
@@ -820,7 +819,7 @@ namespace System.Threading
             // unfortunate thing to do.  However, we expect this to be a rare case (disposing while the associated
             // callback is running), and brief when it happens (so the polling will be minimal), and making
             // this work with a callback mechanism will add additional cost to other more common cases.
-            return new ValueTask(Task.Factory.StartNew(s =>
+            return new ValueTask(Task.Factory.StartNew(static s =>
             {
                 Debug.Assert(s is Tuple<CancellationTokenSource, long>);
                 var state = (Tuple<CancellationTokenSource, long>)s;
@@ -875,7 +874,7 @@ namespace System.Threading
 
         private sealed class LinkedNCancellationTokenSource : CancellationTokenSource
         {
-            internal static readonly Action<object?> s_linkedTokenCancelDelegate = s =>
+            internal static readonly Action<object?> s_linkedTokenCancelDelegate = static s =>
             {
                 Debug.Assert(s is CancellationTokenSource, $"Expected {typeof(CancellationTokenSource)}, got {s}");
                 ((CancellationTokenSource)s).NotifyCancellation(throwOnFirstException: false); // skip ThrowIfDisposed() check in Cancel()
@@ -1029,7 +1028,7 @@ namespace System.Threading
                 ExecutionContext? context = ExecutionContext;
                 if (context != null)
                 {
-                    ExecutionContext.RunInternal(context, s =>
+                    ExecutionContext.RunInternal(context, static s =>
                     {
                         Debug.Assert(s is CallbackNode, $"Expected {typeof(CallbackNode)}, got {s}");
                         CallbackNode n = (CallbackNode)s;

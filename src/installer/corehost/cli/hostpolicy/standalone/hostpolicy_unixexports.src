@@ -1,0 +1,10 @@
+; Licensed to the .NET Foundation under one or more agreements.
+; The .NET Foundation licenses this file to you under the MIT license.
+
+corehost_initialize
+corehost_load
+corehost_main
+corehost_main_with_output_buffer
+corehost_resolve_component_dependencies
+corehost_set_error_writer
+corehost_unload

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Text;
 using Test.Cryptography;
@@ -14,6 +13,7 @@ namespace System.Security.Cryptography.Encryption.Rijndael.Tests
     /// Since RijndaelImplementation (from Rijndael.Create()) and RijndaelManaged classes wrap Aes,
     /// we only test minimally here.
     /// </summary>
+    [SkipOnMono("Not supported on Browser", TestPlatforms.Browser)]
     public class RijndaelTests
     {
         [Fact]

@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>exe</OutputType>
+    <CLRTestKind>BuildAndRun</CLRTestKind>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <CLRTestPriority>0</CLRTestPriority>
+
+    <!-- ilasm round-trip testing doesn't make sense for this test -->
+    <IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>
+    
+    <!-- Crossgen2 currently targets x64 and ARM64 only -->
+    <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' != 'x64' and '$(TargetArchitecture)' != 'arm64'">true</CLRTestTargetUnsupported>
+
+    <!-- This is an explicit crossgen test -->
+    <AlwaysUseCrossGen2>true</AlwaysUseCrossGen2>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include=".\helperdll.csproj" />
+    <ProjectReference Include=".\helperildll.ilproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+  </ItemGroup>
+</Project>

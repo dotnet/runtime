@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ------------------------------------------------------------------------------
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
@@ -44,8 +43,7 @@ namespace System.Collections.Generic
 {
     public static partial class CollectionExtensions
     {
-        [return: System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
-        public static TValue GetValueOrDefault<TKey, TValue>(this System.Collections.Generic.IReadOnlyDictionary<TKey, TValue> dictionary, TKey key) { throw null; }
+        public static TValue? GetValueOrDefault<TKey, TValue>(this System.Collections.Generic.IReadOnlyDictionary<TKey, TValue> dictionary, TKey key) { throw null; }
         public static TValue GetValueOrDefault<TKey, TValue>(this System.Collections.Generic.IReadOnlyDictionary<TKey, TValue> dictionary, TKey key, TValue defaultValue) { throw null; }
         public static bool Remove<TKey, TValue>(this System.Collections.Generic.IDictionary<TKey, TValue> dictionary, TKey key, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TValue value) { throw null; }
         public static bool TryAdd<TKey, TValue>(this System.Collections.Generic.IDictionary<TKey, TValue> dictionary, TKey key, TValue value) { throw null; }
@@ -54,9 +52,9 @@ namespace System.Collections.Generic
     {
         protected Comparer() { }
         public static System.Collections.Generic.Comparer<T> Default { get { throw null; } }
-        public abstract int Compare([System.Diagnostics.CodeAnalysis.AllowNullAttribute] T x, [System.Diagnostics.CodeAnalysis.AllowNullAttribute] T y);
+        public abstract int Compare(T? x, T? y);
         public static System.Collections.Generic.Comparer<T> Create(System.Comparison<T> comparison) { throw null; }
-        int System.Collections.IComparer.Compare(object x, object y) { throw null; }
+        int System.Collections.IComparer.Compare(object? x, object? y) { throw null; }
     }
     public partial class Dictionary<TKey, TValue> : System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IDictionary<TKey, TValue>, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IReadOnlyCollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IReadOnlyDictionary<TKey, TValue>, System.Collections.ICollection, System.Collections.IDictionary, System.Collections.IEnumerable, System.Runtime.Serialization.IDeserializationCallback, System.Runtime.Serialization.ISerializable where TKey : notnull
     {
@@ -102,7 +100,7 @@ namespace System.Collections.Generic
         bool System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>.Remove(System.Collections.Generic.KeyValuePair<TKey, TValue> keyValuePair) { throw null; }
         System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<TKey, TValue>> System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>>.GetEnumerator() { throw null; }
         void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
-        void System.Collections.IDictionary.Add(object key, object value) { }
+        void System.Collections.IDictionary.Add(object key, object? value) { }
         bool System.Collections.IDictionary.Contains(object key) { throw null; }
         System.Collections.IDictionaryEnumerator System.Collections.IDictionary.GetEnumerator() { throw null; }
         void System.Collections.IDictionary.Remove(object key) { }
@@ -185,9 +183,9 @@ namespace System.Collections.Generic
     {
         protected EqualityComparer() { }
         public static System.Collections.Generic.EqualityComparer<T> Default { get { throw null; } }
-        public abstract bool Equals([System.Diagnostics.CodeAnalysis.AllowNullAttribute] T x, [System.Diagnostics.CodeAnalysis.AllowNullAttribute] T y);
+        public abstract bool Equals(T? x, T? y);
         public abstract int GetHashCode([System.Diagnostics.CodeAnalysis.DisallowNullAttribute] T obj);
-        bool System.Collections.IEqualityComparer.Equals(object x, object y) { throw null; }
+        bool System.Collections.IEqualityComparer.Equals(object? x, object? y) { throw null; }
         int System.Collections.IEqualityComparer.GetHashCode(object obj) { throw null; }
     }
     public partial class HashSet<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.ISet<T>, System.Collections.Generic.IReadOnlySet<T>, System.Collections.IEnumerable, System.Runtime.Serialization.IDeserializationCallback, System.Runtime.Serialization.ISerializable
@@ -249,6 +247,7 @@ namespace System.Collections.Generic
         public System.Collections.Generic.LinkedListNode<T>? Next { get { throw null; } }
         public System.Collections.Generic.LinkedListNode<T>? Previous { get { throw null; } }
         public T Value { get { throw null; } set { } }
+        public ref T ValueRef { get { throw null; } }
     }
     public partial class LinkedList<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.ICollection, System.Collections.IEnumerable, System.Runtime.Serialization.IDeserializationCallback, System.Runtime.Serialization.ISerializable
     {
@@ -295,7 +294,7 @@ namespace System.Collections.Generic
             public void Dispose() { }
             public bool MoveNext() { throw null; }
             void System.Collections.IEnumerator.Reset() { }
-            void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object sender) { }
+            void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object? sender) { }
             void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         }
     }
@@ -326,14 +325,12 @@ namespace System.Collections.Generic
         public void CopyTo(T[] array) { }
         public void CopyTo(T[] array, int arrayIndex) { }
         public bool Exists(System.Predicate<T> match) { throw null; }
-        [return: System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
-        public T Find(System.Predicate<T> match) { throw null; }
+        public T? Find(System.Predicate<T> match) { throw null; }
         public System.Collections.Generic.List<T> FindAll(System.Predicate<T> match) { throw null; }
         public int FindIndex(int startIndex, int count, System.Predicate<T> match) { throw null; }
         public int FindIndex(int startIndex, System.Predicate<T> match) { throw null; }
         public int FindIndex(System.Predicate<T> match) { throw null; }
-        [return: System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
-        public T FindLast(System.Predicate<T> match) { throw null; }
+        public T? FindLast(System.Predicate<T> match) { throw null; }
         public int FindLastIndex(int startIndex, int count, System.Predicate<T> match) { throw null; }
         public int FindLastIndex(int startIndex, System.Predicate<T> match) { throw null; }
         public int FindLastIndex(System.Predicate<T> match) { throw null; }
@@ -361,11 +358,11 @@ namespace System.Collections.Generic
         System.Collections.Generic.IEnumerator<T> System.Collections.Generic.IEnumerable<T>.GetEnumerator() { throw null; }
         void System.Collections.ICollection.CopyTo(System.Array array, int arrayIndex) { }
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
-        int System.Collections.IList.Add(object item) { throw null; }
-        bool System.Collections.IList.Contains(object item) { throw null; }
-        int System.Collections.IList.IndexOf(object item) { throw null; }
-        void System.Collections.IList.Insert(int index, object item) { }
-        void System.Collections.IList.Remove(object item) { }
+        int System.Collections.IList.Add(object? item) { throw null; }
+        bool System.Collections.IList.Contains(object? item) { throw null; }
+        int System.Collections.IList.IndexOf(object? item) { throw null; }
+        void System.Collections.IList.Insert(int index, object? item) { }
+        void System.Collections.IList.Remove(object? item) { }
         public T[] ToArray() { throw null; }
         public void TrimExcess() { }
         public bool TrueForAll(System.Predicate<T> match) { throw null; }
@@ -457,7 +454,7 @@ namespace System.Collections.Generic
         bool System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>.Remove(System.Collections.Generic.KeyValuePair<TKey, TValue> keyValuePair) { throw null; }
         System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<TKey, TValue>> System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>>.GetEnumerator() { throw null; }
         void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
-        void System.Collections.IDictionary.Add(object key, object value) { }
+        void System.Collections.IDictionary.Add(object key, object? value) { }
         bool System.Collections.IDictionary.Contains(object key) { throw null; }
         System.Collections.IDictionaryEnumerator System.Collections.IDictionary.GetEnumerator() { throw null; }
         void System.Collections.IDictionary.Remove(object key) { }
@@ -572,7 +569,7 @@ namespace System.Collections.Generic
         bool System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>.Remove(System.Collections.Generic.KeyValuePair<TKey, TValue> keyValuePair) { throw null; }
         System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<TKey, TValue>> System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>>.GetEnumerator() { throw null; }
         void System.Collections.ICollection.CopyTo(System.Array array, int arrayIndex) { }
-        void System.Collections.IDictionary.Add(object key, object value) { }
+        void System.Collections.IDictionary.Add(object key, object? value) { }
         bool System.Collections.IDictionary.Contains(object key) { throw null; }
         System.Collections.IDictionaryEnumerator System.Collections.IDictionary.GetEnumerator() { throw null; }
         void System.Collections.IDictionary.Remove(object key) { }
@@ -589,10 +586,8 @@ namespace System.Collections.Generic
         protected SortedSet(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public System.Collections.Generic.IComparer<T> Comparer { get { throw null; } }
         public int Count { get { throw null; } }
-        [System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
-        public T Max { get { throw null; } }
-        [System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
-        public T Min { get { throw null; } }
+        public T? Max { get { throw null; } }
+        public T? Min { get { throw null; } }
         bool System.Collections.Generic.ICollection<T>.IsReadOnly { get { throw null; } }
         bool System.Collections.ICollection.IsSynchronized { get { throw null; } }
         object System.Collections.ICollection.SyncRoot { get { throw null; } }
@@ -607,7 +602,7 @@ namespace System.Collections.Generic
         public void ExceptWith(System.Collections.Generic.IEnumerable<T> other) { }
         public System.Collections.Generic.SortedSet<T>.Enumerator GetEnumerator() { throw null; }
         protected virtual void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
-        public virtual System.Collections.Generic.SortedSet<T> GetViewBetween(T lowerValue, T upperValue) { throw null; }
+        public virtual System.Collections.Generic.SortedSet<T> GetViewBetween(T? lowerValue, T? upperValue) { throw null; }
         public virtual void IntersectWith(System.Collections.Generic.IEnumerable<T> other) { }
         public bool IsProperSubsetOf(System.Collections.Generic.IEnumerable<T> other) { throw null; }
         public bool IsProperSupersetOf(System.Collections.Generic.IEnumerable<T> other) { throw null; }
@@ -624,7 +619,7 @@ namespace System.Collections.Generic
         System.Collections.Generic.IEnumerator<T> System.Collections.Generic.IEnumerable<T>.GetEnumerator() { throw null; }
         void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
-        void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object sender) { }
+        void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object? sender) { }
         void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public bool TryGetValue(T equalValue, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out T actualValue) { throw null; }
         public void UnionWith(System.Collections.Generic.IEnumerable<T> other) { }
@@ -637,7 +632,7 @@ namespace System.Collections.Generic
             public void Dispose() { }
             public bool MoveNext() { throw null; }
             void System.Collections.IEnumerator.Reset() { }
-            void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object sender) { }
+            void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object? sender) { }
             void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         }
     }

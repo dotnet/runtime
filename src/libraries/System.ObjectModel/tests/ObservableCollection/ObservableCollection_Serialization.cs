@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Reflection;
@@ -18,7 +17,7 @@ namespace System.Collections.ObjectModel.Tests
             yield return new object[] { new ObservableCollection<int>() { 1, 5, 3, 4, 2 } };
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported))]
         [MemberData(nameof(SerializeDeserialize_Roundtrips_MemberData))]
         public void SerializeDeserialize_Roundtrips(ObservableCollection<int> c)
         {

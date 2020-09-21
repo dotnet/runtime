@@ -442,6 +442,53 @@ thread_handle_destroy (gpointer data)
 	g_free (thread_handle);
 }
 
+static gboolean native_thread_id_main_thread_known;
+static MonoNativeThreadId native_thread_id_main_thread;
+
+/**
+ * mono_native_thread_id_main_thread_known:
+ *
+ * If the main thread of the process has interacted with Mono (in the sense
+ * that it has a MonoThreadInfo associated with it), return \c TRUE and write
+ * its MonoNativeThreadId to \c main_thread_tid.
+ *
+ * Otherwise return \c FALSE.
+ */
+gboolean
+mono_native_thread_id_main_thread_known (MonoNativeThreadId *main_thread_tid)
+{
+	if (!native_thread_id_main_thread_known)
+		return FALSE;
+	g_assert (main_thread_tid);
+	*main_thread_tid = native_thread_id_main_thread;
+	return TRUE;
+}
+
+/*
+ * Saves the MonoNativeThreadId (on Linux pthread_t) of the current thread if
+ * it is the main thread.
+ *
+ * The main thread is (on Linux) the one whose OS thread id (on Linux pid_t) is
+ * equal to the process id.
+ *
+ * We have to do this at thread registration time because in embedding
+ * scenarios we can't count on the main thread to be the one that calls
+ * mono_jit_init, or other runtime initialization functions.
+ */
+static void
+native_thread_set_main_thread (void)
+{
+	if (native_thread_id_main_thread_known)
+		return;
+#if defined(__linux__)
+	if (mono_native_thread_os_id_get () == (guint64)getpid ()) {
+		native_thread_id_main_thread = mono_native_thread_id_get ();
+		mono_memory_barrier ();
+		native_thread_id_main_thread_known = TRUE;
+	}
+#endif
+}
+
 static gboolean
 register_thread (MonoThreadInfo *info)
 {
@@ -451,6 +498,7 @@ register_thread (MonoThreadInfo *info)
 
 	info->small_id = mono_thread_info_register_small_id ();
 	mono_thread_info_set_tid (info, mono_native_thread_id_get ());
+	native_thread_set_main_thread ();
 
 	info->handle = g_new0 (MonoThreadHandle, 1);
 	mono_refcount_init (info->handle, thread_handle_destroy);

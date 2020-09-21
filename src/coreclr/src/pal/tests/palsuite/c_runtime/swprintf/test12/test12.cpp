@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================================
 **
@@ -20,7 +19,7 @@
  * Uses memcmp & wcslen
  */
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime_swprintf_test12_paltest_swprintf_test12, "c_runtime/swprintf/test12/paltest_swprintf_test12")
 {
     int neg = -42;
     int pos = 0x1234ab;

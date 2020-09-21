@@ -1,0 +1,58 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <!-- ilasm round-trip testing works, but is not interesting for this test:
+         we already get round-trip testing for the referenced projects, so doing
+         it here only adds round-trip testing of the harness, as well as doing
+         SuperPMI collections of both the normal and round-tripped tests, which
+         seems more costly than it's worth.
+    -->
+    <IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>
+    <GCStressIncompatible>true</GCStressIncompatible>
+    <!-- This test takes a long time to complete -->
+    <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
+    <!-- https://github.com/dotnet/runtime/issues/12709 -->
+    <JitOptimizationSensitive Condition="'$(TargetArchitecture)' == 'arm'">true</JitOptimizationSensitive>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>Full</DebugType>
+    <Optimize>False</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="superpmicollect.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <_SpmiTestProjects Include="..\Performance\CodeQuality\Bytemark\Bytemark.csproj" />
+    <_SpmiTestProjects Include="..\Methodical\fp\exgen\10w5d_cs_do.csproj" />
+    <_SpmiTestProjects Update="@(_SpmiTestProjects)">
+      <Properties>OutputPath=$(OutputPath)\%(FileName)</Properties>
+    </_SpmiTestProjects>
+  </ItemGroup>
+
+  <!-- This target builds the executables and test running scripts for the _SpmiTestProjects
+       to the output directory of the current project. -->
+  <Target Name="_BuildSpmiTestProjects" BeforeTargets="Build">
+    <MSBuild Projects="@(_SpmiTestProjects)" />
+  </Target>
+
+  <!-- _SpmiTestNamesFile contains the file names of the _SpmiTestProjects. -->
+  <PropertyGroup>
+    <_SpmiTestNamesFile>$(IntermediateOutputPath)\SpmiTestNames.txt</_SpmiTestNamesFile>
+  </PropertyGroup>
+
+  <!-- In order to avoid hard-coding of the _SpmiTestProjects names in a C# file
+       we will write them to a file and embed the file as an assembly resource. -->
+  <Target Name="_WriteSpmiTestNamesToFile" BeforeTargets="ResGen">
+    <ItemGroup>
+      <_SpmiTestNames Include="@(_SpmiTestProjects->'%(FileName)')" />
+    </ItemGroup>
+    <WriteLinesToFile File="$(_SpmiTestNamesFile)" Lines="@(_SpmiTestNames)" Overwrite="True" />
+  </Target>
+
+  <ItemGroup>
+    <EmbeddedResource Include="$(_SpmiTestNamesFile)">
+      <LogicalName>SpmiTestNames</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+</Project>

@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using Xunit;
@@ -42,7 +41,6 @@ namespace System.Text.Json.Tests
             yield return new object[] { "\"1997-07-16T19:20:30.6666660\"", "1997-07-16T19:20:30.666666" };
 
             // Test fraction truncation.
-            yield return new object[] { "\"1997-07-16T19:20:30.0000000\"", "1997-07-16T19:20:30" };
             yield return new object[] { "\"1997-07-16T19:20:30.00000001\"", "1997-07-16T19:20:30" };
             yield return new object[] { "\"1997-07-16T19:20:30.000000001\"", "1997-07-16T19:20:30" };
             yield return new object[] { "\"1997-07-16T19:20:30.77777770\"", "1997-07-16T19:20:30.7777777" };
@@ -107,6 +105,13 @@ namespace System.Text.Json.Tests
 
         public static IEnumerable<object[]> InvalidISO8601Tests()
         {
+            // Too short
+            yield return new object[] { "\"1997-07\"" };
+            yield return new object[] { "\"1996\"" };
+            yield return new object[] { "\"997-07-16\"" };
+            yield return new object[] { "\"1997-07-6\"" };
+            yield return new object[] { "\"1997-7-06\"" };
+
             // Invalid YYYY-MM-DD
             yield return new object[] { "\"0997 07-16\"" };
             yield return new object[] { "\"0997-0a-16\"" };
@@ -117,12 +122,8 @@ namespace System.Text.Json.Tests
             yield return new object[] { "\"0997-07-16,0997-07-16\"" };
             yield return new object[] { "\"1997-07-16T19:20abc\"" };
             yield return new object[] { "\"1997-07-16T19:20, 123\"" };
-            yield return new object[] { "\"997-07-16\"" };
-            yield return new object[] { "\"1997-07\"" };
-            yield return new object[] { "\"1997-7-06\"" };
             yield return new object[] { "\"1997-07-16T\"" };
             yield return new object[] { "\"1997-07-16*\"" };
-            yield return new object[] { "\"1997-07-6\"" };
             yield return new object[] { "\"1997-07-6T01\"" };
             yield return new object[] { "\"1997-07-16Z\"" };
             yield return new object[] { "\"1997-07-16+01:00\"" };
@@ -153,7 +154,6 @@ namespace System.Text.Json.Tests
             // Invalid fractions.
             yield return new object[] { "\"1997-07-16T19.45\"" };
             yield return new object[] { "\"1997-07-16T19:20.45\"" };
-            yield return new object[] { "\"1997-07-16T19:20:30a\"" };
             yield return new object[] { "\"1997-07-16T19:20:30,45\"" };
             yield return new object[] { "\"1997-07-16T19:20:30.\"" };
             yield return new object[] { "\"1997-07-16T19:20:30.a\"" };
@@ -168,7 +168,6 @@ namespace System.Text.Json.Tests
             yield return new object[] { "\"1997-07-16T19:20:30.4555555+01Z\"" };
             yield return new object[] { "\"1997-07-16T19:20:30.4555555+01:\"" };
             yield return new object[] { "\"1997-07-16T19:20:30.4555555 +01:00\"" };
-            yield return new object[] { "\"1997-07-16T19:20:30.4555555+01:\"" };
             yield return new object[] { "\"1997-07-16T19:20:30.4555555- 01:00\"" };
             yield return new object[] { "\"1997-07-16T19:20:30.4555555+04 :30\"" };
             yield return new object[] { "\"1997-07-16T19:20:30.4555555-04: 30\"" };

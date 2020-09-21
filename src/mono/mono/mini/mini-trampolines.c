@@ -131,7 +131,7 @@ mono_create_static_rgctx_trampoline (MonoMethod *m, gpointer addr)
 
 	mono_domain_lock (domain);
 	/* Duplicates inserted while we didn't hold the lock are OK */
-	info = (RgctxTrampInfo *)mono_domain_alloc (domain, sizeof (RgctxTrampInfo));
+	info = (RgctxTrampInfo *)m_method_alloc (domain, m, sizeof (RgctxTrampInfo));
 	info->m = m;
 	info->addr = addr;
 	g_hash_table_insert (domain_jit_info (domain)->static_rgctx_trampoline_hash, info, res);
@@ -1141,7 +1141,7 @@ mono_delegate_trampoline (host_mgreg_t *regs, guint8 *code, gpointer *arg, guint
 			}
 		}
 
-		if (tramp_info->method == NULL && delegate->target != NULL && method->flags & METHOD_ATTRIBUTE_VIRTUAL) {
+		if (delegate->method_ptr == NULL && tramp_info->method == NULL && delegate->target != NULL && method->flags & METHOD_ATTRIBUTE_VIRTUAL) {
 			/* tramp_info->method == NULL happens when someone asks us to JIT some delegate's
 			 * Invoke method (see compile_special).  In that case if method is virtual, the target
 			 * could be some derived class, so we need to find the correct override.
@@ -1376,7 +1376,7 @@ mono_create_jump_trampoline (MonoDomain *domain, MonoMethod *method, gboolean ad
 	code = mono_create_specific_trampoline (method, MONO_TRAMPOLINE_JUMP, mono_domain_get (), &code_size);
 	g_assert (code_size);
 
-	ji = (MonoJitInfo *)mono_domain_alloc0 (domain, MONO_SIZEOF_JIT_INFO);
+	ji = (MonoJitInfo *)m_method_alloc0 (domain, method, MONO_SIZEOF_JIT_INFO);
 	ji->code_start = code;
 	ji->code_size = code_size;
 	ji->d.method = method;

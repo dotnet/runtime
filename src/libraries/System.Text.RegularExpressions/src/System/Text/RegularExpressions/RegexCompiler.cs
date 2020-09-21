@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -299,6 +298,9 @@ namespace System.Text.RegularExpressions
 
         /// <summary>A macro for _ilg.Emit(OpCodes.Newobj, constructor).</summary>
         protected void Newobj(ConstructorInfo constructor) => _ilg!.Emit(OpCodes.Newobj, constructor);
+
+        /// <summary>A macro for _ilg.Emit(OpCodes.Dup).</summary>
+        protected void Dup() => _ilg!.Emit(OpCodes.Dup);
 
         /// <summary>A macro for _ilg.Emit(OpCodes.Rem_Un).</summary>
         private void RemUn() => _ilg!.Emit(OpCodes.Rem_Un);
@@ -1333,9 +1335,8 @@ namespace System.Text.RegularExpressions
                 }
 
                 // ch = runtext[runtextpos];
-                // if (ch == lastChar) goto partialMatch;
                 Rightchar();
-                if (_boyerMoorePrefix.CaseInsensitive && ParticipatesInCaseConversion(chLast))
+                if (_boyerMoorePrefix.CaseInsensitive)
                 {
                     CallToLower();
                 }
@@ -1347,6 +1348,7 @@ namespace System.Text.RegularExpressions
                     Ldloc(chLocal);
                     Ldc(chLast);
 
+                    // if (ch == lastChar) goto partialMatch;
                     BeqFar(lPartialMatch);
 
                     // ch -= lowAscii;
@@ -1924,8 +1926,10 @@ namespace System.Text.RegularExpressions
                         case RegexNode.Setloopatomic:
                         // "Empty" is easy: nothing is emitted for it.
                         // "Nothing" is also easy: it doesn't match anything.
+                        // "UpdateBumpalong" doesn't match anything, it's just an optional directive to the engine.
                         case RegexNode.Empty:
                         case RegexNode.Nothing:
+                        case RegexNode.UpdateBumpalong:
                             supported = true;
                             break;
 
@@ -2441,10 +2445,26 @@ namespace System.Text.RegularExpressions
                         // Emit nothing.
                         break;
 
+                    case RegexNode.UpdateBumpalong:
+                        EmitUpdateBumpalong();
+                        break;
+
                     default:
                         Debug.Fail($"Unexpected node type: {node.Type}");
                         break;
                 }
+            }
+
+            // Emits the code to handle updating base.runtextpos to runtextpos in response to
+            // an UpdateBumpalong node.  This is used when we want to inform the scan loop that
+            // it should bump from this location rather than from the original location.
+            void EmitUpdateBumpalong()
+            {
+                // base.runtextpos = runtextpos;
+                TransferTextSpanPosToRunTextPos();
+                Ldthis();
+                Ldloc(runtextposLocal);
+                Stfld(s_runtextposField);
             }
 
             // Emits the code to handle a single-character match.
@@ -3379,6 +3399,20 @@ namespace System.Text.RegularExpressions
                 case RegexCode.Nothing:
                     //: break Backward;
                     Back();
+                    break;
+
+                case RegexCode.UpdateBumpalong:
+                    // UpdateBumpalong should only exist in the code stream at such a point where the root
+                    // of the backtracking stack contains the runtextpos from the start of this Go call. Replace
+                    // that tracking value with the current runtextpos value.
+                    //: base.runtrack[base.runtrack.Length - 1] = runtextpos;
+                    Ldloc(_runtrackLocal!);
+                    Dup();
+                    Ldlen();
+                    Ldc(1);
+                    Sub();
+                    Ldloc(_runtextposLocal!);
+                    StelemI4();
                     break;
 
                 case RegexCode.Goto:
@@ -5319,7 +5353,7 @@ namespace System.Text.RegularExpressions
 
 #if DEBUG
         /// <summary>Emit code to print out the current state of the runner.</summary>
-        [ExcludeFromCodeCoverage]
+        [ExcludeFromCodeCoverage(Justification = "Debug only")]
         private void DumpBacktracking()
         {
             Mvlocfld(_runtextposLocal!, s_runtextposField);

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Linq;
@@ -283,7 +282,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             Assert.Equal(expected: 0, actual: tb.OutputCount);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void TestInputCount()
         {
             foreach (bool sync in DataflowTestHelpers.BooleanValues)
@@ -635,7 +634,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             await tb.Completion;
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task TestOrdering_Sync_OrderedDisabled()
         {
             // If ordering were enabled, this test would hang.

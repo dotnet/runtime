@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Data.Common;       //DbDataAdapter
 
@@ -20,12 +19,12 @@ namespace System.Data.Odbc
     /////////////////////////////////////////////////////////////////////////
     public sealed class OdbcRowUpdatingEventArgs : RowUpdatingEventArgs
     {
-        public OdbcRowUpdatingEventArgs(DataRow row, IDbCommand command, StatementType statementType, DataTableMapping tableMapping)
+        public OdbcRowUpdatingEventArgs(DataRow row, IDbCommand? command, StatementType statementType, DataTableMapping tableMapping)
         : base(row, command, statementType, tableMapping)
         {
         }
 
-        public new OdbcCommand Command
+        public new OdbcCommand? Command
         {
             get { return (base.Command as OdbcCommand); }
             set
@@ -34,7 +33,7 @@ namespace System.Data.Odbc
             }
         }
 
-        protected override IDbCommand BaseCommand
+        protected override IDbCommand? BaseCommand
         {
             get { return base.BaseCommand; }
             set { base.BaseCommand = (value as OdbcCommand); }
@@ -47,14 +46,14 @@ namespace System.Data.Odbc
     /////////////////////////////////////////////////////////////////////////
     public sealed class OdbcRowUpdatedEventArgs : RowUpdatedEventArgs
     {
-        public OdbcRowUpdatedEventArgs(DataRow row, IDbCommand command, StatementType statementType, DataTableMapping tableMapping)
+        public OdbcRowUpdatedEventArgs(DataRow row, IDbCommand? command, StatementType statementType, DataTableMapping tableMapping)
         : base(row, command, statementType, tableMapping)
         {
         }
 
-        public new OdbcCommand Command
+        public new OdbcCommand? Command
         {
-            get { return (OdbcCommand)base.Command; }
+            get { return (OdbcCommand?)base.Command; }
         }
     }
 }

@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Xunit;
 
@@ -48,6 +47,11 @@ namespace System.Tests
             Assert.Equal(expected, BitConverter.GetBytes(num));
         }
 
+        public override void ConvertFromHalf(Half num, byte[] expected)
+        {
+            Assert.Equal(expected, BitConverter.GetBytes(num));
+        }
+
         public override void ConvertFromFloat(float num, byte[] expected)
         {
             Assert.Equal(expected, BitConverter.GetBytes(num));
@@ -91,6 +95,11 @@ namespace System.Tests
         public override void ToUInt64(int index, ulong expected, byte[] byteArray)
         {
             Assert.Equal(expected, BitConverter.ToUInt64(byteArray, index));
+        }
+
+        public override void ToHalf(int index, Half expected, byte[] byteArray)
+        {
+            Assert.Equal(expected, BitConverter.ToHalf(byteArray, index));
         }
 
         public override void ToSingle(int index, float expected, byte[] byteArray)

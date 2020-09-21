@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -50,9 +49,9 @@ namespace Microsoft.Extensions.Options
                 }
 
                 var errors = new List<string>();
-                foreach (var r in validationResults)
+                foreach (ValidationResult r in validationResults)
                 {
-                    errors.Add($"DataAnnotation validation failed for members: '{String.Join(",", r.MemberNames)}' with the error: '{r.ErrorMessage}'.");
+                    errors.Add($"DataAnnotation validation failed for members: '{string.Join(",", r.MemberNames)}' with the error: '{r.ErrorMessage}'.");
                 }
                 return ValidateOptionsResult.Fail(errors);
             }

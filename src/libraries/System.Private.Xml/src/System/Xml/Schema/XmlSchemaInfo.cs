@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Xml;
 using System.Collections;
@@ -11,10 +10,10 @@ namespace System.Xml.Schema
     {
         private bool _isDefault;
         private bool _isNil;
-        private XmlSchemaElement _schemaElement;
-        private XmlSchemaAttribute _schemaAttribute;
-        private XmlSchemaType _schemaType;
-        private XmlSchemaSimpleType _memberType;
+        private XmlSchemaElement? _schemaElement;
+        private XmlSchemaAttribute? _schemaAttribute;
+        private XmlSchemaType? _schemaType;
+        private XmlSchemaSimpleType? _memberType;
         private XmlSchemaValidity _validity;
         private XmlSchemaContentType _contentType;
 
@@ -64,7 +63,7 @@ namespace System.Xml.Schema
             }
         }
 
-        public XmlSchemaSimpleType MemberType
+        public XmlSchemaSimpleType? MemberType
         {
             get
             {
@@ -76,7 +75,7 @@ namespace System.Xml.Schema
             }
         }
 
-        public XmlSchemaType SchemaType
+        public XmlSchemaType? SchemaType
         {
             get
             {
@@ -96,7 +95,7 @@ namespace System.Xml.Schema
             }
         }
 
-        public XmlSchemaElement SchemaElement
+        public XmlSchemaElement? SchemaElement
         {
             get
             {
@@ -112,7 +111,7 @@ namespace System.Xml.Schema
             }
         }
 
-        public XmlSchemaAttribute SchemaAttribute
+        public XmlSchemaAttribute? SchemaAttribute
         {
             get
             {
@@ -140,7 +139,7 @@ namespace System.Xml.Schema
             }
         }
 
-        internal XmlSchemaType XmlType
+        internal XmlSchemaType? XmlType
         {
             get
             {
@@ -156,7 +155,7 @@ namespace System.Xml.Schema
         {
             get
             {
-                return _schemaElement != null && _schemaElement.ElementDecl.DefaultValueTyped != null;
+                return _schemaElement != null && _schemaElement.ElementDecl!.DefaultValueTyped != null;
             }
         }
 

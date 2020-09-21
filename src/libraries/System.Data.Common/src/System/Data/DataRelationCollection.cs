@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
 namespace System.Data
@@ -15,14 +15,16 @@ namespace System.Data
     /// </summary>
     [DefaultEvent(nameof(CollectionChanged))]
     [DefaultProperty("Table")]
+    [Editor("Microsoft.VSDesigner.Data.Design.DataRelationCollectionEditor, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
+            "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public abstract class DataRelationCollection : InternalDataCollectionBase
     {
-        private DataRelation _inTransition = null;
+        private DataRelation? _inTransition;
 
         private int _defaultNameIndex = 1;
 
-        private CollectionChangeEventHandler _onCollectionChangedDelegate;
-        private CollectionChangeEventHandler _onCollectionChangingDelegate;
+        private CollectionChangeEventHandler? _onCollectionChangedDelegate;
+        private CollectionChangeEventHandler? _onCollectionChangingDelegate;
 
         private static int s_objectTypeCount; // Bid counter
         private readonly int _objectID = System.Threading.Interlocked.Increment(ref s_objectTypeCount);
@@ -37,7 +39,7 @@ namespace System.Data
         /// <summary>
         /// Gets the relation specified by name.
         /// </summary>
-        public abstract DataRelation this[string name] { get; }
+        public abstract DataRelation? this[string? name] { get; }
 
         /// <summary>
         /// Adds the relation to the collection.
@@ -56,7 +58,7 @@ namespace System.Data
                 try
                 {
                     OnCollectionChanging(new CollectionChangeEventArgs(CollectionChangeAction.Add, relation));
-                    AddCore(relation);
+                    AddCore(relation!);
                     OnCollectionChanged(new CollectionChangeEventArgs(CollectionChangeAction.Add, relation));
                 }
                 finally
@@ -70,7 +72,7 @@ namespace System.Data
             }
         }
 
-        public virtual void AddRange(DataRelation[] relations)
+        public virtual void AddRange(DataRelation[]? relations)
         {
             if (relations != null)
             {
@@ -89,7 +91,7 @@ namespace System.Data
         /// specified name, parent columns,
         /// child columns, and adds it to the collection.
         /// </summary>
-        public virtual DataRelation Add(string name, DataColumn[] parentColumns, DataColumn[] childColumns)
+        public virtual DataRelation Add(string? name, DataColumn[] parentColumns, DataColumn[] childColumns)
         {
             var relation = new DataRelation(name, parentColumns, childColumns);
             Add(relation);
@@ -104,7 +106,7 @@ namespace System.Data
         /// An InvalidRelationException is thrown if the relation can't be created based on the parameters.
         /// The CollectionChanged event is fired if it succeeds.
         /// </summary>
-        public virtual DataRelation Add(string name, DataColumn[] parentColumns, DataColumn[] childColumns, bool createConstraints)
+        public virtual DataRelation Add(string? name, DataColumn[] parentColumns, DataColumn[] childColumns, bool createConstraints)
         {
             var relation = new DataRelation(name, parentColumns, childColumns, createConstraints);
             Add(relation);
@@ -134,7 +136,7 @@ namespace System.Data
         /// An InvalidConstraintException is thrown if the relation can't be created based on the parameters.
         /// The CollectionChanged event is fired if it succeeds.
         /// </summary>
-        public virtual DataRelation Add(string name, DataColumn parentColumn, DataColumn childColumn)
+        public virtual DataRelation Add(string? name, DataColumn parentColumn, DataColumn childColumn)
         {
             var relation = new DataRelation(name, parentColumn, childColumn);
             Add(relation);
@@ -150,7 +152,7 @@ namespace System.Data
         /// An InvalidConstraintException is thrown if the relation can't be created based on the parameters.
         /// The CollectionChanged event is fired if it succeeds.
         /// </summary>
-        public virtual DataRelation Add(string name, DataColumn parentColumn, DataColumn childColumn, bool createConstraints)
+        public virtual DataRelation Add(string? name, DataColumn parentColumn, DataColumn childColumn, bool createConstraints)
         {
             var relation = new DataRelation(name, parentColumn, childColumn, createConstraints);
             Add(relation);
@@ -210,7 +212,7 @@ namespace System.Data
             }
         }
 
-        public event CollectionChangeEventHandler CollectionChanged
+        public event CollectionChangeEventHandler? CollectionChanged
         {
             add
             {
@@ -224,7 +226,7 @@ namespace System.Data
             }
         }
 
-        internal event CollectionChangeEventHandler CollectionChanging
+        internal event CollectionChangeEventHandler? CollectionChanging
         {
             add
             {
@@ -275,7 +277,7 @@ namespace System.Data
         /// <summary>
         ///  Returns true if this collection has a relation with the given name (case insensitive), false otherwise.
         /// </summary>
-        public virtual bool Contains(string name) => (InternalIndexOf(name) >= 0);
+        public virtual bool Contains(string? name) => (InternalIndexOf(name) >= 0);
 
         public void CopyTo(DataRelation[] array, int index)
         {
@@ -297,19 +299,19 @@ namespace System.Data
 
             for (int i = 0; i < alist.Count; ++i)
             {
-                array[index + i] = (DataRelation)alist[i];
+                array[index + i] = (DataRelation)alist[i]!;
             }
         }
 
         /// <summary>
         /// Returns the index of a specified <see cref='System.Data.DataRelation'/>.
         /// </summary>
-        public virtual int IndexOf(DataRelation relation)
+        public virtual int IndexOf(DataRelation? relation)
         {
             int relationCount = List.Count;
             for (int i = 0; i < relationCount; ++i)
             {
-                if (relation == (DataRelation)List[i])
+                if (relation == (DataRelation)List[i]!)
                 {
                     return i;
                 }
@@ -322,13 +324,13 @@ namespace System.Data
         /// relation with the given name (case insensitive), or -1 if the relation
         /// doesn't exist in the collection.
         /// </summary>
-        public virtual int IndexOf(string relationName)
+        public virtual int IndexOf(string? relationName)
         {
             int index = InternalIndexOf(relationName);
             return (index < 0) ? -1 : index;
         }
 
-        internal int InternalIndexOf(string name)
+        internal int InternalIndexOf(string? name)
         {
             int cachedI = -1;
             if ((null != name) && (0 < name.Length))
@@ -337,7 +339,7 @@ namespace System.Data
                 int result = 0;
                 for (int i = 0; i < count; i++)
                 {
-                    DataRelation relation = (DataRelation)List[i];
+                    DataRelation relation = (DataRelation)List[i]!;
                     result = NamesEqual(relation.RelationName, name, false, GetDataSet().Locale);
                     if (result == 1)
                     {
@@ -415,7 +417,7 @@ namespace System.Data
         /// <summary>
         /// Verifies if a given relation can be removed from the collection.
         /// </summary>
-        public virtual bool CanRemove(DataRelation relation) => relation != null && relation.DataSet == GetDataSet();
+        public virtual bool CanRemove(DataRelation? relation) => relation != null && relation.DataSet == GetDataSet();
 
         /// <summary>
         /// Removes the given relation from the collection.
@@ -435,7 +437,7 @@ namespace System.Data
             try
             {
                 OnCollectionChanging(new CollectionChangeEventArgs(CollectionChangeAction.Remove, relation));
-                RemoveCore(relation);
+                RemoveCore(relation!);
                 OnCollectionChanged(new CollectionChangeEventArgs(CollectionChangeAction.Remove, relation));
             }
             finally
@@ -452,6 +454,7 @@ namespace System.Data
         public void RemoveAt(int index)
         {
             DataRelation dr = this[index];
+            // TODO: Not needed, this[] throws
             if (dr == null)
             {
                 throw ExceptionBuilder.RelationOutOfRange(index);
@@ -466,7 +469,7 @@ namespace System.Data
         /// </summary>
         public void Remove(string name)
         {
-            DataRelation dr = this[name];
+            DataRelation? dr = this[name];
             if (dr == null)
             {
                 throw ExceptionBuilder.RelationNotInTheDataSet(name);
@@ -547,7 +550,7 @@ namespace System.Data
             protected override DataSet GetDataSet()
             {
                 EnsureDataSet();
-                return _table.DataSet;
+                return _table.DataSet!;
             }
 
             public override DataRelation this[int index]
@@ -556,26 +559,26 @@ namespace System.Data
                 {
                     if (index >= 0 && index < _relations.Count)
                     {
-                        return (DataRelation)_relations[index];
+                        return (DataRelation)_relations[index]!;
                     }
                     throw ExceptionBuilder.RelationOutOfRange(index);
                 }
             }
 
-            public override DataRelation this[string name]
+            public override DataRelation? this[string? name]
             {
                 get
                 {
                     int index = InternalIndexOf(name);
                     if (index == -2)
                     {
-                        throw ExceptionBuilder.CaseInsensitiveNameConflict(name);
+                        throw ExceptionBuilder.CaseInsensitiveNameConflict(name!);
                     }
-                    return (index < 0) ? null : (DataRelation)List[index];
+                    return (index < 0) ? null : (DataRelation)List[index]!;
                 }
             }
 
-            internal event CollectionChangeEventHandler RelationPropertyChanged;
+            internal event CollectionChangeEventHandler? RelationPropertyChanged;
 
             internal void OnRelationPropertyChanged(CollectionChangeEventArgs ccevent)
             {
@@ -616,12 +619,14 @@ namespace System.Data
                 AddCache(relation);
             }
 
-            public override bool CanRemove(DataRelation relation)
+            public override bool CanRemove(DataRelation? relation)
             {
                 if (!base.CanRemove(relation))
                 {
                     return false;
                 }
+
+                Debug.Assert(relation != null);
 
                 if (_fParentCollection)
                 {
@@ -684,7 +689,7 @@ namespace System.Data
         {
             private readonly DataSet _dataSet;
             private readonly ArrayList _relations;
-            private DataRelation[] _delayLoadingRelations = null;
+            private DataRelation[]? _delayLoadingRelations;
 
             internal DataSetRelationCollection(DataSet dataSet)
             {
@@ -698,7 +703,7 @@ namespace System.Data
 
             protected override ArrayList List => _relations;
 
-            public override void AddRange(DataRelation[] relations)
+            public override void AddRange(DataRelation[]? relations)
             {
                 if (_dataSet._fInitInProgress)
                 {
@@ -735,22 +740,22 @@ namespace System.Data
                 {
                     if (index >= 0 && index < _relations.Count)
                     {
-                        return (DataRelation)_relations[index];
+                        return (DataRelation)_relations[index]!;
                     }
                     throw ExceptionBuilder.RelationOutOfRange(index);
                 }
             }
 
-            public override DataRelation this[string name]
+            public override DataRelation? this[string? name]
             {
                 get
                 {
                     int index = InternalIndexOf(name);
                     if (index == -2)
                     {
-                        throw ExceptionBuilder.CaseInsensitiveNameConflict(name);
+                        throw ExceptionBuilder.CaseInsensitiveNameConflict(name!);
                     }
-                    return (index < 0) ? null : (DataRelation)List[index];
+                    return (index < 0) ? null : (DataRelation)List[index]!;
                 }
             }
 
@@ -781,9 +786,9 @@ namespace System.Data
 
                 for (int i = 0; i < _relations.Count; i++)
                 {
-                    if (childKey.ColumnsEqual(((DataRelation)_relations[i]).ChildKey))
+                    if (childKey.ColumnsEqual(((DataRelation)_relations[i]!).ChildKey))
                     {
-                        if (relation.ParentKey.ColumnsEqual(((DataRelation)_relations[i]).ParentKey))
+                        if (relation.ParentKey.ColumnsEqual(((DataRelation)_relations[i]!).ParentKey))
                             throw ExceptionBuilder.RelationAlreadyExists();
                     }
                 }
@@ -799,7 +804,7 @@ namespace System.Data
                     relation.ChildTable.CacheNestedParent();
                 }
 
-                ForeignKeyConstraint foreignKey = relation.ChildTable.Constraints.FindForeignKeyConstraint(relation.ParentColumnsReference, relation.ChildColumnsReference);
+                ForeignKeyConstraint? foreignKey = relation.ChildTable.Constraints.FindForeignKeyConstraint(relation.ParentColumnsReference, relation.ChildColumnsReference);
                 if (relation._createConstraints)
                 {
                     if (foreignKey == null)
@@ -817,7 +822,7 @@ namespace System.Data
                         }
                     }
                 }
-                UniqueConstraint key = relation.ParentTable.Constraints.FindKeyConstraint(relation.ParentColumnsReference);
+                UniqueConstraint? key = relation.ParentTable.Constraints.FindKeyConstraint(relation.ParentColumnsReference);
                 relation.SetParentKeyConstraint(key);
                 relation.SetChildKeyConstraint(foreignKey);
             }
@@ -885,20 +890,20 @@ namespace System.Data
                     {
                         if (rel._parentTableNamespace == null)
                         {
-                            parents[j] = _dataSet.Tables[rel._parentTableName].Columns[rel._parentColumnNames[j]];
+                            parents[j] = _dataSet.Tables[rel._parentTableName!]!.Columns[rel._parentColumnNames[j]]!;
                         }
                         else
                         {
-                            parents[j] = _dataSet.Tables[rel._parentTableName, rel._parentTableNamespace].Columns[rel._parentColumnNames[j]];
+                            parents[j] = _dataSet.Tables[rel._parentTableName!, rel._parentTableNamespace]!.Columns[rel._parentColumnNames[j]]!;
                         }
 
                         if (rel._childTableNamespace == null)
                         {
-                            childs[j] = _dataSet.Tables[rel._childTableName].Columns[rel._childColumnNames[j]];
+                            childs[j] = _dataSet.Tables[rel._childTableName!]!.Columns[rel._childColumnNames[j]]!;
                         }
                         else
                         {
-                            childs[j] = _dataSet.Tables[rel._childTableName, rel._childTableNamespace].Columns[rel._childColumnNames[j]];
+                            childs[j] = _dataSet.Tables[rel._childTableName!, rel._childTableNamespace]!.Columns[rel._childColumnNames[j]]!;
                         }
                     }
 

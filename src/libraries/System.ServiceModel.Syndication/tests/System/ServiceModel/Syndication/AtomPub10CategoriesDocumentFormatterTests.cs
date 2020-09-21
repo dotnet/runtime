@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.IO;
@@ -50,7 +49,6 @@ namespace System.ServiceModel.Syndication.Tests
         [InlineData(typeof(InlineCategoriesDocumentSubclass), typeof(ReferencedCategoriesDocumentSubclass))]
         public void Ctor_Type_Type(Type inlineDocumentType, Type referencedDocumentType)
         {
-            var document = new InlineCategoriesDocument();
             var formatter = new AtomPub10CategoriesDocumentFormatter(inlineDocumentType, referencedDocumentType);
             Assert.Null(formatter.Document);
             Assert.Equal("http://www.w3.org/2007/app", formatter.Version);

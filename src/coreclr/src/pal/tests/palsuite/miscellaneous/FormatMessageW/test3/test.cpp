@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================
 **
@@ -14,10 +13,10 @@
 #define UNICODE
 #include <palsuite.h>
 
-WCHAR OutBuffer[1024];
 
-int __cdecl main(int argc, char *argv[]) 
+PALTEST(miscellaneous_FormatMessageW_test3_paltest_formatmessagew_test3, "miscellaneous/FormatMessageW/test3/paltest_formatmessagew_test3")
 {
+    WCHAR OutBuffer[1024];
 
     WCHAR *  TheString; 
     WCHAR * CorrectString;

@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using System.Text;
 using RuntimeTypeCache = System.RuntimeType.RuntimeTypeCache;
 
@@ -18,11 +18,11 @@ namespace System.Reflection
         private RuntimeTypeCache m_reflectedTypeCache;
         private string? m_toString;
         private ParameterInfo[]? m_parameters; // Created lazily when GetParameters() is called.
-#pragma warning disable CA1823, 414
-        private object _empty1 = null!; // These empties are used to ensure that RuntimeConstructorInfo and RuntimeMethodInfo are have a layout which is sufficiently similar
-        private object _empty2 = null!;
-        private object _empty3 = null!;
-#pragma warning restore CA1823, 414
+#pragma warning disable CA1823, 414, 169
+        private object? _empty1; // These empties are used to ensure that RuntimeConstructorInfo and RuntimeMethodInfo are have a layout which is sufficiently similar
+        private object? _empty2;
+        private object? _empty3;
+#pragma warning restore CA1823, 414, 169
         private IntPtr m_handle;
         private MethodAttributes m_methodAttributes;
         private BindingFlags m_bindingFlags;
@@ -48,7 +48,12 @@ namespace System.Reflection
                         // We don't need other flags if this method cannot be invoked
                         invocationFlags |= INVOCATION_FLAGS.INVOCATION_FLAGS_NO_INVOKE;
                     }
-                    else if (IsStatic || declaringType != null && declaringType.IsAbstract)
+                    else if (IsStatic)
+                    {
+                        invocationFlags |= INVOCATION_FLAGS.INVOCATION_FLAGS_RUN_CLASS_CONSTRUCTOR |
+                                           INVOCATION_FLAGS.INVOCATION_FLAGS_NO_CTOR_INVOKE;
+                    }
+                    else if (declaringType != null && declaringType.IsAbstract)
                     {
                         invocationFlags |= INVOCATION_FLAGS.INVOCATION_FLAGS_NO_CTOR_INVOKE;
                     }
@@ -280,6 +285,21 @@ namespace System.Reflection
 
             // check basic method consistency. This call will throw if there are problems in the target/method relationship
             CheckConsistency(obj);
+
+            if ((invocationFlags & INVOCATION_FLAGS.INVOCATION_FLAGS_RUN_CLASS_CONSTRUCTOR) != 0)
+            {
+                // Run the class constructor through the class constructor mechanism instead of the Invoke path.
+                // This avoids allowing mutation of readonly static fields, and initializes the type correctly.
+
+                var declaringType = DeclaringType;
+
+                if (declaringType != null)
+                    RuntimeHelpers.RunClassConstructor(declaringType.TypeHandle);
+                else
+                    RuntimeHelpers.RunModuleConstructor(Module.ModuleHandle);
+
+                return null;
+            }
 
             Signature sig = Signature;
 

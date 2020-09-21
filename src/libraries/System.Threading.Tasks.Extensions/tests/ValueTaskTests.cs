@@ -1,12 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Security.Policy;
 using System.Threading.Tasks.Sources;
 using System.Threading.Tasks.Sources.Tests;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Threading.Tasks.Tests
@@ -638,8 +639,8 @@ namespace System.Threading.Tasks.Tests
                 mode == CtorMode.Task ? new ValueTask(Task.CompletedTask) :
                 new ValueTask(ManualResetValueTaskSourceFactory.Completed(0, null), 0);
 
-            var tcs = new TaskCompletionSource<bool>();
-            t.GetAwaiter().OnCompleted(() => tcs.SetResult(true));
+            var tcs = new TaskCompletionSource();
+            t.GetAwaiter().OnCompleted(() => tcs.SetResult());
             await tcs.Task;
         }
 
@@ -654,8 +655,8 @@ namespace System.Threading.Tasks.Tests
                 mode == CtorMode.Task ? new ValueTask(Task.CompletedTask) :
                 new ValueTask(ManualResetValueTaskSourceFactory.Completed(0, null), 0);
 
-            var tcs = new TaskCompletionSource<bool>();
-            t.GetAwaiter().UnsafeOnCompleted(() => tcs.SetResult(true));
+            var tcs = new TaskCompletionSource();
+            t.GetAwaiter().UnsafeOnCompleted(() => tcs.SetResult());
             await tcs.Task;
         }
 
@@ -670,8 +671,8 @@ namespace System.Threading.Tasks.Tests
                 mode == CtorMode.Task ? new ValueTask<int>(Task.FromResult(42)) :
                 new ValueTask<int>(ManualResetValueTaskSourceFactory.Completed(42, null), 0);
 
-            var tcs = new TaskCompletionSource<bool>();
-            t.GetAwaiter().OnCompleted(() => tcs.SetResult(true));
+            var tcs = new TaskCompletionSource();
+            t.GetAwaiter().OnCompleted(() => tcs.SetResult());
             await tcs.Task;
         }
 
@@ -686,8 +687,8 @@ namespace System.Threading.Tasks.Tests
                 mode == CtorMode.Task ? new ValueTask<int>(Task.FromResult(42)) :
                 new ValueTask<int>(ManualResetValueTaskSourceFactory.Completed(42, null), 0);
 
-            var tcs = new TaskCompletionSource<bool>();
-            t.GetAwaiter().UnsafeOnCompleted(() => tcs.SetResult(true));
+            var tcs = new TaskCompletionSource();
+            t.GetAwaiter().UnsafeOnCompleted(() => tcs.SetResult());
             await tcs.Task;
         }
 
@@ -705,8 +706,8 @@ namespace System.Threading.Tasks.Tests
                 mode == CtorMode.Task ? new ValueTask(Task.CompletedTask) :
                 new ValueTask(ManualResetValueTaskSourceFactory.Completed(0, null), 0);
 
-            var tcs = new TaskCompletionSource<bool>();
-            t.ConfigureAwait(continueOnCapturedContext).GetAwaiter().OnCompleted(() => tcs.SetResult(true));
+            var tcs = new TaskCompletionSource();
+            t.ConfigureAwait(continueOnCapturedContext).GetAwaiter().OnCompleted(() => tcs.SetResult());
             await tcs.Task;
         }
 
@@ -724,8 +725,8 @@ namespace System.Threading.Tasks.Tests
                 mode == CtorMode.Task ? new ValueTask(Task.CompletedTask) :
                 new ValueTask(ManualResetValueTaskSourceFactory.Completed(0, null), 0);
 
-            var tcs = new TaskCompletionSource<bool>();
-            t.ConfigureAwait(continueOnCapturedContext).GetAwaiter().UnsafeOnCompleted(() => tcs.SetResult(true));
+            var tcs = new TaskCompletionSource();
+            t.ConfigureAwait(continueOnCapturedContext).GetAwaiter().UnsafeOnCompleted(() => tcs.SetResult());
             await tcs.Task;
         }
 
@@ -743,8 +744,8 @@ namespace System.Threading.Tasks.Tests
                 mode == CtorMode.Task ? new ValueTask<int>(Task.FromResult(42)) :
                 new ValueTask<int>(ManualResetValueTaskSourceFactory.Completed(42, null), 0);
 
-            var tcs = new TaskCompletionSource<bool>();
-            t.ConfigureAwait(continueOnCapturedContext).GetAwaiter().OnCompleted(() => tcs.SetResult(true));
+            var tcs = new TaskCompletionSource();
+            t.ConfigureAwait(continueOnCapturedContext).GetAwaiter().OnCompleted(() => tcs.SetResult());
             await tcs.Task;
         }
 
@@ -762,8 +763,8 @@ namespace System.Threading.Tasks.Tests
                 mode == CtorMode.Task ? new ValueTask<int>(Task.FromResult(42)) :
                 new ValueTask<int>(ManualResetValueTaskSourceFactory.Completed(42, null), 0);
 
-            var tcs = new TaskCompletionSource<bool>();
-            t.ConfigureAwait(continueOnCapturedContext).GetAwaiter().UnsafeOnCompleted(() => tcs.SetResult(true));
+            var tcs = new TaskCompletionSource();
+            t.ConfigureAwait(continueOnCapturedContext).GetAwaiter().UnsafeOnCompleted(() => tcs.SetResult());
             await tcs.Task;
         }
 
@@ -773,8 +774,10 @@ namespace System.Threading.Tasks.Tests
         [InlineData(CtorMode.ValueTaskSource)]
         public async Task NonGeneric_Awaiter_ContinuesOnCapturedContext(CtorMode mode)
         {
-            await Task.Run(() =>
+            await Task.Run(async () =>
             {
+                var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
                 var tsc = new TrackingSynchronizationContext();
                 SynchronizationContext.SetSynchronizationContext(tsc);
                 try
@@ -784,15 +787,15 @@ namespace System.Threading.Tasks.Tests
                         mode == CtorMode.Task ? new ValueTask(Task.CompletedTask) :
                         new ValueTask(ManualResetValueTaskSourceFactory.Completed(0, null), 0);
 
-                    var mres = new ManualResetEventSlim();
-                    t.GetAwaiter().OnCompleted(() => mres.Set());
-                    Assert.True(mres.Wait(ExpectedSuccessTimeout));
-                    Assert.Equal(1, tsc.Posts);
+                    t.GetAwaiter().OnCompleted(() => tcs.SetResult());
                 }
                 finally
                 {
                     SynchronizationContext.SetSynchronizationContext(null);
                 }
+
+                await tcs.Task;
+                Assert.Equal(1, tsc.Posts);
             });
         }
 
@@ -804,8 +807,10 @@ namespace System.Threading.Tasks.Tests
         [InlineData(CtorMode.ValueTaskSource, true)]
         public async Task Generic_Awaiter_ContinuesOnCapturedContext(CtorMode mode, bool sync)
         {
-            await Task.Run(() =>
+            await Task.Run(async () =>
             {
+                var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
                 var tsc = new TrackingSynchronizationContext();
                 SynchronizationContext.SetSynchronizationContext(tsc);
                 try
@@ -815,15 +820,15 @@ namespace System.Threading.Tasks.Tests
                         mode == CtorMode.Task ? new ValueTask<int>(sync ? Task.FromResult(42) : Task.Delay(1).ContinueWith(_ => 42)) :
                         new ValueTask<int>(sync ? ManualResetValueTaskSourceFactory.Completed(42, null) : ManualResetValueTaskSourceFactory.Delay(1, 42, null), 0);
 
-                    var mres = new ManualResetEventSlim();
-                    t.GetAwaiter().OnCompleted(() => mres.Set());
-                    Assert.True(mres.Wait(ExpectedSuccessTimeout));
-                    Assert.Equal(1, tsc.Posts);
+                    t.GetAwaiter().OnCompleted(() => tcs.SetResult());
                 }
                 finally
                 {
                     SynchronizationContext.SetSynchronizationContext(null);
                 }
+
+                await tcs.Task;
+                Assert.Equal(1, tsc.Posts);
             });
         }
 
@@ -840,8 +845,10 @@ namespace System.Threading.Tasks.Tests
         [InlineData(CtorMode.ValueTaskSource, false, true)]
         public async Task NonGeneric_ConfiguredAwaiter_ContinuesOnCapturedContext(CtorMode mode, bool continueOnCapturedContext, bool sync)
         {
-            await Task.Run(() =>
+            await Task.Run(async () =>
             {
+                var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
                 var tsc = new TrackingSynchronizationContext();
                 SynchronizationContext.SetSynchronizationContext(tsc);
                 try
@@ -851,15 +858,15 @@ namespace System.Threading.Tasks.Tests
                         mode == CtorMode.Task ? new ValueTask(sync ? Task.CompletedTask : Task.Delay(1)) :
                         new ValueTask(sync ? ManualResetValueTaskSourceFactory.Completed(0, null) : ManualResetValueTaskSourceFactory.Delay(42, 0, null), 0);
 
-                    var mres = new ManualResetEventSlim();
-                    t.ConfigureAwait(continueOnCapturedContext).GetAwaiter().OnCompleted(() => mres.Set());
-                    Assert.True(mres.Wait(ExpectedSuccessTimeout));
-                    Assert.Equal(continueOnCapturedContext ? 1 : 0, tsc.Posts);
+                    t.ConfigureAwait(continueOnCapturedContext).GetAwaiter().OnCompleted(() => tcs.SetResult());
                 }
                 finally
                 {
                     SynchronizationContext.SetSynchronizationContext(null);
                 }
+
+                await tcs.Task;
+                Assert.Equal(continueOnCapturedContext ? 1 : 0, tsc.Posts);
             });
         }
 
@@ -876,8 +883,10 @@ namespace System.Threading.Tasks.Tests
         [InlineData(CtorMode.ValueTaskSource, false, true)]
         public async Task Generic_ConfiguredAwaiter_ContinuesOnCapturedContext(CtorMode mode, bool continueOnCapturedContext, bool sync)
         {
-            await Task.Run(() =>
+            await Task.Run(async () =>
             {
+                var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
                 var tsc = new TrackingSynchronizationContext();
                 SynchronizationContext.SetSynchronizationContext(tsc);
                 try
@@ -887,15 +896,15 @@ namespace System.Threading.Tasks.Tests
                         mode == CtorMode.Task ? new ValueTask<int>(sync ? Task.FromResult(42) : Task.Delay(1).ContinueWith(_ => 42)) :
                         new ValueTask<int>(sync ? ManualResetValueTaskSourceFactory.Completed(42, null) : ManualResetValueTaskSourceFactory.Delay(1, 42, null), 0);
 
-                    var mres = new ManualResetEventSlim();
-                    t.ConfigureAwait(continueOnCapturedContext).GetAwaiter().OnCompleted(() => mres.Set());
-                    Assert.True(mres.Wait(ExpectedSuccessTimeout));
-                    Assert.Equal(continueOnCapturedContext ? 1 : 0, tsc.Posts);
+                    t.ConfigureAwait(continueOnCapturedContext).GetAwaiter().OnCompleted(() => tcs.SetResult());
                 }
                 finally
                 {
                     SynchronizationContext.SetSynchronizationContext(null);
                 }
+
+                await tcs.Task;
+                Assert.Equal(continueOnCapturedContext ? 1 : 0, tsc.Posts);
             });
         }
 
@@ -966,8 +975,8 @@ namespace System.Threading.Tasks.Tests
         [Fact]
         public void NonGeneric_OperatorEquals()
         {
-            var completedTcs = new TaskCompletionSource<int>();
-            completedTcs.SetResult(42);
+            var completedTcs = new TaskCompletionSource();
+            completedTcs.SetResult();
 
             var completedVts = ManualResetValueTaskSourceFactory.Completed(42, null);
 
@@ -1009,8 +1018,8 @@ namespace System.Threading.Tasks.Tests
         [Fact]
         public void NonGeneric_OperatorNotEquals()
         {
-            var completedTcs = new TaskCompletionSource<int>();
-            completedTcs.SetResult(42);
+            var completedTcs = new TaskCompletionSource();
+            completedTcs.SetResult();
 
             var completedVts = ManualResetValueTaskSourceFactory.Completed(42, null);
 
@@ -1316,6 +1325,89 @@ namespace System.Threading.Tasks.Tests
                 bool completed = ((ValueTask)vtBoxed).IsCompleted;
                 ((ValueTask)vtBoxed).GetAwaiter().GetResult();
             });
+        }
+
+        [Fact]
+        public void CompletedTask_EqualsDefault()
+        {
+            Assert.Equal(default, ValueTask.CompletedTask);
+        }
+
+        [Fact]
+        public void FromResult_CreateSuccessfulTask()
+        {
+            ValueTask<int> vtInt32 = ValueTask.FromResult(42);
+            Assert.True(vtInt32.IsCompleted);
+            Assert.True(vtInt32.IsCompletedSuccessfully);
+            Assert.Equal(42, vtInt32.Result);
+            Assert.NotSame(vtInt32.AsTask(), vtInt32.AsTask());
+
+            ValueTask<string> vtNullString = ValueTask.FromResult((string)null);
+            Assert.True(vtNullString.IsCompleted);
+            Assert.True(vtNullString.IsCompletedSuccessfully);
+            Assert.Null(vtNullString.Result);
+            Assert.Same(vtNullString.AsTask(), vtNullString.AsTask());
+
+            ValueTask<string> vtString = ValueTask.FromResult("hello");
+            Assert.True(vtString.IsCompleted);
+            Assert.True(vtString.IsCompletedSuccessfully);
+            Assert.Equal("hello", vtString.Result);
+            Assert.NotSame(vtString.AsTask(), vtString.AsTask());
+        }
+
+        [Fact]
+        public async Task FromCanceled_CreatesCanceledTask()
+        {
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("cancellationToken", () => ValueTask.FromCanceled(default));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("cancellationToken", () => ValueTask.FromCanceled<int>(default));
+
+            var cts = new CancellationTokenSource();
+            cts.Cancel();
+
+            {
+                ValueTask vt = ValueTask.FromCanceled(cts.Token);
+                Assert.True(vt.IsCompleted);
+                Assert.True(vt.IsCanceled);
+                OperationCanceledException e = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await vt);
+                Assert.Equal(cts.Token, e.CancellationToken);
+                Assert.Same(vt.AsTask(), vt.AsTask());
+            }
+
+            {
+                ValueTask<int> vt = ValueTask.FromCanceled<int>(cts.Token);
+                Assert.True(vt.IsCompleted);
+                Assert.True(vt.IsCanceled);
+                OperationCanceledException e = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await vt);
+                Assert.Equal(cts.Token, e.CancellationToken);
+                Assert.Same(vt.AsTask(), vt.AsTask());
+            }
+        }
+
+        [Fact]
+        public async Task FromException_CreatesFaultedTask()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("exception", () => ValueTask.FromException(null));
+            AssertExtensions.Throws<ArgumentNullException>("exception", () => ValueTask.FromException<int>(null));
+
+            Exception e = new FormatException("test");
+
+            {
+                ValueTask vt = ValueTask.FromException(e);
+                Assert.True(vt.IsCompleted);
+                Assert.True(vt.IsFaulted);
+                FormatException actual = await Assert.ThrowsAnyAsync<FormatException>(async () => await vt);
+                Assert.Same(e, actual);
+                Assert.Same(vt.AsTask(), vt.AsTask());
+            }
+
+            {
+                ValueTask<int> vt = ValueTask.FromException<int>(e);
+                Assert.True(vt.IsCompleted);
+                Assert.True(vt.IsFaulted);
+                FormatException actual = await Assert.ThrowsAnyAsync<FormatException>(async () => await vt);
+                Assert.Same(e, actual);
+                Assert.Same(vt.AsTask(), vt.AsTask());
+            }
         }
 
         private sealed class DelegateValueTaskSource<T> : IValueTaskSource, IValueTaskSource<T>

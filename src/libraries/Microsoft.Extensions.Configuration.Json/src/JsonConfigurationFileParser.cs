@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -44,12 +43,21 @@ namespace Microsoft.Extensions.Configuration.Json
             return _data;
         }
 
-        private void VisitElement(JsonElement element) {
-            foreach (var property in element.EnumerateObject())
+        private void VisitElement(JsonElement element)
+        {
+            var isEmpty = true;
+
+            foreach (JsonProperty property in element.EnumerateObject())
             {
+                isEmpty = false;
                 EnterContext(property.Name);
                 VisitValue(property.Value);
                 ExitContext();
+            }
+
+            if (isEmpty && _currentPath != null)
+            {
+                _data[_currentPath] = null;
             }
         }
 
@@ -61,8 +69,8 @@ namespace Microsoft.Extensions.Configuration.Json
                     break;
 
                 case JsonValueKind.Array:
-                    var index = 0;
-                    foreach (var arrayElement in value.EnumerateArray()) {
+                    int index = 0;
+                    foreach (JsonElement arrayElement in value.EnumerateArray()) {
                         EnterContext(index.ToString());
                         VisitValue(arrayElement);
                         ExitContext();
@@ -75,7 +83,7 @@ namespace Microsoft.Extensions.Configuration.Json
                 case JsonValueKind.True:
                 case JsonValueKind.False:
                 case JsonValueKind.Null:
-                    var key = _currentPath;
+                    string key = _currentPath;
                     if (_data.ContainsKey(key))
                     {
                         throw new FormatException(SR.Format(SR.Error_KeyIsDuplicated, key));

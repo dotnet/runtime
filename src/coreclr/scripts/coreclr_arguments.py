@@ -2,7 +2,6 @@
 #
 ## Licensed to the .NET Foundation under one or more agreements.
 ## The .NET Foundation licenses this file to you under the MIT license.
-## See the LICENSE file in the project root for more information.
 #
 ##
 # Title               : coreclr_arguments.py
@@ -72,9 +71,9 @@ class CoreclrArguments:
         self.require_built_core_root = require_built_core_root
         self.require_built_test_dir = require_built_test_dir
 
-        self.valid_arches = ["x64", "x86", "arm", "arm64"]
+        self.valid_arches = ["x64", "x86", "arm", "arm64", "wasm"]
         self.valid_build_types = ["Debug", "Checked", "Release"]
-        self.valid_host_os = ["Windows_NT", "OSX", "Linux"]
+        self.valid_host_os = ["Windows_NT", "OSX", "Linux", "illumos", "Solaris", "Browser"]
 
         self.__initialize__(args)
 
@@ -183,8 +182,11 @@ class CoreclrArguments:
             return "OSX"
         elif sys.platform == "win32":
             return "Windows_NT"
+        elif sys.platform.startswith("sunos"):
+            is_illumos = ('illumos' in subprocess.Popen(["uname", "-o"], stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()[0].decode('utf-8'))
+            return 'illumos' if is_illumos else 'Solaris'
         else:
-            print("Unknown OS: %s" % self.host_os)
+            print("Unknown OS: %s" % sys.platform)
             sys.exit(1)
 
     @staticmethod

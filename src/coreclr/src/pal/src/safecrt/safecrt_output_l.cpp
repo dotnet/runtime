@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /***
 *safecrt_output_l.c - implementation of the _output family for safercrt.lib
@@ -91,11 +90,6 @@ Buffer size required to be passed to _gcvt, fcvt and other fp conversion routine
 #ifndef _CLDCVT
 #define _CLDCVT _cldcvt
 #endif  /* _CLDCVT */
-
-#ifdef _MBCS
-#undef  _MBCS
-#endif  /* _MBCS */
-//#include <tchar.h>
 
 /* this macro defines a function which is private and as fast as possible: */
 /* for example, in C 6.0, it might be static _fastcall <type> near. */

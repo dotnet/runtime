@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -27,7 +26,7 @@ namespace Microsoft.Extensions.Primitives
         public CompositeChangeToken(IReadOnlyList<IChangeToken> changeTokens)
         {
             ChangeTokens = changeTokens ?? throw new ArgumentNullException(nameof(changeTokens));
-            for (var i = 0; i < ChangeTokens.Count; i++)
+            for (int i = 0; i < ChangeTokens.Count; i++)
             {
                 if (ChangeTokens[i].ActiveChangeCallbacks)
                 {
@@ -59,7 +58,7 @@ namespace Microsoft.Extensions.Primitives
                     return true;
                 }
 
-                for (var i = 0; i < ChangeTokens.Count; i++)
+                for (int i = 0; i < ChangeTokens.Count; i++)
                 {
                     if (ChangeTokens[i].HasChanged)
                     {
@@ -91,11 +90,11 @@ namespace Microsoft.Extensions.Primitives
 
                 _cancellationTokenSource = new CancellationTokenSource();
                 _disposables = new List<IDisposable>();
-                for (var i = 0; i < ChangeTokens.Count; i++)
+                for (int i = 0; i < ChangeTokens.Count; i++)
                 {
                     if (ChangeTokens[i].ActiveChangeCallbacks)
                     {
-                        var disposable = ChangeTokens[i].RegisterChangeCallback(_onChangeDelegate, this);
+                        IDisposable disposable = ChangeTokens[i].RegisterChangeCallback(_onChangeDelegate, this);
                         _disposables.Add(disposable);
                     }
                 }
@@ -122,9 +121,9 @@ namespace Microsoft.Extensions.Primitives
                 }
             }
 
-            var disposables = compositeChangeTokenState._disposables;
+            List<IDisposable> disposables = compositeChangeTokenState._disposables;
             Debug.Assert(disposables != null);
-            for (var i = 0; i < disposables.Count; i++)
+            for (int i = 0; i < disposables.Count; i++)
             {
                 disposables[i].Dispose();
             }

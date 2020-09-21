@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================
 **
@@ -92,7 +91,7 @@ int GetParameters( int argc, char **argv)
     return 0;
 }
 
- int __cdecl main(INT argc, CHAR **argv)
+PALTEST(composite_object_management_event_shared_paltest_event_shared, "composite/object_management/event/shared/paltest_event_shared")
 {
     unsigned int i = 0;
     HANDLE hProcess[MAXIMUM_WAIT_OBJECTS];

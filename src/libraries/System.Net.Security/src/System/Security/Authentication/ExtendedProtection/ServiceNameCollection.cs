@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Collections.Generic;
@@ -59,7 +58,7 @@ namespace System.Security.Authentication.ExtendedProtection
         {
             string? searchName = NormalizeServiceName(searchServiceName);
 
-            foreach (string? serviceName in InnerList)
+            foreach (string serviceName in InnerList)
             {
                 if (string.Equals(serviceName, searchName, StringComparison.OrdinalIgnoreCase))
                 {
@@ -95,13 +94,13 @@ namespace System.Security.Authentication.ExtendedProtection
 
             // NullReferenceException is thrown when serviceNames is null,
             // which is consistent with the behavior of the .NET Framework.
-            foreach (object? item in serviceNames)
+            foreach (object item in serviceNames)
             {
                 // To match the behavior of the .NET Framework, when an item
                 // in the collection is not a string:
                 //  - Throw InvalidCastException when expectStrings is true.
                 //  - Throw ArgumentException when expectStrings is false.
-                AddIfNew(expectStrings ? (string)item! : (item as string)!);
+                AddIfNew(expectStrings ? (string)item : (item as string)!);
             }
         }
 
@@ -125,16 +124,16 @@ namespace System.Security.Authentication.ExtendedProtection
         {
             Debug.Assert(serviceNames != null);
 
-            foreach (string? serviceName in serviceNames)
+            foreach (string serviceName in serviceNames)
             {
-                AddIfNew(serviceName!);
+                AddIfNew(serviceName);
             }
         }
 
         /// <summary>
         /// Normalize, check for duplicates, and add if the value is unique.
         /// </summary>
-        private void AddIfNew([MaybeNull]string serviceName)
+        private void AddIfNew(string serviceName)
         {
             if (string.IsNullOrEmpty(serviceName))
             {
@@ -165,6 +164,7 @@ namespace System.Security.Authentication.ExtendedProtection
         // prefix/host:port
         // prefix/host/DistinguishedName
         // prefix/host:port/DistinguishedName
+        [return: NotNullIfNotNull("inputServiceName")]
         private static string? NormalizeServiceName(string? inputServiceName)
         {
             if (string.IsNullOrWhiteSpace(inputServiceName))

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Collections.Generic;
@@ -273,7 +272,6 @@ namespace System.Net.Tests
         {
             using (var factory1 = new HttpListenerFactory(host, path: string.Empty))
             {
-                HttpListener listener1 = factory1.GetListener();
                 using (var listener2 = new HttpListener())
                 {
                     string prefixWithSubPath = $"{factory1.ListeningUrl}sub_path/";

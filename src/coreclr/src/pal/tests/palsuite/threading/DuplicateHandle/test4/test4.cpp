@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*=====================================================================
 **
@@ -28,11 +27,11 @@ enum wait_results
 };
 
                                
-volatile int t1_result=WR_WAITING;
-volatile int t2_result=WR_WAITING;
+volatile int t1_result_DuplicateHandle_test4=WR_WAITING;
+volatile int t2_result_DuplicateHandle_test4=WR_WAITING;
 
 
-DWORD PALAPI ThreadTest1(LPVOID lpParam)
+DWORD PALAPI ThreadTest1_DuplicateHandle_test4(LPVOID lpParam)
 {
     DWORD dwWait;
 
@@ -40,24 +39,24 @@ DWORD PALAPI ThreadTest1(LPVOID lpParam)
     if (dwWait == WAIT_OBJECT_0)
     {
         /* tell the main thread we got the mutex */
-        t1_result=WR_GOT_MUTEX;
+        t1_result_DuplicateHandle_test4=WR_GOT_MUTEX;
 
         /* wait for main thread to tell us to release the mutex */
-        while(WR_GOT_MUTEX == t1_result)
+        while(WR_GOT_MUTEX == t1_result_DuplicateHandle_test4)
             Sleep(1);
         ReleaseMutex((HANDLE)lpParam);
 
         /* tell the main thread we released the mutex */
-        t1_result = WR_RELEASED;
+        t1_result_DuplicateHandle_test4 = WR_RELEASED;
     }
     else
     {
-        t1_result = WR_TIMED_OUT;
+        t1_result_DuplicateHandle_test4 = WR_TIMED_OUT;
     }
     return 0;
 }
 
-DWORD PALAPI ThreadTest2(LPVOID lpParam)
+DWORD PALAPI ThreadTest2_DuplicateHandle_test4(LPVOID lpParam)
 {
     DWORD dwWait;
 
@@ -65,18 +64,18 @@ DWORD PALAPI ThreadTest2(LPVOID lpParam)
     if (dwWait == WAIT_OBJECT_0)
     {
         ReleaseMutex((HANDLE)lpParam);
-        t2_result = WR_GOT_MUTEX;
+        t2_result_DuplicateHandle_test4 = WR_GOT_MUTEX;
     }
     else
     {
-        t2_result = WR_TIMED_OUT;
+        t2_result_DuplicateHandle_test4 = WR_TIMED_OUT;
     }
 
     return 0;
 }
 
 
-int __cdecl main(int argc, char **argv)
+PALTEST(threading_DuplicateHandle_test4_paltest_duplicatehandle_test4, "threading/DuplicateHandle/test4/paltest_duplicatehandle_test4")
 {
     
     HANDLE hDupMutex;
@@ -122,7 +121,7 @@ int __cdecl main(int argc, char **argv)
     /*Create a thread to test the Mutex*/       
     hThread = CreateThread(NULL,
                            0,
-                           &ThreadTest1,
+                           &ThreadTest1_DuplicateHandle_test4,
                            hMutex,
                            0,
                            &dwThreadId);
@@ -136,10 +135,10 @@ int __cdecl main(int argc, char **argv)
     }
 
     /* wait until thread has taken the mutex */
-    while (WR_WAITING == t1_result)
+    while (WR_WAITING == t1_result_DuplicateHandle_test4)
         Sleep(1);
 
-    if(WR_TIMED_OUT == t1_result)
+    if(WR_TIMED_OUT == t1_result_DuplicateHandle_test4)
     {
         Trace("ERROR: %u: thread 1 couldn't acquire the mutex\n");
         CloseHandle(hMutex);
@@ -152,7 +151,7 @@ int __cdecl main(int argc, char **argv)
     /*This should fail since the Mutex is owned hThread*/
     hThread2 = CreateThread(NULL,        
                             0,           
-                            &ThreadTest2,  
+                            &ThreadTest2_DuplicateHandle_test4,  
                             hDupMutex,   
                             0,           
                             &dwThreadId);
@@ -168,10 +167,10 @@ int __cdecl main(int argc, char **argv)
     }
     
     /* wait until thread has tried to take the mutex */
-    while (WR_WAITING == t2_result)
+    while (WR_WAITING == t2_result_DuplicateHandle_test4)
         Sleep(1);
     
-    if (WR_TIMED_OUT != t2_result )
+    if (WR_TIMED_OUT != t2_result_DuplicateHandle_test4 )
     {
         Trace("ERROR:%u: Able to take mutex %#x while its duplicate %#x is "
               "held\n", hDupMutex, hMutex);
@@ -183,13 +182,13 @@ int __cdecl main(int argc, char **argv)
     }
 
     /* reset second thread status */
-    t2_result = WR_WAITING;
+    t2_result_DuplicateHandle_test4 = WR_WAITING;
 
     /* tell thread 1 to release the mutex */
-    t1_result = WR_WAITING;
+    t1_result_DuplicateHandle_test4 = WR_WAITING;
 
     /* wait for thread 1 to release the mutex */
-    while (WR_WAITING == t1_result)
+    while (WR_WAITING == t1_result_DuplicateHandle_test4)
         Sleep(1);
     
     CloseHandle(hThread2);
@@ -198,7 +197,7 @@ int __cdecl main(int argc, char **argv)
     /*This test should pass, the Mutex has since been released*/
     hThread2 = CreateThread(NULL,         
                              0,            
-                             &ThreadTest2,   
+                             &ThreadTest2_DuplicateHandle_test4,   
                              hDupMutex,    
                              0,            
                              &dwThreadId);
@@ -214,10 +213,10 @@ int __cdecl main(int argc, char **argv)
     }
     
     /* wait until thread has taken the mutex */
-    while (WR_WAITING == t2_result)
+    while (WR_WAITING == t2_result_DuplicateHandle_test4)
         Sleep(1);
     
-    if (WR_GOT_MUTEX != t2_result )
+    if (WR_GOT_MUTEX != t2_result_DuplicateHandle_test4 )
     {
         Trace("ERROR:%u: Unable to take mutex %#x after its duplicate %#x was "
               "released\n", hDupMutex, hMutex);

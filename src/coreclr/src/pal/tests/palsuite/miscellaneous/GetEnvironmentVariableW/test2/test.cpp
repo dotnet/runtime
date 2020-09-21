@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================
 **
@@ -17,7 +16,7 @@
 
 #define SMALL_BUFFER_SIZE 1
 
-int __cdecl main(int argc, char *argv[]) 
+PALTEST(miscellaneous_GetEnvironmentVariableW_test2_paltest_getenvironmentvariablew_test2, "miscellaneous/GetEnvironmentVariableW/test2/paltest_getenvironmentvariablew_test2")
 {
     
     WCHAR pSmallBuffer[SMALL_BUFFER_SIZE];

@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -16,10 +15,11 @@ using System.IO.MemoryMappedFiles;
 
 using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 using System.Reflection.Metadata;
+using ILCompiler.Reflection.ReadyToRun;
 
 namespace Microsoft.Diagnostics.Tools.Pgo
 {
-    class TraceTypeSystemContext : MetadataTypeSystemContext, IMetadataStringDecoderProvider
+    class TraceTypeSystemContext : MetadataTypeSystemContext, IMetadataStringDecoderProvider, IAssemblyResolver
     {
         private readonly PgoTraceProcess _pgoTraceProcess;
         private readonly ModuleLoadLogger _moduleLoadLogger;
@@ -359,5 +359,24 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 _metadataStringDecoder = new CachingMetadataStringDecoder(0x10000); // TODO: Tune the size
             return _metadataStringDecoder;
         }
+
+        IAssemblyMetadata IAssemblyResolver.FindAssembly(MetadataReader metadataReader, AssemblyReferenceHandle assemblyReferenceHandle, string parentFile)
+        {
+            EcmaAssembly ecmaAssembly = (EcmaAssembly)this.GetModuleForSimpleName(metadataReader.GetString(metadataReader.GetAssemblyReference(assemblyReferenceHandle).Name), false);
+            return new StandaloneAssemblyMetadata(ecmaAssembly.PEReader);
+        }
+
+        IAssemblyMetadata IAssemblyResolver.FindAssembly(string simpleName, string parentFile)
+        {
+            EcmaAssembly ecmaAssembly = (EcmaAssembly)this.GetModuleForSimpleName(simpleName, false);
+            return new StandaloneAssemblyMetadata(ecmaAssembly.PEReader);
+        }
+        bool IAssemblyResolver.Naked => false;
+
+        bool IAssemblyResolver.SignatureBinary => false;
+
+        bool IAssemblyResolver.InlineSignatureBinary => false;
+
+
     }
 }

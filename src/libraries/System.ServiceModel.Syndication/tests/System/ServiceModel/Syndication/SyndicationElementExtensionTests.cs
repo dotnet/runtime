@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.IO;
@@ -18,7 +17,6 @@ namespace System.ServiceModel.Syndication.Tests
         [Fact]
         public void Ctor_Reader()
         {
-            var extensionObject = new ExtensionObject { Value = 10 };
             var extension = new SyndicationElementExtension(new XElement("ExtensionObject", new XElement("Value", 10)).CreateReader());
             Assert.Equal("ExtensionObject", extension.OuterName);
             Assert.Empty(extension.OuterNamespace);
@@ -216,7 +214,6 @@ namespace System.ServiceModel.Syndication.Tests
         [Fact]
         public void GetReader_WithReader_ReturnsExpected()
         {
-            var extensionObject = new ExtensionObject { Value = 10 };
             var extension = new SyndicationElementExtension(new XElement("ExtensionObject", new XElement("Value", 10)).CreateReader());
             XmlReader reader = extension.GetReader();
             Assert.Equal(@"<ExtensionObject><Value>10</Value></ExtensionObject>", reader.ReadOuterXml());

@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Numerics.Hashing;
@@ -13,11 +12,11 @@ namespace Microsoft.Extensions.DependencyModel
         {
             if (string.IsNullOrEmpty(name))
             {
-                throw new ArgumentException(nameof(name));
+                throw new ArgumentException(null, nameof(name));
             }
             if (string.IsNullOrEmpty(version))
             {
-                throw new ArgumentException(nameof(version));
+                throw new ArgumentException(null, nameof(version));
             }
             Name = name;
             Version = version;

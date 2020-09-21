@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Text;
 using System.Diagnostics;
@@ -376,7 +375,7 @@ namespace System
                             }
                             else if (next + 2 < end)
                             {
-                                ch = EscapedAscii(pStr[next + 1], pStr[next + 2]);
+                                ch = DecodeHexChars(pStr[next + 1], pStr[next + 2]);
                                 // Unescape a good sequence if full unescape is requested
                                 if (unescapeMode >= UnescapeMode.UnescapeAll)
                                 {
@@ -510,7 +509,7 @@ namespace System
                                 break;
 
                             // already made sure we have 3 characters in str
-                            ch = EscapedAscii(pStr[next + 1], pStr[next + 2]);
+                            ch = DecodeHexChars(pStr[next + 1], pStr[next + 2]);
 
                             //invalid hex sequence ?
                             if (ch == Uri.c_DummyChar)
@@ -668,35 +667,22 @@ namespace System
             HexConverter.ToCharsBuffer(b, to.AppendSpan(2), 0, HexConverter.Casing.Upper);
         }
 
-        internal static char EscapedAscii(char digit, char next)
+        /// <summary>
+        /// Converts 2 hex chars to a byte (returned in a char), e.g, "0a" becomes (char)0x0A.
+        /// <para>If either char is not hex, returns <see cref="Uri.c_DummyChar"/>.</para>
+        /// </summary>
+        internal static char DecodeHexChars(int first, int second)
         {
-            if (!(((digit >= '0') && (digit <= '9'))
-                || ((digit >= 'A') && (digit <= 'F'))
-                || ((digit >= 'a') && (digit <= 'f'))))
+            int a = HexConverter.FromChar(first);
+            int b = HexConverter.FromChar(second);
+
+            if ((a | b) == 0xFF)
             {
+                // either a or b is 0xFF (invalid)
                 return Uri.c_DummyChar;
             }
 
-            int res = (digit <= '9')
-                ? ((int)digit - (int)'0')
-                : (((digit <= 'F')
-                ? ((int)digit - (int)'A')
-                : ((int)digit - (int)'a'))
-                   + 10);
-
-            if (!(((next >= '0') && (next <= '9'))
-                || ((next >= 'A') && (next <= 'F'))
-                || ((next >= 'a') && (next <= 'f'))))
-            {
-                return Uri.c_DummyChar;
-            }
-
-            return (char)((res << 4) + ((next <= '9')
-                    ? ((int)next - (int)'0')
-                    : (((next <= 'F')
-                        ? ((int)next - (int)'A')
-                        : ((int)next - (int)'a'))
-                       + 10)));
+            return (char)((a << 4) | b);
         }
 
         internal const string RFC3986ReservedMarks = @";/?:@&=+$,#[]!'()*";
@@ -721,7 +707,9 @@ namespace System
                 return true;
             }
 
-            return RFC3986ReservedMarks.IndexOf(ch) >= 0 || AdditionalUnsafeToUnescape.IndexOf(ch) >= 0;
+            const string NotSafeForUnescape = RFC3986ReservedMarks + AdditionalUnsafeToUnescape;
+
+            return NotSafeForUnescape.Contains(ch);
         }
 
         // "Reserved" and "Unreserved" characters are based on RFC 3986.
@@ -776,9 +764,7 @@ namespace System
             ((((uint)character - 'A') & ~0x20) < 26) ||
             (((uint)character - '0') < 10);
 
-        internal static bool IsHexDigit(char character) =>
-            ((((uint)character - 'A') & ~0x20) < 6) ||
-            (((uint)character - '0') < 10);
+        internal static bool IsHexDigit(char character) => HexConverter.IsHexChar(character);
 
         //
         // Is this a Bidirectional control char.. These get stripped

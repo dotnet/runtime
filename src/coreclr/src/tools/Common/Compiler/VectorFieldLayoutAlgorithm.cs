@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Internal.TypeSystem;
 
@@ -14,9 +13,11 @@ namespace ILCompiler
     public class VectorFieldLayoutAlgorithm : FieldLayoutAlgorithm
     {
         private readonly FieldLayoutAlgorithm _fallbackAlgorithm;
+        private readonly bool _vectorAbiIsStable;
 
-        public VectorFieldLayoutAlgorithm(FieldLayoutAlgorithm fallbackAlgorithm)
+        public VectorFieldLayoutAlgorithm(FieldLayoutAlgorithm fallbackAlgorithm, bool vectorAbiIsStable = true)
         {
+            _vectorAbiIsStable = vectorAbiIsStable;
             _fallbackAlgorithm = fallbackAlgorithm;
         }
 
@@ -74,6 +75,7 @@ namespace ILCompiler
                 FieldAlignment = alignment,
                 FieldSize = layoutFromMetadata.FieldSize,
                 Offsets = layoutFromMetadata.Offsets,
+                LayoutAbiStable = _vectorAbiIsStable
             };
         }
 
@@ -90,12 +92,17 @@ namespace ILCompiler
 
         public override ValueTypeShapeCharacteristics ComputeValueTypeShapeCharacteristics(DefType type)
         {
-            return _fallbackAlgorithm.ComputeValueTypeShapeCharacteristics(type);
-        }
-
-        public override DefType ComputeHomogeneousFloatAggregateElementType(DefType type)
-        {
-            return _fallbackAlgorithm.ComputeHomogeneousFloatAggregateElementType(type);
+            if (type.Context.Target.Architecture == TargetArchitecture.ARM64 &&
+                type.Instantiation[0].IsPrimitiveNumeric)
+            {
+                return type.InstanceFieldSize.AsInt switch
+                {
+                    8 => ValueTypeShapeCharacteristics.Vector64Aggregate,
+                    16 => ValueTypeShapeCharacteristics.Vector128Aggregate,
+                    _ => ValueTypeShapeCharacteristics.None
+                };
+            }
+            return ValueTypeShapeCharacteristics.None;
         }
 
         public static bool IsVectorType(DefType type)

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -12,6 +11,8 @@ namespace Internal.Cryptography.Pal
 {
     internal sealed partial class ChainPal
     {
+        private static readonly TimeSpan s_maxUrlRetrievalTimeout = TimeSpan.FromMinutes(1);
+
         public static IChainPal FromHandle(IntPtr chainContext)
         {
             throw new PlatformNotSupportedException();
@@ -33,12 +34,20 @@ namespace Internal.Cryptography.Pal
             X509Certificate2Collection customTrustStore,
             X509ChainTrustMode trustMode,
             DateTime verificationTime,
-            TimeSpan timeout)
+            TimeSpan timeout,
+            bool disableAia)
         {
-            // An input value of 0 on the timeout is "take all the time you need".
             if (timeout == TimeSpan.Zero)
             {
-                timeout = TimeSpan.MaxValue;
+                // An input value of 0 on the timeout is treated as 15 seconds, to match Windows.
+                timeout = TimeSpan.FromSeconds(15);
+            }
+            else if (timeout > s_maxUrlRetrievalTimeout || timeout < TimeSpan.Zero)
+            {
+                // Windows has a max timeout of 1 minute, so we'll match. Windows also treats
+                // the timeout as unsigned, so a negative value gets treated as a large positive
+                // value that is also clamped.
+                timeout = s_maxUrlRetrievalTimeout;
             }
 
             // Let Unspecified mean Local, so only convert if the source was UTC.
@@ -55,18 +64,18 @@ namespace Internal.Cryptography.Pal
             {
             }
 
-            TimeSpan remainingDownloadTime = timeout;
+            TimeSpan downloadTimeout = timeout;
 
             OpenSslX509ChainProcessor chainPal = OpenSslX509ChainProcessor.InitiateChain(
                 ((OpenSslX509CertificateReader)cert).SafeHandle,
                 customTrustStore,
                 trustMode,
                 verificationTime,
-                remainingDownloadTime);
+                downloadTimeout);
 
             Interop.Crypto.X509VerifyStatusCode status = chainPal.FindFirstChain(extraStore);
 
-            if (!OpenSslX509ChainProcessor.IsCompleteChain(status))
+            if (!OpenSslX509ChainProcessor.IsCompleteChain(status) && !disableAia)
             {
                 List<X509Certificate2>? tmp = null;
                 status = chainPal.FindChainViaAia(ref tmp);

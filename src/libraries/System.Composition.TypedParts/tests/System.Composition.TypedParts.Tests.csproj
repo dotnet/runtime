@@ -1,11 +1,19 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);net461</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ContainerConfigurationTests.cs" />
     <Compile Include="$(CommonTestPath)System\Diagnostics\DebuggerAttributes.cs"
              Link="Common\System\Diagnostics\DebuggerAttributes.cs" />
     <Compile Include="ReflectionTests.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Composition.TypedParts.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Composition.Convention\src\System.Composition.Convention.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
+    <!-- S.C.DataAnnotations targeting .NET Framework isn't live built anymore. -->
+    <Reference Include="System.ComponentModel.DataAnnotations" />
   </ItemGroup>
 </Project>

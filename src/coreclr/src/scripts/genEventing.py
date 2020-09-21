@@ -1,7 +1,6 @@
 #
 ## Licensed to the .NET Foundation under one or more agreements.
 ## The .NET Foundation licenses this file to you under the MIT license.
-## See the LICENSE file in the project root for more information.
 #
 #
 #USAGE:
@@ -19,7 +18,6 @@ from utilities import open_for_update
 stdprolog="""
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /******************************************************************
 
@@ -629,7 +627,7 @@ typedef struct _DOTNET_TRACE_CONTEXT
 
             if is_windows:
                 eventpipeProviderCtxName = providerSymbol + "_EVENTPIPE_Context"
-                Clrallevents.write('SELECTANY EVENTPIPE_TRACE_CONTEXT const ' + eventpipeProviderCtxName + ' = { W("' + providerName + '"), 0, false, 0 };\n')
+                Clrallevents.write('constexpr EVENTPIPE_TRACE_CONTEXT ' + eventpipeProviderCtxName + ' = { W("' + providerName + '"), 0, false, 0 };\n')
 
     if write_xplatheader:
         clrproviders = os.path.join(incDir, "clrproviders.h")
@@ -678,14 +676,14 @@ typedef struct _EVENT_DESCRIPTOR
                     symbolName = eventNode.getAttribute('symbol')
                     keywords = eventNode.getAttribute('keywords')
                     level = convertToLevelId(levelName)
-                    Clrproviders.write("SELECTANY EVENT_DESCRIPTOR const " + symbolName + " = { " + str(level) + ", " + hex(getKeywordsMaskCombined(keywords, keywordsToMask)) + " };\n")
+                    Clrproviders.write("constexpr EVENT_DESCRIPTOR " + symbolName + " = { " + str(level) + ", " + hex(getKeywordsMaskCombined(keywords, keywordsToMask)) + " };\n")
 
                 allProviders.append("&" + providerSymbol + "_LTTNG_Context")
 
             # define and initialize runtime providers' DOTNET_TRACE_CONTEXT depending on the platform
             if not is_windows:
                 Clrproviders.write('#define NB_PROVIDERS ' + str(nbProviders) + '\n')
-                Clrproviders.write('SELECTANY LTTNG_TRACE_CONTEXT * const ALL_LTTNG_PROVIDERS_CONTEXT[NB_PROVIDERS] = { ')
+                Clrproviders.write('constexpr LTTNG_TRACE_CONTEXT * ALL_LTTNG_PROVIDERS_CONTEXT[NB_PROVIDERS] = { ')
                 Clrproviders.write(', '.join(allProviders))
                 Clrproviders.write(' };\n')
 

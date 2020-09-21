@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*=============================================================================
 **
@@ -22,14 +21,14 @@
 #include <palsuite.h>
 
 
-static BOOL bAPCExecuted = FALSE;
+static BOOL bAPCExecuted_QueueUserAPC_test4 = FALSE;
 
-VOID PALAPI APCFunc( ULONG_PTR dwParam )
+VOID PALAPI APCFunc_QueueUserAPC_test4( ULONG_PTR dwParam )
 {
-    bAPCExecuted = TRUE;
+    bAPCExecuted_QueueUserAPC_test4 = TRUE;
 }
 
-int __cdecl main( int argc, char **argv )
+PALTEST(threading_QueueUserAPC_test4_paltest_queueuserapc_test4, "threading/QueueUserAPC/test4/paltest_queueuserapc_test4")
 
 {
     /* local variables */
@@ -44,7 +43,7 @@ int __cdecl main( int argc, char **argv )
 
     /* get the current thread */
     hThread = GetCurrentThread();
-    ret = QueueUserAPC( APCFunc, hThread, 0 );
+    ret = QueueUserAPC( APCFunc_QueueUserAPC_test4, hThread, 0 );
     if( ret == 0 )
     {
         Fail( "ERROR:%lu:QueueUserAPC call failed\n", GetLastError() );
@@ -59,7 +58,7 @@ int __cdecl main( int argc, char **argv )
     }
 
     /* check that the APC function was executed */
-    if( bAPCExecuted == FALSE )
+    if( bAPCExecuted_QueueUserAPC_test4 == FALSE )
     {
         Fail( "ERROR:APC function was not executed\n" );
     }

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.IO;
@@ -26,13 +25,13 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        public void Ctor_NotConnected_ThrowsIOException()
+        public void Ctor_NotConnected_Throws()
         {
             Assert.Throws<IOException>(() => new NetworkStream(new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp)));
         }
 
         [Fact]
-        public async Task Ctor_NotStream_ThrowsIOException()
+        public async Task Ctor_NotStream_Throws()
         {
             using (Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp))
             using (Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp))
@@ -44,7 +43,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        public async Task Ctor_NonBlockingSocket_ThrowsIOException()
+        public async Task Ctor_NonBlockingSocket_Throws()
         {
             using (Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             using (Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
@@ -303,7 +302,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        public async Task DisposeSocketDirectly_ReadWriteThrowIOException()
+        public async Task DisposeSocketDirectly_ReadWriteThrowNetworkException()
         {
             using (Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             using (Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
@@ -535,7 +534,7 @@ namespace System.Net.Sockets.Tests
             {
                 var clientData = new byte[] { 42 };
                 var serverData = new byte[clientData.Length];
-                var tcs = new TaskCompletionSource<bool>();
+                var tcs = new TaskCompletionSource();
 
                 client.BeginWrite(clientData, 0, clientData.Length, writeIar =>
                 {
@@ -547,7 +546,7 @@ namespace System.Net.Sockets.Tests
                             try
                             {
                                 Assert.Equal(serverData.Length, server.EndRead(readIar));
-                                tcs.SetResult(true);
+                                tcs.SetResult();
                             }
                             catch (Exception e2) { tcs.SetException(e2); }
                         }, null);
@@ -580,7 +579,7 @@ namespace System.Net.Sockets.Tests
 
         [OuterLoop("Timeouts")]
         [Fact]
-        public async Task ReadTimeout_Expires_ThrowsSocketException()
+        public async Task ReadTimeout_Expires_Throws()
         {
             await RunWithConnectedNetworkStreamsAsync((server, client) =>
             {
@@ -634,14 +633,14 @@ namespace System.Net.Sockets.Tests
             });
         }
 
+        public static IEnumerable<object[]> CopyToAsync_AllDataCopied_MemberData() =>
+            from asyncWrite in new bool[] { true, false }
+            from byteCount in new int[] { 0, 1, 1024, 4096, 4095, 1024 * 1024 }
+            select new object[] { byteCount, asyncWrite };
+
         [Theory]
-        [InlineData(0)]
-        [InlineData(1)]
-        [InlineData(1024)]
-        [InlineData(4096)]
-        [InlineData(4095)]
-        [InlineData(1024*1024)]
-        public async Task CopyToAsync_AllDataCopied(int byteCount)
+        [MemberData(nameof(CopyToAsync_AllDataCopied_MemberData))]
+        public async Task CopyToAsync_AllDataCopied(int byteCount, bool asyncWrite)
         {
             await RunWithConnectedNetworkStreamsAsync(async (server, client) =>
             {
@@ -650,7 +649,16 @@ namespace System.Net.Sockets.Tests
                 new Random().NextBytes(dataToCopy);
 
                 Task copyTask = client.CopyToAsync(results);
-                await server.WriteAsync(dataToCopy, 0, dataToCopy.Length);
+
+                if (asyncWrite)
+                {
+                    await server.WriteAsync(dataToCopy, 0, dataToCopy.Length);
+                }
+                else
+                {
+                    server.Write(new ReadOnlySpan<byte>(dataToCopy, 0, dataToCopy.Length));
+                }
+
                 server.Dispose();
                 await copyTask;
 
@@ -1004,7 +1012,7 @@ namespace System.Net.Sockets.Tests
                 {
                     Assert.Null(SynchronizationContext.Current);
 
-                    var continuationRan = new TaskCompletionSource<bool>();
+                    var continuationRan = new TaskCompletionSource();
                     var asyncLocal = new AsyncLocal<int>();
                     bool schedulerWasFlowed = false;
                     bool executionContextWasFlowed = false;
@@ -1012,7 +1020,7 @@ namespace System.Net.Sockets.Tests
                     {
                         schedulerWasFlowed = TaskScheduler.Current is CustomTaskScheduler;
                         executionContextWasFlowed = 42 == asyncLocal.Value;
-                        continuationRan.SetResult(true);
+                        continuationRan.SetResult();
                     };
 
                     var readBuffer = new byte[1];

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -55,16 +54,16 @@ namespace Microsoft.Extensions.Configuration
             var stack = new Stack<IConfiguration>();
             stack.Push(configuration);
             var rootSection = configuration as IConfigurationSection;
-            var prefixLength = (makePathsRelative && rootSection != null) ? rootSection.Path.Length + 1 : 0;
+            int prefixLength = (makePathsRelative && rootSection != null) ? rootSection.Path.Length + 1 : 0;
             while (stack.Count > 0)
             {
-                var config = stack.Pop();
+                IConfiguration config = stack.Pop();
                 // Don't include the sections value if we are removing paths, since it will be an empty key
                 if (config is IConfigurationSection section && (!makePathsRelative || config != configuration))
                 {
                     yield return new KeyValuePair<string, string>(section.Path.Substring(prefixLength), section.Value);
                 }
-                foreach (var child in config.GetChildren())
+                foreach (IConfigurationSection child in config.GetChildren())
                 {
                     stack.Push(child);
                 }
@@ -81,6 +80,32 @@ namespace Microsoft.Extensions.Configuration
                 return false;
             }
             return section.Value != null || section.GetChildren().Any();
+        }
+
+        /// <summary>
+        /// Gets a configuration sub-section with the specified key.
+        /// </summary>
+        /// <param name="configuration"></param>
+        /// <param name="key">The key of the configuration section.</param>
+        /// <returns>The <see cref="IConfigurationSection"/>.</returns>
+        /// <remarks>
+        ///     If no matching sub-section is found with the specified key, an exception is raised.
+        /// </remarks>
+        /// <exception cref="System.InvalidOperationException">There is no section with key <paramref name="key"/>.</exception>
+        public static IConfigurationSection GetRequiredSection(this IConfiguration configuration, string key)
+        {
+            if (configuration == null)
+            {
+                throw new ArgumentNullException(nameof(configuration));
+            }
+
+            IConfigurationSection section = configuration.GetSection(key);
+            if (section.Exists())
+            {
+                return section;
+            }
+
+            throw new InvalidOperationException(SR.Format(SR.InvalidSectionName, key));
         }
     }
 }

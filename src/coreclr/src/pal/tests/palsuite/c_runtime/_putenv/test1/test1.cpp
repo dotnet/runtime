@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*=====================================================================
 **
@@ -22,19 +21,18 @@ struct TestElement
     BOOL bValidString;           /* valid argument string identifier      */
 };
 
-struct TestElement TestCases[] = 
+PALTEST(c_runtime__putenv_test1_paltest_putenv_test1, "c_runtime/_putenv/test1/paltest_putenv_test1")
 {
-    {"PalTestingEnvironmentVariable=A value", "PalTestingEnvironmentVariable",
-     "A value", TRUE},
-    {"AnotherVariable=", "AnotherVariable", "", TRUE},
-    {"YetAnotherVariable", "", "", FALSE},
-    {"=ADifferentVariable", "", "ADifferentVariable", FALSE},
-    {"", "", "", FALSE}
+    struct TestElement TestCases[] = 
+    {
+        {"PalTestingEnvironmentVariable=A value", "PalTestingEnvironmentVariable",
+        "A value", TRUE},
+        {"AnotherVariable=", "AnotherVariable", "", TRUE},
+        {"YetAnotherVariable", "", "", FALSE},
+        {"=ADifferentVariable", "", "ADifferentVariable", FALSE},
+        {"", "", "", FALSE}
 
-};
-
-int __cdecl main(int argc, char **argv)
-{
+    };
 
     int i;
     char *variableValue;

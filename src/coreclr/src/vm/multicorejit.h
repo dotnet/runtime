@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // File: MultiCoreJIT.h
 //
@@ -74,15 +73,77 @@ struct MulticoreJitPlayerStat
 };
 
 
+#ifndef DACCESS_COMPILE
+class MulticoreJitPrepareCodeConfig;
+#endif
+
+class MulticoreJitCodeInfo
+{
+private:
+    enum class TierInfo : TADDR
+    {
+        None = 0,
+        WasTier0Jit = 1 << 0,
+        JitSwitchedToOptimized = 1 << 1,
+        Mask = None | WasTier0Jit | JitSwitchedToOptimized
+    };
+
+    TADDR m_entryPointAndTierInfo;
+
+public:
+    MulticoreJitCodeInfo() : m_entryPointAndTierInfo(NULL)
+    {
+        LIMITED_METHOD_CONTRACT;
+    }
+
+#ifndef DACCESS_COMPILE
+public:
+    MulticoreJitCodeInfo(PCODE entryPoint, const MulticoreJitPrepareCodeConfig *pConfig);
+#endif
+
+private:
+    void VerifyIsNotNull() const;
+
+public:
+    bool IsNull() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_entryPointAndTierInfo == NULL;
+    }
+
+    PCODE GetEntryPoint() const
+    {
+        WRAPPER_NO_CONTRACT;
+        return IsNull() ? NULL : PINSTRToPCODE(m_entryPointAndTierInfo & ~(TADDR)TierInfo::Mask);
+    }
+
+    bool WasTier0Jit() const
+    {
+        WRAPPER_NO_CONTRACT;
+        VerifyIsNotNull();
+
+        return (m_entryPointAndTierInfo & (TADDR)TierInfo::WasTier0Jit) != 0;
+    }
+
+    bool JitSwitchedToOptimized() const
+    {
+        WRAPPER_NO_CONTRACT;
+        VerifyIsNotNull();
+
+        return (m_entryPointAndTierInfo & (TADDR)TierInfo::JitSwitchedToOptimized) != 0;
+    }
+};
+
+
 // Code Storage
 
 class MulticoreJitCodeStorage
 {
 private:
-    MapSHashWithRemove<PVOID,PCODE> m_nativeCodeMap;
-    CrstExplicitInit                m_crstCodeMap;  // protecting m_nativeCodeMap
-    unsigned                        m_nStored;
-    unsigned                        m_nReturned;
+    MapSHashWithRemove<PVOID, MulticoreJitCodeInfo> m_nativeCodeMap;
+    CrstExplicitInit                                m_crstCodeMap;  // protecting m_nativeCodeMap
+    unsigned                                        m_nStored;
+    unsigned                                        m_nReturned;
 
 public:
 
@@ -101,9 +162,9 @@ public:
 
 #endif
 
-    void StoreMethodCode(MethodDesc * pMethod, PCODE pCode);
+    void StoreMethodCode(MethodDesc * pMethod, MulticoreJitCodeInfo codeInfo);
 
-    PCODE QueryMethodCode(MethodDesc * pMethod, BOOL shouldRemoveCode);
+    MulticoreJitCodeInfo QueryAndRemoveMethodCode(MethodDesc * pMethod);
 
     inline unsigned GetRemainingMethodCount() const
     {
@@ -213,7 +274,7 @@ public:
 
     static bool IsMethodSupported(MethodDesc * pMethod);
 
-    PCODE RequestMethodCode(MethodDesc * pMethod);
+    MulticoreJitCodeInfo RequestMethodCode(MethodDesc * pMethod);
 
     void RecordMethodJit(MethodDesc * pMethod);
 

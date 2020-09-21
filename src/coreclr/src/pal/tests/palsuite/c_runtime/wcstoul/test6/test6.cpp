@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================================
 **
@@ -20,7 +19,7 @@
  */
 
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime_wcstoul_test6_paltest_wcstoul_test6, "c_runtime/wcstoul/test6/paltest_wcstoul_test6")
 {
     WCHAR test1[] = {'0','x','1','2', 0};
     WCHAR test2[] = {'0','1','2',0};

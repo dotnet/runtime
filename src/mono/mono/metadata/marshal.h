@@ -382,6 +382,9 @@ mono_type_native_stack_size (MonoType *type, guint32 *alignment);
 mono_bstr
 mono_ptr_to_bstr (const gunichar2* ptr, int slen);
 
+char *
+mono_ptr_to_ansibstr (const char *ptr, size_t slen);
+
 void mono_delegate_free_ftnptr (MonoDelegate *delegate);
 
 void
@@ -601,6 +604,10 @@ mono_marshal_need_free (MonoType *t, MonoMethodPInvoke *piinfo, MonoMarshalSpec 
 
 ICALL_EXTERN_C
 MonoObject* mono_marshal_get_type_object (MonoClass *klass);
+
+ICALL_EXTERN_C
+gpointer
+mono_marshal_lookup_pinvoke (MonoMethod *method);
 
 ICALL_EXPORT
 guint32 

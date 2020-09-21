@@ -1,12 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable enable
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Net.NetworkInformation;
 using System.Text;
 
@@ -107,7 +107,7 @@ namespace System.Net
         private int m_maxCookieSize = DefaultCookieLengthLimit; // Do not rename (binary serialization)
         private int m_maxCookies = DefaultCookieLimit; // Do not rename (binary serialization)
         private int m_maxCookiesPerDomain = DefaultPerDomainCookieLimit; // Do not rename (binary serialization)
-        private int m_count = 0; // Do not rename (binary serialization)
+        private int m_count; // Do not rename (binary serialization)
         private readonly string m_fqdnMyDomain = s_fqdnMyDomain; // Do not rename (binary serialization)
 
         public CookieContainer()
@@ -118,7 +118,7 @@ namespace System.Net
         {
             if (capacity <= 0)
             {
-                throw new ArgumentException(SR.net_toosmall, "Capacity");
+                throw new ArgumentException(SR.net_toosmall, nameof(capacity));
             }
             m_maxCookies = capacity;
         }
@@ -132,7 +132,7 @@ namespace System.Net
             m_maxCookiesPerDomain = perDomainCapacity;
             if (maxCookieSize <= 0)
             {
-                throw new ArgumentException(SR.net_toosmall, "MaxCookieSize");
+                throw new ArgumentException(SR.net_toosmall, nameof(maxCookieSize));
             }
             m_maxCookieSize = maxCookieSize;
         }
@@ -230,7 +230,7 @@ namespace System.Net
             {
                 throw new ArgumentException(
                     SR.Format(SR.net_emptystringcall, nameof(cookie) + "." + nameof(cookie.Domain)),
-                    nameof(cookie) + "." + nameof(cookie.Domain));
+                    nameof(cookie));
             }
 
             Uri? uri;
@@ -396,9 +396,9 @@ namespace System.Net
             }
             lock (m_domainTable.SyncRoot)
             {
-                foreach (object? item in m_domainTable)
+                foreach (object item in m_domainTable)
                 {
-                    DictionaryEntry entry = (DictionaryEntry)item!;
+                    DictionaryEntry entry = (DictionaryEntry)item;
                     if (domain == null)
                     {
                         tempDomain = (string)entry.Key;
@@ -691,9 +691,9 @@ namespace System.Net
             }
 
             bool isLocalDomain = IsLocalDomain(uri.Host);
-            foreach (Cookie? c in cookies)
+            foreach (Cookie c in cookies)
             {
-                Cookie new_cookie = c!.Clone();
+                Cookie new_cookie = c.Clone();
                 new_cookie.VerifySetDefaults(new_cookie.Variant, uri, isLocalDomain, m_fqdnMyDomain, true, true);
                 Add(new_cookie, true);
             }
@@ -701,10 +701,7 @@ namespace System.Net
 
         internal CookieCollection CookieCutter(Uri uri, string? headerName, string setCookieHeader, bool isThrow)
         {
-            if (NetEventSource.IsEnabled)
-            {
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"uri:{uri} headerName:{headerName} setCookieHeader:{setCookieHeader} isThrow:{isThrow}");
-            }
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"uri:{uri} headerName:{headerName} setCookieHeader:{setCookieHeader} isThrow:{isThrow}");
 
             CookieCollection cookies = new CookieCollection();
             CookieVariant variant = CookieVariant.Unknown;
@@ -730,7 +727,7 @@ namespace System.Net
                 do
                 {
                     Cookie? cookie = parser.Get();
-                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"CookieParser returned cookie:{cookie}");
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"CookieParser returned cookie:{cookie}");
 
                     if (cookie == null)
                     {
@@ -889,7 +886,7 @@ namespace System.Net
                     for (int e = 0; e < listCount; e++)
                     {
                         string path = (string)list.GetKey(e);
-                        if (uri.AbsolutePath.StartsWith(CookieParser.CheckQuoted(path), StringComparison.Ordinal))
+                        if (PathMatch(uri.AbsolutePath, path))
                         {
                             CookieCollection cc = (CookieCollection)list.GetByIndex(e)!;
                             cc.TimeStamp(CookieCollection.Stamp.Set);
@@ -907,6 +904,26 @@ namespace System.Net
                     }
                 }
             }
+        }
+
+        // Implement path-matching according to https://tools.ietf.org/html/rfc6265#section-5.1.4:
+        // | A request-path path-matches a given cookie-path if at least one of the following conditions holds:
+        // | - The cookie-path and the request-path are identical.
+        // | - The cookie-path is a prefix of the request-path, and the last character of the cookie-path is %x2F ("/").
+        // | - The cookie-path is a prefix of the request-path, and the first character of the request-path that is not included in the cookie-path is a %x2F ("/") character.
+        // The latter conditions are needed to make sure that
+        // PathMatch("/fooBar, "/foo") == false
+        // but:
+        // PathMatch("/foo/bar", "/foo") == true, PathMatch("/foo/bar", "/foo/") == true
+        private static bool PathMatch(string requestPath, string cookiePath)
+        {
+            cookiePath = CookieParser.CheckQuoted(cookiePath);
+
+            if (!requestPath.StartsWith(cookiePath, StringComparison.Ordinal))
+                return false;
+            return requestPath.Length == cookiePath.Length ||
+                   cookiePath.Length > 0 && cookiePath[^1] == '/' ||
+                   requestPath[cookiePath.Length] == '/';
         }
 
         private void MergeUpdateCollections(ref CookieCollection? destination, CookieCollection source, int port, bool isSecure, bool isPlainOnly)

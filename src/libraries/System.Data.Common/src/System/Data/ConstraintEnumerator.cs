@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Diagnostics;
@@ -12,11 +11,11 @@ namespace System.Data
     /// </summary>
     internal class ConstraintEnumerator
     {
-        private IEnumerator _tables;
-        private IEnumerator _constraints;
-        private Constraint _currentObject;
+        private IEnumerator? _tables;
+        private IEnumerator? _constraints;
+        private Constraint? _currentObject;
 
-        public ConstraintEnumerator(DataSet dataSet)
+        public ConstraintEnumerator(DataSet? dataSet)
         {
             _tables = (dataSet != null) ? dataSet.Tables.GetEnumerator() : null;
             _currentObject = null;
@@ -64,12 +63,12 @@ namespace System.Data
 
         protected virtual bool IsValidCandidate(Constraint constraint) => true;
 
-        protected Constraint CurrentObject => _currentObject;
+        protected Constraint? CurrentObject => _currentObject;
     }
 
     internal class ForeignKeyConstraintEnumerator : ConstraintEnumerator
     {
-        public ForeignKeyConstraintEnumerator(DataSet dataSet) : base(dataSet) { }
+        public ForeignKeyConstraintEnumerator(DataSet? dataSet) : base(dataSet) { }
 
         protected override bool IsValidCandidate(Constraint constraint) => constraint is ForeignKeyConstraint;
 
@@ -100,7 +99,7 @@ namespace System.Data
         // this is the table to do comparisons against
         private readonly DataTable _table;
 
-        public ParentForeignKeyConstraintEnumerator(DataSet dataSet, DataTable inTable) : base(dataSet)
+        public ParentForeignKeyConstraintEnumerator(DataSet? dataSet, DataTable inTable) : base(dataSet)
         {
             _table = inTable;
         }

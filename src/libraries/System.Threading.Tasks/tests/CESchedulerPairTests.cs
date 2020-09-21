@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
 //
@@ -88,7 +87,7 @@ namespace System.Threading.Tasks.Tests
         /// and those parameters are respected when tasks are executed
         /// </summary>
         /// <remarks>maxItemsPerTask and which scheduler is used are verified in other testcases</remarks>
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData("default")]
         [InlineData("scheduler")]
         [InlineData("maxconcurrent")]
@@ -184,7 +183,7 @@ namespace System.Threading.Tasks.Tests
         /// is that each time ConcurrentExclusiveScheduler is called QueueTasK a counter (which acts as scheduler's Task id) is incremented.
         /// When a task executes, it observes the parent Task Id and if it matches the one its local cache, it increments its local counter (which tracks
         /// the items executed by a ConcurrentExclusiveScheduler Task). At any given time the Task's local counter cant exceed maxItemsPerTask</remarks>
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(4, 1, true)]
         [InlineData(1, 4, true)]
         [InlineData(4, 1, false)]
@@ -259,7 +258,7 @@ namespace System.Threading.Tasks.Tests
         /// When user specifies a concurrency level above the level allowed by the task scheduler, the concurrency level should be set
         /// to the concurrencylevel specified in the taskscheduler. Also tests that the maxConcurrencyLevel specified was respected
         /// </summary>
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TestLowerConcurrencyLevel()
         {
             //a custom scheduler with maxConcurrencyLevel of one
@@ -296,7 +295,7 @@ namespace System.Threading.Tasks.Tests
             Task.WaitAll(taskList.ToArray());
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TestConcurrentBlockage()
         {
             ConcurrentExclusiveSchedulerPair schedPair = new ConcurrentExclusiveSchedulerPair();
@@ -329,7 +328,7 @@ namespace System.Threading.Tasks.Tests
             Task.WaitAll(taskList.ToArray());
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [MemberData(nameof(ApiType))]
         public static void TestIntegration(string apiType, bool useReader)
         {
@@ -363,7 +362,7 @@ namespace System.Threading.Tasks.Tests
         /// <summary>
         /// Test to ensure completion task works successfully
         /// </summary>
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TestCompletionTask()
         {
             // Completion tasks is valid after initialization
@@ -416,7 +415,7 @@ namespace System.Threading.Tasks.Tests
         /// <summary>
         /// Ensure that CESPs can be layered on other CESPs.
         /// </summary
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TestSchedulerNesting()
         {
             // Create a hierarchical set of scheduler pairs
@@ -495,7 +494,7 @@ namespace System.Threading.Tasks.Tests
         /// Ensure that continuations and parent/children which hop between concurrent and exclusive work correctly.
         /// EH
         /// </summary>
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(true)]
         [InlineData(false)]
         public static void TestConcurrentExclusiveChain(bool syncContinuations)

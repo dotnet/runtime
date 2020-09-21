@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 
 #ifndef _WRAPPERS_H_
@@ -8,9 +7,6 @@
 
 #include "metadata.h"
 #include "interoputil.h"
-#ifdef FEATURE_COMINTEROP
-#include "windowsstring.h"
-#endif
 
 class MDEnumHolder
 {
@@ -109,45 +105,13 @@ inline void SafeComReleasePreemp(TYPE *value)
     SafeReleasePreemp((IUnknown*)value);
 }
 
-NEW_WRAPPER_TEMPLATE1(SafeComHolder, SafeComRelease<_TYPE>);
+template<typename _TYPE>
+using SafeComHolder = SpecializedWrapper<_TYPE, SafeComRelease<_TYPE>>;
 
 // Use this holder if you're already in preemptive mode for other reasons,
 // use SafeComHolder otherwise.
-NEW_WRAPPER_TEMPLATE1(SafeComHolderPreemp, SafeComReleasePreemp<_TYPE>);
-
-
-
-#ifdef FEATURE_COMINTEROP
-#ifdef CROSSGEN_COMPILE
-    namespace clr
-    {
-        namespace winrt
-        {
-            template <typename ItfT> inline
-            HRESULT GetActivationFactory(
-                __in WinRtStringRef const & wzActivatableClassId,
-                __deref_out ItfT** ppItf)
-            {
-                LIMITED_METHOD_CONTRACT;
-                return GetActivationFactory(wzActivatableClassId, ppItf);
-            }
-
-            template <typename ItfT> inline
-            HRESULT GetActivationFactory(
-                __in WinRtStringRef const & wzActivatableClassId,
-                __out typename SafeComHolderPreemp<ItfT>* pItf)
-            {
-                STATIC_CONTRACT_WRAPPER;
-
-                if (pItf == nullptr)
-                    return E_INVALIDARG;
-
-                return GetActivationFactory(wzActivatableClassId, (ItfT**)&(*pItf));
-            }
-        }
-    }
-#endif //CROSSGEN_COMPILE
-#endif //FEATURE_COMINTEROP
+template<typename _TYPE>
+using SafeComHolderPreemp = SpecializedWrapper<_TYPE, SafeComReleasePreemp<_TYPE>>;
 
 //-----------------------------------------------------------------------------
 // NewPreempHolder : New'ed memory holder, deletes in preemp mode.
@@ -166,7 +130,8 @@ void DeletePreemp(TYPE *value)
     delete value;
 }
 
-NEW_WRAPPER_TEMPLATE1(NewPreempHolder, DeletePreemp<_TYPE>);
+template<typename _TYPE>
+using NewPreempHolder = SpecializedWrapper<_TYPE, DeletePreemp<_TYPE>>;
 
 
 //-----------------------------------------------------------------------------

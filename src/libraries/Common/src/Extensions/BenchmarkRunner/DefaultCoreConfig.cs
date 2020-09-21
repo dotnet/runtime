@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using BenchmarkDotNet.Columns;
 using BenchmarkDotNet.Configs;
@@ -36,7 +35,7 @@ namespace BenchmarkDotNet.Attributes
 #elif NETCOREAPP3_1
                 .With(CsProjCoreToolchain.From(new NetCoreAppSettings("netcoreapp3.1", null, ".NET Core 3.1")))
 #elif NETCOREAPP5_0
-                .With(CsProjCoreToolchain.From(new NetCoreAppSettings("netcoreapp5.0", null, ".NET Core 5.0")))
+                .With(CsProjCoreToolchain.From(new NetCoreAppSettings("net5.0", null, ".NET 5.0")))
 #else
 #error Target frameworks need to be updated.
 #endif

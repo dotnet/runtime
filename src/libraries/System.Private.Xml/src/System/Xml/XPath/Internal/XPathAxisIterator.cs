@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Xml.XPath;
@@ -11,8 +10,8 @@ namespace MS.Internal.Xml.XPath
     {
         internal XPathNavigator nav;
         internal XPathNodeType type;
-        internal string name;
-        internal string uri;
+        internal string? name;
+        internal string? uri;
         internal int position;
         internal bool matchSelf;
         internal bool first = true;

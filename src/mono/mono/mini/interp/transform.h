@@ -12,7 +12,8 @@
 
 #define INTERP_LOCAL_FLAG_DEAD 1
 
-typedef struct InterpInst InterpInst;
+typedef struct _InterpInst InterpInst;
+typedef struct _InterpBasicBlock InterpBasicBlock;
 
 typedef struct
 {
@@ -23,9 +24,8 @@ typedef struct
 
 #define STACK_VALUE_NONE 0
 #define STACK_VALUE_LOCAL 1
-#define STACK_VALUE_ARG 2
-#define STACK_VALUE_I4 3
-#define STACK_VALUE_I8 4
+#define STACK_VALUE_I4 2
+#define STACK_VALUE_I8 3
 
 // StackValue contains data to construct an InterpInst that is equivalent with the contents
 // of the stack slot / local / argument.
@@ -51,26 +51,58 @@ typedef struct
 	InterpInst *ins;
 } StackContentInfo;
 
-struct InterpInst {
+struct _InterpInst {
 	guint16 opcode;
 	InterpInst *next, *prev;
 	// If this is -1, this instruction is not logically associated with an IL offset, it is
 	// part of the IL instruction associated with the previous interp instruction.
 	int il_offset;
 	guint32 flags;
+	// This union serves the same purpose as the data array. The difference is that
+	// the data array maps exactly to the final representation of the instruction.
+	// FIXME We should consider using a separate higher level IR, that is also easier
+	// to use for various optimizations.
+	union {
+		InterpBasicBlock *target_bb;
+		InterpBasicBlock **target_bb_table;
+	} info;
 	guint16 data [MONO_ZERO_LEN_ARRAY];
 };
 
-typedef struct {
+struct _InterpBasicBlock {
 	guint8 *ip;
-	GSList *preds;
 	GSList *seq_points;
 	SeqPoint *last_seq_point;
+
+	InterpInst *first_ins, *last_ins;
+	/* Next bb in IL order */
+	InterpBasicBlock *next_bb;
+
+	gint16 in_count;
+	InterpBasicBlock **in_bb;
+	gint16 out_count;
+	InterpBasicBlock **out_bb;
+
+	int native_offset;
+
+	/*
+	 * The state of the stack when entering this basic block. By default, the stack height is
+	 * -1, which means it inherits the stack state from the previous instruction, in IL order
+	 */
+	int stack_height;
+	StackInfo *stack_state;
+	int vt_stack_size;
+
+	int index;
 
 	// This will hold a list of last sequence points of incoming basic blocks
 	SeqPoint **pred_seq_points;
 	guint num_pred_seq_points;
-} InterpBasicBlock;
+
+	// This block has special semantics and it shouldn't be optimized away
+	int eh_block : 1;
+	int dead: 1;
+};
 
 typedef enum {
 	RELOC_SHORT_BRANCH,
@@ -82,8 +114,7 @@ typedef struct {
 	RelocType type;
 	/* In the interpreter IR */
 	int offset;
-	/* In the IL code */
-	int target;
+	InterpBasicBlock *target_bb;
 } Reloc;
 
 typedef struct {
@@ -107,10 +138,6 @@ typedef struct
 	int code_size;
 	int *in_offsets;
 	int current_il_offset;
-	StackInfo **stack_state;
-	int *stack_height;
-	int *vt_stack_size;
-	unsigned char *is_bb_start;
 	unsigned short *new_code;
 	unsigned short *new_code_end;
 	unsigned int max_code_size;
@@ -122,6 +149,8 @@ typedef struct
 	unsigned int max_vt_sp;
 	unsigned int total_locals_size;
 	InterpLocal *locals;
+	unsigned int il_locals_offset;
+	unsigned int il_locals_size;
 	unsigned int locals_size;
 	unsigned int locals_capacity;
 	int n_data_items;
@@ -135,8 +164,10 @@ typedef struct
 	gboolean gen_sdb_seq_points;
 	GPtrArray *seq_points;
 	InterpBasicBlock **offset_to_bb;
-	InterpBasicBlock *entry_bb;
+	InterpBasicBlock *entry_bb, *cbb;
+	int bb_count;
 	MonoMemPool     *mempool;
+	MonoMemoryManager *mem_manager;
 	GList *basic_blocks;
 	GPtrArray *relocs;
 	gboolean verbose_level;
@@ -144,6 +175,8 @@ typedef struct
 	gboolean prof_coverage;
 	MonoProfilerCoverageInfo *coverage_info;
 	GList *dont_inline;
+	int inline_depth;
+	int has_localloc : 1;
 } TransformData;
 
 #define STACK_TYPE_I4 0

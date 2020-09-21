@@ -1,13 +1,11 @@
 ﻿' Licensed to the .NET Foundation under one or more agreements.
 ' The .NET Foundation licenses this file to you under the MIT license.
-' See the LICENSE file in the project root for more information.
 Option Strict On
 Option Explicit On
 
 Imports System
 Imports System.Environment
 Imports System.Reflection
-Imports Microsoft.VisualBasic.CompilerServices.Utils
 Imports ExUtils = Microsoft.VisualBasic.CompilerServices.ExceptionUtils
 
 Namespace Microsoft.VisualBasic.FileIO

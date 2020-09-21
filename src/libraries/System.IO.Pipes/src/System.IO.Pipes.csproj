@@ -1,13 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <AssemblyName>System.IO.Pipes</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <OmitTransitiveCompileReferences>true</OmitTransitiveCompileReferences>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
+  <PropertyGroup>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsAnyOS)' == 'true'">SR.Pipes_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
+  </PropertyGroup>
   <!-- Compiled Source Files -->
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetsAnyOS)' != 'true'">
     <Compile Include="Microsoft\Win32\SafeHandles\SafePipeHandle.cs" />
     <Compile Include="System\IO\Error.cs" />
     <Compile Include="System\IO\Pipes\AnonymousPipeClientStream.cs" />
@@ -115,7 +117,7 @@
              Link="Common\Interop\Windows\Interop.LoadLibraryEx_IntPtr.cs" />
     <Compile Include="System\IO\Pipes\NamedPipeServerStream.Win32.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
+  <ItemGroup Condition=" '$(TargetsUnix)' == 'true'">
     <Compile Include="Microsoft\Win32\SafeHandles\SafePipeHandle.Unix.cs" />
     <Compile Include="System\IO\Pipes\AnonymousPipeServerStream.Unix.cs" />
     <Compile Include="System\IO\Pipes\NamedPipeClientStream.Unix.cs" />
@@ -151,8 +153,6 @@
              Link="Common\Interop\Unix\Interop.Permissions.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Pipe.cs"
              Link="Common\Interop\Unix\Interop.Pipe.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Poll.cs"
-             Link="Common\Interop\Unix\Interop.Poll.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Read.Pipe.cs"
              Link="Common\Interop\Unix\Interop.Read.Pipe.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Unlink.cs"
@@ -182,10 +182,11 @@
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Overlapped" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+  <!-- Include src projects during restore as TargetsWindows isn't set. -->
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' or '$(MSBuildRestoreSessionId)' != ''">
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.AccessControl\src\System.Security.AccessControl.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Principal.Windows\src\System.Security.Principal.Windows.csproj" />
     <Reference Include="System.Collections.NonGeneric" />
-    <Reference Include="System.Security.AccessControl" />
-    <Reference Include="System.Security.Principal.Windows" />
     <Reference Include="System.Security.Claims" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">

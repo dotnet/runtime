@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -24,17 +23,17 @@ namespace Microsoft.Extensions.Logging.Configuration
                 throw new ArgumentNullException(nameof(providerType));
             }
 
-            var fullName = providerType.FullName;
-            var alias = ProviderAliasUtilities.GetAlias(providerType);
+            string fullName = providerType.FullName;
+            string alias = ProviderAliasUtilities.GetAlias(providerType);
             var configurationBuilder = new ConfigurationBuilder();
-            foreach (var configuration in _configurations)
+            foreach (LoggingConfiguration configuration in _configurations)
             {
-                var sectionFromFullName = configuration.Configuration.GetSection(fullName);
+                IConfigurationSection sectionFromFullName = configuration.Configuration.GetSection(fullName);
                 configurationBuilder.AddConfiguration(sectionFromFullName);
 
                 if (!string.IsNullOrWhiteSpace(alias))
                 {
-                    var sectionFromAlias = configuration.Configuration.GetSection(alias);
+                    IConfigurationSection sectionFromAlias = configuration.Configuration.GetSection(alias);
                     configurationBuilder.AddConfiguration(sectionFromAlias);
                 }
             }

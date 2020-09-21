@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================
 **
@@ -31,7 +30,7 @@
 
 
 
-int __cdecl main( int argc, char **argv ) 
+PALTEST(threading_CreateProcessW_test2_paltest_createprocessw_test2, "threading/CreateProcessW/test2/paltest_createprocessw_test2")
 {
 
     /*******************************************
@@ -120,7 +119,16 @@ int __cdecl main( int argc, char **argv )
     si.hStdOutput = hTestStdOutW;
     si.hStdError = hTestStdErrW;
 
-    wcscpy(szFullPathNameW, szChildFileW);
+    int mbwcResult = MultiByteToWideChar(CP_ACP, 0, argv[0], -1, szFullPathNameW, sizeof(szFullPathNameW));
+
+    if (0 == mbwcResult)
+    {
+        Fail ("Palsuite Code: MultiByteToWideChar() call failed. Exiting.\n");
+    }
+
+    wcscat(szFullPathNameW, u" ");
+    wcscat(szFullPathNameW, szChildFileW);
+
     wcscat(szFullPathNameW, szArgs);
 
     /*******************************************

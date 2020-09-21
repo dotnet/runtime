@@ -126,6 +126,7 @@ mono_mem_account_type_name (MonoMemAccountType type)
 		"SGen binary protocol",
 		"exceptions",
 		"profiler",
+		"interp stack",
 		"other"
 	};
 
@@ -304,6 +305,12 @@ mono_valloc (void *addr, size_t length, int flags, MonoMemAccountType type)
 		}
 		if ((flags & MONO_MMAP_JIT) && (use_mmap_jit || is_hardened_runtime == 1))
 			mflags |= MAP_JIT;
+#if defined(HOST_ARM64)
+		/* Patching code on apple silicon seems to cause random crashes without this flag */
+		/* No __builtin_available in old versions of Xcode that could be building Mono on x86 or amd64 */
+		if (__builtin_available (macOS 11, *))
+			mflags |= MAP_JIT;
+#endif
 	}
 #endif
 

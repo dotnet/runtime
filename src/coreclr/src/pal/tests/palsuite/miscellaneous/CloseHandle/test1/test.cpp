@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================
 **
@@ -15,7 +14,7 @@
 
 #include <palsuite.h>
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(miscellaneous_CloseHandle_test1_paltest_closehandle_test1, "miscellaneous/CloseHandle/test1/paltest_closehandle_test1")
 {
 
     HANDLE FileHandle = NULL;

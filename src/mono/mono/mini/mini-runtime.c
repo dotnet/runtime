@@ -74,6 +74,10 @@
 #include <mono/metadata/w32handle.h>
 #include <mono/metadata/threadpool.h>
 
+#ifdef ENABLE_PERFTRACING
+#include <mono/eventpipe/ep.h>
+#endif
+
 #include "mini.h"
 #include "seq-points.h"
 #include "tasklets.h"
@@ -129,7 +133,7 @@ gboolean mono_use_llvm = FALSE;
 
 gboolean mono_use_fast_math = FALSE;
 
-// Lists of whitelisted and blacklisted CPU features 
+// Lists of allowlisted and blocklisted CPU features 
 MonoCPUFeatures mono_cpu_features_enabled = (MonoCPUFeatures)0;
 
 #ifdef DISABLE_SIMD
@@ -161,6 +165,7 @@ static GSList *tramp_infos;
 GSList *mono_interp_only_classes;
 
 static void register_icalls (void);
+static void runtime_cleanup (MonoDomain *domain, gpointer user_data);
 
 gboolean
 mono_running_on_valgrind (void)
@@ -516,6 +521,7 @@ mono_tramp_info_register_internal (MonoTrampInfo *info, MonoDomain *domain, gboo
 	copy->code = info->code;
 	copy->code_size = info->code_size;
 	copy->name = g_strdup (info->name);
+	copy->method = info->method;
 
 	if (info->unwind_ops) {
 		copy->uw_info = mono_unwind_ops_encode (info->unwind_ops, &copy->uw_info_len);
@@ -546,8 +552,8 @@ mono_tramp_info_register_internal (MonoTrampInfo *info, MonoDomain *domain, gboo
 		mono_jit_lock ();
 		tramp_infos = g_slist_prepend (tramp_infos, copy);
 		mono_jit_unlock ();
-	} else if (copy->uw_info) {
-		/* Only register trampolines that have unwind infos */
+	} else if (copy->uw_info || info->method) {
+		/* Only register trampolines that have unwind info */
 		register_trampoline_jit_info (domain, copy);
 	}
 
@@ -1234,6 +1240,7 @@ mono_patch_info_hash (gconstpointer data)
 	case MONO_PATCH_INFO_SIGNATURE:
 	case MONO_PATCH_INFO_METHOD_CODE_SLOT:
 	case MONO_PATCH_INFO_AOT_JIT_INFO:
+	case MONO_PATCH_INFO_METHOD_PINVOKE_ADDR_CACHE:
 		return hash | (gssize)ji->data.target;
 	case MONO_PATCH_INFO_GSHAREDVT_CALL:
 		return hash | (gssize)ji->data.gsharedvt->method;
@@ -1439,6 +1446,10 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 		target = code_slot;
 		break;
 	}
+	case MONO_PATCH_INFO_METHOD_PINVOKE_ADDR_CACHE: {
+		target = mono_domain_alloc0 (domain, sizeof (gpointer));
+		break;
+	}
 	case MONO_PATCH_INFO_GC_SAFE_POINT_FLAG:
 		target = (gpointer)&mono_polling_required;
 		break;
@@ -1448,16 +1459,19 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 		if (method && method->dynamic) {
 			jump_table = (void **)mono_code_manager_reserve (mono_dynamic_code_hash_lookup (domain, method)->code_mp, sizeof (gpointer) * patch_info->data.table->table_size);
 		} else {
+			MonoMemoryManager *mem_manager = m_method_get_mem_manager (domain, method);
 			if (mono_aot_only) {
-				jump_table = (void **)mono_domain_alloc (domain, sizeof (gpointer) * patch_info->data.table->table_size);
+				jump_table = (void **)mono_mem_manager_alloc (mem_manager, sizeof (gpointer) * patch_info->data.table->table_size);
 			} else {
-				jump_table = (void **)mono_domain_code_reserve (domain, sizeof (gpointer) * patch_info->data.table->table_size);
+				jump_table = (void **)mono_mem_manager_code_reserve (mem_manager, sizeof (gpointer) * patch_info->data.table->table_size);
 			}
 		}
 
+		mono_codeman_enable_write ();
 		for (i = 0; i < patch_info->data.table->table_size; i++) {
 			jump_table [i] = code + GPOINTER_TO_INT (patch_info->data.table->table [i]);
 		}
+		mono_codeman_disable_write ();
 
 		target = jump_table;
 		break;
@@ -1749,6 +1763,8 @@ mini_patch_jump_sites (MonoDomain *domain, MonoMethod *method, gpointer addr)
 		patch_info.type = MONO_PATCH_INFO_METHOD_JUMP;
 		patch_info.data.method = method;
 
+		mono_codeman_enable_write ();
+
 #ifdef MONO_ARCH_HAVE_PATCH_CODE_NEW
 		for (tmp = jlist->list; tmp; tmp = tmp->next)
 			mono_arch_patch_code_new (NULL, domain, (guint8 *)tmp->data, &patch_info, addr);
@@ -1761,6 +1777,8 @@ mini_patch_jump_sites (MonoDomain *domain, MonoMethod *method, gpointer addr)
 			mono_error_assert_ok (error);
 		}
 #endif
+
+		mono_codeman_disable_write ();
 	}
 }
 
@@ -1952,6 +1970,10 @@ enum {
 	ELF_MACHINE = EM_PPC64,
 #elif HOST_S390X
 	ELF_MACHINE = EM_S390,
+#elif HOST_RISCV
+	ELF_MACHINE = EM_RISCV,
+#elif HOST_MIPS
+	ELF_MACHINE = EM_MIPS,
 #endif
 	JIT_CODE_LOAD = 0
 };
@@ -2009,7 +2031,7 @@ mono_enable_jit_dump (void)
 		add_file_header_info (&header);
 		if (perf_dump_file) {
 			fwrite (&header, sizeof (header), 1, perf_dump_file);
-			//This informs perf of the presence of the jitdump file and support for the feature.​
+			//This informs perf of the presence of the jitdump file and support for the feature.
 			perf_dump_mmap_addr = mmap (NULL, sizeof (header), PROT_READ | PROT_EXEC, MAP_PRIVATE, fileno (perf_dump_file), 0);
 		}
 		
@@ -3600,6 +3622,10 @@ MONO_SIG_HANDLER_FUNC (, mono_sigsegv_signal_handler)
 	} else {
 		if (mono_dump_start ())
 			mono_handle_native_crash (mono_get_signame (SIGSEGV), &mctx, (MONO_SIG_HANDLER_INFO_TYPE*)info);
+		if (mono_do_crash_chaining) {
+			mono_chain_signal (MONO_SIG_HANDLER_PARAMS);
+			return;
+		}
 	}
 #endif
 }
@@ -3748,7 +3774,7 @@ create_delegate_method_ptr (MonoMethod *method, MonoError *error)
 		func = mono_compile_method_checked (method, error);
 		return_val_if_nok (error, NULL);
 	} else {
-		gpointer trampoline = mono_runtime_create_jump_trampoline (mono_domain_get (), method, TRUE, error);
+		gpointer trampoline = mono_create_jump_trampoline (mono_domain_get (), method, TRUE, error);
 		return_val_if_nok (error, NULL);
 		func = mono_create_ftnptr (mono_domain_get (), trampoline);
 	}
@@ -3756,9 +3782,52 @@ create_delegate_method_ptr (MonoMethod *method, MonoError *error)
 }
 
 static void
-mini_init_delegate (MonoDelegateHandle delegate, MonoError *error)
+mini_init_delegate (MonoDelegateHandle delegate, MonoObjectHandle target, gpointer addr, MonoMethod *method, MonoError *error)
 {
 	MonoDelegate *del = MONO_HANDLE_RAW (delegate);
+	MonoDomain *domain = MONO_HANDLE_DOMAIN (delegate);
+
+	if (!method) {
+		MonoJitInfo *ji;
+
+		g_assert (addr);
+		ji = mono_jit_info_table_find_internal (domain, mono_get_addr_from_ftnptr (addr), TRUE, TRUE);
+		/* Shared code */
+		if (!ji && domain != mono_get_root_domain ())
+			ji = mono_jit_info_table_find_internal (mono_get_root_domain (), mono_get_addr_from_ftnptr (addr), TRUE, TRUE);
+		if (ji) {
+			if (ji->is_trampoline) {
+				/* Could be an unbox trampoline etc. */
+				method = ji->d.tramp_info->method;
+			} else {
+				method = mono_jit_info_get_method (ji);
+				g_assert (!mono_class_is_gtd (method->klass));
+			}
+		}
+	}
+
+	if (method)
+		MONO_HANDLE_SETVAL (delegate, method, MonoMethod*, method);
+
+	if (addr)
+		MONO_HANDLE_SETVAL (delegate, method_ptr, gpointer, addr);
+
+#ifndef DISABLE_REMOTING
+	if (!MONO_HANDLE_IS_NULL (target) && mono_class_is_transparent_proxy (mono_handle_class (target))) {
+		if (mono_use_interpreter) {
+			MONO_HANDLE_SETVAL (delegate, interp_method, gpointer, mini_get_interp_callbacks ()->get_remoting_invoke (method, addr, error));
+		} else {
+			g_assert (method);
+			method = mono_marshal_get_remoting_invoke (method, error);
+			return_if_nok (error);
+			MONO_HANDLE_SETVAL (delegate, method_ptr, gpointer, mono_compile_method_checked (method, error));
+		}
+		return_if_nok (error);
+	}
+#endif
+
+	MONO_HANDLE_SET (delegate, target, target);
+	MONO_HANDLE_SETVAL (delegate, invoke_impl, gpointer, mono_create_delegate_trampoline (domain, mono_handle_class (delegate)));
 
 	if (mono_use_interpreter) {
 		mini_get_interp_callbacks ()->init_delegate (del, error);
@@ -4377,7 +4446,6 @@ mini_init (const char *filename, const char *runtime_version)
 #define JIT_TRAMPOLINES_WORK
 #ifdef JIT_TRAMPOLINES_WORK
 	callbacks.compile_method = mono_jit_compile_method;
-	callbacks.create_jump_trampoline = mono_create_jump_trampoline;
 	callbacks.create_jit_trampoline = mono_create_jit_trampoline;
 	callbacks.create_delegate_trampoline = mono_create_delegate_trampoline;
 	callbacks.free_method = mono_jit_free_method;
@@ -4509,9 +4577,14 @@ mini_init (const char *filename, const char *runtime_version)
 	else
 		domain = mono_init_from_assembly (filename, filename);
 
+#if defined(ENABLE_PERFTRACING) && !defined(DISABLE_EVENTPIPE)
+	ep_init ();
+	ep_finish_init ();
+#endif
+
 	if (mono_aot_only) {
 		/* This helps catch code allocation requests */
-		mono_code_manager_set_read_only (domain->code_mp);
+		mono_code_manager_set_read_only (mono_domain_ambient_memory_manager (domain)->code_mp);
 		mono_marshal_use_aot_wrappers (TRUE);
 	}
 
@@ -4553,7 +4626,9 @@ mini_init (const char *filename, const char *runtime_version)
 	mono_simd_intrinsics_init ();
 #endif
 
+#ifndef ENABLE_NETCORE
 	mono_tasklets_init ();
+#endif
 
 	register_trampolines (domain);
 
@@ -4568,7 +4643,7 @@ mini_init (const char *filename, const char *runtime_version)
 
 #define JIT_RUNTIME_WORKS
 #ifdef JIT_RUNTIME_WORKS
-	mono_install_runtime_cleanup ((MonoDomainFunc)mini_cleanup);
+	mono_install_runtime_cleanup (runtime_cleanup);
 	mono_runtime_init_checked (domain, (MonoThreadStartCB)mono_thread_start_cb, mono_thread_attach_cb, error);
 	mono_error_assert_ok (error);
 	mono_thread_attach (domain);
@@ -4852,6 +4927,8 @@ register_icalls (void)
 	register_icall (mono_get_method_object, mono_icall_sig_object_ptr, TRUE);
 	register_icall (mono_throw_method_access, mono_icall_sig_void_ptr_ptr, FALSE);
 	register_icall (mono_throw_bad_image, mono_icall_sig_void, FALSE);
+	register_icall (mono_throw_not_supported, mono_icall_sig_void, FALSE);
+	register_icall (mono_throw_invalid_program, mono_icall_sig_void_ptr, FALSE);
 	register_icall_no_wrapper (mono_dummy_jit_icall, mono_icall_sig_void);
 
 	register_icall_with_wrapper (mono_monitor_enter_internal, mono_icall_sig_int32_obj);
@@ -4940,6 +5017,12 @@ jit_stats_cleanup (void)
 	mono_jit_stats.biggest_method = NULL;
 }
 
+static void
+runtime_cleanup (MonoDomain *domain, gpointer user_data)
+{
+	mini_cleanup (domain);
+}
+
 #ifdef DISABLE_CLEANUP
 void
 mini_cleanup (MonoDomain *domain)
@@ -4949,6 +5032,10 @@ mini_cleanup (MonoDomain *domain)
 	mono_runtime_print_stats ();
 	jit_stats_cleanup ();
 	mono_jit_dump_cleanup ();
+	mini_get_interp_callbacks ()->cleanup ();
+#if defined(ENABLE_PERFTRACING) && !defined(DISABLE_EVENTPIPE)
+	ep_shutdown ();
+#endif
 }
 #else
 void

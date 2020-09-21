@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Internal.Cryptography;
 using Internal.Cryptography.Pal;
@@ -10,11 +9,11 @@ namespace System.Security.Cryptography.X509Certificates
     public sealed class PublicKey
     {
         private readonly Oid _oid;
-        private AsymmetricAlgorithm? _key = null;
+        private AsymmetricAlgorithm? _key;
 
         public PublicKey(Oid oid, AsnEncodedData parameters, AsnEncodedData keyValue)
         {
-            _oid = new Oid(oid);
+            _oid = oid;
             EncodedParameters = new AsnEncodedData(parameters);
             EncodedKeyValue = new AsnEncodedData(keyValue);
         }
@@ -49,12 +48,6 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        public Oid Oid
-        {
-            get
-            {
-                return new Oid(_oid);
-            }
-        }
+        public Oid Oid => _oid;
     }
 }

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /***
 *tmakepath_s.inl - general implementation of _tmakepath_s
@@ -48,11 +47,7 @@ errno_t __cdecl _FUNC_NAME(__out_ecount_z(_SIZE) _CHAR *_DEST, __in_opt size_t _
             *d++ = *p++;
         } while (*p != 0);
 
-#if _MBS_SUPPORT
-        p = _MBSDEC(_Dir, p);
-#else  /* _MBS_SUPPORT */
-        p = p - 1;
-#endif  /* _MBS_SUPPORT */
+        p--;
         if (*p != _T('/') && *p != _T('\\'))
         {
             if(++written >= _SIZE)

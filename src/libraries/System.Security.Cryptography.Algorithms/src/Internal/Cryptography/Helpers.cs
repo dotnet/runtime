@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -39,21 +38,6 @@ namespace Internal.Cryptography
             return buffer;
         }
 
-        // encodes the integer i into a 4-byte array, in big endian.
-        public static void WriteInt(uint i, byte[] arr, int offset)
-        {
-            unchecked
-            {
-                Debug.Assert(arr != null);
-                Debug.Assert(arr.Length >= offset + sizeof(uint));
-
-                arr[offset] = (byte)(i >> 24);
-                arr[offset + 1] = (byte)(i >> 16);
-                arr[offset + 2] = (byte)(i >> 8);
-                arr[offset + 3] = (byte)i;
-            }
-        }
-
         public static byte[] FixupKeyParity(this byte[] key)
         {
             byte[] oddParityKey = new byte[key.Length];
@@ -73,16 +57,6 @@ namespace Internal.Cryptography
                     oddParityKey[index] |= 1;
             }
             return oddParityKey;
-        }
-
-        internal static void ConvertIntToByteArray(uint value, byte[] dest)
-        {
-            Debug.Assert(dest != null);
-            Debug.Assert(dest.Length == 4);
-            dest[0] = (byte)((value & 0xFF000000) >> 24);
-            dest[1] = (byte)((value & 0xFF0000) >> 16);
-            dest[2] = (byte)((value & 0xFF00) >> 8);
-            dest[3] = (byte)(value & 0xFF);
         }
     }
 }

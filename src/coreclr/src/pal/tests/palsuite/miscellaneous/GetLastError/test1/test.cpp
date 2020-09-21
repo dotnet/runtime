@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================
 **
@@ -35,7 +34,8 @@ static void test(DWORD error )
 
 }
 
-int __cdecl main(int argc, char *argv[]) {
+PALTEST(miscellaneous_GetLastError_test1_paltest_getlasterror_test1, "miscellaneous/GetLastError/test1/paltest_getlasterror_test1")
+{
   
 
     /*

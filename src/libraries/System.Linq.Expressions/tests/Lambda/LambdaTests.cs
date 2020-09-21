@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Collections.Generic;
@@ -975,6 +974,24 @@ namespace System.Linq.Expressions.Tests
 
             Expression<Func<object, object, object,object>> complexfunc = (object o1, object o2, object o3) => null;
             Assert.True(complexfunc.Compile(preferInterpretation:true).Method.GetType().Name == "RTDynamicMethod");
+        }
+
+        private interface IInterface
+        {
+            string B();
+        }
+
+        private readonly struct GenericStruct<T> : IInterface
+        {
+            public string B() => "B";
+        }
+
+        [Fact]
+        public void MethodOnGenericStructImplementingInterface()
+        {
+            Expression<Func<GenericStruct<string>, string>> funcE = x => x.B();
+            Func<GenericStruct<string>, string> f = funcE.Compile();
+            Assert.Equal("B", f(new GenericStruct<string>()));
         }
     }
 }

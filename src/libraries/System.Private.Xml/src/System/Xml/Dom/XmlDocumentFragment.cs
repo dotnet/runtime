@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Xml.XPath;
@@ -44,25 +43,26 @@ namespace System.Xml
     // such as <code>insertBefore()</code> and  <code>appendChild()</code>.
     public class XmlDocumentFragment : XmlNode
     {
-        private XmlLinkedNode _lastChild;
+        private XmlLinkedNode? _lastChild;
 
         protected internal XmlDocumentFragment(XmlDocument ownerDocument) : base()
         {
             if (ownerDocument == null)
                 throw new ArgumentException(SR.Xdom_Node_Null_Doc);
+
             parentNode = ownerDocument;
         }
 
         // Gets the name of the node.
         public override string Name
         {
-            get { return OwnerDocument.strDocumentFragmentName; }
+            get { return OwnerDocument!.strDocumentFragmentName; }
         }
 
         // Gets the name of the current node without the namespace prefix.
         public override string LocalName
         {
-            get { return OwnerDocument.strDocumentFragmentName; }
+            get { return OwnerDocument!.strDocumentFragmentName; }
         }
 
         // Gets the type of the current node.
@@ -72,7 +72,7 @@ namespace System.Xml
         }
 
         // Gets the parent of this node (for nodes that can have parents).
-        public override XmlNode ParentNode
+        public override XmlNode? ParentNode
         {
             get { return null; }
         }
@@ -82,7 +82,7 @@ namespace System.Xml
         {
             get
             {
-                return (XmlDocument)parentNode;
+                return (XmlDocument)parentNode!;
             }
         }
 
@@ -119,7 +119,7 @@ namespace System.Xml
             get { return true; }
         }
 
-        internal override XmlLinkedNode LastNode
+        internal override XmlLinkedNode? LastNode
         {
             get { return _lastChild; }
             set { _lastChild = value; }
@@ -141,7 +141,7 @@ namespace System.Xml
 
                 case XmlNodeType.XmlDeclaration:
                     //if there is an XmlDeclaration node, it has to be the first node;
-                    XmlNode firstNode = FirstChild;
+                    XmlNode? firstNode = FirstChild;
                     if (firstNode == null || firstNode.NodeType != XmlNodeType.XmlDeclaration)
                         return true;
                     else
@@ -150,7 +150,7 @@ namespace System.Xml
                     return false;
             }
         }
-        internal override bool CanInsertAfter(XmlNode newChild, XmlNode refChild)
+        internal override bool CanInsertAfter(XmlNode newChild, XmlNode? refChild)
         {
             Debug.Assert(newChild != null); //should be checked that newChild is not null before this function call
             if (newChild.NodeType == XmlNodeType.XmlDeclaration)
@@ -166,7 +166,7 @@ namespace System.Xml
             return true;
         }
 
-        internal override bool CanInsertBefore(XmlNode newChild, XmlNode refChild)
+        internal override bool CanInsertBefore(XmlNode newChild, XmlNode? refChild)
         {
             Debug.Assert(newChild != null); //should be checked that newChild is not null before this function call
             if (newChild.NodeType == XmlNodeType.XmlDeclaration)

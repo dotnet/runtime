@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ===========================================================================
 // File: CLASSCOMPAT.CPP
 
@@ -310,7 +309,7 @@ InteropMethodTableData *MethodTableBuilder::BuildInteropVTable(AllocMemTracker *
     // Com Import classes are special
     if (IsComImport()  && !IsEnum() && !IsInterface() && !IsValueClass() && !IsDelegate())
     {
-        _ASSERTE(pParentMethodTable == g_pBaseCOMObject || pThisMT->IsWinRTObjectType());
+        _ASSERTE(pParentMethodTable == g_pBaseCOMObject);
         _ASSERTE(!(HasLayout()));
 
         // if the current class is imported
@@ -1405,7 +1404,7 @@ VOID MethodTableBuilder::BuildInteropVTable_PlaceVtableMethods(
                                     bmtType->pModule, NULL,
                                     pInterfaceMethodSig,
                                     cInterfaceMethodSig,
-                                    pInterfaceMD->GetModule(), NULL))
+                                    pInterfaceMD->GetModule(), NULL, FALSE))
                                 {   // Found match, break from loop
                                     break;
                                 }
@@ -2263,7 +2262,8 @@ VOID    MethodTableBuilder::EnumerateMethodImpls()
                                                 pSigBody,
                                                 cbSigBody,
                                                 bmtType->pModule,
-                                                NULL))
+                                                NULL,
+                                                FALSE))
                 {
                     BuildMethodTableThrowException(IDS_CLASSLOAD_MI_BODY_DECL_MISMATCH);
                 }
@@ -3010,49 +3010,6 @@ VOID    MethodTableBuilder::AllocateMethodWorkingMemory()
             }
             bmtVT->pParentMethodTable = bmtParent->pParentMethodTable;
         }
-
-#if 0
-        // @<TODO>todo: Figure out the right way to override Equals for value
-        // types only.
-        //
-        // This is broken because
-        // (a) g_pObjectClass->FindMethod("Equals", &gsig_IM_Obj_RetBool); will return
-        //      the EqualsValue method
-        // (b) When mscorlib has been preloaded (and thus the munge already done
-        //      ahead of time), we cannot easily find both methods
-        //      to compute EqualsAddr & EqualsSlot
-        //
-        // For now, the Equals method has a runtime check to see if it's
-        // comparing value types.
-        //</TODO>
-
-        // If it is a value type, over ride a few of the base class methods.
-        if (IsValueClass())
-        {
-            static WORD EqualsSlot;
-
-            // If we haven't been through here yet, get some stuff from the Object class definition.
-            if (EqualsSlot == NULL)
-            {
-                // Get the slot of the Equals method.
-                MethodDesc *pEqualsMD = g_pObjectClass->FindMethod("Equals", &gsig_IM_Obj_RetBool);
-                THROW_BAD_FORMAT_MAYBE(pEqualsMD != NULL, 0, this);
-                EqualsSlot = pEqualsMD->GetSlot();
-
-                // Get the address of the EqualsValue method.
-                MethodDesc *pEqualsValueMD = g_pObjectClass->FindMethod("EqualsValue", &gsig_IM_Obj_RetBool);
-                THROW_BAD_FORMAT_MAYBE(pEqualsValueMD != NULL, 0, this);
-
-                // Patch the EqualsValue method desc in a dangerous way to
-                // look like the Equals method desc.
-                pEqualsValueMD->SetSlot(EqualsSlot);
-                pEqualsValueMD->SetMemberDef(pEqualsMD->GetMemberDef());
-            }
-
-            // Override the valuetype "Equals" with "EqualsValue".
-            bmtVT->SetMethodDescForSlot(EqualsSlot, EqualsSlot);
-        }
-#endif // 0
     }
 
     if (NumDeclaredMethods() > 0)

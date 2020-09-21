@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ------------------------------------------------------------------------------
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
@@ -207,12 +206,13 @@ namespace System.Diagnostics
     public abstract partial class TraceListener : System.MarshalByRefObject, System.IDisposable
     {
         protected TraceListener() { }
-        protected TraceListener(string name) { }
+        protected TraceListener(string? name) { }
         public System.Collections.Specialized.StringDictionary Attributes { get { throw null; } }
         public System.Diagnostics.TraceFilter? Filter { get { throw null; } set { } }
         public int IndentLevel { get { throw null; } set { } }
         public int IndentSize { get { throw null; } set { } }
         public virtual bool IsThreadSafe { get { throw null; } }
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public virtual string Name { get { throw null; } set { } }
         protected bool NeedIndent { get { throw null; } set { } }
         public System.Diagnostics.TraceOptions TraceOutputOptions { get { throw null; } set { } }
@@ -263,10 +263,10 @@ namespace System.Diagnostics
         public void Remove(string name) { }
         public void RemoveAt(int index) { }
         void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
-        int System.Collections.IList.Add(object value) { throw null; }
+        int System.Collections.IList.Add(object? value) { throw null; }
         bool System.Collections.IList.Contains(object? value) { throw null; }
         int System.Collections.IList.IndexOf(object? value) { throw null; }
-        void System.Collections.IList.Insert(int index, object value) { }
+        void System.Collections.IList.Insert(int index, object? value) { }
         void System.Collections.IList.Remove(object? value) { }
     }
     [System.FlagsAttribute]

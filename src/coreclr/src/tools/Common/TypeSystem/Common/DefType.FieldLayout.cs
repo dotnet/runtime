@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -49,6 +48,11 @@ namespace Internal.TypeSystem
             /// True if information about the shape of value type has been computed.
             /// </summary>
             public const int ComputedValueTypeShapeCharacteristics = 0x40;
+
+            /// <summary>
+            /// True if the layout of the type is not stable for use in the ABI
+            /// </summary>
+            public const int ComputedInstanceLayoutAbiUnstable = 0x80;
         }
 
         private class StaticBlockInfo
@@ -154,6 +158,21 @@ namespace Internal.TypeSystem
                     ComputeInstanceLayout(InstanceLayoutKind.TypeOnly);
                 }
                 return _instanceByteAlignment;
+            }
+        }
+
+        /// <summary>
+        /// The type has stable Abi layout
+        /// </summary>
+        public bool LayoutAbiStable
+        {
+            get
+            {
+                if (!_fieldLayoutFlags.HasFlags(FieldLayoutFlags.ComputedInstanceTypeLayout))
+                {
+                    ComputeInstanceLayout(InstanceLayoutKind.TypeOnly);
+                }
+                return !_fieldLayoutFlags.HasFlags(FieldLayoutFlags.ComputedInstanceLayoutAbiUnstable);
             }
         }
 
@@ -281,22 +300,7 @@ namespace Internal.TypeSystem
             }
         }
 
-        /// <summary>
-        /// Gets a value indicating whether the fields of the type satisfy the Homogeneous Float Aggregate classification.
-        /// </summary>
-        public bool IsHfa
-        {
-            get
-            {
-                if (!_fieldLayoutFlags.HasFlags(FieldLayoutFlags.ComputedValueTypeShapeCharacteristics))
-                {
-                    ComputeValueTypeShapeCharacteristics();
-                }
-                return (_valueTypeShapeCharacteristics & ValueTypeShapeCharacteristics.HomogenousFloatAggregate) != 0;
-            }
-        }
-
-        internal ValueTypeShapeCharacteristics ValueTypeShapeCharacteristics
+        public ValueTypeShapeCharacteristics ValueTypeShapeCharacteristics
         {
             get
             {
@@ -308,24 +312,37 @@ namespace Internal.TypeSystem
             }
         }
 
-        /// <summary>
-        /// Get the Homogeneous Float Aggregate element type if this is a HFA type (<see cref="IsHfa"/> is true).
-        /// </summary>
-        public DefType HfaElementType
-        {
-            get
-            {
-                // We are not caching this because this is rare and not worth wasting space in DefType.
-                return this.Context.GetLayoutAlgorithmForType(this).ComputeHomogeneousFloatAggregateElementType(this);
-            }
-        }
-
         private void ComputeValueTypeShapeCharacteristics()
         {
             _valueTypeShapeCharacteristics = this.Context.GetLayoutAlgorithmForType(this).ComputeValueTypeShapeCharacteristics(this);
             _fieldLayoutFlags.AddFlags(FieldLayoutFlags.ComputedValueTypeShapeCharacteristics);
         }
 
+        /// <summary>
+        /// Gets a value indicating whether the type is a homogeneous floating-point or short-vector aggregate.
+        /// </summary>
+        public bool IsHomogeneousAggregate
+        {
+            get
+            {
+                return (ValueTypeShapeCharacteristics & ValueTypeShapeCharacteristics.AggregateMask) != 0;
+            }
+        }
+
+        /// <summary>
+        /// If the type is a homogeneous floating-point or short-vector aggregate, returns its element size.
+        /// </summary>
+        public int GetHomogeneousAggregateElementSize()
+        {
+            return (ValueTypeShapeCharacteristics & ValueTypeShapeCharacteristics.AggregateMask) switch
+            {
+                ValueTypeShapeCharacteristics.Float32Aggregate => 4,
+                ValueTypeShapeCharacteristics.Float64Aggregate => 8,
+                ValueTypeShapeCharacteristics.Vector64Aggregate => 8,
+                ValueTypeShapeCharacteristics.Vector128Aggregate => 16,
+                _ => throw new InvalidOperationException()
+            };
+        }
 
         public void ComputeInstanceLayout(InstanceLayoutKind layoutKind)
         {
@@ -338,6 +355,10 @@ namespace Internal.TypeSystem
             _instanceFieldAlignment = computedLayout.FieldAlignment;
             _instanceByteCountUnaligned = computedLayout.ByteCountUnaligned;
             _instanceByteAlignment = computedLayout.ByteCountAlignment;
+            if (!computedLayout.LayoutAbiStable)
+            {
+                _fieldLayoutFlags.AddFlags(FieldLayoutFlags.ComputedInstanceLayoutAbiUnstable);
+            }
 
             if (computedLayout.Offsets != null)
             {

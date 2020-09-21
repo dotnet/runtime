@@ -1,11 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Runtime.Serialization;
 using System.Diagnostics;
-
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml
 {
@@ -162,7 +161,7 @@ namespace System.Xml
             }
         }
 
-        public bool TryGetDictionaryString(out XmlDictionaryString value)
+        public bool TryGetDictionaryString([NotNullWhen(true)] out XmlDictionaryString? value)
         {
             if (_type == StringHandleType.Dictionary)
             {
@@ -227,7 +226,7 @@ namespace System.Xml
             return GetString() == _bufferReader.GetString(offset2, length2);
         }
 
-        public bool Equals(StringHandle other)
+        public bool Equals(StringHandle? other)
         {
             if (ReferenceEquals(other, null))
                 return false;
@@ -276,7 +275,7 @@ namespace System.Xml
             else
                 return string.Compare(this.GetString(), that.GetString(), StringComparison.Ordinal);
         }
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return Equals(obj as StringHandle);
         }

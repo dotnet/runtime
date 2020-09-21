@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Globalization;
 
@@ -43,7 +42,7 @@ namespace System.ComponentModel.DataAnnotations
         /// <param name="value">The value to test.</param>
         /// <returns><c>true</c> if the value is null or less than or equal to the set maximum length</returns>
         /// <exception cref="InvalidOperationException"> is thrown if the current attribute is ill-formed.</exception>
-        public override bool IsValid(object value)
+        public override bool IsValid(object? value)
         {
             // Check the lengths for legality
             EnsureLegalLengths();

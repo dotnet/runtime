@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>exe</OutputType>
+    <CLRTestPriority>1</CLRTestPriority>
+    <CLRTestKind>BuildAndRun</CLRTestKind>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="c.cs" />
+    <Compile Include="c1.cs" />
+    <Compile Include="main.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\a\a.csproj"/>
+    <ProjectReference Include="..\b\b.csproj"/>
+    <ProjectReference Include="..\d\d.csproj"/>
+  </ItemGroup>
+</Project>

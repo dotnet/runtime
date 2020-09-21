@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 using System.Reflection;
@@ -9,6 +8,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.Algorithms.Tests
 {
+    [SkipOnMono("Not supported on Browser", TestPlatforms.Browser)]
     public class ECDsaTests
     {
         [Fact]
@@ -16,6 +16,14 @@ namespace System.Security.Cryptography.Algorithms.Tests
         {
             AssertExtensions.Throws<ArgumentNullException>("algorithm", () => ECDsa.Create(null));
             Assert.Null(ECDsa.Create(Guid.NewGuid().ToString("N")));
+        }
+
+        [Fact]
+        public void Create_InvalidECCurveFriendlyName_ThrowsPlatformNotSupportedException()
+        {
+            ECCurve curve = ECCurve.CreateFromFriendlyName("bad potato");
+            PlatformNotSupportedException pnse = Assert.Throws<PlatformNotSupportedException>(() => ECDsa.Create(curve));
+            Assert.Contains("'bad potato'", pnse.Message);
         }
 
         [Fact]

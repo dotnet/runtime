@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ============================================================
 //
 // ApplicationContext.cpp
@@ -260,10 +259,8 @@ namespace BINDER_SPACE
             // GCC complains if we create SStrings inline as part of a function call
             SString sNiDll(W(".ni.dll"));
             SString sNiExe(W(".ni.exe"));
-            SString sNiWinmd(W(".ni.winmd"));
             SString sDll(W(".dll"));
             SString sExe(W(".exe"));
-            SString sWinmd(W(".winmd"));
 
             if (fileName.EndsWithCaseInsensitive(sNiDll) ||
                 fileName.EndsWithCaseInsensitive(sNiExe))
@@ -271,19 +268,10 @@ namespace BINDER_SPACE
                 simpleName.Set(fileName, iSimpleNameStart, fileName.End() - 7);
                 isNativeImage = true;
             }
-            else if (fileName.EndsWithCaseInsensitive(sNiWinmd))
-            {
-                simpleName.Set(fileName, iSimpleNameStart, fileName.End() - 9);
-                isNativeImage = true;
-            }
             else if (fileName.EndsWithCaseInsensitive(sDll) ||
                      fileName.EndsWithCaseInsensitive(sExe))
             {
                 simpleName.Set(fileName, iSimpleNameStart, fileName.End() - 4);
-            }
-            else if (fileName.EndsWithCaseInsensitive(sWinmd))
-            {
-                simpleName.Set(fileName, iSimpleNameStart, fileName.End() - 6);
             }
             else
             {

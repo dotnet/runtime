@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
@@ -589,8 +588,8 @@ namespace System.Management
     [Serializable]
     public class ManagementException : SystemException
     {
-        private readonly ManagementBaseObject errorObject = null;
-        private readonly ManagementStatus     errorCode = 0;
+        private readonly ManagementBaseObject errorObject;
+        private readonly ManagementStatus     errorCode;
 
         internal static void ThrowWithExtendedInfo(ManagementStatus errorCode)
         {

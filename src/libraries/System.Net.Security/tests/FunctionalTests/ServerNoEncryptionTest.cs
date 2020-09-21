@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 using System.Net.Sockets;
@@ -17,9 +16,9 @@ namespace System.Net.Security.Tests
     {
         private readonly ITestOutputHelper _log;
 
-        public ServerNoEncryptionTest()
+        public ServerNoEncryptionTest(ITestOutputHelper output)
         {
-            _log = TestLogging.GetInstance();
+            _log = output;
         }
 
         // The following method is invoked by the RemoteCertificateValidationDelegate.
@@ -43,7 +42,7 @@ namespace System.Net.Security.Tests
 
                 using (var sslStream = new SslStream(client.GetStream(), false, AllowAnyServerCertificate, null, EncryptionPolicy.RequireEncryption))
                 {
-                    await Assert.ThrowsAsync(TestConfiguration.SupportsHandshakeAlerts ? typeof(AuthenticationException) : typeof(IOException), () =>
+                    await Assert.ThrowsAsync<AuthenticationException>(() =>
                         sslStream.AuthenticateAsClientAsync("localhost", null, SslProtocolSupport.DefaultSslProtocols, false));
                 }
             }

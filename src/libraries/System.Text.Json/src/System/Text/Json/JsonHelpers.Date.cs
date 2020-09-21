@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
@@ -212,11 +211,8 @@ namespace System.Text.Json
         {
             parseData = default;
 
-            // Source does not have enough characters for YYYY-MM-DD
-            if (source.Length < 10)
-            {
-                return false;
-            }
+            // too short datetime
+            Debug.Assert(source.Length >= 10);
 
             // Parse the calendar date
             // -----------------------
@@ -253,8 +249,6 @@ namespace System.Text.Json
             }
 
             // We now have YYYY-MM-DD [dateX]
-
-            Debug.Assert(source.Length >= 10);
             if (source.Length == 10)
             {
                 // Just a calendar date

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -11,7 +10,7 @@ namespace System.Threading.Tasks.Tests
 {
     public static class BreakTests
     {
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(100, 10)]
         [InlineData(100, 20)]
         [InlineData(1000, 100)]
@@ -47,7 +46,7 @@ namespace System.Threading.Tasks.Tests
             Assert.True(result, "TestForBreak:  Failed: Could not detect any interruption of For-loop.");
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(100, 10)]
         [InlineData(100, 20)]
         [InlineData(1000, 100)]
@@ -87,7 +86,7 @@ namespace System.Threading.Tasks.Tests
             Assert.True(result, "TestFor64Break:  Failed: Could not detect any interruption of For-loop.");
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(500, 10)]
         [InlineData(500, 20)]
         [InlineData(1000, 100)]

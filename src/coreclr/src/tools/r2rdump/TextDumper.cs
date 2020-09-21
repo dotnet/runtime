@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -134,7 +133,7 @@ namespace R2RDump
         internal override void DumpAllMethods()
         {
             WriteDivider("R2R Methods");
-            _writer.WriteLine($"{_r2r.Methods.Count} methods");
+            _writer.WriteLine($"{_r2r.Methods.Sum(kvp => kvp.Value.Count)} methods");
             SkipLine();
             foreach (ReadyToRunMethod method in NormalizedMethods())
             {
@@ -207,27 +206,24 @@ namespace R2RDump
         /// </summary>
         internal override void DumpDisasm(RuntimeFunction rtf, int imageOffset)
         {
-            int indent = (_options.Naked ? _options.HideOffsets ? 4 : 11 : 32);
-            string indentString = new string(' ', indent);
-            int rtfOffset = 0;
+            string indentString = new string(' ', _disassembler.MnemonicIndentation);
             int codeOffset = rtf.CodeOffset;
+            int rtfOffset = 0;
+
             while (rtfOffset < rtf.Size)
             {
                 string instr;
                 int instrSize = _disassembler.GetInstruction(rtf, imageOffset, rtfOffset, out instr);
 
-                if (_r2r.Machine == Machine.Amd64 && ((ILCompiler.Reflection.ReadyToRun.Amd64.UnwindInfo)rtf.UnwindInfo).UnwindCodes.ContainsKey(codeOffset))
+                if (_r2r.Machine == Machine.Amd64 && ((ILCompiler.Reflection.ReadyToRun.Amd64.UnwindInfo)rtf.UnwindInfo).CodeOffsetToUnwindCodeIndex.TryGetValue(codeOffset, out int unwindCodeIndex))
                 {
-                    List<ILCompiler.Reflection.ReadyToRun.Amd64.UnwindCode> codes = ((ILCompiler.Reflection.ReadyToRun.Amd64.UnwindInfo)rtf.UnwindInfo).UnwindCodes[codeOffset];
-                    foreach (ILCompiler.Reflection.ReadyToRun.Amd64.UnwindCode code in codes)
+                    ILCompiler.Reflection.ReadyToRun.Amd64.UnwindCode code = ((ILCompiler.Reflection.ReadyToRun.Amd64.UnwindInfo)rtf.UnwindInfo).UnwindCodes[unwindCodeIndex];
+                    _writer.Write($"{indentString}{code.UnwindOp} {code.OpInfoStr}");
+                    if (code.NextFrameOffset != -1)
                     {
-                        _writer.Write($"{indentString}{code.UnwindOp} {code.OpInfoStr}");
-                        if (code.NextFrameOffset != -1)
-                        {
-                            _writer.WriteLine($"{indentString}{code.NextFrameOffset}");
-                        }
-                        _writer.WriteLine();
+                        _writer.WriteLine($"{indentString}{code.NextFrameOffset}");
                     }
+                    _writer.WriteLine();
                 }
 
                 if (!_options.HideTransitions && rtf.Method.GcInfo?.Transitions != null && rtf.Method.GcInfo.Transitions.TryGetValue(codeOffset, out List<BaseGcTransition> transitionsForOffset))
@@ -349,6 +345,8 @@ namespace R2RDump
                     int rtfOffset = _r2r.GetOffset(section.RelativeVirtualAddress);
                     int rtfEndOffset = rtfOffset + section.Size;
                     int rtfIndex = 0;
+                    _writer.WriteLine("  Index | StartRVA |  EndRVA  | UnwindRVA");
+                    _writer.WriteLine("-----------------------------------------");
                     while (rtfOffset < rtfEndOffset)
                     {
                         int startRva = NativeReader.ReadInt32(_r2r.Image, ref rtfOffset);
@@ -358,11 +356,8 @@ namespace R2RDump
                             endRva = NativeReader.ReadInt32(_r2r.Image, ref rtfOffset);
                         }
                         int unwindRva = NativeReader.ReadInt32(_r2r.Image, ref rtfOffset);
-                        _writer.WriteLine($"Index: {rtfIndex}");
-                        _writer.WriteLine($"        StartRva: 0x{startRva:X8}");
-                        if (endRva != -1)
-                            _writer.WriteLine($"        EndRva: 0x{endRva:X8}");
-                        _writer.WriteLine($"        UnwindRva: 0x{unwindRva:X8}");
+                        string endRvaText = (endRva != -1 ? endRva.ToString("x8") : "        ");
+                        _writer.WriteLine($"{rtfIndex,7} | {startRva:X8} | {endRvaText} | {unwindRva:X8}");
                         rtfIndex++;
                     }
                     break;
@@ -410,7 +405,7 @@ namespace R2RDump
                     int assemblyRefCount = 0;
                     if (!_r2r.Composite)
                     {
-                        MetadataReader globalReader = _r2r.GetGlobalMetadataReader();
+                        MetadataReader globalReader = _r2r.GetGlobalMetadata().MetadataReader;
                         assemblyRefCount = globalReader.GetTableRowCount(TableIndex.AssemblyRef) + 1;
                         _writer.WriteLine($"MSIL AssemblyRef's ({assemblyRefCount} entries):");
                         for (int assemblyRefIndex = 1; assemblyRefIndex < assemblyRefCount; assemblyRefIndex++)
@@ -450,12 +445,12 @@ namespace R2RDump
                     break;
                 case ReadyToRunSectionType.OwnerCompositeExecutable:
                     int oceOffset = _r2r.GetOffset(section.RelativeVirtualAddress);
-                    Decoder decoder = Encoding.UTF8.GetDecoder();
-                    int charLength = decoder.GetCharCount(_r2r.Image, oceOffset, section.Size - 1); // exclude the zero terminator
-                    char[] charArray = new char[charLength];
-                    decoder.GetChars(_r2r.Image, oceOffset, section.Size, charArray, 0, flush: true);
-                    string ownerCompositeExecutable = new string(charArray);
-                    _writer.WriteLine("Composite executable: {0}", ownerCompositeExecutable);
+                    if (_r2r.Image[oceOffset + section.Size - 1] != 0)
+                    {
+                        R2RDump.WriteWarning("String is not zero-terminated");
+                    }
+                    string ownerCompositeExecutable = Encoding.UTF8.GetString(_r2r.Image, oceOffset, section.Size - 1); // exclude the zero terminator
+                    _writer.WriteLine("Composite executable: {0}", ownerCompositeExecutable.ToEscapedString());
                     break;
             }
         }

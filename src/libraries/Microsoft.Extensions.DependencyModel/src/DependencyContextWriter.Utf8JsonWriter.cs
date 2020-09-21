@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.IO;
@@ -25,7 +24,7 @@ namespace Microsoft.Extensions.DependencyModel
             {
                 // Custom encoder is required to fix https://github.com/dotnet/core-setup/issues/7137
                 // Since the JSON is only written to a file that is read by the SDK (and not transmitted over the wire),
-                // it is safe to skip escaping certain characters in this scenario 
+                // it is safe to skip escaping certain characters in this scenario
                 // (that would otherwise be escaped, by default, as part of defense-in-depth, such as +).
                 var options = new JsonWriterOptions { Indented = true, Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
                 var jsonWriter = new Utf8JsonWriter(bufferWriter, options);

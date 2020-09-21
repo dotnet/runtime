@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
-#nullable enable
 using System.IO;
 using System.Diagnostics;
 using System.Globalization;
@@ -27,7 +25,7 @@ namespace System.Xml
         private XmlNameTable? _nameTable;
 
         // XmlResolver
-        private XmlResolver? _xmlResolver = null;
+        private XmlResolver? _xmlResolver;
 
         // Text settings
         private int _lineNumberOffset;
@@ -651,6 +649,7 @@ namespace System.Xml
             {
                 reader = new XsdValidatingReader(reader, GetXmlResolver_CheckConfig(), this);
             }
+
             return reader;
         }
 

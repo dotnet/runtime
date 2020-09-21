@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Diagnostics;
@@ -116,6 +115,24 @@ namespace System
                 throw new ArgumentOutOfRangeException(nameof(option), option, SR.Format(SR.Arg_EnumIllegalVal, option));
 
             return GetFolderPathCore(folder, option);
+        }
+
+        private static int s_processId;
+        private static volatile bool s_haveProcessId;
+
+        /// <summary>Gets the unique identifier for the current process.</summary>
+        public static int ProcessId
+        {
+            get
+            {
+                if (!s_haveProcessId)
+                {
+                    s_processId = GetCurrentProcessId();
+                    s_haveProcessId = true;
+                }
+
+                return s_processId;
+            }
         }
 
         public static bool Is64BitProcess => IntPtr.Size == 8;

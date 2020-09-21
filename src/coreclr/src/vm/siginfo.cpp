@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // siginfo.cpp
 //
@@ -713,7 +712,7 @@ static BOOL MethodDescMatchesSig(MethodDesc* pMD, PCCOR_SIGNATURE pSig, DWORD cS
     pMD->GetSig(&pSigOfMD, &cSigOfMD);
 
     return MetaSig::CompareMethodSigs(pSig, cSig, pModule, NULL,
-                                      pSigOfMD, cSigOfMD, pMD->GetModule(), NULL);
+                                      pSigOfMD, cSigOfMD, pMD->GetModule(), NULL, FALSE);
 }
 #endif // _DEBUG
 
@@ -729,12 +728,12 @@ MetaSig::MetaSig(BinderMethodID id)
     }
     CONTRACTL_END
 
-    Signature sig = MscorlibBinder::GetMethodSignature(id);
+    Signature sig = CoreLibBinder::GetMethodSignature(id);
 
-    _ASSERTE(MethodDescMatchesSig(MscorlibBinder::GetMethod(id),
-        sig.GetRawSig(), sig.GetRawSigLen(), MscorlibBinder::GetModule()));
+    _ASSERTE(MethodDescMatchesSig(CoreLibBinder::GetMethod(id),
+        sig.GetRawSig(), sig.GetRawSigLen(), CoreLibBinder::GetModule()));
 
-    Init(sig.GetRawSig(), sig.GetRawSigLen(), MscorlibBinder::GetModule(), NULL);
+    Init(sig.GetRawSig(), sig.GetRawSigLen(), CoreLibBinder::GetModule(), NULL);
 }
 
 MetaSig::MetaSig(LPHARDCODEDMETASIG pwzMetaSig)
@@ -749,9 +748,9 @@ MetaSig::MetaSig(LPHARDCODEDMETASIG pwzMetaSig)
     }
     CONTRACTL_END
 
-    Signature sig = MscorlibBinder::GetSignature(pwzMetaSig);
+    Signature sig = CoreLibBinder::GetSignature(pwzMetaSig);
 
-    Init(sig.GetRawSig(), sig.GetRawSigLen(), MscorlibBinder::GetModule(), NULL);
+    Init(sig.GetRawSig(), sig.GetRawSigLen(), CoreLibBinder::GetModule(), NULL);
 }
 
 // Helper constructor that constructs a field signature MetaSig from a FieldDesc
@@ -1087,7 +1086,7 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
         // case ELEMENT_TYPE_STRING   = 0x0e,
         // case ELEMENT_TYPE_OBJECT   = 0x1c,
         //
-        thRet = TypeHandle(MscorlibBinder::GetElementType(typ));
+        thRet = TypeHandle(CoreLibBinder::GetElementType(typ));
     }
     else
     {
@@ -1289,7 +1288,7 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
                 pGenericTypeModule = pModule;
             }
 
-            TypeHandle genericType = psig.GetGenericInstType(pModule, fLoadTypes, level, pZapSigContext);
+            TypeHandle genericType = psig.GetGenericInstType(pModule, fLoadTypes, level < CLASS_LOAD_APPROXPARENTS ? level : CLASS_LOAD_APPROXPARENTS, pZapSigContext);
 
             if (genericType.IsNull())
             {
@@ -1480,7 +1479,7 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
             {
                 if (TypeFromToken(typeToken) == mdtTypeRef)
                 {
-                        loadedType = TypeHandle(MscorlibBinder::GetElementType(ELEMENT_TYPE_VOID));
+                        loadedType = TypeHandle(CoreLibBinder::GetElementType(ELEMENT_TYPE_VOID));
                         thRet = loadedType;
                         break;
                 }
@@ -2373,7 +2372,7 @@ CorElementType SigPointer::PeekElemTypeNormalized(Module* pModule, const SigType
             TypeHandle th = GetTypeHandleThrowing(pModule, pTypeContext, ClassLoader::LoadTypes, CLASS_LOAD_APPROXPARENTS, TRUE);
             if(th.IsNull())
             {
-                th = TypeHandle(MscorlibBinder::GetElementType(ELEMENT_TYPE_VOID));
+                th = TypeHandle(CoreLibBinder::GetElementType(ELEMENT_TYPE_VOID));
             }
 
             type = th.GetInternalCorElementType();
@@ -3007,7 +3006,7 @@ static BOOL CompareDelegatesForEquivalence(mdToken tk1, mdToken tk2, Module *pMo
     GetDelegateInvokeMethodSignature(tk1, pModule1, &cbSig1, &pSig1);
     GetDelegateInvokeMethodSignature(tk2, pModule2, &cbSig2, &pSig2);
 
-    return MetaSig::CompareMethodSigs(pSig1, cbSig1, pModule1, NULL, pSig2, cbSig2, pModule2, NULL, pVisited);
+    return MetaSig::CompareMethodSigs(pSig1, cbSig1, pModule1, NULL, pSig2, cbSig2, pModule2, NULL, FALSE, pVisited);
 }
 
 #endif // FEATURE_TYPEEQUIVALENCE
@@ -3567,6 +3566,7 @@ ErrExit:
 #pragma warning(push)
 #pragma warning(disable:21000) // Suppress PREFast warning about overly large function
 #endif
+
 //---------------------------------------------------------------------------------------
 //
 // Compare the next elements in two sigs.
@@ -3698,7 +3698,7 @@ MetaSig::CompareElementType(
             // One type is already loaded, collect all the necessary information to identify the other type.
             if (Type1 == ELEMENT_TYPE_INTERNAL)
             {
-                IfFailThrow(CorSigUncompressPointer_EndPtr(pSig1, pEndSig1, (void **)&hInternal));
+                IfFailThrow(CorSigUncompressPointer_EndPtr(pSig1, pEndSig1, (void**)&hInternal));
 
                 eOtherType = Type2;
                 pOtherModule = pModule2;
@@ -3734,9 +3734,8 @@ MetaSig::CompareElementType(
                     {
                         IfFailThrow(CorSigUncompressToken_EndPtr(pSig1, pEndSig1, &tkOther));
                     }
-                    TypeHandle hOtherType;
 
-                    hOtherType = ClassLoader::LoadTypeDefOrRefThrowing(
+                    TypeHandle hOtherType = ClassLoader::LoadTypeDefOrRefThrowing(
                         pOtherModule,
                         tkOther,
                         ClassLoader::ReturnNullIfNotFound,
@@ -4237,7 +4236,7 @@ MetaSig::CompareMethodSigsNT(
     HRESULT hr = S_OK;
     EX_TRY
     {
-        if (CompareMethodSigs(pSignature1, cSig1, pModule1, pSubst1, pSignature2, cSig2, pModule2, pSubst2, pVisited))
+        if (CompareMethodSigs(pSignature1, cSig1, pModule1, pSubst1, pSignature2, cSig2, pModule2, pSubst2, FALSE, pVisited))
             hr = S_OK;
         else
             hr = S_FALSE;
@@ -4262,6 +4261,7 @@ MetaSig::CompareMethodSigs(
     DWORD                cSig2,
     Module *             pModule2,
     const Substitution * pSubst2,
+    BOOL                 skipReturnTypeSig,
     TokenPairList *      pVisited) //= NULL
 {
     CONTRACTL
@@ -4356,8 +4356,20 @@ MetaSig::CompareMethodSigs(
             // This would be a breaking change to make this throw... see comment above
             _ASSERT(*pSig2 != ELEMENT_TYPE_SENTINEL);
 
-            // We are in bounds on both sides.  Compare the element.
-            if (!CompareElementType(
+            if (i == 0 && skipReturnTypeSig)
+            {
+                SigPointer ptr1(pSig1, (DWORD)(pEndSig1 - pSig1));
+                IfFailThrow(ptr1.SkipExactlyOne());
+                pSig1 = ptr1.GetPtr();
+
+                SigPointer ptr2(pSig2, (DWORD)(pEndSig2 - pSig2));
+                IfFailThrow(ptr2.SkipExactlyOne());
+                pSig2 = ptr2.GetPtr();
+            }
+            else
+            {
+                // We are in bounds on both sides.  Compare the element.
+                if (!CompareElementType(
                     pSig1,
                     pSig2,
                     pEndSig1,
@@ -4367,8 +4379,9 @@ MetaSig::CompareMethodSigs(
                     pSubst1,
                     pSubst2,
                     pVisited))
-            {
-                return FALSE;
+                {
+                    return FALSE;
+                }
             }
         }
 
@@ -4382,7 +4395,19 @@ MetaSig::CompareMethodSigs(
     // do return type as well
     for (i = 0; i <= ArgCount1; i++)
     {
-        if (!CompareElementType(
+        if (i == 0 && skipReturnTypeSig)
+        {
+            SigPointer ptr1(pSig1, (DWORD)(pEndSig1 - pSig1));
+            IfFailThrow(ptr1.SkipExactlyOne());
+            pSig1 = ptr1.GetPtr();
+
+            SigPointer ptr2(pSig2, (DWORD)(pEndSig2 - pSig2));
+            IfFailThrow(ptr2.SkipExactlyOne());
+            pSig2 = ptr2.GetPtr();
+        }
+        else
+        {
+            if (!CompareElementType(
                 pSig1,
                 pSig2,
                 pEndSig1,
@@ -4392,8 +4417,9 @@ MetaSig::CompareMethodSigs(
                 pSubst1,
                 pSubst2,
                 pVisited))
-        {
-            return FALSE;
+            {
+                return FALSE;
+            }
         }
     }
 
@@ -4587,9 +4613,9 @@ MetaSig::CompareElementTypeToToken(
     }
 
     return CompareTypeTokens(
-        MscorlibBinder::GetElementType(Type1)->GetCl(),
+        CoreLibBinder::GetElementType(Type1)->GetCl(),
         tk2,
-        MscorlibBinder::GetModule(),
+        CoreLibBinder::GetModule(),
         pModule2,
         pVisited);
 } // MetaSig::CompareElementTypeToToken
@@ -4673,7 +4699,7 @@ BOOL MetaSig::CompareTypeDefOrRefOrSpec(Module *pModule1, mdToken tok1,
     ULONG cSig1,cSig2;
     IfFailThrow(pInternalImport1->GetTypeSpecFromToken(tok1, &pSig1, &cSig1));
     IfFailThrow(pInternalImport2->GetTypeSpecFromToken(tok2, &pSig2, &cSig2));
-    return MetaSig::CompareElementType(pSig1,pSig2,pSig1+cSig1,pSig2+cSig2,pModule1,pModule2,pSubst1,pSubst2,pVisited);
+    return MetaSig::CompareElementType(pSig1, pSig2, pSig1 + cSig1, pSig2 + cSig2, pModule1, pModule2, pSubst1, pSubst2, pVisited);
 } // MetaSig::CompareTypeDefOrRefOrSpec
 
 /* static */
@@ -4739,10 +4765,10 @@ BOOL MetaSig::CompareVariableConstraints(const Substitution *pSubst1,
         // a) are vacuous, and
         // b) may be implicit (ie. absent) in the overriden variable's declaration
         if (!(CompareTypeDefOrRefOrSpec(pModule1, tkConstraintType1, NULL,
-                                       MscorlibBinder::GetModule(), g_pObjectClass->GetCl(), NULL, NULL) ||
+                                       CoreLibBinder::GetModule(), g_pObjectClass->GetCl(), NULL, NULL) ||
           (((specialConstraints1 & gpNotNullableValueTypeConstraint) != 0) &&
            (CompareTypeDefOrRefOrSpec(pModule1, tkConstraintType1, NULL,
-                      MscorlibBinder::GetModule(), g_pValueTypeClass->GetCl(), NULL, NULL)))))
+                      CoreLibBinder::GetModule(), g_pValueTypeClass->GetCl(), NULL, NULL)))))
         {
             HENUMInternalHolder hEnum2(pInternalImport2);
             mdGenericParamConstraint tkConstraint2;
@@ -4874,6 +4900,16 @@ void PromoteCarefully(promote_func   fn,
         return;
     }
 
+#ifndef CROSSGEN_COMPILE
+    if (sc->promotion)
+    {
+        LoaderAllocator*pLoaderAllocator = LoaderAllocator::GetAssociatedLoaderAllocator_Unsafe(PTR_TO_TADDR(*ppObj));
+        if (pLoaderAllocator != NULL)
+        {
+            GcReportLoaderAllocator(fn, sc, pLoaderAllocator);
+        }
+    }
+#endif // CROSSGEN_COMPILE
 #endif // !defined(DACCESS_COMPILE)
 
     (*fn) (ppObj, sc, flags);
@@ -5193,16 +5229,56 @@ BOOL MetaSig::IsReturnTypeVoid() const
 
 #ifndef DACCESS_COMPILE
 
+namespace
+{
+    HRESULT GetNameOfTypeRefOrDef(
+        _In_ const Module *pModule,
+        _In_ mdToken token,
+        _Out_ LPCSTR *namespaceOut,
+        _Out_ LPCSTR *nameOut)
+    {
+        CONTRACTL
+        {
+            NOTHROW;
+            GC_NOTRIGGER;
+            FORBID_FAULT;
+            MODE_ANY;
+        }
+        CONTRACTL_END
+
+        IMDInternalImport *pInternalImport = pModule->GetMDImport();
+        if (TypeFromToken(token) == mdtTypeDef)
+        {
+            HRESULT hr = pInternalImport->GetNameOfTypeDef(token, nameOut, namespaceOut);
+            if (FAILED(hr))
+                return hr;
+        }
+        else if (TypeFromToken(token) == mdtTypeRef)
+        {
+            HRESULT hr = pInternalImport->GetNameOfTypeRef(token, namespaceOut, nameOut);
+            if (FAILED(hr))
+                return hr;
+        }
+        else
+        {
+            return E_INVALIDARG;
+        }
+
+        return S_OK;
+    }
+}
+
 //----------------------------------------------------------
 // Returns the unmanaged calling convention.
 //----------------------------------------------------------
 /*static*/
-BOOL
-MetaSig::GetUnmanagedCallingConvention(
-    Module *        pModule,
-    PCCOR_SIGNATURE pSig,
-    ULONG           cSig,
-    CorPinvokeMap * pPinvokeMapOut)
+HRESULT
+MetaSig::TryGetUnmanagedCallingConventionFromModOpt(
+    _In_ Module *pModule,
+    _In_ PCCOR_SIGNATURE pSig,
+    _In_ ULONG cSig,
+    _Out_ CorUnmanagedCallingConvention *callConvOut,
+    _Out_ UINT *errorResID)
 {
     CONTRACTL
     {
@@ -5210,14 +5286,18 @@ MetaSig::GetUnmanagedCallingConvention(
         GC_NOTRIGGER;
         FORBID_FAULT;
         MODE_ANY;
+        PRECONDITION(callConvOut != NULL);
+        PRECONDITION(errorResID != NULL);
     }
     CONTRACTL_END
-
 
     // Instantiations aren't relevant here
     MetaSig msig(pSig, cSig, pModule, NULL);
     PCCOR_SIGNATURE pWalk = msig.m_pRetType.GetPtr();
     _ASSERTE(pWalk <= pSig + cSig);
+
+    *callConvOut = (CorUnmanagedCallingConvention)0;
+    bool found = false;
     while ((pWalk < (pSig + cSig)) && ((*pWalk == ELEMENT_TYPE_CMOD_OPT) || (*pWalk == ELEMENT_TYPE_CMOD_REQD)))
     {
         BOOL fIsOptional = (*pWalk == ELEMENT_TYPE_CMOD_OPT);
@@ -5225,38 +5305,54 @@ MetaSig::GetUnmanagedCallingConvention(
         pWalk++;
         if (pWalk + CorSigUncompressedDataSize(pWalk) > pSig + cSig)
         {
-            return FALSE; // Bad formatting
+            *errorResID = BFA_BAD_SIGNATURE;
+            return COR_E_BADIMAGEFORMAT; // Bad formatting
         }
+
         mdToken tk;
         pWalk += CorSigUncompressToken(pWalk, &tk);
 
-        if (fIsOptional)
+        if (!fIsOptional)
+            continue;
+
+        LPCSTR typeNamespace;
+        LPCSTR typeName;
+
+        // Check for CallConv types specified in modopt
+        if (FAILED(GetNameOfTypeRefOrDef(pModule, tk, &typeNamespace, &typeName)))
+            continue;
+
+        if (::strcmp(typeNamespace, CMOD_CALLCONV_NAMESPACE) != 0)
+            continue;
+
+        const struct {
+            LPCSTR name;
+            CorUnmanagedCallingConvention value;
+        } knownCallConvs[] = {
+            { CMOD_CALLCONV_NAME_CDECL,     IMAGE_CEE_UNMANAGED_CALLCONV_C },
+            { CMOD_CALLCONV_NAME_STDCALL,   IMAGE_CEE_UNMANAGED_CALLCONV_STDCALL },
+            { CMOD_CALLCONV_NAME_THISCALL,  IMAGE_CEE_UNMANAGED_CALLCONV_THISCALL },
+            { CMOD_CALLCONV_NAME_FASTCALL,  IMAGE_CEE_UNMANAGED_CALLCONV_FASTCALL } };
+
+        for (const auto &callConv : knownCallConvs)
         {
-            if (IsTypeRefOrDef("System.Runtime.CompilerServices.CallConvCdecl", pModule, tk))
+            // Look for a recognized calling convention in metadata.
+            if (::strcmp(typeName, callConv.name) == 0)
             {
-                *pPinvokeMapOut = pmCallConvCdecl;
-                return TRUE;
-            }
-            else if (IsTypeRefOrDef("System.Runtime.CompilerServices.CallConvStdcall", pModule, tk))
-            {
-                *pPinvokeMapOut = pmCallConvStdcall;
-                return TRUE;
-            }
-            else if (IsTypeRefOrDef("System.Runtime.CompilerServices.CallConvThiscall", pModule, tk))
-            {
-                *pPinvokeMapOut = pmCallConvThiscall;
-                return TRUE;
-            }
-            else if (IsTypeRefOrDef("System.Runtime.CompilerServices.CallConvFastcall", pModule, tk))
-            {
-                *pPinvokeMapOut = pmCallConvFastcall;
-                return TRUE;
+                // Error if there are multiple recognized calling conventions
+                if (found)
+                {
+                    *errorResID = IDS_EE_MULTIPLE_CALLCONV_UNSUPPORTED;
+                    return COR_E_INVALIDPROGRAM;
+                }
+
+                *callConvOut = callConv.value;
+                found = true;
             }
         }
     }
 
-    *pPinvokeMapOut = (CorPinvokeMap)0;
-    return TRUE;
+    return found ? S_OK : S_FALSE;
 }
 
 //---------------------------------------------------------------------------------------
@@ -5359,7 +5455,6 @@ void Substitution::DeleteChain()
 }
 
 #endif // #ifndef DACCESS_COMPILE
-
 //---------------------------------------------------------------------------------------
 //
 // static

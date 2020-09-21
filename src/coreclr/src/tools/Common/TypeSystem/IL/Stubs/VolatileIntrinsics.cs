@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 
@@ -64,7 +63,7 @@ namespace Internal.IL.Stubs
                 //
                 // Ordinary volatile loads and stores only guarantee atomicity for pointer-sized (or smaller) data.
                 // So, on 32-bit platforms we must use Interlocked operations instead for the 64-bit types.
-                // The implementation in mscorlib already does this, so we will only substitute a new
+                // The implementation in CoreLib already does this, so we will only substitute a new
                 // IL body if we're running on a 64-bit platform.
                 //
                 case TypeFlags.Int64 when method.Context.Target.PointerSize == 8:

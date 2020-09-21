@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #pragma once
 
@@ -15,6 +14,7 @@ class TreeLifeUpdater
 public:
     TreeLifeUpdater(Compiler* compiler);
     void UpdateLife(GenTree* tree);
+    bool UpdateLifeFieldVar(GenTreeLclVar* lclNode, unsigned multiRegIndex);
 
 private:
     void UpdateLifeVar(GenTree* tree);

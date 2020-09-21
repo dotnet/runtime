@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
 //
@@ -31,9 +30,9 @@ namespace System.Linq.Parallel
         private readonly Func<TLeftInput, TRightInput, TOutput> _resultSelector; // To select result elements.
         private readonly QueryOperator<TLeftInput> _leftChild;
         private readonly QueryOperator<TRightInput> _rightChild;
-        private readonly bool _prematureMergeLeft = false; // Whether to prematurely merge the left data source
-        private readonly bool _prematureMergeRight = false; // Whether to prematurely merge the right data source
-        private readonly bool _limitsParallelism = false; // Whether this operator limits parallelism
+        private readonly bool _prematureMergeLeft; // Whether to prematurely merge the left data source
+        private readonly bool _prematureMergeRight; // Whether to prematurely merge the right data source
+        private readonly bool _limitsParallelism; // Whether this operator limits parallelism
 
         //---------------------------------------------------------------------------------------
         // Initializes a new zip operator.

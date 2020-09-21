@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #pragma warning disable IDE0060 // unused parameters
 using System.Runtime.CompilerServices;
@@ -16,6 +15,13 @@ namespace System.Runtime.Intrinsics.Arm
         internal Sha256() { }
 
         public static new bool IsSupported { [Intrinsic] get => false; }
+
+        public new abstract class Arm64 : ArmBase.Arm64
+        {
+            internal Arm64() { }
+
+            public static new bool IsSupported { [Intrinsic] get { return false; } }
+        }
 
         /// <summary>
         /// uint32x4_t vsha256hq_u32 (uint32x4_t hash_abcd, uint32x4_t hash_efgh, uint32x4_t wk)

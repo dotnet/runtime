@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Text;
 using Xunit;
@@ -70,6 +69,17 @@ namespace System.IO.Tests
             };
 
             WriteTest(dblArr, (bw, s) => bw.Write(s), (br) => br.ReadDouble());
+        }
+
+        [Fact]
+        public void BinaryWriter_WriteHalfTest()
+        {
+            Half[] hlfArr = new Half[] {
+                Half.NegativeInfinity, Half.PositiveInfinity, Half.Epsilon, Half.MinValue, Half.MaxValue,
+                (Half)0.45, (Half)5.55
+            };
+
+            WriteTest(hlfArr, (bw, s) => bw.Write(s), (br) => br.ReadHalf());
         }
 
         [Fact]

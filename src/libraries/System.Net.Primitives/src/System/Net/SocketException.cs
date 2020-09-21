@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
 using System.Runtime.Serialization;
@@ -34,7 +33,6 @@ namespace System.Net.Sockets
         /// <summary>Creates a new instance of the <see cref='System.Net.Sockets.SocketException'/> class with the specified error code as SocketError.</summary>
         internal SocketException(SocketError socketError) : base(GetNativeErrorForSocketError(socketError))
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, socketError, Message);
             _errorCode = socketError;
         }
 
@@ -45,7 +43,7 @@ namespace System.Net.Sockets
         protected SocketException(SerializationInfo serializationInfo, StreamingContext streamingContext)
             : base(serializationInfo, streamingContext)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"{NativeErrorCode}:{Message}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"{NativeErrorCode}:{Message}");
         }
 
         public override int ErrorCode => base.NativeErrorCode;

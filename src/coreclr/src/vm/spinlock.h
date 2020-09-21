@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //----------------------------------------------------------------------------
 //  spinlock.h , defines the spin lock class and a profiler class
 //
@@ -62,7 +61,6 @@
 
 // non-zero return value if this function causes the OS to switch to another thread
 BOOL __SwitchToThread (DWORD dwSleepMSec, DWORD dwSwitchCount);
-BOOL __DangerousSwitchToThread (DWORD dwSleepMSec, DWORD dwSwitchCount, BOOL goThroughOS);
 
 
 //----------------------------------------------------------------------------

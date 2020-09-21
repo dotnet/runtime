@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 
@@ -65,7 +64,7 @@ namespace Internal.TypeSystem
 
             // CLI - Partition 2, section 22.8
             // A type has layout if it is marked SequentialLayout or ExplicitLayout.  If any type within an inheritance chain has layout, 
-            // then so shall all its base classes, up to the one that descends immediately from System.ValueType (if it exists in the type’s 
+            // then so shall all its base classes, up to the one that descends immediately from System.ValueType (if it exists in the type's 
             // hierarchy); otherwise, from System.Object
             // Note: While the CLI isn't clearly worded, the layout needs to be the same for the entire chain.
             // If the current type isn't ValueType or System.Object and has a layout and the parent type isn't
@@ -103,6 +102,7 @@ namespace Internal.TypeSystem
                     type,
                     type.Context.Target.GetWellKnownTypeSize(type),
                     type.Context.Target.GetWellKnownTypeAlignment(type),
+                    0,
                     out instanceByteSizeAndAlignment
                     );
 
@@ -112,6 +112,7 @@ namespace Internal.TypeSystem
                     ByteCountAlignment = instanceByteSizeAndAlignment.Alignment,
                     FieldAlignment = sizeAndAlignment.Alignment,
                     FieldSize = sizeAndAlignment.Size,
+                    LayoutAbiStable = true
                 };
 
                 if (numInstanceFields > 0)
@@ -227,7 +228,7 @@ namespace Internal.TypeSystem
                 }
 
                 ref StaticsBlock block = ref GetStaticsBlockForField(ref result, field);
-                SizeAndAlignment sizeAndAlignment = ComputeFieldSizeAndAlignment(fieldType, context.Target.DefaultPackingSize);
+                SizeAndAlignment sizeAndAlignment = ComputeFieldSizeAndAlignment(fieldType, context.Target.DefaultPackingSize, out bool _);
 
                 block.Size = LayoutInt.AlignUp(block.Size, sizeAndAlignment.Alignment, context.Target);
                 result.Offsets[index] = new FieldAndOffset(field, block.Size);
@@ -318,11 +319,14 @@ namespace Internal.TypeSystem
 
             var offsets = new FieldAndOffset[numInstanceFields];
             int fieldOrdinal = 0;
+            bool layoutAbiStable = true;
 
             foreach (var fieldAndOffset in layoutMetadata.Offsets)
             {
                 TypeDesc fieldType = fieldAndOffset.Field.FieldType;
-                var fieldSizeAndAlignment = ComputeFieldSizeAndAlignment(fieldType, packingSize);
+                var fieldSizeAndAlignment = ComputeFieldSizeAndAlignment(fieldType, packingSize, out bool fieldLayoutAbiStable);
+                if (!fieldLayoutAbiStable)
+                    layoutAbiStable = false;
 
                 largestAlignmentRequired = LayoutInt.Max(fieldSizeAndAlignment.Alignment, largestAlignmentRequired);
 
@@ -358,13 +362,8 @@ namespace Internal.TypeSystem
                 fieldOrdinal++;
             }
 
-            if (type.IsValueType)
-            {
-                instanceSize = LayoutInt.Max(new LayoutInt(layoutMetadata.Size), instanceSize);
-            }
-
             SizeAndAlignment instanceByteSizeAndAlignment;
-            var instanceSizeAndAlignment = ComputeInstanceSize(type, instanceSize, largestAlignmentRequired, out instanceByteSizeAndAlignment);
+            var instanceSizeAndAlignment = ComputeInstanceSize(type, instanceSize, largestAlignmentRequired, layoutMetadata.Size, out instanceByteSizeAndAlignment);
 
             ComputedInstanceFieldLayout computedLayout = new ComputedInstanceFieldLayout();
             computedLayout.FieldAlignment = instanceSizeAndAlignment.Alignment;
@@ -372,6 +371,8 @@ namespace Internal.TypeSystem
             computedLayout.ByteCountUnaligned = instanceByteSizeAndAlignment.Size;
             computedLayout.ByteCountAlignment = instanceByteSizeAndAlignment.Alignment;
             computedLayout.Offsets = offsets;
+            computedLayout.LayoutAbiStable = layoutAbiStable;
+
 
             ExplicitLayoutValidator.Validate(type, computedLayout);
 
@@ -390,13 +391,16 @@ namespace Internal.TypeSystem
             LayoutInt largestAlignmentRequirement = LayoutInt.One;
             int fieldOrdinal = 0;
             int packingSize = ComputePackingSize(type, layoutMetadata);
+            bool layoutAbiStable = true;
 
             foreach (var field in type.GetFields())
             {
                 if (field.IsStatic)
                     continue;
 
-                var fieldSizeAndAlignment = ComputeFieldSizeAndAlignment(field.FieldType, packingSize);
+                var fieldSizeAndAlignment = ComputeFieldSizeAndAlignment(field.FieldType, packingSize, out bool fieldLayoutAbiStable);
+                if (!fieldLayoutAbiStable)
+                    layoutAbiStable = false;
 
                 largestAlignmentRequirement = LayoutInt.Max(fieldSizeAndAlignment.Alignment, largestAlignmentRequirement);
 
@@ -407,13 +411,8 @@ namespace Internal.TypeSystem
                 fieldOrdinal++;
             }
 
-            if (type.IsValueType)
-            {
-                cumulativeInstanceFieldPos = LayoutInt.Max(cumulativeInstanceFieldPos, new LayoutInt(layoutMetadata.Size));
-            }
-
             SizeAndAlignment instanceByteSizeAndAlignment;
-            var instanceSizeAndAlignment = ComputeInstanceSize(type, cumulativeInstanceFieldPos, largestAlignmentRequirement, out instanceByteSizeAndAlignment);
+            var instanceSizeAndAlignment = ComputeInstanceSize(type, cumulativeInstanceFieldPos, largestAlignmentRequirement, layoutMetadata.Size, out instanceByteSizeAndAlignment);
 
             ComputedInstanceFieldLayout computedLayout = new ComputedInstanceFieldLayout();
             computedLayout.FieldAlignment = instanceSizeAndAlignment.Alignment;
@@ -421,6 +420,7 @@ namespace Internal.TypeSystem
             computedLayout.ByteCountUnaligned = instanceByteSizeAndAlignment.Size;
             computedLayout.ByteCountAlignment = instanceByteSizeAndAlignment.Alignment;
             computedLayout.Offsets = offsets;
+            computedLayout.LayoutAbiStable = layoutAbiStable;
 
             return computedLayout;
         }
@@ -470,7 +470,7 @@ namespace Internal.TypeSystem
                 {                    
                     Debug.Assert(fieldType.IsPrimitive || fieldType.IsPointer || fieldType.IsFunctionPointer || fieldType.IsEnum);
 
-                    var fieldSizeAndAlignment = ComputeFieldSizeAndAlignment(fieldType, packingSize);
+                    var fieldSizeAndAlignment = ComputeFieldSizeAndAlignment(fieldType, packingSize, out bool _);
                     instanceNonGCPointerFieldsCount[CalculateLog2(fieldSizeAndAlignment.Size.AsInt)]++;
                 }
             }
@@ -495,6 +495,7 @@ namespace Internal.TypeSystem
             instanceGCPointerFieldsCount = 0;
             instanceValueClassFieldCount = 0;
             LayoutInt largestAlignmentRequired = LayoutInt.One;
+            bool layoutAbiStable = true;
 
             // Iterate over all fields and do the following
             //   - Add instance fields to the appropriate array (while maintaining the enumerated order)
@@ -506,7 +507,10 @@ namespace Internal.TypeSystem
 
                 TypeDesc fieldType = field.FieldType;
 
-                var fieldSizeAndAlignment = ComputeFieldSizeAndAlignment(fieldType, packingSize);
+                var fieldSizeAndAlignment = ComputeFieldSizeAndAlignment(fieldType, packingSize, out bool fieldLayoutAbiStable);
+                if (!fieldLayoutAbiStable)
+                    layoutAbiStable = false;
+
                 largestAlignmentRequired = LayoutInt.Max(fieldSizeAndAlignment.Alignment, largestAlignmentRequired);
 
                 if (IsByValueClass(fieldType))
@@ -634,7 +638,9 @@ namespace Internal.TypeSystem
                 // If the field has an indeterminate alignment, align the cumulative field offset to the indeterminate value
                 // Otherwise, align the cumulative field offset to the PointerSize
                 // This avoids issues with Universal Generic Field layouts whose fields may have Indeterminate sizes or alignments
-                var fieldSizeAndAlignment = ComputeFieldSizeAndAlignment(instanceValueClassFieldsArr[i].FieldType, packingSize);
+                var fieldSizeAndAlignment = ComputeFieldSizeAndAlignment(instanceValueClassFieldsArr[i].FieldType, packingSize, out bool fieldLayoutAbiStable);
+                if (!fieldLayoutAbiStable)
+                    layoutAbiStable = false;
 
                 if (fieldSizeAndAlignment.Alignment.IsIndeterminate)
                 {
@@ -642,7 +648,8 @@ namespace Internal.TypeSystem
                 }
                 else
                 {
-                    cumulativeInstanceFieldPos = LayoutInt.AlignUp(cumulativeInstanceFieldPos, context.Target.LayoutPointerSize, context.Target);
+                    LayoutInt AlignmentRequired = LayoutInt.Max(fieldSizeAndAlignment.Alignment, context.Target.LayoutPointerSize);
+                    cumulativeInstanceFieldPos = LayoutInt.AlignUp(cumulativeInstanceFieldPos, AlignmentRequired, context.Target);
                 }
                 offsets[fieldOrdinal] = new FieldAndOffset(instanceValueClassFieldsArr[i], cumulativeInstanceFieldPos);
 
@@ -675,7 +682,7 @@ namespace Internal.TypeSystem
             }
 
             SizeAndAlignment instanceByteSizeAndAlignment;
-            var instanceSizeAndAlignment = ComputeInstanceSize(type, cumulativeInstanceFieldPos, minAlign, out instanceByteSizeAndAlignment);
+            var instanceSizeAndAlignment = ComputeInstanceSize(type, cumulativeInstanceFieldPos, minAlign, 0/* specified field size unused */, out instanceByteSizeAndAlignment);
 
             ComputedInstanceFieldLayout computedLayout = new ComputedInstanceFieldLayout();
             computedLayout.FieldAlignment = instanceSizeAndAlignment.Alignment;
@@ -683,13 +690,14 @@ namespace Internal.TypeSystem
             computedLayout.ByteCountUnaligned = instanceByteSizeAndAlignment.Size;
             computedLayout.ByteCountAlignment = instanceByteSizeAndAlignment.Alignment;
             computedLayout.Offsets = offsets;
+            computedLayout.LayoutAbiStable = layoutAbiStable;
 
             return computedLayout;
         }
 
         private static void PlaceInstanceField(FieldDesc field, int packingSize, FieldAndOffset[] offsets, ref LayoutInt instanceFieldPos, ref int fieldOrdinal)
         {
-            var fieldSizeAndAlignment = ComputeFieldSizeAndAlignment(field.FieldType, packingSize);
+            var fieldSizeAndAlignment = ComputeFieldSizeAndAlignment(field.FieldType, packingSize, out bool _);
 
             instanceFieldPos = LayoutInt.AlignUp(instanceFieldPos, fieldSizeAndAlignment.Alignment, field.Context.Target);
             offsets[fieldOrdinal] = new FieldAndOffset(field, instanceFieldPos);
@@ -741,9 +749,10 @@ namespace Internal.TypeSystem
             return cumulativeInstanceFieldPos;
         }
 
-        private static SizeAndAlignment ComputeFieldSizeAndAlignment(TypeDesc fieldType, int packingSize)
+        private static SizeAndAlignment ComputeFieldSizeAndAlignment(TypeDesc fieldType, int packingSize, out bool layoutAbiStable)
         {
             SizeAndAlignment result;
+            layoutAbiStable = true;
 
             if (fieldType.IsDefType)
             {
@@ -752,6 +761,7 @@ namespace Internal.TypeSystem
                     DefType metadataType = (DefType)fieldType;
                     result.Size = metadataType.InstanceFieldSize;
                     result.Alignment = metadataType.InstanceFieldAlignment;
+                    layoutAbiStable = metadataType.LayoutAbiStable;
                 }
                 else
                 {
@@ -788,21 +798,40 @@ namespace Internal.TypeSystem
                 return layoutMetadata.PackingSize;
         }
 
-        private static SizeAndAlignment ComputeInstanceSize(MetadataType type, LayoutInt instanceSize, LayoutInt alignment, out SizeAndAlignment byteCount)
+        private static SizeAndAlignment ComputeInstanceSize(MetadataType type, LayoutInt instanceSize, LayoutInt alignment, int classLayoutSize, out SizeAndAlignment byteCount)
         {
             SizeAndAlignment result;
-
-            TargetDetails target = type.Context.Target;
-
+            
             // Pad the length of structs to be 1 if they are empty so we have no zero-length structures
             if (type.IsValueType && instanceSize == LayoutInt.Zero)
             {
                 instanceSize = LayoutInt.One;
             }
 
+            TargetDetails target = type.Context.Target;
+
+            if (classLayoutSize != 0)
+            {
+                LayoutInt parentSize;
+                if (type.IsValueType)
+                    parentSize = new LayoutInt(0);
+                else
+                    parentSize = type.BaseType.InstanceByteCountUnaligned;
+
+                LayoutInt specifiedInstanceSize = parentSize + new LayoutInt(classLayoutSize);
+
+                instanceSize = LayoutInt.Max(specifiedInstanceSize, instanceSize);
+            }
+            else
+            {
+                if (type.IsValueType)
+                {
+                    instanceSize = LayoutInt.AlignUp(instanceSize, alignment, target);
+                }
+            }
+
             if (type.IsValueType)
             {
-                instanceSize = LayoutInt.AlignUp(instanceSize, alignment, target);
                 result.Size = instanceSize;
                 result.Alignment = alignment;
             }
@@ -830,132 +859,102 @@ namespace Internal.TypeSystem
             if (!type.IsValueType)
                 return ValueTypeShapeCharacteristics.None;
 
-            ValueTypeShapeCharacteristics result = ComputeHomogeneousFloatAggregateCharacteristic(type);
+            ValueTypeShapeCharacteristics result = ComputeHomogeneousAggregateCharacteristic(type);
 
             // TODO: System V AMD64 characteristics (https://github.com/dotnet/corert/issues/158)
 
             return result;
         }
 
-        private ValueTypeShapeCharacteristics ComputeHomogeneousFloatAggregateCharacteristic(DefType type)
+        private ValueTypeShapeCharacteristics ComputeHomogeneousAggregateCharacteristic(DefType type)
         {
+            // Use this constant to make the code below more laconic
+            const ValueTypeShapeCharacteristics NotHA = ValueTypeShapeCharacteristics.None;
+
             Debug.Assert(type.IsValueType);
+
+            TargetArchitecture targetArch = type.Context.Target.Architecture;
+            if ((targetArch != TargetArchitecture.ARM) && (targetArch != TargetArchitecture.ARM64))
+                return NotHA;
 
             MetadataType metadataType = (MetadataType)type;
 
-            if (type.Context.Target.Architecture != TargetArchitecture.ARM && type.Context.Target.Architecture != TargetArchitecture.ARM64)
-                return ValueTypeShapeCharacteristics.None;
-
-            // No HFAs with explicit layout. There may be cases where explicit layout may be still
-            // eligible for HFA, but it is hard to tell the real intent. Make it simple and just 
-            // unconditionally disable HFAs for explicit layout.
+            // No HAs with explicit layout. There may be cases where explicit layout may be still
+            // eligible for HA, but it is hard to tell the real intent. Make it simple and just 
+            // unconditionally disable HAs for explicit layout.
             if (metadataType.IsExplicitLayout)
-                return ValueTypeShapeCharacteristics.None;
+                return NotHA;
 
             switch (metadataType.Category)
             {
+                // These are the primitive types that constitute a HFA type
                 case TypeFlags.Single:
+                    return ValueTypeShapeCharacteristics.Float32Aggregate;
                 case TypeFlags.Double:
-                    // These are the primitive types that constitute a HFA type.
-                    return ValueTypeShapeCharacteristics.HomogenousFloatAggregate;
+                    return ValueTypeShapeCharacteristics.Float64Aggregate;
 
                 case TypeFlags.ValueType:
-                    DefType expectedElementType = null;
+                    // Find the common HA element type if any
+                    ValueTypeShapeCharacteristics haResultType = NotHA;
 
                     foreach (FieldDesc field in metadataType.GetFields())
                     {
                         if (field.IsStatic)
                             continue;
 
-                        // If a field isn't a DefType, then this type cannot be an HFA type
-                        // If a field isn't a HFA type, then this type cannot be an HFA type
-                        DefType fieldType = field.FieldType as DefType;
-                        if (fieldType == null || !fieldType.IsHfa)
-                            return ValueTypeShapeCharacteristics.None;
+                        // If a field isn't a DefType, then this type cannot be a HA type
+                        if (!(field.FieldType is DefType fieldType))
+                            return NotHA;
 
-                        if (expectedElementType == null)
+                        // If a field isn't a HA type, then this type cannot be a HA type
+                        ValueTypeShapeCharacteristics haFieldType = fieldType.ValueTypeShapeCharacteristics & ValueTypeShapeCharacteristics.AggregateMask;
+                        if (haFieldType == NotHA)
+                            return NotHA;
+
+                        if (haResultType == NotHA)
                         {
-                            // If we hadn't yet figured out what form of HFA this type might be, we've
-                            // now found one case.
-                            expectedElementType = fieldType.HfaElementType;
-                            Debug.Assert(expectedElementType != null);
+                            // If we hadn't yet figured out what form of HA this type might be, we've now found one case
+                            haResultType = haFieldType;
                         }
-                        else if (expectedElementType != fieldType.HfaElementType)
+                        else if (haResultType != haFieldType)
                         {
-                            // If we had already determined the possible HFA type of the current type, but
+                            // If we had already determined the possible HA type of the current type, but
                             // the field we've encountered is not of that type, then the current type cannot
-                            // be an HFA type.
-                            return ValueTypeShapeCharacteristics.None;
+                            // be a HA type.
+                            return NotHA;
                         }
                     }
 
-                    // No fields means this is not HFA.
-                    if (expectedElementType == null)
-                        return ValueTypeShapeCharacteristics.None;
+                    // If there are no instance fields, this is not a HA type
+                    if (haResultType == NotHA)
+                        return NotHA;
 
-                    // Types which are indeterminate in field size are not considered to be HFA
-                    if (expectedElementType.InstanceFieldSize.IsIndeterminate)
-                        return ValueTypeShapeCharacteristics.None;
+                    int haElementSize = haResultType switch
+                    {
+                        ValueTypeShapeCharacteristics.Float32Aggregate => 4,
+                        ValueTypeShapeCharacteristics.Float64Aggregate => 8,
+                        ValueTypeShapeCharacteristics.Vector64Aggregate => 8,
+                        ValueTypeShapeCharacteristics.Vector128Aggregate => 16,
+                        _ => throw new ArgumentOutOfRangeException()
+                    };
 
-                    // Types which are indeterminate in field size are not considered to be HFA
+                    // Types which are indeterminate in field size are not considered to be HA
                     if (type.InstanceFieldSize.IsIndeterminate)
-                        return ValueTypeShapeCharacteristics.None;
+                        return NotHA;
 
                     // Note that we check the total size, but do not perform any checks on number of fields:
-                    // - Type of fields can be HFA valuetype itself
-                    // - Managed C++ HFA valuetypes have just one <alignment member> of type float to signal that 
-                    //   the valuetype is HFA and explicitly specified size
-                    int maxSize = expectedElementType.InstanceFieldSize.AsInt * expectedElementType.Context.Target.MaximumHfaElementCount;
+                    // - Type of fields can be HA valuetype itself.
+                    // - Managed C++ HA valuetypes have just one <alignment member> of type float to signal that
+                    //   the valuetype is HA and explicitly specified size.
+                    int maxSize = haElementSize * type.Context.Target.MaxHomogeneousAggregateElementCount;
                     if (type.InstanceFieldSize.AsInt > maxSize)
-                        return ValueTypeShapeCharacteristics.None;
+                        return NotHA;
 
-                    // All the tests passed. This is an HFA type.
-                    return ValueTypeShapeCharacteristics.HomogenousFloatAggregate;
+                    // All the tests passed. This is a HA type.
+                    return haResultType;
             }
 
-            return ValueTypeShapeCharacteristics.None;
-        }
-
-        public override DefType ComputeHomogeneousFloatAggregateElementType(DefType type)
-        {
-            if (!type.IsHfa)
-                return null;
-
-            if (type.IsWellKnownType(WellKnownType.Double) || type.IsWellKnownType(WellKnownType.Single))
-                return type;
-
-            for (; ; )
-            {
-                Debug.Assert(type.IsValueType);
-
-                // All HFA fields have to be of the same HFA type, so we can just return the type of the first field
-                TypeDesc firstFieldType = null;
-                foreach (var field in type.GetFields())
-                {
-                    if (field.IsStatic)
-                        continue;
-
-                    firstFieldType = field.FieldType;
-                    break;
-                }
-                Debug.Assert(firstFieldType != null, "Why is IsHfa true on this type?");
-
-                switch (firstFieldType.Category)
-                {
-                    case TypeFlags.Single:
-                    case TypeFlags.Double:
-                        return (DefType)firstFieldType;
-
-                    case TypeFlags.ValueType:
-                        // Drill into the struct and find the type of its first field
-                        type = (DefType)firstFieldType;
-                        break;
-
-                    default:
-                        Debug.Fail("Why is IsHfa true on this type?");
-                        return null;
-                }
-            }
+            return NotHA;
         }
 
         private struct SizeAndAlignment

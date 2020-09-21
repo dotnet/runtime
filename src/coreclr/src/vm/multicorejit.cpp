@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ===========================================================================
 // File: MultiCoreJIT.cpp
 //
@@ -971,7 +970,7 @@ void MulticoreJitRecorder::RecordModuleLoad(Module * pModule, FileLoadLevel load
 
 
 // Call back from MethodDesc::MakeJitWorker for
-PCODE MulticoreJitRecorder::RequestMethodCode(MethodDesc * pMethod, MulticoreJitManager * pManager)
+MulticoreJitCodeInfo MulticoreJitRecorder::RequestMethodCode(MethodDesc * pMethod, MulticoreJitManager * pManager)
 {
     STANDARD_VM_CONTRACT;
 
@@ -985,16 +984,14 @@ PCODE MulticoreJitRecorder::RequestMethodCode(MethodDesc * pMethod, MulticoreJit
 
     _ASSERTE(! pMethod->IsDynamicMethod());
 
-    PCODE pCode = NULL;
+    MulticoreJitCodeInfo codeInfo = pManager->GetMulticoreJitCodeStorage().QueryAndRemoveMethodCode(pMethod);
 
-    pCode = pManager->GetMulticoreJitCodeStorage().QueryMethodCode(pMethod, TRUE);
-
-    if ((pCode != NULL) && pManager->IsRecorderActive()) // recorder may be off when player is on (e.g. for Appx)
+    if (!codeInfo.IsNull() && pManager->IsRecorderActive()) // recorder may be off when player is on (e.g. for Appx)
     {
         RecordMethodJit(pMethod, false); // JITTed by background thread, returned to application
     }
 
-    return pCode;
+    return codeInfo;
 }
 
 
@@ -1289,7 +1286,7 @@ void MulticoreJitManager::RecordModuleLoad(Module * pModule, FileLoadLevel loadL
 // Call back from MethodDesc::MakeJitWorker for
 // Threading: proected by m_playerLock
 
-PCODE MulticoreJitManager::RequestMethodCode(MethodDesc * pMethod)
+MulticoreJitCodeInfo MulticoreJitManager::RequestMethodCode(MethodDesc * pMethod)
 {
     STANDARD_VM_CONTRACT;
 
@@ -1297,16 +1294,16 @@ PCODE MulticoreJitManager::RequestMethodCode(MethodDesc * pMethod)
 
     if (m_pMulticoreJitRecorder != NULL)
     {
-        PCODE requestedCode = m_pMulticoreJitRecorder->RequestMethodCode(pMethod, this);
-        if(requestedCode)
+        MulticoreJitCodeInfo requestedCodeInfo = m_pMulticoreJitRecorder->RequestMethodCode(pMethod, this);
+        if(!requestedCodeInfo.IsNull())
         {
             _FireEtwMulticoreJitMethodCodeReturned(pMethod);
         }
 
-        return requestedCode;
+        return requestedCodeInfo;
     }
 
-    return NULL;
+    return MulticoreJitCodeInfo();
 }
 
 
@@ -1358,8 +1355,6 @@ void MulticoreJitManager::StopProfileAll()
         CAN_TAKE_LOCK;
     }
     CONTRACTL_END;
-
-    _ASSERTE(!AppX::IsAppXProcess());
 
     AppDomainIterator domain(TRUE);
 

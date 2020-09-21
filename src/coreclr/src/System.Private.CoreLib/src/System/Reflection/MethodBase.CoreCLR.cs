@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Globalization;
 using System.Threading;
@@ -69,7 +68,7 @@ namespace System.Reflection
             // copy the arguments in a different array so we detach from any user changes
             object[] copyOfParameters = new object[parameters.Length];
 
-            ParameterInfo[] p = null!;
+            ParameterInfo[]? p = null;
             for (int i = 0; i < parameters.Length; i++)
             {
                 object arg = parameters[i];

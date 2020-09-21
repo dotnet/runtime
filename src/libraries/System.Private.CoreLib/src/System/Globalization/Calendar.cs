@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 
@@ -57,7 +56,7 @@ namespace System.Globalization
 
         private int _currentEraValue = -1;
 
-        private bool _isReadOnly = false;
+        private bool _isReadOnly;
 
         public virtual DateTime MinSupportedDateTime => DateTime.MinValue;
 
@@ -123,7 +122,7 @@ namespace System.Globalization
                 if (_currentEraValue == -1)
                 {
                     Debug.Assert(BaseCalendarID != CalendarId.UNINITIALIZED_VALUE, "[Calendar.CurrentEraValue] Expected a real calendar ID");
-                    _currentEraValue = CalendarData.GetCalendarData(BaseCalendarID).iCurrentEra;
+                    _currentEraValue = CalendarData.GetCalendarCurrentEra(this);
                 }
 
                 return _currentEraValue;

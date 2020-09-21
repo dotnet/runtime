@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: dacimpl.h
 //
@@ -840,7 +839,9 @@ class ClrDataAccess
       public ISOSDacInterface4,
       public ISOSDacInterface5,
       public ISOSDacInterface6,
-      public ISOSDacInterface7
+      public ISOSDacInterface7,
+      public ISOSDacInterface8,
+      public ISOSDacInterface9
 {
 public:
     ClrDataAccess(ICorDebugDataTarget * pTarget, ICLRDataTarget * pLegacyTarget=0);
@@ -1195,6 +1196,19 @@ public:
     virtual HRESULT STDMETHODCALLTYPE GetProfilerModifiedILInformation(CLRDATA_ADDRESS methodDesc, struct DacpProfilerILData *pILData);
     virtual HRESULT STDMETHODCALLTYPE GetMethodsWithProfilerModifiedIL(CLRDATA_ADDRESS mod, CLRDATA_ADDRESS *methodDescs, int cMethodDescs, int *pcMethodDescs);
 
+    // ISOSDacInterface8
+    virtual HRESULT STDMETHODCALLTYPE GetNumberGenerations(unsigned int *pGenerations);
+    virtual HRESULT STDMETHODCALLTYPE GetGenerationTable(unsigned int cGenerations, struct DacpGenerationData *pGenerationData, unsigned int *pNeeded);
+    virtual HRESULT STDMETHODCALLTYPE GetFinalizationFillPointers(unsigned int cFillPointers, CLRDATA_ADDRESS *pFinalizationFillPointers, unsigned int *pNeeded);
+
+    virtual HRESULT STDMETHODCALLTYPE GetGenerationTableSvr(CLRDATA_ADDRESS heapAddr, unsigned int cGenerations, struct DacpGenerationData *pGenerationData, unsigned int *pNeeded);
+    virtual HRESULT STDMETHODCALLTYPE GetFinalizationFillPointersSvr(CLRDATA_ADDRESS heapAddr, unsigned int cFillPointers, CLRDATA_ADDRESS *pFinalizationFillPointers, unsigned int *pNeeded);
+
+    virtual HRESULT STDMETHODCALLTYPE GetAssemblyLoadContext(CLRDATA_ADDRESS methodTable, CLRDATA_ADDRESS* assemblyLoadContext);
+
+    // ISOSDacInterface9
+    virtual HRESULT STDMETHODCALLTYPE GetBreakingChangeVersion(int* pVersion);
+
     //
     // ClrDataAccess.
     //
@@ -1445,8 +1459,12 @@ protected:
 private:
 #endif
 
-#ifdef FEATURE_COMINTEROP
 protected:
+    // Populates a DacpJitCodeHeapInfo with proper information about the
+    // code heap type and the information needed to locate it.
+    DacpJitCodeHeapInfo DACGetHeapInfoForCodeHeap(CodeHeap *heapAddr);
+
+#ifdef FEATURE_COMINTEROP
     // Returns CCW pointer based on a target address.
     PTR_ComCallWrapper DACGetCCWFromAddress(CLRDATA_ADDRESS addr);
 
@@ -1454,6 +1472,10 @@ private:
     // Returns COM interface pointer corresponding to a given CCW and internal vtable
     // index. Returns NULL if the vtable is unused or not fully laid out.
     PTR_IUnknown DACGetCOMIPFromCCW(PTR_ComCallWrapper pCCW, int vtableIndex);
+#endif
+
+#ifdef FEATURE_COMWRAPPERS
+    HRESULT DACTryGetComWrappersObjectFromCCW(CLRDATA_ADDRESS ccwPtr, OBJECTREF* objRef);
 #endif
 
     static LONG s_procInit;

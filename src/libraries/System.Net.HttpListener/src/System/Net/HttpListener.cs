@@ -1,8 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
+using System.Diagnostics.CodeAnalysis;
+using System.Runtime.Versioning;
 using System.Security.Authentication.ExtendedProtection;
 using System.Text;
 using System.Threading.Tasks;
@@ -21,17 +22,15 @@ namespace System.Net
         private readonly ServiceNameStore _defaultServiceNames;
         private readonly HttpListenerTimeoutManager _timeoutManager;
         private ExtendedProtectionPolicy _extendedProtectionPolicy;
-        private AuthenticationSchemeSelector _authenticationDelegate;
+        private AuthenticationSchemeSelector? _authenticationDelegate;
         private AuthenticationSchemes _authenticationScheme = AuthenticationSchemes.Anonymous;
-        private ExtendedProtectionSelector _extendedProtectionSelectorDelegate;
-        private string _realm;
+        private ExtendedProtectionSelector? _extendedProtectionSelectorDelegate;
+        private string? _realm;
 
         internal ICollection PrefixCollection => _uriPrefixes.Keys;
 
         public HttpListener()
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
-
             _state = State.Stopped;
             _internalLock = new object();
             _defaultServiceNames = new ServiceNameStore();
@@ -42,11 +41,9 @@ namespace System.Net
             // default: no CBT checks on any platform (appcompat reasons); applies also to PolicyEnforcement
             // config element
             _extendedProtectionPolicy = new ExtendedProtectionPolicy(PolicyEnforcement.Never);
-
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
-        public AuthenticationSchemeSelector AuthenticationSchemeSelectorDelegate
+        public AuthenticationSchemeSelector? AuthenticationSchemeSelectorDelegate
         {
             get => _authenticationDelegate;
             set
@@ -56,7 +53,8 @@ namespace System.Net
             }
         }
 
-        public ExtendedProtectionSelector ExtendedProtectionSelectorDelegate
+        [DisallowNull]
+        public ExtendedProtectionSelector? ExtendedProtectionSelectorDelegate
         {
             get => _extendedProtectionSelectorDelegate;
             set
@@ -84,6 +82,7 @@ namespace System.Net
         public ExtendedProtectionPolicy ExtendedProtectionPolicy
         {
             get => _extendedProtectionPolicy;
+            [UnsupportedOSPlatform("browser")]
             set
             {
                 CheckDisposed();
@@ -106,17 +105,14 @@ namespace System.Net
         {
             get
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
                 CheckDisposed();
-                if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
                 return _prefixes;
             }
         }
 
         internal void AddPrefix(string uriPrefix)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, $"uriPrefix:{uriPrefix}");
-            string registeredPrefix = null;
+            string? registeredPrefix = null;
             try
             {
                 if (uriPrefix == null)
@@ -180,7 +176,7 @@ namespace System.Net
                     registeredPrefixBuilder[i] = (char)CaseInsensitiveAscii.AsciiToLower[(byte)registeredPrefixBuilder[i]];
                 }
                 registeredPrefix = registeredPrefixBuilder.ToString();
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"mapped uriPrefix: {uriPrefix} to registeredPrefix: {registeredPrefix}");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"mapped uriPrefix: {uriPrefix} to registeredPrefix: {registeredPrefix}");
                 if (_state == State.Started)
                 {
                     AddPrefixCore(registeredPrefix);
@@ -190,12 +186,8 @@ namespace System.Net
             }
             catch (Exception exception)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Error(this, exception);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, exception);
                 throw;
-            }
-            finally
-            {
-                if (NetEventSource.IsEnabled) NetEventSource.Exit(this, $"prefix: {registeredPrefix}");
             }
         }
 
@@ -203,11 +195,10 @@ namespace System.Net
 
         internal bool RemovePrefix(string uriPrefix)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, $"uriPrefix: {uriPrefix}");
             try
             {
                 CheckDisposed();
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"uriPrefix: {uriPrefix}");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"uriPrefix: {uriPrefix}");
                 if (uriPrefix == null)
                 {
                     throw new ArgumentNullException(nameof(uriPrefix));
@@ -220,7 +211,7 @@ namespace System.Net
 
                 if (_state == State.Started)
                 {
-                    RemovePrefixCore((string)_uriPrefixes[uriPrefix]);
+                    RemovePrefixCore((string)_uriPrefixes[uriPrefix]!);
                 }
 
                 _uriPrefixes.Remove(uriPrefix);
@@ -228,47 +219,35 @@ namespace System.Net
             }
             catch (Exception exception)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Error(this, exception);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, exception);
                 throw;
-            }
-            finally
-            {
-                if (NetEventSource.IsEnabled) NetEventSource.Exit(this, $"uriPrefix: {uriPrefix}");
             }
             return true;
         }
 
         internal void RemoveAll(bool clear)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
-            try
+            CheckDisposed();
+            // go through the uri list and unregister for each one of them
+            if (_uriPrefixes.Count > 0)
             {
-                CheckDisposed();
-                // go through the uri list and unregister for each one of them
-                if (_uriPrefixes.Count > 0)
+                if (_state == State.Started)
                 {
-                    if (_state == State.Started)
+                    foreach (string registeredPrefix in _uriPrefixes.Values)
                     {
-                        foreach (string registeredPrefix in _uriPrefixes.Values)
-                        {
-                            RemovePrefixCore(registeredPrefix);
-                        }
-                    }
-
-                    if (clear)
-                    {
-                        _uriPrefixes.Clear();
-                        _defaultServiceNames.Clear();
+                        RemovePrefixCore(registeredPrefix);
                     }
                 }
-            }
-            finally
-            {
-                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+
+                if (clear)
+                {
+                    _uriPrefixes.Clear();
+                    _defaultServiceNames.Clear();
+                }
             }
         }
 
-        public string Realm
+        public string? Realm
         {
             get => _realm;
             set
@@ -293,27 +272,22 @@ namespace System.Net
         public Task<HttpListenerContext> GetContextAsync()
         {
             return Task.Factory.FromAsync(
-                (callback, state) => ((HttpListener)state).BeginGetContext(callback, state),
-                iar => ((HttpListener)iar.AsyncState).EndGetContext(iar),
+                (callback, state) => ((HttpListener)state!).BeginGetContext(callback, state),
+                iar => ((HttpListener)iar!.AsyncState!).EndGetContext(iar),
                 this);
         }
 
         public void Close()
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, nameof(Close));
             try
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Info("HttpListenerRequest::Close()");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info("HttpListenerRequest::Close()");
                 ((IDisposable)this).Dispose();
             }
             catch (Exception exception)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Error(this, $"Close {exception}");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"Close {exception}");
                 throw;
-            }
-            finally
-            {
-                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
             }
         }
 

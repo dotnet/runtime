@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -198,7 +197,7 @@ namespace System.Collections.Concurrent
         /// <remarks>For <see cref="ConcurrentQueue{T}"/>, this operation will attempt to remove the object
         /// from the beginning of the <see cref="ConcurrentQueue{T}"/>.
         /// </remarks>
-        bool IProducerConsumerCollection<T>.TryTake(out T item) => TryDequeue(out item);
+        bool IProducerConsumerCollection<T>.TryTake([MaybeNullWhen(false)] out T item) => TryDequeue(out item);
 
         /// <summary>
         /// Gets a value that indicates whether the <see cref="ConcurrentQueue{T}"/> is empty.
@@ -690,7 +689,7 @@ namespace System.Collections.Concurrent
                 // check and this check, another item could have arrived).
                 if (head._nextSegment == null)
                 {
-                    item = default!;
+                    item = default;
                     return false;
                 }
 
@@ -784,7 +783,7 @@ namespace System.Collections.Concurrent
                 // and we'll traverse to that segment.
             }
 
-            result = default!;
+            result = default;
             return false;
         }
 

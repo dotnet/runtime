@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Diagnostics;
@@ -199,7 +198,7 @@ namespace System.Net.Http
             return ReadAsyncCore(buffer, offset, count, token);
         }
 
-        public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, object state) =>
+        public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state) =>
             TaskToApm.Begin(ReadAsync(buffer, offset, count, CancellationToken.None), callback, state);
 
         public override int EndRead(IAsyncResult asyncResult) =>
@@ -309,18 +308,15 @@ namespace System.Net.Http
         // a pending operation, it would cause random failures in the other threads when we expect a valid handle.
         private void CancelPendingResponseStreamReadOperation()
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             lock (_state.Lock)
             {
                 if (_state.AsyncReadInProgress)
                 {
-                    if (NetEventSource.IsEnabled) NetEventSource.Info("before dispose");
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info("before dispose");
                     _requestHandle?.Dispose(); // null check necessary to handle race condition between stream disposal and cancellation
-                    if (NetEventSource.IsEnabled) NetEventSource.Info("after dispose");
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info("after dispose");
                 }
             }
-
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
     }
 }

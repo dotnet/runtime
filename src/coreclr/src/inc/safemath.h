@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ---------------------------------------------------------------------------
 // safemath.h
 //
@@ -155,8 +154,7 @@ inline bool DoubleFitsInIntType(double val)
 
  //-----------------------------------------------------------------------------
 //
-// Liberally lifted from the Office example on MSDN and modified.
-// http://msdn.microsoft.com/library/en-us/dncode/html/secure01142004.asp
+// Liberally lifted from https://github.com/dcleblanc/SafeInt and modified.
 //
 // Modified to track an overflow bit instead of throwing exceptions.  In most
 // cases the Visual C++ optimizer (Whidbey beta1 - v14.00.40607) is able to

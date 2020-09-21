@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Xml;
 using System.Collections;
@@ -12,7 +11,7 @@ namespace System.Data.Common
     {
         private const byte defaultValue = 0;
 
-        private byte[] _values;
+        private byte[] _values = default!; // Late-initialized
 
         internal ByteStorage(DataColumn column) : base(column, typeof(byte), defaultValue, StorageType.Byte)
         {
@@ -130,12 +129,12 @@ namespace System.Data.Common
                         }
                         return _nullValue;
 
-                    case AggregateType.First:
+                    case AggregateType.First: // Does not seem to be implemented
                         if (records.Length > 0)
                         {
                             return _values[records[0]];
                         }
-                        return null;
+                        return null!;
 
                     case AggregateType.Count:
                         return base.Aggregate(records, kind);
@@ -162,7 +161,7 @@ namespace System.Data.Common
             return valueNo1.CompareTo(valueNo2);
         }
 
-        public override int CompareValueTo(int recordNo, object value)
+        public override int CompareValueTo(int recordNo, object? value)
         {
             Debug.Assert(0 <= recordNo, "Invalid record");
             System.Diagnostics.Debug.Assert(null != value, "null value");
@@ -184,7 +183,7 @@ namespace System.Data.Common
             return valueNo1.CompareTo((byte)value);
         }
 
-        public override object ConvertValue(object value)
+        public override object ConvertValue(object? value)
         {
             if (_nullValue != value)
             {

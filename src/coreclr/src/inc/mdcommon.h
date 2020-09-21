@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // MDCommon.h
 //
@@ -39,7 +38,9 @@ enum MAPPINGTYPE
 #define ENC_MODEL_STREAM_A          "#-"
 #define MINIMAL_MD_STREAM_A         "#JTD"
 #define HOT_MODEL_STREAM_A          "#!"
-
+#ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
+#define PDB_STREAM_A                "#Pdb"
+#endif // FEATURE_METADATA_EMIT_PORTABLE_PDB
 
 #define SCHEMA_STREAM               W("#Schema")
 #define STRING_POOL_STREAM          W("#Strings")
@@ -50,5 +51,8 @@ enum MAPPINGTYPE
 #define ENC_MODEL_STREAM            W("#-")
 #define MINIMAL_MD_STREAM           W("#JTD")
 #define HOT_MODEL_STREAM            W("#!")
+#ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
+#define PDB_STREAM                  W("#Pdb")
+#endif // FEATURE_METADATA_EMIT_PORTABLE_PDB
 
 #endif // __MDCommon_h__

@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Xunit;
 
@@ -35,7 +34,7 @@ namespace System.DirectoryServices.AccountManagement.Tests
         public void Ctor_EmptySamAccountName_ThrowsArgumentNullException()
         {
             var context = new PrincipalContext(ContextType.Machine);
-            AssertExtensions.Throws<ArgumentNullException>("Principal.SamAccountName", null, () => new ComputerPrincipal(context, string.Empty, "password", enabled: true));
+            AssertExtensions.Throws<ArgumentNullException>("value", null, () => new ComputerPrincipal(context, string.Empty, "password", enabled: true));
         }
 
         [Fact]

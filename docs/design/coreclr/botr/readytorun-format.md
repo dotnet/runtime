@@ -9,7 +9,7 @@ Revisions:
 # Introduction
 
 This document describes ReadyToRun format 3.1 implemented in CoreCLR as of June 2019 and not yet
-implemented proposed extensions 4.1 for the support of composite R2R file format. 
+implemented proposed extensions 4.1 for the support of composite R2R file format.
 **Composite R2R file format** has basically the same structure as the traditional R2R file format
 defined in earlier revisions except that the output file represents a larger number of input MSIL
 assemblies compiled together as a logical unit.
@@ -28,8 +28,9 @@ in the COFF header represent a full copy of the input IL and MSIL metadata it wa
 
 **Composite R2R files** currently conform to Windows PE executable file format as the
 native envelope. Moving forward we plan to gradually add support for platform-native
-executable formats (ELF on Linux, MachO on OSX) as the native envelopes. As a natural corollary
-there is no global CLI / COR header in the file. The ReadyToRun header structure is pointed to
+executable formats (ELF on Linux, MachO on OSX) as the native envelopes. There is a
+global CLI / COR header in the file, but it only exists to facilitate pdb generation, and does
+not participate in any usages by the CoreCLR runtime. The ReadyToRun header structure is pointed to
 by the well-known export symbol `RTR_HEADER` and has the `READYTORUN_FLAG_COMPOSITE` flag set.
 
 Input MSIL metadata and IL streams can be either embedded in the composite R2R file or left
@@ -319,8 +320,8 @@ basic encoding, with extended encoding for large values).
 
 ## ReadyToRunSectionType.RuntimeFunctions
 
-This section contains sorted array of `RUNTIME_FUNCTION` entries that describe all code blocks in the image with pointers to their unwind info. 
-Despite the name, these code block might represent a method body, or it could be just a part of it (e.g. a funclet) that requires its own unwind data. 
+This section contains sorted array of `RUNTIME_FUNCTION` entries that describe all code blocks in the image with pointers to their unwind info.
+Despite the name, these code block might represent a method body, or it could be just a part of it (e.g. a funclet) that requires its own unwind data.
 The standard Windows xdata/pdata format is used.
 ARM format is used for x86 to compensate for the lack of x86 unwind info standard.
 The unwind info blob is immediately followed by the GC info blob. The encoding slightly differs for amd64

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Xml;
@@ -39,7 +38,7 @@ namespace System.Xml.Xsl
         /// <summary>
         /// Constructor
         /// </summary>
-        private XmlQualifiedNameTest(string name, string ns, bool exclude) : base(name, ns)
+        private XmlQualifiedNameTest(string? name, string? ns, bool exclude) : base(name, ns)
         {
             _exclude = exclude;
         }
@@ -47,7 +46,7 @@ namespace System.Xml.Xsl
         /// <summary>
         /// Construct new from name and namespace. Returns singleton Wildcard in case full wildcard
         /// </summary>
-        public static XmlQualifiedNameTest New(string name, string ns)
+        public static XmlQualifiedNameTest New(string? name, string? ns)
         {
             if (ns == null && name == null)
             {

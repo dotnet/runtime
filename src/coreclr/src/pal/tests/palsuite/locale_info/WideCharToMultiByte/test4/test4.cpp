@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================================
 **
@@ -60,7 +59,7 @@ TestWideCharToMultiByte(
   return testStatus;
 }
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(locale_info_WideCharToMultiByte_test4_paltest_widechartomultibyte_test4, "locale_info/WideCharToMultiByte/test4/paltest_widechartomultibyte_test4")
 {    
   int testStatus = PASS;
 

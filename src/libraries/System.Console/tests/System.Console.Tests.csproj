@@ -30,7 +30,7 @@
     <Compile Include="WindowAndCursorProps.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="$(MSBuildThisFileDirectory)TestData\**\*"
+    <Content Include="$(MSBuildThisFileDirectory)TestData\**\*"
           Link="%(RecursiveDir)%(Filename)%(Extension)"
           CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>

@@ -39,6 +39,16 @@ if [[ $llvm_config = *".exe" ]]; then
 	esac
 fi
 
+local_osname="$(uname -s)"
+if [ "x$local_osname" == "xLinux" ]; then
+	local_arch="$(file /bin/bash | cut -f2 -d',')"
+	llvm_config_arch="$(file $llvm_config | cut -f2 -d',')"
+	if [ "x$llvm_config_arch" != "x$local_arch" ]; then
+		use_llvm_config=0
+		linux_cross_llvm=1
+	fi
+fi
+
 if [[ $llvm_host_win32 = 1 ]]; then
 	llvm_config=$(win32_format_path "$llvm_config")
 fi
@@ -65,6 +75,51 @@ if [[ $use_llvm_config = 1 ]]; then
 	if [[ $llvm_host_win32 = 1 ]]; then
 		with_llvm=$(win32_format_path "$with_llvm")
 	fi
+fi
+
+# If building for one architecture, but running on a different architecture, we cannot execute that arch's llvm-config
+# e.g. building an ARM64 build from x64.
+if [[ $linux_cross_llvm = 1 ]] && [[ $use_llvm_config = 0 ]]; then
+	# Assume we have llvm-config sitting in llvm-install-root/bin directory, get llvm-install-root directory.
+	with_llvm="$(dirname $llvm_config)"
+	with_llvm="$(dirname $with_llvm)"
+	llvm_config_path=$with_llvm/include/llvm/Config/llvm-config.h
+
+	# llvm-config --mono-api-version
+	llvm_api_version=`awk '/MONO_API_VERSION/ { print $3 }' $llvm_config_path`
+
+	# llvm-config --cflags, returned information currently not used.
+	llvm_config_cflags=
+
+	# llvm-config --system-libs
+	llvm_system="-lz -lrt -ldl -lpthread -lm"
+
+	# llvm-config --libs analysis core bitwriter
+	llvm_core_components="-lLLVMBitWriter -lLLVMAnalysis -lLLVMProfileData -lLLVMObject -lLLVMMCParser -lLLVMMC -lLLVMDebugInfoCodeView -lLLVMDebugInfoMSF -lLLVMBitReader -lLLVMBitstreamReader -lLLVMCore -lLLVMRemarks -lLLVMBinaryFormat -lLLVMSupport -lLLVMDemangle"
+
+	# llvm-config --libs mcjit
+	llvm_old_jit="-lLLVMMCJIT -lLLVMExecutionEngine -lLLVMTarget -lLLVMAnalysis -lLLVMProfileData -lLLVMRuntimeDyld -lLLVMObject -lLLVMMCParser -lLLVMBitReader -lLLVMBitstreamReader -lLLVMMC -lLLVMDebugInfoCodeView -lLLVMDebugInfoMSF -lLLVMCore -lLLVMRemarks -lLLVMBinaryFormat -lLLVMSupport -lLLVMDemangle"
+
+	# llvm-config --libs orcjit
+	llvm_new_jit="-lLLVMOrcJIT -lLLVMTransformUtils -lLLVMJITLink -lLLVMExecutionEngine -lLLVMTarget -lLLVMAnalysis -lLLVMProfileData -lLLVMRuntimeDyld -lLLVMObject -lLLVMMCParser -lLLVMBitReader -lLLVMBitstreamReader -lLLVMMC -lLLVMDebugInfoCodeView -lLLVMDebugInfoMSF -lLLVMCore -lLLVMRemarks -lLLVMBinaryFormat -lLLVMSupport -lLLVMDemangle"
+
+	# Check codegen libs and add needed libraries.
+	case "$llvm_codegen_libs" in
+		*x86codegen*)
+			# llvm-config --libs x86codegen
+			llvm_extra="-lLLVMX86CodeGen -lLLVMGlobalISel -lLLVMX86Desc -lLLVMX86Utils -lLLVMX86Info -lLLVMMCDisassembler -lLLVMSelectionDAG -lLLVMAsmPrinter -lLLVMDebugInfoDWARF -lLLVMCodeGen -lLLVMTarget -lLLVMScalarOpts -lLLVMInstCombine -lLLVMAggressiveInstCombine -lLLVMTransformUtils -lLLVMBitWriter -lLLVMAnalysis -lLLVMProfileData -lLLVMObject -lLLVMMCParser -lLLVMMC -lLLVMDebugInfoCodeView -lLLVMDebugInfoMSF -lLLVMBitReader -lLLVMBitstreamReader -lLLVMCore -lLLVMRemarks -lLLVMBinaryFormat -lLLVMSupport -lLLVMDemangle"
+			;;
+		*armcodegen*)
+			# llvm-config --libs armcodegen
+			llvm_extra="-lLLVMARMCodeGen -lLLVMGlobalISel -lLLVMSelectionDAG -lLLVMAsmPrinter -lLLVMDebugInfoDWARF -lLLVMCodeGen -lLLVMTarget -lLLVMScalarOpts -lLLVMInstCombine -lLLVMAggressiveInstCombine -lLLVMTransformUtils -lLLVMBitWriter -lLLVMAnalysis -lLLVMProfileData -lLLVMObject -lLLVMMCParser -lLLVMBitReader -lLLVMBitstreamReader -lLLVMCore -lLLVMRemarks -lLLVMARMDesc -lLLVMMCDisassembler -lLLVMMC -lLLVMDebugInfoCodeView -lLLVMDebugInfoMSF -lLLVMBinaryFormat -lLLVMARMUtils -lLLVMARMInfo -lLLVMSupport -lLLVMDemangle"
+			;;
+		*aarch64codegen*)
+			# llvm-config --libs aarch64codegen
+			llvm_extra="-lLLVMAArch64CodeGen -lLLVMGlobalISel -lLLVMSelectionDAG -lLLVMAsmPrinter -lLLVMDebugInfoDWARF -lLLVMCodeGen -lLLVMTarget -lLLVMScalarOpts -lLLVMInstCombine -lLLVMAggressiveInstCombine -lLLVMTransformUtils -lLLVMBitWriter -lLLVMAnalysis -lLLVMProfileData -lLLVMObject -lLLVMMCParser -lLLVMBitReader -lLLVMBitstreamReader -lLLVMCore -lLLVMRemarks -lLLVMAArch64Desc -lLLVMMC -lLLVMDebugInfoCodeView -lLLVMDebugInfoMSF -lLLVMBinaryFormat -lLLVMAArch64Utils -lLLVMAArch64Info -lLLVMSupport -lLLVMDemangle"
+			;;
+		*)
+			llvm_extra=$llvm_codegen_libs
+	esac
 fi
 
 # When cross compiling for Windows on system not capable of running Windows binaries, llvm-config.exe can't be used to query for

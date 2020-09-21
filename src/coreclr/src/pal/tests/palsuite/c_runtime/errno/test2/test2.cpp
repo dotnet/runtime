@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================================
 **
@@ -17,7 +16,7 @@
    This thread function just checks that errno is initially 0 and then sets
    it to a new value before returning.
 */
-DWORD PALAPI ThreadFunc( LPVOID lpParam ) 
+DWORD PALAPI ThreadFunc_errno_test2( LPVOID lpParam ) 
 { 
        
     if(errno != 0) 
@@ -31,7 +30,7 @@ DWORD PALAPI ThreadFunc( LPVOID lpParam )
 } 
 
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime_errno_test2_paltest_errno_test2, "c_runtime/errno/test2/paltest_errno_test2")
 {
     DWORD dwThreadId, dwThrdParam = 0; 
     HANDLE hThread; 
@@ -46,7 +45,7 @@ int __cdecl main(int argc, char *argv[])
 
     errno = 50;
     
-    hThread = CreateThread(NULL, 0, ThreadFunc, &dwThrdParam, 0, &dwThreadId);
+    hThread = CreateThread(NULL, 0, ThreadFunc_errno_test2, &dwThrdParam, 0, &dwThreadId);
     
     if (hThread == NULL) 
     {

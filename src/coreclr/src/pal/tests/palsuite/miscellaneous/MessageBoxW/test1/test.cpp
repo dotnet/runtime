@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================
 **
@@ -15,7 +14,7 @@
 
 #include <palsuite.h>
 
-int __cdecl main(int argc, char *argv[]) 
+PALTEST(miscellaneous_MessageBoxW_test1_paltest_messageboxw_test1, "miscellaneous/MessageBoxW/test1/paltest_messageboxw_test1")
 {
     /* Declare Variables to use with convert()*/
     WCHAR * PalTitle = NULL;

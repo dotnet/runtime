@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
 using System.Buffers;
@@ -50,12 +49,12 @@ namespace System.Net.Sockets
             if (socket.IsInvalid)
             {
                 SocketError error = GetLastSocketError();
-                if (NetEventSource.IsEnabled) NetEventSource.Error(null, $"WSASocketW failed with error {error}");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, $"WSASocketW failed with error {error}");
                 socket.Dispose();
                 return error;
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(null, socket);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, socket);
             return SocketError.Success;
         }
 
@@ -93,7 +92,7 @@ namespace System.Net.Sockets
                 if (socket.IsInvalid)
                 {
                     SocketError error = GetLastSocketError();
-                    if (NetEventSource.IsEnabled) NetEventSource.Error(null, $"WSASocketW failed with error {error}");
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, $"WSASocketW failed with error {error}");
                     socket.Dispose();
                     return error;
                 }
@@ -103,13 +102,13 @@ namespace System.Net.Sockets
                     // Returning SocketError for consistency, since the call site can deal with conversion, and
                     // the most common SetHandleInformation error (AccessDenied) is included in SocketError anyways:
                     SocketError error = GetLastSocketError();
-                    if (NetEventSource.IsEnabled) NetEventSource.Error(null, $"SetHandleInformation failed with error {error}");
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, $"SetHandleInformation failed with error {error}");
                     socket.Dispose();
 
                     return error;
                 }
 
-                if (NetEventSource.IsEnabled) NetEventSource.Info(null, socket);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, socket);
 
                 Interop.Winsock.WSAPROTOCOL_INFOW* protocolInfo = (Interop.Winsock.WSAPROTOCOL_INFOW*)protocolInfoBytes;
                 addressFamily = protocolInfo->iAddressFamily;
@@ -182,7 +181,7 @@ namespace System.Net.Sockets
             IntPtr handle = Interop.Winsock.accept(listenSocket, socketAddress, ref socketAddressSize);
 
             socket = new SafeSocketHandle(handle, ownsHandle: true);
-            if (NetEventSource.IsEnabled) NetEventSource.Info(null, socket);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, socket);
 
             return socket.IsInvalid ? GetLastSocketError() : SocketError.Success;
         }
@@ -338,7 +337,7 @@ namespace System.Net.Sockets
             return SocketError.Success;
         }
 
-        public static SocketError Receive(SafeSocketHandle handle, IList<ArraySegment<byte>> buffers, ref SocketFlags socketFlags, out int bytesTransferred)
+        public static SocketError Receive(SafeSocketHandle handle, IList<ArraySegment<byte>> buffers, SocketFlags socketFlags, out int bytesTransferred)
         {
             const int StackThreshold = 16; // arbitrary limit to avoid too much space on stack (note: may be over-sized, that's OK - length passed separately)
             int count = buffers.Count;
@@ -437,6 +436,12 @@ namespace System.Net.Sockets
 
         public static unsafe IPPacketInformation GetIPPacketInformation(Interop.Winsock.ControlDataIPv6* controlBuffer)
         {
+            if (controlBuffer->length == (UIntPtr)sizeof(Interop.Winsock.ControlData))
+            {
+                // IPv4 client connectiong to dual mode socket.
+                return GetIPPacketInformation((Interop.Winsock.ControlData*)controlBuffer);
+            }
+
             IPAddress address = controlBuffer->length != UIntPtr.Zero ?
                 new IPAddress(new ReadOnlySpan<byte>(controlBuffer->address, Interop.Winsock.IPv6AddressLength)) :
                 IPAddress.IPv6None;
@@ -452,7 +457,6 @@ namespace System.Net.Sockets
             bytesTransferred = 0;
             receiveAddress = socketAddress;
             ipPacketInformation = default(IPPacketInformation);
-
             fixed (byte* ptrBuffer = buffer)
             fixed (byte* ptrSocketAddress = socketAddress.Buffer)
             {
@@ -987,7 +991,7 @@ namespace System.Net.Sockets
                                 IntPtr.Zero);
                     }
                 }
-                if (NetEventSource.IsEnabled)
+                if (NetEventSource.Log.IsEnabled())
                     NetEventSource.Info(null, $"Interop.Winsock.select returns socketCount:{socketCount}");
 
                 if ((SocketError)socketCount == SocketError.SocketError)

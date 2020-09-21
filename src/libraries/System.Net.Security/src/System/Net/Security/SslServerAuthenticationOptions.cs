@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Security.Authentication;
@@ -30,6 +29,8 @@ namespace System.Net.Security
         public ServerCertificateSelectionCallback? ServerCertificateSelectionCallback { get; set; }
 
         public X509Certificate? ServerCertificate { get; set; }
+
+        public SslStreamCertificateContext? ServerCertificateContext { get; set; }
 
         public SslProtocols EnabledSslProtocols
         {

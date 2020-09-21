@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // --------------------------------------------------------------------------------------
 //
@@ -153,7 +152,7 @@ namespace System
             }
         }
 
-        internal static T CreateViaDefaultConstructor<T>()
+        internal static T CreateViaDefaultConstructor<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]T>()
         {
             try
             {
@@ -184,7 +183,7 @@ namespace System
     /// </remarks>
     [DebuggerTypeProxy(typeof(LazyDebugView<>))]
     [DebuggerDisplay("ThreadSafetyMode={Mode}, IsValueCreated={IsValueCreated}, IsValueFaulted={IsValueFaulted}, Value={ValueForDebugDisplay}")]
-    public class Lazy<T>
+    public class Lazy<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]T>
     {
         private static T CreateViaDefaultConstructor() => LazyHelper.CreateViaDefaultConstructor<T>();
 
@@ -196,7 +195,7 @@ namespace System
         private Func<T>? _factory;
 
         // _value eventually stores the lazily created value. It is valid when _state = null.
-        private T _value = default!;
+        private T? _value;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="System.Lazy{T}"/> class that
@@ -448,14 +447,13 @@ namespace System
         }
 
         /// <summary>Gets the value of the Lazy&lt;T&gt; for debugging display purposes.</summary>
-        [MaybeNull]
-        internal T ValueForDebugDisplay
+        internal T? ValueForDebugDisplay
         {
             get
             {
                 if (!IsValueCreated)
                 {
-                    return default!;
+                    return default;
                 }
                 return _value;
             }
@@ -504,12 +502,12 @@ namespace System
         /// from initialization delegate.
         /// </remarks>
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        public T Value => _state == null ? _value : CreateValue();
+        public T Value => _state == null ? _value! : CreateValue();
     }
 
     /// <summary>A debugger view of the Lazy&lt;T&gt; to surface additional debugging properties and
     /// to ensure that the Lazy&lt;T&gt; does not become initialized if it was not already.</summary>
-    internal sealed class LazyDebugView<T>
+    internal sealed class LazyDebugView<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] T>
     {
         // The Lazy object being viewed.
         private readonly Lazy<T> _lazy;
@@ -525,8 +523,7 @@ namespace System
         public bool IsValueCreated => _lazy.IsValueCreated;
 
         /// <summary>Returns the value of the Lazy object.</summary>
-        [MaybeNull]
-        public T Value => _lazy.ValueForDebugDisplay;
+        public T? Value => _lazy.ValueForDebugDisplay;
 
         /// <summary>Returns the execution mode of the Lazy object</summary>
         public LazyThreadSafetyMode? Mode => _lazy.Mode;

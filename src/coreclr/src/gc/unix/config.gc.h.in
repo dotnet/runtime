@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #ifndef __CONFIG_H__
 #define __CONFIG_H__
@@ -19,7 +18,8 @@
 #cmakedefine01 HAVE_PTHREAD_CONDATTR_SETCLOCK
 #cmakedefine01 HAVE_MACH_ABSOLUTE_TIME
 #cmakedefine01 HAVE_SCHED_GETAFFINITY
-#cmakedefine01 HAVE_PTHREAD_GETAFFINITY_NP
+#cmakedefine01 HAVE_SCHED_SETAFFINITY
+#cmakedefine01 HAVE_PTHREAD_SETAFFINITY_NP
 #cmakedefine01 HAVE_PTHREAD_NP_H
 #cmakedefine01 HAVE_CPUSET_T
 #cmakedefine01 HAVE__SC_AVPHYS_PAGES

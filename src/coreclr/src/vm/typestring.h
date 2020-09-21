@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ---------------------------------------------------------------------------
 // typestring.cpp
 // ---------------------------------------------------------------------------
@@ -37,7 +36,7 @@ private:
     friend SString* TypeName::ToString(SString*, BOOL, BOOL, BOOL);
     friend TypeHandle TypeName::GetTypeWorker(BOOL, BOOL, Assembly*, BOOL, BOOL, Assembly*,
         ICLRPrivBinder * pPrivHostBinder,
-        BOOL, OBJECTREF *);
+        OBJECTREF *);
     HRESULT OpenGenericArguments();
     HRESULT CloseGenericArguments();
     HRESULT OpenGenericArgument();

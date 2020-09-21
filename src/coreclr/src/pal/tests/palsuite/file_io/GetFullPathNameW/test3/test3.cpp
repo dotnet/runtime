@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*=====================================================================
 **
@@ -30,17 +29,17 @@
 #define UNICODE
 #include <palsuite.h>
 
+PALTEST(file_io_GetFullPathNameW_test3_paltest_getfullpathnamew_test3, "file_io/GetFullPathNameW/test3/paltest_getfullpathnamew_test3")
+{
 #ifdef WIN32
-const WCHAR szSeperator[] = {'\\','\\','\0'};
+    const WCHAR szSeperator[] = {'\\','\\','\0'};
 #else
-const WCHAR szSeperator[] = {'/','/','\0'};
+    const WCHAR szSeperator[] = {'/','/','\0'};
 #endif
 
-const WCHAR szDotDot[]   = {'.','.','\0'};
-const WCHAR szFileName[] = {'t','e','s','t','i','n','g','.','t','m','p','\0'};
+    const WCHAR szDotDot[]   = {'.','.','\0'};
+    const WCHAR szFileName[] = {'t','e','s','t','i','n','g','.','t','m','p','\0'};
 
-int __cdecl main(int argc, char *argv[])
-{
     DWORD   dwRc = 0;
 
     WCHAR   szReturnedPath[_MAX_DIR+1];
@@ -106,8 +105,8 @@ int __cdecl main(int argc, char *argv[])
 
     /* Initialize the receiving char buffers.
     */
-    memset(szReturnedPath, 0, _MAX_DIR+1);
-    memset(szFullFileName, 0, _MAX_DIR+1);
+    memset(szReturnedPath, 0, sizeof(szReturnedPath));
+    memset(szFullFileName, 0, sizeof(szFullFileName));
 
     /* Create Full filename to pass, will include '..\'
     * in the middle of the path.

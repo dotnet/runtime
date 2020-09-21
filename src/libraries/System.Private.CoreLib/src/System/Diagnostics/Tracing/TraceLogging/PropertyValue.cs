@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #if ES_BUILD_STANDALONE
 using System;
@@ -21,13 +20,7 @@ namespace System.Diagnostics.Tracing
     ///
     /// To get the value of a property quickly, use a delegate produced by <see cref="PropertyValue.GetPropertyGetter(PropertyInfo)"/>.
     /// </summary>
-#if ES_BUILD_PN
-    [CLSCompliant(false)]
-    public
-#else
-    internal
-#endif
-    readonly unsafe struct PropertyValue
+    internal readonly unsafe struct PropertyValue
     {
         /// <summary>
         /// Union of well-known value types, to avoid boxing those types.
@@ -208,12 +201,7 @@ namespace System.Diagnostics.Tracing
             return helper.GetPropertyGetter(property);
         }
 
-#if ES_BUILD_PN
-        public
-#else
-        private
-#endif
-        abstract class TypeHelper
+        private abstract class TypeHelper
         {
             public abstract Func<PropertyValue, PropertyValue> GetPropertyGetter(PropertyInfo property);
 
@@ -223,18 +211,13 @@ namespace System.Diagnostics.Tracing
             }
         }
 
-#if ES_BUILD_PN
-        public
-#else
-        private
-#endif
-        sealed class ReferenceTypeHelper<TContainer> : TypeHelper where TContainer : class?
+        private sealed class ReferenceTypeHelper<TContainer> : TypeHelper where TContainer : class?
         {
             public override Func<PropertyValue, PropertyValue> GetPropertyGetter(PropertyInfo property)
             {
                 Type type = property.PropertyType;
 
-                if (!Statics.IsValueType(type))
+                if (!type.IsValueType)
                 {
                     var getter = (Func<TContainer, object?>)GetGetMethod(property, type);
                     return container => new PropertyValue(getter((TContainer)container.ReferenceValue!));

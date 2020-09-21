@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Xml;
@@ -18,7 +17,7 @@ namespace System.Xml.Schema
     {
         // Fields
         private readonly bool _listsAllowed;
-        private readonly XmlUntypedStringConverter _listItemConverter;
+        private readonly XmlUntypedStringConverter? _listItemConverter;
 
         // Cached types
         private static readonly Type s_decimalType = typeof(decimal);
@@ -155,7 +154,8 @@ namespace System.Xml.Schema
 
         private static XmlQualifiedName StringToQName(string value, IXmlNamespaceResolver nsResolver)
         {
-            string prefix, localName, ns;
+            string prefix, localName;
+            string? ns;
 
             value = value.Trim();
 
@@ -186,7 +186,7 @@ namespace System.Xml.Schema
         {
             if (_listsAllowed && destinationType.IsArray)
             {
-                Type itemTypeDst = destinationType.GetElementType();
+                Type? itemTypeDst = destinationType.GetElementType();
 
                 // Different StringSplitOption needs to be used because of following bugs:
                 // 566053: Behavior change between SL2 and Dev10 in the way string arrays are deserialized by the XmlReader.ReadContentsAs method
@@ -233,7 +233,7 @@ namespace System.Xml.Schema
             T[] arrDst = new T[stringArray.Length];
             for (int i = 0; i < stringArray.Length; i++)
             {
-                arrDst[i] = (T)_listItemConverter.FromString(stringArray[i], typeof(T), nsResolver);
+                arrDst[i] = (T)_listItemConverter!.FromString(stringArray[i], typeof(T), nsResolver);
             }
             return arrDst;
         }

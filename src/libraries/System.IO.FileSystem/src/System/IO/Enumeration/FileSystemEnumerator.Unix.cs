@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Collections.Generic;
@@ -26,7 +25,7 @@ namespace System.IO.Enumeration
         private Queue<string>? _pending;
 
         private Interop.Sys.DirectoryEntry _entry;
-        private TResult _current = default!;
+        private TResult? _current;
 
         // Used for creating full paths
         private char[]? _pathBuffer;

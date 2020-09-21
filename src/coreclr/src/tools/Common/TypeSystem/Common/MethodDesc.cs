@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -20,6 +19,7 @@ namespace Internal.TypeSystem
         UnmanagedCallingConventionStdCall    = 0x0002,
         UnmanagedCallingConventionThisCall   = 0x0003,
         CallingConventionVarargs             = 0x0005,
+        UnmanagedCallingConvention           = 0x0009,
 
         Static = 0x0010,
     }
@@ -48,6 +48,17 @@ namespace Internal.TypeSystem
         internal TypeDesc[] _parameters;
         internal EmbeddedSignatureData[] _embeddedSignatureData;
 
+        // Value of <see cref="EmbeddedSignatureData.index" /> for any custom modifiers on the return type
+        public const string IndexOfCustomModifiersOnReturnType = "0.1.1.1";
+
+        // Value of <see cref="EmbeddedSignatureData.index" /> for any custom modifiers on
+        // SomeStruct when SomeStruct *, or SomeStruct & is the type of a parameter or return type
+        // Parameter index 0 represents the return type, and indices 1-n represent the parameters to the signature
+        public static string GetIndexOfCustomModifierOnPointedAtTypeByParameterIndex(int parameterIndex)
+        {
+            return $"0.1.1.2.{(parameterIndex + 1).ToStringInvariant()}.1";
+        }
+
         public MethodSignature(MethodSignatureFlags flags, int genericParameterCount, TypeDesc returnType, TypeDesc[] parameters, EmbeddedSignatureData[] embeddedSignatureData = null)
         {
             _flags = flags;
@@ -57,6 +68,44 @@ namespace Internal.TypeSystem
             _embeddedSignatureData = embeddedSignatureData;
 
             Debug.Assert(parameters != null, "Parameters must not be null");
+        }
+
+        public MethodSignature ApplySubstitution(Instantiation substitution)
+        {
+            if (substitution.IsNull)
+                return this;
+
+            bool needsNewMethodSignature = false;
+            TypeDesc[] newParameters = _parameters; // Re-use existing array until conflict appears
+            TypeDesc returnTypeNew = _returnType.InstantiateSignature(substitution, default(Instantiation));
+            if (returnTypeNew != _returnType)
+            {
+                needsNewMethodSignature = true;
+                newParameters = (TypeDesc[])_parameters.Clone();
+            }
+
+            for (int i = 0; i < newParameters.Length; i++)
+            {
+                TypeDesc newParameter = newParameters[i].InstantiateSignature(substitution, default(Instantiation));
+                if (newParameter != newParameters[i])
+                {
+                    if (!needsNewMethodSignature)
+                    {
+                        needsNewMethodSignature = true;
+                        newParameters = (TypeDesc[])_parameters.Clone();
+                    }
+                    newParameters[i] = newParameter;
+                }
+            }
+
+            if (needsNewMethodSignature)
+            {
+                return new MethodSignature(_flags, _genericParameterCount, returnTypeNew, newParameters, _embeddedSignatureData);
+            }
+            else
+            {
+                return this;
+            }
         }
 
         public MethodSignatureFlags Flags
@@ -114,7 +163,33 @@ namespace Internal.TypeSystem
             }
         }
 
+        public bool HasEmbeddedSignatureData
+        {
+            get
+            {
+                return _embeddedSignatureData != null;
+            }
+        }
+
+        public EmbeddedSignatureData[] GetEmbeddedSignatureData()
+        {
+            if ((_embeddedSignatureData == null) || (_embeddedSignatureData.Length == 0))
+                return null;
+
+            return (EmbeddedSignatureData[])_embeddedSignatureData.Clone();
+        }
+
         public bool Equals(MethodSignature otherSignature)
+        {
+            return Equals(otherSignature, allowCovariantReturn: false);
+        }
+
+        public bool EqualsWithCovariantReturnType(MethodSignature otherSignature)
+        {
+            return Equals(otherSignature, allowCovariantReturn: true);
+        }
+
+        private bool Equals(MethodSignature otherSignature, bool allowCovariantReturn)
         {
             // TODO: Generics, etc.
             if (this._flags != otherSignature._flags)
@@ -124,7 +199,13 @@ namespace Internal.TypeSystem
                 return false;
 
             if (this._returnType != otherSignature._returnType)
-                return false;
+            {
+                if (!allowCovariantReturn)
+                    return false;
+
+                if (!otherSignature._returnType.IsCompatibleWith(this._returnType))
+                    return false;
+            }
 
             if (this._parameters.Length != otherSignature._parameters.Length)
                 return false;

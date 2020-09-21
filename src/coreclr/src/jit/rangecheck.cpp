@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 //
 
@@ -348,7 +347,13 @@ bool RangeCheck::IsBinOpMonotonicallyIncreasing(GenTreeOp* binop)
             return IsMonotonicallyIncreasing(op1, true) && IsMonotonicallyIncreasing(op2, true);
 
         case GT_CNS_INT:
-            return (op2->AsIntConCommon()->IconValue() >= 0) && IsMonotonicallyIncreasing(op1, false);
+            if (op2->AsIntConCommon()->IconValue() < 0)
+            {
+                JITDUMP("Not monotonically increasing because of encountered negative constant\n");
+                return false;
+            }
+
+            return IsMonotonicallyIncreasing(op1, false);
 
         default:
             JITDUMP("Not monotonically increasing because expression is not recognized.\n");
@@ -420,6 +425,10 @@ bool RangeCheck::IsMonotonicallyIncreasing(GenTree* expr, bool rejectNegativeCon
         }
         return true;
     }
+    else if (expr->OperGet() == GT_COMMA)
+    {
+        return IsMonotonicallyIncreasing(expr->gtEffectiveVal(), rejectNegativeConst);
+    }
     JITDUMP("Unknown tree type\n");
     return false;
 }
@@ -434,7 +443,12 @@ LclSsaVarDsc* RangeCheck::GetSsaDefAsg(GenTreeLclVarCommon* lclUse)
         return nullptr;
     }
 
-    LclSsaVarDsc* ssaDef = m_pCompiler->lvaGetDesc(lclUse)->GetPerSsaData(ssaNum);
+    LclVarDsc* varDsc = m_pCompiler->lvaGetDesc(lclUse);
+    if (varDsc->CanBeReplacedWithItsField(m_pCompiler))
+    {
+        varDsc = m_pCompiler->lvaGetDesc(varDsc->lvFieldLclStart);
+    }
+    LclSsaVarDsc* ssaDef = varDsc->GetPerSsaData(ssaNum);
 
     // RangeCheck does not care about uninitialized variables.
     if (ssaDef->GetAssignment() == nullptr)
@@ -451,6 +465,7 @@ LclSsaVarDsc* RangeCheck::GetSsaDefAsg(GenTreeLclVarCommon* lclUse)
 
 #ifdef DEBUG
     Location* loc = GetDef(lclUse);
+    assert(loc != nullptr);
     assert(loc->parent == ssaDef->GetAssignment());
     assert(loc->block == ssaDef->GetBlock());
 #endif
@@ -461,6 +476,11 @@ LclSsaVarDsc* RangeCheck::GetSsaDefAsg(GenTreeLclVarCommon* lclUse)
 #ifdef DEBUG
 UINT64 RangeCheck::HashCode(unsigned lclNum, unsigned ssaNum)
 {
+    LclVarDsc* varDsc = m_pCompiler->lvaGetDesc(lclNum);
+    if (varDsc->CanBeReplacedWithItsField(m_pCompiler))
+    {
+        lclNum = varDsc->lvFieldLclStart;
+    }
     assert(ssaNum != SsaConfig::RESERVED_SSA_NUM);
     return UINT64(lclNum) << 32 | ssaNum;
 }
@@ -488,7 +508,8 @@ RangeCheck::Location* RangeCheck::GetDef(unsigned lclNum, unsigned ssaNum)
 
 RangeCheck::Location* RangeCheck::GetDef(GenTreeLclVarCommon* lcl)
 {
-    return GetDef(lcl->GetLclNum(), lcl->GetSsaNum());
+    unsigned lclNum = lcl->GetLclNum();
+    return GetDef(lclNum, lcl->GetSsaNum());
 }
 
 // Add the def location to the hash table.
@@ -535,7 +556,12 @@ void RangeCheck::MergeEdgeAssertions(GenTreeLclVarCommon* lcl, ASSERT_VALARG_TP 
         Limit      limit(Limit::keUndef);
         genTreeOps cmpOper = GT_NONE;
 
-        LclSsaVarDsc* ssaData     = m_pCompiler->lvaTable[lcl->GetLclNum()].GetPerSsaData(lcl->GetSsaNum());
+        LclVarDsc* varDsc = m_pCompiler->lvaGetDesc(lcl);
+        if (varDsc->CanBeReplacedWithItsField(m_pCompiler))
+        {
+            varDsc = m_pCompiler->lvaGetDesc(varDsc->lvFieldLclStart);
+        }
+        LclSsaVarDsc* ssaData     = varDsc->GetPerSsaData(lcl->GetSsaNum());
         ValueNum      normalLclVN = m_pCompiler->vnStore->VNConservativeNormalValue(ssaData->m_vnPair);
 
         // Current assertion is of the form (i < len - cns) != 0
@@ -729,7 +755,7 @@ void RangeCheck::MergeEdgeAssertions(GenTreeLclVarCommon* lcl, ASSERT_VALARG_TP 
 }
 
 // Merge assertions from the pred edges of the block, i.e., check for any assertions about "op's" value numbers for phi
-// arguments. If not a phi argument, check if we assertions about local variables.
+// arguments. If not a phi argument, check if we have assertions about local variables.
 void RangeCheck::MergeAssertion(BasicBlock* block, GenTree* op, Range* pRange DEBUGARG(int indent))
 {
     JITDUMP("Merging assertions from pred edges of " FMT_BB " for op [%06d] " FMT_VN "\n", block->bbNum,
@@ -1216,6 +1242,10 @@ Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreas
         }
 
         JITDUMP("%s\n", range.ToString(m_pCompiler->getAllocatorDebugOnly()));
+    }
+    else if (expr->OperGet() == GT_COMMA)
+    {
+        range = GetRange(block, expr->gtEffectiveVal(), monIncreasing DEBUGARG(indent + 1));
     }
     else
     {

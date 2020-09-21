@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -18,8 +17,8 @@ namespace System.Buffers
     public readonly partial struct ReadOnlySequence<T>
     {
         // The data is essentially two SequencePositions, however the Start and End SequencePositions are deconstructed to improve packing.
-        [AllowNull] private readonly object? _startObject;
-        [AllowNull] private readonly object? _endObject;
+        private readonly object? _startObject;
+        private readonly object? _endObject;
         private readonly int _startInteger;
         private readonly int _endInteger;
 
@@ -121,7 +120,7 @@ namespace System.Buffers
             _startObject = array;
             _endObject = array;
             _startInteger = ReadOnlySequence.ArrayToSequenceStart(0);
-            _endInteger = ReadOnlySequence.ArrayToSequenceEnd(array!.Length); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+            _endInteger = ReadOnlySequence.ArrayToSequenceEnd(array.Length);
         }
 
         /// <summary>
@@ -146,9 +145,7 @@ namespace System.Buffers
         /// </summary>
         public ReadOnlySequence(ReadOnlyMemory<T> memory)
         {
-#pragma warning disable CS8631 // TODO-NULLABLE: ILLink rewriter removing some necessary metadata (https://github.com/dotnet/corefx/pull/38983#issuecomment-506757237)
             if (MemoryMarshal.TryGetMemoryManager(memory, out MemoryManager<T>? manager, out int index, out int length))
-#pragma warning restore CS8631
             {
                 _startObject = manager;
                 _endObject = manager;
@@ -526,6 +523,64 @@ namespace System.Buffers
                 ThrowHelper.ThrowArgumentOutOfRangeException_OffsetOutOfRange();
 
             return Seek(offset);
+        }
+
+        /// <summary>
+        /// Returns the offset of a <paramref name="position" /> within this sequence from the start.
+        /// </summary>
+        /// <param name="position">The <see cref="System.SequencePosition"/> of which to get the offset.</param>
+        /// <returns>The offset from the start of the sequence.</returns>
+        /// <exception cref="System.ArgumentOutOfRangeException">The position is out of range.</exception>
+        public long GetOffset(SequencePosition position)
+        {
+            object? positionSequenceObject = position.GetObject();
+            bool positionIsNull = positionSequenceObject == null;
+            BoundsCheck(position, !positionIsNull);
+
+            object? startObject = _startObject;
+            object? endObject = _endObject;
+
+            uint positionIndex = (uint)GetIndex(position);
+
+            // if sequence object is null we suppose start segment
+            if (positionIsNull)
+            {
+                positionSequenceObject = _startObject;
+                positionIndex = (uint)GetIndex(_startInteger);
+            }
+
+            // Single-Segment Sequence
+            if (startObject == endObject)
+            {
+                return positionIndex;
+            }
+            else
+            {
+                // Verify position validity, this is not covered by BoundsCheck for Multi-Segment Sequence
+                // BoundsCheck for Multi-Segment Sequence check only validity inside current sequence but not for SequencePosition validity.
+                // For single segment position bound check is implicit.
+                Debug.Assert(positionSequenceObject != null);
+
+                if (((ReadOnlySequenceSegment<T>)positionSequenceObject).Memory.Length - positionIndex < 0)
+                    ThrowHelper.ThrowArgumentOutOfRangeException_PositionOutOfRange();
+
+                // Multi-Segment Sequence
+                ReadOnlySequenceSegment<T>? currentSegment = (ReadOnlySequenceSegment<T>?)startObject;
+                while (currentSegment != null && currentSegment != positionSequenceObject)
+                {
+                    currentSegment = currentSegment.Next!;
+                }
+
+                // Hit the end of the segments but didn't find the segment
+                if (currentSegment is null)
+                {
+                    ThrowHelper.ThrowArgumentOutOfRangeException_PositionOutOfRange();
+                }
+
+                Debug.Assert(currentSegment!.RunningIndex + positionIndex >= 0);
+
+                return currentSegment!.RunningIndex + positionIndex;
+            }
         }
 
         /// <summary>

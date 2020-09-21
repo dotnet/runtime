@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -22,7 +21,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts
                 throw new InvalidOperationException("Can't test file before entering a directory.");
             }
 
-            if(!Frame.IsNotApplicable && IsEndingGroup() && TestMatchingGroup(file))
+            if (!Frame.IsNotApplicable && IsEndingGroup() && TestMatchingGroup(file))
             {
                 return PatternTestResult.Success(CalculateStem(file));
             }
@@ -32,7 +31,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts
         public sealed override void PushDirectory(DirectoryInfoBase directory)
         {
             // copy the current frame
-            var frame = Frame;
+            FrameData frame = Frame;
 
             if (IsStackEmpty())
             {
@@ -159,17 +158,17 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts
 
         protected bool TestMatchingGroup(FileSystemInfoBase value)
         {
-            var groupLength = Frame.SegmentGroup.Count;
-            var backtrackLength = Frame.BacktrackAvailable + 1;
+            int groupLength = Frame.SegmentGroup.Count;
+            int backtrackLength = Frame.BacktrackAvailable + 1;
             if (backtrackLength < groupLength)
             {
                 return false;
             }
 
-            var scan = value;
+            FileSystemInfoBase scan = value;
             for (int index = 0; index != groupLength; ++index)
             {
-                var segment = Frame.SegmentGroup[groupLength - index - 1];
+                IPathSegment segment = Frame.SegmentGroup[groupLength - index - 1];
                 if (!segment.Match(scan.Name))
                 {
                     return false;

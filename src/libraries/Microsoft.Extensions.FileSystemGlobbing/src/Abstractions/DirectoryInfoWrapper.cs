@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -36,7 +35,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Abstractions
         {
             if (_directoryInfo.Exists)
             {
-                foreach (var fileSystemInfo in _directoryInfo.EnumerateFileSystemInfos("*", SearchOption.TopDirectoryOnly))
+                foreach (FileSystemInfo fileSystemInfo in _directoryInfo.EnumerateFileSystemInfos("*", SearchOption.TopDirectoryOnly))
                 {
                     var directoryInfo = fileSystemInfo as DirectoryInfo;
                     if (directoryInfo != null)
@@ -61,7 +60,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Abstractions
         /// <returns>The directory</returns>
         public override DirectoryInfoBase GetDirectory(string name)
         {
-            var isParentPath = string.Equals(name, "..", StringComparison.Ordinal);
+            bool isParentPath = string.Equals(name, "..", StringComparison.Ordinal);
 
             if (isParentPath)
             {
@@ -71,7 +70,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Abstractions
             }
             else
             {
-                var dirs = _directoryInfo.GetDirectories(name);
+                DirectoryInfo[] dirs = _directoryInfo.GetDirectories(name);
 
                 if (dirs.Length == 1)
                 {

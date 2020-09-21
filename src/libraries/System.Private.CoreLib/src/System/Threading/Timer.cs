@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Tracing;
 using System.Threading.Tasks;
 
@@ -535,7 +535,7 @@ namespace System.Threading
                         // simplify by just failing in that case.
                         var e = new InvalidOperationException(SR.InvalidOperation_TimerAlreadyClosed);
                         e.SetCurrentStackTrace();
-                        return new ValueTask(Task.FromException(e));
+                        return ValueTask.FromException(e);
                     }
                 }
                 else
@@ -639,7 +639,7 @@ namespace System.Threading
             }
         }
 
-        private static readonly ContextCallback s_callCallbackInContext = state =>
+        private static readonly ContextCallback s_callCallbackInContext = static state =>
         {
             Debug.Assert(state is TimerQueueTimer);
             var t = (TimerQueueTimer)state;
@@ -695,7 +695,7 @@ namespace System.Threading
     {
         private const uint MAX_SUPPORTED_TIMEOUT = (uint)0xfffffffe;
 
-        private TimerHolder _timer = null!; // initialized in helper called by ctors
+        private TimerHolder _timer;
 
         public Timer(TimerCallback callback,
                      object? state,
@@ -774,6 +774,7 @@ namespace System.Threading
             TimerSetup(callback, this, DueTime, Period);
         }
 
+        [MemberNotNull(nameof(_timer))]
         private void TimerSetup(TimerCallback callback,
                                 object? state,
                                 uint dueTime,

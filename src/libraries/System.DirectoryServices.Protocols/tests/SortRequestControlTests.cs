@@ -1,12 +1,13 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Reflection;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.DirectoryServices.Protocols.Tests
 {
+    [ConditionalClass(typeof(DirectoryServicesTestHelpers), nameof(DirectoryServicesTestHelpers.IsWindowsOrLibLdapIsInstalled))]
     public class SortRequestControlTests
     {
         [Theory]
@@ -30,13 +31,13 @@ namespace System.DirectoryServices.Protocols.Tests
             }
 
             control.IsCritical = critical;
-            Assert.Equal(new byte[]
-            {
-                48, 132, 0, 0, 0, 43, 48, 132, 0, 0, 0, 17, 4, 5,110,
+            var expected = (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) ?
+                new byte[] { 48, 132, 0, 0, 0, 43, 48, 132, 0, 0, 0, 17, 4, 5,110,
                 97, 109, 101, 49, 128, 5, 114, 117, 108, 101, 49, 129,
                 1, 255, 48, 132, 0, 0, 0, 14, 4, 5, 110, 97, 109, 101,
-                50, 128, 5, 114, 117, 108, 101, 50
-            }, control.GetValue());
+                50, 128, 5, 114, 117, 108, 101, 50} :
+                new byte[] { 48, 19, 48, 9, 4, 1, 110, 128, 1, 114, 129, 1, 255, 48, 6, 4, 1, 110, 128, 1, 114 };
+            Assert.Equal(expected, control.GetValue());
         }
 
         [Fact]

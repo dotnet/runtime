@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // THREADS.CPP
 //
@@ -48,6 +47,7 @@
 
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
 #include "olecontexthelpers.h"
+#include "roapi.h"
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
 #ifdef FEATURE_PERFTRACING
@@ -61,12 +61,10 @@ TailCallTls::TailCallTls()
     // so casting away const is ok here.
     : m_frame(const_cast<PortableTailCallFrame*>(&g_sentinelTailCallFrame))
     , m_argBuffer(NULL)
-    , m_argBufferSize(0)
-    , m_argBufferGCDesc(NULL)
 {
 }
 
-void* TailCallTls::AllocArgBuffer(size_t size, void* gcDesc)
+TailCallArgBuffer* TailCallTls::AllocArgBuffer(int size, void* gcDesc)
 {
     CONTRACTL
     {
@@ -75,42 +73,30 @@ void* TailCallTls::AllocArgBuffer(size_t size, void* gcDesc)
     }
     CONTRACTL_END
 
-    _ASSERTE(m_argBuffer == NULL);
+    _ASSERTE(size >= (int)offsetof(TailCallArgBuffer, Args));
 
-    if (size > sizeof(m_argBufferInline))
+    if (m_argBuffer != NULL && m_argBuffer->Size < size)
     {
-        m_argBuffer = new (nothrow) char[size];
+        FreeArgBuffer();
+    }
+
+    if (m_argBuffer == NULL)
+    {
+        m_argBuffer = (TailCallArgBuffer*)new (nothrow) BYTE[size];
         if (m_argBuffer == NULL)
             return NULL;
+        m_argBuffer->Size = size;
     }
-    else
-        m_argBuffer = m_argBufferInline;
 
+    m_argBuffer->State = TAILCALLARGBUFFER_ACTIVE;
+
+    m_argBuffer->GCDesc = gcDesc;
     if (gcDesc != NULL)
     {
-        memset(m_argBuffer, 0, size);
-        m_argBufferGCDesc = gcDesc;
+        memset(m_argBuffer->Args, 0, size - offsetof(TailCallArgBuffer, Args));
     }
-
-    m_argBufferSize = size;
 
     return m_argBuffer;
-}
-
-void TailCallTls::FreeArgBuffer()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END
-
-    if (m_argBufferSize > sizeof(m_argBufferInline))
-        delete[] m_argBuffer;
-
-    m_argBufferGCDesc = NULL;
-    m_argBuffer = NULL;
 }
 
 #if defined (_DEBUG_IMPL) || defined(_PREFAST_)
@@ -510,10 +496,14 @@ void Thread::ChooseThreadCPUGroupAffinity()
         GC_TRIGGERS;
     }
     CONTRACTL_END;
-#ifndef TARGET_UNIX
-    if (!CPUGroupInfo::CanEnableGCCPUGroups() || !CPUGroupInfo::CanEnableThreadUseAllCpuGroups())
-         return;
 
+#ifndef TARGET_UNIX
+    if (!CPUGroupInfo::CanEnableGCCPUGroups() ||
+        !CPUGroupInfo::CanEnableThreadUseAllCpuGroups() ||
+        !CPUGroupInfo::CanAssignCpuGroupsToThreads())
+    {
+        return;
+    }
 
     //Borrow the ThreadStore Lock here: Lock ThreadStore before distributing threads
     ThreadStoreLockHolder TSLockHolder(TRUE);
@@ -541,10 +531,14 @@ void Thread::ClearThreadCPUGroupAffinity()
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
-#ifndef TARGET_UNIX
-    if (!CPUGroupInfo::CanEnableGCCPUGroups() || !CPUGroupInfo::CanEnableThreadUseAllCpuGroups())
-         return;
 
+#ifndef TARGET_UNIX
+    if (!CPUGroupInfo::CanEnableGCCPUGroups() ||
+        !CPUGroupInfo::CanEnableThreadUseAllCpuGroups() ||
+        !CPUGroupInfo::CanAssignCpuGroupsToThreads())
+    {
+        return;
+    }
 
     ThreadStoreLockHolder TSLockHolder(TRUE);
 
@@ -685,7 +679,7 @@ void EnsurePreemptive()
 
 typedef StateHolder<DoNothing, EnsurePreemptive> EnsurePreemptiveModeIfException;
 
-Thread* SetupThread(BOOL fInternal)
+Thread* SetupThread()
 {
     CONTRACTL {
         THROWS;
@@ -773,17 +767,7 @@ Thread* SetupThread(BOOL fInternal)
 
     SetupTLSForThread(pThread);
 
-    // A host can deny a thread entering runtime by returning a NULL IHostTask.
-    // But we do want threads used by threadpool.
-    if (IsThreadPoolWorkerSpecialThread() ||
-        IsThreadPoolIOCompletionSpecialThread() ||
-        IsTimerSpecialThread() ||
-        IsWaitSpecialThread())
-    {
-        fInternal = TRUE;
-    }
-
-    if (!pThread->InitThread(fInternal) ||
+    if (!pThread->InitThread() ||
         !pThread->PrepareApartmentAndContext())
         ThrowOutOfMemory();
 
@@ -1434,9 +1418,6 @@ Thread::Thread()
     m_CacheStackSufficientExecutionLimit = 0;
     m_CacheStackStackAllocNonRiskyExecutionLimit = 0;
 
-    m_LastAllowableStackAddress= 0;
-    m_ProbeLimit = 0;
-
 #ifdef _DEBUG
     m_pCleanedStackBase = NULL;
 #endif
@@ -1598,6 +1579,7 @@ Thread::Thread()
     m_DeserializationTracker = NULL;
 
     m_currentPrepareCodeConfig = nullptr;
+    m_isInForbidSuspendForDebuggerRegion = false;
 
 #ifdef _DEBUG
     memset(dangerousObjRefs, 0, sizeof(dangerousObjRefs));
@@ -1607,7 +1589,7 @@ Thread::Thread()
 //--------------------------------------------------------------------
 // Failable initialization occurs here.
 //--------------------------------------------------------------------
-BOOL Thread::InitThread(BOOL fInternal)
+BOOL Thread::InitThread()
 {
     CONTRACTL {
         THROWS;
@@ -1722,8 +1704,6 @@ BOOL Thread::InitThread(BOOL fInternal)
     if (m_CacheStackBase == 0)
     {
         _ASSERTE(m_CacheStackLimit == 0);
-        _ASSERTE(m_LastAllowableStackAddress == 0);
-        _ASSERTE(m_ProbeLimit == 0);
         ret = SetStackLimits(fAll);
         if (ret == FALSE)
         {
@@ -1832,7 +1812,7 @@ BOOL Thread::HasStarted(BOOL bRequiresTSL)
             ThrowOutOfMemory();
         }
 
-        InitThread(FALSE);
+        InitThread();
 
         SetThread(this);
         SetAppDomain(m_pDomain);
@@ -1992,7 +1972,7 @@ void Thread::HandleThreadStartupFailure()
 
     GCPROTECT_BEGIN(args);
 
-    MethodTable *pMT = MscorlibBinder::GetException(kThreadStartException);
+    MethodTable *pMT = CoreLibBinder::GetException(kThreadStartException);
     args.pThrowable = AllocateObject(pMT);
 
     MethodDescCallSite exceptionCtor(METHOD__THREAD_START_EXCEPTION__EX_CTOR);
@@ -2646,6 +2626,8 @@ Thread::~Thread()
     if (m_pIBCInfo) {
         delete m_pIBCInfo;
     }
+
+    m_tailCallTls.FreeArgBuffer();
 
 #ifdef FEATURE_EVENT_TRACE
     // Destruct the thread local type cache for allocation sampling
@@ -4500,17 +4482,6 @@ void Thread::SyncManagedExceptionState(bool fIsDebuggerThread)
         // Syncup the LastThrownObject on the managed thread
         SafeUpdateLastThrownObject();
     }
-
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-    // Since the catch clause has successfully executed and we are exiting it, reset the corruption severity
-    // in the ThreadExceptionState for the last active exception. This will ensure that when the next exception
-    // gets thrown/raised, EH tracker wont pick up an invalid value.
-    if (!fIsDebuggerThread)
-    {
-        CEHelper::ResetLastActiveCorruptionSeverityPostCatchHandler(this);
-    }
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
-
 }
 
 void Thread::SetLastThrownObjectHandle(OBJECTHANDLE h)
@@ -4732,7 +4703,7 @@ BOOL Thread::PrepareApartmentAndContext()
         FastInterlockAnd ((ULONG *) &m_State, ~TS_InSTA & ~TS_InMTA);
 
         // Attempt to set the requested apartment state.
-        SetApartment(aState, FALSE);
+        SetApartment(aState);
     }
 
     // In the case where we own the thread and we have switched it to a different
@@ -4742,9 +4713,9 @@ BOOL Thread::PrepareApartmentAndContext()
 #endif //FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
 #ifdef FEATURE_COMINTEROP
-    // Our IInitializeSpy will be registered in AppX always, in classic processes
+    // Our IInitializeSpy will be registered in classic processes
     // only if the internal config switch is on.
-    if (AppX::IsAppXProcess() || g_pConfig->EnableRCWCleanupOnSTAShutdown())
+    if (g_pConfig->EnableRCWCleanupOnSTAShutdown())
     {
         NewHolder<ApartmentSpyImpl> pSpyImpl = new ApartmentSpyImpl();
 
@@ -4919,9 +4890,7 @@ VOID Thread::ResetApartment()
 // achieved is returned and may differ from the input state if someone managed
 // to call CoInitializeEx on this thread first (note that calls to SetApartment
 // made before the thread has started are guaranteed to succeed).
-// The fFireMDAOnMismatch indicates if we should fire the apartment state probe
-// on an apartment state mismatch.
-Thread::ApartmentState Thread::SetApartment(ApartmentState state, BOOL fFireMDAOnMismatch)
+Thread::ApartmentState Thread::SetApartment(ApartmentState state)
 {
     CONTRACTL {
         THROWS;
@@ -5077,8 +5046,6 @@ Thread::ApartmentState Thread::SetApartment(ApartmentState state, BOOL fFireMDAO
         _ASSERTE(!"Unexpected HRESULT returned from CoInitializeEx!");
     }
 
-#ifdef FEATURE_COMINTEROP
-
     // If WinRT is supported on this OS, also initialize it at the same time.  Since WinRT sits on top of COM
     // we need to make sure that it is initialized in the same threading mode as we just started COM itself
     // with (or that we detected COM had already been started with).
@@ -5123,7 +5090,6 @@ Thread::ApartmentState Thread::SetApartment(ApartmentState state, BOOL fFireMDAO
     // Since we've just called CoInitialize, COM has effectively been started up.
     // To ensure the CLR is aware of this, we need to call EnsureComStarted.
     EnsureComStarted(FALSE);
-#endif // FEATURE_COMINTEROP
 
     return GetApartment();
 }
@@ -6444,24 +6410,6 @@ BOOL Thread::SetStackLimits(SetStackLimitScope scope)
     if (FAILED(CLRSetThreadStackGuarantee()))
         return FALSE;
 
-    // Cache the last stack addresses that we are allowed to touch.  We throw a stack overflow
-    // if we cross that line.  Note that we ignore any subsequent calls to STSG for Whidbey until
-    // we see an exception and recache the values.  We use the LastAllowableAddresses to
-    // determine if we've taken a hard SO and the ProbeLimits on the probes themselves.
-
-    m_LastAllowableStackAddress = GetLastNormalStackAddress();
-
-    if (g_pConfig->ProbeForStackOverflow())
-    {
-        m_ProbeLimit = m_LastAllowableStackAddress;
-    }
-    else
-    {
-        // If we have stack probing disabled, set the probeLimit to 0 so that all probes will pass.  This
-        // way we don't have to do an extra check in the probe code.
-        m_ProbeLimit = 0;
-    }
-
     return TRUE;
 }
 
@@ -6713,34 +6661,6 @@ void Thread::DebugLogStackMBIs()
     DebugLogStackRegionMBIs(uStackLimit, uStackBase);
 }
 #endif // _DEBUG
-
-//
-// IsSPBeyondLimit
-//
-// Determines if the stack pointer is beyond the stack limit, in which case
-// we can assume we've taken a hard SO.
-//
-// Parameters: none
-//
-// Returns: bool indicating if SP is beyond the limit or not
-//
-BOOL Thread::IsSPBeyondLimit()
-{
-    WRAPPER_NO_CONTRACT;
-
-    // Reset the stack limits if necessary.
-    // @todo .  Add a vectored handler for X86 so that we reset the stack limits
-    // there, as anything that supports SetThreadStackGuarantee will support vectored handlers.
-    // Then we can always assume during EH processing that our stack limits are good and we
-    // don't have to call ResetStackLimits.
-    ResetStackLimits();
-    char *approxSP = (char *)GetCurrentSP();
-    if  (approxSP < (char *)(GetLastAllowableStackAddress()))
-    {
-        return TRUE;
-    }
-    return FALSE;
-}
 
 NOINLINE void AllocateSomeStack(){
     LIMITED_METHOD_CONTRACT;
@@ -7253,7 +7173,7 @@ void Thread::DoExtraWorkForFinalizer()
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
     if (RequiresCoInitialize())
     {
-        SetApartment(AS_InMTA, FALSE);
+        SetApartment(AS_InMTA);
     }
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
@@ -7860,7 +7780,7 @@ OBJECTREF Thread::GetCulture(BOOL bUICulture)
     }
     CONTRACTL_END;
 
-    // This is the case when we're building mscorlib and haven't yet created
+    // This is the case when we're building CoreLib and haven't yet created
     // the system assembly.
     if (SystemDomain::System()->SystemAssembly()==NULL || g_fForbidEnterEE) {
         return NULL;
@@ -8607,7 +8527,7 @@ OBJECTHANDLE Thread::GetOrCreateDeserializationTracker()
 
     _ASSERTE(this == GetThread());
 
-    MethodTable* pMT = MscorlibBinder::GetClass(CLASS__DESERIALIZATION_TRACKER);
+    MethodTable* pMT = CoreLibBinder::GetClass(CLASS__DESERIALIZATION_TRACKER);
     m_DeserializationTracker = CreateGlobalStrongHandle(AllocateObject(pMT));
 
     _ASSERTE(m_DeserializationTracker != NULL);

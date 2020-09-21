@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================
 **
@@ -14,7 +13,7 @@
 #define UNICODE
 #include <palsuite.h>
 
-int __cdecl main(int argc, char *argv[]) 
+PALTEST(miscellaneous_GetCommandLineW_test1_paltest_getcommandlinew_test1, "miscellaneous/GetCommandLineW/test1/paltest_getcommandlinew_test1")
 {
 
     LPWSTR TheResult = NULL;	

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*=====================================================================
 **
@@ -17,7 +16,7 @@ extern "C" void FILECanonicalizePath(LPSTR lpUnixPath);
 
 void TestCase(LPSTR input, LPSTR expectedOutput);
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(file_io_FILECanonicalizePath_paltest_filecanonicalizepath_test1, "file_io/FILECanonicalizePath/paltest_filecanonicalizepath_test1")
 {
     if (PAL_Initialize(argc,argv) != 0)
     {

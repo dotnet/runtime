@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Xml.Schema
 {
@@ -43,7 +42,7 @@ namespace System.Xml.Schema
 
         public override void CompleteValidation() { }
 
-        public override object FindId(string name)
+        public override object? FindId(string name)
         {
             return null;
         }
@@ -56,8 +55,8 @@ namespace System.Xml.Schema
                 XmlSchemaCollectionEnumerator enumerator = reader.Schemas.GetEnumerator();
                 while (enumerator.MoveNext())
                 {
-                    XmlSchemaCollectionNode node = enumerator.CurrentNode;
-                    SchemaInfo schemaInfo = node.SchemaInfo;
+                    XmlSchemaCollectionNode node = enumerator.CurrentNode!;
+                    SchemaInfo schemaInfo = node.SchemaInfo!;
                     if (schemaInfo.SchemaType == SchemaType.XSD)
                         return ValidationType.Schema;
                     else if (schemaInfo.SchemaType == SchemaType.XDR)

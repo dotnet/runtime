@@ -63,7 +63,7 @@ ac_check_funcs (
   sched_getaffinity sched_setaffinity getpwnam_r getpwuid_r readlink chmod lstat getdtablesize ftruncate msync
   gethostname getpeername utime utimes openlog closelog atexit popen strerror_r inet_pton inet_aton
   pthread_getname_np pthread_setname_np pthread_cond_timedwait_relative_np pthread_kill
-  pthread_attr_setstacksize pthread_get_stackaddr_np
+  pthread_attr_setstacksize pthread_get_stackaddr_np pthread_jit_write_protect_np
   shm_open poll getfsstat mremap posix_fadvise vsnprintf sendfile statfs statvfs setpgid system
   fork execv execve waitpid localtime_r mkdtemp getrandom execvp strlcpy stpcpy strtok_r rewinddir
   vasprintf strndup getpwuid_r getprotobyname getprotobyname_r getaddrinfo mach_absolute_time
@@ -81,12 +81,14 @@ check_symbol_exists(IP_PKTINFO "linux/in.h" HAVE_IP_PKTINFO)
 check_symbol_exists(IPV6_PKTINFO "netdb.h" HAVE_IPV6_PKTINFO)
 check_symbol_exists(IP_DONTFRAGMENT "Ws2ipdef.h" HAVE_IP_DONTFRAGMENT)
 check_symbol_exists(IP_MTU_DISCOVER "linux/in.h" HAVE_IP_MTU_DISCOVER)
+check_symbol_exists(sys_signame "signal.h" HAVE_SYSSIGNAME)
 
 ac_check_type("struct sockaddr_in6" sockaddr_in6 "netinet/in.h")
 ac_check_type("struct timeval" timeval "sys/time.h;sys/types.h;utime.h")
 ac_check_type("socklen_t" socklen_t "sys/types.h;sys/socket.h")
 ac_check_type("struct ip_mreqn" ip_mreqn "netinet/in.h")
 ac_check_type("struct ip_mreq" ip_mreq "netinet/in.h")
+ac_check_type("clockid_t" clockid_t "sys/types.h")
 
 check_struct_has_member("struct kinfo_proc" kp_proc "sys/types.h;sys/param.h;sys/sysctl.h;sys/proc.h" HAVE_STRUCT_KINFO_PROC_KP_PROC)
 check_struct_has_member("struct sockaddr_in" sin_len "netinet/in.h" HAVE_SOCKADDR_IN_SIN_LEN)
@@ -98,3 +100,16 @@ check_type_size("void*" SIZEOF_VOID_P)
 check_type_size("long" SIZEOF_LONG)
 check_type_size("long long" SIZEOF_LONG_LONG)
 check_type_size("size_t" SIZEOF_SIZE_T)
+
+# ICONV
+find_library(LIBICONV_FOUND iconv)
+if(NOT LIBICONV_FOUND STREQUAL "LIBICONV_FOUND-NOTFOUND")
+  set(ICONV_LIB "iconv")
+endif()
+
+file(WRITE ${CMAKE_BINARY_DIR}{$CMAKE_FILES_DIRECTORY}/CMakeTmp/test.c
+  "#include <sched.h>\n"
+  "void main () { CPU_COUNT((void *) 0); }\n"
+)
+try_compile(GLIBC_HAS_CPU_COUNT ${CMAKE_BINARY_DIR}/CMakeTmp SOURCES "${CMAKE_BINARY_DIR}{$CMAKE_FILES_DIRECTORY}/CMakeTmp/test.c"
+    COMPILE_DEFINITIONS "-D_GNU_SOURCE")

@@ -835,9 +835,6 @@
   <data name="Argument_AttributeNamesMustBeUnique" xml:space="preserve">
     <value>Attribute names must be unique.</value>
   </data>
-  <data name="Argument_BadAttributeOnInterfaceMethod" xml:space="preserve">
-    <value>Interface method must be abstract and virtual.</value>
-  </data>
   <data name="Argument_BadConstantValue" xml:space="preserve">
     <value>Bad default value.</value>
   </data>
@@ -1343,7 +1340,7 @@
     <value>The specified object must not be an instance of a generic type.</value>
   </data>
   <data name="Argument_NeedNonGenericType" xml:space="preserve">
-    <value>The specified Type must not be a generic type definition.</value>
+    <value>The specified Type must not be a generic type.</value>
   </data>
   <data name="Argument_NeedStructWithNoRefs" xml:space="preserve">
     <value>The specified Type must be a struct containing no references.</value>
@@ -1755,6 +1752,9 @@
   </data>
   <data name="ArgumentOutOfRange_IndexString" xml:space="preserve">
     <value>Index was out of range. Must be non-negative and less than the length of the string.</value>
+  </data>
+  <data name="ArgumentOutOfRange_InputTooLarge" xml:space="preserve">
+    <value>Input is too large to be processed.</value>
   </data>
   <data name="ArgumentOutOfRange_InvalidEraValue" xml:space="preserve">
     <value>Era value was not valid.</value>
@@ -2224,6 +2224,12 @@
   <data name="Format_NoFormatSpecifier" xml:space="preserve">
     <value>No format specifiers were provided.</value>
   </data>
+  <data name="Format_BadHexChar" xml:space="preserve">
+    <value>The input is not a valid hex string as it contains a non-hex character.</value>
+  </data>
+  <data name="Format_BadHexLength" xml:space="preserve">
+    <value>The input is not a valid hex string as its length is not a multiple of 2.</value>
+  </data>
   <data name="Format_BadQuote" xml:space="preserve">
     <value>Cannot find a matching quote character for the character '{0}'.</value>
   </data>
@@ -2665,6 +2671,9 @@
   <data name="InvariantFailed_Cnd" xml:space="preserve">
     <value>Invariant failed: {0}</value>
   </data>
+  <data name="IO_NoFileTableInInMemoryAssemblies" xml:space="preserve">
+    <value>This assembly does not have a file table because it was loaded from memory.</value>
+  </data>
   <data name="IO_EOF_ReadBeyondEOF" xml:space="preserve">
     <value>Unable to read beyond the end of the stream.</value>
   </data>
@@ -2882,7 +2891,7 @@
     <value>Collection was of a fixed size.</value>
   </data>
   <data name="InvalidProgram_GenericMethod" xml:space="preserve">
-    <value>Generic methods with NativeCallableAttribute are invalid.</value>
+    <value>Generic methods with UnmanagedCallersOnlyAttribute are invalid.</value>
   </data>
   <data name="InvalidOperation_SpanOverlappedOperation" xml:space="preserve">
     <value>This operation is invalid on overlapping buffers.</value>
@@ -2911,20 +2920,23 @@
   <data name="NotSupported_MustBeModuleBuilder" xml:space="preserve">
     <value>Module argument must be a ModuleBuilder.</value>
   </data>
-  <data name="NotSupported_NativeCallableTarget" xml:space="preserve">
-    <value>Methods with NativeCallableAttribute cannot be used as delegate target.</value>
+  <data name="NotSupported_UnmanagedCallersOnlyTarget" xml:space="preserve">
+    <value>Methods with UnmanagedCallersOnlyAttribute cannot be used as delegate target.</value>
   </data>
   <data name="NotSupported_NoCodepageData" xml:space="preserve">
     <value>No data is available for encoding {0}. For information on defining a custom encoding, see the documentation for the Encoding.RegisterProvider method.</value>
   </data>
+  <data name="InvalidOperation_FunctionMissingUnmanagedCallersOnly" xml:space="preserve">
+    <value>Function not marked with UnmanagedCallersOnlyAttribute.</value>
+  </data>
   <data name="InvalidProgram_NonBlittableTypes" xml:space="preserve">
-    <value>Non-blittable parameter types are invalid for NativeCallable methods.</value>
+    <value>Non-blittable parameter types are invalid for UnmanagedCallersOnly methods.</value>
   </data>
   <data name="NotSupported_NonReflectedType" xml:space="preserve">
     <value>Not supported in a non-reflected type.</value>
   </data>
   <data name="InvalidProgram_NonStaticMethod" xml:space="preserve">
-    <value>Non-static methods with NativeCallableAttribute are invalid.</value>
+    <value>Non-static methods with UnmanagedCallersOnlyAttribute are invalid.</value>
   </data>
   <data name="NotSupported_NoParentDefaultConstructor" xml:space="preserve">
     <value>Parent does not have a default constructor. The default constructor must be explicitly defined.</value>
@@ -3219,6 +3231,9 @@
   </data>
   <data name="RuntimeWrappedException" xml:space="preserve">
     <value>An object that does not derive from System.Exception has been wrapped in a RuntimeWrappedException.</value>
+  </data>
+  <data name="StandardOleMarshalObjectGetMarshalerFailed" xml:space="preserve">
+    <value>Failed to get marshaler for IID {0}.</value>
   </data>
   <data name="Security_CannotReadFileData" xml:space="preserve">
     <value>The time zone ID '{0}' was found on the local computer, but the application does not have permission to read the file.</value>
@@ -3735,5 +3750,29 @@
   </data>
   <data name="SwitchExpressionException_UnmatchedValue" xml:space="preserve">
     <value>Unmatched value was {0}.</value>
+  </data>
+  <data name="Encoding_UTF7_Disabled" xml:space="preserve">
+    <value>Support for UTF-7 is disabled. See {0} for more information.</value>
+  </data>
+  <data name="IDynamicInterfaceCastable_DoesNotImplementRequested" xml:space="preserve">
+    <value>Type '{0}' returned by IDynamicInterfaceCastable does not implement the requested interface '{1}'.</value>
+  </data>
+  <data name="IDynamicInterfaceCastable_MissingImplementationAttribute" xml:space="preserve">
+    <value>Type '{0}' returned by IDynamicInterfaceCastable does not have the attribute '{1}'.</value>
+  </data>
+  <data name="IDynamicInterfaceCastable_NotInterface" xml:space="preserve">
+    <value>Type '{0}' returned by IDynamicInterfaceCastable is not an interface.</value>
+  </data>
+  <data name="Arg_MustBeHalf" xml:space="preserve">
+    <value>Object must be of type Half.</value>
+  </data>
+  <data name="Arg_MustBeRune" xml:space="preserve">
+    <value>Object must be of type Rune.</value>
+  </data>
+  <data name="BinaryFormatter_SerializationDisallowed" xml:space="preserve">
+    <value>BinaryFormatter serialization and deserialization are disabled within this application. See https://aka.ms/binaryformatter for more information.</value>
+  </data>
+  <data name="NotSupported_CodeBase" xml:space="preserve">
+    <value>CodeBase is not supported on assemblies loaded from a single-file bundle.</value>
   </data>
 </root>

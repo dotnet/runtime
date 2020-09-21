@@ -1,3 +1,7 @@
+#
+# Configure options
+#
+
 option (ENABLE_NETCORE "Enables the support for .NET Core Features in the MonoVM")
 
 option (DISABLE_PORTABILITY "Disables the IO portability layer")
@@ -39,4 +43,24 @@ option (DISABLE_SOCKETS "Disable sockets")
 option (DISABLE_GAC "Disable GAC")
 option (DISABLE_DLLMAP "Disables use of DllMaps in MonoVM")
 option (DISABLE_THREADS "Disable Threads")
+option (DISABLE_CONFIG "Disable .config file support")
+option (DISABLE_CFGDIR_CONFIG "Disable config directories")
+option (DISABLE_SGEN_TOGGLEREF "Disable toggleref support in SGEN")
+option (DISABLE_SGEN_BINARY_PROTOCOL "Disable binary protocol logging in SGEN")
+option (DISABLE_PROCESSES "Disable process support")
+option (DISABLE_EVENTPIPE "Disable EventPipe support")
+option (DISABLE_EXECUTABLES "Disable the build of the runtime executables")
+option (DISABLE_CRASH_REPORTING "Disable crash reporting subsystem")
+option (DISABLE_ICALL_TABLES "Enable separate icall table library")
+option (ENABLE_ICALL_EXPORT "Export icall functions")
+option (ENABLE_ICALL_SYMBOL_MAP "Generate tables which map icall functions to their C symbols")
+option (ENABLE_PERFTRACING "Enables support for eventpipe library")
+option (ENABLE_INTERP_LIB "Enable separate interpreter library")
+option (ENABLE_LAZY_GC_THREAD_CREATION "Enable lazy runtime thread creation, embedding host must do it explicitly")
+option (ENABLE_WERROR "Compile with -Werror")
 
+set (GC_SUSPEND "default" CACHE STRING "GC suspend method (default, preemptive, coop, hybrid)")
+set (ENABLE_MINIMAL "" CACHE STRING "Set many DISABLE_ options at once. Comma-separated list of lowercase DISABLE_ options ie. 'jit,simd' etc.")
+set (AOT_TARGET_TRIPLE "" CACHE STRING "Target triple for AOT cross compiler")
+set (AOT_OFFSETS_FILE "" CACHE STRING "Offsets file for AOT cross compiler")
+set (LLVM_PREFIX "" CACHE STRING "Enable LLVM support with LLVM installed at <LLVM_PREFIX>.")

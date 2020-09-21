@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // CLRConfigValues.h
 //
@@ -8,6 +7,17 @@
 //
 // Unified method of accessing configuration values from environment variables,
 // registry and config file.
+//
+// Given any config knob below that looks like this example:
+//    RETAIL_CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_LogEnable, W("LogEnable"), "Turns on the traditional CLR log.")
+//                                                                  ---------
+//                                                                     |
+//                                                 --------------------
+//                                                 |
+//                                                 V
+// You can set an environment variable COMPlus_LogEnable=1 to enable it.
+//
+// See below for more details
 //
 //*****************************************************************************
 
@@ -123,7 +133,6 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_JitPitchMaxVal, W("JitPitchMaxVal"), (DWORD)0x
 ///
 /// Assembly Loader
 ///
-RETAIL_CONFIG_DWORD_INFO_EX(EXTERNAL_DesignerNamespaceResolutionEnabled, W("designerNamespaceResolution"), FALSE, "Set it to 1 to enable DesignerNamespaceResolve event for WinRT types", CLRConfig::IgnoreEnv | CLRConfig::IgnoreHKLM | CLRConfig::IgnoreHKCU)
 CONFIG_DWORD_INFO_EX(INTERNAL_GetAssemblyIfLoadedIgnoreRidMap, W("GetAssemblyIfLoadedIgnoreRidMap"), 0, "Used to force loader to ignore assemblies cached in the rid-map", CLRConfig::EEConfig_default)
 
 ///
@@ -253,7 +262,6 @@ CONFIG_DWORD_INFO(INTERNAL_SuppressLockViolationsOnReentryFromOS, W("SuppressLoc
 CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_AssertOnFailFast, W("AssertOnFailFast"), "")
 RETAIL_CONFIG_DWORD_INFO_EX(UNSUPPORTED_legacyCorruptedStateExceptionsPolicy, W("legacyCorruptedStateExceptionsPolicy"), 0, "Enabled Pre-V4 CSE behavior", CLRConfig::EEConfig_default)
 CONFIG_DWORD_INFO_EX(INTERNAL_SuppressLostExceptionTypeAssert, W("SuppressLostExceptionTypeAssert"), 0, "", CLRConfig::EEConfig_default)
-RETAIL_CONFIG_DWORD_INFO_EX(UNSUPPORTED_FailFastOnCorruptedStateException, W("FailFastOnCorruptedStateException"), 0, "Failfast if a CSE is encountered", CLRConfig::EEConfig_default)
 RETAIL_CONFIG_DWORD_INFO_EX(INTERNAL_UseEntryPointFilter, W("UseEntryPointFilter"), 0, "", CLRConfig::EEConfig_default)
 RETAIL_CONFIG_DWORD_INFO_EX(INTERNAL_Corhost_Swallow_Uncaught_Exceptions, W("Corhost_Swallow_Uncaught_Exceptions"), 0, "", CLRConfig::EEConfig_default)
 
@@ -397,6 +405,8 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_TraceInterpreterIL, W("TraceInterpreterIL"), 0
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_TraceInterpreterOstack, W("TraceInterpreterOstack"), 0, "Logs operand stack after each IL instruction of interpreted methods to the console")
 CONFIG_DWORD_INFO(INTERNAL_TraceInterpreterVerbose, W("TraceInterpreterVerbose"), 0, "Logs interpreter progress with detailed messages to the console")
 CONFIG_DWORD_INFO(INTERNAL_TraceInterpreterJITTransition, W("TraceInterpreterJITTransition"), 0, "Logs when the interpreter determines a method should be JITted")
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_ForceInterpreter, W("ForceInterpreter"), 0, "If non-zero, force the interpreter to be used")
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_InterpreterHWIntrinsicsIsSupportedFalse, W("InterpreterHWIntrinsicsIsSupportedFalse"), 0, "If non-zero, force get_IsSupported to return false for hardware intrinsics") // for internal testing purposes
 #endif
 // The JIT queries this ConfigDWORD but it doesn't know if FEATURE_INTERPRETER is enabled
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_InterpreterFallback, W("InterpreterFallback"), 0, "Fallback to the interpreter when the JIT compiler fails")
@@ -404,7 +414,6 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_InterpreterFallback, W("InterpreterFallback"),
 ///
 /// Loader
 ///
-RETAIL_CONFIG_STRING_INFO(INTERNAL_WinMDPath, W("WinMDPath"), "Path for Windows WinMD files")
 
 ///
 /// Loader heap
@@ -443,9 +452,6 @@ CONFIG_DWORD_INFO_EX(INTERNAL_MD_MiniMDBreak, W("MD_MiniMDBreak"), 0, "ASSERT wh
 CONFIG_DWORD_INFO_EX(INTERNAL_MD_PreSaveBreak, W("MD_PreSaveBreak"), 0, "ASSERT when calling CMiniMdRw::PreSave", CLRConfig::EEConfig_default)
 CONFIG_DWORD_INFO_EX(INTERNAL_MD_RegMetaBreak, W("MD_RegMetaBreak"), 0, "ASSERT when creating RegMeta class", CLRConfig::EEConfig_default)
 CONFIG_DWORD_INFO_EX(INTERNAL_MD_RegMetaDump, W("MD_RegMetaDump"), 0, "Dump MD in 4 functions (?)", CLRConfig::EEConfig_default)
-// MetaData - Desktop-only
-CONFIG_DWORD_INFO_EX(INTERNAL_MD_WinMD_Disable, W("MD_WinMD_Disable"), 0, "Never activate the WinMD import adapter", CLRConfig::EEConfig_default)
-CONFIG_DWORD_INFO_EX(INTERNAL_MD_WinMD_AssertOnIllegalUsage, W("MD_WinMD_AssertOnIllegalUsage"), 0, "ASSERT if a WinMD import adapter detects a tool incompatibility", CLRConfig::EEConfig_default)
 
 // Metadata - mscordbi only - this flag is only intended to mitigate potential issues in bug fix 458597.
 RETAIL_CONFIG_DWORD_INFO_EX(EXTERNAL_MD_PreserveDebuggerMetadataMemory, W("MD_PreserveDebuggerMetadataMemory"), 0, "Save all versions of metadata memory in the debugger when debuggee metadata is updated", CLRConfig::EEConfig_default)
@@ -489,6 +495,8 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_NGenSimulateDiskFull, W("NGenSimulateDiskFull"
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_PartialNGen, W("PartialNGen"), (DWORD)-1, "Generate partial NGen images")
 
 CONFIG_DWORD_INFO(INTERNAL_NoASLRForNgen, W("NoASLRForNgen"), 0, "Turn off IMAGE_DLLCHARACTERISTICS_DYNAMIC_BASE bit in generated ngen images. Makes nidump output repeatable from run to run.")
+
+RETAIL_CONFIG_STRING_INFO_EX(INTERNAL_NativeImageSearchPaths, W("NativeImageSearchPaths"), "Extra search paths for native composite R2R images", CLRConfig::EEConfig_default)
 
 #ifdef CROSSGEN_COMPILE
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_CrossGenAssumeInputSigned, W("CrossGenAssumeInputSigned"), 1, "CrossGen should assume that its input assemblies will be signed before deployment")
@@ -556,6 +564,8 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_ThreadSuspendInjection, W("INTERNAL_ThreadSusp
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_DefaultStackSize, W("DefaultStackSize"), 0, "Stack size to use for new VM threads when thread is created with default stack size (dwStackSize == 0).")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_Thread_DeadThreadCountThresholdForGCTrigger, W("Thread_DeadThreadCountThresholdForGCTrigger"), 75, "In the heuristics to clean up dead threads, this threshold must be reached before triggering a GC will be considered. Set to 0 to disable triggering a GC based on dead threads.")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_Thread_DeadThreadGCTriggerPeriodMilliseconds, W("Thread_DeadThreadGCTriggerPeriodMilliseconds"), 1000 * 60 * 30, "In the heuristics to clean up dead threads, this much time must have elapsed since the previous max-generation GC before triggering another GC will be considered")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_Thread_UseAllCpuGroups, W("Thread_UseAllCpuGroups"), 0, "Specifies whether to query and use CPU group information for determining the processor count.")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_Thread_AssignCpuGroups, W("Thread_AssignCpuGroups"), 1, "Specifies whether to automatically distribute threads created by the CLR across CPU Groups. Effective only when Thread_UseAllCpuGroups and GCCpuGroup are enabled.")
 
 ///
 /// Threadpool
@@ -571,7 +581,6 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_ThreadPool_UnfairSemaphoreSpinLimit, W("Thread
 #else // !TARGET_ARM64
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_ThreadPool_UnfairSemaphoreSpinLimit, W("ThreadPool_UnfairSemaphoreSpinLimit"), 0x46, "Maximum number of spins a thread pool worker thread performs before waiting for work")
 #endif // TARGET_ARM64
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_Thread_UseAllCpuGroups, W("Thread_UseAllCpuGroups"), 0, "Specifies if to automatically distribute thread across CPU Groups")
 
 CONFIG_DWORD_INFO(INTERNAL_ThreadpoolTickCountAdjustment, W("ThreadpoolTickCountAdjustment"), 0, "")
 
@@ -618,6 +627,16 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_OSR_CounterBump, W("OSR_CounterBump"), 1000, "
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_OSR_HitLimit, W("OSR_HitLimit"), 10, "Number of times a patchpoint must call back to trigger an OSR transition")
 CONFIG_DWORD_INFO(INTERNAL_OSR_LowId, W("OSR_LowId"), (DWORD)-1, "Low end of enabled patchpoint range (inclusive)");
 CONFIG_DWORD_INFO(INTERNAL_OSR_HighId, W("OSR_HighId"), 10000000, "High end of enabled patchpoint range (inclusive)");
+#endif
+
+///
+/// Profile Guided Opts
+///
+#ifdef FEATURE_PGO
+RETAIL_CONFIG_STRING_INFO_EX(INTERNAL_PGODataPath, W("PGODataPath"), "Read/Write PGO data from/to the indicated file.", CLRConfig::EEConfig_default)
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_ReadPGOData, W("ReadPGOData"), 0, "Read PGO data")
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_WritePGOData, W("WritePGOData"), 0, "Write PGO data")
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_TieredPGO, W("TieredPGO"), 0, "Instrument Tier0 code and make counts available to Tier1")
 #endif
 
 ///
@@ -684,12 +703,10 @@ RETAIL_CONFIG_STRING_INFO(INTERNAL_EventNameFilter, W("EventNameFilter"), "")
 /// Interop
 ///
 CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_ExposeExceptionsInCOM, W("ExposeExceptionsInCOM"), "")
-RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_PInvokeInline, W("PInvokeInline"), "", CLRConfig::EEConfig_default)
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_InteropValidatePinnedObjects, W("InteropValidatePinnedObjects"), 0, "After returning from a managed-to-unmanaged interop call, validate GC heap around objects pinned by IL stubs.")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_InteropLogArguments, W("InteropLogArguments"), 0, "Log all pinned arguments passed to an interop call")
 RETAIL_CONFIG_STRING_INFO(UNSUPPORTED_LogCCWRefCountChange, W("LogCCWRefCountChange"), "Outputs debug information and calls LogCCWRefCountChange_BREAKPOINT when AddRef or Release is called on a CCW.")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_EnableRCWCleanupOnSTAShutdown, W("EnableRCWCleanupOnSTAShutdown"), 0, "Performs RCW cleanup when STA shutdown is detected using IInitializeSpy in classic processes.")
-RETAIL_CONFIG_STRING_INFO(INTERNAL_LocalWinMDPath, W("LocalWinMDPath"), "Additional path to probe for WinMD files in if a WinRT type is not resolved using the standard paths.")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_AllowDComReflection, W("AllowDComReflection"), 0, "Allows out of process DCOM clients to marshal blocked reflection types.")
 
 //
@@ -703,10 +720,19 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_EventPipeRundown, W("EventPipeRundown"), 1, "E
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_EventPipeCircularMB, W("EventPipeCircularMB"), 1024, "The EventPipe circular buffer size in megabytes.")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_EventPipeProcNumbers, W("EventPipeProcNumbers"), 0, "Enable/disable capturing processor numbers in EventPipe event headers")
 
+// 
+// Generational Aware Analysis
+// 
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_GCGenAnalysisGen, W("GCGenAnalysisGen"), 0, "The generation to trigger generational aware analysis")
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_GCGenAnalysisBytes, W("GCGenAnalysisBytes"), 0, "The number of bytes to trigger generational aware analysis")
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_GCGenAnalysisIndex, W("GCGenAnalysisIndex"), 0, "The gc index to trigger generational aware analysis")
+RETAIL_CONFIG_STRING_INFO(INTERNAL_GCGenAnalysisCmd, W("GCGenAnalysisCmd"), "An optional filter to match with the command line used to spawn the process")
+
 //
-// Diagnostics Server
+// Diagnostics Ports
 //
-RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_DOTNET_DiagnosticsMonitorAddress, W("DOTNET_DiagnosticsMonitorAddress"), "NamedPipe path without '\\\\.\\pipe\\' on Windows; Full path of Unix Domain Socket on Linux/Unix.  Used for Diagnostics Monitoring Agents.", CLRConfig::DontPrependCOMPlus_);
+RETAIL_CONFIG_DWORD_INFO_EX(EXTERNAL_DOTNET_DefaultDiagnosticPortSuspend, W("DOTNET_DefaultDiagnosticPortSuspend"), 0, "This sets the deafult diagnostic port to suspend causing the runtime to pause during startup before major subsystems are started.  Resume using the Diagnostics IPC ResumeStartup command on the default diagnostic port.", CLRConfig::DontPrependCOMPlus_);
+RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_DOTNET_DiagnosticPorts, W("DOTNET_DiagnosticPorts"), "A semicolon delimited list of additional Diagnostic Ports, where a Diagnostic Port is a NamedPipe path without '\\\\.\\pipe\\' on Windows or the full path of Unix Domain Socket on Linux/Unix followed by optional tags, e.g., '<path>,connect,nosuspend;<path>'", CLRConfig::DontPrependCOMPlus_);
 
 //
 // LTTng

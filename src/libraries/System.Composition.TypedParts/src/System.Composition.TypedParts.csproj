@@ -1,8 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <RootNamespace>System.Composition</RootNamespace>
-    <AssemblyName>System.Composition.TypedParts</AssemblyName>
-    <TargetFrameworks>netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Composition\CompositionContextExtensions.cs" />
@@ -30,8 +29,8 @@
              Link="Common\System\Numerics\Hashing\HashHelpers.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\System.Composition.AttributedModel\src\System.Composition.AttributedModel.csproj" />
-    <ProjectReference Include="..\..\System.Composition.Hosting\src\System.Composition.Hosting.csproj" />
-    <ProjectReference Include="..\..\System.Composition.Runtime\src\System.Composition.Runtime.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Composition.AttributedModel\src\System.Composition.AttributedModel.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Composition.Hosting\src\System.Composition.Hosting.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Composition.Runtime\src\System.Composition.Runtime.csproj" />
   </ItemGroup>
 </Project>

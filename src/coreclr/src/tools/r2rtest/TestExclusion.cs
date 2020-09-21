@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -163,7 +162,8 @@ namespace R2RTest
 
                 Project project = new Project();
                 project.SetGlobalProperty("XunitTestBinBase", "*");
-                project.SetGlobalProperty("BuildArch", "x64");
+                project.SetGlobalProperty("TargetArchitecture", "x64");
+                project.SetGlobalProperty("RuntimeFlavor", "coreclr");
                 // TODO: cross-OS CPAOT
                 project.SetGlobalProperty("TargetsWindows", (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "true" : "false"));
                 project.SetGlobalProperty("AltJitArch", "x64");

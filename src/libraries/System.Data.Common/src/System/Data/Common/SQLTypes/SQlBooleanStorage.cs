@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Xml;
 using System.Data.SqlTypes;
@@ -13,7 +12,7 @@ namespace System.Data.Common
 {
     internal sealed class SqlBooleanStorage : DataStorage
     {
-        private SqlBoolean[] _values;
+        private SqlBoolean[] _values = default!; // Late-initialized
 
         public SqlBooleanStorage(DataColumn column)
         : base(column, typeof(SqlBoolean), SqlBoolean.Null, SqlBoolean.Null, StorageType.SqlBoolean)
@@ -88,12 +87,13 @@ namespace System.Data.Common
             return _values[recordNo1].CompareTo(_values[recordNo2]);
         }
 
-        public override int CompareValueTo(int recordNo, object value)
+        public override int CompareValueTo(int recordNo, object? value)
         {
+            Debug.Assert(null != value, "null value");
             return _values[recordNo].CompareTo((SqlBoolean)value);
         }
 
-        public override object ConvertValue(object value)
+        public override object ConvertValue(object? value)
         {
             if (null != value)
             {

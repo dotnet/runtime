@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Collections.Generic;
@@ -37,7 +36,7 @@ namespace System.Tests
             Assert.Throws<DirectoryNotFoundException>(() => Environment.CurrentDirectory = GetTestFilePath());
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void CurrentDirectory_SetToValidOtherDirectory()
         {
             RemoteExecutor.Invoke(() =>
@@ -45,7 +44,7 @@ namespace System.Tests
                 Environment.CurrentDirectory = TestDirectory;
                 Assert.Equal(Directory.GetCurrentDirectory(), Environment.CurrentDirectory);
 
-                if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                if (!OperatingSystem.IsMacOS())
                 {
                     // On OSX, the temp directory /tmp/ is a symlink to /private/tmp, so setting the current
                     // directory to a symlinked path will result in GetCurrentDirectory returning the absolute
@@ -62,6 +61,20 @@ namespace System.Tests
         }
 
         [Fact]
+        public void ProcessId_Idempotent()
+        {
+            Assert.InRange(Environment.ProcessId, 1, int.MaxValue);
+            Assert.Equal(Environment.ProcessId, Environment.ProcessId);
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void ProcessId_MatchesExpectedValue()
+        {
+            using RemoteInvokeHandle handle = RemoteExecutor.Invoke(() => Console.WriteLine(Environment.ProcessId), new RemoteInvokeOptions { StartInfo = new ProcessStartInfo { RedirectStandardOutput = true } });
+            Assert.Equal(handle.Process.Id, int.Parse(handle.Process.StandardOutput.ReadToEnd()));
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void CurrentManagedThreadId_DifferentForActiveThreads()
         {
             var ids = new HashSet<int>();
@@ -114,9 +127,8 @@ namespace System.Tests
         public void OSVersion_MatchesPlatform()
         {
             PlatformID id = Environment.OSVersion.Platform;
-            Assert.Equal(
-                RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? PlatformID.Win32NT : PlatformID.Unix,
-                id);
+            PlatformID expected = OperatingSystem.IsWindows() ? PlatformID.Win32NT : OperatingSystem.IsBrowser() ? PlatformID.Other : PlatformID.Unix;
+            Assert.Equal(expected, id);
         }
 
         [Fact]
@@ -129,12 +141,14 @@ namespace System.Tests
             Assert.True(version.Major > 0);
 
             Assert.Contains(version.ToString(2), versionString);
-            Assert.Contains(RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "Windows" : "Unix", versionString);
+
+            string expectedOS = OperatingSystem.IsWindows() ? "Windows " : OperatingSystem.IsBrowser() ? "Other " : "Unix ";
+            Assert.Contains(expectedOS, versionString);
         }
 
-        // On Unix, we must parse the version from uname -r
+        // On non-OSX Unix, we must parse the version from uname -r
         [Theory]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.OSX & ~TestPlatforms.Browser)]
         [InlineData("2.6.19-1.2895.fc6", 2, 6, 19, 1)]
         [InlineData("xxx1yyy2zzz3aaa4bbb", 1, 2, 3, 4)]
         [InlineData("2147483647.2147483647.2147483647.2147483647", int.MaxValue, int.MaxValue, int.MaxValue, int.MaxValue)]
@@ -152,6 +166,19 @@ namespace System.Tests
             var actual = ((OperatingSystem)getOSMethod.Invoke(null, new object[] { input })).Version;
 
             Assert.Equal(expected, actual);
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.OSX)]
+        public void OSVersion_ValidVersion_OSX()
+        {
+            Version version = Environment.OSVersion.Version;
+
+            // verify that the Environment.OSVersion.Version matches the current RID
+            Assert.Contains(version.ToString(2), RuntimeInformation.RuntimeIdentifier);
+
+            Assert.True(version.Build >= 0, "OSVersion Build should be non-negative");
+            Assert.Equal(-1, version.Revision); // Revision is never set on OSX
         }
 
         [Fact]
@@ -194,12 +221,15 @@ namespace System.Tests
         [Fact]
         public void WorkingSet_Valid()
         {
-            Assert.True(Environment.WorkingSet > 0, "Expected positive WorkingSet value");
+            if (PlatformDetection.IsBrowser)
+                Assert.Equal(0, Environment.WorkingSet);
+            else
+                Assert.True(Environment.WorkingSet > 0, "Expected positive WorkingSet value");
         }
 
         [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // fail fast crashes the process
         [OuterLoop]
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void FailFast_ExpectFailureExitCode()
         {
             using (RemoteInvokeHandle handle = RemoteExecutor.Invoke(() => Environment.FailFast("message")))
@@ -220,7 +250,7 @@ namespace System.Tests
         }
 
         [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // fail fast crashes the process
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void FailFast_ExceptionStackTrace_ArgumentException()
         {
             var psi = new ProcessStartInfo();
@@ -241,7 +271,7 @@ namespace System.Tests
         }
 
         [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // fail fast crashes the process
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void FailFast_ExceptionStackTrace_StackOverflowException()
         {
             // Test using another type of exception
@@ -263,7 +293,7 @@ namespace System.Tests
         }
 
         [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // fail fast crashes the process
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void FailFast_ExceptionStackTrace_InnerException()
         {
             // Test if inner exception details are also logged
@@ -287,7 +317,7 @@ namespace System.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Tests OS-specific environment
+        [PlatformSpecific(TestPlatforms.AnyUnix | TestPlatforms.Browser)]  // Tests OS-specific environment
         public void GetFolderPath_Unix_PersonalIsHomeAndUserProfile()
         {
             Assert.Equal(Environment.GetEnvironmentVariable("HOME"), Environment.GetFolderPath(Environment.SpecialFolder.Personal));

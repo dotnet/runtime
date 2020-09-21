@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #ifndef __STRONGNAME_HOLDERS_H__
 #define __STRONGNAME_HOLDERS_H__
@@ -18,6 +17,7 @@ void VoidStrongNameFreeBuffer(__in T *pBuffer)
 {
     StrongNameFreeBuffer(reinterpret_cast<BYTE *>(pBuffer));
 }
-NEW_WRAPPER_TEMPLATE1(StrongNameBufferHolder, VoidStrongNameFreeBuffer<_TYPE>);
+template<typename _TYPE>
+using StrongNameBufferHolder = SpecializedWrapper<_TYPE, VoidStrongNameFreeBuffer<_TYPE>>;
 
 #endif // !__STRONGNAME_HOLDERS_H__

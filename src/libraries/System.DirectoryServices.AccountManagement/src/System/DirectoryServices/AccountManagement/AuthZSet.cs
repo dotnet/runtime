@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -524,10 +523,10 @@ namespace System.DirectoryServices.AccountManagement
         //
 
         // The user whose groups we're retrieving
-        private readonly SafeMemoryPtr _psUserSid = null;
+        private readonly SafeMemoryPtr _psUserSid;
 
         // The SID of the machine domain of the machine we're running on
-        private readonly SafeMemoryPtr _psMachineSid = null;
+        private readonly SafeMemoryPtr _psMachineSid;
 
         // The user's StoreCtx
         private readonly StoreCtx _userStoreCtx;
@@ -551,16 +550,16 @@ namespace System.DirectoryServices.AccountManagement
         private readonly SidList _groupSidList;
 
         // The native TOKEN_GROUPS returned by AuthzGetInformationFromContext
-        private readonly SafeMemoryPtr _psBuffer = null;
+        private readonly SafeMemoryPtr _psBuffer;
 
         // Have we been disposed?
-        private bool _disposed = false;
+        private bool _disposed;
 
         // Maps sidIssuerName --> PrincipalContext
         private readonly Hashtable _contexts = new Hashtable();
 
         // Contains cached results if the local machine is  a DC.
-        private bool? _localMachineIsDC = null;
+        private bool? _localMachineIsDC;
 
         //
         // Guarantees finalization of the native resources

@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <!-- There is a Windows and a non-Windows version of this test to allow it to be compiled for all targets -->
+    <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' == 'true'">true</CLRTestTargetUnsupported>
+    <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
+    <DisableProjectBuild>true</DisableProjectBuild>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildProjectName).cs" />
+  </ItemGroup>
+</Project>

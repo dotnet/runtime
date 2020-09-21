@@ -166,12 +166,6 @@ public:
         DWORD HandlerLength;
         DWORD ClassToken; // one view of symetric union
     };
-    struct Agnostic_AllocMethodBlockCounts
-    {
-        DWORD count;
-        DWORD pBlockCounts_index;
-        DWORD result;
-    };
     struct Agnostic_CORINFO_SIG_INFO2
     {
         DWORD     callConv;
@@ -328,12 +322,9 @@ public:
                             CorJitFuncKind funcKind);
     void dmpAllocUnwindInfo(DWORD key, const Agnostic_AllocUnwindInfo& value);
 
-    void recAllocMethodBlockCounts(ULONG count, ICorJitInfo::BlockCounts** pBlockCounts, HRESULT result);
-    void dmpAllocMethodBlockCounts(DWORD key, const Agnostic_AllocMethodBlockCounts& value);
-    HRESULT repAllocMethodBlockCounts(ULONG count, ICorJitInfo::BlockCounts** pBlockCounts);
-
     void recRecordCallSite(ULONG instrOffset, CORINFO_SIG_INFO* callSig, CORINFO_METHOD_HANDLE methodHandle);
-    void dmpRecordCallSite(DWORD key, const Agnostic_RecordCallSite& value);
+    void dmpRecordCallSiteWithSignature(DWORD key, const Agnostic_RecordCallSite& value) const;
+    void dmpRecordCallSiteWithoutSignature(DWORD key, DWORDLONG methodHandle) const;
     void repRecordCallSite(ULONG instrOffset, CORINFO_SIG_INFO* callSig, CORINFO_METHOD_HANDLE methodHandle);
     bool fndRecordCallSiteSigInfo(ULONG instrOffset, CORINFO_SIG_INFO* pCallSig);
     bool fndRecordCallSiteMethodHandle(ULONG instrOffset, CORINFO_METHOD_HANDLE* pMethodHandle);

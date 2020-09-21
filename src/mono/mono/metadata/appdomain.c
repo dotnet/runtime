@@ -1052,10 +1052,11 @@ gboolean
 mono_domain_owns_vtable_slot (MonoDomain *domain, gpointer vtable_slot)
 {
 	gboolean res;
+	MonoMemoryManager *memory_manager = mono_domain_ambient_memory_manager (domain);
 
-	mono_domain_lock (domain);
-	res = mono_mempool_contains_addr (domain->mp, vtable_slot);
-	mono_domain_unlock (domain);
+	mono_mem_manager_lock (memory_manager);
+	res = mono_mempool_contains_addr (memory_manager->mp, vtable_slot);
+	mono_mem_manager_unlock (memory_manager);
 	return res;
 }
 
@@ -1609,7 +1610,8 @@ mono_domain_fire_assembly_load_event (MonoDomain *domain, MonoAssembly *assembly
 	MONO_STATIC_POINTER_INIT_END (MonoMethod, method)
 	goto_if_nok (error, exit);
 
-	MonoReflectionAssemblyHandle assembly_handle = mono_assembly_get_object_handle (domain, assembly, error);
+	MonoReflectionAssemblyHandle assembly_handle;
+	assembly_handle = mono_assembly_get_object_handle (domain, assembly, error);
 	goto_if_nok (error, exit);
 
 	gpointer args [1];
@@ -1677,7 +1679,8 @@ mono_domain_fire_assembly_load (MonoAssemblyLoadContext *alc, MonoAssembly *asse
 #endif
 	mono_domain_assemblies_unlock (domain);
 
-	mono_domain_fire_assembly_load_event (domain, assembly, error_out);
+	if (assembly->context.kind != MONO_ASMCTX_INTERNAL)
+		mono_domain_fire_assembly_load_event (domain, assembly, error_out);
 
 leave:
 	mono_error_cleanup (error);
@@ -2145,7 +2148,7 @@ mono_is_shadow_copy_enabled (MonoDomain *domain, const gchar *dir_name)
 	if (!is_ok (error))
 		goto exit;
 
-	found = !!strstr (dir_name, base_dir);
+	found = strstr (dir_name, base_dir) != 0;
 	if (found)
 		goto exit;
 
@@ -2478,7 +2481,7 @@ mono_domain_assembly_preload (MonoAssemblyLoadContext *alc,
 
 		char *base_dir = get_app_context_base_directory (error);
 		search_path [0] = base_dir;
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Domain %s (%p) ApplicationBase is %s", domain->friendly_name, domain, base_dir);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Domain (%p) ApplicationBase is %s", domain, base_dir);
 
 		result = real_load (search_path, aname->culture, aname->name, &req);
 
@@ -2603,8 +2606,10 @@ ves_icall_System_Reflection_Assembly_InternalLoad (MonoStringHandle name_handle,
 	if (!parsed)
 		goto fail;
 
-	MonoAssemblyCandidatePredicate predicate = NULL;
-	void* predicate_ud = NULL;
+	MonoAssemblyCandidatePredicate predicate;
+	void* predicate_ud;
+	predicate = NULL;
+	predicate_ud = NULL;
 	if (mono_loader_get_strict_assembly_name_check ()) {
 		predicate = &mono_assembly_candidate_predicate_sn_same_name;
 		predicate_ud = &aname;
@@ -2817,7 +2822,7 @@ mono_alc_load_raw_bytes (MonoAssemblyLoadContext *alc, guint8 *assembly_data, gu
 {
 	MonoAssembly *ass = NULL;
 	MonoImageOpenStatus status;
-	MonoImage *image = mono_image_open_from_data_internal (alc, (char*)assembly_data, raw_assembly_len, FALSE, NULL, refonly, FALSE, NULL);
+	MonoImage *image = mono_image_open_from_data_internal (alc, (char*)assembly_data, raw_assembly_len, FALSE, NULL, refonly, FALSE, NULL, NULL);
 
 	if (!image) {
 		mono_error_set_bad_image_by_name (error, "In memory assembly", "0x%p", assembly_data);
@@ -3225,6 +3230,7 @@ unload_thread_main (void *arg)
 {
 	unload_data *data = (unload_data*)arg;
 	MonoDomain *domain = data->domain;
+	MonoMemoryManager *memory_manager = mono_domain_memory_manager (domain);
 	int i;
 	gsize result = 1; // failure
 
@@ -3257,6 +3263,7 @@ unload_thread_main (void *arg)
 
 	mono_loader_lock ();
 	mono_domain_lock (domain);
+	mono_mem_manager_lock (memory_manager);
 	/*
 	 * We need to make sure that we don't have any remsets
 	 * pointing into static data of the to-be-freed domain because
@@ -3266,17 +3273,18 @@ unload_thread_main (void *arg)
 	 * now be null we won't do any unnecessary copies and after
 	 * the collection there won't be any more remsets.
 	 */
-	for (i = 0; i < domain->class_vtable_array->len; ++i)
-		zero_static_data ((MonoVTable *)g_ptr_array_index (domain->class_vtable_array, i));
+	for (i = 0; i < memory_manager->class_vtable_array->len; ++i)
+		zero_static_data ((MonoVTable *)g_ptr_array_index (memory_manager->class_vtable_array, i));
 #if !HAVE_BOEHM_GC
 	mono_gc_collect (0);
 #endif
-	for (i = 0; i < domain->class_vtable_array->len; ++i)
-		clear_cached_vtable ((MonoVTable *)g_ptr_array_index (domain->class_vtable_array, i));
+	for (i = 0; i < memory_manager->class_vtable_array->len; ++i)
+		clear_cached_vtable ((MonoVTable *)g_ptr_array_index (memory_manager->class_vtable_array, i));
 	deregister_reflection_info_roots (domain);
 
 	mono_assembly_cleanup_domain_bindings (domain->domain_id);
 
+	mono_mem_manager_unlock (memory_manager);
 	mono_domain_unlock (domain);
 	mono_loader_unlock ();
 

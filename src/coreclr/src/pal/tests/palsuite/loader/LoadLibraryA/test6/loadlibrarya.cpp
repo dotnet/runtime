@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*=============================================================
 **
@@ -60,7 +59,7 @@ BOOL PALAPI TestDll(HMODULE hLib)
     return (TRUE);
 }
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(loader_LoadLibraryA_test6_paltest_loadlibrarya_test6, "loader/LoadLibraryA/test6/paltest_loadlibrarya_test6")
 {
     HANDLE hFullLib;
     HANDLE hShortLib;
@@ -166,7 +165,7 @@ cleanUpOne:
 
     /* Terminate the PAL.
      */
-    PAL_Terminate();
+    PAL_TerminateEx(iRetVal);
     return iRetVal;
 
 }

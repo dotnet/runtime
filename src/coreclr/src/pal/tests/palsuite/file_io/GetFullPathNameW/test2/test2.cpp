@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*=====================================================================
 **
@@ -17,11 +16,11 @@
 
 #include <palsuite.h>
 
-WCHAR szwDotDot[]   = {'.','.','\\','\0'};
-WCHAR szwFileName[] = {'t','e','s','t','i','n','g','.','t','m','p','\0'};
-
-int __cdecl main(int argc, char *argv[])
+PALTEST(file_io_GetFullPathNameW_test2_paltest_getfullpathnamew_test2, "file_io/GetFullPathNameW/test2/paltest_getfullpathnamew_test2")
 {
+    WCHAR szwDotDot[]   = {'.','.','\\','\0'};
+    WCHAR szwFileName[] = {'t','e','s','t','i','n','g','.','t','m','p','\0'};
+
     DWORD dwRc = 0;
     WCHAR szwReturnedPath[_MAX_DIR+1];
     WCHAR szwFullFileName[_MAX_DIR+1];
@@ -46,8 +45,8 @@ int __cdecl main(int argc, char *argv[])
 
     /* Initialize the receiving char buffers.
      */    
-    memset(szwReturnedPath, 0, _MAX_DIR+1);
-    memset(szwFullFileName, 0, _MAX_DIR+1);
+    memset(szwReturnedPath, 0, sizeof(szwReturnedPath));
+    memset(szwFullFileName, 0, sizeof(szwFullFileName));
 
     /* Create Full filename to pass, will include '..\'
      * as a pre-fix. */

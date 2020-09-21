@@ -11,13 +11,12 @@
     <WarningsNotAsErrors>42025</WarningsNotAsErrors>
     <DefineConstants>$(DefineConstants),LATEBINDING=True</DefineConstants>
     <DefineConstants Condition="'$(TargetsWindows)' == 'true'">$(DefineConstants),TARGET_WINDOWS=True</DefineConstants>
-    <NoWarn Condition="'$(TargetsWindows)' != 'true'">$(NoWarn);CA1823</NoWarn> <!-- Avoid unused fields warnings in Unix build -->
+    <NoWarn>$(NoWarn),CA1810,CA2200</NoWarn>
+    <NoWarn Condition="'$(TargetsWindows)' != 'true'">$(NoWarn);CA1823</NoWarn>
+    <!-- Avoid unused fields warnings in Unix build -->
     <AssemblyName>Microsoft.VisualBasic.Core</AssemblyName>
-    <NoStdLib>true</NoStdLib>
     <RemoveIntegerChecks>false</RemoveIntegerChecks>
     <RootNamespace />
-    <!-- No plans to fix the analyzer issues. -->
-    <EnableAnalyzers>false</EnableAnalyzers>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-Windows_NT</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
@@ -95,8 +94,8 @@
     <Compile Include="Microsoft\VisualBasic\VBMath.vb" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Win32.Registry\src\Microsoft.Win32.Registry.csproj" />
     <Reference Include="Microsoft.Win32.Primitives" />
-    <Reference Include="Microsoft.Win32.Registry" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.NonGeneric" />
     <Reference Include="System.Collections.Specialized" />

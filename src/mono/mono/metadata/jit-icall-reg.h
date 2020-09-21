@@ -276,15 +276,18 @@ MONO_JIT_ICALL (mono_resume_unwind) \
 MONO_JIT_ICALL (mono_rethrow_preserve_exception) \
 MONO_JIT_ICALL (mono_string_builder_to_utf16) \
 MONO_JIT_ICALL (mono_string_builder_to_utf8) \
+MONO_JIT_ICALL (mono_string_from_ansibstr) \
 MONO_JIT_ICALL (mono_string_from_bstr_icall) \
 MONO_JIT_ICALL (mono_string_from_byvalstr) \
 MONO_JIT_ICALL (mono_string_from_byvalwstr) \
+MONO_JIT_ICALL (mono_string_from_tbstr) \
 MONO_JIT_ICALL (mono_string_new_len_wrapper) \
 MONO_JIT_ICALL (mono_string_new_wrapper_internal) \
 MONO_JIT_ICALL (mono_string_to_ansibstr) \
 MONO_JIT_ICALL (mono_string_to_bstr) \
 MONO_JIT_ICALL (mono_string_to_byvalstr) \
 MONO_JIT_ICALL (mono_string_to_byvalwstr) \
+MONO_JIT_ICALL (mono_string_to_tbstr) \
 MONO_JIT_ICALL (mono_string_to_utf16_internal) \
 MONO_JIT_ICALL (mono_string_to_utf8str) \
 MONO_JIT_ICALL (mono_string_utf16_to_builder) \
@@ -305,6 +308,8 @@ MONO_JIT_ICALL (mono_threads_state_poll) \
 MONO_JIT_ICALL (mono_throw_exception) \
 MONO_JIT_ICALL (mono_throw_method_access) \
 MONO_JIT_ICALL (mono_throw_bad_image) \
+MONO_JIT_ICALL (mono_throw_not_supported) \
+MONO_JIT_ICALL (mono_throw_invalid_program) \
 MONO_JIT_ICALL (mono_trace_enter_method) \
 MONO_JIT_ICALL (mono_trace_leave_method) \
 MONO_JIT_ICALL (mono_trace_tail_method) \
@@ -335,6 +340,7 @@ MONO_JIT_ICALL (ves_icall_runtime_class_init) \
 MONO_JIT_ICALL (ves_icall_string_alloc) \
 MONO_JIT_ICALL (ves_icall_string_new_wrapper) \
 MONO_JIT_ICALL (ves_icall_thread_finish_async_abort) \
+MONO_JIT_ICALL (mono_marshal_lookup_pinvoke) \
 	\
 MONO_JIT_ICALL (count) \
 
