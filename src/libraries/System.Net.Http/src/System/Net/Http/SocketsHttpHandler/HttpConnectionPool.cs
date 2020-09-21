@@ -1357,22 +1357,32 @@ namespace System.Net.Http
             return _sslOptionsHttp11!;
         }
 
-        private async ValueTask<HttpConnection> ConstructHttp11Connection(Stream stream, TransportContext? transportContext, HttpRequestMessage request, CancellationToken cancellationToken)
+        private async ValueTask<Stream> ApplyPlaintextFilter(Stream stream, Version httpVersion, HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            if (Settings._plaintextStreamFilter is not null)
+            if (Settings._plaintextStreamFilter is null)
             {
-                stream = await Settings._plaintextStreamFilter(new SocketsHttpPlaintextStreamFilterContext(stream, HttpVersion.Version11, request), cancellationToken).ConfigureAwait(false);
+                return stream;
             }
 
+            try
+            {
+                return await Settings._plaintextStreamFilter(new SocketsHttpPlaintextStreamFilterContext(stream, httpVersion, request), cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception e)
+            {
+                throw new HttpRequestException("An exception occurred while calling the PlaintextStreamFilter callback.", e);
+            }
+        }
+
+        private async ValueTask<HttpConnection> ConstructHttp11Connection(Stream stream, TransportContext? transportContext, HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            stream = await ApplyPlaintextFilter(stream, HttpVersion.Version11, request, cancellationToken).ConfigureAwait(false);
             return new HttpConnection(this, stream, transportContext);
         }
 
         private async ValueTask<Http2Connection> ConstructHttp2Connection(Stream stream, HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            if (Settings._plaintextStreamFilter is not null)
-            {
-                stream = await Settings._plaintextStreamFilter(new SocketsHttpPlaintextStreamFilterContext(stream, HttpVersion.Version20, request), cancellationToken).ConfigureAwait(false);
-            }
+            stream = await ApplyPlaintextFilter(stream, HttpVersion.Version20, request, cancellationToken).ConfigureAwait(false);
 
             Http2Connection http2Connection = new Http2Connection(this, stream);
             await http2Connection.SetupAsync().ConfigureAwait(false);

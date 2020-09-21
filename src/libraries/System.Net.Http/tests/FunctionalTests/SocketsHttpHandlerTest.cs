@@ -2681,6 +2681,44 @@ namespace System.Net.Http.Functional.Tests
             string response = await clientTask;
             Assert.Equal("foo", response);
         }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async void PlaintextStreamFilter_ExceptionDuringCallback_ThrowsHttpRequestExceptionWithInnerException(bool useSsl)
+        {
+            Exception e = new Exception("hello!");
+
+            GenericLoopbackOptions options = new GenericLoopbackOptions() { UseSsl = useSsl };
+            await LoopbackServerFactory.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Get, uri);
+                    requestMessage.Version = UseVersion;
+                    requestMessage.VersionPolicy = HttpVersionPolicy.RequestVersionExact;
+
+                    using HttpClientHandler handler = CreateHttpClientHandler();
+                    handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+                    var socketsHandler = (SocketsHttpHandler)GetUnderlyingSocketsHttpHandler(handler);
+                    socketsHandler.PlaintextStreamFilter = (context, token) =>
+                    {
+                        throw e;
+                    };
+
+                    using HttpClient client = CreateHttpClient(handler);
+
+                    HttpRequestException hre = await Assert.ThrowsAnyAsync<HttpRequestException>(async () => await client.SendAsync(requestMessage));
+                    Assert.Equal(e, hre.InnerException);
+                },
+                async server =>
+                {
+                    try
+                    {
+                        await server.AcceptConnectionSendResponseAndCloseAsync(content: "foo");
+                    }
+                    catch { }
+                }, options: options);
+        }
     }
 
     public sealed class SocketsHttpHandlerTest_PlaintextStreamFilter_Http11 : SocketsHttpHandlerTest_PlaintextStreamFilter
