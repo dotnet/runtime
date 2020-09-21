@@ -628,122 +628,45 @@ may help to copy its "DIA SDK" folder into "%VSINSTALLDIR%" manually, then try a
 exit /b 1
 
 :PrecompileFX
-set __TotalPrecompiled=0
-set __FailedToPrecompile=0
-set __FailedAssemblies=
-set __CompositeOutputDir=%CORE_ROOT%\composite.out
-set __CompositeResponseFile=%__CompositeOutputDir%\framework-r2r.dll.rsp
+
+set __CrossgenCmd="%__RepoRootDir%\dotnet.cmd" "%CORE_ROOT%\R2RTest\R2RTest.dll" compile-framework -cr "%CORE_ROOT%" --output-directory "%CORE_ROOT%\crossgen.out" --target-arch %__BuildArch% -dop %NUMBER_OF_PROCESSORS%
+
+if defined __CompositeBuildMode (
+    set __CrossgenCmd=%__CrossgenCmd% --composite
+)
 
 set __CrossgenDir=%__BinDir%
-if /i "%__BuildArch%" == "arm" (set __CrossgenDir=!__CrossgenDir!\x86)
-if /i "%__BuildArch%" == "arm64" (set __CrossgenDir=!__CrossgenDir!\x64)
-
-if /i "%__DoCrossgen2%" == "1" (
-  if /i "%__BuildArch%" == "x86" (set __CrossgenDir=!__CrossgenDir!\x64)
-)
-
-set __CrossgenExe="%__CrossgenDir%\crossgen.exe"
-set __Crossgen2Dll="%__RepoRootDir%\dotnet.cmd" "%__CrossgenDir%\crossgen2\crossgen2.dll"
-
-if defined __CompositeBuildMode (
-    mkdir !__CompositeOutputDir!
-    del /Q !__CompositeResponseFile!
-    echo --composite>>!__CompositeResponseFile!
-    echo -O>>!__CompositeResponseFile!
-    echo --targetarch:%__BuildArch%>>!__CompositeResponseFile!
-    echo --out^:%__CompositeOutputDir%\framework-r2r.dll>>!__CompositeResponseFile!
-)
-
-for %%F in ("%CORE_ROOT%\System.*.dll";"%CORE_ROOT%\Microsoft.*.dll";%CORE_ROOT%\netstandard.dll;%CORE_ROOT%\mscorlib.dll) do (
-    if not "%%~nxF"=="System.Runtime.WindowsRuntime.dll" (
-        if defined __CompositeBuildMode (
-            echo %%F>>!__CompositeResponseFile!
-        ) else (
-            call :PrecompileAssembly %%F %%~nxF __TotalPrecompiled __FailedToPrecompile __FailedAssemblies
-            echo Processed: !__TotalPrecompiled!, failed !__FailedToPrecompile!
-        )
-    ))
-)
-
-if defined __CompositeBuildMode (
-    echo Composite response line^: %__CompositeResponseFile%
-    type "%__CompositeResponseFile%"
-)
-
-if defined __CompositeBuildMode (
-    set __CompositeCommandLine=%__Crossgen2Dll%
-    set __CompositeCommandLine=!__CompositeCommandLine! "@%__CompositeResponseFile%"
-    echo Building composite R2R framework^: !__CompositeCommandLine!
-    call !__CompositeCommandLine!
-    set __FailedToPrecompile=!ERRORLEVEL!
-    copy /Y "!__CompositeOutputDir!\*.*" "!CORE_ROOT!\"
-)
-
-if !__FailedToPrecompile! NEQ 0 (
-    @echo Failed assemblies:
-    FOR %%G IN (!__FailedAssemblies!) do echo   %%G
-)
-
-exit /b !__FailedToPrecompile!
-
-REM Compile the managed assemblies in Core_ROOT before running the tests
-:PrecompileAssembly
-
-set AssemblyPath=%1
-set AssemblyName=%2
-
-REM Intentionally avoid using the .dll extension to prevent
-REM subsequent compilations from picking it up as a reference
-set __CrossgenOutputFile=%CORE_ROOT%\temp.ni._dll
-set __CrossgenResponseFile="%CORE_ROOT%\%AssemblyName%.rsp
-set __CrossgenCmd=
-
-del /Q %__CrossgenResponseFile%
-
 if defined __DoCrossgen (
-    set __CrossgenCmd=!__CrossgenExe! @!__CrossgenResponseFile!
-    echo /Platform_Assemblies_Paths "!CORE_ROOT!">>!__CrossgenResponseFile!
-    echo /in !AssemblyPath!>>!__CrossgenResponseFile!
-    echo /out !__CrossgenOutputFile!>>!__CrossgenResponseFile!
+    if /i "%__BuildArch%" == "arm" (
+        set __CrossgenDir=!__CrossgenDir!\x86
+    )
+    if /i "%__BuildArch%" == "arm64" (
+        set __CrossgenDir=!__CrossgenDir!\x64
+    )
+    set __CrossgenCmd=%__CrossgenCmd% --crossgen --nocrossgen2 --crossgen-path "!__CrossgenDir!\crossgen.exe"
 ) else (
-    set __CrossgenCmd=!__Crossgen2Dll! @!__CrossgenResponseFile!
-    echo -r:!CORE_ROOT!\System.*.dll>>!__CrossgenResponseFile!
-    echo -r:!CORE_ROOT!\Microsoft.*.dll>>!__CrossgenResponseFile!
-    echo -r:!CORE_ROOT!\mscorlib.dll>>!__CrossgenResponseFile!
-    echo -r:!CORE_ROOT!\netstandard.dll>>!__CrossgenResponseFile!
-    echo --verify-type-and-field-layout>>!__CrossgenResponseFile!
-    echo -O>>!__CrossgenResponseFile!
-    echo --inputbubble>>!__CrossgenResponseFile!
-    echo --out:!__CrossgenOutputFile!>>!__CrossgenResponseFile!
-    echo !AssemblyPath!>>!__CrossgenResponseFile!
-    echo --targetarch:!__BuildArch!>>!__CrossgenResponseFile!
+    if /i "%__BuildArch%" == "arm" (
+        set __CrossgenDir=!__CrossgenDir!\x64
+    )
+    if /i "%__BuildArch%" == "arm64" (
+        set __CrossgenDir=!__CrossgenDir!\x64
+    )
+    if /i "%__BuildArch%" == "x86" (
+        set __CrossgenDir=!__CrossgenDir!\x64
+    )
+    set __CrossgenCmd=%__CrossgenCmd% --verify-type-and-field-layout --crossgen2-parallelism 1 --crossgen2-path "!__CrossgenDir!\crossgen2\crossgen2.dll"
 )
 
-echo !__CrossgenCmd!
-call !__CrossgenCmd!
-
+echo Running %__CrossgenCmd%
+call %__CrossgenCmd%
 set /a __exitCode = !errorlevel!
 
-set /a "%~3+=1"
-
-if "%__exitCode%" == "-2146230517" (
-    echo %AssemblyPath% is not a managed assembly.
-    exit /b 0
-)
-
 if %__exitCode% neq 0 (
-    echo Unable to precompile %AssemblyPath%, exit code is %__exitCode%
-    set /a "%~4+=1"
-    set "%~5=!%~5!,!AssemblyName!"
-    exit /b 0
+    echo Failed to crossgen the framework
+    exit /b 1
 )
 
-REM Delete original .dll & replace it with the Crossgened .dll
-del %AssemblyPath%
-ren "%__CrossgenOutputFile%" %AssemblyName%
+move "%CORE_ROOT%\crossgen.out\*.dll" %CORE_ROOT% > nul
+del /q /s "%CORE_ROOT%\crossgen.out" > nul
 
-echo Successfully precompiled %AssemblyPath%
 exit /b 0
-
-:Exit_Failure
-exit /b 1
