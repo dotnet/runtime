@@ -44,7 +44,7 @@ namespace AppHost.Bundle.Tests
                 .CaptureStdOut()
                 .Execute()
                 .Should()
-                .Pass()
+                .Fail()
                 .And
                 .HaveStdOutContaining("CodeBase NotSupported");
         }
