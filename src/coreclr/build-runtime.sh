@@ -196,10 +196,6 @@ __BuildPALTests=0
 __BuildAllJits=1
 __BuildRuntime=1
 
-#if [[ "${__BuildArch}" != "${__HostArch}" && "${__BuildOS}" == "OSX" ]]; then
-#    __CrossBuild=1
-#fi
-
 source "$__ProjectRoot"/_build-commons.sh
 
 # Set dependent variables
