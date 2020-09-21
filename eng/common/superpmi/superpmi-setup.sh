@@ -111,6 +111,13 @@ export PATH="$source_directory/.dotnet:$PATH"
 echo "dotnet PATH: $PATH"
 ./bootstrap.sh
 
+cp $jitutils_directory/bin/pmi.dll $superpmi_directory
+cd $source_directory
+rm -r $jitutils_directory
+
+echo "Printing files in $workitem_directory"
+ls -R -1 $workitem_directory
+
 ci=true
 
 _script_dir=$(pwd)/eng/common
