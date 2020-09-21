@@ -765,13 +765,16 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                 Debug.Assert(!IsVarArg || !HasParamType);
 
-#if PROJECTN
+#if !PROJECTN
                 // DESKTOP BEHAVIOR - This block is disabled for x86 as the param arg is the last argument on .NET Framework x86.
-                if (HasParamType)
-                {
-                    numRegistersUsed++;
-                }
+                if (!_transitionBlock.IsX86)
 #endif
+                {
+                    if (HasParamType)
+                    {
+                        numRegistersUsed++;
+                    }
+                }
 
                 if (!_transitionBlock.IsX86 && IsVarArg)
                 {
