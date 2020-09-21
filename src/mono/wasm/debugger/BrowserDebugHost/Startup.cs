@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
 using System.Text.Json;
@@ -13,6 +14,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
@@ -33,9 +35,23 @@ namespace Microsoft.WebAssembly.Diagnostics
         public IConfiguration Configuration { get; }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IOptionsMonitor<ProxyOptions> optionsAccessor, IWebHostEnvironment env)
+        public void Configure(IApplicationBuilder app, IOptionsMonitor<ProxyOptions> optionsAccessor, IWebHostEnvironment env, IHostApplicationLifetime applicationLifetime)
         {
             ProxyOptions options = optionsAccessor.CurrentValue;
+
+            if (options.OwnerPid.HasValue)
+            {
+                Process ownerProcess = Process.GetProcessById(options.OwnerPid.Value);
+                if (ownerProcess != null)
+                {
+                    ownerProcess.EnableRaisingEvents = true;
+                    ownerProcess.Exited += (sender, eventArgs) =>
+                    {
+                        applicationLifetime.StopApplication();
+                    };
+                }
+            }
+
             app.UseDeveloperExceptionPage()
                 .UseWebSockets()
                 .UseDebugProxy(options);
