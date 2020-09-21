@@ -500,14 +500,14 @@ MappedImageLayout::MappedImageLayout(PEImage* pOwner)
     m_Layout=LAYOUT_MAPPED;
     m_pOwner=pOwner;
 
-    _ASSERTE(!pOwner->IsInBundle());
     HANDLE hFile = pOwner->GetFileHandle();
+    INT64 offset = pOwner->GetOffset();
 
     // If mapping was requested, try to do SEC_IMAGE mapping
     LOG((LF_LOADER, LL_INFO100, "PEImage: Opening OS mapped %S (hFile %p)\n", (LPCWSTR) GetPath(), hFile));
 
 #ifndef TARGET_UNIX
-
+    _ASSERTE(!pOwner->IsInBundle());
 
     // Let OS map file for us
 
@@ -603,7 +603,7 @@ MappedImageLayout::MappedImageLayout(PEImage* pOwner)
 #else //!TARGET_UNIX
 
 #ifndef CROSSGEN_COMPILE
-    m_LoadedFile = PAL_LOADLoadPEFile(hFile, 0);
+    m_LoadedFile = PAL_LOADLoadPEFile(hFile, offset);
 
     if (m_LoadedFile == NULL)
     {
