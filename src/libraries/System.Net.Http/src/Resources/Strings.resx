@@ -204,6 +204,9 @@
   <data name="net_http_client_http_baseaddress_required" xml:space="preserve">
     <value>Only 'http' and 'https' schemes are allowed.</value>
   </data>
+  <data name="net_http_client_http_browser_baseaddress_required" xml:space="preserve">
+    <value>Only 'http', 'https', and 'blob' schemes are allowed.</value>
+  </data>
   <data name="net_http_parser_invalid_base64_string" xml:space="preserve">
     <value>Value '{0}' is not a valid Base64 string. Error: {1}</value>
   </data>
@@ -353,6 +356,9 @@
   </data>
   <data name="net_http_invalid_response_status_reason" xml:space="preserve">
     <value>Received status phrase could not be decoded with iso-8859-1: '{0}'.</value>
+  </data>
+  <data name="net_http_invalid_response_multiple_status_codes" xml:space="preserve">
+    <value>The response contained more than one status code.</value>
   </data>
   <data name="net_http_invalid_response_header_folder" xml:space="preserve">
     <value>Received an invalid folded header.</value>

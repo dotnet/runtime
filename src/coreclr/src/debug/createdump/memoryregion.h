@@ -124,7 +124,7 @@ public:
 
     void Trace() const
     {
-        TRACE("%" PRIA PRIx64 " - %" PRIA PRIx64 " (%06" PRId64 ") %" PRIA PRIx64 " %c%c%c%c%c%c %s\n",
+        TRACE("%" PRIA PRIx64 " - %" PRIA PRIx64 " (%06" PRIx64 ") %" PRIA PRIx64 " %c%c%c%c%c%c %02x %s\n",
             m_startAddress,
             m_endAddress,
             Size() / PAGE_SIZE,
@@ -135,6 +135,7 @@ public:
             (m_flags & MEMORY_REGION_FLAG_SHARED) ? 's' : '-',
             (m_flags & MEMORY_REGION_FLAG_PRIVATE) ? 'p' : '-',
             (m_flags & MEMORY_REGION_FLAG_MEMORY_BACKED) ? 'b' : '-',
+            m_flags,
             m_fileName.c_str());
     }
 };

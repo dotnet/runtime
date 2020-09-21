@@ -16370,6 +16370,12 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             case CEE_MACRO_END:
 
             default:
+                if (compIsForInlining())
+                {
+                    compInlineResult->NoteFatal(InlineObservation::CALLEE_COMPILATION_ERROR);
+                    return;
+                }
+
                 BADCODE3("unknown opcode", ": %02X", (int)opcode);
         }
 
@@ -16879,7 +16885,7 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
                                 info.compCompHnd->getChildType(info.compMethodInfo->args.retTypeClass,
                                                                &referentClassHandle);
                             if (varTypeIsStruct(JITtype2varType(referentType)) &&
-                                (varDsc->lvVerTypeInfo.GetClassHandle() != referentClassHandle))
+                                (varDsc->GetStructHnd() != referentClassHandle))
                             {
                                 // We are returning a byref to struct1; the method signature specifies return type as
                                 // byref

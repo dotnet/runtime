@@ -7,8 +7,6 @@ Imports System
 Imports System.ComponentModel
 Imports System.Globalization
 
-Imports Microsoft.VisualBasic.CompilerServices.Utils
-
 Namespace Microsoft.VisualBasic.FileIO
 
     ''' <summary>

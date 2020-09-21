@@ -18,10 +18,10 @@
 #define MAX_THREADS 64
 #define REPEAT_COUNT 10000
 
-LONG GlobalCounter = 0;
-void IncrementCounter(void);
+LONG GlobalCounter_InterlockedIncrement64_test2 = 0;
+void IncrementCounter_InterlockedIncrement64_test2(void);
 
-int __cdecl main(int argc, char *argv[]) 
+PALTEST(miscellaneous_InterlockedIncrement64_test2_paltest_interlockedincrement64_test2, "miscellaneous/InterlockedIncrement64/test2/paltest_interlockedincrement64_test2")
 {
 
 	LONG TotalOperations=0;
@@ -29,7 +29,7 @@ int __cdecl main(int argc, char *argv[])
 	DWORD dwThreadID = 0;
 	HANDLE hThread[MAX_THREADS];
 	TotalOperations = MAX_THREADS * REPEAT_COUNT;
-	GlobalCounter = 0;
+	GlobalCounter_InterlockedIncrement64_test2 = 0;
 
     /*
      * Initialize the PAL and return FAILURE if this fails
@@ -50,7 +50,7 @@ int __cdecl main(int argc, char *argv[])
 			hThread[i] = CreateThread( 
 				NULL,                        // default security attributes 
 				0,                           // use default stack size  
-				(LPTHREAD_START_ROUTINE) IncrementCounter,                  // thread function 
+				(LPTHREAD_START_ROUTINE) IncrementCounter_InterlockedIncrement64_test2,                  // thread function 
 				NULL,                // argument to thread function 
 				0,                           // use default creation flags 
 				&dwThreadID);                // returns the thread identifier 
@@ -76,7 +76,7 @@ int __cdecl main(int argc, char *argv[])
 		
 		/* Compare the value of  global counter with zero.  
 		*/
-		if (TotalOperations!=GlobalCounter)
+		if (TotalOperations!=GlobalCounter_InterlockedIncrement64_test2)
 			{
 				Fail("Test Case Failed: InterlockedDecrement \n");
 			}
@@ -86,13 +86,13 @@ int __cdecl main(int argc, char *argv[])
     return PASS; 
 } 
 
-void IncrementCounter(void)
+void IncrementCounter_InterlockedIncrement64_test2(void)
 {
 	int i=0;
 
 	for (i=0; i<REPEAT_COUNT;i++)
 	{
-		InterlockedIncrement(&GlobalCounter);
+		InterlockedIncrement(&GlobalCounter_InterlockedIncrement64_test2);
 	}
 }
 

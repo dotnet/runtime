@@ -380,11 +380,14 @@ public:
         _lvOtherArgReg(REG_STK)
         ,
 #endif // FEATURE_MULTIREG_ARGS
+        lvClassHnd(NO_CLASS_HANDLE)
+        ,
 #if ASSERTION_PROP
         lvRefBlks(BlockSetOps::UninitVal())
         ,
 #endif // ASSERTION_PROP
         lvPerSsaData()
+
     {
     }
 
@@ -858,7 +861,29 @@ public:
 
     typeInfo lvVerTypeInfo; // type info needed for verification
 
-    CORINFO_CLASS_HANDLE lvClassHnd; // class handle for the local, or null if not known
+    // class handle for the local or null if not known or not a class,
+    // for a struct handle use `GetStructHnd()`.
+    CORINFO_CLASS_HANDLE lvClassHnd;
+
+    // Get class handle for a struct local or implicitByRef struct local.
+    CORINFO_CLASS_HANDLE GetStructHnd() const
+    {
+#ifdef FEATURE_SIMD
+        if (lvSIMDType && (m_layout == nullptr))
+        {
+            return NO_CLASS_HANDLE;
+        }
+#endif
+        assert(m_layout != nullptr);
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+        assert(varTypeIsStruct(TypeGet()) || (lvIsImplicitByRef && (TypeGet() == TYP_BYREF)));
+#else
+        assert(varTypeIsStruct(TypeGet()));
+#endif
+        CORINFO_CLASS_HANDLE structHnd = m_layout->GetClassHandle();
+        assert(structHnd != NO_CLASS_HANDLE);
+        return structHnd;
+    }
 
     CORINFO_FIELD_HANDLE lvFieldHnd; // field handle for promoted struct fields
 
@@ -942,6 +967,7 @@ public:
     void SetLayout(ClassLayout* layout)
     {
         assert(varTypeIsStruct(lvType));
+        assert((m_layout == nullptr) || ClassLayout::AreCompatible(m_layout, layout));
         m_layout = layout;
     }
 
@@ -1452,13 +1478,13 @@ public:
     CorInfoHFAElemType _hfaElemKind : 3; // What kind of an HFA this is (CORINFO_HFA_ELEM_NONE if it is not an HFA).
 #endif
 
-    bool isLateArg()
+    bool isLateArg() const
     {
         bool isLate = (_lateArgInx != UINT_MAX);
         return isLate;
     }
 
-    unsigned GetLateArgInx()
+    unsigned GetLateArgInx() const
     {
         assert(isLateArg());
         return _lateArgInx;
@@ -1467,12 +1493,12 @@ public:
     {
         _lateArgInx = inx;
     }
-    regNumber GetRegNum()
+    regNumber GetRegNum() const
     {
         return (regNumber)regNums[0];
     }
 
-    regNumber GetOtherRegNum()
+    regNumber GetOtherRegNum() const
     {
         return (regNumber)regNums[1];
     }
@@ -1492,7 +1518,7 @@ public:
         return (regNumber)regNums[i];
     }
 
-    bool IsSplit()
+    bool IsSplit() const
     {
 #ifdef FEATURE_ARG_SPLIT
         return _isSplit;
@@ -1507,7 +1533,7 @@ public:
 #endif
     }
 
-    bool IsVararg()
+    bool IsVararg() const
     {
 #ifdef FEATURE_VARARG
         return _isVararg;
@@ -1522,7 +1548,7 @@ public:
 #endif // FEATURE_VARARG
     }
 
-    bool IsHfaArg()
+    bool IsHfaArg() const
     {
 #ifdef FEATURE_HFA
         return IsHfa(_hfaElemKind);
@@ -1531,7 +1557,7 @@ public:
 #endif
     }
 
-    bool IsHfaRegArg()
+    bool IsHfaRegArg() const
     {
 #ifdef FEATURE_HFA
         return IsHfa(_hfaElemKind) && isPassedInRegisters();
@@ -1540,7 +1566,7 @@ public:
 #endif
     }
 
-    unsigned intRegCount()
+    unsigned intRegCount() const
     {
 #if defined(UNIX_AMD64_ABI)
         if (this->isStruct)
@@ -1557,7 +1583,7 @@ public:
         return 0;
     }
 
-    unsigned floatRegCount()
+    unsigned floatRegCount() const
     {
 #if defined(UNIX_AMD64_ABI)
         if (this->isStruct)
@@ -1574,12 +1600,12 @@ public:
         return 0;
     }
 
-    unsigned stackSize()
+    unsigned stackSize() const
     {
         return (TARGET_POINTER_SIZE * this->numSlots);
     }
 
-    var_types GetHfaType()
+    var_types GetHfaType() const
     {
 #ifdef FEATURE_HFA
         return HfaTypeFromElemKind(_hfaElemKind);
@@ -1655,12 +1681,12 @@ public:
     }
 #endif // !TARGET_ARM
 
-    bool isPassedInRegisters()
+    bool isPassedInRegisters() const
     {
         return !IsSplit() && (numRegs != 0);
     }
 
-    bool isPassedInFloatRegisters()
+    bool isPassedInFloatRegisters() const
     {
 #ifdef TARGET_X86
         return false;
@@ -1669,14 +1695,14 @@ public:
 #endif
     }
 
-    bool isSingleRegOrSlot()
+    bool isSingleRegOrSlot() const
     {
         return !IsSplit() && ((numRegs == 1) || (numSlots == 1));
     }
 
     // Returns the number of "slots" used, where for this purpose a
     // register counts as a slot.
-    unsigned getSlotCount()
+    unsigned getSlotCount() const
     {
         if (isBackFilled)
         {
@@ -1697,7 +1723,7 @@ public:
 
     // Returns the size as a multiple of pointer-size.
     // For targets without HFAs, this is the same as getSlotCount().
-    unsigned getSize()
+    unsigned getSize() const
     {
         unsigned size = getSlotCount();
 #ifdef FEATURE_HFA
@@ -1766,7 +1792,7 @@ public:
     // - A node of a scalar type, passed in a single register or slot
     //   (or two slots in the case of a struct pass on the stack as TYP_DOUBLE).
     //
-    void checkIsStruct()
+    void checkIsStruct() const
     {
         GenTree* node = GetNode();
         if (isStruct)
@@ -1796,7 +1822,7 @@ public:
     }
 
 #ifdef DEBUG
-    void Dump();
+    void Dump() const;
 #endif
 };
 
@@ -1888,27 +1914,27 @@ public:
 
     void EvalArgsToTemps();
 
-    unsigned ArgCount()
+    unsigned ArgCount() const
     {
         return argCount;
     }
-    fgArgTabEntry** ArgTable()
+    fgArgTabEntry** ArgTable() const
     {
         return argTable;
     }
-    unsigned GetNextSlotNum()
+    unsigned GetNextSlotNum() const
     {
         return nextSlotNum;
     }
-    bool HasRegArgs()
+    bool HasRegArgs() const
     {
         return hasRegArgs;
     }
-    bool NeedsTemps()
+    bool NeedsTemps() const
     {
         return needsTemps;
     }
-    bool HasStackArgs()
+    bool HasStackArgs() const
     {
         return hasStackArgs;
     }
@@ -1933,7 +1959,7 @@ public:
         padStkAlign = AlignmentPad(curStackLevelInBytes, STACK_ALIGN);
     }
 
-    unsigned GetStkAlign()
+    unsigned GetStkAlign() const
     {
         return padStkAlign;
     }
@@ -1960,7 +1986,7 @@ public:
 #endif // defined(UNIX_X86_ABI)
 
     // Get the fgArgTabEntry for the arg at position argNum.
-    fgArgTabEntry* GetArgEntry(unsigned argNum, bool reMorphing = true)
+    fgArgTabEntry* GetArgEntry(unsigned argNum, bool reMorphing = true) const
     {
         fgArgTabEntry* curArgTabEntry = nullptr;
 
@@ -1986,12 +2012,12 @@ public:
 
     // Get the node for the arg at position argIndex.
     // Caller must ensure that this index is a valid arg index.
-    GenTree* GetArgNode(unsigned argIndex)
+    GenTree* GetArgNode(unsigned argIndex) const
     {
         return GetArgEntry(argIndex)->GetNode();
     }
 
-    void Dump(Compiler* compiler);
+    void Dump(Compiler* compiler) const;
 };
 
 #ifdef DEBUG
@@ -3323,7 +3349,7 @@ public:
         return &lvaTable[lclNum];
     }
 
-    LclVarDsc* lvaGetDesc(GenTreeLclVarCommon* lclVar)
+    LclVarDsc* lvaGetDesc(const GenTreeLclVarCommon* lclVar)
     {
         assert(lclVar->GetLclNum() < lvaCount);
         return &lvaTable[lclVar->GetLclNum()];
@@ -5384,6 +5410,7 @@ protected:
     }
 
     bool fgHaveProfileData();
+    void fgComputeProfileScale();
     bool fgGetProfileWeightForBasicBlock(IL_OFFSET offset, unsigned* weight);
     void fgInstrumentMethod();
 
@@ -8032,7 +8059,7 @@ private:
         {
             return false;
         }
-        return isOpaqueSIMDType(varDsc->lvVerTypeInfo.GetClassHandle());
+        return isOpaqueSIMDType(varDsc->GetStructHnd());
     }
 
     static bool isRelOpSIMDIntrinsic(SIMDIntrinsicID intrinsicId)

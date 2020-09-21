@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.WebAssembly.Diagnostics;
@@ -1062,6 +1063,57 @@ namespace DebuggerTests
             });
 
         [Theory]
+        [InlineData("BoxedTypeObjectTest", false)]
+        [InlineData("BoxedTypeObjectTestAsync", true)]
+        public async Task InspectBoxedTypeObject(string method_name, bool is_async) => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTest",
+            method_name,
+            9,
+            is_async ? "MoveNext" : method_name,
+            $"window.setTimeout(function() {{ invoke_static_method_async('[debugger-test] DebuggerTest:{method_name}'); }}, 1);",
+            wait_for_event_fn: async (pause_location) =>
+            {
+                var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
+                var dt = new DateTime(2310, 1, 2, 3, 4, 5);
+                await CheckProps(locals, new
+                {
+                    i = TNumber(5),
+                    o0 = TNumber(5),
+                    o1 = TNumber(5),
+                    o2 = TNumber(5),
+                    o3 = TNumber(5),
+
+                    oo = TObject("object"),
+                    oo0 = TObject("object"),
+                }, "locals");
+            });
+
+        [Theory]
+        [InlineData("BoxedAsClass", false)]
+        [InlineData("BoxedAsClassAsync", true)]
+        public async Task InspectBoxedAsClassLocals(string method_name, bool is_async) => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTest",
+            method_name,
+            6,
+            is_async ? "MoveNext" : method_name,
+            $"window.setTimeout(function() {{ invoke_static_method_async('[debugger-test] DebuggerTest:{method_name}'); }}, 1);",
+            wait_for_event_fn: async (pause_location) =>
+            {
+                var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
+                var dt = new DateTime(2310, 1, 2, 3, 4, 5);
+                Console.WriteLine (locals);
+
+                await CheckProps(locals, new
+                {
+                    vt_dt = TDateTime(new DateTime(4819, 5, 6, 7, 8, 9)),
+                    vt_gs = TValueType("Math.GenericStruct<string>"),
+                    e     = TEnum("System.IO.FileMode", "0"),
+                    ee    = TEnum("System.IO.FileMode", "Append")
+                }, "locals");
+            });
+
+
+        [Theory]
         [InlineData(false)]
         [InlineData(true)]
         public async Task InspectValueTypeMethodArgs(bool use_cfo)
@@ -1765,6 +1817,34 @@ namespace DebuggerTests
             });
 
         [Fact]
+        public async Task StepOverAsyncMethod()
+        {
+            var insp = new Inspector();
+            //Collect events
+            var scripts = SubscribeToScripts(insp);
+
+            await Ready();
+            await insp.Ready(async (cli, token) =>
+            {
+                ctx = new DebugTestContext(cli, insp, token, scripts);
+
+                var bp = await SetBreakpointInMethod("debugger-test.dll", "AsyncStepClass", "TestAsyncStepOut2", 2);
+                System.Console.WriteLine(bp);
+                await EvaluateAndCheck(
+                    "window.setTimeout(function() { invoke_static_method_async('[debugger-test] AsyncStepClass:TestAsyncStepOut'); }, 1);",
+                    "dotnet://debugger-test.dll/debugger-async-step.cs", 19, 8,
+                    "MoveNext");
+
+                await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-async-step.cs", 21, 8, "MoveNext");
+
+                await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-async-step.cs", 22, 4, "MoveNext");
+
+                await StepAndCheck(StepKind.Over, null, 0, 0, "get_IsCompletedSuccessfully"); //not check the line number and the file name because this can be changed
+
+            });
+        }
+
+        [Fact]
         public async Task PreviousFrameForAReflectedCall() => await CheckInspectLocalsAtBreakpointSite(
              "DebuggerTests.GetPropertiesTests.CloneableStruct", "SimpleStaticMethod", 1, "SimpleStaticMethod",
              "window.setTimeout(function() { invoke_static_method('[debugger-test] DebuggerTests.GetPropertiesTests.TestWithReflection:run'); })",
@@ -1798,6 +1878,110 @@ namespace DebuggerTests
                     ?.Values<JObject>()
                     ?.Where(f => f["functionName"]?.Value<string>() == function_name)
                     ?.FirstOrDefault();
+
+        [Fact]
+        public async Task DebugLazyLoadedAssemblyWithPdb()
+        {
+            var insp = new Inspector();
+            var scripts = SubscribeToScripts(insp);
+            await Ready();
+            await insp.Ready(async (cli, token) =>
+            {
+                ctx = new DebugTestContext(cli, insp, token, scripts);
+
+                int line = 9;
+                await SetBreakpoint(".*/lazy-debugger-test.cs$", line, 0, use_regex: true);
+                await LoadAssemblyDynamically(
+                        Path.Combine(DebuggerTestAppPath, "lazy-debugger-test.dll"),
+                        Path.Combine(DebuggerTestAppPath, "lazy-debugger-test.pdb"));
+
+                var source_location = "dotnet://lazy-debugger-test.dll/lazy-debugger-test.cs";
+                Assert.Contains(source_location, scripts.Values);
+
+                var pause_location = await EvaluateAndCheck(
+                   "window.setTimeout(function () { invoke_static_method('[lazy-debugger-test] LazyMath:IntAdd', 5, 10); }, 1);",
+                   source_location, line, 8,
+                   "IntAdd");
+                var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
+                CheckNumber(locals, "a", 5);
+                CheckNumber(locals, "b", 10);
+            });
+        }
+
+        [Fact]
+        public async Task DebugLazyLoadedAssemblyWithEmbeddedPdb()
+        {
+            var insp = new Inspector();
+            var scripts = SubscribeToScripts(insp);
+            await Ready();
+
+            await insp.Ready(async (cli, token) =>
+            {
+                ctx = new DebugTestContext(cli, insp, token, scripts);
+
+                int line = 9;
+                await SetBreakpoint(".*/lazy-debugger-test-embedded.cs$", line, 0, use_regex: true);
+                await LoadAssemblyDynamically(
+                        Path.Combine(DebuggerTestAppPath, "lazy-debugger-test-embedded.dll"),
+                        null);
+
+                var source_location = "dotnet://lazy-debugger-test-embedded.dll/lazy-debugger-test-embedded.cs";
+                Assert.Contains(source_location, scripts.Values);
+
+                var pause_location = await EvaluateAndCheck(
+                   "window.setTimeout(function () { invoke_static_method('[lazy-debugger-test-embedded] LazyMath:IntAdd', 5, 10); }, 1);",
+                   source_location, line, 8,
+                   "IntAdd");
+                var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
+                CheckNumber(locals, "a", 5);
+                CheckNumber(locals, "b", 10);
+            });
+        }
+
+        [Fact]
+        public async Task CannotDebugLazyLoadedAssemblyWithoutPdb()
+        {
+            var insp = new Inspector();
+            var scripts = SubscribeToScripts(insp);
+            await Ready();
+            await insp.Ready(async (cli, token) =>
+            {
+                ctx = new DebugTestContext(cli, insp, token, scripts);
+
+                int line = 9;
+                await SetBreakpoint(".*/lazy-debugger-test.cs$", line, 0, use_regex: true);
+                await LoadAssemblyDynamically(
+                        Path.Combine(DebuggerTestAppPath, "lazy-debugger-test.dll"),
+                        null);
+
+                // wait to bit to catch if the event might be raised a bit late
+                await Task.Delay(1000);
+
+                var source_location = "dotnet://lazy-debugger-test.dll/lazy-debugger-test.cs";
+                Assert.DoesNotContain(source_location, scripts.Values);
+            });
+        }
+
+        async Task LoadAssemblyDynamically(string asm_file, string pdb_file)
+        {
+            // Simulate loading an assembly into the framework
+            byte[] bytes = File.ReadAllBytes(asm_file);
+            string asm_base64 = Convert.ToBase64String(bytes);
+
+            string pdb_base64 = null;
+            if (pdb_file != null) {
+                bytes = File.ReadAllBytes(pdb_file);
+                pdb_base64 = Convert.ToBase64String(bytes);
+            }
+
+            var load_assemblies = JObject.FromObject(new
+            {
+                expression = $"{{ let asm_b64 = '{asm_base64}'; let pdb_b64 = '{pdb_base64}'; invoke_static_method('[debugger-test] LoadDebuggerTest:LoadLazyAssembly', asm_b64, pdb_b64); }}"
+            });
+
+            Result load_assemblies_res = await ctx.cli.SendCommand("Runtime.evaluate", load_assemblies, ctx.token);
+            Assert.True(load_assemblies_res.IsOk);
+        }
 
         //TODO add tests covering basic stepping behavior as step in/out/over
     }

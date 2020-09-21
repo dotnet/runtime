@@ -18,7 +18,7 @@
 
 
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime_vfprintf_test5_paltest_vfprintf_test5, "c_runtime/vfprintf/test5/paltest_vfprintf_test5")
 {    
     char *longStr = 
         "really-long-string-that-just-keeps-going-on-and-on-and-on.."

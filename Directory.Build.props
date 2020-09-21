@@ -101,6 +101,7 @@
     <LangVersion>preview</LangVersion>
     <LangVersion Condition="'$(MSBuildProjectExtension)' == '.vbproj'">latest</LangVersion>
     <Deterministic>true</Deterministic>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
 
   <PropertyGroup>

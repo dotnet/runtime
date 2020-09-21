@@ -4,12 +4,14 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Net.Security;
+using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Diagnostics.CodeAnalysis;
 
 namespace System.Net.Http
 {
+    [UnsupportedOSPlatform("browser")]
     public sealed class SocketsHttpHandler : HttpMessageHandler
     {
         public static bool IsSupported => false;

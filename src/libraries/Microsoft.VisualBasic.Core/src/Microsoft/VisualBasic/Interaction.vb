@@ -3,14 +3,12 @@
 
 Imports System
 Imports System.Reflection
-Imports System.Text
 Imports System.Runtime.InteropServices
 Imports System.Runtime.Versioning
 Imports Microsoft.Win32
 
 Imports Microsoft.VisualBasic.CompilerServices
 Imports Microsoft.VisualBasic.CompilerServices.ExceptionUtils
-Imports Microsoft.VisualBasic.CompilerServices.Utils
 
 Namespace Microsoft.VisualBasic
 

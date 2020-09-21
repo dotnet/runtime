@@ -20,7 +20,7 @@
 #include <palsuite.h>
 
 
-int __cdecl main( int argc, char **argv ) 
+PALTEST(threading_GetProcessTimes_test2_paltest_getprocesstimes_test2, "threading/GetProcessTimes/test2/paltest_getprocesstimes_test2")
 
 {
     int i, j, k;

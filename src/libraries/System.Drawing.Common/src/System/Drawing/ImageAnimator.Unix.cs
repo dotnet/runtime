@@ -179,20 +179,13 @@ namespace System.Drawing
 
         public void LoopHandler()
         {
-            try
+            int n = 0;
+            while (true)
             {
-                int n = 0;
-                while (true)
-                {
-                    Thread.Sleep(delay[n++]);
-                    frameChangeHandler(null, animateEventArgs);
-                    if (n == delay.Length)
-                        n = 0;
-                }
-            }
-            catch (ThreadAbortException)
-            {
-                Thread.ResetAbort(); // we're going to finish anyway
+                Thread.Sleep(delay[n++]);
+                frameChangeHandler(null, animateEventArgs);
+                if (n == delay.Length)
+                    n = 0;
             }
         }
     }

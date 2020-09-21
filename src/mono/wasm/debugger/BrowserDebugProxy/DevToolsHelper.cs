@@ -33,7 +33,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public static bool operator !=(SessionId a, SessionId b) => a.sessionId != b.sessionId;
 
-        public static SessionId Null { get; } = new SessionId();
+        public static SessionId Null { get; }
 
         public override string ToString() => $"session-{sessionId}";
     }
@@ -74,7 +74,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (!id.StartsWith("dotnet:"))
                 return false;
 
-            var parts = id.Split(":", 3);
+            string[] parts = id.Split(":", 3);
 
             if (parts.Length < 3)
                 return false;
@@ -101,12 +101,12 @@ namespace Microsoft.WebAssembly.Diagnostics
         public bool IsOk => Value != null;
         public bool IsErr => Error != null;
 
-        Result(JObject result, JObject error)
+        private Result(JObject result, JObject error)
         {
             if (result != null && error != null)
                 throw new ArgumentException($"Both {nameof(result)} and {nameof(error)} arguments cannot be non-null.");
 
-            bool resultHasError = String.Compare((result?["result"] as JObject)?["subtype"]?.Value<string>(), "error") == 0;
+            bool resultHasError = string.Compare((result?["result"] as JObject)?["subtype"]?.Value<string>(), "error") == 0;
             if (result != null && resultHasError)
             {
                 this.Value = null;
@@ -167,8 +167,8 @@ namespace Microsoft.WebAssembly.Diagnostics
     {
         public string expression { get; set; }
         public string objectGroup { get; set; } = "mono-debugger";
-        public bool includeCommandLineAPI { get; set; } = false;
-        public bool silent { get; set; } = false;
+        public bool includeCommandLineAPI { get; set; }
+        public bool silent { get; set; }
         public bool returnByValue { get; set; } = true;
 
         public MonoCommands(string expression) => this.expression = expression;
@@ -220,9 +220,10 @@ namespace Microsoft.WebAssembly.Diagnostics
     internal class MonoConstants
     {
         public const string RUNTIME_IS_READY = "mono_wasm_runtime_ready";
+        public const string EVENT_RAISED = "mono_wasm_debug_event_raised:aef14bca-5519-4dfe-b35a-f867abc123ae";
     }
 
-    class Frame
+    internal class Frame
     {
         public Frame(MethodInfo method, SourceLocation location, int id)
         {
@@ -236,7 +237,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         public int Id { get; private set; }
     }
 
-    class Breakpoint
+    internal class Breakpoint
     {
         public SourceLocation Location { get; private set; }
         public int RemoteId { get; set; }
@@ -260,14 +261,14 @@ namespace Microsoft.WebAssembly.Diagnostics
         }
     }
 
-    enum BreakpointState
+    internal enum BreakpointState
     {
         Active,
         Disabled,
         Pending
     }
 
-    enum StepKind
+    internal enum StepKind
     {
         Into,
         Out,
@@ -279,7 +280,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         public string DebuggerId { get; set; }
         public Dictionary<string, BreakpointRequest> BreakpointRequests { get; } = new Dictionary<string, BreakpointRequest>();
 
-        public TaskCompletionSource<DebugStore> ready = null;
+        public TaskCompletionSource<DebugStore> ready;
         public bool IsRuntimeReady => ready != null && ready.Task.IsCompleted;
 
         public int Id { get; set; }
@@ -291,7 +292,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         internal DebugStore store;
         public TaskCompletionSource<DebugStore> Source { get; } = new TaskCompletionSource<DebugStore>();
 
-        Dictionary<int, PerScopeCache> perScopeCaches { get; } = new Dictionary<int, PerScopeCache>();
+        private Dictionary<int, PerScopeCache> perScopeCaches { get; } = new Dictionary<int, PerScopeCache>();
 
         public DebugStore Store
         {
@@ -306,7 +307,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public PerScopeCache GetCacheForScope(int scope_id)
         {
-            if (perScopeCaches.TryGetValue(scope_id, out var cache))
+            if (perScopeCaches.TryGetValue(scope_id, out PerScopeCache cache))
                 return cache;
 
             cache = new PerScopeCache();
