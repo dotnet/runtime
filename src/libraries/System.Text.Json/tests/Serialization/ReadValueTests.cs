@@ -23,6 +23,9 @@ namespace System.Text.Json.Serialization.Tests
             ex = Assert.Throws<ArgumentNullException>(() => JsonSerializer.Deserialize("", returnType: null));
             Assert.Contains("returnType", ex.ToString());
 
+            ex = Assert.Throws<ArgumentNullException>(() => JsonSerializer.Deserialize(new char[] { '1' }, returnType: null));
+            Assert.Contains("returnType", ex.ToString());
+
             ex = Assert.Throws<ArgumentNullException>(() => JsonSerializer.Deserialize(new byte[] { 1 }, returnType: null));
             Assert.Contains("returnType", ex.ToString());
 
@@ -38,9 +41,6 @@ namespace System.Text.Json.Serialization.Tests
 
             ex = Assert.Throws<ArgumentNullException>(() => JsonSerializer.DeserializeAsync(utf8Json: null, returnType: null));
             Assert.Contains("utf8Json", ex.ToString());
-
-            ex = Assert.Throws<ArgumentNullException>(() => JsonSerializer.Deserialize(json: (ReadOnlySpan<char>)null, returnType: null));
-            Assert.Contains("json", ex.ToString());
         }
 
         [Fact]

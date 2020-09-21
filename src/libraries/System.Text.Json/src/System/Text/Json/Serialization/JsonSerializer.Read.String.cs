@@ -74,10 +74,7 @@ namespace System.Text.Json
         /// </remarks>
         public static TValue? Deserialize<[DynamicallyAccessedMembers(MembersAccessedOnRead)] TValue>(ReadOnlySpan<char> json, JsonSerializerOptions? options = null)
         {
-            if (json == null)
-            {
-                throw new ArgumentNullException(nameof(json));
-            }
+            // default/null span is treated as empty
 
             return Deserialize<TValue>(json, typeof(TValue), options);
         }
@@ -152,10 +149,7 @@ namespace System.Text.Json
         /// </remarks>
         public static object? Deserialize(ReadOnlySpan<char> json, [DynamicallyAccessedMembers(MembersAccessedOnRead)] Type returnType, JsonSerializerOptions? options = null)
         {
-            if (json == null)
-            {
-                throw new ArgumentNullException(nameof(json));
-            }
+            // default/null span is treated as empty
 
             if (returnType == null)
             {
