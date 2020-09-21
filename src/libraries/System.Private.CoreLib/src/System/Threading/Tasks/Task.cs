@@ -5532,7 +5532,7 @@ namespace System.Threading.Tasks
         private sealed class WhenAllPromise : Task, ITaskCompletionAction
         {
             /// <summary>Stores all of the constituent tasks. This field is present only for debugging purposes.</summary>
-            private readonly IEnumerable<Task?> m_tasks;
+            private readonly IEnumerable<Task> m_tasks;
             /// <summary>The number of tasks remaining to complete.</summary>
             private int m_count;
             /// <summary>True if any of the supplied tasks requires wait notification.</summary>
@@ -5542,7 +5542,7 @@ namespace System.Threading.Tasks
             /// <summary>The first task that got canceled.</summary>
             private Task? m_canceledTask;
 
-            internal WhenAllPromise(IEnumerable<Task?> tasks)
+            internal WhenAllPromise(IEnumerable<Task> tasks)
             {
                 Debug.Assert(tasks != null, "Expected a non-null task enumerable");
 
@@ -5555,7 +5555,7 @@ namespace System.Threading.Tasks
                 m_tasks = tasks;
 
                 int count = 0;
-                foreach (Task? task in tasks)
+                foreach (Task task in tasks)
                 {
                     if (task == null) ThrowHelper.ThrowArgumentException(ExceptionResource.Task_MultiTaskContinuation_NullTask, ExceptionArgument.tasks);
                     if (task.IsCompleted) this.Invoke(task); // short-circuit the completion action, if possible
