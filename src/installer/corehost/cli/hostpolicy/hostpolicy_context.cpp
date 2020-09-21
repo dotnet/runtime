@@ -166,7 +166,8 @@ int hostpolicy_context_t::initialize(hostpolicy_init_t &hostpolicy_init, const a
     }
 
     // Build properties for CoreCLR instantiation
-    pal::string_t app_base = resolver.get_app_dir();
+    pal::string_t app_base;
+    resolver.get_app_dir(&app_base);
     coreclr_properties.add(common_property::TrustedPlatformAssemblies, probe_paths.tpa.c_str());
     coreclr_properties.add(common_property::NativeDllSearchDirectories, probe_paths.native.c_str());
     coreclr_properties.add(common_property::PlatformResourceRoots, probe_paths.resources.c_str());
