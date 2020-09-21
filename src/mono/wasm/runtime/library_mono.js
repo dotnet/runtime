@@ -1825,7 +1825,7 @@ var MonoSupportLib = {
 		mono_wasm_get_loaded_files: function() {
 			if (!this.mono_wasm_set_is_debugger_attached)
 				this.mono_wasm_set_is_debugger_attached = Module.cwrap ('mono_wasm_set_is_debugger_attached', 'void', ['bool']);
-			this.mono_wasm_set_is_debugger_attached(true);
+			this.mono_wasm_set_is_debugger_attached (true);
 			return MONO.loaded_files;
 		},
 
