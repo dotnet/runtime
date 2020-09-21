@@ -70,7 +70,7 @@ jobs:
       condition: and(succeeded(), eq(variables['Agent.Os'], 'Windows_NT'))
       continueOnError: ${{ parameters.continueOnError }}
 
-    - script: $(Build.SourcesDirectory)/eng/common/superpmi/superpmi-setup.sh -core_root_directory $(Build.SourcesDirectory)/artifacts/tests/coreclr/${{ parameters.osGroup }}.${{ parameters.archType }}.${{ parameters.buildConfig }}/Tests/Core_Root --managed_test_artifact_directory $(managedTestArtifactRootFolderPath) --architecture $(archType)
+    - script: $(Build.SourcesDirectory)/eng/common/superpmi/superpmi-setup.sh --corerootdirectory $(Build.SourcesDirectory)/artifacts/tests/coreclr/${{ parameters.osGroup }}.${{ parameters.archType }}.${{ parameters.buildConfig }}/Tests/Core_Root --managedtestartifactdirectory $(managedTestArtifactRootFolderPath) --architecture $(archType)
       displayName: SuperPMI Setup (Unix)
       condition: and(succeeded(), ne(variables['Agent.Os'], 'Windows_NT'))
       continueOnError: ${{ parameters.continueOnError }}
