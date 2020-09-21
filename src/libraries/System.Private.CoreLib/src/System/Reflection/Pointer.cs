@@ -39,6 +39,18 @@ namespace System.Reflection
             return ((Pointer)ptr)._ptr;
         }
 
+        public override unsafe bool Equals(object? obj)
+        {
+            if (obj is Pointer pointer)
+            {
+                return _ptr == pointer._ptr;
+            }
+
+            return false;
+        }
+
+        public override unsafe int GetHashCode() => ((nuint)_ptr).GetHashCode();
+
         void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
         {
             throw new PlatformNotSupportedException();
