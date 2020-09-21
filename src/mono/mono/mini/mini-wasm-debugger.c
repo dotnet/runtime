@@ -53,6 +53,7 @@ EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_get_array_values (int object_id, int sta
 EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_invoke_getter_on_object (int object_id, const char* name);
 EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_invoke_getter_on_value (void *value, MonoClass *klass, const char *name);
 EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_get_deref_ptr_value (void *value_addr, MonoClass *klass);
+EMSCRIPTEN_KEEPALIVE void mono_wasm_set_is_debugger_attached (gboolean is_attached);
 
 //JS functions imported that we use
 extern void mono_wasm_add_frame (int il_offset, int method_token, int frame_id, const char *assembly_name, const char *method_name);
@@ -1555,6 +1556,12 @@ mono_wasm_invoke_getter_on_value (void *value, MonoClass *klass, const char *nam
 	}
 
 	return invoke_getter (value, klass, name);
+}
+
+EMSCRIPTEN_KEEPALIVE void 
+mono_wasm_set_is_debugger_attached (gboolean is_attached)
+{
+	mono_set_is_debugger_attached (is_attached);
 }
 
 // Functions required by debugger-state-machine.
