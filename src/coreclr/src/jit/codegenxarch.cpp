@@ -5921,21 +5921,27 @@ void CodeGen::genCompareInt(GenTree* treeNode)
     instruction ins;
     var_types   type = TYP_UNKNOWN;
 
-#ifdef TARGET_64BIT
-    // Optimize "x<0" to shift if it's saved to a register
-    if ((targetReg != REG_NA) && tree->OperIs(GT_LT) && op1->isUsedFromReg() && op2->IsIntegralConst(0))
+    // Optimize "x<0" and "x>=0" to "x>>31" if "x" is not a jump condition and in a reg.
+    // Morph/Lowering are responsible to rotate "0<x" to "x>0" so we won't handle it here.
+    if ((targetReg != REG_NA) && tree->OperIs(GT_LT, GT_GE) && op1->isUsedFromReg() && op2->IsIntegralConst(0))
     {
         emitAttr targetSize = emitActualTypeSize(op1);
         if (targetReg != op1->GetRegNum())
         {
+            // move op1 to the target register.
+            // in case of byte/short we need save info for shr that it was extended to EA_4BYTE
             targetSize = op1Type == TYP_LONG ? EA_8BYTE : EA_4BYTE;
-            inst_RV_RV(INS_mov, tree->GetRegNum(), op1->GetRegNum());
+            inst_RV_RV(INS_mov, targetReg, op1->GetRegNum());
         }
-        inst_RV_IV(INS_shr_N, tree->GetRegNum(), (int)targetSize * 8 - 1, targetSize);
+        if (tree->OperIs(GT_GE))
+        {
+            // emit "neg" for "x>=0" case
+            inst_RV(INS_neg, targetReg, op1Type, targetSize);
+        }
+        inst_RV_IV(INS_shr_N, targetReg, (int)targetSize * 8 - 1, targetSize);
         genProduceReg(tree);
         return;
     }
-#endif
 
     if (tree->OperIs(GT_TEST_EQ, GT_TEST_NE))
     {
