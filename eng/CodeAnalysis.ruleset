@@ -418,7 +418,7 @@
     <Rule Id="IDE0040" Action="Hidden" />  <!-- AddAccessibilityModifiers -->
     <Rule Id="IDE0041" Action="Hidden" />  <!-- UseIsNullCheck -->
     <Rule Id="IDE0042" Action="Hidden" />  <!-- UseDeconstruction -->
-    <Rule Id="IDE0043" Action="Hidden" />  <!-- ValidateFormatString -->
+    <Rule Id="IDE0043" Action="Warning" /> <!-- ValidateFormatString -->
     <Rule Id="IDE0044" Action="Hidden" />  <!-- MakeFieldReadonly -->
     <Rule Id="IDE0045" Action="Hidden" />  <!-- UseConditionalExpressionForAssignment -->
     <Rule Id="IDE0046" Action="Hidden" />  <!-- UseConditionalExpressionForReturn -->
