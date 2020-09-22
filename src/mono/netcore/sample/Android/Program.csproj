@@ -4,7 +4,7 @@
     <OutputPath>bin</OutputPath>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <TargetArchitecture>x64</TargetArchitecture>
+    <TargetArchitecture Condition="'$(TargetArchitecture)'==''">x64</TargetArchitecture>
     <TargetOS>Android</TargetOS>
     <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.android-$(TargetArchitecture)\$(Configuration)\runtimes\android-$(TargetArchitecture)\</MicrosoftNetCoreAppRuntimePackDir>
     <BuildDir>$(MSBuildThisFileDirectory)obj\$(Configuration)\android</BuildDir>
