@@ -17,7 +17,7 @@
          PmiAssembliesDirectory - Path on helix machine itself where superpmi.py will discover the sent assemblies.
     -->
   <PropertyGroup Condition="'$(AGENT_OS)' == 'Windows_NT'">
-    <Python>py -3</Python>
+    <Python>%HELIX_PYTHONPATH%</Python>
     <PmiAssembliesPayload>$(WorkItemDirectory)\pmiAssembliesDirectory</PmiAssembliesPayload>
     <PmiAssembliesDirectory>%HELIX_WORKITEM_PAYLOAD%\binaries</PmiAssembliesDirectory>
     <SuperPMIDirectory>%HELIX_CORRELATION_PAYLOAD%\superpmi</SuperPMIDirectory>
@@ -27,7 +27,7 @@
     <WorkItemCommand>$(SuperPMIDirectory)\superpmi.py collect --pmi -pmi_location $(SuperPMIDirectory)\pmi.dll </WorkItemCommand>
   </PropertyGroup>
   <PropertyGroup Condition="'$(AGENT_OS)' != 'Windows_NT'">
-    <Python>py -3</Python>
+    <Python>$HELIX_PYTHONPATH</Python>
     <PmiAssembliesPayload>$(WorkItemDirectory)/pmiAssembliesDirectory</PmiAssembliesPayload>
     <PmiAssembliesDirectory>$HELIX_WORKITEM_PAYLOAD/binaries</PmiAssembliesDirectory>
     <SuperPMIDirectory>$HELIX_CORRELATION_PAYLOAD/superpmi</SuperPMIDirectory>
