@@ -2504,6 +2504,25 @@ namespace System.Net.Http.Functional.Tests
             Assert.Equal("foo", response);
         }
 
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ConnectCallback_ReturnsNull_ThrowsHttpRequestException(bool useSsl)
+        {
+            using HttpClientHandler handler = CreateHttpClientHandler();
+            handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+            var socketsHandler = (SocketsHttpHandler)GetUnderlyingSocketsHttpHandler(handler);
+            socketsHandler.ConnectCallback = (context, token) =>
+            {
+                return ValueTask.FromResult<Stream>(null);
+            };
+
+            using HttpClient client = CreateHttpClient(handler);
+            client.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact;
+
+            HttpRequestException hre = await Assert.ThrowsAnyAsync<HttpRequestException>(async () => await client.GetAsync($"{(useSsl ? "https" : "http")}://nowhere.invalid/foo"));
+        }
+
         private static bool PlatformSupportsUnixDomainSockets => Socket.OSSupportsUnixDomainSockets;
    }
 
@@ -2715,6 +2734,41 @@ namespace System.Net.Http.Functional.Tests
 
                     HttpRequestException hre = await Assert.ThrowsAnyAsync<HttpRequestException>(async () => await client.SendAsync(requestMessage));
                     Assert.Equal(e, hre.InnerException);
+                },
+                async server =>
+                {
+                    try
+                    {
+                        await server.AcceptConnectionSendResponseAndCloseAsync(content: "foo");
+                    }
+                    catch { }
+                }, options: options);
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async void PlaintextStreamFilter_ReturnsNull_ThrowsHttpRequestException(bool useSsl)
+        {
+            GenericLoopbackOptions options = new GenericLoopbackOptions() { UseSsl = useSsl };
+            await LoopbackServerFactory.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Get, uri);
+                    requestMessage.Version = UseVersion;
+                    requestMessage.VersionPolicy = HttpVersionPolicy.RequestVersionExact;
+
+                    using HttpClientHandler handler = CreateHttpClientHandler();
+                    handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+                    var socketsHandler = (SocketsHttpHandler)GetUnderlyingSocketsHttpHandler(handler);
+                    socketsHandler.PlaintextStreamFilter = (context, token) =>
+                    {
+                        return ValueTask.FromResult<Stream>(null);
+                    };
+
+                    using HttpClient client = CreateHttpClient(handler);
+
+                    HttpRequestException hre = await Assert.ThrowsAnyAsync<HttpRequestException>(async () => await client.SendAsync(requestMessage));
                 },
                 async server =>
                 {

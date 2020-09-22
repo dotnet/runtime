@@ -1364,14 +1364,24 @@ namespace System.Net.Http
                 return stream;
             }
 
+            Stream newStream;
             try
             {
-                return await Settings._plaintextStreamFilter(new SocketsHttpPlaintextStreamFilterContext(stream, httpVersion, request), cancellationToken).ConfigureAwait(false);
+                newStream = await Settings._plaintextStreamFilter(new SocketsHttpPlaintextStreamFilterContext(stream, httpVersion, request), cancellationToken).ConfigureAwait(false);
             }
             catch (Exception e)
             {
+                stream.Dispose();
                 throw new HttpRequestException(SR.net_http_exception_during_plaintext_filter, e);
             }
+
+            if (newStream == null)
+            {
+                stream.Dispose();
+                throw new HttpRequestException(SR.net_http_null_from_plaintext_filter);
+            }
+
+            return newStream;
         }
 
         private async ValueTask<HttpConnection> ConstructHttp11Connection(Stream stream, TransportContext? transportContext, HttpRequestMessage request, CancellationToken cancellationToken)

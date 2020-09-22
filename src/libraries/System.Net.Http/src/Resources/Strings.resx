@@ -594,4 +594,10 @@
   <data name="net_http_exception_during_plaintext_filter" xml:space="preserve">
     <value>An exception occurred while invoking the PlaintextStreamFilter.</value>
   </data>
+  <data name="net_http_null_from_connect_callback" xml:space="preserve">
+    <value>The user-supplied ConnectCallback returned null.</value>
+  </data>
+  <data name="net_http_null_from_plaintext_filter" xml:space="preserve">
+    <value>The user-supplied PlaintextStreamFilter returned null.</value>
+  </data>
 </root>
