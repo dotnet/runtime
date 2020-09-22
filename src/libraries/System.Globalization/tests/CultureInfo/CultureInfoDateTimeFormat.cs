@@ -92,7 +92,7 @@ namespace System.Globalization.Tests
         public void DateTimeFormat_En_Locales_ShortDatePattern(string locale, string shortDatePattern)
         {
             var cultureInfo = new CultureInfo(locale);
-            Assert.Equal(shortDatePattern, culture.DateTimeFormat.ShortDatePattern);
+            Assert.Equal(shortDatePattern, cultureInfo.DateTimeFormat.ShortDatePattern);
         }
     }
 }
