@@ -19,13 +19,13 @@ parameters:
   DisplayNamePrefix: 'Send job to Helix' # optional -- rename the beginning of the displayName of the steps in AzDO 
   condition: succeeded()                 # optional -- condition for step to execute; defaults to succeeded()
   continueOnError: false                 # optional -- determines whether to continue the build if the step errors; defaults to false
-            
+  BuildConfig: 'checked'                 # optional -- Mostly, superpmi will be run on checked builds
 
 steps:
   - powershell: $(Build.SourcesDirectory)\eng\common\msbuild.ps1 $(Build.SourcesDirectory)\eng\common\superpmi\superpmi.proj /restore /t:Test /bl:$(Build.SourcesDirectory)\artifacts\log\$env:BuildConfig\SendToHelix.binlog
     displayName: ${{ parameters.DisplayNamePrefix }} (Windows)
     env:
-      BuildConfig: $(_BuildConfig)
+      MchFileTag: $(MchFileTag)
       HelixSource: ${{ parameters.HelixSource }}
       HelixType: ${{ parameters.HelixType }}
       HelixBuild: ${{ parameters.HelixBuild }}
@@ -42,12 +42,13 @@ steps:
       WaitForWorkItemCompletion: ${{ parameters.WaitForWorkItemCompletion }}
       Creator: ${{ parameters.Creator }}
       SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+      BuildConfig:  ${{ parameters.BuildConfig }}
     condition: and(${{ parameters.condition }}, eq(variables['Agent.Os'], 'Windows_NT'))
     continueOnError: ${{ parameters.continueOnError }}
   - script: $BUILD_SOURCESDIRECTORY/eng/common/msbuild.sh $BUILD_SOURCESDIRECTORY/eng/common/superpmi/superpmi.proj /restore /t:Test /bl:$BUILD_SOURCESDIRECTORY/artifacts/log/$BuildConfig/SendToHelix.binlog
     displayName: ${{ parameters.DisplayNamePrefix }} (Unix)
     env:
-      BuildConfig: $(_BuildConfig)
+      MchFileTag: $(MchFileTag)
       HelixSource: ${{ parameters.HelixSource }}
       HelixType: ${{ parameters.HelixType }}
       HelixBuild: ${{ parameters.HelixBuild }}
@@ -64,5 +65,6 @@ steps:
       WaitForWorkItemCompletion: ${{ parameters.WaitForWorkItemCompletion }}
       Creator: ${{ parameters.Creator }}
       SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+      BuildConfig:  ${{ parameters.BuildConfig }}
     condition: and(${{ parameters.condition }}, ne(variables['Agent.Os'], 'Windows_NT'))
     continueOnError: ${{ parameters.continueOnError }}

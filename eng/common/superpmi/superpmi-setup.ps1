@@ -11,7 +11,8 @@ Param(
     [string] $CoreRootDirectory,
     [string] $ManagedTestArtifactDirectory,
     [string] $Architecture="x64",
-    [string] $Framework="net5.0"
+    [string] $Framework="net5.0",
+    [string] $Tag="Windows_NT.x64.checked"
 )
 
 Write-Host "CORE_ROOT is" $CoreRootDirectory
@@ -35,23 +36,13 @@ if($Architecture -eq 'arm64') {
 $HelixSourcePrefix = "official"
 $Creator = ""
 
-# Minimum binaries from CORE_ROOT needed to run superpmi.py
-$super_pmi_dlls = @(
- "clrjit.dll",
- "coreclr.dll",
- "CoreRun.exe",
- "mcs.exe",
- "superpmi.exe",
- "System.Private.CoreLib.dll"
-)
-
-# Prepare WorkItemDirectories
+# Prepare WorkItemDirectories (Specific to the job)
 robocopy $CoreRootDirectory $PmiAssembliesDirectory\Core_Root\binaries /E /XF *.pdb
 # robocopy $ManagedTestArtifactDirectory $PmiAssembliesDirectory\Tests /E /XD $CoreRootDirectory /XF *.pdb
 
-# Prepare CorrelationPayloadDirectories
+# Prepare CorrelationPayloadDirectories (Common to all the jobs)
 robocopy $SourceDirectory\src\coreclr\scripts $SuperPmiDirectory /E
-robocopy $CoreRootDirectory $SuperPmiDirectory $($super_pmi_dlls)
+robocopy $CoreRootDirectory $SuperPmiDirectory /E /XF *.pdb
 
 Write-Host "Cloning and building JitUtilsDirectory"
 
@@ -78,7 +69,6 @@ $ci = $true
 # Directories
 Write-PipelineSetVariable -Name 'CorrelationPayloadDirectory' -Value "$CorrelationPayloadDirectory" -IsMultiJobVariable $false
 Write-PipelineSetVariable -Name 'SuperPMIDirectory' -Value "$SuperPMIDirectory" -IsMultiJobVariable $false
-Write-PipelineSetVariable -Name 'JitUtilsDirectory' -Value "$JitUtilsDirectory" -IsMultiJobVariable $false
 Write-PipelineSetVariable -Name 'PmiAssembliesDirectory' -Value "$PmiAssembliesDirectory" -IsMultiJobVariable $false
 Write-PipelineSetVariable -Name 'WorkItemDirectory' -Value "$WorkItemDirectory" -IsMultiJobVariable $false
 
@@ -90,6 +80,6 @@ Write-PipelineSetVariable -Name 'Architecture' -Value "$Architecture" -IsMultiJo
 Write-PipelineSetVariable -Name 'Creator' -Value "$Creator" -IsMultiJobVariable $false
 Write-PipelineSetVariable -Name 'Queue' -Value "$Queue" -IsMultiJobVariable $false
 Write-PipelineSetVariable -Name 'HelixSourcePrefix' -Value "$HelixSourcePrefix" -IsMultiJobVariable $false
-Write-PipelineSetVariable -Name '_BuildConfig' -Value "$Architecture.$Framework" -IsMultiJobVariable $false
+Write-PipelineSetVariable -Name 'MchFileTag' -Value "$Tag" -IsMultiJobVariable $false
 
 exit 0

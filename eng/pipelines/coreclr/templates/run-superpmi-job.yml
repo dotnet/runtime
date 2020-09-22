@@ -65,12 +65,12 @@ jobs:
             _Framework: ${{ framework }}
     steps:
     - ${{ parameters.steps }}
-    - powershell: $(Build.SourcesDirectory)\eng\common\superpmi\superpmi-setup.ps1 -CoreRootDirectory $(Build.SourcesDirectory)\artifacts\tests\coreclr\${{ parameters.osGroup }}.${{ parameters.archType }}.${{ parameters.buildConfig }}\Tests\Core_Root -ManagedTestArtifactDirectory $(managedTestArtifactRootFolderPath) -Architecture $(archType)
+    - powershell: $(Build.SourcesDirectory)\eng\common\superpmi\superpmi-setup.ps1 -CoreRootDirectory $(Build.SourcesDirectory)\artifacts\tests\coreclr\${{ parameters.osGroup }}.${{ parameters.archType }}.${{ parameters.buildConfig }}\Tests\Core_Root -ManagedTestArtifactDirectory $(managedTestArtifactRootFolderPath) -Architecture $(archType) -Tag ${{ parameters.osGroup }}.${{ parameters.archType }}.${{ parameters.buildConfig }}
       displayName: SuperPMI Setup (Windows)
       condition: and(succeeded(), eq(variables['Agent.Os'], 'Windows_NT'))
       continueOnError: ${{ parameters.continueOnError }}
 
-    - script: $(Build.SourcesDirectory)/eng/common/superpmi/superpmi-setup.sh --corerootdirectory $(Build.SourcesDirectory)/artifacts/tests/coreclr/${{ parameters.osGroup }}.${{ parameters.archType }}.${{ parameters.buildConfig }}/Tests/Core_Root --managedtestartifactdirectory $(managedTestArtifactRootFolderPath) --architecture $(archType)
+    - script: $(Build.SourcesDirectory)/eng/common/superpmi/superpmi-setup.sh --corerootdirectory $(Build.SourcesDirectory)/artifacts/tests/coreclr/${{ parameters.osGroup }}.${{ parameters.archType }}.${{ parameters.buildConfig }}/Tests/Core_Root --managedtestartifactdirectory $(managedTestArtifactRootFolderPath) --architecture $(archType) --tag ${{ parameters.osGroup }}.${{ parameters.archType }}.${{ parameters.buildConfig }}
       displayName: SuperPMI Setup (Unix)
       condition: and(succeeded(), ne(variables['Agent.Os'], 'Windows_NT'))
       continueOnError: ${{ parameters.continueOnError }}
@@ -89,6 +89,7 @@ jobs:
         WorkItemDirectory: '$(WorkItemDirectory)'
         CorrelationPayloadDirectory: '$(CorrelationPayloadDirectory)'
         ProjectFile: ${{ parameters.projectFile }}
+        BuildConfig: ${{ parameters.buildConfig }}
 
     - task: PublishPipelineArtifact@1
       displayName: Publish Logs
