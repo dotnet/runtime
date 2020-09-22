@@ -457,7 +457,7 @@
     <Rule Id="IDE0079" Action="Warning" /> <!-- RemoveUnnecessarySuppression -->
     <Rule Id="IDE0080" Action="Hidden" />  <!-- RemoveConfusingSuppressionForIsExpression -->
     <Rule Id="IDE0081" Action="Hidden" />  <!-- RemoveUnnecessaryByVal -->
-    <Rule Id="IDE0082" Action="Hidden" />  <!-- ConvertTypeOfToNameOf -->
+    <Rule Id="IDE0082" Action="Warning" /> <!-- ConvertTypeOfToNameOf -->
     <Rule Id="IDE0083" Action="Hidden" />  <!-- UseNotPattern -->
     <Rule Id="IDE0084" Action="Hidden" />  <!-- UseIsNotExpression -->
     <Rule Id="IDE1001" Action="Hidden" />  <!-- AnalyzerChanged -->
