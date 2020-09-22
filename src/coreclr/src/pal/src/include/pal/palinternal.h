@@ -455,7 +455,6 @@ function_name() to call the system's implementation
 #undef log10
 #undef modf
 #undef pow
-#undef scalbn
 #undef sin
 #undef sinh
 #undef sqrt
@@ -483,7 +482,6 @@ function_name() to call the system's implementation
 #undef log10f
 #undef modff
 #undef powf
-#undef scalbnf
 #undef sinf
 #undef sinhf
 #undef sqrtf

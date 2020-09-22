@@ -510,25 +510,6 @@ PALIMPORT double __cdecl PAL_pow(double x, double y)
 
 /*++
 Function:
-    scalbn
-
-See MSDN.
---*/
-PALIMPORT double __cdecl PAL_scalbn(double x, int n)
-{
-    double ret;
-    PERF_ENTRY(scalbn);
-    ENTRY("scalbn (x=%f, n=%d)\n", x, n);
-
-    ret = scalbn(x, n);
-
-    LOGEXIT("scalbn returns double %f\n", ret);
-    PERF_EXIT(scalbn);
-    return ret;
-}
-
-/*++
-Function:
   _finitef
 
 Determines whether given single-precision floating point value is finite.
@@ -985,24 +966,5 @@ PALIMPORT float __cdecl PAL_powf(float x, float y)
 
     LOGEXIT("powf returns float %f\n", ret);
     PERF_EXIT(powf);
-    return ret;
-}
-
-/*++
-Function:
-    scalbnf
-
-See MSDN.
---*/
-PALIMPORT float __cdecl PAL_scalbnf(float x, int n)
-{
-    float ret;
-    PERF_ENTRY(scalbnf);
-    ENTRY("scalbnf (x=%f, n=%d)\n", x, n);
-
-    ret = scalbnf(x, n);
-
-    LOGEXIT("scalbnf returns double %f\n", ret);
-    PERF_EXIT(scalbnf);
     return ret;
 }

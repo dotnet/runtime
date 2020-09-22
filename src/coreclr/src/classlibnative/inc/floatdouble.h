@@ -31,7 +31,6 @@ public:
     FCDECL1_V(static double, Log10, double x);
     FCDECL2_VI(static double, ModF, double x, double* intptr);
     FCDECL2_VV(static double, Pow, double x, double y);
-    FCDECL2_VI(static double, ScaleB, double x, int n);
     FCDECL1_V(static double, Sin, double x);
     FCDECL1_V(static double, Sinh, double x);
     FCDECL1_V(static double, Sqrt, double x);
