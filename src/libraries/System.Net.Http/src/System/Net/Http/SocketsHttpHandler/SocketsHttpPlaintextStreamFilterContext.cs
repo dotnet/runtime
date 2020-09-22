@@ -11,14 +11,14 @@ namespace System.Net.Http
     public sealed class SocketsHttpPlaintextStreamFilterContext
     {
         private readonly Stream _plaintextStream;
-        private readonly Version _httpVersion;
-        private readonly HttpRequestMessage _requestMessage;
+        private readonly Version _negotiatedHttpVersion;
+        private readonly HttpRequestMessage _initialRequestMessage;
 
-        internal SocketsHttpPlaintextStreamFilterContext(Stream plaintextStream, Version httpVersion, HttpRequestMessage requestMessage)
+        internal SocketsHttpPlaintextStreamFilterContext(Stream plaintextStream, Version negotiatedHttpVersion, HttpRequestMessage initialRequestMessage)
         {
             _plaintextStream = plaintextStream;
-            _httpVersion = httpVersion;
-            _requestMessage = requestMessage;
+            _negotiatedHttpVersion = negotiatedHttpVersion;
+            _initialRequestMessage = initialRequestMessage;
         }
 
         /// <summary>
@@ -29,11 +29,11 @@ namespace System.Net.Http
         /// <summary>
         /// The version of HTTP in use for this stream.
         /// </summary>
-        public Version HttpVersion => _httpVersion;
+        public Version NegotiatedHttpVersion => _negotiatedHttpVersion;
 
         /// <summary>
         /// The initial HttpRequestMessage that is causing the stream to be used.
         /// </summary>
-        public HttpRequestMessage RequestMessage => _requestMessage;
+        public HttpRequestMessage InitialRequestMessage => _initialRequestMessage;
     }
 }

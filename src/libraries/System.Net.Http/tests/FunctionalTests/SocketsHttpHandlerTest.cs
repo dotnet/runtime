@@ -2322,7 +2322,7 @@ namespace System.Net.Http.Functional.Tests
                     {
                         Assert.Equal(uri.Host, context.DnsEndPoint.Host);
                         Assert.Equal(uri.Port, context.DnsEndPoint.Port);
-                        Assert.Equal(requestMessage, context.RequestMessage);
+                        Assert.Equal(requestMessage, context.InitialRequestMessage);
 
                         Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
                         await s.ConnectAsync(context.DnsEndPoint, token);
@@ -2572,8 +2572,8 @@ namespace System.Net.Http.Functional.Tests
                     var socketsHandler = (SocketsHttpHandler)GetUnderlyingSocketsHttpHandler(handler);
                     socketsHandler.PlaintextStreamFilter = (context, token) =>
                     {
-                        Assert.Equal(UseVersion, context.HttpVersion);
-                        Assert.Equal(requestMessage, context.RequestMessage);
+                        Assert.Equal(UseVersion, context.NegotiatedHttpVersion);
+                        Assert.Equal(requestMessage, context.InitialRequestMessage);
 
                         return ValueTask.FromResult(context.PlaintextStream);
                     };
@@ -2603,7 +2603,7 @@ namespace System.Net.Http.Functional.Tests
                     var socketsHandler = (SocketsHttpHandler)GetUnderlyingSocketsHttpHandler(handler);
                     socketsHandler.PlaintextStreamFilter = (context, token) =>
                     {
-                        Assert.Equal(UseVersion, context.HttpVersion);
+                        Assert.Equal(UseVersion, context.NegotiatedHttpVersion);
 
                         DelegateStream newStream = new DelegateStream(
                             canReadFunc: () => true,
@@ -2799,7 +2799,7 @@ namespace System.Net.Http.Functional.Tests
                     var socketsHandler = (SocketsHttpHandler)GetUnderlyingSocketsHttpHandler(handler);
                     socketsHandler.PlaintextStreamFilter = (context, token) =>
                     {
-                        Assert.Equal(UseVersion, context.HttpVersion);
+                        Assert.Equal(UseVersion, context.NegotiatedHttpVersion);
 
                         context.PlaintextStream.Dispose();
 

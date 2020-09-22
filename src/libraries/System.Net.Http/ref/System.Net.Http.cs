@@ -384,14 +384,14 @@ namespace System.Net.Http
     {
         internal SocketsHttpConnectionContext() { }
         public DnsEndPoint DnsEndPoint { get { throw null; } }
-        public HttpRequestMessage RequestMessage { get { throw null; } }
+        public HttpRequestMessage InitialRequestMessage { get { throw null; } }
     }
     public sealed class SocketsHttpPlaintextStreamFilterContext
     {
         internal SocketsHttpPlaintextStreamFilterContext() { }
         public System.IO.Stream PlaintextStream { get { throw null; } }
-        public Version HttpVersion { get { throw null; } }
-        public HttpRequestMessage RequestMessage { get { throw null; } }
+        public Version NegotiatedHttpVersion { get { throw null; } }
+        public HttpRequestMessage InitialRequestMessage { get { throw null; } }
     }
     public enum HttpKeepAlivePingPolicy
     {
