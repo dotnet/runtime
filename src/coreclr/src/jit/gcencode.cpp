@@ -3588,7 +3588,7 @@ const bool verifyGCTables = false;
  *  Dump the info block header.
  */
 
-unsigned GCInfo::gcInfoBlockHdrDump(const BYTE* table, InfoHdr* header, unsigned* methodSize)
+size_t GCInfo::gcInfoBlockHdrDump(const BYTE* table, InfoHdr* header, unsigned* methodSize)
 {
     GCDump gcDump(GCINFO_VERSION);
 
@@ -3600,7 +3600,7 @@ unsigned GCInfo::gcInfoBlockHdrDump(const BYTE* table, InfoHdr* header, unsigned
 
 /*****************************************************************************/
 
-unsigned GCInfo::gcDumpPtrTable(const BYTE* table, const InfoHdr& header, unsigned methodSize)
+size_t GCInfo::gcDumpPtrTable(const BYTE* table, const InfoHdr& header, unsigned methodSize)
 {
     printf("Pointer table:\n");
 

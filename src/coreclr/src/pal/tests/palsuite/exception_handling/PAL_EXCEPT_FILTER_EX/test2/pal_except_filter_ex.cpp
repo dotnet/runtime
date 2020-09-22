@@ -54,7 +54,7 @@ LONG Filter_01(EXCEPTION_POINTERS* ep, VOID *pnTestInt)
     return EXCEPTION_EXECUTE_HANDLER;
 }
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(exception_handling_PAL_EXCEPT_FILTER_EX_test2_paltest_pal_except_filter_ex_test2, "exception_handling/PAL_EXCEPT_FILTER_EX/test2/paltest_pal_except_filter_ex_test2")
 {
     int* p = 0x00000000;
     BOOL bExcept  = FALSE;

@@ -391,6 +391,11 @@ if [ ${#actInt[@]} -eq 0 ]; then
     arguments="-restore -build $arguments"
 fi
 
+if [ "$os" = "Browser" ] && [ "$arch" != "wasm" ]; then
+    # override default arch for Browser, we only support wasm
+    arch=wasm
+fi
+
 initDistroRid $os $arch $crossBuild $portableBuild
 
 # URL-encode space (%20) to avoid quoting issues until the msbuild call in /eng/common/tools.sh.

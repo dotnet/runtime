@@ -16,7 +16,7 @@
 #include "../swscanf.h"
 
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime_swscanf_test3_paltest_swscanf_test3, "c_runtime/swscanf/test3/paltest_swscanf_test3")
 {
     if (PAL_Initialize(argc, argv))
     {

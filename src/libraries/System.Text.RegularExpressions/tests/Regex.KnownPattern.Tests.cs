@@ -958,5 +958,59 @@ namespace System.Text.RegularExpressions.Tests
                 Assert.Equal(isExpectedMatch, r.IsMatch(value));
             }
         }
+
+        [Theory]
+        [InlineData("Jiri: 10", "10")]
+        [InlineData("jiri: -10.01", "-10.01")]
+        [InlineData("jiri: .-22", "-22")]
+        [InlineData("jiri: .-22.3", "-22.3")]
+        [InlineData("foo15.0", "15.0")]
+        [InlineData("foo15", "15")]
+        [InlineData("foo16bar", "16")]
+        [InlineData("fds:-4", "-4")]
+        [InlineData("dsa:-20.04", "-20.04")]
+        [InlineData("dsa:15.a", "15")]
+        public void RealWorld_ValueParse(string value, string expected)
+        {
+            foreach (RegexOptions options in new[] { RegexOptions.Compiled, RegexOptions.None })
+            {
+                Regex r = new Regex(@"(?<value>-?\d+(\.\d+)?)", options);
+                Match m = r.Match(value);
+                Assert.True(m.Success);
+                Assert.Equal(expected, m.Groups["value"].Value);
+            }
+        }
+
+        [Theory]
+        [InlineData("WI-T4.0.0.1963 Firebird 4.0 Beta 2", "4.0.0.1963")]
+        [InlineData("WI-V3.0.5.33220 Firebird 3.0", "3.0.5.33220")]
+        public void RealWorld_FirebirdVersionString(string value, string expected)
+        {
+            foreach (RegexOptions options in new[] { RegexOptions.Compiled, RegexOptions.None })
+            {
+                Regex r = new Regex(@"\w{2}-\w(\d+\.\d+\.\d+\.\d+)", options);
+                Match m = r.Match(value);
+                Assert.True(m.Success);
+                Assert.Equal(expected, m.Groups[1].Value);
+            }
+        }
+
+        [Theory]
+        [InlineData("Foo!Bar.M", "Foo", "Bar", "M")]
+        [InlineData("Foo!Bar.A.B.C", "Foo", "Bar.A.B", "C")]
+        [InlineData("Foo1.Foo2.Foo!Bar.A.B.C", "Foo1.Foo2.Foo", "Bar.A.B", "C")]
+        [InlineData(@"Foo1\Foo2.Foo!Bar.A.B.C", @"Foo1\Foo2.Foo", "Bar.A.B", "C")]
+        public void RealWorld_ExternalEntryPoint(string value, string a, string b, string c)
+        {
+            foreach (RegexOptions options in new[] { RegexOptions.Compiled, RegexOptions.None })
+            {
+                Regex r = new Regex(@"^(.+)!(.+)\.([^.]+)$", options);
+                Match m = r.Match(value);
+                Assert.True(m.Success);
+                Assert.Equal(a, m.Groups[1].Value);
+                Assert.Equal(b, m.Groups[2].Value);
+                Assert.Equal(c, m.Groups[3].Value);
+            }
+        }
     }
 }

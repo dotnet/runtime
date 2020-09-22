@@ -396,7 +396,7 @@ namespace System.Xml
             if (_wrapped == null)
             {
                 // Whitespace-only text blocks aren't enough to determine Xml vs. Html
-                if (XmlCharType.Instance.IsOnlyWhitespace(textBlock))
+                if (XmlCharType.IsOnlyWhitespace(textBlock))
                 {
                     return false;
                 }

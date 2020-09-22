@@ -49,7 +49,7 @@ namespace Internal.JitInterface
 #if SUPPORT_JIT
         private const string JitSupportLibrary = "*";
 #else
-        private const string JitSupportLibrary = "jitinterface";
+        internal const string JitSupportLibrary = "jitinterface";
 #endif
 
         private IntPtr _jit;
@@ -397,12 +397,21 @@ namespace Internal.JitInterface
         private const int handleMultipler = 8;
         private const int handleBase = 0x420000;
 
+#if DEBUG
+        private static readonly IntPtr s_handleHighBitSet = (sizeof(IntPtr) == 4) ? new IntPtr(0x40000000) : new IntPtr(0x4000000000000000);
+#endif
+
         private IntPtr ObjectToHandle(Object obj)
         {
+            // SuperPMI relies on the handle returned from this function being stable for the lifetime of the crossgen2 process
+            // If handle deletion is implemented, please update SuperPMI
             IntPtr handle;
             if (!_objectToHandle.TryGetValue(obj, out handle))
             {
                 handle = (IntPtr)(handleMultipler * _handleToObject.Count + handleBase);
+#if DEBUG
+                handle = new IntPtr((long)s_handleHighBitSet | (long)handle);
+#endif
                 _handleToObject.Add(obj);
                 _objectToHandle.Add(obj, handle);
             }
@@ -411,6 +420,9 @@ namespace Internal.JitInterface
 
         private Object HandleToObject(IntPtr handle)
         {
+#if DEBUG
+            handle = new IntPtr(~(long)s_handleHighBitSet & (long) handle);
+#endif
             int index = ((int)handle - handleBase) / handleMultipler;
             return _handleToObject[index];
         }
@@ -648,6 +660,32 @@ namespace Internal.JitInterface
 
             if (type.IsValueType)
             {
+                if (_compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.X86)
+                {
+                    LayoutInt elementSize = type.GetElementSize();
+
+#if READYTORUN
+                    if (elementSize.IsIndeterminate)
+                    {
+                        throw new RequiresRuntimeJitException(type);
+                    }
+#endif
+#if READYTORUN
+                    if (elementSize.AsInt == 4)
+                    {
+                        var normalizedCategory = _compilation.TypeSystemContext.NormalizedCategoryFor4ByteStructOnX86(type);
+                        if (normalizedCategory != type.Category)
+                        {
+                            if (NeedsTypeLayoutCheck(type))
+                            {
+                                ISymbolNode node = _compilation.SymbolNodeFactory.CheckTypeLayout(type);
+                                _methodCodeNode.Fixups.Add(node);
+                            }
+                            return (CorInfoType)normalizedCategory;
+                        }
+                    }
+#endif
+                }
                 return CorInfoType.CORINFO_TYPE_VALUECLASS;
             }
 

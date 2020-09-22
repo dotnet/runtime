@@ -57,6 +57,7 @@ namespace System.Net.Sockets
             {
                 unsafe
                 {
+                    Debug.Assert(OperatingSystem.IsWindows());
                     Debug.Assert(_socketHandle != null, "_socketHandle is null.");
 
                     ThreadPoolBoundHandle? boundHandle = _socketHandle.IOCPBoundHandle;

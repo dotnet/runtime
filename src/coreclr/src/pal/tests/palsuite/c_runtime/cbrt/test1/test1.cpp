@@ -42,11 +42,11 @@ struct test
 };
 
 /**
- * validate
+ * cbrt_test1_validate
  *
  * test validation function
  */
-void __cdecl validate(double value, double expected, double variance)
+void __cdecl cbrt_test1_validate(double value, double expected, double variance)
 {
     double result = cbrt(value);
 
@@ -64,11 +64,11 @@ void __cdecl validate(double value, double expected, double variance)
 }
 
 /**
- * validate
+ * cbrt_test1_validate
  *
  * test validation function for values returning NaN
  */
-void __cdecl validate_isnan(double value)
+void __cdecl cbrt_test1_validate_isnan(double value)
 {
     double result = cbrt(value);
 
@@ -79,7 +79,7 @@ void __cdecl validate_isnan(double value)
     }
 }
 
-int __cdecl main(int argc, char **argv)
+PALTEST(c_runtime_cbrt_test1_paltest_cbrt_test1, "c_runtime/cbrt/test1/paltest_cbrt_test1")
 {
     struct test tests[] = 
     {
@@ -106,16 +106,16 @@ int __cdecl main(int argc, char **argv)
         return FAIL;
     }
     
-    validate(-0.0, -0.0, PAL_EPSILON);
-    validate( 0.0,  0.0, PAL_EPSILON);
+    cbrt_test1_validate(-0.0, -0.0, PAL_EPSILON);
+    cbrt_test1_validate( 0.0,  0.0, PAL_EPSILON);
 
     for (int i = 0; i < (sizeof(tests) / sizeof(struct test)); i++)
     {
-        validate(tests[i].value, tests[i].expected, tests[i].variance);
-        validate(-tests[i].value, -tests[i].expected, tests[i].variance);
+        cbrt_test1_validate(tests[i].value, tests[i].expected, tests[i].variance);
+        cbrt_test1_validate(-tests[i].value, -tests[i].expected, tests[i].variance);
     }
     
-    validate_isnan(PAL_NAN);
+    cbrt_test1_validate_isnan(PAL_NAN);
 
     PAL_Terminate();
     return PASS;

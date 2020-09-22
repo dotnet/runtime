@@ -2181,7 +2181,9 @@ MONO_EMPTY_SOURCE_FILE (simd_intrinsics_netcore);
 void
 ves_icall_System_Runtime_Intrinsics_X86_X86Base___cpuidex (int abcd[4], int function_id, int subfunction_id)
 {
+#ifndef MONO_CROSS_COMPILE
 	mono_hwcap_x86_call_cpuidex (function_id, subfunction_id,
 		&abcd [0], &abcd [1], &abcd [2], &abcd [3]);
+#endif
 }
 #endif

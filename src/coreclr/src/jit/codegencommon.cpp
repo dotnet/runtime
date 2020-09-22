@@ -2271,6 +2271,7 @@ void CodeGen::genEmitMachineCode()
     GetEmitter()->emitComputeCodeSizes();
 
 #ifdef DEBUG
+    unsigned instrCount;
 
     // Code to test or stress our ability to run a fallback compile.
     // We trigger the fallback here, before asking the VM for any memory,
@@ -2319,7 +2320,7 @@ void CodeGen::genEmitMachineCode()
 
     codeSize = GetEmitter()->emitEndCodeGen(compiler, trackedStackPtrsContig, GetInterruptible(),
                                             IsFullPtrRegMapRequired(), compiler->compHndBBtabCount, &prologSize,
-                                            &epilogSize, codePtr, &coldCodePtr, &consPtr);
+                                            &epilogSize, codePtr, &coldCodePtr, &consPtr DEBUGARG(&instrCount));
 
 #ifdef DEBUG
     assert(compiler->compCodeGenDone == false);
@@ -2339,8 +2340,9 @@ void CodeGen::genEmitMachineCode()
 #ifdef DEBUG
     if (compiler->opts.disAsm || verbose)
     {
-        printf("\n; Total bytes of code %d, prolog size %d, PerfScore %.2f, (MethodHash=%08x) for method %s\n",
-               codeSize, prologSize, compiler->info.compPerfScore, compiler->info.compMethodHash(),
+        printf("\n; Total bytes of code %d, prolog size %d, PerfScore %.2f, instruction count %d (MethodHash=%08x) for "
+               "method %s\n",
+               codeSize, prologSize, compiler->info.compPerfScore, instrCount, compiler->info.compMethodHash(),
                compiler->info.compFullName);
         printf("; ============================================================\n\n");
         printf(""); // in our logic this causes a flush
@@ -3423,7 +3425,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
 #if defined(UNIX_AMD64_ABI)
         if (varTypeIsStruct(varDsc))
         {
-            CORINFO_CLASS_HANDLE typeHnd = varDsc->lvVerTypeInfo.GetClassHandle();
+            CORINFO_CLASS_HANDLE typeHnd = varDsc->GetStructHnd();
             assert(typeHnd != nullptr);
             SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
             compiler->eeGetSystemVAmd64PassStructInRegisterDescriptor(typeHnd, &structDesc);
@@ -10106,7 +10108,7 @@ var_types Compiler::GetHfaType(GenTree* tree)
 
 unsigned Compiler::GetHfaCount(GenTree* tree)
 {
-    return GetHfaCount(gtGetStructHandleIfPresent(tree));
+    return GetHfaCount(gtGetStructHandle(tree));
 }
 
 var_types Compiler::GetHfaType(CORINFO_CLASS_HANDLE hClass)
@@ -11649,7 +11651,7 @@ void CodeGen::genStructReturn(GenTree* treeNode)
     if (actualOp1->OperIs(GT_LCL_VAR))
     {
         varDsc = compiler->lvaGetDesc(actualOp1->AsLclVar()->GetLclNum());
-        retTypeDesc.InitializeStructReturnType(compiler, varDsc->lvVerTypeInfo.GetClassHandle());
+        retTypeDesc.InitializeStructReturnType(compiler, varDsc->GetStructHnd());
         assert(varDsc->lvIsMultiRegRet);
     }
     else

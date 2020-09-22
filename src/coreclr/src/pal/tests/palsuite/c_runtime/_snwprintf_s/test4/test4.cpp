@@ -19,7 +19,7 @@
 /* ditto with wcslen */
 
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime__snwprintf_s_test4_paltest_snwprintf_test4, "c_runtime/_snwprintf_s/test4/paltest_snwprintf_test4")
 {
     void *ptr = (void*) 0x123456;
     INT64 lptr = I64(0x1234567887654321);

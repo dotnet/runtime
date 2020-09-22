@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <CLRTestKind>BuildOnly</CLRTestKind>
+    <IsTestProject>false</IsTestProject>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <DisableRarCache>true</DisableRarCache>
+    <DisablePackageAssetsCache>true</DisablePackageAssetsCache>
+    <RuntimeIdentifiers>win-arm;win-arm64;win-x64;win-x86;$(TargetRid)</RuntimeIdentifiers>
+    <IncludeOOBLibraries>true</IncludeOOBLibraries>
+    <LibrariesConfiguration>Release</LibrariesConfiguration>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Diagnostics.Tools.RuntimeClient" Version="$(MicrosoftDiagnosticsToolsRuntimeClientVersion)" />
+    <PackageReference Include="Microsoft.Diagnostics.NETCore.Client" Version="$(MicrosoftDiagnosticsNETCoreClientVersion)" />
+  </ItemGroup>
+
+  <Target Name="Build" DependsOnTargets="$(TraversalBuildDependsOn)" />
+
+  <PropertyGroup>
+    <ProjectAssetsFile>$(RepoRoot)src\tests\Common\test_dependencies\obj\project.assets.json</ProjectAssetsFile>
+  </PropertyGroup>
+
+  <Target Name="AddUcrtFilesToCoreRoot" BeforeTargets="CopyDependencyToCoreRoot" Condition="'$(TargetOS)' == 'Windows_NT'">
+    <ItemGroup>
+      <NativeCopyLocalItems Include="$(UniversalCRTSDKDir)Redist\ucrt\DLLs\$(TargetArchitecture)\*.dll" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="AddLibrariesToCoreRoot" BeforeTargets="CopyDependencyToCoreRoot" DependsOnTargets="ResolveLibrariesFromLocalBuild">
+    <ItemGroup>
+      <RuntimeCopyLocalItems Include="@(LibrariesRuntimeFiles)" />
+    </ItemGroup>
+  </Target>
+</Project>

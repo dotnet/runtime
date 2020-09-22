@@ -391,7 +391,6 @@ namespace System.Xml.Serialization
                 int xmlnsMember = FindXmlnsIndex(mapping.Members!);
                 if (xmlnsMember >= 0)
                 {
-                    MemberMapping member = mapping.Members![xmlnsMember];
                     string source = "((" + typeof(XmlSerializerNamespaces).FullName + ")p[" + xmlnsMember.ToString(CultureInfo.InvariantCulture) + "])";
 
                     ilg.Ldloc(pLengthLoc);
@@ -1619,21 +1618,18 @@ namespace System.Xml.Serialization
 
                         WriteChoiceTypeCheck(source, fullTypeName, choice!, enumFullName, element.Mapping.TypeDesc);
 
-                        SourceInfo castedSource = source;
-                        castedSource = source.CastTo(element.Mapping.TypeDesc);
+                        SourceInfo castedSource = source.CastTo(element.Mapping.TypeDesc);
                         WriteElement(element.Any ? source : castedSource, element, arrayName, writeAccessors);
                     }
                     else
                     {
                         TypeDesc td = element.IsUnbounded ? element.Mapping!.TypeDesc!.CreateArrayTypeDesc() : element.Mapping!.TypeDesc!;
-                        string fullTypeName = td.CSharpName;
                         if (wroteFirstIf) ilg.InitElseIf();
                         else { wroteFirstIf = true; ilg.InitIf(); }
                         WriteInstanceOf(source, td.Type!);
                         // WriteInstanceOf leave bool on the stack
                         ilg.AndIf();
-                        SourceInfo castedSource = source;
-                        castedSource = source.CastTo(td);
+                        SourceInfo castedSource = source.CastTo(td);
                         WriteElement(element.Any ? source : castedSource, element, arrayName, writeAccessors);
                     }
                 }
@@ -1652,8 +1648,6 @@ namespace System.Xml.Serialization
                 {
                     if (elements.Length - anyCount > 0) ilg.InitElseIf();
                     else ilg.InitIf();
-
-                    string fullTypeName = typeof(XmlElement).FullName!;
 
                     source.Load(typeof(object));
                     ilg.IsInst(typeof(XmlElement));
@@ -1795,18 +1789,17 @@ namespace System.Xml.Serialization
                 }
                 if (text != null)
                 {
-                    string fullTypeName = text.Mapping!.TypeDesc!.CSharpName;
                     if (elements.Length > 0)
                     {
                         ilg.InitElseIf();
-                        WriteInstanceOf(source, text.Mapping.TypeDesc.Type!);
+                        WriteInstanceOf(source, text.Mapping!.TypeDesc!.Type!);
                         ilg.AndIf();
                         SourceInfo castedSource = source.CastTo(text.Mapping.TypeDesc);
                         WriteText(castedSource, text);
                     }
                     else
                     {
-                        SourceInfo castedSource = source.CastTo(text.Mapping.TypeDesc);
+                        SourceInfo castedSource = source.CastTo(text.Mapping!.TypeDesc!);
                         WriteText(castedSource, text);
                     }
                 }
@@ -1913,8 +1906,7 @@ namespace System.Xml.Serialization
                     ilg.Cne();
                 }
                 ilg.If();
-                string fullTypeName = element.Mapping.TypeDesc.BaseTypeDesc!.CSharpName;
-                SourceInfo castedSource = source.CastTo(element.Mapping.TypeDesc.BaseTypeDesc);
+                SourceInfo castedSource = source.CastTo(element.Mapping.TypeDesc.BaseTypeDesc!);
                 ElementAccessor e = element.Clone();
                 e.Mapping = ((NullableMapping)element.Mapping).BaseMapping;
                 WriteElement(e.Any ? source : castedSource, e, arrayName, writeAccessor);
@@ -2017,11 +2009,6 @@ namespace System.Xml.Serialization
             }
             else if (element.Mapping is SpecialMapping)
             {
-                SpecialMapping mapping = (SpecialMapping)element.Mapping;
-                TypeDesc td = mapping.TypeDesc!;
-                string fullTypeName = td.CSharpName;
-
-
                 if (element.Mapping is SerializableMapping)
                 {
                     WriteElementCall("WriteSerializable", typeof(IXmlSerializable), source, name, ns, element.IsNullable, !element.Any);
@@ -2314,7 +2301,7 @@ namespace System.Xml.Serialization
         {
             foreach (Type type in scope.Types)
             {
-                TypeDesc typeDesc = scope.GetTypeDesc(type);
+                scope.GetTypeDesc(type);
             }
         }
 

@@ -40,6 +40,13 @@
  * @type {number} - address in wasm memory
  */
 
+/**
+ * @typedef Event
+ * @type {object}
+ * @property {string} eventName - name of the event being raised
+ * @property {object} eventArgs - arguments for the event itself
+ */
+
 var MonoSupportLib = {
 	$MONO__postset: 'MONO.export_functions (Module);',
 	$MONO: {
@@ -71,12 +78,120 @@ var MonoSupportLib = {
 			module ["mono_load_runtime_and_bcl_args"] = MONO.mono_load_runtime_and_bcl_args;
 			module ["mono_wasm_load_bytes_into_heap"] = MONO.mono_wasm_load_bytes_into_heap;
 			module ["mono_wasm_load_icu_data"] = MONO.mono_wasm_load_icu_data;
+			module ["mono_wasm_get_icudt_name"] = MONO.mono_wasm_get_icudt_name;
 			module ["mono_wasm_globalization_init"] = MONO.mono_wasm_globalization_init;
 			module ["mono_wasm_get_loaded_files"] = MONO.mono_wasm_get_loaded_files;
 			module ["mono_wasm_new_root_buffer"] = MONO.mono_wasm_new_root_buffer;
 			module ["mono_wasm_new_root"] = MONO.mono_wasm_new_root;
 			module ["mono_wasm_new_roots"] = MONO.mono_wasm_new_roots;
 			module ["mono_wasm_release_roots"] = MONO.mono_wasm_release_roots;
+		},
+
+		_base64Converter: {
+			// Code from JSIL:
+			// https://github.com/sq/JSIL/blob/1d57d5427c87ab92ffa3ca4b82429cd7509796ba/JSIL.Libraries/Includes/Bootstrap/Core/Classes/System.Convert.js#L149
+			// Thanks to Katelyn Gadd @kg
+
+			_base64Table: [
+				'A', 'B', 'C', 'D',
+				'E', 'F', 'G', 'H',
+				'I', 'J', 'K', 'L',
+				'M', 'N', 'O', 'P',
+				'Q', 'R', 'S', 'T',
+				'U', 'V', 'W', 'X',
+				'Y', 'Z',
+				'a', 'b', 'c', 'd',
+				'e', 'f', 'g', 'h',
+				'i', 'j', 'k', 'l',
+				'm', 'n', 'o', 'p',
+				'q', 'r', 's', 't',
+				'u', 'v', 'w', 'x',
+				'y', 'z',
+				'0', '1', '2', '3',
+				'4', '5', '6', '7',
+				'8', '9',
+				'+', '/'
+			],
+
+			_makeByteReader: function (bytes, index, count) {
+				var position = (typeof (index) === "number") ? index : 0;
+				var endpoint;
+
+				if (typeof (count) === "number")
+					endpoint = (position + count);
+				else
+					endpoint = (bytes.length - position);
+
+				var result = {
+					read: function () {
+						if (position >= endpoint)
+							return false;
+
+						var nextByte = bytes[position];
+						position += 1;
+						return nextByte;
+					}
+				};
+
+				Object.defineProperty(result, "eof", {
+					get: function () {
+						return (position >= endpoint);
+					},
+					configurable: true,
+					enumerable: true
+				});
+
+				return result;
+			},
+
+			toBase64StringImpl: function (inArray, offset, length) {
+				var reader = this._makeByteReader(inArray, offset, length);
+				var result = "";
+				var ch1 = 0, ch2 = 0, ch3 = 0, bits = 0, equalsCount = 0, sum = 0;
+				var mask1 = (1 << 24) - 1, mask2 = (1 << 18) - 1, mask3 = (1 << 12) - 1, mask4 = (1 << 6) - 1;
+				var shift1 = 18, shift2 = 12, shift3 = 6, shift4 = 0;
+
+				while (true) {
+					ch1 = reader.read();
+					ch2 = reader.read();
+					ch3 = reader.read();
+
+					if (ch1 === false)
+						break;
+					if (ch2 === false) {
+						ch2 = 0;
+						equalsCount += 1;
+					}
+					if (ch3 === false) {
+						ch3 = 0;
+						equalsCount += 1;
+					}
+
+					// Seems backwards, but is right!
+					sum = (ch1 << 16) | (ch2 << 8) | (ch3 << 0);
+
+					bits = (sum & mask1) >> shift1;
+					result += this._base64Table[bits];
+					bits = (sum & mask2) >> shift2;
+					result += this._base64Table[bits];
+
+					if (equalsCount < 2) {
+						bits = (sum & mask3) >> shift3;
+						result += this._base64Table[bits];
+					}
+
+					if (equalsCount === 2) {
+						result += "==";
+					} else if (equalsCount === 1) {
+						result += "=";
+					} else {
+						bits = (sum & mask4) >> shift4;
+						result += this._base64Table[bits];
+					}
+				}
+
+				return result;
+			},
 		},
 
 		_mono_wasm_root_buffer_prototype: {
@@ -362,19 +477,34 @@ var MonoSupportLib = {
 			var i = 0;
 			while (i < var_list.length) {
 				let o = var_list [i];
-				const name = o.name;
-				if (name == null || name == undefined) {
-					i ++;
-					out_list.push (o);
-					continue;
-				}
+				const this_has_name = o.name !== undefined;
+				let next_has_value_or_get_set = false;
 
 				if (i + 1 < var_list.length) {
+					const next = var_list [i+1];
+					next_has_value_or_get_set = next.value !== undefined || next.get !== undefined || next.set !== undefined;
+				}
+
+				if (!this_has_name) {
+					// insert the object as-is
+					// Eg. in case of locals, the names are added
+					// later
+					i ++;
+				} else if (next_has_value_or_get_set) {
+					// found a {name} followed by a {value/get}
 					o = Object.assign (o, var_list [i + 1]);
+					i += 2;
+				} else {
+					// missing value/get, so add a placeholder one
+					o.value = {
+						type: "symbol",
+						value: "<unreadable value>",
+						description: "<unreadable value>"
+					};
+					i ++;
 				}
 
 				out_list.push (o);
-				i += 2;
 			}
 
 			return out_list;
@@ -396,6 +526,11 @@ var MonoSupportLib = {
 
 			// Split props into the 3 groups - backing_fields, getters, and all_fields_except_backing_fields
 			props.forEach(p => {
+				if (p.name === undefined) {
+					console.debug(`Bug: Found a member with no name. Skipping it. p: ${JSON.stringify(p)}`);
+					return;
+				}
+
 				if (p.name.endsWith('k__BackingField')) {
 					const auto_prop_name = p.name.replace ('k__BackingField', '')
 						.replace ('<', '')
@@ -758,6 +893,13 @@ var MonoSupportLib = {
 
 				if (value.type != "object" || value.isValueType != true || value.expanded != true) // undefined would also give us false
 					continue;
+
+				if (value.members === undefined) {
+					// this could happen for valuetypes that maybe
+					// we were not able to describe, like `ref` parameters
+					// So, skip that
+					continue;
+				}
 
 				// Generate objectId for expanded valuetypes
 				value.objectId = value.objectId || this._new_or_add_id_props ({ scheme: 'valuetype' });
@@ -1298,6 +1440,7 @@ var MonoSupportLib = {
 			var offset = null;
 
 			switch (asset.behavior) {
+				case "resource":
 				case "assembly":
 					ctx.loaded_files.push ({ url: url, file: virtualName});
 				case "heap":
@@ -1357,6 +1500,9 @@ var MonoSupportLib = {
 				else
 					console.error ("Error loading ICU asset", asset.name);
 			}
+			else if (asset.behavior === "resource") {
+				ctx.mono_wasm_add_satellite_assembly (virtualName, asset.culture, offset, bytes.length);
+			}
 		},
 
 		// deprecated
@@ -1400,6 +1546,7 @@ var MonoSupportLib = {
 		//        behavior: (required) determines how the asset will be handled once loaded:
 		//          "heap": store asset into the native heap
 		//          "assembly": load asset as a managed assembly (or debugging information)
+		//          "resource": load asset as a managed resource assembly
 		//          "icu": load asset as an ICU data archive
 		//          "vfs": load asset into the virtual filesystem (for fopen, File.Open, etc)
 		//        load_remote: (optional) if true, an attempt will be made to load the asset
@@ -1458,6 +1605,14 @@ var MonoSupportLib = {
 			return ok;
 		},
 
+		// Get icudt.dat exact filename that matches given culture, examples:
+		//   "ja" -> "icudt_CJK.dat"
+		//   "en_US" (or "en-US" or just "en") -> "icudt_EFIGS.dat"
+		// etc, see "mono_wasm_get_icudt_name" implementation in pal_icushim_static.c
+		mono_wasm_get_icudt_name: function (culture) {
+			return Module.ccall ('mono_wasm_get_icudt_name', 'string', ['string'], [culture]);
+		},
+
 		_finalize_startup: function (args, ctx) {
 			var loaded_files_with_debug_info = [];
 
@@ -1510,6 +1665,7 @@ var MonoSupportLib = {
 				tracing: args.diagnostic_tracing || false,
 				pending_count: args.assets.length,
 				mono_wasm_add_assembly: Module.cwrap ('mono_wasm_add_assembly', 'number', ['string', 'number', 'number']),
+				mono_wasm_add_satellite_assembly: Module.cwrap ('mono_wasm_add_satellite_assembly', 'void', ['string', 'string', 'number', 'number']),
 				loaded_assets: Object.create (null),
 				// dlls and pdbs, used by blazor and the debugger
 				loaded_files: [],
@@ -1602,6 +1758,10 @@ var MonoSupportLib = {
 					if (sourcePrefix.trim() === "") {
 						if (asset.behavior === "assembly")
 							attemptUrl = locateFile (args.assembly_root + "/" + asset.name);
+						else if (asset.behavior === "resource") {
+							var path = asset.culture !== '' ? `${asset.culture}/${asset.name}` : asset.name;
+							attemptUrl = locateFile (args.assembly_root + "/" + path);
+						}
 						else
 							attemptUrl = asset.name;
 					} else {
@@ -1917,6 +2077,20 @@ var MonoSupportLib = {
 				}
 				break;
 
+			case "symbol": {
+				if (typeof value === 'object' && value.isClassName)
+					str_value = MONO._mono_csharp_fixup_class_name (str_value);
+
+				MONO.var_info.push ({
+					value: {
+						type: "symbol",
+						value: str_value,
+						description: str_value
+					}
+				});
+				}
+				break;
+
 			default: {
 				const msg = `'${str_value}' ${value}`;
 
@@ -1990,7 +2164,26 @@ var MonoSupportLib = {
 				data = data.slice(length);
 			}
 			return true;
-		}
+		},
+
+		/**
+		 * Raises an event for the debug proxy
+		 *
+		 * @param {Event} event - event to be raised
+		 * @param {object} args - arguments for raising this event, eg. `{trace: true}`
+		 */
+		mono_wasm_raise_debug_event: function(event, args={}) {
+			if (typeof event !== 'object')
+				throw new Error(`event must be an object, but got ${JSON.stringify(event)}`);
+
+			if (event.eventName === undefined)
+				throw new Error(`event.eventName is a required parameter, in event: ${JSON.stringify(event)}`);
+
+			if (typeof args !== 'object')
+				throw new Error(`args must be an object, but got ${JSON.stringify(args)}`);
+
+			console.debug('mono_wasm_debug_event_raised:aef14bca-5519-4dfe-b35a-f867abc123ae', JSON.stringify(event), JSON.stringify(args));
+		},
 	},
 
 	mono_wasm_add_typed_value: function (type, str_value, value) {
@@ -2077,14 +2270,15 @@ var MonoSupportLib = {
 			var args_sig = parts.splice (1).join (', ');
 			return `${ret_sig} ${method_name} (${args_sig})`;
 		}
-
 		let tgt_sig;
 		if (targetName != 0)
 			tgt_sig = args_to_sig (Module.UTF8ToString (targetName));
 
 		const type_name = MONO._mono_csharp_fixup_class_name (Module.UTF8ToString (className));
+		if (tgt_sig === undefined)
+			tgt_sig = type_name;
 
-		if (objectId == -1) {
+		if (objectId == -1 || targetName === 0) {
 			// Target property
 			MONO.var_info.push ({
 				value: {
@@ -2105,14 +2299,15 @@ var MonoSupportLib = {
 		}
 	},
 
-	mono_wasm_add_frame: function(il, method, assembly_name, method_full_name) {
+	mono_wasm_add_frame: function(il, method, frame_id, assembly_name, method_full_name) {
 		var parts = Module.UTF8ToString (method_full_name).split (":", 2);
 		MONO.active_frames.push( {
 			il_pos: il,
 			method_token: method,
 			assembly_name: Module.UTF8ToString (assembly_name),
 			// Extract just the method name from `{class_name}:{method_name}`
-			method_name: parts [parts.length - 1]
+			method_name: parts [parts.length - 1],
+			frame_id
 		});
 	},
 
@@ -2163,6 +2358,36 @@ var MonoSupportLib = {
 			uncaught    : uncaught
 		};
 		debugger;
+	},
+
+	mono_wasm_asm_loaded: function (assembly_name, assembly_ptr, assembly_len, pdb_ptr, pdb_len) {
+		// Only trigger this codepath for assemblies loaded after app is ready
+		if (MONO.mono_wasm_runtime_is_ready !== true)
+			return;
+
+		if (!this.mono_wasm_assembly_already_added)
+			this.mono_wasm_assembly_already_added = Module.cwrap ("mono_wasm_assembly_already_added", 'number', ['string']);
+
+		// And for assemblies that have not already been loaded
+		const assembly_name_str = assembly_name !== 0 ? Module.UTF8ToString(assembly_name).concat('.dll') : '';
+		if (this.mono_wasm_assembly_already_added(assembly_name_str))
+			return;
+
+		const assembly_data = new Uint8Array(Module.HEAPU8.buffer, assembly_ptr, assembly_len);
+		const assembly_b64 = MONO._base64Converter.toBase64StringImpl(assembly_data);
+
+		let pdb_b64;
+		if (pdb_ptr) {
+			const pdb_data = new Uint8Array(Module.HEAPU8.buffer, pdb_ptr, pdb_len);
+			pdb_b64 = MONO._base64Converter.toBase64StringImpl(pdb_data);
+		}
+
+		MONO.mono_wasm_raise_debug_event({
+			eventName: 'AssemblyLoaded',
+			assembly_name: assembly_name_str,
+			assembly_b64,
+			pdb_b64
+		});
 	},
 };
 

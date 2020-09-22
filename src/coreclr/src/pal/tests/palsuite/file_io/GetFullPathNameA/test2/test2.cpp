@@ -17,11 +17,11 @@
 
 #include <palsuite.h>
 
-const char* szDotDot   = "..\\";
-const char* szFileName = "testing.tmp";
-
-int __cdecl main(int argc, char *argv[])
+PALTEST(file_io_GetFullPathNameA_test2_paltest_getfullpathnamea_test2, "file_io/GetFullPathNameA/test2/paltest_getfullpathnamea_test2")
 {
+    const char* szDotDot   = "..\\";
+    const char* szFileName = "testing.tmp";
+
     DWORD dwRc = 0;
     char szReturnedPath[_MAX_DIR+1];
     char szFullFileName[_MAX_DIR+1];

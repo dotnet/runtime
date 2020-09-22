@@ -116,7 +116,19 @@ namespace DebuggerTests
     {
         protected Task startTask;
 
-        static string FindTestPath()
+        static string s_debuggerTestAppPath;
+        protected static string DebuggerTestAppPath
+        {
+            get
+            {
+                if (s_debuggerTestAppPath == null)
+                    s_debuggerTestAppPath = FindTestPath();
+
+                return s_debuggerTestAppPath;
+            }
+        }
+
+        static protected string FindTestPath()
         {
             //FIXME how would I locate it otherwise?
             var test_path = Environment.GetEnvironmentVariable("TEST_SUITE_PATH");
@@ -162,7 +174,7 @@ namespace DebuggerTests
 
         public DebuggerTestBase(string driver = "debugger-driver.html")
         {
-            startTask = TestHarnessProxy.Start(FindChromePath(), FindTestPath(), driver);
+            startTask = TestHarnessProxy.Start(FindChromePath(), DebuggerTestAppPath, driver);
         }
 
         public Task Ready() => startTask;
@@ -222,7 +234,6 @@ namespace DebuggerTests
                        var top_frame = pause_location["callFrames"][0];
 
                        var scope = top_frame["scopeChain"][0];
-                       Assert.Equal("dotnet:scope:0", scope["object"]["objectId"]);
                        if (wait_for_event_fn != null)
                            await wait_for_event_fn(pause_location);
                        else
@@ -271,7 +282,6 @@ namespace DebuggerTests
                 var top_frame = pause_location["callFrames"][0];
 
                 var scope = top_frame["scopeChain"][0];
-                Assert.Equal("dotnet:scope:0", scope["object"]["objectId"]);
 
                 if (wait_for_event_fn != null)
                     await wait_for_event_fn(pause_location);
@@ -470,14 +480,15 @@ namespace DebuggerTests
         internal async Task<JObject> StepAndCheck(StepKind kind, string script_loc, int line, int column, string function_name,
             Func<JObject, Task> wait_for_event_fn = null, Action<JToken> locals_fn = null, int times = 1)
         {
+            string method = (kind == StepKind.Resume ? "Debugger.resume" : $"Debugger.step{kind}");
             for (int i = 0; i < times - 1; i++)
             {
-                await SendCommandAndCheck(null, $"Debugger.step{kind.ToString()}", null, -1, -1, null);
+                await SendCommandAndCheck(null, method, null, -1, -1, null);
             }
 
             // Check for method/line etc only at the last step
             return await SendCommandAndCheck(
-                null, $"Debugger.step{kind.ToString()}", script_loc, line, column, function_name,
+                null, method, script_loc, line, column, function_name,
                 wait_for_event_fn: wait_for_event_fn,
                 locals_fn: locals_fn);
         }
@@ -500,12 +511,15 @@ namespace DebuggerTests
             }
 
             var wait_res = await ctx.insp.WaitFor(waitForEvent);
-
+            JToken top_frame = wait_res["callFrames"]?[0];
             if (function_name != null)
-                Assert.Equal(function_name, wait_res["callFrames"]?[0]?["functionName"]?.Value<string>());
+            {
+                AssertEqual(function_name, wait_res["callFrames"]?[0]?["functionName"]?.Value<string>(), top_frame?.ToString());
+            }
 
-            if (script_loc != null)
-                CheckLocation(script_loc, line, column, ctx.scripts, wait_res["callFrames"][0]["location"]);
+            Console.WriteLine (top_frame);
+            if (script_loc != null && line >= 0)
+                CheckLocation(script_loc, line, column, ctx.scripts, top_frame["location"]);
 
             if (wait_for_event_fn != null)
                 await wait_for_event_fn(wait_res);
@@ -719,26 +733,34 @@ namespace DebuggerTests
                 return;
             }
 
-            foreach (var jp in exp_val.Values<JProperty>())
+            try
             {
-                if (jp.Value.Type == JTokenType.Object)
+                foreach (var jp in exp_val.Values<JProperty>())
                 {
-                    var new_val = await GetProperties(actual_val["objectId"].Value<string>());
-                    await CheckProps(new_val, jp.Value, $"{label}-{actual_val["objectId"]?.Value<string>()}");
+                    if (jp.Value.Type == JTokenType.Object)
+                    {
+                        var new_val = await GetProperties(actual_val["objectId"].Value<string>());
+                        await CheckProps(new_val, jp.Value, $"{label}-{actual_val["objectId"]?.Value<string>()}");
 
-                    continue;
+                        continue;
+                    }
+
+                    var exp_val_str = jp.Value.Value<string>();
+                    bool null_or_empty_exp_val = String.IsNullOrEmpty(exp_val_str);
+
+                    var actual_field_val = actual_val?.Values<JProperty>()?.FirstOrDefault(a_jp => a_jp.Name == jp.Name);
+                    var actual_field_val_str = actual_field_val?.Value?.Value<string>();
+                    if (null_or_empty_exp_val && String.IsNullOrEmpty(actual_field_val_str))
+                        continue;
+
+                    Assert.True(actual_field_val != null, $"[{label}] Could not find value field named {jp.Name}");
+                    AssertEqual(exp_val_str, actual_field_val_str, $"[{label}] Value for json property named {jp.Name} didn't match.");
                 }
-
-                var exp_val_str = jp.Value.Value<string>();
-                bool null_or_empty_exp_val = String.IsNullOrEmpty(exp_val_str);
-
-                var actual_field_val = actual_val?.Values<JProperty>()?.FirstOrDefault(a_jp => a_jp.Name == jp.Name);
-                var actual_field_val_str = actual_field_val?.Value?.Value<string>();
-                if (null_or_empty_exp_val && String.IsNullOrEmpty(actual_field_val_str))
-                    continue;
-
-                Assert.True(actual_field_val != null, $"[{label}] Could not find value field named {jp.Name}");
-                AssertEqual(exp_val_str, actual_field_val_str, $"[{label}] Value for json property named {jp.Name} didn't match.");
+            }
+            catch
+            {
+                Console.WriteLine ($"Expected: {exp_val}. Actual: {actual_val}");
+                throw;
             }
         }
 
@@ -1076,6 +1098,7 @@ namespace DebuggerTests
     {
         Into,
         Over,
-        Out
+        Out,
+        Resume
     }
 }
