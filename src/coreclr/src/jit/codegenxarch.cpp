@@ -5950,15 +5950,14 @@ void CodeGen::genCompareInt(GenTree* treeNode)
             emitAttr targetSize = emitActualTypeSize(op1);
             if (targetReg != op1->GetRegNum())
             {
-                // move op1 to the target register.
-                // in case of byte/short we need to save info for shr that it was extended to EA_4BYTE
+                // move op1 to the target register and extend to 4BYTE if needed.
                 targetSize = op1Type == TYP_LONG ? EA_8BYTE : EA_4BYTE;
                 inst_RV_RV(INS_mov, targetReg, op1->GetRegNum());
             }
             if (tree->OperIs(GT_GE))
             {
                 // emit "neg" for "x>=0" case
-                inst_RV(INS_neg, targetReg, op1Type, targetSize);
+                inst_RV(INS_not, targetReg, tree->TypeGet(), targetSize);
             }
             inst_RV_IV(INS_shr_N, targetReg, (int)targetSize * 8 - 1, targetSize);
             genProduceReg(tree);
