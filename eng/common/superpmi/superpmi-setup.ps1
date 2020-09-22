@@ -46,7 +46,7 @@ $super_pmi_dlls = @(
 )
 
 # Prepare WorkItemDirectories
-robocopy $CoreRootDirectory $PmiAssembliesDirectory\Core_Root /E /XF *.pdb
+robocopy $CoreRootDirectory $PmiAssembliesDirectory\Core_Root\binaries /E /XF *.pdb
 # robocopy $ManagedTestArtifactDirectory $PmiAssembliesDirectory\Tests /E /XD $CoreRootDirectory /XF *.pdb
 
 # Prepare CorrelationPayloadDirectories

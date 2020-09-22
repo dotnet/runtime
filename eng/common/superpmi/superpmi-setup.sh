@@ -78,7 +78,7 @@ creator=
 echo "Done setting queue"
 
 # Prepare WorkItemDirectories
-mkdir -p $pmi_assemblies_directory/Core_Root
+mkdir -p $pmi_assemblies_directory/Core_Root/binaries
 rsync -avr --exclude='*.pdb' $core_root_directory/* $pmi_assemblies_directory/Core_Root
 
 # mkdir -p $pmi_assemblies_directory/Tests
@@ -88,13 +88,13 @@ rsync -avr --exclude='*.pdb' $core_root_directory/* $pmi_assemblies_directory/Co
 
 mkdir -p $superpmi_directory
 
-super_pmi_dlls = (
- "clrjit.dll"
- "coreclr.dll"
- "CoreRun.exe"
- "mcs.exe"
- "superpmi.exe"
- "System.Private.CoreLib.dll"
+super_pmi_dlls=(
+"clrjit.dll"
+"coreclr.dll"
+"CoreRun.exe"
+"mcs.exe"
+"superpmi.exe"
+"System.Private.CoreLib.dll"
 )
 printf "%s\n" "${super_pmi_dlls[@]}" > $superpmi_directory/super_pmi_dlls.txt
 

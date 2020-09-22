@@ -9,14 +9,25 @@
 
   <PropertyGroup Condition="'$(AGENT_OS)' == 'Windows_NT'">
     <Python>py -3</Python>
-    <PmiAssembliesDirectory>$(WorkItemDirectory)\pmiAssembliesDirectory</PmiAssembliesDirectory>
+    <!-- The directory structure of pmiAssembliesPayload is
+         source\workitem\pmiAssembliesDirectory\<machine_specific_load_0>\binaries
+         source\workitem\pmiAssembliesDirectory\<machine_specific_load_1>\binaries
+         ...
+         source\workitem\pmiAssembliesDirectory\<machine_specific_load_N>\binaries
+
+         PmiAssembliesPayload - Path that will be sent to helix machine to run collection on
+         PmiAssembliesDirectory - Path on helix machine itself where superpmi.py will discover the sent assemblies.
+    -->
+    <PmiAssembliesPayload>$(WorkItemDirectory)\pmiAssembliesDirectory</PmiAssembliesPayload>
+    <PmiAssembliesDirectory>%HELIX_WORKITEM_PAYLOAD%\binaries</PmiAssembliesDirectory>
     <SuperPMIDirectory>%HELIX_CORRELATION_PAYLOAD%\superpmi</SuperPMIDirectory>
     <OutputMchPath>%HELIX_WORKITEM_UPLOAD_ROOT%</OutputMchPath>
     <WorkItemCommand>$(SuperPMIDirectory)\superpmi.py collect --pmi -pmi_location $(SuperPMIDirectory)\pmi.dll -core_root $(SuperPMIDirectory)</WorkItemCommand>
   </PropertyGroup>
   <PropertyGroup Condition="'$(AGENT_OS)' != 'Windows_NT'">
     <Python>py -3</Python>
-    <PmiAssembliesDirectory>$(WorkItemDirectory)/pmiAssembliesDirectory</PmiAssembliesDirectory>
+    <PmiAssembliesPayload>$(WorkItemDirectory)/pmiAssembliesDirectory</PmiAssembliesPayload>
+    <PmiAssembliesDirectory>$HELIX_WORKITEM_PAYLOAD/binaries</PmiAssembliesDirectory>
     <SuperPMIDirectory>$HELIX_CORRELATION_PAYLOAD/superpmi</SuperPMIDirectory>
     <OutputMchPath>$HELIX_WORKITEM_UPLOAD_ROOT</OutputMchPath>
     <WorkItemCommand>$(SuperPMIDirectory)/superpmi.py collect --pmi -pmi_location $(SuperPMIDirectory)/pmi.dll -core_root $(SuperPMIDirectory)</WorkItemCommand>
@@ -51,9 +62,9 @@
   <ItemGroup>
     <HelixWorkItem Include="@(Partition)">
     <!-- TODO: Here too make payload folder different for workitem.Name -->
-      <PayloadDirectory>$(PmiAssembliesDirectory)$(FileSeparatorChar)%(HelixWorkItem.PmiAssemblies)</PayloadDirectory>
-      <HelixPreCommands>$(HelixPreCommands);dir /s /b $(WorkItemDirectory)</HelixPreCommands>
-      <Command>dir /s /b $(WorkItemDirectory); $(WorkItemCommand) -pmi_assemblies $(WorkItemDirectory) -output_mch_path $(OutputMchPath)$(FileSeparatorChar)%(HelixWorkItem.OutputMchName).$(AGENT_OS).$(Architecture).$(BuildConfig).mch</Command>
+      <PayloadDirectory>$(PmiAssembliesPayload)$(FileSeparatorChar)%(HelixWorkItem.PmiAssemblies)</PayloadDirectory>
+      <HelixPreCommands>$(HelixPreCommands);dir /s /b %HELIX_WORKITEM_PAYLOAD%</HelixPreCommands>
+      <Command>dir /s /b %HELIX_WORKITEM_PAYLOAD%; $(WorkItemCommand) -pmi_assemblies $(PmiAssembliesDirectory) -output_mch_path $(OutputMchPath)$(FileSeparatorChar)%(HelixWorkItem.OutputMchName).$(AGENT_OS).$(Architecture).$(BuildConfig).mch</Command>
       <Timeout>$(WorkItemTimeout)</Timeout>
       <DownloadFilesFromResults>%(HelixWorkItem.OutputMchName).$(AGENT_OS).$(Architecture).$(BuildConfig).mch;%(HelixWorkItem.OutputMchName).$(AGENT_OS).$(Architecture).$(BuildConfig).mch.mct</DownloadFilesFromResults>
     </HelixWorkItem>
