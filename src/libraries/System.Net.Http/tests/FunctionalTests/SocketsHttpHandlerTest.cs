@@ -2532,7 +2532,7 @@ namespace System.Net.Http.Functional.Tests
 
             using HttpClient client = CreateHttpClient(handler);
 
-            Assert.ThrowsAny<NotSupportedException>(() => client.Send(new HttpRequestMessage(HttpMethod.Get, $"http://bing.com")));
+            Assert.ThrowsAny<NotSupportedException>(() => client.Send(new HttpRequestMessage(HttpMethod.Get, "http://bing.com")));
         }
 
         [Theory]
