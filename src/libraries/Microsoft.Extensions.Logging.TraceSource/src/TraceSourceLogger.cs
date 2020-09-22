@@ -3,7 +3,6 @@
 
 using System;
 using System.Diagnostics;
-using System.Globalization;
 using DiagnosticsTraceSource = System.Diagnostics.TraceSource;
 
 namespace Microsoft.Extensions.Logging.TraceSource
@@ -23,7 +22,9 @@ namespace Microsoft.Extensions.Logging.TraceSource
             {
                 return;
             }
+
             string message = string.Empty;
+
             if (formatter != null)
             {
                 message = formatter(state, exception);
@@ -34,10 +35,6 @@ namespace Microsoft.Extensions.Logging.TraceSource
                 {
                     message += state;
                 }
-                if (exception != null)
-                {
-                    message += string.Format(CultureInfo.InvariantCulture, "{0}{1}", Environment.NewLine, exception);
-                }
             }
 
             if (string.IsNullOrEmpty(message) && exception == null)
@@ -46,7 +43,7 @@ namespace Microsoft.Extensions.Logging.TraceSource
             if (exception != null)
             {
                 string exceptionDelimiter = !string.IsNullOrEmpty(message) ? Environment.NewLine : string.Empty;
-                message += string.Format(CultureInfo.InvariantCulture, "{0}Error: {1}", exceptionDelimiter, exception);
+                message += exceptionDelimiter + "Error: " + exception;
             }
 
             _traceSource.TraceEvent(GetEventType(logLevel), eventId.Id, message);
