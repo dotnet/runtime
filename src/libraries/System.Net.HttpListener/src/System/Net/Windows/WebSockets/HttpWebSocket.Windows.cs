@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Runtime.CompilerServices;
@@ -197,6 +198,7 @@ namespace System.Net.WebSockets
             }
         }
 
+        [DoesNotReturn]
         internal static void ThrowPlatformNotSupportedException_WSPC()
         {
             throw new PlatformNotSupportedException(SR.net_WebSockets_UnsupportedPlatform);

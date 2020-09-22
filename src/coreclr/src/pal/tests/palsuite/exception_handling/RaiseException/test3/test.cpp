@@ -14,21 +14,21 @@
 
 #include <palsuite.h>
 
-BOOL bFilter = FALSE;
-BOOL bTry    = FALSE;
-BOOL bExcept = FALSE;
+BOOL bFilter_RaiseException_test3 = FALSE;
+BOOL bTry_RaiseException_test3    = FALSE;
+BOOL bExcept_RaiseException_test3 = FALSE;
 
 /**
 **
 **  Filter function that checks for the parameters
 **
 **/
-LONG Filter_test1(EXCEPTION_POINTERS* ep, VOID* unused)
+LONG Filter_test1_RaiseException_test3(EXCEPTION_POINTERS* ep, VOID* unused)
 {
     /* let the main know we've hit the filter function */
-    bFilter = TRUE;
+    bFilter_RaiseException_test3 = TRUE;
 
-    if (!bTry)
+    if (!bTry_RaiseException_test3)
     {
         Fail("PAL_EXCEPT_FILTER_EX: ERROR -> Something weird is going on."
             " The filter was hit without PAL_TRY being hit.\n");
@@ -48,9 +48,9 @@ LONG Filter_test1(EXCEPTION_POINTERS* ep, VOID* unused)
     return EXCEPTION_EXECUTE_HANDLER;
 }
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(exception_handling_RaiseException_test3_paltest_raiseexception_test3, "exception_handling/RaiseException/test3/paltest_raiseexception_test3")
 {
-    bExcept = FALSE;
+    bExcept_RaiseException_test3 = FALSE;
     
     if (0 != PAL_Initialize(argc, argv))
     {
@@ -63,7 +63,7 @@ int __cdecl main(int argc, char *argv[])
      */
     PAL_TRY(VOID*, unused, NULL)
     {
-        bTry = TRUE;    /* indicate we hit the PAL_TRY block */
+        bTry_RaiseException_test3 = TRUE;    /* indicate we hit the PAL_TRY block */
 
         RaiseException(EXCEPTION_ARRAY_BOUNDS_EXCEEDED,
 		       0,
@@ -72,37 +72,37 @@ int __cdecl main(int argc, char *argv[])
         Fail("RaiseException: ERROR -> code was executed after the "
              "exception was raised.\n");
     }
-    PAL_EXCEPT_FILTER(Filter_test1)
+    PAL_EXCEPT_FILTER(Filter_test1_RaiseException_test3)
     {
-        if (!bTry)
+        if (!bTry_RaiseException_test3)
         {
             Fail("RaiseException: ERROR -> Something weird is going on."
                  " PAL_EXCEPT_FILTER was hit without PAL_TRY being hit.\n");
         }
-        bExcept = TRUE; /* indicate we hit the PAL_EXCEPT_FILTER_EX block */
+        bExcept_RaiseException_test3 = TRUE; /* indicate we hit the PAL_EXCEPT_FILTER_EX block */
     }
     PAL_ENDTRY;
 
-    if (!bTry)
+    if (!bTry_RaiseException_test3)
     {
         Trace("RaiseException: ERROR -> It appears the code in the "
               "PAL_TRY block was not executed.\n");
     }
 
-    if (!bExcept)
+    if (!bExcept_RaiseException_test3)
     {
         Trace("RaiseException: ERROR -> It appears the code in the "
               "PAL_EXCEPT_FILTER_EX block was not executed.\n");
     }
 
-    if (!bFilter)
+    if (!bFilter_RaiseException_test3)
     {
         Trace("RaiseException: ERROR -> It appears the code in the"
               " filter function was not executed.\n");
     }
 
     /* did we hit all the code blocks? */
-    if(!bTry || !bExcept || !bFilter)
+    if(!bTry_RaiseException_test3 || !bExcept_RaiseException_test3 || !bFilter_RaiseException_test3)
     {
         Fail("");
     }

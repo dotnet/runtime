@@ -30,7 +30,7 @@ public class WasmAppBuilder : Task
 
     // If true, continue when a referenced assembly cannot be found.
     // If false, throw an exception.
-    public bool SkipMissingAssemblies { get; set; } 
+    public bool SkipMissingAssemblies { get; set; }
 
     // full list of ICU data files we produce can be found here:
     // https://github.com/dotnet/icu/tree/maint/maint-67/icu-filters
@@ -45,8 +45,8 @@ public class WasmAppBuilder : Task
     public ITaskItem[]? RemoteSources { get; set; }
     public bool InvariantGlobalization { get; set; }
 
-    SortedDictionary<string, Assembly>? _assemblies;
-    Resolver? _resolver;
+    private SortedDictionary<string, Assembly>? _assemblies;
+    private Resolver? _resolver;
 
     private class WasmAppConfig
     {
@@ -130,18 +130,18 @@ public class WasmAppBuilder : Task
         {
             foreach (var item in ExtraAssemblies)
             {
-		try
-	        {
-                	var refAssembly = mlc.LoadFromAssemblyPath(item.ItemSpec);
-                	Add(mlc, refAssembly);
-		}
-		catch (System.IO.FileLoadException)
-		{
-			if (!SkipMissingAssemblies)
-			{
-				throw;
-			}
-		}
+                try
+                {
+                    var refAssembly = mlc.LoadFromAssemblyPath(item.ItemSpec);
+                    Add(mlc, refAssembly);
+                }
+                catch (System.IO.FileLoadException)
+                {
+                    if (!SkipMissingAssemblies)
+                    {
+                        throw;
+                    }
+                }
             }
         }
 
@@ -228,7 +228,7 @@ public class WasmAppBuilder : Task
 
         if (!InvariantGlobalization)
             config.Assets.Add(new IcuData(IcuDataFileName!) { LoadRemote = RemoteSources?.Length > 0 });
-            
+
         config.Assets.Add(new VfsEntry ("dotnet.timezones.blat") { VirtualPath = "/usr/share/zoneinfo/"});
 
         if (RemoteSources?.Length > 0) {
@@ -270,9 +270,9 @@ public class WasmAppBuilder : Task
     }
 }
 
-class Resolver : MetadataAssemblyResolver
+internal class Resolver : MetadataAssemblyResolver
 {
-    List<String> _searchPaths;
+    private List<string> _searchPaths;
 
     public Resolver(List<string> searchPaths)
     {

@@ -12309,7 +12309,15 @@ void emitter::emitDispIns(
                     {
                         targetName = "SetGlobalSecurityCookie";
                     }
-                    else if ((idFlags == GTF_ICON_STR_HDL) || (idFlags == GTF_ICON_PSTR_HDL))
+                    else if (idFlags == GTF_ICON_CONST_PTR)
+                    {
+                        targetName = "const ptr";
+                    }
+                    else if (idFlags == GTF_ICON_GLOBAL_PTR)
+                    {
+                        targetName = "global ptr";
+                    }
+                    else if (idFlags == GTF_ICON_STR_HDL)
                     {
                         stringLiteral = emitComp->eeGetCPString(targetHandle);
                         // Note that eGetCPString isn't currently implemented on Linux/ARM

@@ -100,3 +100,16 @@ check_type_size("void*" SIZEOF_VOID_P)
 check_type_size("long" SIZEOF_LONG)
 check_type_size("long long" SIZEOF_LONG_LONG)
 check_type_size("size_t" SIZEOF_SIZE_T)
+
+# ICONV
+find_library(LIBICONV_FOUND iconv)
+if(NOT LIBICONV_FOUND STREQUAL "LIBICONV_FOUND-NOTFOUND")
+  set(ICONV_LIB "iconv")
+endif()
+
+file(WRITE ${CMAKE_BINARY_DIR}{$CMAKE_FILES_DIRECTORY}/CMakeTmp/test.c
+  "#include <sched.h>\n"
+  "void main () { CPU_COUNT((void *) 0); }\n"
+)
+try_compile(GLIBC_HAS_CPU_COUNT ${CMAKE_BINARY_DIR}/CMakeTmp SOURCES "${CMAKE_BINARY_DIR}{$CMAKE_FILES_DIRECTORY}/CMakeTmp/test.c"
+    COMPILE_DEFINITIONS "-D_GNU_SOURCE")

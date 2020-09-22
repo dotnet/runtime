@@ -13,7 +13,7 @@
 
 #include <palsuite.h>
 
-int __cdecl main(int argc, char **argv)
+PALTEST(threading_WaitForMultipleObjectsEx_test6_paltest_waitformultipleobjectsex_test6_child, "threading/WaitForMultipleObjectsEx/test6/paltest_waitformultipleobjectsex_test6_child")
 {
     int i, iRet;
     BOOL bRet;

@@ -26,40 +26,7 @@
 #include <palsuite.h>
 #include "myexitcode.h"
 
-
-static const char* rgchPathDelim = "\\";
-
-
-int
-mkAbsoluteFilename( LPSTR dirName,
-                    DWORD dwDirLength,
-                    LPCSTR fileName,
-                    DWORD dwFileLength,
-                    LPSTR absPathName )
-{
-    DWORD sizeDN, sizeFN, sizeAPN;
-
-    sizeDN = strlen( dirName );
-    sizeFN = strlen( fileName );
-    sizeAPN = (sizeDN + 1 + sizeFN + 1);
-
-    /* ensure ((dirName + DELIM + fileName + \0) =< _MAX_PATH ) */
-    if( sizeAPN > _MAX_PATH )
-    {
-        return ( 0 );
-    }
-
-    strncpy( absPathName, dirName, dwDirLength +1 );
-    strncpy( absPathName, rgchPathDelim, 2 );
-    strncpy( absPathName, fileName, dwFileLength +1 );
-
-    return (sizeAPN);
-
-}
-
-
-int __cdecl main( int argc, char **argv )
-
+PALTEST(threading_ExitThread_test2_paltest_exitthread_test2, "threading/ExitThread/test2/paltest_exitthread_test2")
 {
     const char* rgchChildFile = "childprocess";
 

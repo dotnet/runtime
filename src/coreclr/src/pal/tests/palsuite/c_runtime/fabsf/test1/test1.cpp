@@ -44,11 +44,11 @@ struct test
 };
 
 /**
- * validate
+ * fabsf_test1_validate
  *
  * test validation function
  */
-void __cdecl validate(float value, float expected, float variance)
+void __cdecl fabsf_test1_validate(float value, float expected, float variance)
 {
     float result = fabsf(value);
 
@@ -66,11 +66,11 @@ void __cdecl validate(float value, float expected, float variance)
 }
 
 /**
- * validate
+ * fabsf_test1_validate
  *
  * test validation function for values returning NaN
  */
-void __cdecl validate_isnan(float value)
+void __cdecl fabsf_test1_validate_isnan(float value)
 {
     float result = fabsf(value);
 
@@ -86,7 +86,7 @@ void __cdecl validate_isnan(float value)
  * 
  * executable entry point
  */
-INT __cdecl main(INT argc, CHAR **argv)
+PALTEST(c_runtime_fabsf_test1_paltest_fabsf_test1, "c_runtime/fabsf/test1/paltest_fabsf_test1")
 {
     struct test tests[] = 
     {
@@ -118,11 +118,11 @@ INT __cdecl main(INT argc, CHAR **argv)
 
     for (int i = 0; i < (sizeof(tests) / sizeof(struct test)); i++)
     {
-        validate( tests[i].value, tests[i].expected, tests[i].variance);
-        validate(-tests[i].value, tests[i].expected, tests[i].variance);
+        fabsf_test1_validate( tests[i].value, tests[i].expected, tests[i].variance);
+        fabsf_test1_validate(-tests[i].value, tests[i].expected, tests[i].variance);
     }
     
-    validate_isnan(PAL_NAN);
+    fabsf_test1_validate_isnan(PAL_NAN);
 
     PAL_Terminate();
     return PASS;

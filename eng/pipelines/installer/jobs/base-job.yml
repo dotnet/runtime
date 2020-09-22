@@ -409,14 +409,14 @@ jobs:
         displayName: 'Unzip $(runtimeFlavorName) artifacts: ${{ platform }}'
         inputs:
           archiveFilePatterns: |
-            $(Build.SourcesDirectory)/__download__/AllPlatforms/$(runtimeFlavorName)Product_${{ platform }}_${{ parameters.liveRuntimeBuildConfig }}.*
+            $(Build.SourcesDirectory)/__download__/AllPlatforms/**/$(runtimeFlavorName)Product_${{ platform }}_${{ parameters.liveRuntimeBuildConfig }}.*
           destinationFolder: $(AllArtifactsDownloadPath)/$(runtimeFlavorName)Product_${{ platform }}_${{ parameters.liveRuntimeBuildConfig }}/
           cleanUnpackFolder: false
       - task: ExtractFiles@1
         displayName: 'Unzip Libraries artifacts: ${{ platform }}'
         inputs:
           archiveFilePatterns: |
-            $(Build.SourcesDirectory)/__download__/AllPlatforms/libraries_bin_${{ platform }}_${{ parameters.liveLibrariesBuildConfig }}.*
+            $(Build.SourcesDirectory)/__download__/AllPlatforms/**/libraries_bin_${{ platform }}_${{ parameters.liveLibrariesBuildConfig }}.*
           destinationFolder: $(AllArtifactsDownloadPath)/libraries_bin_${{ platform }}_${{ parameters.liveLibrariesBuildConfig }}/
           cleanUnpackFolder: false
 

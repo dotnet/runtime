@@ -12,7 +12,7 @@
 
 #include <palsuite.h>
 
-int __cdecl main(int argc, char **argv)
+PALTEST(samples_test2_paltest_samples_test2, "samples/test2/paltest_samples_test2")
 {
     int exampleInt = 9;
     

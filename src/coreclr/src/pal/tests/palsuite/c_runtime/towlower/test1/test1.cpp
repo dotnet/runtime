@@ -21,7 +21,7 @@ struct testCase
     WCHAR start;
 };
 
-int __cdecl main(int argc, char **argv)
+PALTEST(c_runtime_towlower_test1_paltest_towlower_test1, "c_runtime/towlower/test1/paltest_towlower_test1")
 {
   
     int result;  

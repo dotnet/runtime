@@ -65,4 +65,9 @@
     <CLRTestBuildAllTargets></CLRTestBuildAllTargets>
   </PropertyGroup>
 
+  <!-- Language settings -->
+  <PropertyGroup>
+    <RunAnalyzers>false</RunAnalyzers>
+  </PropertyGroup>
+
 </Project>
