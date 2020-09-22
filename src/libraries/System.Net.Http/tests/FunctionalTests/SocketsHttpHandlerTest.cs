@@ -2620,66 +2620,72 @@ namespace System.Net.Http.Functional.Tests
             listenSocket.Bind(new IPEndPoint(IPAddress.Loopback, 0));
             listenSocket.Listen();
 
-            using HttpClientHandler handler = CreateHttpClientHandler();
-            handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
-            var socketsHandler = (SocketsHttpHandler)GetUnderlyingSocketsHttpHandler(handler);
-            socketsHandler.PlaintextStreamFilter = async (context, token) =>
+            Task clientTask = Task.Run(async () =>
             {
-                await context.PlaintextStream.WriteAsync(RequestPrefix);
-
-                byte[] buffer = new byte[ResponsePrefix.Length];
-                await context.PlaintextStream.ReadAsync(buffer);
-                Assert.True(buffer.SequenceEqual(ResponsePrefix));
-
-                return context.PlaintextStream;
-            };
-
-            using HttpClient client = CreateHttpClient(handler);
-            client.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact;
-
-            Task<string> clientTask = client.GetStringAsync($"{(useSsl ? "https" : "http")}://{listenSocket.LocalEndPoint}/foo");
-
-            Socket serverSocket = await listenSocket.AcceptAsync();
-            Stream serverStream = new NetworkStream(serverSocket, ownsSocket: true);
-
-            if (useSsl)
-            {
-                var sslStream = new SslStream(serverStream, false, delegate { return true; });
-
-                using (X509Certificate2 cert = System.Net.Test.Common.Configuration.Certificates.GetServerCertificate())
+                using HttpClientHandler handler = CreateHttpClientHandler();
+                handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+                var socketsHandler = (SocketsHttpHandler)GetUnderlyingSocketsHttpHandler(handler);
+                socketsHandler.PlaintextStreamFilter = async (context, token) =>
                 {
-                    SslServerAuthenticationOptions options = new SslServerAuthenticationOptions();
+                    await context.PlaintextStream.WriteAsync(RequestPrefix);
 
-                    options.EnabledSslProtocols = SslProtocols.Tls12;
+                    byte[] buffer = new byte[ResponsePrefix.Length];
+                    await context.PlaintextStream.ReadAsync(buffer);
+                    Assert.True(buffer.SequenceEqual(ResponsePrefix));
 
-                    var protocols = new List<SslApplicationProtocol>();
-                    protocols.Add(SslApplicationProtocol.Http2);
-                    options.ApplicationProtocols = protocols;
+                    return context.PlaintextStream;
+                };
 
-                    options.ServerCertificate = cert;
+                using HttpClient client = CreateHttpClient(handler);
+                client.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact;
 
-                    await sslStream.AuthenticateAsServerAsync(options, CancellationToken.None).ConfigureAwait(false);
+                string response = await client.GetStringAsync($"{(useSsl ? "https" : "http")}://{listenSocket.LocalEndPoint}/foo");
+                Assert.Equal("foo", response);
+            });
+
+            Task serverTask = Task.Run(async () =>
+            {
+                Socket serverSocket = await listenSocket.AcceptAsync();
+                Stream serverStream = new NetworkStream(serverSocket, ownsSocket: true);
+
+                if (useSsl)
+                {
+                    var sslStream = new SslStream(serverStream, false, delegate { return true; });
+
+                    using (X509Certificate2 cert = System.Net.Test.Common.Configuration.Certificates.GetServerCertificate())
+                    {
+                        SslServerAuthenticationOptions options = new SslServerAuthenticationOptions();
+
+                        options.EnabledSslProtocols = SslProtocols.Tls12;
+
+                        var protocols = new List<SslApplicationProtocol>();
+                        protocols.Add(SslApplicationProtocol.Http2);
+                        options.ApplicationProtocols = protocols;
+
+                        options.ServerCertificate = cert;
+
+                        await sslStream.AuthenticateAsServerAsync(options, CancellationToken.None).ConfigureAwait(false);
+                    }
+
+                    serverStream = sslStream;
                 }
 
-                serverStream = sslStream;
-            }
+                byte[] buffer = new byte[RequestPrefix.Length];
+                await serverStream.ReadAsync(buffer);
+                Assert.True(buffer.SequenceEqual(RequestPrefix));
 
-            byte[] buffer = new byte[RequestPrefix.Length];
-            await serverStream.ReadAsync(buffer);
-            Assert.True(buffer.SequenceEqual(RequestPrefix));
+                await serverStream.WriteAsync(ResponsePrefix);
 
-            await serverStream.WriteAsync(ResponsePrefix);
+                using GenericLoopbackConnection loopbackConnection = await LoopbackServerFactory.CreateConnectionAsync(socket: null, serverStream, new GenericLoopbackOptions() { UseSsl = false });
+                await loopbackConnection.InitializeConnectionAsync();
 
-            using GenericLoopbackConnection loopbackConnection = await LoopbackServerFactory.CreateConnectionAsync(socket: null, serverStream, new GenericLoopbackOptions() { UseSsl = false });
-            await loopbackConnection.InitializeConnectionAsync();
+                HttpRequestData requestData = await loopbackConnection.ReadRequestDataAsync();
+                Assert.Equal("/foo", requestData.Path);
 
-            HttpRequestData requestData = await loopbackConnection.ReadRequestDataAsync();
-            Assert.Equal("/foo", requestData.Path);
+                await loopbackConnection.SendResponseAsync(content: "foo");
+            });
 
-            await loopbackConnection.SendResponseAsync(content: "foo");
-
-            string response = await clientTask;
-            Assert.Equal("foo", response);
+            await new Task[] { clientTask, serverTask }.WhenAllOrAnyFailed();
         }
 
         [Theory]
