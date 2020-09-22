@@ -368,18 +368,7 @@ build_Tests()
     fi
 
     if [[ "$__SkipNative" != 1 && "$__BuildArch" != "wasm" ]]; then
-        if [[ "$__TargetOS" == OSX ]]; then
-            if [[ "$__BuildArch" == x64 ]]; then
-                __CMakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"x86_64\" $__CMakeArgs"
-            elif [[ "$__BuildArch" == arm64 ]]; then
-                __CMakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"arm64\" $__CMakeArgs"
-            else
-                echo "Error: Unknown OSX architecture $__BuildArch."
-                exit 1
-            fi
-        fi
-
-        build_native "$__BuildArch" "$__TestDir" "$__TryRunDir" "$__NativeTestIntermediatesDir" "CoreCLR test component"
+        build_native "$__TargetOS" "$__BuildArch" "$__TestDir" "$__TryRunDir" "$__NativeTestIntermediatesDir" "CoreCLR test component"
 
         if [[ "$?" -ne 0 ]]; then
             echo "${__ErrMsgPrefix}${__MsgPrefix}Error: native test build failed. Refer to the build log files for details (above)"
