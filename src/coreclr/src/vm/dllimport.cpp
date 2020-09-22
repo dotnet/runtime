@@ -4322,8 +4322,11 @@ void NDirect::PopulateNDirectMethodDesc(NDirectMethodDesc* pNMD, PInvokeStaticSi
         ndirectflags |= NDirectMethodDesc::kThisCall;
 
     if ((pNMD->GetLoaderModule()->IsSystem() && (strcmp(szLibName, "QCall") == 0)) ||
-        strcmp(szLibName, "libGlobalization.Native") == 0 || 
+        strcmp(szLibName, "libSystem.Globalization.Native") == 0 || 
         strcmp(szLibName, "libSystem.IO.Compression.Native") == 0 ||
+        strcmp(szLibName, "libSystem.Native") == 0 ||
+        strcmp(szLibName, "libSystem.Net.Security.Native") == 0 ||
+        strcmp(szLibName, "libSystem.Security.Cryptography.Native.OpenSsl") == 0 ||
         strcmp(szLibName, "clrcompression") == 0)
     {
         ndirectflags |= NDirectMethodDesc::kIsQCall;

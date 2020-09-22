@@ -86,7 +86,7 @@ if (CLR_CMAKE_HOST_UNIX)
     set(LIB_UNWINDER unwinder_wks)
 endif (CLR_CMAKE_HOST_UNIX)
 
-if(CLR_CMAKE_TARGET_WIN32)
+if(CLR_CMAKE_HOST_WIN32)
     set(COMPRESSION_LIB clrcompression-static)
 else()
     set(COMPRESSION_LIB System.IO.Compression.Native-Static)
@@ -101,6 +101,36 @@ else()
     else ()
         find_package(ZLIB REQUIRED)
     endif ()
+
+
+    if (HAVE_GSSFW_HEADERS)
+       find_library(LIBGSS NAMES GSS)
+       if(LIBGSS STREQUAL LIBGSS-NOTFOUND)
+         message(FATAL_ERROR "Cannot find GSS.Framework and System.Net.Security.Native cannot build without it. Try installing GSS.Framework (or the appropriate package for your platform)")
+       endif()
+    elseif(HAVE_HEIMDAL_HEADERS)
+       find_library(LIBGSS NAMES gssapi)
+       if(LIBGSS STREQUAL LIBGSS-NOTFOUND)
+         message(FATAL_ERROR "Cannot find libgssapi and System.Net.Security.Native cannot build without it. Try installing heimdal (or the appropriate package for your platform)")
+       endif()
+    else()
+       find_library(LIBGSS NAMES gssapi_krb5)
+       if(LIBGSS STREQUAL LIBGSS-NOTFOUND)
+         message(FATAL_ERROR "Cannot find libgssapi_krb5 and System.Net.Security.Native cannot build without it. Try installing libkrb5-dev (or the appropriate package for your platform)")
+       endif()
+    endif()
+
+    if (CLR_CMAKE_TARGET_LINUX AND NOT CLR_CMAKE_TARGET_ANDROID)
+        set(NATIVE_LIBS_EXTRA
+            rt
+        )
+    endif ()
+
+    set(NATIVE_LIBS
+      System.Native-Static
+      System.Net.Security.Native-Static
+      System.Security.Cryptography.Native.OpenSsl-Static
+    )
 endif()
 
 # IMPORTANT! Please do not rearrange the order of the libraries. The linker on Linux is
@@ -128,7 +158,10 @@ set(CORECLR_LIBRARIES
     v3binder
     System.Globalization.Native-static
     ${COMPRESSION_LIB}
+    ${NATIVE_LIBS}
     ${ZLIB_LIBRARIES}
+    ${LIBGSS}
+    ${NATIVE_LIBS_EXTRA}
     interop
 )
 

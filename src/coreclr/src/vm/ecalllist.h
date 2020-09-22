@@ -1125,6 +1125,12 @@ FCClassElement("CastHelpers", "System.Runtime.CompilerServices", gCastHelpers)
 FCClassElement("ComWrappers", "System.Runtime.InteropServices", gComWrappersFuncs)
 #endif // FEATURE_COMINTEROP
 FCClassElement("CompatibilitySwitch", "System.Runtime.Versioning", gCompatibilitySwitchFuncs)
+
+#if defined(TARGET_UNIX) && !defined(CROSSGEN_COMPILE)
+FCClassElement("Crypto", "", gEmbedded_Crypto)
+FCClassElement("CryptoInitializer", "", gEmbedded_CryptoInitializer)
+#endif
+
 FCClassElement("CustomAttribute", "System.Reflection", gCOMCustomAttributeFuncs)
 FCClassElement("CustomAttributeEncodedArgument", "System.Reflection", gCustomAttributeEncodedArgument)
 FCClassElement("DateTime", "System", gDateTimeFuncs)
@@ -1137,6 +1143,11 @@ FCClassElement("Environment", "System", gEnvironmentFuncs)
 FCClassElement("EventPipeInternal", "System.Diagnostics.Tracing", gEventPipeInternalFuncs)
 #endif // FEATURE_PERFTRACING
 FCClassElement("Exception", "System", gExceptionFuncs)
+
+#if defined(TARGET_UNIX) && !defined(CROSSGEN_COMPILE)
+FCClassElement("Fcntl", "", gEmbedded_Fcntl)
+#endif
+
 FCClassElement("FileLoadException", "System.IO", gFileLoadExceptionFuncs)
 FCClassElement("GC", "System", gGCInterfaceFuncs)
 FCClassElement("GCHandle", "System.Runtime.InteropServices", gGCHandleFuncs)
@@ -1172,6 +1183,11 @@ FCClassElement("ModuleBuilder", "System.Reflection.Emit", gCOMModuleBuilderFuncs
 FCClassElement("ModuleHandle", "System", gCOMModuleHandleFuncs)
 FCClassElement("Monitor", "System.Threading", gMonitorFuncs)
 FCClassElement("NativeLibrary", "System.Runtime.InteropServices", gInteropNativeLibraryFuncs)
+
+#if defined(TARGET_UNIX) && !defined(CROSSGEN_COMPILE)
+FCClassElement("NetSecurityNative", "", gEmbedded_NetSecurityNative)
+#endif
+
 #ifdef FEATURE_COMINTEROP
 FCClassElement("OAVariantLib", "Microsoft.Win32", gOAVariantFuncs)
 #endif
@@ -1179,6 +1195,11 @@ FCClassElement("Object", "System", gObjectFuncs)
 #ifdef FEATURE_COMINTEROP
 FCClassElement("ObjectMarshaler", "System.StubHelpers", gObjectMarshalerFuncs)
 #endif
+
+#if defined(TARGET_UNIX) && !defined(CROSSGEN_COMPILE)
+FCClassElement("OpenSsl", "", gEmbedded_OpenSsl)
+#endif
+
 FCClassElement("OverlappedData", "System.Threading", gOverlappedFuncs)
 
 
@@ -1195,10 +1216,20 @@ FCClassElement("RuntimeTypeHandle", "System", gCOMTypeHandleFuncs)
 FCClassElement("SafeTypeNameParserHandle", "System", gSafeTypeNameParserHandle)
 
 FCClassElement("Signature", "System", gSignatureNative)
+
+#if defined(TARGET_UNIX) && !defined(CROSSGEN_COMPILE)
+FCClassElement("Ssl", "", gEmbedded_Ssl)
+#endif
+
 FCClassElement("StackTrace", "System.Diagnostics", gDiagnosticsStackTrace)
 FCClassElement("Stream", "System.IO", gStreamFuncs)
 FCClassElement("String", "System", gStringFuncs)
 FCClassElement("StubHelpers", "System.StubHelpers", gStubHelperFuncs)
+
+#if defined(TARGET_UNIX) && !defined(CROSSGEN_COMPILE)
+FCClassElement("Sys", "", gEmbedded_Sys)
+#endif
+
 FCClassElement("Thread", "System.Threading", gThreadFuncs)
 FCClassElement("ThreadPool", "System.Threading", gThreadPoolFuncs)
 FCClassElement("TimerQueue", "System.Threading", gTimerFuncs)

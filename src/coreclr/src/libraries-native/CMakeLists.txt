@@ -22,5 +22,8 @@ if(CLR_CMAKE_TARGET_WIN32)
     add_subdirectory(${GLOBALIZATION_NATIVE_DIR} System.Globalization.Native)
 
 else()
+    # HACK HACK HACK   always assume portable build?
+    set(FEATURE_DISTRO_AGNOSTIC_SSL True)
+    set(CMAKE_STATIC_LIB_LINK True)
     add_subdirectory(${CLR_REPO_ROOT_DIR}/src/libraries/Native/Unix Native.Unix)
 endif()
