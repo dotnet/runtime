@@ -1003,6 +1003,9 @@ var BindingSupportLib = {
 				throw exc;
 			}
 
+			converter.scratchRootBuffer = null;
+			converter.scratchBuffer = 0 | 0;
+
 			return converter;
 		},
 
@@ -1065,13 +1068,13 @@ var BindingSupportLib = {
 		},
 
 		_release_buffer_from_method_call: function (converter, buffer) {
-			if (!buffer)
+			if (!converter || !buffer)
 				return;
 
 			if (!converter.scratchBuffer)
-				converter.scratchBuffer = buffer;
+				converter.scratchBuffer = buffer | 0;
 			else
-				Module._free (buffer);
+				Module._free (buffer | 0);
 		},
 
 		_convert_exception_for_method_call: function (result, exception) {
@@ -1189,7 +1192,7 @@ var BindingSupportLib = {
 
 		_teardown_after_call: function (converter, buffer, resultRoot, exceptionRoot, argsRootBuffer) {
 			this._release_args_root_buffer_from_method_call (converter, argsRootBuffer);
-			this._release_buffer_from_method_call (converter, buffer);
+			this._release_buffer_from_method_call (converter, buffer | 0);
 
 			if (resultRoot)
 				resultRoot.release ();
@@ -1292,17 +1295,15 @@ var BindingSupportLib = {
 				"resultRoot.value = binding_support.invoke_method (method, this_arg, buffer, exceptionRoot.get_address ());",
 				"binding_support._handle_exception_for_call (" + converterKey + ", buffer, resultRoot, exceptionRoot, argsRootBuffer);",
 				"",
-				"var resultPtr = resultRoot.value, result, resultType;",
+				"var resultPtr = resultRoot.value, result = undefined;",
 				"if (!is_result_marshaled) ",
 				"    result = resultPtr;",
-				"else if (resultPtr === 0)",
-				"    result = undefined;",
-				"else {",
+				"else if (resultPtr !== 0) {",
 				// For the common scenario where the return type is a primitive, we want to try and unbox it directly
 				//  into our existing heap allocation and then read it out of the heap. Doing this all in one operation
 				//  means that we only need to enter a gc safe region twice (instead of 3+ times with the normal,
 				//  slower check-type-and-then-unbox flow which has extra checks since unbox verifies the type).
-				"    resultType = binding_support.mono_wasm_try_unbox_primitive_and_get_type (resultPtr, buffer);",
+				"    var resultType = binding_support.mono_wasm_try_unbox_primitive_and_get_type (resultPtr, buffer);",
 				"    switch (resultType) {",
 				"    case 1:", // int
 				"        result = Module.HEAP32[buffer / 4]; break;",
