@@ -84,14 +84,15 @@ creator=
 echo "Done setting queue"
 
 # Prepare WorkItemDirectories (Specific to the job)
-echo rsync -avr --exclude='*.pdb' $core_root_directory/* $pmi_assemblies_directory/Core_Root
-rsync -avr --exclude='*.pdb' $core_root_directory/* $pmi_assemblies_directory/Core_Root
+mkdir -p $pmi_assemblies_directory/Core_Root/binaries
+echo rsync -avr --exclude='*.pdb' $core_root_directory/* $pmi_assemblies_directory/Core_Root/binaries
+rsync -avr --exclude='*.pdb' $core_root_directory/* $pmi_assemblies_directory/Core_Root/binaries
 
 # mkdir -p $pmi_assemblies_directory/Tests
 # rsync -avr --exclude='*.pdb' $managed_test_artifact_directory/* $pmi_assemblies_directory/Tests
 
 # Prepare CorrelationPayloadDirectories (Common to all the jobs)
-
+mkdir -p $superpmi_directory
 echo rsync -avr $source_directory/src/coreclr/scripts/* $superpmi_directory
 rsync -avr $source_directory/src/coreclr/scripts/* $superpmi_directory
 
