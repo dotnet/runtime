@@ -1,5 +1,5 @@
 MONO_CONFIG=Release
-MONO_ARCH=arm64
+MONO_ARCH=x64
 DOTNET := ../../../../.././dotnet.sh
 
 all: runtimepack run
