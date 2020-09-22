@@ -32,7 +32,7 @@ namespace HttpStress
             _log = new StreamWriter("client.log", false) { AutoFlush = true };
 
             _messagesChannel = Channel.CreateUnbounded<string>();
-            _processMessages = ProcessMessages();
+            _processMessages = ProcessMessagesAsync();
             _stopProcessing = new CancellationTokenSource();
         }
 
@@ -44,7 +44,7 @@ namespace HttpStress
             }
         }
 
-        private async Task ProcessMessages()
+        private async Task ProcessMessagesAsync()
         {
             await Task.Yield();
 
