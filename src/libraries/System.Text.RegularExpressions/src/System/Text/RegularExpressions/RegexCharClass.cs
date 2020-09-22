@@ -303,7 +303,6 @@ namespace System.Text.RegularExpressions
             new LowerCaseMapping('\u00C0', '\u00D6', LowercaseAdd, 32),
             new LowerCaseMapping('\u00D8', '\u00DE', LowercaseAdd, 32),
             new LowerCaseMapping('\u0100', '\u012E', LowercaseBor, 0),
-            new LowerCaseMapping('\u0130', '\u0130', LowercaseSet, 0x0069),
             new LowerCaseMapping('\u0132', '\u0136', LowercaseBor, 0),
             new LowerCaseMapping('\u0139', '\u0147', LowercaseBad, 0),
             new LowerCaseMapping('\u014A', '\u0176', LowercaseBor, 0),
@@ -365,7 +364,8 @@ namespace System.Text.RegularExpressions
             new LowerCaseMapping('\u04F8', '\u04F8', LowercaseSet, 0x04F9),
             new LowerCaseMapping('\u0531', '\u0556', LowercaseAdd, 48),
             new LowerCaseMapping('\u10A0', '\u10C5', LowercaseAdd, 7264),
-            new LowerCaseMapping('\u1E00', '\u1EF8', LowercaseBor, 0),
+            new LowerCaseMapping('\u1E00', '\u1E95', LowercaseBor, 0),
+            new LowerCaseMapping('\u1EA0', '\u1EF8', LowercaseBor, 0),
             new LowerCaseMapping('\u1F08', '\u1F0F', LowercaseAdd, -8),
             new LowerCaseMapping('\u1F18', '\u1F1D', LowercaseAdd, -8),
             new LowerCaseMapping('\u1F28', '\u1F2F', LowercaseAdd, -8),
@@ -415,20 +415,40 @@ namespace System.Text.RegularExpressions
             for (int i = 0; i < len - 1; i++)
                 Debug.Assert(string.Compare(s_propTable[i][0], s_propTable[i + 1][0], StringComparison.Ordinal) < 0, $"RegexCharClass s_propTable is out of order at ({s_propTable[i][0]}, {s_propTable[i + 1][0]})");
 
+            // Make sure the s_lcTable's ranges are correctly populated.
             CultureInfo culture = CultureInfo.InvariantCulture;
             for (int k = 0; k < s_lcTable.Length; k++)
             {
                 LowerCaseMapping loc = s_lcTable[k];
-                if (loc.LcOp == 1)
+                if (loc.LcOp == LowercaseAdd)
                 {
-                    // Validate only the LowercaseAdd cases
                     int offset = loc.Data;
-                    for (int l = loc.ChMin; l <= loc.ChMax; l++)
+                    for (char l = loc.ChMin; l <= loc.ChMax; l++)
                     {
-                        if (culture.TextInfo.ToLower((char)l) != (char)(l + offset))
-                        {
-                            Debug.Assert(false, $"The Unicode character range at index {k} in s_lcTable contains the character {(char)l} (decimal value: {l}) whose lowercase value cannot be obtained by using the specified offset.");
-                        }
+                        Debug.Assert(culture.TextInfo.ToLower((char)l) == (char)(l + offset), $"The Unicode character range at index {k} in s_lcTable contains the character {(char)l} (decimal value: {l}). Its lowercase value cannot be obtained by using the specified offset.");
+                    }
+                }
+                else if (loc.LcOp == LowercaseSet)
+                {
+                    char lowercase = (char)loc.Data;
+                    for (char l = loc.ChMin; l <= loc.ChMax; l++)
+                    {
+                        char uppercase = l;
+                        Debug.Assert(culture.TextInfo.ToLower(uppercase) == lowercase, $"The Unicode character range at index {k} in s_lcTable contains the character {uppercase} (decimal value: {(int)uppercase}). Its lowercase value {culture.TextInfo.ToLower(uppercase)} is not the stored value {lowercase}.");
+                    }
+                }
+                else if (loc.LcOp == LowercaseBor)
+                {
+                    for (char l = loc.ChMin; l <= loc.ChMax; l++)
+                    {
+                        Debug.Assert(culture.TextInfo.ToLower((char)l) == (char)(l | (char)1), $"The Unicode character range at index {k} in s_lcTable contains the character {(char)l} (decimal value: {l}). Its lowercase value {culture.TextInfo.ToLower(l)} cannot be obtained by OR-ing with 1: {(char)(l | (char)1)}");
+                    }
+                }
+                else if (loc.LcOp == LowercaseBad)
+                {
+                    for (char l = loc.ChMin; l <= loc.ChMax; l++)
+                    {
+                        Debug.Assert(culture.TextInfo.ToLower((char)l) == (char)(l + (l & 1)), $"The Unicode character range at index {k} in s_lcTable contains the character {(char)l} (decimal value: {l}). Its lowercase value cannot be obtained by AND-ing with 1.");
                     }
                 }
             }
