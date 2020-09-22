@@ -1,27 +1,29 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
+using System.Runtime.CompilerServices;
 
 namespace System.Text.Json
 {
     internal static class TypeExtensions
     {
-        private static readonly Type s_NullableType = typeof(Nullable<>);
+        private static readonly Type s_nullableType = typeof(Nullable<>);
 
         /// <summary>
         /// Returns <see langword="true" /> when the given type is of type <see cref="Nullable{T}"/>.
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsNullableOfT(this Type type) =>
-            type.IsGenericType && type.GetGenericTypeDefinition() == s_NullableType;
+            type.IsGenericType && type.GetGenericTypeDefinition() == s_nullableType;
 
         /// <summary>
         /// Returns <see langword="true" /> when the given type is either a reference type or of type <see cref="Nullable{T}"/>.
         /// </summary>
         /// <remarks>This calls <see cref="Type.IsValueType"/> which is slow. If knowledge already exists
         /// that the type is a value type, call <see cref="IsNullableOfT"/> instead.</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool CanBeNull(this Type type) =>
-            !type.IsValueType || (type.IsGenericType && type.GetGenericTypeDefinition() == s_NullableType);
+            !type.IsValueType || type.IsNullableOfT();
 
         /// <summary>
         /// Returns <see langword="true" /> when the given type is assignable from <paramref name="from"/> including support
