@@ -17,7 +17,7 @@
  * Notes: memcmp is used, as is strlen.
  */
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime_vsprintf_test10_paltest_vsprintf_test10, "c_runtime/vsprintf/test10/paltest_vsprintf_test10")
 {
     int neg = -42;
     int pos = 42;

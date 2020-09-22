@@ -1349,6 +1349,8 @@ typedef struct {
 
 	MonoGSharedVtMethodInfo *gsharedvt_info;
 
+	MonoMemoryManager *mem_manager;
+
 	/* Points to the gsharedvt locals area at runtime */
 	MonoInst *gsharedvt_locals_var;
 

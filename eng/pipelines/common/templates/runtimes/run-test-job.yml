@@ -313,6 +313,9 @@ jobs:
 
         runCrossGen: ${{ and(eq(parameters.readyToRun, true), ne(parameters.crossgen2, true)) }}
         runCrossGen2: ${{ and(eq(parameters.readyToRun, true), eq(parameters.crossgen2, true)) }}
+        ${{ if and(ne(parameters.testGroup, 'innerloop'), eq(parameters.runtimeFlavor, 'coreclr')) }}:
+          runPALTestsDir: '$(coreClrProductRootFolderPath)/paltests'
+
         compositeBuildMode: ${{ parameters.compositeBuildMode }}
         runInUnloadableContext: ${{ parameters.runInUnloadableContext }}
 

@@ -79,6 +79,24 @@ namespace System.Text.Json
         /// </remarks>
         public JsonPropertyInfo PropertyInfoForClassInfo { get; private set; }
 
+        private GenericMethodHolder? _genericMethods;
+        /// <summary>
+        /// Returns a helper class used when generic methods need to be invoked on Type.
+        /// </summary>
+        public GenericMethodHolder GenericMethods
+        {
+            get
+            {
+                if (_genericMethods == null)
+                {
+                    Type runtimePropertyClass = typeof(GenericMethodHolder<>).MakeGenericType(new Type[] { Type })!;
+                    _genericMethods = (GenericMethodHolder)Activator.CreateInstance(runtimePropertyClass)!;
+                }
+
+                return _genericMethods;
+            }
+        }
+
         public JsonClassInfo(Type type, JsonSerializerOptions options)
         {
             Type = type;

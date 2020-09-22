@@ -30,9 +30,14 @@ parameters:
   continueOnError: false                 # optional -- determines whether to continue the build if the step errors; defaults to false
 
 steps:
-  - powershell: 'powershell "$env:BUILD_SOURCESDIRECTORY\eng\common\msbuild.ps1 $env:BUILD_SOURCESDIRECTORY\eng\common\helixpublish.proj /restore /t:Test /bl:$env:BUILD_SOURCESDIRECTORY\artifacts\log\$env:BuildConfig\SendToHelix.binlog"'
+- template: /eng/pipelines/common/templates/runtimes/send-to-helix-inner-step.yml
+  parameters:
+    osGroup: ${{ variables['Agent.Os'] }}
+    sendParams: $(Build.SourcesDirectory)/eng/common/helixpublish.proj /restore /t:Test /bl:$(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)/SendToHelix.binlog
     displayName: ${{ parameters.DisplayNamePrefix }} (Windows)
-    env:
+    condition: ${{ parameters.condition }}
+    continueOnError: ${{ parameters.continueOnError }}
+    environment:
       BuildConfig: $(_BuildConfig)
       HelixSource: ${{ parameters.HelixSource }}
       HelixType: ${{ parameters.HelixType }}
@@ -59,36 +64,3 @@ steps:
       HelixBaseUri: ${{ parameters.HelixBaseUri }}
       Creator: ${{ parameters.Creator }}
       SYSTEM_ACCESSTOKEN: $(System.AccessToken)
-    condition: and(${{ parameters.condition }}, eq(variables['Agent.Os'], 'Windows_NT'))
-    continueOnError: ${{ parameters.continueOnError }}
-  - script: $BUILD_SOURCESDIRECTORY/eng/common/msbuild.sh $BUILD_SOURCESDIRECTORY/eng/common/helixpublish.proj /restore /t:Test /bl:$BUILD_SOURCESDIRECTORY/artifacts/log/$BuildConfig/SendToHelix.binlog
-    displayName: ${{ parameters.DisplayNamePrefix }} (Unix)
-    env:
-      BuildConfig: $(_BuildConfig)
-      HelixSource: ${{ parameters.HelixSource }}
-      HelixType: ${{ parameters.HelixType }}
-      HelixBuild: ${{ parameters.HelixBuild }}
-      HelixConfiguration:  ${{ parameters.HelixConfiguration }}
-      HelixTargetQueues: ${{ parameters.HelixTargetQueues }}
-      HelixAccessToken: ${{ parameters.HelixAccessToken }}
-      HelixPreCommands: ${{ parameters.HelixPreCommands }}
-      HelixPostCommands: ${{ parameters.HelixPostCommands }}
-      WorkItemDirectory: ${{ parameters.WorkItemDirectory }}
-      WorkItemCommand: ${{ parameters.WorkItemCommand }}
-      WorkItemTimeout: ${{ parameters.WorkItemTimeout }}
-      CorrelationPayloadDirectory: ${{ parameters.CorrelationPayloadDirectory }}
-      XUnitProjects: ${{ parameters.XUnitProjects }}
-      XUnitWorkItemTimeout: ${{ parameters.XUnitWorkItemTimeout }}
-      XUnitPublishTargetFramework: ${{ parameters.XUnitPublishTargetFramework }}
-      XUnitRuntimeTargetFramework: ${{ parameters.XUnitRuntimeTargetFramework }}
-      XUnitRunnerVersion: ${{ parameters.XUnitRunnerVersion }}
-      IncludeDotNetCli: ${{ parameters.IncludeDotNetCli }}
-      DotNetCliPackageType: ${{ parameters.DotNetCliPackageType }}
-      DotNetCliVersion: ${{ parameters.DotNetCliVersion }}
-      EnableXUnitReporter: ${{ parameters.EnableXUnitReporter }}
-      WaitForWorkItemCompletion: ${{ parameters.WaitForWorkItemCompletion }}
-      HelixBaseUri: ${{ parameters.HelixBaseUri }}
-      Creator: ${{ parameters.Creator }}
-      SYSTEM_ACCESSTOKEN: $(System.AccessToken)
-    condition: and(${{ parameters.condition }}, ne(variables['Agent.Os'], 'Windows_NT'))
-    continueOnError: ${{ parameters.continueOnError }}

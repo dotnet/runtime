@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
@@ -34,6 +35,10 @@ namespace Microsoft.WebAssembly.Diagnostics
                     .ConfigureAppConfiguration((hostingContext, config) =>
                     {
                         config.AddEnvironmentVariables(prefix: "WASM_TESTS_");
+                    })
+                    .ConfigureLogging(logging =>
+                    {
+                        logging.AddConsole();
                     })
                     .ConfigureServices((ctx, services) =>
                     {

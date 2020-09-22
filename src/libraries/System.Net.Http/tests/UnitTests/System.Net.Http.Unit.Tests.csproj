@@ -252,6 +252,8 @@
              Link="ProductionCode\System\Net\Http\SocketsHttpHandler\SystemProxyInfo.Unix.cs" />
     <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\SystemProxyInfo.Windows.cs" Condition=" '$(TargetsWindows)' == 'true' and '$(TargetFramework)' == '$(NetCoreAppCurrent)'"
              Link="ProductionCode\System\Net\Http\SocketsHttpHandler\SystemProxyInfo.Windows.cs" />
+    <Compile Include="..\..\src\System\Net\Http\HttpUtilities.AnyOS.cs"
+             Link="ProductionCode\System\Net\Http\HttpUtilities.AnyOS.cs" />
     <Compile Include="$(CommonPath)System\Net\Http\HttpHandlerDefaults.cs"
              Link="ProductionCode\System\Net\Http\HttpHandlerDefaults.cs" />
     <Compile Include="DigestAuthenticationTests.cs" />

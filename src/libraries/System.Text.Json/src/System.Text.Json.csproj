@@ -143,6 +143,7 @@
     <Compile Include="System\Text\Json\Serialization\JsonParameterInfoOfT.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonPropertyInfo.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonPropertyInfoOfT.cs" />
+    <Compile Include="System\Text\Json\Serialization\GenericMethodHolder.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonResumableConverterOfT.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializer.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializer.Read.HandleMetadata.cs" />

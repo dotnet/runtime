@@ -204,11 +204,12 @@ target_link_libraries(singlefilehost
     libhostcommon
     ${CORECLR_LIBRARIES}
 
+    ${START_WHOLE_ARCHIVE}
+    ${NATIVE_LIBS}
+    ${END_WHOLE_ARCHIVE}
+
     ${ZLIB_LIBRARIES}
     ${LIBGSS}
     ${NATIVE_LIBS_EXTRA}
 
-    ${START_WHOLE_ARCHIVE}
-    ${NATIVE_LIBS}
-    ${END_WHOLE_ARCHIVE}
 )

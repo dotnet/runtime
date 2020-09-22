@@ -3,7 +3,9 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Net.Security;
+using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Diagnostics.CodeAnalysis;
@@ -11,6 +13,7 @@ using System.Text;
 
 namespace System.Net.Http
 {
+    [UnsupportedOSPlatform("browser")]
     public sealed class SocketsHttpHandler : HttpMessageHandler
     {
         private readonly HttpConnectionSettings _settings = new HttpConnectionSettings();
@@ -361,6 +364,19 @@ namespace System.Net.Http
         internal bool SupportsAutomaticDecompression => true;
         internal bool SupportsProxy => true;
         internal bool SupportsRedirectConfiguration => true;
+
+        /// <summary>
+        /// When non-null, a custom callback used to open new connections.
+        /// </summary>
+        public Func<SocketsHttpConnectionContext, CancellationToken, ValueTask<Stream>>? ConnectCallback
+        {
+            get => _settings._connectCallback;
+            set
+            {
+                CheckDisposedOrStarted();
+                _settings._connectCallback = value;
+            }
+        }
 
         public IDictionary<string, object?> Properties =>
             _settings._properties ?? (_settings._properties = new Dictionary<string, object?>());

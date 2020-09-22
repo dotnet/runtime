@@ -16,7 +16,7 @@
 ** Purpose:
 **
 ** Test to ensure proper operation of the OpenEventW()
-** API by creating a new named event with CreateEventA()
+** API by creating a new named event with CreateEventW()
 ** and verifying that it can be opened with OpenEventW().
 ** It should be possible to use the event handles
 ** interchangeably, we test by setting the event with the
@@ -30,7 +30,7 @@
 
 
 
-int __cdecl main( int argc, char **argv )
+PALTEST(threading_OpenEventW_test5_paltest_openeventw_test5, "threading/OpenEventW/test5/paltest_openeventw_test5")
 
 {
     /* local variables */
@@ -41,7 +41,6 @@ int __cdecl main( int argc, char **argv )
     LPSECURITY_ATTRIBUTES   lpEventAttributes = NULL;
     BOOL                    bManualReset = TRUE;
     BOOL                    bInitialState = FALSE;
-    LPSTR                   lpNameA = "ShakeIt";
     WCHAR                   wcName[] = {'S','h','a','k','e','I','t','\0'};
     LPWSTR                  lpNameW = wcName;
 
@@ -54,10 +53,10 @@ int __cdecl main( int argc, char **argv )
 
 
     /* create an event which we can use with SetEvent */
-    hEvent = CreateEventA(  lpEventAttributes,
-                            bManualReset,
-                            bInitialState,
-                            lpNameA );
+    hEvent = CreateEvent( lpEventAttributes,
+                          bManualReset,
+                          bInitialState,
+                          lpNameW );
 
     if( hEvent == NULL )
     {
@@ -189,7 +188,7 @@ cleanup:
 
 
     /* PAL termination */
-    PAL_Terminate();
+    PAL_TerminateEx(ret);
 
     /* return success or failure */
     return ret;

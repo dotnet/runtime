@@ -43,11 +43,11 @@ struct test
 };
 
 /**
- * validate
+ * pow_test1_validate
  *
  * test validation function
  */
-void __cdecl validate(double x, double y, double expected, double variance)
+void __cdecl pow_test1_validate(double x, double y, double expected, double variance)
 {
     double result = pow(x, y);
 
@@ -65,11 +65,11 @@ void __cdecl validate(double x, double y, double expected, double variance)
 }
 
 /**
- * validate
+ * pow_test1_validate
  *
  * test validation function for values returning NaN
  */
-void __cdecl validate_isnan(double x, double y)
+void __cdecl pow_test1_validate_isnan(double x, double y)
 {
     double result = pow(x, y);
 
@@ -85,7 +85,7 @@ void __cdecl validate_isnan(double x, double y)
  * 
  * executable entry point
  */
-int __cdecl main(int argc, char **argv)
+PALTEST(c_runtime_pow_test1_paltest_pow_test1, "c_runtime/pow/test1/paltest_pow_test1")
 {
     struct test tests[] = 
     {
@@ -203,26 +203,26 @@ int __cdecl main(int argc, char **argv)
 
     for (int i = 0; i < (sizeof(tests) / sizeof(struct test)); i++)
     {
-        validate(tests[i].x, tests[i].y, tests[i].expected, tests[i].variance);
+        pow_test1_validate(tests[i].x, tests[i].y, tests[i].expected, tests[i].variance);
     }
 
-    validate_isnan(-10, -1.5707963267948966);                                                                 //          y: -(pi / 2)
-    validate_isnan(-10, -0.78539816339744828);                                                                //          y: -(pi / 4)
-    validate_isnan(-10,  0.78539816339744828);                                                                //          y:   pi / 4
-    validate_isnan(-10,  1.5707963267948966);                                                                 //          y:   pi / 2
+    pow_test1_validate_isnan(-10, -1.5707963267948966);                                                                 //          y: -(pi / 2)
+    pow_test1_validate_isnan(-10, -0.78539816339744828);                                                                //          y: -(pi / 4)
+    pow_test1_validate_isnan(-10,  0.78539816339744828);                                                                //          y:   pi / 4
+    pow_test1_validate_isnan(-10,  1.5707963267948966);                                                                 //          y:   pi / 2
     
-    validate_isnan(-2.7182818284590452, -1.5707963267948966);                                                 // x: -(e)  y: -(pi / 2)
-    validate_isnan(-2.7182818284590452, -0.78539816339744828);                                                // x: -(e)  y: -(pi / 4)
-    validate_isnan(-2.7182818284590452,  0.78539816339744828);                                                // x: -(e)  y:   pi / 4
-    validate_isnan(-2.7182818284590452,  1.5707963267948966);                                                 // x: -(e)  y:   pi / 2
+    pow_test1_validate_isnan(-2.7182818284590452, -1.5707963267948966);                                                 // x: -(e)  y: -(pi / 2)
+    pow_test1_validate_isnan(-2.7182818284590452, -0.78539816339744828);                                                // x: -(e)  y: -(pi / 4)
+    pow_test1_validate_isnan(-2.7182818284590452,  0.78539816339744828);                                                // x: -(e)  y:   pi / 4
+    pow_test1_validate_isnan(-2.7182818284590452,  1.5707963267948966);                                                 // x: -(e)  y:   pi / 2
 
-    validate_isnan(PAL_NEGINF, PAL_NAN);
-    validate_isnan(PAL_NAN,    PAL_NEGINF);
+    pow_test1_validate_isnan(PAL_NEGINF, PAL_NAN);
+    pow_test1_validate_isnan(PAL_NAN,    PAL_NEGINF);
     
-    validate_isnan(PAL_POSINF, PAL_NAN);
-    validate_isnan(PAL_NAN,    PAL_POSINF);
+    pow_test1_validate_isnan(PAL_POSINF, PAL_NAN);
+    pow_test1_validate_isnan(PAL_NAN,    PAL_POSINF);
     
-    validate_isnan(PAL_NAN, PAL_NAN);
+    pow_test1_validate_isnan(PAL_NAN, PAL_NAN);
 
     PAL_Terminate();
     return PASS;

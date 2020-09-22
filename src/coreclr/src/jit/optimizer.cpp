@@ -6549,6 +6549,7 @@ void Compiler::optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt)
     {
         printf("optHoistLoopCode for loop L%02u <" FMT_BB ".." FMT_BB ">:\n", lnum, begn, endn);
         printf("  Loop body %s a call\n", pLoopDsc->lpContainsCall ? "contains" : "does not contain");
+        printf("  Loop has %s\n", (pLoopDsc->lpFlags & LPFLG_ONE_EXIT) ? "single exit" : "multiple exits");
     }
 #endif
 

@@ -17,7 +17,7 @@
  * Note: The _wcsicmp is dependent on the LC_CTYPE category of the locale,
  *      and this is ignored by these tests.
  */
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime__wcsicmp_test1_paltest_wcsicmp_test1, "c_runtime/_wcsicmp/test1/paltest_wcsicmp_test1")
 {
     WCHAR str1[] = {'f','o','o',0};
     WCHAR str2[] = {'f','O','o',0};

@@ -13,7 +13,7 @@
 #ifndef __fwprintf_H__
 #define __fwprintf_H__
 
-void DoStrTest(const WCHAR *formatstr, char* param, const char *checkstr)
+inline void DoStrTest_fwprintf(const WCHAR *formatstr, char* param, const char *checkstr)
 {
     FILE *fp;    
     char buf[256] = { 0 };
@@ -43,8 +43,9 @@ void DoStrTest(const WCHAR *formatstr, char* param, const char *checkstr)
     }    
     fclose(fp);
 }
+#define DoStrTest DoStrTest_fwprintf
 
-void DoWStrTest(const WCHAR *formatstr, WCHAR* param, const char *checkstr)
+inline void DoWStrTest_fwprintf(const WCHAR *formatstr, WCHAR* param, const char *checkstr)
 {
     FILE *fp;
     char buf[256] = { 0 };
@@ -74,9 +75,9 @@ void DoWStrTest(const WCHAR *formatstr, WCHAR* param, const char *checkstr)
     }    
     fclose(fp);
 }
+#define DoWStrTest DoWStrTest_fwprintf
 
-
-void DoPointerTest(const WCHAR *formatstr, void* param, char* paramstr, 
+inline void DoPointerTest_fwprintf(const WCHAR *formatstr, void* param, char* paramstr, 
                    const char *checkstr1, const char *checkstr2)
 {
     FILE *fp;
@@ -115,10 +116,10 @@ void DoPointerTest(const WCHAR *formatstr, void* param, char* paramstr,
         Fail("ERROR: fclose failed to close \"testfile.txt\"\n");
     }
 }
+#define DoPointerTest DoPointerTest_fwprintf
 
 
-
-void DoCountTest(const WCHAR *formatstr, int param, const char *checkstr)
+inline void DoCountTest_fwprintf(const WCHAR *formatstr, int param, const char *checkstr)
 {
     FILE *fp;
     char buf[512] = { 0 };
@@ -160,8 +161,9 @@ void DoCountTest(const WCHAR *formatstr, int param, const char *checkstr)
         Fail("ERROR: fclose failed to close \"testfile.txt\"\n");
     }
 }
+#define DoCountTest DoCountTest_fwprintf
 
-void DoShortCountTest(const WCHAR *formatstr, int param, const char *checkstr)
+inline void DoShortCountTest_fwprintf(const WCHAR *formatstr, int param, const char *checkstr)
 {
     FILE *fp;
     char buf[512] = { 0 };
@@ -203,9 +205,9 @@ void DoShortCountTest(const WCHAR *formatstr, int param, const char *checkstr)
         Fail("ERROR: fclose failed to close \"testfile.txt\"\n");
     }
 }
+#define DoShortCountTest DoShortCountTest_fwprintf
 
-
-void DoCharTest(const WCHAR *formatstr, char param, const char *checkstr)
+inline void DoCharTest_fwprintf(const WCHAR *formatstr, char param, const char *checkstr)
 {
     FILE *fp;
     char buf[256] = { 0 };
@@ -235,8 +237,9 @@ void DoCharTest(const WCHAR *formatstr, char param, const char *checkstr)
     }    
     fclose(fp);
 }
+#define DoCharTest DoCharTest_fwprintf
 
-void DoWCharTest(const WCHAR *formatstr, WCHAR param, const char *checkstr)
+inline void DoWCharTest_fwprintf(const WCHAR *formatstr, WCHAR param, const char *checkstr)
 {
     FILE *fp;
     char buf[256] = { 0 };
@@ -266,8 +269,9 @@ void DoWCharTest(const WCHAR *formatstr, WCHAR param, const char *checkstr)
     }    
     fclose(fp);
 }
+#define DoWCharTest DoWCharTest_fwprintf
 
-void DoNumTest(const WCHAR *formatstr, int value, const char *checkstr)
+inline void DoNumTest_fwprintf(const WCHAR *formatstr, int value, const char *checkstr)
 {
     FILE *fp;
     char buf[256] = { 0 };
@@ -297,8 +301,9 @@ void DoNumTest(const WCHAR *formatstr, int value, const char *checkstr)
     }    
     fclose(fp);
 }
+#define DoNumTest DoNumTest_fwprintf
 
-void DoI64Test(const WCHAR *formatstr, INT64 value, char *valuestr, const char *checkstr1,
+inline void DoI64Test_fwprintf(const WCHAR *formatstr, INT64 value, char *valuestr, const char *checkstr1,
                const char *checkstr2)
 {
     FILE *fp;
@@ -330,8 +335,9 @@ void DoI64Test(const WCHAR *formatstr, INT64 value, char *valuestr, const char *
     }    
     fclose(fp);
 }
+#define DoI64Test DoI64Test_fwprintf
 
-void DoDoubleTest(const WCHAR *formatstr, double value, const char *checkstr1,
+inline void DoDoubleTest_fwprintf(const WCHAR *formatstr, double value, const char *checkstr1,
                   const char *checkstr2)
 {
     FILE *fp;
@@ -364,9 +370,9 @@ void DoDoubleTest(const WCHAR *formatstr, double value, const char *checkstr1,
     }    
     fclose(fp);
 }
+#define DoDoubleTest DoDoubleTest_fwprintf
 
-
-void DoArgumentPrecTest(const WCHAR *formatstr, int precision, void *param, 
+inline void DoArgumentPrecTest_fwprintf(const WCHAR *formatstr, int precision, void *param, 
                         char *paramstr, const char *checkstr1, const char *checkstr2)
 {
     FILE *fp;
@@ -407,8 +413,9 @@ void DoArgumentPrecTest(const WCHAR *formatstr, int precision, void *param,
     }
             
 }
+#define DoArgumentPrecTest DoArgumentPrecTest_fwprintf
 
-void DoArgumentPrecDoubleTest(const WCHAR *formatstr, int precision, double param, 
+inline void DoArgumentPrecDoubleTest_fwprintf(const WCHAR *formatstr, int precision, double param, 
                               const char *checkstr1, const char *checkstr2)
 {
     FILE *fp;
@@ -448,5 +455,5 @@ void DoArgumentPrecDoubleTest(const WCHAR *formatstr, int precision, double para
     }
             
 }
-
+#define DoArgumentPrecDoubleTest DoArgumentPrecDoubleTest_fwprintf
 #endif
