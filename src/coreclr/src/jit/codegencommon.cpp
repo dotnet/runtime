@@ -4584,10 +4584,8 @@ void CodeGen::genCheckUseBlockInit()
 {
     assert(!compiler->compGeneratingProlog);
 
-    unsigned initStkLclCnt = 0;  // The number of int-sized stack local variables that need to be initialized (variables
-                                 // larger than int count for more than 1).
-    unsigned largeGcStructs = 0; // The number of "large" structs with GC pointers. Used as part of the heuristic to
-                                 // determine whether to use block init.
+    unsigned initStkLclCnt = 0; // The number of int-sized stack local variables that need to be initialized (variables
+                                // larger than int count for more than 1).
 
     unsigned   varNum;
     LclVarDsc* varDsc;
@@ -4688,55 +4686,7 @@ void CodeGen::genCheckUseBlockInit()
                     counted = true;
                 }
             }
-
-            continue;
         }
-
-        /* Ignore if not a pointer variable or value class with a GC field */
-
-        if (!varDsc->HasGCPtr())
-        {
-            continue;
-        }
-
-// TODO-Review: The code below is currently unreachable. We are guaranteed to execute one of the
-// 'continue' statements above.
-#if 0
-        /* If we don't know lifetimes of variables, must be conservative */
-        if (!compiler->backendRequiresLocalVarLifetimes())
-        {
-            varDsc->lvMustInit = true;
-            noway_assert(!varDsc->lvRegister);
-        }
-        else
-        {
-            if (!varDsc->lvTracked)
-            {
-                varDsc->lvMustInit = true;
-            }
-        }
-
-        /* Is this a 'must-init' stack pointer local? */
-
-        if (varDsc->lvMustInit && varDsc->lvOnFrame && !counted)
-        {
-            if (varDsc->TypeGet() == TYP_STRUCT)
-            {
-                initStkLclCnt += varDsc->GetLayout()->GetGCPtrCount();
-            }
-            else
-            {
-                assert(varTypeIsGC(varDsc->TypeGet()));
-                initStkLclCnt += 1;
-            }
-            counted = true;
-        }
-
-        if ((compiler->lvaLclSize(varNum) > (3 * TARGET_POINTER_SIZE)) && (largeGcStructs <= 4))
-        {
-            largeGcStructs++;
-        }
-#endif
     }
 
     /* Don't forget about spill temps that hold pointers */
@@ -4762,10 +4712,9 @@ void CodeGen::genCheckUseBlockInit()
     // Current heuristic is to use block init when more than 4 stores
     // are required.
     //
-    // Secondary factor is the presence of large structs that
-    // potentially only need some fields set to zero. We likely don't
-    // model this very well, but have left the logic as is for now.
-
+    // TODO: Consider taking into account the presence of large structs that
+    // potentially only need some fields set to zero.
+    //
     // Compiler::fgVarNeedsExplicitZeroInit relies on this logic to
     // find structs that are guaranteed to be block initialized.
     // If this logic changes, Compiler::fgVarNeedsExplicitZeroInit needs
@@ -4777,15 +4726,15 @@ void CodeGen::genCheckUseBlockInit()
 
     // We can clear using aligned SIMD so the threshold is lower,
     // and clears in order which is better for auto-prefetching
-    genUseBlockInit = (genInitStkLclCnt > (largeGcStructs + 4));
+    genUseBlockInit = (genInitStkLclCnt > 4);
 
 #else // !defined(TARGET_AMD64)
 
-    genUseBlockInit = (genInitStkLclCnt > (largeGcStructs + 8));
+    genUseBlockInit = (genInitStkLclCnt > 8);
 #endif
 #else
 
-    genUseBlockInit = (genInitStkLclCnt > (largeGcStructs + 4));
+    genUseBlockInit = (genInitStkLclCnt > 4);
 
 #endif // TARGET_64BIT
 
