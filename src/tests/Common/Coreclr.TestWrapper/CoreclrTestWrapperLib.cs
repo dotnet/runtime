@@ -321,7 +321,29 @@ namespace CoreclrTestLib
                 process.StartInfo.RedirectStandardError = true;
 
                 DateTime startTime = DateTime.Now;
-                process.Start();
+                try
+                {
+                    process.Start();
+                }
+                catch (Exception ex)
+                {
+                    StringBuilder sb = new StringBuilder();
+                    sb.AppendLine("FileName:  " + process.StartInfo.FileName);
+                    sb.AppendLine("Arguments: " + process.StartInfo.Arguments);
+                    string directory = Path.GetDirectoryName(executable);
+                    if (Directory.Exists(directory))
+                    {
+                        foreach (string fileInFolder in Directory.EnumerateFiles(directory))
+                        {
+                            sb.AppendLine("-> " + fileInFolder);
+                        }
+                    }
+                    else
+                    {
+                        sb.AppendLine("Non-existent directory");
+                    }
+                    throw new Exception(sb.ToString(), ex);
+                }
 
                 var cts = new CancellationTokenSource();
                 Task copyOutput = process.StandardOutput.BaseStream.CopyToAsync(outputStream, 4096, cts.Token);
