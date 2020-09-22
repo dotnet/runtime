@@ -428,9 +428,9 @@ namespace System
             return x;
         }
 
-        public static float ScaleB(float f, int n)
+        public static float ScaleB(float x, int n)
         {
-            float y = f;
+            float y = x;
             if (n > 127)
             {
                 y *= SCALEB_C1;
@@ -440,7 +440,9 @@ namespace System
                     y *= SCALEB_C1;
                     n -= 127;
                     if (n > 127)
+                    {
                         n = 127;
+                    }
                 }
             }
             else if (n < -126)
@@ -452,9 +454,12 @@ namespace System
                     y *= SCALEB_C2 * SCALEB_C3;
                     n += 126 - 24;
                     if (n < -126)
+                    {
                         n = -126;
+                    }
                 }
             }
+
             float u = BitConverter.Int32BitsToSingle(((int)(0x7f + n) << 23));
             return y * u;
         }

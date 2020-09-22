@@ -1105,7 +1105,7 @@ namespace System
 
         public static double ScaleB(double x, int n)
         {
-            double y = f;
+            double y = x;
             if (n > 1023)
             {
                 y *= SCALEB_C1;
@@ -1115,7 +1115,9 @@ namespace System
                     y *= SCALEB_C1;
                     n -= 1023;
                     if (n > 1023)
+                    {
                         n = 1023;
+                    }
                 }
             }
             else if (n < -1022)
@@ -1127,9 +1129,12 @@ namespace System
                     y *= SCALEB_C2 * SCALEB_C3;
                     n += 1022 - 53;
                     if (n < -1022)
+                    {
                         n = -1022;
+                    }
                 }
             }
+
             double u = BitConverter.Int64BitsToDouble(((long)(0x3ff + n) << 52));
             return y * u;
         }
