@@ -2616,7 +2616,7 @@ namespace System.Net.Http.Functional.Tests
             byte[] RequestPrefix = Encoding.UTF8.GetBytes("request prefix\r\n");
             byte[] ResponsePrefix = Encoding.UTF8.GetBytes("response prefix\r\n");
 
-            Socket listenSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            using var listenSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             listenSocket.Bind(new IPEndPoint(IPAddress.Loopback, 0));
             listenSocket.Listen();
 
