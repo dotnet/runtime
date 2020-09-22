@@ -241,7 +241,7 @@ namespace System.Net.Sockets.Tests
                 EventWrittenEventArgs failed = Assert.Single(events, e => e.EventName == "AcceptFailed");
                 Assert.Equal(2, failed.Payload.Count);
                 Assert.True(Enum.IsDefined((SocketError)failed.Payload[0]));
-                Assert.Empty(failed.Payload[1] as string);
+                Assert.IsType<string>(failed.Payload[1]);
 
                 EventWrittenEventArgs start = Assert.Single(events, e => e.EventName == "AcceptStart");
                 Assert.Equal(start.ActivityId, failed.ActivityId);
@@ -324,7 +324,7 @@ namespace System.Net.Sockets.Tests
             EventWrittenEventArgs failed = Assert.Single(events, e => e.EventName == "ConnectFailed");
             Assert.Equal(2, failed.Payload.Count);
             Assert.True(Enum.IsDefined((SocketError)failed.Payload[0]));
-            Assert.Empty(failed.Payload[1] as string);
+            Assert.IsType<string>(failed.Payload[1]);
 
             EventWrittenEventArgs start = Assert.Single(events, e => e.EventName == "ConnectStart");
             Assert.Equal(start.ActivityId, canceled.ActivityId);
