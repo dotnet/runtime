@@ -5956,7 +5956,7 @@ void CodeGen::genCompareInt(GenTree* treeNode)
             }
             if (tree->OperIs(GT_GE))
             {
-                // emit "neg" for "x>=0" case
+                // emit "not" for "x>=0" case
                 inst_RV(INS_not, targetReg, tree->TypeGet(), targetSize);
             }
             inst_RV_IV(INS_shr_N, targetReg, (int)targetSize * 8 - 1, targetSize);
