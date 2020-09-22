@@ -4067,6 +4067,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			break;
 		}
 		case CEE_RET: {
+			link_bblocks = FALSE;
 			/* Return from inlined method, return value is on top of stack */
 			if (inlining) {
 				td->ip++;
@@ -4074,7 +4075,6 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				td->last_ins->info.target_bb = exit_bb;
 				init_bb_stack_state (td, exit_bb);
 				interp_link_bblocks (td, td->cbb, exit_bb);
-				link_bblocks = FALSE;
 				break;
 			}
 
@@ -7767,6 +7767,18 @@ retry:
 				sp->ins = ins;
 				sp->val = val;
 			}
+			sp++;
+		} else if (ins->opcode == MINT_MONO_LDPTR) {
+			StackValue val;
+#if SIZEOF_VOID_P == 8
+			val.type = STACK_VALUE_I8;
+			val.l = (gint64)td->data_items [ins->data [0]];
+#else
+			val.type = STACK_VALUE_I4;
+			val.i = (gint32)td->data_items [ins->data [0]];
+#endif
+			sp->ins = ins;
+			sp->val = val;
 			sp++;
 		} else if (MINT_IS_MOVLOC (ins->opcode)) {
 			int src_local = ins->data [0];
