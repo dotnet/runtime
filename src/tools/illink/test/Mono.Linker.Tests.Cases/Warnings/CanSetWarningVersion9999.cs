@@ -1,6 +1,4 @@
 using System;
-using System.Linq.Expressions;
-using System.Reflection;
 using System.Diagnostics.CodeAnalysis;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
