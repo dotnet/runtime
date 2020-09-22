@@ -1486,7 +1486,7 @@ namespace System.Diagnostics
             async ValueTask WaitUntilOutputEOF()
             {
                 // if we have a hard timeout, we cannot wait for the streams
-                if (!cancellationToken.IsCancellationRequested)
+                if (!cancellationToken.CanBeCanceled)
                 {
                     if (_output != null)
                     {
