@@ -43,8 +43,8 @@ jobs:
     # - Linux_arm64
     - Linux_x64
     - Windows_NT_x64
-    # - Windows_NT_x86
-    # - Windows_NT_arm64
+    - Windows_NT_x86
+    - Windows_NT_arm64
     # - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
     jobParameters:
       testGroup: outerloop
@@ -72,8 +72,8 @@ jobs:
     # - Linux_arm64
     - Linux_x64
     - Windows_NT_x64
-    # - Windows_NT_x86
-    # - Windows_NT_arm64
+    - Windows_NT_x86
+    - Windows_NT_arm64
     # - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
     helixQueueGroup: ci
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
