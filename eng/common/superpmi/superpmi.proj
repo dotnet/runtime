@@ -63,8 +63,7 @@
     <HelixWorkItem Include="@(Partition)">
     <!-- TODO: Here too make payload folder different for workitem.Name -->
       <PayloadDirectory>$(PmiAssembliesPayload)$(FileSeparatorChar)%(HelixWorkItem.PmiAssemblies)</PayloadDirectory>
-      <HelixPreCommands>$(HelixPreCommands);dir /s /b %HELIX_WORKITEM_PAYLOAD%</HelixPreCommands>
-      <Command>dir /s /b %HELIX_WORKITEM_PAYLOAD%; $(WorkItemCommand) -pmi_assemblies $(PmiAssembliesDirectory) -output_mch_path $(OutputMchPath)$(FileSeparatorChar)%(HelixWorkItem.OutputMchName).$(AGENT_OS).$(Architecture).$(BuildConfig).mch</Command>
+      <Command>$(WorkItemCommand) -pmi_assemblies $(PmiAssembliesDirectory) -output_mch_path $(OutputMchPath)$(FileSeparatorChar)%(HelixWorkItem.OutputMchName).$(AGENT_OS).$(Architecture).$(BuildConfig).mch</Command>
       <Timeout>$(WorkItemTimeout)</Timeout>
       <DownloadFilesFromResults>%(HelixWorkItem.OutputMchName).$(AGENT_OS).$(Architecture).$(BuildConfig).mch;%(HelixWorkItem.OutputMchName).$(AGENT_OS).$(Architecture).$(BuildConfig).mch.mct</DownloadFilesFromResults>
     </HelixWorkItem>
