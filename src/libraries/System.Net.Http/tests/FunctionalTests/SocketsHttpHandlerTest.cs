@@ -2599,7 +2599,7 @@ namespace System.Net.Http.Functional.Tests
                     using HttpClient client = CreateHttpClient(handler);
                     client.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact;
 
-                    HttpResponseMessage response = await client.GetAsync(uri);
+                    using HttpResponseMessage response = await client.GetAsync(uri);
                     Assert.Equal("foo", await response.Content.ReadAsStringAsync());
                 },
                 async server =>
