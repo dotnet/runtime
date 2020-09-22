@@ -1452,6 +1452,7 @@ namespace System.Diagnostics
                 // exception up to the user
                 if (HasExited)
                 {
+                    await WaitUntilOutputEOF().ConfigureAwait(false);
                     return;
                 }
 
@@ -1460,7 +1461,7 @@ namespace System.Diagnostics
 
             var tcs = new TaskCompletionSourceWithCancellation<bool>();
 
-            EventHandler handler = (s, e) => tcs.TrySetResult(true);
+            EventHandler handler = (_, _) => tcs.TrySetResult(true);
             Exited += handler;
 
             try
@@ -1477,6 +1478,26 @@ namespace System.Diagnostics
             finally
             {
                 Exited -= handler;
+
+                await WaitUntilOutputEOF().ConfigureAwait(false);
+            }
+
+            // Wait until output streams have been drained
+            async ValueTask WaitUntilOutputEOF()
+            {
+                // if we have a hard timeout, we cannot wait for the streams
+                if (!cancellationToken.IsCancellationRequested)
+                {
+                    if (_output != null)
+                    {
+                        await _output.WaitUntilEOFAsync().ConfigureAwait(false);
+                    }
+
+                    if (_error != null)
+                    {
+                        await _error.WaitUntilEOFAsync().ConfigureAwait(false);
+                    }
+                }
             }
         }
 
