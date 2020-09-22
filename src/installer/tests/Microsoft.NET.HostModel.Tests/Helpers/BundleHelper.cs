@@ -122,6 +122,15 @@ namespace BundleTests.Helpers
                    throw new ArgumentException(nameof (runtimeIdentifier));
         }
 
+        private static void UseOwnSharedLibrary(TestProjectFixture fixture, string libraryName)
+        {
+            string sharedLibraryName = RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform(libraryName);
+            File.Copy(
+                Path.Combine(fixture.RepoDirProvider.HostArtifacts, sharedLibraryName),
+                Path.Combine(BundleHelper.GetPublishPath(fixture), sharedLibraryName),
+                overwrite: true);
+        }
+
         /// Generate a bundle containind the (embeddable) files in sourceDir
         public static string GenerateBundle(Bundler bundler, string sourceDir, string outputDir, bool copyExludedFiles=true)
         {
@@ -174,6 +183,10 @@ namespace BundleTests.Helpers
             var bundleDir = GetBundleDir(fixture);
             var targetOS = GetTargetOS(fixture.CurrentRid);
             var targetArch = GetTargetArch(fixture.CurrentRid);
+
+            // In order to test the hosting components we need the hostpolicy and hostfxr built by the repo
+            UseOwnSharedLibrary(fixture, "hostfxr");
+            UseOwnSharedLibrary(fixture, "hostpolicy");
 
             var bundler = new Bundler(hostName, bundleDir.FullName, options, targetOS, targetArch, targetFrameworkVersion);
             singleFile = GenerateBundle(bundler, publishPath, bundleDir.FullName, copyExcludedFiles);

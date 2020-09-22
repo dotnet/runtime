@@ -2,6 +2,7 @@
 using BundleTests.Helpers;
 using Microsoft.DotNet.Cli.Build.Framework;
 using Microsoft.DotNet.CoreSetup.Test;
+using Microsoft.NET.HostModel.Bundle;
 using Xunit;
 
 namespace AppHost.Bundle.Tests
@@ -65,6 +66,24 @@ namespace AppHost.Bundle.Tests
                 .NotHaveStdOutContaining("SingleFileApiTests.deps.json")
                 .And
                 .NotHaveStdOutContaining("Microsoft.NETCore.App.deps.json");
+        }
+
+        [Fact]
+        public void AppContext_Deps_Files_Bundled_Self_Contained_NetCoreApp3_CompatMode()
+        {
+            var fixture = sharedTestState.TestFixture.Copy();
+            string singleFile = BundleHelper.BundleApp(fixture, BundleOptions.BundleAllContent);
+
+            Command.Create(singleFile, "appcontext")
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .Execute()
+                .Should()
+                .Pass()
+                .And
+                .HaveStdOutContaining("SingleFileApiTests.deps.json")
+                .And
+                .HaveStdOutContaining("Microsoft.NETCore.App.deps.json");
         }
 
         [Fact]
