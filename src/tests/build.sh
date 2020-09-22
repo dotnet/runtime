@@ -221,6 +221,7 @@ precompile_coreroot_fx()
             commandLine="${__DotNetCli} $__Crossgen2Dll @$responseFile"
             echo -O>>$responseFile
             echo --inputbubble>>$responseFile
+            echo --verify-type-and-field-layout>>$responseFile
             echo --out:$outputDir/$(basename $filename)>>$responseFile
             echo --targetarch:${__BuildArch}>>$responseFile
             echo $filename>>$responseFile

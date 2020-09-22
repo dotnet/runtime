@@ -638,6 +638,10 @@ set __CrossgenDir=%__BinDir%
 if /i "%__BuildArch%" == "arm" (set __CrossgenDir=!__CrossgenDir!\x86)
 if /i "%__BuildArch%" == "arm64" (set __CrossgenDir=!__CrossgenDir!\x64)
 
+if /i "%__DoCrossgen2%" == "1" (
+  if /i "%__BuildArch%" == "x86" (set __CrossgenDir=!__CrossgenDir!\x64)
+)
+
 set __CrossgenExe="%__CrossgenDir%\crossgen.exe"
 set __Crossgen2Dll="%__RepoRootDir%\dotnet.cmd" "%__CrossgenDir%\crossgen2\crossgen2.dll"
 
@@ -707,6 +711,7 @@ if defined __DoCrossgen (
     echo -r:!CORE_ROOT!\Microsoft.*.dll>>!__CrossgenResponseFile!
     echo -r:!CORE_ROOT!\mscorlib.dll>>!__CrossgenResponseFile!
     echo -r:!CORE_ROOT!\netstandard.dll>>!__CrossgenResponseFile!
+    echo --verify-type-and-field-layout>>!__CrossgenResponseFile!
     echo -O>>!__CrossgenResponseFile!
     echo --inputbubble>>!__CrossgenResponseFile!
     echo --out:!__CrossgenOutputFile!>>!__CrossgenResponseFile!
