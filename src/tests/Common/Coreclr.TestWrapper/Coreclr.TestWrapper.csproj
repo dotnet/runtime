@@ -5,6 +5,7 @@
     <ProjectAssetsFile>$(RepoRoot)src\tests\Common\Coreclr.TestWrapper\obj\project.assets.json</ProjectAssetsFile>
     <NuGetTargetMoniker>$(NetCoreAppCurrentTargetFrameworkMoniker)</NuGetTargetMoniker>
     <NuGetTargetMonikerShort>$(NetCoreAppCurrent)</NuGetTargetMonikerShort>
+    <RunAnalyzers>false</RunAnalyzers>
   </PropertyGroup>
 
   <ItemGroup>

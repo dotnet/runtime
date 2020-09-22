@@ -254,12 +254,10 @@ namespace System.Diagnostics
             }
         }
 
-        /// <devdoc>
-        ///    <para>
-        ///       Gets or sets the maximum allowable working set for the associated
-        ///       process.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Gets or sets the maximum allowable working set for the associated process.
+        /// </summary>
+        /// <remarks>On macOS and FreeBSD, setting the value works only for the current process.</remarks>
         public IntPtr MaxWorkingSet
         {
             get
@@ -268,18 +266,18 @@ namespace System.Diagnostics
                 return _maxWorkingSet;
             }
             [SupportedOSPlatform("windows")]
+            [SupportedOSPlatform("macos")]
+            [SupportedOSPlatform("freebsd")]
             set
             {
                 SetWorkingSetLimits(null, value);
             }
         }
 
-        /// <devdoc>
-        ///    <para>
-        ///       Gets or sets the minimum allowable working set for the associated
-        ///       process.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Gets or sets the minimum allowable working set for the associated process.
+        /// </summary>
+        /// <remarks>On macOS and FreeBSD, setting the value works only for the current process.</remarks>
         public IntPtr MinWorkingSet
         {
             get
@@ -288,6 +286,8 @@ namespace System.Diagnostics
                 return _minWorkingSet;
             }
             [SupportedOSPlatform("windows")]
+            [SupportedOSPlatform("macos")]
+            [SupportedOSPlatform("freebsd")]
             set
             {
                 SetWorkingSetLimits(value, null);
