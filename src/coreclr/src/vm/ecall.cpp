@@ -697,7 +697,7 @@ LPVOID ECall::GetQCallImpl(MethodDesc * pMD)
     if (id == 0)
     {
         id = ECall::GetIDForMethod(pMD);
-        _ASSERTE(id != 0);
+        _ASSERTE_MSG(id != 0, pMD->m_pszDebugMethodName);
 
         // Cache the id
         ((NDirectMethodDesc *)pMD)->SetECallID(id);
