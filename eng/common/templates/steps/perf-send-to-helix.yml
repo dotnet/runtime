@@ -30,9 +30,7 @@ steps:
     displayName: ${{ parameters.DisplayNamePrefix }}
     condition: ${{ parameters.condition }}
     continueOnError: ${{ parameters.continueOnError }}
-  - script: $BUILD_SOURCESDIRECTORY/eng/common/msbuild.sh $BUILD_SOURCESDIRECTORY/eng/common/performance/${{ parameters.ProjectFile }} /restore /t:Test /bl:$BUILD_SOURCESDIRECTORY/artifacts/log/$BuildConfig/SendToHelix.binlog
-    displayName: ${{ parameters.DisplayNamePrefix }} (Unix)
-    env:
+    environment:
       BuildConfig: $(_BuildConfig)
       HelixSource: ${{ parameters.HelixSource }}
       HelixType: ${{ parameters.HelixType }}
@@ -50,5 +48,3 @@ steps:
       WaitForWorkItemCompletion: ${{ parameters.WaitForWorkItemCompletion }}
       Creator: ${{ parameters.Creator }}
       SYSTEM_ACCESSTOKEN: $(System.AccessToken)
-    condition: and(${{ parameters.condition }}, ne(variables['Agent.Os'], 'Windows_NT'))
-    continueOnError: ${{ parameters.continueOnError }}
