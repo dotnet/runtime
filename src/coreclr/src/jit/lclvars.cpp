@@ -2276,15 +2276,20 @@ void Compiler::StructPromotionHelper::PromoteStructVar(unsigned lclNum)
         // Reset the implicitByRef flag.
         fieldVarDsc->lvIsImplicitByRef = 0;
 
+#endif
+
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_ARM)
+
         // Do we have a parameter that can be enregistered?
         //
         if (varDsc->lvIsRegArg)
         {
             fieldVarDsc->lvIsRegArg = true;
             regNumber parentArgReg  = varDsc->GetArgReg();
-#if FEATURE_MULTIREG_ARGS && defined(FEATURE_SIMD)
+#if FEATURE_MULTIREG_ARGS
             if (!compiler->lvaIsImplicitByRefLocal(lclNum))
             {
+#ifdef UNIX_AMD64_ABI
                 if (varTypeIsSIMD(fieldVarDsc) && (varDsc->lvFieldCnt == 1))
                 {
                     // This SIMD typed field may be passed in multiple registers.
@@ -2292,10 +2297,18 @@ void Compiler::StructPromotionHelper::PromoteStructVar(unsigned lclNum)
                     fieldVarDsc->SetOtherArgReg(varDsc->GetOtherArgReg());
                 }
                 else
+#endif // UNIX_AMD64_ABI
                 {
                     // TODO: Need to determine if/how to handle split args.
                     // TODO: Assert that regs are always sequential.
-                    regNumber fieldRegNum = (regNumber)(parentArgReg + fieldVarDsc->lvFldOrdinal);
+                    unsigned regIncrement = fieldVarDsc->lvFldOrdinal;
+#ifdef TARGET_ARM
+                    if (varDsc->lvIsHfa() && (varDsc->GetHfaType() == TYP_DOUBLE))
+                    {
+                        regIncrement = (fieldVarDsc->lvFldOrdinal * 2);
+                    }
+#endif // TARGET_ARM
+                    regNumber fieldRegNum = (regNumber)(parentArgReg + regIncrement);
                     fieldVarDsc->SetArgReg(fieldRegNum);
                 }
             }
@@ -2305,7 +2318,7 @@ void Compiler::StructPromotionHelper::PromoteStructVar(unsigned lclNum)
                 fieldVarDsc->SetArgReg(parentArgReg);
             }
         }
-#endif
+#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_ARM)
 
 #ifdef FEATURE_SIMD
         if (varTypeIsSIMD(pFieldInfo->fldType))
