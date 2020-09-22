@@ -82,7 +82,6 @@ namespace System.Globalization.Tests
             yield return new object[] { "en-SG", "d/M/yyyy" };
             yield return new object[] { "en-UM", "M/d/yyyy" };
             yield return new object[] { "en-US", "M/d/yyyy" };
-            yield return new object[] { "en-US-posix", "M/d/yyyy" };
             yield return new object[] { "en-VI", "M/d/yyyy" };
             yield return new object[] { "en-ZA", "yyyy/MM/dd" };
             yield return new object[] { "en-ZW", "d/M/yyyy" };
