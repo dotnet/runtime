@@ -4,7 +4,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -106,9 +105,15 @@ namespace System.Net.Sockets.Tests
         }
 
         [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public async Task SendFile_Empty_SucceedsSendingNothing(bool useAsync)
+        [InlineData(false, false, false)]
+        [InlineData(false, false, true)]
+        [InlineData(false, true, false)]
+        [InlineData(false, true, true)]
+        [InlineData(true, false, false)]
+        [InlineData(true, false, true)]
+        [InlineData(true, true, false)]
+        [InlineData(true, true, true)]
+        public async Task SendFile_NoFile_Succeeds(bool useAsync, bool usePreBuffer, bool usePostBuffer)
         {
             using var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             using var listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
@@ -128,18 +133,26 @@ namespace System.Net.Sockets.Tests
             }
             Assert.Equal(0, client.Available);
 
+            byte[] preBuffer = usePreBuffer ? new byte[1] : null;
+            byte[] postBuffer = usePostBuffer ? new byte[1] : null;
+            int bytesExpected = (usePreBuffer ? 1 : 0) + (usePostBuffer ? 1 : 0);
+
             if (useAsync)
             {
-                await Task.Factory.FromAsync((c, s) => server.BeginSendFile(null, null, null, TransmitFileOptions.UseDefaultWorkerThread, c, s), server.EndSendFile, null);
+                await Task.Factory.FromAsync((c, s) => server.BeginSendFile(null, preBuffer, postBuffer, TransmitFileOptions.UseDefaultWorkerThread, c, s), server.EndSendFile, null);
             }
             else
             {
-                server.SendFile(null, null, null, TransmitFileOptions.UseDefaultWorkerThread);
+                server.SendFile(null, preBuffer, postBuffer, TransmitFileOptions.UseDefaultWorkerThread);
             }
-            Assert.Equal(0, client.Available);
 
-            server.Send(new byte[1]);
-            Assert.Equal(1, client.Receive(new byte[2]));
+            byte[] receiveBuffer = new byte[1];
+            for (int i = 0; i < bytesExpected; i++)
+            {
+                Assert.Equal(1, client.Receive(receiveBuffer));
+            }
+
+            Assert.Equal(0, client.Available);
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/42534", TestPlatforms.Windows)]
