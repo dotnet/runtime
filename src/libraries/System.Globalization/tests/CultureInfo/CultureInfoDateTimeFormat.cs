@@ -69,16 +69,13 @@ namespace System.Globalization.Tests
         public static IEnumerable<object[]> DateTimeFormat_En_Locales_ShortDatePattern_TestData()
         {
             yield return new object[] { "en-AS", "M/d/yyyy" };
-            yield return new object[] { "en-AU", "d/M/yyyy" };
             yield return new object[] { "en-BI", "M/d/yyyy" };
-            yield return new object[] { "en-CA", "yyyy-MM-dd" };
             yield return new object[] { "en-GU", "M/d/yyyy" };
             yield return new object[] { "en-HK", "d/M/yyyy" };
             yield return new object[] { "en-MH", "M/d/yyyy" };
             yield return new object[] { "en-MP", "M/d/yyyy" };
             yield return new object[] { "en-NZ", "d/MM/yyyy" };
             yield return new object[] { "en-PR", "M/d/yyyy" };
-            yield return new object[] { "en-SE", "yyyy-MM-dd" };
             yield return new object[] { "en-SG", "d/M/yyyy" };
             yield return new object[] { "en-UM", "M/d/yyyy" };
             yield return new object[] { "en-US", "M/d/yyyy" };
