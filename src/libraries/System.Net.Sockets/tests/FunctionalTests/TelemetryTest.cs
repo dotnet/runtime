@@ -187,8 +187,8 @@ namespace System.Net.Sockets.Tests
                     {
                         Task connectTask = socketHelper.ConnectAsync(client, endPoint);
                         await WaitForEventAsync(events, "ConnectStart");
-                        client.Dispose();
-                        await connectTask;
+                        Task disposeTask = Task.Run(() => client.Dispose());
+                        await new[] { connectTask, disposeTask }.WhenAllOrAnyFailed();
                     });
 
                     if (ex is SocketException se)
@@ -226,8 +226,8 @@ namespace System.Net.Sockets.Tests
                     {
                         Task acceptTask = GetHelperBase(acceptMethod).AcceptAsync(server);
                         await WaitForEventAsync(events, "AcceptStart");
-                        server.Dispose();
-                        await acceptTask;
+                        Task disposeTask = Task.Run(() => server.Dispose());
+                        await new[] { acceptTask, disposeTask }.WhenAllOrAnyFailed();
                     });
 
                     await WaitForEventAsync(events, "AcceptStop");
