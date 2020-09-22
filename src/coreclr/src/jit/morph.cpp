@@ -6695,7 +6695,7 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
     {
         fgArgTabEntry* arg = argInfo->GetArgEntry(index, false);
 
-        calleeArgStackSize += arg->stackSize();
+        calleeArgStackSize += arg->GetStackSize();
     }
 
     auto reportFastTailCallDecision = [&](const char* thisFailReason) {

@@ -1613,7 +1613,8 @@ public:
         return 0;
     }
 
-    unsigned stackSize() const
+    // Get the number of bytes that this argument is occyping on the stack.
+    unsigned GetStackSize() const
     {
         return (TARGET_POINTER_SIZE * this->numSlots);
     }
