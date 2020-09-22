@@ -1103,7 +1103,7 @@ namespace System
             throw new ArgumentException(SR.Format(SR.Argument_MinMaxValue, min, max));
         }
 
-        public static double ScaleB(double f, int n)
+        public static double ScaleB(double x, int n)
         {
             double y = f;
             if (n > 1023)
