@@ -5945,14 +5945,12 @@ void CodeGen::genCompareInt(GenTree* treeNode)
     {
         // Optimize "x<0" and "x>=0" to "x>>31" if "x" is not a jump condition and in a reg.
         // Morph/Lowering are responsible to rotate "0<x" to "x>0" so we won't handle it here.
-        if (!varTypeIsByte(tree->TypeGet()) && (targetReg != REG_NA) && tree->OperIs(GT_LT, GT_GE))
+        if ((genTypeSize(tree->TypeGet()) >= 4) && (targetReg != REG_NA) && tree->OperIs(GT_LT, GT_GE))
         {
-            emitAttr targetSize = emitActualTypeSize(op1);
+            emitAttr targetSize = emitActualTypeSize(tree->TypeGet());
             if (targetReg != op1->GetRegNum())
             {
-                // move op1 to the target register and extend to 4BYTE if needed.
-                targetSize = op1Type == TYP_LONG ? EA_8BYTE : EA_4BYTE;
-                inst_RV_RV(INS_mov, targetReg, op1->GetRegNum());
+                inst_RV_RV(INS_mov, targetReg, op1->GetRegNum(), tree->TypeGet());
             }
             if (tree->OperIs(GT_GE))
             {
