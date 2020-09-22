@@ -7,8 +7,6 @@
     <FileSeparatorChar>/</FileSeparatorChar>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(AGENT_OS)' == 'Windows_NT'">
-    <Python>py -3</Python>
     <!-- The directory structure of pmiAssembliesPayload is
          source\workitem\pmiAssembliesDirectory\<machine_specific_load_0>\binaries
          source\workitem\pmiAssembliesDirectory\<machine_specific_load_1>\binaries
@@ -18,10 +16,14 @@
          PmiAssembliesPayload - Path that will be sent to helix machine to run collection on
          PmiAssembliesDirectory - Path on helix machine itself where superpmi.py will discover the sent assemblies.
     -->
+  <PropertyGroup Condition="'$(AGENT_OS)' == 'Windows_NT'">
+    <Python>py -3</Python>
     <PmiAssembliesPayload>$(WorkItemDirectory)\pmiAssembliesDirectory</PmiAssembliesPayload>
     <PmiAssembliesDirectory>%HELIX_WORKITEM_PAYLOAD%\binaries</PmiAssembliesDirectory>
     <SuperPMIDirectory>%HELIX_CORRELATION_PAYLOAD%\superpmi</SuperPMIDirectory>
     <OutputMchPath>%HELIX_WORKITEM_UPLOAD_ROOT%</OutputMchPath>
+    <!-- Workaround until https://github.com/dotnet/arcade/pull/6179 is not available -->
+    <HelixResultsDestinationDir>$(BUILD_SOURCESDIRECTORY\artifacts\helixresults</HelixResultsDestinationDir>
     <WorkItemCommand>$(SuperPMIDirectory)\superpmi.py collect --pmi -pmi_location $(SuperPMIDirectory)\pmi.dll </WorkItemCommand>
   </PropertyGroup>
   <PropertyGroup Condition="'$(AGENT_OS)' != 'Windows_NT'">
@@ -30,6 +32,8 @@
     <PmiAssembliesDirectory>$HELIX_WORKITEM_PAYLOAD/binaries</PmiAssembliesDirectory>
     <SuperPMIDirectory>$HELIX_CORRELATION_PAYLOAD/superpmi</SuperPMIDirectory>
     <OutputMchPath>$HELIX_WORKITEM_UPLOAD_ROOT</OutputMchPath>
+    <!-- Workaround until https://github.com/dotnet/arcade/pull/6179 is not available -->
+    <HelixResultsDestinationDir>$(BUILD_SOURCESDIRECTORY/artifacts/helixresults</HelixResultsDestinationDir>
     <WorkItemCommand>$(SuperPMIDirectory)/superpmi.py collect --pmi -pmi_location $(SuperPMIDirectory)/pmi.dll </WorkItemCommand>
   </PropertyGroup>
 
