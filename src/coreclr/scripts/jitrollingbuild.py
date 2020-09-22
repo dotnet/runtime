@@ -249,14 +249,17 @@ def upload_command(coreclr_args):
             blob_client.upload_blob(data)
 
     # 1. Find all the JIT builds in the product directory
-    # 2. Find all the JIT debug info in the product directory
-    #    a. For Windows, these are in the PDB subdirectory, e.g. PDB\clrjit.pdb
-    #    b. For Linux, these are DBG files in the same directory as the jit, e.g., libcoreclr.so.dbg
-    # 3. Upload them
+    # 2. Upload them
+    #
+    # We could also upload debug info, but it's not clear it's needed for most purposes, and it is very big:
+    # it increases the upload size from about 190MB to over 900MB for each roll.
+    #
+    # For reference, the JIT debug info is found:
+    #    a. For Windows, in the PDB subdirectory, e.g. PDB\clrjit.pdb
+    #    b. For Linux .dbg files, and Mac .dwarf files, in the same directory as the jit, e.g., libcoreclr.so.dbg
 
     # Target directory: <root>/git-hash/OS/architecture/build-flavor/
     # Note that build-flavor will probably always be Checked.
-    # Put PDBs in the same directory as the dlls.
 
     files = []
 
@@ -274,21 +277,36 @@ def upload_command(coreclr_args):
     #   clrjit_win_arm_x64.dll
     #   clrjit_win_arm64_x64.dll
     # and so on, and live in the same product directory as the primary JIT.
+    #
     # Note that the expression below explicitly filters out the primary JIT since we added that above.
     # We handle the primary JIT specially so we can error if it is missing. For the cross-compilation
     # JITs, we don't bother trying to ensure that all the ones we might expect are actually there.
-    # The expression below will also get the DBG files on Linux, which live in the same directory.
+    #
     # We don't do a recursive walk because the JIT is also copied to the "sharedFramework" subdirectory,
     # so we don't want to pick that up.
-    cross_jit_paths = [os.path.join(coreclr_args.product_location, item) for item in os.listdir(coreclr_args.product_location) if re.match(r'.*clrjit.*', item) and item != jit_name]
+
+    if coreclr_args.host_os == "OSX":
+        allowed_extensions = [ ".dylib" ]
+        # Add .dwarf for debug info
+    elif coreclr_args.host_os == "Linux":
+        allowed_extensions = [ ".so" ]
+        # Add .dbg for debug info
+    elif coreclr_args.host_os == "Windows_NT":
+        allowed_extensions = [ ".dll" ]
+    else:
+        raise RuntimeError("Unknown OS.")
+
+    cross_jit_paths = [os.path.join(coreclr_args.product_location, item)
+            for item in os.listdir(coreclr_args.product_location)
+            if re.match(r'.*clrjit.*', item) and item != jit_name and any(item.endswith(extension) for extension in allowed_extensions)]
     files += cross_jit_paths
 
-    # On Windows, grab the PDB files from a sub-directory
-    if coreclr_args.host_os == "Windows_NT":
-        pdb_dir = os.path.join(coreclr_args.product_location, "PDB")
-        if os.path.isdir(pdb_dir):
-            pdb_paths = [os.path.join(pdb_dir, item) for item in os.listdir(pdb_dir) if re.match(r'.*clrjit.*', item)]
-            files += pdb_paths
+    # On Windows, grab the PDB files from a sub-directory.
+    #if coreclr_args.host_os == "Windows_NT":
+    #    pdb_dir = os.path.join(coreclr_args.product_location, "PDB")
+    #    if os.path.isdir(pdb_dir):
+    #        pdb_paths = [os.path.join(pdb_dir, item) for item in os.listdir(pdb_dir) if re.match(r'.*clrjit.*', item)]
+    #        files += pdb_paths
 
     print("Uploading:")
     for item in files:
