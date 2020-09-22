@@ -66,7 +66,7 @@ namespace System.Globalization.Tests
             Assert.Throws<InvalidOperationException>(() => CultureInfo.InvariantCulture.DateTimeFormat = new DateTimeFormatInfo()); // DateTimeFormatInfo.InvariantInfo is read only
         }
 
-        public static IEnumerable<object[]> EnLocalesShortDatePatternsTestData()
+        public static IEnumerable<object[]> DateTimeFormat_En_Locales_ShortDatePattern_TestData()
         {
             yield return new object[] { "en-AS", "M/d/yyyy" };
             yield return new object[] { "en-AU", "d/M/yyyy" };
@@ -89,7 +89,7 @@ namespace System.Globalization.Tests
         }
 
         [Theory]
-        [MemberData(nameof(EnLocalesShortDatePatternsTestData))]
+        [MemberData(nameof(DateTimeFormat_En_Locales_ShortDatePattern_TestData))]
         public void DateTimeFormat_En_Locales_ShortDatePattern(string locale, string shortDatePattern)
         {
             var cultureInfo = new CultureInfo(locale);
