@@ -63,7 +63,7 @@ jobs:
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/coreclr/templates/superpmi-job.yml
-    buildConfig: Checked
+    buildConfig: checked
     platforms:
     # Linux tests are built on the OSX machines.
     # For now, lets try it on Windows_NT_x64
