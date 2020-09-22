@@ -354,7 +354,7 @@ void IUInvokeDispMethod(
 
 //--------------------------------------------------------------------------
 // GetComClassFromCLSID used by reflection class to setup a Class based on CLSID
-void GetComClassFromCLSID(REFCLSID clsid, __in_opt PCWSTR wszServer, OBJECTREF* pRef);
+void GetComClassFromCLSID(REFCLSID clsid, _In_opt_z_ PCWSTR wszServer, OBJECTREF* pRef);
 
 //-------------------------------------------------------------
 // check if a ComClassFactory has been setup for this class

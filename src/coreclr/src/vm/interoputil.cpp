@@ -3835,7 +3835,7 @@ static void GetComClassHelper(
 
 //-------------------------------------------------------------
 // returns a ComClass reflect class that wraps the IClassFactory
-void GetComClassFromCLSID(REFCLSID clsid, __in_opt PCWSTR wszServer, OBJECTREF *pRef)
+void GetComClassFromCLSID(REFCLSID clsid, _In_opt_z_ PCWSTR wszServer, OBJECTREF *pRef)
 {
     CONTRACTL
     {
