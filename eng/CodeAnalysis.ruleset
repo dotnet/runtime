@@ -437,7 +437,7 @@
     <Rule Id="IDE0059" Action="Hidden" />  <!-- ValueAssignedIsUnused -->
     <Rule Id="IDE0060" Action="Hidden" />  <!-- UnusedParameter -->
     <Rule Id="IDE0061" Action="Hidden" />  <!-- UseExpressionBodyForLocalFunctions -->
-    <Rule Id="IDE0062" Action="Hidden" />  <!-- MakeLocalFunctionStatic -->
+    <Rule Id="IDE0062" Action="Warning" /> <!-- MakeLocalFunctionStatic -->
     <Rule Id="IDE0063" Action="Hidden" />  <!-- UseSimpleUsingStatement -->
     <Rule Id="IDE0064" Action="Hidden" />  <!-- MakeStructFieldsWritable -->
     <Rule Id="IDE0065" Action="Hidden" />  <!-- MoveMisplacedUsingDirectives -->
