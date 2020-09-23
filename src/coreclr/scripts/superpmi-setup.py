@@ -95,8 +95,44 @@ def first_fit(sorted_by_size, max_size):
     return end_result
 
 
-def partition_files(coreclr_args):
+def run_command(command_to_run):
+    print("Running: " + " ".join(command_to_run))
+    with subprocess.Popen(command_to_run, stdout=subprocess.PIPE, stderr=subprocess.PIPE) as proc:
+        stdout, _ = proc.communicate()
+        print(stdout.decode('utf-8'))
 
+
+def copy_files_windows(src_path, dst_path, file_names):
+    command = ["robocopy", src_path, dst_path] + file_names
+    command += [
+        "/S",  # copy from sub-directories
+        "/R:2",  # no. of retries
+        "/W:5",  # seconds before retry
+        "/NS",  # don't log file sizes
+        "/NC",  # don't log file classes
+        "/NFL",  # don't log file names
+        "/NDL",  # don't log directory names
+        "/NJH"  # No Job Header.
+    ]
+    run_command(command)
+
+
+def copy_files_linux(src_path, dst_path, file_names):
+    # create dst_path
+    run_command(["mkdir", "-p", dst_path])
+
+    with tempfile.NamedTemporaryFile(mode='w+t') as tmp:
+        # create temp file containing name of files to copy
+        to_write = os.linesep.join(file_names)
+        tmp.write(to_write)
+        tmp.flush()
+
+        # use rsync
+        command = ["rsync", "-avr", "--files-from={0}".format(tmp.name), src_path, dst_path]
+        run_command(command)
+
+
+def partition_files(coreclr_args):
     src_directory = coreclr_args.src_directory
     dst_directory = coreclr_args.dst_directory
     dst_folder_name = coreclr_args.dst_folder_name
@@ -109,21 +145,10 @@ def partition_files(coreclr_args):
     for p_index in partitions:
         file_names = list(set([path.basename(curr_file[0]) for curr_file in partitions[p_index]]))
         curr_dst_path = path.join(dst_directory, str(index), dst_folder_name)
-        command = ["robocopy", src_directory, curr_dst_path] + file_names
-        command += [
-            "/S",  # copy from sub-directories
-            "/R:2",  # no. of retries
-            "/W:5",  # seconds before retry
-            "/NS",  # don't log file sizes
-            "/NC",  # don't log file classes
-            "/NFL",  # don't log file names
-            "/NDL",  # don't log directory names
-            "/NJH"  # No Job Header.
-        ]
-        print(" ".join(command))
-        with subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE) as proc:
-            stdout, _ = proc.communicate()
-            print(stdout.decode('utf-8'))
+        if platform.system() == "Windows":
+            copy_files_windows(src_directory, curr_dst_path, file_names)
+        else:
+            copy_files_linux(src_directory, curr_dst_path, file_names)
         index += 1
 
     total_partitions = str(len(partitions))

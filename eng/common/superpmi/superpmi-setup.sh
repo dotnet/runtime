@@ -81,12 +81,11 @@ fi
 helix_source_prefix="official"
 creator=
 
-echo "Done setting queue"
 
 # Prepare WorkItemDirectories (Specific to the job)
-mkdir -p $pmi_assemblies_directory/Core_Root/binaries
-echo rsync -avr --exclude='*.pdb' $core_root_directory/* $pmi_assemblies_directory/Core_Root/binaries
-rsync -avr --exclude='*.pdb' $core_root_directory/* $pmi_assemblies_directory/Core_Root/binaries
+# mkdir -p $pmi_assemblies_directory/Core_Root/binaries
+# echo rsync -avr --exclude='*.pdb' $core_root_directory/* $pmi_assemblies_directory/Core_Root/binaries
+# rsync -avr --exclude='*.pdb' $core_root_directory/* $pmi_assemblies_directory/Core_Root/binaries
 
 # mkdir -p $pmi_assemblies_directory/Tests
 # rsync -avr --exclude='*.pdb' $managed_test_artifact_directory/* $pmi_assemblies_directory/Tests
@@ -104,15 +103,11 @@ git clone --branch master --depth 1 --quiet https://github.com/dotnet/jitutils $
 cd $jitutils_directory
 
 export PATH="$source_directory/.dotnet:$PATH"
-echo "dotnet PATH: $PATH"
 ./bootstrap.sh
 
 cp $jitutils_directory/bin/pmi.dll $superpmi_directory
 cd $source_directory
 rm -r $jitutils_directory
-
-echo "Printing files in $workitem_directory"
-ls -R -1 $workitem_directory
 
 ci=true
 
@@ -124,6 +119,11 @@ Write-PipelineSetVariable -name "CorrelationPayloadDirectory" -value "$correlati
 Write-PipelineSetVariable -name "SuperPMIDirectory" -value "$superpmi_directory" -is_multi_job_variable false
 Write-PipelineSetVariable -name "PmiAssembliesDirectory" -value "$pmi_assemblies_directory" -is_multi_job_variable false
 Write-PipelineSetVariable -name "WorkItemDirectory" -value "$workitem_directory" -is_multi_job_variable false
+
+# Artifacts
+Write-PipelineSetVariable -name "LibrariesArtifacts" -value "$pmi_assemblies_directory/Core_Root" -is_multi_job_variable false
+Write-PipelineSetVariable -name "TestsArtifacts" -value "$workitem_directory" -is_multi_job_variable false
+
 # Script arguments
 Write-PipelineSetVariable -name "Python" -value "python3" -is_multi_job_variable false
 Write-PipelineSetVariable -name "Architecture" -value "$architecture" -is_multi_job_variable false
