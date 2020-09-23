@@ -75,6 +75,20 @@ jobs:
       condition: and(succeeded(), ne(variables['Agent.Os'], 'Windows_NT'))
       continueOnError: ${{ parameters.continueOnError }}
 
+    - task: PythonScript@0
+      displayName: Partition PMIAssembliesDirectory (libraries)
+      inputs:
+        scriptSource: 'filePath'
+        scriptPath: $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi-setup.py
+        arguments: -src_directory $(Build.SourcesDirectory)\artifacts\tests\coreclr\${{ parameters.osGroup }}.${{ parameters.archType }}.Checked\Tests\Core_Root -dst_directory $(LibrariesArtifact) -max_size 50
+
+    # - task: PythonScript@0
+    #   displayName: Partition PMIAssembliesDirectory (libraries)
+    #   inputs:
+    #     scriptSource: 'filePath'
+    #     scriptPath: $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi-setup.py
+    #     arguments: -src_directory $(Build.SourcesDirectory)\artifacts\tests\coreclr\${{ parameters.osGroup }}.${{ parameters.archType }}.Checked\Tests -dst_directory $(TestsArtifact) -max_size 50
+
       # Run superpmi collection in helix
     - template: /eng/common/templates/steps/superpmi-send-to-helix.yml
       parameters:
@@ -90,6 +104,8 @@ jobs:
         CorrelationPayloadDirectory: '$(CorrelationPayloadDirectory)'
         ProjectFile: ${{ parameters.projectFile }}
         BuildConfig: ${{ parameters.buildConfig }}
+        LibrariesArtifact: $(LibrariesArtifact)
+        TestsArtifact: $(TestsArtifact)
 
     - task: PublishPipelineArtifact@1
       displayName: Publish Logs

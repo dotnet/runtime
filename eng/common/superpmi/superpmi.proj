@@ -54,22 +54,21 @@
     </HelixCorrelationPayload>
   </ItemGroup>
 
-  <PropertyGroup>
-    <PartitionCount>1</PartitionCount>
-  </PropertyGroup>
-
   <ItemGroup>
-    <Partition Include="$(MchFileTag).Libraries" PmiAssemblies="Core_Root" OutputMchName="libraries.pmi" />
-    <!-- <Partition Include="$(MchFileTag).Tests" PmiAssemblies="Tests" OutputMchName="tests.pmi" /> -->
+    <LibraryPartitions Include="$([System.IO.Directory]::GetDirectories($(LibrariesArtifacts)))"/>
+    <Partition Include="@(LibraryPartitions -> '%(Filename)')" PmiAssemblies="Core_Root$(FileSeparatorChar)%(Filename)" OutputMchName="libraries.pmi" PartitionId="%(Filename)" />
+
+    <TestPartitions Include="$([System.IO.Directory]::GetDirectories($(TestsArtifact)))"/>
+    <Partition Include="@(TestPartitions -> '%(Filename)')" PmiAssemblies="Tests$(FileSeparatorChar)%(Filename)" OutputMchName="tests.pmi" PartitionId="%(Filename)" />
   </ItemGroup>
 
   <ItemGroup>
     <HelixWorkItem Include="@(Partition)">
     <!-- TODO: Here too make payload folder different for workitem.Name -->
       <PayloadDirectory>$(PmiAssembliesPayload)$(FileSeparatorChar)%(HelixWorkItem.PmiAssemblies)</PayloadDirectory>
-      <Command>$(WorkItemCommand) -output_mch_path $(OutputMchPath)$(FileSeparatorChar)%(HelixWorkItem.OutputMchName).$(MchFileTag).mch</Command>
+      <Command>$(WorkItemCommand) -output_mch_path $(OutputMchPath)$(FileSeparatorChar)%(HelixWorkItem.OutputMchName).$(MchFileTag).%(HelixWorkItem.PartitionId).mch</Command>
       <Timeout>$(WorkItemTimeout)</Timeout>
-      <DownloadFilesFromResults>%(HelixWorkItem.OutputMchName).$(MchFileTag).mch;%(HelixWorkItem.OutputMchName).$(MchFileTag).mch.mct</DownloadFilesFromResults>
+      <DownloadFilesFromResults>%(HelixWorkItem.OutputMchName).$(MchFileTag).%(HelixWorkItem.PartitionId).mch;%(HelixWorkItem.OutputMchName).$(MchFileTag).%(HelixWorkItem.PartitionId).mch.mct</DownloadFilesFromResults>
     </HelixWorkItem>
   </ItemGroup>
 

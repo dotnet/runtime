@@ -12,7 +12,7 @@ parser = argparse.ArgumentParser(description="description")
 parser.add_argument("-src_directory", help="path to src")
 parser.add_argument("-dst_directory", help="path to dst")
 parser.add_argument("-dst_folder_name", dest='dst_folder_name', default="binaries", help="Folder under dst/N/")
-parser.add_argument("-max_size", help="Max size")
+parser.add_argument("-max_size", help="Max size of partition in MB")
 
 
 def setup_args(args):
@@ -95,18 +95,21 @@ def first_fit(sorted_by_size, max_size):
     return end_result
 
 
-def main(args):
-    coreclr_args = setup_args(args)
+def partition_files(coreclr_args):
 
+    src_directory = coreclr_args.src_directory
+    dst_directory = coreclr_args.dst_directory
+    dst_folder_name = coreclr_args.dst_folder_name
     max_size = coreclr_args.max_size
-    sorted_by_size = get_files_sorted_by_size(coreclr_args.src_directory)
+
+    sorted_by_size = get_files_sorted_by_size(src_directory)
     partitions = first_fit(sorted_by_size, max_size)
 
     index = 0
     for p_index in partitions:
         file_names = list(set([path.basename(curr_file[0]) for curr_file in partitions[p_index]]))
-        curr_dst_path = path.join(coreclr_args.dst_directory, str(index), coreclr_args.dst_folder_name)
-        command = ["robocopy", coreclr_args.src_directory, curr_dst_path] + file_names
+        curr_dst_path = path.join(dst_directory, str(index), dst_folder_name)
+        command = ["robocopy", src_directory, curr_dst_path] + file_names
         command += [
             "/S",  # copy from sub-directories
             "/R:2",  # no. of retries
@@ -121,11 +124,21 @@ def main(args):
         with subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE) as proc:
             stdout, _ = proc.communicate()
             print(stdout.decode('utf-8'))
-            return_code = proc.returncode
-            print("Completed with exitCode=" + str(return_code))
         index += 1
 
-    print('Total partitions: %s' % str(len(partitions)))
+    total_partitions = str(len(partitions))
+    print('Total partitions: %s' % total_partitions)
+    set_pipeline_variable("SuperPmiJobCount", total_partitions)
+
+
+def set_pipeline_variable(name, value):
+    define_variable_format = "##vso[task.setvariable variable={0}]{1}"
+    print(define_variable_format.format(name, value))
+
+
+def main(args):
+    coreclr_args = setup_args(args)
+    partition_files(coreclr_args)
 
 
 ################################################################################

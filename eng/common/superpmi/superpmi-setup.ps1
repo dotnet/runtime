@@ -37,7 +37,7 @@ $HelixSourcePrefix = "official"
 $Creator = ""
 
 # Prepare WorkItemDirectories (Specific to the job)
-robocopy $CoreRootDirectory $PmiAssembliesDirectory\Core_Root\binaries /E /XF *.pdb
+# robocopy $CoreRootDirectory $PmiAssembliesDirectory\Core_Root\binaries /E /XF *.pdb
 # robocopy $ManagedTestArtifactDirectory $PmiAssembliesDirectory\Tests /E /XD $CoreRootDirectory /XF *.pdb
 
 # Prepare CorrelationPayloadDirectories (Common to all the jobs)
@@ -51,15 +51,11 @@ pushd $JitUtilsDirectory
 
 #TODO: Try using UseDotNet so we don't have to do this
 $env:PATH = "$SourceDirectory\.dotnet;$env:PATH"
-Write-Host "dotnet PATH: $env:PATH"
 .\bootstrap.cmd
 
 robocopy $JitUtilsDirectory\bin $SuperPmiDirectory "pmi.dll"
 pushd $SourceDirectory
 Remove-Item $JitUtilsDirectory -Recurse -Force
-
-Write-Host "Printing files in $WorkItemDirectory"
-Get-ChildItem -Path $WorkItemDirectory -Recurse -Name
 
 # Set variables that we will need to have in future steps
 $ci = $true
@@ -71,6 +67,10 @@ Write-PipelineSetVariable -Name 'CorrelationPayloadDirectory' -Value "$Correlati
 Write-PipelineSetVariable -Name 'SuperPMIDirectory' -Value "$SuperPMIDirectory" -IsMultiJobVariable $false
 Write-PipelineSetVariable -Name 'PmiAssembliesDirectory' -Value "$PmiAssembliesDirectory" -IsMultiJobVariable $false
 Write-PipelineSetVariable -Name 'WorkItemDirectory' -Value "$WorkItemDirectory" -IsMultiJobVariable $false
+
+# Artifacts
+Write-PipelineSetVariable -Name 'LibrariesArtifact' -Value "$PmiAssembliesDirectory\Core_Root" -IsMultiJobVariable $false
+Write-PipelineSetVariable -Name 'TestsArtifact' -Value "$PmiAssembliesDirectory\Tests" -IsMultiJobVariable $false
 
 # Script Arguments
 Write-PipelineSetVariable -Name 'Python' -Value "py -3" -IsMultiJobVariable $false
