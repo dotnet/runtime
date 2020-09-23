@@ -24,8 +24,7 @@
              Targets="Build;Publish"/>
   </Target>
 
-  <UsingTask TaskName="AndroidAppBuilderTask" 
-             AssemblyFile="$(ArtifactsBinDir)AndroidAppBuilder\$(Configuration)\$(NetCoreAppCurrent)\publish\AndroidAppBuilder.dll"/>
+  <UsingTask TaskName="AndroidAppBuilderTask" AssemblyFile="$(AndroidAppBuilderTasksAssemblyPath)"/>
 
   <Target Name="BuildApp" DependsOnTargets="RebuildAndroidAppBuilder;Build">
     <PropertyGroup>
