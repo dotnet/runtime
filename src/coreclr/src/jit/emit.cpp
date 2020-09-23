@@ -6898,8 +6898,7 @@ void emitter::emitGCvarLiveUpd(int offs, int varNum, GCtype gcType, BYTE* addr D
                 if ((EMIT_GC_VERBOSE || emitComp->opts.disasmWithGC) && (actualVarNum < emitComp->lvaCount) &&
                     emitComp->lvaGetDesc(actualVarNum)->lvTracked)
                 {
-                    VarSetOps::AddElemD(emitComp, debugThisGCrefVars,
-                                        emitComp->lvaGetDesc(actualVarNum)->lvVarIndex);
+                    VarSetOps::AddElemD(emitComp, debugThisGCrefVars, emitComp->lvaGetDesc(actualVarNum)->lvVarIndex);
                 }
 #endif
             }
