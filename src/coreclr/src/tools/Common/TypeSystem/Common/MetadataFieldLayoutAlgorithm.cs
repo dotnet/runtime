@@ -22,7 +22,7 @@ namespace Internal.TypeSystem
                 ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
             }
 
-            // CLI - Partition 1, section 9.5 - Generic types shall not be marked explicitlayout.  
+            // CLI - Partition 1, section 9.5 - Generic types shall not be marked explicitlayout.
             if (type.HasInstantiation && type.IsExplicitLayout)
             {
                 ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadExplicitGeneric, type.GetTypeDefinition());
@@ -63,8 +63,8 @@ namespace Internal.TypeSystem
             }
 
             // CLI - Partition 2, section 22.8
-            // A type has layout if it is marked SequentialLayout or ExplicitLayout.  If any type within an inheritance chain has layout, 
-            // then so shall all its base classes, up to the one that descends immediately from System.ValueType (if it exists in the type's 
+            // A type has layout if it is marked SequentialLayout or ExplicitLayout.  If any type within an inheritance chain has layout,
+            // then so shall all its base classes, up to the one that descends immediately from System.ValueType (if it exists in the type's
             // hierarchy); otherwise, from System.Object
             // Note: While the CLI isn't clearly worded, the layout needs to be the same for the entire chain.
             // If the current type isn't ValueType or System.Object and has a layout and the parent type isn't
@@ -485,7 +485,7 @@ namespace Internal.TypeSystem
                     instanceGCPointerFieldsCount++;
                 }
                 else
-                {                    
+                {
                     Debug.Assert(fieldType.IsPrimitive || fieldType.IsPointer || fieldType.IsFunctionPointer || fieldType.IsEnum);
 
                     var fieldSizeAndAlignment = ComputeFieldSizeAndAlignment(fieldType, packingSize, out bool _);
@@ -590,7 +590,7 @@ namespace Internal.TypeSystem
                         // (the subsequent loop will place fields from large to small fields)
                         if (j > maxLog2Size)
                             break;
-                        
+
                         // Check whether there are any small enough fields
                         // We must consider both GC Pointers and non-GC Pointers
                         for (j = i; j >= 0; j--)
@@ -819,7 +819,7 @@ namespace Internal.TypeSystem
         private static SizeAndAlignment ComputeInstanceSize(MetadataType type, LayoutInt instanceSize, LayoutInt alignment, int classLayoutSize, out SizeAndAlignment byteCount)
         {
             SizeAndAlignment result;
-            
+
             // Pad the length of structs to be 1 if they are empty so we have no zero-length structures
             if (type.IsValueType && instanceSize == LayoutInt.Zero)
             {
@@ -862,7 +862,7 @@ namespace Internal.TypeSystem
             }
 
             // Determine the alignment needed by the type when allocated
-            // This is target specific, and not just pointer sized due to 
+            // This is target specific, and not just pointer sized due to
             // 8 byte alignment requirements on ARM for longs and doubles
             alignment = target.GetObjectAlignment(alignment);
 
@@ -898,7 +898,7 @@ namespace Internal.TypeSystem
             MetadataType metadataType = (MetadataType)type;
 
             // No HAs with explicit layout. There may be cases where explicit layout may be still
-            // eligible for HA, but it is hard to tell the real intent. Make it simple and just 
+            // eligible for HA, but it is hard to tell the real intent. Make it simple and just
             // unconditionally disable HAs for explicit layout.
             if (metadataType.IsExplicitLayout)
                 return NotHA;
