@@ -58,8 +58,8 @@
     <LibraryPartitions Include="$([System.IO.Directory]::GetDirectories($(LibrariesArtifacts)))"/>
     <Partition Include="@(LibraryPartitions -> '%(Filename)')" PmiAssemblies="Core_Root$(FileSeparatorChar)%(Filename)" OutputMchName="libraries.pmi" PartitionId="%(Filename)" />
 
-    <TestPartitions Include="$([System.IO.Directory]::GetDirectories($(TestsArtifacts)))"/>
-    <Partition Include="@(TestPartitions -> '%(Filename)')" PmiAssemblies="Tests$(FileSeparatorChar)%(Filename)" OutputMchName="tests.pmi" PartitionId="%(Filename)" />
+    <!-- <TestPartitions Include="$([System.IO.Directory]::GetDirectories($(TestsArtifacts)))"/>
+    <Partition Include="@(TestPartitions -> '%(Filename)')" PmiAssemblies="Tests$(FileSeparatorChar)%(Filename)" OutputMchName="tests.pmi" PartitionId="%(Filename)" /> -->
   </ItemGroup>
 
   <ItemGroup>
