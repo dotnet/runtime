@@ -2664,7 +2664,7 @@ namespace System.Net.Sockets
             return bytesTransferred;
         }
 
-        public IAsyncResult BeginSendFile(string fileName, AsyncCallback? callback, object? state)
+        public IAsyncResult BeginSendFile(string? fileName, AsyncCallback? callback, object? state)
         {
             return BeginSendFile(fileName, null, null, TransmitFileOptions.UseDefaultWorkerThread, callback, state);
         }
