@@ -229,7 +229,7 @@ ves_icall_System_Math_FusedMultiplyAdd (gdouble x, gdouble y, gdouble z)
 gdouble
 ves_icall_System_Math_ScaleB(gdouble x, gint32 n)
 {
-    return scalbn(x, n);
+	return scalbn(x, n);
 }
 #endif
 
