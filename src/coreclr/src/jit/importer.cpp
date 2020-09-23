@@ -6038,16 +6038,8 @@ GenTree* Compiler::impImportLdvirtftn(GenTree*                thisPtr,
     // CoreRT generic virtual method
     if ((pCallInfo->sig.sigInst.methInstCount != 0) && IsTargetAbi(CORINFO_CORERT_ABI))
     {
-        GenTree* runtimeMethodHandle = nullptr;
-        if (pCallInfo->exactContextNeedsRuntimeLookup)
-        {
-            runtimeMethodHandle =
-                impRuntimeLookupToTree(pResolvedToken, &pCallInfo->codePointerLookup, pCallInfo->hMethod);
-        }
-        else
-        {
-            runtimeMethodHandle = gtNewIconEmbMethHndNode(pResolvedToken->hMethod);
-        }
+        GenTree* runtimeMethodHandle =
+            impLookupToTree(pResolvedToken, &pCallInfo->codePointerLookup, GTF_ICON_METHOD_HDL, pCallInfo->hMethod);
         return gtNewHelperCallNode(CORINFO_HELP_GVMLOOKUP_FOR_SLOT, TYP_I_IMPL,
                                    gtNewCallArgs(thisPtr, runtimeMethodHandle));
     }
