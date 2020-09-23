@@ -60,8 +60,6 @@ jobs:
         value: 'py -3 -m pip'
       - name: Core_Root_Dir
         value: '$(Build.SourcesDirectory)\artifacts\tests\coreclr\${{ parameters.osGroup }}.${{ parameters.archType }}.${{ parameters.buildConfig }}\Tests\Core_Root'
-      - name: SuperPMISetupJobName
-        value: 'SuperPMI setup (Windows)'
     - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
       - name: PythonScript
         value: 'python3'
@@ -69,8 +67,6 @@ jobs:
         value: 'pip3'
       - name: Core_Root_Dir
         value: '$(Build.SourcesDirectory)/artifacts/tests/coreclr/${{ parameters.osGroup }}.${{ parameters.archType }}.$(buildConfigUpper)/Tests/Core_Root'
-      - name: SuperPMISetupJobName
-        value: 'SuperPMI setup (Linux)'
     workspace:
       clean: all
     pool:
@@ -94,7 +90,10 @@ jobs:
     #   continueOnError: ${{ parameters.continueOnError }}
 
     - task: PythonScript@0
-        displayName:  $(SuperPMISetupJobName)
+    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+        displayName: 'SuperPMI setup (Windows)'
+    - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+        displayName: 'SuperPMI setup (Linux)'
       inputs:
         scriptSource: 'filePath'
         scriptPath: $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi-setup.py
