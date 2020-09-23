@@ -113,38 +113,38 @@ namespace System
 
         [ConditionalTheory(nameof(ManualTestsEnabled))]
         [MemberData(nameof(GetKeyChords))]
-        public static void ReadKey_KeyChords(ConsoleKeyInfo expected)
+        public static void ReadKey_KeyChords(string requestedKeyChord, ConsoleKeyInfo expected)
         {
-            Console.Write($"Please type key chord {RenderKeyChord(expected)}: ");
+            Console.Write($"Please type key chord {requestedKeyChord}: ");
             var actual = Console.ReadKey(intercept: true);
             Console.WriteLine();
 
             Assert.Equal(expected.Key, actual.Key);
             Assert.Equal(expected.Modifiers, actual.Modifiers);
             Assert.Equal(expected.KeyChar, actual.KeyChar);
-
-            static string RenderKeyChord(ConsoleKeyInfo key)
-            {
-                string modifiers = "";
-                if (key.Modifiers.HasFlag(ConsoleModifiers.Control)) modifiers += "Ctrl+";
-                if (key.Modifiers.HasFlag(ConsoleModifiers.Alt)) modifiers += "Alt+";
-                if (key.Modifiers.HasFlag(ConsoleModifiers.Shift)) modifiers += "Shift+";
-                return modifiers + key.Key;
-            }
         }
 
         public static IEnumerable<object[]> GetKeyChords()
         {
-            yield return MkConsoleKeyInfo('\x02', ConsoleKey.B, ConsoleModifiers.Control);
-            yield return MkConsoleKeyInfo(OperatingSystem.IsWindows() ? '\x00' : '\x02', ConsoleKey.B, ConsoleModifiers.Control | ConsoleModifiers.Alt);
-            yield return MkConsoleKeyInfo('\r', ConsoleKey.Enter, (ConsoleModifiers)0);
-            // windows will report '\n' as 'Ctrl+Enter', which is typically not picked up by Unix terminals
-            yield return MkConsoleKeyInfo('\n', OperatingSystem.IsWindows() ? ConsoleKey.Enter : ConsoleKey.J, ConsoleModifiers.Control);
+            yield return MkConsoleKeyInfo("Ctrl+B", '\x02', ConsoleKey.B, ConsoleModifiers.Control);
+            yield return MkConsoleKeyInfo("Ctrl+Alt+B", OperatingSystem.IsWindows() ? '\x00' : '\x02', ConsoleKey.B, ConsoleModifiers.Control | ConsoleModifiers.Alt);
+            yield return MkConsoleKeyInfo("Enter", '\r', ConsoleKey.Enter, default);
 
-            static object[] MkConsoleKeyInfo (char keyChar, ConsoleKey consoleKey, ConsoleModifiers modifiers)
+            if (OperatingSystem.IsWindows())
+            {
+                yield return MkConsoleKeyInfo("Ctrl+J", '\n', ConsoleKey.J, ConsoleModifiers.Control);
+            }
+            else
+            {
+                // Validate current Unix console behaviour: '\n' is reported as '\r'
+                yield return MkConsoleKeyInfo("Ctrl+J", '\r', ConsoleKey.Enter, default);
+            }
+
+            static object[] MkConsoleKeyInfo (string requestedKeyChord, char keyChar, ConsoleKey consoleKey, ConsoleModifiers modifiers)
             {
                 return new object[]
                 {
+                    requestedKeyChord,
                     new ConsoleKeyInfo(keyChar, consoleKey, 
                         control: modifiers.HasFlag(ConsoleModifiers.Control),
                         alt: modifiers.HasFlag(ConsoleModifiers.Alt),

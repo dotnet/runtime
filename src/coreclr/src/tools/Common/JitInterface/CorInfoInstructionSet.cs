@@ -662,5 +662,62 @@ namespace Internal.JitInterface
 
             }
         }
+
+        public void Set64BitInstructionSetVariantsUnconditionally(TargetArchitecture architecture)
+        {
+            switch (architecture)
+            {
+
+                case TargetArchitecture.ARM64:
+                    AddInstructionSet(InstructionSet.ARM64_ArmBase_Arm64);
+                    AddInstructionSet(InstructionSet.ARM64_AdvSimd_Arm64);
+                    AddInstructionSet(InstructionSet.ARM64_Aes_Arm64);
+                    AddInstructionSet(InstructionSet.ARM64_Crc32_Arm64);
+                    AddInstructionSet(InstructionSet.ARM64_Dp_Arm64);
+                    AddInstructionSet(InstructionSet.ARM64_Rdm_Arm64);
+                    AddInstructionSet(InstructionSet.ARM64_Sha1_Arm64);
+                    AddInstructionSet(InstructionSet.ARM64_Sha256_Arm64);
+                    break;
+
+                case TargetArchitecture.X64:
+                    AddInstructionSet(InstructionSet.X64_X86Base_X64);
+                    AddInstructionSet(InstructionSet.X64_SSE_X64);
+                    AddInstructionSet(InstructionSet.X64_SSE2_X64);
+                    AddInstructionSet(InstructionSet.X64_SSE3_X64);
+                    AddInstructionSet(InstructionSet.X64_SSSE3_X64);
+                    AddInstructionSet(InstructionSet.X64_SSE41_X64);
+                    AddInstructionSet(InstructionSet.X64_SSE42_X64);
+                    AddInstructionSet(InstructionSet.X64_AVX_X64);
+                    AddInstructionSet(InstructionSet.X64_AVX2_X64);
+                    AddInstructionSet(InstructionSet.X64_AES_X64);
+                    AddInstructionSet(InstructionSet.X64_BMI1_X64);
+                    AddInstructionSet(InstructionSet.X64_BMI2_X64);
+                    AddInstructionSet(InstructionSet.X64_FMA_X64);
+                    AddInstructionSet(InstructionSet.X64_LZCNT_X64);
+                    AddInstructionSet(InstructionSet.X64_PCLMULQDQ_X64);
+                    AddInstructionSet(InstructionSet.X64_POPCNT_X64);
+                    break;
+
+                case TargetArchitecture.X86:
+                    AddInstructionSet(InstructionSet.X86_X86Base_X64);
+                    AddInstructionSet(InstructionSet.X86_SSE_X64);
+                    AddInstructionSet(InstructionSet.X86_SSE2_X64);
+                    AddInstructionSet(InstructionSet.X86_SSE3_X64);
+                    AddInstructionSet(InstructionSet.X86_SSSE3_X64);
+                    AddInstructionSet(InstructionSet.X86_SSE41_X64);
+                    AddInstructionSet(InstructionSet.X86_SSE42_X64);
+                    AddInstructionSet(InstructionSet.X86_AVX_X64);
+                    AddInstructionSet(InstructionSet.X86_AVX2_X64);
+                    AddInstructionSet(InstructionSet.X86_AES_X64);
+                    AddInstructionSet(InstructionSet.X86_BMI1_X64);
+                    AddInstructionSet(InstructionSet.X86_BMI2_X64);
+                    AddInstructionSet(InstructionSet.X86_FMA_X64);
+                    AddInstructionSet(InstructionSet.X86_LZCNT_X64);
+                    AddInstructionSet(InstructionSet.X86_PCLMULQDQ_X64);
+                    AddInstructionSet(InstructionSet.X86_POPCNT_X64);
+                    break;
+
+            }
+        }
     }
 }

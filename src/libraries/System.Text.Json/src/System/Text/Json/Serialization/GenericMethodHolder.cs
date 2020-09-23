@@ -26,7 +26,7 @@ namespace System.Text.Json.Serialization
         {
             // For performance, we only want to call this method for non-nullable value types.
             // Nullable types should be checked againt 'null' before calling this method.
-            Debug.Assert(Nullable.GetUnderlyingType(value.GetType()) == null);
+            Debug.Assert(!value.GetType().CanBeNull());
 
             return EqualityComparer<T>.Default.Equals(default, (T)value);
         }
