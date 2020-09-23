@@ -29,7 +29,8 @@ void ReleaseLock(PLONG pLock);
 
 
 //Main entry point of the program
-int __cdecl main(int argc, char *argv[]) {
+PALTEST(miscellaneous_InterlockedCompareExchange_test2_paltest_interlockedcompareexchange_test2, "miscellaneous/InterlockedCompareExchange/test2/paltest_interlockedcompareexchange_test2")
+{
   
     int i = 0;
     DWORD dwThreadID=0;

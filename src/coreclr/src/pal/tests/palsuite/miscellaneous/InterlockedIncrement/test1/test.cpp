@@ -19,7 +19,7 @@
 
 #include <palsuite.h>
 
-int __cdecl main(int argc, char *argv[]) 
+PALTEST(miscellaneous_InterlockedIncrement_test1_paltest_interlockedincrement_test1, "miscellaneous/InterlockedIncrement/test1/paltest_interlockedincrement_test1")
 {
 
     int TheValue = 0;

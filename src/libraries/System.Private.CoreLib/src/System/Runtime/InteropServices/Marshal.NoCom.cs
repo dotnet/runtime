@@ -175,10 +175,12 @@ namespace System.Runtime.InteropServices
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
-        [SupportedOSPlatform("windows")]
-        public static Type? GetTypeFromCLSID(Guid clsid)
+        internal static Type? GetTypeFromCLSID(Guid clsid, string? server, bool throwOnError)
         {
-            throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
+            if (throwOnError)
+                throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
+
+            return null;
         }
 
         [SupportedOSPlatform("windows")]

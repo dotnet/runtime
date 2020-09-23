@@ -1,0 +1,145 @@
+<Project>
+  <!--
+    Common files don't take part in the root tests\src\Directory.Build.targets
+    This file prevents them from including it as it gets included in its place
+    If they ever need to take part, we can conditionally include them as documented
+    here https://docs.microsoft.com/en-us/visualstudio/msbuild/customize-your-build#directorybuildprops-and-directorybuildtargets
+  -->
+  <Import Project="$(RepoRoot)src/coreclr/tests/disableversioncheck.targets"
+          Condition="'$(DisableVersionCheckImported)' != 'true'" />
+
+  <Import Project="$(RepoRoot)eng/liveBuilds.targets" />
+
+  <ItemGroup>
+    <KnownFrameworkReference Remove="Microsoft.AspNetCore.App" />
+    <KnownFrameworkReference Remove="Microsoft.WindowsDesktop.App" />
+  </ItemGroup>
+
+  <Target Name="CopyDependencyToCoreRoot"
+          DependsOnTargets="ResolveAssemblyReferences;ResolveRuntimeFilesFromLocalBuild">
+
+    <ItemGroup>
+      <RunTimeDependencyExclude Include="$(CORE_ROOT)\**\*.*"  />
+      <RunTimeDependencyExcludeFiles Include="@(RunTimeDependencyExclude -> '%(FileName)%(Extension)')" />
+      <RunTimeDependencyExcludeFiles Include="@(RunTimeDependencyExclude -> '%(FileName).ni%(Extension)')" />
+      <RunTimeDependencyExcludeFiles Include="@(RunTimeDependencyExclude -> '%(FileName).pdb')" />
+
+      <AllResolvedRuntimeDependencies Include="@(RuntimeCopyLocalItems -> '%(FileName)%(Extension)');@(NativeCopyLocalItems -> '%(FileName)%(Extension)')">
+        <File>%(Identity)</File>
+      </AllResolvedRuntimeDependencies>
+      
+      <RunTimeDependencyCopyLocalFile Include="@(AllResolvedRuntimeDependencies)"  Exclude="@(RunTimeDependencyExcludeFiles)"/>
+      <RunTimeDependencyCopyLocal Include="@(RunTimeDependencyCopyLocalFile -> '%(File)')"  />
+      <RunTimeDependencyCopyLocal Include="$(TargetingPackPath)/*" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <RunTimeArtifactsExcludeFiles Include="PDB/createdump.pdb" />
+      <RunTimeArtifactsExcludeFiles Include="PDB/dbgshim.pdb" />
+      <RunTimeArtifactsExcludeFiles Include="PDB/linuxonjit.pdb" />
+      <RunTimeArtifactsExcludeFiles Include="PDB/mcs.pdb" />
+      <RunTimeArtifactsExcludeFiles Include="PDB/mscordaccore.pdb" />
+      <RunTimeArtifactsExcludeFiles Include="PDB/mscordbi.pdb" />
+      <RunTimeArtifactsExcludeFiles Include="PDB/mscorrc.pdb" />
+      <RunTimeArtifactsExcludeFiles Include="PDB/protononjit.pdb" />
+      <RunTimeArtifactsExcludeFiles Include="PDB/superpmi.pdb" />
+      <RunTimeArtifactsExcludeFiles Include="PDB/superpmi-shim-collector.pdb" />
+      <RunTimeArtifactsExcludeFiles Include="PDB/superpmi-shim-counter.pdb" />
+      <RunTimeArtifactsExcludeFiles Include="PDB/superpmi-shim-simple.pdb" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(MinimalCoreRoot)' == 'true'">
+      <RunTimeArtifactsExcludeFiles Include="PDB/ilasm.pdb" />
+      <RunTimeArtifactsExcludeFiles Include="PDB/ildasm.pdb" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <RunTimeArtifactsIncludeFolders Include="/" />
+
+      <!-- Used by the Crossgen comparison job -->
+      <RunTimeArtifactsIncludeFolders Include="IL/" />
+
+      <!-- Used for Crossgen2 R2R tests -->
+      <RunTimeArtifactsIncludeFolders Include="crossgen2/">
+        <IncludeSubFolders>True</IncludeSubFolders>
+      </RunTimeArtifactsIncludeFolders>
+
+      <!-- Used for capturing symbolic stack traces using Watson -->
+      <RunTimeArtifactsIncludeFolders Include="PDB/" />
+
+      <!-- Used by the coreroot_determinism test -->
+      <RunTimeArtifactsIncludeFolders Include="R2RTest/">
+        <IncludeSubFolders>True</IncludeSubFolders>
+      </RunTimeArtifactsIncludeFolders>
+    </ItemGroup>
+
+    <ItemGroup>
+      <!-- Add binary dependencies to copy-local items -->
+      <RunTimeDependencyCopyLocal
+          Condition="'%(RuntimeArtifactsIncludeFolders.IncludeSubFolders)' != 'True'"
+          Include="$(CoreCLRArtifactsPath)%(RunTimeArtifactsIncludeFolders.Identity)*"
+          Exclude="@(RunTimeArtifactsExcludeFiles -> '$(CoreCLRArtifactsPath)%(Identity)')"
+          TargetDir="%(RunTimeArtifactsIncludeFolders.Identity)" />
+
+      <RunTimeDependencyCopyLocal
+          Condition="'%(RuntimeArtifactsIncludeFolders.IncludeSubFolders)' == 'True'"
+          Include="$(CoreCLRArtifactsPath)%(RunTimeArtifactsIncludeFolders.Identity)**/*"
+          Exclude="@(RunTimeArtifactsExcludeFiles -> '$(CoreCLRArtifactsPath)%(Identity)')"
+          TargetDir="%(RunTimeArtifactsIncludeFolders.Identity)" />
+
+      <RunTimeDependencyCopyLocal
+          Condition="'$(TargetArchitecture)' != 'x64'"
+          Include="$(CoreCLRArtifactsPath)x64/crossgen2/clrjit_*"
+          TargetDir="crossgen2/" />
+
+      <RunTimeDependencyCopyLocal
+          Condition="'$(TargetArchitecture)' != 'x64'"
+          Include="$(CoreCLRArtifactsPath)x64/crossgen2/jitinterface_*"
+          TargetDir="crossgen2/" />
+
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(TargetArchitecture)' == 'wasm'">
+        <RunTimeDependencyCopyLocal
+          Include="@(RuntimeFiles)"
+          TargetDir="runtimepack/native/"/>
+
+        <!-- This throws everything in 'native', include many non-native assemblies.
+             This is done because LibrariesRuntimeFiles includes some .js files that
+             WasmAppBuilder expects in native/-->
+        <RunTimeDependencyCopyLocal
+          Include="@(LibrariesRuntimeFiles)"
+          TargetDir="runtimepack/native/"/>
+
+       <RunTimeDependencyCopyLocal
+          Include="$(ArtifactsDir)\TargetingPack\**"
+          TargetDir="TargetingPack/"/>
+
+        <!-- Wasm App Builder always builds in Debug -->
+        <RunTimeDependencyCopyLocal
+          Include="$(ArtifactsBinDir)\WasmAppBuilder\Debug\$(NetCoreAppCurrent)\publish\**"
+          TargetDir="WasmAppBuilder/"/>
+
+        <RunTimeDependencyCopyLocal
+          Include="$(RepoRoot)\src\tests\Common\wasm-test-runner\WasmTestRunner.proj"
+          TargetDir="wasm-test-runner/"/>
+  
+        <RunTimeDependencyCopyLocal
+          Include="$(MonoProjectRoot)\wasm\runtime-test.js"
+          TargetDir="runtime-test/"/>
+    </ItemGroup>
+
+    <Copy
+      SourceFiles="@(RunTimeDependencyCopyLocal)"
+      DestinationFiles="@(RunTimeDependencyCopyLocal -> '$(CORE_ROOT)/%(TargetDir)%(RecursiveDir)%(Filename)%(Extension)')"
+      SkipUnchangedFiles="$(SkipCopyUnchangedFiles)"
+      OverwriteReadOnlyFiles="$(OverwriteReadOnlyFiles)"
+      Retries="$(CopyRetryCount)"
+      RetryDelayMilliseconds="$(CopyRetryDelayMilliseconds)"
+      UseHardlinksIfPossible="$(CreateHardLinksForCopyFilesToOutputDirectoryIfPossible)">
+      <Output TaskParameter="DestinationFiles" ItemName="FileWrites" />
+    </Copy>
+
+  </Target>
+
+</Project>

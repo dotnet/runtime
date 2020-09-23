@@ -1,5 +1,6 @@
 parameters:
   PublishRidAgnosticPackagesFromPlatform: Windows_NT_x64
+  publishingInfraVersion: 3
 
 stages:
 
@@ -23,6 +24,7 @@ stages:
 # Stages-based publishing entry point
 - template: /eng/common/templates/post-build/post-build.yml
   parameters:
+    publishingInfraVersion: ${{ parameters.publishingInfraVersion }}
     validateDependsOn:
     - PrepareForPublish
     # The following checks are run after the build in the validation and release pipelines
@@ -47,6 +49,6 @@ stages:
         -TsaRepositoryName "$(TsaRepositoryName)"
         -TsaCodebaseName "$(TsaCodebaseName)"
         -TsaPublish $True
-    
+
     # Publish to blob storage.
     publishInstallersAndChecksums: true

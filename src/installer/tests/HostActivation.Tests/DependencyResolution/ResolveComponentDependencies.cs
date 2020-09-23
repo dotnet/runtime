@@ -50,6 +50,131 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
         }
 
         [Fact]
+        public void ComponentWithNoDependenciesCaseChangedOnAsm()
+        {
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                // Remove once https://github.com/dotnet/runtime/issues/42334 is resolved
+                return;
+            }
+
+            var component = sharedTestState.ComponentWithNoDependencies.Copy();
+
+            // Change the case of the first letter of AppDll
+            string fileName = component.AppDll;
+            string nameWOExtension = Path.GetFileNameWithoutExtension(fileName);
+            string nameWOExtensionCaseChanged = (Char.IsUpper(nameWOExtension[0]) ? nameWOExtension[0].ToString().ToLower() : nameWOExtension[0].ToString().ToUpper()) + nameWOExtension.Substring(1);
+            string changeFile = Path.Combine(Path.GetDirectoryName(fileName), (nameWOExtensionCaseChanged + Path.GetExtension(fileName)));
+
+            // Rename
+            File.Move(fileName, changeFile);
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                sharedTestState.RunComponentResolutionTest(component)
+                    .Should().Pass()
+                    .And.HaveStdOutContaining("corehost_resolve_component_dependencies:Success")
+                    .And.HaveStdOutContaining($"corehost_resolve_component_dependencies assemblies:[{component.AppDll}{Path.PathSeparator}]")
+                    .And.HaveStdErrContaining($"app_root='{component.Location}{Path.DirectorySeparatorChar}'")
+                    .And.HaveStdErrContaining($"deps='{component.DepsJson}'")
+                    .And.HaveStdErrContaining($"mgd_app='{component.AppDll}'");
+            }
+            else
+            {
+                // See https://github.com/dotnet/runtime/issues/42334
+                // We expect the test to fail due to the the case change of AppDll
+                sharedTestState.RunComponentResolutionTest(component)
+                    .Should().Pass()
+                    .And.HaveStdErrContaining($"Failed to locate managed application [{component.AppDll}]");
+            }
+        }
+
+        [Fact]
+        public void ComponentWithNoDependenciesCaseChangedOnDepsAndAsm()
+        {
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                // Remove once https://github.com/dotnet/runtime/issues/42334 is resolved
+                return;
+            }
+
+            var component = sharedTestState.ComponentWithNoDependencies.Copy();
+
+            // Change the case of the first letter of AppDll
+            string fileName = component.AppDll;
+            string nameWOExtension = Path.GetFileNameWithoutExtension(fileName);
+            string nameWOExtensionCaseChanged = (Char.IsUpper(nameWOExtension[0]) ? nameWOExtension[0].ToString().ToLower() : nameWOExtension[0].ToString().ToUpper()) + nameWOExtension.Substring(1);
+            string changeFile = Path.Combine(Path.GetDirectoryName(fileName), (nameWOExtensionCaseChanged + Path.GetExtension(fileName)));
+
+            string changeDepsFile = Path.Combine(Path.GetDirectoryName(component.DepsJson), (nameWOExtensionCaseChanged + ".deps" + Path.GetExtension(component.DepsJson)));
+
+            // Rename
+            File.Move(fileName, changeFile);
+            File.Move(component.DepsJson, changeDepsFile);
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                sharedTestState.RunComponentResolutionTest(component)
+                    .Should().Pass()
+                    .And.HaveStdOutContaining("corehost_resolve_component_dependencies:Success")
+                    .And.HaveStdOutContaining($"corehost_resolve_component_dependencies assemblies:[{component.AppDll}{Path.PathSeparator}]")
+                    .And.HaveStdErrContaining($"app_root='{component.Location}{Path.DirectorySeparatorChar}'")
+                    .And.HaveStdErrContaining($"deps='{component.DepsJson}'")
+                    .And.HaveStdErrContaining($"mgd_app='{component.AppDll}'");
+            }
+            else
+            {
+                // See https://github.com/dotnet/runtime/issues/42334
+                // We expect the test to fail due to the the case change of AppDll
+                sharedTestState.RunComponentResolutionTest(component)
+                    .Should().Pass()
+                    .And.HaveStdErrContaining($"Failed to locate managed application [{component.AppDll}]");
+            }
+        }
+
+        [Fact]
+        public void ComponentWithNoDependenciesNoDepsCaseChangedOnAsm()
+        {
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                // Remove once https://github.com/dotnet/runtime/issues/42334 is resolved
+                return;
+            }
+
+            var component = sharedTestState.ComponentWithNoDependencies.Copy();
+
+            // Change the case of the first letter of AppDll
+            string fileName = component.AppDll;
+            string nameWOExtension = Path.GetFileNameWithoutExtension(fileName);
+            string nameWOExtensionCaseChanged = (Char.IsUpper(nameWOExtension[0]) ? nameWOExtension[0].ToString().ToLower() : nameWOExtension[0].ToString().ToUpper()) + nameWOExtension.Substring(1);
+            string changeFile = Path.Combine(Path.GetDirectoryName(fileName), (nameWOExtensionCaseChanged + Path.GetExtension(fileName)));
+
+            // Rename
+            File.Move(fileName, changeFile);
+            // Delete deps
+            File.Delete(component.DepsJson);
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                sharedTestState.RunComponentResolutionTest(component)
+                    .Should().Pass()
+                    .And.HaveStdOutContaining("corehost_resolve_component_dependencies:Success")
+                    .And.HaveStdOutContaining($"corehost_resolve_component_dependencies assemblies:[{component.AppDll}{Path.PathSeparator}{changeFile}{Path.PathSeparator}]")
+                    .And.HaveStdErrContaining($"app_root='{component.Location}{Path.DirectorySeparatorChar}'")
+                    .And.HaveStdErrContaining($"deps='{component.DepsJson}'")
+                    .And.HaveStdErrContaining($"mgd_app='{component.AppDll}'");
+            }
+            else
+            {
+                // See https://github.com/dotnet/runtime/issues/42334
+                // We expect the test to fail due to the the case change of AppDll
+                sharedTestState.RunComponentResolutionTest(component)
+                    .Should().Pass()
+                    .And.HaveStdErrContaining($"Failed to locate managed application [{component.AppDll}]");
+            }
+        }
+
+        [Fact]
         public void ComponentWithNoDependencies()
         {
             sharedTestState.RunComponentResolutionTest(sharedTestState.ComponentWithNoDependencies)

@@ -403,6 +403,8 @@ namespace Internal.JitInterface
 
         private IntPtr ObjectToHandle(Object obj)
         {
+            // SuperPMI relies on the handle returned from this function being stable for the lifetime of the crossgen2 process
+            // If handle deletion is implemented, please update SuperPMI
             IntPtr handle;
             if (!_objectToHandle.TryGetValue(obj, out handle))
             {
@@ -658,6 +660,32 @@ namespace Internal.JitInterface
 
             if (type.IsValueType)
             {
+                if (_compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.X86)
+                {
+                    LayoutInt elementSize = type.GetElementSize();
+
+#if READYTORUN
+                    if (elementSize.IsIndeterminate)
+                    {
+                        throw new RequiresRuntimeJitException(type);
+                    }
+#endif
+#if READYTORUN
+                    if (elementSize.AsInt == 4)
+                    {
+                        var normalizedCategory = _compilation.TypeSystemContext.NormalizedCategoryFor4ByteStructOnX86(type);
+                        if (normalizedCategory != type.Category)
+                        {
+                            if (NeedsTypeLayoutCheck(type))
+                            {
+                                ISymbolNode node = _compilation.SymbolNodeFactory.CheckTypeLayout(type);
+                                _methodCodeNode.Fixups.Add(node);
+                            }
+                            return (CorInfoType)normalizedCategory;
+                        }
+                    }
+#endif
+                }
                 return CorInfoType.CORINFO_TYPE_VALUECLASS;
             }
 

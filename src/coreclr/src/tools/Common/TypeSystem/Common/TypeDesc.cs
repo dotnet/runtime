@@ -13,32 +13,34 @@ namespace Internal.TypeSystem
     /// </summary>
     public abstract partial class TypeDesc : TypeSystemEntity
     {
+#pragma warning disable CA1825 // avoid Array.Empty<T>() instantiation for TypeLoader
         public static readonly TypeDesc[] EmptyTypes = new TypeDesc[0];
+#pragma warning restore CA1825
 
         /// Inherited types are required to override, and should use the algorithms
         /// in TypeHashingAlgorithms in their implementation.
         public abstract override int GetHashCode();
 
-        public override bool Equals(Object o)
+        public override bool Equals(object o)
         {
             // Its only valid to compare two TypeDescs in the same context
-            Debug.Assert(o == null || !(o is TypeDesc) || Object.ReferenceEquals(((TypeDesc)o).Context, this.Context));
-            return Object.ReferenceEquals(this, o);
+            Debug.Assert(o == null || !(o is TypeDesc) || object.ReferenceEquals(((TypeDesc)o).Context, this.Context));
+            return object.ReferenceEquals(this, o);
         }
 
 #if DEBUG
         public static bool operator ==(TypeDesc left, TypeDesc right)
         {
             // Its only valid to compare two TypeDescs in the same context
-            Debug.Assert(Object.ReferenceEquals(left, null) || Object.ReferenceEquals(right, null) || Object.ReferenceEquals(left.Context, right.Context));
-            return Object.ReferenceEquals(left, right);
+            Debug.Assert(object.ReferenceEquals(left, null) || object.ReferenceEquals(right, null) || object.ReferenceEquals(left.Context, right.Context));
+            return object.ReferenceEquals(left, right);
         }
 
         public static bool operator !=(TypeDesc left, TypeDesc right)
         {
             // Its only valid to compare two TypeDescs in the same context
-            Debug.Assert(Object.ReferenceEquals(left, null) || Object.ReferenceEquals(right, null) || Object.ReferenceEquals(left.Context, right.Context));
-            return !Object.ReferenceEquals(left, right);
+            Debug.Assert(object.ReferenceEquals(left, null) || object.ReferenceEquals(right, null) || object.ReferenceEquals(left.Context, right.Context));
+            return !object.ReferenceEquals(left, right);
         }
 #endif
 

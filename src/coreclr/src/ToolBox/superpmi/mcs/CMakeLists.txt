@@ -24,6 +24,7 @@ set(MCS_SOURCES
     verbildump.cpp
     verbinteg.cpp
     verbmerge.cpp
+    verbprintjiteeversion.cpp
     verbremovedup.cpp
     verbstat.cpp
     verbstrip.cpp

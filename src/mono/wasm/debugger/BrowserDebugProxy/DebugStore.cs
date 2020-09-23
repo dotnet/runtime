@@ -29,7 +29,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         public int Column { get; private set; }
         public MethodInfo Method { get; private set; }
 
-        JObject request;
+        private JObject request;
 
         public bool IsResolved => Assembly != null;
         public List<Breakpoint> Locations { get; } = new List<Breakpoint>();
@@ -62,10 +62,10 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public bool IsMatch(SourceFile sourceFile)
         {
-            var url = request?["url"]?.Value<string>();
+            string url = request?["url"]?.Value<string>();
             if (url == null)
             {
-                var urlRegex = request?["urlRegex"].Value<string>();
+                string urlRegex = request?["urlRegex"].Value<string>();
                 var regex = new Regex(urlRegex);
                 return regex.IsMatch(sourceFile.Url.ToString()) || regex.IsMatch(sourceFile.DocUrl);
             }
@@ -78,8 +78,8 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (!IsMatch(sourceFile))
                 return false;
 
-            var line = request?["lineNumber"]?.Value<int>();
-            var column = request?["columnNumber"]?.Value<int>();
+            int? line = request?["lineNumber"]?.Value<int>();
+            int? column = request?["columnNumber"]?.Value<int>();
 
             if (line == null || column == null)
                 return false;
@@ -134,10 +134,10 @@ namespace Microsoft.WebAssembly.Diagnostics
 
     internal class SourceLocation
     {
-        SourceId id;
-        int line;
-        int column;
-        CliLocation cliLoc;
+        private SourceId id;
+        private int line;
+        private int column;
+        private CliLocation cliLoc;
 
         public SourceLocation(SourceId id, int line, int column)
         {
@@ -166,11 +166,11 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (obj == null)
                 return null;
 
-            if (!SourceId.TryParse(obj["scriptId"]?.Value<string>(), out var id))
+            if (!SourceId.TryParse(obj["scriptId"]?.Value<string>(), out SourceId id))
                 return null;
 
-            var line = obj["lineNumber"]?.Value<int>();
-            var column = obj["columnNumber"]?.Value<int>();
+            int? line = obj["lineNumber"]?.Value<int>();
+            int? column = obj["columnNumber"]?.Value<int>();
             if (id == null || line == null || column == null)
                 return null;
 
@@ -208,9 +208,9 @@ namespace Microsoft.WebAssembly.Diagnostics
 
     internal class SourceId
     {
-        const string Scheme = "dotnet://";
+        private const string Scheme = "dotnet://";
 
-        readonly int assembly, document;
+        private readonly int assembly, document;
 
         public int Assembly => assembly;
         public int Document => document;
@@ -230,20 +230,20 @@ namespace Microsoft.WebAssembly.Diagnostics
         public static bool TryParse(string id, out SourceId source)
         {
             source = null;
-            if (!TryParse(id, out var assembly, out var document))
+            if (!TryParse(id, out int assembly, out int document))
                 return false;
 
             source = new SourceId(assembly, document);
             return true;
         }
 
-        static bool TryParse(string id, out int assembly, out int document)
+        private static bool TryParse(string id, out int assembly, out int document)
         {
             assembly = document = 0;
             if (id == null || !id.StartsWith(Scheme, StringComparison.Ordinal))
                 return false;
 
-            var sp = id.Substring(Scheme.Length).Split('_');
+            string[] sp = id.Substring(Scheme.Length).Split('_');
             if (sp.Length != 2)
                 return false;
 
@@ -275,8 +275,8 @@ namespace Microsoft.WebAssembly.Diagnostics
 
     internal class MethodInfo
     {
-        MethodDefinition methodDef;
-        SourceFile source;
+        private MethodDefinition methodDef;
+        private SourceFile source;
 
         public SourceId SourceId => source.SourceId;
 
@@ -294,14 +294,14 @@ namespace Microsoft.WebAssembly.Diagnostics
             this.methodDef = methodDef;
             this.source = source;
 
-            var sps = DebugInformation.SequencePoints;
-            if (sps == null || sps.Count() < 1)
+            Mono.Collections.Generic.Collection<SequencePoint> sps = DebugInformation.SequencePoints;
+            if (sps == null || sps.Count < 1)
                 return;
 
             SequencePoint start = sps[0];
             SequencePoint end = sps[0];
 
-            foreach (var sp in sps)
+            foreach (SequencePoint sp in sps)
             {
                 if (sp.StartLine < start.StartLine)
                     start = sp;
@@ -321,7 +321,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         public SourceLocation GetLocationByIl(int pos)
         {
             SequencePoint prev = null;
-            foreach (var sp in DebugInformation.SequencePoints)
+            foreach (SequencePoint sp in DebugInformation.SequencePoints)
             {
                 if (sp.Offset > pos)
                     break;
@@ -353,9 +353,9 @@ namespace Microsoft.WebAssembly.Diagnostics
 
     internal class TypeInfo
     {
-        AssemblyInfo assembly;
-        TypeDefinition type;
-        List<MethodInfo> methods;
+        private AssemblyInfo assembly;
+        private TypeDefinition type;
+        private List<MethodInfo> methods;
 
         public TypeInfo(AssemblyInfo assembly, TypeDefinition type)
         {
@@ -371,17 +371,18 @@ namespace Microsoft.WebAssembly.Diagnostics
         public override string ToString() => "TypeInfo('" + FullName + "')";
     }
 
-    class AssemblyInfo
+    internal class AssemblyInfo
     {
-        static int next_id;
-        ModuleDefinition image;
-        readonly int id;
-        readonly ILogger logger;
-        Dictionary<uint, MethodInfo> methods = new Dictionary<uint, MethodInfo>();
-        Dictionary<string, string> sourceLinkMappings = new Dictionary<string, string>();
-        Dictionary<string, TypeInfo> typesByName = new Dictionary<string, TypeInfo>();
-        readonly List<SourceFile> sources = new List<SourceFile>();
+        private static int next_id;
+        private ModuleDefinition image;
+        private readonly int id;
+        private readonly ILogger logger;
+        private Dictionary<uint, MethodInfo> methods = new Dictionary<uint, MethodInfo>();
+        private Dictionary<string, string> sourceLinkMappings = new Dictionary<string, string>();
+        private Dictionary<string, TypeInfo> typesByName = new Dictionary<string, TypeInfo>();
+        private readonly List<SourceFile> sources = new List<SourceFile>();
         internal string Url { get; }
+        public bool TriedToLoadSymbolsOnDemand { get; set; }
 
         public AssemblyInfo(IAssemblyResolver resolver, string url, byte[] assembly, byte[] pdb)
         {
@@ -439,7 +440,23 @@ namespace Microsoft.WebAssembly.Diagnostics
             this.logger = logger;
         }
 
-        void Populate()
+        public ModuleDefinition Image => image;
+
+        public void ClearDebugInfo()
+        {
+            foreach (TypeDefinition type in image.GetTypes())
+            {
+                var typeInfo = new TypeInfo(this, type);
+                typesByName[type.FullName] = typeInfo;
+
+                foreach (MethodDefinition method in type.Methods)
+                {
+                    method.DebugInformation = null;
+                }
+            }
+        }
+
+        public void Populate()
         {
             ProcessSourceLink();
 
@@ -450,7 +467,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 if (doc == null)
                     return null;
 
-                if (d2s.TryGetValue(doc, out var source))
+                if (d2s.TryGetValue(doc, out SourceFile source))
                     return source;
 
                 var src = new SourceFile(this, sources.Count, doc, GetSourceLinkUrl(doc.Url));
@@ -459,16 +476,16 @@ namespace Microsoft.WebAssembly.Diagnostics
                 return src;
             };
 
-            foreach (var type in image.GetTypes())
+            foreach (TypeDefinition type in image.GetTypes())
             {
                 var typeInfo = new TypeInfo(this, type);
                 typesByName[type.FullName] = typeInfo;
 
-                foreach (var method in type.Methods)
+                foreach (MethodDefinition method in type.Methods)
                 {
-                    foreach (var sp in method.DebugInformation.SequencePoints)
+                    foreach (SequencePoint sp in method.DebugInformation.SequencePoints)
                     {
-                        var source = FindSource(sp.Document);
+                        SourceFile source = FindSource(sp.Document);
                         var methodInfo = new MethodInfo(this, method, source);
                         methods[method.MetadataToken.RID] = methodInfo;
                         if (source != null)
@@ -482,15 +499,15 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         private void ProcessSourceLink()
         {
-            var sourceLinkDebugInfo = image.CustomDebugInformations.FirstOrDefault(i => i.Kind == CustomDebugInformationKind.SourceLink);
+            CustomDebugInformation sourceLinkDebugInfo = image.CustomDebugInformations.FirstOrDefault(i => i.Kind == CustomDebugInformationKind.SourceLink);
 
             if (sourceLinkDebugInfo != null)
             {
-                var sourceLinkContent = ((SourceLinkDebugInformation)sourceLinkDebugInfo).Content;
+                string sourceLinkContent = ((SourceLinkDebugInformation)sourceLinkDebugInfo).Content;
 
                 if (sourceLinkContent != null)
                 {
-                    var jObject = JObject.Parse(sourceLinkContent)["documents"];
+                    JToken jObject = JObject.Parse(sourceLinkContent)["documents"];
                     sourceLinkMappings = JsonConvert.DeserializeObject<Dictionary<string, string>>(jObject.ToString());
                 }
             }
@@ -501,7 +518,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (sourceLinkMappings.TryGetValue(document, out string url))
                 return new Uri(url);
 
-            foreach (var sourceLinkDocument in sourceLinkMappings)
+            foreach (KeyValuePair<string, string> sourceLinkDocument in sourceLinkMappings)
             {
                 string key = sourceLinkDocument.Key;
 
@@ -510,11 +527,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                     continue;
                 }
 
-                var keyTrim = key.TrimEnd('*');
+                string keyTrim = key.TrimEnd('*');
 
                 if (document.StartsWith(keyTrim, StringComparison.OrdinalIgnoreCase))
                 {
-                    var docUrlPart = document.Replace(keyTrim, "");
+                    string docUrlPart = document.Replace(keyTrim, "");
                     return new Uri(sourceLinkDocument.Value.TrimEnd('*') + docUrlPart);
                 }
             }
@@ -528,6 +545,9 @@ namespace Microsoft.WebAssembly.Diagnostics
         public int Id => id;
         public string Name => image.Name;
 
+        // "System.Threading", instead of "System.Threading, Version=5.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a"
+        public string AssemblyNameUnqualified => image.Assembly.Name.Name;
+
         public SourceFile GetDocById(int document)
         {
             return sources.FirstOrDefault(s => s.SourceId.Document == document);
@@ -535,23 +555,23 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public MethodInfo GetMethodByToken(uint token)
         {
-            methods.TryGetValue(token, out var value);
+            methods.TryGetValue(token, out MethodInfo value);
             return value;
         }
 
         public TypeInfo GetTypeByName(string name)
         {
-            typesByName.TryGetValue(name, out var res);
+            typesByName.TryGetValue(name, out TypeInfo res);
             return res;
         }
     }
 
     internal class SourceFile
     {
-        Dictionary<uint, MethodInfo> methods;
-        AssemblyInfo assembly;
-        int id;
-        Document doc;
+        private Dictionary<uint, MethodInfo> methods;
+        private AssemblyInfo assembly;
+        private int id;
+        private Document doc;
 
         internal SourceFile(AssemblyInfo assembly, int id, Document doc, Uri sourceLinkUri)
         {
@@ -594,19 +614,19 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public (int startLine, int startColumn, int endLine, int endColumn) GetExtents()
         {
-            var start = Methods.OrderBy(m => m.StartLocation.Line).ThenBy(m => m.StartLocation.Column).First();
-            var end = Methods.OrderByDescending(m => m.EndLocation.Line).ThenByDescending(m => m.EndLocation.Column).First();
+            MethodInfo start = Methods.OrderBy(m => m.StartLocation.Line).ThenBy(m => m.StartLocation.Column).First();
+            MethodInfo end = Methods.OrderByDescending(m => m.EndLocation.Line).ThenByDescending(m => m.EndLocation.Column).First();
             return (start.StartLocation.Line, start.StartLocation.Column, end.EndLocation.Line, end.EndLocation.Column);
         }
 
-        async Task<MemoryStream> GetDataAsync(Uri uri, CancellationToken token)
+        private async Task<MemoryStream> GetDataAsync(Uri uri, CancellationToken token)
         {
             var mem = new MemoryStream();
             try
             {
                 if (uri.IsFile && File.Exists(uri.LocalPath))
                 {
-                    using (var file = File.Open(SourceUri.LocalPath, FileMode.Open))
+                    using (FileStream file = File.Open(SourceUri.LocalPath, FileMode.Open))
                     {
                         await file.CopyToAsync(mem, token).ConfigureAwait(false);
                         mem.Position = 0;
@@ -614,8 +634,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
                 else if (uri.Scheme == "http" || uri.Scheme == "https")
                 {
-                    var client = new HttpClient();
-                    using (var stream = await client.GetStreamAsync(uri))
+                    using (var client = new HttpClient())
+                    using (Stream stream = await client.GetStreamAsync(uri, token))
                     {
                         await stream.CopyToAsync(mem, token).ConfigureAwait(false);
                         mem.Position = 0;
@@ -629,35 +649,39 @@ namespace Microsoft.WebAssembly.Diagnostics
             return mem;
         }
 
-        static HashAlgorithm GetHashAlgorithm(DocumentHashAlgorithm algorithm)
+        private static HashAlgorithm GetHashAlgorithm(DocumentHashAlgorithm algorithm)
         {
             switch (algorithm)
             {
                 case DocumentHashAlgorithm.SHA1:
+#pragma warning disable CA5350 // Do Not Use Weak Cryptographic Algorithms
                     return SHA1.Create();
+#pragma warning restore CA5350 // Do Not Use Weak Cryptographic Algorithms
                 case DocumentHashAlgorithm.SHA256:
                     return SHA256.Create();
                 case DocumentHashAlgorithm.MD5:
+#pragma warning disable CA5351 // Do Not Use Broken Cryptographic Algorithms
                     return MD5.Create();
+#pragma warning restore CA5351 // Do Not Use Broken Cryptographic Algorithms
             }
             return null;
         }
 
-        bool CheckPdbHash(byte[] computedHash)
+        private bool CheckPdbHash(byte[] computedHash)
         {
             if (computedHash.Length != doc.Hash.Length)
                 return false;
 
-            for (var i = 0; i < computedHash.Length; i++)
+            for (int i = 0; i < computedHash.Length; i++)
                 if (computedHash[i] != doc.Hash[i])
                     return false;
 
             return true;
         }
 
-        byte[] ComputePdbHash(Stream sourceStream)
+        private byte[] ComputePdbHash(Stream sourceStream)
         {
-            var algorithm = GetHashAlgorithm(doc.HashAlgorithm);
+            HashAlgorithm algorithm = GetHashAlgorithm(doc.HashAlgorithm);
             if (algorithm != null)
                 using (algorithm)
                     return algorithm.ComputeHash(sourceStream);
@@ -670,9 +694,9 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (doc.EmbeddedSource.Length > 0)
                 return new MemoryStream(doc.EmbeddedSource, false);
 
-            foreach (var url in new[] { SourceUri, SourceLinkUri })
+            foreach (Uri url in new[] { SourceUri, SourceLinkUri })
             {
-                var mem = await GetDataAsync(url, token).ConfigureAwait(false);
+                MemoryStream mem = await GetDataAsync(url, token).ConfigureAwait(false);
                 if (mem != null && (!checkHash || CheckPdbHash(ComputePdbHash(mem))))
                 {
                     mem.Position = 0;
@@ -699,32 +723,61 @@ namespace Microsoft.WebAssembly.Diagnostics
 
     internal class DebugStore
     {
-        List<AssemblyInfo> assemblies = new List<AssemblyInfo>();
-        readonly HttpClient client;
-        readonly ILogger logger;
+        private List<AssemblyInfo> assemblies = new List<AssemblyInfo>();
+        private readonly HttpClient client;
+        private readonly ILogger logger;
+        private readonly IAssemblyResolver resolver;
 
         public DebugStore(ILogger logger, HttpClient client)
         {
             this.client = client;
             this.logger = logger;
+            this.resolver = new DefaultAssemblyResolver();
         }
 
         public DebugStore(ILogger logger) : this(logger, new HttpClient())
         { }
 
-        class DebugItem
+        private class DebugItem
         {
             public string Url { get; set; }
             public Task<byte[][]> Data { get; set; }
         }
 
+        public IEnumerable<SourceFile> Add(SessionId sessionId, byte[] assembly_data, byte[] pdb_data)
+        {
+            AssemblyInfo assembly = null;
+            try
+            {
+                assembly = new AssemblyInfo(this.resolver, sessionId.ToString(), assembly_data, pdb_data);
+            }
+            catch (Exception e)
+            {
+                logger.LogDebug($"Failed to load assembly: ({e.Message})");
+                yield break;
+            }
+
+            if (assembly == null)
+                yield break;
+
+            if (GetAssemblyByUnqualifiedName(assembly.AssemblyNameUnqualified) != null)
+            {
+                logger.LogDebug($"Skipping adding {assembly.Name} into the debug store, as it already exists");
+                yield break;
+            }
+
+            assemblies.Add(assembly);
+            foreach (var source in assembly.Sources)
+            {
+                yield return source;
+            }
+        }
+
         public async IAsyncEnumerable<SourceFile> Load(SessionId sessionId, string[] loaded_files, [EnumeratorCancellation] CancellationToken token)
         {
-            static bool MatchPdb(string asm, string pdb) => Path.ChangeExtension(asm, "pdb") == pdb;
-
             var asm_files = new List<string>();
             var pdb_files = new List<string>();
-            foreach (var file_name in loaded_files)
+            foreach (string file_name in loaded_files)
             {
                 if (file_name.EndsWith(".pdb", StringComparison.OrdinalIgnoreCase))
                     pdb_files.Add(file_name);
@@ -733,16 +786,18 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
 
             List<DebugItem> steps = new List<DebugItem>();
-            foreach (var url in asm_files)
+            foreach (string url in asm_files)
             {
                 try
                 {
-                    var pdb = pdb_files.FirstOrDefault(n => MatchPdb(url, n));
+                    string candidate_pdb = Path.ChangeExtension(url, "pdb");
+                    string pdb = pdb_files.FirstOrDefault(n => n == candidate_pdb);
+
                     steps.Add(
                         new DebugItem
                         {
                             Url = url,
-                            Data = Task.WhenAll(client.GetByteArrayAsync(url), pdb != null ? client.GetByteArrayAsync(pdb) : Task.FromResult<byte[]>(null))
+                            Data = Task.WhenAll(client.GetByteArrayAsync(url, token), pdb != null ? client.GetByteArrayAsync(pdb, token) : Task.FromResult<byte[]>(null))
                         });
                 }
                 catch (Exception e)
@@ -751,14 +806,13 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
             }
 
-            var resolver = new DefaultAssemblyResolver();
-            foreach (var step in steps)
+            foreach (DebugItem step in steps)
             {
                 AssemblyInfo assembly = null;
                 try
                 {
-                    var bytes = await step.Data.ConfigureAwait(false);
-                    assembly = new AssemblyInfo(resolver, step.Url, bytes[0], bytes[1]);
+                    byte[][] bytes = await step.Data.ConfigureAwait(false);
+                    assembly = new AssemblyInfo(this.resolver, step.Url, bytes[0], bytes[1]);
                 }
                 catch (Exception e)
                 {
@@ -767,8 +821,14 @@ namespace Microsoft.WebAssembly.Diagnostics
                 if (assembly == null)
                     continue;
 
+                if (GetAssemblyByUnqualifiedName(assembly.AssemblyNameUnqualified) != null)
+                {
+                    logger.LogDebug($"Skipping loading {assembly.Name} into the debug store, as it already exists");
+                    continue;
+                }
+
                 assemblies.Add(assembly);
-                foreach (var source in assembly.Sources)
+                foreach (SourceFile source in assembly.Sources)
                     yield return source;
             }
         }
@@ -779,14 +839,16 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public AssemblyInfo GetAssemblyByName(string name) => assemblies.FirstOrDefault(a => a.Name.Equals(name, StringComparison.InvariantCultureIgnoreCase));
 
+        public AssemblyInfo GetAssemblyByUnqualifiedName(string name) => assemblies.FirstOrDefault(a => a.AssemblyNameUnqualified.Equals(name, StringComparison.InvariantCultureIgnoreCase));
+
         /*
         V8 uses zero based indexing for both line and column.
         PPDBs uses one based indexing for both line and column.
         */
-        static bool Match(SequencePoint sp, SourceLocation start, SourceLocation end)
+        private static bool Match(SequencePoint sp, SourceLocation start, SourceLocation end)
         {
-            var spStart = (Line: sp.StartLine - 1, Column: sp.StartColumn - 1);
-            var spEnd = (Line: sp.EndLine - 1, Column: sp.EndColumn - 1);
+            (int Line, int Column) spStart = (Line: sp.StartLine - 1, Column: sp.StartColumn - 1);
+            (int Line, int Column) spEnd = (Line: sp.EndLine - 1, Column: sp.EndColumn - 1);
 
             if (start.Line > spEnd.Line)
                 return false;
@@ -812,9 +874,9 @@ namespace Microsoft.WebAssembly.Diagnostics
                 return null;
             }
 
-            var sourceId = start.Id;
+            SourceId sourceId = start.Id;
 
-            var doc = GetFileById(sourceId);
+            SourceFile doc = GetFileById(sourceId);
 
             var res = new List<SourceLocation>();
             if (doc == null)
@@ -823,9 +885,9 @@ namespace Microsoft.WebAssembly.Diagnostics
                 return res;
             }
 
-            foreach (var method in doc.Methods)
+            foreach (MethodInfo method in doc.Methods)
             {
-                foreach (var sequencePoint in method.DebugInformation.SequencePoints)
+                foreach (SequencePoint sequencePoint in method.DebugInformation.SequencePoints)
                 {
                     if (!sequencePoint.IsHidden && Match(sequencePoint, start, end))
                         res.Add(new SourceLocation(method, sequencePoint));
@@ -838,9 +900,9 @@ namespace Microsoft.WebAssembly.Diagnostics
         V8 uses zero based indexing for both line and column.
         PPDBs uses one based indexing for both line and column.
         */
-        static bool Match(SequencePoint sp, int line, int column)
+        private static bool Match(SequencePoint sp, int line, int column)
         {
-            var bp = (line: line + 1, column: column + 1);
+            (int line, int column) bp = (line: line + 1, column: column + 1);
 
             if (sp.StartLine > bp.line || sp.EndLine < bp.line)
                 return false;
@@ -862,15 +924,15 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             request.TryResolve(this);
 
-            var asm = assemblies.FirstOrDefault(a => a.Name.Equals(request.Assembly, StringComparison.OrdinalIgnoreCase));
-            var sourceFile = asm?.Sources?.SingleOrDefault(s => s.DebuggerFileName.Equals(request.File, StringComparison.OrdinalIgnoreCase));
+            AssemblyInfo asm = assemblies.FirstOrDefault(a => a.Name.Equals(request.Assembly, StringComparison.OrdinalIgnoreCase));
+            SourceFile sourceFile = asm?.Sources?.SingleOrDefault(s => s.DebuggerFileName.Equals(request.File, StringComparison.OrdinalIgnoreCase));
 
             if (sourceFile == null)
                 yield break;
 
-            foreach (var method in sourceFile.Methods)
+            foreach (MethodInfo method in sourceFile.Methods)
             {
-                foreach (var sequencePoint in method.DebugInformation.SequencePoints)
+                foreach (SequencePoint sequencePoint in method.DebugInformation.SequencePoints)
                 {
                     if (!sequencePoint.IsHidden && Match(sequencePoint, request.Line, request.Column))
                         yield return new SourceLocation(method, sequencePoint);

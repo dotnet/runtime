@@ -13,7 +13,7 @@
 
 #include <palsuite.h>
 
-int __cdecl main(int argc, char **argv)
+PALTEST(c_runtime_memset_test1_paltest_memset_test1, "c_runtime/memset/test1/paltest_memset_test1")
 {
 
     char testA[22] = "bbbbbbbbbbbbbbbbbbbbb";
