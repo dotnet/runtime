@@ -903,8 +903,7 @@ namespace DebuggerTests
             });
         }
 
-        // [Fact]
-        // [ActiveIssue("https://github.com/dotnet/runtime/issues/42424")]
+        [Fact]
         public async Task BreakOnAwaitThenStepOverToNextAwaitCall()
         {
             var insp = new Inspector();
@@ -927,8 +926,7 @@ namespace DebuggerTests
             });
         }
 
-        // [Fact]
-        // [ActiveIssue("https://github.com/dotnet/runtime/issues/42424")]
+        [Fact]
         public async Task BreakOnAwaitThenStepOverToNextLine()
         {
             var insp = new Inspector();
