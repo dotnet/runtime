@@ -53,6 +53,17 @@ jobs:
     - HelixApiAccessToken: ''
     - HelixPreCommand: ''
 
+    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+      - name: PythonScript
+        value: 'py -3'
+      - name: PipScript
+        value: 'py -3 -m pip'
+    - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+      - name: PythonScript
+        value: 'python3'
+      - name: PipScript
+        value: 'pip3'
+
     workspace:
       clean: all
     pool:
@@ -80,14 +91,14 @@ jobs:
       inputs:
         scriptSource: 'filePath'
         scriptPath: $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi-setup.py
-        arguments: -src_directory $(Build.SourcesDirectory)\artifacts\tests\coreclr\${{ parameters.osGroup }}.${{ parameters.archType }}.Checked\Tests\Core_Root -dst_directory $(LibrariesArtifact) -max_size 50
+        arguments: -src_directory $(Build.SourcesDirectory)\artifacts\tests\coreclr\${{ parameters.osGroup }}.${{ parameters.archType }}.$(buildConfigUpper)\Tests\Core_Root -dst_directory $(LibrariesArtifacts) -max_size 50
 
     # - task: PythonScript@0
     #   displayName: Partition PMIAssembliesDirectory (libraries)
     #   inputs:
     #     scriptSource: 'filePath'
     #     scriptPath: $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi-setup.py
-    #     arguments: -src_directory $(Build.SourcesDirectory)\artifacts\tests\coreclr\${{ parameters.osGroup }}.${{ parameters.archType }}.Checked\Tests -dst_directory $(TestsArtifact) -max_size 50
+    #     arguments: -src_directory $(Build.SourcesDirectory)\artifacts\tests\coreclr\${{ parameters.osGroup }}.${{ parameters.archType }}.$(buildConfigUpper)\Tests -dst_directory $(TestsArtifact) -max_size 50
 
       # Run superpmi collection in helix
     - template: /eng/common/templates/steps/superpmi-send-to-helix.yml
@@ -104,23 +115,24 @@ jobs:
         CorrelationPayloadDirectory: '$(CorrelationPayloadDirectory)'
         ProjectFile: ${{ parameters.projectFile }}
         BuildConfig: ${{ parameters.buildConfig }}
-        LibrariesArtifact: $(LibrariesArtifact)
-        TestsArtifact: $(TestsArtifact)
+        LibrariesArtifacts: $(LibrariesArtifacts)
+        TestsArtifacts: $(TestsArtifacts)
 
     - task: PublishPipelineArtifact@1
-      displayName: Publish Logs
+      displayName: Publish SuperPMI collection
       inputs:
         targetPath: $(Build.SourcesDirectory)/artifacts/helixresults
         artifactName: 'SuperPMI_Run_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.runtimeType }}_${{ parameters.codeGenType }}_CoreRoot'
       continueOnError: true
       condition: always()
 
-    - task: PythonScript@0
-      displayName: Upload SuperPMI collection
-      inputs:
-        scriptSource: 'filePath'
-        scriptPath: $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py
-        arguments: upload -arch $(archType) -build_type $(buildConfig) -mch_files $(Build.SourcesDirectory)\artifacts\helixresults -core_root $(Build.SourcesDirectory)\artifacts\tests\coreclr\${{ parameters.osGroup }}.${{ parameters.archType }}.Checked\Tests\Core_Root
-      env:
-        CLRJIT_AZ_KEY: $(clrjit_key1) # secret key
-# python superpmi.py upload -arch x64 -core_root E:\temp\power\core_root\superpmi_min -mch_files E:\temp\power\_2
+    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+      - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py upload -arch $(archType) -build_type $(buildConfig) -mch_files $(Build.SourcesDirectory)\artifacts\helixresults -core_root $(Build.SourcesDirectory)\artifacts\tests\coreclr\${{ parameters.osGroup }}.${{ parameters.archType }}.$(buildConfigUpper)\Tests\Core_Root
+        displayName: Upload SuperPMI collection to Azure Storage
+        env:
+          CLRJIT_AZ_KEY: $(clrjit_key1) # secret key stored as variable in pipeline
+    - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+      - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py upload -arch $(archType) -build_type $(buildConfig) -mch_files $(Build.SourcesDirectory)\artifacts\helixresults -core_root $(Build.SourcesDirectory)/artifacts/tests/coreclr/${{ parameters.osGroup }}.${{ parameters.archType }}.$(buildConfigUpper)/Tests/Core_Root
+        displayName: Upload SuperPMI collection to Azure Storage
+        env:
+          CLRJIT_AZ_KEY: $(clrjit_key1) # secret key stored as variable in pipeline

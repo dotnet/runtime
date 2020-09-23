@@ -69,8 +69,8 @@ Write-PipelineSetVariable -Name 'PmiAssembliesDirectory' -Value "$PmiAssembliesD
 Write-PipelineSetVariable -Name 'WorkItemDirectory' -Value "$WorkItemDirectory" -IsMultiJobVariable $false
 
 # Artifacts
-Write-PipelineSetVariable -Name 'LibrariesArtifact' -Value "$PmiAssembliesDirectory\Core_Root" -IsMultiJobVariable $false
-Write-PipelineSetVariable -Name 'TestsArtifact' -Value "$PmiAssembliesDirectory\Tests" -IsMultiJobVariable $false
+Write-PipelineSetVariable -Name 'LibrariesArtifacts' -Value "$PmiAssembliesDirectory\Core_Root" -IsMultiJobVariable $false
+Write-PipelineSetVariable -Name 'TestsArtifacts' -Value "$PmiAssembliesDirectory\Tests" -IsMultiJobVariable $false
 
 # Script Arguments
 Write-PipelineSetVariable -Name 'Python' -Value "py -3" -IsMultiJobVariable $false
