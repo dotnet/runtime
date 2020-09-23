@@ -32,8 +32,8 @@ namespace System.Security.Claims
             // Diverging behavior from .NET Framework: In Framework, the default PrincipalPolicy is
             // UnauthenticatedPrincipal. In .NET Core, the default is NoPrincipal. .NET Framework
             // would throw an ArgumentNullException when constructing the ClaimsPrincipal with a
-            // null principal from the thread if it were set to use NoPrincpial. In .NET Core, since
-            // NoPrinicipal is the default, we return null instead of throw.
+            // null principal from the thread if it were set to use NoPrincipal. In .NET Core, since
+            // NoPrincipal is the default, we return null instead of throw.
 
             IPrincipal? threadPrincipal = Thread.CurrentPrincipal;
 
