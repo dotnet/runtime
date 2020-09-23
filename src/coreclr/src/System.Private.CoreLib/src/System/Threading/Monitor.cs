@@ -163,45 +163,38 @@ namespace System.Threading
     ** This method acquires the monitor waithandle for the object
     ** If this thread holds the monitor lock for the object, it releases it.
     ** On exit from the method, it obtains the monitor lock back.
-    ** If exitContext is true then the synchronization domain for the context
-    ** (if in a synchronized context) is exited before the wait and reacquired
     **
         ** Exceptions: ArgumentNullException if object is null.
     ========================================================================*/
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern bool ObjWait(bool exitContext, int millisecondsTimeout, object obj);
-
-        [UnsupportedOSPlatform("browser")]
-        public static bool Wait(object obj, int millisecondsTimeout, bool exitContext)
-        {
-            if (obj == null)
-                throw (new ArgumentNullException(nameof(obj)));
-            return ObjWait(exitContext, millisecondsTimeout, obj);
-        }
-
-        [UnsupportedOSPlatform("browser")]
-        public static bool Wait(object obj, TimeSpan timeout, bool exitContext)
-        {
-            return Wait(obj, MillisecondsTimeoutFromTimeSpan(timeout), exitContext);
-        }
+        private static extern bool ObjWait(int millisecondsTimeout, object obj);
 
         [UnsupportedOSPlatform("browser")]
         public static bool Wait(object obj, int millisecondsTimeout)
         {
-            return Wait(obj, millisecondsTimeout, false);
+            if (obj == null)
+                throw (new ArgumentNullException(nameof(obj)));
+            if (millisecondsTimeout < -1)
+                throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
+
+            return ObjWait(millisecondsTimeout, obj);
         }
 
         [UnsupportedOSPlatform("browser")]
-        public static bool Wait(object obj, TimeSpan timeout)
-        {
-            return Wait(obj, MillisecondsTimeoutFromTimeSpan(timeout), false);
-        }
+        public static bool Wait(object obj, TimeSpan timeout) => Wait(obj, MillisecondsTimeoutFromTimeSpan(timeout));
 
         [UnsupportedOSPlatform("browser")]
-        public static bool Wait(object obj)
-        {
-            return Wait(obj, Timeout.Infinite, false);
-        }
+        public static bool Wait(object obj) => Wait(obj, Timeout.Infinite);
+
+        // Remoting is not supported, exitContext argument is unused
+        [UnsupportedOSPlatform("browser")]
+        public static bool Wait(object obj, int millisecondsTimeout, bool exitContext)
+            => Wait(obj, millisecondsTimeout);
+
+        // Remoting is not supported, exitContext argument is unused
+        [UnsupportedOSPlatform("browser")]
+        public static bool Wait(object obj, TimeSpan timeout, bool exitContext)
+            => Wait(obj, MillisecondsTimeoutFromTimeSpan(timeout));
 
         /*========================================================================
         ** Sends a notification to a single waiting object.
