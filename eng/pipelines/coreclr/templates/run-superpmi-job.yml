@@ -89,15 +89,22 @@ jobs:
     #   condition: and(succeeded(), ne(variables['Agent.Os'], 'Windows_NT'))
     #   continueOnError: ${{ parameters.continueOnError }}
 
-    - task: PythonScript@0
-      - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-        displayName: 'SuperPMI setup (Windows)'
-      - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+    - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+      - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi-setup.py -source_directory $(Build.SourcesDirectory) -core_root_directory $(Core_Root_Dir) -arch $(archType) -mch_file_tag ${{ parameters.osGroup }}.${{ parameters.archType }}.${{ parameters.buildConfig }} -assemblies_directory $(Core_Root_Dir) -max_size 50
         displayName: 'SuperPMI setup (Linux)'
-      inputs:
-        scriptSource: 'filePath'
-        scriptPath: $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi-setup.py
-        arguments: -source_directory $(Build.SourcesDirectory) -core_root_directory $(Core_Root_Dir) -arch $(archType) -mch_file_tag ${{ parameters.osGroup }}.${{ parameters.archType }}.${{ parameters.buildConfig }} -assemblies_directory $(Core_Root_Dir) -max_size 50
+    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+      - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi-setup.py -source_directory $(Build.SourcesDirectory) -core_root_directory $(Core_Root_Dir) -arch $(archType) -mch_file_tag ${{ parameters.osGroup }}.${{ parameters.archType }}.${{ parameters.buildConfig }} -assemblies_directory $(Core_Root_Dir) -max_size 50
+        displayName: 'SuperPMI setup (Windows)'
+
+    # - task: PythonScript@0
+    # - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+    #     displayName: 'SuperPMI setup (Windows)'
+    # - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+    #     displayName: 'SuperPMI setup (Linux)'
+    #   inputs:
+    #     scriptSource: 'filePath'
+    #     scriptPath: $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi-setup.py
+    #     arguments: -source_directory $(Build.SourcesDirectory) -core_root_directory $(Core_Root_Dir) -arch $(archType) -mch_file_tag ${{ parameters.osGroup }}.${{ parameters.archType }}.${{ parameters.buildConfig }} -assemblies_directory $(Core_Root_Dir) -max_size 50
 
     # - task: PythonScript@0
     #   displayName: Partition PMIAssembliesDirectory (libraries)
@@ -138,7 +145,7 @@ jobs:
         env:
           CLRJIT_AZ_KEY: $(clrjit_key1) # secret key stored as variable in pipeline
     - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-      - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py upload -arch $(archType) -build_type $(buildConfig) -mch_files $(Build.SourcesDirectory)\artifacts\helixresults -core_root $(Build.SourcesDirectory)/artifacts/tests/coreclr/${{ parameters.osGroup }}.${{ parameters.archType }}.$(buildConfigUpper)/Tests/Core_Root
+      - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py upload -arch $(archType) -build_type $(buildConfig) -mch_files $(Build.SourcesDirectory)/artifacts/helixresults -core_root $(Build.SourcesDirectory)/artifacts/tests/coreclr/${{ parameters.osGroup }}.${{ parameters.archType }}.$(buildConfigUpper)/Tests/Core_Root
         displayName: Upload SuperPMI collection to Azure Storage
         env:
           CLRJIT_AZ_KEY: $(clrjit_key1) # secret key stored as variable in pipeline
