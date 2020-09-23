@@ -412,7 +412,7 @@ namespace CoreclrTestLib
                             sb.AppendLine("=> " + fileInFolder);
                         }
                     }
-                    throw new Exception(sb.ToString(), ex);
+                    throw new Exception(sb.ToString());
                 }
 
                 outputWriter.WriteLine("Test Harness Exitcode is : " + exitCode.ToString());
