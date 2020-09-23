@@ -81,9 +81,7 @@ namespace AppHost.Bundle.Tests
                 .Should()
                 .Pass()
                 .And
-                .HaveStdOutContaining("SingleFileApiTests.deps.json")
-                .And
-                .HaveStdOutContaining("Microsoft.NETCore.App.deps.json");
+                .HaveStdOutContaining("SingleFileApiTests.deps.json");
         }
 
         [Fact]
