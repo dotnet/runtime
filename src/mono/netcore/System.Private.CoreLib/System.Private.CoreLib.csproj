@@ -252,7 +252,7 @@
       <Compile Include="$(BclSourcesRoot)\System\Security\DynamicSecurityMethodAttribute.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Text\Utf8Span.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\Interlocked.Mono.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\Threading\Monitor.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Threading\Monitor.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\Overlapped.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\PreAllocatedOverlapped.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\StackCrawlMark.cs" />

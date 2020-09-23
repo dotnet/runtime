@@ -331,10 +331,10 @@ class Object
 
 #endif // #ifndef DACCESS_COMPILE
 
-    BOOL Wait(INT32 timeOut, BOOL exitContext)
+    BOOL Wait(INT32 timeOut)
     {
         WRAPPER_NO_CONTRACT;
-        return GetHeader()->Wait(timeOut, exitContext);
+        return GetHeader()->Wait(timeOut);
     }
 
     void Pulse()
