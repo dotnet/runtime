@@ -35,9 +35,11 @@ namespace System.Security.Claims
             // null principal from the thread if it were set to use NoPrincpial. In .NET Core, since
             // NoPrinicipal is the default, we return null instead of throw.
 
-            return Thread.CurrentPrincipal switch {
+            IPrincipal? threadPrincipal = Thread.CurrentPrincipal;
+
+            return threadPrincipal switch {
                 ClaimsPrincipal claimsPrincipal => claimsPrincipal,
-                not null => new ClaimsPrincipal(Thread.CurrentPrincipal),
+                not null => new ClaimsPrincipal(threadPrincipal),
                 null => null
             };
         }
