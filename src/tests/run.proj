@@ -149,7 +149,7 @@ $(_XunitEpilog)
 
   <Target Name="CreateXunitFacts">
     <!-- NOTE! semicolons must be escaped with %3B boooo -->
-    
+
     <PropertyGroup>
       <_CMDDIR_Parent>$([System.IO.Path]::GetDirectoryName($(_CMDDIR)))</_CMDDIR_Parent>
       <_CMDDIR_Grandparent>$([System.IO.Path]::GetDirectoryName($(_CMDDIR_Parent)))</_CMDDIR_Grandparent>
