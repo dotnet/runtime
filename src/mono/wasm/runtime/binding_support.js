@@ -849,7 +849,8 @@ var BindingSupportLib = {
 				steps: steps, size: size, args_marshal: args_marshal, 
 				is_result_definitely_unmarshaled: is_result_definitely_unmarshaled,
 				is_result_possibly_unmarshaled: is_result_possibly_unmarshaled,
-				result_unmarshaled_if_argc: result_unmarshaled_if_argc
+				result_unmarshaled_if_argc: result_unmarshaled_if_argc,
+				needs_root_buffer: needs_root_buffer
 			};
 		},
 
