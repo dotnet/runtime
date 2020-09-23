@@ -532,7 +532,7 @@ namespace System.Text.Json.Serialization.Tests
 
                 json = $@"{{""Prop"":{json}}}";
 
-                ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ClassWithInvalidType<T>>(json));
+                ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ClassWithType<T>>(json));
                 exAsStr = ex.ToString();
                 Assert.Contains(fullName, exAsStr);
                 Assert.Contains("$.Prop", exAsStr);
@@ -540,7 +540,7 @@ namespace System.Text.Json.Serialization.Tests
                 // NSE is not thrown because the serializer handles null.
                 Assert.Null(JsonSerializer.Deserialize<T>("null"));
 
-                ClassWithInvalidType<T> obj = JsonSerializer.Deserialize<ClassWithInvalidType<T>>(@"{""Prop"":null}");
+                ClassWithType<T> obj = JsonSerializer.Deserialize<ClassWithType<T>>(@"{""Prop"":null}");
                 Assert.Null(obj.Prop);
             }
         }
@@ -548,38 +548,22 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void SerializeUnsupportedType()
         {
-            RunTest<Type>();
-            RunTest<SerializationInfo>();
+            RunTest<Type>(typeof(int));
+            RunTest<SerializationInfo>(new SerializationInfo(typeof(Type), new FormatterConverter()));
 
-            void RunTest<T>()
+            void RunTest<T>(T value)
             {
-                object testObj;
-                if (typeof(T) == typeof(Type))
-                {
-                    testObj = typeof(int);
-                }
-                else if (typeof(T) == typeof(SerializationInfo))
-                {
-                    testObj = new SerializationInfo(typeof(Type), new FormatterConverter());
-                }
-                else
-                {
-                    throw new NotSupportedException();
-                }
-
                 string fullName = typeof(T).FullName;
-                T val = (T)testObj;
 
-                NotSupportedException ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(val));
+                NotSupportedException ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(value));
                 string exAsStr = ex.ToString();
                 Assert.Contains(fullName, exAsStr);
                 Assert.Contains("$", exAsStr);
 
-                val = (T)(object)null;
-                string serialized = JsonSerializer.Serialize(val);
+                string serialized = JsonSerializer.Serialize((T)(object)null);
                 Assert.Equal("null", serialized);
 
-                ClassWithInvalidType<T> obj = new ClassWithInvalidType<T> { Prop = (T)testObj };
+                ClassWithType<T> obj = new ClassWithType<T> { Prop = value };
 
                 ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(obj));
                 exAsStr = ex.ToString();
@@ -646,7 +630,7 @@ namespace System.Text.Json.Serialization.Tests
             object obj = JsonSerializer.Deserialize(@"{""Info"":null}", type);
             Assert.Null(type.GetProperty("Info").GetValue(obj));
 
-            // Deserialization of other non-null tokens is not okay
+            // Deserialization of other non-null tokens is not okay.
             Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize(@"{""Info"":1}", type));
             Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize(@"{""Info"":""""}", type));
         }

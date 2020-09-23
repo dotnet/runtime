@@ -21,8 +21,8 @@ namespace System.Text.Json
         // The global list of built-in converters that override CanConvert().
         private static readonly JsonConverter[] s_defaultFactoryConverters = new JsonConverter[]
         {
-            // Check for black-listed types.
-            new UnsupportedTypeConverterFactory(),
+            // Check for disallowed types.
+            new DisallowedTypeConverterFactory(),
             // Nullable converter should always be next since it forwards to any nullable type.
             new NullableConverterFactory(),
             new EnumConverterFactory(),

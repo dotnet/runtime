@@ -1866,7 +1866,7 @@ namespace System.Text.Json.Serialization.Tests
         }
     }
 
-    public class ClassWithInvalidType<T>
+    public class ClassWithType<T>
     {
         public T Prop { get; set; }
     }
