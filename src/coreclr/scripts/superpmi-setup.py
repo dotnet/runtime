@@ -28,6 +28,8 @@ parser = argparse.ArgumentParser(description="description")
 parser.add_argument("-src_directory", help="path to src")
 parser.add_argument("-dst_directory", help="path to dst")
 parser.add_argument("-dst_folder_name", dest='dst_folder_name', default="binaries", help="Folder under dst/N/")
+parser.add_argument("-exclude_directories", dest='exclude_directories', default='', help="semi-colon separated list "
+                                                                                         "of directories to exclude")
 parser.add_argument("-max_size", help="Max size of partition in MB")
 
 
@@ -60,32 +62,43 @@ def setup_args(args):
                         "Unable to set dst_folder_name")
 
     coreclr_args.verify(args,
+                        "exclude_directories",
+                        lambda unused: True,
+                        "Unable to set exclude_directories",
+                        modify_arg=lambda exclude_directories: exclude_directories.split(';'))
+
+    coreclr_args.verify(args,
                         "max_size",
-                        lambda max_size: True,  # max_size.isnumeric() and int(max_size) > 0,
+                        lambda max_size: max_size > 0,
                         "Please enter valid positive numeric max_size",
-                        modify_arg=lambda max_size: int(max_size) * 1000 * 1000 if max_size.isnumeric() else max_size
+                        modify_arg=lambda max_size: int(max_size) * 1000 * 1000 if max_size.isnumeric() else 0
                         # Convert to MB
                         )
     return coreclr_args
 
 
-def get_files_sorted_by_size(src_directory):
+def get_files_sorted_by_size(src_directory, exclude_directories):
     """ For a given src_directory, returns all the .dll files sorted by size.
 
     Args:
         src_directory (string): Path of directory to enumerate.
+        exclude_directories (string): Directory names to exclude.
     """
+
     def sorter_by_size(pair):
         """ Sorts the pair (file_name, file_size) tuple in descending order of file_size
 
         Args:
-            pair ((string, int)): Tuple of file_name, file_size
+            pair ([(string, int)]): List of tuple of file_name, file_size
         """
         pair.sort(key=lambda x: x[1], reverse=True)
         return pair
 
     filename_with_size = []
-    for file_path, _, files in walk(src_directory):
+
+    for file_path, dirs, files in walk(src_directory, topdown=True):
+        # Credit: https://stackoverflow.com/a/19859907
+        dirs[:] = [d for d in dirs if d not in exclude_directories]
         for name in files:
             curr_file_path = path.join(file_path, name)
             if not isfile(curr_file_path) or not name.endswith(".dll"):
@@ -193,11 +206,12 @@ def partition_files(coreclr_args):
         coreclr_args (CoreclrArguments): Command line arguments.
     """
     src_directory = coreclr_args.src_directory
+    exclude_directories = coreclr_args.exclude_directories
     dst_directory = coreclr_args.dst_directory
     dst_folder_name = coreclr_args.dst_folder_name
     max_size = coreclr_args.max_size
 
-    sorted_by_size = get_files_sorted_by_size(src_directory)
+    sorted_by_size = get_files_sorted_by_size(src_directory, exclude_directories)
     partitions = first_fit(sorted_by_size, max_size)
 
     index = 0
