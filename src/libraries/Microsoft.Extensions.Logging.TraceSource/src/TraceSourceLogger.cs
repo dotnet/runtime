@@ -42,7 +42,7 @@ namespace Microsoft.Extensions.Logging.TraceSource
 
             if (exception != null)
             {
-                string exceptionDelimiter = !string.IsNullOrEmpty(message) ? Environment.NewLine : string.Empty;
+                string exceptionDelimiter = string.IsNullOrEmpty(message) ? string.Empty : Environment.NewLine;
                 message += exceptionDelimiter + "Error: " + exception;
             }
 
