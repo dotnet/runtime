@@ -90,9 +90,9 @@ jobs:
     #   continueOnError: ${{ parameters.continueOnError }}
 
     - task: PythonScript@0
-    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+      - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
         displayName: 'SuperPMI setup (Windows)'
-    - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+      - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
         displayName: 'SuperPMI setup (Linux)'
       inputs:
         scriptSource: 'filePath'
