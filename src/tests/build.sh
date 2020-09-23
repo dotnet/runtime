@@ -680,7 +680,7 @@ if [[ "$__RunTests" -ne 0 ]]; then
 
     echo "Tests run successful."
 else
-    echo "To run all tests use 'tests/runtests.sh' where:"
+    echo "To run all tests use 'run.sh' where:"
     echo "    testRootDir      = $__TestBinDir"
     echo "    coreClrBinDir    = $__BinDir"
     echo "    coreFxBinDir     = $CORE_ROOT"

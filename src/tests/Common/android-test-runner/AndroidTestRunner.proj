@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.Build.NoTargets/1.0.53" DefaultTargets="BuildApp">
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.android-$(TargetArchitecture)\$(Configuration)\runtimes\android-$(TargetArchitecture)</MicrosoftNetCoreAppRuntimePackDir>
+    <MicrosoftNetCoreAppRuntimePackDir>$(CORE_ROOT)/runtimepack</MicrosoftNetCoreAppRuntimePackDir>
     <AndroidAppBuilderDir>$(CORE_ROOT)/AndroidAppBuilder</AndroidAppBuilderDir>
     <EnableTargetingPackDownload>false</EnableTargetingPackDownload>
     <InvariantGlobalization>true</InvariantGlobalization> <!-- workaround for https://github.com/dotnet/runtime/issues/41866 -->
@@ -21,7 +21,6 @@
       <ApkDir>$(TestBinDir)\apk</ApkDir>
       <StripDebugSymbols>False</StripDebugSymbols>
       <StripDebugSymbols Condition="'$(Configuration)' == 'Release'">True</StripDebugSymbols>
-      <AdbTool>$(ANDROID_SDK_ROOT)\platform-tools\adb</AdbTool>
     </PropertyGroup>
 
     <ItemGroup>
