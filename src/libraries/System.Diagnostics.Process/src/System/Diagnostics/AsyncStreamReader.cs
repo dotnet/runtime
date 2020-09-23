@@ -262,11 +262,11 @@ namespace System.Diagnostics
             }
         }
 
-        internal async ValueTask WaitUntilEOFAsync()
+        internal async ValueTask WaitUntilEOFAsync(CancellationToken cancellationToken)
         {
             if (_readToBufferTask is Task task)
             {
-                await task.ConfigureAwait(false);
+                await task.WithCancellation(cancellationToken).ConfigureAwait(false);
                 _readToBufferTask = null;
             }
         }

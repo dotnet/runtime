@@ -1469,34 +1469,31 @@ namespace System.Diagnostics
                 if (HasExited)
                 {
                     // CASE 1.2 & CASE 3.2: Handle race where the process exits before registering the handler
-                    return;
+                }
+                else
+                {
+                    // CASE 1.1 & CASE 3.1: Process exits or is canceled here
+                    await tcs.WaitWithCancellationAsync(cancellationToken).ConfigureAwait(false);
                 }
 
-                // CASE 1.1 & CASE 3.1: Process exits or is canceled here
-                await tcs.WaitWithCancellationAsync(cancellationToken).ConfigureAwait(false);
+                // Wait until output streams have been drained
+                await WaitUntilOutputEOF().ConfigureAwait(false);
             }
             finally
             {
                 Exited -= handler;
-
-                await WaitUntilOutputEOF().ConfigureAwait(false);
             }
 
-            // Wait until output streams have been drained
             async ValueTask WaitUntilOutputEOF()
             {
-                // if we have a hard timeout, we cannot wait for the streams
-                if (!cancellationToken.CanBeCanceled)
+                if (_output != null)
                 {
-                    if (_output != null)
-                    {
-                        await _output.WaitUntilEOFAsync().ConfigureAwait(false);
-                    }
+                    await _output.WaitUntilEOFAsync(cancellationToken).ConfigureAwait(false);
+                }
 
-                    if (_error != null)
-                    {
-                        await _error.WaitUntilEOFAsync().ConfigureAwait(false);
-                    }
+                if (_error != null)
+                {
+                    await _error.WaitUntilEOFAsync(cancellationToken).ConfigureAwait(false);
                 }
             }
         }
