@@ -13,13 +13,7 @@
     <TestSourceDir>$([MSBuild]::NormalizePath('$(RepoRoot)/src/tests/'))</TestSourceDir>
   </PropertyGroup>
 
-  <!-- Common properties -->
   <PropertyGroup>
-    <BinDir>$(ArtifactsDir)bin\coreclr\$(TargetOS).$(TargetArchitecture).$(Configuration)\</BinDir>
-
-    <TestWorkingDir>$(__TestWorkingDir)\</TestWorkingDir>
-    <TestWorkingDir>$(ArtifactsDir)tests\coreclr\$(TargetOS).$(TargetArchitecture).$(Configuration)\</TestWorkingDir>
-
     <AltJitArch>$(__AltJitArch)</AltJitArch>
   </PropertyGroup>
 

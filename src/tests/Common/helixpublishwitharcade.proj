@@ -106,7 +106,7 @@
     <DotNetCliRuntime>linux-x64</DotNetCliRuntime>
   </PropertyGroup>
 
-  <Import Project="$(MSBuildThisFileDirectory)testgrouping.proj" />
+  <Import Project="testgrouping.proj" />
 
   <Target Name="DiscoverAllXUnitWrappers">
     <ItemGroup>

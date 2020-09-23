@@ -321,87 +321,104 @@ namespace CoreclrTestLib
                 process.StartInfo.RedirectStandardError = true;
 
                 DateTime startTime = DateTime.Now;
+
                 try
                 {
                     process.Start();
+
+                    var cts = new CancellationTokenSource();
+                    Task copyOutput = process.StandardOutput.BaseStream.CopyToAsync(outputStream, 4096, cts.Token);
+                    Task copyError = process.StandardError.BaseStream.CopyToAsync(errorStream, 4096, cts.Token);
+    
+                    if (process.WaitForExit(timeout))
+                    {
+                        // Process completed. Check process.ExitCode here.
+                        exitCode = process.ExitCode;
+                        Task.WaitAll(copyOutput, copyError);
+                    }
+                    else
+                    {
+                        // Timed out.
+    
+                        DateTime endTime = DateTime.Now;
+    
+                        try
+                        {
+                            cts.Cancel();
+                        }
+                        catch {}
+    
+                        outputWriter.WriteLine("\ncmdLine:{0} Timed Out (timeout in milliseconds: {1}{2}{3}, start: {4}, end: {5})",
+                                executable, timeout, (environmentVar != null) ? " from variable " : "", (environmentVar != null) ? TIMEOUT_ENVIRONMENT_VAR : "",
+                                startTime.ToString(), endTime.ToString());
+                        errorWriter.WriteLine("\ncmdLine:{0} Timed Out (timeout in milliseconds: {1}{2}{3}, start: {4}, end: {5})",
+                                executable, timeout, (environmentVar != null) ? " from variable " : "", (environmentVar != null) ? TIMEOUT_ENVIRONMENT_VAR : "",
+                                startTime.ToString(), endTime.ToString());
+    
+                        if (collectCrashDumps)
+                        {
+                            if (crashDumpFolder != null)
+                            {
+                                foreach (var child in FindChildProcessesByName(process, "corerun"))
+                                {
+                                    string crashDumpPath = Path.Combine(Path.GetFullPath(crashDumpFolder), string.Format("crashdump_{0}.dmp", child.Id));
+                                    Console.WriteLine($"Attempting to collect crash dump: {crashDumpPath}");
+                                    if (CollectCrashDump(child, crashDumpPath))
+                                    {
+                                        Console.WriteLine("Collected crash dump: {0}", crashDumpPath);
+                                    }
+                                    else
+                                    {
+                                        Console.WriteLine("Failed to collect crash dump");
+                                    }
+                                }
+                            }
+                        }
+    
+                        // kill the timed out processes after we've collected dumps
+                        process.Kill(entireProcessTree: true);
+                    }
                 }
                 catch (Exception ex)
+                {
+                    outputWriter.WriteLine("Error starting process: " + ex.Message);
+                }
+
+                if (exitCode == -100 || exitCode == 127)
                 {
                     StringBuilder sb = new StringBuilder();
                     sb.AppendLine("FileName:  " + process.StartInfo.FileName);
                     sb.AppendLine("Arguments: " + process.StartInfo.Arguments);
                     string directory = Path.GetDirectoryName(executable);
+                    while (!Directory.Exists(directory))
+                    {
+                        sb.AppendLine("Non-existent directory: " + directory);
+                        string parent = Path.GetDirectoryName(directory);
+                        if (string.IsNullOrEmpty(parent) || parent.Length >= directory.Length)
+                        {
+                            break;
+                        }
+                        directory = parent;
+                    }
+                    
                     if (Directory.Exists(directory))
                     {
+                        foreach (string directoryInFolder in Directory.EnumerateDirectories(directory))
+                        {
+                            sb.AppendLine("/> " + directoryInFolder);
+                        }
                         foreach (string fileInFolder in Directory.EnumerateFiles(directory))
                         {
-                            sb.AppendLine("-> " + fileInFolder);
+                            sb.AppendLine("=> " + fileInFolder);
                         }
-                    }
-                    else
-                    {
-                        sb.AppendLine("Non-existent directory");
                     }
                     throw new Exception(sb.ToString(), ex);
                 }
 
-                var cts = new CancellationTokenSource();
-                Task copyOutput = process.StandardOutput.BaseStream.CopyToAsync(outputStream, 4096, cts.Token);
-                Task copyError = process.StandardError.BaseStream.CopyToAsync(errorStream, 4096, cts.Token);
+                outputWriter.WriteLine("Test Harness Exitcode is : " + exitCode.ToString());
+                outputWriter.Flush();
 
-                if (process.WaitForExit(timeout))
-                {
-                    // Process completed. Check process.ExitCode here.
-                    exitCode = process.ExitCode;
-                    Task.WaitAll(copyOutput, copyError);
-                }
-                else
-                {
-                    // Timed out.
-
-                    DateTime endTime = DateTime.Now;
-
-                    try
-                    {
-                        cts.Cancel();
-                    }
-                    catch {}
-
-                    outputWriter.WriteLine("\ncmdLine:{0} Timed Out (timeout in milliseconds: {1}{2}{3}, start: {4}, end: {5})",
-                            executable, timeout, (environmentVar != null) ? " from variable " : "", (environmentVar != null) ? TIMEOUT_ENVIRONMENT_VAR : "",
-                            startTime.ToString(), endTime.ToString());
-                    errorWriter.WriteLine("\ncmdLine:{0} Timed Out (timeout in milliseconds: {1}{2}{3}, start: {4}, end: {5})",
-                            executable, timeout, (environmentVar != null) ? " from variable " : "", (environmentVar != null) ? TIMEOUT_ENVIRONMENT_VAR : "",
-                            startTime.ToString(), endTime.ToString());
-
-                    if (collectCrashDumps)
-                    {
-                        if (crashDumpFolder != null)
-                        {
-                            foreach (var child in FindChildProcessesByName(process, "corerun"))
-                            {
-                                string crashDumpPath = Path.Combine(Path.GetFullPath(crashDumpFolder), string.Format("crashdump_{0}.dmp", child.Id));
-                                Console.WriteLine($"Attempting to collect crash dump: {crashDumpPath}");
-                                if (CollectCrashDump(child, crashDumpPath))
-                                {
-                                    Console.WriteLine("Collected crash dump: {0}", crashDumpPath);
-                                }
-                                else
-                                {
-                                    Console.WriteLine("Failed to collect crash dump");
-                                }
-                            }
-                        }
-                    }
-
-                    // kill the timed out processes after we've collected dumps
-                    process.Kill(entireProcessTree: true);
-                }
-
-               outputWriter.WriteLine("Test Harness Exitcode is : " + exitCode.ToString());
-               outputWriter.Flush();
-
-               errorWriter.Flush();
+                errorWriter.Flush();
             }
 
             return exitCode;
