@@ -84,7 +84,7 @@ namespace System.Globalization.Tests
             yield return new object[] { "en-ZW", "d/M/yyyy" };
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
         [MemberData(nameof(DateTimeFormat_En_Locales_ShortDatePattern_TestData))]
         public void DateTimeFormat_En_Locales_ShortDatePattern(string locale, string shortDatePattern)
         {
