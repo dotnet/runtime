@@ -269,7 +269,8 @@ def set_pipeline_variable(name, value):
         value (string): Value of the variable.
     """
     define_variable_format = "##vso[task.setvariable variable={0}]{1}"
-    print(define_variable_format.format(name, value))
+    print("{0} -> {1}".format(name, value)) # logging
+    print(define_variable_format.format(name, value)) # set variable
 
 
 def main(args):

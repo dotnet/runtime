@@ -113,6 +113,10 @@ jobs:
     #     scriptPath: $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi-setup.py
     #     arguments: -src_directory $(Build.SourcesDirectory)\artifacts\tests\coreclr\${{ parameters.osGroup }}.${{ parameters.archType }}.$(buildConfigUpper)\Tests -dst_directory $(TestsArtifact) -max_size 50
 
+    - script: |
+          echo LibrariesArtifacts: $(LibrariesArtifacts)
+          echo TestsArtifacts: $(TestsArtifacts)
+
       # Run superpmi collection in helix
     - template: /eng/common/templates/steps/superpmi-send-to-helix.yml
       parameters:
