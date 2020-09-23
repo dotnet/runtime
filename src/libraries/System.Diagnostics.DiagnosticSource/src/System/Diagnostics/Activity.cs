@@ -432,7 +432,7 @@ namespace System.Diagnostics
         {
             KeyValuePair<string, string?> kvp = new KeyValuePair<string, string?>(key, value);
 
-            if (_baggage != null || Interlocked.CompareExchange(ref _baggage, new LinkedList<KeyValuePair<string, string?>>(kvp), null) != null)
+            if (_baggage != null || Interlocked.CompareExchange(ref _baggage, new LinkedList<KeyValuePair<string, string?>>(kvp, reversed: true), null) != null)
             {
                 _baggage.Add(kvp);
             }
@@ -1268,8 +1268,13 @@ namespace System.Diagnostics
         {
             private LinkedListNode<T> _first;
             private LinkedListNode<T> _last;
+            private bool _reversed;
 
-            public LinkedList(T firstValue) => _last = _first = new LinkedListNode<T>(firstValue);
+            public LinkedList(T firstValue, bool reversed = false)
+            {
+                _reversed = reversed;
+                _last = _first = new LinkedListNode<T>(firstValue);
+            }
 
             public LinkedList(IEnumerator<T> e)
             {
@@ -1288,10 +1293,18 @@ namespace System.Diagnostics
             {
                 LinkedListNode<T> newNode = new LinkedListNode<T>(value);
 
-                lock (_first)
+                lock (this)
                 {
-                    _last.Next = newNode;
-                    _last = newNode;
+                    if (_reversed)
+                    {
+                        newNode.Next = _first;
+                        _first = newNode;
+                    }
+                    else
+                    {
+                        _last.Next = newNode;
+                        _last = newNode;
+                    }
                 }
             }
 
