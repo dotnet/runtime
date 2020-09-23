@@ -39,6 +39,9 @@ namespace BINDER_SPACE
                                   SBuffer &publicKeyTokenBLOB);
 
     BOOL IsFileNotFound(HRESULT hr);
+
+    HRESULT GetNextPath(SString& paths, SString::Iterator& startPos, SString& outPath);
+    HRESULT GetNextTPAPath(SString& paths, SString::Iterator& startPos, bool dllOnly, SString& outPath, SString& simpleName, bool& isNativeImage);
 };
 
 #endif

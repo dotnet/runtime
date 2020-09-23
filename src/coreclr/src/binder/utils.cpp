@@ -15,6 +15,8 @@
 
 #include "strongnameinternal.h"
 #include "corpriv.h"
+#include "clr/fs/path.h"
+using namespace clr::fs;
 
 namespace BINDER_SPACE
 {
@@ -115,4 +117,139 @@ namespace BINDER_SPACE
     {
         return RuntimeFileNotFound(hr);
     }
+
+    HRESULT GetNextPath(SString& paths, SString::Iterator& startPos, SString& outPath)
+    {
+        HRESULT hr = S_OK;
+
+        bool wrappedWithQuotes = false;
+
+        // Skip any leading spaces or path separators
+        while (paths.Skip(startPos, W(' ')) || paths.Skip(startPos, PATH_SEPARATOR_CHAR_W)) {}
+
+        if (startPos == paths.End())
+        {
+            // No more paths in the string and we just skipped over some white space
+            outPath.Set(W(""));
+            return S_FALSE;
+        }
+
+        // Support paths being wrapped with quotations
+        if (paths.Skip(startPos, W('\"')))
+        {
+            wrappedWithQuotes = true;
+        }
+
+        SString::Iterator iEnd = startPos;      // Where current path ends
+        SString::Iterator iNext;                // Where next path starts
+        if (wrappedWithQuotes)
+        {
+            if (paths.Find(iEnd, W('\"')))
+            {
+                iNext = iEnd;
+                // Find where the next path starts - there should be a path separator right after the closing quotation mark
+                if (paths.Find(iNext, PATH_SEPARATOR_CHAR_W))
+                {
+                    iNext++;
+                }
+                else
+                {
+                    iNext = paths.End();
+                }
+            }
+            else
+            {
+                // There was no terminating quotation mark - that's bad
+                GO_WITH_HRESULT(E_INVALIDARG);
+            }
+        }
+        else if (paths.Find(iEnd, PATH_SEPARATOR_CHAR_W))
+        {
+            iNext = iEnd + 1;
+        }
+        else
+        {
+            iNext = iEnd = paths.End();
+        }
+
+        // Skip any trailing spaces
+        while (iEnd[-1] == W(' '))
+        {
+            iEnd--;
+        }
+
+        _ASSERTE(startPos < iEnd);
+
+        outPath.Set(paths, startPos, iEnd);
+        startPos = iNext;
+    Exit:
+        return hr;
+    }
+
+    HRESULT GetNextTPAPath(SString& paths, SString::Iterator& startPos, bool dllOnly, SString& outPath, SString& simpleName, bool& isNativeImage)
+    {
+        HRESULT hr = S_OK;
+        isNativeImage = false;
+
+        HRESULT pathResult = S_OK;
+        IF_FAIL_GO(pathResult = GetNextPath(paths, startPos, outPath));
+        if (pathResult == S_FALSE)
+        {
+            return S_FALSE;
+        }
+
+#ifndef CROSSGEN_COMPILE
+        if (Path::IsRelative(outPath))
+        {
+            GO_WITH_HRESULT(E_INVALIDARG);
+        }
+#endif
+
+        {
+            // Find the beginning of the simple name
+            SString::Iterator iSimpleNameStart = outPath.End();
+
+            if (!outPath.FindBack(iSimpleNameStart, DIRECTORY_SEPARATOR_CHAR_W))
+            {
+                iSimpleNameStart = outPath.Begin();
+            }
+            else
+            {
+                // Advance past the directory separator to the first character of the file name
+                iSimpleNameStart++;
+            }
+
+            if (iSimpleNameStart == outPath.End())
+            {
+                GO_WITH_HRESULT(E_INVALIDARG);
+            }
+
+            // GCC complains if we create SStrings inline as part of a function call
+            SString sNiDll(W(".ni.dll"));
+            SString sNiExe(W(".ni.exe"));
+            SString sDll(W(".dll"));
+            SString sExe(W(".exe"));
+
+            if (!dllOnly && (outPath.EndsWithCaseInsensitive(sNiDll) ||
+                outPath.EndsWithCaseInsensitive(sNiExe)))
+            {
+                simpleName.Set(outPath, iSimpleNameStart, outPath.End() - 7);
+                isNativeImage = true;
+            }
+            else if (outPath.EndsWithCaseInsensitive(sDll) ||
+                (!dllOnly && outPath.EndsWithCaseInsensitive(sExe)))
+            {
+                simpleName.Set(outPath, iSimpleNameStart, outPath.End() - 4);
+            }
+            else
+            {
+                // Invalid filename
+                GO_WITH_HRESULT(E_INVALIDARG);
+            }
+        }
+
+    Exit:
+        return hr;
+    }
+
 };
