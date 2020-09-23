@@ -185,7 +185,7 @@ namespace System.Text.Json
             // We also throw to avoid passing an invalid argument to setters for nullable struct properties,
             // which would cause an InvalidProgramException when the generated IL is invoked.
             // This is not an issue of the converter is wrapped in NullableConverter<T>.
-            if (runtimePropertyType.IsNullableType() && !converter.TypeToConvert.IsNullableType())
+            if (runtimePropertyType.CanBeNull() && !converter.TypeToConvert.CanBeNull())
             {
                 ThrowHelper.ThrowInvalidOperationException_ConverterCanConvertNullableRedundant(runtimePropertyType, converter);
             }
