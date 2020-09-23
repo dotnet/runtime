@@ -309,7 +309,7 @@ namespace System.Net.Sockets
         public System.IAsyncResult? BeginSend(byte[] buffer, int offset, int size, System.Net.Sockets.SocketFlags socketFlags, out System.Net.Sockets.SocketError errorCode, System.AsyncCallback? callback, object? state) { throw null; }
         public System.IAsyncResult BeginSend(System.Collections.Generic.IList<System.ArraySegment<byte>> buffers, System.Net.Sockets.SocketFlags socketFlags, System.AsyncCallback? callback, object? state) { throw null; }
         public System.IAsyncResult? BeginSend(System.Collections.Generic.IList<System.ArraySegment<byte>> buffers, System.Net.Sockets.SocketFlags socketFlags, out System.Net.Sockets.SocketError errorCode, System.AsyncCallback? callback, object? state) { throw null; }
-        public System.IAsyncResult BeginSendFile(string fileName, System.AsyncCallback? callback, object? state) { throw null; }
+        public System.IAsyncResult BeginSendFile(string? fileName, System.AsyncCallback? callback, object? state) { throw null; }
         public System.IAsyncResult BeginSendFile(string? fileName, byte[]? preBuffer, byte[]? postBuffer, System.Net.Sockets.TransmitFileOptions flags, System.AsyncCallback? callback, object? state) { throw null; }
         public System.IAsyncResult BeginSendTo(byte[] buffer, int offset, int size, System.Net.Sockets.SocketFlags socketFlags, System.Net.EndPoint remoteEP, System.AsyncCallback? callback, object? state) { throw null; }
         public void Bind(System.Net.EndPoint localEP) { }
