@@ -52,7 +52,7 @@ def setup_args(args):
 
     coreclr_args.verify(args,
                         "source_directory",
-                        lambda src_directory: os.path.isdir(source_directory),
+                        lambda source_directory: os.path.isdir(source_directory),
                         "source_directory doesn't exist")
 
     coreclr_args.verify(args,
@@ -79,7 +79,7 @@ def setup_args(args):
                         "max_size",
                         lambda max_size: max_size > 0,
                         "Please enter valid positive numeric max_size",
-                        modify_arg=lambda max_size: int(max_size) * 1000 * 1000 if max_size.isnumeric() else 0
+                        modify_arg=lambda max_size: int(max_size) * 1000 * 1000 if max_size is not None and max_size.isnumeric() else 0
                         # Convert to MB
                         )
     return coreclr_args
@@ -159,8 +159,11 @@ def run_command(command_to_run, _cwd=None):
     """
     print("Running: " + " ".join(command_to_run))
     with subprocess.Popen(command_to_run, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=_cwd) as proc:
-        stdout, _ = proc.communicate()
-        print(stdout.decode("utf-8"))
+        stdout, stderr = proc.communicate()
+        if len(stdout) > 0:
+            print(stdout.decode("utf-8"))
+        if len(stderr) > 0:
+            print(stderr.decode("utf-8"))
 
 
 def copy_files(src_path, dst_path, file_names):
@@ -180,15 +183,17 @@ def copy_files_windows(src_path, dst_path, file_names):
     """
     command = ["robocopy", src_path, dst_path] + file_names
     command += [
-        "/S",  # copy from sub-directories
+        "/S",    # copy from sub-directories
         "/R:2",  # no. of retries
         "/W:5",  # seconds before retry
-        "/NS",  # don't log file sizes
-        "/NC",  # don't log file classes
+        "/NS",   # don't log file sizes
+        "/NC",   # don't log file classes
         "/NFL",  # don't log file names
         "/NDL",  # don't log directory names
-        "/NJH"  # No Job Header.
-        "/XF *pdb"  # Exclude pdb files
+        "/NJH",  # No Job Header.
+        "/XF",   # Exclude
+        "*.pdb", #  *.pdb
+
     ]
     run_command(command)
 
@@ -287,13 +292,13 @@ def main(args):
     # Clone and build jitutils
     with tempfile.TemporaryDirectory() as jitutils_directory:
         run_command(
-            ["git clone --branch master --depth 1 --quiet https://github.com/dotnet/jitutils ", jitutils_directory])
+            ["git", "clone", "--quiet", "--depth", "1", "https://github.com/dotnet/jitutils", jitutils_directory])
         # Set dotnet path to run bootstrap
-        os.environ["PATH"] = path.join(source_directory, ".dotnet") + os.environ["PATH"]
+        os.environ["PATH"] = path.join(source_directory, ".dotnet") + os.pathsep + os.environ["PATH"]
         if is_windows:
-            run_command("bootstrap.cmd", jitutils_directory)
+            run_command([path.join(jitutils_directory, "bootstrap.cmd")], jitutils_directory)
         else:
-            run_command("bootstrap.sh", jitutils_directory)
+            run_command([path.join(jitutils_directory, "bootstrap.sh")], jitutils_directory)
 
         copy_files(path.join(jitutils_directory, "bin"), superpmi_dst_directory, ["pmi.dll"])
 
@@ -314,8 +319,8 @@ def main(args):
     set_pipeline_variable("PmiAssembliesDirectory", pmiassemblies_directory)
     set_pipeline_variable("WorkItemDirectory", workitem_directory)
     set_pipeline_variable("CorrelationPayloadDirectory", correlation_payload_directory)
-    set_pipeline_variables("LibrariesArtifacts", libraries_artifacts)
-    # set_pipeline_variables("TestsArtifacts", libraries_artifacts)
+    set_pipeline_variable("LibrariesArtifacts", libraries_artifacts)
+    # set_pipeline_variable("TestsArtifacts", libraries_artifacts)
     if is_windows:
         set_pipeline_variable("Python", "py -3")
     else:

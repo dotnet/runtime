@@ -98,7 +98,7 @@ jobs:
       inputs:
         scriptSource: 'filePath'
         scriptPath: $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi-setup.py
-        arguments: -src_directory $(Build.SourcesDirectory) -core_root_directory $(Core_Root_Dir) -arch $(archType) -mch_file_tag ${{ parameters.osGroup }}.${{ parameters.archType }}.${{ parameters.buildConfig }} -assemblies_directory $(Core_Root_Dir) -max_size 50
+        arguments: -source_directory $(Build.SourcesDirectory) -core_root_directory $(Core_Root_Dir) -arch $(archType) -mch_file_tag ${{ parameters.osGroup }}.${{ parameters.archType }}.${{ parameters.buildConfig }} -assemblies_directory $(Core_Root_Dir) -max_size 50
 
     # - task: PythonScript@0
     #   displayName: Partition PMIAssembliesDirectory (libraries)
