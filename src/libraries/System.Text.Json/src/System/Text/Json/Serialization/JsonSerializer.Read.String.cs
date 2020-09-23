@@ -50,10 +50,10 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Parse the text representing a single JSON value into an instance of a specified type.
+        /// Parses the text representing a single JSON value into an instance of the type specified by a generic type parameter.
         /// </summary>
         /// <returns>A <typeparamref name="TValue"/> representation of the JSON value.</returns>
-        /// <param name="json">JSON text to parse.</param>
+        /// <param name="json">The JSON text to parse.</param>
         /// <param name="options">Options to control the behavior during parsing.</param>
         /// <exception cref="JsonException">
         /// The JSON is invalid.
