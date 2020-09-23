@@ -26277,7 +26277,7 @@ PhaseStatus Compiler::fgMergeFinallyChains()
         {
             JITDUMP("Method had mergeable try-finallys and some callfinally merges were performed.\n");
 
-#if DEBUG
+#ifdef DEBUG
             if (verbose)
             {
                 printf("\n*************** After fgMergeFinallyChains()\n");
@@ -26814,3 +26814,247 @@ void Compiler::fgTailMergeThrowsJumpToHelper(BasicBlock* predBlock,
     // Note there is now a jump to the canonical block
     canonicalBlock->bbFlags |= (BBF_JMP_TARGET | BBF_HAS_LABEL);
 }
+
+#ifdef DEBUG
+
+//------------------------------------------------------------------------
+// fgDebugCheckProfileData: verify profile data is self-consistent
+//   (or nearly so)
+//
+// Notes:
+//   For each profiled block, check that the flow of counts into
+//   the block matches the flow of counts out of the block.
+//
+//   We ignore EH flow as we don't have explicit edges and generally
+//   we expect EH edge counts to be small, so errors from ignoring
+//   them should be rare.
+//
+void Compiler::fgDebugCheckProfileData()
+{
+    // We can't check before we have pred lists built.
+    //
+    assert(fgComputePredsDone);
+
+    JITDUMP("Checking Profile Data\n");
+    unsigned             problemBlocks    = 0;
+    unsigned             unprofiledBlocks = 0;
+    unsigned             profiledBlocks   = 0;
+    bool                 entryProfiled    = false;
+    bool                 exitProfiled     = false;
+    BasicBlock::weight_t entryWeight      = 0;
+    BasicBlock::weight_t exitWeight       = 0;
+
+    // Verify each profiled block.
+    //
+    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    {
+        if (!block->hasProfileWeight())
+        {
+            unprofiledBlocks++;
+            continue;
+        }
+
+        // There is some profile data to check.
+        //
+        profiledBlocks++;
+
+        // Currently using raw counts. Consider using normalized counts instead?
+        //
+        BasicBlock::weight_t blockWeight = block->bbWeight;
+
+        bool verifyIncoming = true;
+        bool verifyOutgoing = true;
+
+        // First, look for blocks that require special treatment.
+
+        // Entry blocks
+        //
+        if (block == fgFirstBB)
+        {
+            entryWeight += blockWeight;
+            entryProfiled  = true;
+            verifyIncoming = false;
+        }
+
+        // Exit blocks
+        //
+        if ((block->bbJumpKind == BBJ_RETURN) || (block->bbJumpKind == BBJ_THROW))
+        {
+            exitWeight += blockWeight;
+            exitProfiled   = true;
+            verifyOutgoing = false;
+        }
+
+        // Handler entries
+        //
+        if (block->hasEHBoundaryIn())
+        {
+            verifyIncoming = false;
+        }
+
+        // Handler exits
+        //
+        if (block->hasEHBoundaryOut())
+        {
+            verifyOutgoing = false;
+        }
+
+        // We generally expect that the incoming flow, block weight and outgoing
+        // flow should all match.
+        //
+        // But we have two edge counts... so for now we simply check if the block
+        // count falls within the [min,max] range.
+        //
+        if (verifyIncoming)
+        {
+            BasicBlock::weight_t incomingWeightMin = 0;
+            BasicBlock::weight_t incomingWeightMax = 0;
+            bool                 foundPreds        = false;
+
+            for (flowList* predEdge = block->bbPreds; predEdge != nullptr; predEdge = predEdge->flNext)
+            {
+                incomingWeightMin += predEdge->edgeWeightMin();
+                incomingWeightMax += predEdge->edgeWeightMax();
+                foundPreds = true;
+            }
+
+            if (!foundPreds)
+            {
+                // Might need to tone this down as we could see unreachable blocks?
+                problemBlocks++;
+                JITDUMP("  " FMT_BB " - expected to see predecessors\n", block->bbNum);
+            }
+            else
+            {
+                if (incomingWeightMin > incomingWeightMax)
+                {
+                    problemBlocks++;
+                    JITDUMP("  " FMT_BB " - incoming min %d > incoming max %d\n", block->bbNum, incomingWeightMin,
+                            incomingWeightMax);
+                }
+                else if (blockWeight < incomingWeightMin)
+                {
+                    problemBlocks++;
+                    JITDUMP("  " FMT_BB " - block weight %d < incoming min %d\n", block->bbNum, blockWeight,
+                            incomingWeightMin);
+                }
+                else if (blockWeight > incomingWeightMax)
+                {
+                    problemBlocks++;
+                    JITDUMP("  " FMT_BB " - block weight %d > incoming max %d\n", block->bbNum, blockWeight,
+                            incomingWeightMax);
+                }
+            }
+        }
+
+        if (verifyOutgoing)
+        {
+            const unsigned numSuccs = block->NumSucc();
+
+            if (numSuccs == 0)
+            {
+                problemBlocks++;
+                JITDUMP("  " FMT_BB " - expected to see successors\n", block->bbNum);
+            }
+            else
+            {
+                BasicBlock::weight_t outgoingWeightMin = 0;
+                BasicBlock::weight_t outgoingWeightMax = 0;
+
+                // Walking successor edges is a bit wonky. Seems like it should be easier.
+                // Note this can also fail to enumerate all the edges, if we have a multigraph
+                //
+                int missingEdges = 0;
+
+                for (unsigned i = 0; i < numSuccs; i++)
+                {
+                    BasicBlock* succBlock = block->GetSucc(i);
+                    flowList*   succEdge  = nullptr;
+
+                    for (flowList* edge = succBlock->bbPreds; edge != nullptr; edge = edge->flNext)
+                    {
+                        if (edge->flBlock == block)
+                        {
+                            succEdge = edge;
+                            break;
+                        }
+                    }
+
+                    if (succEdge == nullptr)
+                    {
+                        missingEdges++;
+                        JITDUMP("  " FMT_BB " can't find successor edge to " FMT_BB "\n", block->bbNum,
+                                succBlock->bbNum);
+                    }
+                    else
+                    {
+                        outgoingWeightMin += succEdge->edgeWeightMin();
+                        outgoingWeightMax += succEdge->edgeWeightMax();
+                    }
+                }
+
+                if (missingEdges > 0)
+                {
+                    JITDUMP("  " FMT_BB " - missing %d successor edges\n", block->bbNum, missingEdges);
+                    problemBlocks++;
+                }
+                if (outgoingWeightMin > outgoingWeightMax)
+                {
+                    problemBlocks++;
+                    JITDUMP("  " FMT_BB " - outgoing min %d > outgoing max %d\n", block->bbNum, outgoingWeightMin,
+                            outgoingWeightMax);
+                }
+                else if (blockWeight < outgoingWeightMin)
+                {
+                    problemBlocks++;
+                    JITDUMP("  " FMT_BB " - block weight %d < outgoing min %d\n", block->bbNum, blockWeight,
+                            outgoingWeightMin);
+                }
+                else if (blockWeight > outgoingWeightMax)
+                {
+                    problemBlocks++;
+                    JITDUMP("  " FMT_BB " - block weight %d > outgoing max %d\n", block->bbNum, blockWeight,
+                            outgoingWeightMax);
+                }
+            }
+        }
+    }
+
+    // Verify overall input-output balance.
+    //
+    if (entryProfiled && exitProfiled)
+    {
+        if (entryWeight != exitWeight)
+        {
+            problemBlocks++;
+            JITDUMP("  Entry %d exit %d mismatch\n", entryWeight, exitWeight);
+        }
+    }
+
+    // Sum up what we discovered.
+    //
+    if (problemBlocks == 0)
+    {
+        if (profiledBlocks == 0)
+        {
+            JITDUMP("No blocks were profiled, so nothing to check\n");
+        }
+        else
+        {
+            JITDUMP("Profile is self-consistent (%d profiled blocks, %d unprofiled)\n", profiledBlocks,
+                    unprofiledBlocks);
+        }
+    }
+    else
+    {
+        JITDUMP("Profile is NOT self-consistent, found %d problems (%d profiled blocks, %d unprofiled)\n",
+                problemBlocks, profiledBlocks, unprofiledBlocks);
+
+        if (JitConfig.JitProfileChecks() == 2)
+        {
+            assert(!"Inconsistent profile");
+        }
+    }
+}
+
+#endif // DEBUG

@@ -5298,6 +5298,7 @@ public:
     void fgDebugCheckDispFlags(GenTree* tree, unsigned dispFlags, unsigned debugFlags);
     void fgDebugCheckFlagsHelper(GenTree* tree, unsigned treeFlags, unsigned chkFlags);
     void fgDebugCheckTryFinallyExits();
+    void fgDebugCheckProfileData();
 #endif
 
     static GenTree* fgGetFirstNode(GenTree* tree);

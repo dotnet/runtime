@@ -4537,7 +4537,11 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
 
     // Compute bbNum, bbRefs and bbPreds
     //
-    // This is the first time full (not cheap) preds will be computed
+    // This is the first time full (not cheap) preds will be computed.
+    // And, if we have profile data, we can now check integrity.
+    //
+    // From this point on the flowgraph information such as bbNum,
+    // bbRefs or bbPreds has to be kept updated.
     //
     auto computePredsPhase = [this]() {
         JITDUMP("\nRenumbering the basic blocks for fgComputePred\n");
@@ -4564,9 +4568,6 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
         DoPhase(this, PHASE_EARLY_UPDATE_FLOW_GRAPH, earlyUpdateFlowGraphPhase);
     }
 
-    // From this point on the flowgraph information such as bbNum,
-    // bbRefs or bbPreds has to be kept updated
-    //
     // Promote struct locals
     //
     auto promoteStructsPhase = [this]() {
