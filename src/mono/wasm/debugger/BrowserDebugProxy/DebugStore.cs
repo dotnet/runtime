@@ -323,6 +323,8 @@ namespace Microsoft.WebAssembly.Diagnostics
             SequencePoint prev = null;
             foreach (SequencePoint sp in DebugInformation.SequencePoints)
             {
+                if (sp.IsHidden)
+                    continue;
                 if (sp.Offset > pos)
                     break;
                 prev = sp;
