@@ -324,8 +324,15 @@ CLRTestExitCode=$?
       </BashCLRTestLaunchCmds>
       <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And $(TargetOS) == 'Android' ">
       <![CDATA[
-cd apk
 # run Android app
+AdbTool=$ANDROID_SDK_ROOT/platform-tools/adb
+$AdbTool kill-server
+$AdbTool start-server
+$AdbTool logcat -c" ContinueOnError="WarnAndContinue
+$AdbTool uninstall net.dot.$(MsBuildProjectName)" ContinueOnError="WarnAndContinue
+$AdbTool install apk/bin/$(MsBuildProjectName).apk
+$AdbTool shell am instrument -w net.dot.$(MsBuildProjectName)/net.dot.MonoRunner
+$AdbTool logcat -d -s DOTNET
 CLRTestExitCode=$?
       ]]>
       </BashCLRTestLaunchCmds>
