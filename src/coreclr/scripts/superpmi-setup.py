@@ -1,3 +1,19 @@
+#!/usr/bin/env python3
+#
+## Licensed to the .NET Foundation under one or more agreements.
+## The .NET Foundation licenses this file to you under the MIT license.
+#
+##
+# Title               : superpmi-setup.py
+#
+# Notes:
+#
+# Script to setup directory structure to perform SuperPMI collection in CI.
+#
+################################################################################
+################################################################################
+
+
 import subprocess
 import argparse
 
@@ -54,12 +70,22 @@ def setup_args(args):
 
 
 def get_files_sorted_by_size(src_directory):
+    """ For a given src_directory, returns all the .dll files sorted by size.
+
+    Args:
+        src_directory (string): Path of directory to enumerate.
+    """
     def sorter_by_size(pair):
+        """ Sorts the pair (file_name, file_size) tuple in descending order of file_size
+
+        Args:
+            pair ((string, int)): Tuple of file_name, file_size
+        """
         pair.sort(key=lambda x: x[1], reverse=True)
         return pair
 
     filename_with_size = []
-    for file_path, subdirs, files in walk(src_directory):
+    for file_path, _, files in walk(src_directory):
         for name in files:
             curr_file_path = path.join(file_path, name)
             if not isfile(curr_file_path) or not name.endswith(".dll"):
@@ -71,11 +97,20 @@ def get_files_sorted_by_size(src_directory):
 
 
 def first_fit(sorted_by_size, max_size):
+    """ Given a list of file names along with size in descending order, divides the files
+    in number of buckets such that each bucket doesn't exceed max_size. Since this is a first-fit
+    approach, it doesn't guarantee to find the bucket with tighest spot available.
+
+    Args:
+        sorted_by_size ((string, int)): (file_name, file_size) tuple
+        max_size (int): Maximum size (in bytes) of each bucket.
+
+    Returns:
+        [{int, [string]}]: Returns a dictionary of partition-index to list of file names following in that bucket.
+    """
     end_result = {}
-    cached_size = {}
-    partition_index = 0
     for curr_file in sorted_by_size:
-        file_name, file_size = curr_file
+        _, file_size = curr_file
 
         # Find the right bucket
         found_bucket = False
@@ -85,7 +120,6 @@ def first_fit(sorted_by_size, max_size):
                 total_in_curr_par = sum(n for _, n in end_result[p_index])
                 if (total_in_curr_par + file_size) < max_size:
                     end_result[p_index].append(curr_file)
-                    # cached_size[p_index] = cached_size[p_index] + file_size
                     found_bucket = True
                     break
 
@@ -96,6 +130,11 @@ def first_fit(sorted_by_size, max_size):
 
 
 def run_command(command_to_run):
+    """ Runs the command.
+
+    Args:
+        command_to_run ([string]): Command to run along with arguments.
+    """
     print("Running: " + " ".join(command_to_run))
     with subprocess.Popen(command_to_run, stdout=subprocess.PIPE, stderr=subprocess.PIPE) as proc:
         stdout, _ = proc.communicate()
@@ -103,6 +142,13 @@ def run_command(command_to_run):
 
 
 def copy_files_windows(src_path, dst_path, file_names):
+    """ On Windows, copies files specified in file_names from src_path to dst_path using "robocopy".
+
+    Args:
+        src_path (string): Path of source directory
+        dst_path (string): Path of destination directory
+        file_names ([string]): List of files names to be copied
+    """
     command = ["robocopy", src_path, dst_path] + file_names
     command += [
         "/S",  # copy from sub-directories
@@ -118,6 +164,14 @@ def copy_files_windows(src_path, dst_path, file_names):
 
 
 def copy_files_linux(src_path, dst_path, file_names):
+    """ On Linux, copies files specified in file_names from src_path to dst_path using "rsync".
+
+    Args:
+        src_path (string): Path of source directory
+        dst_path (string): Path of destination directory
+        file_names ([string]): List of files names to be copied
+    """
+
     # create dst_path
     run_command(["mkdir", "-p", dst_path])
 
@@ -133,6 +187,11 @@ def copy_files_linux(src_path, dst_path, file_names):
 
 
 def partition_files(coreclr_args):
+    """ Copy bucketized files based on size to destination folder.
+
+    Args:
+        coreclr_args (CoreclrArguments): Command line arguments.
+    """
     src_directory = coreclr_args.src_directory
     dst_directory = coreclr_args.dst_directory
     dst_folder_name = coreclr_args.dst_folder_name
@@ -157,11 +216,22 @@ def partition_files(coreclr_args):
 
 
 def set_pipeline_variable(name, value):
+    """ This method sets pipeline variable.
+
+    Args:
+        name (string): Name of the variable.
+        value (string): Value of the variable.
+    """
     define_variable_format = "##vso[task.setvariable variable={0}]{1}"
     print(define_variable_format.format(name, value))
 
 
 def main(args):
+    """ Main entrypoint
+
+    Args:
+        args ([type]): Arguments to the script
+    """
     coreclr_args = setup_args(args)
     partition_files(coreclr_args)
 
