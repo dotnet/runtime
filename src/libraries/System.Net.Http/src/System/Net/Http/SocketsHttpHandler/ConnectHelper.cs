@@ -33,9 +33,10 @@ namespace System.Net.Http
 
         public static async ValueTask<Stream> ConnectAsync(Func<SocketsHttpConnectionContext, CancellationToken, ValueTask<Stream>> callback, DnsEndPoint endPoint, HttpRequestMessage requestMessage, CancellationToken cancellationToken)
         {
+            Stream stream;
             try
             {
-                return await callback(new SocketsHttpConnectionContext(endPoint, requestMessage), cancellationToken).ConfigureAwait(false);
+                stream = await callback(new SocketsHttpConnectionContext(endPoint, requestMessage), cancellationToken).ConfigureAwait(false);
             }
             catch (OperationCanceledException ex) when (ex.CancellationToken == cancellationToken)
             {
@@ -45,6 +46,13 @@ namespace System.Net.Http
             {
                 throw CreateWrappedException(ex, endPoint.Host, endPoint.Port, cancellationToken);
             }
+
+            if (stream == null)
+            {
+                throw new HttpRequestException(SR.net_http_null_from_connect_callback);
+            }
+
+            return stream;
         }
 
         public static Stream Connect(string host, int port, CancellationToken cancellationToken)
