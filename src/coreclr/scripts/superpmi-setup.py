@@ -31,7 +31,8 @@ parser.add_argument("-core_root_directory", help="path to core_root directory")
 parser.add_argument("-arch", help="Architecture")
 parser.add_argument("-mch_file_tag", help="Tag to be used to mch files")
 
-parser.add_argument("-src_directory", help="path to src")  # TODO: Change this
+parser.add_argument("-assemblies_directory", help="directory containing assemblies for which superpmi collection to "
+                                                  "be done")
 parser.add_argument("-max_size", help="Max size of partition in MB")
 is_windows = platform.system() == "Windows"
 
@@ -70,9 +71,9 @@ def setup_args(args):
                         "Unable to set mch_file_tag")
 
     coreclr_args.verify(args,
-                        "src_directory",
-                        lambda src_directory: os.path.isdir(src_directory),
-                        "src_directory doesn't exist")
+                        "assemblies_directory",
+                        lambda assemblies_directory: os.path.isdir(assemblies_directory),
+                        "assemblies_directory doesn't exist")
 
     coreclr_args.verify(args,
                         "max_size",
@@ -223,7 +224,7 @@ def partition_files(coreclr_args, dst_directory, exclude_directories):
         dst_directory (string): Destination folder where files are copied.
         exclude_directories ([string]): List of folder names to be excluded
     """
-    src_directory = coreclr_args.src_directory
+    src_directory = coreclr_args.assemblies_directory
     max_size = coreclr_args.max_size
 
     sorted_by_size = get_files_sorted_by_size(src_directory, exclude_directories)
