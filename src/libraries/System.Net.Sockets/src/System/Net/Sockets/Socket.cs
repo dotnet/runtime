@@ -1299,7 +1299,7 @@ namespace System.Net.Sockets
             return bytesTransferred;
         }
 
-        public void SendFile(string fileName)
+        public void SendFile(string? fileName)
         {
             SendFile(fileName, null, null, TransmitFileOptions.UseDefaultWorkerThread);
         }
