@@ -290,17 +290,22 @@ def main(args):
     copy_files(coreclr_args.core_root_directory, superpmi_dst_directory, ["*"])
 
     # Clone and build jitutils
-    with tempfile.TemporaryDirectory() as jitutils_directory:
-        run_command(
-            ["git", "clone", "--quiet", "--depth", "1", "https://github.com/dotnet/jitutils", jitutils_directory])
-        # Set dotnet path to run bootstrap
-        os.environ["PATH"] = path.join(source_directory, ".dotnet") + os.pathsep + os.environ["PATH"]
-        if is_windows:
-            run_command([path.join(jitutils_directory, "bootstrap.cmd")], jitutils_directory)
-        else:
-            run_command([path.join(jitutils_directory, "bootstrap.sh")], jitutils_directory)
+    try:
+        with tempfile.TemporaryDirectory() as jitutils_directory:
+            run_command(
+                ["git", "clone", "--quiet", "--depth", "1", "https://github.com/dotnet/jitutils", jitutils_directory])
+            # Set dotnet path to run bootstrap
+            os.environ["PATH"] = path.join(source_directory, ".dotnet") + os.pathsep + os.environ["PATH"]
+            if is_windows:
+                run_command([path.join(jitutils_directory, "bootstrap.cmd")], jitutils_directory)
+            else:
+                run_command([path.join(jitutils_directory, "bootstrap.sh")], jitutils_directory)
 
-        copy_files(path.join(jitutils_directory, "bin"), superpmi_dst_directory, ["pmi.dll"])
+            copy_files(path.join(jitutils_directory, "bin"), superpmi_dst_directory, ["pmi.dll"])
+    except PermissionError as pe_error:
+        # Details: https://bugs.python.org/issue26660
+        print('Ignoring PermissionError: {0}'.format(pe_error))
+
 
     # Workitem directories
     workitem_directory = path.join(source_directory, "workitem")
