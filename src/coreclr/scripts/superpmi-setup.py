@@ -187,6 +187,9 @@ def copy_files_windows(src_path, dst_path, file_paths):
     file_names = list(set([path.basename(curr_file) for curr_file in file_paths]))
     command = ["robocopy", src_path, dst_path] + file_names
     command += [
+        # "*.dll",  # only copy .dll
+        # "*.exe",  # or .exe
+        # "*.py", #TODO : Have this option only if file_names is empty
         "/S",  # copy from sub-directories
         "/R:2",  # no. of retries
         "/W:5",  # seconds before retry
@@ -195,9 +198,8 @@ def copy_files_windows(src_path, dst_path, file_paths):
         "/NFL",  # don't log file names
         "/NDL",  # don't log directory names
         "/NJH",  # No Job Header.
-        "/XF",  # Exclude
-        "*.pdb",  # *.pdb
-
+        "/XF",   # Exclude
+        "*.pdb"  #  *.pdb files
     ]
     run_command(command)
 
@@ -219,7 +221,7 @@ def copy_files_linux(src_path, dst_path, file_paths):
 
     if len(file_names) == 0:
         # if file_names is empty, copy everything
-        command = ["rsync", "-avr", "--exclude='*.pdb'", src_path, dst_path]
+        command = ["rsync", "-avr", "--include='*.dll'", "--include='*.exe'", "--exclude='*'", src_path + '/', dst_path]
         run_command(command)
     else:
         with tempfile.NamedTemporaryFile(mode="w+t", delete=False) as tmp:
@@ -229,7 +231,7 @@ def copy_files_linux(src_path, dst_path, file_paths):
             tmp.flush()
 
             # use rsync
-            command = ["rsync", "-avr", "--exclude='*.pdb'", "--files-from={0}".format(tmp.name), src_path, dst_path]
+            command = ["rsync", "-avr", "--files-from={0}".format(tmp.name), src_path, dst_path]
             run_command(command)
 
 
@@ -297,27 +299,26 @@ def main(args):
         else:
             helix_queue = "Ubuntu.1804.Amd64"
 
-    # # create superpmi directory
-    # # TODO: Fix to make sure all files are dumped in
-    # copy_files(superpmi_src_directory, superpmi_dst_directory, [])
-    # copy_files(coreclr_args.core_root_directory, superpmi_dst_directory, [])
+    # create superpmi directory
+    copy_files(superpmi_src_directory, superpmi_dst_directory, [])
+    copy_files(coreclr_args.core_root_directory, superpmi_dst_directory, [])
 
-    # # Clone and build jitutils
-    # try:
-    #     with tempfile.TemporaryDirectory() as jitutils_directory:
-    #         run_command(
-    #             ["git", "clone", "--quiet", "--depth", "1", "https://github.com/dotnet/jitutils", jitutils_directory])
-    #         # Set dotnet path to run bootstrap
-    #         os.environ["PATH"] = path.join(source_directory, ".dotnet") + os.pathsep + os.environ["PATH"]
-    #         if is_windows:
-    #             run_command([path.join(jitutils_directory, "bootstrap.cmd")], jitutils_directory)
-    #         else:
-    #             run_command([path.join(jitutils_directory, "bootstrap.sh")], jitutils_directory)
-    #
-    #         copy_files(path.join(jitutils_directory, "bin"), superpmi_dst_directory, ["pmi.dll"])
-    # except PermissionError as pe_error:
-    #     # Details: https://bugs.python.org/issue26660
-    #     print('Ignoring PermissionError: {0}'.format(pe_error))
+    # Clone and build jitutils
+    try:
+        with tempfile.TemporaryDirectory() as jitutils_directory:
+            run_command(
+                ["git", "clone", "--quiet", "--depth", "1", "https://github.com/dotnet/jitutils", jitutils_directory])
+            # Set dotnet path to run bootstrap
+            os.environ["PATH"] = path.join(source_directory, ".dotnet") + os.pathsep + os.environ["PATH"]
+            if is_windows:
+                run_command([path.join(jitutils_directory, "bootstrap.cmd")], jitutils_directory)
+            else:
+                run_command([path.join(jitutils_directory, "bootstrap.sh")], jitutils_directory)
+
+            copy_files(path.join(jitutils_directory, "bin"), superpmi_dst_directory, ["pmi.dll"])
+    except PermissionError as pe_error:
+        # Details: https://bugs.python.org/issue26660
+        print('Ignoring PermissionError: {0}'.format(pe_error))
 
     # Workitem directories
     workitem_directory = path.join(source_directory, "workitem")
