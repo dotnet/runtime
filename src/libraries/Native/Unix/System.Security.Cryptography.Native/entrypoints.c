@@ -286,6 +286,8 @@ FCFuncStart(gEmbedded_CryptoInitializer)
 FCFuncEnd()
 
 FCFuncStart(gEmbedded_OpenSsl)
+    // trimmed
+    QCFuncElement("OpenSslGetProtocolSupport", CryptoNative_OpenSslGetProtocolSupport)
     QCFuncElement("OpenSslVersionNumber", CryptoNative_OpenSslVersionNumber)
 FCFuncEnd()
 

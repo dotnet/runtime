@@ -151,6 +151,8 @@ FCFuncStart(gEmbedded_Sys)
     QCFuncElement("MUnmap", SystemNative_MUnmap)
     QCFuncElement("Open", SystemNative_Open)
     QCFuncElement("OpenDir", SystemNative_OpenDir)
+    //trimmed 
+    QCFuncElement("PathConf", SystemNative_PathConf)
     QCFuncElement("Pipe", SystemNative_Pipe)
     QCFuncElement("PlatformSupportsDualModeIPv4PacketInfo", SystemNative_PlatformSupportsDualModeIPv4PacketInfo)
     QCFuncElement("Poll", SystemNative_Poll)
@@ -208,5 +210,8 @@ FCFuncStart(gEmbedded_Sys)
     QCFuncElement("WaitIdAnyExitedNoHangNoWait", SystemNative_WaitIdAnyExitedNoHangNoWait)
     QCFuncElement("WaitPidExitedNoHang", SystemNative_WaitPidExitedNoHang)
     QCFuncElement("Write", SystemNative_Write)
+
+    // trimmed
+    QCFuncElement("GetNodeName", SystemNative_GetNodeName)
 FCFuncEnd()
 
