@@ -225,14 +225,6 @@ ves_icall_System_Math_FusedMultiplyAdd (gdouble x, gdouble y, gdouble z)
 }
 #endif
 
-#ifndef ENABLE_NETCORE
-gdouble
-ves_icall_System_Math_ScaleB(gdouble x, gint32 n)
-{
-	return scalbn(x, n);
-}
-#endif
-
 float
 ves_icall_System_MathF_Acos (float x)
 {
@@ -393,13 +385,5 @@ float
 ves_icall_System_MathF_FusedMultiplyAdd (float x, float y, float z)
 {
 	return fmaf (x, y, z);
-}
-#endif
-
-#ifndef ENABLE_NETCORE
-float
-ves_icall_System_MathF_ScaleB(float x, gint32 n)
-{
-    return scalbnf(x, n);
 }
 #endif
