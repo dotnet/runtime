@@ -8,6 +8,12 @@ using Internal.TypeSystem;
 
 namespace Internal.JitInterface
 {
+    public enum BOOL : int
+    {
+        FALSE = 0,
+        TRUE = 1,
+    }
+
     public static class CORINFO
     {
         // CORINFO_MAXINDIRECTIONS is the maximum number of
@@ -20,40 +26,14 @@ namespace Internal.JitInterface
 
     public struct CORINFO_METHOD_STRUCT_
     {
-        internal static unsafe CORINFO_METHOD_STRUCT_* Construct(int i)
-        {
-            return (CORINFO_METHOD_STRUCT_*)((i + 1) << 4);
-        }
-
-        internal static unsafe int GetValue(CORINFO_METHOD_STRUCT_* val)
-        {
-            return ((int)val - 1) >> 4;
-        }
     }
 
     public struct CORINFO_FIELD_STRUCT_
     {
-        internal static unsafe CORINFO_FIELD_STRUCT_* Construct(int i)
-        {
-            return (CORINFO_FIELD_STRUCT_*)((i + 1) << 4);
-        }
-        internal static unsafe int GetValue(CORINFO_FIELD_STRUCT_* val)
-        {
-            return ((int)val - 1) >> 4;
-        }
     }
 
     public struct CORINFO_CLASS_STRUCT_
     {
-        internal static unsafe CORINFO_CLASS_STRUCT_* Construct(int i)
-        {
-            return (CORINFO_CLASS_STRUCT_*)((i + 1) << 4);
-        }
-
-        internal static unsafe int GetValue(CORINFO_CLASS_STRUCT_* val)
-        {
-            return ((int)val - 1) >> 4;
-        }
     }
 
     public struct CORINFO_ARG_LIST_STRUCT_
@@ -62,14 +42,6 @@ namespace Internal.JitInterface
 
     public struct CORINFO_MODULE_STRUCT_
     {
-        internal static unsafe CORINFO_MODULE_STRUCT_* Construct(int i)
-        {
-            return (CORINFO_MODULE_STRUCT_*)((i + 1) << 4);
-        }
-        internal static unsafe int GetValue(CORINFO_MODULE_STRUCT_* val)
-        {
-            return ((int)val - 1) >> 4;
-        }
     }
 
     public struct CORINFO_ASSEMBLY_STRUCT_
