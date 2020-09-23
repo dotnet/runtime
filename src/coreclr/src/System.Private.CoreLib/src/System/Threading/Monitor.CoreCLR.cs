@@ -20,7 +20,7 @@ using System.Runtime.Versioning;
 
 namespace System.Threading
 {
-    public static class Monitor
+    public static partial class Monitor
     {
         /*=========================================================================
         ** Obtain the monitor lock of obj. Will block if another thread holds the lock
@@ -112,19 +112,6 @@ namespace System.Threading
             return lockTaken;
         }
 
-        private static int MillisecondsTimeoutFromTimeSpan(TimeSpan timeout)
-        {
-            long tm = (long)timeout.TotalMilliseconds;
-            if (tm < -1 || tm > (long)int.MaxValue)
-                throw new ArgumentOutOfRangeException(nameof(timeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
-            return (int)tm;
-        }
-
-        public static bool TryEnter(object obj, TimeSpan timeout)
-        {
-            return TryEnter(obj, MillisecondsTimeoutFromTimeSpan(timeout));
-        }
-
         // The JIT should inline this method to allow check of lockTaken argument to be optimized out
         // in the typical case. Note that the method has to be transparent for inlining to be allowed by the VM.
         public static void TryEnter(object obj, int millisecondsTimeout, ref bool lockTaken)
@@ -133,14 +120,6 @@ namespace System.Threading
                 ThrowLockTakenException();
 
             ReliableEnterTimeout(obj, millisecondsTimeout, ref lockTaken);
-        }
-
-        public static void TryEnter(object obj, TimeSpan timeout, ref bool lockTaken)
-        {
-            if (lockTaken)
-                ThrowLockTakenException();
-
-            ReliableEnterTimeout(obj, MillisecondsTimeoutFromTimeSpan(timeout), ref lockTaken);
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -179,22 +158,6 @@ namespace System.Threading
 
             return ObjWait(millisecondsTimeout, obj);
         }
-
-        [UnsupportedOSPlatform("browser")]
-        public static bool Wait(object obj, TimeSpan timeout) => Wait(obj, MillisecondsTimeoutFromTimeSpan(timeout));
-
-        [UnsupportedOSPlatform("browser")]
-        public static bool Wait(object obj) => Wait(obj, Timeout.Infinite);
-
-        // Remoting is not supported, exitContext argument is unused
-        [UnsupportedOSPlatform("browser")]
-        public static bool Wait(object obj, int millisecondsTimeout, bool exitContext)
-            => Wait(obj, millisecondsTimeout);
-
-        // Remoting is not supported, exitContext argument is unused
-        [UnsupportedOSPlatform("browser")]
-        public static bool Wait(object obj, TimeSpan timeout, bool exitContext)
-            => Wait(obj, MillisecondsTimeoutFromTimeSpan(timeout));
 
         /*========================================================================
         ** Sends a notification to a single waiting object.
