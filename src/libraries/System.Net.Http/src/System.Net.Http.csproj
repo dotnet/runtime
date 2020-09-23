@@ -10,7 +10,7 @@
     <DefineConstants>$(DefineConstants);SYSNETHTTP_NO_OPENSSL</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetsBrowser)' == 'true'">
-    <DefineConstants>$(DefineConstants);TARGETS_BROWSER</DefineConstants>
+    <DefineConstants>$(DefineConstants);TARGET_BROWSER</DefineConstants>
   </PropertyGroup>
   <!-- ILLinker settings -->
   <PropertyGroup>
