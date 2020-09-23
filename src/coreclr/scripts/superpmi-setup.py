@@ -79,7 +79,8 @@ def setup_args(args):
                         "max_size",
                         lambda max_size: max_size > 0,
                         "Please enter valid positive numeric max_size",
-                        modify_arg=lambda max_size: int(max_size) * 1000 * 1000 if max_size is not None and max_size.isnumeric() else 0
+                        modify_arg=lambda max_size: int(
+                            max_size) * 1000 * 1000 if max_size is not None and max_size.isnumeric() else 0
                         # Convert to MB
                         )
     return coreclr_args
@@ -173,52 +174,63 @@ def copy_files(src_path, dst_path, file_names):
         copy_files_linux(src_path, dst_path, file_names)
 
 
-def copy_files_windows(src_path, dst_path, file_names):
+def copy_files_windows(src_path, dst_path, file_paths):
     """ On Windows, copies files specified in file_names from src_path to dst_path using "robocopy".
 
     Args:
         src_path (string): Path of source directory
         dst_path (string): Path of destination directory
-        file_names ([string]): List of files names to be copied
+        file_paths ([string]): List of files paths to be copied
     """
+
+    # Extract just the unique files names
+    file_names = list(set([path.basename(curr_file) for curr_file in file_paths]))
     command = ["robocopy", src_path, dst_path] + file_names
     command += [
-        "/S",    # copy from sub-directories
+        "/S",  # copy from sub-directories
         "/R:2",  # no. of retries
         "/W:5",  # seconds before retry
-        "/NS",   # don't log file sizes
-        "/NC",   # don't log file classes
+        "/NS",  # don't log file sizes
+        "/NC",  # don't log file classes
         "/NFL",  # don't log file names
         "/NDL",  # don't log directory names
         "/NJH",  # No Job Header.
-        "/XF",   # Exclude
-        "*.pdb", #  *.pdb
+        "/XF",  # Exclude
+        "*.pdb",  # *.pdb
 
     ]
     run_command(command)
 
 
-def copy_files_linux(src_path, dst_path, file_names):
+def copy_files_linux(src_path, dst_path, file_paths):
     """ On Linux, copies files specified in file_names from src_path to dst_path using "rsync".
 
     Args:
         src_path (string): Path of source directory
         dst_path (string): Path of destination directory
-        file_names ([string]): List of files names to be copied
+        file_paths ([string]): List of files paths to be copied
     """
+
+    # Extract just the unique relative path of files names
+    file_names = list(set([curr_file.replace(src_path + '/', '') for curr_file in file_paths]))
 
     # create dst_path
     run_command(["mkdir", "-p", dst_path])
 
-    with tempfile.NamedTemporaryFile(mode="w+t") as tmp:
-        # create temp file containing name of files to copy
-        to_write = os.linesep.join(file_names)
-        tmp.write(to_write)
-        tmp.flush()
-
-        # use rsync
-        command = ["rsync", "-avr", "--exclude='*.pdb'", "--files-from={0}".format(tmp.name), src_path, dst_path]
+    if len(file_names) == 0:
+        # if file_names is empty, copy everything
+        command = ["rsync", "-avr", "--exclude='*.pdb'", src_path, dst_path]
         run_command(command)
+    else:
+        with tempfile.NamedTemporaryFile(mode="w+t", delete=False) as tmp:
+            # create temp file containing name of files to copy
+            to_write = os.linesep.join(file_names)
+            tmp.write(to_write)
+            tmp.flush()
+
+            # use rsync
+            command = ["rsync", "-avr", "--exclude='*.pdb'", "--files-from={0}".format(tmp.name), src_path, dst_path]
+            run_command(command)
 
 
 def partition_files(coreclr_args, dst_directory, exclude_directories):
@@ -237,7 +249,7 @@ def partition_files(coreclr_args, dst_directory, exclude_directories):
 
     index = 0
     for p_index in partitions:
-        file_names = list(set([path.basename(curr_file[0]) for curr_file in partitions[p_index]]))
+        file_names = [curr_file[0] for curr_file in partitions[p_index]]
         curr_dst_path = path.join(dst_directory, str(index), "binaries")
         copy_files(src_directory, curr_dst_path, file_names)
         index += 1
@@ -285,27 +297,27 @@ def main(args):
         else:
             helix_queue = "Ubuntu.1804.Amd64"
 
-    # create superpmi directory
-    copy_files(superpmi_src_directory, superpmi_dst_directory, ["*"])
-    copy_files(coreclr_args.core_root_directory, superpmi_dst_directory, ["*"])
+    # # create superpmi directory
+    # # TODO: Fix to make sure all files are dumped in
+    # copy_files(superpmi_src_directory, superpmi_dst_directory, [])
+    # copy_files(coreclr_args.core_root_directory, superpmi_dst_directory, [])
 
-    # Clone and build jitutils
-    try:
-        with tempfile.TemporaryDirectory() as jitutils_directory:
-            run_command(
-                ["git", "clone", "--quiet", "--depth", "1", "https://github.com/dotnet/jitutils", jitutils_directory])
-            # Set dotnet path to run bootstrap
-            os.environ["PATH"] = path.join(source_directory, ".dotnet") + os.pathsep + os.environ["PATH"]
-            if is_windows:
-                run_command([path.join(jitutils_directory, "bootstrap.cmd")], jitutils_directory)
-            else:
-                run_command([path.join(jitutils_directory, "bootstrap.sh")], jitutils_directory)
-
-            copy_files(path.join(jitutils_directory, "bin"), superpmi_dst_directory, ["pmi.dll"])
-    except PermissionError as pe_error:
-        # Details: https://bugs.python.org/issue26660
-        print('Ignoring PermissionError: {0}'.format(pe_error))
-
+    # # Clone and build jitutils
+    # try:
+    #     with tempfile.TemporaryDirectory() as jitutils_directory:
+    #         run_command(
+    #             ["git", "clone", "--quiet", "--depth", "1", "https://github.com/dotnet/jitutils", jitutils_directory])
+    #         # Set dotnet path to run bootstrap
+    #         os.environ["PATH"] = path.join(source_directory, ".dotnet") + os.pathsep + os.environ["PATH"]
+    #         if is_windows:
+    #             run_command([path.join(jitutils_directory, "bootstrap.cmd")], jitutils_directory)
+    #         else:
+    #             run_command([path.join(jitutils_directory, "bootstrap.sh")], jitutils_directory)
+    #
+    #         copy_files(path.join(jitutils_directory, "bin"), superpmi_dst_directory, ["pmi.dll"])
+    # except PermissionError as pe_error:
+    #     # Details: https://bugs.python.org/issue26660
+    #     print('Ignoring PermissionError: {0}'.format(pe_error))
 
     # Workitem directories
     workitem_directory = path.join(source_directory, "workitem")
