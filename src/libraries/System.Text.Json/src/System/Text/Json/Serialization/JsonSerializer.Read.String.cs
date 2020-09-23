@@ -130,6 +130,9 @@ namespace System.Text.Json
         /// <param name="json">The JSON text to parse.</param>
         /// <param name="returnType">The type of the object to convert to and return.</param>
         /// <param name="options">Options to control the behavior during parsing.</param>
+        /// <exception cref="System.ArgumentNullException">
+        /// <paramref name="returnType"/> is <see langword="null"/>.
+        /// </exception>
         /// <exception cref="JsonException">
         /// The JSON is invalid.
         ///
