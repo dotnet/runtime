@@ -25,12 +25,15 @@ from coreclr_arguments import *
 
 parser = argparse.ArgumentParser(description="description")
 
-parser.add_argument("-src_directory", help="path to src")
-parser.add_argument("-dst_directory", help="path to dst")
-parser.add_argument("-dst_folder_name", dest='dst_folder_name', default="binaries", help="Folder under dst/N/")
-parser.add_argument("-exclude_directories", dest='exclude_directories', default='', help="semi-colon separated list "
-                                                                                         "of directories to exclude")
+parser.add_argument("-source_directory", help="path to source directory")
+parser.add_argument("-core_root_directory", help="path to core_root directory")
+# parser.add_argument("-managed_test_directory", help="path to managed test artifacts directory")
+parser.add_argument("-arch", help="Architecture")
+parser.add_argument("-mch_file_tag", help="Tag to be used to mch files")
+
+parser.add_argument("-src_directory", help="path to src")  # TODO: Change this
 parser.add_argument("-max_size", help="Max size of partition in MB")
+is_windows = platform.system() == "Windows"
 
 
 def setup_args(args):
@@ -47,25 +50,29 @@ def setup_args(args):
                                     require_built_test_dir=False, default_build_type="Checked")
 
     coreclr_args.verify(args,
+                        "source_directory",
+                        lambda src_directory: os.path.isdir(source_directory),
+                        "source_directory doesn't exist")
+
+    coreclr_args.verify(args,
+                        "core_root_directory",
+                        lambda core_root_directory: os.path.isdir(core_root_directory),
+                        "core_root_directory doesn't exist")
+
+    coreclr_args.verify(args,
+                        "arch",
+                        lambda unused: True,
+                        "Unable to set arch")
+
+    coreclr_args.verify(args,
+                        "mch_file_tag",
+                        lambda unused: True,
+                        "Unable to set mch_file_tag")
+
+    coreclr_args.verify(args,
                         "src_directory",
                         lambda src_directory: os.path.isdir(src_directory),
                         "src_directory doesn't exist")
-
-    coreclr_args.verify(args,
-                        "dst_directory",
-                        lambda dst_directory: (not os.path.isdir(dst_directory)),
-                        "dst_directory already exist")
-
-    coreclr_args.verify(args,
-                        "dst_folder_name",
-                        lambda unused: True,
-                        "Unable to set dst_folder_name")
-
-    coreclr_args.verify(args,
-                        "exclude_directories",
-                        lambda unused: True,
-                        "Unable to set exclude_directories",
-                        modify_arg=lambda exclude_directories: exclude_directories.split(';'))
 
     coreclr_args.verify(args,
                         "max_size",
@@ -142,16 +149,24 @@ def first_fit(sorted_by_size, max_size):
     return end_result
 
 
-def run_command(command_to_run):
+def run_command(command_to_run, _cwd=None):
     """ Runs the command.
 
     Args:
         command_to_run ([string]): Command to run along with arguments.
+        _cmd (string): Current working directory
     """
     print("Running: " + " ".join(command_to_run))
-    with subprocess.Popen(command_to_run, stdout=subprocess.PIPE, stderr=subprocess.PIPE) as proc:
+    with subprocess.Popen(command_to_run, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=_cwd) as proc:
         stdout, _ = proc.communicate()
-        print(stdout.decode('utf-8'))
+        print(stdout.decode("utf-8"))
+
+
+def copy_files(src_path, dst_path, file_names):
+    if is_windows:
+        copy_files_windows(src_path, dst_path, file_names)
+    else:
+        copy_files_linux(src_path, dst_path, file_names)
 
 
 def copy_files_windows(src_path, dst_path, file_names):
@@ -172,6 +187,7 @@ def copy_files_windows(src_path, dst_path, file_names):
         "/NFL",  # don't log file names
         "/NDL",  # don't log directory names
         "/NJH"  # No Job Header.
+        "/XF *pdb"  # Exclude pdb files
     ]
     run_command(command)
 
@@ -188,27 +204,26 @@ def copy_files_linux(src_path, dst_path, file_names):
     # create dst_path
     run_command(["mkdir", "-p", dst_path])
 
-    with tempfile.NamedTemporaryFile(mode='w+t') as tmp:
+    with tempfile.NamedTemporaryFile(mode="w+t") as tmp:
         # create temp file containing name of files to copy
         to_write = os.linesep.join(file_names)
         tmp.write(to_write)
         tmp.flush()
 
         # use rsync
-        command = ["rsync", "-avr", "--files-from={0}".format(tmp.name), src_path, dst_path]
+        command = ["rsync", "-avr", "--exclude='*.pdb'", "--files-from={0}".format(tmp.name), src_path, dst_path]
         run_command(command)
 
 
-def partition_files(coreclr_args):
+def partition_files(coreclr_args, dst_directory, exclude_directories):
     """ Copy bucketized files based on size to destination folder.
 
     Args:
         coreclr_args (CoreclrArguments): Command line arguments.
+        dst_directory (string): Destination folder where files are copied.
+        exclude_directories ([string]): List of folder names to be excluded
     """
     src_directory = coreclr_args.src_directory
-    exclude_directories = coreclr_args.exclude_directories
-    dst_directory = coreclr_args.dst_directory
-    dst_folder_name = coreclr_args.dst_folder_name
     max_size = coreclr_args.max_size
 
     sorted_by_size = get_files_sorted_by_size(src_directory, exclude_directories)
@@ -217,15 +232,12 @@ def partition_files(coreclr_args):
     index = 0
     for p_index in partitions:
         file_names = list(set([path.basename(curr_file[0]) for curr_file in partitions[p_index]]))
-        curr_dst_path = path.join(dst_directory, str(index), dst_folder_name)
-        if platform.system() == "Windows":
-            copy_files_windows(src_directory, curr_dst_path, file_names)
-        else:
-            copy_files_linux(src_directory, curr_dst_path, file_names)
+        curr_dst_path = path.join(dst_directory, str(index), "binaries")
+        copy_files(src_directory, curr_dst_path, file_names)
         index += 1
 
     total_partitions = str(len(partitions))
-    print('Total partitions: %s' % total_partitions)
+    print("Total partitions: %s" % total_partitions)
     set_pipeline_variable("SuperPmiJobCount", total_partitions)
 
 
@@ -247,7 +259,71 @@ def main(args):
         args ([type]): Arguments to the script
     """
     coreclr_args = setup_args(args)
-    partition_files(coreclr_args)
+    source_directory = coreclr_args.source_directory
+
+    # CorelationPayload directories
+    correlation_payload_directory = path.join(coreclr_args.source_directory, "payload")
+    superpmi_src_directory = path.join(source_directory, 'src', 'coreclr', 'scripts')
+    superpmi_dst_directory = path.join(correlation_payload_directory, "superpmi")
+    arch = coreclr_args.arch
+    helix_source_prefix = "official"
+    creator = ""
+    ci = True
+    if is_windows:
+        helix_queue = "Windows.10.Arm64" if arch == "arm64" else "Windows.10.Amd64"
+    else:
+        if arch == "arm":
+            helix_queue = "(Ubuntu.1804.Arm32)Ubuntu.1804.Armarch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm32v7-bfcd90a-20200121150440"
+        elif arch == "arm64":
+            helix_queue = "(Ubuntu.1804.Arm64)Ubuntu.1804.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm64v8-a45aeeb-20190620155855"
+        else:
+            helix_queue = "Ubuntu.1804.Amd64"
+
+    # create superpmi directory
+    copy_files(superpmi_src_directory, superpmi_dst_directory, ["*"])
+    copy_files(coreclr_args.core_root_directory, superpmi_dst_directory, ["*"])
+
+    # Clone and build jitutils
+    with tempfile.TemporaryDirectory() as jitutils_directory:
+        run_command(
+            ["git clone --branch master --depth 1 --quiet https://github.com/dotnet/jitutils ", jitutils_directory])
+        # Set dotnet path to run bootstrap
+        os.environ["PATH"] = path.join(source_directory, ".dotnet") + os.environ["PATH"]
+        if is_windows:
+            run_command("bootstrap.cmd", jitutils_directory)
+        else:
+            run_command("bootstrap.sh", jitutils_directory)
+
+        copy_files(path.join(jitutils_directory, "bin"), superpmi_dst_directory, ["pmi.dll"])
+
+    # Workitem directories
+    workitem_directory = path.join(source_directory, "workitem")
+    pmiassemblies_directory = path.join(workitem_directory, "pmiAssembliesDirectory")
+
+    # libraries
+    libraries_artifacts = path.join(pmiassemblies_directory, "Core_Root")
+    partition_files(coreclr_args, libraries_artifacts, [])
+
+    # test
+    # likewise for test
+
+    # Set variables
+    set_pipeline_variable("CorrelationPayloadDirectory", correlation_payload_directory)
+    set_pipeline_variable("SuperPMIDirectory", superpmi_dst_directory)
+    set_pipeline_variable("PmiAssembliesDirectory", pmiassemblies_directory)
+    set_pipeline_variable("WorkItemDirectory", workitem_directory)
+    set_pipeline_variable("CorrelationPayloadDirectory", correlation_payload_directory)
+    set_pipeline_variables("LibrariesArtifacts", libraries_artifacts)
+    # set_pipeline_variables("TestsArtifacts", libraries_artifacts)
+    if is_windows:
+        set_pipeline_variable("Python", "py -3")
+    else:
+        set_pipeline_variable("Python", "python3")
+    set_pipeline_variable("Architecture", arch)
+    set_pipeline_variable("Creator", creator)
+    set_pipeline_variable("Queue", helix_queue)
+    set_pipeline_variable("HelixSourcePrefix", helix_source_prefix)
+    set_pipeline_variable("MchFileTag", coreclr_args.mch_file_tag)
 
 
 ################################################################################
