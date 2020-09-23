@@ -324,6 +324,8 @@ namespace Microsoft.WebAssembly.Diagnostics
             foreach (SequencePoint sp in DebugInformation.SequencePoints)
             {
                 if (sp.Offset > pos) {
+                    //get the earlier line number if the offset is in a hidden sequence point and has a earlier line number available
+                    // if is doesn't continue and get the next line number that is not in a hidden sequence point
                     if (sp.IsHidden && prev == null)
                         continue;
                     break;
