@@ -94,6 +94,7 @@ namespace System.Linq.Tests
             foreach (MethodInfo method in dependentMethods)
             {
                 DynamicDependencyAttribute dependency = method.GetCustomAttribute<DynamicDependencyAttribute>();
+                Assert.NotNull(dependency);
                 Assert.Equal(typeof(Enumerable), dependency.Type);
 
                 int genericArgCount = 0;
