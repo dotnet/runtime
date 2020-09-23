@@ -3176,7 +3176,7 @@ const unsigned emitter::emitFmtCount = _countof(emitFmtToOps);
 // Interleaved GC info dumping.
 // We'll attempt to line this up with the opcode, which indented differently for
 // diffable and non-diffable dumps.
-// This is approximate, and is better tuned for disassembly than for jitudmps.
+// This is approximate, and is better tuned for disassembly than for jitdumps.
 // See emitDispInsHex().
 #ifdef TARGET_AMD64
 const size_t basicIndent     = 7;
@@ -3238,10 +3238,10 @@ void emitter::emitDispGCRegDelta(const char* title, regMaskTP prevRegs, regMaskT
 //------------------------------------------------------------------------
 // emitDispGCVarDelta: Print a delta for GC variables
 //
-// Arguments:
-//    title    - The type of GC info delta we're printing
-//    prevVars - The live GC vars before the recent instruction.
-//    curVars  - The live GC vars after the recent instruction.
+// Notes:
+//    Uses the debug-only variables 'debugThisGCrefVars', 'debugPrevGCrefVars'
+//    and 'debugPrevRegPtrDsc' to print deltas from the last time this was
+//    called.
 //
 void emitter::emitDispGCVarDelta()
 {
@@ -3376,7 +3376,7 @@ void emitter::emitDispIG(insGroup* ig, insGroup* igPrev, bool verbose)
 
     // We dump less information when we're only interleaving GC info with a disassembly listing,
     // than we do in the jitdump case. (Note that the verbose argument to this method is
-    // distinct from the verbose on Compiler.
+    // distinct from the verbose on Compiler.)
     bool jitdump = emitComp->verbose;
 
     if (jitdump && ((igPrev == nullptr) || (igPrev->igFuncIdx != ig->igFuncIdx)))
@@ -6896,7 +6896,7 @@ void emitter::emitGCvarLiveUpd(int offs, int varNum, GCtype gcType, BYTE* addr D
                 emitGCvarLiveSet(offs, gcType, addr, disp);
 #ifdef DEBUG
                 if ((EMIT_GC_VERBOSE || emitComp->opts.disasmWithGC) && ((unsigned)actualVarNum < emitComp->lvaCount) &&
-                    emitComp->lvaGetDesc((unsigned)actualVarNum)->lvTracked)
+                    emitComp->lvaGetDesc(actualVarNum)->lvTracked)
                 {
                     VarSetOps::AddElemD(emitComp, debugThisGCrefVars,
                                         emitComp->lvaGetDesc((unsigned)actualVarNum)->lvVarIndex);
