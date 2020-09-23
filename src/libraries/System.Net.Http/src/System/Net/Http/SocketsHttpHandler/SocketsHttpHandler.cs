@@ -378,6 +378,19 @@ namespace System.Net.Http
             }
         }
 
+        /// <summary>
+        /// Gets or sets a custom callback that provides access to the plaintext HTTP protocol stream.
+        /// </summary>
+        public Func<SocketsHttpPlaintextStreamFilterContext, CancellationToken, ValueTask<Stream>>? PlaintextStreamFilter
+        {
+            get => _settings._plaintextStreamFilter;
+            set
+            {
+                CheckDisposedOrStarted();
+                _settings._plaintextStreamFilter = value;
+            }
+        }
+
         public IDictionary<string, object?> Properties =>
             _settings._properties ?? (_settings._properties = new Dictionary<string, object?>());
 
@@ -482,6 +495,11 @@ namespace System.Net.Http
 
             CheckDisposed();
             HttpMessageHandlerStage handler = _handler ?? SetupHandlerChain();
+
+            if (_settings._plaintextStreamFilter is not null)
+            {
+                throw new NotSupportedException(SR.net_http_sync_operations_not_allowed_with_plaintext_filter);
+            }
 
             Exception? error = ValidateAndNormalizeRequest(request);
             if (error != null)

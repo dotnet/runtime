@@ -179,5 +179,11 @@ namespace System.Net.Http
             get => throw new PlatformNotSupportedException();
             set => throw new PlatformNotSupportedException();
         }
+
+        public Func<SocketsHttpPlaintextStreamFilterContext, CancellationToken, ValueTask<Stream>>? PlaintextStreamFilter
+        {
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
+        }
     }
 }
