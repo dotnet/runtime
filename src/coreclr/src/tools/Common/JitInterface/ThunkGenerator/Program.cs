@@ -336,8 +336,7 @@ namespace Internal.JitInterface
                 tr.Write($"            callbacks[{index}] = (delegate* <IntPtr, IntPtr*");
                 foreach (Parameter param in decl.Parameters)
                 {
-                    tr.Write(", ");
-                    tr.Write(param.Type.UnmanagedTypeName);
+                    tr.Write($", {param.Type.UnmanagedTypeName}");
                 }
                 tr.WriteLine($", {decl.ReturnType.UnmanagedTypeName}>)&_{decl.FunctionName};");
                 index++;
@@ -365,13 +364,10 @@ struct JitInterfaceCallbacks
 
             foreach (FunctionDecl decl in functionData)
             {
-                tw.Write("    " + decl.ReturnType.NativeTypeName + " (* " + decl.FunctionName + ")(");
-                tw.Write("void * thisHandle");
-                tw.Write(", CorInfoException** ppException");
+                tw.Write($"    {decl.ReturnType.NativeTypeName} (* {decl.FunctionName})(void * thisHandle, CorInfoException** ppException");
                 foreach (Parameter param in decl.Parameters)
                 {
-                    tw.Write(", ");
-                    tw.Write(param.Type.NativeTypeName + " " + param.Name);
+                    tw.Write($", {param.Type.NativeTypeName} {param.Name}");
                 }
                 tw.WriteLine(");");
             }
@@ -421,12 +417,12 @@ public:
         ");
                 if (decl.ReturnType.NativeTypeName != "void")
                 {
-                    tw.Write(decl.ReturnType.NativeTypeName + " _ret = ");
+                    tw.Write($"{decl.ReturnType.NativeTypeName} _ret = ");
                 }
-                tw.Write("_callbacks->" + decl.FunctionName + "(_thisHandle, &pException");
+                tw.Write($"_callbacks->{decl.FunctionName}(_thisHandle, &pException");
                 foreach (Parameter param in decl.Parameters)
                 {
-                    tw.Write(", " + param.Name);
+                    tw.Write($", {param.Name}");
                 }
                 tw.Write(@");
         if (pException != nullptr)
