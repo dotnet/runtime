@@ -15,10 +15,12 @@
     <BinDir>$(ArtifactsDir)bin\coreclr\$(OSPlatformConfig)\</BinDir>
 
     <BaseOutputPath>$(ArtifactsDir)tests\coreclr</BaseOutputPath>
-    <TestWorkingDir>$([MSBuild]::NormalizePath('$(BaseOutputPath)\$(OSPlatformConfig)\'))</TestWorkingDir>
+    <BaseOutputPathWithConfig>$([MSBuild]::NormalizePath('$(BaseOutputPath)\$(OSPlatformConfig)\'))</BaseOutputPathWithConfig>
+
+    <TestWorkingDir>$(BaseOutputPathWithConfig)</TestWorkingDir>
 
     <TestSourceDir>$([MSBuild]::NormalizePath('$(RepoRoot)/src/tests/'))</TestSourceDir>
-    <TestSourceDir Condition="$([System.String]::new('$(MSBuildProjectDirectory)').StartsWith('$(TestWorkingDir)'))">$(TestWorkingDir)</TestSourceDir>
+    <TestSourceDir Condition="$([System.String]::new('$(MSBuildProjectDirectory)').StartsWith('$(BaseOutputPathWithConfig)'))">$(BaseOutputPathWithConfig)</TestSourceDir>
     <BuildProjectRelativeDir>$([MSBuild]::MakeRelative($(TestSourceDir), $(MSBuildProjectDirectory)))\$(MSBuildProjectName)\</BuildProjectRelativeDir>
 
     <!-- BaseIntermediateOutputPath is used by the SDK as the location
@@ -36,7 +38,7 @@
 
     <ProjectAssetsFile>$(RestoreOutputPath)/project.assets.json</ProjectAssetsFile>
 
-    <OutputPath>$(TestWorkingDir)$(BuildProjectRelativeDir)</OutputPath>
+    <OutputPath>$(BaseOutputPathWithConfig)$(BuildProjectRelativeDir)</OutputPath>
   </PropertyGroup>
   
   <PropertyGroup>
