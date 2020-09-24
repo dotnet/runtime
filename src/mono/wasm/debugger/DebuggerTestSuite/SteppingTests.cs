@@ -1019,14 +1019,14 @@ namespace DebuggerTests
                 
                 var pause_location = await EvaluateAndCheck(
                     "window.setTimeout(function() { invoke_static_method ('[debugger-test] HiddenSequencePointTest:StepOverHiddenSP'); }, 1);",
-                    "dotnet://debugger-test.dll/debugger-test.cs", 547, 4,
+                    "dotnet://debugger-test.dll/debugger-test.cs", 546, 4,
                     "StepOverHiddenSP2");
                 
                 var top_frame = pause_location["callFrames"][1];
                 Assert.Equal("StepOverHiddenSP", top_frame["functionName"].Value<string>());
                 Assert.Contains("debugger-test.cs", top_frame["url"].Value<string>());
 
-                CheckLocation("dotnet://debugger-test.dll/debugger-test.cs", 538, 8, scripts, top_frame["location"]);
+                CheckLocation("dotnet://debugger-test.dll/debugger-test.cs", 537, 8, scripts, top_frame["location"]);
 
             });
         }
