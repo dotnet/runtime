@@ -2309,7 +2309,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        public async void ConnectCallback_ContextHasCorrectProperties_Success()
+        public async Task ConnectCallback_ContextHasCorrectProperties_Success()
         {
             await LoopbackServerFactory.CreateClientAndServerAsync(
                 async uri =>
@@ -2592,7 +2592,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public async void PlaintextStreamFilter_ContextHasCorrectProperties_Success(bool useSsl)
+        public async Task PlaintextStreamFilter_ContextHasCorrectProperties_Success(bool useSsl)
         {
             GenericLoopbackOptions options = new GenericLoopbackOptions() { UseSsl = useSsl };
             await LoopbackServerFactory.CreateClientAndServerAsync(
@@ -2627,7 +2627,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public async void PlaintextStreamFilter_SimpleDelegatingStream_Success(bool useSsl)
+        public async Task PlaintextStreamFilter_SimpleDelegatingStream_Success(bool useSsl)
         {
             GenericLoopbackOptions options = new GenericLoopbackOptions() { UseSsl = useSsl };
             await LoopbackServerFactory.CreateClientAndServerAsync(
@@ -2745,7 +2745,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public async void PlaintextStreamFilter_ExceptionDuringCallback_ThrowsHttpRequestExceptionWithInnerException(bool useSsl)
+        public async Task PlaintextStreamFilter_ExceptionDuringCallback_ThrowsHttpRequestExceptionWithInnerException(bool useSsl)
         {
             Exception e = new Exception("hello!");
 
@@ -2783,7 +2783,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public async void PlaintextStreamFilter_ReturnsNull_ThrowsHttpRequestException(bool useSsl)
+        public async Task PlaintextStreamFilter_ReturnsNull_ThrowsHttpRequestException(bool useSsl)
         {
             GenericLoopbackOptions options = new GenericLoopbackOptions() { UseSsl = useSsl };
             await LoopbackServerFactory.CreateClientAndServerAsync(
@@ -2823,7 +2823,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public async void PlaintextStreamFilter_CustomStream_Success(bool useSsl)
+        public async Task PlaintextStreamFilter_CustomStream_Success(bool useSsl)
         {
             GenericLoopbackOptions options = new GenericLoopbackOptions() { UseSsl = useSsl };
             await LoopbackServerFactory.CreateClientAndServerAsync(
@@ -2864,6 +2864,46 @@ namespace System.Net.Http.Functional.Tests
                         await server.AcceptConnectionSendResponseAndCloseAsync(content: "foo");
                     }
                     catch (IOException) { }
+                }, options: options);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task PlaintextStreamFilter_Logging_Success(bool useSsl)
+        {
+            bool log = int.TryParse(Environment.GetEnvironmentVariable("DOTNET_TEST_SOCKETSHTTPHANDLERLOG"), out int value) && value == 1;
+
+            GenericLoopbackOptions options = new GenericLoopbackOptions() { UseSsl = useSsl };
+            await LoopbackServerFactory.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    using HttpClientHandler handler = CreateHttpClientHandler();
+                    handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+                    var socketsHandler = (SocketsHttpHandler)GetUnderlyingSocketsHttpHandler(handler);
+                    socketsHandler.PlaintextStreamFilter = (context, token) =>
+                    {
+                        Assert.Equal(HttpVersion.Version11, context.NegotiatedHttpVersion);
+
+                        bool foundGet = false;
+                        return ValueTask.FromResult<Stream>(new BytesLoggingStream(context.PlaintextStream, (read, data) =>
+                        {
+                            if (log)
+                            {
+                                Console.WriteLine(data);
+                            }
+
+                            foundGet |= read && data.Contains("GET / 1.1");
+                        }));
+                    };
+
+                    using HttpClient client = CreateHttpClient(handler);
+                    using HttpResponseMessage response = await client.GetAsync(uri);
+                    Assert.Equal("hello", await response.Content.ReadAsStringAsync());
+                },
+                async server =>
+                {
+                    await server.AcceptConnectionSendResponseAndCloseAsync(content: "hello");
                 }, options: options);
         }
     }
