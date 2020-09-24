@@ -333,6 +333,7 @@ def main(args):
     # likewise for test
 
     # Set variables
+    print('Setting pipeline variables:')
     set_pipeline_variable("CorrelationPayloadDirectory", correlation_payload_directory)
     set_pipeline_variable("WorkItemDirectory", workitem_directory)
     set_pipeline_variable("LibrariesArtifacts", libraries_artifacts)

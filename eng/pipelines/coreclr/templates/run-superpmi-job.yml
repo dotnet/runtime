@@ -113,10 +113,6 @@ jobs:
     #     scriptPath: $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi-setup.py
     #     arguments: -src_directory $(Build.SourcesDirectory)\artifacts\tests\coreclr\${{ parameters.osGroup }}.${{ parameters.archType }}.$(buildConfigUpper)\Tests -dst_directory $(TestsArtifact) -max_size 50
 
-    - script: |
-          echo LibrariesArtifacts: $(LibrariesArtifacts)
-          echo TestsArtifacts: $(TestsArtifacts)
-
       # Run superpmi collection in helix
     - template: /eng/common/templates/steps/superpmi-send-to-helix.yml
       parameters:
@@ -144,12 +140,12 @@ jobs:
       condition: always()
 
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-      - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py upload -arch $(archType) -build_type $(buildConfig) -mch_files $(Build.SourcesDirectory)\artifacts\helixresults -core_root $(Build.SourcesDirectory)\artifacts\tests\coreclr\${{ parameters.osGroup }}.${{ parameters.archType }}.$(buildConfigUpper)\Tests\Core_Root
+      - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py upload -arch $(archType) -build_type $(buildConfig) -mch_files $(Build.SourcesDirectory)\artifacts\helixresults -core_root $(Build.SourcesDirectory)\artifacts\bin\coreclr\$(osGroup).x64.$(buildConfigUpper)
         displayName: Upload SuperPMI collection to Azure Storage
         env:
           CLRJIT_AZ_KEY: $(clrjit_key1) # secret key stored as variable in pipeline
     - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-      - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py upload -arch $(archType) -build_type $(buildConfig) -mch_files $(Build.SourcesDirectory)/artifacts/helixresults -core_root $(Build.SourcesDirectory)/artifacts/tests/coreclr/${{ parameters.osGroup }}.${{ parameters.archType }}.$(buildConfigUpper)/Tests/Core_Root
+      - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py upload -arch $(archType) -build_type $(buildConfig) -mch_files $(Build.SourcesDirectory)/artifacts/helixresults -core_root $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).x64.$(buildConfigUpper)
         displayName: Upload SuperPMI collection to Azure Storage
         env:
           CLRJIT_AZ_KEY: $(clrjit_key1) # secret key stored as variable in pipeline

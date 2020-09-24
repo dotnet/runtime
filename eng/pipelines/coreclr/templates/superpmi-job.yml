@@ -42,6 +42,9 @@ jobs:
     # Test job depends on the corresponding build job
     dependsOn:
      - ${{ format('coreclr_{0}_product_build_{1}{2}_{3}_{4}', parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+     # Depend on coreclr x64 so we can download it and use mcs.exe from it while publishing non-x64 arch SPMI collection
+     - ${{ if ne(parameters.archType, 'x64') }}:
+       - ${{ format('coreclr_{0}_product_build_{1}{2}_x64_{3}', parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.buildConfig) }}
      - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
        - ${{ format('libraries_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveLibrariesBuildConfig) }}
     #  - ${{ format('coreclr_common_test_build_p1_AnyOS_AnyCPU_{0}', parameters.buildConfig) }}
@@ -70,6 +73,15 @@ jobs:
         artifactFileName: '$(buildProductArtifactName)$(archiveExtension)'
         artifactName: '$(buildProductArtifactName)'
         displayName: 'Coreclr product build'
+
+    # Download x64 coreclr if running on non-x64 configuration
+    - ${{ if ne(parameters.archType, 'x64') }}:
+      - template: /eng/pipelines/common/download-artifact-step.yml
+        parameters:
+          unpackFolder: '$(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).x64.$(buildConfigUpper)'
+          artifactFileName: '$(buildProductArtifactName)$(archiveExtension)'
+          artifactName: '$(buildProductArtifactName)'
+          displayName: 'Coreclr product build'
 
     # # Download and unzip managed test artifacts
     # - template: /eng/pipelines/common/download-artifact-step.yml
