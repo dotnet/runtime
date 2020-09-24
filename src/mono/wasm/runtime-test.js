@@ -16,6 +16,8 @@ if (is_browser) {
 	console.debug = print;
 	console.error = print;
 	console.trace = print;
+	console.warn = print;
+	console.info = print;
 
 	const consoleUrl = `${window.location.origin}/console`.replace('http://', 'ws://');
 
