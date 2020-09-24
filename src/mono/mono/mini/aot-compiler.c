@@ -9168,8 +9168,18 @@ mono_aot_get_method_name (MonoCompile *cfg)
 	/* Use the mangled name if possible */
 	if (method->wrapper_type == MONO_WRAPPER_OTHER) {
 		WrapperInfo *info = mono_marshal_get_wrapper_info (method);
-		if (info->subtype == WRAPPER_SUBTYPE_GSHAREDVT_IN_SIG || info->subtype == WRAPPER_SUBTYPE_GSHAREDVT_OUT_SIG)
-			return mono_aot_get_mangled_method_name (method);
+		if (info->subtype == WRAPPER_SUBTYPE_GSHAREDVT_IN_SIG || info->subtype == WRAPPER_SUBTYPE_GSHAREDVT_OUT_SIG) {
+		    char *name, *s;
+			name = mono_aot_get_mangled_method_name (method);
+			if (llvm_acfg->aot_opts.static_link) {
+				/* Include the assembly name too to avoid duplicate symbol errors */
+				 s = g_strdup_printf ("%s_%s", llvm_acfg->assembly_name_sym, name);
+				 g_free (name);
+				 return s;
+			} else {
+				return name;
+			}
+		}
 	}
 
 	if (llvm_acfg->aot_opts.static_link)
