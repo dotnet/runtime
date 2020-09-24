@@ -132,8 +132,8 @@ jobs:
         CorrelationPayloadDirectory: '$(CorrelationPayloadDirectory)'
         ProjectFile: ${{ parameters.projectFile }}
         BuildConfig: ${{ parameters.buildConfig }}
-        LibrariesArtifacts: $(LibrariesArtifacts)
-        TestsArtifacts: $(TestsArtifacts)
+        LibrariesArtifacts: '$(LibrariesArtifacts)'
+        TestsArtifacts: '$(TestsArtifacts)'
 
     - task: PublishPipelineArtifact@1
       displayName: Publish SuperPMI collection

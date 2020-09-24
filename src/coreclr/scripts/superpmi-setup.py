@@ -334,10 +334,7 @@ def main(args):
 
     # Set variables
     set_pipeline_variable("CorrelationPayloadDirectory", correlation_payload_directory)
-    set_pipeline_variable("SuperPMIDirectory", superpmi_dst_directory)
-    set_pipeline_variable("PmiAssembliesDirectory", pmiassemblies_directory)
     set_pipeline_variable("WorkItemDirectory", workitem_directory)
-    set_pipeline_variable("CorrelationPayloadDirectory", correlation_payload_directory)
     set_pipeline_variable("LibrariesArtifacts", libraries_artifacts)
     # set_pipeline_variable("TestsArtifacts", libraries_artifacts)
     if is_windows:
