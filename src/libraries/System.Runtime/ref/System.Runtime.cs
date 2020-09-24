@@ -5787,6 +5787,11 @@ namespace System.Diagnostics
         public string? VisualizerObjectSourceTypeName { get { throw null; } }
         public string VisualizerTypeName { get { throw null; } }
     }
+    [System.AttributeUsage(AttributeTargets.Class | System.AttributeTargets.Method | System.AttributeTargets.Constructor | System.AttributeTargets.Struct, Inherited = false)]
+    public sealed partial class StackTraceHiddenAttribute : Attribute
+    {
+        public StackTraceHiddenAttribute() { }
+    }
     public partial class Stopwatch
     {
         public static readonly long Frequency;
