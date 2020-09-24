@@ -234,7 +234,7 @@ replay_common_parser.add_argument("-mch_files", metavar="MCH_FILE", nargs='+', h
 replay_common_parser.add_argument("-filter", nargs='+', help=filter_help)
 replay_common_parser.add_argument("-product_location", help=product_location_help)
 replay_common_parser.add_argument("--force_download", action="store_true", help=force_download_help)
-replay_common_parser.add_argument("-altjit", nargs='?', const=True, help="Replay with an altjit. If an argument is specified, it is used as the name of the altjit (e.g., 'protojit.dll'). Otherwise, the default altjit name is used.")
+replay_common_parser.add_argument("-altjit", help="Replay with an altjit. Specify the filename of the altjit to use, e.g., 'clrjit_win_arm64_x64.dll'.")
 replay_common_parser.add_argument("-jit_ee_version", help=jit_ee_version_help)
 
 # subparser for replay
@@ -1635,22 +1635,22 @@ def determine_pmi_location(coreclr_args):
     return pmi_location
 
 def determine_jit_name(coreclr_args):
-    """ Determine the jit based on the OS. If "-altjit" is specified, then use the specified altjit,
-        or an appropriate altjit based on target.
+    """ Determine the jit based on the OS. If "-altjit" is specified, then use the specified altjit.
+        This function is called for cases where the "-altjit" flag is not used, so be careful not
+        to depend on the "altjit" attribute existing.
 
     Args:
         coreclr_args (CoreclrArguments): parsed args
 
     Return:
-        jit_name(str) : name of the jit for this os
+        jit_name(str) : name of the jit for this OS
     """
 
-    jit_base_name = "clrjit"
-    if isinstance(coreclr_args.altjit, str):
-        jit_base_name = coreclr_args.altjit
-    elif coreclr_args.altjit == True:
-        jit_base_name = "protononjit"
+    # If `-altjit` is used, it must be given a full filename, not just a "base name", so use it without additional processing.
+    if hasattr(coreclr_args, "altjit") and coreclr_args.altjit is not None:
+        return coreclr_args.altjit
 
+    jit_base_name = "clrjit"
     if coreclr_args.host_os == "OSX":
         return "lib" + jit_base_name + ".dylib"
     elif coreclr_args.host_os == "Linux":
@@ -1965,7 +1965,7 @@ def download_urls(urls, target_dir, verbose=True, fail_if_not_found=True):
 def upload_mch(coreclr_args):
     """ Upload a set of MCH files. Each MCH file is first ZIP compressed to save data space and upload/download time.
 
-        TODO: Add baseline altjits upload?
+        TODO: Upload baseline altjits or cross-compile JITs?
 
     Args:
         coreclr_args (CoreclrArguments): parsed args
