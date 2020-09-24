@@ -81,7 +81,8 @@
     Once you've done that you can run this to see the results:
     dotnet msbuild .\scenarios.proj /v:n
    -->
-   <!-- <PropertyGroup>
+   <!-- 
+   <PropertyGroup>
      <HelixTargetQueues>Some_Queue</HelixTargetQueues>
    </PropertyGroup>
   <Target Name="printItems">
@@ -91,6 +92,7 @@
      command: %(HelixWorkItem.Command)
      post: %(HelixWorkItem.PostCommands)
      timeout: %(HelixWorkItem.Timeout)  '"/>
-  </Target> -->
+  </Target>
+   -->
 
 </Project>
