@@ -108,6 +108,11 @@ list_collections_description = """\
 List the existing collections in the SuperPMI Azure storage.
 """
 
+merge_mch_description = """\
+Utility command to merge MCH files. This is a thin wrapper around
+'mcs -merge -recursive -dedup -thin' followed by 'mcs -toc'.
+"""
+
 log_file_help = "Write output to a log file. Requires --sequential."
 
 jit_ee_version_help = """\
@@ -165,6 +170,12 @@ force_download_help = """\
 If downloading an MCH file, always download it. Don't use an existing file in the download location.
 Normally, we don't download if the target directory exists. This forces download even if the
 target directory already exists.
+"""
+
+merge_mch_pattern_help = """\
+A pattern to describing files to merge, passed through directly to `mcs -merge`.
+Acceptable patterns include `*.mch`, `file*.mch`, and `c:\my\directory\*.mch`.
+Only the final component can contain a `*` wildcard; the directory path cannot.
 """
 
 # Start of parser object creation.
@@ -283,6 +294,13 @@ list_collections_parser.add_argument("-jit_ee_version", help=jit_ee_version_help
 list_collections_parser.add_argument("--all", action="store_true", help="Show all MCH files, not just those for the specified (or default) JIT-EE version, OS, and architecture")
 list_collections_parser.add_argument("--local", action="store_true", help="Show the local MCH download cache")
 list_collections_parser.add_argument("-spmi_location", help=spmi_location_help)
+
+# subparser for merge-mch
+
+merge_mch_parser = subparsers.add_parser("merge-mch", description=merge_mch_description, parents=[core_root_parser])
+
+merge_mch_parser.add_argument("-output_mch_path", required=True, help="Location to place the final MCH file.")
+merge_mch_parser.add_argument("-pattern", required=True, help=merge_mch_pattern_help)
 
 ################################################################################
 # Helper functions
@@ -2259,6 +2277,41 @@ def list_collections_local_command(coreclr_args):
     print("")
 
 
+def merge_mch(coreclr_args):
+    """ Merge all the files specified by a given pattern into a single output MCH file.
+        This is a utility function mostly for use by the CI scripting. It is a
+        thin wrapper around:
+
+            mcs -merge <output_mch_path> <pattern> -recursive -dedup -thin
+            mcs -toc <output_mch_path>
+
+    Args:
+        coreclr_args (CoreclrArguments) : parsed args
+
+    Returns:
+        True on success, else False
+    """
+
+    mcs_path = determine_mcs_tool_path(coreclr_args)
+    command = [mcs_path, "-merge", coreclr_args.output_mch_path, coreclr_args.pattern, "-recursive", "-dedup", "-thin"]
+    proc = subprocess.Popen(command)
+    proc.communicate()
+    return_code = proc.returncode
+    if return_code != 0:
+        print("mcs -merge Failed with code {}".format(return_code))
+        return False
+
+    command = [mcs_path, "-toc", coreclr_args.output_mch_path]
+    proc = subprocess.Popen(command)
+    proc.communicate()
+    return_code = proc.returncode
+    if return_code != 0:
+        print("mcs -toc Failed with code {}".format(return_code))
+        return False
+
+    return True
+
+
 def get_mch_files_for_replay(coreclr_args):
     """ Given the argument `mch_files`, and any specified filters, find all the MCH files to
         use for replay.
@@ -2855,6 +2908,18 @@ def setup_args(args):
                             "Unable to set spmi_location",
                             modify_arg=lambda spmi_location: os.path.abspath(os.path.join(coreclr_args.artifacts_location, "spmi")) if spmi_location is None else spmi_location)
 
+    elif coreclr_args.mode == "merge-mch":
+
+        coreclr_args.verify(args,
+                            "output_mch_path",
+                            lambda output_mch_path: not os.path.isdir(os.path.abspath(output_mch_path)) and not os.path.isfile(os.path.abspath(output_mch_path)),
+                            "Invalid output_mch_path; is it an existing directory or file?")
+
+        coreclr_args.verify(args,
+                            "pattern",
+                            lambda unused: True,
+                            "Unable to set pattern")
+
     return coreclr_args
 
 ################################################################################
@@ -3013,6 +3078,9 @@ def main(args):
             list_collections_local_command(coreclr_args)
         else:
             list_collections_command(coreclr_args)
+
+    elif coreclr_args.mode == "merge-mch":
+        success = merge_mch(coreclr_args)
 
     else:
         raise NotImplementedError(coreclr_args.mode)
