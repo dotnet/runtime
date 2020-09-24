@@ -49,7 +49,6 @@ namespace Microsoft.Extensions.Logging.Test
             secondSwitch.Level = second;
 
             // Act
-
             var factory = TestLoggerBuilder.Create(builder => builder
                 .AddTraceSource(firstSwitch)
                 .AddTraceSource(secondSwitch));
