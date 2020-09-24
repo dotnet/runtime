@@ -8,6 +8,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -169,6 +170,12 @@ namespace System.Net.Sockets.Tests
         [MemberData(nameof(SocketMethods_WithBools_MemberData))]
         public void EventSource_SocketConnectFailure_LogsConnectFailed(string connectMethod, bool useDnsEndPoint)
         {
+            if (connectMethod == "Sync" && PlatformDetection.IsRedHatFamily7)
+            {
+                // [ActiveIssue("https://github.com/dotnet/runtime/issues/42686")]
+                throw new SkipTestException("Disposing a Socket performing a sync operation can hang on RedHat7 systems");
+            }
+
             RemoteExecutor.Invoke(async (connectMethod, useDnsEndPointString) =>
             {
                 EndPoint endPoint = await GetRemoteEndPointAsync(useDnsEndPointString, port: 12345);
@@ -210,6 +217,12 @@ namespace System.Net.Sockets.Tests
         [MemberData(nameof(SocketMethods_MemberData))]
         public void EventSource_SocketAcceptFailure_LogsAcceptFailed(string acceptMethod)
         {
+            if (acceptMethod == "Sync" && PlatformDetection.IsRedHatFamily7)
+            {
+                // [ActiveIssue("https://github.com/dotnet/runtime/issues/42686")]
+                throw new SkipTestException("Disposing a Socket performing a sync operation can hang on RedHat7 systems");
+            }
+
             RemoteExecutor.Invoke(async acceptMethod =>
             {
                 using var listener = new TestEventListener("System.Net.Sockets", EventLevel.Verbose, 0.1);
