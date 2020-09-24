@@ -221,12 +221,6 @@ set(SOURCES
   thread/threadsusp.cpp
 )
 
-if(NOT CLR_CMAKE_TARGET_OSX)
-  list(APPEND SOURCES
-     exception/remote-unwind.cpp
-  )
-endif(NOT CLR_CMAKE_TARGET_OSX)
-
 if(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
   set(LIBUNWIND_OBJECTS $<TARGET_OBJECTS:libunwind>)
 endif(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
@@ -252,15 +246,19 @@ if(CLR_CMAKE_TARGET_OSX)
     "-D_XOPEN_SOURCE"
     "-DUNW_REMOTE_ONLY"
   )
-
-  target_include_directories(coreclrpal_dac PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/libunwind/include
-    ${CMAKE_CURRENT_SOURCE_DIR}/libunwind/include/tdep
-    ${CMAKE_CURRENT_BINARY_DIR}
-    ${CMAKE_CURRENT_BINARY_DIR}/libunwind/include
-    ${CMAKE_CURRENT_BINARY_DIR}/libunwind/include/tdep
+else()
+  add_library(coreclrpal_dac STATIC
+    exception/remote-unwind.cpp
   )
 endif(CLR_CMAKE_TARGET_OSX)
+
+target_include_directories(coreclrpal_dac PUBLIC
+  ${CMAKE_CURRENT_SOURCE_DIR}/libunwind/include
+  ${CMAKE_CURRENT_SOURCE_DIR}/libunwind/include/tdep
+  ${CMAKE_CURRENT_BINARY_DIR}
+  ${CMAKE_CURRENT_BINARY_DIR}/libunwind/include
+  ${CMAKE_CURRENT_BINARY_DIR}/libunwind/include/tdep
+)
 
 # There is only one function exported in 'tracepointprovider.cpp' namely 'PAL_InitializeTracing',
 # which is guarded with '#if defined(__linux__)'. On macOS, Xcode issues the following warning:
