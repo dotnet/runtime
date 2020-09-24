@@ -96,11 +96,15 @@ SET_TARGET_PROPERTIES(clrcompression-static PROPERTIES PREFIX "")
 SET_TARGET_PROPERTIES(clrcompression-static PROPERTIES OUTPUT_NAME libclrcompression)
 
 # Allow specification of arguments that should be passed to the linker
-SET_TARGET_PROPERTIES(clrcompression PROPERTIES LINK_OPTIONS "${__LinkArgs};${__SharedLinkArgs}")
+if (GEN_SHARED_LIB)
+    SET_TARGET_PROPERTIES(clrcompression PROPERTIES LINK_OPTIONS "${__LinkArgs};${__SharedLinkArgs}")
+endif()
 SET_TARGET_PROPERTIES(clrcompression-static PROPERTIES STATIC_LIBRARY_OPTIONS "${__LinkArgs}")
 
 # Allow specification of libraries that should be linked against
-target_link_libraries(clrcompression ${__LinkLibraries})
+if (GEN_SHARED_LIB)
+    target_link_libraries(clrcompression ${__LinkLibraries})
+endif()
 target_link_libraries(clrcompression-static ${__LinkLibraries})
 
 if (GEN_SHARED_LIB)
