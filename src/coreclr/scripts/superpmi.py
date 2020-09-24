@@ -2606,11 +2606,6 @@ def setup_args(args):
                             lambda unused: True,
                             "Unable to set use_zapdisable")
 
-        coreclr_args.verify(False,          # Force it to false. TODO: support altjit collections?
-                            "altjit",
-                            lambda unused: True,
-                            "Unable to set altjit.")
-
         if args.collection_command is None and args.merge_mch_files is not True:
             assert args.collection_args is None
             assert args.pmi is True
@@ -2659,7 +2654,7 @@ def setup_args(args):
 
         # Make a more intelligent decision about the arch and build type
         # based on the path of the jit passed
-        if jit_in_product_location and not coreclr_args.build_type in coreclr_args.jit_path:
+        if jit_in_product_location and coreclr_args.build_type not in coreclr_args.jit_path:
             coreclr_args.verify(determined_arch.lower(),
                                 "arch",
                                 lambda unused: True,
@@ -2765,13 +2760,13 @@ def setup_args(args):
 
         # Make a more intelligent decision about the arch and build type
         # based on the path of the jit passed
-        if jit_in_product_location and not coreclr_args.build_type in coreclr_args.base_jit_path:
+        if jit_in_product_location and coreclr_args.build_type not in coreclr_args.base_jit_path:
             coreclr_args.verify(determined_build_type,
                                 "build_type",
                                 coreclr_args.check_build_type,
                                 "Invalid build_type")
 
-        if jit_in_product_location and not coreclr_args.arch in coreclr_args.base_jit_path:
+        if jit_in_product_location and coreclr_args.arch not in coreclr_args.base_jit_path:
             coreclr_args.verify(determined_arch.lower(),
                                 "arch",
                                 lambda unused: True,
