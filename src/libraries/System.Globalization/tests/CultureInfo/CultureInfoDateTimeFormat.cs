@@ -65,5 +65,31 @@ namespace System.Globalization.Tests
             AssertExtensions.Throws<ArgumentNullException>("value", () => new CultureInfo("en-US").DateTimeFormat = null); // Value is null
             Assert.Throws<InvalidOperationException>(() => CultureInfo.InvariantCulture.DateTimeFormat = new DateTimeFormatInfo()); // DateTimeFormatInfo.InvariantInfo is read only
         }
+
+        public static IEnumerable<object[]> DateTimeFormat_En_Locales_ShortDatePattern_TestData()
+        {
+            yield return new object[] { "en-AS", "M/d/yyyy" };
+            yield return new object[] { "en-BI", "M/d/yyyy" };
+            yield return new object[] { "en-GU", "M/d/yyyy" };
+            yield return new object[] { "en-HK", "d/M/yyyy" };
+            yield return new object[] { "en-MH", "M/d/yyyy" };
+            yield return new object[] { "en-MP", "M/d/yyyy" };
+            yield return new object[] { "en-NZ", "d/MM/yyyy" };
+            yield return new object[] { "en-PR", "M/d/yyyy" };
+            yield return new object[] { "en-SG", "d/M/yyyy" };
+            yield return new object[] { "en-UM", "M/d/yyyy" };
+            yield return new object[] { "en-US", "M/d/yyyy" };
+            yield return new object[] { "en-VI", "M/d/yyyy" };
+            yield return new object[] { "en-ZA", "yyyy/MM/dd" };
+            yield return new object[] { "en-ZW", "d/M/yyyy" };
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
+        [MemberData(nameof(DateTimeFormat_En_Locales_ShortDatePattern_TestData))]
+        public void DateTimeFormat_En_Locales_ShortDatePattern(string locale, string shortDatePattern)
+        {
+            var cultureInfo = new CultureInfo(locale);
+            Assert.Equal(shortDatePattern, cultureInfo.DateTimeFormat.ShortDatePattern);
+        }
     }
 }
