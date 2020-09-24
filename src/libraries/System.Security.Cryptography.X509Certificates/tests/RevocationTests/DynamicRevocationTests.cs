@@ -990,6 +990,95 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                 });
         }
 
+        [Fact]
+        [PlatformSpecific(~TestPlatforms.OSX)] //macOS does not support offline chain building.
+        public static void TestRevocation_Offline_NotRevoked()
+        {
+            SimpleTest(
+                PkiOptions.CrlEverywhere,
+                (root, intermediate, endEntity, onlineHolder) =>
+                {
+                    using ChainHolder offlineHolder = new ChainHolder();
+                    X509Chain offlineChain = offlineHolder.Chain;
+                    X509Chain onlineChain = onlineHolder.Chain;
+                    CopyChainPolicy(from: onlineChain, to: offlineChain);
+                    offlineChain.ChainPolicy.RevocationMode = X509RevocationMode.Offline;
+
+                    SimpleRevocationBody(
+                        onlineHolder,
+                        endEntity,
+                        rootRevoked: false,
+                        issrRevoked: false,
+                        leafRevoked: false);
+
+                    SimpleRevocationBody(
+                        offlineHolder,
+                        endEntity,
+                        rootRevoked: false,
+                        issrRevoked: false,
+                        leafRevoked: false);
+
+                    // Everything should look just like the online chain:
+                    Assert.Equal(onlineChain.ChainElements.Count, offlineChain.ChainElements.Count);
+
+                    for (int i = 0; i < offlineChain.ChainElements.Count; i++)
+                    {
+                        X509ChainElement onlineElement = onlineChain.ChainElements[i];
+                        X509ChainElement offlineElement = offlineChain.ChainElements[i];
+
+                        Assert.Equal(onlineElement.ChainElementStatus, offlineElement.ChainElementStatus);
+                        Assert.Equal(onlineElement.Certificate, offlineElement.Certificate);
+                    }
+                });
+        }
+
+        [Fact]
+        [PlatformSpecific(~TestPlatforms.OSX)] //macOS does not support offline chain building.
+        public static void TestRevocation_Offline_Revoked()
+        {
+            SimpleTest(
+                PkiOptions.CrlEverywhere,
+                (root, intermediate, endEntity, onlineHolder) =>
+                {
+                    DateTimeOffset revokeTime = DateTimeOffset.UtcNow;
+                    intermediate.Revoke(endEntity, revokeTime);
+
+                    using ChainHolder offlineHolder = new ChainHolder();
+                    X509Chain offlineChain = offlineHolder.Chain;
+                    X509Chain onlineChain = onlineHolder.Chain;
+                    onlineChain.ChainPolicy.VerificationTime = revokeTime.AddSeconds(1).UtcDateTime;
+
+                    CopyChainPolicy(from: onlineChain, to: offlineChain);
+                    offlineChain.ChainPolicy.RevocationMode = X509RevocationMode.Offline;
+
+                    SimpleRevocationBody(
+                        onlineHolder,
+                        endEntity,
+                        rootRevoked: false,
+                        issrRevoked: false,
+                        leafRevoked: true);
+
+                    SimpleRevocationBody(
+                        offlineHolder,
+                        endEntity,
+                        rootRevoked: false,
+                        issrRevoked: false,
+                        leafRevoked: true);
+
+                    // Everything should look just like the online chain:
+                    Assert.Equal(onlineChain.ChainElements.Count, offlineChain.ChainElements.Count);
+
+                    for (int i = 0; i < offlineChain.ChainElements.Count; i++)
+                    {
+                        X509ChainElement onlineElement = onlineChain.ChainElements[i];
+                        X509ChainElement offlineElement = offlineChain.ChainElements[i];
+
+                        Assert.Equal(onlineElement.ChainElementStatus, offlineElement.ChainElementStatus);
+                        Assert.Equal(onlineElement.Certificate, offlineElement.Certificate);
+                    }
+                });
+        }
+
         private static void RevokeEndEntityWithInvalidRevocation(
             ChainHolder holder,
             CertificateAuthority intermediate,
@@ -1355,6 +1444,16 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
             }
 
             return $"CN=\"{cn}\", O=\"{testName}\"";
+        }
+
+        private static void CopyChainPolicy(X509Chain from, X509Chain to)
+        {
+            to.ChainPolicy.VerificationFlags = from.ChainPolicy.VerificationFlags;
+            to.ChainPolicy.VerificationTime = from.ChainPolicy.VerificationTime;
+            to.ChainPolicy.RevocationFlag = from.ChainPolicy.RevocationFlag;
+            to.ChainPolicy.TrustMode = from.ChainPolicy.TrustMode;
+            to.ChainPolicy.ExtraStore.AddRange(from.ChainPolicy.ExtraStore);
+            to.ChainPolicy.CustomTrustStore.AddRange(from.ChainPolicy.CustomTrustStore);
         }
     }
 }
