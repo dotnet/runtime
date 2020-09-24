@@ -35,6 +35,40 @@ parser.add_argument("-assemblies_directory", help="directory containing assembli
                                                   "be done")
 parser.add_argument("-max_size", help="Max size of partition in MB")
 is_windows = platform.system() == "Windows"
+native_dlls_to_ignore = [
+    "clrcompression.dll",
+    "clretwrc.dll",
+    "clrgc.dll",
+    "clrjit.dll",
+    "clrjit_unix_arm_x64.dll",
+    "clrjit_unix_arm64_x64.dll",
+    "clrjit_unix_x64_x64.dll",
+    "clrjit_win_arm_x64.dll",
+    "clrjit_win_arm64_x64.dll",
+    "clrjit_win_x64_x64.dll",
+    "clrjit_win_x86_x64.dll",
+    "coreclr.dll",
+    "CoreConsole.exe",
+    "coredistools.dll",
+    "CoreRun.exe",
+    "CoreShim.dll",
+    "createdump.exe",
+    "crossgen.exe",
+    "dbgshim.dll",
+    "ilasm.exe",
+    "ildasm.exe",
+    "jitinterface_x64.dll",
+    "linuxnonjit.dll",
+    "mcs.exe",
+    "mscordaccore.dll",
+    "mscordbi.dll",
+    "mscorrc.dll",
+    "protononjit.dll",
+    "superpmi.exe",
+    "superpmi-shim-collector.dll",
+    "superpmi-shim-counter.dll",
+    "superpmi-shim-simple.dll",
+]
 
 
 def setup_args(args):
@@ -86,12 +120,13 @@ def setup_args(args):
     return coreclr_args
 
 
-def get_files_sorted_by_size(src_directory, exclude_directories):
+def get_files_sorted_by_size(src_directory, exclude_directories, exclude_files):
     """ For a given src_directory, returns all the .dll files sorted by size.
 
     Args:
         src_directory (string): Path of directory to enumerate.
-        exclude_directories (string): Directory names to exclude.
+        exclude_directories ([string]): Directory names to exclude.
+        exclude_files ([string]): File names to exclude.
     """
 
     def sorter_by_size(pair):
@@ -109,6 +144,8 @@ def get_files_sorted_by_size(src_directory, exclude_directories):
         # Credit: https://stackoverflow.com/a/19859907
         dirs[:] = [d for d in dirs if d not in exclude_directories]
         for name in files:
+            if name in exclude_files:
+                continue
             curr_file_path = path.join(file_path, name)
             if not isfile(curr_file_path) or not name.endswith(".dll"):
                 continue
@@ -235,18 +272,19 @@ def copy_files_linux(src_path, dst_path, file_paths):
             run_command(command)
 
 
-def partition_files(coreclr_args, dst_directory, exclude_directories):
+def partition_files(coreclr_args, dst_directory, exclude_directories, exclude_files):
     """ Copy bucketized files based on size to destination folder.
 
     Args:
         coreclr_args (CoreclrArguments): Command line arguments.
         dst_directory (string): Destination folder where files are copied.
         exclude_directories ([string]): List of folder names to be excluded
+        exclude_files ([string]): List of files names to be excluded
     """
     src_directory = coreclr_args.assemblies_directory
     max_size = coreclr_args.max_size
 
-    sorted_by_size = get_files_sorted_by_size(src_directory, exclude_directories)
+    sorted_by_size = get_files_sorted_by_size(src_directory, exclude_directories, exclude_files)
     partitions = first_fit(sorted_by_size, max_size)
 
     index = 0
@@ -327,7 +365,7 @@ def main(args):
 
     # libraries
     libraries_artifacts = path.join(pmiassemblies_directory, "Core_Root")
-    partition_files(coreclr_args, libraries_artifacts, [])
+    partition_files(coreclr_args, libraries_artifacts, [], native_dlls_to_ignore)
 
     # test
     # likewise for test
