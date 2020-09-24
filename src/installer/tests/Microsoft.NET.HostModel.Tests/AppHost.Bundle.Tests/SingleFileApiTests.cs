@@ -6,7 +6,7 @@ using Xunit;
 
 namespace AppHost.Bundle.Tests
 {
-    public class SingleFileApiTests : IClassFixture<SingleFileApiTests.SharedTestState>
+    public class SingleFileApiTests : BundleTestBase, IClassFixture<SingleFileApiTests.SharedTestState>
     {
         private SharedTestState sharedTestState;
 
@@ -19,7 +19,7 @@ namespace AppHost.Bundle.Tests
         public void FullyQualifiedName()
         {
             var fixture = sharedTestState.TestFixture.Copy();
-            var singleFile = BundleHelper.BundleApp(fixture);
+            var singleFile = BundleSelfContainedApp(fixture);
 
             Command.Create(singleFile, "fullyqualifiedname")
                 .CaptureStdErr()
@@ -37,7 +37,7 @@ namespace AppHost.Bundle.Tests
         public void CodeBaseThrows()
         {
             var fixture = sharedTestState.TestFixture.Copy();
-            var singleFile = BundleHelper.BundleApp(fixture);
+            var singleFile = BundleSelfContainedApp(fixture);
 
             Command.Create(singleFile, "codebase")
                 .CaptureStdErr()
@@ -53,7 +53,7 @@ namespace AppHost.Bundle.Tests
         public void AppContext_Deps_Files_Bundled_Self_Contained()
         {
             var fixture = sharedTestState.TestFixture.Copy();
-            var singleFile = BundleHelper.BundleApp(fixture);
+            var singleFile = BundleSelfContainedApp(fixture);
 
             Command.Create(singleFile, "appcontext")
                 .CaptureStdErr()
@@ -71,7 +71,7 @@ namespace AppHost.Bundle.Tests
         public void GetEnvironmentArgs_0_Returns_Bundled_Executable_Path()
         {
             var fixture = sharedTestState.TestFixture.Copy();
-            var singleFile = BundleHelper.BundleApp(fixture);
+            var singleFile = BundleSelfContainedApp(fixture);
 
             // For single-file, Environment.GetCommandLineArgs[0]
             // should return the file path of the host.
@@ -104,18 +104,13 @@ namespace AppHost.Bundle.Tests
                 .HaveStdOutContaining(appPath);
         }
 
-        public class SharedTestState : IDisposable
+        public class SharedTestState : SharedTestStateBase, IDisposable
         {
             public TestProjectFixture TestFixture { get; set; }
-            public RepoDirectoriesProvider RepoDirectories { get; set; }
 
             public SharedTestState()
             {
-                RepoDirectories = new RepoDirectoriesProvider();
-                TestFixture = new TestProjectFixture("SingleFileApiTests", RepoDirectories);
-                TestFixture
-                    .EnsureRestoredForRid(TestFixture.CurrentRid, RepoDirectories.CorehostPackages)
-                    .PublishProject(runtime: TestFixture.CurrentRid, outputDirectory: BundleHelper.GetPublishPath(TestFixture));
+                TestFixture = PreparePublishedSelfContainedTestProject("SingleFileApiTests");
             }
 
             public void Dispose()

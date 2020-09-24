@@ -13,7 +13,7 @@ using Xunit;
 
 namespace AppHost.Bundle.Tests
 {
-    public class NetCoreApp3CompatModeTests : IClassFixture<NetCoreApp3CompatModeTests.SharedTestState>
+    public class NetCoreApp3CompatModeTests : BundleTestBase, IClassFixture<NetCoreApp3CompatModeTests.SharedTestState>
     {
         private SharedTestState sharedTestState;
 
@@ -25,9 +25,9 @@ namespace AppHost.Bundle.Tests
         [Fact]
         public void Bundle_Is_Extracted()
         {
-            var fixture = sharedTestState.TestFixture.Copy();
-            string singleFile;
-            Bundler bundler = BundleHelper.BundleApp(fixture, out singleFile, BundleOptions.BundleAllContent);
+            var fixture = sharedTestState.SingleFileTestFixture.Copy();
+            UseSingleFileSelfContainedHost(fixture);
+            Bundler bundler = BundleHelper.BundleApp(fixture, out string singleFile, BundleOptions.BundleAllContent);
             var extractionBaseDir = BundleHelper.GetExtractionRootDir(fixture);
 
             Command.Create(singleFile, "executing_assembly_location trusted_platform_assemblies assembly_location System.Console")
@@ -50,41 +50,21 @@ namespace AppHost.Bundle.Tests
                 .Select(file => Path.GetFileName(file))
                 .Except(bundleFiles)
                 .ToArray();
-            var bundlerFiles = BundleHelper.GetBundleDir(fixture).GetFiles();
             extractionDir.Should().HaveFiles(publishedFiles);
         }
 
-        public class SharedTestState : IDisposable
+        public class SharedTestState : SharedTestStateBase, IDisposable
         {
-            public TestProjectFixture TestFixture { get; set; }
-            public RepoDirectoriesProvider RepoDirectories { get; set; }
+            public TestProjectFixture SingleFileTestFixture { get; set; }
 
             public SharedTestState()
             {
-                RepoDirectories = new RepoDirectoriesProvider();
-                TestFixture = new TestProjectFixture("SingleFileApiTests", RepoDirectories);
-                TestFixture
-                    .EnsureRestoredForRid(TestFixture.CurrentRid, RepoDirectories.CorehostPackages)
-                    .PublishProject(runtime: TestFixture.CurrentRid, outputDirectory: BundleHelper.GetPublishPath(TestFixture));
-
-                // The above will publish the app as self-contained using the stock .NET Core SDK (typically from Program Files)
-                // In order to test the hosting components we need the hostpolicy and hostfxr built by the repo
-                string hostFxrFileName = RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("hostfxr");
-                File.Copy(
-                    Path.Combine(RepoDirectories.Artifacts, "corehost", hostFxrFileName),
-                    Path.Combine(BundleHelper.GetPublishPath(TestFixture), hostFxrFileName),
-                    overwrite: true);
-
-                string hostPolicyFileName = RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("hostpolicy");
-                File.Copy(
-                    Path.Combine(RepoDirectories.Artifacts, "corehost", hostPolicyFileName),
-                    Path.Combine(BundleHelper.GetPublishPath(TestFixture), hostPolicyFileName),
-                    overwrite: true);
+                SingleFileTestFixture = PreparePublishedSelfContainedTestProject("SingleFileApiTests");
             }
 
             public void Dispose()
             {
-                TestFixture.Dispose();
+                SingleFileTestFixture.Dispose();
             }
         }
     }

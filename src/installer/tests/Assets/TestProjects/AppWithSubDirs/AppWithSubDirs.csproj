@@ -3,7 +3,6 @@
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <OutputType>Exe</OutputType>
-    <RuntimeIdentifier>$(TestTargetRid)</RuntimeIdentifier>
     <RuntimeFrameworkVersion>$(MNAVersion)</RuntimeFrameworkVersion>
   </PropertyGroup>
 
