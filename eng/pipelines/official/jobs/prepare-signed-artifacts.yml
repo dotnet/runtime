@@ -34,8 +34,7 @@ jobs:
       feedSource: https://dnceng.pkgs.visualstudio.com/_packaging/MicroBuildToolset/nuget/v3/index.json
     continueOnError: false
     condition: and(succeeded(), 
-                in(variables['SignType'], 'real', 'test'),
-                ne(variables['PostBuildSign'], 'true'))
+                in(variables['SignType'], 'real', 'test'))
 
   - task: DownloadBuildArtifacts@0
     displayName: Download IntermediateUnsignedArtifacts
