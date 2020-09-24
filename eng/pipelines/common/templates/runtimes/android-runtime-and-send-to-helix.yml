@@ -6,18 +6,13 @@ parameters:
   container: ''
   testGroup: ''
   crossrootfsDir: ''
-  readyToRun: false
   liveLibrariesBuildConfig: ''
-  crossgen2: false
-  compositeBuildMode: false
   helixQueues: ''
   stagedBuild: false
   displayNameArgs: ''
-  runInUnloadableContext: false
   runtimeVariant: ''
   variables: {}
   pool: ''
-  runtimeFlavor: 'mono'
   runtimeFlavorDisplayName: 'Mono'
   dependsOn: []
   #arcade-specific parameters
@@ -49,11 +44,6 @@ steps:
 
         helixBuild: $(Build.BuildNumber)
         helixSource: $(_HelixSource)
-
-        # REVIEW: not sure why "cli" is part of the names here. Leave it for the ones that already had it,
-        # but don't add it to new ones.
-        ${{ if ne(parameters.readyToRun, true) }}:
-          helixType: 'test/functional/cli/'
 
         helixQueues: ${{ parameters.helixQueues }}
 
