@@ -79,9 +79,9 @@ jobs:
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
           unpackFolder: '$(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).x64.$(buildConfigUpper)'
-          artifactFileName: '$(buildProductArtifactName)$(archiveExtension)'
-          artifactName: '$(buildProductArtifactName)'
-          displayName: 'Coreclr product build'
+          artifactFileName: 'CoreCLRProduct_${{ parameters.runtimeVariant }}_$(osGroup)$(osSubgroup)_x64_$(buildConfig)$(archiveExtension)'
+          artifactName: 'CoreCLRProduct_${{ parameters.runtimeVariant }}_$(osGroup)$(osSubgroup)_x64_$(buildConfig)'
+          displayName: 'Coreclr product build (x64)'
 
     # # Download and unzip managed test artifacts
     # - template: /eng/pipelines/common/download-artifact-step.yml
