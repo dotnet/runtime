@@ -279,7 +279,7 @@ namespace Internal.JitInterface
             {
 ");
                 bool isVoid = decl.ReturnType.ManagedTypeName == "void";
-                tr.Write($"                " + (isVoid ? "" : "return ") + $"_this.{decl.FunctionName}(");
+                tr.Write($"                {(isVoid ? "" : "return ")}_this.{decl.FunctionName}(");
                 bool isFirst = true;
                 foreach (Parameter param in decl.Parameters)
                 {
