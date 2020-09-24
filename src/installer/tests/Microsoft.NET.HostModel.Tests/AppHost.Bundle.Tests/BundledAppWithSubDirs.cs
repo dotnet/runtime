@@ -91,13 +91,10 @@ namespace AppHost.Bundle.Tests
             {
                 TestFrameworkDependentFixture = new TestProjectFixture("AppWithSubDirs", RepoDirectories);
                 BundleHelper.AddLongNameContentToAppWithSubDirs(TestFrameworkDependentFixture);
-                // This is a bit of a cheating - we know that the AppWithSubDirs doesn't have any RID specific assets
-                // so we can build it as a portable app and bundle it (since the built output will look the same)
-                // This is to workaround a problem where publishing RID specific FDD apps for some reason brings in
-                // hostfxr.dll to the built output - which breaks everything.
                 TestFrameworkDependentFixture
-                    .EnsureRestored(RepoDirectories.CorehostPackages)
-                    .PublishProject(selfContained: false,
+                    .EnsureRestoredForRid(TestFrameworkDependentFixture.CurrentRid, RepoDirectories.CorehostPackages)
+                    .PublishProject(runtime: TestFrameworkDependentFixture.CurrentRid,
+                                    selfContained: false,
                                     outputDirectory: BundleHelper.GetPublishPath(TestFrameworkDependentFixture));
 
                 TestSelfContainedFixture = new TestProjectFixture("AppWithSubDirs", RepoDirectories);

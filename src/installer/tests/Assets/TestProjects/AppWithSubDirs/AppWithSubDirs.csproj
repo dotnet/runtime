@@ -4,6 +4,7 @@
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <OutputType>Exe</OutputType>
     <RuntimeFrameworkVersion>$(MNAVersion)</RuntimeFrameworkVersion>
+    <RuntimeIdentifier>$(TestTargetRid)</RuntimeIdentifier>
   </PropertyGroup>
 
   <Target Name="CopyFiles" AfterTargets="Publish">
