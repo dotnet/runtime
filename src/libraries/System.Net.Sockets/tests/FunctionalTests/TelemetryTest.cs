@@ -188,7 +188,11 @@ namespace System.Net.Sockets.Tests
                         Task connectTask = socketHelper.ConnectAsync(client, endPoint);
                         await WaitForEventAsync(events, "ConnectStart");
                         Task disposeTask = Task.Run(() => client.Dispose());
-                        await new[] { connectTask, disposeTask }.WhenAllOrAnyFailed();
+                        try {
+                            await new[] { connectTask, disposeTask }.WhenAllOrAnyFailed(30_000);
+                        } catch {
+                            Environment.FailFast("Crashy crash, dumpy dump.");
+                        }
                     });
 
                     if (ex is SocketException se)
@@ -227,7 +231,11 @@ namespace System.Net.Sockets.Tests
                         Task acceptTask = GetHelperBase(acceptMethod).AcceptAsync(server);
                         await WaitForEventAsync(events, "AcceptStart");
                         Task disposeTask = Task.Run(() => server.Dispose());
-                        await new[] { acceptTask, disposeTask }.WhenAllOrAnyFailed();
+                        try {
+                            await new[] { acceptTask, disposeTask }.WhenAllOrAnyFailed(30_000);
+                        } catch {
+                            Environment.FailFast("Crashy crash, dumpy dump.");
+                        }
                     });
 
                     await WaitForEventAsync(events, "AcceptStop");
