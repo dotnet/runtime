@@ -59,7 +59,7 @@ int testStatus;
 const char sTmpEventName[MAX_PATH] = "StartTestEvent";
 char objectSuffix[MAX_PATH];
 
-void PALAPI Run_Thread(LPVOID lpParam);
+void PALAPI Run_Thread_mutex_shared(LPVOID lpParam);
 
 int GetParameters( int argc, char **argv)
 {
@@ -115,7 +115,7 @@ int GetParameters( int argc, char **argv)
     return 0;
 }
 
- int __cdecl main(INT argc, CHAR **argv)
+PALTEST(composite_object_management_mutex_shared_paltest_mutex_shared, "composite/object_management/mutex/shared/paltest_mutex_shared")
 {
     unsigned int i = 0;
     HANDLE hThread[MAXIMUM_WAIT_OBJECTS];
@@ -212,7 +212,7 @@ int GetParameters( int argc, char **argv)
         hThread[i] = CreateThread(
                                     NULL,                   /* no security attributes */
                                     0,                      /* use default stack size */
-                                    (LPTHREAD_START_ROUTINE)Run_Thread,/* thread function */
+                                    (LPTHREAD_START_ROUTINE)Run_Thread_mutex_shared,/* thread function */
                                     (LPVOID)dwParam,  /* argument to thread function */
                                     0,                      /* use default creation flags  */
                                     &threadId[i]     /* returns the thread identifier*/                                  
@@ -286,7 +286,7 @@ int GetParameters( int argc, char **argv)
     return  testStatus;
 }
 
-void  PALAPI Run_Thread (LPVOID lpParam)
+void  PALAPI Run_Thread_mutex_shared (LPVOID lpParam)
 {
     unsigned int i = 0;
     DWORD dwWaitResult; 

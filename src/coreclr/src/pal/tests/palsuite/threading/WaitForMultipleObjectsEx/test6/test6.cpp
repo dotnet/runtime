@@ -582,7 +582,7 @@ DWORD PALAPI TestThread(PVOID pArg)
     return 0;
 }
 
-int __cdecl main(int argc, char **argv)
+PALTEST(threading_WaitForMultipleObjectsEx_test6_paltest_waitformultipleobjectsex_test6, "threading/WaitForMultipleObjectsEx/test6/paltest_waitformultipleobjectsex_test6")
 {
     DWORD dwRet;
     DWORD dwSlaveThreadTid = 0;

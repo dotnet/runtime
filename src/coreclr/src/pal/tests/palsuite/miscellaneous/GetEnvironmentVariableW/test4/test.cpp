@@ -16,7 +16,8 @@
 #define UNICODE
 #include <palsuite.h>
 
-int __cdecl main(int argc, char *argv[]) {
+PALTEST(miscellaneous_GetEnvironmentVariableW_test4_paltest_getenvironmentvariablew_test4, "miscellaneous/GetEnvironmentVariableW/test4/paltest_getenvironmentvariablew_test4")
+{
 
     /* Define some buffers needed for the function */
     WCHAR * pResultBuffer = NULL;

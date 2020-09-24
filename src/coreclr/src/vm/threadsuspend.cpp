@@ -2269,8 +2269,9 @@ void Thread::RareDisablePreemptiveGC()
     // Note IsGCInProgress is also true for say Pause (anywhere SuspendEE happens) and GCThread is the
     // thread that did the Pause. While in Pause if another thread attempts Rev/Pinvoke it should get inside the following and
     // block until resume
-    if ((GCHeapUtilities::IsGCInProgress()  && (this != ThreadSuspend::GetSuspensionThread())) ||
-        (m_State & (TS_DebugSuspendPending | TS_StackCrawlNeeded)))
+    if ((GCHeapUtilities::IsGCInProgress() && (this != ThreadSuspend::GetSuspensionThread())) ||
+        ((m_State & TS_DebugSuspendPending) && !IsInForbidSuspendForDebuggerRegion()) ||
+        (m_State & TS_StackCrawlNeeded))
     {
         STRESS_LOG1(LF_SYNC, LL_INFO1000, "RareDisablePreemptiveGC: entering. Thread state = %x\n", m_State.Load());
 
@@ -2361,7 +2362,8 @@ void Thread::RareDisablePreemptiveGC()
             // thread while in this loop.  This happens if you use the COM+
             // debugger to suspend this thread and then release it.
             if (! ((GCHeapUtilities::IsGCInProgress() && (this != ThreadSuspend::GetSuspensionThread())) ||
-                    (m_State & (TS_DebugSuspendPending | TS_StackCrawlNeeded))) )
+                    ((m_State & TS_DebugSuspendPending) && !IsInForbidSuspendForDebuggerRegion()) ||
+                    (m_State & TS_StackCrawlNeeded)) )
             {
                 break;
             }
@@ -5897,6 +5899,16 @@ void ThreadSuspend::RestartEE(BOOL bFinishedGC, BOOL SuspendSucceded)
 #endif //TIME_SUSPEND
 
     FireEtwGCRestartEEBegin_V1(GetClrInstanceId());
+
+#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+    // Flush the store buffers on all CPUs, to ensure that they all see changes made
+    // by the GC threads. This only matters on weak memory ordered processors as 
+    // the strong memory ordered processors wouldn't have reordered the relevant reads.
+    // This is needed to synchronize threads that were running in preemptive mode while
+    // the runtime was suspended and that will return to cooperative mode after the runtime 
+    // is restarted. 
+    ::FlushProcessWriteBuffers();
+#endif //TARGET_ARM || TARGET_ARM64
 
     //
     // SyncClean holds a list of things to be cleaned up when it's possible.

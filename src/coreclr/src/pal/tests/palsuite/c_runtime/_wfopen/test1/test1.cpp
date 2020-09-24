@@ -25,7 +25,7 @@ struct testCase
     WCHAR mode[20];
 };
 
-int __cdecl main(int argc, char **argv)
+PALTEST(c_runtime__wfopen_test1_paltest_wfopen_test1, "c_runtime/_wfopen/test1/paltest_wfopen_test1")
 {
   
     FILE *fp;

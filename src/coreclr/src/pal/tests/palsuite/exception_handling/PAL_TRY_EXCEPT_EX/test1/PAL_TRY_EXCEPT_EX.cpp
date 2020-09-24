@@ -17,7 +17,7 @@
 #include <palsuite.h>
 
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(exception_handling_PAL_TRY_EXCEPT_EX_test1_paltest_pal_try_except_ex_test1, "exception_handling/PAL_TRY_EXCEPT_EX/test1/paltest_pal_try_except_ex_test1")
 {
     int* p = 0x00000000;   /* NULL pointer */
     BOOL bTry = FALSE;

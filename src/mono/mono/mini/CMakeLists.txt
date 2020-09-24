@@ -50,7 +50,6 @@ set(icu_shim_sources_base
 addprefix(icu_shim_sources "${ICU_SHIM_PATH}" "${icu_shim_sources_base}")
 set_source_files_properties(${icu_shim_sources} PROPERTIES COMPILE_DEFINITIONS OSX_ICU_LIBRARY_PATH="${OSX_ICU_LIBRARY_PATH}")
 set_source_files_properties(${icu_shim_sources} PROPERTIES COMPILE_FLAGS "-I${ICU_INCLUDEDIR} -I${CMAKE_SOURCE_DIR}/../libraries/Native/Unix/System.Globalization.Native/ -I${CMAKE_SOURCE_DIR}/../libraries/Native/Unix/Common/ ${ICU_FLAGS}")
-set(ICU_LIBS "icucore")
 set(ICU_LDFLAGS "-L${ICU_LIBDIR}")
 endif()
 
@@ -182,7 +181,6 @@ set(arm_sources
     exceptions-arm.c
     tramp-arm.c
     mini-arm-gsharedvt.c
-    mini-arm-gsharedvt.h
     tramp-arm-gsharedvt.c
     cpu-arm.h)
 
@@ -221,6 +219,8 @@ set(posix_sources
 
 if(HOST_DARWIN)
 set(os_sources "${darwin_sources};${posix_sources}")
+elseif(HOST_LINUX)
+set(os_sources "${posix_sources}")
 endif()
 
 set(interp_sources
@@ -274,10 +274,10 @@ endif()
 
 if(HOST_DARWIN)
 set(OS_LIBS "-framework CoreFoundation" "-framework Foundation")
-endif()
-
-if(HOST_IOS)
+elseif(HOST_IOS)
 set(OS_LIBS "-framework CoreFoundation" "-lobjc" "-lc++")
+elseif(HOST_LINUX)
+set(OS_LIBS pthread m dl)
 endif()
 
 add_library(monosgen-objects OBJECT "${eglib_sources};${metadata_sources};${utils_sources};${sgen_sources};${icu_shim_sources};${eventpipe_sources};${mini_sources}")
@@ -296,7 +296,7 @@ if(NOT DISABLE_SHARED_LIBS)
   add_library(monosgen SHARED $<TARGET_OBJECTS:monosgen-objects>)
   set_target_properties(monosgen PROPERTIES OUTPUT_NAME monosgen-2.0)
   set_target_properties(monosgen PROPERTIES LIBRARY_OUTPUT_DIRECTORY .libs)
-  target_link_libraries(monosgen ${OS_LIBS} "iconv" ${LLVM_LIBS} ${ICU_LIBS})
+  target_link_libraries(monosgen ${OS_LIBS} ${ICONV_LIB} ${LLVM_LIBS} ${ICU_LIBS})
   if(ICU_LDFLAGS)
     set_target_properties(monosgen PROPERTIES LINK_FLAGS ${ICU_LDFLAGS})
   endif()
@@ -357,7 +357,7 @@ add_custom_command(
 if(NOT DISABLE_EXECUTABLES)
 set(CMAKE_SKIP_RPATH 1)
 add_executable(mono-sgen "main-sgen.c")
-target_link_libraries(mono-sgen monosgen-static ${OS_LIBS} "iconv" ${LLVM_LIBS} ${ICU_LIBS})
+target_link_libraries(mono-sgen monosgen-static ${OS_LIBS} ${ICONV_LIB} ${LLVM_LIBS} ${ICU_LIBS})
 if(ICU_LDFLAGS)
   set_target_properties(mono-sgen PROPERTIES LINK_FLAGS ${ICU_LDFLAGS})
 endif()
