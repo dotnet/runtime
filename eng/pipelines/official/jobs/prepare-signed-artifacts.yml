@@ -10,7 +10,7 @@ jobs:
   dependsOn: ${{ parameters.dependsOn }}
   pool:
     name: NetCoreInternal-Pool
-    queue: buildpool.windows.10.amd64.vs2017
+    queue: buildpool.windows.10.amd64.vs2019
   # Double the default timeout.
   timeoutInMinutes: 120
   workspace:
@@ -34,8 +34,7 @@ jobs:
       feedSource: https://dnceng.pkgs.visualstudio.com/_packaging/MicroBuildToolset/nuget/v3/index.json
     continueOnError: false
     condition: and(succeeded(), 
-                in(variables['SignType'], 'real', 'test'),
-                ne(variables['PostBuildSign'], 'true'))
+                in(variables['SignType'], 'real', 'test'))
 
   - task: DownloadBuildArtifacts@0
     displayName: Download IntermediateUnsignedArtifacts
