@@ -146,7 +146,7 @@
     <MoqVersion>4.12.0</MoqVersion>
     <FsCheckVersion>2.14.3</FsCheckVersion>
     <!-- Docs -->
-    <MicrosoftPrivateIntellisenseVersion>5.0.0-preview-20200914.1</MicrosoftPrivateIntellisenseVersion>
+    <MicrosoftPrivateIntellisenseVersion>5.0.0-preview-20200924.1</MicrosoftPrivateIntellisenseVersion>
     <!-- ILLink -->
     <MicrosoftNETILLinkTasksVersion>6.0.0-alpha.1.20461.4</MicrosoftNETILLinkTasksVersion>
     <!-- ICU -->
