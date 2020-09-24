@@ -77,6 +77,8 @@ static void assembly_loaded (MonoProfiler *prof, MonoAssembly *assembly);
 //FIXME move all of those fields to the profiler object
 static gboolean debugger_enabled;
 
+static gboolean has_pending_lazy_loaded_assemblies;
+
 static int event_request_id;
 static GHashTable *objrefs;
 static GHashTable *obj_to_objref;
@@ -498,6 +500,15 @@ assembly_loaded (MonoProfiler *prof, MonoAssembly *assembly)
 	DEBUG_PRINTF (2, "assembly_loaded callback called for %s\n", assembly->aname.name);
 	MonoImage *assembly_image = assembly->image;
 	MonoImage *pdb_image = NULL;
+
+	if (!mono_is_debugger_attached ()) {
+		has_pending_lazy_loaded_assemblies = TRUE;
+		return;
+	}
+
+	if (mono_wasm_assembly_already_added(assembly->aname.name))
+		return;
+
 	if (mono_has_pdb_checksum ((char *) assembly_image->raw_data, assembly_image->raw_data_len)) { //if it's a release assembly we don't need to send to DebuggerProxy
 		MonoDebugHandle *handle = mono_debug_get_handle (assembly_image);
 		if (handle) {
@@ -1562,6 +1573,18 @@ EMSCRIPTEN_KEEPALIVE void
 mono_wasm_set_is_debugger_attached (gboolean is_attached)
 {
 	mono_set_is_debugger_attached (is_attached);
+	if (is_attached && has_pending_lazy_loaded_assemblies)
+	{
+		MonoDomain* domain =  mono_domain_get ();
+		mono_domain_assemblies_lock (domain);
+		GSList *tmp;
+		for (tmp = domain->domain_assemblies; tmp; tmp = tmp->next) {
+			MonoAssembly *ass = (MonoAssembly *)tmp->data;
+			assembly_loaded (NULL, ass);
+		}
+		mono_domain_assemblies_unlock (domain);
+		has_pending_lazy_loaded_assemblies = FALSE;
+	}
 }
 
 // Functions required by debugger-state-machine.
