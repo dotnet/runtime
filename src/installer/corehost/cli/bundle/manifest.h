@@ -23,7 +23,7 @@ namespace bundle
 
         std::vector<file_entry_t> files;
 
-        static manifest_t read(reader_t &reader, header_t &header);
+        static manifest_t read(reader_t &reader, const header_t &header);
 
         bool files_need_extraction() const
         {

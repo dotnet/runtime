@@ -5,7 +5,7 @@
 
 using namespace bundle;
 
-manifest_t manifest_t::read(reader_t& reader, header_t& header)
+manifest_t manifest_t::read(reader_t& reader, const header_t& header)
 {
     manifest_t manifest;
 

@@ -172,7 +172,7 @@ public:
         return m_is_framework_dependent;
     }
 
-    const void get_app_dir(pal::string_t *app_dir) const
+    void get_app_dir(pal::string_t *app_dir) const
     {
         if (m_host_mode == host_mode_t::libhost)
         {
