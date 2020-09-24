@@ -10513,6 +10513,10 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
         JITDUMP(" not morphing a multireg call return\n");
         return tree;
     }
+    else if (dest->IsMultiRegLclVar() && !src->IsMultiRegNode())
+    {
+        dest->AsLclVar()->ClearMultiReg();
+    }
 #endif // FEATURE_MULTIREG_RET
 
     if (src->IsCall() && !compDoOldStructRetyping())
