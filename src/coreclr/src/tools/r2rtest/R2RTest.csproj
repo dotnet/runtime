@@ -5,7 +5,7 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <NoWarn>8002,NU1701</NoWarn>
-    <Platform>AnyCPU</Platform>
+    <PlatformTarget>AnyCPU</PlatformTarget>
     <OutputPath>$(BinDir)\R2RTest</OutputPath>
   </PropertyGroup>
 

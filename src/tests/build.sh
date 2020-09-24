@@ -156,129 +156,50 @@ generate_layout()
 
 precompile_coreroot_fx()
 {
-    local overlayDir="$CORE_ROOT"
-    local compilerName=Crossgen
-
-    # Read the exclusion file for this platform
-    skipCrossGenFiles=($(grep -v '^#' "$(dirname "$0")/tests/skipCrossGenFiles.${__BuildArch}.txt" 2> /dev/null))
-    skipCrossGenFiles+=('System.Runtime.WindowsRuntime.dll')
-
-    # Temporary output folder for Crossgen2-compiled assemblies
-    local outputDir="$overlayDir"/out
-
-    # Delete previously crossgened assemblies
-    rm "$overlayDir"/*.ni.dll 2>/dev/null
-
-    if [[ "$__DoCrossgen2" != 0 ]]; then
-        compilerName=Crossgen2
-
-        mkdir "$outputDir"
+    # Get the number of processors available to the scheduler
+    # Other techniques such as `nproc` only get the number of
+    # processors available to a single process.
+    local platform="$(uname)"
+    if [[ "$platform" == "FreeBSD" ]]; then
+        __NumProc=$(sysctl hw.ncpu | awk '{ print $2+1 }')
+    elif [[ "$platform" == "NetBSD" || "$platform" == "SunOS" ]]; then
+        __NumProc=$(($(getconf NPROCESSORS_ONLN)+1))
+    elif [[ "$platform" == "Darwin" ]]; then
+        __NumProc=$(($(getconf _NPROCESSORS_ONLN)+1))
+    else
+        __NumProc=$(nproc --all)
     fi
 
-    echo "${__MsgPrefix}Running ${compilerName} on framework assemblies in CORE_ROOT: '${CORE_ROOT}'"
-
-    local totalPrecompiled=0
-    local failedToPrecompile=0
-    local compositeOutputFile=$outputDir/framework-r2r.dll
-    local compositeResponseFile=$compositeOutputFile.rsp
-    local compositeCommandLine="${__DotNetCli} $__Crossgen2Dll @$compositeResponseFile"
+    local crossgenCmd="\"$__DotNetCli\" \"$CORE_ROOT/R2RTest/R2RTest.dll\" compile-framework -cr \"$CORE_ROOT\" --output-directory \"$CORE_ROOT/crossgen.out\" --target-arch $__BuildArch -dop $__NumProc"
 
     if [[ "$__CompositeBuildMode" != 0 ]]; then
-        rm $compositeResponseFile 2>/dev/null
-        echo --composite>>$compositeResponseFile
-        echo -O>>$compositeResponseFile
-        echo --out:$compositeOutputFile>>$compositeResponseFile
-        echo --targetarch:${__BuildArch}>>$compositeResponseFile
+        crossgenCmd="$crossgenCmd --composite"
     fi
 
-    declare -a failedAssemblies
-
-    filesToPrecompile=$(find -L "$overlayDir" -maxdepth 1 -iname Microsoft.\*.dll -o -iname System.\*.dll -o -iname netstandard.dll -o -iname mscorlib.dll -type f)
-    for fileToPrecompile in ${filesToPrecompile}; do
-        local filename="$fileToPrecompile"
-        if is_skip_crossgen_test "$(basename $filename)"; then
-            continue
-        fi
-
-        if [[ "$__CompositeBuildMode" != 0 ]]; then
-            echo $filename>>$compositeResponseFile
-            continue
-        fi
-
-        local commandLine=""
-        local responseFile="$overlayDir/$(basename $filename).rsp"
-
-        rm $responseFile 2>/dev/null
-
-        if [[ "$__DoCrossgen" != 0 ]]; then
-            commandLine="$__CrossgenExe @$responseFile"
-            echo /Platform_Assemblies_Paths>>$responseFile
-            echo $overlayDir>>$responseFile
-            echo $filename>>$responseFile
-        fi
-
-        if [[ "$__DoCrossgen2" != 0 ]]; then
-            commandLine="${__DotNetCli} $__Crossgen2Dll @$responseFile"
-            echo -O>>$responseFile
-            echo --inputbubble>>$responseFile
-            echo --verify-type-and-field-layout>>$responseFile
-            echo --out:$outputDir/$(basename $filename)>>$responseFile
-            echo --targetarch:${__BuildArch}>>$responseFile
-            echo $filename>>$responseFile
-            for reference in $overlayDir/*.dll; do
-                echo -r:$reference>>$responseFile
-            done
-        fi
-
-        echo Precompiling "$filename"
-        $commandLine 1> "$filename".stdout 2> "$filename".stderr
-        local exitCode="$?"
-        if [[ "$exitCode" != 0 ]]; then
-            if grep -q -e '0x80131018' "$filename".stderr; then
-                printf "\n\t$filename is not a managed assembly.\n\n"
-            else
-                echo Unable to precompile "$filename", exit code is "$exitCode".
-                echo Command-line: "$commandLine"
-                cat "$filename".stdout
-                cat "$filename".stderr
-                failedAssemblies+=($(basename -- "$filename"))
-                failedToPrecompile=$((failedToPrecompile+1))
-            fi
-        else
-            rm "$filename".{stdout,stderr}
-        fi
-
-        totalPrecompiled=$((totalPrecompiled+1))
-        echo "Processed: $totalPrecompiled, failed $failedToPrecompile"
-    done
-
-    if [[ "$__CompositeBuildMode" != 0 ]]; then
-        # Compile the entire framework in composite build mode
-        echo "Response file: $compositeResponseFile"
-        cat $compositeResponseFile
-        echo "Compiling composite R2R framework: $compositeCommandLine"
-        $compositeCommandLine
-        local exitCode="$?"
-        if [[ "$exitCode" != 0 ]]; then
-            echo Unable to precompile composite framework, exit code is "$exitCode".
-            exit 1
-        fi
+    local crossgenDir="$__BinDir"
+    if [[ "$__CrossBuild" == 1 ]]; then
+        crossgenDir="$crossgenDir/$__HostArch"
     fi
 
-    if [[ "$__DoCrossgen2" != 0 ]]; then
-        # Copy the Crossgen-compiled assemblies back to CORE_ROOT
-        mv -f "$outputDir"/* "$overlayDir"/
-        rm -r "$outputDir"
+    if [[ "$__DoCrossgen" != 0 ]]; then
+        crossgenCmd="$crossgenCmd --crossgen --nocrossgen2 --crossgen-path \"$crossgenDir/crossgen\""
+    else
+        crossgenCmd="$crossgenCmd --verify-type-and-field-layout --crossgen2-parallelism 1 --crossgen2-path \"$crossgenDir/crossgen2/crossgen2.dll\""
     fi
 
-    if [[ "$failedToPrecompile" != 0 ]]; then
-        echo Failed assemblies:
-        for assembly in "${failedAssemblies[@]}"; do
-            echo "  $assembly"
-        done
+    echo "Running $crossgenCmd"
+    eval $crossgenCmd
+    local exitCode="$?"
 
-        exit 1
+    if [[ "$exitCode" != 0 ]]; then
+        echo "Failed to crossgen the framework"
+        return 1
     fi
+
+    mv "$CORE_ROOT"/crossgen.out/*.dll "$CORE_ROOT"
+    rm -r "$CORE_ROOT/crossgen.out"
+
+    return 0
 }
 
 declare -a skipCrossGenFiles
