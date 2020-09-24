@@ -33,7 +33,9 @@ namespace System.Net.Http.Functional.Tests
             foreach (Configuration.Http.RemoteServer remoteServer in Configuration.Http.RemoteServers)
             {
                 yield return new object[] { remoteServer, remoteServer.GZipUri };
-                yield return new object[] { remoteServer, remoteServer.DeflateUri };
+
+                // Remote deflate endpoint isn't correctly following the deflate protocol.
+                //yield return new object[] { remoteServer, remoteServer.DeflateUri };
             }
         }
 
@@ -44,7 +46,7 @@ namespace System.Net.Http.Functional.Tests
                 yield return new object[]
                 {
                     "deflate",
-                    new Func<Stream, Stream>(s => new DeflateStream(s, CompressionLevel.Optimal, leaveOpen: true)),
+                    new Func<Stream, Stream>(s => new ZLibStream(s, CompressionLevel.Optimal, leaveOpen: true)),
                     specifyAllMethods ? DecompressionMethods.Deflate : _all
                 };
                 yield return new object[]
@@ -105,7 +107,7 @@ namespace System.Net.Http.Functional.Tests
             yield return new object[]
             {
                 "deflate",
-                new Func<Stream, Stream>(s => new DeflateStream(s, CompressionLevel.Optimal, leaveOpen: true)),
+                new Func<Stream, Stream>(s => new ZLibStream(s, CompressionLevel.Optimal, leaveOpen: true)),
                 DecompressionMethods.None
             };
 #if !NETFRAMEWORK
@@ -183,6 +185,26 @@ namespace System.Net.Http.Functional.Tests
                         false,
                         null);
                 }
+            }
+        }
+
+        // The remote server endpoint was written to use DeflateStream, which isn't actually a correct
+        // implementation of the deflate protocol (the deflate protocol requires the zlib wrapper around
+        // deflate).  Until we can get that updated (and deal with previous releases still testing it
+        // via a DeflateStream-based implementation), we utilize httpbin.org to help validate behavior.
+        [OuterLoop("Uses external servers")]
+        [Theory]
+        [InlineData("http://httpbin.org/deflate", "\"deflated\": true")]
+        [InlineData("https://httpbin.org/deflate", "\"deflated\": true")]
+        [InlineData("http://httpbin.org/gzip", "\"gzipped\": true")]
+        [InlineData("https://httpbin.org/gzip", "\"gzipped\": true")]
+        public async Task GetAsync_SetAutomaticDecompression_ContentDecompressed(string uri, string expectedContent)
+        {
+            HttpClientHandler handler = CreateHttpClientHandler();
+            handler.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
+            using (HttpClient client = CreateHttpClient(handler))
+            {
+                Assert.Contains(expectedContent, await client.GetStringAsync(uri));
             }
         }
 

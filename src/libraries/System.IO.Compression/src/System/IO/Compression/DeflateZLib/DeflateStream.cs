@@ -320,7 +320,7 @@ namespace System.IO.Compression
 
         private static void ThrowStreamClosedException()
         {
-            throw new ObjectDisposedException(null, SR.ObjectDisposed_StreamClosed);
+            throw new ObjectDisposedException(nameof(DeflateStream), SR.ObjectDisposed_StreamClosed);
         }
 
         private void EnsureDecompressionMode()

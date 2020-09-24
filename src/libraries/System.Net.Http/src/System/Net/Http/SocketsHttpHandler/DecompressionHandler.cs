@@ -211,7 +211,7 @@ namespace System.Net.Http
             { }
 
             protected override Stream GetDecompressedStream(Stream originalStream) =>
-                new DeflateStream(originalStream, CompressionMode.Decompress);
+                new ZLibStream(originalStream, CompressionMode.Decompress);
         }
 
         private sealed class BrotliDecompressedContent : DecompressedContent
