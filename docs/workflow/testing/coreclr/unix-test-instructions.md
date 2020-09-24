@@ -81,15 +81,23 @@ PAL tests
 
 Build CoreCLR with PAL tests on the Unix machine:
 
-```sh
-./src/coreclr/build-runtime.sh -skipgenerateversion -nopgooptimize \
-    -cmakeargs -DCLR_CMAKE_BUILD_TESTS=1
+```sh ./build.sh clr.paltests
 ```
 
 Run tests:
 
+To run all tests including disabled tests
 ```sh
-./src/coreclr/src/pal/tests/palsuite/runpaltests.sh $(pwd)/artifacts/obj/coreclr/$(uname).x64.Debug
+./src/coreclr/src/pal/tests/palsuite/runpaltests.sh $(pwd)/artifacts/bin/coreclr/$(uname).x64.Debug/paltests
+# on macOS, replace $(uname) with OSX
+```
+To only run enabled tests for the platform the tests were built for:
+```sh
+artifacts/bin/coreclr/$(uname).x64.Debug/paltests/runpaltests.sh $(pwd)/artifacts/bin/coreclr/$(uname).x64.Debug/paltests
+# on macOS, replace $(uname) with OSX
 ```
 
 Test results will go into: `/tmp/PalTestOutput/default/pal_tests.xml`
+
+To disable tests in the CI edit
+`src/coreclr/src/pal/tests/palsuite/issues.targets`

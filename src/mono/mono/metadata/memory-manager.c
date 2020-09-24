@@ -169,6 +169,17 @@ mono_mem_manager_alloc0_nolock (MonoMemoryManager *memory_manager, guint size)
 	return mono_mempool_alloc0 (memory_manager->mp, size);
 }
 
+char*
+mono_mem_manager_strdup (MonoMemoryManager *memory_manager, const char *s)
+{
+	char *res;
+
+	mono_mem_manager_lock (memory_manager);
+	res = mono_mempool_strdup (memory_manager->mp, s);
+	mono_mem_manager_unlock (memory_manager);
+
+	return res;
+}
 
 void *
 mono_mem_manager_code_reserve (MonoMemoryManager *memory_manager, int size)

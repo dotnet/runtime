@@ -79,7 +79,7 @@ namespace System.Net.Http
 
                         if (NetEventSource.Log.IsEnabled())
                         {
-                            NetEventSource.Info(connection, $"Authentication: {challenge.AuthenticationType}, Uri: {authUri.AbsoluteUri.ToString()}");
+                            NetEventSource.Info(connection, $"Authentication: {challenge.AuthenticationType}, Uri: {authUri.AbsoluteUri}");
                         }
 
                         // Calculate SPN (Service Principal Name) using the host name of the request.

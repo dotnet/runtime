@@ -16,7 +16,7 @@
 #include <palsuite.h>
 const int MY_EXCEPTION=999;
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(debug_api_WriteProcessMemory_test4_paltest_writeprocessmemory_test4, "debug_api/WriteProcessMemory/test4/paltest_writeprocessmemory_test4")
 {
     
     PROCESS_INFORMATION pi;

@@ -14,11 +14,9 @@
 #include <palsuite.h>
 
 
-const char* szStringTest = "The quick fox jumped over the lazy dog's back.";
-const char* szTextFile = "text.txt";
+#define szStringTest "The quick fox jumped over the lazy dog's back."
 
-
-int __cdecl main(int argc, char *argv[])
+PALTEST(file_io_SetEndOfFile_test2_paltest_setendoffile_test2, "file_io/SetEndOfFile/test2/paltest_setendoffile_test2")
 {
     HANDLE hFile = NULL;
     DWORD dwByteCount = 0;

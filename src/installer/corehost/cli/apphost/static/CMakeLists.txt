@@ -191,6 +191,11 @@ else()
     #     )
     endif ()
 
+    # Additional requirements for System.Security.Cryptography.Native.OpenSsl
+    if(NOT FEATURE_DISTRO_AGNOSTIC_SSL)
+        find_package(OpenSSL)
+    endif()
+
     if(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_NETBSD OR CLR_CMAKE_TARGET_SUNOS)
         # These options are used to force every object to be included even if it's unused.
         set(START_WHOLE_ARCHIVE -Wl,--whole-archive)
@@ -204,11 +209,19 @@ target_link_libraries(singlefilehost
     libhostcommon
     ${CORECLR_LIBRARIES}
 
+    ${START_WHOLE_ARCHIVE}
+    ${NATIVE_LIBS}
+    ${END_WHOLE_ARCHIVE}
+
     ${ZLIB_LIBRARIES}
     ${LIBGSS}
     ${NATIVE_LIBS_EXTRA}
 
-    ${START_WHOLE_ARCHIVE}
-    ${NATIVE_LIBS}
-    ${END_WHOLE_ARCHIVE}
 )
+
+if(NOT FEATURE_DISTRO_AGNOSTIC_SSL)
+    target_link_libraries(singlefilehost
+        ${OPENSSL_CRYPTO_LIBRARY}
+        ${OPENSSL_SSL_LIBRARY}
+    )
+endif()

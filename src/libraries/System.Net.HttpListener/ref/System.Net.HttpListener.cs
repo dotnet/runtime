@@ -24,7 +24,7 @@ namespace System.Net
         public System.Net.HttpListenerTimeoutManager TimeoutManager { get { throw null; } }
         public bool UnsafeConnectionNtlmAuthentication { get { throw null; } set { } }
         public void Abort() { }
-        public System.IAsyncResult BeginGetContext(System.AsyncCallback callback, object state) { throw null; }
+        public System.IAsyncResult BeginGetContext(System.AsyncCallback? callback, object? state) { throw null; }
         public void Close() { }
         public System.Net.HttpListenerContext EndGetContext(System.IAsyncResult asyncResult) { throw null; }
         public System.Net.HttpListenerContext GetContext() { throw null; }
@@ -109,7 +109,7 @@ namespace System.Net
         public string UserHostAddress { get { throw null; } }
         public string UserHostName { get { throw null; } }
         public string[]? UserLanguages { get { throw null; } }
-        public System.IAsyncResult BeginGetClientCertificate(System.AsyncCallback requestCallback, object state) { throw null; }
+        public System.IAsyncResult BeginGetClientCertificate(System.AsyncCallback? requestCallback, object? state) { throw null; }
         public System.Security.Cryptography.X509Certificates.X509Certificate2? EndGetClientCertificate(System.IAsyncResult asyncResult) { throw null; }
         public System.Security.Cryptography.X509Certificates.X509Certificate2? GetClientCertificate() { throw null; }
         public System.Threading.Tasks.Task<System.Security.Cryptography.X509Certificates.X509Certificate2?> GetClientCertificateAsync() { throw null; }

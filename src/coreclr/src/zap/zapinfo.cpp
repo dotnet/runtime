@@ -976,7 +976,6 @@ HRESULT ZapInfo::getMethodBlockCounts (
 {
     _ASSERTE(pBlockCounts != nullptr);
     _ASSERTE(pCount != nullptr);
-    _ASSERTE(ftnHnd == m_currentMethodHandle);
 
     HRESULT hr;
 
@@ -1004,21 +1003,9 @@ HRESULT ZapInfo::getMethodBlockCounts (
         return E_FAIL;
     }
 
-    mdMethodDef md = m_currentMethodToken;
+    mdMethodDef md;
+    IfFailRet(m_zapper->m_pEECompileInfo->GetMethodDef(ftnHnd, &md));
 
-    if (IsNilToken(md))
-    {
-        // This must be the non-System.Object instantiation of a generic type/method.
-        IfFailRet(m_zapper->m_pEECompileInfo->GetMethodDef(ftnHnd, &md));
-    }
-#ifdef _DEBUG
-    else
-    {
-        mdMethodDef mdTemp;
-        IfFailRet(m_zapper->m_pEECompileInfo->GetMethodDef(ftnHnd, &mdTemp));
-        _ASSERTE(md == mdTemp);
-    }
-#endif
     if (IsNilToken(md))
     {
         return E_FAIL;
@@ -1064,9 +1051,23 @@ HRESULT ZapInfo::getMethodBlockCounts (
     *pBlockCounts = (ICorJitInfo::BlockCounts *) &profileData->method.block[0];
     *pCount  = profileData->method.cBlock;
 
+    // Find method's IL size
+    //
+    unsigned ilSize = m_currentMethodInfo.ILCodeSize;
+
+    if (ftnHnd != m_currentMethodHandle)
+    {
+        CORINFO_METHOD_INFO methodInfo;
+        if (!getMethodInfo(ftnHnd, &methodInfo))
+        {
+            return E_FAIL;
+        }
+        ilSize = methodInfo.ILCodeSize;
+    }
+
     // If the ILSize is non-zero the the ILCodeSize also must match
     //
-    if ((profileData->method.ILSize != 0) && (profileData->method.ILSize != m_currentMethodInfo.ILCodeSize))
+    if ((profileData->method.ILSize != 0) && (profileData->method.ILSize != ilSize))
     {
         // IL code for this method does not match the IL code for the method when it was profiled
         // in such cases we tell the JIT to discard the profile data by returning E_FAIL

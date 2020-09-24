@@ -186,8 +186,8 @@ namespace System.Xml.Serialization
         private void InitPrimitiveIDs()
         {
             if (_tokenID != null) return;
-            object ns = _r.NameTable.Add(XmlSchema.Namespace);
-            object ns2 = _r.NameTable.Add(UrtTypes.Namespace);
+            _r.NameTable.Add(XmlSchema.Namespace);
+            _r.NameTable.Add(UrtTypes.Namespace);
 
             _stringID = _r.NameTable.Add("string");
             _intID = _r.NameTable.Add("int");
@@ -2116,7 +2116,6 @@ namespace System.Xml.Serialization
                 _arrayName = arrayName + "_" + i.ToString(CultureInfo.InvariantCulture);
                 _choiceArrayName = "choice_" + _arrayName;
                 _choiceSource = choiceSource;
-                ElementAccessor[]? elements = mapping.Elements;
 
                 if (mapping.TypeDesc!.IsArrayLike)
                 {
@@ -3426,7 +3425,6 @@ namespace System.Xml.Serialization
         {
             if (structMapping.TypeDesc!.IsRoot)
                 return;
-            bool useReflection = structMapping.TypeDesc.UseReflection;
             string methodName = (string)MethodNames[structMapping]!;
             Writer.WriteLine();
             Writer.Write("object");
@@ -3566,7 +3564,6 @@ namespace System.Xml.Serialization
         private void WriteAddCollectionFixup(TypeDesc typeDesc, bool readOnly, string memberSource, string targetSource)
         {
             Writer.WriteLine("// get array of the collection items");
-            bool useReflection = typeDesc.UseReflection;
             CreateCollectionInfo? create = (CreateCollectionInfo?)_createMethods[typeDesc];
             if (create == null)
             {

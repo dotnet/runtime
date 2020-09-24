@@ -45,11 +45,11 @@ struct test
 };
 
 /**
- * validate
+ * asinh_test1_validate
  *
  * test validation function
  */
-void __cdecl validate(double value, double expected, double variance)
+void __cdecl asinh_test1_validate(double value, double expected, double variance)
 {
     double result = asinh(value);
 
@@ -67,11 +67,11 @@ void __cdecl validate(double value, double expected, double variance)
 }
 
 /**
- * validate
+ * asinh_test1_validate
  *
  * test validation function for values returning NaN
  */
-void __cdecl validate_isnan(double value)
+void __cdecl asinh_test1_validate_isnan(double value)
 {
     double result = asinh(value);
 
@@ -83,11 +83,11 @@ void __cdecl validate_isnan(double value)
 }
 
 /**
- * validate
+ * asinh_test1_validate
  *
  * test validation function for values returning +INF
  */
-void __cdecl validate_isinf_positive(double value)
+void __cdecl asinh_test1_validate_isinf_positive(double value)
 {
     double result = asinh(value);
 
@@ -103,7 +103,7 @@ void __cdecl validate_isinf_positive(double value)
  * 
  * executable entry point
  */
-int __cdecl main(int argc, char **argv)
+PALTEST(c_runtime_asinh_test1_paltest_asinh_test1, "c_runtime/asinh/test1/paltest_asinh_test1")
 {
     struct test tests[] = 
     {
@@ -134,11 +134,11 @@ int __cdecl main(int argc, char **argv)
 
     for (int i = 0; i < (sizeof(tests) / sizeof(struct test)); i++)
     {
-        validate( tests[i].value,  tests[i].expected, tests[i].variance);
-        validate(-tests[i].value, -tests[i].expected, tests[i].variance);
+        asinh_test1_validate( tests[i].value,  tests[i].expected, tests[i].variance);
+        asinh_test1_validate(-tests[i].value, -tests[i].expected, tests[i].variance);
     }
     
-    validate_isnan(PAL_NAN);
+    asinh_test1_validate_isnan(PAL_NAN);
 
     PAL_Terminate();
     return PASS;

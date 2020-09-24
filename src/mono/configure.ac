@@ -2254,7 +2254,28 @@ if test x$host_win32 = xno; then
 		[#include <sys/types.h>])
 
 	dnl hires monotonic clock support
-	AC_SEARCH_LIBS(clock_gettime, rt)
+
+	# Check for clock_gettime
+	if test x$target_osx = xyes; then
+		# On OSX, clock_gettime is only really available on 10.12 or later
+		# However, it exists as a weak symbol on earlier versions, so hard-code a version check
+		AC_MONO_APPLE_AVAILABLE(clock_gettime_available, [whether clock_gettime is available on OSX],
+		[(MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_12)])
+		if test x$clock_gettime_available = xyes; then
+			AC_DEFINE(HAVE_CLOCK_GETTIME, 1, [clock_gettime])
+		fi
+	else
+		AC_CHECK_FUNC(clock_gettime, [
+			AC_DEFINE(HAVE_CLOCK_GETTIME, 1, [clock_gettime])
+		], [
+			# Old glibc (< 2.17) has clock_gettime in librt, so check there too
+			AC_CHECK_LIB(rt, clock_gettime, [
+				AC_DEFINE(HAVE_CLOCK_GETTIME, 1, [clock_gettime])
+				LIBS="$LIBS -lrt"
+			])
+		])
+	fi
+
 	AC_CHECK_FUNCS(clock_nanosleep)
 
 	dnl dynamic loader support

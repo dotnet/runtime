@@ -5545,22 +5545,23 @@ MonoObject*
 mono_runtime_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 			   MonoObject **exc)
 {
+	MonoObject *res;
+	MONO_ENTER_GC_UNSAFE;
 	ERROR_DECL (error);
 	if (exc) {
-		MonoObject *result = mono_runtime_try_invoke_array (method, obj, params, exc, error);
+		res = mono_runtime_try_invoke_array (method, obj, params, exc, error);
 		if (*exc) {
+			res = NULL;
 			mono_error_cleanup (error);
-			return NULL;
-		} else {
-			if (!is_ok (error))
-				*exc = (MonoObject*)mono_error_convert_to_exception (error);
-			return result;
+		} else if (!is_ok (error)) {
+			*exc = (MonoObject*)mono_error_convert_to_exception (error);
 		}
 	} else {
-		MonoObject *result = mono_runtime_try_invoke_array (method, obj, params, NULL, error);
+		res = mono_runtime_try_invoke_array (method, obj, params, NULL, error);
 		mono_error_raise_exception_deprecated (error); /* OK to throw, external only without a good alternative */
-		return result;
 	}
+	MONO_EXIT_GC_UNSAFE;
+	return res;
 }
 
 /**

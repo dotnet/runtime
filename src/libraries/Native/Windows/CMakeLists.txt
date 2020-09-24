@@ -11,7 +11,12 @@ SET (CMAKE_ASM_MASM_FLAGS                   "${CMAKE_ASM_MASM_FLAGS} /ZH:SHA_256
 SET (CMAKE_INSTALL_PREFIX                   $ENV{__CMakeBinDir})
 SET (CMAKE_INCLUDE_CURRENT_DIR              ON)
 SET (CMAKE_SHARED_LIBRARY_PREFIX            "")
-SET (__LinkArgs $ENV{__LinkArgs})
+
+set(__SharedLinkArgs)
+set(__LinkArgs)
+if ($ENV{__LinkArgs})
+    SET (__LinkArgs $ENV{__LinkArgs})
+endif()
 
 # Force an out of source build
 if("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_BINARY_DIR}")
@@ -19,7 +24,6 @@ if("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_BINARY_DIR}")
 endif()
 
 project(CoreFX)
-string(TOUPPER $ENV{CMAKE_BUILD_TYPE} UPPERCASE_CMAKE_BUILD_TYPE)
 
 # The following options are set by the razzle build
 add_compile_options(/d2Zi+)       # make optimized builds debugging easier
@@ -58,7 +62,7 @@ endif ()
 
 # enable control-flow-guard support for native components
 add_compile_options(/guard:cf) 
-set(__LinkArgs "${__LinkArgs} /GUARD:CF")
+list(APPEND __SharedLinkArgs /GUARD:CF)
 
 # Statically linked CRT (libcmt[d].lib, libvcruntime[d].lib and libucrt[d].lib) by default. This is done to avoid
 # linking in VCRUNTIME140.DLL for a simplified xcopy experience by reducing the dependency on VC REDIST.
@@ -66,64 +70,53 @@ set(__LinkArgs "${__LinkArgs} /GUARD:CF")
 # For Release builds, we shall dynamically link into uCRT [ucrtbase.dll] (which is pushed down as a Windows Update on downlevel OS) but
 # won't do the same for debug/checked builds since ucrtbased.dll is not redistributable and Debug/Checked builds are not
 # production-time scenarios.
-if (UPPERCASE_CMAKE_BUILD_TYPE STREQUAL "RELEASE")
-    add_compile_options(/MT)
-    add_compile_options(/GL)
-    add_compile_options(/O1)
-    set(__LinkLibraries "${__LinkLibraries} libcmt.lib")
-    set(__LinkLibraries "${__LinkLibraries} libvcruntime.lib")
-    set(STATIC_UCRT_LIB "libucrt.lib")
-    set(DYNAMIC_UCRT_LIB "ucrt.lib")
-else()
-    add_compile_options(/MTd)
-    set(__LinkLibraries "${__LinkLibraries} libcmtd.lib")
-    set(__LinkLibraries "${__LinkLibraries} libvcruntimed.lib")
-    set(STATIC_UCRT_LIB "libucrtd.lib")
-    set(DYNAMIC_UCRT_LIB "ucrtd.lib")
-endif()
+
+add_compile_options($<$<CONFIG:DEBUG>:/MTd>)
+add_compile_options($<$<CONFIG:RELEASE>:/MT>)
+
+add_compile_options($<$<CONFIG:RELEASE>:/GL>)
+add_compile_options($<$<CONFIG:RELEASE>:/O1>)
+
+list(APPEND __LinkLibraries $<$<CONFIG:DEBUG>:libcmtd.lib>)
+list(APPEND __LinkLibraries $<$<CONFIG:RELEASE>:libcmt.lib>)
+
+list(APPEND __LinkLibraries $<$<CONFIG:DEBUG>:libvcruntimed.lib>)
+list(APPEND __LinkLibraries $<$<CONFIG:RELEASE>:libvcruntime.lib>)
 
 # Linker flags
-set(__LinkArgs "${__LinkArgs} /INCREMENTAL:NO")
-set(__LinkArgs "${__LinkArgs} /MANIFEST:NO")            #Do not create Side-by-Side Assembly Manifest
-set(__LinkArgs "${__LinkArgs} /LARGEADDRESSAWARE")      # can handle addresses larger than 2 gigabytes
-set(__LinkArgs "${__LinkArgs} /RELEASE")                #sets the checksum in the header
-set(__LinkArgs "${__LinkArgs} /NXCOMPAT")               #Compatible with Data Execution Prevention
-set(__LinkArgs "${__LinkArgs} /DYNAMICBASE")            #Use address space layout randomization
-set(__LinkArgs "${__LinkArgs} /DEBUGTYPE:cv,fixup")     #debugging format
-set(__LinkArgs "${__LinkArgs} /PDBCOMPRESS")            #shrink pdb size
-set(__LinkArgs "${__LinkArgs} /DEBUG")
-set(__LinkArgs "${__LinkArgs} /IGNORE:4197,4013,4254,4070,4221")
+list(APPEND __SharedLinkArgs /INCREMENTAL:NO)
+list(APPEND __SharedLinkArgs /MANIFEST:NO)            #Do not create Side-by-Side Assembly Manifest
+list(APPEND __SharedLinkArgs /LARGEADDRESSAWARE)      # can handle addresses larger than 2 gigabytes
+list(APPEND __SharedLinkArgs /RELEASE)                #sets the checksum in the header
+list(APPEND __SharedLinkArgs /NXCOMPAT)               #Compatible with Data Execution Prevention
+list(APPEND __SharedLinkArgs /DYNAMICBASE)            #Use address space layout randomization
+list(APPEND __SharedLinkArgs /DEBUGTYPE:cv,fixup)     #debugging format
+list(APPEND __SharedLinkArgs /PDBCOMPRESS)            #shrink pdb size
+list(APPEND __SharedLinkArgs /DEBUG)
+list(APPEND __SharedLinkArgs /IGNORE:4197,4013,4254,4070,4221)
 
-if (UPPERCASE_CMAKE_BUILD_TYPE STREQUAL "RELEASE")
-    # Release build specific flags
-    set(__LinkArgs "${__LinkArgs} /LTCG /OPT:REF /OPT:ICF /INCREMENTAL:NO")
-    
-    # Force uCRT to be dynamically linked for Release build (unless env variable CLR_CMAKE_WIN32_FORCE_STATIC_LINK is set to true)
-    set(CLR_CMAKE_WIN32_FORCE_STATIC_LINK $ENV{CLR_CMAKE_WIN32_FORCE_STATIC_LINK})
-    if(NOT CLR_CMAKE_WIN32_FORCE_STATIC_LINK)
-      set(__LinkArgs "${__LinkArgs} /NODEFAULTLIB:libucrt.lib /DEFAULTLIB:ucrt.lib")
-    endif()
-    
-    if ($ENV{__BuildArch} STREQUAL x86)
-        set(__LinkArgs "${__LinkArgs} /SAFESEH")
-    endif()
-else()
-    # Debug build specific flags
-    set(__LinkArgs "/NOVCFEATURE ${__LinkArgs}")
+# Release build specific flags
+list(APPEND __LinkArgs $<$<CONFIG:RELEASE>:/LTCG>)
+list(APPEND __SharedLinkArgs $<$<CONFIG:RELEASE>:/OPT:REF>)
+list(APPEND __SharedLinkArgs $<$<CONFIG:RELEASE>:/OPT:ICF>)
+
+# Force uCRT to be dynamically linked for Release build (unless env variable CLR_CMAKE_WIN32_FORCE_STATIC_LINK is set to true)
+set(CLR_CMAKE_WIN32_FORCE_STATIC_LINK $ENV{CLR_CMAKE_WIN32_FORCE_STATIC_LINK})
+if(NOT CLR_CMAKE_WIN32_FORCE_STATIC_LINK)
+    list(APPEND __SharedLinkArgs $<$<CONFIG:RELEASE>:/NODEFAULTLIB:libucrt.lib>)
+    list(APPEND __SharedLinkArgs $<$<CONFIG:RELEASE>:/DEFAULTLIB:ucrt.lib>)
 endif()
+
+# Debug build specific flags
+list(INSERT __SharedLinkArgs 0 $<$<OR:$<CONFIG:DEBUG>,$<CONFIG:CHECKED>>:/NOVCFEATURE>)
 
 if ($ENV{__BuildArch} STREQUAL "x86_64" OR $ENV{__BuildArch} STREQUAL "amd64")
     add_definitions(-DTARGET_64BIT=1)
 endif ()
 
-if (UPPERCASE_CMAKE_BUILD_TYPE STREQUAL "DEBUG")
-    # Do not define DEBUG. zlib has asserts under DEBUG for non-catastrophic cases,
-    # such as on bad user-provided inputs.  We leave NDEBUG defined, however,
-    # as other asserts should still be included.
-elseif (UPPERCASE_CMAKE_BUILD_TYPE STREQUAL "RELEASE")
-    add_definitions(-DNDEBUG)
-else ()
-    message(FATAL_ERROR "Unknown build type. Set CMAKE_BUILD_TYPE to DEBUG or RELEASE.")
-endif ()
+# Do not define DEBUG. zlib has asserts under DEBUG for non-catastrophic cases,
+# such as on bad user-provided inputs.  We leave NDEBUG defined, however,
+# as other asserts should still be included.
+add_compile_definitions($<$<CONFIG:RELEASE>:NDEBUG>)
 
 add_subdirectory(clrcompression)

@@ -1963,7 +1963,9 @@ NextMethod8:
                 For i As Integer = 0 To namedParameters.GetUpperBound(0)
                     If (namedParameters(i) Is Nothing) Then
                         Diagnostics.Debug.Assert(False, "Should never be reached")
+#Disable Warning CA2208 ' Instantiate argument exceptions correctly
                         Throw New ArgumentException
+#Enable Warning CA2208 ' Instantiate argument exceptions correctly
                     End If
                 Next i
             End If
@@ -1991,7 +1993,7 @@ NextMethod8:
 
             p = GetMethodsByName(objType, objIReflect, name, invokeAttr)
             If (args Is Nothing) Then
-                args = New Object() {}
+                args = Array.Empty(Of Object)()
             End If
 
             Dim binderState As Object = Nothing

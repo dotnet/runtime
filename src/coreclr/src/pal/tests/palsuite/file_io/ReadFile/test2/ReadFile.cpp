@@ -21,19 +21,18 @@
 #include <palsuite.h>
 
 
-const char* szStringTest = "The quick fox jumped over the lazy dog's back.\0";
-const char* szEmptyString = "";
-const char* szReadableFile = "Readable.txt";
-const char* szResultsFile = "Results.txt";
+#define szStringTest "The quick fox jumped over the lazy dog's back.\0"
+#define szEmptyString ""
+#define szReadableFile "Readable.txt"
+#define szResultsFile "Results.txt"
 
 //Previously number of tests was 6, now 4 refer VSW 312690
 #define NOOFTESTS 4
 
 const int PAGESIZE = 4096;
+char *readBuffer_ReadFile_test2;
 
-char *readBuffer;
-
-BOOL validateResults(const char* szString,  // string read
+BOOL validateResults_ReadFile_test2(const char* szString,  // string read
                      DWORD dwByteCount,     // amount requested
                      DWORD dwBytesRead)     // amount read
 {
@@ -62,7 +61,7 @@ BOOL validateResults(const char* szString,  // string read
     return TRUE;
 }
 
-BOOL readTest(DWORD dwByteCount, char cResult)
+BOOL readTest_ReadFile_test2(DWORD dwByteCount, char cResult)
 {
     HANDLE hFile = NULL;
     DWORD dwBytesRead;
@@ -83,9 +82,9 @@ BOOL readTest(DWORD dwByteCount, char cResult)
         return FALSE;
     }
 
-    memset(readBuffer, 0, PAGESIZE);
+    memset(readBuffer_ReadFile_test2, 0, PAGESIZE);
 
-    bRc = ReadFile(hFile, readBuffer, dwByteCount, &dwBytesRead, NULL);
+    bRc = ReadFile(hFile, readBuffer_ReadFile_test2, dwByteCount, &dwBytesRead, NULL);
 
     if (bRc == FALSE)
     {
@@ -93,7 +92,7 @@ BOOL readTest(DWORD dwByteCount, char cResult)
         if (cResult == '1')
         {
             Trace("\nbRc = %d\n", bRc);
-            Trace("readBuffer = [%s]  dwByteCount = %d  dwBytesRead = %d\n", readBuffer, dwByteCount, dwBytesRead);
+            Trace("readBuffer = [%s]  dwByteCount = %d  dwBytesRead = %d\n", readBuffer_ReadFile_test2, dwByteCount, dwBytesRead);
             Trace("cresult = 1\n");
             Trace("getlasterror = %d\n", GetLastError()); 
             CloseHandle(hFile);
@@ -111,7 +110,7 @@ BOOL readTest(DWORD dwByteCount, char cResult)
         }
         else
         {
-            return (validateResults(readBuffer, dwByteCount, dwBytesRead));
+            return (validateResults_ReadFile_test2(readBuffer_ReadFile_test2, dwByteCount, dwBytesRead));
         }
     }
 
@@ -119,7 +118,7 @@ BOOL readTest(DWORD dwByteCount, char cResult)
     return TRUE;
 }
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(file_io_ReadFile_test2_paltest_readfile_test2, "file_io/ReadFile/test2/paltest_readfile_test2")
 {
     HANDLE hFile = NULL;
     const int BUFFER_SIZE = 2 * PAGESIZE;
@@ -145,14 +144,14 @@ int __cdecl main(int argc, char *argv[])
     }
 
     /* allocate read-write memery for readBuffer */
-    if (!(readBuffer = (char*) VirtualAlloc(NULL, BUFFER_SIZE, MEM_COMMIT, PAGE_READWRITE)))
+    if (!(readBuffer_ReadFile_test2 = (char*) VirtualAlloc(NULL, BUFFER_SIZE, MEM_COMMIT, PAGE_READWRITE)))
 	{
 		Fail("VirtualAlloc failed: GetLastError returns %d\n", GetLastError());
 		return FAIL;
 	}
 	
     /* write protect the second page of readBuffer */
-	if (!VirtualProtect(&readBuffer[PAGESIZE], PAGESIZE, PAGE_NOACCESS, &oldProt))
+	if (!VirtualProtect(&readBuffer_ReadFile_test2[PAGESIZE], PAGESIZE, PAGE_NOACCESS, &oldProt))
 	{
 		Fail("VirtualProtect failed: GetLastError returns %d\n", GetLastError());
 		return FAIL;
@@ -179,14 +178,14 @@ int __cdecl main(int argc, char *argv[])
     
     for (i = 0; i< NOOFTESTS; i++)
     {
-        bRc = readTest(dwByteCount[i], szResults[i]);
+        bRc = readTest_ReadFile_test2(dwByteCount[i], szResults[i]);
         if (bRc != TRUE)
         {
             Fail("ReadFile: ERROR -> Failed on test[%d]\n", i);
         }
     }
 	
-	VirtualFree(readBuffer, BUFFER_SIZE, MEM_RELEASE);
+	VirtualFree(readBuffer_ReadFile_test2, BUFFER_SIZE, MEM_RELEASE);
     PAL_Terminate();
     return PASS;
 }
