@@ -118,10 +118,11 @@
   </Target>
 
   <Import Project="$(MSBuildThisFileDirectory)tests.mobile.targets" Condition="'$(TargetsMobile)' == 'true'" />
+  <Import Project="$(MSBuildThisFileDirectory)tests.singlefile.targets" Condition="'$(TestSingleFile)' == 'true'" />
   <Import Project="$(MSBuildThisFileDirectory)xunit\xunit.targets" Condition="'$(TestFramework)' == 'xunit'" />
 
   <!-- Main test targets -->
   <Target Name="Test" DependsOnTargets="$(TestDependsOn)" />
-  
+
   <Import Project="$(MSBuildThisFileDirectory)outerBuild.targets" Condition="'$(IsCrossTargetingBuild)' == 'true'" />
 </Project>

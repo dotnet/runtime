@@ -1,0 +1,25 @@
+<Project>
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+
+    <PublishSingleFile>true</PublishSingleFile>
+    <UseAppHost>true</UseAppHost>
+    <RuntimeIdentifier>$(PackageRID)</RuntimeIdentifier>
+    <SelfContained>true</SelfContained>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="$(CommonTestPath)SingleFileTestRunner\SingleFileTestRunner.cs"
+             Link="Common\SingleFileTestRunner\SingleFileTestRunner.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="xunit.runner.utility" Version="2.4.1" />
+  </ItemGroup>
+
+  <Target Name="PublishTestAsSingleFile"
+          Condition="'$(IsCrossTargetingBuild)' != 'true'"
+          AfterTargets="Build"
+          DependsOnTargets="Publish" />
+
+</Project>

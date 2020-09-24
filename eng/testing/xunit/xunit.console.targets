@@ -36,7 +36,7 @@
     <XunitExcludesTxtFileContent>$(_withoutCategories.Replace(';', '%0dcategory='))</XunitExcludesTxtFileContent>
   </PropertyGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition="'$(TestSingleFile)' != 'true'">
     <PackageReference Include="Microsoft.DotNet.XUnitConsoleRunner"
                       Version="$(MicrosoftDotNetXUnitConsoleRunnerVersion)"
                       Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
