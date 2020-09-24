@@ -95,10 +95,10 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public static void FunctionMath()
         {
             JSObject math = (JSObject)Runtime.GetGlobalObject("Math");
-            Assert.NotNull(math);
+            Assert.True(math != null, "math != null");
 
             Function mathMax = (Function)math.GetObjectProperty("max");
-            Assert.NotNull(mathMax);
+            Assert.True(mathMax != null, "mathMax != null");
 
             var maxValue = (int)mathMax.Apply(null, new object[] { 5, 6, 2, 3, 7 });
             Assert.Equal(7, maxValue);
@@ -107,13 +107,45 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal(7, maxValue);
 
             Function mathMin = (Function)((JSObject)Runtime.GetGlobalObject("Math")).GetObjectProperty("min");
-            Assert.NotNull(mathMin);
+            Assert.True(mathMin != null, "mathMin != null");
 
             var minValue = (int)mathMin.Apply(null, new object[] { 5, 6, 2, 3, 7 });
             Assert.Equal(2, minValue);
 
             minValue = (int)mathMin.Call(null, 5, 6, 2, 3, 7);
             Assert.Equal(2, minValue);
+        }
+
+        private static string GetBigTestString() {
+            var expectedSb = new System.Text.StringBuilder();
+            expectedSb.Append("start<<<");
+            for (int i = 0; i < 409600; i++)
+                expectedSb.Append(i % 10);
+            expectedSb.Append(">>>end");
+            return expectedSb.ToString();
+        }
+
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/42693")]
+        [Fact]
+        public static void InvokeJSMarshalsStrings() {
+            var invokeResult = Runtime.InvokeJS("\"a\0bc\"");
+            Assert.Equal("a\0bc", invokeResult);
+
+            var expected = GetBigTestString();
+            invokeResult = Runtime.InvokeJS("\"" + expected + "\"");
+            Assert.Equal(expected, invokeResult);
+        }
+
+        [Fact]
+        public static void MarshalStringParametersFromJS() {
+            HelperMarshal._stringResource = null;
+            Runtime.InvokeJS("App.call_test_method(\"InvokeString\", [\"a\0bc\"])");
+            Assert.Equal("a\0bc", HelperMarshal._stringResource);
+
+            var expected = GetBigTestString();
+            HelperMarshal._stringResource = null;
+            Runtime.InvokeJS("App.call_test_method(\"InvokeString\", [\"" + expected + "\"])");
+            Assert.Equal(expected, HelperMarshal._stringResource);
         }
     }
 }
