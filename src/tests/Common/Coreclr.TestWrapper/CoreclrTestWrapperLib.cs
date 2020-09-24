@@ -403,11 +403,11 @@ namespace CoreclrTestLib
                     
                     if (Directory.Exists(directory))
                     {
-                        foreach (string directoryInFolder in Directory.EnumerateDirectories(directory))
+                        foreach (string directoryInFolder in Directory.EnumerateDirectories(directory, "*.*", SearchOption.AllDirectories))
                         {
                             sb.AppendLine("/> " + directoryInFolder);
                         }
-                        foreach (string fileInFolder in Directory.EnumerateFiles(directory))
+                        foreach (string fileInFolder in Directory.EnumerateFiles(directory, "*.*", SearchOption.AllDirectories))
                         {
                             sb.AppendLine("=> " + fileInFolder);
                         }
