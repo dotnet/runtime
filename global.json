@@ -19,6 +19,7 @@
     "Microsoft.FIX-85B6-MERGE-9C38-CONFLICT": "1.0.0",
     "Microsoft.NET.Sdk.IL": "5.0.0-preview.8.20359.4",
     "Microsoft.Build.NoTargets": "2.0.1",
-    "Microsoft.Build.Traversal": "2.1.1"
+    "Microsoft.Build.Traversal": "2.1.1",
+    "Microsoft.DotNet.XHarness.CLI": "1.0.0-prerelease.20474.1"
   }
 }
