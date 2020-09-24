@@ -3,6 +3,7 @@
 
 using System;
 using System.Threading.Tasks;
+
 public partial class Math
 { //Only append content to this class as the test suite depends on line info
     public static int IntAdd(int a, int b)
@@ -529,5 +530,22 @@ public class LoadDebuggerTest {
 
         var loadedAssembly = System.Runtime.Loader.AssemblyLoadContext.Default.LoadFromStream(new System.IO.MemoryStream(asm_bytes), new System.IO.MemoryStream(pdb_bytes));
         Console.WriteLine($"Loaded - {loadedAssembly}");
+    }
+}
+
+public class HiddenSequencePointTest {
+    public static void StepOverHiddenSP()
+    {
+        Console.WriteLine("first line");
+        #line hidden
+        Console.WriteLine("second line");
+        StepOverHiddenSP2();
+        #line default
+        Console.WriteLine("third line");
+
+    }
+    public static void StepOverHiddenSP2()
+    {
+        Console.WriteLine("StepOverHiddenSP2");
     }
 }
