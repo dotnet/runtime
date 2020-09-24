@@ -379,6 +379,96 @@
     <Rule Id="SA1643" Action="None" /> <!-- Destructor summary documentation should begin with standard text -->
     <Rule Id="SA1649" Action="None" /> <!-- File name should match first type name -->
   </Rules>
+  <Rules AnalyzerId="Microsoft.CodeAnalysis.CSharp.CodeStyle" RuleNamespace="Microsoft.CodeQuality.Analyzers">
+    <Rule Id="IDE0001" Action="Hidden" />  <!-- SimplifyNames -->
+    <Rule Id="IDE0002" Action="Hidden" />  <!-- SimplifyMemberAccess -->
+    <Rule Id="IDE0003" Action="Hidden" />  <!-- RemoveQualification -->
+    <Rule Id="IDE0004" Action="Hidden" />  <!-- RemoveUnnecessaryCast -->
+    <Rule Id="IDE0005" Action="Hidden" />  <!-- RemoveUnnecessaryImports -->
+    <Rule Id="IDE0006" Action="Hidden" />  <!-- IntellisenseBuildFailed -->
+    <Rule Id="IDE0007" Action="Hidden" />  <!-- UseImplicitType -->
+    <Rule Id="IDE0008" Action="Hidden" />  <!-- UseExplicitType -->
+    <Rule Id="IDE0009" Action="Hidden" />  <!-- AddQualification -->
+    <Rule Id="IDE0010" Action="Hidden" />  <!-- PopulateSwitchStatement -->
+    <Rule Id="IDE0011" Action="Hidden" />  <!-- AddBraces -->
+    <Rule Id="IDE0016" Action="Hidden" />  <!-- UseThrowExpression -->
+    <Rule Id="IDE0017" Action="Hidden" />  <!-- UseObjectInitializer -->
+    <Rule Id="IDE0018" Action="Hidden" />  <!-- InlineDeclaration -->
+    <Rule Id="IDE0019" Action="Hidden" />  <!-- InlineAsTypeCheck -->
+    <Rule Id="IDE0020" Action="Hidden" />  <!-- InlineIsTypeCheck -->
+    <Rule Id="IDE0021" Action="Hidden" />  <!-- UseExpressionBodyForConstructors -->
+    <Rule Id="IDE0022" Action="Hidden" />  <!-- UseExpressionBodyForMethods -->
+    <Rule Id="IDE0023" Action="Hidden" />  <!-- UseExpressionBodyForConversionOperators -->
+    <Rule Id="IDE0024" Action="Hidden" />  <!-- UseExpressionBodyForOperators -->
+    <Rule Id="IDE0025" Action="Hidden" />  <!-- UseExpressionBodyForProperties -->
+    <Rule Id="IDE0026" Action="Hidden" />  <!-- UseExpressionBodyForIndexers -->
+    <Rule Id="IDE0027" Action="Hidden" />  <!-- UseExpressionBodyForAccessors -->
+    <Rule Id="IDE0028" Action="Hidden" />  <!-- UseCollectionInitializer -->
+    <Rule Id="IDE0029" Action="Hidden" />  <!-- UseCoalesceExpression -->
+    <Rule Id="IDE0030" Action="Hidden" />  <!-- UseCoalesceExpressionForNullable -->
+    <Rule Id="IDE0031" Action="Hidden" />  <!-- UseNullPropagation -->
+    <Rule Id="IDE0032" Action="Hidden" />  <!-- UseAutoProperty -->
+    <Rule Id="IDE0033" Action="Hidden" />  <!-- UseExplicitTupleName -->
+    <Rule Id="IDE0034" Action="Hidden" />  <!-- UseDefaultLiteral -->
+    <Rule Id="IDE0035" Action="Hidden" />  <!-- RemoveUnreachableCode -->
+    <Rule Id="IDE0036" Action="Hidden" />  <!-- OrderModifiers -->
+    <Rule Id="IDE0037" Action="Hidden" />  <!-- UseInferredMemberName -->
+    <Rule Id="IDE0038" Action="Hidden" />  <!-- InlineIsTypeWithoutNameCheck -->
+    <Rule Id="IDE0039" Action="Hidden" />  <!-- UseLocalFunction -->
+    <Rule Id="IDE0040" Action="Hidden" />  <!-- AddAccessibilityModifiers -->
+    <Rule Id="IDE0041" Action="Hidden" />  <!-- UseIsNullCheck -->
+    <Rule Id="IDE0042" Action="Hidden" />  <!-- UseDeconstruction -->
+    <Rule Id="IDE0043" Action="Hidden" />  <!-- ValidateFormatString -->
+    <Rule Id="IDE0044" Action="Hidden" />  <!-- MakeFieldReadonly -->
+    <Rule Id="IDE0045" Action="Hidden" />  <!-- UseConditionalExpressionForAssignment -->
+    <Rule Id="IDE0046" Action="Hidden" />  <!-- UseConditionalExpressionForReturn -->
+    <Rule Id="IDE0047" Action="Hidden" />  <!-- RemoveUnnecessaryParentheses -->
+    <Rule Id="IDE0048" Action="Hidden" />  <!-- AddRequiredParentheses -->
+    <Rule Id="IDE0049" Action="Hidden" />  <!-- PreferBuiltInOrFrameworkType -->
+    <Rule Id="IDE0050" Action="Hidden" />  <!-- ConvertAnonymousTypeToTuple -->
+    <Rule Id="IDE0051" Action="Hidden" />  <!-- RemoveUnusedMembers -->
+    <Rule Id="IDE0052" Action="Hidden" />  <!-- RemoveUnreadMembers -->
+    <Rule Id="IDE0053" Action="Hidden" />  <!-- UseExpressionBodyForLambdaExpressions -->
+    <Rule Id="IDE0054" Action="Hidden" />  <!-- UseCompoundAssignment -->
+    <Rule Id="IDE0055" Action="Hidden" />  <!-- Formatting -->
+    <Rule Id="IDE0056" Action="Hidden" />  <!-- UseIndexOperator -->
+    <Rule Id="IDE0057" Action="Hidden" />  <!-- UseRangeOperator -->
+    <Rule Id="IDE0058" Action="Hidden" />  <!-- ExpressionValueIsUnused -->
+    <Rule Id="IDE0059" Action="Hidden" />  <!-- ValueAssignedIsUnused -->
+    <Rule Id="IDE0060" Action="Hidden" />  <!-- UnusedParameter -->
+    <Rule Id="IDE0061" Action="Hidden" />  <!-- UseExpressionBodyForLocalFunctions -->
+    <Rule Id="IDE0062" Action="Hidden" />  <!-- MakeLocalFunctionStatic -->
+    <Rule Id="IDE0063" Action="Hidden" />  <!-- UseSimpleUsingStatement -->
+    <Rule Id="IDE0064" Action="Hidden" />  <!-- MakeStructFieldsWritable -->
+    <Rule Id="IDE0065" Action="Hidden" />  <!-- MoveMisplacedUsingDirectives -->
+    <Rule Id="IDE0066" Action="Hidden" />  <!-- ConvertSwitchStatementToExpression -->
+    <Rule Id="IDE0067" Action="Hidden" />  <!-- DisposeObjectsBeforeLosingScope -->
+    <Rule Id="IDE0068" Action="Hidden" />  <!-- UseRecommendedDisposePattern -->
+    <Rule Id="IDE0069" Action="Hidden" />  <!-- DisposableFieldsShouldBeDisposed -->
+    <Rule Id="IDE0070" Action="Hidden" />  <!-- UseSystemHashCode -->
+    <Rule Id="IDE0071" Action="Hidden" />  <!-- SimplifyInterpolation -->
+    <Rule Id="IDE0072" Action="Hidden" />  <!-- PopulateSwitchExpression -->
+    <Rule Id="IDE0073" Action="Warning" /> <!-- FileHeaderMismatch -->
+    <Rule Id="IDE0074" Action="Hidden" />  <!-- UseCoalesceCompoundAssignment -->
+    <Rule Id="IDE0075" Action="Hidden" />  <!-- SimplifyConditionalExpression -->
+    <Rule Id="IDE0076" Action="Hidden" />  <!-- InvalidSuppressMessageAttribute -->
+    <Rule Id="IDE0077" Action="Hidden" />  <!-- LegacyFormatSuppressMessageAttribute -->
+    <Rule Id="IDE0078" Action="Hidden" />  <!-- UsePatternCombinators -->
+    <Rule Id="IDE0079" Action="Hidden" />  <!-- RemoveUnnecessarySuppression -->
+    <Rule Id="IDE0080" Action="Hidden" />  <!-- RemoveConfusingSuppressionForIsExpression -->
+    <Rule Id="IDE0081" Action="Hidden" />  <!-- RemoveUnnecessaryByVal -->
+    <Rule Id="IDE0082" Action="Hidden" />  <!-- ConvertTypeOfToNameOf -->
+    <Rule Id="IDE0083" Action="Hidden" />  <!-- UseNotPattern -->
+    <Rule Id="IDE0084" Action="Hidden" />  <!-- UseIsNotExpression -->
+    <Rule Id="IDE1001" Action="Hidden" />  <!-- AnalyzerChanged -->
+    <Rule Id="IDE1002" Action="Hidden" />  <!-- AnalyzerDependencyConflict -->
+    <Rule Id="IDE1003" Action="Hidden" />  <!-- MissingAnalyzerReference -->
+    <Rule Id="IDE1004" Action="Hidden" />  <!-- ErrorReadingRuleset -->
+    <Rule Id="IDE1005" Action="Hidden" />  <!-- InvokeDelegateWithConditionalAccess -->
+    <Rule Id="IDE1006" Action="Hidden" />  <!-- NamingRule -->
+    <Rule Id="IDE1007" Action="Hidden" />  <!-- UnboundIdentifier -->
+    <Rule Id="IDE1008" Action="Hidden" />  <!-- UnboundConstructor -->
+  </Rules>
   <Rules AnalyzerId="xunit.analyzers" RuleNamespace="xunit.analyzers">
     <Rule Id="xUnit2013" Action="None" /> <!-- Do not use equality check to check for collection size. -->
     <Rule Id="xUnit2017" Action="None" /> <!-- Do not use Contains() to check if a value exists in a collection -->

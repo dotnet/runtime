@@ -1,10 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
-// AbandonedMutexException
-// Thrown when a wait completes because one or more mutexes was abandoned.
-// AbandonedMutexs indicate serious error in user code or machine state.
-////////////////////////////////////////////////////////////////////////////////
 
 using System.Runtime.Serialization;
 
