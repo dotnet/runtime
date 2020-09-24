@@ -2878,6 +2878,9 @@ namespace System.Net.Http.Functional.Tests
             await LoopbackServerFactory.CreateClientAndServerAsync(
                 async uri =>
                 {
+                    string sendText = "";
+                    string recvText = "";
+
                     using HttpClientHandler handler = CreateHttpClientHandler();
                     handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
                     var socketsHandler = (SocketsHttpHandler)GetUnderlyingSocketsHttpHandler(handler);
@@ -2885,21 +2888,27 @@ namespace System.Net.Http.Functional.Tests
                     {
                         Assert.Equal(HttpVersion.Version11, context.NegotiatedHttpVersion);
 
-                        bool foundGet = false;
-                        return ValueTask.FromResult<Stream>(new BytesLoggingStream(context.PlaintextStream, (read, data) =>
+                        static void Log(ref string text, bool log, string prefix, Stream stream, ReadOnlySpan<char> hex, ReadOnlySpan<char> ascii)
                         {
-                            if (log)
-                            {
-                                Console.WriteLine(data);
-                            }
+                            if (log) Console.WriteLine($"[{prefix} {stream.GetHashCode():X8}] {hex.ToString().PadRight(71)}  {ascii.ToString()}");
+                            text += ascii.ToString();
+                        }
 
-                            foundGet |= read && data.Contains("GET / 1.1");
-                        }));
+                        return ValueTask.FromResult<Stream>(new BytesLoggingStream(
+                            context.PlaintextStream,
+                            (stream, hex, ascii) => Log(ref sendText, log, "SEND", stream, hex, ascii),
+                            (stream, hex, ascii) => Log(ref recvText, log, "RECV", stream, hex, ascii)));
                     };
 
                     using HttpClient client = CreateHttpClient(handler);
                     using HttpResponseMessage response = await client.GetAsync(uri);
                     Assert.Equal("hello", await response.Content.ReadAsStringAsync());
+
+                    Assert.Contains("GET / HTTP/1.1", sendText);
+                    Assert.Contains("Host: ", sendText);
+
+                    Assert.Contains("HTTP/1.1 200 OK", recvText);
+                    Assert.Contains("hello", recvText);
                 },
                 async server =>
                 {
