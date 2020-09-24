@@ -118,18 +118,30 @@ if ($vs) {
 
   if (-Not (Test-Path $vs)) {
     $solution = $vs
-    # Search for the solution in libraries
-    $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "src\libraries" | Join-Path -ChildPath $vs | Join-Path -ChildPath "$vs.sln"
+
+    # Search for the solution in coreclr
+    $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "src\coreclr\src" | Join-Path -ChildPath $vs | Join-Path -ChildPath "$vs.sln"
+
     if (-Not (Test-Path $vs)) {
       $vs = $solution
-      # Search for the solution in installer
-      if (-Not ($vs.endswith(".sln"))) {
-        $vs = "$vs.sln"
-      }
-      $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "src\installer" | Join-Path -ChildPath $vs
+
+      # Search for the solution in libraries
+      $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "src\libraries" | Join-Path -ChildPath $vs | Join-Path -ChildPath "$vs.sln"
+
       if (-Not (Test-Path $vs)) {
-        Write-Error "Passed in solution cannot be resolved."
-        exit 1
+        $vs = $solution
+
+        # Search for the solution in installer
+        if (-Not ($vs.endswith(".sln"))) {
+          $vs = "$vs.sln"
+        }
+
+        $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "src\installer" | Join-Path -ChildPath $vs
+
+        if (-Not (Test-Path $vs)) {
+          Write-Error "Passed in solution cannot be resolved."
+          exit 1
+        }
       }
     }
   }
@@ -151,7 +163,7 @@ if ($vs) {
     # Respect the RuntimeConfiguration variable for building inside VS with different runtime configurations
     $env:RUNTIMECONFIGURATION=$runtimeConfiguration
   }
-  
+
   # Restore the solution to workaround https://github.com/dotnet/runtime/issues/32205
   Invoke-Expression "& dotnet restore $vs"
 
