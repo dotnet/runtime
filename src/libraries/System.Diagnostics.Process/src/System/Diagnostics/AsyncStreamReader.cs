@@ -258,17 +258,17 @@ namespace System.Diagnostics
             if (_readToBufferTask is Task task)
             {
                 task.GetAwaiter().GetResult();
-                _readToBufferTask = null;
             }
         }
 
-        internal async ValueTask WaitUntilEOFAsync(CancellationToken cancellationToken)
+        internal Task WaitUntilEOFAsync(CancellationToken cancellationToken)
         {
             if (_readToBufferTask is Task task)
             {
-                await task.WithCancellation(cancellationToken).ConfigureAwait(false);
-                _readToBufferTask = null;
+                return task.WithCancellation(cancellationToken);
             }
+
+            return Task.CompletedTask;
         }
 
         public void Dispose()

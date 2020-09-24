@@ -10,7 +10,7 @@ namespace System.Threading.Tasks
     /// </summary>
     internal static class TaskTimeoutExtensions
     {
-        public static async Task WithCancellation(this Task task, CancellationToken cancellationToken)
+        public static Task WithCancellation(this Task task, CancellationToken cancellationToken)
         {
             if (task is null)
             {
@@ -19,23 +19,27 @@ namespace System.Threading.Tasks
 
             if (task.IsCompleted || !cancellationToken.CanBeCanceled)
             {
-                await task.ConfigureAwait(false);
-                return;
+                return task;
             }
 
-            cancellationToken.ThrowIfCancellationRequested();
-
-            var tcs = new TaskCompletionSource<bool>();
-            using (cancellationToken.Register(static s => ((TaskCompletionSource<bool>)s!).TrySetResult(true), tcs))
+            if (cancellationToken.IsCancellationRequested)
             {
+                return Task.FromCanceled(cancellationToken);
+            }
+
+            return WithCancellationCore(task, cancellationToken);
+
+            static async Task WithCancellationCore(Task task, CancellationToken cancellationToken)
+            {
+                var tcs = new TaskCompletionSource();
+                using IDisposable _ = cancellationToken.UnsafeRegister(static s => ((TaskCompletionSource)s!).SetResult(), tcs);
+
                 if (task != await Task.WhenAny(task, tcs.Task).ConfigureAwait(false))
                 {
-                    throw new OperationCanceledException(cancellationToken);
+                    throw new TaskCanceledException(Task.FromCanceled(cancellationToken));
                 }
 
-#pragma warning disable CA2007 // Consider calling ConfigureAwait on the awaited task
-                await task; // already completed; propagate any exception
-#pragma warning restore CA2007 // Consider calling ConfigureAwait on the awaited task
+                task.GetAwaiter().GetResult(); // already completed; propagate any exception
             }
         }
     }
