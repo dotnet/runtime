@@ -425,6 +425,13 @@ void mono_threads_add_joinable_thread (gpointer tid);
 void mono_threads_join_threads (void);
 void mono_thread_join (gpointer tid);
 
+MONO_PROFILER_API MonoThread*
+mono_thread_internal_attach (MonoDomain *domain);
+
+MonoThread *
+mono_thread_attach_external_native_thread (MonoDomain *domain, gboolean background);
+
+
 MONO_API gpointer
 mono_threads_attach_coop (MonoDomain *domain, gpointer *dummy);
 

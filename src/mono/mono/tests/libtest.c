@@ -7789,6 +7789,13 @@ mono_test_native_to_managed_exception_rethrow (NativeToManagedExceptionRethrowFu
 typedef void (*VoidVoidCallback) (void);
 typedef void (*MonoFtnPtrEHCallback) (guint32 gchandle);
 
+typedef void *MonoDomain;
+typedef void *MonoAssembly;
+typedef void *MonoImage;
+typedef void *MonoClass;
+typedef void *MonoMethod;
+typedef void *MonoThread;
+
 typedef long long MonoObject;
 typedef MonoObject MonoException;
 typedef int32_t mono_bool;
@@ -7803,25 +7810,60 @@ static void (*sym_mono_domain_unload) (gpointer);
 static void (*sym_mono_threads_exit_gc_safe_region_unbalanced) (gpointer, gpointer *);
 static void (*null_function_ptr) (void);
 
+static MonoDomain *(*sym_mono_get_root_domain) (void);
+
+static MonoDomain *(*sym_mono_domain_get)(void);
+
+static mono_bool (*sym_mono_domain_set)(MonoDomain *, mono_bool /*force */);
+
+static MonoAssembly *(*sym_mono_domain_assembly_open) (MonoDomain *, const char*);
+
+static MonoImage *(*sym_mono_assembly_get_image) (MonoAssembly *);
+
+static MonoClass *(*sym_mono_class_from_name)(MonoImage *, const char *, const char *);
+
+static MonoMethod *(*sym_mono_class_get_method_from_name)(MonoClass *, const char *, int /* arg_count */);
+
+static MonoThread *(*sym_mono_thread_attach)(MonoDomain *);
+
+static void (*sym_mono_thread_detach)(MonoThread *);
+
+static MonoObject *(*sym_mono_runtime_invoke) (MonoMethod *, void*, void**, MonoObject**);
+
+
+// SYM_LOOKUP(mono_runtime_invoke)
+// expands to
+//  sym_mono_runtime_invoke = g_cast (lookup_mono_symbol ("mono_runtime_invoke"));
+//
+// (the g_cast is necessary for C++ builds)
+#define SYM_LOOKUP(name) do {			\
+	sym_##name = g_cast (lookup_mono_symbol (#name));	\
+	} while (0)
+
 static void
 mono_test_init_symbols (void)
 {
 	if (sym_inited)
 		return;
 
-	sym_mono_install_ftnptr_eh_callback = (void (*) (MonoFtnPtrEHCallback)) (lookup_mono_symbol ("mono_install_ftnptr_eh_callback"));
+	SYM_LOOKUP (mono_install_ftnptr_eh_callback);
+	SYM_LOOKUP (mono_gchandle_get_target);
+	SYM_LOOKUP (mono_gchandle_new);
+	SYM_LOOKUP (mono_gchandle_free);
+	SYM_LOOKUP (mono_raise_exception);
+	SYM_LOOKUP (mono_domain_unload);
+	SYM_LOOKUP (mono_threads_exit_gc_safe_region_unbalanced);
 
-	sym_mono_gchandle_get_target = (MonoObject* (*) (guint32 gchandle)) (lookup_mono_symbol ("mono_gchandle_get_target"));
-
-	sym_mono_gchandle_new = (guint32 (*) (MonoObject *, mono_bool)) (lookup_mono_symbol ("mono_gchandle_new"));
-
-	sym_mono_gchandle_free = (void (*) (guint32 gchandle)) (lookup_mono_symbol ("mono_gchandle_free"));
-
-	sym_mono_raise_exception = (void (*) (MonoException *)) (lookup_mono_symbol ("mono_raise_exception"));
-
-	sym_mono_domain_unload = (void (*) (gpointer)) (lookup_mono_symbol ("mono_domain_unload"));
-
-	sym_mono_threads_exit_gc_safe_region_unbalanced = (void (*) (gpointer, gpointer *)) (lookup_mono_symbol ("mono_threads_exit_gc_safe_region_unbalanced"));
+	SYM_LOOKUP (mono_get_root_domain);
+	SYM_LOOKUP (mono_domain_get);
+	SYM_LOOKUP (mono_domain_set);
+	SYM_LOOKUP (mono_domain_assembly_open);
+	SYM_LOOKUP (mono_assembly_get_image);
+	SYM_LOOKUP (mono_class_from_name);
+	SYM_LOOKUP (mono_class_get_method_from_name);
+	SYM_LOOKUP (mono_thread_attach);
+	SYM_LOOKUP (mono_thread_detach);
+	SYM_LOOKUP (mono_runtime_invoke);
 
 	sym_inited = 1;
 }
@@ -8257,6 +8299,160 @@ LIBTEST_API guint8*
 mono_test_marshal_return_array (void)
 {
 	return static_arr;
+}
+
+struct invoke_names {
+	char *assm_name;
+	char *name_space;
+	char *name;
+	char *meth_name;
+};
+
+static struct invoke_names *
+make_invoke_names (const char *assm_name, const char *name_space, const char *name, const char *meth_name)
+{
+	struct invoke_names *names = (struct invoke_names*) malloc (sizeof (struct invoke_names));
+	names->assm_name = strdup (assm_name);
+	names->name_space = strdup (name_space);
+	names->name = strdup (name);
+	names->meth_name = strdup (meth_name);
+	return names;
+}
+
+static void
+destroy_invoke_names (struct invoke_names *n)
+{
+	free (n->assm_name);
+	free (n->name_space);
+	free (n->name);
+	free (n->meth_name);
+	free (n);
+}
+
+static void
+test_invoke_by_name (struct invoke_names *names)
+{
+	mono_test_init_symbols ();
+
+	MonoDomain *domain = sym_mono_domain_get ();
+	MonoThread *thread = NULL;
+	if (!domain) {
+		thread = sym_mono_thread_attach (sym_mono_get_root_domain ());
+	}
+	domain = sym_mono_domain_get ();
+	g_assert (domain);
+	MonoAssembly *assm = sym_mono_domain_assembly_open (domain, names->assm_name);
+	g_assert (assm);
+	MonoImage *image = sym_mono_assembly_get_image (assm);
+	MonoClass *klass = sym_mono_class_from_name (image, names->name_space, names->name);
+	g_assert (klass);
+	/* meth_name should be a static method that takes no arguments */
+	MonoMethod *method = sym_mono_class_get_method_from_name (klass, names->meth_name, -1);
+	g_assert (method);
+
+	MonoObject *args[] = {NULL, };
+
+	sym_mono_runtime_invoke (method, NULL, (void**)args, NULL);
+
+	if (thread)
+		sym_mono_thread_detach (thread);
+}
+
+static void*
+invoke_foreign_thread (void* user_data)
+{
+	struct invoke_names *names = (struct invoke_names*)user_data;
+	test_invoke_by_name (names);
+	destroy_invoke_names (names);
+	return NULL;
+}
+
+
+
+LIBTEST_API mono_bool STDCALL
+mono_test_attach_invoke_foreign_thread (const char *assm_name, const char *name_space, const char *name, const char *meth_name)
+{
+#ifndef HOST_WIN32
+	struct invoke_names *names = make_invoke_names (assm_name, name_space, name, meth_name);
+	pthread_t t;
+	int res = pthread_create (&t, NULL, invoke_foreign_thread, (void*)names);
+	g_assert (res == 0);
+	pthread_join (t, NULL);
+	return 0;
+#else
+	// TODO: Win32 version of this test
+	return 1;
+#endif
+}
+
+#ifndef HOST_WIN32
+static void*
+invoke_repeat_foreign_thread (void *user_data)
+{
+	// This thread tries to call back into the runtime forever, and it
+	// never ends. It should not prevent the runtime from shutting down.
+	struct invoke_names *names = (struct invoke_names *)user_data;
+	while (1) {
+		test_invoke_by_name (names);
+		sleep (2);
+	}
+	g_assert_not_reached ();
+}
+#endif
+
+LIBTEST_API mono_bool STDCALL
+mono_test_attach_invoke_repeat_foreign_thread (const char *assm_name, const char *name_space, const char *name, const char *meth_name)
+{
+#ifndef HOST_WIN32
+	struct invoke_names *names = make_invoke_names (assm_name, name_space, name, meth_name);
+	pthread_t t;
+	int res = pthread_create (&t, NULL, invoke_repeat_foreign_thread, (void*)names);
+	g_assert (res == 0);
+	pthread_detach (t);
+	return 0;
+#else
+	// TODO: Win32 version of this test
+	return 1;
+#endif
+}
+
+#ifndef HOST_WIN32
+struct names_and_mutex {
+	struct invoke_names *names;
+	pthread_mutex_t mutex;
+};
+
+static void*
+invoke_block_foreign_thread (void *user_data)
+{
+	// This thread calls into the runtime and then blocks. It should not
+	// prevent the runtime from shutting down.
+	struct names_and_mutex *nm = (struct names_and_mutex *)user_data;
+	test_invoke_by_name (nm->names);
+	pthread_mutex_lock (&nm->mutex); // blocks forever
+	g_assert_not_reached ();
+}
+#endif
+
+LIBTEST_API mono_bool STDCALL
+mono_test_attach_invoke_block_foreign_thread (const char *assm_name, const char *name_space, const char *name, const char *meth_name)
+{
+#ifndef HOST_WIN32
+	struct invoke_names *names = make_invoke_names (assm_name, name_space, name, meth_name);
+	struct names_and_mutex *nm = malloc (sizeof (struct names_and_mutex));
+	nm->names = names;
+	pthread_mutex_init (&nm->mutex, NULL);
+
+	pthread_mutex_lock (&nm->mutex); // lock the mutex and never unlock it.
+	pthread_t t;
+	int res = pthread_create (&t, NULL, invoke_block_foreign_thread, (void*)nm);
+	g_assert (res == 0);
+	pthread_detach (t);
+	return 0;
+#else
+	// TODO: Win32 version of this test
+	return 1;
+#endif
 }
 
 #ifdef __cplusplus

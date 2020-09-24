@@ -3150,7 +3150,7 @@ profiler_thread_begin_function (const char *name8, const gunichar2* name16, size
 	mono_thread_info_attach ();
 	MonoProfilerThread *thread = init_thread (FALSE);
 
-	mono_thread_attach (mono_get_root_domain ());
+	mono_thread_internal_attach (mono_get_root_domain ());
 
 	MonoInternalThread *internal = mono_thread_internal_current ();
 

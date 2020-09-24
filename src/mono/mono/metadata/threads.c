@@ -1522,6 +1522,50 @@ mono_thread_create_checked (MonoDomain *domain, gpointer func, gpointer arg, Mon
 MonoThread *
 mono_thread_attach (MonoDomain *domain)
 {
+	return mono_thread_attach_external_native_thread (domain, FALSE);
+}
+
+/**
+ * mono_thread_attach_external_native_thread:
+ *
+ * Attach the current thread (that was created outside the runtime or managed
+ * code) to the runtime.  If \p background is TRUE, set the IsBackground
+ * property on the thread.
+ *
+ * COOP: The thread is left in GC Safe mode
+ */
+MonoThread *
+mono_thread_attach_external_native_thread (MonoDomain *domain, gboolean background)
+{
+	MonoThread *thread = mono_thread_internal_attach (domain);
+
+	if (background)
+		mono_thread_set_state (mono_thread_internal_current (), ThreadState_Background);
+
+	if (mono_threads_is_blocking_transition_enabled ()) {
+		/* mono_jit_thread_attach and mono_thread_attach are external-only and
+		 * not called by the runtime on any of our own threads.  So if we get
+		 * here, the thread is running native code - leave it in GC Safe mode
+		 * and leave it to the n2m invoke wrappers or MONO_API entry points to
+		 * switch to GC Unsafe.
+		 */
+		MONO_STACKDATA (stackdata);
+		mono_threads_enter_gc_safe_region_unbalanced_internal (&stackdata);
+	}
+	return thread;
+}
+
+/**
+ * mono_thread_internal_attach:
+ *
+ * Attach the current thread to the runtime.  The thread was created on behalf
+ * of the runtime and the runtime is responsible for it.
+ *
+ * COOP: The thread is left in GC Unsafe mode
+ */
+MonoThread *
+mono_thread_internal_attach (MonoDomain *domain)
+{
 	MonoInternalThread *internal;
 	MonoThread *thread;
 	MonoThreadInfo *info;
@@ -1596,8 +1640,12 @@ mono_threads_attach_tools_thread (void)
 void
 mono_thread_detach (MonoThread *thread)
 {
-	if (thread)
-		mono_thread_detach_internal (thread->internal_thread);
+
+	if (!thread)
+		return;
+	MONO_ENTER_GC_UNSAFE;
+	mono_thread_detach_internal (thread->internal_thread);
+	MONO_EXIT_GC_UNSAFE;
 }
 
 
@@ -3788,6 +3836,8 @@ mono_thread_manage_internal (void)
 	 * Also abort all the background threads
 	 * */
 	do {
+		THREAD_DEBUG (g_message ("%s: abort phase", __func__));
+
 		mono_threads_lock ();
 
 		wait->num = 0;
@@ -6073,7 +6123,7 @@ mono_threads_attach_coop_internal (MonoDomain *domain, gpointer *cookie, MonoSta
 		external = !(info = mono_thread_info_current_unchecked ()) || !mono_thread_info_is_live (info);
 
 	if (!mono_thread_internal_current ()) {
-		mono_thread_attach (domain);
+		mono_thread_internal_attach (domain);
 
 		// #678164
 		mono_thread_set_state (mono_thread_internal_current (), ThreadState_Background);
@@ -6081,7 +6131,7 @@ mono_threads_attach_coop_internal (MonoDomain *domain, gpointer *cookie, MonoSta
 
 	if (mono_threads_is_blocking_transition_enabled ()) {
 		if (external) {
-			/* mono_thread_attach put the thread in RUNNING mode from STARTING, but we need to
+			/* mono_thread_internal_attach put the thread in RUNNING mode from STARTING, but we need to
 			 * return the right cookie. */
 			*cookie = mono_threads_enter_gc_unsafe_region_cookie ();
 		} else {

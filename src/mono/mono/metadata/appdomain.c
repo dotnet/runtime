@@ -344,7 +344,7 @@ mono_runtime_init_checked (MonoDomain *domain, MonoThreadStartCB start_cb, MonoT
 		domain->setup = MONO_HANDLE_RAW (setup);
 	}
 
-	mono_thread_attach (domain);
+	mono_thread_internal_attach (domain);
 
 	mono_type_initialization_init ();
 

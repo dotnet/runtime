@@ -2856,7 +2856,7 @@ cominterop_ccw_queryinterface_impl (MonoCCWInterface* ccwe, const guint8* riid, 
 		*ppv = NULL;
 
 	if (!mono_domain_get ())
-		mono_thread_attach (mono_get_root_domain ());
+		mono_thread_attach_external_native_thread (mono_get_root_domain (), FALSE);
 
 	/* handle IUnknown special */
 	if (cominterop_class_guid_equal (riid, mono_class_get_iunknown_class ())) {
@@ -2987,7 +2987,7 @@ cominterop_ccw_get_ids_of_names_impl (MonoCCWInterface* ccwe, gpointer riid,
 	klass = mono_object_class (object);
 
 	if (!mono_domain_get ())
-		 mono_thread_attach (mono_get_root_domain ());
+		mono_thread_attach_external_native_thread (mono_get_root_domain (), FALSE);
 
 	for (i=0; i < cNames; i++) {
 		methodname = mono_unicode_to_external (rgszNames[i]);
