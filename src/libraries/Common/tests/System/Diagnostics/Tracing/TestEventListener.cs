@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Reflection;
 using System.Threading.Tasks;
 
 namespace System.Diagnostics.Tracing
@@ -111,14 +110,8 @@ namespace System.Diagnostics.Tracing
             finally { _eventWritten = null; }
         }
 
-        // Workaround for being able to inspect the ActivityId property after storing EventWrittenEventArgs
-        // [ActiveIssue("https://github.com/dotnet/runtime/issues/42128")]
-        private static readonly FieldInfo s_activityIdFieldInfo =
-            typeof(EventWrittenEventArgs).GetField("m_activityId", BindingFlags.NonPublic | BindingFlags.Instance);
-
         protected override void OnEventWritten(EventWrittenEventArgs eventData)
         {
-            s_activityIdFieldInfo.SetValue(eventData, eventData.ActivityId);
             _eventWritten?.Invoke(eventData);
         }
     }

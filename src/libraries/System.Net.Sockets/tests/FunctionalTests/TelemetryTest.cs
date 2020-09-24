@@ -96,8 +96,8 @@ namespace System.Net.Sockets.Tests
                 using var listener = new TestEventListener("System.Net.Sockets", EventLevel.Verbose, 0.1);
                 listener.AddActivityTracking();
 
-                var events = new ConcurrentQueue<EventWrittenEventArgs>();
-                await listener.RunWithCallbackAsync(events.Enqueue, async () =>
+                var events = new ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)>();
+                await listener.RunWithCallbackAsync(e => events.Enqueue((e, e.ActivityId)), async () =>
                 {
                     using var server = new Socket(SocketType.Stream, ProtocolType.Tcp);
                     server.Bind(new IPEndPoint(IPAddress.Loopback, 0));
@@ -116,14 +116,14 @@ namespace System.Net.Sockets.Tests
 
                     await WaitForEventCountersAsync(events);
                 });
-                Assert.DoesNotContain(events, ev => ev.EventId == 0); // errors from the EventSource itself
+                Assert.DoesNotContain(events, ev => ev.Event.EventId == 0); // errors from the EventSource itself
 
                 VerifyStartStopEvents(events, connect: true, expectedCount: 1);
                 VerifyStartStopEvents(events, connect: false, expectedCount: 1);
 
-                Assert.DoesNotContain(events, e => e.EventName == "ConnectFailed");
-                Assert.DoesNotContain(events, e => e.EventName == "ConnectCanceled");
-                Assert.DoesNotContain(events, e => e.EventName == "AcceptFailed");
+                Assert.DoesNotContain(events, e => e.Event.EventName == "ConnectFailed");
+                Assert.DoesNotContain(events, e => e.Event.EventName == "ConnectCanceled");
+                Assert.DoesNotContain(events, e => e.Event.EventName == "AcceptFailed");
 
                 VerifyEventCounters(events, connectCount: 1);
             }, connectMethod, acceptMethod).Dispose();
@@ -139,8 +139,8 @@ namespace System.Net.Sockets.Tests
                 using var listener = new TestEventListener("System.Net.Sockets", EventLevel.Verbose, 0.1);
                 listener.AddActivityTracking();
 
-                var events = new ConcurrentQueue<EventWrittenEventArgs>();
-                await listener.RunWithCallbackAsync(events.Enqueue, async () =>
+                var events = new ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)>();
+                await listener.RunWithCallbackAsync(e => events.Enqueue((e, e.ActivityId)), async () =>
                 {
                     using var client = new Socket(SocketType.Stream, ProtocolType.Tcp);
 
@@ -153,12 +153,12 @@ namespace System.Net.Sockets.Tests
 
                     await WaitForEventCountersAsync(events);
                 });
-                Assert.DoesNotContain(events, ev => ev.EventId == 0); // errors from the EventSource itself
+                Assert.DoesNotContain(events, ev => ev.Event.EventId == 0); // errors from the EventSource itself
 
                 VerifyStartStopEvents(events, connect: true, expectedCount: 1);
 
-                Assert.DoesNotContain(events, e => e.EventName == "ConnectFailed");
-                Assert.DoesNotContain(events, e => e.EventName == "ConnectCanceled");
+                Assert.DoesNotContain(events, e => e.Event.EventName == "ConnectFailed");
+                Assert.DoesNotContain(events, e => e.Event.EventName == "ConnectCanceled");
 
                 VerifyEventCounters(events, connectCount: 1, connectOnly: true);
             }, connectMethod, useDnsEndPoint.ToString()).Dispose();
@@ -183,8 +183,8 @@ namespace System.Net.Sockets.Tests
                 using var listener = new TestEventListener("System.Net.Sockets", EventLevel.Verbose, 0.1);
                 listener.AddActivityTracking();
 
-                var events = new ConcurrentQueue<EventWrittenEventArgs>();
-                await listener.RunWithCallbackAsync(events.Enqueue, async () =>
+                var events = new ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)>();
+                await listener.RunWithCallbackAsync(e => events.Enqueue((e, e.ActivityId)), async () =>
                 {
                     using var client = new Socket(SocketType.Stream, ProtocolType.Tcp);
 
@@ -228,8 +228,8 @@ namespace System.Net.Sockets.Tests
                 using var listener = new TestEventListener("System.Net.Sockets", EventLevel.Verbose, 0.1);
                 listener.AddActivityTracking();
 
-                var events = new ConcurrentQueue<EventWrittenEventArgs>();
-                await listener.RunWithCallbackAsync(events.Enqueue, async () =>
+                var events = new ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)>();
+                await listener.RunWithCallbackAsync(e => events.Enqueue((e, e.ActivityId)), async () =>
                 {
                     using var server = new Socket(SocketType.Stream, ProtocolType.Tcp);
                     server.Bind(new IPEndPoint(IPAddress.Loopback, 0));
@@ -247,17 +247,17 @@ namespace System.Net.Sockets.Tests
 
                     await WaitForEventCountersAsync(events);
                 });
-                Assert.DoesNotContain(events, ev => ev.EventId == 0); // errors from the EventSource itself
+                Assert.DoesNotContain(events, ev => ev.Event.EventId == 0); // errors from the EventSource itself
 
                 VerifyStartStopEvents(events, connect: false, expectedCount: 1);
 
-                EventWrittenEventArgs failed = Assert.Single(events, e => e.EventName == "AcceptFailed");
-                Assert.Equal(2, failed.Payload.Count);
-                Assert.True(Enum.IsDefined((SocketError)failed.Payload[0]));
-                Assert.IsType<string>(failed.Payload[1]);
+                (EventWrittenEventArgs Event, Guid ActivityId) failed = Assert.Single(events, e => e.Event.EventName == "AcceptFailed");
+                Assert.Equal(2, failed.Event.Payload.Count);
+                Assert.True(Enum.IsDefined((SocketError)failed.Event.Payload[0]));
+                Assert.IsType<string>(failed.Event.Payload[1]);
 
-                EventWrittenEventArgs start = Assert.Single(events, e => e.EventName == "AcceptStart");
-                Assert.Equal(start.ActivityId, failed.ActivityId);
+                (_, Guid startActivityId) = Assert.Single(events, e => e.Event.EventName == "AcceptStart");
+                Assert.Equal(startActivityId, failed.ActivityId);
 
                 VerifyEventCounters(events, connectCount: 0);
             }, acceptMethod).Dispose();
@@ -278,8 +278,8 @@ namespace System.Net.Sockets.Tests
                 using var listener = new TestEventListener("System.Net.Sockets", EventLevel.Verbose, 0.1);
                 listener.AddActivityTracking();
 
-                var events = new ConcurrentQueue<EventWrittenEventArgs>();
-                await listener.RunWithCallbackAsync(events.Enqueue, async () =>
+                var events = new ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)>();
+                await listener.RunWithCallbackAsync(e => events.Enqueue((e, e.ActivityId)), async () =>
                 {
                     using var client = new Socket(SocketType.Stream, ProtocolType.Tcp);
 
@@ -325,23 +325,23 @@ namespace System.Net.Sockets.Tests
             }, connectMethod, useDnsEndPoint.ToString()).Dispose();
         }
 
-        private static void VerifyConnectFailureEvents(ConcurrentQueue<EventWrittenEventArgs> events)
+        private static void VerifyConnectFailureEvents(ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)> events)
         {
-            Assert.DoesNotContain(events, ev => ev.EventId == 0); // errors from the EventSource itself
+            Assert.DoesNotContain(events, ev => ev.Event.EventId == 0); // errors from the EventSource itself
 
             VerifyStartStopEvents(events, connect: true, expectedCount: 1);
 
-            EventWrittenEventArgs canceled = Assert.Single(events, e => e.EventName == "ConnectCanceled");
-            Assert.Empty(canceled.Payload);
+            (EventWrittenEventArgs Event, Guid ActivityId) canceled = Assert.Single(events, e => e.Event.EventName == "ConnectCanceled");
+            Assert.Empty(canceled.Event.Payload);
 
-            EventWrittenEventArgs failed = Assert.Single(events, e => e.EventName == "ConnectFailed");
-            Assert.Equal(2, failed.Payload.Count);
-            Assert.True(Enum.IsDefined((SocketError)failed.Payload[0]));
-            Assert.IsType<string>(failed.Payload[1]);
+            (EventWrittenEventArgs Event, Guid ActivityId) failed = Assert.Single(events, e => e.Event.EventName == "ConnectFailed");
+            Assert.Equal(2, failed.Event.Payload.Count);
+            Assert.True(Enum.IsDefined((SocketError)failed.Event.Payload[0]));
+            Assert.IsType<string>(failed.Event.Payload[1]);
 
-            EventWrittenEventArgs start = Assert.Single(events, e => e.EventName == "ConnectStart");
-            Assert.Equal(start.ActivityId, canceled.ActivityId);
-            Assert.Equal(start.ActivityId, failed.ActivityId);
+            (_, Guid startActivityId) = Assert.Single(events, e => e.Event.EventName == "ConnectStart");
+            Assert.Equal(startActivityId, canceled.ActivityId);
+            Assert.Equal(startActivityId, failed.ActivityId);
 
             VerifyEventCounters(events, connectCount: 0);
         }
@@ -356,8 +356,8 @@ namespace System.Net.Sockets.Tests
                 {
                     listener.AddActivityTracking();
 
-                    var events = new ConcurrentQueue<EventWrittenEventArgs>();
-                    await listener.RunWithCallbackAsync(events.Enqueue, async () =>
+                    var events = new ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)>();
+                    await listener.RunWithCallbackAsync(e => events.Enqueue((e, e.ActivityId)), async () =>
                     {
                         // Invoke several tests to execute code paths while tracing is enabled
 
@@ -381,33 +381,33 @@ namespace System.Net.Sockets.Tests
 
                         await WaitForEventCountersAsync(events);
                     });
-                    Assert.DoesNotContain(events, ev => ev.EventId == 0); // errors from the EventSource itself
+                    Assert.DoesNotContain(events, ev => ev.Event.EventId == 0); // errors from the EventSource itself
 
                     VerifyStartStopEvents(events, connect: true, expectedCount: 10);
 
-                    Assert.DoesNotContain(events, e => e.EventName == "ConnectFailed");
-                    Assert.DoesNotContain(events, e => e.EventName == "ConnectCanceled");
+                    Assert.DoesNotContain(events, e => e.Event.EventName == "ConnectFailed");
+                    Assert.DoesNotContain(events, e => e.Event.EventName == "ConnectCanceled");
 
                     VerifyEventCounters(events, connectCount: 10, shouldHaveTransferedBytes: true, shouldHaveDatagrams: true);
                 }
             }).Dispose();
         }
 
-        private static void VerifyStartStopEvents(ConcurrentQueue<EventWrittenEventArgs> events, bool connect, int expectedCount)
+        private static void VerifyStartStopEvents(ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)> events, bool connect, int expectedCount)
         {
             string startName = connect ? "ConnectStart" : "AcceptStart";
-            EventWrittenEventArgs[] starts = events.Where(e => e.EventName == startName).ToArray();
+            (EventWrittenEventArgs Event, Guid ActivityId)[] starts = events.Where(e => e.Event.EventName == startName).ToArray();
             Assert.Equal(expectedCount, starts.Length);
-            foreach (EventWrittenEventArgs start in starts)
+            foreach ((EventWrittenEventArgs Event, _) in starts)
             {
-                object startPayload = Assert.Single(start.Payload);
+                object startPayload = Assert.Single(Event.Payload);
                 Assert.False(string.IsNullOrWhiteSpace(startPayload as string));
             }
 
             string stopName = connect ? "ConnectStop" : "AcceptStop";
-            EventWrittenEventArgs[] stops = events.Where(e => e.EventName == stopName).ToArray();
+            (EventWrittenEventArgs Event, Guid ActivityId)[] stops = events.Where(e => e.Event.EventName == stopName).ToArray();
             Assert.Equal(expectedCount, stops.Length);
-            Assert.All(stops, stop => Assert.Empty(stop.Payload));
+            Assert.All(stops, stop => Assert.Empty(stop.Event.Payload));
 
             for (int i = 0; i < expectedCount; i++)
             {
@@ -416,10 +416,10 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        private static async Task WaitForEventAsync(ConcurrentQueue<EventWrittenEventArgs> events, string name)
+        private static async Task WaitForEventAsync(ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)> events, string name)
         {
             DateTime startTime = DateTime.UtcNow;
-            while (!events.Any(e => e.EventName == name))
+            while (!events.Any(e => e.Event.EventName == name))
             {
                 if (DateTime.UtcNow.Subtract(startTime) > TimeSpan.FromSeconds(30))
                     throw new TimeoutException($"Timed out waiting for {name}");
@@ -428,12 +428,12 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        private static async Task WaitForEventCountersAsync(ConcurrentQueue<EventWrittenEventArgs> events)
+        private static async Task WaitForEventCountersAsync(ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)> events)
         {
             DateTime startTime = DateTime.UtcNow;
             int startCount = events.Count;
 
-            while (events.Skip(startCount).Count(IsBytesSentEventCounter) < 2)
+            while (events.Skip(startCount).Count(e => IsBytesSentEventCounter(e.Event)) < 2)
             {
                 if (DateTime.UtcNow.Subtract(startTime) > TimeSpan.FromSeconds(30))
                     throw new TimeoutException($"Timed out waiting for EventCounters");
@@ -452,11 +452,11 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        private static void VerifyEventCounters(ConcurrentQueue<EventWrittenEventArgs> events, int connectCount, bool connectOnly = false, bool shouldHaveTransferedBytes = false, bool shouldHaveDatagrams = false)
+        private static void VerifyEventCounters(ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)> events, int connectCount, bool connectOnly = false, bool shouldHaveTransferedBytes = false, bool shouldHaveDatagrams = false)
         {
             Dictionary<string, double[]> eventCounters = events
-                .Where(e => e.EventName == "EventCounters")
-                .Select(e => (IDictionary<string, object>)e.Payload.Single())
+                .Where(e => e.Event.EventName == "EventCounters")
+                .Select(e => (IDictionary<string, object>)e.Event.Payload.Single())
                 .GroupBy(d => (string)d["Name"], d => (double)(d.ContainsKey("Mean") ? d["Mean"] : d["Increment"]))
                 .ToDictionary(p => p.Key, p => p.ToArray());
 
