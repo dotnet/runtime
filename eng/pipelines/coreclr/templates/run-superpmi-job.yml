@@ -79,39 +79,13 @@ jobs:
             _Framework: ${{ framework }}
     steps:
     - ${{ parameters.steps }}
-    # - powershell: $(Build.SourcesDirectory)\eng\common\superpmi\superpmi-setup.ps1 -CoreRootDirectory $(Build.SourcesDirectory)\artifacts\tests\coreclr\${{ parameters.osGroup }}.${{ parameters.archType }}.${{ parameters.buildConfig }}\Tests\Core_Root -ManagedTestArtifactDirectory $(managedTestArtifactRootFolderPath) -Architecture $(archType) -Tag ${{ parameters.osGroup }}.${{ parameters.archType }}.${{ parameters.buildConfig }}
-    #   displayName: SuperPMI Setup (Windows)
-    #   condition: and(succeeded(), eq(variables['Agent.Os'], 'Windows_NT'))
-    #   continueOnError: ${{ parameters.continueOnError }}
-
-    # - script: $(Build.SourcesDirectory)/eng/common/superpmi/superpmi-setup.sh --corerootdirectory $(Build.SourcesDirectory)/artifacts/tests/coreclr/${{ parameters.osGroup }}.${{ parameters.archType }}.$(buildConfigUpper)/Tests/Core_Root --managedtestartifactdirectory $(managedTestArtifactRootFolderPath) --architecture $(archType) --tag ${{ parameters.osGroup }}.${{ parameters.archType }}.${{ parameters.buildConfig }}
-    #   displayName: SuperPMI Setup (Unix)
-    #   condition: and(succeeded(), ne(variables['Agent.Os'], 'Windows_NT'))
-    #   continueOnError: ${{ parameters.continueOnError }}
-
+  
     - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
       - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi-setup.py -source_directory $(Build.SourcesDirectory) -core_root_directory $(Core_Root_Dir) -arch $(archType) -mch_file_tag ${{ parameters.osGroup }}.${{ parameters.archType }}.${{ parameters.buildConfig }} -assemblies_directory $(Core_Root_Dir) -max_size 50
         displayName: 'SuperPMI setup (Linux)'
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
       - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi-setup.py -source_directory $(Build.SourcesDirectory) -core_root_directory $(Core_Root_Dir) -arch $(archType) -mch_file_tag ${{ parameters.osGroup }}.${{ parameters.archType }}.${{ parameters.buildConfig }} -assemblies_directory $(Core_Root_Dir) -max_size 50
         displayName: 'SuperPMI setup (Windows)'
-
-    # - task: PythonScript@0
-    # - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-    #     displayName: 'SuperPMI setup (Windows)'
-    # - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-    #     displayName: 'SuperPMI setup (Linux)'
-    #   inputs:
-    #     scriptSource: 'filePath'
-    #     scriptPath: $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi-setup.py
-    #     arguments: -source_directory $(Build.SourcesDirectory) -core_root_directory $(Core_Root_Dir) -arch $(archType) -mch_file_tag ${{ parameters.osGroup }}.${{ parameters.archType }}.${{ parameters.buildConfig }} -assemblies_directory $(Core_Root_Dir) -max_size 50
-
-    # - task: PythonScript@0
-    #   displayName: Partition PMIAssembliesDirectory (libraries)
-    #   inputs:
-    #     scriptSource: 'filePath'
-    #     scriptPath: $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi-setup.py
-    #     arguments: -src_directory $(Build.SourcesDirectory)\artifacts\tests\coreclr\${{ parameters.osGroup }}.${{ parameters.archType }}.$(buildConfigUpper)\Tests -dst_directory $(TestsArtifact) -max_size 50
 
       # Run superpmi collection in helix
     - template: /eng/common/templates/steps/superpmi-send-to-helix.yml
