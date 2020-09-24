@@ -50,36 +50,27 @@ namespace System.Net.Sockets
             }
         }
 
-        [Event(4, Level = EventLevel.Warning)]
-        private void ConnectCanceled()
+        [Event(4, Level = EventLevel.Informational)]
+        private void AcceptStart(string? address)
         {
-            if (IsEnabled(EventLevel.Warning, EventKeywords.All))
-            {
-                WriteEvent(eventId: 4);
-            }
+            WriteEvent(eventId: 4, address);
         }
 
         [Event(5, Level = EventLevel.Informational)]
-        private void AcceptStart(string? address)
-        {
-            WriteEvent(eventId: 5, address);
-        }
-
-        [Event(6, Level = EventLevel.Informational)]
         private void AcceptStop()
         {
             if (IsEnabled(EventLevel.Informational, EventKeywords.All))
             {
-                WriteEvent(eventId: 6);
+                WriteEvent(eventId: 5);
             }
         }
 
-        [Event(7, Level = EventLevel.Error)]
+        [Event(6, Level = EventLevel.Error)]
         private void AcceptFailed(SocketError error, string? exceptionMessage)
         {
             if (IsEnabled(EventLevel.Error, EventKeywords.All))
             {
-                WriteEvent(eventId: 7, (int)error, exceptionMessage);
+                WriteEvent(eventId: 6, (int)error, exceptionMessage);
             }
         }
 
@@ -102,11 +93,6 @@ namespace System.Net.Sockets
             }
             else
             {
-                if (error == SocketError.OperationAborted || error == SocketError.NotSocket)
-                {
-                    ConnectCanceled();
-                }
-
                 ConnectFailed(error, exceptionMessage);
             }
 

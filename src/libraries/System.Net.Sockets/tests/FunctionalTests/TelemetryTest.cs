@@ -122,7 +122,6 @@ namespace System.Net.Sockets.Tests
                 VerifyStartStopEvents(events, connect: false, expectedCount: 1);
 
                 Assert.DoesNotContain(events, e => e.Event.EventName == "ConnectFailed");
-                Assert.DoesNotContain(events, e => e.Event.EventName == "ConnectCanceled");
                 Assert.DoesNotContain(events, e => e.Event.EventName == "AcceptFailed");
 
                 VerifyEventCounters(events, connectCount: 1);
@@ -158,7 +157,6 @@ namespace System.Net.Sockets.Tests
                 VerifyStartStopEvents(events, connect: true, expectedCount: 1);
 
                 Assert.DoesNotContain(events, e => e.Event.EventName == "ConnectFailed");
-                Assert.DoesNotContain(events, e => e.Event.EventName == "ConnectCanceled");
 
                 VerifyEventCounters(events, connectCount: 1, connectOnly: true);
             }, connectMethod, useDnsEndPoint.ToString()).Dispose();
@@ -269,7 +267,7 @@ namespace System.Net.Sockets.Tests
         [InlineData("Task", false)]
         [InlineData("Eap", true)]
         [InlineData("Eap", false)]
-        public void EventSource_ConnectAsyncCanceled_LogsConnectCanceled(string connectMethod, bool useDnsEndPoint)
+        public void EventSource_ConnectAsyncCanceled_LogsConnectFailed(string connectMethod, bool useDnsEndPoint)
         {
             RemoteExecutor.Invoke(async (connectMethod, useDnsEndPointString) =>
             {
@@ -331,16 +329,12 @@ namespace System.Net.Sockets.Tests
 
             VerifyStartStopEvents(events, connect: true, expectedCount: 1);
 
-            (EventWrittenEventArgs Event, Guid ActivityId) canceled = Assert.Single(events, e => e.Event.EventName == "ConnectCanceled");
-            Assert.Empty(canceled.Event.Payload);
-
             (EventWrittenEventArgs Event, Guid ActivityId) failed = Assert.Single(events, e => e.Event.EventName == "ConnectFailed");
             Assert.Equal(2, failed.Event.Payload.Count);
             Assert.True(Enum.IsDefined((SocketError)failed.Event.Payload[0]));
             Assert.IsType<string>(failed.Event.Payload[1]);
 
             (_, Guid startActivityId) = Assert.Single(events, e => e.Event.EventName == "ConnectStart");
-            Assert.Equal(startActivityId, canceled.ActivityId);
             Assert.Equal(startActivityId, failed.ActivityId);
 
             VerifyEventCounters(events, connectCount: 0);
@@ -386,7 +380,6 @@ namespace System.Net.Sockets.Tests
                     VerifyStartStopEvents(events, connect: true, expectedCount: 10);
 
                     Assert.DoesNotContain(events, e => e.Event.EventName == "ConnectFailed");
-                    Assert.DoesNotContain(events, e => e.Event.EventName == "ConnectCanceled");
 
                     VerifyEventCounters(events, connectCount: 10, shouldHaveTransferedBytes: true, shouldHaveDatagrams: true);
                 }
