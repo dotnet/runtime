@@ -21,7 +21,9 @@ namespace System.Text.Json
         // The global list of built-in converters that override CanConvert().
         private static readonly JsonConverter[] s_defaultFactoryConverters = new JsonConverter[]
         {
-            // Nullable converter should always be first since it forwards to any nullable type.
+            // Check for disallowed types.
+            new DisallowedTypeConverterFactory(),
+            // Nullable converter should always be next since it forwards to any nullable type.
             new NullableConverterFactory(),
             new EnumConverterFactory(),
             // IEnumerable should always be second to last since they can convert any IEnumerable.
@@ -35,7 +37,7 @@ namespace System.Text.Json
 
         private static Dictionary<Type, JsonConverter> GetDefaultSimpleConverters()
         {
-            const int NumberOfSimpleConverters = 24;
+            const int NumberOfSimpleConverters = 23;
             var converters = new Dictionary<Type, JsonConverter>(NumberOfSimpleConverters);
 
             // Use a dictionary for simple converters.
@@ -58,7 +60,6 @@ namespace System.Text.Json
             Add(new SByteConverter());
             Add(new SingleConverter());
             Add(new StringConverter());
-            Add(new TypeConverter());
             Add(new UInt16Converter());
             Add(new UInt32Converter());
             Add(new UInt64Converter());
