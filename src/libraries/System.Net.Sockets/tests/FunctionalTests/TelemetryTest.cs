@@ -45,16 +45,16 @@ namespace System.Net.Sockets.Tests
 
         public static IEnumerable<object[]> SocketMethods_Matrix_MemberData()
         {
-            return from m1 in SocketMethods_MemberData()
-                   from m2 in SocketMethods_MemberData()
-                   select new[] { m1[0], m2[0] };
+            return from connectMethod in SocketMethods_MemberData()
+                   from acceptMethod in SocketMethods_MemberData()
+                   select new[] { connectMethod[0], acceptMethod[0] };
         }
 
         public static IEnumerable<object[]> SocketMethods_WithBools_MemberData()
         {
-            return from m1 in SocketMethods_MemberData()
-                   from @bool in new[] { true, false }
-                   select new[] { m1[0], @bool };
+            return from connectMethod in SocketMethods_MemberData()
+                   from useDnsEndPoint in new[] { true, false }
+                   select new[] { connectMethod[0], useDnsEndPoint };
         }
 
         private static async Task<EndPoint> GetRemoteEndPointAsync(string useDnsEndPointString, int port)
