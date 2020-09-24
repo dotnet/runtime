@@ -8547,7 +8547,7 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
                       EA_UNKNOWN); // retSize
 
     // Check that we have place for the push.
-    assert(compiler->fgPtrArgCntMax >= 1);
+    assert(compiler->fgGetPtrArgCntMax() >= 1);
 
 #if defined(UNIX_X86_ABI)
     // Restoring alignment manually. This is similar to CodeGen::genRemoveAlignmentAfterCall
@@ -8628,7 +8628,7 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
     genEmitHelperCall(helper, argSize, EA_UNKNOWN /* retSize */);
 
     // Check that we have place for the push.
-    assert(compiler->fgPtrArgCntMax >= 1);
+    assert(compiler->fgGetPtrArgCntMax() >= 1);
 
 #if defined(UNIX_X86_ABI)
     // Restoring alignment manually. This is similar to CodeGen::genRemoveAlignmentAfterCall

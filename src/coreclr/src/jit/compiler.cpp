@@ -4921,10 +4921,13 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
     m_pLowering = new (this, CMK_LSRA) Lowering(this, m_pLinearScan); // PHASE_LOWERING
     m_pLowering->Run();
 
-    // Set stack levels
-    //
+#if !defined(OSX_ARM64_ABI)
+    // Set stack levels, this informmation is necessary for x86
+    // but on other platforms it is used only in asserts
+    // TODO: do not run it in release on other platforms, see https://github.com/dotnet/runtime/issues/42673.
     StackLevelSetter stackLevelSetter(this);
     stackLevelSetter.Run();
+#endif // !OSX_ARM64_ABI
 
     // We can not add any new tracked variables after this point.
     lvaTrackedFixed = true;
