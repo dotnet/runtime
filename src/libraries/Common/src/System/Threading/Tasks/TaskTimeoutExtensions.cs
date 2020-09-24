@@ -32,7 +32,7 @@ namespace System.Threading.Tasks
             static async Task WithCancellationCore(Task task, CancellationToken cancellationToken)
             {
                 var tcs = new TaskCompletionSource();
-                using IDisposable _ = cancellationToken.UnsafeRegister(static s => ((TaskCompletionSource)s!).SetResult(), tcs);
+                using IDisposable _ = cancellationToken.UnsafeRegister(static s => ((TaskCompletionSource)s!).TrySetResult(), tcs);
 
                 if (task != await Task.WhenAny(task, tcs.Task).ConfigureAwait(false))
                 {
