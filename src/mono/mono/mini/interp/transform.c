@@ -186,7 +186,7 @@ interp_new_ins (TransformData *td, guint16 opcode, int len)
 {
 	InterpInst *new_inst;
 	// Size of data region of instruction is length of instruction minus 1 (the opcode slot)
-	new_inst = mono_mempool_alloc0 (td->mempool, sizeof (InterpInst) + sizeof (guint16) * ((len > 0) ? (len - 1) : 0));
+	new_inst = (InterpInst*)mono_mempool_alloc0 (td->mempool, sizeof (InterpInst) + sizeof (guint16) * ((len > 0) ? (len - 1) : 0));
 	new_inst->opcode = opcode;
 	new_inst->il_offset = td->current_il_offset;
 	return new_inst;
@@ -3249,9 +3249,9 @@ interp_method_compute_offsets (TransformData *td, InterpMethod *imethod, MonoMet
 	offset = ALIGN_TO (offset, MINT_VT_ALIGNMENT);
 	td->il_locals_size = offset - td->il_locals_offset;
 
-	imethod->exvar_offsets = (guint32*)g_malloc (header->num_clauses * sizeof (guint32));
+	imethod->clause_data_offsets = (guint32*)g_malloc (header->num_clauses * sizeof (guint32));
 	for (i = 0; i < header->num_clauses; i++) {
-		imethod->exvar_offsets [i] = offset;
+		imethod->clause_data_offsets [i] = offset;
 		offset += sizeof (MonoObject*);
 	}
 	offset = ALIGN_TO (offset, MINT_VT_ALIGNMENT);
@@ -3508,11 +3508,16 @@ initialize_clause_bblocks (TransformData *td)
 		bb = td->offset_to_bb [c->handler_offset];
 		g_assert (bb);
 		bb->eh_block = TRUE;
-		bb->stack_height = 1;
 		bb->vt_stack_size = 0;
-		bb->stack_state = (StackInfo*) mono_mempool_alloc0 (td->mempool, sizeof (StackInfo));
-		bb->stack_state [0].type = STACK_TYPE_O;
-		bb->stack_state [0].klass = NULL; /*FIX*/
+
+		if (c->flags == MONO_EXCEPTION_CLAUSE_FINALLY) {
+			bb->stack_height = 0;
+		} else {
+			bb->stack_height = 1;
+			bb->stack_state = (StackInfo*) mono_mempool_alloc0 (td->mempool, sizeof (StackInfo));
+			bb->stack_state [0].type = STACK_TYPE_O;
+			bb->stack_state [0].klass = NULL; /*FIX*/
+		}
 
 		if (c->flags == MONO_EXCEPTION_CLAUSE_FILTER) {
 			bb = td->offset_to_bb [c->data.filter_offset];
@@ -6127,19 +6132,35 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 		}
 		case CEE_LEAVE:
 		case CEE_LEAVE_S: {
-			int offset;
+			int target_offset;
 
 			if (*td->ip == CEE_LEAVE)
-				offset = 5 + read32 (td->ip + 1);
+				target_offset = 5 + read32 (td->ip + 1);
 			else
-				offset = 2 + (gint8)td->ip [1];
+				target_offset = 2 + (gint8)td->ip [1];
 
 			td->sp = td->stack;
+
+			for (i = 0; i < header->num_clauses; ++i) {
+				MonoExceptionClause *clause = &header->clauses [i];
+				if (clause->flags != MONO_EXCEPTION_CLAUSE_FINALLY)
+					continue;
+				if (MONO_OFFSET_IN_CLAUSE (clause, (td->ip - header->code)) &&
+						(!MONO_OFFSET_IN_CLAUSE (clause, (target_offset + in_offset)))) {
+					handle_branch (td, MINT_CALL_HANDLER_S, MINT_CALL_HANDLER, clause->handler_offset - in_offset);
+					// FIXME We need new IR to get rid of _S ugliness
+					if (td->last_ins->opcode == MINT_CALL_HANDLER_S)
+						td->last_ins->data [1] = i;
+					else
+						td->last_ins->data [2] = i;
+				}
+			}
+
 			if (td->clause_indexes [in_offset] != -1) {
 				/* LEAVE instructions in catch clauses need to check for abort exceptions */
-				handle_branch (td, MINT_LEAVE_S_CHECK, MINT_LEAVE_CHECK, offset);
+				handle_branch (td, MINT_LEAVE_S_CHECK, MINT_LEAVE_CHECK, target_offset);
 			} else {
-				handle_branch (td, MINT_LEAVE_S, MINT_LEAVE, offset);
+				handle_branch (td, MINT_LEAVE_S, MINT_LEAVE, target_offset);
 			}
 
 			if (*td->ip == CEE_LEAVE)
@@ -6645,7 +6666,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				int clause_index = td->clause_indexes [in_offset];
 				g_assert (clause_index != -1);
 				SIMPLE_OP (td, MINT_RETHROW);
-				td->last_ins->data [0] = rtm->exvar_offsets [clause_index];
+				td->last_ins->data [0] = rtm->clause_data_offsets [clause_index];
 				td->sp = td->stack;
 				link_bblocks = FALSE;
 				break;
@@ -6906,7 +6927,7 @@ emit_compacted_instruction (TransformData *td, guint16* start_ip, InterpInst *in
 		}
 	} else if ((opcode >= MINT_BRFALSE_I4_S && opcode <= MINT_BRTRUE_R8_S) ||
 			(opcode >= MINT_BEQ_I4_S && opcode <= MINT_BLT_UN_R8_S) ||
-			opcode == MINT_BR_S || opcode == MINT_LEAVE_S || opcode == MINT_LEAVE_S_CHECK) {
+			opcode == MINT_BR_S || opcode == MINT_LEAVE_S || opcode == MINT_LEAVE_S_CHECK || opcode == MINT_CALL_HANDLER_S) {
 		const int br_offset = start_ip - td->new_code;
 		if (ins->info.target_bb->native_offset >= 0) {
 			// Backwards branch. We can already patch it.
@@ -6920,9 +6941,11 @@ emit_compacted_instruction (TransformData *td, guint16* start_ip, InterpInst *in
 			g_ptr_array_add (td->relocs, reloc);
 			*ip++ = 0xdead;
 		}
+		if (opcode == MINT_CALL_HANDLER_S)
+			*ip++ = ins->data [1];
 	} else if ((opcode >= MINT_BRFALSE_I4 && opcode <= MINT_BRTRUE_R8) ||
 			(opcode >= MINT_BEQ_I4 && opcode <= MINT_BLT_UN_R8) ||
-			opcode == MINT_BR || opcode == MINT_LEAVE || opcode == MINT_LEAVE_CHECK) {
+			opcode == MINT_BR || opcode == MINT_LEAVE || opcode == MINT_LEAVE_CHECK || opcode == MINT_CALL_HANDLER) {
 		const int br_offset = start_ip - td->new_code;
 		if (ins->info.target_bb->native_offset >= 0) {
 			// Backwards branch. We can already patch it
@@ -6937,6 +6960,8 @@ emit_compacted_instruction (TransformData *td, guint16* start_ip, InterpInst *in
 			*ip++ = 0xdead;
 			*ip++ = 0xbeef;
 		}
+		if (opcode == MINT_CALL_HANDLER)
+			*ip++ = ins->data [2];
 	} else if (opcode == MINT_SDB_SEQ_POINT) {
 		SeqPoint *seqp = (SeqPoint*)mono_mempool_alloc0 (td->mempool, sizeof (SeqPoint));
 		InterpBasicBlock *cbb;
@@ -8196,7 +8221,7 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, MonoG
 		ei->try_start = (guint8*)(rtm->code + c->try_offset);
 		ei->try_end = (guint8*)(rtm->code + c->try_offset + c->try_len);
 		ei->handler_start = (guint8*)(rtm->code + c->handler_offset);
-		ei->exvar_offset = rtm->exvar_offsets [i];
+		ei->exvar_offset = rtm->clause_data_offsets [i];
 		if (ei->flags == MONO_EXCEPTION_CLAUSE_FILTER) {
 			ei->data.filter = (guint8*)(rtm->code + c->data.filter_offset);
 		} else if (ei->flags == MONO_EXCEPTION_CLAUSE_FINALLY) {
