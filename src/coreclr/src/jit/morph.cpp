@@ -15856,9 +15856,8 @@ bool Compiler::fgFoldConditional(BasicBlock* block)
 
                 /* JTRUE 0 - transform the basic block into a BBJ_NONE   */
                 block->bbJumpKind = BBJ_NONE;
-                noway_assert(!(block->bbFlags & BBF_NEEDS_GCPOLL));
-                bTaken    = block->bbNext;
-                bNotTaken = block->bbJumpDest;
+                bTaken            = block->bbNext;
+                bNotTaken         = block->bbJumpDest;
             }
 
             if (fgHaveValidEdgeWeights)
@@ -16079,18 +16078,11 @@ bool Compiler::fgFoldConditional(BasicBlock* block)
                         /* transform the basic block into a BBJ_ALWAYS */
                         block->bbJumpKind = BBJ_ALWAYS;
                         block->bbJumpDest = curJump;
-
-                        // if we are jumping backwards, make sure we have a GC Poll.
-                        if (curJump->bbNum > block->bbNum)
-                        {
-                            block->bbFlags &= ~BBF_NEEDS_GCPOLL;
-                        }
                     }
                     else
                     {
                         /* transform the basic block into a BBJ_NONE */
                         block->bbJumpKind = BBJ_NONE;
-                        block->bbFlags &= ~BBF_NEEDS_GCPOLL;
                     }
                     foundVal = true;
                 }
