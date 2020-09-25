@@ -1001,7 +1001,7 @@ namespace DebuggerTests
         }
 
         [Fact]
-        public async Task StepOverHiddenSequencePoint()
+        public async Task BreakOnMethodCalledFromHiddenLine()
         {
             var insp = new Inspector();
 
@@ -1013,19 +1013,116 @@ namespace DebuggerTests
             {
                 ctx = new DebugTestContext(cli, insp, token, scripts);
 
-                var bp = await SetBreakpointInMethod("debugger-test.dll", "HiddenSequencePointTest", "StepOverHiddenSP2", 0);
-                
+                await SetBreakpointInMethod("debugger-test.dll", "HiddenSequencePointTest", "StepOverHiddenSP2", 0);
+
                 var pause_location = await EvaluateAndCheck(
                     "window.setTimeout(function() { invoke_static_method ('[debugger-test] HiddenSequencePointTest:StepOverHiddenSP'); }, 1);",
                     "dotnet://debugger-test.dll/debugger-test.cs", 546, 4,
                     "StepOverHiddenSP2");
-                
+
+                // Check previous frame
                 var top_frame = pause_location["callFrames"][1];
                 Assert.Equal("StepOverHiddenSP", top_frame["functionName"].Value<string>());
                 Assert.Contains("debugger-test.cs", top_frame["url"].Value<string>());
 
                 CheckLocation("dotnet://debugger-test.dll/debugger-test.cs", 537, 8, scripts, top_frame["location"]);
+            });
+        }
 
+        [Fact]
+        public async Task StepOverHiddenLinesShouldResumeAtNextAvailableLineInTheMethod()
+        {
+            var insp = new Inspector();
+
+            //Collect events
+            var scripts = SubscribeToScripts(insp);
+
+            await Ready();
+            await insp.Ready(async (cli, token) =>
+            {
+                ctx = new DebugTestContext(cli, insp, token, scripts);
+
+                string source_loc = "dotnet://debugger-test.dll/debugger-test.cs";
+                await SetBreakpoint(source_loc, 537, 8);
+
+                await EvaluateAndCheck(
+                    "window.setTimeout(function() { invoke_static_method ('[debugger-test] HiddenSequencePointTest:StepOverHiddenSP'); }, 1);",
+                    "dotnet://debugger-test.dll/debugger-test.cs", 537, 8,
+                    "StepOverHiddenSP");
+
+                await StepAndCheck(StepKind.Over, source_loc, 542, 8, "StepOverHiddenSP");
+            });
+        }
+
+        // [Fact]
+        // Issue: https://github.com/dotnet/runtime/issues/42703
+        async Task StepOverHiddenLinesInMethodWithNoNextAvailableLineShouldResumeAtCallSite()
+        {
+            var insp = new Inspector();
+
+            //Collect events
+            var scripts = SubscribeToScripts(insp);
+
+            await Ready();
+            await insp.Ready(async (cli, token) =>
+            {
+                ctx = new DebugTestContext(cli, insp, token, scripts);
+
+                string source_loc = "dotnet://debugger-test.dll/debugger-test.cs";
+                await SetBreakpoint(source_loc, 552, 8);
+
+                await EvaluateAndCheck(
+                    "window.setTimeout(function() { invoke_static_method ('[debugger-test] HiddenSequencePointTest:StepOverHiddenSP'); }, 1);",
+                    "dotnet://debugger-test.dll/debugger-test.cs", 552, 8,
+                    "MethodWithHiddenLinesAtTheEnd");
+
+                await StepAndCheck(StepKind.Over, source_loc, 544, 4, "StepOverHiddenSP");
+            });
+        }
+
+        // [Fact]
+        // Issue: https://github.com/dotnet/runtime/issues/42704
+        async Task BreakpointOnHiddenLineShouldStopAtEarliestNextAvailableLine()
+        {
+            var insp = new Inspector();
+
+            //Collect events
+            var scripts = SubscribeToScripts(insp);
+
+            await Ready();
+            await insp.Ready(async (cli, token) =>
+            {
+                ctx = new DebugTestContext(cli, insp, token, scripts);
+
+                await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 539, 8);
+                await EvaluateAndCheck(
+                    "window.setTimeout(function() { invoke_static_method ('[debugger-test] HiddenSequencePointTest:StepOverHiddenSP'); }, 1);",
+                    "dotnet://debugger-test.dll/debugger-test.cs", 546, 4,
+                    "StepOverHiddenSP2");
+            });
+        }
+
+        [Fact]
+        public async Task BreakpointOnHiddenLineOfMethodWithNoNextVisibleLineShouldNotPause()
+        {
+            var insp = new Inspector();
+
+            //Collect events
+            var scripts = SubscribeToScripts(insp);
+
+            await Ready();
+            await insp.Ready(async (cli, token) =>
+            {
+                ctx = new DebugTestContext(cli, insp, token, scripts);
+
+                await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 554, 12);
+
+                string expression = "window.setTimeout(function() { invoke_static_method ('[debugger-test] HiddenSequencePointTest:StepOverHiddenSP'); }, 1);";
+                await ctx.cli.SendCommand($"Runtime.evaluate", JObject.FromObject(new { expression }), ctx.token);
+
+                Task pause_task = insp.WaitFor(Inspector.PAUSE);
+                Task t = await Task.WhenAny(pause_task, Task.Delay(2000));
+                Assert.True(t != pause_task, "Debugger unexpectedly paused");
             });
         }
     }
