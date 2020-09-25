@@ -186,7 +186,7 @@ namespace System.Net.Sockets.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Linux)]
-        public unsafe void ConnectDisposeFailureRepro()
+        public unsafe void DisconnectKernelBugRepro()
         {
             Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             s.Connect("www.microsoft.com", 443);
