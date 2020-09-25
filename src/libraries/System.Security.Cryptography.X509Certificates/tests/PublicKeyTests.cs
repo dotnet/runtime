@@ -460,7 +460,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 otherParty.ImportFromPem(TestData.EcDhPkcs8Key);
                 byte[] key = otherParty.DeriveKeyFromHash(publicKey.PublicKey, HashAlgorithmName.SHA256);
 
-                byte[] expectedKey = new byte[] {
+                byte[] expectedKey = new byte[]
+                {
                     0x3f, 0x67, 0x8f, 0x51, 0xa0, 0x91, 0xfa, 0x5d,
                     0x38, 0x00, 0x92, 0xd3, 0x5b, 0x29, 0xd4, 0x00,
                     0x1c, 0x4a, 0x8f, 0x30, 0x7d, 0x78, 0xf4, 0x79,
