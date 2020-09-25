@@ -142,12 +142,14 @@ namespace System.Security.Cryptography.X509Certificates
 
         private AsnWriter EncodeSubjectPublicKeyInfo()
         {
-            SubjectPublicKeyInfoAsn spki = new SubjectPublicKeyInfoAsn {
-                Algorithm = new AlgorithmIdentifierAsn {
+            SubjectPublicKeyInfoAsn spki = new SubjectPublicKeyInfoAsn
+            {
+                Algorithm = new AlgorithmIdentifierAsn
+                {
                     Algorithm = _oid.Value ?? string.Empty,
-                    Parameters = EncodedParameters.RawData
+                    Parameters = EncodedParameters.RawData,
                 },
-                SubjectPublicKey = EncodedKeyValue.RawData
+                SubjectPublicKey = EncodedKeyValue.RawData,
             };
 
             AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
