@@ -44,7 +44,8 @@ namespace Internal.Cryptography.Pal
                 return DecodeECPublicKey(
                     pal,
                     factory: cngKey => new ECDiffieHellmanCng(cngKey),
-                    import: (algorithm, ecParams) => algorithm.ImportParameters(ecParams));
+                    import: (algorithm, ecParams) => algorithm.ImportParameters(ecParams),
+                    importFlags: CryptImportPublicKeyInfoFlags.CRYPT_OID_INFO_PUBKEY_ENCRYPT_KEY_FLAG);
             }
 
             throw new NotSupportedException(SR.NotSupported_KeyAlgorithm);
@@ -77,16 +78,11 @@ namespace Internal.Cryptography.Pal
         private static TAlgorithm DecodeECPublicKey<TAlgorithm>(
             CertificatePal certificatePal,
             Func<CngKey, TAlgorithm> factory,
-            Action<TAlgorithm, ECParameters> import)
+            Action<TAlgorithm, ECParameters> import,
+            CryptImportPublicKeyInfoFlags importFlags = CryptImportPublicKeyInfoFlags.NONE)
                 where TAlgorithm : AsymmetricAlgorithm, new()
         {
             TAlgorithm key;
-            CryptImportPublicKeyInfoFlags importFlags = CryptImportPublicKeyInfoFlags.NONE;
-
-            if (typeof(ECDiffieHellmanCng) == typeof(TAlgorithm))
-            {
-                importFlags |= CryptImportPublicKeyInfoFlags.CRYPT_OID_INFO_PUBKEY_ENCRYPT_KEY_FLAG;
-            }
 
             using (SafeBCryptKeyHandle bCryptKeyHandle = ImportPublicKeyInfo(certificatePal.CertContext, importFlags))
             {
