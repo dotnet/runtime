@@ -11518,7 +11518,7 @@ BOOL gc_heap::grow_heap_segment (heap_segment* seg, uint8_t* high_address, bool*
 #endif // MULTIPLE_HEAPS
     }
 
-    return !!ret;
+    return ret;
 }
 
 inline
