@@ -14,11 +14,19 @@ namespace System.Diagnostics.Tests
 
         static DebugTests()
         {
-            FieldInfo fieldInfo = typeof(Debug).GetField("s_provider", BindingFlags.Static | BindingFlags.NonPublic);
-            _debugOnlyProvider = (DebugProvider)fieldInfo.GetValue(null);
-            // Triggers code to wire up TraceListeners with Debug
+            // Clear the current trace listeners in case test runners add their own.
+            Trace.Listeners.Clear();
+            Trace.Listeners.Add(new DefaultTraceListener());
             Assert.Equal(1, Trace.Listeners.Count);
+
+            // Initialize the trace provider.
+            FieldInfo fieldInfo = typeof(Debug).GetField("s_provider", BindingFlags.Static | BindingFlags.NonPublic);
             _debugTraceProvider = (DebugProvider)fieldInfo.GetValue(null);
+
+            // Initialize the debug provider. Set it explicitely as test runner might override it (ie vstest).
+            Debug.SetProvider(new DebugProvider());
+            _debugOnlyProvider = (DebugProvider)fieldInfo.GetValue(null);
+
             Assert.NotEqual(_debugOnlyProvider.GetType(), _debugTraceProvider.GetType());
         }
 
