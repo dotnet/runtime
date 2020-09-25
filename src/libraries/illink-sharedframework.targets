@@ -106,7 +106,7 @@
                          Include="$(LibrariesProjectRoot)System.Security.Cryptography.X509Certificates\$(ProjectILLinkSuppressionsAndroidSpecificFile).xml" />
       <_SuppressionsXmls Condition="'$(TargetOs)' == 'Linux'"
                          Include="$(LibrariesProjectRoot)System.Security.Cryptography.X509Certificates\$(ProjectILLinkSuppressionsAndroidSpecificFile).xml" />  -->
-      <_SuppressionsXmls Exists="$(LibrariesProjectRoot)System.Security.Cryptography.X509Certificates\$(ProjectILLinkSuppressionsTargetOsSpecificFile).xml"
+      <_SuppressionsXmls Condition="Exists('$(LibrariesProjectRoot)System.Security.Cryptography.X509Certificates\$(ProjectILLinkSuppressionsTargetOsSpecificFile).xml')"
                          Include="$(LibrariesProjectRoot)System.Security.Cryptography.X509Certificates\$(ProjectILLinkSuppressionsTargetOsSpecificFile).xml" /> 
       <_SuppressionsXmls Condition="'$(TargetArchitecture)' == 'wasm'"
                          Include="$(LibrariesProjectRoot)System.Private.Runtime.InteropServices.JavaScript\$(ProjectILLinkSuppressionsWasmSpecificFile).xml" />
