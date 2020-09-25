@@ -85,7 +85,7 @@ namespace System.Threading
                                     }
 
                                     ThreadCounts newCounts = counts;
-                                    short newNumThreadsGoal = (short)(counts.NumThreadsGoal + 1);
+                                    short newNumThreadsGoal = (short)(counts.NumProcessingWork + 1);
                                     newCounts.NumThreadsGoal = newNumThreadsGoal;
 
                                     ThreadCounts oldCounts = threadPoolInstance._separated.counts.InterlockedCompareExchange(newCounts, counts);
