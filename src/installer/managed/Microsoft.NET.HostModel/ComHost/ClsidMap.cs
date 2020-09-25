@@ -180,7 +180,7 @@ namespace Microsoft.NET.HostModel.ComHost
                     return attr;
                 }
             }
-            return new CustomAttributeHandle();
+            return default;
         }
 
         private static Guid GetTypeGuid(MetadataReader reader, TypeDefinition type)

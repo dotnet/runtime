@@ -3723,6 +3723,12 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 				encode_value (info->d.element_addr.elem_size, p, &p);
 			} else if (info->subtype == WRAPPER_SUBTYPE_STRING_CTOR) {
 				encode_method_ref (acfg, info->d.string_ctor.method, p, &p);
+			} else if (info->subtype == WRAPPER_SUBTYPE_GENERIC_ARRAY_HELPER) {
+				encode_klass_ref (acfg, info->d.generic_array_helper.klass, p, &p);
+				encode_method_ref (acfg, info->d.generic_array_helper.method, p, &p);
+				int len = strlen (info->d.generic_array_helper.name);
+				guint32 idx = add_to_blob (acfg, (guint8*)info->d.generic_array_helper.name, len + 1);
+				encode_value (idx, p, &p);
 			} else {
 				g_assert_not_reached ();
 			}

@@ -13,7 +13,7 @@
 
 #include <palsuite.h>
 
-int __cdecl main( int argc, char **argv ) 
+PALTEST(threading_ExitProcess_test1_paltest_exitprocess_test1, "threading/ExitProcess/test1/paltest_exitprocess_test1")
 
 {
     

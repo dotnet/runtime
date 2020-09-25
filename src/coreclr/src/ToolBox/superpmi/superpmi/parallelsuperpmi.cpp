@@ -31,9 +31,18 @@ bool StartProcess(char* commandLine, HANDLE hStdOutput, HANDLE hStdError, HANDLE
 
     ZeroMemory(&pi, sizeof(pi));
 
+#if TARGET_UNIX
+    const unsigned cmdLen = (unsigned)strlen(commandLine) + 1;
+    WCHAR* cmdLineW = new WCHAR[cmdLen];
+    MultiByteToWideChar(CP_UTF8, 0, commandLine, cmdLen, cmdLineW, cmdLen);
+#endif
     // Start the child process.
     if (!CreateProcess(NULL,        // No module name (use command line)
+#if TARGET_UNIX
+                       cmdLineW,    // Command line
+#else
                        commandLine, // Command line
+#endif
                        NULL,        // Process handle not inheritable
                        NULL,        // Thread handle not inheritable
                        TRUE,        // Set handle inheritance to TRUE (required to use STARTF_USESTDHANDLES)
@@ -45,10 +54,17 @@ bool StartProcess(char* commandLine, HANDLE hStdOutput, HANDLE hStdError, HANDLE
     {
         LogError("CreateProcess failed (%d). CommandLine: %s", GetLastError(), commandLine);
         *hProcess = INVALID_HANDLE_VALUE;
+#if TARGET_UNIX
+        delete[] cmdLineW;
+#endif
         return false;
     }
 
     *hProcess = pi.hProcess;
+
+#if TARGET_UNIX
+    delete[] cmdLineW;
+#endif
     return true;
 }
 
@@ -382,7 +398,6 @@ char* ConstructChildProcessArgs(const CommandLine::Options& o)
     ADDARG_STRING(o.reproName, "-reproName");
     ADDARG_STRING(o.writeLogFile, "-writeLogFile");
     ADDARG_STRING(o.methodStatsTypes, "-emitMethodStats");
-    ADDARG_STRING(o.reproName, "-reproName");
     ADDARG_STRING(o.hash, "-matchHash");
     ADDARG_STRING(o.targetArchitecture, "-target");
     ADDARG_STRING(o.compileList, "-compile");

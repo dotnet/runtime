@@ -116,7 +116,7 @@ struct InterpMethod {
 	MonoExceptionClause *clauses; // num_clauses
 	void **data_items;
 	guint32 *local_offsets;
-	guint32 *exvar_offsets;
+	guint32 *clause_data_offsets;
 	gpointer jit_call_info;
 	gpointer jit_entry;
 	gpointer llvmonly_unbox_entry;
@@ -187,7 +187,6 @@ typedef struct {
 	stackval *sp;
 	unsigned char *vt_sp;
 	const unsigned short  *ip;
-	GSList *finally_ips;
 } InterpState;
 
 struct InterpFrame {

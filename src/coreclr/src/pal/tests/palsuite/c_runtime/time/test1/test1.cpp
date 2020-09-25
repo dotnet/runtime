@@ -13,7 +13,7 @@
 
 #include <palsuite.h>
 
-int __cdecl main(int argc, char **argv)
+PALTEST(c_runtime_time_test1_paltest_time_test1, "c_runtime/time/test1/paltest_time_test1")
 {
     time_t t = 0;
 

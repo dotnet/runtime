@@ -18,7 +18,7 @@ namespace Internal.TypeSystem
     public enum GenericVariance
     {
         None = 0,
-        
+
         /// <summary>
         /// The generic type parameter is covariant. A covariant type parameter can appear
         /// as the result type of a method, the type of a read-only field, a declared base
@@ -68,7 +68,7 @@ namespace Internal.TypeSystem
         {
             get
             {
-                return String.Concat("T", Index.ToStringInvariant());
+                return string.Concat("T", Index.ToStringInvariant());
             }
         }
 
@@ -76,7 +76,7 @@ namespace Internal.TypeSystem
         /// Gets a value indicating whether this is a type or method generic parameter.
         /// </summary>
         public abstract GenericParameterKind Kind { get; }
-        
+
         /// <summary>
         /// Gets the zero based index of the generic parameter within the declaring type or method.
         /// </summary>
@@ -103,7 +103,7 @@ namespace Internal.TypeSystem
                 return GenericConstraints.None;
             }
         }
-        
+
         /// <summary>
         /// Gets type constraints imposed on substitutions.
         /// </summary>

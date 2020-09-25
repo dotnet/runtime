@@ -13,7 +13,7 @@
 
 #include <palsuite.h>
 
-int __cdecl main(int argc, char **argv)
+PALTEST(c_runtime_realloc_test1_paltest_realloc_test1, "c_runtime/realloc/test1/paltest_realloc_test1")
 {
     char *testA;
     const int len1 = 10;

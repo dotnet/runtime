@@ -87,7 +87,7 @@ int GetParameters( int argc, char **argv)
     return 0;
 }
 
- int __cdecl main(INT argc, CHAR **argv)
+PALTEST(composite_threading_threadsuspension_paltest_threading_threadsuspension, "composite/threading/threadsuspension/paltest_threading_threadsuspension")
 {
     unsigned int i = 0;
     HANDLE hProcess[MAXIMUM_WAIT_OBJECTS];

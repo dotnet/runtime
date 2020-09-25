@@ -10,7 +10,7 @@ function with this as a return type.
 #ifndef __FPRINTF_H__
 #define __FPRINTF_H__
 
-void DoStrTest(const char *formatstr, char* param, const char *checkstr)
+inline void DoStrTest_fprintf(const char *formatstr, char* param, const char *checkstr)
 {
     FILE *fp;    
     char buf[256] = { 0 };
@@ -32,8 +32,9 @@ void DoStrTest(const char *formatstr, char* param, const char *checkstr)
     }    
     fclose(fp);
 }
+#define DoStrTest DoStrTest_fprintf
 
-void DoWStrTest(const char *formatstr, WCHAR* param, const char *checkstr)
+inline void DoWStrTest_fprintf(const char *formatstr, WCHAR* param, const char *checkstr)
 {
     FILE *fp;
     char buf[256] = { 0 };
@@ -55,9 +56,9 @@ void DoWStrTest(const char *formatstr, WCHAR* param, const char *checkstr)
     }    
     fclose(fp);
 }
+#define DoWStrTest DoWStrTest_fprintf
 
-
-void DoCharTest(const char *formatstr, char param, const char *checkstr)
+inline void DoCharTest_fprintf(const char *formatstr, char param, const char *checkstr)
 {
     FILE *fp;
     char buf[256] = { 0 };
@@ -79,8 +80,9 @@ void DoCharTest(const char *formatstr, char param, const char *checkstr)
     }    
     fclose(fp);
 }
+#define DoCharTest DoCharTest_fprintf
 
-void DoWCharTest(const char *formatstr, WCHAR param, const char *checkstr)
+inline void DoWCharTest_fprintf(const char *formatstr, WCHAR param, const char *checkstr)
 {
     FILE *fp;
     char buf[256] = { 0 };
@@ -102,8 +104,9 @@ void DoWCharTest(const char *formatstr, WCHAR param, const char *checkstr)
     }    
     fclose(fp);
 }
+#define DoWCharTest DoWCharTest_fprintf
 
-void DoNumTest(const char *formatstr, int value, const char *checkstr)
+inline void DoNumTest_fprintf(const char *formatstr, int value, const char *checkstr)
 {
     FILE *fp;
     char buf[256] = { 0 };
@@ -125,8 +128,9 @@ void DoNumTest(const char *formatstr, int value, const char *checkstr)
     }    
     fclose(fp);
 }
+#define DoNumTest DoNumTest_fprintf
 
-void DoI64Test(const char *formatstr, INT64 value, char *valuestr, const char *checkstr1, const char *checkstr2)
+inline void DoI64Test_fprintf(const char *formatstr, INT64 value, char *valuestr, const char *checkstr1, const char *checkstr2)
 {
     FILE *fp;
     char buf[256] = { 0 };
@@ -149,8 +153,9 @@ void DoI64Test(const char *formatstr, INT64 value, char *valuestr, const char *c
     }    
     fclose(fp);
 }
+#define DoI64Test DoI64Test_fprintf
 
-void DoDoubleTest(const char *formatstr, double value, const char *checkstr1, const char *checkstr2)
+inline void DoDoubleTest_fprintf(const char *formatstr, double value, const char *checkstr1, const char *checkstr2)
 {
     FILE *fp;
     char buf[256] = { 0 };
@@ -173,4 +178,5 @@ void DoDoubleTest(const char *formatstr, double value, const char *checkstr1, co
     }    
     fclose(fp);
 }
+#define DoDoubleTest DoDoubleTest_fprintf
 #endif

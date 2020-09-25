@@ -975,7 +975,7 @@ void CompileResult::recRecordCallSite(ULONG instrOffset, CORINFO_SIG_INFO* callS
     repRecordCallSite(instrOffset, callSig, methodHandle);
 }
 
-void CompileResult::dmpRecordCallSite(DWORD key, const Agnostic_RecordCallSite& value)
+void CompileResult::dmpRecordCallSiteWithSignature(DWORD key, const Agnostic_RecordCallSite& value) const
 {
     printf("RecordCallSite key %u, callSig{cc-%u rtc-%016llX rts-%016llX rt-%u flg-%u na-%u cc-%u ci-%u mc-%u mi-%u "
            "sig-%u pSig-%u scp-%016llX tok-%08X} ftn-%016llX",
@@ -986,16 +986,26 @@ void CompileResult::dmpRecordCallSite(DWORD key, const Agnostic_RecordCallSite& 
            value.callSig.token, value.methodHandle);
 }
 
+void CompileResult::dmpRecordCallSiteWithoutSignature(DWORD key, DWORDLONG methodHandle) const
+{
+    printf("RecordCallSite without call signature key %u, ftn-%016llX", key, methodHandle);
+}
+
 void CompileResult::repRecordCallSite(ULONG instrOffset, CORINFO_SIG_INFO* callSig, CORINFO_METHOD_HANDLE methodHandle)
 {
-    if (RecordCallSite == nullptr)
-        RecordCallSite = new LightWeightMap<DWORD, Agnostic_RecordCallSite>();
-
-    Agnostic_RecordCallSite value;
-    ZeroMemory(&value, sizeof(Agnostic_RecordCallSite));
+    
+    if (RecordCallSiteWithSignature == nullptr)
+    {
+        // The most call site records have only `methodHandle`, so creating two separate maps give us better perfomance
+        // and smaller memory consumption. Note: we are not reading values from these maps during a normal replay.
+        RecordCallSiteWithSignature = new LightWeightMap<DWORD, Agnostic_RecordCallSite>();
+        RecordCallSiteWithoutSignature = new LightWeightMap<DWORD, DWORDLONG>();
+    }
 
     if (callSig != nullptr)
     {
+        Agnostic_RecordCallSite value;
+        ZeroMemory(&value, sizeof(Agnostic_RecordCallSite));
         value.callSig.callConv               = (DWORD)callSig->callConv;
         value.callSig.retTypeClass           = (DWORDLONG)callSig->retTypeClass;
         value.callSig.retTypeSigClass        = (DWORDLONG)callSig->retTypeSigClass;
@@ -1004,51 +1014,35 @@ void CompileResult::repRecordCallSite(ULONG instrOffset, CORINFO_SIG_INFO* callS
         value.callSig.numArgs                = (DWORD)callSig->numArgs;
         value.callSig.sigInst_classInstCount = (DWORD)callSig->sigInst.classInstCount;
         value.callSig.sigInst_classInst_Index =
-            RecordCallSite->AddBuffer((unsigned char*)callSig->sigInst.classInst,
+            RecordCallSiteWithSignature->AddBuffer((unsigned char*)callSig->sigInst.classInst,
                                       callSig->sigInst.classInstCount * 8); // porting issue
         value.callSig.sigInst_methInstCount = (DWORD)callSig->sigInst.methInstCount;
         value.callSig.sigInst_methInst_Index =
-            RecordCallSite->AddBuffer((unsigned char*)callSig->sigInst.methInst,
+            RecordCallSiteWithSignature->AddBuffer((unsigned char*)callSig->sigInst.methInst,
                                       callSig->sigInst.methInstCount * 8); // porting issue
         value.callSig.args       = (DWORDLONG)callSig->args;
         value.callSig.cbSig      = (DWORD)callSig->cbSig;
-        value.callSig.pSig_Index = (DWORD)RecordCallSite->AddBuffer((unsigned char*)callSig->pSig, callSig->cbSig);
+        value.callSig.pSig_Index = (DWORD)RecordCallSiteWithSignature->AddBuffer((unsigned char*)callSig->pSig, callSig->cbSig);
         value.callSig.scope      = (DWORDLONG)callSig->scope;
         value.callSig.token      = (DWORD)callSig->token;
+        value.methodHandle = (DWORDLONG)methodHandle;
+        RecordCallSiteWithSignature->Add(instrOffset, value);
     }
     else
     {
-        value.callSig.callConv                = (DWORD)-1;
-        value.callSig.retTypeClass            = (DWORDLONG)-1;
-        value.callSig.retTypeSigClass         = (DWORDLONG)-1;
-        value.callSig.retType                 = (DWORD)-1;
-        value.callSig.flags                   = (DWORD)-1;
-        value.callSig.numArgs                 = (DWORD)-1;
-        value.callSig.sigInst_classInstCount  = (DWORD)-1;
-        value.callSig.sigInst_classInst_Index = (DWORD)-1;
-        value.callSig.sigInst_methInstCount   = (DWORD)-1;
-        value.callSig.sigInst_methInst_Index  = (DWORD)-1;
-        value.callSig.args                    = (DWORDLONG)-1;
-        value.callSig.cbSig                   = (DWORD)-1;
-        value.callSig.pSig_Index              = (DWORD)-1;
-        value.callSig.scope                   = (DWORDLONG)-1;
-        value.callSig.token                   = (DWORD)-1;
+        RecordCallSiteWithoutSignature->Add(instrOffset, (DWORDLONG)methodHandle);
     }
-
-    value.methodHandle = (DWORDLONG)methodHandle;
-
-    RecordCallSite->Add(instrOffset, value);
 }
 
 bool CompileResult::fndRecordCallSiteSigInfo(ULONG instrOffset, CORINFO_SIG_INFO* pCallSig)
 {
-    if (RecordCallSite == nullptr)
+    if (RecordCallSiteWithSignature == nullptr)
         return false;
 
-    if (RecordCallSite->GetIndex(instrOffset) == -1)
+    if (RecordCallSiteWithSignature->GetIndex(instrOffset) == -1)
         return false;
 
-    Agnostic_RecordCallSite value = RecordCallSite->Get(instrOffset);
+    Agnostic_RecordCallSite value = RecordCallSiteWithSignature->Get(instrOffset);
 
     if (value.callSig.callConv == (DWORD)-1)
         return false;
@@ -1061,12 +1055,12 @@ bool CompileResult::fndRecordCallSiteSigInfo(ULONG instrOffset, CORINFO_SIG_INFO
     pCallSig->numArgs                = (unsigned)value.callSig.numArgs;
     pCallSig->sigInst.classInstCount = (unsigned)value.callSig.sigInst_classInstCount;
     pCallSig->sigInst.classInst =
-        (CORINFO_CLASS_HANDLE*)RecordCallSite->GetBuffer(value.callSig.sigInst_classInst_Index);
+        (CORINFO_CLASS_HANDLE*)RecordCallSiteWithSignature->GetBuffer(value.callSig.sigInst_classInst_Index);
     pCallSig->sigInst.methInstCount = (unsigned)value.callSig.sigInst_methInstCount;
-    pCallSig->sigInst.methInst = (CORINFO_CLASS_HANDLE*)RecordCallSite->GetBuffer(value.callSig.sigInst_methInst_Index);
+    pCallSig->sigInst.methInst = (CORINFO_CLASS_HANDLE*)RecordCallSiteWithSignature->GetBuffer(value.callSig.sigInst_methInst_Index);
     pCallSig->args             = (CORINFO_ARG_LIST_HANDLE)value.callSig.args;
     pCallSig->cbSig            = (unsigned int)value.callSig.cbSig;
-    pCallSig->pSig             = (PCCOR_SIGNATURE)RecordCallSite->GetBuffer(value.callSig.pSig_Index);
+    pCallSig->pSig             = (PCCOR_SIGNATURE)RecordCallSiteWithSignature->GetBuffer(value.callSig.pSig_Index);
     pCallSig->scope            = (CORINFO_MODULE_HANDLE)value.callSig.scope;
     pCallSig->token            = (mdToken)value.callSig.token;
 
@@ -1075,14 +1069,16 @@ bool CompileResult::fndRecordCallSiteSigInfo(ULONG instrOffset, CORINFO_SIG_INFO
 
 bool CompileResult::fndRecordCallSiteMethodHandle(ULONG instrOffset, CORINFO_METHOD_HANDLE* pMethodHandle)
 {
-    if (RecordCallSite == nullptr)
-        return false;
-
-    if (RecordCallSite->GetIndex(instrOffset) == -1)
-        return false;
-
-    Agnostic_RecordCallSite value = RecordCallSite->Get(instrOffset);
-    *pMethodHandle                = (CORINFO_METHOD_HANDLE)value.methodHandle;
-
-    return true;
+    
+    if (RecordCallSiteWithSignature != nullptr && RecordCallSiteWithSignature->GetIndex(instrOffset) != -1)
+    {
+        Agnostic_RecordCallSite value = RecordCallSiteWithSignature->Get(instrOffset);
+        *pMethodHandle = (CORINFO_METHOD_HANDLE)value.methodHandle;
+    }
+    else if (RecordCallSiteWithoutSignature != nullptr && RecordCallSiteWithoutSignature->GetIndex(instrOffset) != -1)
+    {
+        CORINFO_METHOD_HANDLE value = (CORINFO_METHOD_HANDLE)RecordCallSiteWithoutSignature->Get(instrOffset);
+        *pMethodHandle = value;
+    }
+    return false;
 }

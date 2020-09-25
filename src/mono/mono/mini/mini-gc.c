@@ -2425,7 +2425,7 @@ create_map (MonoCompile *cfg)
 		encoded_size = endbuf - buf;
 		alloc_size = sizeof (GCEncodedMap) + ALIGN_TO (encoded_size, map->callsite_entry_size) + (map->callsite_entry_size * map->ncallsites) + bitmaps_size;
 
-		emap = mono_domain_alloc0 (cfg->domain, alloc_size);
+		emap = mono_mem_manager_alloc0 (cfg->mem_manager, alloc_size);
 		//emap->ref_slots = map->ref_slots;
 
 		/* Encoded fixed fields */
