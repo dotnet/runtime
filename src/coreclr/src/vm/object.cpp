@@ -341,13 +341,6 @@ void STDCALL CopyValueClassUnchecked(void* dest, void* src, MethodTable *pMT)
     }
     else
     {
-        // <TODO> @todo Only call MemoryBarrier() if needed.
-        // Reflection is a known use case where this is required.
-        // Unboxing is a use case where this should not be required.
-        // </TODO>
-        MemoryBarrier();
-
-        // Copy the bulk of the data, and any non-GC refs.
         switch (pMT->GetNumInstanceFieldBytes())
         {
         case 1:
