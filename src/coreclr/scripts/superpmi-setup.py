@@ -27,15 +27,15 @@ parser = argparse.ArgumentParser(description="description")
 
 parser.add_argument("-source_directory", help="path to source directory")
 parser.add_argument("-core_root_directory", help="path to core_root directory")
-# parser.add_argument("-managed_test_directory", help="path to managed test artifacts directory")
 parser.add_argument("-arch", help="Architecture")
 parser.add_argument("-mch_file_tag", help="Tag to be used to mch files")
 
-parser.add_argument("-assemblies_directory", help="directory containing assemblies for which superpmi collection to "
+parser.add_argument("-libraries_directory", help="directory containing assemblies for which superpmi collection to "
                                                   "be done")
+parser.add_argument("-tests_directory", help="path to managed test artifacts directory")
 parser.add_argument("-max_size", help="Max size of partition in MB")
 is_windows = platform.system() == "Windows"
-native_dlls_to_ignore = [
+native_binaries_to_ignore = [
     "clrcompression.dll",
     "clretwrc.dll",
     "clrgc.dll",
@@ -105,9 +105,14 @@ def setup_args(args):
                         "Unable to set mch_file_tag")
 
     coreclr_args.verify(args,
-                        "assemblies_directory",
-                        lambda assemblies_directory: os.path.isdir(assemblies_directory),
-                        "assemblies_directory doesn't exist")
+                        "libraries_directory",
+                        lambda libraries_directory: os.path.isdir(libraries_directory),
+                        "libraries_directory doesn't exist")
+
+    coreclr_args.verify(args,
+                        "tests_directory",
+                        lambda tests_directory: os.path.isdir(tests_directory),
+                        "tests_directory doesn't exist")
 
     coreclr_args.verify(args,
                         "max_size",
@@ -147,8 +152,12 @@ def get_files_sorted_by_size(src_directory, exclude_directories, exclude_files):
             if name in exclude_files:
                 continue
             curr_file_path = path.join(file_path, name)
-            if not isfile(curr_file_path) or not name.endswith(".dll"):
+
+            if not isfile(curr_file_path):
                 continue
+            if not name.endswith(".dll") and not name.endswith(".exe"):
+                continue
+
             size = getsize(curr_file_path)
             filename_with_size.append((curr_file_path, size))
 
@@ -167,7 +176,7 @@ def first_fit(sorted_by_size, max_size):
     Returns:
         [{int, [string]}]: Returns a dictionary of partition-index to list of file names following in that bucket.
     """
-    end_result = {}
+    partitions = {}
     for curr_file in sorted_by_size:
         _, file_size = curr_file
 
@@ -175,17 +184,24 @@ def first_fit(sorted_by_size, max_size):
         found_bucket = False
 
         if file_size < max_size:
-            for p_index in end_result:
-                total_in_curr_par = sum(n for _, n in end_result[p_index])
+            for p_index in partitions:
+                total_in_curr_par = sum(n for _, n in partitions[p_index])
                 if (total_in_curr_par + file_size) < max_size:
-                    end_result[p_index].append(curr_file)
+                    partitions[p_index].append(curr_file)
                     found_bucket = True
                     break
 
             if not found_bucket:
-                end_result[len(end_result) - 1] = [curr_file]
+                partitions[len(partitions)] = [curr_file]
 
-    return end_result
+    total_size = 0
+    for p_index in partitions:
+        partition_size = sum(n for _, n in partitions[p_index])
+        print("Partition {0}: {1} bytes.".format(p_index, partition_size))
+        total_size += partition_size
+    print("Total {0} partitions with {1} bytes.".format(str(len(partitions)), total_size))
+
+    return partitions
 
 
 def run_command(command_to_run, _cwd=None):
@@ -272,7 +288,7 @@ def copy_files_linux(src_path, dst_path, file_paths):
             run_command(command)
 
 
-def partition_files(coreclr_args, dst_directory, exclude_directories, exclude_files):
+def partition_files(src_directory, dst_directory, max_size, exclude_directories=[], exclude_files=native_binaries_to_ignore):
     """ Copy bucketized files based on size to destination folder.
 
     Args:
@@ -281,8 +297,6 @@ def partition_files(coreclr_args, dst_directory, exclude_directories, exclude_fi
         exclude_directories ([string]): List of folder names to be excluded
         exclude_files ([string]): List of files names to be excluded
     """
-    src_directory = coreclr_args.assemblies_directory
-    max_size = coreclr_args.max_size
 
     sorted_by_size = get_files_sorted_by_size(src_directory, exclude_directories, exclude_files)
     partitions = first_fit(sorted_by_size, max_size)
@@ -293,10 +307,6 @@ def partition_files(coreclr_args, dst_directory, exclude_directories, exclude_fi
         curr_dst_path = path.join(dst_directory, str(index), "binaries")
         copy_files(src_directory, curr_dst_path, file_names)
         index += 1
-
-    total_partitions = str(len(partitions))
-    print("Total partitions: %s" % total_partitions)
-    set_pipeline_variable("SuperPmiJobCount", total_partitions)
 
 
 def set_pipeline_variable(name, value):
@@ -365,17 +375,18 @@ def main(args):
 
     # libraries
     libraries_artifacts = path.join(pmiassemblies_directory, "Core_Root")
-    partition_files(coreclr_args, libraries_artifacts, [], native_dlls_to_ignore)
+    partition_files(coreclr_args.libraries_directory, libraries_artifacts, coreclr_args.max_size)
 
     # test
-    # likewise for test
+    tests_artifacts = path.join(pmiassemblies_directory, "Tests")
+    partition_files(coreclr_args.tests_directory, tests_artifacts, coreclr_args.max_size, ["Core_Root"])
 
     # Set variables
     print('Setting pipeline variables:')
     set_pipeline_variable("CorrelationPayloadDirectory", correlation_payload_directory)
     set_pipeline_variable("WorkItemDirectory", workitem_directory)
     set_pipeline_variable("LibrariesArtifacts", libraries_artifacts)
-    # set_pipeline_variable("TestsArtifacts", libraries_artifacts)
+    set_pipeline_variable("TestsArtifacts", tests_artifacts)
     if is_windows:
         set_pipeline_variable("Python", "py -3")
     else:
