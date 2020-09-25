@@ -15,6 +15,7 @@ Param(
   [Parameter(Position=0)][string][Alias('s')]$subset,
   [ValidateSet("Debug","Release","Checked")][string][Alias('rc')]$runtimeConfiguration,
   [ValidateSet("Debug","Release")][string][Alias('lc')]$librariesConfiguration,
+  [ValidateSet("CoreCLR","Mono")][string][Alias('rf')]$runtimeFlavor,
   [Parameter(ValueFromRemainingArguments=$true)][String[]]$properties
 )
 
@@ -38,6 +39,8 @@ function Get-Help() {
   Write-Host "                                 Checked is exclusive to the CLR runtime. It is the same as Debug, except code is"
   Write-Host "                                 compiled with optimizations enabled."
   Write-Host "                                 [Default: Debug]"
+  Write-Host "  -runtimeFlavor (-rf)           Runtime flavor: CoreCLR or Mono."
+  Write-Host "                                 [Default: CoreCLR]"
   Write-Host "  -subset (-s)                   Build a subset, print available subsets with -subset help."
   Write-Host "                                 '-subset' can be omitted if the subset is given as the first argument."
   Write-Host "                                 [Default: Builds the entire repo.]"
@@ -119,8 +122,13 @@ if ($vs) {
   if (-Not (Test-Path $vs)) {
     $solution = $vs
 
-    # Search for the solution in coreclr
-    $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "src\coreclr\src" | Join-Path -ChildPath $vs | Join-Path -ChildPath "$vs.sln"
+    if ($runtimeFlavor -eq "Mono") {
+      # Search for the solution in mono
+      $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "src\mono\netcore" | Join-Path -ChildPath $vs | Join-Path -ChildPath "$vs.sln"
+    } else {
+      # Search for the solution in coreclr
+      $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "src\coreclr\src" | Join-Path -ChildPath $vs | Join-Path -ChildPath "$vs.sln"
+    }
 
     if (-Not (Test-Path $vs)) {
       $vs = $solution
@@ -189,6 +197,7 @@ foreach ($argument in $PSBoundParameters.Keys)
   switch($argument)
   {
     "runtimeConfiguration"   { $arguments += " /p:RuntimeConfiguration=$((Get-Culture).TextInfo.ToTitleCase($($PSBoundParameters[$argument])))" }
+    "runtimeFlavor"          { $arguments += " /p:RuntimeFlavor=$($PSBoundParameters[$argument].ToLowerInvariant())" }
     "librariesConfiguration" { $arguments += " /p:LibrariesConfiguration=$((Get-Culture).TextInfo.ToTitleCase($($PSBoundParameters[$argument])))" }
     "framework"              { $arguments += " /p:BuildTargetFramework=$($PSBoundParameters[$argument].ToLowerInvariant())" }
     "os"                     { $arguments += " /p:TargetOS=$($PSBoundParameters[$argument])" }
