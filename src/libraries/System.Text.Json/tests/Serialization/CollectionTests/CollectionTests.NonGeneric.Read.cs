@@ -146,11 +146,45 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public static void ReadNullableStructIList()
+        {
+            string json = @"[""a"",20]";
+            var wrapper = JsonSerializer.Deserialize<StructWrapperForIList?>(json);
+            Assert.True(wrapper.HasValue);
+            Assert.Equal(2, wrapper.Value.Count);
+            Assert.Equal("a", ((JsonElement)wrapper.Value[0]).GetString());
+            Assert.Equal(20, ((JsonElement)wrapper.Value[1]).GetInt32());
+        }
+
+        [Fact]
+        public static void ReadNullableStructIListWithNullJson()
+        {
+            var wrapper = JsonSerializer.Deserialize<StructWrapperForIList?>("null");
+            Assert.False(wrapper.HasValue);
+        }
+
+        [Fact]
         public static void ReadStructIDictionary()
         {
             string json = @"{""Key"":""Value""}";
             var wrapper = JsonSerializer.Deserialize<StructWrapperForIDictionary>(json);
             Assert.Equal("Value", wrapper["Key"].ToString());
+        }
+
+        [Fact]
+        public static void ReadNullableStructIDictionary()
+        {
+            string json = @"{""Key"":""Value""}";
+            var wrapper = JsonSerializer.Deserialize<StructWrapperForIDictionary?>(json);
+            Assert.True(wrapper.HasValue);
+            Assert.Equal("Value", wrapper.Value["Key"].ToString());
+        }
+
+        [Fact]
+        public static void ReadNullableStructIDictionaryWithNullJson()
+        {
+            var wrapper = JsonSerializer.Deserialize<StructWrapperForIDictionary?>("null");
+            Assert.False(wrapper.HasValue);
         }
 
         [Fact]

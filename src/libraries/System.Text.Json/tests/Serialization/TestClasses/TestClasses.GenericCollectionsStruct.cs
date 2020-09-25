@@ -284,6 +284,7 @@ namespace System.Text.Json.Serialization.Tests
 
         public void Add(TKey key, TValue value)
         {
+            InitializeIfNull();
             ((IDictionary<TKey, TValue>)_dict).Add(key, value);
         }
 

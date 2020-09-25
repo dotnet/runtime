@@ -269,6 +269,25 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public static void ReadNullableGenericStructIList()
+        {
+            string json = "[10,20,30]";
+            var wrapper = JsonSerializer.Deserialize<GenericStructIListWrapper<int>?>(json);
+            Assert.True(wrapper.HasValue);
+            Assert.Equal(3, wrapper.Value.Count);
+            Assert.Equal(10, wrapper.Value[0]);
+            Assert.Equal(20, wrapper.Value[1]);
+            Assert.Equal(30, wrapper.Value[2]);
+        }
+
+        [Fact]
+        public static void ReadNullableGenericStructIListWithNullJson()
+        {
+            var wrapper = JsonSerializer.Deserialize<GenericStructIListWrapper<int>?>("null");
+            Assert.False(wrapper.HasValue);
+        }
+
+        [Fact]
         public static void ReadGenericStructICollection()
         {
             string json = "[10,20,30]";
@@ -277,6 +296,25 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(10, wrapper.ElementAt(0));
             Assert.Equal(20, wrapper.ElementAt(1));
             Assert.Equal(30, wrapper.ElementAt(2));
+        }
+
+        [Fact]
+        public static void ReadNullableGenericStructICollection()
+        {
+            string json = "[10,20,30]";
+            var wrapper = JsonSerializer.Deserialize<GenericStructICollectionWrapper<int>?>(json);
+            Assert.True(wrapper.HasValue);
+            Assert.Equal(3, wrapper.Value.Count);
+            Assert.Equal(10, wrapper.Value.ElementAt(0));
+            Assert.Equal(20, wrapper.Value.ElementAt(1));
+            Assert.Equal(30, wrapper.Value.ElementAt(2));
+        }
+
+        [Fact]
+        public static void ReadNullableGenericStructICollectionWithNullJson()
+        {
+            var wrapper = JsonSerializer.Deserialize<GenericStructICollectionWrapper<int>?>("null");
+            Assert.False(wrapper.HasValue);
         }
 
         [Fact]
@@ -555,6 +593,25 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(10, wrapper.ElementAt(0));
             Assert.Equal(20, wrapper.ElementAt(1));
             Assert.Equal(30, wrapper.ElementAt(2));
+        }
+
+        [Fact]
+        public static void ReadNullableGenericStructISet()
+        {
+            string json = "[10, 20, 30]";
+            var wrapper = JsonSerializer.Deserialize<GenericStructISetWrapper<int>?>(json);
+            Assert.True(wrapper.HasValue);
+            Assert.Equal(3, wrapper.Value.Count);
+            Assert.Equal(10, wrapper.Value.ElementAt(0));
+            Assert.Equal(20, wrapper.Value.ElementAt(1));
+            Assert.Equal(30, wrapper.Value.ElementAt(2));
+        }
+
+        [Fact]
+        public static void ReadNullableGenericStructISetWithNullJson()
+        {
+            var wrapper = JsonSerializer.Deserialize<GenericStructISetWrapper<int>?>("null");
+            Assert.False(wrapper.HasValue);
         }
 
         [Fact]
