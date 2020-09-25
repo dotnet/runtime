@@ -28,20 +28,20 @@ namespace SingleFileApiTests
                         break;
 
                     case "cmdlineargs":
-                        Console.WriteLine(Environment.GetCommandLineArgs()[0]);
+                        Console.WriteLine("Command line args: " + Environment.GetCommandLineArgs()[0]);
                         break;
 
                     case "codebase":
                         try
                         {
                             #pragma warning disable SYSLIB0012
-                            _ = typeof(Program).Assembly.CodeBase;
+                            var codeBase = typeof(Program).Assembly.CodeBase;
                             #pragma warning restore SYSLIB0012
+                            Console.WriteLine("CodeBase " + codeBase);
                         }
                         catch (NotSupportedException)
                         {
                             Console.WriteLine("CodeBase NotSupported");
-                            return -1;
                         }
                         break;
 
@@ -57,6 +57,10 @@ namespace SingleFileApiTests
                         {
                             Console.WriteLine(assemblyPath);
                         }
+                        break;
+
+                    case "basedirectory":
+                        Console.WriteLine("AppContext.BaseDirectory: " + AppContext.BaseDirectory);
                         break;
 
                     default:

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using BundleTests.Helpers;
 using Microsoft.DotNet.Cli.Build.Framework;
 using Microsoft.DotNet.CoreSetup.Test;
@@ -17,93 +18,56 @@ namespace AppHost.Bundle.Tests
         }
 
         [Fact]
-        public void FullyQualifiedName()
+        public void SelfContained_SingleFile_APITests()
         {
             var fixture = sharedTestState.TestFixture.Copy();
             var singleFile = BundleSelfContainedApp(fixture);
 
-            Command.Create(singleFile, "fullyqualifiedname")
+            Command.Create(singleFile, "fullyqualifiedname codebase appcontext cmdlineargs executing_assembly_location basedirectory")
                 .CaptureStdErr()
                 .CaptureStdOut()
                 .Execute()
                 .Should()
                 .Pass()
-                .And
-                .HaveStdOutContaining("FullyQualifiedName: <Unknown>" +
-                    Environment.NewLine +
-                    "Name: <Unknown>");
+                .And.HaveStdOutContaining("FullyQualifiedName: <Unknown>")
+                .And.HaveStdOutContaining("Name: <Unknown>")
+                .And.HaveStdOutContaining("CodeBase NotSupported")
+                .And.NotHaveStdOutContaining("SingleFileApiTests.deps.json")
+                .And.NotHaveStdOutContaining("Microsoft.NETCore.App.deps.json")
+                // For single-file, Environment.GetCommandLineArgs[0] should return the file path of the host.
+                .And.HaveStdOutContaining("Command line args: " + singleFile)
+                .And.HaveStdOutContaining("ExecutingAssembly.Location: " + Environment.NewLine)
+                .And.HaveStdOutContaining("AppContext.BaseDirectory: " + Path.GetDirectoryName(singleFile));
         }
 
         [Fact]
-        public void CodeBaseThrows()
+        public void SelfContained_NetCoreApp3_CompatMode_SingleFile_APITests()
         {
             var fixture = sharedTestState.TestFixture.Copy();
-            var singleFile = BundleSelfContainedApp(fixture);
+            var singleFile = BundleSelfContainedApp(fixture, BundleOptions.BundleAllContent);
+            var extractionBaseDir = BundleHelper.GetExtractionRootDir(fixture);
 
-            Command.Create(singleFile, "codebase")
+            Command.Create(singleFile, "fullyqualifiedname codebase appcontext cmdlineargs executing_assembly_location basedirectory")
                 .CaptureStdErr()
                 .CaptureStdOut()
-                .Execute()
-                .Should()
-                .Fail()
-                .And
-                .HaveStdOutContaining("CodeBase NotSupported");
-        }
-
-        [Fact]
-        public void AppContext_Deps_Files_Bundled_Self_Contained()
-        {
-            var fixture = sharedTestState.TestFixture.Copy();
-            var singleFile = BundleSelfContainedApp(fixture);
-
-            Command.Create(singleFile, "appcontext")
-                .CaptureStdErr()
-                .CaptureStdOut()
+                .EnvironmentVariable(BundleHelper.DotnetBundleExtractBaseEnvVariable, extractionBaseDir.FullName)
                 .Execute()
                 .Should()
                 .Pass()
-                .And
-                .NotHaveStdOutContaining("SingleFileApiTests.deps.json")
-                .And
-                .NotHaveStdOutContaining("Microsoft.NETCore.App.deps.json");
+                .And.HaveStdOutContaining(Path.DirectorySeparatorChar + "System.Private.CoreLib.dll") // In extraction directory
+                .And.HaveStdOutContaining("System.Private.CoreLib.dll") // In extraction directory
+                .And.NotHaveStdOutContaining("CodeBase NotSupported") // CodeBase should point to extraction directory
+                .And.HaveStdOutContaining("SingleFileApiTests.dll")
+                .And.HaveStdOutContaining("SingleFileApiTests.deps.json") // The app's .deps.json should be available
+                .And.NotHaveStdOutContaining("Microsoft.NETCore.App.deps.json") // No framework - it's self-contained
+                // For single-file, Environment.GetCommandLineArgs[0] should return the file path of the host.
+                .And.HaveStdOutContaining("Command line args: " + singleFile)
+                .And.HaveStdOutContaining("ExecutingAssembly.Location: " + extractionBaseDir.FullName) // Should point to the app's dll
+                .And.HaveStdOutContaining("AppContext.BaseDirectory: " + extractionBaseDir.FullName); // Should point to the extraction directory
         }
 
         [Fact]
-        public void AppContext_Deps_Files_Bundled_Self_Contained_NetCoreApp3_CompatMode()
-        {
-            var fixture = sharedTestState.TestFixture.Copy();
-            string singleFile = BundleSelfContainedApp(fixture, BundleOptions.BundleAllContent);
-
-            Command.Create(singleFile, "appcontext")
-                .CaptureStdErr()
-                .CaptureStdOut()
-                .Execute()
-                .Should()
-                .Pass()
-                .And
-                .HaveStdOutContaining("SingleFileApiTests.deps.json");
-        }
-
-        [Fact]
-        public void GetEnvironmentArgs_0_Returns_Bundled_Executable_Path()
-        {
-            var fixture = sharedTestState.TestFixture.Copy();
-            var singleFile = BundleSelfContainedApp(fixture);
-
-            // For single-file, Environment.GetCommandLineArgs[0]
-            // should return the file path of the host.
-            Command.Create(singleFile, "cmdlineargs")
-                .CaptureStdErr()
-                .CaptureStdOut()
-                .Execute()
-                .Should()
-                .Pass()
-                .And
-                .HaveStdOutContaining(singleFile);
-        }
-
-        [Fact]
-        public void GetEnvironmentArgs_0_Non_Bundled_App()
+        public void GetCommandLineArgs_0_Non_Bundled_App()
         {
             var fixture = sharedTestState.TestFixture.Copy();
             var dotnet = fixture.BuiltDotnet;
