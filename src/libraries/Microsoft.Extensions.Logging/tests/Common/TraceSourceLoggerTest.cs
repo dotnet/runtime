@@ -77,7 +77,7 @@ namespace Microsoft.Extensions.Logging.Test
             Exception exception = new Exception("Some error occurred");
             Func<string, Exception, string> formatter = shouldFormatterBeNull ? (Func<string, Exception, string>)null : (value, passedException) => value;
 
-            string expectedMessage = $"{message}{Environment.NewLine}Error: {exception}";
+            string expectedMessage = $"{message} {exception}";
 
             // Act
             logger.Log(logLevel, eventId, message, exception, formatter);

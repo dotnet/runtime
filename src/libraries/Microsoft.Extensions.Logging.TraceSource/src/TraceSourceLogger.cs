@@ -29,24 +29,21 @@ namespace Microsoft.Extensions.Logging.TraceSource
             {
                 message = formatter(state, exception);
             }
-            else
+            else if (state != null)
             {
-                if (state != null)
-                {
-                    message += state;
-                }
+                message += state;
             }
-
-            if (string.IsNullOrEmpty(message) && exception == null)
-                return;
 
             if (exception != null)
             {
-                string exceptionDelimiter = string.IsNullOrEmpty(message) ? string.Empty : Environment.NewLine;
-                message += exceptionDelimiter + "Error: " + exception;
+                string exceptionDelimiter = string.IsNullOrEmpty(message) ? string.Empty : " " ;
+                message += exceptionDelimiter + exception;
             }
 
-            _traceSource.TraceEvent(GetEventType(logLevel), eventId.Id, message);
+            if (!string.IsNullOrEmpty(message))
+            {
+                _traceSource.TraceEvent(GetEventType(logLevel), eventId.Id, message);
+            }
         }
 
         public bool IsEnabled(LogLevel logLevel)
