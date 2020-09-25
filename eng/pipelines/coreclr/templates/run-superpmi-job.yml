@@ -81,7 +81,7 @@ jobs:
     steps:
     - ${{ parameters.steps }}
   
-    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi-setup.py -source_directory $(Build.SourcesDirectory) -core_root_directory $(Core_Root_Dir) -arch $(archType) -mch_file_tag $(MchFileTag) -assemblies_directory $(Core_Root_Dir) -max_size 50
+    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi-setup.py -source_directory $(Build.SourcesDirectory) -core_root_directory $(Core_Root_Dir) -arch $(archType) -mch_file_tag $(MchFileTag) -libraries_directory $(Core_Root_Dir) -tests_directory $(managedTestArtifactRootFolderPath) -max_size 50
       displayName: ${{ format('SuperPMI setup ({0})', parameters.osGroup) }}
 
       # Run superpmi collection in helix
@@ -110,11 +110,14 @@ jobs:
       continueOnError: true
       condition: always()
 
-    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py merge-mch -pattern $(Build.SourcesDirectory)/artifacts/helixresults/libraries*.mch  -output_mch_path $(Build.SourcesDirectory)/artifacts/helixresults/libraries.pmi.$(MchFileTag).mch
+    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py merge-mch -pattern $(Build.SourcesDirectory)/artifacts/helixresults/libraries.pmi*.mch  -output_mch_path $(Build.SourcesDirectory)/artifacts/helixresults/libraries.pmi.$(MchFileTag).mch
       displayName: Merge libraries SuperPMI collections
 
-    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py upload -arch $(archType) -build_type $(buildConfig) -mch_files $(Build.SourcesDirectory)/artifacts/helixresults/libraries.pmi.$(MchFileTag).mch -core_root $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).x64.$(buildConfigUpper)
-      displayName: Upload libraries SuperPMI collection to Azure Storage
+    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py merge-mch -pattern $(Build.SourcesDirectory)/artifacts/helixresults/tests.pmi*.mch  -output_mch_path $(Build.SourcesDirectory)/artifacts/helixresults/tests.pmi.$(MchFileTag).mch
+      displayName: Merge tests SuperPMI collections
+
+    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py upload -arch $(archType) -build_type $(buildConfig) -mch_files $(Build.SourcesDirectory)/artifacts/helixresults/libraries.pmi.$(MchFileTag).mch $(Build.SourcesDirectory)/artifacts/helixresults/tests.pmi.$(MchFileTag).mch -core_root $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).x64.$(buildConfigUpper)
+      displayName: Upload SuperPMI collection to Azure Storage
       env:
         CLRJIT_AZ_KEY: $(clrjit_key1) # secret key stored as variable in pipeline
 

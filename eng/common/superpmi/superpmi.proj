@@ -56,15 +56,13 @@
 
   <ItemGroup>
     <LibraryPartitions Include="$([System.IO.Directory]::GetDirectories($(LibrariesArtifacts)))"/>
+    <TestPartitions Include="$([System.IO.Directory]::GetDirectories($(TestsArtifacts)))"/>
     <Partition Include="@(LibraryPartitions -> '%(Filename)')" PmiAssemblies="Core_Root$(FileSeparatorChar)%(Filename)" OutputMchName="libraries.pmi" PartitionId="%(Filename)" />
-
-    <!-- <TestPartitions Include="$([System.IO.Directory]::GetDirectories($(TestsArtifacts)))"/>
-    <Partition Include="@(TestPartitions -> '%(Filename)')" PmiAssemblies="Tests$(FileSeparatorChar)%(Filename)" OutputMchName="tests.pmi" PartitionId="%(Filename)" /> -->
+    <Partition Include="@(TestPartitions -> '%(Filename)')" PmiAssemblies="Tests$(FileSeparatorChar)%(Filename)" OutputMchName="tests.pmi" PartitionId="%(Filename)" />
   </ItemGroup>
 
   <ItemGroup>
     <HelixWorkItem Include="@(Partition)">
-    <!-- TODO: Here too make payload folder different for workitem.Name -->
       <PayloadDirectory>$(PmiAssembliesPayload)$(FileSeparatorChar)%(HelixWorkItem.PmiAssemblies)</PayloadDirectory>
       <Command>$(WorkItemCommand) -output_mch_path $(OutputMchPath)$(FileSeparatorChar)%(HelixWorkItem.OutputMchName).$(MchFileTag).%(HelixWorkItem.PartitionId).mch</Command>
       <Timeout>$(WorkItemTimeout)</Timeout>

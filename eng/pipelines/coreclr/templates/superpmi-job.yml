@@ -5,6 +5,7 @@ parameters:
   osSubgroup: ''
   container: ''
   runtimeVariant: ''
+  testGroup: ''
   framework: net5.0 # Specify the appropriate framework when running release branches (ie netcoreapp3.0 for release/3.0)
   liveLibrariesBuildConfig: ''
   variables: {}
@@ -38,6 +39,7 @@ jobs:
     codeGenType: ${{ parameters.codeGenType }}
     projectFile: ${{ parameters.projectFile }}
     runKind: ${{ parameters.runKind }}
+    testGroup: ${{ parameters.testGroup }}
     additionalSetupParameters: ${{ parameters.additionalSetupParameters }}
     # Test job depends on the corresponding build job
     dependsOn:
@@ -47,7 +49,10 @@ jobs:
        - ${{ format('coreclr_{0}_product_build_{1}{2}_x64_{3}', parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.buildConfig) }}
      - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
        - ${{ format('libraries_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveLibrariesBuildConfig) }}
-    #  - ${{ format('coreclr_common_test_build_p1_AnyOS_AnyCPU_{0}', parameters.buildConfig) }}
+     - ${{ if eq(parameters.testGroup, 'innerloop') }}:
+        - '${{ parameters.runtimeType }}_common_test_build_p0_AnyOS_AnyCPU_${{parameters.buildConfig }}'
+     - ${{ if ne(parameters.testGroup, 'innerloop') }}:
+        - '${{ parameters.runtimeType }}_common_test_build_p1_AnyOS_AnyCPU_${{parameters.buildConfig }}'
 
     variables: ${{ parameters.variables }}
 
@@ -83,13 +88,13 @@ jobs:
           artifactName: 'CoreCLRProduct_${{ parameters.runtimeVariant }}_$(osGroup)$(osSubgroup)_x64_$(buildConfig)'
           displayName: 'Coreclr product build (x64)'
 
-    # # Download and unzip managed test artifacts
-    # - template: /eng/pipelines/common/download-artifact-step.yml
-    #   parameters:
-    #     unpackFolder: '$(managedTestArtifactRootFolderPath)'
-    #     artifactFileName: '$(managedGenericTestArtifactName).tar.gz'
-    #     artifactName: '$(managedGenericTestArtifactName)'
-    #     displayName: 'generic managed test artifacts'
+    # Download and unzip managed test artifacts
+    - template: /eng/pipelines/common/download-artifact-step.yml
+      parameters:
+        unpackFolder: '$(managedTestArtifactRootFolderPath)'
+        artifactFileName: '$(managedGenericTestArtifactName).tar.gz'
+        artifactName: '$(managedGenericTestArtifactName)'
+        displayName: 'generic managed test artifacts'
 
     # Create Core_Root
     - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(buildConfig) $(archType) generatelayoutonly $(librariesOverrideArg)
