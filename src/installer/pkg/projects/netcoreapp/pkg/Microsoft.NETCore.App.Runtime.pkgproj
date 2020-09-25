@@ -5,7 +5,7 @@
     shared framework on those platforms.
   -->
   <PropertyGroup>
-    <ExcludeHostAssets Condition="'$(RuntimeFlavor)' == 'Mono'">true</ExcludeHostAssets>
+    <ExcludeHostAssets Condition="'$(TargetsMobile)' == 'true'">true</ExcludeHostAssets>
   </PropertyGroup>
   <!--
     Include HostPolicy and HostResolver based on legacy packages. This can be collapsed once the
