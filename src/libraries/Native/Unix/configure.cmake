@@ -42,6 +42,12 @@ else ()
     message(FATAL_ERROR "Unknown platform. Cannot define PAL_UNIX_NAME, used by RuntimeInformation.")
 endif ()
 
+if(CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
+    # This variable can be set and used by the coreclr and installer builds.
+    # Libraries doesn't need it, but not using it makes the build fail.  So
+    # just check and igore the variable.
+endif()
+
 # We compile with -Werror, so we need to make sure these code fragments compile without warnings.
 # Older CMake versions (3.8) do not assign the result of their tests, causing unused-value errors
 # which are not distinguished from the test failing. So no error for that one.
