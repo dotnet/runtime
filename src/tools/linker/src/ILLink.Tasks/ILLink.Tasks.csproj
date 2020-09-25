@@ -19,6 +19,7 @@
     <AutoGenerateAssemblyVersion>true</AutoGenerateAssemblyVersion>
     <!-- Place linker and cecil alongside ILLink.Tasks in the output, for integration tests. -->
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <RunAnalyzers>true</RunAnalyzers>
   </PropertyGroup>
 
   <ItemGroup>

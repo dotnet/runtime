@@ -954,6 +954,8 @@ namespace Mono.Linker.Dataflow
 	/// The result of a Type.GetType.
 	/// AssemblyIdentity is the scope in which to resolve if the type name string is not assembly-qualified.
 	/// </summary>
+
+#pragma warning disable CA1812 // GetTypeFromStringValue is never instantiated
 	class GetTypeFromStringValue : ValueNode
 	{
 		private readonly TypeResolver _resolver;

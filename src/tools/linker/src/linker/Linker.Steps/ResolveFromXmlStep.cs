@@ -41,9 +41,9 @@ namespace Mono.Linker.Steps
 	{
 		const string NamespaceElementName = "namespace";
 
-		static readonly string _required = "required";
-		static readonly string _preserve = "preserve";
-		static readonly string _accessors = "accessors";
+		const string _required = "required";
+		const string _preserve = "preserve";
+		const string _accessors = "accessors";
 
 		static readonly string[] _accessorsAll = new string[] { "all" };
 		static readonly char[] _accessorsSep = new char[] { ';' };

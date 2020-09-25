@@ -39,3 +39,66 @@ csharp_style_conditional_delegate_call = true:suggestion
 
 # Avoid redundant accessibility modifiers when they're default
 dotnet_style_require_accessibility_modifiers = omit_if_default:suggestion
+
+### Code Style Analyzers
+
+# IDE0004: Remove unnecessary cast
+#dotnet_diagnostic.IDE0004.severity = warning
+
+# IDE0005: Remove unnecessary usings/imports
+dotnet_diagnostic.IDE0005.severity = warning
+
+# IDE0019: Use pattern matching
+#dotnet_diagnostic.IDE0019.severity = warning
+
+# IDE0020:
+dotnet_diagnostic.IDE0020.severity = warning
+
+# IDE0035: Remove unreachable code
+dotnet_diagnostic.IDE0035.severity = warning
+
+# IDE0036: Order modifiers
+#dotnet_diagnostic.IDE0036.severity = warning
+
+# IDE0043: Format string contains invalid placeholder
+dotnet_diagnostic.IDE0043.severity = warning
+
+# IDE0044: Make field readonly
+#dotnet_diagnostic.IDE0044.severity = warning
+
+# IDE0051: Remove unused private members (no reads or writes)
+dotnet_diagnostic.IDE0051.severity = warning
+
+# IDE0052: Remove unread private member
+dotnet_diagnostic.IDE0052.severity = warning
+
+# IDE0053: Prefer expression bodies for lambdas
+dotnet_diagnostic.IDE0053.severity = warning
+
+# IDE0055: Fix formatting
+dotnet_diagnostic.IDE0055.severity = none
+
+# IDE0059: Unnecessary assignment to a value
+#dotnet_diagnostic.IDE0059.severity = warning
+
+# IDE0060: Remove unused parameter
+#dotnet_diagnostic.IDE0060.severity = warning
+
+# IDE0073: File header
+dotnet_diagnostic.IDE0073.severity = suggestion
+file_header_template = Licensed to the .NET Foundation under one or more agreements.\nThe .NET Foundation licenses this file to you under the MIT license.\nSee the LICENSE file in the project root for more information.
+
+## CA analyzer rules
+dotnet_analyzer_diagnostic.category-performance.severity = warning
+dotnet_analyzer_diagnostic.category-maintainability.severity = warning
+dotnet_analyzer_diagnostic.category-reliability.severity = warning
+
+# CA1834: Use 'StringBuilder.Append(char)'
+dotnet_diagnostic.CA1834.severity = none
+
+# CA1822: Make member static
+dotnet_diagnostic.CA1822.severity = none
+
+[external/**/*.cs]
+dotnet_analyzer_diagnostic.severity = none
+generated_code = true

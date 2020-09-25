@@ -12,6 +12,7 @@ namespace Mono.Linker
 	/// TypeReference instead of a Type, and it has a reference to the original
 	/// CustomAttribute for dependency tracing. It is also a place for helper
 	/// methods related to the attribute.
+	[System.AttributeUsage (System.AttributeTargets.Constructor | System.AttributeTargets.Field | System.AttributeTargets.Method, AllowMultiple = true, Inherited = false)]
 	internal class DynamicDependency : Attribute
 	{
 		public CustomAttribute? OriginalAttribute { get; set; }

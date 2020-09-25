@@ -85,7 +85,7 @@ namespace Mono.Linker.Steps
 				return;
 			case "stub":
 				string value = GetAttribute (iterator.Current, "value");
-				if (value != "") {
+				if (!string.IsNullOrEmpty (value)) {
 					if (!TryConvertValue (value, method.ReturnType, out object res)) {
 						Context.LogWarning ($"Invalid value for '{method.GetDisplayName ()}' stub", 2010, _xmlDocumentLocation);
 						return;

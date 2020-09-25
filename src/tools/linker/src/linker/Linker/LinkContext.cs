@@ -348,7 +348,7 @@ namespace Mono.Linker
 				return;
 
 			if (_symbolReaderProvider == null)
-				throw new ArgumentNullException (nameof (_symbolReaderProvider));
+				throw new InvalidOperationException ("Symbol provider is not set");
 
 			try {
 				var symbolReader = _symbolReaderProvider.GetSymbolReader (

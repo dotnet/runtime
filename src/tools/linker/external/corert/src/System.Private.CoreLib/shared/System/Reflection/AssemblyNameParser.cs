@@ -21,7 +21,7 @@ namespace System.Reflection
 			if (indexOfNul != -1)
 				s = s.Substring(0, indexOfNul);
 			if (s.Length == 0)
-				throw new ArgumentException();
+				throw new ArgumentException("Empty string", nameof(s));
 
 			AssemblyNameLexer lexer = new AssemblyNameLexer(s);
 
@@ -31,7 +31,7 @@ namespace System.Reflection
 			if (token != AssemblyNameLexer.Token.String)
 				throw new FileLoadException();
 
-			if (name == string.Empty || name.IndexOfAny(s_illegalCharactersInSimpleName) != -1)
+			if (string.IsNullOrEmpty(name) || name.IndexOfAny(s_illegalCharactersInSimpleName) != -1)
 				throw new FileLoadException();
 
 			Version version = null;
@@ -64,7 +64,7 @@ namespace System.Reflection
 				if (token != AssemblyNameLexer.Token.String)
 					throw new FileLoadException();
 
-				if (attributeName == string.Empty)
+				if (String.IsNullOrEmpty(attributeName))
 					throw new FileLoadException();
 
 				for (int i = 0; i < alreadySeen.Count; i++)
@@ -168,7 +168,7 @@ namespace System.Reflection
 
 		private static byte[] ParsePKT(string attributeValue)
 		{
-			if (attributeValue.Equals("null", StringComparison.OrdinalIgnoreCase) || attributeValue == string.Empty)
+			if (attributeValue.Equals("null", StringComparison.OrdinalIgnoreCase) || attributeValue.Length == 0)
 				return Array.Empty<byte>();
 
 			if (attributeValue.Length != 8 * 2)

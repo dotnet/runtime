@@ -14,7 +14,7 @@ namespace System.Reflection
 		{
 			const int PUBLIC_KEY_TOKEN_LEN = 8;
 
-			if (a.Name == string.Empty)
+			if (string.IsNullOrEmpty(a.Name))
 				throw new FileLoadException();
 
 			StringBuilder sb = new StringBuilder();
@@ -54,7 +54,7 @@ namespace System.Reflection
 			string cultureName = a.CultureName;
 			if (cultureName != null)
 			{
-				if (cultureName == string.Empty)
+				if (cultureName.Length == 0)
 					cultureName = "neutral";
 				sb.Append(", Culture=");
 				sb.AppendQuoted(cultureName);
@@ -64,7 +64,7 @@ namespace System.Reflection
 			if (pkt != null)
 			{
 				if (pkt.Length > PUBLIC_KEY_TOKEN_LEN)
-					throw new ArgumentException();
+					throw new ArgumentException("Invalid token length", nameof(a));
 
 				sb.Append(", PublicKeyToken=");
 				if (pkt.Length == 0)

@@ -35,18 +35,15 @@ namespace Mono.Linker
 	{
 		protected readonly LinkContext context;
 
-		Stack<object> dependency_stack;
 		List<IDependencyRecorder> recorders;
 
 		public Tracer (LinkContext context)
 		{
 			this.context = context;
-			dependency_stack = new Stack<object> ();
 		}
 
 		public void Finish ()
 		{
-			dependency_stack = null;
 			if (recorders != null) {
 				foreach (var recorder in recorders) {
 					if (recorder is IDisposable disposableRecorder)
