@@ -119,7 +119,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         private static string GetBigTestString() {
             var expectedSb = new System.Text.StringBuilder();
             expectedSb.Append("start<<<");
-            for (int i = 0; i < 409600; i++)
+            for (int i = 0; i < 4096000; i++)
                 expectedSb.Append(i % 10);
             expectedSb.Append(">>>end");
             return expectedSb.ToString();
@@ -143,9 +143,11 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal("a\0bc", HelperMarshal._stringResource);
 
             var expected = GetBigTestString();
-            HelperMarshal._stringResource = null;
-            Runtime.InvokeJS("App.call_test_method(\"InvokeString\", [\"" + expected + "\"])");
-            Assert.Equal(expected, HelperMarshal._stringResource);
+            for (var i = 0; i < 10; i++) {
+                HelperMarshal._stringResource = null;
+                Runtime.InvokeJS("App.call_test_method(\"InvokeString\", [\"" + expected + "\"])");
+                Assert.Equal(expected, HelperMarshal._stringResource);
+            }
         }
     }
 }
