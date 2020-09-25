@@ -8660,10 +8660,12 @@ mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoDomain *domain, MonoIMTC
 		}
 		size += item->chunk_size;
 	}
-	if (fail_tramp)
-		code = (guint8 *)mono_method_alloc_generic_virtual_trampoline (domain, size + MONO_TRAMPOLINE_UNWINDINFO_SIZE(0));
-	else
-		code = (guint8 *)mono_domain_code_reserve (domain, size + MONO_TRAMPOLINE_UNWINDINFO_SIZE(0));
+	if (fail_tramp) {
+		code = (guint8 *)mono_method_alloc_generic_virtual_trampoline (mono_domain_ambient_memory_manager (domain), size + MONO_TRAMPOLINE_UNWINDINFO_SIZE(0));
+	} else {
+		MonoMemoryManager *mem_manager = m_class_get_mem_manager (domain, vtable->klass);
+		code = (guint8 *)mono_mem_manager_code_reserve (mem_manager, size + MONO_TRAMPOLINE_UNWINDINFO_SIZE(0));
+	}
 	start = code;
 
 	unwind_ops = mono_arch_get_cie_program ();
