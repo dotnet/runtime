@@ -53,14 +53,22 @@ FCFuncStart(gEmbedded_Sys)
     QCFuncElement("ChMod", SystemNative_ChMod)
     QCFuncElement("Close", SystemNative_Close)
     QCFuncElement("CloseDir", SystemNative_CloseDir)
+
+#if defined(__FreeBSD__) || defined(__linux__)
     QCFuncElement("CloseNetworkChangeListenerSocket", SystemNative_CloseNetworkChangeListenerSocket)
+#endif
+
     QCFuncElement("CloseSocketEventPort", SystemNative_CloseSocketEventPort)
     QCFuncElement("ConfigureTerminalForChildProcess", SystemNative_ConfigureTerminalForChildProcess)
     QCFuncElement("Connect", SystemNative_Connect)
     QCFuncElement("ConvertErrorPalToPlatform", SystemNative_ConvertErrorPalToPlatform)
     QCFuncElement("ConvertErrorPlatformToPal", SystemNative_ConvertErrorPlatformToPal)
     QCFuncElement("CopyFile", SystemNative_CopyFile)
+
+#if defined(__FreeBSD__) || defined(__linux__)
     QCFuncElement("CreateNetworkChangeListenerSocket", SystemNative_CreateNetworkChangeListenerSocket)
+#endif
+
     QCFuncElement("CreateSocketEventBuffer", SystemNative_CreateSocketEventBuffer)
     QCFuncElement("CreateSocketEventPort", SystemNative_CreateSocketEventPort)
     QCFuncElement("Disconnect", SystemNative_Disconnect)
@@ -159,7 +167,11 @@ FCFuncStart(gEmbedded_Sys)
     QCFuncElement("PosixFAdvise", SystemNative_PosixFAdvise)
     QCFuncElement("Read", SystemNative_Read)
     QCFuncElement("ReadDirR", SystemNative_ReadDirR)
+
+#if defined(__FreeBSD__) || defined(__linux__)
     QCFuncElement("ReadEvents", SystemNative_ReadEvents)
+#endif
+
     QCFuncElement("ReadLink", SystemNative_ReadLink)
     QCFuncElement("ReadStdin", SystemNative_ReadStdin)
     QCFuncElement("Receive", SystemNative_Receive)
@@ -169,8 +181,15 @@ FCFuncStart(gEmbedded_Sys)
     QCFuncElement("Rename", SystemNative_Rename)
     QCFuncElement("RestoreAndHandleCtrl", SystemNative_RestoreAndHandleCtrl)
     QCFuncElement("RmDir", SystemNative_RmDir)
+
+#if HAVE_SCHED_GETAFFINITY
     QCFuncElement("SchedGetAffinity", SystemNative_SchedGetAffinity)
+#endif
+
+#if HAVE_SCHED_SETAFFINITY
     QCFuncElement("SchedSetAffinity", SystemNative_SchedSetAffinity)
+#endif
+
     QCFuncElement("Send", SystemNative_Send)
     QCFuncElement("SendFile", SystemNative_SendFile)
     QCFuncElement("SendMessage", SystemNative_SendMessage)
