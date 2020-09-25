@@ -299,7 +299,7 @@ namespace System.Xml.Serialization
 
         private void Write1_XmlSchemaAttribute(XmlSchemaAttribute? o)
         {
-            if ((object?)o == null) return;
+            if (o is null) return;
             WriteStartElement("attribute");
             WriteAttribute(@"id", @"", ((string?)o.@Id));
             WriteAttributes((XmlAttribute[]?)o.@UnhandledAttributes, o);
@@ -335,7 +335,7 @@ namespace System.Xml.Serialization
 
         private void Write3_XmlSchemaObject(XmlSchemaObject? o)
         {
-            if ((object?)o == null) return;
+            if (o is null) return;
             System.Type t = o.GetType();
 
             if (t == typeof(XmlSchemaComplexType))
@@ -492,7 +492,7 @@ namespace System.Xml.Serialization
 
         private void Write5_XmlSchemaAnnotation(XmlSchemaAnnotation? o)
         {
-            if ((object?)o == null) return;
+            if (o is null) return;
             WriteStartElement("annotation");
 
             WriteAttribute(@"id", @"", ((string?)o.@Id));
@@ -518,7 +518,7 @@ namespace System.Xml.Serialization
 
         private void Write6_XmlSchemaDocumentation(XmlSchemaDocumentation o)
         {
-            if ((object)o == null) return;
+            if (o is null) return;
             WriteStartElement("documentation");
 
             WriteAttribute(@"source", @"", ((string?)o.@Source));
@@ -538,7 +538,7 @@ namespace System.Xml.Serialization
 
         private void Write7_XmlSchemaAppInfo(XmlSchemaAppInfo? o)
         {
-            if ((object?)o == null) return;
+            if (o is null) return;
             WriteStartElement("appinfo");
 
             WriteAttribute("source", "", o.Source);
@@ -557,7 +557,7 @@ namespace System.Xml.Serialization
 
         private void Write9_XmlSchemaSimpleType(XmlSchemaSimpleType? o)
         {
-            if ((object?)o == null) return;
+            if (o is null) return;
             WriteStartElement("simpleType");
 
             WriteAttribute(@"id", @"", ((string?)o.@Id));
@@ -587,7 +587,7 @@ namespace System.Xml.Serialization
 
         private void Write12_XmlSchemaSimpleTypeUnion(XmlSchemaSimpleTypeUnion? o)
         {
-            if ((object?)o == null) return;
+            if (o is null) return;
             WriteStartElement("union");
 
             WriteAttribute(@"id", @"", ((string?)o.@Id));
@@ -619,7 +619,7 @@ namespace System.Xml.Serialization
 
         private void Write14_XmlSchemaSimpleTypeList(XmlSchemaSimpleTypeList o)
         {
-            if ((object)o == null) return;
+            if (o is null) return;
             WriteStartElement("list");
 
             WriteAttribute(@"id", @"", ((string?)o.@Id));
@@ -635,7 +635,7 @@ namespace System.Xml.Serialization
 
         private void Write15_XmlSchemaSimpleTypeRestriction(XmlSchemaSimpleTypeRestriction? o)
         {
-            if ((object?)o == null) return;
+            if (o is null) return;
             WriteStartElement("restriction");
             WriteAttribute(@"id", @"", ((string?)o.@Id));
             WriteAttributes((XmlAttribute[]?)o.@UnhandledAttributes, o);
@@ -715,7 +715,7 @@ namespace System.Xml.Serialization
 
         private void Write_XmlSchemaFacet(string name, XmlSchemaFacet? o)
         {
-            if ((object?)o == null) return;
+            if (o is null) return;
             WriteStartElement(name);
 
             WriteAttribute("id", "", o.Id);
@@ -744,7 +744,7 @@ namespace System.Xml.Serialization
 
         private void Write31_XmlSchemaAttributeGroup(XmlSchemaAttributeGroup? o)
         {
-            if ((object?)o == null) return;
+            if (o is null) return;
             WriteStartElement("attributeGroup");
 
             WriteAttribute(@"id", @"", ((string?)o.@Id));
@@ -758,7 +758,7 @@ namespace System.Xml.Serialization
 
         private void Write32_XmlSchemaAttributeGroupRef(XmlSchemaAttributeGroupRef? o)
         {
-            if ((object?)o == null) return;
+            if (o is null) return;
             WriteStartElement("attributeGroup");
 
             WriteAttribute(@"id", @"", ((string?)o.@Id));
@@ -774,7 +774,7 @@ namespace System.Xml.Serialization
 
         private void Write33_XmlSchemaAnyAttribute(XmlSchemaAnyAttribute? o)
         {
-            if ((object?)o == null) return;
+            if (o is null) return;
             WriteStartElement("anyAttribute");
 
             WriteAttribute(@"id", @"", ((string?)o.@Id));
@@ -801,7 +801,7 @@ namespace System.Xml.Serialization
 
         private void Write35_XmlSchemaComplexType(XmlSchemaComplexType o)
         {
-            if ((object)o == null) return;
+            if (o is null) return;
             WriteStartElement("complexType");
 
             WriteAttribute(@"id", @"", ((string?)o.@Id));
@@ -849,7 +849,7 @@ namespace System.Xml.Serialization
 
         private void Write36_XmlSchemaSimpleContent(XmlSchemaSimpleContent? o)
         {
-            if ((object?)o == null) return;
+            if (o is null) return;
             WriteStartElement("simpleContent");
 
             WriteAttribute(@"id", @"", ((string?)o.@Id));
@@ -868,7 +868,7 @@ namespace System.Xml.Serialization
 
         private void Write38_XmlSchemaSimpleContentExtension(XmlSchemaSimpleContentExtension o)
         {
-            if ((object)o == null) return;
+            if (o is null) return;
             WriteStartElement("extension");
 
             WriteAttribute(@"id", @"", ((string?)o.@Id));
@@ -885,7 +885,7 @@ namespace System.Xml.Serialization
 
         private void Write40_XmlSchemaSimpleContentRestriction(XmlSchemaSimpleContentRestriction? o)
         {
-            if ((object?)o == null) return;
+            if (o is null) return;
             WriteStartElement("restriction");
             WriteAttribute(@"id", @"", ((string?)o.@Id));
             WriteAttributes((XmlAttribute[]?)o.@UnhandledAttributes, o);
@@ -903,7 +903,7 @@ namespace System.Xml.Serialization
 
         private void Write41_XmlSchemaComplexContent(XmlSchemaComplexContent? o)
         {
-            if ((object?)o == null) return;
+            if (o is null) return;
             WriteStartElement("complexContent");
 
             WriteAttribute(@"id", @"", ((string?)o.@Id));
@@ -923,7 +923,7 @@ namespace System.Xml.Serialization
 
         private void Write42_XmlSchemaComplexContentExtension(XmlSchemaComplexContentExtension? o)
         {
-            if ((object?)o == null) return;
+            if (o is null) return;
             WriteStartElement("extension");
 
             WriteAttribute(@"id", @"", ((string?)o.@Id));
@@ -956,7 +956,7 @@ namespace System.Xml.Serialization
 
         private void Write43_XmlSchemaAll(XmlSchemaAll o)
         {
-            if ((object)o == null) return;
+            if (o is null) return;
             WriteStartElement("all");
 
             WriteAttribute(@"id", @"", ((string?)o.@Id));
@@ -970,7 +970,7 @@ namespace System.Xml.Serialization
 
         private void Write46_XmlSchemaElement(XmlSchemaElement? o)
         {
-            if ((object?)o == null) return;
+            if (o is null) return;
             WriteStartElement("element");
             WriteAttribute(@"id", @"", o.Id);
             WriteAttribute("minOccurs", "", XmlConvert.ToString(o.MinOccurs));
@@ -1031,7 +1031,7 @@ namespace System.Xml.Serialization
 
         private void Write47_XmlSchemaKey(XmlSchemaKey? o)
         {
-            if ((object?)o == null) return;
+            if (o is null) return;
             WriteStartElement("key");
             WriteAttribute(@"id", @"", ((string?)o.@Id));
             WriteAttribute(@"name", @"", ((string?)o.@Name));
@@ -1053,7 +1053,7 @@ namespace System.Xml.Serialization
 
         private void Write48_XmlSchemaIdentityConstraint(XmlSchemaIdentityConstraint? o)
         {
-            if ((object?)o == null) return;
+            if (o is null) return;
             System.Type t = o.GetType();
             if (t == typeof(XmlSchemaUnique))
             {
@@ -1074,7 +1074,7 @@ namespace System.Xml.Serialization
 
         private void Write49_XmlSchemaXPath(string name, string ns, XmlSchemaXPath? o)
         {
-            if ((object?)o == null) return;
+            if (o is null) return;
             WriteStartElement(name);
             WriteAttribute(@"id", @"", o.@Id);
             WriteAttribute(@"xpath", @"", o.@XPath);
@@ -1085,7 +1085,7 @@ namespace System.Xml.Serialization
 
         private void Write50_XmlSchemaKeyref(XmlSchemaKeyref? o)
         {
-            if ((object?)o == null) return;
+            if (o is null) return;
             WriteStartElement("keyref");
 
             WriteAttribute(@"id", @"", ((string?)o.@Id));
@@ -1110,7 +1110,7 @@ namespace System.Xml.Serialization
 
         private void Write51_XmlSchemaUnique(XmlSchemaUnique? o)
         {
-            if ((object?)o == null) return;
+            if (o is null) return;
             WriteStartElement("unique");
 
             WriteAttribute(@"id", @"", ((string?)o.@Id));
@@ -1131,7 +1131,7 @@ namespace System.Xml.Serialization
 
         private void Write52_XmlSchemaChoice(XmlSchemaChoice? o)
         {
-            if ((object?)o == null) return;
+            if (o is null) return;
             WriteStartElement("choice");
 
             WriteAttribute(@"id", @"", ((string?)o.@Id));
@@ -1145,7 +1145,7 @@ namespace System.Xml.Serialization
 
         private void Write53_XmlSchemaAny(XmlSchemaAny? o)
         {
-            if ((object?)o == null) return;
+            if (o is null) return;
             WriteStartElement("any");
 
             WriteAttribute(@"id", @"", o.@Id);
@@ -1161,7 +1161,7 @@ namespace System.Xml.Serialization
 
         private void Write54_XmlSchemaSequence(XmlSchemaSequence? o)
         {
-            if ((object?)o == null) return;
+            if (o is null) return;
             WriteStartElement("sequence");
 
             WriteAttribute(@"id", @"", ((string?)o.@Id));
@@ -1202,7 +1202,7 @@ namespace System.Xml.Serialization
 
         private void Write55_XmlSchemaGroupRef(XmlSchemaGroupRef? o)
         {
-            if ((object?)o == null) return;
+            if (o is null) return;
             WriteStartElement("group");
 
             WriteAttribute(@"id", @"", ((string?)o.@Id));
@@ -1220,7 +1220,7 @@ namespace System.Xml.Serialization
 
         private void Write56_XmlSchemaComplexContentRestriction(XmlSchemaComplexContentRestriction? o)
         {
-            if ((object?)o == null) return;
+            if (o is null) return;
             WriteStartElement("restriction");
 
             WriteAttribute(@"id", @"", ((string?)o.@Id));
@@ -1255,7 +1255,7 @@ namespace System.Xml.Serialization
 
         private void Write57_XmlSchemaGroup(XmlSchemaGroup? o)
         {
-            if ((object?)o == null) return;
+            if (o is null) return;
             WriteStartElement("group");
 
             WriteAttribute(@"id", @"", ((string?)o.@Id));

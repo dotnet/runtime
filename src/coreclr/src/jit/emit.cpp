@@ -3172,12 +3172,157 @@ const BYTE emitter::emitFmtToOps[] = {
 const unsigned emitter::emitFmtCount = _countof(emitFmtToOps);
 #endif
 
+//------------------------------------------------------------------------
+// Interleaved GC info dumping.
+// We'll attempt to line this up with the opcode, which indented differently for
+// diffable and non-diffable dumps.
+// This is approximate, and is better tuned for disassembly than for jitdumps.
+// See emitDispInsHex().
+#ifdef TARGET_AMD64
+const size_t basicIndent     = 7;
+const size_t hexEncodingSize = 21;
+#elif defined(TARGET_X86)
+const size_t basicIndent     = 7;
+const size_t hexEncodingSize = 13;
+#elif defined(TARGET_ARM64)
+const size_t basicIndent     = 12;
+const size_t hexEncodingSize = 19;
+#elif defined(TARGET_ARM)
+const size_t basicIndent     = 12;
+const size_t hexEncodingSize = 11;
+#endif
+
+#ifdef DEBUG
+//------------------------------------------------------------------------
+// emitDispGCDeltaTitle: Print an appropriately indented title for a GC info delta
+//
+// Arguments:
+//    title - The type of GC info delta we're printing
+//
+void emitter::emitDispGCDeltaTitle(const char* title)
+{
+    size_t indent = emitComp->opts.disDiffable ? basicIndent : basicIndent + hexEncodingSize;
+    printf("%.*s; %s", indent, "                             ", title);
+}
+
+//------------------------------------------------------------------------
+// emitDispGCRegDelta: Print a delta for GC registers
+//
+// Arguments:
+//    title    - The type of GC info delta we're printing
+//    prevRegs - The live GC registers before the recent instruction.
+//    curRegs  - The live GC registers after the recent instruction.
+//
+void emitter::emitDispGCRegDelta(const char* title, regMaskTP prevRegs, regMaskTP curRegs)
+{
+    if (prevRegs != curRegs)
+    {
+        emitDispGCDeltaTitle(title);
+        regMaskTP sameRegs    = prevRegs & curRegs;
+        regMaskTP removedRegs = prevRegs - sameRegs;
+        regMaskTP addedRegs   = curRegs - sameRegs;
+        if (removedRegs != RBM_NONE)
+        {
+            printf(" -");
+            dspRegMask(removedRegs);
+        }
+        if (addedRegs != RBM_NONE)
+        {
+            printf(" +");
+            dspRegMask(addedRegs);
+        }
+        printf("\n");
+    }
+}
+
+//------------------------------------------------------------------------
+// emitDispGCVarDelta: Print a delta for GC variables
+//
+// Notes:
+//    Uses the debug-only variables 'debugThisGCrefVars', 'debugPrevGCrefVars'
+//    and 'debugPrevRegPtrDsc' to print deltas from the last time this was
+//    called.
+//
+void emitter::emitDispGCVarDelta()
+{
+    if (!VarSetOps::Equal(emitComp, debugPrevGCrefVars, debugThisGCrefVars))
+    {
+        emitDispGCDeltaTitle("GC ptr vars");
+        VARSET_TP sameGCrefVars(VarSetOps::Intersection(emitComp, debugPrevGCrefVars, debugThisGCrefVars));
+        VARSET_TP GCrefVarsRemoved(VarSetOps::Diff(emitComp, debugPrevGCrefVars, debugThisGCrefVars));
+        VARSET_TP GCrefVarsAdded(VarSetOps::Diff(emitComp, debugThisGCrefVars, debugPrevGCrefVars));
+        if (!VarSetOps::IsEmpty(emitComp, GCrefVarsRemoved))
+        {
+            printf(" -");
+            dumpConvertedVarSet(emitComp, GCrefVarsRemoved);
+        }
+        if (!VarSetOps::IsEmpty(emitComp, GCrefVarsAdded))
+        {
+            printf(" +");
+            dumpConvertedVarSet(emitComp, GCrefVarsAdded);
+        }
+        VarSetOps::Assign(emitComp, debugPrevGCrefVars, debugThisGCrefVars);
+        printf("\n");
+    }
+    // Dump any deltas in regPtrDsc's for outgoing args; these aren't captured in the other sets.
+    if (debugPrevRegPtrDsc != codeGen->gcInfo.gcRegPtrLast)
+    {
+        for (regPtrDsc* dsc = (debugPrevRegPtrDsc == nullptr) ? codeGen->gcInfo.gcRegPtrList
+                                                              : debugPrevRegPtrDsc->rpdNext;
+             dsc != nullptr; dsc = dsc->rpdNext)
+        {
+            // The non-arg regPtrDscs are reflected in the register sets debugPrevGCrefRegs/emitThisGCrefRegs
+            // and debugPrevByrefRegs/emitThisByrefRegs, and dumped using those sets.
+            if (!dsc->rpdArg)
+            {
+                continue;
+            }
+            emitDispGCDeltaTitle(GCtypeStr((GCtype)dsc->rpdGCtype));
+            switch (dsc->rpdArgType)
+            {
+                case GCInfo::rpdARG_PUSH:
+#if FEATURE_FIXED_OUT_ARGS
+                    // For FEATURE_FIXED_OUT_ARGS, we report a write to the outgoing arg area
+                    // as a 'rpdARG_PUSH' even though it doesn't actually push. Note that
+                    // we also have 'rpdARG_POP's even though we don't actually pop, and
+                    // we can have those even if there's no stack arg.
+                    printf(" arg write");
+                    break;
+#else
+                    printf(" arg push %u", dsc->rpdPtrArg);
+                    break;
+#endif
+                case GCInfo::rpdARG_POP:
+                    printf(" arg pop %u", dsc->rpdPtrArg);
+                    break;
+                case GCInfo::rpdARG_KILL:
+                    printf(" arg kill %u", dsc->rpdPtrArg);
+                    break;
+                default:
+                    printf(" arg ??? %u", dsc->rpdPtrArg);
+            }
+            printf("\n");
+        }
+        debugPrevRegPtrDsc = codeGen->gcInfo.gcRegPtrLast;
+    }
+}
+
+//------------------------------------------------------------------------
+// emitDispGCInfoDelta: Print a delta for GC info
+//
+void emitter::emitDispGCInfoDelta()
+{
+    emitDispGCRegDelta("gcrRegs", debugPrevGCrefRegs, emitThisGCrefRegs);
+    emitDispGCRegDelta("byrRegs", debugPrevByrefRegs, emitThisByrefRegs);
+    debugPrevGCrefRegs = emitThisGCrefRegs;
+    debugPrevByrefRegs = emitThisByrefRegs;
+    emitDispGCVarDelta();
+}
+
 /*****************************************************************************
  *
  *  Display the current instruction group list.
  */
-
-#ifdef DEBUG
 
 void emitter::emitDispIGflags(unsigned flags)
 {
@@ -3228,7 +3373,13 @@ void emitter::emitDispIG(insGroup* ig, insGroup* igPrev, bool verbose)
 
     sprintf_s(buff, TEMP_BUFFER_LEN, "G_M%03u_IG%02u:        ", emitComp->compMethodID, ig->igNum);
     printf("%s; ", buff);
-    if ((igPrev == nullptr) || (igPrev->igFuncIdx != ig->igFuncIdx))
+
+    // We dump less information when we're only interleaving GC info with a disassembly listing,
+    // than we do in the jitdump case. (Note that the verbose argument to this method is
+    // distinct from the verbose on Compiler.)
+    bool jitdump = emitComp->verbose;
+
+    if (jitdump && ((igPrev == nullptr) || (igPrev->igFuncIdx != ig->igFuncIdx)))
     {
         printf("func=%02u, ", ig->igFuncIdx);
     }
@@ -3316,29 +3467,37 @@ void emitter::emitDispIG(insGroup* ig, insGroup* igPrev, bool verbose)
     }
     else
     {
-        printf("offs=%06XH, size=%04XH", ig->igOffs, ig->igSize);
+        const char* separator = "";
+        if (jitdump)
+        {
+            printf("offs=%06XH, size=%04XH", ig->igOffs, ig->igSize);
+            separator = ", ";
+        }
 
         if (emitComp->compCodeGenDone)
         {
-            printf(", bbWeight=%s PerfScore %.2f", refCntWtd2str(ig->igWeight), ig->igPerfScore);
+            printf("%sbbWeight=%s PerfScore %.2f", separator, refCntWtd2str(ig->igWeight), ig->igPerfScore);
+            separator = ", ";
         }
 
         if (ig->igFlags & IGF_GC_VARS)
         {
-            printf(", gcVars=%s ", VarSetOps::ToString(emitComp, ig->igGCvars()));
+            printf("%sgcVars=%s ", separator, VarSetOps::ToString(emitComp, ig->igGCvars()));
             dumpConvertedVarSet(emitComp, ig->igGCvars());
+            separator = ", ";
         }
 
         if (!(ig->igFlags & IGF_EXTEND))
         {
-            printf(", gcrefRegs=");
+            printf("%sgcrefRegs=", separator);
             printRegMaskInt(ig->igGCregs);
             emitDispRegSet(ig->igGCregs);
+            separator = ", ";
         }
 
         if (ig->igFlags & IGF_BYREF_REGS)
         {
-            printf(", byrefRegs=");
+            printf("%sbyrefRegs=", separator);
             printRegMaskInt(ig->igByrefRegs());
             emitDispRegSet(ig->igByrefRegs());
         }
@@ -4679,6 +4838,11 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     /* Assume no live GC ref variables on entry */
 
     VarSetOps::ClearD(emitComp, emitThisGCrefVars); // This is initialized to Empty at the start of codegen.
+#if defined(DEBUG) && defined(JIT32_ENCODER)
+    VarSetOps::ClearD(emitComp, debugThisGCRefVars);
+    VarSetOps::ClearD(emitComp, debugPrevGCRefVars);
+    debugPrevRegPtrDsc = nullptr;
+#endif
     emitThisGCrefRegs = emitThisByrefRegs = RBM_NONE;
     emitThisGCrefVset                     = true;
 
@@ -4914,7 +5078,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
 
         if (emitComp->opts.disAsm || emitComp->opts.dspEmit || emitComp->verbose)
         {
-            if (emitComp->verbose)
+            if (emitComp->verbose || emitComp->opts.disasmWithGC)
             {
                 printf("\n");
                 emitDispIG(ig); // Display the flags, IG data, etc.
@@ -4995,6 +5159,12 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
                     emitUpdateLiveGCregs(GCT_BYREF, byrefRegs, cp);
                 }
             }
+#ifdef DEBUG
+            if (EMIT_GC_VERBOSE || emitComp->opts.disasmWithGC)
+            {
+                emitDispGCInfoDelta();
+            }
+#endif // DEBUG
         }
         else
         {
@@ -5900,24 +6070,6 @@ void emitter::emitGCvarLiveSet(int offs, GCtype gcType, BYTE* addr, ssize_t disp
     assert(emitGCrFrameLiveTab[disp] == nullptr);
     emitGCrFrameLiveTab[disp] = desc;
 
-#ifdef DEBUG
-    if (EMITVERBOSE)
-    {
-        printf("[%08X] %s var born at [%s", dspPtr(desc), GCtypeStr(gcType), emitGetFrameReg());
-
-        if (offs < 0)
-        {
-            printf("-%02XH", -offs);
-        }
-        else if (offs > 0)
-        {
-            printf("+%02XH", +offs);
-        }
-
-        printf("]\n");
-    }
-#endif
-
     /* The "global" live GC variable mask is no longer up-to-date */
 
     emitThisGCrefVset = false;
@@ -5958,35 +6110,6 @@ void emitter::emitGCvarDeadSet(int offs, BYTE* addr, ssize_t disp)
     assert(desc->vpdEndOfs == 0xFACEDEAD);
     desc->vpdEndOfs = emitCurCodeOffs(addr);
 
-#ifdef DEBUG
-    if (EMITVERBOSE)
-    {
-        GCtype gcType = (desc->vpdVarNum & byref_OFFSET_FLAG) ? GCT_BYREF : GCT_GCREF;
-#if !defined(JIT32_GCENCODER) || !defined(FEATURE_EH_FUNCLETS)
-        bool isThis = (desc->vpdVarNum & this_OFFSET_FLAG) != 0;
-
-        printf("[%08X] %s%s var died at [%s", dspPtr(desc), GCtypeStr(gcType), isThis ? "this-ptr" : "",
-               emitGetFrameReg());
-#else
-        bool isPinned = (desc->vpdVarNum & pinned_OFFSET_FLAG) != 0;
-
-        printf("[%08X] %s%s var died at [%s", dspPtr(desc), GCtypeStr(gcType), isPinned ? "pinned" : "",
-               emitGetFrameReg());
-#endif
-
-        if (offs < 0)
-        {
-            printf("-%02XH", -offs);
-        }
-        else if (offs > 0)
-        {
-            printf("+%02XH", +offs);
-        }
-
-        printf("]\n");
-    }
-#endif
-
     /* The "global" live GC variable mask is no longer up-to-date */
 
     emitThisGCrefVset = false;
@@ -6017,9 +6140,7 @@ void emitter::emitUpdateLiveGCvars(VARSET_VALARG_TP vars, BYTE* addr)
 #ifdef DEBUG
     if (EMIT_GC_VERBOSE)
     {
-        printf("New GC ref live vars=%s ", VarSetOps::ToString(emitComp, vars));
-        dumpConvertedVarSet(emitComp, vars);
-        printf("\n");
+        VarSetOps::Assign(emitComp, debugThisGCrefVars, vars);
     }
 #endif
 
@@ -6051,11 +6172,11 @@ void emitter::emitUpdateLiveGCvars(VARSET_VALARG_TP vars, BYTE* addr)
                 if (VarSetOps::IsMember(emitComp, vars, num))
                 {
                     GCtype gcType = (val & byref_OFFSET_FLAG) ? GCT_BYREF : GCT_GCREF;
-                    emitGCvarLiveUpd(offs, INT_MAX, gcType, addr);
+                    emitGCvarLiveUpd(offs, INT_MAX, gcType, addr DEBUG_ARG(num));
                 }
                 else
                 {
-                    emitGCvarDeadUpd(offs, addr);
+                    emitGCvarDeadUpd(offs, addr DEBUG_ARG(num));
                 }
             }
         }
@@ -6226,16 +6347,6 @@ void emitter::emitUpdateLiveGCregs(GCtype gcType, regMaskTP regs, BYTE* addr)
     regMaskTP life;
     regMaskTP dead;
     regMaskTP chg;
-
-#ifdef DEBUG
-    if (EMIT_GC_VERBOSE)
-    {
-        printf("New %sReg live regs=", GCtypeStr(gcType));
-        printRegMaskInt(regs);
-        emitDispRegSet(regs);
-        printf("\n");
-    }
-#endif
 
     assert(needsGC(gcType));
 
@@ -6602,13 +6713,6 @@ void emitter::emitGCregLiveUpd(GCtype gcType, regNumber reg, BYTE* addr)
         }
 
         emitThisXXrefRegs |= regMask;
-
-#ifdef DEBUG
-        if (EMIT_GC_VERBOSE)
-        {
-            printf("%sReg +[%s]\n", GCtypeStr(gcType), emitRegName(reg));
-        }
-#endif
     }
 
     // The 2 GC reg masks can't be overlapping
@@ -6649,17 +6753,6 @@ void emitter::emitGCregDeadUpdMask(regMaskTP regs, BYTE* addr)
         }
 
         emitThisGCrefRegs &= ~gcrefRegs;
-
-#ifdef DEBUG
-        if (EMIT_GC_VERBOSE)
-        {
-            printf("gcrReg ");
-            printRegMaskInt(gcrefRegs);
-            printf(" -");
-            emitDispRegSet(gcrefRegs);
-            printf("\n");
-        }
-#endif
     }
 
     // Second, handle the byref regs going dead
@@ -6676,17 +6769,6 @@ void emitter::emitGCregDeadUpdMask(regMaskTP regs, BYTE* addr)
         }
 
         emitThisByrefRegs &= ~byrefRegs;
-
-#ifdef DEBUG
-        if (EMIT_GC_VERBOSE)
-        {
-            printf("byrReg ");
-            printRegMaskInt(byrefRegs);
-            printf(" -");
-            emitDispRegSet(byrefRegs);
-            printf("\n");
-        }
-#endif
     }
 }
 
@@ -6717,13 +6799,6 @@ void emitter::emitGCregDeadUpd(regNumber reg, BYTE* addr)
         }
 
         emitThisGCrefRegs &= ~regMask;
-
-#ifdef DEBUG
-        if (EMIT_GC_VERBOSE)
-        {
-            printf("%s -[%s]\n", "gcrReg", emitRegName(reg));
-        }
-#endif
     }
     else if ((emitThisByrefRegs & regMask) != 0)
     {
@@ -6733,13 +6808,6 @@ void emitter::emitGCregDeadUpd(regNumber reg, BYTE* addr)
         }
 
         emitThisByrefRegs &= ~regMask;
-
-#ifdef DEBUG
-        if (EMIT_GC_VERBOSE)
-        {
-            printf("%s -[%s]\n", "byrReg", emitRegName(reg));
-        }
-#endif
     }
 }
 
@@ -6751,7 +6819,7 @@ void emitter::emitGCregDeadUpd(regNumber reg, BYTE* addr)
  *    need a valid value to check if the variable is tracked or not.
  */
 
-void emitter::emitGCvarLiveUpd(int offs, int varNum, GCtype gcType, BYTE* addr)
+void emitter::emitGCvarLiveUpd(int offs, int varNum, GCtype gcType, BYTE* addr DEBUG_ARG(unsigned actualVarNum))
 {
     assert(abs(offs) % sizeof(int) == 0);
     assert(needsGC(gcType));
@@ -6774,13 +6842,6 @@ void emitter::emitGCvarLiveUpd(int offs, int varNum, GCtype gcType, BYTE* addr)
             regPtrNext->rpdPtrArg  = (unsigned short)offs;
             regPtrNext->rpdArgType = (unsigned short)GCInfo::rpdARG_PUSH;
             regPtrNext->rpdIsThis  = FALSE;
-
-#ifdef DEBUG
-            if (EMIT_GC_VERBOSE)
-            {
-                printf("[%04X] %s arg write\n", offs, GCtypeStr(gcType));
-            }
-#endif
         }
     }
     else
@@ -6833,6 +6894,13 @@ void emitter::emitGCvarLiveUpd(int offs, int varNum, GCtype gcType, BYTE* addr)
             if (emitGCrFrameLiveTab[disp] == nullptr)
             {
                 emitGCvarLiveSet(offs, gcType, addr, disp);
+#ifdef DEBUG
+                if ((EMIT_GC_VERBOSE || emitComp->opts.disasmWithGC) && (actualVarNum < emitComp->lvaCount) &&
+                    emitComp->lvaGetDesc(actualVarNum)->lvTracked)
+                {
+                    VarSetOps::AddElemD(emitComp, debugThisGCrefVars, emitComp->lvaGetDesc(actualVarNum)->lvVarIndex);
+                }
+#endif
             }
         }
     }
@@ -6843,7 +6911,7 @@ void emitter::emitGCvarLiveUpd(int offs, int varNum, GCtype gcType, BYTE* addr)
  *  Record the fact that the given variable no longer contains a live GC ref.
  */
 
-void emitter::emitGCvarDeadUpd(int offs, BYTE* addr)
+void emitter::emitGCvarDeadUpd(int offs, BYTE* addr DEBUG_ARG(unsigned varNum))
 {
     assert(emitIssuing);
     assert(abs(offs) % sizeof(int) == 0);
@@ -6865,6 +6933,13 @@ void emitter::emitGCvarDeadUpd(int offs, BYTE* addr)
         {
             assert(!emitComp->lvaKeepAliveAndReportThis() || (offs != emitSyncThisObjOffs));
             emitGCvarDeadSet(offs, addr, disp);
+#ifdef DEBUG
+            if ((EMIT_GC_VERBOSE || emitComp->opts.disasmWithGC) && (varNum < emitComp->lvaCount) &&
+                emitComp->lvaGetDesc(varNum)->lvTracked)
+            {
+                VarSetOps::RemoveElemD(emitComp, debugThisGCrefVars, emitComp->lvaGetDesc(varNum)->lvVarIndex);
+            }
+#endif
         }
     }
 }
@@ -7228,13 +7303,6 @@ void emitter::emitStackPushLargeStk(BYTE* addr, GCtype gcType, unsigned count)
                 regPtrNext->rpdPtrArg  = (unsigned short)level.Value();
                 regPtrNext->rpdArgType = (unsigned short)GCInfo::rpdARG_PUSH;
                 regPtrNext->rpdIsThis  = FALSE;
-
-#ifdef DEBUG
-                if (EMIT_GC_VERBOSE)
-                {
-                    printf("[%08X] %s arg push %u\n", dspPtr(regPtrNext), GCtypeStr(gcType), level.Value());
-                }
-#endif
             }
 
             /* This is an "interesting" argument push */
@@ -7367,13 +7435,6 @@ void emitter::emitStackPopLargeStk(BYTE* addr, bool isCall, unsigned char callIn
     regPtrNext->rpdArg           = TRUE;
     regPtrNext->rpdArgType       = (unsigned short)GCInfo::rpdARG_POP;
     regPtrNext->rpdPtrArg        = argRecCnt.Value();
-
-#ifdef DEBUG
-    if (EMIT_GC_VERBOSE)
-    {
-        printf("[%08X] ptr arg pop  %u\n", dspPtr(regPtrNext), count);
-    }
-#endif
 }
 
 /*****************************************************************************
@@ -7454,13 +7515,6 @@ void emitter::emitStackKillArgs(BYTE* addr, unsigned count, unsigned char callIn
             regPtrNext->rpdArg     = TRUE;
             regPtrNext->rpdArgType = (unsigned short)GCInfo::rpdARG_KILL;
             regPtrNext->rpdPtrArg  = gcCnt.Value();
-
-#ifdef DEBUG
-            if (EMIT_GC_VERBOSE)
-            {
-                printf("[%08X] ptr arg kill %u\n", dspPtr(regPtrNext), count);
-            }
-#endif
         }
 
         /* Now that ptr args have been marked as non-ptrs, we need to record

@@ -228,7 +228,7 @@ namespace System.Xml
 
         public bool Equals(StringHandle? other)
         {
-            if (ReferenceEquals(other, null))
+            if (other is null)
                 return false;
             StringHandleType type = other._type;
             if (type == StringHandleType.Dictionary)

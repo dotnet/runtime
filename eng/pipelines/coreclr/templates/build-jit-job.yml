@@ -96,14 +96,14 @@ jobs:
 
     # Build CoreCLR JIT
     - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-      - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) $(crossArg) -ci $(compilerArg) -skipruntime -skipalljits -nopgooptimize
+      - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) $(crossArg) -ci $(compilerArg) -skipruntime -nopgooptimize
         displayName: Build CoreCLR JIT
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-      - script: set __TestIntermediateDir=int&&$(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) -ci -skipruntime -skipalljits -nopgooptimize -skiprestoreoptdata
+      - script: set __TestIntermediateDir=int&&$(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) -ci -skipruntime -nopgooptimize -skiprestoreoptdata
         displayName: Build CoreCLR JIT
 
     # Ensure the Python azure-storage-blob package is installed before doing the upload.
-    - script: $(PipScript) install --user azure.storage.blob==12.0.0 --force-reinstall
+    - script: $(PipScript) install --user azure.storage.blob==12.5.0 --force-reinstall
       displayName: Install azure-storage-blob Python package
 
     - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/jitrollingbuild.py upload -build_type $(buildConfig) -arch $(archType) -host_os $(osGroup) -git_hash $(Build.SourceVersion)

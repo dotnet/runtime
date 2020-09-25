@@ -108,6 +108,11 @@ list_collections_description = """\
 List the existing collections in the SuperPMI Azure storage.
 """
 
+merge_mch_description = """\
+Utility command to merge MCH files. This is a thin wrapper around
+'mcs -merge -recursive -dedup -thin' followed by 'mcs -toc'.
+"""
+
 log_file_help = "Write output to a log file. Requires --sequential."
 
 jit_ee_version_help = """\
@@ -165,6 +170,12 @@ force_download_help = """\
 If downloading an MCH file, always download it. Don't use an existing file in the download location.
 Normally, we don't download if the target directory exists. This forces download even if the
 target directory already exists.
+"""
+
+merge_mch_pattern_help = """\
+A pattern to describing files to merge, passed through directly to `mcs -merge`.
+Acceptable patterns include `*.mch`, `file*.mch`, and `c:\my\directory\*.mch`.
+Only the final component can contain a `*` wildcard; the directory path cannot.
 """
 
 # Start of parser object creation.
@@ -234,7 +245,7 @@ replay_common_parser.add_argument("-mch_files", metavar="MCH_FILE", nargs='+', h
 replay_common_parser.add_argument("-filter", nargs='+', help=filter_help)
 replay_common_parser.add_argument("-product_location", help=product_location_help)
 replay_common_parser.add_argument("--force_download", action="store_true", help=force_download_help)
-replay_common_parser.add_argument("-altjit", nargs='?', const=True, help="Replay with an altjit. If an argument is specified, it is used as the name of the altjit (e.g., 'protojit.dll'). Otherwise, the default altjit name is used.")
+replay_common_parser.add_argument("-altjit", help="Replay with an altjit. Specify the filename of the altjit to use, e.g., 'clrjit_win_arm64_x64.dll'.")
 replay_common_parser.add_argument("-jit_ee_version", help=jit_ee_version_help)
 
 # subparser for replay
@@ -283,6 +294,13 @@ list_collections_parser.add_argument("-jit_ee_version", help=jit_ee_version_help
 list_collections_parser.add_argument("--all", action="store_true", help="Show all MCH files, not just those for the specified (or default) JIT-EE version, OS, and architecture")
 list_collections_parser.add_argument("--local", action="store_true", help="Show the local MCH download cache")
 list_collections_parser.add_argument("-spmi_location", help=spmi_location_help)
+
+# subparser for merge-mch
+
+merge_mch_parser = subparsers.add_parser("merge-mch", description=merge_mch_description, parents=[core_root_parser])
+
+merge_mch_parser.add_argument("-output_mch_path", required=True, help="Location to place the final MCH file.")
+merge_mch_parser.add_argument("-pattern", required=True, help=merge_mch_pattern_help)
 
 ################################################################################
 # Helper functions
@@ -554,22 +572,19 @@ class SuperPMICollect:
 
         if coreclr_args.host_os == "OSX":
             self.collection_shim_name = "libsuperpmi-shim-collector.dylib"
-            self.mcs_tool_name = "mcs"
             self.corerun_tool_name = "corerun"
         elif coreclr_args.host_os == "Linux":
             self.collection_shim_name = "libsuperpmi-shim-collector.so"
-            self.mcs_tool_name = "mcs"
             self.corerun_tool_name = "corerun"
         elif coreclr_args.host_os == "Windows_NT":
             self.collection_shim_name = "superpmi-shim-collector.dll"
-            self.mcs_tool_name = "mcs.exe"
             self.corerun_tool_name = "corerun.exe"
         else:
             raise RuntimeError("Unsupported OS.")
 
         self.jit_path = os.path.join(coreclr_args.core_root, determine_jit_name(coreclr_args))
         self.superpmi_path = determine_superpmi_tool_path(coreclr_args)
-        self.mcs_path = os.path.join(coreclr_args.core_root, self.mcs_tool_name)
+        self.mcs_path = determine_mcs_tool_path(coreclr_args)
 
         self.core_root = coreclr_args.core_root
 
@@ -1577,6 +1592,9 @@ def determine_coredis_tools(coreclr_args):
         coredistools_location (str)     : path of [lib]coredistools.dylib|so|dll
     """
 
+    if not hasattr(coreclr_args, "core_root") or coreclr_args.core_root is None:
+        raise RuntimeError("Core_Root not set properly")
+
     coredistools_dll_name = None
     if coreclr_args.host_os.lower() == "osx":
         coredistools_dll_name = "libcoredistools.dylib"
@@ -1591,6 +1609,13 @@ def determine_coredis_tools(coreclr_args):
     if os.path.isfile(coredistools_location):
         print("Using coredistools found at {}".format(coredistools_location))
     else:
+        # Often, Core_Root will already exist. However, you can do a product build without
+        # creating a Core_Root, and successfully run replay or asm diffs, if we just create Core_Root
+        # and copy coredistools there. Note that our replays all depend on Core_Root existing, as we
+        # set the current directory to Core_Root before running superpmi.
+        if not os.path.isdir(coreclr_args.core_root):
+            print("Warning: Core_Root does not exist at \"{}\"; creating it now".format(coreclr_args.core_root))
+            os.makedirs(coreclr_args.core_root)
         coredistools_uri = az_blob_storage_superpmi_container_uri + "/libcoredistools/{}-{}/{}".format(coreclr_args.host_os.lower(), coreclr_args.arch.lower(), coredistools_dll_name)
         print("Download: {} -> {}".format(coredistools_uri, coredistools_location))
         urllib.request.urlretrieve(coredistools_uri, coredistools_location)
@@ -1635,22 +1660,22 @@ def determine_pmi_location(coreclr_args):
     return pmi_location
 
 def determine_jit_name(coreclr_args):
-    """ Determine the jit based on the OS. If "-altjit" is specified, then use the specified altjit,
-        or an appropriate altjit based on target.
+    """ Determine the jit based on the OS. If "-altjit" is specified, then use the specified altjit.
+        This function is called for cases where the "-altjit" flag is not used, so be careful not
+        to depend on the "altjit" attribute existing.
 
     Args:
         coreclr_args (CoreclrArguments): parsed args
 
     Return:
-        jit_name(str) : name of the jit for this os
+        jit_name(str) : name of the jit for this OS
     """
 
-    jit_base_name = "clrjit"
-    if isinstance(coreclr_args.altjit, str):
-        jit_base_name = coreclr_args.altjit
-    elif coreclr_args.altjit == True:
-        jit_base_name = "protononjit"
+    # If `-altjit` is used, it must be given a full filename, not just a "base name", so use it without additional processing.
+    if hasattr(coreclr_args, "altjit") and coreclr_args.altjit is not None:
+        return coreclr_args.altjit
 
+    jit_base_name = "clrjit"
     if coreclr_args.host_os == "OSX":
         return "lib" + jit_base_name + ".dylib"
     elif coreclr_args.host_os == "Linux":
@@ -1659,6 +1684,46 @@ def determine_jit_name(coreclr_args):
         return jit_base_name + ".dll"
     else:
         raise RuntimeError("Unknown OS.")
+
+def find_tool(coreclr_args, tool_name, search_core_root=True, search_product_location=True, search_PATH=True):
+    """ Find a tool or any specified file (e.g., clrjit.dll) and return the full path to that tool if found.
+
+    Args:
+        coreclr_args (CoreclrArguments): parsed args
+        tool_name (str): tool to find, e.g., "superpmi.exe"
+        search_core_root (bool): True to search the Core_Root folder
+        search_product_location: True to search the build product folder
+        search_PATH: True to search along the PATH
+
+    Return:
+        (str) Full path of the tool, or None if not found.
+    """
+
+    # First, look in Core_Root, if there is one.
+    if search_core_root and hasattr(coreclr_args, "core_root") and coreclr_args.core_root is not None and os.path.isdir(coreclr_args.core_root):
+        tool_path = os.path.join(coreclr_args.core_root, tool_name)
+        if os.path.isfile(tool_path):
+            print("Using {} from Core_Root: {}".format(tool_name, tool_path))
+            return tool_path
+
+    # Next, look in the built product directory, if it exists. We can use superpmi/mcs directly from the
+    # product build directory instead from Core_Root because they don't depend on managed code libraries.
+    if search_product_location and hasattr(coreclr_args, "product_location") and coreclr_args.product_location is not None and os.path.isdir(coreclr_args.product_location):
+        tool_path = os.path.join(coreclr_args.product_location, tool_name)
+        if os.path.isfile(tool_path):
+            print("Using {} from product build location: {}".format(tool_name, tool_path))
+            return tool_path
+
+    # Finally, look on the PATH
+    if search_PATH:
+        search_path = os.environ.get("PATH")
+        if search_path is not None:
+            tool_path = find_file(tool_name, search_path.split(";"))
+            if tool_path is not None:
+                print("Using {} from PATH: {}".format(tool_name, tool_path))
+                return tool_path
+
+    raise RuntimeError("Tool " + tool_name + " not found. Have you built the runtime repo and created a Core_Root, or put it on your PATH?")
 
 def determine_superpmi_tool_name(coreclr_args):
     """ Determine the superpmi tool name based on the OS
@@ -1670,9 +1735,7 @@ def determine_superpmi_tool_name(coreclr_args):
         (str) Name of the superpmi tool to use
     """
 
-    if coreclr_args.host_os == "OSX":
-        return "superpmi"
-    elif coreclr_args.host_os == "Linux":
+    if coreclr_args.host_os == "OSX" or coreclr_args.host_os == "Linux":
         return "superpmi"
     elif coreclr_args.host_os == "Windows_NT":
         return "superpmi.exe"
@@ -1690,16 +1753,94 @@ def determine_superpmi_tool_path(coreclr_args):
     """
 
     superpmi_tool_name = determine_superpmi_tool_name(coreclr_args)
-    superpmi_tool_path = os.path.join(coreclr_args.core_root, superpmi_tool_name)
-    if not os.path.isfile(superpmi_tool_path):
-        # We couldn't find superpmi in core_root. This is probably fatal.
-        # However, just in case, check for it on the PATH.
-        search_path = os.environ.get("PATH")
-        superpmi_tool_path = find_file(superpmi_tool_name, search_path.split(";")) if search_path is not None else None
-        if superpmi_tool_path is None:
-            raise RuntimeError("Superpmi tool not found. Have you built the runtime repo and created a Core_Root?")
+    return find_tool(coreclr_args, superpmi_tool_name)
 
-    return superpmi_tool_path
+def determine_mcs_tool_name(coreclr_args):
+    """ Determine the mcs tool name based on the OS
+
+    Args:
+        coreclr_args (CoreclrArguments): parsed args
+
+    Return:
+        (str) Name of the mcs tool to use
+    """
+
+    if coreclr_args.host_os == "OSX" or coreclr_args.host_os == "Linux":
+        return "mcs"
+    elif coreclr_args.host_os == "Windows_NT":
+        return "mcs.exe"
+    else:
+        raise RuntimeError("Unsupported OS.")
+
+def determine_mcs_tool_path(coreclr_args):
+    """ Determine the mcs tool full path
+
+    Args:
+        coreclr_args (CoreclrArguments): parsed args
+
+    Return:
+        (str) Path of the mcs tool to use
+    """
+
+    mcs_tool_name = determine_mcs_tool_name(coreclr_args)
+    return find_tool(coreclr_args, mcs_tool_name)
+
+def determine_jit_ee_version(coreclr_args):
+    """ Determine the JIT-EE version to use, for determining which MCH files to download and use, as follows:
+        1. Try to parse it out of the source code. If we can find src\coreclr\src\inc\corinfo.h in the source
+           tree (and we're already assuming we can find the repo root from the relative path of this script),
+           then the JIT-EE version lives in corinfo.h as follows:
+
+           constexpr GUID JITEEVersionIdentifier = { /* a5eec3a4-4176-43a7-8c2b-a05b551d4f49 */
+               0xa5eec3a4,
+               0x4176,
+               0x43a7,
+               {0x8c, 0x2b, 0xa0, 0x5b, 0x55, 0x1d, 0x4f, 0x49}
+           };
+
+           We want the string between the /* */ comments.
+        2. Find the mcs tool and run "mcs -printJITEEVersion".
+        3. Otherwise, just use "unknown-jit-ee-version", which will probably cause downstream failures.
+
+        NOTE: When using mcs, we need to run the tool. So we need a version that will run. If a user specifies
+              an "-arch" argument that creates a Core_Root path that won't run, like an arm32 Core_Root on an
+              x64 machine, this won't work. This could happen if doing "upload" or "list-collections" on
+              collections from a machine that didn't create the native collections. We should create a "native"
+              Core_Root and use that in case there are "cross-arch" scenarios.
+
+    Args:
+        coreclr_args (CoreclrArguments): parsed args
+
+    Return:
+        (str) The JIT-EE version to use
+    """
+
+    corinfo_h_path = os.path.join(coreclr_args.coreclr_dir, "src", "inc", "corinfo.h")
+    if os.path.isfile(corinfo_h_path):
+        # The string is near the beginning of the somewhat large file, so just read a line at a time when searching.
+        with open(corinfo_h_path, 'r') as file_handle:
+            for line in file_handle:
+                match_obj = re.search(r'JITEEVersionIdentifier *= *{ */\* *([^ ]*) *\*/', line)
+                if match_obj is not None:
+                    corinfo_h_jit_ee_version = match_obj.group(1)
+                    print("Using JIT/EE Version from corinfo.h: {}".format(corinfo_h_jit_ee_version))
+                    return corinfo_h_jit_ee_version
+            print("Warning: couldn't find JITEEVersionIdentifier in {}; is the file corrupt?".format(corinfo_h_path))
+
+    mcs_path = determine_mcs_tool_path(coreclr_args)
+    command = [mcs_path, "-printJITEEVersion"]
+    proc = subprocess.Popen(command, stdout=subprocess.PIPE)
+    stdout_jit_ee_version, stderr_output = proc.communicate()
+    return_code = proc.returncode
+    if return_code == 0:
+        mcs_jit_ee_version = stdout_jit_ee_version.decode('utf-8').strip()
+        print("Using JIT/EE Version from mcs: {}".format(mcs_jit_ee_version))
+        return mcs_jit_ee_version
+
+    # Otherwise, use the default "unknown" version.
+    default_jit_ee_version = "unknown-jit-ee-version"
+    print("Using default JIT/EE Version: {}".format(default_jit_ee_version))
+    return default_jit_ee_version
 
 def print_platform_specific_environment_vars(coreclr_args, var, value):
     """ Print environment variables as set {}={} or export {}={}
@@ -1965,7 +2106,7 @@ def download_urls(urls, target_dir, verbose=True, fail_if_not_found=True):
 def upload_mch(coreclr_args):
     """ Upload a set of MCH files. Each MCH file is first ZIP compressed to save data space and upload/download time.
 
-        TODO: Add baseline altjits upload?
+        TODO: Upload baseline altjits or cross-compile JITs?
 
     Args:
         coreclr_args (CoreclrArguments): parsed args
@@ -2134,6 +2275,41 @@ def list_collections_local_command(coreclr_args):
         print("{}".format(item))
 
     print("")
+
+
+def merge_mch(coreclr_args):
+    """ Merge all the files specified by a given pattern into a single output MCH file.
+        This is a utility function mostly for use by the CI scripting. It is a
+        thin wrapper around:
+
+            mcs -merge <output_mch_path> <pattern> -recursive -dedup -thin
+            mcs -toc <output_mch_path>
+
+    Args:
+        coreclr_args (CoreclrArguments) : parsed args
+
+    Returns:
+        True on success, else False
+    """
+
+    mcs_path = determine_mcs_tool_path(coreclr_args)
+    command = [mcs_path, "-merge", coreclr_args.output_mch_path, coreclr_args.pattern, "-recursive", "-dedup", "-thin"]
+    proc = subprocess.Popen(command)
+    proc.communicate()
+    return_code = proc.returncode
+    if return_code != 0:
+        print("mcs -merge Failed with code {}".format(return_code))
+        return False
+
+    command = [mcs_path, "-toc", coreclr_args.output_mch_path]
+    proc = subprocess.Popen(command)
+    proc.communicate()
+    return_code = proc.returncode
+    if return_code != 0:
+        print("mcs -toc Failed with code {}".format(return_code))
+        return False
+
+    return True
 
 
 def get_mch_files_for_replay(coreclr_args):
@@ -2333,41 +2509,12 @@ def setup_args(args):
         if jit_ee_version is not None:
             # The user passed a specific jit_ee_version on the command-line, so use that
             return jit_ee_version
+        return determine_jit_ee_version(coreclr_args)
 
-        # Try to find the mcs tool, and run "mcs -printJITEEVersion" to find the version.
-        # NOTE: we need to run this tool. So we need a version that will run. If a user specifies a "-arch" that creates
-        #       a core_root path that won't run, like an arm32 core_root on an x64 machine, this won't work. This could happen
-        #       if doing "upload" or "list-collections" on collections from a machine that didn't create the native collections.
-        #       We should create a "native" core_root and use that in case there are "cross-arch" scenarios.
-
-        # NOTE: there's some code duplication between here and SuperPMICollect::__init__, for finding the mcs path.
-
-        if coreclr_args.host_os == "OSX" or coreclr_args.host_os == "Linux":
-            mcs_tool_name = "mcs"
-        elif coreclr_args.host_os == "Windows_NT":
-            mcs_tool_name = "mcs.exe"
-        else:
-            raise RuntimeError("Unsupported OS.")
-
-        mcs_path = os.path.join(coreclr_args.core_root, mcs_tool_name)
-        if os.path.isfile(mcs_path):
-            command = [mcs_path, "-printJITEEVersion"]
-            proc = subprocess.Popen(command, stdout=subprocess.PIPE)
-            stdout_jit_ee_version, stderr_output = proc.communicate()
-            return_code = proc.returncode
-            if return_code == 0:
-                mcs_jit_ee_version = stdout_jit_ee_version.decode('utf-8').strip()
-                print("Using JIT/EE Version: {}".format(mcs_jit_ee_version))
-                return mcs_jit_ee_version
-            else:
-                print("Note: \"{}\" failed".format(" ".join(command)))
-        else:
-            print("Note: \"{}\" not found".format(mcs_path))
-
-        # Otherwise, use the default "unknown" version.
-        default_jit_ee_version = "unknown-jit-ee-version"
-        print("Using JIT/EE Version: {}".format(default_jit_ee_version))
-        return default_jit_ee_version
+    def setup_jit_path_arg(jit_path):
+        if jit_path is not None:
+            return os.path.abspath(jit_path)
+        return find_tool(coreclr_args, determine_jit_name(coreclr_args), search_PATH=False) # It doesn't make sense to search PATH for the JIT dll.
 
     def verify_superpmi_common_args():
 
@@ -2512,11 +2659,6 @@ def setup_args(args):
                             lambda unused: True,
                             "Unable to set use_zapdisable")
 
-        coreclr_args.verify(False,          # Force it to false. TODO: support altjit collections?
-                            "altjit",
-                            lambda unused: True,
-                            "Unable to set altjit.")
-
         if args.collection_command is None and args.merge_mch_files is not True:
             assert args.collection_args is None
             assert args.pmi is True
@@ -2535,15 +2677,15 @@ def setup_args(args):
                             "jit_path",
                             lambda jit_path: os.path.isfile(jit_path),
                             lambda jit_path: "Error: JIT not found at jit_path {}".format(jit_path),
-                            modify_arg=lambda arg: os.path.join(coreclr_args.core_root, determine_jit_name(coreclr_args)) if arg is None else os.path.abspath(arg))
+                            modify_arg=lambda arg: setup_jit_path_arg(arg))
 
-        standard_location = False
+        jit_in_product_location = False
         if coreclr_args.product_location.lower() in coreclr_args.jit_path.lower():
-            standard_location = True
+            jit_in_product_location = True
 
         determined_arch = None
         determined_build_type = None
-        if standard_location:
+        if jit_in_product_location:
             # Get os/arch/flavor directory, e.g. split "F:\gh\runtime\artifacts\bin\coreclr\Windows_NT.x64.Checked" with "F:\gh\runtime\artifacts\bin\coreclr"
             # yielding
             # [0]: ""
@@ -2565,7 +2707,7 @@ def setup_args(args):
 
         # Make a more intelligent decision about the arch and build type
         # based on the path of the jit passed
-        if standard_location and not coreclr_args.build_type in coreclr_args.jit_path:
+        if jit_in_product_location and coreclr_args.build_type not in coreclr_args.jit_path:
             coreclr_args.verify(determined_arch.lower(),
                                 "arch",
                                 lambda unused: True,
@@ -2589,8 +2731,8 @@ def setup_args(args):
         coreclr_args.verify(args,
                             "diff_jit_path",
                             lambda jit_path: os.path.isfile(jit_path),
-                            "Unable to set diff_jit_path",
-                            modify_arg=lambda arg: os.path.join(coreclr_args.core_root, determine_jit_name(coreclr_args)) if arg is None else os.path.abspath(arg))
+                            lambda diff_jit_path: "Error: JIT not found at diff_jit_path {}".format(diff_jit_path),
+                            modify_arg=lambda arg: setup_jit_path_arg(arg))
 
         coreclr_args.verify(args,
                             "git_hash",
@@ -2643,13 +2785,13 @@ def setup_args(args):
 
         process_base_jit_path_arg(coreclr_args)
 
-        standard_location = False
+        jit_in_product_location = False
         if coreclr_args.product_location.lower() in coreclr_args.base_jit_path.lower():
-            standard_location = True
+            jit_in_product_location = True
 
         determined_arch = None
         determined_build_type = None
-        if standard_location:
+        if jit_in_product_location:
             # Get os/arch/flavor directory, e.g. split "F:\gh\runtime\artifacts\bin\coreclr\Windows_NT.x64.Checked" with "F:\gh\runtime\artifacts\bin\coreclr"
             # yielding
             # [0]: ""
@@ -2671,13 +2813,13 @@ def setup_args(args):
 
         # Make a more intelligent decision about the arch and build type
         # based on the path of the jit passed
-        if standard_location and not coreclr_args.build_type in coreclr_args.base_jit_path:
+        if jit_in_product_location and coreclr_args.build_type not in coreclr_args.base_jit_path:
             coreclr_args.verify(determined_build_type,
                                 "build_type",
                                 coreclr_args.check_build_type,
                                 "Invalid build_type")
 
-        if standard_location and not coreclr_args.arch in coreclr_args.base_jit_path:
+        if jit_in_product_location and coreclr_args.arch not in coreclr_args.base_jit_path:
             coreclr_args.verify(determined_arch.lower(),
                                 "arch",
                                 lambda unused: True,
@@ -2765,6 +2907,18 @@ def setup_args(args):
                             lambda unused: True,
                             "Unable to set spmi_location",
                             modify_arg=lambda spmi_location: os.path.abspath(os.path.join(coreclr_args.artifacts_location, "spmi")) if spmi_location is None else spmi_location)
+
+    elif coreclr_args.mode == "merge-mch":
+
+        coreclr_args.verify(args,
+                            "output_mch_path",
+                            lambda output_mch_path: not os.path.isdir(os.path.abspath(output_mch_path)) and not os.path.isfile(os.path.abspath(output_mch_path)),
+                            "Invalid output_mch_path; is it an existing directory or file?")
+
+        coreclr_args.verify(args,
+                            "pattern",
+                            lambda unused: True,
+                            "Unable to set pattern")
 
     return coreclr_args
 
@@ -2924,6 +3078,9 @@ def main(args):
             list_collections_local_command(coreclr_args)
         else:
             list_collections_command(coreclr_args)
+
+    elif coreclr_args.mode == "merge-mch":
+        success = merge_mch(coreclr_args)
 
     else:
         raise NotImplementedError(coreclr_args.mode)

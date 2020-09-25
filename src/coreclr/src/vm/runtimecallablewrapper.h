@@ -707,7 +707,6 @@ protected:
     MethodTable *m_pClassMT;
 };
 
-class ComClassFactoryCreator;
 //-------------------------------------------------------------------------
 // Class that wraps an IClassFactory
 // This class allows a Reflection Class to wrap an IClassFactory
@@ -719,9 +718,7 @@ class ComClassFactoryCreator;
 //
 class ComClassFactory : public ClassFactoryBase
 {
-protected:
-    friend ComClassFactoryCreator;
-
+public:
     // We have two types of ComClassFactory:
     // 1. We build for reflection purpose.  We should not clean up.
     // 2. We build for IClassFactory.  We should clean up.
@@ -731,15 +728,13 @@ protected:
     {
         WRAPPER_NO_CONTRACT;
 
-        m_pwszProgID = NULL;
-        m_pwszServer = NULL;
+        m_wszServer = NULL;
 
         // Default to unmanaged version.
         m_bManagedVersion = FALSE;
         m_rclsid = rclsid;
     }
 
-public :
     //---------------------------------------------------------
     // Mark this instance as Managed Version, so we will not do clean up.
     void SetManagedVersion()
@@ -750,7 +745,7 @@ public :
 
     //--------------------------------------------------------------
     // Init the ComClassFactory
-    void Init(__in_opt WCHAR* pwszProgID, __in_opt WCHAR* pwszServer, MethodTable* pClassMT);
+    void Init(__in_opt PCWSTR wszServer, MethodTable* pClassMT);
 
     //-------------------------------------------------------------
     // create instance, calls IClassFactory::CreateInstance
@@ -786,31 +781,11 @@ private:
     IUnknown *CreateInstanceFromClassFactory(IClassFactory *pClassFact, IUnknown *punkOuter, BOOL *pfDidContainment);
 
 public:;
-    WCHAR*          m_pwszProgID;   // progId
     CLSID           m_rclsid;       // CLSID
-    WCHAR*          m_pwszServer;   // server name
+    PCWSTR          m_wszServer;   // server name
 
 private:
     BOOL            m_bManagedVersion;
-};
-
-//--------------------------------------------------------------
-// Creates the right ComClassFactory for you
-class ComClassFactoryCreator
-{
-public :
-    static ComClassFactory *Create(REFCLSID rclsid)
-    {
-        CONTRACT(ComClassFactory *)
-        {
-            THROWS;
-            GC_NOTRIGGER;
-            MODE_ANY;
-        }
-        CONTRACT_END;
-
-        RETURN new ComClassFactory(rclsid);
-    }
 };
 #endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
 

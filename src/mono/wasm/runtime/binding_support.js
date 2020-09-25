@@ -142,6 +142,9 @@ var BindingSupportLib = {
 		},
 
 		js_string_to_mono_string: function (string) {
+			if (string === null || typeof string === "undefined")
+				return 0;
+
 			var buffer = Module._malloc ((string.length + 1) * 2);
 			var buffer16 = (buffer / 2) | 0;
 			for (var i = 0; i < string.length; i++)

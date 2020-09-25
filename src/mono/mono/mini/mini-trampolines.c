@@ -968,23 +968,24 @@ gpointer
 mono_aot_plt_trampoline (host_mgreg_t *regs, guint8 *code, guint8 *aot_module, 
 						 guint8* tramp)
 {
-	MONO_REQ_GC_UNSAFE_MODE;
-
 	gpointer res;
 	ERROR_DECL (error);
 
+	MONO_ENTER_GC_UNSAFE;
 	UnlockedIncrement (&trampoline_calls);
 
 	res = mono_aot_plt_resolve (aot_module, regs, code, error);
 	if (!res) {
 		if (!is_ok (error)) {
 			mono_error_set_pending_exception (error);
-			return NULL;
+			res = NULL;
+		} else {
+			// FIXME: Error handling (how ?)
+			g_assert (res);
 		}
-		// FIXME: Error handling (how ?)
-		g_assert (res);
 	}
 
+	MONO_EXIT_GC_UNSAFE;
 	return res;
 }
 #endif

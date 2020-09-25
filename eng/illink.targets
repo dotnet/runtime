@@ -26,7 +26,7 @@
   <!-- Inputs and outputs of ILLinkTrimAssembly -->
   <PropertyGroup>
     <ILLinkTasksDir>$([MSBuild]::NormalizeDirectory('$(PkgMicrosoft_NET_ILLink_Tasks)', 'tools'))</ILLinkTasksDir>
-    <ILLinkTasksPath Condition="'$(ILLinkTasksPath)' == '' and '$(MSBuildRuntimeType)' == 'core'">$(ILLinkTasksDir)netcoreapp3.0/ILLink.Tasks.dll</ILLinkTasksPath>
+    <ILLinkTasksPath Condition="'$(ILLinkTasksPath)' == '' and '$(MSBuildRuntimeType)' == 'core'">$(ILLinkTasksDir)net5.0/ILLink.Tasks.dll</ILLinkTasksPath>
     <ILLinkTasksPath Condition="'$(ILLinkTasksPath)' == '' and '$(MSBuildRuntimeType)' != 'core'">$(ILLinkTasksDir)net472/ILLink.Tasks.dll</ILLinkTasksPath>
     <ILLinkTrimAssemblyPath>$(IntermediateOutputPath)$(TargetName)$(TargetExt)</ILLinkTrimAssemblyPath>
     <ILLinkTrimAssemblySymbols>$(IntermediateOutputPath)$(TargetName).pdb</ILLinkTrimAssemblySymbols>
@@ -281,7 +281,8 @@
     <!-- When running from Desktop MSBuild, DOTNET_HOST_PATH is not set.
          In this case, explicitly specify the path to the dotnet host. -->
     <PropertyGroup Condition=" '$(DOTNET_HOST_PATH)' == '' ">
-      <_DotNetHostDirectory>$(DotNetRoot)</_DotNetHostDirectory>
+      <!-- This is defined when building in Visual Studio. -->
+      <_DotNetHostDirectory>$(NetCoreRoot)</_DotNetHostDirectory>
       <_DotNetHostFileName>$([System.IO.Path]::GetFileName('$(DotNetTool)'))</_DotNetHostFileName>
     </PropertyGroup>
 

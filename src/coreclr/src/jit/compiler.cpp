@@ -2945,6 +2945,10 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
                 }
             }
         }
+        if (opts.disAsm && JitConfig.JitDisasmWithGC())
+        {
+            opts.disasmWithGC = true;
+        }
 
 #ifdef LATE_DISASM
         if (JitConfig.JitLateDisasm().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
@@ -3256,18 +3260,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         }
     }
 #endif
-
-    opts.compGCPollType = GCPOLL_NONE;
-    if (jitFlags->IsSet(JitFlags::JIT_FLAG_GCPOLL_CALLS))
-    {
-        opts.compGCPollType = GCPOLL_CALL;
-    }
-    else if (jitFlags->IsSet(JitFlags::JIT_FLAG_GCPOLL_INLINE))
-    {
-        // make sure that the EE didn't set both flags.
-        assert(opts.compGCPollType == GCPOLL_NONE);
-        opts.compGCPollType = GCPOLL_INLINE;
-    }
 
 #ifdef PROFILING_SUPPORTED
 #ifdef UNIX_AMD64_ABI
@@ -4537,7 +4529,11 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
 
     // Compute bbNum, bbRefs and bbPreds
     //
-    // This is the first time full (not cheap) preds will be computed
+    // This is the first time full (not cheap) preds will be computed.
+    // And, if we have profile data, we can now check integrity.
+    //
+    // From this point on the flowgraph information such as bbNum,
+    // bbRefs or bbPreds has to be kept updated.
     //
     auto computePredsPhase = [this]() {
         JITDUMP("\nRenumbering the basic blocks for fgComputePred\n");
@@ -4564,9 +4560,6 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
         DoPhase(this, PHASE_EARLY_UPDATE_FLOW_GRAPH, earlyUpdateFlowGraphPhase);
     }
 
-    // From this point on the flowgraph information such as bbNum,
-    // bbRefs or bbPreds has to be kept updated
-    //
     // Promote struct locals
     //
     auto promoteStructsPhase = [this]() {
@@ -4644,18 +4637,6 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
         }
     };
     DoPhase(this, PHASE_GS_COOKIE, gsPhase);
-
-    // If we need to emit GC Poll calls, mark the blocks that need them now.
-    // This is conservative and can be optimized later.
-    //
-    // GC Poll marking assumes block bbnums match lexical block order,
-    // so make sure this is the case.
-    //
-    auto gcPollPhase = [this]() {
-        fgRenumberBlocks();
-        fgMarkGCPollBlocks();
-    };
-    DoPhase(this, PHASE_MARK_GC_POLL_BLOCKS, gcPollPhase);
 
     // Compute the block and edge weights
     //

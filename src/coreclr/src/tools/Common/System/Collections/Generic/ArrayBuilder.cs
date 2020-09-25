@@ -44,7 +44,7 @@ namespace System.Collections.Generic
 
             EnsureCapacity(_count + length);
             Array.Copy(newItems, offset, _items, _count, length);
-            _count += length; 
+            _count += length;
         }
 
         public void Append(ArrayBuilder<T> newItems)

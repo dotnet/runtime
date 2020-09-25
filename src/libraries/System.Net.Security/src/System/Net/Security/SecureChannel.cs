@@ -657,7 +657,7 @@ namespace System.Net.Security
             {
                 X509CertificateCollection tempCollection = new X509CertificateCollection();
                 tempCollection.Add(_sslAuthenticationOptions.CertificateContext!.Certificate!);
-                // We pass string.Empty here to maintain strict compatability with .NET Framework.
+                // We pass string.Empty here to maintain strict compatibility with .NET Framework.
                 localCertificate = _sslAuthenticationOptions.CertSelectionDelegate(string.Empty, tempCollection, null, Array.Empty<string>());
                 if (localCertificate == null)
                 {
@@ -676,7 +676,7 @@ namespace System.Net.Security
 
             if (selectedCert == null)
             {
-                // We will get here if vertificate was slected via legacy callback using X509Certificate
+                // We will get here if certificate was selected via legacy callback using X509Certificate
                 // Fail immediately if no certificate was given.
                 if (localCertificate == null)
                 {

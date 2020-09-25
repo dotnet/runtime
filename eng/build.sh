@@ -172,7 +172,7 @@ while [[ $# > 0 ]]; do
   firstArgumentChecked=1
 
   case "$opt" in
-     -help|-h)
+     -help|-h|-\?|/?)
       usage
       exit 0
       ;;

@@ -5025,10 +5025,6 @@ public:
     // Initialize the per-block variable sets (used for liveness analysis).
     void fgInitBlockVarSets();
 
-    // true if we've gone through and created GC Poll calls.
-    bool        fgGCPollsCreated;
-    void        fgMarkGCPollBlocks();
-    void        fgCreateGCPolls();
     PhaseStatus fgInsertGCPolls();
     BasicBlock* fgCreateGCPoll(GCPollType pollType, BasicBlock* block);
 
@@ -5298,6 +5294,7 @@ public:
     void fgDebugCheckDispFlags(GenTree* tree, unsigned dispFlags, unsigned debugFlags);
     void fgDebugCheckFlagsHelper(GenTree* tree, unsigned treeFlags, unsigned chkFlags);
     void fgDebugCheckTryFinallyExits();
+    void fgDebugCheckProfileData();
 #endif
 
     static GenTree* fgGetFirstNode(GenTree* tree);
@@ -8838,6 +8835,7 @@ public:
         bool varNames;                 // Display variables names in native code output
         bool disAsm;                   // Display native code as it is generated
         bool disAsmSpilled;            // Display native code when any register spilling occurs
+        bool disasmWithGC;             // Display GC info interleaved with disassembly.
         bool disDiffable;              // Makes the Disassembly code 'diff-able'
         bool disAsm2;                  // Display native code after it is generated using external disassembler
         bool dspOrder;                 // Display names of each of the methods that we ngen/jit
@@ -8886,8 +8884,6 @@ public:
 #else // !ARM_SOFTFP
         static const bool compUseSoftFP = false;
 #endif
-
-        GCPollType compGCPollType;
     } opts;
 
 #ifdef ALT_JIT

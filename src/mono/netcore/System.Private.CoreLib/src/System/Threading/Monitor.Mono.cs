@@ -2,10 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.CompilerServices;
+using System.Runtime.Versioning;
 
 namespace System.Threading
 {
-    public static class Monitor
+    public static partial class Monitor
     {
         [Intrinsic]
         [MethodImplAttribute(MethodImplOptions.InternalCall)] // Interpreter is missing this intrinsic
@@ -46,31 +47,11 @@ namespace System.Threading
             return lockTaken;
         }
 
-        private static int MillisecondsTimeoutFromTimeSpan(TimeSpan timeout)
-        {
-            long tm = (long)timeout.TotalMilliseconds;
-            if (tm < -1 || tm > (long)int.MaxValue)
-                throw new ArgumentOutOfRangeException(nameof(timeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
-            return (int)tm;
-        }
-
-        public static bool TryEnter(object obj, TimeSpan timeout)
-        {
-            return TryEnter(obj, MillisecondsTimeoutFromTimeSpan(timeout));
-        }
-
         public static void TryEnter(object obj, int millisecondsTimeout, ref bool lockTaken)
         {
             if (lockTaken)
                 throw new ArgumentException(SR.Argument_MustBeFalse, nameof(lockTaken));
             ReliableEnterTimeout(obj, millisecondsTimeout, ref lockTaken);
-        }
-
-        public static void TryEnter(object obj, TimeSpan timeout, ref bool lockTaken)
-        {
-            if (lockTaken)
-                throw new ArgumentException(SR.Argument_MustBeFalse, nameof(lockTaken));
-            ReliableEnterTimeout(obj, MillisecondsTimeoutFromTimeSpan(timeout), ref lockTaken);
         }
 
         public static bool IsEntered(object obj)
@@ -80,20 +61,13 @@ namespace System.Threading
             return IsEnteredNative(obj);
         }
 
-        public static bool Wait(object obj, int millisecondsTimeout, bool exitContext)
+        [UnsupportedOSPlatform("browser")]
+        public static bool Wait(object obj, int millisecondsTimeout)
         {
             if (obj == null)
                 throw new ArgumentNullException(nameof(obj));
-            return ObjWait(exitContext, millisecondsTimeout, obj);
+            return ObjWait(millisecondsTimeout, obj);
         }
-
-        public static bool Wait(object obj, TimeSpan timeout, bool exitContext) => Wait(obj, MillisecondsTimeoutFromTimeSpan(timeout), exitContext);
-
-        public static bool Wait(object obj, int millisecondsTimeout) => Wait(obj, millisecondsTimeout, false);
-
-        public static bool Wait(object obj, TimeSpan timeout) => Wait(obj, MillisecondsTimeoutFromTimeSpan(timeout), false);
-
-        public static bool Wait(object obj) => Wait(obj, Timeout.Infinite, false);
 
         public static void Pulse(object obj)
         {
@@ -137,7 +111,7 @@ namespace System.Threading
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern bool Monitor_wait(object obj, int ms, bool allowInterruption);
 
-        private static bool ObjWait(bool exitContext, int millisecondsTimeout, object obj)
+        private static bool ObjWait(int millisecondsTimeout, object obj)
         {
             if (millisecondsTimeout < 0 && millisecondsTimeout != (int)Timeout.Infinite)
                 throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout));

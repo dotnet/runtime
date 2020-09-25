@@ -227,7 +227,7 @@
     <Compile Include="$(BclSourcesRoot)\System\Threading\ClrThreadPoolBoundHandleOverlapped.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\ClrThreadPoolPreAllocatedOverlapped.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\Interlocked.CoreCLR.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Threading\Monitor.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\Monitor.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\Overlapped.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\StackCrawlMark.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\SynchronizationContext.CoreCLR.cs" />

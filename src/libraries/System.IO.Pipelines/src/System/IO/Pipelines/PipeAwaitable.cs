@@ -100,7 +100,7 @@ namespace System.IO.Pipelines
         public void OnCompleted(Action<object?> continuation, object? state, ValueTaskSourceOnCompletedFlags flags, out CompletionData completionData, out bool doubleCompletion)
         {
             completionData = default;
-            doubleCompletion = !ReferenceEquals(_completion, null);
+            doubleCompletion = _completion is not null;
 
             if (IsCompleted || doubleCompletion)
             {

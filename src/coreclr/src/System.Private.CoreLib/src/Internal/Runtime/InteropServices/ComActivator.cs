@@ -219,7 +219,7 @@ namespace Internal.Runtime.InteropServices
                     if (methParams[0].ParameterType == typeof(string))
                     {
                         // We are dealing with the string overload of the function - provide the registry key - see comhost.dll implementation
-                        objs[0] = $"HKEY_LOCAL_MACHINE\\SOFTWARE\\Classes\\CLSID\\{cxt.ClassId.ToString("B")}";
+                        objs[0] = $"HKEY_LOCAL_MACHINE\\SOFTWARE\\Classes\\CLSID\\{cxt.ClassId:B}";
                     }
                     else
                     {
