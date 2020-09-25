@@ -321,9 +321,4 @@
     <CLSCompliant Condition="'$(CLSCompliant)' == ''">true</CLSCompliant>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <ILLinkTrimAssemblyArtifactsRootDir>$(ArtifactsBinDir)ILLinkTrimAssembly/$(BuildSettings)</ILLinkTrimAssemblyArtifactsRootDir>
-    <ILLinkTrimAssemblySuppressionsXmlsDir>$(ILLinkTrimAssemblyArtifactsRootDir)/suppressions-xmls/</ILLinkTrimAssemblySuppressionsXmlsDir>
-  </PropertyGroup>
-
 </Project>

@@ -17,18 +17,8 @@
            IL2009: Could not find method A in type B specified in resource C
            IL2025: Duplicate preserve of A in B
            IL2035: Unresolved assembly A in DynamicDependencyAttribute on B
-           // remove?
-           IL2050: P/invoke method A declares a parameter with COM marshalling. Correctness of COM interop
-                   cannot be guaranteed after trimming. Interfaces and interface members might be removed.
       -->
       <LinkerNoWarn>IL2009;IL2025;IL2035</LinkerNoWarn>
-      <!-- remove? ^ --><!-- ;IL2050 -->
-      <!-- IL2032,IL2055,IL2057-IL2061: Reflection intrinsics with unknown arguments -->
-      <!-- <LinkerNoWarn>$(LinkerNoWarn);IL2032;IL2055;IL2057;IL2058;IL2059;IL2060;IL2061</LinkerNoWarn> -->
-      <!-- IL2062-IL2066: Unknown values passed to locations with DynamicallyAccessedMemberTypes -->
-      <!-- <LinkerNoWarn>$(LinkerNoWarn);IL2062;IL2063;IL2064;IL2065;IL2066</LinkerNoWarn> -->
-      <!-- IL2067-IL2091: Unsatisfied DynamicallyAccessedMembers requirements -->
-      <!-- <LinkerNoWarn>$(LinkerNoWarn);IL2067;IL2068;IL2069;IL2070;IL2071;IL2072;IL2073;IL2074;IL2075;IL2076;IL2077;IL2078;IL2079;IL2080;IL2081;IL2082;IL2083;IL2084;IL2085;IL2086;IL2087;IL2088;IL2089;IL2090;IL2091</LinkerNoWarn> -->
       <!-- https://github.com/dotnet/runtime/issues/40336 - need to also suppress the following on non-Windows:
            IL2008: Could not find type A specified in resource B
            and on 32-bit builds:

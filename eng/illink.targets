@@ -74,6 +74,11 @@
     </BinPlaceTargetFramework>
   </ItemGroup>
 
+  <PropertyGroup>
+    <ILLinkTrimAssemblyArtifactsRootDir>$(ArtifactsBinDir)ILLinkTrimAssembly/$(BuildSettings)</ILLinkTrimAssemblyArtifactsRootDir>
+    <ILLinkTrimAssemblySuppressionsXmlsDir>$(ILLinkTrimAssemblyArtifactsRootDir)/suppressions-xmls/</ILLinkTrimAssemblySuppressionsXmlsDir>
+  </PropertyGroup>
+
   <ItemGroup>
     <BinPlaceTargetFrameworks Include="$(NetCoreAppCurrent)">
       <RuntimePath>$(ILLinkTrimAssemblySuppressionsXmlsDir)</RuntimePath>
