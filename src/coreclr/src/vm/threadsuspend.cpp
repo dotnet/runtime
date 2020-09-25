@@ -6256,6 +6256,16 @@ retry_for_debugger:
     g_SuspendStatistics.EndSuspend(reason == SUSPEND_FOR_GC || reason == SUSPEND_FOR_GC_PREP);
 #endif //TIME_SUSPEND
     ThreadSuspend::s_fSuspended = true;
+
+#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+    // Flush the store buffers on all CPUs, to ensure that all changes made so far are seen
+    // by the GC threads. This only matters on weak memory ordered processors as 
+    // the strong memory ordered processors wouldn't have reordered the relevant writes.
+    // This is needed to synchronize threads that were running in preemptive mode thus were
+    // left alone by suspension to flush their writes that they made before they switched to
+    // preemptive mode.
+    ::FlushProcessWriteBuffers();
+#endif //TARGET_ARM || TARGET_ARM64
 }
 
 #if defined(FEATURE_HIJACK) && defined(TARGET_UNIX)
