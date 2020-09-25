@@ -14,7 +14,7 @@
 
   <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
     <!-- We need to set this in order to get extensibility on xunit category traits and other arguments we pass down to xunit via MSBuild properties -->
-    <RunScriptCommand>$HARNESS_RUNNER wasm test --engine=$(JSEngine) $(JSEngineArgs) --js-file=runtime.js -v --output-directory=$XHARNESS_OUT --  $(RunTestsJSArguments) --run WasmTestRunner.dll $(AssemblyName).dll</RunScriptCommand>
+    <RunScriptCommand>$HARNESS_RUNNER wasm test --engine=$(JSEngine) $(JSEngineArgs) --js-file=runtime.js -v --output-directory=$XHARNESS_OUT --  $(RunTestsJSArguments) --extra-scripts='$(PublishDir)msrcrypto.js' --run WasmTestRunner.dll $(AssemblyName).dll</RunScriptCommand>
   </PropertyGroup>
 
   <ItemGroup>
@@ -176,6 +176,14 @@
 
       <!-- Exclude xunit assemblies as those should be resolved by our own package references -->
       <ResolvedFileToPublish Include="@(_runnerFilesToPublish)" Condition="!$([System.String]::Copy('%(Filename)').StartsWith('xunit.'))" RelativePath="%(FileName)%(Extension)" CopyToPublishDirectory="PreserveNewest" PostprocessAssembly="true" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="AddExtraScriptsToPublishedFiles"
+          AfterTargets="ComputeResolvedFilesToPublishList">
+    <ItemGroup>
+      <_extraScriptsToPublish Include="$(MonoProjectRoot)\wasm\polyfills\**\*.*" Condition="'$(TargetOS)' == 'Browser'" />
+      <ResolvedFileToPublish Include="@(_extraScriptsToPublish)" RelativePath="%(FileName)%(Extension)" CopyToPublishDirectory="PreserveNewest" PostprocessAssembly="true" />
     </ItemGroup>
   </Target>
 
