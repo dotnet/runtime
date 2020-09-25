@@ -76,6 +76,7 @@ usage()
   echo "  --gcc                      Optional argument to build using gcc in PATH (default)."
   echo "  --gccx.y                   Optional argument to build using gcc version x.y."
   echo "  --portablebuild            Optional argument: set to false to force a non-portable build."
+  echo "  --keepnativesymbols        Optional argument: set to true to keep native symbols/debuginfo in generated binaries."
   echo ""
 
   echo "Command line arguments starting with '/p:' are passed through to MSBuild."
@@ -398,6 +399,18 @@ while [[ $# > 0 ]]; do
       if [ "$passedPortable" = false ]; then
         portableBuild=0
         arguments="$arguments /p:PortableBuild=false"
+      fi
+      shift 2
+      ;;
+
+     -keepnativesymbols)
+      if [ -z ${2+x} ]; then
+        echo "No value for keepNativeSymbols is supplied. See help (--help) for supported values." 1>&2
+        exit 1
+      fi
+      passedKeepNativeSymbols="$(echo "$2" | awk '{print tolower($0)}')"
+      if [ "$passedKeepNativeSymbols" = true ]; then
+        arguments="$arguments /p:KeepNativeSymbols=true"
       fi
       shift 2
       ;;

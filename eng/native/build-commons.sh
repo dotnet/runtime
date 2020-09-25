@@ -225,6 +225,7 @@ usage()
     echo "-portablebuild: pass -portablebuild=false to force a non-portable build."
     echo "-skipconfigure: skip build configuration."
     echo "-skipgenerateversion: disable version generation even if MSBuild is supported."
+    echo "-keepnativesymbols: keep native/unmanaged debug symbols."
     echo "-verbose: optional argument to enable verbose build output."
     echo ""
     echo "Additional Options:"
@@ -352,6 +353,10 @@ while :; do
                 parts=(${version//./ })
                 __CompilerMajorVersion="${parts[0]}"
                 __CompilerMinorVersion="${parts[1]}"
+            ;;
+
+        keepnativesymbols|-keepnativesymbols)
+            __CMakeArgs="$__CMakeArgs -DCLR_CMAKE_KEEP_NATIVE_SYMBOLS=true"
             ;;
 
         msbuildonunsupportedplatform|-msbuildonunsupportedplatform)
