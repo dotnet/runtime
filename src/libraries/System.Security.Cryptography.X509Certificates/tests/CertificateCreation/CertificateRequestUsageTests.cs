@@ -563,8 +563,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 ecdsa,
                 HashAlgorithmName.SHA256);
 
-                issuerRequest.CertificateExtensions.Add(
-                    new X509BasicConstraintsExtension(true, false, 0, true));
+            issuerRequest.CertificateExtensions.Add(
+                new X509BasicConstraintsExtension(true, false, 0, true));
 
             CertificateRequest request = new CertificateRequest(
                 new X500DistinguishedName("CN=test"),
