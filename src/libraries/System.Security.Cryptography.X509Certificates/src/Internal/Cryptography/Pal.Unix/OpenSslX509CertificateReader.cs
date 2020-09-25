@@ -620,7 +620,7 @@ namespace Internal.Cryptography.Pal
 
             if (typedKey != null)
             {
-                return CopyWithPrivateKey((SafeEvpPKeyHandle)typedKey.DuplicateKeyHandle());
+                return CopyWithPrivateKey(typedKey.DuplicateKeyHandle());
             }
 
             DSAParameters dsaParameters = privateKey.ExportParameters(true);
@@ -628,7 +628,7 @@ namespace Internal.Cryptography.Pal
             using (PinAndClear.Track(dsaParameters.X!))
             using (typedKey = new DSAOpenSsl(dsaParameters))
             {
-                return CopyWithPrivateKey((SafeEvpPKeyHandle)typedKey.DuplicateKeyHandle());
+                return CopyWithPrivateKey(typedKey.DuplicateKeyHandle());
             }
         }
 
@@ -638,7 +638,7 @@ namespace Internal.Cryptography.Pal
 
             if (typedKey != null)
             {
-                return CopyWithPrivateKey((SafeEvpPKeyHandle)typedKey.DuplicateKeyHandle());
+                return CopyWithPrivateKey(typedKey.DuplicateKeyHandle());
             }
 
             ECParameters ecParameters = privateKey.ExportParameters(true);
@@ -648,7 +648,7 @@ namespace Internal.Cryptography.Pal
             {
                 typedKey.ImportParameters(ecParameters);
 
-                return CopyWithPrivateKey((SafeEvpPKeyHandle)typedKey.DuplicateKeyHandle());
+                return CopyWithPrivateKey(typedKey.DuplicateKeyHandle());
             }
         }
 
@@ -658,7 +658,7 @@ namespace Internal.Cryptography.Pal
 
             if (typedKey != null)
             {
-                return CopyWithPrivateKey((SafeEvpPKeyHandle)typedKey.DuplicateKeyHandle());
+                return CopyWithPrivateKey(typedKey.DuplicateKeyHandle());
             }
 
             ECParameters ecParameters = privateKey.ExportParameters(true);
@@ -668,7 +668,7 @@ namespace Internal.Cryptography.Pal
             {
                 typedKey.ImportParameters(ecParameters);
 
-                return CopyWithPrivateKey((SafeEvpPKeyHandle)typedKey.DuplicateKeyHandle());
+                return CopyWithPrivateKey(typedKey.DuplicateKeyHandle());
             }
         }
 
@@ -678,7 +678,7 @@ namespace Internal.Cryptography.Pal
 
             if (typedKey != null)
             {
-                return CopyWithPrivateKey((SafeEvpPKeyHandle)typedKey.DuplicateKeyHandle());
+                return CopyWithPrivateKey(typedKey.DuplicateKeyHandle());
             }
 
             RSAParameters rsaParameters = privateKey.ExportParameters(true);
@@ -691,7 +691,7 @@ namespace Internal.Cryptography.Pal
             using (PinAndClear.Track(rsaParameters.InverseQ!))
             using (typedKey = new RSAOpenSsl(rsaParameters))
             {
-                return CopyWithPrivateKey((SafeEvpPKeyHandle)typedKey.DuplicateKeyHandle());
+                return CopyWithPrivateKey(typedKey.DuplicateKeyHandle());
             }
         }
 
