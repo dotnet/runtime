@@ -1,5 +1,3 @@
-#pragma warning disable CA1507,CA1825,CA1834,CA2208
-
 //
 // Options.cs
 //

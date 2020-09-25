@@ -38,9 +38,9 @@ namespace Mono.Linker
 
 	public class UnintializedContextFactory
 	{
-		virtual public AnnotationStore CreateAnnotationStore (LinkContext context) => new AnnotationStore (context);
-		virtual public MarkingHelpers CreateMarkingHelpers (LinkContext context) => new MarkingHelpers (context);
-		virtual public Tracer CreateTracer (LinkContext context) => new Tracer (context);
+		public virtual AnnotationStore CreateAnnotationStore (LinkContext context) => new AnnotationStore (context);
+		public virtual MarkingHelpers CreateMarkingHelpers (LinkContext context) => new MarkingHelpers (context);
+		public virtual Tracer CreateTracer (LinkContext context) => new Tracer (context);
 	}
 
 	public class LinkContext : IDisposable
@@ -545,7 +545,7 @@ namespace Mono.Linker
 		/// <returns>New MessageContainer of 'Warning' category</returns>
 		public void LogWarning (string text, int code, MessageOrigin origin, string subcategory = MessageSubCategory.None)
 		{
-			WarnVersion version = GetWarningVersion (code);
+			WarnVersion version = GetWarningVersion ();
 			MessageContainer warning = MessageContainer.CreateWarningMessage (this, text, code, origin, version, subcategory);
 			LogMessage (warning);
 		}
@@ -617,7 +617,7 @@ namespace Mono.Linker
 			return WarnAsError.TryGetValue (warningCode, out value) && value;
 		}
 
-		static WarnVersion GetWarningVersion (int code)
+		static WarnVersion GetWarningVersion ()
 		{
 			// This should return an increasing WarnVersion for new warning waves.
 			return WarnVersion.ILLink5;

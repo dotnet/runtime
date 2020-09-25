@@ -24,7 +24,7 @@ namespace Mono.Linker
 
 		public void AddWarning (int code, IMemberDefinition memberDefinition)
 		{
-			var assemblyName = _context.Suppressions.GetModuleFromProvider (memberDefinition).Assembly.Name;
+			var assemblyName = UnconditionalSuppressMessageAttributeState.GetModuleFromProvider (memberDefinition).Assembly.Name;
 			if (!_warnings.TryGetValue (assemblyName, out var warnings)) {
 				warnings = new HashSet<(int, IMemberDefinition)> ();
 				_warnings.Add (assemblyName, warnings);
@@ -91,7 +91,7 @@ namespace Mono.Linker
 			List<(int Code, string MemberDocumentationSignature)> listOfWarnings = new List<(int Code, string MemberDocumentationSignature)> ();
 			StringBuilder sb = new StringBuilder ();
 			foreach (var warning in _warnings[assemblyName].ToList ()) {
-				DocumentationSignatureGenerator.Instance.VisitMember (warning.Member, sb);
+				DocumentationSignatureGenerator.VisitMember (warning.Member, sb);
 				listOfWarnings.Add ((warning.Code, sb.ToString ()));
 				sb.Clear ();
 			}

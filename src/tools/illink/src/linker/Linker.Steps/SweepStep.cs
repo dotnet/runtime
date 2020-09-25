@@ -551,7 +551,7 @@ namespace Mono.Linker.Steps
 				method.HasSecurity = false;
 		}
 
-		bool ShouldSetHasSecurityToFalse (ISecurityDeclarationProvider providerAsSecurity, ICustomAttributeProvider provider, bool existingHasSecurity, IList<CustomAttribute> removedAttributes)
+		static bool ShouldSetHasSecurityToFalse (ISecurityDeclarationProvider providerAsSecurity, ICustomAttributeProvider provider, bool existingHasSecurity, IList<CustomAttribute> removedAttributes)
 		{
 			if (existingHasSecurity && removedAttributes.Count > 0 && !providerAsSecurity.HasSecurityDeclarations) {
 				// If the method or type had security before and all attributes were removed, or no remaining attributes are security attributes,

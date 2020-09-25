@@ -119,7 +119,7 @@ namespace Mono.Linker
 			return true;
 		}
 
-		public ModuleDefinition GetModuleFromProvider (ICustomAttributeProvider provider)
+		public static ModuleDefinition GetModuleFromProvider (ICustomAttributeProvider provider)
 		{
 			switch (provider.MetadataToken.TokenType) {
 			case TokenType.Module:

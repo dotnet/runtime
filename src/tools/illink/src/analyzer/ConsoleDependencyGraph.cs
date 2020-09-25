@@ -111,7 +111,7 @@ namespace LinkerAnalyzer
 				ShowDependencies (type);
 		}
 
-		string Tabs (string key)
+		static string Tabs (string key)
 		{
 			int count = Math.Max (1, 2 - key.Length / 8);
 
@@ -169,7 +169,7 @@ namespace LinkerAnalyzer
 
 		static readonly string line = new string ('-', 72);
 
-		void Line ()
+		static void Line ()
 		{
 			Console.Write (line);
 			Console.WriteLine ();

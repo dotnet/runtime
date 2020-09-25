@@ -72,7 +72,7 @@ namespace Mono.Linker
 			// if (!ShouldProcess (context, customAttribute))
 			// 	return null;
 
-			var dynamicDependency = GetDynamicDependency (context, customAttribute);
+			var dynamicDependency = GetDynamicDependency (customAttribute);
 			if (dynamicDependency != null)
 				return dynamicDependency;
 
@@ -80,7 +80,7 @@ namespace Mono.Linker
 			return null;
 		}
 
-		static DynamicDependency? GetDynamicDependency (LinkContext context, CustomAttribute ca)
+		static DynamicDependency? GetDynamicDependency (CustomAttribute ca)
 		{
 			var args = ca.ConstructorArguments;
 			if (args.Count < 1 || args.Count > 3)

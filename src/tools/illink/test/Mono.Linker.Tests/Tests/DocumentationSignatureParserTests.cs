@@ -51,9 +51,8 @@ namespace Mono.Linker.Tests
 
 		public static void CheckGeneratedString (IMemberDefinition member, string expected)
 		{
-			var generator = DocumentationSignatureGenerator.Instance;
 			var builder = new StringBuilder ();
-			generator.VisitMember (member, builder);
+			DocumentationSignatureGenerator.VisitMember (member, builder);
 			Assert.AreEqual (expected, builder.ToString ());
 		}
 

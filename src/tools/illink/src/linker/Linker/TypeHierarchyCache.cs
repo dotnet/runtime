@@ -13,7 +13,7 @@ namespace Mono.Linker
 			IsSystemReflectionIReflect = 0x02,
 		}
 
-		Dictionary<TypeDefinition, HierarchyFlags> _cache = new Dictionary<TypeDefinition, HierarchyFlags> ();
+		readonly Dictionary<TypeDefinition, HierarchyFlags> _cache = new Dictionary<TypeDefinition, HierarchyFlags> ();
 
 		private HierarchyFlags GetFlags (TypeReference type)
 		{
