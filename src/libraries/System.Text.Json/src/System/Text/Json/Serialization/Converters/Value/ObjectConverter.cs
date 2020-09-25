@@ -42,10 +42,7 @@ namespace System.Text.Json.Serialization.Converters
 
         internal override object ReadNumberWithCustomHandling(ref Utf8JsonReader reader, JsonNumberHandling handling)
         {
-            using (JsonDocument document = JsonDocument.ParseValue(ref reader))
-            {
-                return document.RootElement.Clone();
-            }
+            return JsonElement.Parse(ref reader);
         }
     }
 }

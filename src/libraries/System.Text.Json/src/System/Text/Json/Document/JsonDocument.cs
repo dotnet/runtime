@@ -1,12 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Buffers;
 using System.Buffers.Text;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Diagnostics.CodeAnalysis;
 
@@ -922,8 +920,7 @@ namespace System.Text.Json
             ReadOnlySpan<byte> utf8JsonSpan,
             JsonReaderOptions readerOptions,
             ref MetadataDb database,
-            ref StackRowStack stack,
-            bool useArrayPools)
+            ref StackRowStack stack)
         {
             bool inArray = false;
             int arrayItemsCount = 0;
@@ -1070,7 +1067,7 @@ namespace System.Text.Json
 
             Debug.Assert(reader.BytesConsumed == utf8JsonSpan.Length);
 
-            database.CompleteAllocations(useArrayPools);
+            database.CompleteAllocations();
         }
 
         private void CheckNotDisposed()

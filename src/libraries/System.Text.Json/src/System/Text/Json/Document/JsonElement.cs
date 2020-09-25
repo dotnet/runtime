@@ -29,8 +29,9 @@ namespace System.Text.Json
 
         /// <summary>
         ///   Parses one JSON value (including objects or arrays) from the provided reader.
-        ///   For performance, the JsonDocument Parse() methods should be used instead when the
-        ///   Dispose pattern is applicable.
+        ///   This is intended to be used when the <see cref="JsonDocument.Dispose"/> pattern is not
+        ///   applicable. If the Dispose pattern is applicable, then use the <see cref="JsonDocument"/>
+        ///   Parse methods instead since they have better performance.
         /// </summary>
         /// <param name="reader">The reader to read.</param>
         /// <returns>
@@ -64,14 +65,9 @@ namespace System.Text.Json
         /// <exception cref="JsonException">
         ///   A value could not be read from the reader.
         /// </exception>
-
         internal static JsonElement Parse(ref Utf8JsonReader reader)
         {
-            bool ret = JsonDocument.TryParseValue(
-                ref reader,
-                out JsonDocument? document,
-                shouldThrow: true,
-                useArrayPools: false);
+            bool ret = JsonDocument.TryParseValue(ref reader, out JsonDocument? document, shouldThrow: true, useArrayPools: false);
 
             Debug.Assert(ret, "Parse returned false with shouldThrow: true.");
             return document!.RootElement;

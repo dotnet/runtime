@@ -12,6 +12,11 @@ namespace System.Text.Json
 {
     public sealed partial class JsonDocument
     {
+        // Cached unrented documents for literal values.
+        private static JsonDocument? s_nullLiteral;
+        private static JsonDocument? s_trueLiteral;
+        private static JsonDocument? s_falseLiteral;
+
         private const int UnseekableStreamInitialRentSize = 4096;
 
         /// <summary>
@@ -41,7 +46,7 @@ namespace System.Text.Json
         /// </exception>
         public static JsonDocument Parse(ReadOnlyMemory<byte> utf8Json, JsonDocumentOptions options = default)
         {
-            return Parse(utf8Json, options.GetReaderOptions(), null, useArrayPools: true);
+            return Parse(utf8Json, options.GetReaderOptions(), null);
         }
 
         /// <summary>
@@ -75,7 +80,7 @@ namespace System.Text.Json
 
             if (utf8Json.IsSingleSegment)
             {
-                return Parse(utf8Json.First, readerOptions, null, useArrayPools: true);
+                return Parse(utf8Json.First, readerOptions, null);
             }
 
             int length = checked((int)utf8Json.Length);
@@ -84,7 +89,7 @@ namespace System.Text.Json
             try
             {
                 utf8Json.CopyTo(utf8Bytes.AsSpan());
-                return Parse(utf8Bytes.AsMemory(0, length), readerOptions, utf8Bytes, useArrayPools: true);
+                return Parse(utf8Bytes.AsMemory(0, length), readerOptions, utf8Bytes);
             }
             catch
             {
@@ -121,7 +126,7 @@ namespace System.Text.Json
             Debug.Assert(drained.Array != null);
             try
             {
-                return Parse(drained.AsMemory(), options.GetReaderOptions(), drained.Array, useArrayPools: true);
+                return Parse(drained.AsMemory(), options.GetReaderOptions(), drained.Array);
             }
             catch
             {
@@ -170,7 +175,7 @@ namespace System.Text.Json
             Debug.Assert(drained.Array != null);
             try
             {
-                return Parse(drained.AsMemory(), options.GetReaderOptions(), drained.Array, useArrayPools: true);
+                return Parse(drained.AsMemory(), options.GetReaderOptions(), drained.Array);
             }
             catch
             {
@@ -214,8 +219,7 @@ namespace System.Text.Json
                 return Parse(
                     utf8Bytes.AsMemory(0, actualByteCount),
                     options.GetReaderOptions(),
-                    utf8Bytes,
-                    useArrayPools: true);
+                    utf8Bytes);
             }
             catch
             {
@@ -330,11 +334,7 @@ namespace System.Text.Json
         /// </exception>
         public static JsonDocument ParseValue(ref Utf8JsonReader reader)
         {
-            bool ret = TryParseValue(
-                ref reader,
-                out JsonDocument? document,
-                shouldThrow: true,
-                useArrayPools: true);
+            bool ret = TryParseValue(ref reader, out JsonDocument? document, shouldThrow: true, useArrayPools: true);
 
             Debug.Assert(ret, "TryParseValue returned false with shouldThrow: true.");
             return document!;
@@ -380,6 +380,7 @@ namespace System.Text.Json
                             document = null;
                             return false;
                         }
+
                         break;
                     }
                 }
@@ -427,11 +428,64 @@ namespace System.Text.Json
                         break;
                     }
 
-                    // Single-token values
-                    case JsonTokenType.Number:
-                    case JsonTokenType.True:
-                    case JsonTokenType.False:
                     case JsonTokenType.Null:
+                        if (useArrayPools)
+                        {
+                            if (reader.HasValueSequence)
+                            {
+                                valueSequence = reader.ValueSequence;
+                            }
+                            else
+                            {
+                                valueSpan = reader.ValueSpan;
+                            }
+
+                            break;
+                        }
+
+                        s_nullLiteral ??= CreateForLiteral(JsonConstants.NullValue.ToArray(), reader.TokenType);
+                        document = s_nullLiteral;
+                        return true;
+
+                    case JsonTokenType.True:
+                        if (useArrayPools)
+                        {
+                            if (reader.HasValueSequence)
+                            {
+                                valueSequence = reader.ValueSequence;
+                            }
+                            else
+                            {
+                                valueSpan = reader.ValueSpan;
+                            }
+
+                            break;
+                        }
+
+                        s_trueLiteral ??= CreateForLiteral(JsonConstants.TrueValue.ToArray(), reader.TokenType);
+                        document = s_trueLiteral;
+                        return true;
+
+                    case JsonTokenType.False:
+                        if (useArrayPools)
+                        {
+                            if (reader.HasValueSequence)
+                            {
+                                valueSequence = reader.ValueSequence;
+                            }
+                            else
+                            {
+                                valueSpan = reader.ValueSpan;
+                            }
+
+                            break;
+                        }
+
+                        s_falseLiteral ??= CreateForLiteral(JsonConstants.FalseValue.ToArray(), reader.TokenType);
+                        document = s_falseLiteral;
+                        return true;
+
+                    case JsonTokenType.Number:
                     {
                         if (reader.HasValueSequence)
                         {
@@ -444,6 +498,7 @@ namespace System.Text.Json
 
                         break;
                     }
+
                     // String's ValueSequence/ValueSpan omits the quotes, we need them back.
                     case JsonTokenType.String:
                     {
@@ -536,7 +591,7 @@ namespace System.Text.Json
                         valueSpan.CopyTo(rentedSpan);
                     }
 
-                    document = Parse(rented.AsMemory(0, length), state.Options, rented, useArrayPools);
+                    document = Parse(rented.AsMemory(0, length), state.Options, rented);
                 }
                 catch
                 {
@@ -550,36 +605,42 @@ namespace System.Text.Json
             }
             else
             {
-                byte[] utf8Json = new byte[length];
+                byte[] owned;
 
                 if (valueSpan.IsEmpty)
                 {
-                    valueSequence.CopyTo(utf8Json);
+                    owned = valueSequence.ToArray();
                 }
                 else
                 {
-                    valueSpan.CopyTo(utf8Json);
+                    owned = valueSpan.ToArray();
                 }
 
-                document = Parse(utf8Json, state.Options, extraRentedBytes: null, useArrayPools);
+                document = ParseUnrented(owned, state.Options, reader.TokenType);
             }
 
             return true;
         }
 
+        private static JsonDocument CreateForLiteral(byte[] utf8Json, JsonTokenType tokenType)
+        {
+            MetadataDb database = MetadataDb.CreateLocked(utf8Json.Length);
+            database.Append(tokenType, startLocation: 0, utf8Json.Length);
+            return new JsonDocument(utf8Json, database, extraRentedBytes: null);
+        }
+
         private static JsonDocument Parse(
             ReadOnlyMemory<byte> utf8Json,
             JsonReaderOptions readerOptions,
-            byte[]? extraRentedBytes,
-            bool useArrayPools)
+            byte[]? extraRentedBytes)
         {
             ReadOnlySpan<byte> utf8JsonSpan = utf8Json.Span;
-            var database = new MetadataDb(utf8Json.Length);
+            var database = MetadataDb.CreateRented(utf8Json.Length, convertToAlloc: false);
             var stack = new StackRowStack(JsonDocumentOptions.DefaultMaxDepth * StackRow.Size);
 
             try
             {
-                Parse(utf8JsonSpan, readerOptions, ref database, ref stack, useArrayPools);
+                Parse(utf8JsonSpan, readerOptions, ref database, ref stack);
             }
             catch
             {
@@ -592,6 +653,46 @@ namespace System.Text.Json
             }
 
             return new JsonDocument(utf8Json, database, extraRentedBytes);
+        }
+
+        private static JsonDocument ParseUnrented(
+            ReadOnlyMemory<byte> utf8Json,
+            JsonReaderOptions readerOptions,
+            JsonTokenType tokenType)
+        {
+            // These tokens should already have been processed.
+            Debug.Assert(
+                tokenType != JsonTokenType.Null &&
+                tokenType != JsonTokenType.False &&
+                tokenType != JsonTokenType.True);
+
+            ReadOnlySpan<byte> utf8JsonSpan = utf8Json.Span;
+            MetadataDb database;
+
+            if (tokenType == JsonTokenType.String ||
+                tokenType == JsonTokenType.Number)
+            {
+                // For primitive types, we can avoid renting and there is no need for a StackRowStack.
+                database = MetadataDb.CreateLocked(utf8Json.Length);
+                var _ = new StackRowStack(initialSize: -1);
+                Parse(utf8JsonSpan, readerOptions, ref database, ref _);
+            }
+            else
+            {
+                database = MetadataDb.CreateRented(utf8Json.Length, convertToAlloc: true);
+                var stack = new StackRowStack(JsonDocumentOptions.DefaultMaxDepth * StackRow.Size);
+
+                try
+                {
+                    Parse(utf8JsonSpan, readerOptions, ref database, ref stack);
+                }
+                finally
+                {
+                    stack.Dispose();
+                }
+            }
+
+            return new JsonDocument(utf8Json, database, extraRentedBytes: null);
         }
 
         private static ArraySegment<byte> ReadToEnd(Stream stream)
