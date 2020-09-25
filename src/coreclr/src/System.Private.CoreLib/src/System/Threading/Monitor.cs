@@ -12,10 +12,11 @@
 **
 =============================================================================*/
 
-using System.Runtime.CompilerServices;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 
 namespace System.Threading
 {
@@ -170,6 +171,7 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern bool ObjWait(bool exitContext, int millisecondsTimeout, object obj);
 
+        [UnsupportedOSPlatform("browser")]
         public static bool Wait(object obj, int millisecondsTimeout, bool exitContext)
         {
             if (obj == null)
@@ -177,21 +179,25 @@ namespace System.Threading
             return ObjWait(exitContext, millisecondsTimeout, obj);
         }
 
+        [UnsupportedOSPlatform("browser")]
         public static bool Wait(object obj, TimeSpan timeout, bool exitContext)
         {
             return Wait(obj, MillisecondsTimeoutFromTimeSpan(timeout), exitContext);
         }
 
+        [UnsupportedOSPlatform("browser")]
         public static bool Wait(object obj, int millisecondsTimeout)
         {
             return Wait(obj, millisecondsTimeout, false);
         }
 
+        [UnsupportedOSPlatform("browser")]
         public static bool Wait(object obj, TimeSpan timeout)
         {
             return Wait(obj, MillisecondsTimeoutFromTimeSpan(timeout), false);
         }
 
+        [UnsupportedOSPlatform("browser")]
         public static bool Wait(object obj)
         {
             return Wait(obj, Timeout.Infinite, false);

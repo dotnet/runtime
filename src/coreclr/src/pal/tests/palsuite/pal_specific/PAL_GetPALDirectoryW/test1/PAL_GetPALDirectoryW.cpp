@@ -14,7 +14,7 @@
 #define UNICODE
 #include <palsuite.h>
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(pal_specific_PAL_GetPALDirectoryW_test1_paltest_pal_getpaldirectoryw_test1, "pal_specific/PAL_GetPALDirectoryW/test1/paltest_pal_getpaldirectoryw_test1")
 {
     int err;
     BOOL bValue;

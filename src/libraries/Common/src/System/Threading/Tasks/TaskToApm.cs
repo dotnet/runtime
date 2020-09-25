@@ -5,7 +5,7 @@
 //
 // Example usage, wrapping a Task<int>-returning FooAsync method with Begin/EndFoo methods:
 //
-//     public IAsyncResult BeginFoo(..., AsyncCallback callback, object state) =>
+//     public IAsyncResult BeginFoo(..., AsyncCallback? callback, object? state) =>
 //         TaskToApm.Begin(FooAsync(...), callback, state);
 //
 //     public int EndFoo(IAsyncResult asyncResult) =>

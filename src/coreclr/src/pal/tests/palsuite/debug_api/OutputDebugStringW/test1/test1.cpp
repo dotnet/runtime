@@ -15,7 +15,7 @@
 #define UNICODE
 #include <palsuite.h>
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(debug_api_OutputDebugStringW_test1_paltest_outputdebugstringw_test1, "debug_api/OutputDebugStringW/test1/paltest_outputdebugstringw_test1")
 {
     WCHAR *str1;
     WCHAR *str2;

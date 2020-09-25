@@ -971,7 +971,6 @@ namespace System.Xml.Serialization
         private void Write46_XmlSchemaElement(XmlSchemaElement? o)
         {
             if ((object?)o == null) return;
-            System.Type t = o.GetType();
             WriteStartElement("element");
             WriteAttribute(@"id", @"", o.Id);
             WriteAttribute("minOccurs", "", XmlConvert.ToString(o.MinOccurs));
@@ -1033,7 +1032,6 @@ namespace System.Xml.Serialization
         private void Write47_XmlSchemaKey(XmlSchemaKey? o)
         {
             if ((object?)o == null) return;
-            System.Type t = o.GetType();
             WriteStartElement("key");
             WriteAttribute(@"id", @"", ((string?)o.@Id));
             WriteAttribute(@"name", @"", ((string?)o.@Name));
@@ -1088,7 +1086,6 @@ namespace System.Xml.Serialization
         private void Write50_XmlSchemaKeyref(XmlSchemaKeyref? o)
         {
             if ((object?)o == null) return;
-            System.Type t = o.GetType();
             WriteStartElement("keyref");
 
             WriteAttribute(@"id", @"", ((string?)o.@Id));
@@ -1114,7 +1111,6 @@ namespace System.Xml.Serialization
         private void Write51_XmlSchemaUnique(XmlSchemaUnique? o)
         {
             if ((object?)o == null) return;
-            System.Type t = o.GetType();
             WriteStartElement("unique");
 
             WriteAttribute(@"id", @"", ((string?)o.@Id));
@@ -1136,7 +1132,6 @@ namespace System.Xml.Serialization
         private void Write52_XmlSchemaChoice(XmlSchemaChoice? o)
         {
             if ((object?)o == null) return;
-            System.Type t = o.GetType();
             WriteStartElement("choice");
 
             WriteAttribute(@"id", @"", ((string?)o.@Id));

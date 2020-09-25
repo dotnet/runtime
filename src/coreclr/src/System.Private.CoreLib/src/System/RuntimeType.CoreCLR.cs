@@ -4085,24 +4085,6 @@ namespace System
             bool[]? byrefModifiers, int culture, string[]? namedParameters);
 #endif // FEATURE_COMINTEROP
 
-#if FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern Type? GetTypeFromProgIDImpl(string progID, string? server, bool throwOnError);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern Type? GetTypeFromCLSIDImpl(Guid clsid, string? server, bool throwOnError);
-#else // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
-        internal static Type GetTypeFromProgIDImpl(string progID, string? server, bool throwOnError)
-        {
-            throw new NotImplementedException("CoreCLR_REMOVED -- Unmanaged activation removed");
-        }
-
-        internal static Type GetTypeFromCLSIDImpl(Guid clsid, string? server, bool throwOnError)
-        {
-            throw new NotImplementedException("CoreCLR_REMOVED -- Unmanaged activation removed");
-        }
-#endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
-
         #endregion
 
 #if FEATURE_COMINTEROP

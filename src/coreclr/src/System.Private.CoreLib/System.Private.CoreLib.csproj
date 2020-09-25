@@ -48,7 +48,6 @@
 
     <SkipCommonResourcesIncludes>true</SkipCommonResourcesIncludes>
     <DocumentationFile>$(OutputPath)$(MSBuildProjectName).xml</DocumentationFile>
-    <EnableAnalyzers>true</EnableAnalyzers>
   </PropertyGroup>
 
   <!-- Platform specific properties -->

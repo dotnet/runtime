@@ -220,6 +220,26 @@ namespace System.Text.RegularExpressions.Tests
             Assert.Same(input, Regex.Replace(input, "no-match", new MatchEvaluator(MatchEvaluator1)));
         }
 
+        [Fact]
+        public void Replace_MatchEvaluator_UniqueMatchObjects()
+        {
+            const string Input = "abcdefghijklmnopqrstuvwxyz";
+
+            var matches = new List<Match>();
+
+            string result = Regex.Replace(Input, @"[a-z]", match =>
+            {
+                Assert.Equal(((char)('a' + matches.Count)).ToString(), match.Value);
+                matches.Add(match);
+                return match.Value.ToUpperInvariant();
+            });
+
+            Assert.Equal(26, matches.Count);
+            Assert.Equal("ABCDEFGHIJKLMNOPQRSTUVWXYZ", result);
+
+            Assert.Equal(Input, string.Concat(matches.Cast<Match>().Select(m => m.Value)));
+        }
+
         [Theory]
         [InlineData(RegexOptions.None)]
         [InlineData(RegexOptions.RightToLeft)]

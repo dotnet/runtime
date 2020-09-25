@@ -10,6 +10,11 @@ if [ -z ${2+x} ]; then
 	JS_ENGINE=V8
 fi
 
+# Find a better way to express this
+if [ "$TEST_NAME" == "System.IO.FileSystem.Tests" ]; then
+    RUN_TESTS_JS_ARGUMENTS="--working-dir=/test-dir"
+fi
+
 if [ "$JS_ENGINE" == "V8" ]; then
 	JS_ENGINE_ARGS="${JS_ENGINE_ARGS} --engine-arg=--stack-trace-limit=1000"
 fi
@@ -22,7 +27,7 @@ else
 	HARNESS_RUNNER="dotnet xharness"
 fi
 
-$HARNESS_RUNNER wasm test --engine=${JS_ENGINE} ${JS_ENGINE_ARGS} --js-file=runtime.js -v --output-directory=$XHARNESS_OUT -- --run WasmTestRunner.dll ${TEST_NAME}.dll
+$HARNESS_RUNNER wasm test --engine=${JS_ENGINE} ${JS_ENGINE_ARGS} --js-file=runtime.js -v --output-directory=$XHARNESS_OUT -- ${RUN_TESTS_JS_ARGUMENTS} --run WasmTestRunner.dll ${TEST_NAME}.dll
 
 _exitCode=$?
 

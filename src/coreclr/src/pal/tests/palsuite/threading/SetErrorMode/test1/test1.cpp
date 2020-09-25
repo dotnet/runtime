@@ -14,7 +14,7 @@
 
 #include <palsuite.h>
 
-int __cdecl main(int argc, char **argv)
+PALTEST(threading_SetErrorMode_test1_paltest_seterrormode_test1, "threading/SetErrorMode/test1/paltest_seterrormode_test1")
 {   
     DWORD dErrorReturn;
     UINT  dErrorModes[] = {SEM_NOOPENFILEERRORBOX, SEM_FAILCRITICALERRORS, 0};

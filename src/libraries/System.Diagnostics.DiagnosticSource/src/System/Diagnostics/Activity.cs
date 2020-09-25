@@ -949,7 +949,12 @@ namespace System.Diagnostics
             else if (parentContext != default)
             {
                 activity._traceId = parentContext.TraceId.ToString();
-                activity._parentSpanId = parentContext.SpanId.ToString();
+
+                if (parentContext.SpanId != default)
+                {
+                    activity._parentSpanId = parentContext.SpanId.ToString();
+                }
+
                 activity.ActivityTraceFlags = parentContext.TraceFlags;
                 activity._traceState = parentContext.TraceState;
             }

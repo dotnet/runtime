@@ -29,17 +29,18 @@
 
 #include <palsuite.h>
 
+
+PALTEST(file_io_GetFullPathNameA_test4_paltest_getfullpathnamea_test4, "file_io/GetFullPathNameA/test4/paltest_getfullpathnamea_test4")
+{
 #ifdef WIN32
     const char* szSeperator = "\\";
 #else
     const char* szSeperator = "//";
 #endif
 
-const char* szDotDot   = "..";
-const char* szFileName = "testing.tmp";
+    const char* szDotDot   = "..";
+    const char* szFileName = "testing.tmp";
 
-int __cdecl main(int argc, char *argv[])
-{
     DWORD   dwRc = 0;
     char    szReturnedPath[_MAX_DIR+1];
     char    szFullFileName[_MAX_DIR+1];
@@ -197,6 +198,6 @@ cleanUpOne:
     free (szCreatedDirW);
 
     /* Terminate the PAL.*/
-    PAL_Terminate();
+    PAL_TerminateEx(bRetVal);
     return bRetVal;
 }

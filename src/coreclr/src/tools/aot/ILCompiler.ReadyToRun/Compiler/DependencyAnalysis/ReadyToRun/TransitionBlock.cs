@@ -183,7 +183,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     case CorElementType.ELEMENT_TYPE_SZARRAY:
                         pNumRegistersUsed++;
                         return true;
-
+#if PROJECTN
                     case CorElementType.ELEMENT_TYPE_VALUETYPE:
                         {
                             // On ProjectN valuetypes of integral size are passed enregistered
@@ -198,6 +198,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                             }
                             break;
                         }
+#endif
                 }
             }
 
@@ -334,6 +335,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public const int InvalidOffset = -1;
 
+        public sealed class X86Constants
+        {
+            public const int OffsetOfEcx = 1 * sizeof(int);
+            public const int OffsetOfEdx = 0 * sizeof(int);
+        }
+
         private sealed class X86TransitionBlock : TransitionBlock
         {
             public static TransitionBlock Instance = new X86TransitionBlock();
@@ -350,7 +357,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             // CALLDESCR_FPARGREGS is not set for X86
             public override int OffsetOfFloatArgumentRegisters => 0;
             // offsetof(ArgumentRegisters.ECX)
-            public override int ThisOffset => 4;
+            public override int ThisOffset => X86Constants.OffsetOfEcx;
             public override int EnregisteredParamTypeMaxSize => 0;
             public override int EnregisteredReturnTypeIntegerMaxSize => 4;
 
@@ -370,9 +377,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             /// <summary>
             /// x86 is special as always
-            /// DESKTOP BEHAVIOR            ret += this.HasThis() ? ArgumentRegisters.GetOffsetOfEdx() : ArgumentRegisters.GetOffsetOfEcx();
             /// </summary>
-            public override int GetRetBuffArgOffset(bool hasThis) => OffsetOfArgs;
+            public override int GetRetBuffArgOffset(bool hasThis)
+            {
+#if PROJECTN
+                return OffsetOfArgs;
+#else
+                return hasThis ? X86Constants.OffsetOfEdx : X86Constants.OffsetOfEcx;
+#endif
+            }
         }
 
         public const int SizeOfM128A = 16;
