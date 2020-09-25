@@ -80,12 +80,8 @@ jobs:
     steps:
     - ${{ parameters.steps }}
   
-    - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-      - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi-setup.py -source_directory $(Build.SourcesDirectory) -core_root_directory $(Core_Root_Dir) -arch $(archType) -mch_file_tag ${{ parameters.osGroup }}.${{ parameters.archType }}.${{ parameters.buildConfig }} -assemblies_directory $(Core_Root_Dir) -max_size 50
-        displayName: 'SuperPMI setup (Linux)'
-    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-      - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi-setup.py -source_directory $(Build.SourcesDirectory) -core_root_directory $(Core_Root_Dir) -arch $(archType) -mch_file_tag ${{ parameters.osGroup }}.${{ parameters.archType }}.${{ parameters.buildConfig }} -assemblies_directory $(Core_Root_Dir) -max_size 50
-        displayName: 'SuperPMI setup (Windows)'
+    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi-setup.py -source_directory $(Build.SourcesDirectory) -core_root_directory $(Core_Root_Dir) -arch $(archType) -mch_file_tag ${{ parameters.osGroup }}.${{ parameters.archType }}.${{ parameters.buildConfig }} -assemblies_directory $(Core_Root_Dir) -max_size 50
+      displayName: ${{ format('SuperPMI setup ({0})', parameters.osGroup) }}
 
       # Run superpmi collection in helix
     - template: /eng/common/templates/steps/superpmi-send-to-helix.yml
@@ -113,16 +109,10 @@ jobs:
       continueOnError: true
       condition: always()
 
-    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-      - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py upload -arch $(archType) -build_type $(buildConfig) -mch_files $(Build.SourcesDirectory)\artifacts\helixresults -core_root $(Build.SourcesDirectory)\artifacts\bin\coreclr\$(osGroup).x64.$(buildConfigUpper)
-        displayName: Upload SuperPMI collection to Azure Storage
-        env:
-          CLRJIT_AZ_KEY: $(clrjit_key1) # secret key stored as variable in pipeline
-    - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-      - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py upload -arch $(archType) -build_type $(buildConfig) -mch_files $(Build.SourcesDirectory)/artifacts/helixresults -core_root $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).x64.$(buildConfigUpper)
-        displayName: Upload SuperPMI collection to Azure Storage
-        env:
-          CLRJIT_AZ_KEY: $(clrjit_key1) # secret key stored as variable in pipeline
+    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py upload -arch $(archType) -build_type $(buildConfig) -mch_files $(Build.SourcesDirectory)/artifacts/helixresults -core_root $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).x64.$(buildConfigUpper)
+      displayName: Upload SuperPMI collection to Azure Storage
+      env:
+        CLRJIT_AZ_KEY: $(clrjit_key1) # secret key stored as variable in pipeline
 
     - task: PublishPipelineArtifact@1
       displayName: Publish Logs
