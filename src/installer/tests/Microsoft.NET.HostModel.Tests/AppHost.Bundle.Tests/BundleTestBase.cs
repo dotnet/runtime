@@ -69,13 +69,6 @@ namespace AppHost.Bundle.Tests
 
                 return testFixture;
             }
-
-            public TestProjectFixture PrepareSingleFileSelfContainedTestProject(string projectName)
-            {
-                var testFixture = PreparePublishedSelfContainedTestProject(projectName);
-                UseSingleFileSelfContainedHost(testFixture);
-                return testFixture;
-            }
         }
     }
 }
