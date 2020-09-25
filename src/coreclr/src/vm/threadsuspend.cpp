@@ -5815,18 +5815,7 @@ BOOL Thread::HandledJITCase()
 
             if (GetReturnAddressHijackInfo(&codeInfo, &returnKind))
             {
-
-#ifdef FEATURE_ENABLE_GCPOLL
-                // On platforms that support both hijacking and GC polling
-                // decide whether to hijack based on a configuration value.
-                // COMPlus_GCPollType = 1 is the setting that enables hijacking
-                // in GCPOLL enabled builds.
-                EEConfig::GCPollType pollType = g_pConfig->GetGCPollType();
-                if (EEConfig::GCPOLL_TYPE_HIJACK == pollType || EEConfig::GCPOLL_TYPE_DEFAULT == pollType)
-#endif // FEATURE_ENABLE_GCPOLL
-                {
-                    HijackThread(returnKind, &esb);
-                }
+                HijackThread(returnKind, &esb);
             }
         }
     }

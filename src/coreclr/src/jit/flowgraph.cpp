@@ -56,9 +56,6 @@ void Compiler::fgInit()
     /* We don't know yet which loops will always execute calls */
     fgLoopCallMarked = false;
 
-    /* We haven't created GC Poll blocks yet. */
-    fgGCPollsCreated = false;
-
     /* Initialize the basic block list */
 
     fgFirstBB        = nullptr;
@@ -2238,7 +2235,7 @@ bool Compiler::fgRemoveUnreachableBlocks()
             /* Unmark the block as removed, */
             /* clear BBF_INTERNAL as well and set BBJ_IMPORTED */
 
-            block->bbFlags &= ~(BBF_REMOVED | BBF_INTERNAL | BBF_NEEDS_GCPOLL);
+            block->bbFlags &= ~(BBF_REMOVED | BBF_INTERNAL);
             block->bbFlags |= BBF_IMPORTED;
             block->bbJumpKind = BBJ_THROW;
             block->bbSetRunRarely();
@@ -3617,73 +3614,6 @@ BasicBlock* Compiler::fgFirstBlockOfHandler(BasicBlock* block)
     return ehGetDsc(block->getHndIndex())->ebdHndBeg;
 }
 
-/*****************************************************************************
- *
- *  Function called to find back edges and return blocks and mark them as needing GC Polls.  This marks all
- *  blocks.
- */
-void Compiler::fgMarkGCPollBlocks()
-{
-    if (GCPOLL_NONE == opts.compGCPollType)
-    {
-        return;
-    }
-
-#ifdef DEBUG
-    /* Check that the flowgraph data (bbNum, bbRefs, bbPreds) is up-to-date */
-    fgDebugCheckBBlist();
-#endif
-
-    BasicBlock* block;
-
-    // Return blocks always need GC polls.  In addition, all back edges (including those from switch
-    // statements) need GC polls.  The poll is on the block with the outgoing back edge (or ret), rather than
-    // on the destination or on the edge itself.
-    for (block = fgFirstBB; block; block = block->bbNext)
-    {
-        bool blockNeedsPoll = false;
-        switch (block->bbJumpKind)
-        {
-            case BBJ_ALWAYS:
-                if (block->isBBCallAlwaysPairTail())
-                {
-                    break;
-                }
-            case BBJ_COND:
-                blockNeedsPoll = (block->bbJumpDest->bbNum <= block->bbNum);
-                break;
-
-            case BBJ_RETURN:
-                blockNeedsPoll = true;
-                break;
-
-            case BBJ_SWITCH:
-                unsigned jumpCnt;
-                jumpCnt = block->bbJumpSwt->bbsCount;
-                BasicBlock** jumpTab;
-                jumpTab = block->bbJumpSwt->bbsDstTab;
-
-                do
-                {
-                    if ((*jumpTab)->bbNum <= block->bbNum)
-                    {
-                        blockNeedsPoll = true;
-                        break;
-                    }
-                } while (++jumpTab, --jumpCnt);
-                break;
-
-            default:
-                break;
-        }
-
-        if (blockNeedsPoll)
-        {
-            block->bbFlags |= BBF_NEEDS_GCPOLL;
-        }
-    }
-}
-
 void Compiler::fgInitBlockVarSets()
 {
     for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
@@ -3887,303 +3817,6 @@ PhaseStatus Compiler::fgInsertGCPolls()
 #endif // DEBUG
 
     return result;
-}
-
-/*****************************************************************************
- *
- *  The following does the final pass on BBF_NEEDS_GCPOLL and then actually creates the GC Polls.
- */
-
-void Compiler::fgCreateGCPolls()
-{
-    if (GCPOLL_NONE == opts.compGCPollType)
-    {
-        return;
-    }
-
-    bool createdPollBlocks = false;
-
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("*************** In fgCreateGCPolls() for %s\n", info.compFullName);
-        fgDispBasicBlocks(false);
-        printf("\n");
-    }
-#endif // DEBUG
-
-    if (opts.OptimizationEnabled())
-    {
-        // Remove polls from well formed loops with a constant upper bound.
-        for (unsigned lnum = 0; lnum < optLoopCount; ++lnum)
-        {
-            // Look for constant counted loops that run for a short duration.  This logic is very similar to
-            // what's in code:Compiler::optUnrollLoops, since they have similar constraints.  However, this
-            // logic is much more permissive since we're not doing a complex transformation.
-
-            /* TODO-Cleanup:
-             * I feel bad cloning so much logic from optUnrollLoops
-             */
-
-            // Filter out loops not meeting the obvious preconditions.
-            //
-            if (optLoopTable[lnum].lpFlags & LPFLG_REMOVED)
-            {
-                continue;
-            }
-
-            if (!(optLoopTable[lnum].lpFlags & LPFLG_CONST))
-            {
-                continue;
-            }
-
-            BasicBlock* head   = optLoopTable[lnum].lpHead;
-            BasicBlock* bottom = optLoopTable[lnum].lpBottom;
-
-            // Loops dominated by GC_SAFE_POINT won't have this set.
-            if (!(bottom->bbFlags & BBF_NEEDS_GCPOLL))
-            {
-                continue;
-            }
-
-            /* Get the loop data:
-                - initial constant
-                - limit constant
-                - iterator
-                - iterator increment
-                - increment operation type (i.e. ASG_ADD, ASG_SUB, etc...)
-                - loop test type (i.e. GT_GE, GT_LT, etc...)
-             */
-
-            int        lbeg     = optLoopTable[lnum].lpConstInit;
-            int        llim     = optLoopTable[lnum].lpConstLimit();
-            genTreeOps testOper = optLoopTable[lnum].lpTestOper();
-
-            int        lvar     = optLoopTable[lnum].lpIterVar();
-            int        iterInc  = optLoopTable[lnum].lpIterConst();
-            genTreeOps iterOper = optLoopTable[lnum].lpIterOper();
-
-            var_types iterOperType = optLoopTable[lnum].lpIterOperType();
-            bool      unsTest      = (optLoopTable[lnum].lpTestTree->gtFlags & GTF_UNSIGNED) != 0;
-            if (lvaTable[lvar].lvAddrExposed)
-            { // Can't reason about the value of the iteration variable.
-                continue;
-            }
-
-            unsigned totalIter;
-
-            /* Find the number of iterations - the function returns false if not a constant number */
-
-            if (!optComputeLoopRep(lbeg, llim, iterInc, iterOper, iterOperType, testOper, unsTest,
-                                   // The value here doesn't matter for this variation of the optimization
-                                   true, &totalIter))
-            {
-#ifdef DEBUG
-                if (verbose)
-                {
-                    printf("Could not compute loop iterations for loop from " FMT_BB " to " FMT_BB, head->bbNum,
-                           bottom->bbNum);
-                }
-#endif                      // DEBUG
-                (void)head; // suppress gcc error.
-
-                continue;
-            }
-
-            /* Forget it if there are too many repetitions or not a constant loop */
-
-            static const unsigned ITER_LIMIT = 256;
-            if (totalIter > ITER_LIMIT)
-            {
-                continue;
-            }
-
-            // It is safe to elminate the poll from this loop.
-            bottom->bbFlags &= ~BBF_NEEDS_GCPOLL;
-
-#ifdef DEBUG
-            if (verbose)
-            {
-                printf("Removing poll in block " FMT_BB " because it forms a bounded counted loop\n", bottom->bbNum);
-            }
-#endif // DEBUG
-        }
-    }
-
-    // Final chance to optimize the polls.  Move all polls in loops from the bottom of the loop up to the
-    // loop head.  Also eliminate all epilog polls in non-leaf methods.  This only works if we have dominator
-    // information.
-    if (fgDomsComputed)
-    {
-        for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
-        {
-            if (!(block->bbFlags & BBF_NEEDS_GCPOLL))
-            {
-                continue;
-            }
-
-            if (block->bbJumpKind == BBJ_COND || block->bbJumpKind == BBJ_ALWAYS)
-            {
-                // make sure that this is loop-like
-                if (!fgReachable(block->bbJumpDest, block))
-                {
-                    block->bbFlags &= ~BBF_NEEDS_GCPOLL;
-#ifdef DEBUG
-                    if (verbose)
-                    {
-                        printf("Removing poll in block " FMT_BB " because it is not loop\n", block->bbNum);
-                    }
-#endif // DEBUG
-                    continue;
-                }
-            }
-            else if (!(block->bbJumpKind == BBJ_RETURN || block->bbJumpKind == BBJ_SWITCH))
-            {
-                noway_assert(!"GC Poll on a block that has no control transfer.");
-#ifdef DEBUG
-                if (verbose)
-                {
-                    printf("Removing poll in block " FMT_BB " because it is not a jump\n", block->bbNum);
-                }
-#endif // DEBUG
-                block->bbFlags &= ~BBF_NEEDS_GCPOLL;
-                continue;
-            }
-
-            // Because of block compaction, it's possible to end up with a block that is both poll and safe.
-            // Clean those up now.
-
-            if (block->bbFlags & BBF_GC_SAFE_POINT)
-            {
-#ifdef DEBUG
-                if (verbose)
-                {
-                    printf("Removing poll in return block " FMT_BB " because it is GC Safe\n", block->bbNum);
-                }
-#endif // DEBUG
-                block->bbFlags &= ~BBF_NEEDS_GCPOLL;
-                continue;
-            }
-
-            if (block->bbJumpKind == BBJ_RETURN)
-            {
-                if (!optReachWithoutCall(fgFirstBB, block))
-                {
-                    // check to see if there is a call along the path between the first block and the return
-                    // block.
-                    block->bbFlags &= ~BBF_NEEDS_GCPOLL;
-#ifdef DEBUG
-                    if (verbose)
-                    {
-                        printf("Removing poll in return block " FMT_BB " because it dominated by a call\n",
-                               block->bbNum);
-                    }
-#endif // DEBUG
-                    continue;
-                }
-            }
-        }
-    }
-
-    noway_assert(!fgGCPollsCreated);
-    BasicBlock* block;
-    fgGCPollsCreated = true;
-
-    // Walk through the blocks and hunt for a block that has BBF_NEEDS_GCPOLL
-    for (block = fgFirstBB; block; block = block->bbNext)
-    {
-        // Because of block compaction, it's possible to end up with a block that is both poll and safe.
-        // And if !fgDomsComputed, we won't have cleared them, so skip them now
-        if (!(block->bbFlags & BBF_NEEDS_GCPOLL) || (block->bbFlags & BBF_GC_SAFE_POINT))
-        {
-            continue;
-        }
-
-        // This block needs a poll.  We either just insert a callout or we split the block and inline part of
-        // the test.  This depends on the value of opts.compGCPollType.
-
-        // If we're doing GCPOLL_CALL, just insert a GT_CALL node before the last node in the block.
-        CLANG_FORMAT_COMMENT_ANCHOR;
-
-#ifdef DEBUG
-        switch (block->bbJumpKind)
-        {
-            case BBJ_RETURN:
-            case BBJ_ALWAYS:
-            case BBJ_COND:
-            case BBJ_SWITCH:
-                break;
-            default:
-                noway_assert(!"Unknown block type for BBF_NEEDS_GCPOLL");
-        }
-#endif // DEBUG
-
-        noway_assert(opts.compGCPollType);
-
-        GCPollType pollType = opts.compGCPollType;
-        // pollType is set to either CALL or INLINE at this point.  Below is the list of places where we
-        // can't or don't want to emit an inline check.  Check all of those.  If after all of that we still
-        // have INLINE, then emit an inline check.
-
-        if (opts.OptimizationDisabled())
-        {
-#ifdef DEBUG
-            if (verbose)
-            {
-                printf("Selecting CALL poll in block " FMT_BB " because of debug/minopts\n", block->bbNum);
-            }
-#endif // DEBUG
-
-            // Don't split blocks and create inlined polls unless we're optimizing.
-            pollType = GCPOLL_CALL;
-        }
-        else if (genReturnBB == block)
-        {
-#ifdef DEBUG
-            if (verbose)
-            {
-                printf("Selecting CALL poll in block " FMT_BB " because it is the single return block\n", block->bbNum);
-            }
-#endif // DEBUG
-
-            // we don't want to split the single return block
-            pollType = GCPOLL_CALL;
-        }
-        else if (BBJ_SWITCH == block->bbJumpKind)
-        {
-#ifdef DEBUG
-            if (verbose)
-            {
-                printf("Selecting CALL poll in block " FMT_BB " because it is a loop formed by a SWITCH\n",
-                       block->bbNum);
-            }
-#endif // DEBUG
-
-            // I don't want to deal with all the outgoing edges of a switch block.
-            pollType = GCPOLL_CALL;
-        }
-
-        // TODO-Cleanup: potentially don't split if we're in an EH region.
-
-        BasicBlock* curBasicBlock = fgCreateGCPoll(pollType, block);
-        createdPollBlocks |= (block != curBasicBlock);
-    }
-
-    // If we split a block to create a GC Poll, then rerun fgReorderBlocks to push the rarely run blocks out
-    // past the epilog.  We should never split blocks unless we're optimizing.
-    if (createdPollBlocks)
-    {
-        noway_assert(opts.OptimizationEnabled());
-        fgReorderBlocks();
-        fgUpdateChangedFlowGraph();
-    }
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("*************** After fgCreateGCPolls()\n");
-        fgDispBasicBlocks(true);
-    }
-#endif // DEBUG
 }
 
 //------------------------------------------------------------------------------
@@ -4445,10 +4078,6 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
             default:
                 NO_WAY("Unknown block type for updating predecessor lists.");
         }
-
-        top->bbFlags &= ~BBF_NEEDS_GCPOLL;
-        noway_assert(!(poll->bbFlags & BBF_NEEDS_GCPOLL));
-        noway_assert(!(bottom->bbFlags & BBF_NEEDS_GCPOLL));
 
         if (compCurBB == top)
         {
@@ -8109,11 +7738,6 @@ inline void Compiler::fgLoopCallTest(BasicBlock* srcBB, BasicBlock* dstBB)
             dstBB->bbFlags |= BBF_LOOP_CALL1;
         }
     }
-    // if this loop will always call, then we can omit the GC Poll
-    if ((GCPOLL_NONE != opts.compGCPollType) && (dstBB->bbFlags & BBF_LOOP_CALL1))
-    {
-        srcBB->bbFlags &= ~BBF_NEEDS_GCPOLL;
-    }
 }
 
 /*****************************************************************************
@@ -8204,8 +7828,6 @@ inline void Compiler::fgMarkLoopHead(BasicBlock* block)
             printf("this block will execute a call\n");
         }
 #endif
-        // single block loops that contain GC safe points don't need polls.
-        block->bbFlags &= ~BBF_NEEDS_GCPOLL;
         return;
     }
 
@@ -8254,26 +7876,13 @@ inline void Compiler::fgMarkLoopHead(BasicBlock* block)
         return;
     }
 
-    // only enable fully interruptible code for if we're hijacking.
-    if (GCPOLL_NONE == opts.compGCPollType)
-    {
 #ifdef DEBUG
-        if (verbose)
-        {
-            printf("no guaranteed callsite exits, marking method as fully interruptible\n");
-        }
-#endif
-        SetInterruptible(true);
-    }
-    else
+    if (verbose)
     {
-#ifdef DEBUG
-        if (verbose)
-        {
-            printf("no guaranteed callsite exits, but we are using GC Poll calls\n");
-        }
-#endif
+        printf("no guaranteed callsite exits, marking method as fully interruptible\n");
     }
+#endif
+    SetInterruptible(true);
 }
 
 GenTree* Compiler::fgGetCritSectOfStaticMethod()
@@ -11235,7 +10844,6 @@ void Compiler::fgRemoveConditionalJump(BasicBlock* block)
 
     // Change the BBJ_COND to BBJ_NONE, and adjust the refCount and dupCount.
     block->bbJumpKind = BBJ_NONE;
-    block->bbFlags &= ~BBF_NEEDS_GCPOLL;
     --block->bbNext->bbRefs;
     --flow->flDupCount;
 
@@ -11523,7 +11131,6 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
             // because that would violate our invariant that BBJ_CALLFINALLY blocks are followed by
             // BBJ_ALWAYS blocks.
             bPrev->bbJumpKind = BBJ_NONE;
-            bPrev->bbFlags &= ~BBF_NEEDS_GCPOLL;
         }
 
         // If this is the first Cold basic block update fgFirstColdBlock
@@ -11812,7 +11419,6 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
                     {
                         // It's safe to change the jump type
                         bPrev->bbJumpKind = BBJ_NONE;
-                        bPrev->bbFlags &= ~BBF_NEEDS_GCPOLL;
                     }
                 }
                 break;
@@ -11960,7 +11566,6 @@ BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst)
                 (bSrc->bbJumpDest == bSrc->bbNext))
             {
                 bSrc->bbJumpKind = BBJ_NONE;
-                bSrc->bbFlags &= ~BBF_NEEDS_GCPOLL;
 #ifdef DEBUG
                 if (verbose)
                 {
@@ -15207,7 +14812,6 @@ bool Compiler::fgOptimizeBranchToNext(BasicBlock* block, BasicBlock* bNext, Basi
                 {
                     /* the unconditional jump is to the next BB  */
                     block->bbJumpKind = BBJ_NONE;
-                    block->bbFlags &= ~BBF_NEEDS_GCPOLL;
 #ifdef DEBUG
                     if (verbose)
                     {
@@ -15325,7 +14929,6 @@ bool Compiler::fgOptimizeBranchToNext(BasicBlock* block, BasicBlock* bNext, Basi
         /* Conditional is gone - simply fall into the next block */
 
         block->bbJumpKind = BBJ_NONE;
-        block->bbFlags &= ~BBF_NEEDS_GCPOLL;
 
         /* Update bbRefs and bbNum - Conditional predecessors to the same
          * block are counted twice so we have to remove one of them */
@@ -19570,8 +19173,7 @@ void Compiler::fgSetBlockOrder()
             }
         }
     }
-    // only enable fully interruptible code for if we're hijacking.
-    else if (GCPOLL_NONE == opts.compGCPollType)
+    else
     {
         /* If we don't have the dominators, use an abbreviated test for fully interruptible.  If there are
          * any back edges, check the source and destination blocks to see if they're GC Safe.  If not, then
@@ -19629,11 +19231,6 @@ void Compiler::fgSetBlockOrder()
         }
     }
 
-    if (!fgGCPollsCreated)
-    {
-        fgCreateGCPolls();
-    }
-
     for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
     {
 
@@ -19641,15 +19238,6 @@ void Compiler::fgSetBlockOrder()
 #ifndef JIT32_GCENCODER
         if (block->endsWithTailCallOrJmp(this, true) && optReachWithoutCall(fgFirstBB, block))
         {
-            // We have a tail call that is reachable without making any other
-            // 'normal' call that would have counted as a GC Poll.  If we were
-            // using polls, all return blocks meeting this criteria would have
-            // already added polls and then marked as being GC safe
-            // (BBF_GC_SAFE_POINT). Thus we can only reach here when *NOT*
-            // using GC polls, but instead relying on the JIT to generate
-            // fully-interruptible code.
-            noway_assert(GCPOLL_NONE == opts.compGCPollType);
-
             // This tail call might combine with other tail calls to form a
             // loop.  Thus we need to either add a poll, or make the method
             // fully interruptible.  I chose the later because that's what
@@ -21581,12 +21169,6 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
         {
             assert(block->lastNode()->gtNext == nullptr &&
                    (block->lastNode()->gtOper == GT_SWITCH || block->lastNode()->gtOper == GT_SWITCH_TABLE));
-        }
-        else if (!(block->bbJumpKind == BBJ_ALWAYS || block->bbJumpKind == BBJ_RETURN ||
-                   block->bbJumpKind == BBJ_NONE || block->bbJumpKind == BBJ_THROW))
-        {
-            // this block cannot have a poll
-            assert(!(block->bbFlags & BBF_NEEDS_GCPOLL));
         }
 
         if (block->bbCatchTyp == BBCT_FILTER)
