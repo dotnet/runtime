@@ -136,10 +136,10 @@ if(NOT CLR_CMAKE_TARGET_LINUX)
     )
 else()
     set(NATIVE_LIBS
-      ${NATIVE_LIBS_LOCATION}/libSystem.IO.Compression.Native.a
-      ${NATIVE_LIBS_LOCATION}/libSystem.Native.a
-      ${NATIVE_LIBS_LOCATION}/libSystem.Net.Security.Native.a
-      ${NATIVE_LIBS_LOCATION}/libSystem.Security.Cryptography.Native.OpenSsl.a
+      ${CORECLR_STATIC_LIB_LOCATION}/libSystem.IO.Compression.Native.a
+      ${CORECLR_STATIC_LIB_LOCATION}/libSystem.Native.a
+      ${CORECLR_STATIC_LIB_LOCATION}/libSystem.Net.Security.Native.a
+      ${CORECLR_STATIC_LIB_LOCATION}/libSystem.Security.Cryptography.Native.OpenSsl.a
     )
 
     find_package(ZLIB REQUIRED)
@@ -208,15 +208,10 @@ set_property(TARGET singlefilehost PROPERTY ENABLE_EXPORTS 1)
 target_link_libraries(singlefilehost
     libhostcommon
     ${CORECLR_LIBRARIES}
-
-    ${START_WHOLE_ARCHIVE}
     ${NATIVE_LIBS}
-    ${END_WHOLE_ARCHIVE}
-
     ${ZLIB_LIBRARIES}
     ${LIBGSS}
     ${NATIVE_LIBS_EXTRA}
-
 )
 
 if(NOT FEATURE_DISTRO_AGNOSTIC_SSL)

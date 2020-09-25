@@ -6,10 +6,6 @@ add_definitions(-DPALEXPORT=EXTERN_C)
 set(NATIVE_LIBS_ONLY 1)
 
 if(CLR_CMAKE_TARGET_WIN32)
-    #add_subdirectory(${CLR_REPO_ROOT_DIR}/src/libraries/Native/Windows Native.Windows)
-
-    # HACK HACK HACK   remove the following, uncomment the line above.
-
     set(GLOBALIZATION_NATIVE_DIR ${CLR_REPO_ROOT_DIR}/src/libraries/Native/Unix/System.Globalization.Native)
     set(COMPRESSION_NATIVE_DIR ${CLR_REPO_ROOT_DIR}/src/libraries/Native/Windows/clrcompression)
 

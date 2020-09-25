@@ -25,7 +25,7 @@ endif()
 
 if(NATIVE_LIBS_ONLY)
     set(GEN_SHARED_LIB 0)
-    set(STATIC_LIB_DESTINATION libs)
+    set(STATIC_LIB_DESTINATION lib)
 else()
     set(GEN_SHARED_LIB 1)
     set(STATIC_LIB_DESTINATION .)

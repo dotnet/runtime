@@ -4,8 +4,6 @@ if("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_BINARY_DIR}")
     message(FATAL_ERROR "Binary directory isn't being correctly set before calling Cmake. Tree must be built in separate directory from source.")
 endif()
 
-set(GEN_SHARED_LIB 0)
-
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 if (GEN_SHARED_LIB)
@@ -108,20 +106,6 @@ endif()
 target_link_libraries(clrcompression-static ${__LinkLibraries})
 
 if (GEN_SHARED_LIB)
-    # Allow specification of arguments that should be passed to the linker
-    SET_TARGET_PROPERTIES(clrcompression PROPERTIES LINK_FLAGS ${__LinkArgs})
-    SET_TARGET_PROPERTIES(clrcompression-static PROPERTIES LINK_FLAGS ${__LinkArgs})
-endif()
-
-if (GEN_SHARED_LIB)
-    # Allow specification of libraries that should be linked against
-    # CMake doesn't like space delimiters as input to target_link_libraries
-    separate_arguments(linker_libs_sanitized WINDOWS_COMMAND ${__LinkLibraries})
-    target_link_libraries(clrcompression ${linker_libs_sanitized})
-    target_link_libraries(clrcompression-static ${linker_libs_sanitized})
-endif()
-
-if (GEN_SHARED_LIB)
     GENERATE_EXPORT_HEADER( clrcompression
          BASE_NAME clrcompression
          EXPORT_MACRO_NAME clrcompression_EXPORT
@@ -134,5 +118,5 @@ if (GEN_SHARED_LIB)
     install (FILES ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_BUILD_TYPE}/clrcompression.pdb DESTINATION .)
 endif()
 
-install (TARGETS clrcompression-static DESTINATION lib)
+install (TARGETS clrcompression-static DESTINATION ${STATIC_LIB_DESTINATION})
 
