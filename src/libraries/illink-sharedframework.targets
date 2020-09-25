@@ -99,7 +99,6 @@
       <_SuppressionsXmls Include="$(LibrariesProjectRoot)System.Security.Cryptography.Algorithms\$(ProjectILLinkSuppressionsFile).xml" />
       <_SuppressionsXmls Include="$(LibrariesProjectRoot)System.Security.Cryptography.Cng\$(ProjectILLinkSuppressionsFile).xml" />
       <_SuppressionsXmls Include="$(LibrariesProjectRoot)System.Security.Cryptography.Csp\$(ProjectILLinkSuppressionsFile).xml" />
-      <_SuppressionsXmls Include="$(LibrariesProjectRoot)System.Security.Cryptography.X509Certificates\$(ProjectILLinkSuppressionsFile).xml" />
       <_SuppressionsXmls Condition="'$(TargetOs)' != 'Windows_NT'"
                          Include="$(LibrariesProjectRoot)System.Security.Cryptography.X509Certificates\$(ProjectILLinkSuppressionsNonWindowsSpecificFile).xml" /> 
       <_SuppressionsXmls Condition="'$(TargetArchitecture)' == 'wasm'"
