@@ -19,7 +19,7 @@ trigger:
     - SECURITY.md
     - THIRD-PARTY-NOTICES.TXT
   
-pr: none
+#pr: none
 
 jobs:
 #
