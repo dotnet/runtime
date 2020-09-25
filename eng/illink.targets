@@ -87,9 +87,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ILLinkSuppressionsXmls Condition="Exists('$(ILLinkSuppressionsXmlFile).xml')" Include="$(ILLinkSuppressionsXmlFile).xml" />
-    <ILLinkSuppressionsXmls Condition="Exists('$(ILLinkSuppressionsConfigurationSpecificXmlFile).xml')" Include="$(ILLinkSuppressionsConfigurationSpecificXmlFile).xml" />
-    <ILLinkSuppressionsXmls Update="@(ILLinkSuppressionsXmls)" TargetPath="%(FileName).$(AssemblyName).xml" />
+    <ILLinkSuppressionsXmls Condition="Exists('$(ILLinkSuppressionsXmlFile).xml')"
+                            Include="$(ILLinkSuppressionsXmlFile).xml"
+                            TargetPath="%(FileName).$(AssemblyName).xml" />
+    <ILLinkSuppressionsXmls Condition="Exists('$(ILLinkSuppressionsConfigurationSpecificXmlFile).xml')"
+                            Include="$(ILLinkSuppressionsConfigurationSpecificXmlFile).xml"
+                            TargetPath="%(FileName).$(AssemblyName).xml" />
   </ItemGroup>
 
   <Target Name="_EmbedILLinkXmls"
