@@ -89,6 +89,7 @@
       <!-- Assemblies that were not included in per-library linker run -->
       <_SuppressionsXmls Include="$(LibrariesProjectRoot)Microsoft.CSharp\$(ProjectILLinkSuppressionsFile).xml" />
       <_SuppressionsXmls Include="$(LibrariesProjectRoot)Microsoft.VisualBasic.Core\$(ProjectILLinkSuppressionsFile).xml" />
+      <_SuppressionsXmls Include="$(LibrariesProjectRoot)System.ComponentModel.Annotations\$(ProjectILLinkSuppressionsFile).xml" />
       <_SuppressionsXmls Include="$(LibrariesProjectRoot)System.Drawing.Primitives\$(ProjectILLinkSuppressionsFile).xml" />
       <_SuppressionsXmls Include="$(LibrariesProjectRoot)System.Linq.Queryable\$(ProjectILLinkSuppressionsFile).xml" />
       <_SuppressionsXmls Include="$(LibrariesProjectRoot)System.Net.Http\$(ProjectILLinkSuppressionsFile).xml" />
