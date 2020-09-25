@@ -14,8 +14,16 @@ namespace SingleFileApiTests
                 switch (arg)
                 {
                     case "appcontext":
-                        var deps_files = AppContext.GetData("APP_CONTEXT_DEPS_FILES");
+                        var deps_files = (string)AppContext.GetData("APP_CONTEXT_DEPS_FILES");
                         Console.WriteLine("APP_CONTEXT_DEPS_FILES: " + deps_files);
+                        foreach (string deps_file_path in deps_files.Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                        {
+                            if (!File.Exists(deps_file_path))
+                            {
+                                Console.WriteLine($"APP_CONTEXT_DEPS_FILES contains path which doesn't exist: '{deps_file_path}'");
+                                return -1;
+                            }
+                        }
                         break;
 
                     case "executing_assembly_location":

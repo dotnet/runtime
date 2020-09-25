@@ -161,7 +161,20 @@ int hostpolicy_context_t::initialize(hostpolicy_init_t &hostpolicy_init, const a
         if (fx_curr != fx_begin)
             app_context_deps_str += _X(';');
 
-        app_context_deps_str += (*fx_curr)->get_deps_file();
+        // For the application's .deps.json if this is single file, 3.1 backward compat
+        // then the path used internally is the bundle path, but externally we need to report
+        // the path to the extraction folder.
+        if (fx_curr == fx_begin && bundle::info_t::is_single_file_bundle() && bundle::runner_t::app()->is_netcoreapp3_compat_mode())
+        {
+            pal::string_t deps_path = bundle::runner_t::app()->extraction_path();
+            append_path(&deps_path, get_filename((*fx_curr)->get_deps_file()).c_str());
+            app_context_deps_str += deps_path;
+        }
+        else
+        {
+            app_context_deps_str += (*fx_curr)->get_deps_file();
+        }
+
         ++fx_curr;
     }
 
