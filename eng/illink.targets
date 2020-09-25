@@ -45,6 +45,7 @@
     <ILLinkLinkAttributesXmlIntermediatePath>$(IntermediateOutputPath)ILLink.LinkAttributes.xml</ILLinkLinkAttributesXmlIntermediatePath>
 
     <ILLinkSuppressionsXmlFile>$(ILLinkDirectory)ILLink.Suppressions</ILLinkSuppressionsXmlFile>
+    <ILLinkSuppressionsConfigurationSpecificXmlFile>$(ILLinkSuppressionsXmlFile).$(Configuration)</ILLinkSuppressionsConfigurationSpecificXmlFile>
 
     <!-- if building a PDB, tell illink to rewrite the symbols file -->
     <ILLinkRewritePDBs Condition="'$(ILLinkRewritePDBs)' == '' and '$(DebugSymbols)' != 'false'">true</ILLinkRewritePDBs>
@@ -82,6 +83,7 @@
 
   <ItemGroup>
     <ILLinkSuppressionsXmls Condition="Exists('$(ILLinkSuppressionsXmlFile).xml')" Include="$(ILLinkSuppressionsXmlFile).xml" />
+    <ILLinkSuppressionsXmls Condition="Exists('$(ILLinkSuppressionsConfigurationSpecificXmlFile).xml')" Include="$(ILLinkSuppressionsConfigurationSpecificXmlFile).xml" />
     <ILLinkSuppressionsXmls Update="@(ILLinkSuppressionsXmls)" TargetPath="%(FileName).$(AssemblyName).xml" />
   </ItemGroup>
 

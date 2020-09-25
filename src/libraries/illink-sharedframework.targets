@@ -73,6 +73,7 @@
 
     <PropertyGroup>
       <ProjectILLinkSuppressionsFile>src\ILLink\ILLink.Suppressions</ProjectILLinkSuppressionsFile>
+      <ProjectILLinkSuppressionsDebugSpecificFile>$(ProjectILLinkSuppressionsFile).Debug</ProjectILLinkSuppressionsDebugSpecificFile>
       <ProjectILLinkSuppressionsAndroidSpecificFile>$(ProjectILLinkSuppressionsFile).Mono</ProjectILLinkSuppressionsAndroidSpecificFile>
       <ProjectILLinkSuppressionsWasmSpecificFile>$(ProjectILLinkSuppressionsFile).wasm</ProjectILLinkSuppressionsWasmSpecificFile>
       <CoreLibSharedILLinkSuppressionsFilesPrefix>$(CoreLibSharedDir)ILLink\ILLink.Suppressions.Shared</CoreLibSharedILLinkSuppressionsFilesPrefix>
@@ -91,6 +92,8 @@
       <_SuppressionsXmls Include="$(LibrariesProjectRoot)System.Drawing.Primitives\$(ProjectILLinkSuppressionsFile).xml" />
       <_SuppressionsXmls Include="$(LibrariesProjectRoot)System.Linq.Queryable\$(ProjectILLinkSuppressionsFile).xml" />
       <_SuppressionsXmls Include="$(LibrariesProjectRoot)System.Net.Http\$(ProjectILLinkSuppressionsFile).xml" />
+      <_SuppressionsXmls Condition="'$(Configuration)' == 'Debug'"
+                         Include="$(LibrariesProjectRoot)System.Net.Http\$(ProjectILLinkSuppressionsDebugSpecificFile).xml" />
       <_SuppressionsXmls Include="$(LibrariesProjectRoot)System.Runtime.Serialization.Formatters\$(ProjectILLinkSuppressionsFile).xml" />
       <_SuppressionsXmls Include="$(LibrariesProjectRoot)System.Security.Cryptography.Algorithms\$(ProjectILLinkSuppressionsFile).xml" />
       <_SuppressionsXmls Include="$(LibrariesProjectRoot)System.Security.Cryptography.Cng\$(ProjectILLinkSuppressionsFile).xml" />
