@@ -1049,7 +1049,7 @@ if(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
   list(INSERT CMAKE_REQUIRED_INCLUDES 0 ${CMAKE_CURRENT_SOURCE_DIR}/libunwind/include ${CMAKE_CURRENT_BINARY_DIR}/libunwind/include)
 endif()
 
-set(CMAKE_REQUIRED_FLAGS "-c -Werror=implicit-function-declaration")
+set(CMAKE_REQUIRED_FLAGS "-Werror=implicit-function-declaration")
 
 check_c_source_compiles("
 #include <libunwind.h>
