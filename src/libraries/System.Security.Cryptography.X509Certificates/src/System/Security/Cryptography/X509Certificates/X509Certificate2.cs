@@ -801,7 +801,14 @@ namespace System.Security.Cryptography.X509Certificates
         /// exceptions that can be thrown.
         /// </para>
         /// <para>
-        ///   The Subjbool restrictPublicKeyToEncryption PEM-encoded certificates and keys do not require a specific order. For the certificate, the
+        ///   The SubjectPublicKeyInfo from the certificate determines what PEM labels are accepted for the private key.
+        ///   For RSA certificates, accepted private key PEM labels are "RSA PRIVATE KEY" and "PRIVATE KEY".
+        ///   For ECDSA certificates, accepted private key PEM labels are "EC PRIVATE KEY" and "PRIVATE KEY".
+        ///   For DSA certificates, the accepted private key PEM label is "PRIVATE KEY".
+        /// </para>
+        /// <para>PEM-encoded items that have a different label are ignored.</para>
+        /// <para>
+        ///   Combined PEM-encoded certificates and keys do not require a specific order. For the certificate, the
         ///   the first certificate with a CERTIFICATE label is loaded. For the private key, the first private
         ///   key with an acceptable label is loaded. More advanced scenarios for loading certificates and
         ///   private keys can leverage <see cref="System.Security.Cryptography.PemEncoding" /> to enumerate
