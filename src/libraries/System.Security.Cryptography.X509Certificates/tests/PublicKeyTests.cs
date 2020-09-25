@@ -778,6 +778,22 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        public static void CreateFromSubjectPublicKeyInfo_Roundtrip_DSA_InvalidKey()
+        {
+            // The DSA key is invalid here, but we should be able to round-trip the
+            // parameters as-is.
+            byte[] spki = Convert.FromHexString(
+                "3021301906072A8648CE380401300E020100020300FFFF020400FFFFFF030400020103");
+
+            PublicKey key = PublicKey.CreateFromSubjectPublicKeyInfo(spki, out int read);
+
+            Assert.Throws<CryptographicException>(() => key.Key);
+            Assert.Equal("1.2.840.10040.4.1", key.Oid.Value);
+            Assert.Equal(spki, key.ExportSubjectPublicKeyInfo());
+            Assert.Equal(spki.Length, read);
+        }
+
+        [Fact]
         public static void CreateFromSubjectPublicKeyInfo_BadEncoding()
         {
             Assert.Throws<CryptographicException>(() =>
