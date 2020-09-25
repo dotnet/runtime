@@ -22,13 +22,11 @@ namespace Mono.Linker
 		internal const string PropertyPrefix = "P:";
 		internal const string TypePrefix = "T:";
 
-		public static readonly DocumentationSignatureGenerator Instance = new DocumentationSignatureGenerator ();
-
 		private DocumentationSignatureGenerator ()
 		{
 		}
 
-		public void VisitMember (IMemberDefinition member, StringBuilder builder)
+		public static void VisitMember (IMemberDefinition member, StringBuilder builder)
 		{
 			switch (member.MetadataToken.TokenType) {
 			case TokenType.TypeDef:
@@ -51,31 +49,31 @@ namespace Mono.Linker
 			}
 		}
 
-		private void VisitMethod (MethodDefinition method, StringBuilder builder)
+		private static void VisitMethod (MethodDefinition method, StringBuilder builder)
 		{
 			builder.Append (MethodPrefix);
 			PartVisitor.Instance.VisitMethodDefinition (method, builder);
 		}
 
-		private void VisitField (FieldDefinition field, StringBuilder builder)
+		private static void VisitField (FieldDefinition field, StringBuilder builder)
 		{
 			builder.Append (FieldPrefix);
 			PartVisitor.Instance.VisitField (field, builder);
 		}
 
-		private void VisitEvent (EventDefinition evt, StringBuilder builder)
+		private static void VisitEvent (EventDefinition evt, StringBuilder builder)
 		{
 			builder.Append (EventPrefix);
 			PartVisitor.Instance.VisitEvent (evt, builder);
 		}
 
-		private void VisitProperty (PropertyDefinition property, StringBuilder builder)
+		private static void VisitProperty (PropertyDefinition property, StringBuilder builder)
 		{
 			builder.Append (PropertyPrefix);
 			PartVisitor.Instance.VisitProperty (property, builder);
 		}
 
-		private void VisitTypeDefinition (TypeDefinition type, StringBuilder builder)
+		private static void VisitTypeDefinition (TypeDefinition type, StringBuilder builder)
 		{
 			builder.Append (TypePrefix);
 			PartVisitor.Instance.VisitTypeReference (type, builder);

@@ -11,8 +11,8 @@ namespace Mono.Linker
 {
 	public class CustomAttributeSource
 	{
-		private Dictionary<ICustomAttributeProvider, IEnumerable<CustomAttribute>> _xmlCustomAttributes;
-		private Dictionary<ICustomAttributeProvider, IEnumerable<Attribute>> _internalAttributes;
+		private readonly Dictionary<ICustomAttributeProvider, IEnumerable<CustomAttribute>> _xmlCustomAttributes;
+		private readonly Dictionary<ICustomAttributeProvider, IEnumerable<Attribute>> _internalAttributes;
 
 		public CustomAttributeSource ()
 		{

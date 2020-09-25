@@ -183,7 +183,7 @@ namespace Mono.Linker.Steps
 			return true;
 		}
 
-		ArrayBuilder<string> GetAttributeChildren (XPathNodeIterator iterator)
+		static ArrayBuilder<string> GetAttributeChildren (XPathNodeIterator iterator)
 		{
 			ArrayBuilder<string> children = new ArrayBuilder<string> ();
 			while (iterator.MoveNext ()) {

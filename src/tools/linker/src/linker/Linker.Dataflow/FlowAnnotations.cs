@@ -341,7 +341,7 @@ namespace Mono.Linker.Dataflow
 			return new TypeAnnotations (type, annotatedMethods.ToArray (), annotatedFields.ToArray (), typeGenericParameterAnnotations);
 		}
 
-		bool ScanMethodBodyForFieldAccess (MethodBody body, bool write, out FieldDefinition found)
+		static bool ScanMethodBodyForFieldAccess (MethodBody body, bool write, out FieldDefinition found)
 		{
 			// Tries to find the backing field for a property getter/setter.
 			// Returns true if this is a method body that we can unambiguously analyze.

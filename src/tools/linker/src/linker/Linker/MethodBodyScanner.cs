@@ -51,7 +51,7 @@ namespace Mono.Linker
 			return true;
 		}
 
-		public static IEnumerable<(InterfaceImplementation, TypeDefinition)> GetReferencedInterfaces (AnnotationStore annotations, MethodBody body)
+		public static IEnumerable<(InterfaceImplementation, TypeDefinition)> GetReferencedInterfaces (MethodBody body)
 		{
 			var possibleStackTypes = AllPossibleStackTypes (body.Method);
 			if (possibleStackTypes.Count == 0)

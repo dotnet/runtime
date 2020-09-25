@@ -253,14 +253,14 @@ namespace ILLink.Tasks
 			return args.ToString ();
 		}
 
-		private void SetOpt (StringBuilder args, string opt, bool enabled)
+		private static void SetOpt (StringBuilder args, string opt, bool enabled)
 		{
 			args.Append (enabled ? "--enable-opt " : "--disable-opt ").AppendLine (opt);
 		}
 
-		private void SetOpt (StringBuilder args, string opt, string assembly, bool enabled)
+		private static void SetOpt (StringBuilder args, string opt, string assembly, bool enabled)
 		{
-			args.Append (enabled ? "--enable-opt " : "--disable-opt ").Append (opt).Append (" ").AppendLine (assembly);
+			args.Append (enabled ? "--enable-opt " : "--disable-opt ").Append (opt).Append (' ').AppendLine (assembly);
 		}
 
 		protected override string GenerateResponseFileCommands ()
@@ -290,7 +290,7 @@ namespace ILLink.Tasks
 				if (!String.IsNullOrEmpty (trimMode)) {
 					args.Append ("-p ");
 					args.Append (trimMode);
-					args.Append (" ").AppendLine (Quote (assemblyName));
+					args.Append (' ').AppendLine (Quote (assemblyName));
 				}
 
 				// Add per-assembly optimization arguments
@@ -370,7 +370,7 @@ namespace ILLink.Tasks
 					var value = customData.GetMetadata ("Value");
 					if (String.IsNullOrEmpty (value))
 						throw new ArgumentException ("custom data requires \"Value\" metadata");
-					args.Append ("--custom-data ").Append (" ").Append (key).Append ("=").AppendLine (Quote (value));
+					args.Append ("--custom-data ").Append (' ').Append (key).Append ('=').AppendLine (Quote (value));
 				}
 			}
 
@@ -380,7 +380,7 @@ namespace ILLink.Tasks
 					var featureValue = featureSetting.GetMetadata ("Value");
 					if (String.IsNullOrEmpty (featureValue))
 						throw new ArgumentException ("feature settings require \"Value\" metadata");
-					args.Append ("--feature ").Append (feature).Append (" ").AppendLine (featureValue);
+					args.Append ("--feature ").Append (feature).Append (' ').AppendLine (featureValue);
 				}
 			}
 

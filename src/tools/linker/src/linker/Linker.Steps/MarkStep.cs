@@ -919,7 +919,7 @@ namespace Mono.Linker.Steps
 			return true;
 		}
 
-		internal protected void MarkStaticConstructor (TypeDefinition type, in DependencyInfo reason, IMemberDefinition sourceLocationMember)
+		protected internal void MarkStaticConstructor (TypeDefinition type, in DependencyInfo reason, IMemberDefinition sourceLocationMember)
 		{
 			if (MarkMethodIf (type.Methods, IsNonEmptyStaticConstructor, reason, sourceLocationMember) != null)
 				Annotations.SetPreservedStaticCtor (type);
@@ -1011,7 +1011,7 @@ namespace Mono.Linker.Steps
 			}
 		}
 
-		PropertyDefinition GetProperty (TypeDefinition type, string propertyname)
+		static PropertyDefinition GetProperty (TypeDefinition type, string propertyname)
 		{
 			while (type != null) {
 				PropertyDefinition property = type.Properties.FirstOrDefault (p => p.Name == propertyname);
@@ -1047,7 +1047,7 @@ namespace Mono.Linker.Steps
 			}
 		}
 
-		FieldDefinition GetField (TypeDefinition type, string fieldname)
+		static FieldDefinition GetField (TypeDefinition type, string fieldname)
 		{
 			while (type != null) {
 				FieldDefinition field = type.Fields.FirstOrDefault (f => f.Name == fieldname);
@@ -1060,7 +1060,7 @@ namespace Mono.Linker.Steps
 			return null;
 		}
 
-		MethodDefinition GetMethodWithNoParameters (TypeDefinition type, string methodname)
+		static MethodDefinition GetMethodWithNoParameters (TypeDefinition type, string methodname)
 		{
 			while (type != null) {
 				MethodDefinition method = type.Methods.FirstOrDefault (m => m.Name == methodname && !m.HasParameters);
@@ -1258,7 +1258,7 @@ namespace Mono.Linker.Steps
 			return markOccurred;
 		}
 
-		internal protected void MarkField (FieldReference reference, DependencyInfo reason)
+		protected internal void MarkField (FieldReference reference, DependencyInfo reason)
 		{
 			if (reference.DeclaringType is GenericInstanceType) {
 				Debug.Assert (reason.Kind == DependencyKind.FieldAccess || reason.Kind == DependencyKind.Ldtoken);
@@ -1360,7 +1360,7 @@ namespace Mono.Linker.Steps
 			MarkMethodsIf (type.Methods, IsSpecialSerializationConstructor, new DependencyInfo (DependencyKind.SerializationMethodForType, type), type);
 		}
 
-		internal protected virtual TypeDefinition MarkTypeVisibleToReflection (TypeReference reference, DependencyInfo reason, IMemberDefinition sourceLocationMember)
+		protected internal virtual TypeDefinition MarkTypeVisibleToReflection (TypeReference reference, DependencyInfo reason, IMemberDefinition sourceLocationMember)
 		{
 			// If a type is visible to reflection, we need to stop doing optimization that could cause observable difference
 			// in reflection APIs. This includes APIs like MakeGenericType (where variant castability of the produced type
@@ -1381,7 +1381,7 @@ namespace Mono.Linker.Steps
 		/// For example if the type is marked due to an instruction in a method's body, this should be the method which body it is.</param>
 		/// <returns>The resolved type definition if the reference can be resolved and if the call ended up actually marking.
 		/// If the type definition was already marked, the method returns null.</returns>
-		internal protected virtual TypeDefinition MarkType (TypeReference reference, DependencyInfo reason, IMemberDefinition sourceLocationMember)
+		protected internal virtual TypeDefinition MarkType (TypeReference reference, DependencyInfo reason, IMemberDefinition sourceLocationMember)
 		{
 #if DEBUG
 			if (!_typeReasons.Contains (reason.Kind))
@@ -1936,7 +1936,7 @@ namespace Mono.Linker.Steps
 				parameters[1].ParameterType.Name == "StreamingContext";
 		}
 
-		internal protected bool MarkMethodsIf (Collection<MethodDefinition> methods, Func<MethodDefinition, bool> predicate, in DependencyInfo reason, IMemberDefinition sourceLocationMember)
+		protected internal bool MarkMethodsIf (Collection<MethodDefinition> methods, Func<MethodDefinition, bool> predicate, in DependencyInfo reason, IMemberDefinition sourceLocationMember)
 		{
 			bool marked = false;
 			foreach (MethodDefinition method in methods) {
@@ -2266,7 +2266,7 @@ namespace Mono.Linker.Steps
 				MarkMethod (method, reason, sourceLocationMember);
 		}
 
-		internal protected void MarkIndirectlyCalledMethod (MethodDefinition method, in DependencyInfo reason, IMemberDefinition sourceLocationMember)
+		protected internal void MarkIndirectlyCalledMethod (MethodDefinition method, in DependencyInfo reason, IMemberDefinition sourceLocationMember)
 		{
 			MarkMethod (method, reason, sourceLocationMember);
 			Annotations.MarkIndirectlyCalledMethod (method);
@@ -2666,7 +2666,7 @@ namespace Mono.Linker.Steps
 			}
 		}
 
-		private bool IsComInterop (IMarshalInfoProvider marshalInfoProvider, TypeReference parameterType)
+		private static bool IsComInterop (IMarshalInfoProvider marshalInfoProvider, TypeReference parameterType)
 		{
 			// This is best effort. One can likely find ways how to get COM without triggering these alarms.
 			// AsAny marshalling of a struct with an object-typed field would be one, for example.
@@ -2747,7 +2747,7 @@ namespace Mono.Linker.Steps
 			}
 		}
 
-		internal protected void MarkProperty (PropertyDefinition prop, in DependencyInfo reason)
+		protected internal void MarkProperty (PropertyDefinition prop, in DependencyInfo reason)
 		{
 			Tracer.AddDirectDependency (prop, reason, marked: false);
 			// Consider making this more similar to MarkEvent method?
@@ -2755,7 +2755,7 @@ namespace Mono.Linker.Steps
 			DoAdditionalPropertyProcessing (prop);
 		}
 
-		internal protected virtual void MarkEvent (EventDefinition evt, in DependencyInfo reason)
+		protected internal virtual void MarkEvent (EventDefinition evt, in DependencyInfo reason)
 		{
 			// Record the event without marking it in Annotations.
 			Tracer.AddDirectDependency (evt, reason, marked: false);
@@ -2816,7 +2816,7 @@ namespace Mono.Linker.Steps
 			// If a type could be on the stack in the body and an interface it implements could be on the stack on the body
 			// then we need to mark that interface implementation.  When this occurs it is not safe to remove the interface implementation from the type
 			// even if the type is never instantiated
-			var implementations = MethodBodyScanner.GetReferencedInterfaces (_context.Annotations, body);
+			var implementations = MethodBodyScanner.GetReferencedInterfaces (body);
 			if (implementations == null)
 				return;
 

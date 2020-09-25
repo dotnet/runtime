@@ -130,7 +130,7 @@ namespace Mono.Linker
 		AlreadyMarked = 79, // null -> member that has already been marked for a particular reason (used to propagate reasons internally, not reported)
 	}
 
-	readonly public struct DependencyInfo : IEquatable<DependencyInfo>
+	public readonly struct DependencyInfo : IEquatable<DependencyInfo>
 	{
 		public DependencyKind Kind { get; }
 		public object Source { get; }

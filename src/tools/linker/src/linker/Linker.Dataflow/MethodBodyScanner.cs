@@ -53,7 +53,7 @@ namespace Mono.Linker.Dataflow
 			stack.Push (new StackSlot ());
 		}
 
-		private void PushUnknownAndWarnAboutInvalidIL (Stack<StackSlot> stack, MethodBody methodBody, int offset, bool invalidateBody)
+		private void PushUnknownAndWarnAboutInvalidIL (Stack<StackSlot> stack, MethodBody methodBody, int offset)
 		{
 			WarnAboutInvalidILInMethod (methodBody, offset);
 			PushUnknown (stack);
@@ -90,7 +90,7 @@ namespace Mono.Linker.Dataflow
 		}
 
 		// Merge stacks together. This may return the first stack, the stack length must be the same for the two stacks.
-		private Stack<StackSlot> MergeStack (Stack<StackSlot> a, Stack<StackSlot> b, MethodBody method, int ilOffset)
+		private static Stack<StackSlot> MergeStack (Stack<StackSlot> a, Stack<StackSlot> b)
 		{
 			if (a.Count != b.Count) {
 				// Force stacks to be of equal size to avoid crashes.
@@ -118,7 +118,7 @@ namespace Mono.Linker.Dataflow
 			stack = null;
 		}
 
-		private void NewKnownStack (Dictionary<int, Stack<StackSlot>> knownStacks, int newOffset, Stack<StackSlot> newStack, MethodBody method)
+		private static void NewKnownStack (Dictionary<int, Stack<StackSlot>> knownStacks, int newOffset, Stack<StackSlot> newStack)
 		{
 			// No need to merge in empty stacks
 			if (newStack.Count == 0) {
@@ -126,7 +126,7 @@ namespace Mono.Linker.Dataflow
 			}
 
 			if (knownStacks.ContainsKey (newOffset)) {
-				knownStacks[newOffset] = MergeStack (knownStacks[newOffset], newStack, method, newOffset);
+				knownStacks[newOffset] = MergeStack (knownStacks[newOffset], newStack);
 			} else {
 				knownStacks.Add (newOffset, new Stack<StackSlot> (newStack.Reverse ()));
 			}
@@ -134,7 +134,7 @@ namespace Mono.Linker.Dataflow
 
 		private struct BasicBlockIterator
 		{
-			HashSet<int> _methodBranchTargets;
+			readonly HashSet<int> _methodBranchTargets;
 			int _currentBlockIndex;
 			bool _foundEndOfPrevBlock;
 
@@ -172,7 +172,7 @@ namespace Mono.Linker.Dataflow
 			public int BasicBlockIndex;
 		}
 
-		private void StoreMethodLocalValue<KeyType> (
+		private static void StoreMethodLocalValue<KeyType> (
 			Dictionary<KeyType, ValueBasicBlockPair> valueCollection,
 			ValueNode valueToStore,
 			KeyType collectionKey,
@@ -217,7 +217,7 @@ namespace Mono.Linker.Dataflow
 						// The stack copy constructor reverses the stack
 						currentStack = new Stack<StackSlot> (knownStacks[operation.Offset].Reverse ());
 					} else {
-						currentStack = MergeStack (currentStack, knownStacks[operation.Offset], methodBody, operation.Offset);
+						currentStack = MergeStack (currentStack, knownStacks[operation.Offset]);
 					}
 				}
 
@@ -343,7 +343,7 @@ namespace Mono.Linker.Dataflow
 				case Code.Ldloc_S:
 				case Code.Ldloca:
 				case Code.Ldloca_S:
-					ScanLdloc (operation, currentStack, thisMethod, methodBody, locals);
+					ScanLdloc (operation, currentStack, methodBody, locals);
 					break;
 
 				case Code.Ldstr: {
@@ -353,7 +353,7 @@ namespace Mono.Linker.Dataflow
 					break;
 
 				case Code.Ldtoken:
-					ScanLdtoken (operation, currentStack, thisMethod, methodBody);
+					ScanLdtoken (operation, currentStack);
 					break;
 
 				case Code.Ldind_I:
@@ -503,7 +503,7 @@ namespace Mono.Linker.Dataflow
 				case Code.Brtrue:
 				case Code.Brtrue_S:
 					PopUnknown (currentStack, 1, methodBody, operation.Offset);
-					NewKnownStack (knownStacks, ((Instruction) operation.Operand).Offset, currentStack, methodBody);
+					NewKnownStack (knownStacks, ((Instruction) operation.Operand).Offset, currentStack);
 					break;
 
 				case Code.Calli: {
@@ -536,14 +536,14 @@ namespace Mono.Linker.Dataflow
 
 				case Code.Br:
 				case Code.Br_S:
-					NewKnownStack (knownStacks, ((Instruction) operation.Operand).Offset, currentStack, methodBody);
+					NewKnownStack (knownStacks, ((Instruction) operation.Operand).Offset, currentStack);
 					ClearStack (ref currentStack);
 					break;
 
 				case Code.Leave:
 				case Code.Leave_S:
 					ClearStack (ref currentStack);
-					NewKnownStack (knownStacks, ((Instruction) operation.Operand).Offset, new Stack<StackSlot> (methodBody.MaxStackSize), methodBody);
+					NewKnownStack (knownStacks, ((Instruction) operation.Operand).Offset, new Stack<StackSlot> (methodBody.MaxStackSize));
 					break;
 
 				case Code.Endfilter:
@@ -570,7 +570,7 @@ namespace Mono.Linker.Dataflow
 						PopUnknown (currentStack, 1, methodBody, operation.Offset);
 						Instruction[] targets = (Instruction[]) operation.Operand;
 						foreach (Instruction target in targets) {
-							NewKnownStack (knownStacks, target.Offset, currentStack, methodBody);
+							NewKnownStack (knownStacks, target.Offset, currentStack);
 						}
 						break;
 					}
@@ -596,24 +596,24 @@ namespace Mono.Linker.Dataflow
 				case Code.Blt_Un:
 				case Code.Blt_Un_S:
 					PopUnknown (currentStack, 2, methodBody, operation.Offset);
-					NewKnownStack (knownStacks, ((Instruction) operation.Operand).Offset, currentStack, methodBody);
+					NewKnownStack (knownStacks, ((Instruction) operation.Operand).Offset, currentStack);
 					break;
 				}
 			}
 		}
 
-		private void ScanExceptionInformation (Dictionary<int, Stack<StackSlot>> knownStacks, MethodBody methodBody)
+		private static void ScanExceptionInformation (Dictionary<int, Stack<StackSlot>> knownStacks, MethodBody methodBody)
 		{
 			foreach (ExceptionHandler exceptionClause in methodBody.ExceptionHandlers) {
 				Stack<StackSlot> catchStack = new Stack<StackSlot> (1);
 				catchStack.Push (new StackSlot ());
 
 				if (exceptionClause.HandlerType == ExceptionHandlerType.Filter) {
-					NewKnownStack (knownStacks, exceptionClause.FilterStart.Offset, catchStack, methodBody);
-					NewKnownStack (knownStacks, exceptionClause.HandlerStart.Offset, catchStack, methodBody);
+					NewKnownStack (knownStacks, exceptionClause.FilterStart.Offset, catchStack);
+					NewKnownStack (knownStacks, exceptionClause.HandlerStart.Offset, catchStack);
 				}
 				if (exceptionClause.HandlerType == ExceptionHandlerType.Catch) {
-					NewKnownStack (knownStacks, exceptionClause.HandlerStart.Offset, catchStack, methodBody);
+					NewKnownStack (knownStacks, exceptionClause.HandlerStart.Offset, catchStack);
 				}
 			}
 		}
@@ -678,13 +678,12 @@ namespace Mono.Linker.Dataflow
 		private void ScanLdloc (
 			Instruction operation,
 			Stack<StackSlot> currentStack,
-			MethodDefinition thisMethod,
 			MethodBody methodBody,
 			Dictionary<VariableDefinition, ValueBasicBlockPair> locals)
 		{
 			VariableDefinition localDef = GetLocalDef (operation, methodBody.Variables);
 			if (localDef == null) {
-				PushUnknownAndWarnAboutInvalidIL (currentStack, methodBody, operation.Offset, true);
+				PushUnknownAndWarnAboutInvalidIL (currentStack, methodBody, operation.Offset);
 				return;
 			}
 
@@ -701,11 +700,7 @@ namespace Mono.Linker.Dataflow
 			}
 		}
 
-		private void ScanLdtoken (
-			Instruction operation,
-			Stack<StackSlot> currentStack,
-			MethodDefinition thisMethod,
-			MethodBody methodBody)
+		private static void ScanLdtoken (Instruction operation, Stack<StackSlot> currentStack)
 		{
 			if (operation.Operand is GenericParameter genericParameter) {
 				StackSlot slot = new StackSlot (new RuntimeTypeHandleForGenericParameterValue (genericParameter));
@@ -856,11 +851,11 @@ namespace Mono.Linker.Dataflow
 
 			bool isNewObj = (operation.OpCode.Code == Code.Newobj);
 
-			ValueNode newObjValue = null;
+			ValueNode newObjValue;
 			ValueNodeList methodParams = PopCallArguments (currentStack, calledMethod, callingMethodBody, isNewObj,
 														   operation.Offset, out newObjValue);
 
-			ValueNode methodReturnValue = null;
+			ValueNode methodReturnValue;
 			bool handledFunction = HandleCall (
 				callingMethodBody,
 				calledMethod,

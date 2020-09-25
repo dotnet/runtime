@@ -134,7 +134,7 @@ namespace Mono.Linker
 			return false;
 		}
 
-		string TokenString (object o)
+		static string TokenString (object o)
 		{
 			if (o == null)
 				return "N:null";

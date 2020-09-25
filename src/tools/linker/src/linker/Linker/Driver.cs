@@ -775,7 +775,7 @@ namespace Mono.Linker
 
 		partial void PreProcessPipeline (Pipeline pipeline);
 
-		private IEnumerable<int> ProcessWarningCodes (string value)
+		private static IEnumerable<int> ProcessWarningCodes (string value)
 		{
 			string Unquote (string arg)
 			{
@@ -818,7 +818,7 @@ namespace Mono.Linker
 			pipeline.AddStepAfter (typeof (BlacklistStep), new LinkAttributesStep (new XPathDocument (file), file));
 		}
 
-		void AddBodySubstituterStep (Pipeline pipeline, string file)
+		static void AddBodySubstituterStep (Pipeline pipeline, string file)
 		{
 			pipeline.AddStepBefore (typeof (MarkStep), new BodySubstituterStep (new XPathDocument (file), file));
 		}

@@ -54,7 +54,7 @@ namespace LinkerAnalyzer.Core
 			return false;
 		}
 
-		string GetTypeKey (TypeDefinition td)
+		static string GetTypeKey (TypeDefinition td)
 		{
 			if (td == null)
 				return "";
@@ -65,7 +65,7 @@ namespace LinkerAnalyzer.Core
 			return $"{td.MetadataToken.TokenType}:{td}{addition}";
 		}
 
-		string GetKey (IMetadataTokenProvider provider)
+		static string GetKey (IMetadataTokenProvider provider)
 		{
 			return $"{provider.MetadataToken.TokenType}:{provider}";
 		}

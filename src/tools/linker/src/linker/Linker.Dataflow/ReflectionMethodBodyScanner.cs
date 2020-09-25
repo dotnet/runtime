@@ -109,7 +109,7 @@ namespace Mono.Linker.Dataflow
 			}
 		}
 
-		ValueNode GetValueNodeForCustomAttributeArgument (CustomAttributeArgument argument)
+		static ValueNode GetValueNodeForCustomAttributeArgument (CustomAttributeArgument argument)
 		{
 			ValueNode valueNode;
 			if (argument.Type.Name == "Type") {
@@ -846,7 +846,7 @@ namespace Mono.Linker.Dataflow
 						// Go over all types we've seen
 						foreach (var value in methodParams[0].UniqueValues ()) {
 							if (value is SystemTypeValue systemTypeValue) {
-								MarkConstructorsOnType (ref reflectionContext, systemTypeValue.TypeRepresented, (Func<MethodDefinition, bool>) null, bindingFlags);
+								MarkConstructorsOnType (ref reflectionContext, systemTypeValue.TypeRepresented, null, bindingFlags);
 								reflectionContext.RecordHandledPattern ();
 							} else {
 								// Otherwise fall back to the bitfield requirements
@@ -1613,7 +1613,7 @@ namespace Mono.Linker.Dataflow
 			reflectionContext.RecordHandledPattern ();
 		}
 
-		bool BindingFlagsAreSupported (BindingFlags bindingFlags)
+		static bool BindingFlagsAreSupported (BindingFlags bindingFlags)
 		{
 			return (bindingFlags & BindingFlags.IgnoreCase) == BindingFlags.IgnoreCase || (int) bindingFlags > 255;
 		}
