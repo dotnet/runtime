@@ -74,7 +74,7 @@
     <PropertyGroup>
       <ProjectILLinkSuppressionsFile>src\ILLink\ILLink.Suppressions</ProjectILLinkSuppressionsFile>
       <ProjectILLinkSuppressionsDebugSpecificFile>$(ProjectILLinkSuppressionsFile).Debug</ProjectILLinkSuppressionsDebugSpecificFile>
-      <ProjectILLinkSuppressionsAndroidSpecificFile>$(ProjectILLinkSuppressionsFile).Mono</ProjectILLinkSuppressionsAndroidSpecificFile>
+      <ProjectILLinkSuppressionsAndroidSpecificFile>$(ProjectILLinkSuppressionsFile).Android</ProjectILLinkSuppressionsAndroidSpecificFile>
       <ProjectILLinkSuppressionsWasmSpecificFile>$(ProjectILLinkSuppressionsFile).wasm</ProjectILLinkSuppressionsWasmSpecificFile>
       <CoreLibSharedILLinkSuppressionsFilesPrefix>$(CoreLibSharedDir)ILLink\ILLink.Suppressions.Shared</CoreLibSharedILLinkSuppressionsFilesPrefix>
     </PropertyGroup>
