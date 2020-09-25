@@ -72,7 +72,7 @@ namespace AppHost.Bundle.Tests
         public void AppContext_Deps_Files_Bundled_Self_Contained_NetCoreApp3_CompatMode()
         {
             var fixture = sharedTestState.TestFixture.Copy();
-            string singleFile = BundleHelper.BundleApp(fixture, BundleOptions.BundleAllContent);
+            string singleFile = BundleSelfContainedApp(fixture, BundleOptions.BundleAllContent);
 
             Command.Create(singleFile, "appcontext")
                 .CaptureStdErr()
