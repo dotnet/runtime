@@ -61,22 +61,22 @@
   -->
   <ItemGroup Condition="'$(BinPlaceILLinkTrimAssembly)' == 'true'">
     <BinPlaceTargetFramework Include="$(BuildSettings)">
-      <RuntimePath>$(ILLinkTrimAssemblyArtifactsRootDir)/trimmed</RuntimePath>
+      <RuntimePath>$(ILLinkTrimAssemblyArtifactsRootDir)trimmed</RuntimePath>
       <ItemName>TrimmedItem</ItemName>
     </BinPlaceTargetFramework>
     <BinPlaceTargetFramework Include="$(BuildSettings)">
-      <RuntimePath>$(ILLinkTrimAssemblyArtifactsRootDir)/reports</RuntimePath>
+      <RuntimePath>$(ILLinkTrimAssemblyArtifactsRootDir)reports</RuntimePath>
       <ItemName>TrimmingReport</ItemName>
     </BinPlaceTargetFramework>
     <BinPlaceTargetFramework Include="$(BuildSettings)">
-      <RuntimePath>$(ILLinkTrimAssemblyArtifactsRootDir)/pretrimmed</RuntimePath>
+      <RuntimePath>$(ILLinkTrimAssemblyArtifactsRootDir)pretrimmed</RuntimePath>
       <ItemName>PreTrimmedItem</ItemName>
     </BinPlaceTargetFramework>
   </ItemGroup>
 
   <PropertyGroup>
-    <ILLinkTrimAssemblyArtifactsRootDir>$(ArtifactsBinDir)ILLinkTrimAssembly/$(BuildSettings)</ILLinkTrimAssemblyArtifactsRootDir>
-    <ILLinkTrimAssemblySuppressionsXmlsDir>$(ILLinkTrimAssemblyArtifactsRootDir)/suppressions-xmls/</ILLinkTrimAssemblySuppressionsXmlsDir>
+    <ILLinkTrimAssemblyArtifactsRootDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'ILLinkTrimAssembly', '$(BuildSettings)'))</ILLinkTrimAssemblyArtifactsRootDir>
+    <ILLinkTrimAssemblySuppressionsXmlsDir>$(ILLinkTrimAssemblyArtifactsRootDir)suppressions-xmls\</ILLinkTrimAssemblySuppressionsXmlsDir>
   </PropertyGroup>
 
   <ItemGroup>
