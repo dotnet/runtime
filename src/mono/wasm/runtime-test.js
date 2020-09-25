@@ -171,6 +171,9 @@ while (args !== undefined && args.length > 0) {
 }
 testArguments = args;
 
+// cheap way to let the testing infrastructure know we're running in a browser context (or not)
+setenv["IsBrowserDomSupported"] = is_browser.toString().toLowerCase();
+
 function writeContentToFile(content, path)
 {
 	var stream = FS.open(path, 'w+');
