@@ -55,6 +55,10 @@ void SystemNative_GetNonCryptographicallySecureRandomBytes(uint8_t* buffer, int3
 #endif // HAVE_ARC4RANDOM_BUF
 }
 
+#ifdef __EMSCRIPTEN__
+int32_t mono_wasm_browser_crypto_getRandomValues(uint8_t* buffer, int32_t bufferLength);
+#endif
+
 /*
 
 Generate cryptographically strong random bytes.
@@ -67,6 +71,18 @@ int32_t SystemNative_GetCryptographicallySecureRandomBytes(uint8_t* buffer, int3
     static bool sMissingDevURandom;
 
     assert(buffer != NULL);
+
+#ifdef __EMSCRIPTEN__
+    static bool sMissingBrowserCrypto;
+    if (!sMissingBrowserCrypto)
+    {
+        int32_t bff = mono_wasm_browser_crypto_getRandomValues(buffer, bufferLength);
+        if (bff == -1)
+            sMissingBrowserCrypto = true;
+        else
+            return 0;
+    }
+#endif
 
     if (!sMissingDevURandom)
     {

@@ -940,3 +940,15 @@ mono_timezone_get_local_name (MonoString **result)
 	*result = mono_string_from_utf16 (tzd_local_name);
 	free (tzd_local_name);
 }
+
+EM_JS(int32_t, mono_wasm_browser_crypto_getRandomValues, (uint8_t* buffer, int32_t bufferLength),
+{
+	// check that we have crypto available
+	if (!(typeof crypto !== 'undefined' && crypto.subtle && typeof crypto.getRandomValues === 'function')) {
+		return -1;
+	}
+	// map the work array to the memory buffer passed with the length
+	var wrkArray = new Uint8Array(Module.HEAPU8.buffer, buffer, bufferLength);
+	crypto.getRandomValues(wrkArray);
+	return 0;
+});
