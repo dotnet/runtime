@@ -29,11 +29,10 @@ parser.add_argument("-source_directory", help="path to source directory")
 parser.add_argument("-core_root_directory", help="path to core_root directory")
 parser.add_argument("-arch", help="Architecture")
 parser.add_argument("-mch_file_tag", help="Tag to be used to mch files")
-
 parser.add_argument("-libraries_directory", help="directory containing assemblies for which superpmi collection to "
                                                   "be done")
 parser.add_argument("-tests_directory", help="path to managed test artifacts directory")
-parser.add_argument("-max_size", help="Max size of partition in MB")
+parser.add_argument("-max_size", help="Max size of each partition in MB")
 is_windows = platform.system() == "Windows"
 native_binaries_to_ignore = [
     "clrcompression.dll",
@@ -242,17 +241,17 @@ def copy_files_windows(src_path, dst_path, file_paths):
     command += [
         # "*.dll",  # only copy .dll
         # "*.exe",  # or .exe
-        # "*.py", #TODO : Have this option only if file_names is empty
-        "/S",  # copy from sub-directories
-        "/R:2",  # no. of retries
-        "/W:5",  # seconds before retry
-        "/NS",  # don't log file sizes
-        "/NC",  # don't log file classes
-        "/NFL",  # don't log file names
-        "/NDL",  # don't log directory names
-        "/NJH",  # No Job Header.
-        "/XF",   # Exclude
-        "*.pdb"  #  *.pdb files
+        # "*.py",   # or .py
+        "/S",       # copy from sub-directories
+        "/R:2",     # no. of retries
+        "/W:5",     # seconds before retry
+        "/NS",      # don't log file sizes
+        "/NC",      # don't log file classes
+        "/NFL",     # don't log file names
+        "/NDL",     # don't log directory names
+        "/NJH",     # No Job Header.
+        "/XF",      # Exclude
+        "*.pdb"     #  *.pdb files
     ]
     run_command(command)
 
@@ -292,10 +291,11 @@ def partition_files(src_directory, dst_directory, max_size, exclude_directories=
     """ Copy bucketized files based on size to destination folder.
 
     Args:
-        coreclr_args (CoreclrArguments): Command line arguments.
-        dst_directory (string): Destination folder where files are copied.
-        exclude_directories ([string]): List of folder names to be excluded
-        exclude_files ([string]): List of files names to be excluded
+        src_directory (string): Source folder containing files to be copied.
+        dst_directory (string): Destination folder where files should be copied.
+        max_size (int): Maximum partition size in bytes
+        exclude_directories ([string]): List of folder names to be excluded.
+        exclude_files ([string]): List of files names to be excluded.
     """
 
     sorted_by_size = get_files_sorted_by_size(src_directory, exclude_directories, exclude_files)
@@ -321,13 +321,13 @@ def set_pipeline_variable(name, value):
     print(define_variable_format.format(name, value)) # set variable
 
 
-def main(args):
+def main(main_args):
     """ Main entrypoint
 
     Args:
-        args ([type]): Arguments to the script
+        main_args ([type]): Arguments to the script
     """
-    coreclr_args = setup_args(args)
+    coreclr_args = setup_args(main_args)
     source_directory = coreclr_args.source_directory
 
     # CorelationPayload directories

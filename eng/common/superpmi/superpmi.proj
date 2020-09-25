@@ -55,9 +55,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- libraries payload -->
     <LibraryPartitions Include="$([System.IO.Directory]::GetDirectories($(LibrariesArtifacts)))"/>
-    <TestPartitions Include="$([System.IO.Directory]::GetDirectories($(TestsArtifacts)))"/>
     <Partition Include="@(LibraryPartitions -> '%(Filename)')" PmiAssemblies="Core_Root$(FileSeparatorChar)%(Filename)" OutputMchName="libraries.pmi" PartitionId="%(Filename)" />
+
+    <!-- tests payload -->
+    <TestPartitions Include="$([System.IO.Directory]::GetDirectories($(TestsArtifacts)))"/>
     <Partition Include="@(TestPartitions -> '%(Filename)')" PmiAssemblies="Tests$(FileSeparatorChar)%(Filename)" OutputMchName="tests.pmi" PartitionId="%(Filename)" />
   </ItemGroup>
 
