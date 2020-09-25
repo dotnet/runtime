@@ -1780,6 +1780,14 @@ suIwDAYDVR0TBAUwAwEB/zAKBggqhkjOPQQDAgMwADAtAhUAxMT7z8lLv7hgWmGh
             "39366d5a59590a734f65735a513d3d0a2d2d2d2d2d454e442043455254494649" +
             "434154452d2d2d2d2d0a").HexToByteArray();
 
+        // The SubjectPublicKeyInfo value from the test certificate in
+        // https://tools.ietf.org/html/rfc4491#section-4.2
+        internal static byte[] GostR3410SubjectPublicKeyInfo = (
+            "3063301C06062A8503020213301206072A85030202240006072A850302021E01" +
+            "03430004408495687560021A407508CD138C31892CFDE505037A435CF46D2B0F" +
+            "E74F327E578FEBCC16B9958803D09A7C85AE0FE48DEAA6BB7E56C7CBB0DF0F66" +
+            "BCCAEA1A60").HexToByteArray();
+
         internal static byte[] ConcatenatedPemFile = ByteUtils.AsciiBytes(
             @"-----BEGIN CERTIFICATE-----
 MIIFcDCCBFigAwIBAgIQB6krbZc11OZ5l2/FnU3CpTANBgkqhkiG9w0BAQsFADBG

@@ -784,6 +784,18 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 PublicKey.CreateFromSubjectPublicKeyInfo(new byte[] { 0xFF }, out _));
         }
 
+        [Fact]
+        public static void CreateFromSubjectPublicKeyInfo_AnyAlgorithm()
+        {
+            byte[] spki = TestData.GostR3410SubjectPublicKeyInfo;
+            PublicKey key = PublicKey.CreateFromSubjectPublicKeyInfo(spki, out int read);
+
+            Assert.Throws<NotSupportedException>(() => key.Key);
+            Assert.Equal("1.2.643.2.2.19", key.Oid.Value);
+            Assert.Equal(spki, key.ExportSubjectPublicKeyInfo());
+            Assert.Equal(spki.Length, read);
+        }
+
         private static void TestKey_ECDsaCng(byte[] certBytes, TestData.ECDsaCngKeyValues expected)
         {
             using (X509Certificate2 cert = new X509Certificate2(certBytes))
