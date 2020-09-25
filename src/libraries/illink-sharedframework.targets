@@ -74,9 +74,7 @@
     <PropertyGroup>
       <ProjectILLinkSuppressionsFile>src\ILLink\ILLink.Suppressions</ProjectILLinkSuppressionsFile>
       <ProjectILLinkSuppressionsDebugSpecificFile>$(ProjectILLinkSuppressionsFile).Debug</ProjectILLinkSuppressionsDebugSpecificFile>
-      <!-- <ProjectILLinkSuppressionsAndroidSpecificFile>$(ProjectILLinkSuppressionsFile).Android</ProjectILLinkSuppressionsAndroidSpecificFile>
-      <ProjectILLinkSuppressionsLinuxSpecificFile>$(ProjectILLinkSuppressionsFile).Linux</ProjectILLinkSuppressionsLinuxSpecificFile> -->
-      <ProjectILLinkSuppressionsTargetOsSpecificFile>$(ProjectILLinkSuppressionsFile).$(TargetOs)</ProjectILLinkSuppressionsTargetOsSpecificFile>
+      <ProjectILLinkSuppressionsNonWindowsSpecificFile>$(ProjectILLinkSuppressionsFile).NonWindows</ProjectILLinkSuppressionsNonWindowsSpecificFile>
       <ProjectILLinkSuppressionsWasmSpecificFile>$(ProjectILLinkSuppressionsFile).wasm</ProjectILLinkSuppressionsWasmSpecificFile>
       <CoreLibSharedILLinkSuppressionsFilesPrefix>$(CoreLibSharedDir)ILLink\ILLink.Suppressions.Shared</CoreLibSharedILLinkSuppressionsFilesPrefix>
     </PropertyGroup>
@@ -102,12 +100,8 @@
       <_SuppressionsXmls Include="$(LibrariesProjectRoot)System.Security.Cryptography.Cng\$(ProjectILLinkSuppressionsFile).xml" />
       <_SuppressionsXmls Include="$(LibrariesProjectRoot)System.Security.Cryptography.Csp\$(ProjectILLinkSuppressionsFile).xml" />
       <_SuppressionsXmls Include="$(LibrariesProjectRoot)System.Security.Cryptography.X509Certificates\$(ProjectILLinkSuppressionsFile).xml" />
-      <!-- <_SuppressionsXmls Condition="'$(TargetOs)' == 'Android'"
-                         Include="$(LibrariesProjectRoot)System.Security.Cryptography.X509Certificates\$(ProjectILLinkSuppressionsAndroidSpecificFile).xml" />
-      <_SuppressionsXmls Condition="'$(TargetOs)' == 'Linux'"
-                         Include="$(LibrariesProjectRoot)System.Security.Cryptography.X509Certificates\$(ProjectILLinkSuppressionsAndroidSpecificFile).xml" />  -->
-      <_SuppressionsXmls Condition="Exists('$(LibrariesProjectRoot)System.Security.Cryptography.X509Certificates\$(ProjectILLinkSuppressionsTargetOsSpecificFile).xml')"
-                         Include="$(LibrariesProjectRoot)System.Security.Cryptography.X509Certificates\$(ProjectILLinkSuppressionsTargetOsSpecificFile).xml" /> 
+      <_SuppressionsXmls Condition="'$(TargetOs)' != 'Windows_NT'"
+                         Include="$(LibrariesProjectRoot)System.Security.Cryptography.X509Certificates\$(ProjectILLinkSuppressionsNonWindowsSpecificFile).xml" /> 
       <_SuppressionsXmls Condition="'$(TargetArchitecture)' == 'wasm'"
                          Include="$(LibrariesProjectRoot)System.Private.Runtime.InteropServices.JavaScript\$(ProjectILLinkSuppressionsWasmSpecificFile).xml" />
 
