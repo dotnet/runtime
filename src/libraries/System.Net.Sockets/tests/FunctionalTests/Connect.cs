@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
+using System.Reflection.Metadata.Ecma335;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -208,6 +210,99 @@ namespace System.Net.Sockets.Tests
 
         [System.Runtime.InteropServices.DllImport("libc", SetLastError = true)]
         private static unsafe extern int connect(int socket, byte* address, uint address_len);
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        public async Task DisposeShouldAbortSyncConnectOnLinux()
+        {
+            IPAddress ip = (Dns.GetHostAddresses("microsoft.com"))[0];
+            IPEndPoint endPoint = new IPEndPoint(ip, 12345);
+
+            using var client = new Socket(SocketType.Stream, ProtocolType.Tcp);
+
+            Task connectTask = ConnectAsync(client, endPoint);
+
+            // Make 100% sure the connect operation starts
+            await Task.Delay(200);
+
+            Task timeoutTask = Task.Delay(2000);
+            Task disposeTask = Task.Run(() => client.Dispose());
+
+            Task finishedFirst = null;
+            try
+            {
+                finishedFirst = await Task.WhenAny(connectTask, timeoutTask, disposeTask);
+            }
+            catch (SocketException ex)
+            {
+                Assert.True(finishedFirst == connectTask, $"Got {ex.SocketErrorCode} during Dispose: {ex.Message}");
+            }
+
+            if (finishedFirst == timeoutTask)
+            {
+                throw new TimeoutException();
+            }
+            else if (finishedFirst == connectTask)
+            {
+                await disposeTask;
+            }
+            else
+            {
+                await Assert.ThrowsAsync<SocketException>(() => connectTask);
+            }            
+        }
+
+        //[Fact]
+        //[PlatformSpecific(TestPlatforms.Linux)]
+        //public async Task ConnectCancelByDispose()
+        //{
+        //    var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+
+        //    Task connectTask = ConnectAsync(client, new IPEndPoint(IPAddress.Parse("1.1.1.1"), 23));
+
+        //    // Wait a little so the operation is started.
+        //    await Task.Delay(100);
+        //    Task disposeTask = Task.Run(() => client.Dispose());
+
+        //    var cts = new CancellationTokenSource();
+        //    Task timeoutTask = Task.Delay(30000, cts.Token);
+        //    Assert.NotSame(timeoutTask, await Task.WhenAny(disposeTask, connectTask, timeoutTask));
+        //    cts.Cancel();
+
+        //    await disposeTask;
+
+        //    SocketError? localSocketError = null;
+        //    bool disposedException = false;
+        //    try
+        //    {
+        //        await connectTask;
+        //    }
+        //    catch (SocketException se)
+        //    {
+        //        // On connection timeout, retry.
+        //        Assert.NotEqual(SocketError.TimedOut, se.SocketErrorCode);
+
+        //        localSocketError = se.SocketErrorCode;
+        //    }
+        //    catch (ObjectDisposedException)
+        //    {
+        //        disposedException = true;
+        //    }
+
+        //    if (UsesApm)
+        //    {
+        //        Assert.Null(localSocketError);
+        //        Assert.True(disposedException);
+        //    }
+        //    else if (UsesSync)
+        //    {
+        //        Assert.Equal(SocketError.NotSocket, localSocketError);
+        //    }
+        //    else
+        //    {
+        //        Assert.Equal(SocketError.OperationAborted, localSocketError);
+        //    }
+        //}
     }
 
     public sealed class ConnectSyncForceNonBlocking : Connect<SocketHelperSyncForceNonBlocking>
