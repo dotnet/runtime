@@ -19,9 +19,9 @@
 
     <TestWorkingDir>$(BaseOutputPathWithConfig)</TestWorkingDir>
 
-    <TestSourceDir>$([MSBuild]::NormalizePath('$(RepoRoot)/src/tests/'))</TestSourceDir>
-    <TestSourceDir Condition="$([System.String]::new('$(MSBuildProjectDirectory)').StartsWith('$(BaseOutputPathWithConfig)'))">$(BaseOutputPathWithConfig)</TestSourceDir>
-    <BuildProjectRelativeDir>$([MSBuild]::MakeRelative($(TestSourceDir), $(MSBuildProjectDirectory)))\$(MSBuildProjectName)\</BuildProjectRelativeDir>
+    <TestSrcDir>$([MSBuild]::NormalizePath('$(RepoRoot)/src/tests/'))</TestSourceDir>
+    <TestSrcDir Condition="$([System.String]::new('$(MSBuildProjectDirectory)').StartsWith('$(BaseOutputPathWithConfig)'))">$(BaseOutputPathWithConfig)</TestSourceDir>
+    <BuildProjectRelativeDir>$([MSBuild]::MakeRelative($(TestSrcDir), $(MSBuildProjectDirectory)))\$(MSBuildProjectName)\</BuildProjectRelativeDir>
 
     <!-- BaseIntermediateOutputPath is used by the SDK as the location
          for the lock file, and props/targets from nuget packages. -->
