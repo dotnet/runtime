@@ -416,9 +416,9 @@
     <Rule Id="IDE0038" Action="Hidden" />  <!-- InlineIsTypeWithoutNameCheck -->
     <Rule Id="IDE0039" Action="Hidden" />  <!-- UseLocalFunction -->
     <Rule Id="IDE0040" Action="Hidden" />  <!-- AddAccessibilityModifiers -->
-    <Rule Id="IDE0041" Action="Hidden" />  <!-- UseIsNullCheck -->
+    <Rule Id="IDE0041" Action="Warning" /> <!-- UseIsNullCheck -->
     <Rule Id="IDE0042" Action="Hidden" />  <!-- UseDeconstruction -->
-    <Rule Id="IDE0043" Action="Hidden" />  <!-- ValidateFormatString -->
+    <Rule Id="IDE0043" Action="Warning" /> <!-- ValidateFormatString -->
     <Rule Id="IDE0044" Action="Hidden" />  <!-- MakeFieldReadonly -->
     <Rule Id="IDE0045" Action="Hidden" />  <!-- UseConditionalExpressionForAssignment -->
     <Rule Id="IDE0046" Action="Hidden" />  <!-- UseConditionalExpressionForReturn -->
@@ -437,7 +437,7 @@
     <Rule Id="IDE0059" Action="Hidden" />  <!-- ValueAssignedIsUnused -->
     <Rule Id="IDE0060" Action="Hidden" />  <!-- UnusedParameter -->
     <Rule Id="IDE0061" Action="Hidden" />  <!-- UseExpressionBodyForLocalFunctions -->
-    <Rule Id="IDE0062" Action="Hidden" />  <!-- MakeLocalFunctionStatic -->
+    <Rule Id="IDE0062" Action="Warning" /> <!-- MakeLocalFunctionStatic -->
     <Rule Id="IDE0063" Action="Hidden" />  <!-- UseSimpleUsingStatement -->
     <Rule Id="IDE0064" Action="Hidden" />  <!-- MakeStructFieldsWritable -->
     <Rule Id="IDE0065" Action="Hidden" />  <!-- MoveMisplacedUsingDirectives -->
@@ -454,10 +454,10 @@
     <Rule Id="IDE0076" Action="Hidden" />  <!-- InvalidSuppressMessageAttribute -->
     <Rule Id="IDE0077" Action="Hidden" />  <!-- LegacyFormatSuppressMessageAttribute -->
     <Rule Id="IDE0078" Action="Hidden" />  <!-- UsePatternCombinators -->
-    <Rule Id="IDE0079" Action="Hidden" />  <!-- RemoveUnnecessarySuppression -->
+    <Rule Id="IDE0079" Action="Warning" /> <!-- RemoveUnnecessarySuppression -->
     <Rule Id="IDE0080" Action="Hidden" />  <!-- RemoveConfusingSuppressionForIsExpression -->
     <Rule Id="IDE0081" Action="Hidden" />  <!-- RemoveUnnecessaryByVal -->
-    <Rule Id="IDE0082" Action="Hidden" />  <!-- ConvertTypeOfToNameOf -->
+    <Rule Id="IDE0082" Action="Warning" /> <!-- ConvertTypeOfToNameOf -->
     <Rule Id="IDE0083" Action="Hidden" />  <!-- UseNotPattern -->
     <Rule Id="IDE0084" Action="Hidden" />  <!-- UseIsNotExpression -->
     <Rule Id="IDE1001" Action="Hidden" />  <!-- AnalyzerChanged -->
