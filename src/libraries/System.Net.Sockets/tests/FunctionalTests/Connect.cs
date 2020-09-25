@@ -183,6 +183,31 @@ namespace System.Net.Sockets.Tests
     public sealed class ConnectSync : Connect<SocketHelperArraySync>
     {
         public ConnectSync(ITestOutputHelper output) : base(output) {}
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        public unsafe void ConnectDisposeFailureRepro()
+        {
+            Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            s.Connect("www.microsoft.com", 443);
+
+            // Connect to AF_UNSPEC
+            const int AddressLength = 16;
+            byte* address = stackalloc byte[AddressLength]; // note: AF_UNSPEC is zero.
+            int rv = connect((int)s.Handle, address, AddressLength);
+            if (rv == -1)
+            {
+                int errno = System.Runtime.InteropServices.Marshal.GetLastWin32Error();
+                throw new Exception($"fail, errno is {errno}");
+            }
+            else
+            {
+                // Success
+            }
+        }
+
+        [System.Runtime.InteropServices.DllImport("libc", SetLastError = true)]
+        private static unsafe extern int connect(int socket, byte* address, uint address_len);
     }
 
     public sealed class ConnectSyncForceNonBlocking : Connect<SocketHelperSyncForceNonBlocking>
