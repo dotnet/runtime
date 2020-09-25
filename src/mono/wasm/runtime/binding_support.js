@@ -144,11 +144,14 @@ var BindingSupportLib = {
 			if (string === null || typeof string === "undefined")
 				return 0;
 
-			var buffer = Module._malloc ((string.length + 1) * 2);
+			var buffer = Module._malloc (string.length * 2);
+			if (!buffer)
+				throw new Error ("out of memory");
+
 			var buffer16 = (buffer / 2) | 0;
 			for (var i = 0; i < string.length; i++)
 				Module.HEAP16[buffer16 + i] = string.charCodeAt (i);
-			Module.HEAP16[buffer16 + string.length] = 0;
+			
 			var result = this.mono_wasm_string_from_utf16 (buffer, string.length);
 			Module._free (buffer);
 			return result;
