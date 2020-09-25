@@ -8,7 +8,7 @@ namespace Mono.Linker.Tests.Cases.Expectations.Assertions
 		public ExpectedInstructionSequenceAttribute (string[] opCodes)
 		{
 			if (opCodes == null)
-				throw new ArgumentNullException ();
+				throw new ArgumentNullException (nameof (opCodes));
 		}
 	}
 }

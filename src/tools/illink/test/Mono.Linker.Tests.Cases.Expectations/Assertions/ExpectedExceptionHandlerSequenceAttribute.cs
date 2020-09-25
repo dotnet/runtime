@@ -8,7 +8,7 @@ namespace Mono.Linker.Tests.Cases.Expectations.Assertions
 		public ExpectedExceptionHandlerSequenceAttribute (string[] types)
 		{
 			if (types == null)
-				throw new ArgumentNullException ();
+				throw new ArgumentNullException (nameof (types));
 		}
 	}
 }

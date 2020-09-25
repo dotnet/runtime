@@ -10,7 +10,7 @@ namespace Mono.Linker
 {
 	public readonly struct MessageContainer
 	{
-		public static readonly MessageContainer Empty = new MessageContainer ();
+		public static readonly MessageContainer Empty;
 
 		/// <summary>
 		/// Optional data with a filename, line and column that triggered the

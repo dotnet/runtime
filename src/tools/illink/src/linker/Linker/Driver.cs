@@ -43,10 +43,10 @@ namespace Mono.Linker
 
 #if FEATURE_ILLINK
 		const string resolvers = "-a|-r|-x";
-		static readonly string _linker = "IL Linker";
+		const string _linker = "IL Linker";
 #else
 		const string resolvers = "-a|-i|-r|-x";
-		static readonly string _linker = "Mono IL Linker";
+		const string _linker = "Mono IL Linker";
 #endif
 
 		public static int Main (string[] args)

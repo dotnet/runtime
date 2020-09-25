@@ -124,9 +124,9 @@ namespace Mono.Linker
 		{
 			// Validate arguments, similarly to how the base class does it.
 			if (name == null)
-				throw new ArgumentNullException ("name");
+				throw new ArgumentNullException (nameof (name));
 			if (parameters == null)
-				throw new ArgumentNullException ("parameters");
+				throw new ArgumentNullException (nameof (parameters));
 
 			if (!_assemblies.TryGetValue (name.Name, out AssemblyDefinition asm) && (_unresolvedAssemblies == null || !_unresolvedAssemblies.Contains (name.Name))) {
 				try {

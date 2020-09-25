@@ -3,6 +3,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <ServerGarbageCollection>true</ServerGarbageCollection>
+    <RunAnalyzers>true</RunAnalyzers>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(MonoBuild)' == ''">

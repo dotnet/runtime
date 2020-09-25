@@ -39,7 +39,7 @@ namespace Mono.Linker.Steps
 				}
 
 				string attributeFullName = GetFullName (iterator.Current);
-				if (attributeFullName == string.Empty) {
+				if (string.IsNullOrEmpty (attributeFullName)) {
 					Context.LogWarning ($"'attribute' element does not contain attribute 'fullname' or it's empty", 2029, _xmlDocumentLocation);
 					continue;
 				}
@@ -87,7 +87,7 @@ namespace Mono.Linker.Steps
 			List<CustomAttributeNamedArgument> attributeProperties = new List<CustomAttributeNamedArgument> ();
 			while (iterator.MoveNext ()) {
 				string propertyName = GetName (iterator.Current);
-				if (propertyName == string.Empty) {
+				if (string.IsNullOrEmpty (propertyName)) {
 					Context.LogWarning ($"Property element does not contain attribute 'name'", 2051, _xmlDocumentLocation);
 					continue;
 				}
@@ -202,7 +202,7 @@ namespace Mono.Linker.Steps
 		protected override void ProcessAssembly (AssemblyDefinition assembly, XPathNodeIterator iterator, bool warnOnUnresolvedTypes)
 		{
 			IEnumerable<CustomAttribute> attributes = ProcessAttributes (iterator.Current, assembly);
-			if (attributes.Count () > 0)
+			if (attributes.Any ())
 				Context.CustomAttributes.AddCustomAttributes (assembly, attributes);
 			ProcessTypes (assembly, iterator, warnOnUnresolvedTypes);
 		}
@@ -212,7 +212,7 @@ namespace Mono.Linker.Steps
 			Debug.Assert (ShouldProcessElement (nav));
 
 			IEnumerable<CustomAttribute> attributes = ProcessAttributes (nav, type);
-			if (attributes.Count () > 0)
+			if (attributes.Any ())
 				Context.CustomAttributes.AddCustomAttributes (type, attributes);
 			ProcessTypeChildren (type, nav);
 
@@ -231,14 +231,14 @@ namespace Mono.Linker.Steps
 		protected override void ProcessField (TypeDefinition type, FieldDefinition field, XPathNavigator nav)
 		{
 			IEnumerable<CustomAttribute> attributes = ProcessAttributes (nav, field);
-			if (attributes.Count () > 0)
+			if (attributes.Any ())
 				Context.CustomAttributes.AddCustomAttributes (field, attributes);
 		}
 
 		protected override void ProcessMethod (TypeDefinition type, MethodDefinition method, XPathNavigator nav, object customData)
 		{
 			IEnumerable<CustomAttribute> attributes = ProcessAttributes (nav, method);
-			if (attributes.Count () > 0)
+			if (attributes.Any ())
 				Context.CustomAttributes.AddCustomAttributes (method, attributes);
 			ProcessReturnParameters (method, nav);
 			ProcessParameters (method, nav);
@@ -249,7 +249,7 @@ namespace Mono.Linker.Steps
 			var iterator = nav.SelectChildren ("parameter", string.Empty);
 			while (iterator.MoveNext ()) {
 				IEnumerable<CustomAttribute> attributes = ProcessAttributes (iterator.Current, method);
-				if (attributes.Count () > 0) {
+				if (attributes.Any ()) {
 					string paramName = GetAttribute (iterator.Current, "name");
 					foreach (ParameterDefinition parameter in method.Parameters) {
 						if (paramName == parameter.Name) {
@@ -273,7 +273,7 @@ namespace Mono.Linker.Steps
 				if (firstAppearance) {
 					firstAppearance = false;
 					IEnumerable<CustomAttribute> attributes = ProcessAttributes (iterator.Current, method.MethodReturnType);
-					if (attributes.Count () > 0)
+					if (attributes.Any ())
 						Context.CustomAttributes.AddCustomAttributes (method.MethodReturnType, attributes);
 				} else {
 					Context.LogWarning (
@@ -326,14 +326,14 @@ namespace Mono.Linker.Steps
 		protected override void ProcessProperty (TypeDefinition type, PropertyDefinition property, XPathNavigator nav, object customData, bool fromSignature)
 		{
 			IEnumerable<CustomAttribute> attributes = ProcessAttributes (nav, property);
-			if (attributes.Count () > 0)
+			if (attributes.Any ())
 				Context.CustomAttributes.AddCustomAttributes (property, attributes);
 		}
 
 		protected override void ProcessEvent (TypeDefinition type, EventDefinition @event, XPathNavigator nav, object customData)
 		{
 			IEnumerable<CustomAttribute> attributes = ProcessAttributes (nav, @event);
-			if (attributes.Count () > 0)
+			if (attributes.Any ())
 				Context.CustomAttributes.AddCustomAttributes (@event, attributes);
 		}
 

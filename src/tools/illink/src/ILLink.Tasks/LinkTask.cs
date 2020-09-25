@@ -200,7 +200,7 @@ namespace ILLink.Tasks
 		/// </summary>
 		public ITaskItem[] CustomSteps { get; set; }
 
-		private readonly static string DotNetHostPathEnvironmentName = "DOTNET_HOST_PATH";
+		private const string DotNetHostPathEnvironmentName = "DOTNET_HOST_PATH";
 
 		private string _dotnetPath;
 
