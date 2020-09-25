@@ -66,10 +66,11 @@
 
   <ItemGroup>
     <HelixWorkItem Include="@(Partition)">
+      <OutputFileName>%(HelixWorkItem.OutputMchName).$(MchFileTag).%(HelixWorkItem.PartitionId)</OutputFileName>
       <PayloadDirectory>$(PmiAssembliesPayload)$(FileSeparatorChar)%(HelixWorkItem.PmiAssemblies)</PayloadDirectory>
-      <Command>$(WorkItemCommand) -output_mch_path $(OutputMchPath)$(FileSeparatorChar)%(HelixWorkItem.OutputMchName).$(MchFileTag).%(HelixWorkItem.PartitionId).mch</Command>
+      <Command>$(WorkItemCommand) -output_mch_path $(OutputMchPath)$(FileSeparatorChar)%(OutputFileName).mch -log_file $(OutputMchPath)$(FileSeparatorChar)%(OutputFileName).log</Command>
       <Timeout>$(WorkItemTimeout)</Timeout>
-      <DownloadFilesFromResults>%(HelixWorkItem.OutputMchName).$(MchFileTag).%(HelixWorkItem.PartitionId).mch;%(HelixWorkItem.OutputMchName).$(MchFileTag).%(HelixWorkItem.PartitionId).mch.mct</DownloadFilesFromResults>
+      <DownloadFilesFromResults>%(OutputFileName).mch;%(OutputFileName).mch.mct;%(OutputFileName).log</DownloadFilesFromResults>
     </HelixWorkItem>
   </ItemGroup>
 
@@ -82,9 +83,11 @@
     Once you've done that you can run this to see the results:
     dotnet msbuild .\scenarios.proj /v:n
    -->
-   <!-- 
+<!--    
    <PropertyGroup>
      <HelixTargetQueues>Some_Queue</HelixTargetQueues>
+     <LibrariesArtifacts>E:\temp\power\test1</LibrariesArtifacts>
+     <TestsArtifacts>E:\temp\power\test1</TestsArtifacts>
    </PropertyGroup>
   <Target Name="printItems">
         <Message Text="@(HelixWorkItem -> 'name: %(HelixWorkItem.Identity)
