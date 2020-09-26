@@ -59,32 +59,19 @@
       <ILLinkArgs>$(ILLinkArgs) -r @(_AssembliesToLink->'%(Identity)', ' -r ')</ILLinkArgs>
     </PropertyGroup>
 
-    <!-- pass suppressions xml files -->
-
     <PropertyGroup>
       <ProjectILLinkSuppressionsFile>src\ILLink\ILLink.Suppressions</ProjectILLinkSuppressionsFile>
-      <ProjectILLinkSuppressionsDebugSpecificFile>$(ProjectILLinkSuppressionsFile).Debug</ProjectILLinkSuppressionsDebugSpecificFile>
-      <ProjectILLinkSuppressionsNonWindowsSpecificFile>$(ProjectILLinkSuppressionsFile).NonWindows</ProjectILLinkSuppressionsNonWindowsSpecificFile>
-      <ProjectILLinkSuppressionsWasmSpecificFile>$(ProjectILLinkSuppressionsFile).wasm</ProjectILLinkSuppressionsWasmSpecificFile>
       <CoreLibSharedILLinkSuppressionsFilesPrefix>$(CoreLibSharedDir)ILLink\ILLink.Suppressions.Shared</CoreLibSharedILLinkSuppressionsFilesPrefix>
     </PropertyGroup>
 
-    <!-- Collate XML files not bin-placed in earlier per-library linker run -->
     <ItemGroup>
-      <!-- CoreLib doesn't use bin-place logic -->
+      <!-- Include suppression XML files bin-placed in earlier per-library linker run. -->
+      <_SuppressionsXmls Include="$(ILLinkTrimAssemblySuppressionsXmlsDir)*.xml" />
+
+      <!-- Collate CoreLib suppression XML files not bin-placed in earlier per-library linker run. CoreLib doesn't use bin-place logic. -->
       <_SuppressionsXmls Include="$(CoreLibSharedILLinkSuppressionsFilesPrefix).xml" />
       <_SuppressionsXmls Condition="'$(TargetOs)' != 'Windows_NT'" Include="$(CoreLibSharedILLinkSuppressionsFilesPrefix).NonWindows.xml" />
       <_SuppressionsXmls Condition="'$(RuntimeFlavor)' == 'Mono'" Include="$(MonoProjectRoot)netcore\System.Private.CoreLib\$(ProjectILLinkSuppressionsFile).xml" />
-
-      <!-- Assemblies that were not included in per-library linker run -->
-      <_SuppressionsXmls Include="$(LibrariesProjectRoot)Microsoft.CSharp\$(ProjectILLinkSuppressionsFile).xml" />
-      <_SuppressionsXmls Include="$(LibrariesProjectRoot)Microsoft.VisualBasic.Core\$(ProjectILLinkSuppressionsFile).xml" />
-
-      <_SuppressionsXmls Include="$(LibrariesProjectRoot)System.ComponentModel.Annotations\$(ProjectILLinkSuppressionsFile).xml" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <_SuppressionsXmls Include="$(ILLinkTrimAssemblySuppressionsXmlsDir)*.xml" />
     </ItemGroup>
 
     <PropertyGroup>
