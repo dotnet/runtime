@@ -18,9 +18,4 @@ internal static partial class Interop
     {
         Sys.GetNonCryptographicallySecureRandomBytes(buffer, length);
     }
-
-    internal static unsafe int GetCryptographicallySecureRandomBytes(byte* buffer, int length)
-    {
-        return Sys.GetCryptographicallySecureRandomBytes(buffer, length);
-    }
 }

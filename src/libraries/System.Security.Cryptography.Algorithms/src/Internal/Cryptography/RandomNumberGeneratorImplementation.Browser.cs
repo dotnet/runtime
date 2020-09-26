@@ -12,7 +12,7 @@ namespace System.Security.Cryptography
         {
             Debug.Assert(count > 0);
 
-            int res = Interop.GetCryptographicallySecureRandomBytes(pbBuffer, count);
+            int res = Interop.Sys.GetCryptographicallySecureRandomBytes(pbBuffer, count);
             if (res != 0)
                 throw new CryptographicException();
         }
