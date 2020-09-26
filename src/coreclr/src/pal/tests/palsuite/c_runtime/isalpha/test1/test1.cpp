@@ -20,7 +20,7 @@ struct testCase
     int character;
 };
 
-int __cdecl main(int argc, char **argv)
+PALTEST(c_runtime_isalpha_test1_paltest_isalpha_test1, "c_runtime/isalpha/test1/paltest_isalpha_test1")
 {
   
     int result;  

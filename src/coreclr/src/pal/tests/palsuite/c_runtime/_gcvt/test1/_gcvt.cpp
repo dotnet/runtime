@@ -13,7 +13,7 @@
 **============================================================*/
 #include <palsuite.h>
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime__gcvt_test1_paltest_gcvt_test1, "c_runtime/_gcvt/test1/paltest_gcvt_test1")
 {
     int err;
     double dValue = -3.1415926535;

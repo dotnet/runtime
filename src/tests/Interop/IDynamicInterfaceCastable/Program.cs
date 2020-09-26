@@ -14,7 +14,8 @@ namespace IDynamicInterfaceCastableTests
         Class,
         Interface,
         InterfacePrivate,
-        InterfaceStatic
+        InterfaceStatic,
+        ImplInterfacePublic,
     }
 
     public interface ITest
@@ -68,6 +69,12 @@ namespace IDynamicInterfaceCastableTests
             return GetNumberStaticReturnValue;
         }
 
+        public int GetNumberHelper()
+        {
+            Assert.Fail("Calling a public interface method with a default implementation should go through IDynamicInterfaceCastable for interface dispatch.");
+            return 0;
+        }
+
         int ITest.CallImplemented(ImplementationToCall toCall)
         {
             switch (toCall)
@@ -81,6 +88,8 @@ namespace IDynamicInterfaceCastableTests
                     return GetNumberPrivate();
                 case ImplementationToCall.InterfaceStatic:
                     return GetNumberStatic();
+                case ImplementationToCall.ImplInterfacePublic:
+                    return GetNumberHelper();
             }
 
             return 0;
@@ -291,6 +300,7 @@ namespace IDynamicInterfaceCastableTests
             Assert.AreEqual(ITestImpl.GetNumberReturnValue, testObj.CallImplemented(ImplementationToCall.Interface));
             Assert.AreEqual(ITestImpl.GetNumberPrivateReturnValue, testObj.CallImplemented(ImplementationToCall.InterfacePrivate));
             Assert.AreEqual(ITestImpl.GetNumberStaticReturnValue, testObj.CallImplemented(ImplementationToCall.InterfaceStatic));
+            Assert.Throws<InvalidCastException>(() => testObj.CallImplemented(ImplementationToCall.ImplInterfacePublic));
 
             Console.WriteLine(" -- Validate delegate call");
             Func<ITest> func = new Func<ITest>(testObj.ReturnThis);

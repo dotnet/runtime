@@ -51,7 +51,7 @@ ResultBuffer *resultBuffer = NULL;
 
 int testStatus;
 
-void PALAPI Run_Thread(LPVOID lpParam);
+void PALAPI Run_Thread_mutex_nonshared(LPVOID lpParam);
 
 int GetParameters( int argc, char **argv)
 {
@@ -100,7 +100,7 @@ int GetParameters( int argc, char **argv)
     return 0;
 }
 
- int __cdecl main(INT argc, CHAR **argv)
+PALTEST(composite_object_management_mutex_nonshared_paltest_mutex_nonshared, "composite/object_management/mutex/nonshared/paltest_mutex_nonshared")
 {
     unsigned int i = 0;
     HANDLE hThread[MAXIMUM_WAIT_OBJECTS];
@@ -195,7 +195,7 @@ int GetParameters( int argc, char **argv)
         hThread[i] = CreateThread(
                                     NULL,                   /* no security attributes */
                                     0,                      /* use default stack size */
-                                    (LPTHREAD_START_ROUTINE)Run_Thread,/* thread function */
+                                    (LPTHREAD_START_ROUTINE)Run_Thread_mutex_nonshared,/* thread function */
                                     (LPVOID)dwParam,  /* argument to thread function */
                                     0,                      /* use default creation flags  */
                                     &threadId[i]     /* returns the thread identifier*/                                  
@@ -270,7 +270,7 @@ int GetParameters( int argc, char **argv)
     return testStatus;
 }
 
-void  PALAPI Run_Thread (LPVOID lpParam)
+void  PALAPI Run_Thread_mutex_nonshared (LPVOID lpParam)
 {
     unsigned int i = 0;
     DWORD dwWaitResult; 

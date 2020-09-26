@@ -170,10 +170,11 @@ gpointer
 mono_arch_get_gsharedvt_arg_trampoline (MonoDomain *domain, gpointer arg, gpointer addr)
 {
 	guint8 *code, *start;
+	MonoMemoryManager *mem_manager = mono_domain_ambient_memory_manager (domain);
 
 	const int buf_len = 32;
 
-	start = code = mono_domain_code_reserve (domain, buf_len);
+	start = code = mono_mem_manager_code_reserve (mem_manager, buf_len);
 
 	amd64_mov_reg_imm (code, AMD64_RAX, arg);
 	amd64_jump_code (code, addr);

@@ -14,7 +14,8 @@
 
 #include <palsuite.h>
 
-int __cdecl main(int argc, char *argv[]) {
+PALTEST(threading_QueryThreadCycleTime_test1_paltest_querythreadcycletime_test1, "threading/QueryThreadCycleTime/test1/paltest_querythreadcycletime_test1")
+{
     int ret = FAIL;
 
     //Test is failing unreliably, so for now we always return pass.

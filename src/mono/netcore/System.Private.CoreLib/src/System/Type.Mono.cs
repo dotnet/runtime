@@ -4,6 +4,7 @@
 using System.Reflection;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using System.Runtime.Versioning;
 using System.Threading;
 
 namespace System
@@ -95,10 +96,6 @@ namespace System
 
             return internal_from_handle(handle.Value);
         }
-
-        public static Type? GetTypeFromCLSID(Guid clsid, string? server, bool throwOnError) => throw new PlatformNotSupportedException();
-
-        public static Type? GetTypeFromProgID(string progID, string? server, bool throwOnError) => throw new PlatformNotSupportedException();
 
         internal virtual Type InternalResolve()
         {

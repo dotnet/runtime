@@ -357,7 +357,7 @@ BOOL PAL_VirtualUnwind(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *contextP
     // Check if the frame we have unwound to is a frame that caused
     // synchronous signal, like a hardware exception and record it
     // in the context flags.
-    if (unw_is_signal_frame(&cursor) > 0)
+    if ((st != 0) && (unw_is_signal_frame(&cursor) > 0))
     {
         context->ContextFlags |= CONTEXT_EXCEPTION_ACTIVE;
 #if defined(CONTEXT_UNWOUND_TO_CALL)

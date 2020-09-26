@@ -17,8 +17,6 @@ trigger:
     - eng/Version.Details.xml
     - .github/*
     - docs/*
-    - ISSUE_TEMPLATE/*
-    - PULL_REQUEST_TEMPLATE/*
     - CODE-OF-CONDUCT.md
     - CONTRIBUTING.md
     - LICENSE.TXT
@@ -41,8 +39,6 @@ pr:
     - eng/Version.Details.xml
     - .github/*
     - docs/*
-    - ISSUE_TEMPLATE/*
-    - PULL_REQUEST_TEMPLATE/*
     - CODE-OF-CONDUCT.md
     - CONTRIBUTING.md
     - LICENSE.TXT
@@ -144,6 +140,7 @@ jobs:
     - Linux_x64
     - Linux_arm
     - Linux_arm64
+    - Linux_musl_arm
     - Linux_musl_arm64
     - Linux_musl_x64
     - Windows_NT_x86
@@ -209,6 +206,7 @@ jobs:
     - Linux_arm
     - Linux_arm64
     - Linux_musl_x64
+    - Linux_musl_arm
     - Linux_musl_arm64
     - Windows_NT_x64
     - Windows_NT_x86
@@ -290,7 +288,6 @@ jobs:
     - Android_arm
     - tvOS_arm64
     - iOS_arm
-    - iOS_x64
     - Linux_musl_x64
     jobParameters:
       testGroup: innerloop
@@ -313,6 +310,7 @@ jobs:
     buildConfig: Release
     runtimeFlavor: mono
     platforms:
+    - iOS_x64
     - Browser_wasm
     variables:
       # map dependencies variables to local variables
@@ -563,6 +561,7 @@ jobs:
     buildConfig: Release
     platforms:
     - Linux_arm
+    - Linux_musl_arm
     - Linux_musl_arm64
     - Windows_NT_arm
     - Windows_NT_arm64
@@ -651,6 +650,7 @@ jobs:
     buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
     platforms:
       - Linux_arm
+      - Linux_musl_arm
       - Linux_musl_arm64
       - Windows_NT_x86
       - Windows_NT_arm

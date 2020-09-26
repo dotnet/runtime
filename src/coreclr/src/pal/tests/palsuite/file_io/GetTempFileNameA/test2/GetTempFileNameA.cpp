@@ -18,7 +18,7 @@
 
 
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(file_io_GetTempFileNameA_test2_paltest_gettempfilenamea_test2, "file_io/GetTempFileNameA/test2/paltest_gettempfilenamea_test2")
 {
     UINT uiError = 0;
     DWORD dwError = 0;

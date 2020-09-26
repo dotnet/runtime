@@ -4155,6 +4155,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_QueryInterfaceInternal (MonoIUn
 #endif /* HOST_WIN32 */
 #endif /* DISABLE_COM */
 
+#ifndef ENABLE_NETCORE
 MonoStringHandle
 ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringBSTR (mono_bstr_const ptr, MonoError *error)
 {
@@ -4164,6 +4165,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringBSTR (mono_bstr_cons
 	}
 	return mono_string_from_bstr_checked (ptr, error);
 }
+#endif
 
 mono_bstr
 ves_icall_System_Runtime_InteropServices_Marshal_BufferToBSTR (const gunichar2* ptr, int len)

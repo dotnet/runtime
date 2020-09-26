@@ -11602,6 +11602,29 @@ BOOL MethodTableBuilder::ChangesImplementationOfVirtualSlot(SLOT_INDEX idx)
         // methods.
         if (!fChangesImplementation && (ParentImpl.GetSlotIndex() != idx))
             fChangesImplementation = TRUE;
+
+        // If the current vtable slot is MethodImpl, is it possible that it will be updated by
+        // the ClassLoader::PropagateCovariantReturnMethodImplSlots.
+        if (!fChangesImplementation && VTImpl.GetMethodDesc()->IsMethodImpl())
+        {
+            // Note: to know exactly whether the slot will be updated or not, we would need to check the
+            // PreserveBaseOverridesAttribute presence on the current vtable slot and in the worst case
+            // on all of its ancestors. This is expensive, so we don't do that check here and accept
+            // the fact that we get some false positives and end up sharing less vtable chunks.
+
+            // Search the previous slots in the parent vtable for the same implementation. If it exists and it was
+            // overriden, the ClassLoader::PropagateCovariantReturnMethodImplSlots will propagate the change to the current
+            // slot (idx), so the implementation of it will change.
+            MethodDesc* pParentMD = ParentImpl.GetMethodDesc();
+            for (SLOT_INDEX i = 0; i < idx; i++)
+            {
+                if ((*bmtParent)[i].Impl().GetMethodDesc() == pParentMD && (*bmtVT)[i].Impl().GetMethodDesc() != pParentMD)
+                {
+                    fChangesImplementation = TRUE;
+                    break;
+                }
+            }
+        }
     }
 
     return fChangesImplementation;

@@ -381,50 +381,54 @@ void Compiler::gsParamsToShadows()
             continue;
         }
 
-        int shadowVar = lvaGrabTemp(false DEBUGARG("shadowVar"));
+        int shadowVarNum = lvaGrabTemp(false DEBUGARG("shadowVar"));
         // reload varDsc as lvaGrabTemp may realloc the lvaTable[]
-        varDsc = &lvaTable[lclNum];
+        varDsc                  = &lvaTable[lclNum];
+        LclVarDsc* shadowVarDsc = &lvaTable[shadowVarNum];
 
         // Copy some info
 
-        var_types type             = varTypeIsSmall(varDsc->TypeGet()) ? TYP_INT : varDsc->TypeGet();
-        lvaTable[shadowVar].lvType = type;
+        var_types type       = varTypeIsSmall(varDsc->TypeGet()) ? TYP_INT : varDsc->TypeGet();
+        shadowVarDsc->lvType = type;
 
 #ifdef FEATURE_SIMD
-        lvaTable[shadowVar].lvSIMDType            = varDsc->lvSIMDType;
-        lvaTable[shadowVar].lvUsedInSIMDIntrinsic = varDsc->lvUsedInSIMDIntrinsic;
+        shadowVarDsc->lvSIMDType            = varDsc->lvSIMDType;
+        shadowVarDsc->lvUsedInSIMDIntrinsic = varDsc->lvUsedInSIMDIntrinsic;
         if (varDsc->lvSIMDType)
         {
-            lvaTable[shadowVar].lvExactSize = varDsc->lvExactSize;
-            lvaTable[shadowVar].lvBaseType  = varDsc->lvBaseType;
+            shadowVarDsc->lvBaseType = varDsc->lvBaseType;
         }
 #endif
-        lvaTable[shadowVar].lvRegStruct = varDsc->lvRegStruct;
+        shadowVarDsc->lvRegStruct = varDsc->lvRegStruct;
 
-        lvaTable[shadowVar].lvAddrExposed     = varDsc->lvAddrExposed;
-        lvaTable[shadowVar].lvDoNotEnregister = varDsc->lvDoNotEnregister;
+        shadowVarDsc->lvAddrExposed     = varDsc->lvAddrExposed;
+        shadowVarDsc->lvDoNotEnregister = varDsc->lvDoNotEnregister;
 #ifdef DEBUG
-        lvaTable[shadowVar].lvVMNeedsStackAddr = varDsc->lvVMNeedsStackAddr;
-        lvaTable[shadowVar].lvLiveInOutOfHndlr = varDsc->lvLiveInOutOfHndlr;
-        lvaTable[shadowVar].lvLclFieldExpr     = varDsc->lvLclFieldExpr;
-        lvaTable[shadowVar].lvLiveAcrossUCall  = varDsc->lvLiveAcrossUCall;
+        shadowVarDsc->lvVMNeedsStackAddr = varDsc->lvVMNeedsStackAddr;
+        shadowVarDsc->lvLiveInOutOfHndlr = varDsc->lvLiveInOutOfHndlr;
+        shadowVarDsc->lvLclFieldExpr     = varDsc->lvLclFieldExpr;
+        shadowVarDsc->lvLiveAcrossUCall  = varDsc->lvLiveAcrossUCall;
 #endif
-        lvaTable[shadowVar].lvVerTypeInfo = varDsc->lvVerTypeInfo;
+        shadowVarDsc->lvVerTypeInfo = varDsc->lvVerTypeInfo;
         if (varTypeIsStruct(type))
         {
-            lvaTable[shadowVar].SetLayout(varDsc->GetLayout());
+            // We don't need unsafe value cls check here since we are copying the params and this flag
+            // would have been set on the original param before reaching here.
+            lvaSetStruct(shadowVarNum, varDsc->GetStructHnd(), false);
+            shadowVarDsc->lvIsMultiRegArg = varDsc->lvIsMultiRegArg;
+            shadowVarDsc->lvIsMultiRegRet = varDsc->lvIsMultiRegRet;
         }
-        lvaTable[shadowVar].lvIsUnsafeBuffer = varDsc->lvIsUnsafeBuffer;
-        lvaTable[shadowVar].lvIsPtr          = varDsc->lvIsPtr;
+        shadowVarDsc->lvIsUnsafeBuffer = varDsc->lvIsUnsafeBuffer;
+        shadowVarDsc->lvIsPtr          = varDsc->lvIsPtr;
 
 #ifdef DEBUG
         if (verbose)
         {
-            printf("Var V%02u is shadow param candidate. Shadow copy is V%02u.\n", lclNum, shadowVar);
+            printf("Var V%02u is shadow param candidate. Shadow copy is V%02u.\n", lclNum, shadowVarNum);
         }
 #endif
 
-        gsShadowVarInfo[lclNum].shadowCopy = shadowVar;
+        gsShadowVarInfo[lclNum].shadowCopy = shadowVarNum;
     }
 
     class ReplaceShadowParamsVisitor final : public GenTreeVisitor<ReplaceShadowParamsVisitor>
@@ -487,18 +491,19 @@ void Compiler::gsParamsToShadows()
     // Now insert code to copy the params to their shadow copy.
     for (UINT lclNum = 0; lclNum < lvaOldCount; lclNum++)
     {
-        LclVarDsc* varDsc = &lvaTable[lclNum];
+        const LclVarDsc* varDsc = &lvaTable[lclNum];
 
-        unsigned shadowVar = gsShadowVarInfo[lclNum].shadowCopy;
-        if (shadowVar == NO_SHADOW_COPY)
+        const unsigned shadowVarNum = gsShadowVarInfo[lclNum].shadowCopy;
+        if (shadowVarNum == NO_SHADOW_COPY)
         {
             continue;
         }
 
-        var_types type = lvaTable[shadowVar].TypeGet();
+        const LclVarDsc* shadowVarDsc = &lvaTable[shadowVarNum];
+        var_types        type         = shadowVarDsc->TypeGet();
 
         GenTree* src = gtNewLclvNode(lclNum, varDsc->TypeGet());
-        GenTree* dst = gtNewLclvNode(shadowVar, type);
+        GenTree* dst = gtNewLclvNode(shadowVarNum, type);
 
         src->gtFlags |= GTF_DONT_CSE;
         dst->gtFlags |= GTF_DONT_CSE;
@@ -506,14 +511,9 @@ void Compiler::gsParamsToShadows()
         GenTree* opAssign = nullptr;
         if (type == TYP_STRUCT)
         {
-            // We don't need unsafe value cls check here since we are copying the params and this flag
-            // would have been set on the original param before reaching here.
-            lvaSetStruct(shadowVar, varDsc->lvVerTypeInfo.GetClassHandle(), false);
-
+            assert(shadowVarDsc->GetLayout() != nullptr);
+            assert(shadowVarDsc->lvExactSize != 0);
             opAssign = gtNewBlkOpNode(dst, src, false, true);
-
-            lvaTable[shadowVar].lvIsMultiRegArg = lvaTable[lclNum].lvIsMultiRegArg;
-            lvaTable[shadowVar].lvIsMultiRegRet = lvaTable[lclNum].lvIsMultiRegRet;
         }
         else
         {
@@ -543,15 +543,17 @@ void Compiler::gsParamsToShadows()
 
             for (UINT lclNum = 0; lclNum < info.compArgsCount; lclNum++)
             {
-                LclVarDsc* varDsc = &lvaTable[lclNum];
+                const LclVarDsc* varDsc = &lvaTable[lclNum];
 
-                unsigned shadowVar = gsShadowVarInfo[lclNum].shadowCopy;
-                if (shadowVar == NO_SHADOW_COPY)
+                const unsigned shadowVarNum = gsShadowVarInfo[lclNum].shadowCopy;
+                if (shadowVarNum == NO_SHADOW_COPY)
                 {
                     continue;
                 }
 
-                GenTree* src = gtNewLclvNode(shadowVar, lvaTable[shadowVar].TypeGet());
+                const LclVarDsc* shadowVarDsc = &lvaTable[shadowVarNum];
+
+                GenTree* src = gtNewLclvNode(shadowVarNum, shadowVarDsc->TypeGet());
                 GenTree* dst = gtNewLclvNode(lclNum, varDsc->TypeGet());
 
                 src->gtFlags |= GTF_DONT_CSE;

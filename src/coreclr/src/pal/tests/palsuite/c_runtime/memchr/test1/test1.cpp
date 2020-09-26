@@ -25,7 +25,7 @@ struct testCase
 };
 
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime_memchr_test1_paltest_memchr_test1, "c_runtime/memchr/test1/paltest_memchr_test1")
 {
     int i = 0;
     char *result = NULL;
