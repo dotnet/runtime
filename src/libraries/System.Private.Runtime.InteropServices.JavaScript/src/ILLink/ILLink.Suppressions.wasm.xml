@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <linker>
-  <assembly fullname="System.Private.Runtime.InteropServices.JavaScript, Version=5.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+  <assembly fullname="System.Private.Runtime.InteropServices.JavaScript, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>
       <argument>IL2075</argument>
