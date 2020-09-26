@@ -74,7 +74,7 @@
       <_SuppressionsXmls Condition="'$(RuntimeFlavor)' == 'Mono'" Include="$(MonoProjectRoot)netcore\System.Private.CoreLib\$(ProjectILLinkSuppressionsFile).xml" />
 
       <!-- netstandard2.1-only System.ComponentModel.Annotations XML files are not bin-placed during -allConfigurations builds. -->
-      <_SuppressionsXmls Condition="'$(BuildingNETCoreAppVertical)' != 'true'"
+      <_SuppressionsXmls Condition="'$(BuildAllConfigurations)' == 'true'"
                          Include="$(LibrariesProjectRoot)System.ComponentModel.Annotations\$(ProjectILLinkSuppressionsFile).xml" />
     </ItemGroup>
 
