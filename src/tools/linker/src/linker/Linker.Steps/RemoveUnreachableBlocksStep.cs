@@ -591,6 +591,8 @@ namespace Mono.Linker.Steps
 								condBranches = new Stack<int> ();
 
 							condBranches.Push (GetInstructionIndex (handler.HandlerStart));
+							if (handler.FilterStart != null)
+								condBranches.Push (GetInstructionIndex (handler.FilterStart));
 						}
 
 						if (condBranches?.Count > 0) {
