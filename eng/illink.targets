@@ -46,6 +46,8 @@
 
     <ILLinkSuppressionsXmlFile>$(ILLinkDirectory)ILLink.Suppressions</ILLinkSuppressionsXmlFile>
     <ILLinkSuppressionsConfigurationSpecificXmlFile>$(ILLinkSuppressionsXmlFile).$(Configuration)</ILLinkSuppressionsConfigurationSpecificXmlFile>
+    <ILLinkSuppressionsTargetArchitectureSpecificXmlFile>$(ILLinkSuppressionsXmlFile).$(TargetArchitecture)</ILLinkSuppressionsTargetArchitectureSpecificXmlFile>
+    <ILLinkSuppressionsNonWindowsXmlFile>$(ILLinkSuppressionsXmlFile).NonWindows</ILLinkSuppressionsNonWindowsXmlFile>
 
     <!-- if building a PDB, tell illink to rewrite the symbols file -->
     <ILLinkRewritePDBs Condition="'$(ILLinkRewritePDBs)' == '' and '$(DebugSymbols)' != 'false'">true</ILLinkRewritePDBs>
@@ -92,11 +94,14 @@
 
   <ItemGroup>
     <ILLinkSuppressionsXmls Condition="Exists('$(ILLinkSuppressionsXmlFile).xml')"
-                            Include="$(ILLinkSuppressionsXmlFile).xml"
-                            TargetPath="%(FileName).$(AssemblyName).xml" />
+                            Include="$(ILLinkSuppressionsXmlFile).xml" />
     <ILLinkSuppressionsXmls Condition="Exists('$(ILLinkSuppressionsConfigurationSpecificXmlFile).xml')"
-                            Include="$(ILLinkSuppressionsConfigurationSpecificXmlFile).xml"
-                            TargetPath="%(FileName).$(AssemblyName).xml" />
+                            Include="$(ILLinkSuppressionsConfigurationSpecificXmlFile).xml" />
+    <ILLinkSuppressionsXmls Condition="Exists('$(ILLinkSuppressionsTargetArchitectureSpecificXmlFile).xml')"
+                            Include="$(ILLinkSuppressionsTargetArchitectureSpecificXmlFile).xml" />
+    <ILLinkSuppressionsXmls Condition="'$(TargetOs)' != 'Windows_NT' and Exists('$(ILLinkSuppressionsNonWindowsXmlFile).xml')"
+                            Include="$(ILLinkSuppressionsNonWindowsXmlFile).xml" />
+    <ILLinkSuppressionsXmls Update="@(ILLinkSuppressionsXmls)" TargetPath="%(FileName).$(AssemblyName).xml" />
   </ItemGroup>
 
   <Target Name="_EmbedILLinkXmls"
