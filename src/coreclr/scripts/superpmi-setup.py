@@ -208,7 +208,7 @@ def run_command(command_to_run, _cwd=None):
 
     Args:
         command_to_run ([string]): Command to run along with arguments.
-        _cmd (string): Current working directory
+        _cmd (string): Current working directory.
     """
     print("Running: " + " ".join(command_to_run))
     with subprocess.Popen(command_to_run, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=_cwd) as proc:
@@ -219,72 +219,52 @@ def run_command(command_to_run, _cwd=None):
             print(stderr.decode("utf-8"))
 
 
+def copy_directory(src_path, dst_path):
+    """Copies directory in 'src_path' to 'dst_path' maintaining the directory
+    structure. https://docs.python.org/3.5/library/shutil.html#shutil.copytree can't
+    be used in this case because it expects the destination directory should not
+    exist, however we do call copy_directory() to copy files to same destination directory.
+
+    It only copied *.dll, *.exe and *.py files.
+
+    Args:
+        src_path (string): Path of source directory that need to be copied.
+        dst_path (string): Path where directory should be copied.
+    """
+    if not os.path.exists(dst_path):
+        os.makedirs(dst_path)
+    for item in os.listdir(src_path):
+        src_item = os.path.join(src_path, item)
+        dst_item = os.path.join(dst_path, item)
+        if os.path.isdir(src_item):
+            copy_directory(src_item, dst_item)
+        else:
+            if not (dst_item.endswith('.dll') or dst_item.endswith('.exe') or dst_item.endswith('.py')):
+                continue
+            shutil.copy2(src_item, dst_item)
+
+
 def copy_files(src_path, dst_path, file_names):
-    if is_windows:
-        copy_files_windows(src_path, dst_path, file_names)
-    else:
-        copy_files_linux(src_path, dst_path, file_names)
-
-
-def copy_files_windows(src_path, dst_path, file_paths):
-    """ On Windows, copies files specified in file_names from src_path to dst_path using "robocopy".
+    """Copy files from 'file_names' list from 'src_path' to 'dst_path'.
+    It retains the original directory structure of src_path.
 
     Args:
-        src_path (string): Path of source directory
-        dst_path (string): Path of destination directory
-        file_paths ([string]): List of files paths to be copied
+        src_path (string): Source directory from where files are copied.
+        dst_path (string): Destination directory where files to be copied.
+        file_names ([string]): List of full path file names to be copied.
     """
 
-    # Extract just the unique files names
-    file_names = list(set([path.basename(curr_file) for curr_file in file_paths]))
-    command = ["robocopy", src_path, dst_path] + file_names
-    command += [
-        # "*.dll",  # only copy .dll
-        # "*.exe",  # or .exe
-        # "*.py",   # or .py
-        "/S",       # copy from sub-directories
-        "/R:2",     # no. of retries
-        "/W:5",     # seconds before retry
-        "/NS",      # don't log file sizes
-        "/NC",      # don't log file classes
-        "/NFL",     # don't log file names
-        "/NDL",     # don't log directory names
-        "/NJH",     # No Job Header.
-        "/XF",      # Exclude
-        "*.pdb"     #  *.pdb files
-    ]
-    run_command(command)
+    print('### Copying below files to {0}:'.format(dst_path))
+    print('')
+    print(os.linesep.join(file_names))
+    for f in file_names:
+        # Create same structure in dst so we don't clobber same files names present in different directories
+        dst_path_of_file = f.replace(src_path, dst_path)
 
-
-def copy_files_linux(src_path, dst_path, file_paths):
-    """ On Linux, copies files specified in file_names from src_path to dst_path using "rsync".
-
-    Args:
-        src_path (string): Path of source directory
-        dst_path (string): Path of destination directory
-        file_paths ([string]): List of files paths to be copied
-    """
-
-    # Extract just the unique relative path of files names
-    file_names = list(set([curr_file.replace(src_path + '/', '') for curr_file in file_paths]))
-
-    # create dst_path
-    run_command(["mkdir", "-p", dst_path])
-
-    if len(file_names) == 0:
-        # if file_names is empty, copy everything
-        command = ["rsync", "-avr", "--include='*.dll'", "--include='*.exe'", "--exclude='*'", src_path + '/', dst_path]
-        run_command(command)
-    else:
-        with tempfile.NamedTemporaryFile(mode="w+t", delete=False) as tmp:
-            # create temp file containing name of files to copy
-            to_write = os.linesep.join(file_names)
-            tmp.write(to_write)
-            tmp.flush()
-
-            # use rsync
-            command = ["rsync", "-avr", "--files-from={0}".format(tmp.name), src_path, dst_path]
-            run_command(command)
+        dst_directory = path.dirname(dst_path_of_file)
+        if not os.path.exists(dst_directory):
+            os.makedirs(dst_directory)
+        shutil.copy2(f, dst_path_of_file)
 
 
 def partition_files(src_directory, dst_directory, max_size, exclude_directories=[], exclude_files=native_binaries_to_ignore):
@@ -349,8 +329,10 @@ def main(main_args):
             helix_queue = "Ubuntu.1804.Amd64"
 
     # create superpmi directory
-    copy_files(superpmi_src_directory, superpmi_dst_directory, [])
-    copy_files(coreclr_args.core_root_directory, superpmi_dst_directory, [])
+    print('Copying {} -> {}'.format(superpmi_src_directory, superpmi_dst_directory))
+    copy_directory(superpmi_src_directory, superpmi_dst_directory)
+    print('Copying {} -> {}'.format(coreclr_args.core_root_directory, superpmi_dst_directory))
+    copy_directory(coreclr_args.core_root_directory, superpmi_dst_directory)
 
     # Clone and build jitutils
     try:
