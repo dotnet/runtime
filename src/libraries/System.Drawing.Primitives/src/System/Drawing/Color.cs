@@ -248,6 +248,8 @@ namespace System.Drawing
 
         public static Color Purple => new Color(KnownColor.Purple);
 
+        public static Color RebeccaPurple => new Color(KnownColor.RebeccaPurple);
+
         public static Color Red => new Color(KnownColor.Red);
 
         public static Color RosyBrown => new Color(KnownColor.RosyBrown);
