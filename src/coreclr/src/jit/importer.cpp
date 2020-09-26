@@ -4171,7 +4171,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
             case NI_System_Threading_Thread_get_ManagedThreadId:
             {
-                if (impStackTop().val->OperIs(GT_RET_EXPR))
+                if (opts.OptimizationEnabled() && impStackTop().val->OperIs(GT_RET_EXPR))
                 {
                     GenTreeCall* call = impStackTop().val->AsRetExpr()->gtInlineCandidate->AsCall();
                     if (call->gtFlags & CORINFO_FLG_JIT_INTRINSIC)
