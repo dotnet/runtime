@@ -1,6 +1,7 @@
 project(mini)
 
 function(addprefix var prefix list)
+  set(f)
   foreach(i ${list})
     set(f ${f} ${prefix}/${i})
   endforeach()
@@ -251,6 +252,8 @@ set(llvm_sources
     mini-llvm.c
     mini-llvm-cpp.cpp
     llvm-jit.cpp)
+else()
+set(llvm_sources)
 endif()
 
 if(ENABLE_LLVM)
@@ -259,6 +262,8 @@ set(llvm_runtime_sources
 elseif(ENABLE_LLVM_RUNTIME)
 set(llvm_runtime_sources
     llvm-runtime.cpp)
+else()
+set(llvm_runtime_sources)
 endif()
 
 set(mini_public_headers_base

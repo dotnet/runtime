@@ -916,7 +916,7 @@ namespace System.Net.Test.Common
                 newHeaders.Add(new HttpHeaderData("Connection", "Close"));
                 if (!hasDate)
                 {
-                    newHeaders.Add(new HttpHeaderData("Date", "{DateTimeOffset.UtcNow:R}"));
+                    newHeaders.Add(new HttpHeaderData("Date", $"{DateTimeOffset.UtcNow:R}"));
                 }
 
                 await SendResponseAsync(statusCode, newHeaders, content: content).ConfigureAwait(false);

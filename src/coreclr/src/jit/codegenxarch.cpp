@@ -3689,18 +3689,28 @@ void CodeGen::genRangeCheck(GenTree* oper)
     noway_assert(oper->OperIsBoundsCheck());
     GenTreeBoundsChk* bndsChk = oper->AsBoundsChk();
 
-    GenTree* arrIndex  = bndsChk->gtIndex;
-    GenTree* arrLen    = bndsChk->gtArrLen;
-    GenTree* arrRef    = nullptr;
-    int      lenOffset = 0;
+    GenTree* arrIndex = bndsChk->gtIndex;
+    GenTree* arrLen   = bndsChk->gtArrLen;
 
     GenTree *    src1, *src2;
     emitJumpKind jmpKind;
+    instruction  cmpKind;
 
     genConsumeRegs(arrIndex);
     genConsumeRegs(arrLen);
 
-    if (arrIndex->isContainedIntOrIImmed())
+    if (arrIndex->IsIntegralConst(0) && arrLen->isUsedFromReg())
+    {
+        // arrIndex is 0 and arrLen is in a reg. In this case
+        // we can generate
+        //      test reg, reg
+        // since arrLen is non-negative
+        src1    = arrLen;
+        src2    = arrLen;
+        jmpKind = EJ_je;
+        cmpKind = INS_test;
+    }
+    else if (arrIndex->isContainedIntOrIImmed())
     {
         // arrIndex is a contained constant.  In this case
         // we will generate one of the following
@@ -3713,6 +3723,7 @@ void CodeGen::genRangeCheck(GenTree* oper)
         src1    = arrLen;
         src2    = arrIndex;
         jmpKind = EJ_jbe;
+        cmpKind = INS_cmp;
     }
     else
     {
@@ -3721,7 +3732,7 @@ void CodeGen::genRangeCheck(GenTree* oper)
         //      cmp  [mem], immed   (if arrLen is a constant)
         //      cmp  [mem], reg     (if arrLen is in a reg)
         //      cmp  reg, immed     (if arrIndex is in a reg)
-        //      cmp  reg1, reg2     (if arraIndex is in reg1)
+        //      cmp  reg1, reg2     (if arrIndex is in reg1)
         //      cmp  reg, [mem]     (if arrLen is a memory op)
         //
         // That is only one of arrIndex or arrLen can be a memory op.
@@ -3730,6 +3741,7 @@ void CodeGen::genRangeCheck(GenTree* oper)
         src1    = arrIndex;
         src2    = arrLen;
         jmpKind = EJ_jae;
+        cmpKind = INS_cmp;
     }
 
     var_types bndsChkType = src2->TypeGet();
@@ -3741,7 +3753,7 @@ void CodeGen::genRangeCheck(GenTree* oper)
     assert(emitTypeSize(bndsChkType) >= emitTypeSize(src1->TypeGet()));
 #endif // DEBUG
 
-    GetEmitter()->emitInsBinary(INS_cmp, emitTypeSize(bndsChkType), src1, src2);
+    GetEmitter()->emitInsBinary(cmpKind, emitTypeSize(bndsChkType), src1, src2);
     genJumpToThrowHlpBlk(jmpKind, bndsChk->gtThrowKind, bndsChk->gtIndRngFailBB);
 }
 
@@ -5931,6 +5943,27 @@ void CodeGen::genCompareInt(GenTree* treeNode)
     }
     else if (op1->isUsedFromReg() && op2->IsIntegralConst(0))
     {
+        emitAttr targetSize = emitActualTypeSize(op1->TypeGet());
+        emitAttr op1Size    = emitActualTypeSize(op1->TypeGet());
+
+        // Optimize "x<0" and "x>=0" to "x>>31" if "x" is not a jump condition and in a reg.
+        // Morph/Lowering are responsible to rotate "0<x" to "x>0" so we won't handle it here.
+        if ((targetSize >= 4) && (op1Size >= 4) && (targetReg != REG_NA) && tree->OperIs(GT_LT, GT_GE))
+        {
+            if (targetReg != op1->GetRegNum())
+            {
+                inst_RV_RV(INS_mov, targetReg, op1->GetRegNum(), op1->TypeGet());
+            }
+            if (tree->OperIs(GT_GE))
+            {
+                // emit "not" for "x>=0" case
+                inst_RV(INS_not, targetReg, tree->TypeGet(), op1Size);
+            }
+            inst_RV_IV(INS_shr_N, targetReg, (int)op1Size * 8 - 1, op1Size);
+            genProduceReg(tree);
+            return;
+        }
+
         if (compiler->opts.OptimizationEnabled())
         {
             canReuseFlags = true;

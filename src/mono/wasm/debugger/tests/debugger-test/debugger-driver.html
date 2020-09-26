@@ -80,45 +80,4 @@
       <script async type="text/javascript" src="dotnet.js"></script>
 	  Stuff goes here
   </body>
-  </html> 
-     
-17  sdks/wasm/debugger-test.cs
-@@ -0,0 +1,17 @@
-using System;
-
-public class Math { //Only append content to this class as the test suite depends on line info
-	public static int IntAdd (int a, int b) {
-		int c = a + b;
-		int d = c + b;
-		int e = d + a;
-
-		return e;
-	}
-
-	public static int UseComplex () {
-		var complex = new Simple.Complex (10, "xx");
-		var res = complex.DoStuff ();
-		return res;
-	}
-}
-     
-19  sdks/wasm/debugger-test2.cs
-@@ -0,0 +1,19 @@
-using System;
-
-public class Misc { //Only append content to this class as the test suite depends on line info
-	public static int CreateObject (int foo, int bar) {
-		var f = new Fancy () {
-			Foo = foo,
-			Bar = bar,
-		};
-
-		Console.WriteLine ($"{f.Foo} {f.Bar}");
-		return f.Foo + f.Bar;
-	}
-}
-
-public class Fancy {
-	public int Foo;
-	public int Bar { get ; set; }
-}
+  </html>

@@ -15,13 +15,13 @@ Dotnet CLI is required to build the tests. This can be done on any platform then
 To build the tests on Unix:
 
 ```sh
-./src/coreclr/build-test.sh
+./src/tests/build.sh
 ```
 
 Please note that this builds the Priority 0 tests. To build priority 1:
 
 ```sh
-./src/coreclr/build-test.sh -priority1
+./src/tests/build.sh -priority1
 ```
 
 ## Building Individual Tests
@@ -41,16 +41,16 @@ During development there are many instances where building an individual test is
 The following instructions assume that on the Unix machine:
 - The CoreCLR repo is cloned at `/mnt/coreclr`
 
-`src/coreclr/build-test.sh` will have set up the `Core_Root` directory correctly after the test build.
+`src/tests/build.sh` will have set up the `Core_Root` directory correctly after the test build.
 
 ```sh
-./src/coreclr/tests/runtest.sh x64 checked
+./src/tests/run.sh x64 checked
 ```
 
 Please use the following command for help.
 
 ```sh
-./src/coreclr/tests/runtest.sh -h
+./src/tests/run.sh -h
 ```
 
 ### Unsupported and temporarily disabled tests
@@ -65,7 +65,7 @@ the conditional property
 This property disables building of a test in a default build. It also
 disables running a test in the bash/batch wrapper scripts. It allows the
 test to be built on any target in CI when the `allTargets` option is
-passed to the `build-test.*` scripts.
+passed to the `build.*` scripts.
 
 Tests which never should be built or run are marked
 

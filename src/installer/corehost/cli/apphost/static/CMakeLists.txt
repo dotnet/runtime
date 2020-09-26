@@ -107,15 +107,6 @@ elseif(CLR_CMAKE_TARGET_LINUX)
     #   )
     # endif(CLR_CMAKE_TARGET_OSX)
     # 
-    # # On OSX and *BSD, we use the libunwind that's part of the OS
-    # if(CLR_CMAKE_TARGET_FREEBSD)
-    #     find_unwind_libs(UNWIND_LIBS)
-    # 
-    #     LIST(APPEND CORECLR_LIBRARIES
-    #       ${UNWIND_LIBS}
-    #     )
-    # endif(CLR_CMAKE_TARGET_FREEBSD)
-    # 
     # if(CLR_CMAKE_TARGET_NETBSD)
     #     find_library(KVM kvm)
     # 
@@ -128,6 +119,15 @@ endif(CLR_CMAKE_TARGET_WIN32)
 # Path like: artifacts/bin/native/net5.0-Linux-Release-arm/
 set(NATIVE_LIBS_LOCATION "${NATIVE_LIBS_ARTIFACTS}")
 message ("Looking for native libs at location: '${NATIVE_LIBS_LOCATION}'.")
+
+# If/when OSX and *BSD are supported, they should also use the libunwind that's part of the OS
+if(CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
+    find_unwind_libs(UNWIND_LIBS)
+
+    LIST(APPEND CORECLR_LIBRARIES
+      ${UNWIND_LIBS}
+    )
+endif()
 
 if(NOT CLR_CMAKE_TARGET_LINUX)
     set(NATIVE_LIBS
@@ -191,6 +191,11 @@ else()
     #     )
     endif ()
 
+    # Additional requirements for System.Security.Cryptography.Native.OpenSsl
+    if(NOT FEATURE_DISTRO_AGNOSTIC_SSL)
+        find_package(OpenSSL)
+    endif()
+
     if(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_NETBSD OR CLR_CMAKE_TARGET_SUNOS)
         # These options are used to force every object to be included even if it's unused.
         set(START_WHOLE_ARCHIVE -Wl,--whole-archive)
@@ -213,3 +218,10 @@ target_link_libraries(singlefilehost
     ${NATIVE_LIBS_EXTRA}
 
 )
+
+if(NOT FEATURE_DISTRO_AGNOSTIC_SSL)
+    target_link_libraries(singlefilehost
+        ${OPENSSL_CRYPTO_LIBRARY}
+        ${OPENSSL_SSL_LIBRARY}
+    )
+endif()

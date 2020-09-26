@@ -483,12 +483,12 @@ IClassFactory *ComClassFactory::GetIClassFactory()
     GCX_PREEMP();
 
     // If a server name is specified, then first try CLSCTX_REMOTE_SERVER.
-    if (m_pwszServer)
+    if (m_wszServer)
     {
         // Set up the COSERVERINFO struct.
         COSERVERINFO ServerInfo;
         memset(&ServerInfo, 0, sizeof(COSERVERINFO));
-        ServerInfo.pwszName = m_pwszServer;
+        ServerInfo.pwszName = (LPWSTR)m_wszServer;
 
         // Try to retrieve the IClassFactory passing in CLSCTX_REMOTE_SERVER.
         hr = CoGetClassObject(m_rclsid, CLSCTX_REMOTE_SERVER, &ServerInfo, IID_IClassFactory, (void**)&pClassFactory);
@@ -519,10 +519,10 @@ IClassFactory *ComClassFactory::GetIClassFactory()
         GetHRMsg(hr, strHRDescription);
 
         // Throw the actual exception indicating we couldn't find the class factory.
-        if (m_pwszServer == NULL)
+        if (m_wszServer == NULL)
             COMPlusThrowHR(hr, IDS_EE_LOCAL_COGETCLASSOBJECT_FAILED, strHRHex, strClsid, strHRDescription.GetUnicode());
         else
-            COMPlusThrowHR(hr, IDS_EE_REMOTE_COGETCLASSOBJECT_FAILED, strHRHex, strClsid, m_pwszServer, strHRDescription.GetUnicode());
+            COMPlusThrowHR(hr, IDS_EE_REMOTE_COGETCLASSOBJECT_FAILED, strHRHex, strClsid, m_wszServer, strHRDescription.GetUnicode());
     }
 
     RETURN pClassFactory;
@@ -587,12 +587,11 @@ OBJECTREF ComClassFactory::CreateInstance(MethodTable* pMTClass, BOOL ForManaged
 
 //--------------------------------------------------------------
 // Init the ComClassFactory.
-void ComClassFactory::Init(__in_opt WCHAR* pwszProgID, __in_opt WCHAR* pwszServer, MethodTable* pClassMT)
+void ComClassFactory::Init(__in_opt PCWSTR wszServer, MethodTable* pClassMT)
 {
     LIMITED_METHOD_CONTRACT;
 
-    m_pwszProgID = pwszProgID;
-    m_pwszServer = pwszServer;
+    m_wszServer = wszServer;
     m_pClassMT = pClassMT;
 }
 
@@ -610,11 +609,8 @@ void ComClassFactory::Cleanup()
     if (m_bManagedVersion)
         return;
 
-    if (m_pwszProgID != NULL)
-        delete [] m_pwszProgID;
-
-    if (m_pwszServer != NULL)
-        delete [] m_pwszServer;
+    if (m_wszServer != NULL)
+        delete [] m_wszServer;
 
     delete this;
 }

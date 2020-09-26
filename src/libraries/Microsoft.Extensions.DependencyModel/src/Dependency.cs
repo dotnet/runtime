@@ -32,7 +32,7 @@ namespace Microsoft.Extensions.DependencyModel
 
         public override bool Equals(object obj)
         {
-            if (ReferenceEquals(null, obj)) return false;
+            if (obj is null) return false;
             return obj is Dependency && Equals((Dependency) obj);
         }
 

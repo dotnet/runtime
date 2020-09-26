@@ -12,14 +12,15 @@
 **
 =============================================================================*/
 
-using System.Runtime.CompilerServices;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 
 namespace System.Threading
 {
-    public static class Monitor
+    public static partial class Monitor
     {
         /*=========================================================================
         ** Obtain the monitor lock of obj. Will block if another thread holds the lock
@@ -111,19 +112,6 @@ namespace System.Threading
             return lockTaken;
         }
 
-        private static int MillisecondsTimeoutFromTimeSpan(TimeSpan timeout)
-        {
-            long tm = (long)timeout.TotalMilliseconds;
-            if (tm < -1 || tm > (long)int.MaxValue)
-                throw new ArgumentOutOfRangeException(nameof(timeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
-            return (int)tm;
-        }
-
-        public static bool TryEnter(object obj, TimeSpan timeout)
-        {
-            return TryEnter(obj, MillisecondsTimeoutFromTimeSpan(timeout));
-        }
-
         // The JIT should inline this method to allow check of lockTaken argument to be optimized out
         // in the typical case. Note that the method has to be transparent for inlining to be allowed by the VM.
         public static void TryEnter(object obj, int millisecondsTimeout, ref bool lockTaken)
@@ -132,14 +120,6 @@ namespace System.Threading
                 ThrowLockTakenException();
 
             ReliableEnterTimeout(obj, millisecondsTimeout, ref lockTaken);
-        }
-
-        public static void TryEnter(object obj, TimeSpan timeout, ref bool lockTaken)
-        {
-            if (lockTaken)
-                ThrowLockTakenException();
-
-            ReliableEnterTimeout(obj, MillisecondsTimeoutFromTimeSpan(timeout), ref lockTaken);
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -162,39 +142,21 @@ namespace System.Threading
     ** This method acquires the monitor waithandle for the object
     ** If this thread holds the monitor lock for the object, it releases it.
     ** On exit from the method, it obtains the monitor lock back.
-    ** If exitContext is true then the synchronization domain for the context
-    ** (if in a synchronized context) is exited before the wait and reacquired
     **
         ** Exceptions: ArgumentNullException if object is null.
     ========================================================================*/
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern bool ObjWait(bool exitContext, int millisecondsTimeout, object obj);
+        private static extern bool ObjWait(int millisecondsTimeout, object obj);
 
-        public static bool Wait(object obj, int millisecondsTimeout, bool exitContext)
+        [UnsupportedOSPlatform("browser")]
+        public static bool Wait(object obj, int millisecondsTimeout)
         {
             if (obj == null)
                 throw (new ArgumentNullException(nameof(obj)));
-            return ObjWait(exitContext, millisecondsTimeout, obj);
-        }
+            if (millisecondsTimeout < -1)
+                throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
 
-        public static bool Wait(object obj, TimeSpan timeout, bool exitContext)
-        {
-            return Wait(obj, MillisecondsTimeoutFromTimeSpan(timeout), exitContext);
-        }
-
-        public static bool Wait(object obj, int millisecondsTimeout)
-        {
-            return Wait(obj, millisecondsTimeout, false);
-        }
-
-        public static bool Wait(object obj, TimeSpan timeout)
-        {
-            return Wait(obj, MillisecondsTimeoutFromTimeSpan(timeout), false);
-        }
-
-        public static bool Wait(object obj)
-        {
-            return Wait(obj, Timeout.Infinite, false);
+            return ObjWait(millisecondsTimeout, obj);
         }
 
         /*========================================================================

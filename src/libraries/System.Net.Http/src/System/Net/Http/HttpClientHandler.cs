@@ -14,7 +14,7 @@ namespace System.Net.Http
 {
     public partial class HttpClientHandler : HttpMessageHandler
     {
-#if TARGETS_BROWSER
+#if TARGET_BROWSER
         private readonly BrowserHttpHandler _underlyingHandler;
 #else
         private readonly SocketsHttpHandler _underlyingHandler;
@@ -26,7 +26,7 @@ namespace System.Net.Http
 
         public HttpClientHandler()
         {
-#if TARGETS_BROWSER
+#if TARGET_BROWSER
             _underlyingHandler = new BrowserHttpHandler();
 #else
             _underlyingHandler = new SocketsHttpHandler();
@@ -208,7 +208,7 @@ namespace System.Net.Http
                 switch (value)
                 {
                     case ClientCertificateOption.Manual:
-#if TARGETS_BROWSER
+#if TARGET_BROWSER
                         _clientCertificateOptions = value;
 #else
                         ThrowForModifiedManagedSslOptionsIfStarted();
@@ -218,7 +218,7 @@ namespace System.Net.Http
                         break;
 
                     case ClientCertificateOption.Automatic:
-#if TARGETS_BROWSER
+#if TARGET_BROWSER
                         _clientCertificateOptions = value;
 #else
                         ThrowForModifiedManagedSslOptionsIfStarted();
@@ -251,7 +251,7 @@ namespace System.Net.Http
         [UnsupportedOSPlatform("browser")]
         public Func<HttpRequestMessage, X509Certificate2?, X509Chain?, SslPolicyErrors, bool>? ServerCertificateCustomValidationCallback
         {
-#if TARGETS_BROWSER
+#if TARGET_BROWSER
             get => throw new PlatformNotSupportedException();
             set => throw new PlatformNotSupportedException();
 #else

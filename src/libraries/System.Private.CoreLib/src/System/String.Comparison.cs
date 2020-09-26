@@ -538,7 +538,7 @@ namespace System
 
         public bool EndsWith(string value, StringComparison comparisonType)
         {
-            if ((object)value == null)
+            if (value is null)
             {
                 throw new ArgumentNullException(nameof(value));
             }

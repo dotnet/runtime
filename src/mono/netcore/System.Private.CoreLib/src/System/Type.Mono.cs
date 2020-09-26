@@ -97,12 +97,6 @@ namespace System
             return internal_from_handle(handle.Value);
         }
 
-        [SupportedOSPlatform("windows")]
-        public static Type? GetTypeFromCLSID(Guid clsid, string? server, bool throwOnError) => throw new PlatformNotSupportedException();
-
-        [SupportedOSPlatform("windows")]
-        public static Type? GetTypeFromProgID(string progID, string? server, bool throwOnError) => throw new PlatformNotSupportedException();
-
         internal virtual Type InternalResolve()
         {
             return UnderlyingSystemType;
