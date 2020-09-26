@@ -8,8 +8,7 @@ internal static partial class Interop
     internal static partial class Sys
     {
         /// <summary>
-        /// Takes a path containing relative subpaths or links and returns the absolute path.
-        /// This function works on both files and folders and returns a null-terminated string.
+        /// Returns the full path to the executable for the current process resolving symbolic links.
         /// </summary>
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetProcessPath", SetLastError = true)]
         internal static extern string? GetProcessPath();
