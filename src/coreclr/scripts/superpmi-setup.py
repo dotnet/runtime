@@ -239,7 +239,12 @@ def copy_directory(src_path, dst_path):
         if os.path.isdir(src_item):
             copy_directory(src_item, dst_item)
         else:
-            if not (dst_item.endswith('.dll') or dst_item.endswith('.exe') or dst_item.endswith('.py')):
+            should_copy_file = dst_item.endswith('.dll') or dst_item.endswith('.py')
+            if is_windows:
+                should_copy_file = should_copy_file or dst_item.endswith('.exe')
+            else:
+                should_copy_file = should_copy_file or dst_item.endswith('.so') or item.find(".") == -1
+            if not should_copy_file:
                 continue
             shutil.copy2(src_item, dst_item)
 
