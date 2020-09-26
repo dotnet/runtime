@@ -93,8 +93,6 @@
                          Include="$(LibrariesProjectRoot)System.Security.Cryptography.X509Certificates\$(ProjectILLinkSuppressionsNonWindowsSpecificFile).xml" /> 
       <_SuppressionsXmls Condition="'$(TargetArchitecture)' == 'wasm'"
                          Include="$(LibrariesProjectRoot)System.Private.Runtime.InteropServices.JavaScript\$(ProjectILLinkSuppressionsWasmSpecificFile).xml" />
-
-      <!-- TODO: bin-place the above suppressions files to the ILLinkTrimAssemblySuppressionsXmlsDir directory below for easier debugging -->
     </ItemGroup>
 
     <ItemGroup>
