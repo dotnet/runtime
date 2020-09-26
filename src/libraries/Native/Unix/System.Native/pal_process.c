@@ -874,7 +874,7 @@ char* SystemNative_GetProcessPath()
 {
     // Get path to the executable for the current process using
     // platform specific means.
-#ifdef __APPLE__
+#if defined(__APPLE__)
     // On Mac, we ask the OS for the absolute path to the entrypoint executable
     uint32_t path_length = 0;
     if (_NSGetExecutablePath(NULL, &path_length) != -1)
@@ -901,7 +901,7 @@ char* SystemNative_GetProcessPath()
     size_t len;
 
     len = sizeof(path);
-    if (!sysctl(name, 4, path, &len, NULL, 0) != 0)
+    if (sysctl(name, 4, path, &len, NULL, 0) != 0)
     {
         return NULL;
     }
