@@ -32,6 +32,12 @@
 #include <mach-o/dyld.h>
 #endif
 
+#ifdef __FreeBSD__
+#include <sys/types.h>
+#include <sys/param.h>
+#include <sys/sysctl.h>
+#endif
+
 // Validate that our SysLogPriority values are correct for the platform
 c_static_assert(PAL_LOG_EMERG == LOG_EMERG);
 c_static_assert(PAL_LOG_ALERT == LOG_ALERT);
@@ -885,6 +891,22 @@ char* SystemNative_GetProcessPath()
     }
 
     return realpath(path_buf, NULL);
+#elif defined(__FreeBSD__)
+    static const int name[] =
+    {
+        CTL_KERN, KERN_PROC, KERN_PROC_PATHNAME, -1
+    };
+
+    char path[PATH_MAX];
+    size_t len;
+
+    len = sizeof(path);
+    if (!sysctl(name, 4, path, &len, NULL, 0) != 0)
+    {
+        return NULL;
+    }
+
+    return strdup(path);
 #else
 
 #ifdef __linux__
