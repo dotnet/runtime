@@ -1,23 +1,36 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace Demo
 {
-    partial class Kernel32
+    partial class NativeExportsNE
     {
-        [GeneratedDllImport(nameof(Kernel32), EntryPoint = "QueryPerformanceCounter")]
-        public static partial int Method(ref long t);
+        [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = "sumi")]
+        public static partial int Sum(int a, int b);
+
+        [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = "sumouti")]
+        public static partial void Sum(int a, int b, out int c);
+
+        [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = "sumrefi")]
+        public static partial void Sum(int a, ref int b);
     }
 
     unsafe class Program
     {
         static void Main(string[] args)
         {
-            var ts = (long)0;
-            int suc = Kernel32.Method(ref ts);
-            Console.WriteLine($"{suc}: 0x{ts:x}");
+            int a = 12;
+            int b = 13;
+            int c = NativeExportsNE.Sum(a, b);
+            Console.WriteLine($"{a} + {b} = {c}");
+
+            c = 0;
+            NativeExportsNE.Sum(a, b, out c);
+            Console.WriteLine($"{a} + {b} = {c}");
+
+            c = b;
+            NativeExportsNE.Sum(a, ref c);
+            Console.WriteLine($"{a} + {b} = {c}");
         }
     }
 }

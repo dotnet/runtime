@@ -5,11 +5,15 @@
     <TargetFramework>net5.0</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <LangVersion>preview</LangVersion>
+
+    <!-- See https://github.com/dotnet/runtime/issues/42745 for why this is needed. -->
+    <UseAppHost>true</UseAppHost>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Ancillary.Interop\Ancillary.Interop.csproj" />
     <ProjectReference Include="..\DllImportGenerator\DllImportGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\TestAssets\NativeExports\NativeExports.csproj" />
   </ItemGroup>
 
 </Project>

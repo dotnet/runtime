@@ -8,8 +8,11 @@ Below are additional work items that are not presently captured in this reposito
 
 ### Required
 
-* Add `GeneratedDllImportAttribute` to the BCL. See [`GeneratedDllImportAttribute.cs`](./DllImportGeneratorAttribute/GeneratedDllImportAttribute.cs).
+
+* Add `GeneratedDllImportAttribute` to the BCL. See [`GeneratedDllImportAttribute.cs`](./Ancillary.Interop/GeneratedDllImportAttribute.cs).
 * Add support for calling [`SetLastError()`](https://docs.microsoft.com/windows/win32/api/errhandlingapi/nf-errhandlingapi-setlasterror) from managed code with the expected semantics. During P/Invoke transitions the runtime manipulates the associated thread's error code and thus breaks `SetLastError()` semantics.
+
+* APIs to handle [`SafeHandle`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.safehandle) manipulation.
 
 ### Optional
 
@@ -17,4 +20,5 @@ Below are additional work items that are not presently captured in this reposito
 
 ## Designs
 
+- [Code generation pipeline](./designs/Pipeline.md)
 - [Struct Marshalling](./designs/StructMarshalling.md)

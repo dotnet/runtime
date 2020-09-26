@@ -1,0 +1,35 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net5.0</TargetFramework>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <EnableDynamicLoading>true</EnableDynamicLoading>
+    <DnneAddGeneratedBinaryToProject>true</DnneAddGeneratedBinaryToProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="DNNE" Version="1.0.11" />
+  </ItemGroup>
+
+  <!--
+    The Target below is used to mitigate a limitation when referencing
+    application projects. The work to improve this is tracked with:
+        https://github.com/dotnet/sdk/issues/1675
+    See https://github.com/dotnet/sdk/issues/1675#issuecomment-658779827
+  -->
+  <Target Name="AddRuntimeDependenciesToContent"
+        BeforeTargets="GetCopyToOutputDirectoryItems"
+        DependsOnTargets="GenerateBuildDependencyFile;GenerateBuildRuntimeConfigurationFiles">
+    <ItemGroup>
+      <ContentWithTargetPath Include="$(ProjectDepsFilePath)"
+                            Condition="'$(GenerateDependencyFile)' == 'true'"
+                            CopyToOutputDirectory="PreserveNewest"
+                            TargetPath="$(ProjectDepsFileName)" />
+      <ContentWithTargetPath Include="$(ProjectRuntimeConfigFilePath)"
+                            Condition="'$(GenerateRuntimeConfigurationFiles)' == 'true'"
+                            CopyToOutputDirectory="PreserveNewest"
+                            TargetPath="$(ProjectRuntimeConfigFileName)" />
+    </ItemGroup>
+  </Target>
+
+</Project>
