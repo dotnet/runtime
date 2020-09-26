@@ -6583,6 +6583,7 @@ void Compiler::fgValueNumberBlockAssignment(GenTree* tree)
             assert(!GetMemorySsaMap(GcHeap)->Lookup(tree));
 
             unsigned      lhsLclNum = lclVarTree->GetLclNum();
+            LclVarDsc*    lhsVarDsc = lvaGetDesc(lhsLclNum);
             FieldSeqNode* lhsFldSeq = nullptr;
             // If it's excluded from SSA, don't need to do anything.
             if (lvaInSsa(lhsLclNum))
@@ -6628,6 +6629,7 @@ void Compiler::fgValueNumberBlockAssignment(GenTree* tree)
 
                 // Now we need to get the proper RHS.
                 GenTreeLclVarCommon* rhsLclVarTree = nullptr;
+                unsigned             rhsLclNum     = BAD_VAR_NUM;
                 LclVarDsc*           rhsVarDsc     = nullptr;
                 FieldSeqNode*        rhsFldSeq     = nullptr;
                 ValueNumPair         rhsVNPair;
@@ -6636,17 +6638,15 @@ void Compiler::fgValueNumberBlockAssignment(GenTree* tree)
                 {
                     if (rhs->IsLocalExpr(this, &rhsLclVarTree, &rhsFldSeq))
                     {
-                        unsigned rhsLclNum = rhsLclVarTree->GetLclNum();
-                        rhsVarDsc          = &lvaTable[rhsLclNum];
+                        rhsLclNum = rhsLclVarTree->GetLclNum();
+                        rhsVarDsc = &lvaTable[rhsLclNum];
                         if (!lvaInSsa(rhsLclNum) || rhsFldSeq == FieldSeqStore::NotAField())
                         {
                             isNewUniq = true;
                         }
                         else
                         {
-                            rhsVNPair = lvaTable[rhsLclVarTree->GetLclNum()]
-                                            .GetPerSsaData(rhsLclVarTree->GetSsaNum())
-                                            ->m_vnPair;
+                            rhsVNPair         = rhsVarDsc->GetPerSsaData(rhsLclVarTree->GetSsaNum())->m_vnPair;
                             var_types indType = rhsLclVarTree->TypeGet();
 
                             rhsVNPair = vnStore->VNPairApplySelectors(rhsVNPair, rhsFldSeq, indType);
@@ -6663,17 +6663,15 @@ void Compiler::fgValueNumberBlockAssignment(GenTree* tree)
                     VNFuncApp srcAddrFuncApp;
                     if (srcAddr->IsLocalAddrExpr(this, &rhsLclVarTree, &rhsFldSeq))
                     {
-                        unsigned rhsLclNum = rhsLclVarTree->GetLclNum();
-                        rhsVarDsc          = &lvaTable[rhsLclNum];
+                        rhsLclNum = rhsLclVarTree->GetLclNum();
+                        rhsVarDsc = &lvaTable[rhsLclNum];
                         if (!lvaInSsa(rhsLclNum) || rhsFldSeq == FieldSeqStore::NotAField())
                         {
                             isNewUniq = true;
                         }
                         else
                         {
-                            rhsVNPair = lvaTable[rhsLclVarTree->GetLclNum()]
-                                            .GetPerSsaData(rhsLclVarTree->GetSsaNum())
-                                            ->m_vnPair;
+                            rhsVNPair         = rhsVarDsc->GetPerSsaData(rhsLclVarTree->GetSsaNum())->m_vnPair;
                             var_types indType = rhsLclVarTree->TypeGet();
 
                             rhsVNPair = vnStore->VNPairApplySelectors(rhsVNPair, rhsFldSeq, indType);
@@ -6686,6 +6684,7 @@ void Compiler::fgValueNumberBlockAssignment(GenTree* tree)
                             var_types     indType            = lclVarTree->TypeGet();
                             ValueNum      fieldSeqVN         = srcAddrFuncApp.m_args[0];
                             FieldSeqNode* fldSeqForStaticVar = vnStore->FieldSeqVNToFieldSeq(fieldSeqVN);
+                            rhsFldSeq                        = fldSeqForStaticVar;
 #ifdef DEBUG
                             FieldSeqNode* zeroOffsetFldSeq = nullptr;
                             if (GetZeroOffsetFieldMap()->Lookup(srcAddr, &zeroOffsetFldSeq))
@@ -6717,6 +6716,7 @@ void Compiler::fgValueNumberBlockAssignment(GenTree* tree)
                         {
                             ValueNum elemLib =
                                 fgValueNumberArrIndexVal(nullptr, &srcAddrFuncApp, vnStore->VNForEmptyExcSet());
+                            rhsFldSeq = vnStore->FieldSeqVNToFieldSeq(srcAddrFuncApp.m_args[3]);
                             rhsVNPair.SetLiberal(elemLib);
                             rhsVNPair.SetConservative(vnStore->VNForExpr(compCurBB, lclVarTree->TypeGet()));
                         }
@@ -6737,6 +6737,44 @@ void Compiler::fgValueNumberBlockAssignment(GenTree* tree)
                     //
                     JITDUMP("    *** Missing field sequence info for Dst/LHS of COPYBLK\n");
                     isNewUniq = true;
+                }
+
+                assert(lhsVarDsc != nullptr);
+                CORINFO_CLASS_HANDLE rhsClsHnd = NO_CLASS_HANDLE;
+
+                if (!isNewUniq)
+                {
+                    if (rhsFldSeq != nullptr)
+                    {
+                        FieldSeqNode* lastField = rhsFldSeq->GetTail();
+                        assert(lastField != nullptr);
+                        CORINFO_FIELD_HANDLE fldHnd = lastField->GetFieldHandle();
+                        rhsClsHnd                   = info.compCompHnd->getFieldClass(fldHnd);
+                    }
+                    else if (rhsVarDsc != nullptr)
+                    {
+                        rhsClsHnd = rhsVarDsc->GetStructHnd();
+                    }
+                }
+
+                assert(varTypeIsStruct(lhsVarDsc) || isNewUniq);
+
+                if (rhsClsHnd != NO_CLASS_HANDLE)
+                {
+                    if (varTypeIsStruct(lhsVarDsc))
+                    {
+                        if (rhsClsHnd != lhsVarDsc->GetLayout()->GetClassHandle())
+                        {
+                            // We are saving one struct as a struct with a different type.
+                            // This may happen in, for example, System.Runtime.CompilerServices.Unsafe.As<TFrom,
+                            // TTo>. If we copy the VN from the rhs to the lhs VN futher VN optimizations
+                            // could give us incorrect values for lhs fields, because `ApplySelectors` does not
+                            // support such reinterpretations. If that becomes a CQ issue it could be improved.
+                            isNewUniq = true;
+                            JITDUMP("Generate a unique VN for  on V%02u because of struct reinterpretation\n",
+                                    lhsLclNum);
+                        }
+                    }
                 }
 
                 if (isNewUniq)
