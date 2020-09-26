@@ -110,7 +110,7 @@ jobs:
       displayName: Publish SuperPMI collection
       inputs:
         targetPath: $(Build.SourcesDirectory)/artifacts/helixresults
-        artifactName: 'SuperPMI_Result_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.runtimeType }}_${{ parameters.codeGenType }}_CoreRoot'
+        artifactName: 'SuperPMI_Result_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.runtimeType }}_${{ parameters.codeGenType }}'
       continueOnError: true
       condition: always()
 
@@ -119,6 +119,8 @@ jobs:
 
     - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py merge-mch -pattern $(MchFilesLocation)tests.pmi*.mch  -output_mch_path $(MchFilesLocation)tests.pmi.$(MchFileTag).mch
       displayName: Merge tests SuperPMI collections
+
+    # For now, we won't upload merged collection as an artifact.
 
     - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py upload -arch $(archType) -build_type $(buildConfig) -mch_files $(MchFilesLocation)libraries.pmi.$(MchFileTag).mch $(MchFilesLocation)tests.pmi.$(MchFileTag).mch -core_root $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).x64.$(buildConfigUpper)
       displayName: Upload SuperPMI collection to Azure Storage

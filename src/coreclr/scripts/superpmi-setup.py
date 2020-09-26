@@ -346,7 +346,7 @@ def main(main_args):
             else:
                 run_command([path.join(jitutils_directory, "bootstrap.sh")], jitutils_directory)
 
-            copy_files(path.join(jitutils_directory, "bin"), superpmi_dst_directory, ["pmi.dll"])
+            copy_files(path.join(jitutils_directory, "bin"), superpmi_dst_directory, [path.join(jitutils_directory, "bin", "pmi.dll")])
     except PermissionError as pe_error:
         # Details: https://bugs.python.org/issue26660
         print('Ignoring PermissionError: {0}'.format(pe_error))
