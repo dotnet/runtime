@@ -124,6 +124,7 @@ namespace System.Drawing
             0xFFDDA0DD,     // Plum
             0xFFB0E0E6,     // PowderBlue
             0xFF800080,     // Purple
+            0xFF663399,     // RebeccaPurple
             0xFFFF0000,     // Red
             0xFFBC8F8F,     // RosyBrown
             0xFF4169E1,     // RoyalBlue

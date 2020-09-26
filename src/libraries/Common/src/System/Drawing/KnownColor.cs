@@ -164,6 +164,7 @@ namespace System.Drawing
         Plum,
         PowderBlue,
         Purple,
+        RebeccaPurple,
         Red,
         RosyBrown,
         RoyalBlue,
