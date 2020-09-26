@@ -165,6 +165,12 @@
   <data name="NativeTypeMustHaveRequiredShapeMessage" xml:space="preserve">
     <value>The native type '{0}' must be a value type and have a constructor that takes one parameter of type '{1}' or a parameterless instance method named 'ToManaged' that returns '{1}'.</value>
   </data>
+  <data name="StackallocConstructorMustHaveStackBufferSizeConstantDescription" xml:space="preserve">
+    <value>When constructor taking a Span&lt;byte&gt; is specified on the native type, the type must also have a public integer constant named StackBufferSize to provide the size of the stack-allocated buffer.</value>
+  </data>
+  <data name="StackallocConstructorMustHaveStackBufferSizeConstantMessage" xml:space="preserve">
+    <value>The native type '{0}' must have a 'public const int StackBufferSize' field that specifies the size of the stack buffer because it has a constructor that takes a stack-allocated Span&lt;byte&gt;.</value>
+  </data>
   <data name="StackallocMarshallingShouldSupportAllocatingMarshallingFallbackDescription" xml:space="preserve">
     <value>A type that supports marshalling from managed to native by stack allocation should also support marshalling from managed to native where stack allocation is impossible.</value>
   </data>

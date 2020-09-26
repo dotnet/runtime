@@ -76,7 +76,7 @@ partial struct TNative
 {
      public TNative(TManaged managed, Span<byte> stackSpace) {}
 
-     public static const int StackBufferSize = /* */;
+     public const int StackBufferSize = /* */;
 }
 ```
 

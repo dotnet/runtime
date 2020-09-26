@@ -205,6 +205,24 @@ namespace DllImportGenerator {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to When constructor taking a Span&lt;byte&gt; is specified on the native type, the type must also have a public integer constant named StackBufferSize to provide the size of the stack-allocated buffer..
+        /// </summary>
+        internal static string StackallocConstructorMustHaveStackBufferSizeConstantDescription {
+            get {
+                return ResourceManager.GetString("StackallocConstructorMustHaveStackBufferSizeConstantDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The native type &apos;{0}&apos; must have a &apos;public const int StackBufferSize&apos; field that specifies the size of the stack buffer because it has a constructor that takes a stack-allocated Span&lt;byte&gt;..
+        /// </summary>
+        internal static string StackallocConstructorMustHaveStackBufferSizeConstantMessage {
+            get {
+                return ResourceManager.GetString("StackallocConstructorMustHaveStackBufferSizeConstantMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to A type that supports marshalling from managed to native by stack allocation should also support marshalling from managed to native where stack allocation is impossible..
         /// </summary>
         internal static string StackallocMarshallingShouldSupportAllocatingMarshallingFallbackDescription {

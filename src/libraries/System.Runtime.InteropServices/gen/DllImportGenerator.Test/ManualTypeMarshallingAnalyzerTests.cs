@@ -564,6 +564,8 @@ class S
 struct Native
 {
     public Native(S s, Span<byte> buffer) {}
+
+    public const int StackBufferSize = 0x100;
 }";
 
             await VerifyCS.VerifyAnalyzerAsync(source,
@@ -589,6 +591,8 @@ struct Native
     public Native(S s, Span<byte> buffer) {}
 
     public IntPtr Value => IntPtr.Zero;
+    
+    public const int StackBufferSize = 0x100;
 }";
 
             await VerifyCS.VerifyAnalyzerAsync(source,
@@ -1045,6 +1049,30 @@ struct G<T, U> where U : class
     T fld;
 }";
             await VerifyCS.VerifyAnalyzerAsync(source);
+        }
+
+        [Fact]
+        public async Task NativeTypeWithStackallocConstructorWithoutBufferSize_ReportsDiagnostic()
+        {
+            string source = @"
+using System;
+using System.Runtime.InteropServices;
+
+[NativeMarshalling(typeof(Native))]
+class S
+{
+    public byte c;
+}
+
+[BlittableType]
+struct Native
+{
+    public Native(S s) {}
+    public Native(S s, Span<byte> buffer) {}
+}";
+
+            await VerifyCS.VerifyAnalyzerAsync(source,
+                VerifyCS.Diagnostic(StackallocConstructorMustHaveStackBufferSizeConstantRule).WithSpan(15, 5, 15, 45).WithArguments("Native"));
         }
     }
 }
