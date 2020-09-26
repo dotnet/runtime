@@ -251,6 +251,14 @@ public:
         UINT32 ExecutionCount;
     };
 
+    struct ClassProfile
+    {
+        enum { SIZE = 8, SAMPLE_INTERVAL = 32 };
+        UINT32 ILOffset;
+        UINT32 Count;
+        CORINFO_CLASS_HANDLE ClassTable[SIZE];
+    };
+
     // allocate a basic block profile buffer where execution counts will be stored
     // for jitted basic blocks.
     virtual HRESULT allocMethodBlockCounts (
@@ -265,6 +273,17 @@ public:
             UINT32 *              pCount,          // pointer to the count of <ILOffset, ExecutionCount> tuples
             BlockCounts **        pBlockCounts,    // pointer to array of <ILOffset, ExecutionCount> tuples
             UINT32 *              pNumRuns         // pointer to the total number of profile scenarios run
+            ) = 0;
+
+    // Get the likely implementing class for a virtual call or interface call made by ftnHnd
+    // at the indicated IL offset. baseHnd is the interface class or base class for the method
+    // being called. 
+    virtual CORINFO_CLASS_HANDLE getLikelyClass(
+            CORINFO_METHOD_HANDLE ftnHnd,
+            CORINFO_CLASS_HANDLE  baseHnd,
+            UINT32                ilOffset,
+            UINT32 *              pLikelihood,     // estimated likelihood of the class (0...100)
+            UINT32 *              pNumberOfClasses // estimated number of possible classes
             ) = 0;
 
     // Associates a native call site, identified by its offset in the native code stream, with

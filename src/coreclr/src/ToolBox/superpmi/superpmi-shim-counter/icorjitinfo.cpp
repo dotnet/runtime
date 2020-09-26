@@ -1623,6 +1623,19 @@ HRESULT interceptor_ICJI::getMethodBlockCounts(CORINFO_METHOD_HANDLE ftnHnd,
     return original_ICorJitInfo->getMethodBlockCounts(ftnHnd, pCount, pBlockCounts, pNumRuns);
 }
 
+// Get the likely implementing class for a virtual call or interface call made by ftnHnd
+// at the indicated IL offset. baseHnd is the interface class or base class for the method
+// being called. 
+CORINFO_CLASS_HANDLE interceptor_ICJI::getLikelyClass(CORINFO_METHOD_HANDLE ftnHnd,
+                                                      CORINFO_CLASS_HANDLE  baseHnd,
+                                                      UINT32                ilOffset,
+                                                      UINT32*               pLikelihood,
+                                                      UINT32*               pNumberOfClasses)
+{
+    mcs->AddCall("getLikelyClass");
+    return original_ICorJitInfo->getLikelyClass(ftnHnd, baseHnd, ilOffset, pLikelihood, pNumberOfClasses);
+}
+
 // Associates a native call site, identified by its offset in the native code stream, with
 // the signature information and method handle the JIT used to lay out the call site. If
 // the call site has no signature information (e.g. a helper call) or has no method handle

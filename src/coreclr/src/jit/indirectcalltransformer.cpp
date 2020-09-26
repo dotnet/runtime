@@ -192,6 +192,7 @@ private:
             thenBlock      = nullptr;
             elseBlock      = nullptr;
             origCall       = nullptr;
+            likelihood     = HIGH_PROBABILITY;
         }
 
         //------------------------------------------------------------------------
@@ -204,7 +205,7 @@ private:
 
         void Transform()
         {
-            JITDUMP("*** %s: transforming" FMT_STMT "\n", Name(), stmt->GetID());
+            JITDUMP("*** %s: transforming " FMT_STMT "\n", Name(), stmt->GetID());
             FixupRetExpr();
             ClearFlag();
             CreateRemainder();
@@ -228,9 +229,8 @@ private:
         //
         void CreateRemainder()
         {
-            remainderBlock          = compiler->fgSplitBlockAfterStatement(currBlock, stmt);
-            unsigned propagateFlags = currBlock->bbFlags & BBF_GC_SAFE_POINT;
-            remainderBlock->bbFlags |= BBF_JMP_TARGET | BBF_HAS_LABEL | propagateFlags;
+            remainderBlock = compiler->fgSplitBlockAfterStatement(currBlock, stmt);
+            remainderBlock->bbFlags |= BBF_JMP_TARGET | BBF_HAS_LABEL | BBF_INTERNAL;
         }
 
         virtual void CreateCheck() = 0;
@@ -248,11 +248,7 @@ private:
         BasicBlock* CreateAndInsertBasicBlock(BBjumpKinds jumpKind, BasicBlock* insertAfter)
         {
             BasicBlock* block = compiler->fgNewBBafter(jumpKind, insertAfter, true);
-            if ((insertAfter->bbFlags & BBF_INTERNAL) == 0)
-            {
-                block->bbFlags &= ~BBF_INTERNAL;
-                block->bbFlags |= BBF_IMPORTED;
-            }
+            block->bbFlags |= BBF_IMPORTED;
             return block;
         }
 
@@ -274,8 +270,8 @@ private:
         {
             remainderBlock->inheritWeight(currBlock);
             checkBlock->inheritWeight(currBlock);
-            thenBlock->inheritWeightPercentage(currBlock, HIGH_PROBABILITY);
-            elseBlock->inheritWeightPercentage(currBlock, 100 - HIGH_PROBABILITY);
+            thenBlock->inheritWeightPercentage(currBlock, likelihood);
+            elseBlock->inheritWeightPercentage(currBlock, 100 - likelihood);
         }
 
         //------------------------------------------------------------------------
@@ -296,6 +292,7 @@ private:
         BasicBlock*  elseBlock;
         Statement*   stmt;
         GenTreeCall* origCall;
+        unsigned     likelihood;
 
         const int HIGH_PROBABILITY = 80;
     };
@@ -546,6 +543,10 @@ private:
                 return;
             }
 
+            likelihood = origCall->gtGuardedDevirtualizationCandidateInfo->likelihood;
+            assert((likelihood >= 0) && (likelihood <= 100));
+            JITDUMP("Likelihood of correct guess is %u\n", likelihood);
+
             Transform();
         }
 
@@ -688,7 +689,7 @@ private:
             thenBlock->bbFlags |= currBlock->bbFlags & BBF_SPLIT_GAINED;
 
             InlineCandidateInfo* inlineInfo = origCall->gtInlineCandidateInfo;
-            CORINFO_CLASS_HANDLE clsHnd     = inlineInfo->clsHandle;
+            CORINFO_CLASS_HANDLE clsHnd     = inlineInfo->guardedClassHandle;
 
             // copy 'this' to temp with exact type.
             const unsigned thisTemp  = compiler->lvaGrabTemp(false DEBUGARG("guarded devirt this exact temp"));
@@ -721,8 +722,9 @@ private:
             assert(!call->IsVirtual());
 
             // Re-establish this call as an inline candidate.
-            GenTree* oldRetExpr         = inlineInfo->retExpr;
-            inlineInfo->clsHandle       = clsHnd;
+            GenTree* oldRetExpr = inlineInfo->retExpr;
+            // Todo -- pass this back from impdevirt...?
+            inlineInfo->clsHandle       = compiler->info.compCompHnd->getMethodClass(methodHnd);
             inlineInfo->exactContextHnd = context;
             call->gtInlineCandidateInfo = inlineInfo;
 
