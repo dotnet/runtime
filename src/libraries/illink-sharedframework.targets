@@ -79,16 +79,11 @@
       <!-- Assemblies that were not included in per-library linker run -->
       <_SuppressionsXmls Include="$(LibrariesProjectRoot)Microsoft.CSharp\$(ProjectILLinkSuppressionsFile).xml" />
       <_SuppressionsXmls Include="$(LibrariesProjectRoot)Microsoft.VisualBasic.Core\$(ProjectILLinkSuppressionsFile).xml" />
+
       <_SuppressionsXmls Include="$(LibrariesProjectRoot)System.ComponentModel.Annotations\$(ProjectILLinkSuppressionsFile).xml" />
-      <_SuppressionsXmls Include="$(LibrariesProjectRoot)System.Drawing.Primitives\$(ProjectILLinkSuppressionsFile).xml" />
-      <_SuppressionsXmls Include="$(LibrariesProjectRoot)System.Linq.Queryable\$(ProjectILLinkSuppressionsFile).xml" />
-      <_SuppressionsXmls Include="$(LibrariesProjectRoot)System.Net.Http\$(ProjectILLinkSuppressionsFile).xml" />
+
       <_SuppressionsXmls Condition="'$(Configuration)' == 'Debug'"
                          Include="$(LibrariesProjectRoot)System.Net.Http\$(ProjectILLinkSuppressionsDebugSpecificFile).xml" />
-      <_SuppressionsXmls Include="$(LibrariesProjectRoot)System.Runtime.Serialization.Formatters\$(ProjectILLinkSuppressionsFile).xml" />
-      <_SuppressionsXmls Include="$(LibrariesProjectRoot)System.Security.Cryptography.Algorithms\$(ProjectILLinkSuppressionsFile).xml" />
-      <_SuppressionsXmls Include="$(LibrariesProjectRoot)System.Security.Cryptography.Cng\$(ProjectILLinkSuppressionsFile).xml" />
-      <_SuppressionsXmls Include="$(LibrariesProjectRoot)System.Security.Cryptography.Csp\$(ProjectILLinkSuppressionsFile).xml" />
       <_SuppressionsXmls Condition="'$(TargetOs)' != 'Windows_NT'"
                          Include="$(LibrariesProjectRoot)System.Security.Cryptography.X509Certificates\$(ProjectILLinkSuppressionsNonWindowsSpecificFile).xml" /> 
       <_SuppressionsXmls Condition="'$(TargetArchitecture)' == 'wasm'"
