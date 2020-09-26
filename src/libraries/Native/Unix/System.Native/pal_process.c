@@ -871,7 +871,7 @@ char* SystemNative_GetProcessPath()
 #ifdef __APPLE__
     // On Mac, we ask the OS for the absolute path to the entrypoint executable
     uint32_t path_length = 0;
-    if (_NSGetExecutablePath(nullptr, &path_length) != -1)
+    if (_NSGetExecutablePath(NULL, &path_length) != -1)
     {
         errno = EINVAL;
         return NULL;
