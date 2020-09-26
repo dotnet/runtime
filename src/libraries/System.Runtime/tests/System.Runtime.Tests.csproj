@@ -7,6 +7,9 @@
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetRandomBytes.cs"
+             Link="Interop\Unix\System.Native\Interop.GetRandomBytes.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs" />
     <Compile Include="$(CommonTestPath)System\EnumTypes.cs"
              Link="Common\System\EnumTypes.cs" />
     <Compile Include="$(CommonTestPath)System\MockType.cs"

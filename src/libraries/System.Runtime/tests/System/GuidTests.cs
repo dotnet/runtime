@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Diagnostics;
 using Xunit;
 
 namespace System.Tests
@@ -12,6 +13,29 @@ namespace System.Tests
     {
         private static readonly Guid s_testGuid = new Guid("a8a110d5-fc49-43c5-bf46-802db8f843ff");
         private static readonly Guid s_fullGuid = new Guid(uint.MaxValue, ushort.MaxValue, ushort.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue);
+
+        [Fact]
+        public static unsafe void PerfTest()
+        {
+            Stopwatch sw = new Stopwatch();
+            Guid g = new Guid();
+            for (;;)
+            {
+                sw.Restart();
+                for (int i = 0; i < 10000000; i++)
+                {
+                     Interop.Sys.GetCryptographicallySecureRandomBytes((byte*)&g, sizeof(Guid));
+                }
+                Console.WriteLine($"Secure: {sw.ElapsedMilliseconds}");
+
+                sw.Restart();
+                for (int i = 0; i < 10000000; i++)
+                {
+                     Interop.Sys.GetNonCryptographicallySecureRandomBytes((byte*)&g, sizeof(Guid));
+                }
+                Console.WriteLine($"NonSecure: {sw.ElapsedMilliseconds}");
+            }
+        }
 
         [Fact]
         public static void Empty()
