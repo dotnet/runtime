@@ -49,6 +49,7 @@ namespace Mono.Linker.Dataflow
 #endif
 		}
 
+#pragma warning disable CA1822
 		[Conditional ("DEBUG")]
 		public void AnalyzingPattern ()
 		{
@@ -64,6 +65,7 @@ namespace Mono.Linker.Dataflow
 			_patternReported = true;
 #endif
 		}
+#pragma warning restore CA1822
 
 		public void RecordRecognizedPattern (IMemberDefinition accessedItem, Action mark)
 		{
