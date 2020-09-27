@@ -30,7 +30,7 @@ jobs:
               $Content = Get-Content $(Build.StagingDirectory)/ReleaseConfigs/ReleaseConfigs.txt
 
               $BarId = $Content | Select -Index 0
-              $Channels = $Content | Select -Index 1             
+              $Channels = $Content | Select -Index 1
               $IsStableBuild = $Content | Select -Index 2
 
               $AzureDevOpsProject = $Env:System_TeamProject
