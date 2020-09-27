@@ -46,6 +46,13 @@ jobs:
     artifact: Checkout_bundle
     displayName: Upload Checkout.bundle
 
+  - template: /eng/pipelines/common/download-specific-artifact-step.yml
+    parameters:
+      unpackFolder: $(buildProductRootFolderPath)
+      artifactFileName: '$(buildProductArtifactName)$(archiveExtension)'
+      artifactName: '$(buildProductArtifactName)'
+      displayName: 'Coreclr product build'
+
   - ${{ if and(ne(parameters.paths[0], ''), eq(variables['Build.Reason'], 'PullRequest')) }}:
     - ${{ each path in parameters.paths }}:
       - template: evaluate-changed-paths.yml
