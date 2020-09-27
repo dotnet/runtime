@@ -162,7 +162,7 @@ else()
         ${SECURITY}
         ${SYSTEM}
       )
-    endif(CLR_CMAKE_TARGET_OSX)
+    endif()
 
     # Always build portable on macOS because OpenSSL is not a system component
     # and our prebuilts should not assume a specific ABI version for the types
@@ -177,13 +177,19 @@ else()
         LIST(APPEND NATIVE_LIBS_EXTRA
           ${KVM}
         )
-    endif(CLR_CMAKE_TARGET_NETBSD)
+    endif()
 
     set(NATIVE_LIBS
       System.Native-Static
       System.Net.Security.Native-Static
-      System.Security.Cryptography.Native.OpenSsl-Static
     )
+
+    if(NOT CLR_CMAKE_TARGET_OSX)
+        LIST(APPEND NATIVE_LIBS
+          System.Security.Cryptography.Native.OpenSsl-Static
+        )
+    endif()
+
 endif()
 
 # IMPORTANT! Please do not rearrange the order of the libraries. The linker on Linux is
