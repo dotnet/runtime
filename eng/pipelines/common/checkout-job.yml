@@ -35,9 +35,6 @@ jobs:
     vmImage: 'macOS-10.14'
 
   steps:
-  - checkout: self
-    clean: true
-    fetchDepth: 20
 
   - template: /eng/pipelines/common/download-specific-artifact-step.yml
     parameters:
@@ -45,6 +42,10 @@ jobs:
       artifactFileName: '$(buildProductArtifactName)$(archiveExtension)'
       artifactName: '$(buildProductArtifactName)'
       displayName: 'Coreclr product build'
+
+  - checkout: self
+    clean: true
+    fetchDepth: 20
 
   - script: git bundle create $(Build.StagingDirectory)/Checkout.bundle HEAD
     displayName: Create Checkout.bundle

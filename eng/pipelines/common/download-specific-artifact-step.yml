@@ -11,10 +11,10 @@ steps:
     displayName: 'Download specific ${{ parameters.displayName }}'
     inputs:
       buildType: specific
-      project:  'internal'
-      pipeline: 'runtime-coreclr superpmi'
-      buildVersionToDownload: latest
-      branchName: refs/pull/42783/head
+      project:  'public'
+      pipeline: 'runtime-coreclr outerloop'
+      buildVersionToDownload: 'latest'
+      branchName: 'refs/heads/master'
       # buildId: '20200925.3'
       downloadType: single
       downloadPath: '$(Build.SourcesDirectory)/__download__'
