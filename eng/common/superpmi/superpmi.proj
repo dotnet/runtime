@@ -56,12 +56,8 @@
 
   <ItemGroup>
     <!-- libraries payload -->
-    <LibraryPartitions Include="$([System.IO.Directory]::GetDirectories($(LibrariesArtifacts)))"/>
-    <Partition Include="@(LibraryPartitions -> '%(Filename)')" PmiAssemblies="Core_Root$(FileSeparatorChar)%(Filename)" OutputMchName="libraries.pmi" PartitionId="%(Filename)" />
-
-    <!-- tests payload -->
-    <TestPartitions Include="$([System.IO.Directory]::GetDirectories($(TestsArtifacts)))"/>
-    <Partition Include="@(TestPartitions -> '%(Filename)')" PmiAssemblies="Tests$(FileSeparatorChar)%(Filename)" OutputMchName="tests.pmi" PartitionId="%(Filename)" />
+    <PartitionDirectories Include="$([System.IO.Directory]::GetDirectories($(PmiAssembliesSubDirectory)))"/>
+    <Partition Include="@(PartitionDirectories -> '%(Filename)')" PmiAssemblies="Core_Root$(FileSeparatorChar)%(Filename)" OutputMchName="$(OutputSPMICollectionName).pmi" PartitionId="%(Filename)" />
   </ItemGroup>
 
   <ItemGroup>
@@ -86,8 +82,8 @@
 <!--    
    <PropertyGroup>
      <HelixTargetQueues>Some_Queue</HelixTargetQueues>
-     <LibrariesArtifacts>E:\temp\power\test1</LibrariesArtifacts>
-     <TestsArtifacts>E:\temp\power\test1</TestsArtifacts>
+     <PmiAssembliesSubDirectory>D:\git\runtime\workitem-unix\pmiAssembliesDirectory\Tests</PmiAssembliesSubDirectory>
+     <OutputSPMICollectionName>tests</OutputSPMICollectionName>
    </PropertyGroup>
   <Target Name="printItems">
         <Message Text="@(HelixWorkItem -> 'name: %(HelixWorkItem.Identity)

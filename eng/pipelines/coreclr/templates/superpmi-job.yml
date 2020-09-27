@@ -14,7 +14,7 @@ parameters:
   codeGenType: 'JIT'
   projetFile: ''
   runKind: ''
-  runJobTemplate: '/eng/pipelines/coreclr/templates/run-superpmi-job.yml'
+  runJobTemplate: '/eng/pipelines/coreclr/templates/superpmi-collection-job.yml'
   additionalSetupParameters: ''
 
 ### SuperPMI job
@@ -37,7 +37,6 @@ jobs:
     liveLibrariesBuildConfig: ${{ parameters.liveLibrariesBuildConfig }}
     runtimeType: ${{ parameters.runtimeType }}
     codeGenType: ${{ parameters.codeGenType }}
-    projectFile: ${{ parameters.projectFile }}
     runKind: ${{ parameters.runKind }}
     testGroup: ${{ parameters.testGroup }}
     additionalSetupParameters: ${{ parameters.additionalSetupParameters }}
