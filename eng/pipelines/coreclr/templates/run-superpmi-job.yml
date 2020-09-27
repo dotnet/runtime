@@ -106,6 +106,14 @@ jobs:
         LibrariesArtifacts: '$(LibrariesArtifacts)'
         TestsArtifacts: '$(TestsArtifacts)'
 
+    - task: PublishPipelineArtifact@1
+      displayName: Publish SuperPMI collection
+      inputs:
+        targetPath: $(Build.SourcesDirectory)/artifacts/helixresults
+        artifactName: 'SuperPMI_Result_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.runtimeType }}_${{ parameters.codeGenType }}'
+      continueOnError: true
+      condition: always()
+
     - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py merge-mch -pattern $(MchFilesLocation)libraries.pmi*.mch  -output_mch_path $(MchFilesLocation)libraries.pmi.$(MchFileTag).mch
       displayName: Merge libraries SuperPMI collections
 
@@ -113,29 +121,11 @@ jobs:
       displayName: Merge tests SuperPMI collections
 
     # For now, we won't upload merged collection as an artifact.
-    - task: PublishPipelineArtifact@1
-      displayName: Publish SuperPMI collection (libraries)
-      inputs:
-        targetPath: $(MchFilesLocation)libraries.pmi.$(MchFileTag).mch
-        artifactName: 'SuperPMI_libraries_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.runtimeType }}_${{ parameters.codeGenType }}'
-      continueOnError: true
-      condition: always()
-
-    - task: PublishPipelineArtifact@1
-      displayName: Publish SuperPMI collection (tests)
-      inputs:
-        targetPath: $(MchFilesLocation)tests.pmi.$(MchFileTag).mch
-        artifactName: 'SuperPMI_tests_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.runtimeType }}_${{ parameters.codeGenType }}'
-      continueOnError: true
-      condition: always()
 
     - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py upload -arch $(archType) -build_type $(buildConfig) -mch_files $(MchFilesLocation)libraries.pmi.$(MchFileTag).mch $(MchFilesLocation)tests.pmi.$(MchFileTag).mch -core_root $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).x64.$(buildConfigUpper)
       displayName: Upload SuperPMI collection to Azure Storage
       env:
         CLRJIT_AZ_KEY: $(clrjit_key1) # secret key stored as variable in pipeline
-
-    #TODO: If publishing above works, copy the log files and put it in /artifacts/log folder
-    #      or just copy *.mch, *.mct and *.log inside a single folder and publish it
 
     - task: PublishPipelineArtifact@1
       displayName: Publish Logs
