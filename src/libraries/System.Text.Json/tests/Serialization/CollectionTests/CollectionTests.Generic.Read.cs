@@ -1052,6 +1052,46 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public static void ReadClass_WithGenericStructCollectionWrapper_NullJson_Throws()
+        {
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<ClassWithGenericStructIListWrapper>(@"{ ""List"": null }"));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<ClassWithGenericStructICollectionWrapper>(@"{ ""Collection"": null }"));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<ClassWithGenericStructIDictionaryWrapper>(@"{ ""Dictionary"": null }"));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<ClassWithGenericStructISetWrapper>(@"{ ""Set"": null }"));
+        }
+
+        [Fact]
+        public static void ReadSimpleTestClass_GenericStructCollectionWrappers()
+        {
+            SimpleTestClassWithGenericStructCollectionWrappers obj = JsonSerializer.Deserialize<SimpleTestClassWithGenericStructCollectionWrappers>(SimpleTestClassWithGenericStructCollectionWrappers.s_json);
+            obj.Verify();
+        }
+
+        [Fact]
+        public static void ReadSimpleTestStruct_NullableGenericStructCollectionWrappers()
+        {
+            {
+                SimpleTestStructWithNullableGenericStructCollectionWrappers obj = JsonSerializer.Deserialize<SimpleTestStructWithNullableGenericStructCollectionWrappers>(SimpleTestStructWithNullableGenericStructCollectionWrappers.s_json);
+                obj.Verify();
+            }
+
+            {
+                string json =
+                        @"{" +
+                        @"""List"" : null," +
+                        @"""Collection"" : null," +
+                        @"""Set"" : null," +
+                        @"""Dictionary"" : null" +
+                        @"}";
+                SimpleTestStructWithNullableGenericStructCollectionWrappers obj = JsonSerializer.Deserialize<SimpleTestStructWithNullableGenericStructCollectionWrappers>(json);
+                Assert.False(obj.List.HasValue);
+                Assert.False(obj.Collection.HasValue);
+                Assert.False(obj.Set.HasValue);
+                Assert.False(obj.Dictionary.HasValue);
+            }
+        }
+
+        [Fact]
         public static void ReadSimpleTestClass_GenericCollectionWrappers()
         {
             SimpleTestClassWithGenericCollectionWrappers obj = JsonSerializer.Deserialize<SimpleTestClassWithGenericCollectionWrappers>(SimpleTestClassWithGenericCollectionWrappers.s_json);

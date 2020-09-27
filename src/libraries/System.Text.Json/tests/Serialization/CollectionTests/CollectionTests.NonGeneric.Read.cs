@@ -164,6 +164,13 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public static void ReadClassWithStructIListWrapper_NullJson_Throws()
+        {
+            string json = @"{ ""List"" : null }";
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<ClassWithStructIListWrapper>(json));
+        }
+
+        [Fact]
         public static void ReadStructIDictionary()
         {
             string json = @"{""Key"":""Value""}";
@@ -185,6 +192,13 @@ namespace System.Text.Json.Serialization.Tests
         {
             var wrapper = JsonSerializer.Deserialize<StructWrapperForIDictionary?>("null");
             Assert.False(wrapper.HasValue);
+        }
+
+        [Fact]
+        public static void ReadClassWithStructIDictionaryWrapper_NullJson_Throws()
+        {
+            string json = @"{ ""Dictionary"" : null }";
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<ClassWithStructIDictionaryWrapper>(json));
         }
 
         [Fact]
@@ -507,6 +521,34 @@ namespace System.Text.Json.Serialization.Tests
         {
             SimpleTestClassWithNonGenericCollectionWrappers obj = JsonSerializer.Deserialize<SimpleTestClassWithNonGenericCollectionWrappers>(SimpleTestClassWithNonGenericCollectionWrappers.s_json);
             obj.Verify();
+        }
+
+        [Fact]
+        public static void ReadSimpleTestClass_StructCollectionWrappers()
+        {
+            SimpleTestClassWithStructCollectionWrappers obj = JsonSerializer.Deserialize<SimpleTestClassWithStructCollectionWrappers>(SimpleTestClassWithStructCollectionWrappers.s_json);
+            obj.Verify();
+        }
+
+        [Fact]
+        public static void ReadSimpleTestStruct_NullableStructCollectionWrappers()
+        {
+            {
+                SimpleTestStructWithNullableStructCollectionWrappers obj = JsonSerializer.Deserialize<SimpleTestStructWithNullableStructCollectionWrappers>(SimpleTestStructWithNullableStructCollectionWrappers.s_json);
+                obj.Verify();
+            }
+
+            {
+                string json =
+                        @"{" +
+                        @"""List"" : null," +
+                        @"""Dictionary"" : null" +
+                        @"}";
+
+                SimpleTestStructWithNullableStructCollectionWrappers obj = JsonSerializer.Deserialize<SimpleTestStructWithNullableStructCollectionWrappers>(json);
+                Assert.False(obj.List.HasValue);
+                Assert.False(obj.Dictionary.HasValue);
+            }
         }
 
         [Theory]
