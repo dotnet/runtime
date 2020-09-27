@@ -380,10 +380,14 @@ EXTERN_C const LPVOID gEmbedded_zlib[];
 EXTERN_C const LPVOID gEmbedded_Fcntl[];
 EXTERN_C const LPVOID gEmbedded_Sys[];
 EXTERN_C const LPVOID gEmbedded_NetSecurityNative[];
+
+#if !defined(__APPLE__)
 EXTERN_C const LPVOID gEmbedded_Crypto[];
 EXTERN_C const LPVOID gEmbedded_CryptoInitializer[];
 EXTERN_C const LPVOID gEmbedded_OpenSsl[];
 EXTERN_C const LPVOID gEmbedded_Ssl[];
+#endif
+
 #endif
 
 // When compiling crossgen, we only need the target version of the ecall tables

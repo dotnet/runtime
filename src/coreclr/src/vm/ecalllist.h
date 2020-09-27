@@ -1126,7 +1126,7 @@ FCClassElement("ComWrappers", "System.Runtime.InteropServices", gComWrappersFunc
 #endif // FEATURE_COMINTEROP
 FCClassElement("CompatibilitySwitch", "System.Runtime.Versioning", gCompatibilitySwitchFuncs)
 
-#if defined(TARGET_UNIX) && !defined(CROSSGEN_COMPILE)
+#if defined(TARGET_UNIX) && !defined(CROSSGEN_COMPILE) && !defined(__APPLE__)
 FCClassElement("Crypto", "", gEmbedded_Crypto)
 FCClassElement("CryptoInitializer", "", gEmbedded_CryptoInitializer)
 #endif
@@ -1196,7 +1196,7 @@ FCClassElement("Object", "System", gObjectFuncs)
 FCClassElement("ObjectMarshaler", "System.StubHelpers", gObjectMarshalerFuncs)
 #endif
 
-#if defined(TARGET_UNIX) && !defined(CROSSGEN_COMPILE)
+#if defined(TARGET_UNIX) && !defined(CROSSGEN_COMPILE) && !defined(__APPLE__)
 FCClassElement("OpenSsl", "", gEmbedded_OpenSsl)
 #endif
 
@@ -1217,7 +1217,7 @@ FCClassElement("SafeTypeNameParserHandle", "System", gSafeTypeNameParserHandle)
 
 FCClassElement("Signature", "System", gSignatureNative)
 
-#if defined(TARGET_UNIX) && !defined(CROSSGEN_COMPILE)
+#if defined(TARGET_UNIX) && !defined(CROSSGEN_COMPILE) && !defined(__APPLE__)
 FCClassElement("Ssl", "", gEmbedded_Ssl)
 #endif
 
