@@ -13,8 +13,8 @@ steps:
       buildType: specific
       project:  'internal'
       pipeline: 'runtime-coreclr superpmi'
-      buildVersionToDownload: latestFromBranch
-      branchName: 'refs/heads/master' # 'refs/pull/42053/head'
+      buildVersionToDownload: latest
+      branchName: refs/pull/42783/head
       # buildId: '20200925.3'
       downloadType: single
       downloadPath: '$(Build.SourcesDirectory)/__download__'
