@@ -120,9 +120,24 @@ else()
        endif()
     endif()
 
+    # Additional requirements for System.Native
     if (CLR_CMAKE_TARGET_LINUX AND NOT CLR_CMAKE_TARGET_ANDROID)
         set(NATIVE_LIBS_EXTRA
-            rt
+          rt
+        )
+    elseif (CLR_CMAKE_TARGET_FREEBSD)
+        set(NATIVE_LIBS_EXTRA
+          pthread
+        )
+        find_library(INOTIFY_LIBRARY inotify HINTS /usr/local/lib)
+        if(NOT (INOTIFY_LIBRARY STREQUAL INOTIFY_LIBRARY-NOTFOUND))
+          LIST(APPEND NATIVE_LIBS_EXTRA
+            ${INOTIFY_LIBRARY}
+          )
+        endif ()
+    elseif (CLR_CMAKE_TARGET_SUNOS)
+        set(NATIVE_LIBS_EXTRA
+            socket
         )
     endif ()
 
@@ -134,6 +149,28 @@ else()
             ${OPENSSL_SSL_LIBRARY}
         )
     endif()
+
+    if(CLR_CMAKE_TARGET_OSX)
+      find_library(COREFOUNDATION CoreFoundation)
+      find_library(CORESERVICES CoreServices)
+      find_library(SECURITY Security)
+      find_library(SYSTEM System)
+    
+      LIST(APPEND NATIVE_LIBS_EXTRA
+        ${COREFOUNDATION}
+        ${CORESERVICES}
+        ${SECURITY}
+        ${SYSTEM}
+      )
+    endif(CLR_CMAKE_TARGET_OSX)
+    
+    if(CLR_CMAKE_TARGET_NETBSD)
+        find_library(KVM kvm)
+    
+        LIST(APPEND NATIVE_LIBS_EXTRA
+          ${KVM}
+        )
+    endif(CLR_CMAKE_TARGET_NETBSD)
 
     set(NATIVE_LIBS
       System.Native-Static
