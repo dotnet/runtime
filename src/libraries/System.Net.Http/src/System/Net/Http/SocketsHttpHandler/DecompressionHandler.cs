@@ -211,6 +211,11 @@ namespace System.Net.Http
             { }
 
             protected override Stream GetDecompressedStream(Stream originalStream) =>
+                // As described in RFC 2616, the deflate content-coding is actually
+                // the "zlib" format (RFC 1950) in combination with the "deflate"
+                // compression algrithm (RFC 1951).  So while potentially
+                // counterintuitive based on naming, this needs to use ZLibStream
+                // rather than DeflateStream.
                 new ZLibStream(originalStream, CompressionMode.Decompress);
         }
 
