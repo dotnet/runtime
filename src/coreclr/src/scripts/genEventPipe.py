@@ -392,10 +392,10 @@ def generateEventPipeImplFiles(
                 eventpipeImpl.write(stdprolog_cpp)
 
                 header = """
-#include "{root:s}/vm/common.h"
-#include "{root:s}/vm/eventpipeprovider.h"
-#include "{root:s}/vm/eventpipeevent.h"
-#include "{root:s}/vm/eventpipe.h"
+#include <common.h>
+#include <eventpipeprovider.h>
+#include <eventpipeevent.h>
+#include <eventpipe.h>
 
 #if defined(TARGET_UNIX)
 #define wcslen PAL_wcslen
