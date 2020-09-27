@@ -6,9 +6,9 @@
     <Project Include="$(MSBuildThisFileDirectory)Common\dirs.proj" />
   </ItemGroup>
 
-  <Import Project="$(RepoRoot)\src\coreclr\tests\Directory.Build.targets" />
+  <Import Project="$(RepoRoot)\src\tests\Directory.Build.targets" />
 
-  <Import Project="$(RepoRoot)\src\coreclr\tests\dir.traversal.targets" />
+  <Import Project="$(RepoRoot)\src\tests\Common\dir.traversal.targets" />
 
   <PropertyGroup>
     <TraversalBuildDependsOn>
@@ -18,18 +18,18 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <RestoreProjects Include="$(RepoRoot)src\coreclr\tests\scripts\scripts.csproj" />
+    <RestoreProjects Include="$(MSBuildThisFileDirectory)Common\scripts\scripts.csproj" />
     <RestoreProjects Include="$(MSBuildThisFileDirectory)Common\test_dependencies_fs\test_dependencies.fsproj" />
     <RestoreProjects Include="$(MSBuildThisFileDirectory)Common\test_dependencies\test_dependencies.csproj" />
     <RestoreProjects Include="$(MSBuildThisFileDirectory)Common\CoreCLRTestLibrary\CoreCLRTestLibrary.csproj" />
-    <RestoreProjects Include="$(RepoRoot)src\coreclr\tests\external\external.csproj" />
+    <RestoreProjects Include="$(MSBuildThisFileDirectory)Common\external\external.csproj" />
     <RestoreProjects Include="$(MSBuildThisFileDirectory)Common\ilasm\ilasm.ilproj" />
   </ItemGroup>
 
   <Target Name="BuildTargetingPack" AfterTargets="BatchRestorePackages" Condition="$(__SkipTargetingPackBuild) != 'true'">
     <Message Text="Building Targeting Pack" Importance="High" />
     <Error  Text="TargetOS has not been specified. Please do that then run build again."  Condition="'$(TargetOS)' == 'AnyOS'" />
-    <MSBuild Projects="$(RepoRoot)src\coreclr\tests\external\external.csproj"
+    <MSBuild Projects="$(MSBuildThisFileDirectory)Common\external\external.csproj"
              Targets="Build" />
   </Target>
 
