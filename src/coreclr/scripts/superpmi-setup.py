@@ -261,7 +261,7 @@ def copy_files(src_path, dst_path, file_names):
 
     print('### Copying below files to {0}:'.format(dst_path))
     print('')
-    print(os.linesep.join(file_names))
+    print(file_names)
     for f in file_names:
         # Create same structure in dst so we don't clobber same files names present in different directories
         dst_path_of_file = f.replace(src_path, dst_path)
@@ -366,7 +366,8 @@ def main(main_args):
 
     # test
     tests_artifacts = path.join(pmiassemblies_directory, "Tests")
-    partition_files(coreclr_args.tests_directory, tests_artifacts, coreclr_args.max_size, ["Core_Root"])
+    # TODO: Disable SPMI for P1 tests
+    # partition_files(coreclr_args.tests_directory, tests_artifacts, coreclr_args.max_size, ["Core_Root"])
 
     # Set variables
     print('Setting pipeline variables:')
