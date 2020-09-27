@@ -24,56 +24,35 @@ parameters:
   mchFileLocation: ''             # required -- path to mchFileLocation
   mchFileTag: ''                  # required -- mch file tag to use
 
-  variables:
-      HelixSource: ${{ parameters.helixSource }}
-      HelixType: ${{ parameters.helixType }}
-      HelixPreCommands: ''
-      HelixAccessToken: ''
-      HelixTargetQueues: ${{ parameters.helixTargetQueues }}
-      Creator: ${{ parameters.creator }}
-      WorkItemTimeout: ${{ parameters.workItemTimeout }}
-      WorkItemDirectory: ${{ parameters.workItemDirectory }}
-      CorrelationPayloadDirectory: ${{ parameters.correlationPayloadDirectory }}
-      BuildConfig: ${{ parameters.buildConfig }}
-      osGroup: ${{ parameters.osGroup }}
-      osSubgroup: ${{ parameters.osSubgroup }}
-      archType: ${{ parameters.archType }}
-      PythonScript: ${{ parameters.pythonScript }}
-      PmiAssembliesSubDirectory: ${{ parameters.pmiAssembliesSubDirectory }}
-      OutputSPMICollectionName: ${{ parameters.outputSPMICollectionName }}
-      Core_Root_Dir: ${{ parameters.coreRootDir }}
-      MchFilesLocation: ${{ parameters.mchFileLocation }}
-      MchFileTag: ${{ parameters.mchFileTag }}
-
      # Run superpmi collection in helix
     - template: /eng/common/templates/steps/superpmi-send-to-helix.yml
       parameters:
-        HelixSource: $(HelixSource)
-        HelixType: $(HelixType)
+        HelixSource: ${{ parameters.helixSource }}
+        HelixType: ${{ parameters.helixType }}
         HelixPreCommands: ''
         HelixAccessToken: ''
-        HelixTargetQueues: $(HelixTargetQueues)
-        Creator: $(Creator)
-        WorkItemTimeout: $(WorkItemTimeout)
-        WorkItemDirectory: $(WorkItemDirectory)
-        CorrelationPayloadDirectory: $(CorrelationPayloadDirectory)
-        BuildConfig: $(BuildConfig)
-        osGroup: $(osGroup)
-        PmiAssembliesSubDirectory: $(PmiAssembliesSubDirectory)
-        OutputSPMICollectionName: $(OutputSPMICollectionName)
+        HelixTargetQueues: ${{ parameters.helixTargetQueues }}
+        Creator: ''
+        WorkItemTimeout: ${{ parameters.workItemTimeout }}
+        WorkItemDirectory: ${{ parameters.workItemDirectory }}
+        CorrelationPayloadDirectory: ${{ parameters.correlationPayloadDirectory}}
+        BuildConfig: ${{ parameters.buildConfig}}
+        osGroup: ${{ parameters.osGroup }}
+        PmiAssembliesSubDirectory: ${{ parameters.pmiAssembliesSubDirectory}}
+        OutputSPMICollectionName: ${{ parameters.outputSPMICollectionName }}
 
     - task: PublishPipelineArtifact@1
       displayName: Publish SuperPMI collection
       inputs:
         targetPath: $(Build.SourcesDirectory)/artifacts/helixresults
-        artifactName: 'SuperPMI_$(OutputSPMICollectionName)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.runtimeType }}_${{ parameters.codeGenType }}'
+        artifactName: 'SuperPMI_${{ parameters.outputSPMICollectionName}}_${{ parameters.osGroup}}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig}}_${{ parameters.runtimeType }}_${{ parameters.codeGenType }}'
 
-    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py merge-mch -pattern $(MchFilesLocation)$(OutputSPMICollectionName).pmi*.mch  -output_mch_path $(MchFilesLocation)$(OutputSPMICollectionName).pmi.$(MchFileTag).mch
+    - script: ${{ parameters.pythonScript }} $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py merge-mch -pattern ${{ parameters.mchFileLocation}}${{ parameters.outputSPMICollectionName}}.pmi*.mch  -output_mch_path ${{ parameters.mchFileLocation}}${{ parameters.outputSPMICollectionName}}.pmi.${{ parameters.mchFileTag }}.mch
       displayName: ${{ format('Merge {0} SuperPMI collections', parameters.outputSPMICollectionName) }}
 
     # For now, we won't upload merged collection as an artifact.
 
-    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py upload -arch $(archType) -build_type $(buildConfig) -mch_files $(MchFilesLocation)$(OutputSPMICollectionName).pmi.$(MchFileTag).mch -core_root $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).x64.$(buildConfigUpper)
+    - script: ${{ parameters.pythonScript }} $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py upload -arch ${{ parameters.archType }} -build_type ${{ parameters.buildConfig}} -mch_files ${{ parameters.mchFileLocation}}${{ parameters.outputSPMICollectionName}}.pmi.${{ parameters.mchFileTag }}.mch -core_root ${{ parameters.coreRootDir }}
       displayName: Upload SuperPMI collection to Azure Storage
       env:
         CLRJIT_AZ_KEY: $(clrjit_key1) # secret key stored as variable in pipeline
@@ -82,6 +61,6 @@ parameters:
       displayName: Publish Logs
       inputs:
         targetPath: $(Build.SourcesDirectory)/artifacts/log
-        artifactName: 'SuperPMI_$(OutputSPMICollectionName)_Logs_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.runtimeType }}_${{ parameters.codeGenType }}'
+        artifactName: 'SuperPMI_${{ parameters.outputSPMICollectionName}}_Logs_${{ parameters.osGroup}}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig}}_${{ parameters.runtimeType }}_${{ parameters.codeGenType }}'
       continueOnError: true
       condition: always()
