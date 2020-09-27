@@ -14,6 +14,7 @@ parameters:
   helixType: ''                   # required -- helix type
   helixTargetQueues: ''           # required -- helix target queue to run the job on
   creator: ''                     # required -- creator
+  helixAccessToken: ''            # required -- access token to make Helix API requests; should be provided by the appropriate variable group
   workItemTimeout: 4:00           # optional -- work item timeout
   workItemDirectory: ''           # required -- work item directory
   correlationPayloadDirectory: '' # required -- correlation payload directory
@@ -32,9 +33,9 @@ steps:
       HelixSource: ${{ parameters.helixSource }}
       HelixType: ${{ parameters.helixType }}
       HelixPreCommands: ''
-      HelixAccessToken: ''
+      HelixAccessToken: ${{ parameters.helixAccessToken }}
       HelixTargetQueues: ${{ parameters.helixTargetQueues }}
-      Creator: ''
+      Creator: ${{ parameters.creator }}
       WorkItemTimeout: ${{ parameters.workItemTimeout }}
       WorkItemDirectory: ${{ parameters.workItemDirectory }}
       CorrelationPayloadDirectory: ${{ parameters.correlationPayloadDirectory}}
@@ -42,6 +43,7 @@ steps:
       osGroup: ${{ parameters.osGroup }}
       PmiAssembliesSubDirectory: ${{ parameters.pmiAssembliesSubDirectory}}
       OutputSPMICollectionName: ${{ parameters.outputSPMICollectionName }}
+      DisplayNamePrefix: ${{ format('Send job to Helix ({0})', parameters.outputSPMICollectionName) }}
 
   - task: PublishPipelineArtifact@1
     displayName: Publish SuperPMI collection

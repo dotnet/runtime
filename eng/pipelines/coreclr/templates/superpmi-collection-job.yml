@@ -96,6 +96,7 @@ jobs:
         helixType: 'test/superpmi/$(_Framework)/$(Architecture)'
         helixTargetQueues: $(Queue)
         helixPreCommands: $(HelixPreCommand)
+        helixApiAccessToken: $(HelixApiAccessToken)
         creator: $(Creator)
         workItemTimeout: 4:00 # 4 hours
         workItemDirectory: '$(WorkItemDirectory)'
