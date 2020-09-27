@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Security.Cryptography;
-
 namespace System
 {
     public partial struct Guid
@@ -15,9 +13,7 @@ namespace System
             // Guid.NewGuid is often used as a cheap source of random data that are sometimes used for security purposes.
             // Windows implementation uses secure RNG to implement it. We use secure RNG for Unix too to avoid subtle security
             // vulnerabilities in applications that depend on it. See https://github.com/dotnet/runtime/issues/42752 for details.
-            int res = Interop.Sys.GetCryptographicallySecureRandomBytes((byte*)&g, sizeof(Guid));
-            if (res != 0)
-                throw new CryptographicException();
+            Interop.GetCryptographicallySecureRandomBytes((byte*)&g, sizeof(Guid));
 
             const ushort VersionMask = 0xF000;
             const ushort RandomGuidVersion = 0x4000;
