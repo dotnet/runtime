@@ -15,6 +15,7 @@ steps:
       pipeline: 'runtime-coreclr outerloop'
       buildVersionToDownload: 'latest'
       branchName: 'refs/heads/master'
+      allowPartiallySucceededBuilds: true
       # buildId: '20200925.3'
       downloadType: single
       downloadPath: '$(Build.SourcesDirectory)/__download__'
