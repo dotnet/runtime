@@ -323,9 +323,16 @@ namespace Microsoft.WebAssembly.Diagnostics
             SequencePoint prev = null;
             foreach (var sp in DebugInformation.SequencePoints)
             {
-                if (sp.Offset > pos)
+                if (sp.Offset > pos) {
+                    //get the earlier line number if the offset is in a hidden sequence point and has a earlier line number available
+                    // if is doesn't continue and get the next line number that is not in a hidden sequence point
+                    if (sp.IsHidden && prev == null)
+                        continue;
                     break;
-                prev = sp;
+                }
+
+                if (!sp.IsHidden)
+                    prev = sp;
             }
 
             if (prev != null)
@@ -528,6 +535,9 @@ namespace Microsoft.WebAssembly.Diagnostics
         public int Id => id;
         public string Name => image.Name;
 
+        // "System.Threading", instead of "System.Threading, Version=5.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a"
+        public string AssemblyNameUnqualified => image.Assembly.Name.Name;
+
         public SourceFile GetDocById(int document)
         {
             return sources.FirstOrDefault(s => s.SourceId.Document == document);
@@ -702,11 +712,13 @@ namespace Microsoft.WebAssembly.Diagnostics
         List<AssemblyInfo> assemblies = new List<AssemblyInfo>();
         readonly HttpClient client;
         readonly ILogger logger;
+        readonly IAssemblyResolver resolver;
 
         public DebugStore(ILogger logger, HttpClient client)
         {
             this.client = client;
             this.logger = logger;
+            this.resolver = new DefaultAssemblyResolver();
         }
 
         public DebugStore(ILogger logger) : this(logger, new HttpClient())
@@ -716,6 +728,35 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             public string Url { get; set; }
             public Task<byte[][]> Data { get; set; }
+        }
+
+        public IEnumerable<SourceFile> Add(SessionId sessionId, byte[] assembly_data, byte[] pdb_data)
+        {
+            AssemblyInfo assembly = null;
+            try
+            {
+                assembly = new AssemblyInfo(this.resolver, sessionId.ToString(), assembly_data, pdb_data);
+            }
+            catch (Exception e)
+            {
+                logger.LogDebug($"Failed to load assembly: ({e.Message})");
+                yield break;
+            }
+
+            if (assembly == null)
+                yield break;
+
+            if (GetAssemblyByUnqualifiedName(assembly.AssemblyNameUnqualified) != null)
+            {
+                logger.LogDebug($"Skipping adding {assembly.Name} into the debug store, as it already exists");
+                yield break;
+            }
+
+            assemblies.Add(assembly);
+            foreach (var source in assembly.Sources)
+            {
+                yield return source;
+            }
         }
 
         public async IAsyncEnumerable<SourceFile> Load(SessionId sessionId, string[] loaded_files, [EnumeratorCancellation] CancellationToken token)
@@ -751,14 +792,13 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
             }
 
-            var resolver = new DefaultAssemblyResolver();
             foreach (var step in steps)
             {
                 AssemblyInfo assembly = null;
                 try
                 {
                     var bytes = await step.Data.ConfigureAwait(false);
-                    assembly = new AssemblyInfo(resolver, step.Url, bytes[0], bytes[1]);
+                    assembly = new AssemblyInfo(this.resolver, step.Url, bytes[0], bytes[1]);
                 }
                 catch (Exception e)
                 {
@@ -766,6 +806,12 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
                 if (assembly == null)
                     continue;
+
+                if (GetAssemblyByUnqualifiedName(assembly.AssemblyNameUnqualified) != null)
+                {
+                    logger.LogDebug($"Skipping loading {assembly.Name} into the debug store, as it already exists");
+                    continue;
+                }
 
                 assemblies.Add(assembly);
                 foreach (var source in assembly.Sources)
@@ -778,6 +824,8 @@ namespace Microsoft.WebAssembly.Diagnostics
         public SourceFile GetFileById(SourceId id) => AllSources().SingleOrDefault(f => f.SourceId.Equals(id));
 
         public AssemblyInfo GetAssemblyByName(string name) => assemblies.FirstOrDefault(a => a.Name.Equals(name, StringComparison.InvariantCultureIgnoreCase));
+
+        public AssemblyInfo GetAssemblyByUnqualifiedName(string name) => assemblies.FirstOrDefault(a => a.AssemblyNameUnqualified.Equals(name, StringComparison.InvariantCultureIgnoreCase));
 
         /*
         V8 uses zero based indexing for both line and column.

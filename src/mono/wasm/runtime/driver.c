@@ -36,6 +36,7 @@ void mono_wasm_enable_debugging (int);
 
 int mono_wasm_register_root (char *start, size_t size, const char *name);
 void mono_wasm_deregister_root (char *addr);
+int mono_wasm_assembly_already_added (const char *assembly_name);
 
 void mono_ee_interp_init (const char *opts);
 void mono_marshal_ilgen_init (void);
@@ -54,6 +55,12 @@ static MonoClass* datetimeoffset_class;
 static MonoClass* uri_class;
 static MonoClass* task_class;
 static MonoClass* safehandle_class;
+
+static int resolved_datetime_class = 0,
+	resolved_datetimeoffset_class = 0,
+	resolved_uri_class = 0,
+	resolved_task_class = 0,
+	resolved_safehandle_class = 0;
 
 int mono_wasm_enable_gc = 1;
 
@@ -194,6 +201,22 @@ mono_wasm_add_assembly (const char *name, const unsigned char *data, unsigned in
 	assemblies = entry;
 	++assembly_count;
 	return mono_has_pdb_checksum (data, size);
+}
+
+EMSCRIPTEN_KEEPALIVE int
+mono_wasm_assembly_already_added (const char *assembly_name)
+{
+	if (assembly_count == 0)
+		return 0;
+
+	WasmAssembly *entry = assemblies;
+	while (entry != NULL) {
+		if (strcmp (entry->assembly.name, assembly_name) == 0)
+			return 1;
+		entry = entry->next;
+	}
+
+	return 0;
 }
 
 EMSCRIPTEN_KEEPALIVE void
@@ -584,8 +607,10 @@ mono_wasm_string_from_js (const char *str)
 static int
 class_is_task (MonoClass *klass)
 {
-	if (!task_class)
+	if (!task_class && !resolved_task_class) {
 		task_class = mono_class_from_name (mono_get_corlib(), "System.Threading.Tasks", "Task");
+		resolved_task_class = 1;
+	}
 
 	if (task_class && (klass == task_class || mono_class_is_subclass_of(klass, task_class, 0)))
 		return 1;
@@ -638,16 +663,23 @@ mono_wasm_get_obj_type (MonoObject *obj)
 	MonoType *type = mono_class_get_type (klass);
 	obj = NULL;
 
-	if (!datetime_class)
+	if (!datetime_class && !resolved_datetime_class) {
 		datetime_class = mono_class_from_name (mono_get_corlib(), "System", "DateTime");
-	if (!datetimeoffset_class)
+		resolved_datetime_class = 1;
+	}
+	if (!datetimeoffset_class && !resolved_datetimeoffset_class) {
 		datetimeoffset_class = mono_class_from_name (mono_get_corlib(), "System", "DateTimeOffset");
-	if (!uri_class) {
+		resolved_datetimeoffset_class = 1;
+	}
+	if (!uri_class && !resolved_uri_class) {
 		MonoException** exc = NULL;
 		uri_class = mono_get_uri_class(exc);
+		resolved_uri_class = 1;
 	}
-	if (!safehandle_class)
+	if (!safehandle_class && !resolved_safehandle_class) {
 		safehandle_class = mono_class_from_name (mono_get_corlib(), "System.Runtime.InteropServices", "SafeHandle");
+		resolved_safehandle_class = 1;
+	}
 
 	switch (mono_type_get_type (type)) {
 	// case MONO_TYPE_CHAR: prob should be done not as a number?

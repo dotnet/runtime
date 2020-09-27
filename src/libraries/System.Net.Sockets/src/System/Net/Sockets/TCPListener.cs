@@ -211,13 +211,13 @@ namespace System.Net.Sockets
             TaskToApm.Begin(AcceptSocketAsync(), callback, state);
 
         public Socket EndAcceptSocket(IAsyncResult asyncResult) =>
-            TaskToApm.End<Socket>(asyncResult);
+            EndAcceptCore<Socket>(asyncResult);
 
         public IAsyncResult BeginAcceptTcpClient(AsyncCallback? callback, object? state) =>
             TaskToApm.Begin(AcceptTcpClientAsync(), callback, state);
 
         public TcpClient EndAcceptTcpClient(IAsyncResult asyncResult) =>
-            TaskToApm.End<TcpClient>(asyncResult);
+            EndAcceptCore<TcpClient>(asyncResult);
 
         public Task<Socket> AcceptSocketAsync()
         {
@@ -278,6 +278,20 @@ namespace System.Net.Sockets
             {
                 SetIPProtectionLevel(_allowNatTraversal.GetValueOrDefault());
                 _allowNatTraversal = null; // Reset value to avoid affecting more sockets
+            }
+        }
+
+        private TResult EndAcceptCore<TResult>(IAsyncResult asyncResult)
+        {
+            try
+            {
+                return TaskToApm.End<TResult>(asyncResult);
+            }
+            catch (SocketException) when (!_active)
+            {
+                // Socket.EndAccept(iar) throws ObjectDisposedException when the underlying socket gets closed.
+                // TcpClient's documented behavior was to propagate that exception, we need to emulate it for compatibility:
+                throw new ObjectDisposedException(typeof(Socket).FullName);
             }
         }
     }

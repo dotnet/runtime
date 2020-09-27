@@ -19,7 +19,7 @@ namespace System.Text.Json
         /// Specifies that values should be used more appropriate to web-based scenarios.
         /// </summary>
         /// <remarks>
-        /// This option implies that property names are treated as case-insensitive and that "camelCase" name formatting should be employed.
+        /// This option implies that property names are treated as case-insensitive, "camelCase" name formatting should be employed, and that numbers can be read from JSON strings.
         /// </remarks>
         Web = 1
     }
