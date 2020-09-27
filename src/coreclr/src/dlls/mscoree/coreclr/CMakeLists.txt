@@ -126,6 +126,15 @@ else()
         )
     endif ()
 
+    # Additional requirements for System.Security.Cryptography.Native.OpenSsl
+    if(NOT FEATURE_DISTRO_AGNOSTIC_SSL)
+        find_package(OpenSSL)
+        list(APPEND NATIVE_LIBS_EXTRA
+            ${OPENSSL_CRYPTO_LIBRARY}
+            ${OPENSSL_SSL_LIBRARY}
+        )
+    endif()
+
     set(NATIVE_LIBS
       System.Native-Static
       System.Net.Security.Native-Static

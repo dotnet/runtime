@@ -444,6 +444,8 @@ if [[ "$__PortableBuild" == 0 ]]; then
     __CommonMSBuildArgs="$__CommonMSBuildArgs /p:PortableBuild=false"
 fi
 
+__CMakeArgs="-DFEATURE_DISTRO_AGNOSTIC_SSL=$__PortableBuild $__CMakeArgs"
+
 # Configure environment if we are doing a cross compile.
 if [[ "$__CrossBuild" == 1 ]]; then
     CROSSCOMPILE=1
