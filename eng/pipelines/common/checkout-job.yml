@@ -36,6 +36,14 @@ jobs:
 
   steps:
 
+  - task: PowerShell@2
+    name: Blah
+    displayName: Displaying build id
+    inputs:
+      targetType: inline
+      script: |
+          Write-Host buildId is $Env:Build_BuildId
+
   - template: /eng/pipelines/common/download-specific-artifact-step.yml
     parameters:
       unpackFolder: $(buildProductRootFolderPath)
