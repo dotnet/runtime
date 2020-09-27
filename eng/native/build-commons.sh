@@ -444,7 +444,21 @@ if [[ "$__PortableBuild" == 0 ]]; then
     __CommonMSBuildArgs="$__CommonMSBuildArgs /p:PortableBuild=false"
 fi
 
-__CMakeArgs="-DFEATURE_DISTRO_AGNOSTIC_SSL=$__PortableBuild $__CMakeArgs"
+if [[ "$__BuildArch" == wasm ]]; then
+    # nothing to do here
+    true
+elif [[ "$__TargetOS" == iOS ]]; then
+    # nothing to do here
+    true
+elif [[ "$__TargetOS" == tvOS ]]; then
+    # nothing to do here
+    true
+elif [[ "$__TargetOS" == Android && -z "$ROOTFS_DIR" ]]; then
+    # nothing to do here
+    true
+else
+    __CMakeArgs="-DFEATURE_DISTRO_AGNOSTIC_SSL=$__PortableBuild $__CMakeArgs"
+fi
 
 # Configure environment if we are doing a cross compile.
 if [[ "$__CrossBuild" == 1 ]]; then

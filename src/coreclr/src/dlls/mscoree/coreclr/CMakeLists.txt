@@ -163,7 +163,14 @@ else()
         ${SYSTEM}
       )
     endif(CLR_CMAKE_TARGET_OSX)
-    
+
+    # Always build portable on macOS because OpenSSL is not a system component
+    # and our prebuilts should not assume a specific ABI version for the types
+    # that use OpenSSL at runtime.
+    if (CLR_CMAKE_TARGET_OSX)
+        set(FEATURE_DISTRO_AGNOSTIC_SSL True)
+    endif()
+
     if(CLR_CMAKE_TARGET_NETBSD)
         find_library(KVM kvm)
     
