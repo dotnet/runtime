@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Net.Quic.Implementations.MsQuic.Internal;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
@@ -84,6 +85,29 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             return false;
         }
 
+        private class AsyncSocketArgs : SocketAsyncEventArgs
+        {
+            public AsyncSocketArgs()
+            {
+
+            }
+
+            public ResettableCompletionSource<SocketReceiveFromResult> CompletionSource { get; } = new ResettableCompletionSource<SocketReceiveFromResult>();
+
+            protected override void OnCompleted(SocketAsyncEventArgs e)
+            {
+                CompletionSource.Complete(
+                    new SocketReceiveFromResult()
+                    {
+                        ReceivedBytes = e.SocketError == SocketError.Success ? e.BytesTransferred : 0,
+                        RemoteEndPoint = e.RemoteEndPoint!
+                    });
+            }
+        }
+
+        private AsyncSocketArgs _socketReceiveEventArgs = new AsyncSocketArgs();
+
+
         protected override int ReceiveFrom(byte[] buffer, ref EndPoint sender)
         {
             sender = _remoteEndPoint;
@@ -91,21 +115,31 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             return Socket.Receive(buffer, SocketFlags.None, out _);
         }
 
-        protected override async Task<SocketReceiveFromResult> ReceiveFromAsync(byte[] buffer, EndPoint sender,
+        private ValueTask<SocketReceiveFromResult> ReceiveFromAsyncCore(byte[] buffer, EndPoint sender,
             CancellationToken token)
         {
-            // TOOD-RZ: Get rid of this try-catch block
-            int bytes;
-            try
+            _socketReceiveEventArgs.SetBuffer(buffer);
+            _socketReceiveEventArgs.SocketFlags = SocketFlags.None;
+            _socketReceiveEventArgs.RemoteEndPoint = _remoteEndPoint;
+
+            if (Socket.ReceiveAsync(_socketReceiveEventArgs))
             {
-                bytes = await Socket.ReceiveAsync(buffer, SocketFlags.None, token);
+                return _socketReceiveEventArgs.CompletionSource.GetValueTask();
             }
-            catch (SocketException e)
-            {
-                bytes = 0;
-            }
+
             // use method without explicit address because we use connected socket
-            return new SocketReceiveFromResult {ReceivedBytes = bytes, RemoteEndPoint = _remoteEndPoint};
+            return new ValueTask<SocketReceiveFromResult>(
+                new SocketReceiveFromResult
+                {
+                    ReceivedBytes = _socketReceiveEventArgs.BytesTransferred,
+                    RemoteEndPoint = _remoteEndPoint
+                });
+        }
+
+        protected override Task<SocketReceiveFromResult> ReceiveFromAsync(byte[] buffer, EndPoint sender,
+            CancellationToken token)
+        {
+            return ReceiveFromAsyncCore(buffer, sender, token).AsTask();
         }
 
         protected override void SendTo(byte[] buffer, int size, EndPoint receiver)
