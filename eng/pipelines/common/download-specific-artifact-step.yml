@@ -11,8 +11,8 @@ steps:
     displayName: 'Download specific ${{ parameters.displayName }}'
     inputs:
       buildType: specific
-      project:  'dnceng'
-      pipeline: 'runtime'
+      project:  'internal'
+      pipeline: 'runtime-coreclr superpmi'
       buildVersionToDownload: specific
       branchName: 'refs/pull/42053/head'
       buildId: '20200925.3'
