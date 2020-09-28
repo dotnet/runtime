@@ -6683,6 +6683,14 @@ void Compiler::fgValueNumberBlockAssignment(GenTree* tree)
                         {
                             var_types     indType            = lclVarTree->TypeGet();
                             ValueNum      fieldSeqVN         = srcAddrFuncApp.m_args[0];
+                            // It could return a sequence that ends with a pseudo fields that does not make sense for me.
+                            // Is it another bug?
+                            //N006 ( 12, 11) [000013] -A-XG---R---              *  ASG       struct (copy)
+                            //N005 (  3,  2) [000011] D------N----              +--*  LCL_VAR   struct<System.Guid, 16> V01 tmp0         d:2
+                            //N004 (  8,  8) [000007] ---XG-------              \--*  IND       struct
+                            //N003 (  5,  6) [000006] ----G-------                 \--*  ADD       byref
+                            //N001 (  3,  4) [000004] ----G-------                    +--*  CLS_VAR   ref    Hnd=0x8b77438 Fseq[Empty]
+                            //N002 (  1,  1) [000005] ------------                    \--*  CNS_INT   int    4 Fseq[#FirstElem]
                             FieldSeqNode* fldSeqForStaticVar = vnStore->FieldSeqVNToFieldSeq(fieldSeqVN);
                             rhsFldSeq                        = fldSeqForStaticVar;
 #ifdef DEBUG
@@ -6748,8 +6756,15 @@ void Compiler::fgValueNumberBlockAssignment(GenTree* tree)
                     {
                         FieldSeqNode* lastField = rhsFldSeq->GetTail();
                         assert(lastField != nullptr);
-                        CORINFO_FIELD_HANDLE fldHnd = lastField->GetFieldHandle();
-                        rhsClsHnd                   = info.compCompHnd->getFieldClass(fldHnd);
+                        if (!lastField->IsPseudoField())
+                        {
+                            CORINFO_FIELD_HANDLE fldHnd = lastField->GetFieldHandle();
+                            rhsClsHnd = info.compCompHnd->getFieldClass(fldHnd);
+                        }
+                        else
+                        {
+                            isNewUniq = true;
+                        }
                     }
                     else if (rhsVarDsc != nullptr)
                     {
