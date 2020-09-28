@@ -30,7 +30,7 @@ Artifacts will be placed in `artifacts/bin/microsoft.netcore.app.runtime.browser
 
 ### Note: do not mix runtime and library configurations
 
-At this time, it is not possible to specify different configurations for the runtime and libraries.  That is mixing a Release `-runtimeConfigration` with a Debug `-libraryConfiguration` (or `-configuration`), or vice versa will not work.
+At this time, it is not possible to specify different configurations for the runtime and libraries.  That is mixing a Release `-runtimeConfiguration` with a Debug `-libraryConfiguration` (or `-configuration`), or vice versa will not work.
 
 Please only use the `-configuration` option with `Debug` or `Release`, and do not specify a `-runtimeConfiguration` and `-libraryConfiguration`.
 
