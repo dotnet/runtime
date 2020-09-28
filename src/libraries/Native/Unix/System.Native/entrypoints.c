@@ -232,5 +232,22 @@ FCFuncStart(gEmbedded_Sys)
 
     // trimmed
     QCFuncElement("GetNodeName", SystemNative_GetNodeName)
+    // trimmed
+    QCFuncElement("RealPath", SystemNative_RealPath)
+    // trimmed
+    QCFuncElement("GetSid", SystemNative_GetSid)
+
+    // OSX (bsd?) only
+    QCFuncElement("GetTcpGlobalStatistics", "SystemNative_GetTcpGlobalStatistics")
+    QCFuncElement("GetIPv4GlobalStatistics", "SystemNative_GetIPv4GlobalStatistics")
+    QCFuncElement("GetUdpGlobalStatistics", "SystemNative_GetUdpGlobalStatistics")
+    QCFuncElement("GetIcmpv4GlobalStatistics", "SystemNative_GetIcmpv4GlobalStatistics")
+    QCFuncElement("GetIcmpv6GlobalStatistics", "SystemNative_GetIcmpv6GlobalStatistics")
+    QCFuncElement("GetEstimatedTcpConnectionCount", "SystemNative_GetEstimatedTcpConnectionCount")
+    QCFuncElement("GetActiveTcpConnectionInfos", "SystemNative_GetActiveTcpConnectionInfos")
+    QCFuncElement("GetEstimatedUdpListenerCount", "SystemNative_GetEstimatedUdpListenerCount")
+    QCFuncElement("GetActiveUdpListeners", "SystemNative_GetActiveUdpListeners")
+    QCFuncElement("GetNativeIPInterfaceStatistics", "SystemNative_GetNativeIPInterfaceStatistics")
+    QCFuncElement("SystemNative_GetNumRoutes", "SystemNative_GetNumRoutes")
 FCFuncEnd()
 
