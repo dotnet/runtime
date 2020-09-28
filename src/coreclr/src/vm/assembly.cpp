@@ -1965,7 +1965,7 @@ bool Assembly::TrySetTypeLib(_In_ ITypeLib *pNew)
         pNew->AddRef();
 
     return true;
-} // void Assembly::SetTypeLib()
+} // void Assembly::TrySetTypeLib()
 
 #endif // FEATURE_COMINTEROP
 

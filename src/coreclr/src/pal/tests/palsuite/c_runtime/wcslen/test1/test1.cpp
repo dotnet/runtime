@@ -16,7 +16,7 @@
 
 #include <palsuite.h>
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime_wcslen_test1_paltest_wcslen_test1, "c_runtime/wcslen/test1/paltest_wcslen_test1")
 {
     WCHAR str1[] = {'f','o','o',' ',0};
     WCHAR str2[] = {0};

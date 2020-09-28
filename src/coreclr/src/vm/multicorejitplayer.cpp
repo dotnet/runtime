@@ -65,7 +65,7 @@ MulticoreJitCodeStorage::~MulticoreJitCodeStorage()
 
 
 // Callback from MakeJitWorker to store compiled code, under MethodDesc lock
-void MulticoreJitCodeStorage::StoreMethodCode(MethodDesc * pMD, PCODE pCode)
+void MulticoreJitCodeStorage::StoreMethodCode(MethodDesc * pMD, MulticoreJitCodeInfo codeInfo)
 {
     STANDARD_VM_CONTRACT;
 
@@ -76,22 +76,27 @@ void MulticoreJitCodeStorage::StoreMethodCode(MethodDesc * pMD, PCODE pCode)
     }
 #endif
 
-    if (pCode != NULL)
+    if (!codeInfo.IsNull())
     {
         CrstHolder holder(& m_crstCodeMap);
 
 #ifdef MULTICOREJIT_LOGGING
         if (Logging2On(LF2_MULTICOREJIT, LL_INFO1000))
         {
-            MulticoreJitTrace(("%p %p StoredMethodCode", pMD, pCode));
+            MulticoreJitTrace((
+                "%p %p %d %d StoredMethodCode",
+                pMD,
+                codeInfo.GetEntryPoint(),
+                (int)codeInfo.WasTier0Jit(),
+                (int)codeInfo.JitSwitchedToOptimized()));
         }
 #endif
 
-        PCODE code = NULL;
+        MulticoreJitCodeInfo existingCodeInfo;
 
-        if (! m_nativeCodeMap.Lookup(pMD, & code))
+        if (! m_nativeCodeMap.Lookup(pMD, & existingCodeInfo))
         {
-            m_nativeCodeMap.Add(pMD, pCode);
+            m_nativeCodeMap.Add(pMD, codeInfo);
 
             m_nStored ++;
         }
@@ -100,33 +105,40 @@ void MulticoreJitCodeStorage::StoreMethodCode(MethodDesc * pMD, PCODE pCode)
 
 
 // Query from MakeJitWorker: Lookup stored JITted methods
-PCODE MulticoreJitCodeStorage::QueryMethodCode(MethodDesc * pMethod, BOOL shouldRemoveCode)
+MulticoreJitCodeInfo MulticoreJitCodeStorage::QueryAndRemoveMethodCode(MethodDesc * pMethod)
 {
     STANDARD_VM_CONTRACT;
 
-    PCODE code = NULL;
+    MulticoreJitCodeInfo codeInfo;
 
     if (m_nStored > m_nReturned) // Quick check before taking lock
     {
         CrstHolder holder(& m_crstCodeMap);
 
-        if (m_nativeCodeMap.Lookup(pMethod, & code) && shouldRemoveCode)
+        if (m_nativeCodeMap.Lookup(pMethod, & codeInfo))
         {
+            _ASSERTE(!codeInfo.IsNull());
+
             m_nReturned ++;
 
             // Remove it to keep storage small (hopefully flat)
             m_nativeCodeMap.Remove(pMethod);
+
+#ifdef MULTICOREJIT_LOGGING
+            if (Logging2On(LF2_MULTICOREJIT, LL_INFO1000))
+            {
+                MulticoreJitTrace((
+                    "%p %p %d %d QueryAndRemoveMethodCode",
+                    pMethod,
+                    codeInfo.GetEntryPoint(),
+                    (int)codeInfo.WasTier0Jit(),
+                    (int)codeInfo.JitSwitchedToOptimized()));
+            }
+#endif
         }
     }
 
-#ifdef MULTICOREJIT_LOGGING
-    if (Logging2On(LF2_MULTICOREJIT, LL_INFO1000))
-    {
-        MulticoreJitTrace(("%p %p QueryMethodCode", pMethod, code));
-    }
-#endif
-
-    return code;
+    return codeInfo;
 }
 
 
@@ -495,23 +507,53 @@ HRESULT MulticoreJitProfilePlayer::HandleModuleRecord(const ModuleRecord * pMod)
     return hr;
 }
 
-
 #ifndef DACCESS_COMPILE
-class MulticoreJitPrepareCodeConfig : public PrepareCodeConfig
+MulticoreJitPrepareCodeConfig::MulticoreJitPrepareCodeConfig(MethodDesc* pMethod) :
+    PrepareCodeConfig(NativeCodeVersion(pMethod), FALSE, FALSE), m_wasTier0Jit(false)
 {
-public:
-    MulticoreJitPrepareCodeConfig(MethodDesc* pMethod) :
-        PrepareCodeConfig(NativeCodeVersion(pMethod), FALSE, FALSE)
-    {}
+    WRAPPER_NO_CONTRACT;
 
-    virtual BOOL SetNativeCode(PCODE pCode, PCODE * ppAlternateCodeToUse)
-    {
-        MulticoreJitManager & mcJitManager = GetAppDomain()->GetMulticoreJitManager();
-        mcJitManager.GetMulticoreJitCodeStorage().StoreMethodCode(GetMethodDesc(), pCode);
-        return TRUE;
-    }
-};
+#ifdef FEATURE_MULTICOREJIT
+    SetIsForMulticoreJit();
 #endif
+}
+
+BOOL MulticoreJitPrepareCodeConfig::SetNativeCode(PCODE pCode, PCODE * ppAlternateCodeToUse)
+{
+    WRAPPER_NO_CONTRACT;
+
+    MulticoreJitManager & mcJitManager = GetAppDomain()->GetMulticoreJitManager();
+    mcJitManager.GetMulticoreJitCodeStorage().StoreMethodCode(GetMethodDesc(), MulticoreJitCodeInfo(pCode, this));
+    return TRUE;
+}
+
+MulticoreJitCodeInfo::MulticoreJitCodeInfo(PCODE entryPoint, const MulticoreJitPrepareCodeConfig *pConfig)
+{
+    WRAPPER_NO_CONTRACT;
+
+    m_entryPointAndTierInfo = PCODEToPINSTR(entryPoint);
+    _ASSERTE(m_entryPointAndTierInfo != NULL);
+    _ASSERTE((m_entryPointAndTierInfo & (TADDR)TierInfo::Mask) == 0);
+
+#ifdef FEATURE_TIERED_COMPILATION
+    if (pConfig->WasTier0Jit())
+    {
+        m_entryPointAndTierInfo |= (TADDR)TierInfo::WasTier0Jit;
+    }
+
+    if (pConfig->JitSwitchedToOptimized())
+    {
+        m_entryPointAndTierInfo |= (TADDR)TierInfo::JitSwitchedToOptimized;
+    }
+#endif
+}
+#endif // !DACCESS_COMPILE
+
+void MulticoreJitCodeInfo::VerifyIsNotNull() const
+{
+    WRAPPER_NO_CONTRACT;
+    _ASSERTE(!IsNull());
+}
 
 // Call JIT to compile a method
 

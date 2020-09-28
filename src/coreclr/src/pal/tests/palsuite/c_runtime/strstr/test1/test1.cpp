@@ -28,7 +28,7 @@ struct testCase
 
 };
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime_strstr_test1_paltest_strstr_test1, "c_runtime/strstr/test1/paltest_strstr_test1")
 {
     int i=0;
     char *ptr=NULL;

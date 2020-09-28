@@ -815,6 +815,9 @@ public:
 #define GTF_VAR_ITERATOR    0x00800000 // GT_LCL_VAR -- this is a iterator reference in the loop condition
 #define GTF_VAR_CLONED      0x00400000 // GT_LCL_VAR -- this node has been cloned or is a clone
 #define GTF_VAR_CONTEXT     0x00200000 // GT_LCL_VAR -- this node is part of a runtime lookup
+#define GTF_VAR_FOLDED_IND  0x00100000 // GT_LCL_VAR -- this node was folded from *(typ*)&lclVar expression tree in fgMorphSmpOp()
+// where 'typ' is a small type and 'lclVar' corresponds to a normalized-on-store local variable.
+// This flag identifies such nodes in order to make sure that fgDoNormalizeOnStore() is called on their parents in post-order morph.
 
                                        // Relevant for inlining optimizations (see fgInlinePrependStatements)
 
@@ -901,11 +904,11 @@ public:
 #define GTF_ICON_FIELD_HDL          0x40000000 // GT_CNS_INT -- constant is a field handle
 #define GTF_ICON_STATIC_HDL         0x50000000 // GT_CNS_INT -- constant is a handle to static data
 #define GTF_ICON_STR_HDL            0x60000000 // GT_CNS_INT -- constant is a string handle
-#define GTF_ICON_PSTR_HDL           0x70000000 // GT_CNS_INT -- constant is a ptr to a string handle
-#define GTF_ICON_PTR_HDL            0x80000000 // GT_CNS_INT -- constant is a ldptr handle
+#define GTF_ICON_CONST_PTR          0x70000000 // GT_CNS_INT -- constant is a pointer to immutable data, (e.g. IAT_PPVALUE)
+#define GTF_ICON_GLOBAL_PTR         0x80000000 // GT_CNS_INT -- constant is a pointer to mutable data (e.g. from the VM state)
 #define GTF_ICON_VARG_HDL           0x90000000 // GT_CNS_INT -- constant is a var arg cookie handle
 #define GTF_ICON_PINVKI_HDL         0xA0000000 // GT_CNS_INT -- constant is a pinvoke calli handle
-#define GTF_ICON_TOKEN_HDL          0xB0000000 // GT_CNS_INT -- constant is a token handle
+#define GTF_ICON_TOKEN_HDL          0xB0000000 // GT_CNS_INT -- constant is a token handle (other than class, method or field)
 #define GTF_ICON_TLS_HDL            0xC0000000 // GT_CNS_INT -- constant is a TLS ref with offset
 #define GTF_ICON_FTN_ADDR           0xD0000000 // GT_CNS_INT -- constant is a function address
 #define GTF_ICON_CIDMID_HDL         0xE0000000 // GT_CNS_INT -- constant is a class ID or a module ID
@@ -6045,13 +6048,13 @@ struct GenTreePutArgStk : public GenTreeUnOp
 
 #endif // !FEATURE_FASTTAILCALL
 
-    unsigned getArgOffset()
+    unsigned getArgOffset() const
     {
         return gtSlotNum * TARGET_POINTER_SIZE;
     }
 
 #if defined(UNIX_X86_ABI)
-    unsigned getArgPadding()
+    unsigned getArgPadding() const
     {
         return gtPadAlign;
     }
@@ -6063,15 +6066,14 @@ struct GenTreePutArgStk : public GenTreeUnOp
 #endif
 
 #ifdef FEATURE_PUT_STRUCT_ARG_STK
-
-    unsigned getArgSize()
+    unsigned getArgSize() const
     {
         return gtNumSlots * TARGET_POINTER_SIZE;
     }
 
     // Return true if this is a PutArgStk of a SIMD12 struct.
     // This is needed because such values are re-typed to SIMD16, and the type of PutArgStk is VOID.
-    unsigned isSIMD12()
+    unsigned isSIMD12() const
     {
         return (varTypeIsSIMD(gtOp1) && (gtNumSlots == 3));
     }
@@ -6086,7 +6088,7 @@ struct GenTreePutArgStk : public GenTreeUnOp
     };
 
     Kind gtPutArgStkKind;
-    bool isPushKind()
+    bool isPushKind() const
     {
         return (gtPutArgStkKind == Kind::Push) || (gtPutArgStkKind == Kind::PushAllSlots);
     }
@@ -6224,7 +6226,7 @@ struct GenTreePutArgSplit : public GenTreePutArgStk
     // Return Value:
     //    var_type of the register specified by its index.
 
-    var_types GetRegType(unsigned index)
+    var_types GetRegType(unsigned index) const
     {
         assert(index < gtNumRegs);
         var_types result = m_regType[index];
@@ -6246,7 +6248,7 @@ struct GenTreePutArgSplit : public GenTreePutArgStk
     }
 
 #ifdef FEATURE_PUT_STRUCT_ARG_STK
-    unsigned getArgSize()
+    unsigned getArgSize() const
     {
         return (gtNumSlots + gtNumRegs) * TARGET_POINTER_SIZE;
     }

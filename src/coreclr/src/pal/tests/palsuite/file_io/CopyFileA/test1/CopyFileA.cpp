@@ -31,7 +31,7 @@ struct TESTS{
     };
 
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(file_io_CopyFileA_test1_paltest_copyfilea_test1, "file_io/CopyFileA/test1/paltest_copyfilea_test1")
 {
     char szSrcExisting[] =     {"src_existing.tmp"};
     char szSrcNonExistant[] =  {"src_non-existant.tmp"};

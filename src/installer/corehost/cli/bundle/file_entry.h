@@ -37,11 +37,13 @@ namespace bundle
             , m_size(0)
             , m_type(file_type_t::__last)
             , m_relative_path()
+            , m_disabled(false)
         {
         }
 
         file_entry_t(const file_entry_fixed_t *fixed_data)
             :m_relative_path()
+            , m_disabled(false)
         {
             // File_entries in the bundle-manifest are expected to be used 
             // beyond startup (for loading files directly from bundle, lazy extraction, etc.).
@@ -57,7 +59,10 @@ namespace bundle
         int64_t offset() const { return m_offset; }
         int64_t size() const { return m_size; }
         file_type_t type() const { return m_type; }
+        void disable() { m_disabled = true; }
+        bool is_disabled() const { return m_disabled; }
         bool needs_extraction() const;
+        bool matches(const pal::string_t& path) const { return (pal::pathcmp(relative_path(), path) == 0) && !is_disabled(); }
 
         static file_entry_t read(reader_t &reader);
 
@@ -66,6 +71,11 @@ namespace bundle
         int64_t m_size;
         file_type_t m_type;
         pal::string_t m_relative_path; // Path of an embedded file, relative to the extraction directory.
+        // If the file represented by this entry is also found in a servicing location, the servicing location must take precedence.
+        // But in general, bundle will take precedence over on-disk locations everywhere.
+        // So in order to make sure that the servicing location is used, the file entry in the bundle is marked as "disabled"
+        // in such case, and the lookup logic will behave as if the file is not present in the bundle.
+        bool m_disabled;
         bool is_valid() const;
     };
 }

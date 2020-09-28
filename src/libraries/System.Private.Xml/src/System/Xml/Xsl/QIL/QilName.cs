@@ -111,7 +111,7 @@ namespace System.Xml.Xsl.Qil
             {
                 return true;
             }
-            if ((object?)a == null || (object?)b == null)
+            if (a is null || b is null)
             {
                 return false;
             }

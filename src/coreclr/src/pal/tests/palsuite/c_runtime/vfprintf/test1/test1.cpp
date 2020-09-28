@@ -16,7 +16,7 @@
 #include <palsuite.h>
 #include "../vfprintf.h"
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime_vfprintf_test1_paltest_vfprintf_test1, "c_runtime/vfprintf/test1/paltest_vfprintf_test1")
 {
     FILE *fp;
     char testfile[] = "testfile.txt";

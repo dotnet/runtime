@@ -2147,5 +2147,16 @@ public unsafe class Tests {
 		return 0;
 	}
 
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_return_array")]
+	public static extern int[] mono_test_marshal_return_array ();
+
+	public static int test_0_return_array () {
+		try {
+			var arr = mono_test_marshal_return_array ();
+			return 1;
+		} catch (MarshalDirectiveException) {
+			return 0;
+		}
+	}
 }
 

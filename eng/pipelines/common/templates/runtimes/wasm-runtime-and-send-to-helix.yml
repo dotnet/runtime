@@ -30,7 +30,7 @@ parameters:
 
 
 steps:
-  - script: $(Build.SourcesDirectory)/src/coreclr/build-test$(scriptExt) /p:LibrariesConfiguration=${{ parameters.buildConfig }} -ci -skipstressdependencies -excludemonofailures os Browser wasm $(buildConfigUpper)
+  - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) /p:LibrariesConfiguration=${{ parameters.buildConfig }} -ci -skipstressdependencies -excludemonofailures os Browser wasm $(buildConfigUpper)
     displayName: Build Tests
 
   #  Send tests to Helix
@@ -78,6 +78,6 @@ steps:
           # DotNet-HelixApi-Access variable group
           helixAccessToken: $(HelixApiAccessToken)
 
-        helixProjectArguments: '$(Build.SourcesDirectory)/src/coreclr/tests/helixpublishwitharcade.proj'
+        helixProjectArguments: '$(Build.SourcesDirectory)/src/tests/Common/helixpublishwitharcade.proj'
 
         scenarios: normal 
