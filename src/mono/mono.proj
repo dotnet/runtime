@@ -926,8 +926,8 @@
 
   <!-- Run coreclr tests using runtest.py -->
   <Target Name="RunCoreClrTests" DependsOnTargets="ValidateLocalDotnet;PatchCoreClrCoreRoot">
-    <Exec Condition="'$(OS)' == 'Windows_NT'" Command="$(MonoProjectRoot)..\coreclr\tests\runtest.cmd $(CoreClrTestConfig)" ContinueOnError="ErrorAndContinue" />
-    <Exec Condition="'$(OS)' != 'Windows_NT'" Command="$(MonoProjectRoot)../coreclr/tests/./runtest.sh $(CoreClrTestConfig)" ContinueOnError="ErrorAndContinue" />
+    <Exec Condition="'$(OS)' == 'Windows_NT'" Command="$(MonoProjectRoot)..\tests\run.cmd $(CoreClrTestConfig)" ContinueOnError="ErrorAndContinue" />
+    <Exec Condition="'$(OS)' != 'Windows_NT'" Command="$(MonoProjectRoot)../tests/run.sh $(CoreClrTestConfig)" ContinueOnError="ErrorAndContinue" />
   </Target>
 
   <!-- Run Libraries tests using testhost -->

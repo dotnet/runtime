@@ -123,7 +123,7 @@ jobs:
       displayName: Create cross-platform crossgen baseline
       inputs:
         scriptSource: 'filePath'
-        scriptPath: $(Build.SourcesDirectory)/src/coreclr/tests/scripts/crossgen_comparison.py
+        scriptPath: $(Build.SourcesDirectory)/src/tests/Common/scripts/crossgen_comparison.py
         pythonInterpreter: /usr/bin/python3
         ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
           arguments:
@@ -164,7 +164,7 @@ jobs:
           Creator: $(Creator)
         WorkItemTimeout: 3:00 # 3 hours
         WorkItemDirectory: '$(workItemDirectory)'
-        CorrelationPayloadDirectory: '$(Build.SourcesDirectory)/src/coreclr/tests/scripts'
+        CorrelationPayloadDirectory: '$(Build.SourcesDirectory)/src/tests/Common/scripts'
         ${{ if ne(parameters.osName, 'Windows_NT') }}:
           WorkItemCommand:
             chmod +x     $HELIX_WORKITEM_PAYLOAD/crossgen;

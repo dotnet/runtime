@@ -61,7 +61,7 @@ your new runtime.
 
 ## How CoreCLR Tests use corerun.exe
 
-When you execute 'runtime/src/coreclr/build-test.cmd' one of the things that it does is set up a directory where it
+When you execute 'runtime/src/tests/build.cmd' one of the things that it does is set up a directory where it
 gathers the CoreCLR that has just been built with the pieces of the class library that tests need.
 It places this runtime in the directory
 ```bat
@@ -70,7 +70,7 @@ It places this runtime in the directory
 off the CoreCLR Repository.    The way the tests are expected to work is that you set the environment
 variable CORE_ROOT to this directory
 (you don't have to set CORE_LIBRARIES) and you can run any tests.  For example after building the tests
-(running build-test at the repository base) and running 'test\runtest') you can do the following
+(running src\tests\build from the repository base) and running 'src\tests\run') you can do the following
 
 ```bat
     set PATH=%PATH%;%CoreCLR%\artifacts\Product\Windows_NT.x64.Debug

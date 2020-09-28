@@ -585,7 +585,7 @@ namespace System.Runtime.InteropServices
                 if (!SetComObjectData(o, t, Wrapper))
                 {
                     // Another thead already cached the wrapper so use that one instead.
-                    Wrapper = GetComObjectData(o, t);
+                    Wrapper = GetComObjectData(o, t)!;
                 }
             }
 
