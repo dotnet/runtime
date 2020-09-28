@@ -63,7 +63,7 @@ jobs:
         value: '$(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(buildConfigUpper)'
       
       - name: librariesBuildArtifactName
-        value: 'libraries_bin_$(osGroup)$(osSubgroup)_$(archType)_$(parameters.liveLibrariesBuildConfig)'
+        value: 'libraries_bin_$(osGroup)$(osSubgroup)_$(archType)_Release'
 
       - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
         - name: archiveExtension
@@ -80,14 +80,14 @@ jobs:
     # Extra steps that will be passed to the superpmi template and run before sending the job to helix (all of which is done in the template)
 
     # Optionally download live-built libraries
-    - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
-      - template: /eng/pipelines/common/download-specific-artifact-step.yml
-        parameters:
-          unpackFolder: $(librariesDownloadDir)
-          cleanUnpackFolder: false
-          artifactFileName: '$(librariesBuildArtifactName)$(archiveExtension)'
-          artifactName: '$(librariesBuildArtifactName)'
-          displayName: 'live-built libraries'
+    # - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
+    - template: /eng/pipelines/common/download-specific-artifact-step.yml
+      parameters:
+        unpackFolder: $(librariesDownloadDir)
+        cleanUnpackFolder: false
+        artifactFileName: '$(librariesBuildArtifactName)$(archiveExtension)'
+        artifactName: '$(librariesBuildArtifactName)'
+        displayName: 'live-built libraries'
 
     # Download coreclr
     - template: /eng/pipelines/common/download-specific-artifact-step.yml
