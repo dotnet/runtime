@@ -126,4 +126,7 @@
     <Compile Include="$(CommonTestPath)System\Collections\IDictionary.NonGeneric.Tests.netcoreapp.cs"
              Link="Common\System\Collections\IDictionary.NonGeneric.Tests.netcoreapp.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Collections.csproj" />
+  </ItemGroup>
 </Project>

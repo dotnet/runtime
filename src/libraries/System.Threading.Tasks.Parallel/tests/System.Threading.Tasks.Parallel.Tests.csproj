@@ -27,4 +27,7 @@
     <Compile Include="$(CommonTestPath)System\Threading\ThreadPoolHelpers.cs"
              Link="CommonTest\System\Threading\ThreadPoolHelpers.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Threading.Tasks.Parallel.csproj" />
+  </ItemGroup>
 </Project>

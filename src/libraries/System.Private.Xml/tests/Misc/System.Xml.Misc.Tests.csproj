@@ -6,4 +6,7 @@
   <ItemGroup>
     <Compile Include="XmlUrlResolverTests.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\System.Private.Xml.csproj" ReferenceOutputAssembly="false" />
+  </ItemGroup>
 </Project>

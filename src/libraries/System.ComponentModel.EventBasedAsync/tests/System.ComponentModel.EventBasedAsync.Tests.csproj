@@ -14,4 +14,7 @@
     <Compile Include="BackgroundWorkerTests.cs" />
     <Compile Include="TestException.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.ComponentModel.EventBasedAsync.csproj" />
+  </ItemGroup>
 </Project>

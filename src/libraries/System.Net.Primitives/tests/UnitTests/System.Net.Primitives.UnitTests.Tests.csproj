@@ -10,10 +10,6 @@
          System.Net.Internals namespace. -->
     <DefineConstants>$(DefineConstants);SYSTEM_NET_PRIMITIVES_DLL</DefineConstants>
   </PropertyGroup>
-  <!-- Do not reference these assemblies from the TargetingPack since we are building part of the source code for tests. -->
-  <ItemGroup>
-    <DefaultReferenceExclusion Include="System.Net.Primitives" />
-  </ItemGroup>
   <ItemGroup>
     <Compile Include="CookieInternalTest.cs" />
     <Compile Include="CookieContainerTest.cs" />
@@ -109,5 +105,9 @@
              Link="ProductionCode\Common\Interop\Unix\System.Native\Interop.SocketAddress.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.InterfaceNameToIndex.cs"
              Link="ProductionCode\Common\Interop\Unix\System.Native\Interop.InterfaceNameToIndex.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Do not reference since we build part of the source code for tests. -->
+    <ProjectReference Include="..\..\src\System.Net.Primitives.csproj" ReferenceOutputAssembly="false" />
   </ItemGroup>
 </Project>

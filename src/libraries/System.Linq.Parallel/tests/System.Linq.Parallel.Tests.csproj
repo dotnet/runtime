@@ -74,4 +74,7 @@
     <Compile Include="WithCancellationTests.cs" />
     <Compile Include="XunitAssemblyAttributes.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Linq.Parallel.csproj" />
+  </ItemGroup>
 </Project>

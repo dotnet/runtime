@@ -5,4 +5,7 @@
   <ItemGroup>
     <Compile Include="WebProxyTest.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Net.WebProxy.csproj" />
+  </ItemGroup>
 </Project>

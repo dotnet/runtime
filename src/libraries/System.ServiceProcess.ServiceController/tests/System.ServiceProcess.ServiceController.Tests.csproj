@@ -10,6 +10,7 @@
     <Compile Include="ServiceProcessDescriptionAttributeTests.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\src\System.ServiceProcess.ServiceController.csproj" />
     <ProjectReference Include="System.ServiceProcess.ServiceController.TestService\System.ServiceProcess.ServiceController.TestService.csproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'net461'">

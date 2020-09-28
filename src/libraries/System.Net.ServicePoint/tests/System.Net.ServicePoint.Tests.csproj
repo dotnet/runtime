@@ -8,4 +8,7 @@
     <Compile Include="ServicePointManagerTest.cs" />
     <Compile Include="TlsSystemDefault.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Net.ServicePoint.csproj" />
+  </ItemGroup>
 </Project>

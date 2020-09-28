@@ -25,5 +25,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)System.DirectoryServices\src\System.DirectoryServices.csproj" />
+    <ProjectReference Include="..\src\System.Security.Permissions.csproj" />
   </ItemGroup>
 </Project>

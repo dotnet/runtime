@@ -119,8 +119,9 @@
     <Compile Include="$(CommonTestPath)System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs"
              Link="Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs" />
   </ItemGroup>
-  <!-- S.D.SqlClient isn't live built anymore. -->
   <ItemGroup>
+    <!-- S.D.SqlClient isn't live built anymore. -->
     <PackageReference Include="System.Data.SqlClient" Version="$(SystemDataSqlClientVersion)" />
+    <ProjectReference Include="..\src\System.Data.Common.csproj" />
   </ItemGroup>
 </Project>

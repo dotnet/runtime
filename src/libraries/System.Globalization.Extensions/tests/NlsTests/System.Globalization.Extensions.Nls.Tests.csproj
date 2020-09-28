@@ -53,4 +53,7 @@
     </EmbeddedResource>
     <None Include="runtimeconfig.template.json" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\System.Globalization.Extensions.csproj" />
+  </ItemGroup>
 </Project>

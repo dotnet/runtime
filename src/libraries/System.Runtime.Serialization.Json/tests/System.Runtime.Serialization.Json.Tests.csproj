@@ -8,4 +8,7 @@
     <Compile Include="$(TestSourceFolder)..\..\System.Runtime.Serialization.Xml\tests\SerializationTypes.RuntimeOnly.cs" />
     <Compile Include="$(CommonTestPath)System\Runtime\Serialization\Utils.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Runtime.Serialization.Json.csproj" />
+  </ItemGroup>
 </Project>

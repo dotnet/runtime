@@ -15,4 +15,7 @@
     <Compile Include="SDMPI.cs" />
     <Compile Include="SDMXName.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\System.Private.Xml.Linq.csproj" ReferenceOutputAssembly="false" />
+  </ItemGroup>
 </Project>

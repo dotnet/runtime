@@ -10,4 +10,7 @@
     <Compile Include="$(TestSourceFolder)XmlSerializerTests.Internal.cs" />
     <Compile Include="$(TestSourceFolder)XmlSerializerTests.RuntimeOnly.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\System.Private.Xml.csproj" ReferenceOutputAssembly="false" />
+  </ItemGroup>
 </Project>

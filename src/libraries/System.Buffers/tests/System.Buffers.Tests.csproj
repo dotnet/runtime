@@ -11,4 +11,7 @@
     <Compile Include="ArrayPool\UnitTests.cs" />
     <Compile Include="$(CommonTestPath)System\Diagnostics\Tracing\TestEventListener.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Buffers.csproj" />
+  </ItemGroup>
 </Project>

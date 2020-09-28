@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <RootNamespace>System</RootNamespace>
-    <AssemblyName>System.Diagnostics.Tools.Tests</AssemblyName>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <TestRuntime>true</TestRuntime>
   </PropertyGroup>
@@ -9,5 +8,8 @@
     <Compile Include="System\CodeDom\Compiler\GeneratedCodeAttributeTests.cs" />
     <Compile Include="System\Diagnostics\CodeAnalysis\SuppressMessageAttributeTests.cs" />
     <Compile Include="System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAttributeTests.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Diagnostics.Tools.csproj" />
   </ItemGroup>
 </Project>

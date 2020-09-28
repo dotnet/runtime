@@ -77,4 +77,7 @@
              Link="Common\System\Collections\IEnumerable.NonGeneric.Serialization.Tests.cs" />
     <Compile Include="NameObjectCollectionBase\NameObjectCollectionBase.ConstructorTests.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Collections.Specialized.csproj" />
+  </ItemGroup>
 </Project>

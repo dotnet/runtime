@@ -23,4 +23,7 @@
     <Compile Include="SymmetricAlgorithm\Trivial.cs" />
     <Compile Include="ZeroMemoryTests.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Security.Cryptography.Primitives.csproj" />
+  </ItemGroup>
 </Project>

@@ -14,4 +14,7 @@
     <Compile Include="$(CommonTestPath)System\ShouldNotBeInvokedException.cs"
              Link="Common\System\ShouldNotBeInvokedException.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Diagnostics.Contracts.csproj" />
+  </ItemGroup>
 </Project>

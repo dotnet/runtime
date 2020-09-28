@@ -19,4 +19,7 @@
              Link="Common\System\IO\TempFile.cs" />
     <Compile Include="XunitAssemblyAttributes.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.IO.MemoryMappedFiles.csproj" />
+  </ItemGroup>
 </Project>

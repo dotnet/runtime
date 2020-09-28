@@ -32,7 +32,6 @@
     <Compile Include="Writer\CborWriterTests.TextString.cs" />
     <Compile Include="CoseKeyHelpers.cs" />
   </ItemGroup>
-  
   <ItemGroup>
     <ProjectReference Include="..\src\System.Formats.Cbor.csproj" />
     <ProjectReference Include="CborDocument\System.Formats.Cbor.Tests.DataModel.fsproj" />

@@ -8,4 +8,7 @@
     <Compile Include="AssemblyInfo.cs" />
     <Compile Include="ActivityTests.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\System.Diagnostics.DiagnosticSource.csproj" />
+  </ItemGroup>
 </Project>

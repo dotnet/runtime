@@ -9,4 +9,7 @@
     <Compile Include="SafeWaitHandle.cs" />
     <Compile Include="SafeWaitHandleExtensions.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Runtime.Handles.csproj" />
+  </ItemGroup>
 </Project>

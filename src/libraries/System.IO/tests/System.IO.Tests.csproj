@@ -59,4 +59,7 @@
     <Compile Include="TextWriter\CharArrayTextWriter.cs" />
     <Compile Include="TextWriter\TextWriterTests.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.IO.csproj" />
+  </ItemGroup>
 </Project>

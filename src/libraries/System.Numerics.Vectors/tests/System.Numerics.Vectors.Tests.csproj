@@ -17,4 +17,7 @@
     <Compile Include="PlaneTests.cs" />
     <Compile Include="QuaternionTests.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Numerics.Vectors.csproj" />
+  </ItemGroup>
 </Project>

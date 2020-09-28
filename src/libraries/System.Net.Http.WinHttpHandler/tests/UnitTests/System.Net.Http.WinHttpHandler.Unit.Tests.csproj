@@ -7,9 +7,6 @@
     <DefineConstants>$(DefineConstants);WINHTTPHANDLER_DLL</DefineConstants>
     <Nullable>annotations</Nullable>
   </PropertyGroup>
-  <ItemGroup>
-    <DefaultReferenceExclusion Include="System.Net.Http.WinHttpHandler" />
-  </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
     <Compile Include="$(CommonTestPath)System\Net\SslProtocolSupport.cs"
              Link="CommonTest\System\Net\SslProtocolSupport.cs" />
@@ -113,5 +110,9 @@
     <Compile Include="WinHttpResponseHeaderReaderTest.cs" />
     <Compile Include="WinHttpResponseStreamTest.cs" />
     <Compile Include="XunitTestAssemblyAtrributes.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Do not reference since we build part of the source code for tests. -->
+    <ProjectReference Include="..\..\src\System.Net.Http.WinHttpHandler.csproj" ReferenceOutputAssembly="false"/>
   </ItemGroup>
 </Project>

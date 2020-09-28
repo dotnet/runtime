@@ -59,7 +59,8 @@
     <Compile Include="NamedPipeTests\NamedPipeTest.RunAsClient.Unix.cs" />
     <Compile Include="NativeOverlapped.unix.cs" />
   </ItemGroup>
-  <ItemGroup Condition="$(TargetFramework.StartsWith('$(NetCoreAppCurrent)'))">
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.IO.Pipes.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.DirectoryServices\src\System.DirectoryServices.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.DirectoryServices.AccountManagement\src\System.DirectoryServices.AccountManagement.csproj" />
   </ItemGroup>

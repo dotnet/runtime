@@ -30,4 +30,7 @@
     <Compile Include="$(CommonTestPath)System\Net\Capability.RawSocketPermissions.cs"
              Link="Common\System\Net\Capability.RawSocketPermissions.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\System.Net.Ping.csproj" />
+  </ItemGroup>
 </Project>

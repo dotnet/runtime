@@ -24,4 +24,7 @@
     <Compile Include="TraceTestHelper.cs" />
     <Compile Include="CorrelationManagerTests.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Diagnostics.TraceSource.csproj" />
+  </ItemGroup>
 </Project>

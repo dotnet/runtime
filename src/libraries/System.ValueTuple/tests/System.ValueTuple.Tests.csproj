@@ -9,4 +9,7 @@
     <Compile Include="TupleTests.cs" />
     <Compile Include="ValueTupleTests.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.ValueTuple.csproj" />
+  </ItemGroup>
 </Project>

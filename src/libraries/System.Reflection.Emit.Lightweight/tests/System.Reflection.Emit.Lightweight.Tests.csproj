@@ -15,4 +15,7 @@
     <Compile Include="DynamicMethodToString.cs" />
     <Compile Include="Utilities.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Reflection.Emit.Lightweight.csproj" />
+  </ItemGroup>
 </Project>

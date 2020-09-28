@@ -5,4 +5,7 @@
   <ItemGroup>
     <Compile Include="HttpUtility\HttpUtilityTest.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Web.HttpUtility.csproj" />
+  </ItemGroup>
 </Project>

@@ -76,4 +76,7 @@
     <Compile Include="$(CommonPath)System\Net\InternalException.cs"
              Link="ProductionCode\Common\System\Net\InternalException.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\System.Net.Security.csproj" />
+  </ItemGroup>
 </Project>

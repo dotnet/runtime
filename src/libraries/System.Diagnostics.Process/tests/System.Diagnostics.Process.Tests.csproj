@@ -45,6 +45,7 @@
              Link="System\PasteArguments.Unix.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\src\System.Diagnostics.Process.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Win32.Registry\src\Microsoft.Win32.Registry.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.DirectoryServices\src\System.DirectoryServices.csproj" />
   </ItemGroup>

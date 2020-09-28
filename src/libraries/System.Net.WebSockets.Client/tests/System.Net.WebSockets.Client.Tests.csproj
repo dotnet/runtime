@@ -47,5 +47,6 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="System.Net.TestData" Version="$(SystemNetTestDataVersion)" />
+    <ProjectReference Include="..\src\System.Net.WebSockets.Client.csproj" />
   </ItemGroup>
 </Project>

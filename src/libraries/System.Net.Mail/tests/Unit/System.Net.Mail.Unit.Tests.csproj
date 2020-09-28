@@ -273,8 +273,8 @@
              Link="Common\Interop\Windows\Interop.UNICODE_STRING.cs" />
   </ItemGroup>
   <ItemGroup>
-    <!-- Do not reference these assemblies from the TargetingPack since we are building part of the source code for tests. -->
-    <DefaultReferenceExclusion Include="System.Net.Mail" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Principal.Windows\src\System.Security.Principal.Windows.csproj" />
+    <!-- Do not reference since we build part of the source code for tests. -->
+    <ProjectReference Include="..\..\src\System.Net.Mail.csproj" ReferenceOutputAssembly="false"/>
   </ItemGroup>
 </Project>

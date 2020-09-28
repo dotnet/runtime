@@ -34,4 +34,7 @@
     <Compile Include="CustomAttributeBuilderTests.cs" />
     <Compile Include="Utilities.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Reflection.Emit.ILGeneration.csproj" />
+  </ItemGroup>
 </Project>

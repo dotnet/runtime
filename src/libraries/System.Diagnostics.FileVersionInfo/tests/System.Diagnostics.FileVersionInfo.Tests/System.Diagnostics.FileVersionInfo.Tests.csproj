@@ -6,18 +6,11 @@
   </PropertyGroup>
   <ItemGroup>
     <!-- Checked in test binaries for FileVersionInfoTest -->
-    <Content Include="NativeConsoleApp.exe">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="NativeLibrary.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="SecondNativeLibrary.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="..\System.Diagnostics.FileVersionInfo.TestAssembly\Assembly1.cs">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
+    <Content Include="NativeConsoleApp.exe;
+                      NativeLibrary.dll;
+                      SecondNativeLibrary.dll;
+                      ..\System.Diagnostics.FileVersionInfo.TestAssembly\Assembly1.cs"
+             CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="FileVersionInfoTest.cs" />
@@ -34,6 +27,7 @@
     <Compile Include="FileVersionInfoTest.Unix.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\src\System.Diagnostics.FileVersionInfo.csproj" />
     <ProjectReference Include="..\System.Diagnostics.FileVersionInfo.TestAssembly\System.Diagnostics.FileVersionInfo.TestAssembly.csproj" />
   </ItemGroup>
 </Project>

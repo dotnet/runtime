@@ -11,4 +11,7 @@
     <Compile Include="$(CommonPath)Interop\Linux\cgroups\Interop.cgroups.cs"
              Link="Common\Interop\Linux\Interop.cgroups.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Runtime.InteropServices.RuntimeInformation.csproj" />
+  </ItemGroup>
 </Project>

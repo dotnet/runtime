@@ -6,4 +6,7 @@
     <Compile Include="CancelEventArgsTests.cs" />
     <Compile Include="ComponentModelBasicTests.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.ComponentModel.csproj" />
+  </ItemGroup>
 </Project>

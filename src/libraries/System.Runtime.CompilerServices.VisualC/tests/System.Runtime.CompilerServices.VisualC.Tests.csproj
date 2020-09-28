@@ -7,4 +7,7 @@
     <Compile Include="System\Runtime\CompilerServices\RequiredAttributeAttributeTests.cs" />
     <Compile Include="System\Runtime\CompilerServices\ScopelessEnumAttributeTests.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Runtime.CompilerServices.VisualC.csproj" />
+  </ItemGroup>
 </Project>

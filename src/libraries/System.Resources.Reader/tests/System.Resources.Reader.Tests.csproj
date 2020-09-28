@@ -6,4 +6,7 @@
   <ItemGroup>
     <Compile Include="ResourceReaderUnitTest.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Resources.Reader.csproj" />
+  </ItemGroup>
 </Project>

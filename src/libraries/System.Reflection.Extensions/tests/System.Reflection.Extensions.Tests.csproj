@@ -17,4 +17,7 @@
     <Compile Include="RuntimeReflectionExtensionTests.cs" />
     <Compile Include="RuntimeReflectionExtensionTestsWithQuirks.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Reflection.Extensions.csproj" />
+  </ItemGroup>
 </Project>

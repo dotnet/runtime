@@ -23,4 +23,7 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Reflection.TypeExtensions.csproj" />
+  </ItemGroup>
 </Project>

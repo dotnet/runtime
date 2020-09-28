@@ -22,5 +22,6 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="System.IO.Compression.TestData" Version="$(SystemIOCompressionTestDataVersion)" />
+    <ProjectReference Include="..\src\System.IO.Compression.Brotli.csproj" />
   </ItemGroup>
 </Project>

@@ -9,4 +9,7 @@
     <Compile Include="$(TestSourceFolder)..\..\..\System.Runtime.Serialization.Xml\tests\SerializationTypes.RuntimeOnly.cs" />
     <Compile Include="$(TestSourceFolder)..\DataContractJsonSerializer.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\System.Runtime.Serialization.Json.csproj" />
+  </ItemGroup>
 </Project>

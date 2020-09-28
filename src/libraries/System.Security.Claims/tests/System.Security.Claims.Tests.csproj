@@ -10,4 +10,7 @@
     <Compile Include="ClaimsPrincipalTests.cs" />
     <Compile Include="ClaimTests.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Security.Claims.csproj" />
+  </ItemGroup>
 </Project>

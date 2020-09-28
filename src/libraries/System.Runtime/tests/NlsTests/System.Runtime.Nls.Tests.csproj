@@ -42,5 +42,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)TestUtilities.Unicode\TestUtilities.Unicode.csproj" />
+    <ProjectReference Include="..\..\src\System.Runtime.csproj" />
   </ItemGroup>
 </Project>

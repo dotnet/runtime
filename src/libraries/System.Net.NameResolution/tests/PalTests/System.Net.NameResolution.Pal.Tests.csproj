@@ -6,10 +6,6 @@
     <Nullable>annotations</Nullable>
     <IgnoreForCI Condition="'$(TargetOS)' == 'Browser'">true</IgnoreForCI>
   </PropertyGroup>
-  <!-- Do not reference these assemblies from the TargetingPack since we are building part of the source code for tests. -->
-  <ItemGroup>
-    <DefaultReferenceExclusion Include="System.Net.NameResolution" />
-  </ItemGroup>
   <ItemGroup>
     <Compile Include="..\..\src\System\Net\IPHostEntry.cs"
              Link="ProductionCode\System\Net\IPHostEntry.cs" />
@@ -108,5 +104,9 @@
              Link="Common\Interop\Unix\System.Native\Interop.Socket.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.SocketAddress.cs"
              Link="Common\Interop\Unix\System.Native\Interop.SocketAddress.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Do not reference since we build part of the source code for tests. -->
+    <ProjectReference Include="..\..\src\System.Net.NameResolution.csproj" ReferenceOutputAssembly="false"/>
   </ItemGroup>
 </Project>

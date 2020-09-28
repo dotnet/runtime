@@ -11,5 +11,6 @@
                       ReferenceOutputAssembly="false"
                       OutputItemType="content"
                       CopyToOutputDirectory="PreserveNewest" />
+    <ProjectReference Include="..\..\src\System.Runtime.Loader.csproj" />
   </ItemGroup>
 </Project>

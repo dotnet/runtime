@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ReadAsArrayTests.cs" />
@@ -54,5 +54,8 @@
     <Compile Include="ReadAsUriElementContentTests.cs" />
     <Compile Include="ReadAsUriTests.cs" />
     <Compile Include="Utils.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\src\System.Private.Xml.csproj" ReferenceOutputAssembly="false" />
   </ItemGroup>
 </Project>

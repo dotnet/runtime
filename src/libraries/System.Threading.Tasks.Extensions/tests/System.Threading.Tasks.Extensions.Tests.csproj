@@ -16,4 +16,7 @@
     <Compile Include="$(CommonTestPath)System\Threading\Tasks\GetStateMachineData.cs"
              Link="Common\System\Threading\Tasks\GetStateMachineData.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Threading.Tasks.Extensions.csproj" />
+  </ItemGroup>
 </Project>

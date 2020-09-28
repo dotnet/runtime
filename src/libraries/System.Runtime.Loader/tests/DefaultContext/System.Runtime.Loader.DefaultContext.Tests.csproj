@@ -14,5 +14,6 @@
                       OutputItemType="ContentWithTargetPath"
                       CopyToOutputDirectory="PreserveNewest"
                       TargetPath="System.Runtime.Loader.Noop.Assembly_test.dll" />
+    <ProjectReference Include="..\..\src\System.Runtime.Loader.csproj" />
   </ItemGroup>
 </Project>

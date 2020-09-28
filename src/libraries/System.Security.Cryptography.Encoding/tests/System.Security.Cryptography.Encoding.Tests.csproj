@@ -15,4 +15,7 @@
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\ByteUtils.cs" Link="CommonTest\System\Security\Cryptography\ByteUtils.cs" />
     <Compile Include="$(CommonPath)System\Memory\PointerMemoryManager.cs" Link="Common\System\Memory\PointerMemoryManager.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Security.Cryptography.Encoding.csproj" />
+  </ItemGroup>
 </Project>

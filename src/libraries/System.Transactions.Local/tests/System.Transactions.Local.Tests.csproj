@@ -16,4 +16,7 @@
     <Compile Include="TestEnlistments.cs" />
     <Compile Include="TransactionTracingEventListener.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Transactions.Local.csproj" />
+  </ItemGroup>
 </Project>

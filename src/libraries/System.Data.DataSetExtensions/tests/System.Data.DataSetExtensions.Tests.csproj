@@ -14,8 +14,10 @@
     <Compile Include="System\Data\TypedTableBaseExtensionsTests.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Mono\testdataset1.xml">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
+    <Content Include="Mono\testdataset1.xml"
+             CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Data.DataSetExtensions.csproj" />
   </ItemGroup>
 </Project>

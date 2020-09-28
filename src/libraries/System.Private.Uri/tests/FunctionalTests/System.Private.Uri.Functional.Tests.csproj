@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)</TargetFrameworks>
     <NoWarn>$(NoWarn),SYSLIB0013</NoWarn>
   </PropertyGroup>
   <ItemGroup>
@@ -26,5 +26,8 @@
     <Compile Include="UriRelativeResolutionTest.cs" />
     <Compile Include="UriTests.cs" />
     <Compile Include="WebSocketsUriParserTest.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\System.Private.Uri.csproj" ReferenceOutputAssembly="false" />
   </ItemGroup>
 </Project>

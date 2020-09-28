@@ -6,4 +6,7 @@
     <Compile Include="DriveInfo.Unix.Tests.cs" Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true'" />
     <Compile Include="DriveInfo.Windows.Tests.cs" Condition="'$(TargetsWindows)' == 'true'" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.IO.FileSystem.DriveInfo.csproj" />
+  </ItemGroup>
 </Project>

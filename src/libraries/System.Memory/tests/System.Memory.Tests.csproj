@@ -263,4 +263,7 @@
     <Compile Include="$(CommonPath)System\MutableDecimal.cs"
              Link="Common\System\MutableDecimal.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Memory.csproj" />
+  </ItemGroup>
 </Project>

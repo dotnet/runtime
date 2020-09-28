@@ -12,4 +12,7 @@
     <Compile Include="System\Runtime\Serialization\InvalidDataContractExceptionTests.cs" />
     <Compile Include="System\Runtime\Serialization\KnownTypeAttributeTests.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Runtime.Serialization.Primitives.csproj" />
+  </ItemGroup>
 </Project>

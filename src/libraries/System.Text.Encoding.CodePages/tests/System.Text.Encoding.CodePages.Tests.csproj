@@ -8,7 +8,7 @@
     <Compile Include="EncodingCodePages.cs" />
     <Compile Include="EncodingCodePages.netcoreapp.cs" Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
+  <ItemGroup>
     <ProjectReference Include="..\src\System.Text.Encoding.CodePages.csproj" />
   </ItemGroup>
 </Project>

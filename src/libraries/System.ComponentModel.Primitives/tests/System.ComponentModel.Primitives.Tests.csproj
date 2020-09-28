@@ -27,4 +27,7 @@
     <Compile Include="System\ComponentModel\ReadOnlyAttributeTests.cs" />
     <Compile Include="System\ComponentModel\RefreshPropertiesAttributeTests.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.ComponentModel.Primitives.csproj" />
+  </ItemGroup>
 </Project>

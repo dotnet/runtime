@@ -6,4 +6,7 @@
   <ItemGroup>
     <Compile Include="CalendarTests.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\System.Globalization.Calendars.csproj" />
+  </ItemGroup>
 </Project>

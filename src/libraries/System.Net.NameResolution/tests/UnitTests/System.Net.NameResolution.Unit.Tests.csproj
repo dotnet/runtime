@@ -8,10 +8,6 @@
     <Nullable>annotations</Nullable>
     <IgnoreForCI Condition="'$(TargetOS)' == 'Browser'">true</IgnoreForCI>
   </PropertyGroup>
-  <!-- Do not reference these assemblies from the TargetingPack since we are building part of the source code for tests. -->
-  <ItemGroup>
-    <DefaultReferenceExclusion Include="System.Net.NameResolution" />
-  </ItemGroup>
   <ItemGroup>
     <Compile Include="..\..\src\System\Net\IPHostEntry.cs"
              Link="ProductionCode\System\Net\IPHostEntry.cs" />
@@ -43,5 +39,9 @@
              Link="Common\System\Threading\Tasks\TaskToApm.cs" />
     <Compile Include="$(CommonPath)Extensions\ValueStopwatch\ValueStopwatch.cs"
              Link="Common\Extensions\ValueStopwatch\ValueStopwatch.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Do not reference since we build part of the source code for tests. -->
+    <ProjectReference Include="..\..\src\System.Net.NameResolution.csproj" ReferenceOutputAssembly="false" />
   </ItemGroup>
 </Project>

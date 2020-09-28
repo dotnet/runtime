@@ -103,6 +103,8 @@
     <Compile Include="ThaiBuddhistCalendar\ThaiBuddhistCalendarToFourDigitYear.cs" />
     <Compile Include="ThaiBuddhistCalendar\ThaiBuddhistCalendarTwoDigitYearMax.cs" />
     <Compile Include="$(CommonTestPath)System\RandomDataGenerator.cs" />
-    <!-- Helpers -->
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Globalization.Calendars.csproj" />
   </ItemGroup>
 </Project>

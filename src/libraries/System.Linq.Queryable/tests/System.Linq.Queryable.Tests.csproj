@@ -56,4 +56,7 @@
     <Compile Include="$(CommonTestPath)System\Linq\SkipTakeData.cs"
              Link="Common\System\Linq\SkipTakeData.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Linq.Queryable.csproj" />
+  </ItemGroup>
 </Project>

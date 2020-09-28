@@ -18,4 +18,7 @@
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
              Link="ProductionCode\Common\System\Threading\Tasks\TaskToApm.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\System.Net.Security.csproj" />
+  </ItemGroup>
 </Project>

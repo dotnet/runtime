@@ -11,5 +11,6 @@
     <ProjectReference Include="$(CommonTestPath)System\Xml\XmlCoreTest\XmlCoreTest.csproj" />
     <ProjectReference Include="$(CommonTestPath)System\Xml\ModuleCore\ModuleCore.csproj" />
     <ProjectReference Include="..\XDocument.Common\XDocument.Common.csproj" />
+    <ProjectReference Include="..\..\src\System.Private.Xml.Linq.csproj" ReferenceOutputAssembly="false" />
   </ItemGroup>
 </Project>

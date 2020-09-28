@@ -281,5 +281,6 @@
     <!-- Used during reflection in tests. -->
     <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Permissions\src\System.Security.Permissions.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Threading.AccessControl\src\System.Threading.AccessControl.csproj" />
+    <ProjectReference Include="..\src\System.Runtime.csproj" />
   </ItemGroup>
 </Project>

@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ColorTranslatorTests.cs" />
@@ -18,5 +18,8 @@
              Link="Common\System\Runtime\Serialization\DataContractSerializerHelper.cs" />
     <Compile Include="$(CommonTestPath)System\Runtime\Serialization\Utils.cs"
              Link="Common\System\Runtime\Serialization\Utils.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Drawing.Primitives.csproj" />
   </ItemGroup>
 </Project>

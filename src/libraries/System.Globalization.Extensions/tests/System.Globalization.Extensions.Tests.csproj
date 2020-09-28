@@ -35,4 +35,7 @@
       <LogicalName>NormalizationDataWin7</LogicalName>
     </EmbeddedResource>
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Globalization.Extensions.csproj" />
+  </ItemGroup>
 </Project>

@@ -13,4 +13,7 @@
   <ItemGroup>
     <None Include="Configurations.props" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\src\System.Private.Xml.csproj" ReferenceOutputAssembly="false" />
+  </ItemGroup>
 </Project>

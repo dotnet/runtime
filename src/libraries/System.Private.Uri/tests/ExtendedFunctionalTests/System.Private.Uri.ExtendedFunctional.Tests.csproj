@@ -6,4 +6,7 @@
     <Compile Include="UriRelativeResolutionTest.cs" />
     <Compile Include="UriTests.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\System.Private.Uri.csproj" ReferenceOutputAssembly="false" />
+  </ItemGroup>
 </Project>

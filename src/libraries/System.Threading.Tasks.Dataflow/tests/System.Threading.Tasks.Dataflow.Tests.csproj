@@ -26,7 +26,7 @@
     <Compile Include="$(CommonTestPath)System\Diagnostics\DebuggerAttributes.cs"
              Link="Common\System\Diagnostics\DebuggerAttributes.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
+  <ItemGroup>
     <ProjectReference Include="..\src\System.Threading.Tasks.Dataflow.csproj" />
   </ItemGroup>
 </Project>

@@ -42,7 +42,7 @@
     <Compile Include="System\Xml\XPath\XObjectExtensions.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Private.Xml\src\System.Private.Xml.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Private.Xml\src\System.Private.Xml.csproj" PrivateAssets="all" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Linq" />
     <Reference Include="System.ObjectModel" />

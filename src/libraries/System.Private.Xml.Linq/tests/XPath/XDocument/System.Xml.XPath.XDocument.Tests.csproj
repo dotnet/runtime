@@ -192,4 +192,7 @@
       <Link>TestData\xpC001.xml</Link>
     </EmbeddedResource>
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\src\System.Private.Xml.Linq.csproj" ReferenceOutputAssembly="false" />
+  </ItemGroup>
 </Project>

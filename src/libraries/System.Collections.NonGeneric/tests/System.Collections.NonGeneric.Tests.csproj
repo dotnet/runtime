@@ -41,4 +41,7 @@
     <Compile Include="$(CommonTestPath)System\Collections\IEnumerable.NonGeneric.Serialization.Tests.cs"
              Link="Common\System\Collections\IEnumerable.NonGeneric.Serialization.Tests.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Collections.NonGeneric.csproj" />
+  </ItemGroup>
 </Project>

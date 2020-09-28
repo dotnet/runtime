@@ -20,4 +20,7 @@
     <Compile Include="$(CommonPath)System\HexConverter.cs"
              Link="Common\System\HexConverter.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\System.Private.Uri.csproj" ReferenceOutputAssembly="false" />
+  </ItemGroup>
 </Project>

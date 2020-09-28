@@ -23,4 +23,7 @@
     <Compile Include="UmsManager.cs" />
     <Compile Include="UmsSecurityTest.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.IO.UnmanagedMemoryStream.csproj" />
+  </ItemGroup>
 </Project>

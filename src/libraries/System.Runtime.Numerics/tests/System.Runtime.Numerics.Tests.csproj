@@ -51,4 +51,7 @@
     <Compile Include="BigInteger\TryWriteBytes.cs" />
     <Compile Include="ComplexTests.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Runtime.Numerics.csproj" />
+  </ItemGroup>
 </Project>

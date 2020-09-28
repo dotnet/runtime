@@ -14,5 +14,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\TestExe\System.Reflection.TestExe.csproj" />
+    <ProjectReference Include="..\..\src\System.Reflection.csproj" />
   </ItemGroup>
 </Project>

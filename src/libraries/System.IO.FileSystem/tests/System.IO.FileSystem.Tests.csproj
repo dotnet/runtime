@@ -3,7 +3,6 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
-
     <RunTestsJSArguments>--working-dir=/test-dir</RunTestsJSArguments>
   </PropertyGroup>
   <ItemGroup>
@@ -177,5 +176,8 @@
 
     <Content Include="DirectoryInfo\test-dir\dummy.txt"
              Link="test-dir\dummy.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.IO.FileSystem.csproj" />
   </ItemGroup>
 </Project>

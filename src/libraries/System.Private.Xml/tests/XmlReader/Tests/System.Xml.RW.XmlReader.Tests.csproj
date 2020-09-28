@@ -10,4 +10,7 @@
     <Compile Include="$(CommonTestPath)System\Threading\TrackingSynchronizationContext.cs"
              Link="Common\System\Threading\TrackingSynchronizationContext.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\src\System.Private.Xml.csproj" ReferenceOutputAssembly="false" />
+  </ItemGroup>
 </Project>

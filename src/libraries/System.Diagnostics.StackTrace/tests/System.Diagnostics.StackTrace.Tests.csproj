@@ -17,4 +17,7 @@
     <WasmFilesToIncludeFromPublishDir Include="$(AssemblyName).dll" />
     <WasmFilesToIncludeFromPublishDir Include="$(AssemblyName).pdb" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Diagnostics.StackTrace.csproj" />
+  </ItemGroup>
 </Project>

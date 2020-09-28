@@ -9,4 +9,7 @@
     <Compile Include="FileModeTests.cs" />
     <Compile Include="FileShareTests.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.IO.FileSystem.Primitives.csproj" />
+  </ItemGroup>
 </Project>

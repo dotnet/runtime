@@ -42,6 +42,9 @@
     <Compile Include="System\ComponentModel\DataAnnotations\ValidationResultTests.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\ValidatorTests.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+    <ProjectReference Include="..\src\System.ComponentModel.Annotations.csproj" />
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'net48'">
     <Reference Include="System.ComponentModel.DataAnnotations" />
   </ItemGroup>

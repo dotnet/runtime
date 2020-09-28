@@ -13,4 +13,7 @@
     <Compile Include="TextWriterTraceListener_WriteTests.cs" />
     <Compile Include="XmlWriterTraceListenerTests.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Diagnostics.TextWriterTraceListener.csproj" />
+  </ItemGroup>
 </Project>

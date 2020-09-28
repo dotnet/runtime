@@ -70,4 +70,7 @@
     <Compile Include="$(CommonTestPath)System\Collections\IEnumerable.Generic.Serialization.Tests.cs"
              Link="Common\System\Collections\IEnumerable.Generic.Serialization.Tests.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Collections.Concurrent.csproj" />
+  </ItemGroup>
 </Project>

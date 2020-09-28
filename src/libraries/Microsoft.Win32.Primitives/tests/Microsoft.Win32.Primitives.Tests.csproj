@@ -5,4 +5,7 @@
   <ItemGroup>
     <Compile Include="Win32ExceptionTests.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\Microsoft.Win32.Primitives.csproj" />
+  </ItemGroup>
 </Project>

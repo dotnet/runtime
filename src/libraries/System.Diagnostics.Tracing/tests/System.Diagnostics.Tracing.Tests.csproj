@@ -46,5 +46,6 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="$(TraceEventVersion)" />
+    <ProjectReference Include="..\src\System.Diagnostics.Tracing.csproj" />
   </ItemGroup>
 </Project>

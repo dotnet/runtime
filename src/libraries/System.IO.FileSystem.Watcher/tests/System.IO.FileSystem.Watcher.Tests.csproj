@@ -39,4 +39,7 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.ResourceLimits.cs"
              Link="Common\Interop\Unix\System.Native\Interop.ResourceLimits.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.IO.FileSystem.Watcher.csproj" />
+  </ItemGroup>
 </Project>

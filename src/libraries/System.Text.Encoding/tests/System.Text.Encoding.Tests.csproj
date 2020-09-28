@@ -85,5 +85,6 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Moq" Version="$(MoqVersion)" />
+    <ProjectReference Include="..\src\System.Text.Encoding.csproj" />
   </ItemGroup>
 </Project>

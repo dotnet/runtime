@@ -15,4 +15,7 @@
     <Compile Include="$(CommonPath)System\Net\HttpKnownHeaderNames.cs"
              Link="Common\System\Net\HttpKnownHeaderNames.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Net.WebSockets.csproj" />
+  </ItemGroup>
 </Project>

@@ -3,14 +3,9 @@
     <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-FreeBSD;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
     <Nullable>annotations</Nullable>
   </PropertyGroup>
-  <!-- Do not reference these assemblies from the TargetingPack since we are building part of the source code for tests. -->
-  <ItemGroup>
-    <DefaultReferenceExclusion Include="System.Net.Http" />
-    <DefaultReferenceExclusion Include="System.Net.Mail" />
-  </ItemGroup>
   <ItemGroup>
     <Compile Include="$(CommonPath)System\HexConverter.cs"
              Link="Common\System\HexConverter.cs" />
@@ -407,5 +402,10 @@
              Link="WinHttpHandler\UnitTests\APICallHistory.cs" />
     <Compile Include="..\..\..\System.Net.Http.WinHttpHandler\tests\UnitTests\TestServer.cs"
              Link="WinHttpHandler\UnitTests\TestServer.cs" />
+  </ItemGroup>
+  <!-- Do not reference since we build part of the source code for tests. -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\System.Net.Http.csproj" ReferenceOutputAssembly="false" />
+    <DefaultReferenceExclusion Include="System.Net.Mail" />
   </ItemGroup>
 </Project>
