@@ -7,7 +7,7 @@ parameters:
   runtimeVariant: ''
   testGroup: ''
   framework: net5.0 # Specify the appropriate framework when running release branches (ie netcoreapp3.0 for release/3.0)
-  liveLibrariesBuildConfig: ''
+  liveLibrariesBuildConfig: 'Release'
   variables: {}
   runtimeType: 'coreclr'
   pool: ''
