@@ -66,7 +66,7 @@ else:
     import urllib.request
 
 # Import coreclr_arguments.py from src\coreclr\scripts
-sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "scripts"))
+sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "coreclr", "scripts"))
 from coreclr_arguments import *
 
 ################################################################################
