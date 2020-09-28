@@ -1,6 +1,7 @@
 #nullable enable
 
 using System.Diagnostics;
+using System.Net.Quic.Implementations.MsQuic.Internal;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -38,6 +39,29 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         private readonly byte[] _sendBuffer = new byte[64 * 1024];
         private readonly byte[] _recvBuffer = new byte[64 * 1024];
 
+        protected class AsyncSocketArgs : SocketAsyncEventArgs
+        {
+            public AsyncSocketArgs()
+            {
+
+            }
+
+            public ResettableCompletionSource<SocketReceiveFromResult> CompletionSource { get; } = new ResettableCompletionSource<SocketReceiveFromResult>();
+
+            protected override void OnCompleted(SocketAsyncEventArgs e)
+            {
+                CompletionSource.Complete(
+                    new SocketReceiveFromResult()
+                    {
+                        ReceivedBytes = e.SocketError == SocketError.Success ? e.BytesTransferred : 0,
+                        RemoteEndPoint = e.RemoteEndPoint!
+                    });
+            }
+        }
+
+        protected AsyncSocketArgs SocketReceiveEventArgs { get; } = new AsyncSocketArgs();
+
+
         protected QuicSocketContext(IPEndPoint? localEndPoint, IPEndPoint? remoteEndPoint, bool isServer)
         {
             _localEndPoint = localEndPoint;
@@ -52,7 +76,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             _sendContext = new SendContext(sentPacketPool);
             _recvContext = new RecvContext(sentPacketPool);
 
-            Socket.ExclusiveAddressUse = !isServer;
+            Socket.ExclusiveAddressUse = false;
 
             if (localEndPoint != null)
             {
@@ -318,6 +342,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             catch (Exception e)
             {
                 if (NetEventSource.IsEnabled) NetEventSource.Error(this, e);
+                OnException(e);
             }
 
             // cleanup everything
@@ -325,6 +350,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             Socket.Close();
             Socket.Dispose();
         }
+
+        protected abstract void OnException(Exception e);
 
         // TODO-RZ: This function is a slight hack, but the socket context classes will need to be reworked either way
         protected void ReceiveAllDatagramsForConnection(ManagedQuicConnection connection)

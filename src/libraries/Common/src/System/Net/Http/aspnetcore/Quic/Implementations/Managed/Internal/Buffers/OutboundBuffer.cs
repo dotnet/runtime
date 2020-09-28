@@ -492,5 +492,10 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
                 throw new QuicStreamAbortedException("Stream aborted", Error.Value);
             }
         }
+
+        public void OnFatalException(Exception exception)
+        {
+            // TODO-RZ: handle callers blocking on other async tasks
+        }
     }
 }

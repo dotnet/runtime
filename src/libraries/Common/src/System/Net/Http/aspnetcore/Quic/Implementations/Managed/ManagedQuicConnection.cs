@@ -195,6 +195,13 @@ namespace System.Net.Quic.Implementations.Managed
         /// </summary>
         private bool _disposed;
 
+
+        /// <summary>
+        ///     If not null, contains the exception that terminated the socket maintenance task.
+        /// </summary>
+        private Exception? _socketContextException;
+
+
         /// <summary>
         ///     Requests sending PING frame to the peer, requiring the peer to send acknowledgement back.
         /// </summary>
@@ -712,6 +719,9 @@ namespace System.Net.Quic.Implementations.Managed
 
         internal void ThrowIfError()
         {
+            if (_socketContextException != null)
+                throw _socketContextException;
+
             var error = _inboundError ?? _outboundError;
             // don't throw if connection was closed gracefully. By doing so, we still allow retrieving
             // unread data/streams if the connection was closed by the peer.
@@ -825,6 +835,19 @@ namespace System.Net.Quic.Implementations.Managed
                 // TODO-RZ: We should probably format reason phrase into the exception message
                 ? new QuicConnectionAbortedException(error.ReasonPhrase, (long)error.ErrorCode)
                 : new QuicConnectionAbortedException((long)error.ErrorCode);
+        }
+
+        internal void OnSocketContextException(Exception e)
+        {
+            _socketContextException = e;
+
+            _connectTcs.TryCompleteException(e);
+            _closeTcs.TryCompleteException(e);
+
+            foreach (var stream in _streams)
+            {
+                stream.OnFatalException(e);
+            }
         }
     }
 }

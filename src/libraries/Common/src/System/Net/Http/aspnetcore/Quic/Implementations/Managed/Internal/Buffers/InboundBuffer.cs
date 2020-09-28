@@ -446,9 +446,16 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
             ReturnBuffer(chunk.Buffer);
         }
 
-        public void OnConnectionError(QuicConnectionAbortedException exception)
+        public void OnFatalException(Exception e)
         {
-            _deliverableChannel.Writer.TryComplete(exception.ErrorCode == 0 ? null : exception);
+            if (e is QuicConnectionAbortedException abortedException && abortedException.ErrorCode == 0)
+            {
+                _deliverableChannel.Writer.TryComplete(null);
+            }
+            else
+            {
+                _deliverableChannel.Writer.TryComplete(e);
+            }
         }
 
         private void ReturnBuffer(byte[] buffer)

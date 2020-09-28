@@ -241,14 +241,18 @@ namespace System.Net.Quic.Implementations.Managed
             await _shutdownCompleted.GetTask().ConfigureAwait(false);
         }
 
+        internal void OnFatalException(Exception exception)
+        {
+            InboundBuffer?.OnFatalException(exception);
+            OutboundBuffer?.OnFatalException(exception);
+        }
 
         internal void OnConnectionClosed(QuicConnectionAbortedException exception)
         {
             // closing connection (CONNECTION_CLOSE frame) causes all streams to become closed
             NotifyShutdownWriteCompleted();
 
-            // TODO-RZ: handle callers blocking on other async tasks
-            InboundBuffer?.OnConnectionError(exception);
+            OnFatalException(exception);
         }
 
         internal override void Shutdown()

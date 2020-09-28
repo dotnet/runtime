@@ -1,5 +1,6 @@
 #nullable enable
 
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
@@ -13,7 +14,7 @@ namespace System.Net.Quic.Implementations.Managed
     /// <summary>
     ///     Collection of Quic streams.
     /// </summary>
-    internal sealed class StreamCollection
+    internal sealed class StreamCollection : IEnumerable<ManagedQuicStream>
     {
         /// <summary>
         ///     All streams by their id;
@@ -182,5 +183,9 @@ namespace System.Net.Quic.Implementations.Managed
         }
 
         internal IEnumerable<ManagedQuicStream> AllStreams => _streams.Values;
+
+        public IEnumerator<ManagedQuicStream> GetEnumerator() => AllStreams.GetEnumerator();
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     }
 }

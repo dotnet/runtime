@@ -85,29 +85,6 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             return false;
         }
 
-        private class AsyncSocketArgs : SocketAsyncEventArgs
-        {
-            public AsyncSocketArgs()
-            {
-
-            }
-
-            public ResettableCompletionSource<SocketReceiveFromResult> CompletionSource { get; } = new ResettableCompletionSource<SocketReceiveFromResult>();
-
-            protected override void OnCompleted(SocketAsyncEventArgs e)
-            {
-                CompletionSource.Complete(
-                    new SocketReceiveFromResult()
-                    {
-                        ReceivedBytes = e.SocketError == SocketError.Success ? e.BytesTransferred : 0,
-                        RemoteEndPoint = e.RemoteEndPoint!
-                    });
-            }
-        }
-
-        private AsyncSocketArgs _socketReceiveEventArgs = new AsyncSocketArgs();
-
-
         protected override int ReceiveFrom(byte[] buffer, ref EndPoint sender)
         {
             sender = _remoteEndPoint;
@@ -118,20 +95,20 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         private ValueTask<SocketReceiveFromResult> ReceiveFromAsyncCore(byte[] buffer, EndPoint sender,
             CancellationToken token)
         {
-            _socketReceiveEventArgs.SetBuffer(buffer);
-            _socketReceiveEventArgs.SocketFlags = SocketFlags.None;
-            _socketReceiveEventArgs.RemoteEndPoint = _remoteEndPoint;
+            SocketReceiveEventArgs.SetBuffer(buffer);
+            SocketReceiveEventArgs.SocketFlags = SocketFlags.None;
+            SocketReceiveEventArgs.RemoteEndPoint = _remoteEndPoint;
 
-            if (Socket.ReceiveAsync(_socketReceiveEventArgs))
+            // use method without explicit address because we used connected socket
+            if (Socket.ReceiveAsync(SocketReceiveEventArgs))
             {
-                return _socketReceiveEventArgs.CompletionSource.GetValueTask();
+                return SocketReceiveEventArgs.CompletionSource.GetValueTask();
             }
 
-            // use method without explicit address because we use connected socket
             return new ValueTask<SocketReceiveFromResult>(
                 new SocketReceiveFromResult
                 {
-                    ReceivedBytes = _socketReceiveEventArgs.BytesTransferred,
+                    ReceivedBytes = SocketReceiveEventArgs.BytesTransferred,
                     RemoteEndPoint = _remoteEndPoint
                 });
         }
@@ -145,6 +122,11 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         protected override void SendTo(byte[] buffer, int size, EndPoint receiver)
             // use method without explicit address because we use connected socket
             => Socket.Send(buffer.AsSpan(0, size), SocketFlags.None, out _);
+
+        protected override void OnException(Exception e)
+        {
+            _connection.OnSocketContextException(e);
+        }
 
         protected internal override void DetachConnection(ManagedQuicConnection connection)
         {

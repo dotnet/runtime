@@ -111,6 +111,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             // Connection established -> transition to single connection  QuicSocketContext
             _newConnections.TryWrite(connection);
 
+            return;
+
             // Create new single connection context, this will bind a more specific socket to the
             // remote endpoint's address. Any further packets will be received by this context
 
@@ -173,6 +175,14 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
         protected override void SendTo(byte[] buffer, int size, EndPoint receiver)
             => Socket.SendTo(buffer, 0, size, SocketFlags.None, receiver);
+
+        protected override void OnException(Exception e)
+        {
+            foreach (var connection in _connectionsByEndpoint.Values)
+            {
+                connection.OnSocketContextException(e);
+            }
+        }
 
         protected internal override void DetachConnection(ManagedQuicConnection connection)
         {
