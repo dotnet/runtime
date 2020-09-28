@@ -63,14 +63,15 @@ namespace System.IO.FileSystem.DriveInfoTests
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         public void PropertiesOfValidDrive()
         {
-            var root = new DriveInfo("/");
+            var rootdir = PlatformDetection.IsAndroid ?  "/data" : "/";
+            var root = new DriveInfo(rootdir);
             var format = root.DriveFormat;
             Assert.Equal(PlatformDetection.IsBrowser ? DriveType.Unknown : DriveType.Fixed, root.DriveType);
             Assert.True(root.IsReady);
-            Assert.Equal("/", root.Name);
-            Assert.Equal("/", root.ToString());
-            Assert.Equal("/", root.RootDirectory.FullName);
-            Assert.Equal("/", root.VolumeLabel);
+            Assert.Equal(rootdir, root.Name);
+            Assert.Equal(rootdir, root.ToString());
+            Assert.Equal(rootdir, root.RootDirectory.FullName);
+            Assert.Equal(rootdir, root.VolumeLabel);
 
             if (PlatformDetection.IsBrowser)
             {
