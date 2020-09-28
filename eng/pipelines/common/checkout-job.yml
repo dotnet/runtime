@@ -34,8 +34,16 @@ jobs:
   pool:
     vmImage: 'macOS-10.14'
 
-  steps:
+  variables:
+    - name: buildProductArtifactName
+      value: 'CoreCLRProduct__Windows_NT_x64_checked'
+      # value: 'CoreCLRProduct_${{ parameters.runtimeVariant }}_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
 
+    - name: buildProductRootFolderPath
+      value: '$(Build.SourcesDirectory)/artifacts/bin/coreclr/Windows_NT.x64.Checked'
+      # value: '$(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(buildConfigUpper)'
+
+  steps:
   - task: PowerShell@2
     name: Blah
     displayName: Displaying build id
