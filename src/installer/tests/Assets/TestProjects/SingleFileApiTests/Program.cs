@@ -16,7 +16,7 @@ namespace SingleFileApiTests
                     case "appcontext":
                         var deps_files = (string)AppContext.GetData("APP_CONTEXT_DEPS_FILES");
                         Console.WriteLine("APP_CONTEXT_DEPS_FILES: " + deps_files);
-                        foreach (string deps_file_path in deps_files.Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                        foreach (string deps_file_path in deps_files.Split(";", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
                         {
                             if (!File.Exists(deps_file_path))
                             {
