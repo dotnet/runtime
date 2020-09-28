@@ -304,6 +304,9 @@
   <data name="NotSupported_ECDsa_Csp" xml:space="preserve">
     <value>CryptoApi ECDsa keys are not supported.</value>
   </data>
+  <data name="NotSupported_ECDiffieHellman_Csp" xml:space="preserve">
+    <value>CryptoApi ECDiffieHellman keys are not supported.</value>
+  </data>
   <data name="NotSupported_Export_MultiplePrivateCerts" xml:space="preserve">
     <value>Only one certificate with a private key can be exported in a single PFX.</value>
   </data>
@@ -429,5 +432,14 @@
   </data>
   <data name="SystemSecurityCryptographyX509Certificates_PlatformNotSupported" xml:space="preserve">
     <value>System.Security.Cryptography.X509Certificates is not supported on this platform.</value>
+  </data>
+  <data name="Cryptography_ArgECDHKeySizeMismatch" xml:space="preserve">
+    <value>The keys from both parties must be the same size to generate a secret agreement.</value>
+  </data>
+  <data name="Cryptography_ArgECDHRequiresECDHKey" xml:space="preserve">
+    <value>Keys used with the ECDiffieHellmanCng algorithm must have an algorithm group of ECDiffieHellman.</value>
+  </data>
+  <data name="Cryptography_TlsRequires64ByteSeed" xml:space="preserve">
+    <value>The TLS key derivation function requires a seed value of exactly 64 bytes.</value>
   </data>
 </root>
