@@ -13,7 +13,7 @@ namespace System.Net
 
         internal static IOCompletionCallback IOCallback => s_ioCallback;
 
-        internal ListenerAsyncResult(HttpListenerSession session, object userState, AsyncCallback callback) :
+        internal ListenerAsyncResult(HttpListenerSession session, object? userState, AsyncCallback? callback) :
             base(session, userState, callback)
         {
             _requestContext = new AsyncRequestContext(session.RequestQueueBoundHandle, this);

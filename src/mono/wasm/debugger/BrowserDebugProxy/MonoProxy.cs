@@ -10,6 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace Microsoft.WebAssembly.Diagnostics
@@ -72,7 +73,29 @@ namespace Microsoft.WebAssembly.Diagnostics
                                 }
                                 await RuntimeReady(sessionId, token);
                             }
+                            else if (a?[0]?["value"]?.ToString() == MonoConstants.EVENT_RAISED)
+                            {
+                                if (a.Type != JTokenType.Array)
+                                {
+                                    logger.LogDebug("Invalid event raised args, expected an array: {a}");
+                                }
+                                else
+                                {
+                                    if (JObjectTryParse(a?[2]?["value"]?.Value<string>(), out JObject raiseArgs) &&
+                                        JObjectTryParse(a?[1]?["value"]?.Value<string>(), out JObject eventArgs))
+                                    {
+                                        await OnJSEventRaised(sessionId, eventArgs, token);
 
+                                        if (raiseArgs?["trace"]?.Value<bool>() == true) {
+                                            // Let the message show up on the console
+                                            return false;
+                                        }
+                                    }
+                                }
+
+                                // Don't log this message in the console
+                                return true;
+                            }
                         }
                         break;
                     }
@@ -170,7 +193,6 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                 case "Debugger.enable":
                     {
-                        System.Console.WriteLine("recebi o Debugger.enable");
                         var resp = await SendCommand(id, method, args, token);
 
                         context.DebuggerId = resp.Value["debuggerId"]?.ToString();
@@ -426,7 +448,9 @@ namespace Microsoft.WebAssembly.Diagnostics
         async Task<Result> RuntimeGetProperties(MessageId id, DotnetObjectId objectId, JToken args, CancellationToken token)
         {
             if (objectId.Scheme == "scope")
+            {
                 return await GetScopeProperties(id, int.Parse(objectId.Value), token);
+            }
 
             var res = await SendMonoCommand(id, MonoCommands.GetDetails(objectId, args), token);
             if (res.IsErr)
@@ -456,7 +480,6 @@ namespace Microsoft.WebAssembly.Diagnostics
             return res;
         }
 
-        //static int frame_id=0;
         async Task<bool> OnPause(SessionId sessionId, JObject args, CancellationToken token)
         {
             //FIXME we should send release objects every now and then? Or intercept those we inject and deal in the runtime
@@ -517,12 +540,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
 
                     var frames = new List<Frame>();
-                    int frame_id = 0;
                     var the_mono_frames = res.Value?["result"]?["value"]?["frames"]?.Values<JObject>();
 
                     foreach (var mono_frame in the_mono_frames)
                     {
-                        ++frame_id;
+                        int frame_id = mono_frame["frame_id"].Value<int>();
                         var il_pos = mono_frame["il_pos"].Value<int>();
                         var method_token = mono_frame["method_token"].Value<uint>();
                         var assembly_name = mono_frame["assembly_name"].Value<string>();
@@ -559,12 +581,12 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                         Log("info", $"frame il offset: {il_pos} method token: {method_token} assembly name: {assembly_name}");
                         Log("info", $"\tmethod {method_name} location: {location}");
-                        frames.Add(new Frame(method, location, frame_id - 1));
+                        frames.Add(new Frame(method, location, frame_id));
 
                         callFrames.Add(new
                         {
                             functionName = method_name,
-                            callFrameId = $"dotnet:scope:{frame_id - 1}",
+                            callFrameId = $"dotnet:scope:{frame_id}",
                             functionLocation = method.StartLocation.AsLocation(),
 
                             location = location.AsLocation(),
@@ -581,7 +603,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                                                 @type = "object",
                                                     className = "Object",
                                                     description = "Object",
-                                                    objectId = $"dotnet:scope:{frame_id-1}",
+                                                    objectId = $"dotnet:scope:{frame_id}",
                                             },
                                             name = method_name,
                                             startLocation = method.StartLocation.AsLocation(),
@@ -673,62 +695,67 @@ namespace Microsoft.WebAssembly.Diagnostics
             return true;
         }
 
-        internal bool TryFindVariableValueInCache(ExecutionContext ctx, string expression, bool only_search_on_this, out JToken obj)
+        async Task<bool> OnJSEventRaised(SessionId sessionId, JObject eventArgs, CancellationToken token)
         {
-            if (ctx.LocalsCache.TryGetValue(expression, out obj))
+            string eventName = eventArgs?["eventName"]?.Value<string>();
+            if (string.IsNullOrEmpty(eventName))
             {
-                if (only_search_on_this && obj["fromThis"] == null)
-                    return false;
-                return true;
-            }
-            return false;
-        }
-
-        internal async Task<JToken> TryGetVariableValue(MessageId msg_id, int scope_id, string expression, bool only_search_on_this, CancellationToken token)
-        {
-            JToken thisValue = null;
-            var context = GetContext(msg_id);
-            if (context.CallStack == null)
-                return null;
-
-            if (TryFindVariableValueInCache(context, expression, only_search_on_this, out JToken obj))
-                return obj;
-
-            var scope = context.CallStack.FirstOrDefault(s => s.Id == scope_id);
-            var live_vars = scope.Method.GetLiveVarsAt(scope.Location.CliLocation.Offset);
-            //get_this
-            var res = await SendMonoCommand(msg_id, MonoCommands.GetScopeVariables(scope.Id, live_vars), token);
-
-            var scope_values = res.Value?["result"]?["value"]?.Values<JObject>()?.ToArray();
-            thisValue = scope_values?.FirstOrDefault(v => v["name"]?.Value<string>() == "this");
-
-            if (!only_search_on_this)
-            {
-                if (thisValue != null && expression == "this")
-                    return thisValue;
-
-                var value = scope_values.SingleOrDefault(sv => sv["name"]?.Value<string>() == expression);
-                if (value != null)
-                    return value;
+                logger.LogDebug($"Missing name for raised js event: {eventArgs}");
+                return false;
             }
 
-            //search in scope
-            if (thisValue != null)
-            {
-                if (!DotnetObjectId.TryParse(thisValue["value"]["objectId"], out var objectId))
-                    return null;
+            logger.LogDebug($"OnJsEventRaised: args: {eventArgs}");
 
-                res = await SendMonoCommand(msg_id, MonoCommands.GetDetails(objectId), token);
-                scope_values = res.Value?["result"]?["value"]?.Values<JObject>().ToArray();
-                var foundValue = scope_values.FirstOrDefault(v => v["name"].Value<string>() == expression);
-                if (foundValue != null)
+            switch (eventName)
+            {
+                case "AssemblyLoaded":
+                    return await OnAssemblyLoadedJSEvent(sessionId, eventArgs, token);
+                default:
                 {
-                    foundValue["fromThis"] = true;
-                    context.LocalsCache[foundValue["name"].Value<string>()] = foundValue;
-                    return foundValue;
+                    logger.LogDebug($"Unknown js event name: {eventName} with args {eventArgs}");
+                    return await Task.FromResult(false);
                 }
             }
-            return null;
+        }
+
+        async Task<bool> OnAssemblyLoadedJSEvent(SessionId sessionId, JObject eventArgs, CancellationToken token)
+        {
+            try
+            {
+                var store = await LoadStore(sessionId, token);
+                var assembly_name = eventArgs?["assembly_name"]?.Value<string>();
+
+                if (store.GetAssemblyByUnqualifiedName(assembly_name) != null)
+                {
+                    Log("debug", $"Got AssemblyLoaded event for {assembly_name}, but skipping it as it has already been loaded.");
+                    return true;
+                }
+
+                var assembly_b64 = eventArgs?["assembly_b64"]?.ToObject<string>();
+                var pdb_b64 = eventArgs?["pdb_b64"]?.ToObject<string>();
+
+                if (String.IsNullOrEmpty(assembly_b64))
+                {
+                    logger.LogDebug("No assembly data provided to load.");
+                    return false;
+                }
+
+                var assembly_data = Convert.FromBase64String(assembly_b64);
+                var pdb_data = String.IsNullOrEmpty(pdb_b64) ? null : Convert.FromBase64String(pdb_b64);
+
+                var context = GetContext(sessionId);
+                foreach (var source in store.Add(sessionId, assembly_data, pdb_data))
+                {
+                    await OnSourceFileAdded(sessionId, source, context, token);
+                }
+
+                return true;
+            }
+            catch (Exception e)
+            {
+                logger.LogDebug($"Failed to load assemblies and PDBs: {e}");
+                return false;
+            }
         }
 
         async Task<bool> OnEvaluateOnCallFrame(MessageId msg_id, int scope_id, string expression, CancellationToken token)
@@ -739,35 +766,40 @@ namespace Microsoft.WebAssembly.Diagnostics
                 if (context.CallStack == null)
                     return false;
 
-                var varValue = await TryGetVariableValue(msg_id, scope_id, expression, false, token);
+                var resolver = new MemberReferenceResolver(this, context, msg_id, scope_id, logger);
 
-                if (varValue != null)
+                JObject retValue = await resolver.Resolve(expression, token);
+                if (retValue == null)
+                {
+                    retValue = await EvaluateExpression.CompileAndRunTheExpression(expression, resolver, token);
+                }
+
+                if (retValue != null)
                 {
                     SendResponse(msg_id, Result.OkFromObject(new
                     {
-                        result = varValue["value"]
+                        result = retValue
                     }), token);
-                    return true;
                 }
-
-                string retValue = await EvaluateExpression.CompileAndRunTheExpression(this, msg_id, scope_id, expression, token);
-                SendResponse(msg_id, Result.OkFromObject(new
+                else
                 {
-                    result = new
-                    {
-                        value = retValue
-                    }
-                }), token);
-                return true;
+                    SendResponse(msg_id, Result.Err($"Unable to evaluate '{expression}'"), token);
+                }
+            }
+            catch (ReturnAsErrorException ree)
+            {
+                SendResponse(msg_id, ree.Error, token);
             }
             catch (Exception e)
             {
-                logger.LogDebug(e, $"Error in EvaluateOnCallFrame for expression '{expression}.");
+                logger.LogDebug($"Error in EvaluateOnCallFrame for expression '{expression}' with '{e}.");
+                SendResponse(msg_id, Result.Exception(e), token);
             }
-            return false;
+
+            return true;
         }
 
-        async Task<Result> GetScopeProperties(MessageId msg_id, int scope_id, CancellationToken token)
+        internal async Task<Result> GetScopeProperties(MessageId msg_id, int scope_id, CancellationToken token)
         {
             try
             {
@@ -788,8 +820,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                 if (values == null || values.Length == 0)
                     return Result.OkFromObject(new { result = Array.Empty<object>() });
 
+                var frameCache = ctx.GetCacheForScope(scope_id);
                 foreach (var value in values)
-                    ctx.LocalsCache[value["name"]?.Value<string>()] = value;
+                {
+                    frameCache.Locals[value["name"]?.Value<string>()] = value;
+                }
 
                 return Result.OkFromObject(new { result = values });
             }
@@ -820,6 +855,22 @@ namespace Microsoft.WebAssembly.Diagnostics
             return bp;
         }
 
+        async Task OnSourceFileAdded(SessionId sessionId, SourceFile source, ExecutionContext context, CancellationToken token)
+        {
+            JObject scriptSource = JObject.FromObject(source.ToScriptSource(context.Id, context.AuxData));
+            Log("debug", $"sending {source.Url} {context.Id} {sessionId.sessionId}");
+
+            SendEvent(sessionId, "Debugger.scriptParsed", scriptSource, token);
+
+            foreach (var req in context.BreakpointRequests.Values)
+            {
+                if (req.TryResolve(source))
+                {
+                    await SetBreakpoint(sessionId, context.store, req, true, token);
+                }
+            }
+        }
+
         async Task<DebugStore> LoadStore(SessionId sessionId, CancellationToken token)
         {
             var context = GetContext(sessionId);
@@ -840,18 +891,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 await
                 foreach (var source in context.store.Load(sessionId, loaded_files, token).WithCancellation(token))
                 {
-                    var scriptSource = JObject.FromObject(source.ToScriptSource(context.Id, context.AuxData));
-                    Log("verbose", $"\tsending {source.Url} {context.Id} {sessionId.sessionId}");
-
-                    SendEvent(sessionId, "Debugger.scriptParsed", scriptSource, token);
-
-                    foreach (var req in context.BreakpointRequests.Values)
-                    {
-                        if (req.TryResolve(source))
-                        {
-                            await SetBreakpoint(sessionId, context.store, req, true, token);
-                        }
-                    }
+                    await OnSourceFileAdded(sessionId, source, context, token);
                 }
             }
             catch (Exception e)
@@ -902,7 +942,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     bp.State = BreakpointState.Disabled;
                 }
             }
-            breakpointRequest.Locations.Clear();
+            context.BreakpointRequests.Remove(bpid);
         }
 
         async Task SetBreakpoint(SessionId sessionId, DebugStore store, BreakpointRequest req, bool sendResolvedEvent, CancellationToken token)
@@ -1019,6 +1059,25 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                 if (sessionId != SessionId.Null && !res.IsOk)
                     sessions.Remove(sessionId);
+            }
+        }
+
+        bool JObjectTryParse(string str, out JObject obj, bool log_exception = true)
+        {
+            obj = null;
+            if (string.IsNullOrEmpty(str))
+                return false;
+
+            try
+            {
+                obj = JObject.Parse(str);
+                return true;
+            }
+            catch (JsonReaderException jre)
+            {
+                if (log_exception)
+                    logger.LogDebug($"Could not parse {str}. Failed with {jre}");
+                return false;
             }
         }
     }

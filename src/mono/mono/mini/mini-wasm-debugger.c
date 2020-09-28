@@ -19,6 +19,7 @@
 #include <emscripten.h>
 
 #include "mono/metadata/assembly-internals.h"
+#include "mono/metadata/debug-mono-ppdb.h"
 
 static int log_level = 1;
 
@@ -29,6 +30,12 @@ enum {
 	EXCEPTION_MODE_UNCAUGHT,
 	EXCEPTION_MODE_ALL
 };
+
+// Flags for get_*_properties
+#define GPFLAG_NONE               0x0000
+#define GPFLAG_OWN_PROPERTIES     0x0001
+#define GPFLAG_ACCESSORS_ONLY     0x0002
+#define GPFLAG_EXPAND_VALUETYPES  0x0004
 
 //functions exported to be used by JS
 G_BEGIN_DECLS
@@ -41,14 +48,14 @@ EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_get_local_vars (int scope, int* pos, int
 EMSCRIPTEN_KEEPALIVE void mono_wasm_clear_all_breakpoints (void);
 EMSCRIPTEN_KEEPALIVE int mono_wasm_setup_single_step (int kind);
 EMSCRIPTEN_KEEPALIVE int mono_wasm_pause_on_exceptions (int state);
-EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_get_object_properties (int object_id, gboolean expand_value_types);
-EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_get_array_values (int object_id, int start_idx, int count, gboolean expand_value_types);
+EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_get_object_properties (int object_id, int gpflags);
+EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_get_array_values (int object_id, int start_idx, int count, int gpflags);
 EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_invoke_getter_on_object (int object_id, const char* name);
 EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_invoke_getter_on_value (void *value, MonoClass *klass, const char *name);
 EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_get_deref_ptr_value (void *value_addr, MonoClass *klass);
 
 //JS functions imported that we use
-extern void mono_wasm_add_frame (int il_offset, int method_token, const char *assembly_name, const char *method_name);
+extern void mono_wasm_add_frame (int il_offset, int method_token, int frame_id, const char *assembly_name, const char *method_name);
 extern void mono_wasm_fire_bp (void);
 extern void mono_wasm_fire_exception (int exception_obj_id, const char* message, const char* class_name, gboolean uncaught);
 extern void mono_wasm_add_obj_var (const char*, const char*, guint64);
@@ -58,11 +65,13 @@ extern void mono_wasm_add_properties_var (const char*, gint32);
 extern void mono_wasm_add_array_item (int);
 extern void mono_wasm_set_is_async_method (guint64);
 extern void mono_wasm_add_typed_value (const char *type, const char *str_value, double value);
+extern void mono_wasm_asm_loaded (const char *asm_name, const char *assembly_data, guint32 assembly_len, const char *pdb_data, guint32 pdb_len);
 
 G_END_DECLS
 
-static void describe_object_properties_for_klass (void *obj, MonoClass *klass, gboolean isAsyncLocalThis, gboolean expandValueType);
+static void describe_object_properties_for_klass (void *obj, MonoClass *klass, gboolean isAsyncLocalThis, int gpflags);
 static void handle_exception (MonoException *exc, MonoContext *throw_ctx, MonoContext *catch_ctx, StackFrameInfo *catch_frame);
+static void assembly_loaded (MonoProfiler *prof, MonoAssembly *assembly);
 
 //FIXME move all of those fields to the profiler object
 static gboolean debugger_enabled;
@@ -137,17 +146,20 @@ collect_frames (MonoStackFrameInfo *info, MonoContext *ctx, gpointer data)
 	if (!method)
 		return FALSE;
 
-	DEBUG_PRINTF (2, "Reporting method %s native_offset %d\n", method->name, info->native_offset);
+	DEBUG_PRINTF (2, "collect_frames: Reporting method %s native_offset %d, wrapper_type: %d\n", method->name, info->native_offset, method->wrapper_type);
 
 	if (!mono_find_prev_seq_point_for_native_offset (mono_get_root_domain (), method, info->native_offset, NULL, &sp))
-		DEBUG_PRINTF (2, "Failed to lookup sequence point\n");
+		DEBUG_PRINTF (2, "collect_frames: Failed to lookup sequence point. method: %s, native_offset: %d \n", method->name, info->native_offset);
 
-	DbgEngineStackFrame *frame = g_new0 (DbgEngineStackFrame, 1);
+	StackFrame *frame = g_new0 (StackFrame, 1);
+	frame->de.ji = info->ji;
+	frame->de.domain = info->domain;
+	frame->de.method = method;
+	frame->de.native_offset = info->native_offset;
 
-	frame->ji = info->ji;
-	frame->domain = info->domain;
-	frame->method = method;
-	frame->native_offset = info->native_offset;
+	frame->il_offset = info->il_offset;
+	frame->interp_frame = info->interp_frame;
+	frame->frame_addr = info->frame_addr;
 
 	g_ptr_array_add (frames, frame);
 
@@ -229,24 +241,55 @@ ensure_runtime_is_suspended (void)
 	return DE_ERR_NONE;
 }
 
+static int 
+get_object_id(MonoObject *obj) 
+{
+	ObjRef *ref;
+	if (!obj)
+		return 0;
+
+	ref = (ObjRef *)g_hash_table_lookup (obj_to_objref, GINT_TO_POINTER (~((gsize)obj)));
+	if (ref)
+		return ref->id;
+	ref = g_new0 (ObjRef, 1);
+	ref->id = mono_atomic_inc_i32 (&objref_id);
+	ref->handle = mono_gchandle_new_weakref_internal (obj, FALSE);
+	g_hash_table_insert (objrefs, GINT_TO_POINTER (ref->id), ref);
+	g_hash_table_insert (obj_to_objref, GINT_TO_POINTER (~((gsize)obj)), ref);
+	return ref->id;
+}
+
 static int
-get_this_async_id (DbgEngineStackFrame *f)
+get_this_async_id (DbgEngineStackFrame *frame)
 {
-	g_error ("get_this_async_id");
-	return 0;
-}
+	MonoClassField *builder_field;
+	gpointer builder;
+	MonoMethod *method;
+	MonoObject *ex;
+	ERROR_DECL (error);
+	MonoObject *obj;
 
-static gboolean
-set_set_notification_for_wait_completion_flag (DbgEngineStackFrame *f)
-{
-	g_error ("set_set_notification_for_wait_completion_flag");
-	return FALSE;
-}
+	/*
+	 * FRAME points to a method in a state machine class/struct.
+	 * Call the ObjectIdForDebugger method of the associated method builder type.
+	 */
+	builder = get_async_method_builder (frame);
+	if (!builder)
+		return 0;
 
-static MonoMethod*
-get_notify_debugger_of_wait_completion_method (void)
-{
-	g_error ("get_notify_debugger_of_wait_completion_method");
+	builder_field = mono_class_get_field_from_name_full (get_class_to_get_builder_field(frame), "<>t__builder", NULL);
+	if (!builder_field)
+		return 0;
+
+	method = get_object_id_for_debugger_method (mono_class_from_mono_type_internal (builder_field->type));
+	if (!method) {
+		return 0;
+	}
+
+	obj = mono_runtime_try_invoke (method, builder, NULL, &ex, error);
+	mono_error_assert_ok (error);
+
+	return get_object_id (obj);
 }
 
 typedef struct {
@@ -367,6 +410,7 @@ mono_wasm_debugger_init (void)
 	mono_profiler_set_jit_done_callback (prof, jit_done);
 	//FIXME support multiple appdomains
 	mono_profiler_set_domain_loaded_callback (prof, appdomain_load);
+	mono_profiler_set_assembly_loaded_callback (prof, assembly_loaded);
 
 	obj_to_objref = g_hash_table_new (NULL, NULL);
 	objrefs = g_hash_table_new_full (NULL, NULL, NULL, mono_debugger_free_objref);
@@ -445,22 +489,24 @@ mono_wasm_setup_single_step (int kind)
 	return isBPOnNativeCode;
 }
 
-static int 
-get_object_id(MonoObject *obj) 
+static void
+assembly_loaded (MonoProfiler *prof, MonoAssembly *assembly)
 {
-	ObjRef *ref;
-	if (!obj)
-		return 0;
-
-	ref = (ObjRef *)g_hash_table_lookup (obj_to_objref, GINT_TO_POINTER (~((gsize)obj)));
-	if (ref)
-		return ref->id;
-	ref = g_new0 (ObjRef, 1);
-	ref->id = mono_atomic_inc_i32 (&objref_id);
-	ref->handle = mono_gchandle_new_weakref_internal (obj, FALSE);
-	g_hash_table_insert (objrefs, GINT_TO_POINTER (ref->id), ref);
-	g_hash_table_insert (obj_to_objref, GINT_TO_POINTER (~((gsize)obj)), ref);
-	return ref->id;
+	DEBUG_PRINTF (2, "assembly_loaded callback called for %s\n", assembly->aname.name);
+	MonoImage *assembly_image = assembly->image;
+	MonoImage *pdb_image = NULL;
+	if (mono_has_pdb_checksum ((char *) assembly_image->raw_data, assembly_image->raw_data_len)) { //if it's a release assembly we don't need to send to DebuggerProxy
+		MonoDebugHandle *handle = mono_debug_get_handle (assembly_image);
+		if (handle) {
+			MonoPPDBFile *ppdb = handle->ppdb;
+			if (!mono_ppdb_is_embedded (ppdb)) { //if it's an embedded pdb we don't need to send pdb extrated to DebuggerProxy. 
+				pdb_image = mono_ppdb_get_image (ppdb);
+				mono_wasm_asm_loaded (assembly_image->assembly_name, assembly_image->raw_data, assembly_image->raw_data_len, pdb_image->raw_data, pdb_image->raw_data_len);
+				return;
+			}
+		}
+		mono_wasm_asm_loaded (assembly_image->assembly_name, assembly_image->raw_data, assembly_image->raw_data_len, NULL, 0);
+	}
 }
 
 static void
@@ -651,23 +697,25 @@ list_frames (MonoStackFrameInfo *info, MonoContext *ctx, gpointer data)
 	MonoMethod *method;
 	char *method_full_name;
 
+	int* frame_id_p = (int*)data;
+	(*frame_id_p)++;
+
 	//skip wrappers
 	if (info->type != FRAME_TYPE_MANAGED && info->type != FRAME_TYPE_INTERP)
 		return FALSE;
-
 
 	if (info->ji)
 		method = jinfo_get_method (info->ji);
 	else
 		method = info->method;
 
-	if (!method)
+	if (!method || method->wrapper_type != MONO_WRAPPER_NONE)
 		return FALSE;
 
-	DEBUG_PRINTF (2, "Reporting method %s native_offset %d\n", method->name, info->native_offset);
+	DEBUG_PRINTF (2, "list_frames: Reporting method %s native_offset %d, wrapper_type: %d\n", method->name, info->native_offset, method->wrapper_type);
 
 	if (!mono_find_prev_seq_point_for_native_offset (mono_get_root_domain (), method, info->native_offset, NULL, &sp))
-		DEBUG_PRINTF (1, "Failed to lookup sequence point\n");
+		DEBUG_PRINTF (2, "list_frames: Failed to lookup sequence point. method: %s, native_offset: %d\n", method->name, info->native_offset);
 
 	method_full_name = mono_method_full_name (method, FALSE);
 	while (method->is_inflated)
@@ -676,10 +724,8 @@ list_frames (MonoStackFrameInfo *info, MonoContext *ctx, gpointer data)
 	char *assembly_name = g_strdup (m_class_get_image (method->klass)->module_name);
 	inplace_tolower (assembly_name);
 
-	if (method->wrapper_type == MONO_WRAPPER_NONE) {
-		DEBUG_PRINTF (2, "adding off %d token %d assembly name %s\n", sp.il_offset, mono_metadata_token_index (method->token), assembly_name);
-		mono_wasm_add_frame (sp.il_offset, mono_metadata_token_index (method->token), assembly_name, method_full_name);
-	}
+	DEBUG_PRINTF (2, "adding off %d token %d assembly name %s\n", sp.il_offset, mono_metadata_token_index (method->token), assembly_name);
+	mono_wasm_add_frame (sp.il_offset, mono_metadata_token_index (method->token), *frame_id_p, assembly_name, method_full_name);
 
 	g_free (assembly_name);
 
@@ -689,7 +735,8 @@ list_frames (MonoStackFrameInfo *info, MonoContext *ctx, gpointer data)
 EMSCRIPTEN_KEEPALIVE void
 mono_wasm_enum_frames (void)
 {
-	mono_walk_stack_with_ctx (list_frames, NULL, MONO_UNWIND_NONE, NULL);
+	int frame_id = -1;
+	mono_walk_stack_with_ctx (list_frames, NULL, MONO_UNWIND_NONE, &frame_id);
 }
 
 static char*
@@ -763,6 +810,7 @@ typedef struct {
 	int target_frame;
 	int len;
 	int *pos;
+	gboolean found;
 } FrameDescData;
 
 /*
@@ -823,7 +871,24 @@ read_enum_value (const char *mem, int type)
 	return 0;
 }
 
-static gboolean describe_value(MonoType * type, gpointer addr, gboolean expandValueType)
+static gboolean
+nullable_try_get_value (guint8 *nullable, MonoClass *klass, gpointer* out_value)
+{
+	mono_class_setup_fields (klass);
+	g_assert (m_class_is_fields_inited (klass));
+
+	*out_value = NULL;
+	MonoClassField *klass_fields = m_class_get_fields (klass);
+	gpointer addr_for_has_value = mono_vtype_get_field_addr (nullable, &klass_fields[0]);
+	if (0 == *(guint8*)addr_for_has_value)
+		return FALSE;
+
+	*out_value = mono_vtype_get_field_addr (nullable, &klass_fields[1]);
+	return TRUE;
+}
+
+static gboolean
+describe_value(MonoType * type, gpointer addr, int gpflags)
 {
 	ERROR_DECL (error);
 	switch (type->type) {
@@ -892,7 +957,45 @@ static gboolean describe_value(MonoType * type, gpointer addr, gboolean expandVa
 			}
 			break;
 		}
+
+		case MONO_TYPE_OBJECT: {
+			MonoObject *obj = *(MonoObject**)addr;
+			MonoClass *klass = obj->vtable->klass;
+			if (!klass) {
+				// boxed null
+				mono_wasm_add_obj_var ("object", NULL, 0);
+				break;
+			}
+
+			type = m_class_get_byval_arg (klass);
+			if (type->type == MONO_TYPE_OBJECT) {
+				mono_wasm_add_obj_var ("object", "object", get_object_id (obj));
+				break;
+			}
+
+			// Boxed valuetype
+			if (m_class_is_valuetype (klass))
+				addr = mono_object_unbox_internal (obj);
+
+			return describe_value (type, addr, gpflags);
+		}
+
 		case MONO_TYPE_GENERICINST: {
+			MonoClass *klass = mono_class_from_mono_type_internal (type);
+			if (mono_class_is_nullable (klass)) {
+				MonoType *targ = type->data.generic_class->context.class_inst->type_argv [0];
+
+				gpointer nullable_value = NULL;
+				if (nullable_try_get_value (addr, klass, &nullable_value)) {
+					return describe_value (targ, nullable_value, gpflags);
+				} else {
+					char* class_name = mono_type_full_name (type);
+					mono_wasm_add_obj_var (class_name, NULL, 0);
+					g_free (class_name);
+					break;
+				}
+			}
+
 			if (mono_type_generic_inst_is_valuetype (type))
 				goto handle_vtype;
 			/*
@@ -902,10 +1005,15 @@ static gboolean describe_value(MonoType * type, gpointer addr, gboolean expandVa
 
 		case MONO_TYPE_SZARRAY:
 		case MONO_TYPE_ARRAY:
-		case MONO_TYPE_OBJECT:
 		case MONO_TYPE_CLASS: {
 			MonoObject *obj = *(MonoObject**)addr;
 			MonoClass *klass = type->data.klass;
+
+			if (m_class_is_valuetype (mono_object_class (obj))) {
+				addr = mono_object_unbox_internal (obj);
+				type = m_class_get_byval_arg (mono_object_class (obj));
+				goto handle_vtype;
+			}
 
 			char *class_name = mono_type_full_name (type);
 			int obj_id = get_object_id (obj);
@@ -923,17 +1031,16 @@ static gboolean describe_value(MonoType * type, gpointer addr, gboolean expandVa
 
 				method = mono_get_delegate_invoke_internal (klass);
 				if (!method) {
-					DEBUG_PRINTF (2, "Could not get a method for the delegate for %s\n", class_name);
-					break;
+					mono_wasm_add_func_var (class_name, NULL, -1);
+				} else {
+					MonoMethod *tm = ((MonoDelegate *)obj)->method;
+					char *tm_desc = NULL;
+					if (tm)
+						tm_desc = mono_method_to_desc_for_js (tm, FALSE);
+
+					mono_wasm_add_func_var (class_name, tm_desc, obj_id);
+					g_free (tm_desc);
 				}
-
-				MonoMethod *tm = ((MonoDelegate *)obj)->method;
-				char *tm_desc = NULL;
-				if (tm)
-					tm_desc = mono_method_to_desc_for_js (tm, FALSE);
-
-				mono_wasm_add_func_var (class_name, tm_desc, obj_id);
-				g_free (tm_desc);
 			} else {
 				char *to_string_val = get_to_string_description (class_name, klass, addr);
 				mono_wasm_add_obj_var (class_name, to_string_val, obj_id);
@@ -984,7 +1091,7 @@ static gboolean describe_value(MonoType * type, gpointer addr, gboolean expandVa
 			} else {
 				char *to_string_val = get_to_string_description (class_name, klass, addr);
 
-				if (expandValueType) {
+				if (gpflags & GPFLAG_EXPAND_VALUETYPES) {
 					int32_t size = mono_class_value_size (klass, NULL);
 					void *value_buf = g_malloc0 (size);
 					mono_value_copy_internal (value_buf, addr, klass);
@@ -996,7 +1103,7 @@ static gboolean describe_value(MonoType * type, gpointer addr, gboolean expandVa
 					g_free (value_buf);
 
 					// FIXME: isAsyncLocalThis
-					describe_object_properties_for_klass (addr, klass, FALSE, expandValueType);
+					describe_object_properties_for_klass (addr, klass, FALSE, gpflags);
 					mono_wasm_add_typed_value ("end_vt", NULL, 0);
 				} else {
 					EM_ASM ({
@@ -1030,7 +1137,7 @@ are_getters_allowed (const char *class_name)
 	return FALSE;
 }
 
-static void
+static gboolean
 invoke_and_describe_getter_value (MonoObject *obj, MonoProperty *p)
 {
 	ERROR_DECL (error);
@@ -1043,35 +1150,45 @@ invoke_and_describe_getter_value (MonoObject *obj, MonoProperty *p)
 	if (!is_ok (error) && exc == NULL)
 		exc = (MonoObject*) mono_error_convert_to_exception (error);
 	if (exc)
-		describe_value (mono_get_object_type (), &exc, TRUE);
+		return describe_value (mono_get_object_type (), &exc, GPFLAG_EXPAND_VALUETYPES);
 	else if (!res || !m_class_is_valuetype (mono_object_class (res)))
-		describe_value (sig->ret, &res, TRUE);
+		return describe_value (sig->ret, &res, GPFLAG_EXPAND_VALUETYPES);
 	else
-		describe_value (sig->ret, mono_object_unbox_internal (res), TRUE);
+		return describe_value (sig->ret, mono_object_unbox_internal (res), GPFLAG_EXPAND_VALUETYPES);
 }
 
 static void
-describe_object_properties_for_klass (void *obj, MonoClass *klass, gboolean isAsyncLocalThis, gboolean expandValueType)
+describe_object_properties_for_klass (void *obj, MonoClass *klass, gboolean isAsyncLocalThis, int gpflags)
 {
 	MonoClassField *f;
 	MonoProperty *p;
 	MonoMethodSignature *sig;
-	gpointer iter = NULL;
 	gboolean is_valuetype;
 	int pnum;
 	char *klass_name;
 	gboolean auto_invoke_getters;
+	gboolean is_own;
+	gboolean only_backing_fields;
 
 	g_assert (klass);
-	is_valuetype = m_class_is_valuetype(klass);
+	MonoClass *start_klass = klass;
 
+	only_backing_fields = gpflags & GPFLAG_ACCESSORS_ONLY;
+	is_valuetype = m_class_is_valuetype(klass);
+	if (is_valuetype)
+		gpflags |= GPFLAG_EXPAND_VALUETYPES;
+
+handle_parent:
+	is_own = (start_klass == klass);
+	klass_name = mono_class_full_name (klass);
+	gpointer iter = NULL;
 	while (obj && (f = mono_class_get_fields_internal (klass, &iter))) {
 		if (isAsyncLocalThis && f->name[0] == '<' && f->name[1] == '>') {
 			if (g_str_has_suffix (f->name, "__this")) {
 				mono_wasm_add_properties_var ("this", f->offset);
 				gpointer field_value = (guint8*)obj + f->offset;
 
-				describe_value (f->type, field_value, is_valuetype | expandValueType);
+				describe_value (f->type, field_value, gpflags);
 			}
 
 			continue;
@@ -1081,20 +1198,23 @@ describe_object_properties_for_klass (void *obj, MonoClass *klass, gboolean isAs
 		if (mono_field_is_deleted (f))
 			continue;
 
-		mono_wasm_add_properties_var (f->name, f->offset);
+		if (only_backing_fields && !g_str_has_suffix(f->name, "k__BackingField"))
+			continue;
+
+		EM_ASM ({
+			MONO.mono_wasm_add_properties_var ($0, { field_offset: $1, is_own: $2, attr: $3, owner_class: $4 });
+		}, f->name, f->offset, is_own, f->type->attrs, klass_name);
 
 		gpointer field_addr;
 		if (is_valuetype)
 			field_addr = mono_vtype_get_field_addr (obj, f);
 		else
 			field_addr = (guint8*)obj + f->offset;
-		
-		describe_value (f->type, field_addr, is_valuetype | expandValueType);
+
+		describe_value (f->type, field_addr, gpflags);
 	}
 
-	klass_name = mono_class_full_name (klass);
 	auto_invoke_getters = are_getters_allowed (klass_name);
-
 	iter = NULL;
 	pnum = 0;
 	while ((p = mono_class_get_properties (klass, &iter))) {
@@ -1102,8 +1222,15 @@ describe_object_properties_for_klass (void *obj, MonoClass *klass, gboolean isAs
 			if (isAsyncLocalThis && (p->name[0] != '<' || (p->name[0] == '<' &&  p->name[1] == '>')))
 				continue;
 
-			mono_wasm_add_properties_var (p->name, pnum);
 			sig = mono_method_signature_internal (p->get);
+			if (sig->param_count != 0) {
+				// getters with params are not shown
+				continue;
+			}
+
+			EM_ASM ({
+				MONO.mono_wasm_add_properties_var ($0, { field_offset: $1, is_own: $2, attr: $3, owner_class: $4 });
+			}, p->name, pnum, is_own, p->attrs, klass_name);
 
 			gboolean vt_self_type_getter = is_valuetype && mono_class_from_mono_type_internal (sig->ret) == klass;
 			if (auto_invoke_getters && !vt_self_type_getter) {
@@ -1112,8 +1239,7 @@ describe_object_properties_for_klass (void *obj, MonoClass *klass, gboolean isAs
 				// not allowed to call the getter here
 				char *ret_class_name = mono_class_full_name (mono_class_from_mono_type_internal (sig->ret));
 
-				gboolean invokable = sig->param_count == 0;
-				mono_wasm_add_typed_value ("getter", ret_class_name, invokable);
+				mono_wasm_add_typed_value ("getter", ret_class_name, -1);
 
 				g_free (ret_class_name);
 				continue;
@@ -1123,6 +1249,14 @@ describe_object_properties_for_klass (void *obj, MonoClass *klass, gboolean isAs
 	}
 
 	g_free (klass_name);
+
+	// ownProperties
+	// Note: ownProperties should mean that we return members of the klass itself,
+	// but we are going to ignore that here, because otherwise vscode/chrome don't
+	// seem to ask for inherited fields at all.
+	// if (!is_valuetype && !(gpflags & GPFLAG_OWN_PROPERTIES) && (klass = m_class_get_parent (klass)))
+	if (!is_valuetype && (klass = m_class_get_parent (klass)))
+		goto handle_parent;
 }
 
 /*
@@ -1148,9 +1282,9 @@ describe_delegate_properties (MonoObject *obj)
 }
 
 static gboolean
-describe_object_properties (guint64 objectId, gboolean isAsyncLocalThis, gboolean expandValueType)
+describe_object_properties (guint64 objectId, gboolean isAsyncLocalThis, int gpflags)
 {
-	DEBUG_PRINTF (2, "describe_object_properties %llu\n", objectId);
+	DEBUG_PRINTF (2, "describe_object_properties %llu, gpflags: %d\n", objectId, gpflags);
 
 	MonoObject *obj = get_object_from_id (objectId);
 	if (!obj)
@@ -1160,7 +1294,7 @@ describe_object_properties (guint64 objectId, gboolean isAsyncLocalThis, gboolea
 		// delegates get the same id format as regular objects
 		describe_delegate_properties (obj);
 	} else {
-		describe_object_properties_for_klass (obj, obj->vtable->klass, isAsyncLocalThis, expandValueType);
+		describe_object_properties_for_klass (obj, obj->vtable->klass, isAsyncLocalThis, gpflags);
 	}
 
 	return TRUE;
@@ -1174,7 +1308,9 @@ invoke_getter (void *obj_or_value, MonoClass *klass, const char *name)
 		return FALSE;
 	}
 
-	gpointer iter = NULL;
+	gpointer iter;
+handle_parent:
+	iter = NULL;
 	MonoProperty *p;
 	while ((p = mono_class_get_properties (klass, &iter))) {
 		//if get doesn't have name means that doesn't have a getter implemented and we don't want to show value, like VS debug
@@ -1185,11 +1321,14 @@ invoke_getter (void *obj_or_value, MonoClass *klass, const char *name)
 		return TRUE;
 	}
 
+	if ((klass = m_class_get_parent(klass)))
+		goto handle_parent;
+
 	return FALSE;
 }
 
-static gboolean 
-describe_array_values (guint64 objectId, int startIdx, int count, gboolean expandValueType)
+static gboolean
+describe_array_values (guint64 objectId, int startIdx, int count, int gpflags)
 {
 	if (count == 0)
 		return TRUE;
@@ -1229,7 +1368,7 @@ describe_array_values (guint64 objectId, int startIdx, int count, gboolean expan
 	for (int i = startIdx; i < endIdx; i ++) {
 		mono_wasm_add_array_item(i);
 		elem = (gpointer*)((char*)arr->vector + (i * esize));
-		describe_value (m_class_get_byval_arg (m_class_get_element_class (klass)), elem, expandValueType);
+		describe_value (m_class_get_byval_arg (m_class_get_element_class (klass)), elem, gpflags);
 	}
 	return TRUE;
 }
@@ -1237,14 +1376,14 @@ describe_array_values (guint64 objectId, int startIdx, int count, gboolean expan
 static void
 describe_async_method_locals (InterpFrame *frame, MonoMethod *method)
 {
-	//Async methods are special in the way that local variables can be lifted to generated class fields 
+	//Async methods are special in the way that local variables can be lifted to generated class fields
 	gpointer addr = NULL;
 	if (mono_debug_lookup_method_async_debug_info (method)) {
 		addr = mini_get_interp_callbacks ()->frame_get_this (frame);
 		MonoObject *obj = *(MonoObject**)addr;
 		int objId = get_object_id (obj);
 		mono_wasm_set_is_async_method (objId);
-		describe_object_properties (objId, TRUE, FALSE);
+		describe_object_properties (objId, TRUE, GPFLAG_NONE);
 	}
 }
 
@@ -1264,30 +1403,36 @@ describe_non_async_this (InterpFrame *frame, MonoMethod *method)
 		mono_wasm_add_properties_var ("this", -1);
 
 		if (m_class_is_valuetype (klass)) {
-			describe_value (type, obj, TRUE);
+			describe_value (type, obj, GPFLAG_EXPAND_VALUETYPES);
 		} else {
 			// this is an object, and we can retrieve the valuetypes in it later
 			// through the object id
-			describe_value (type, addr, FALSE);
+			describe_value (type, addr, GPFLAG_NONE);
 		}
 	}
 }
 
 static gboolean
-describe_variable (InterpFrame *frame, MonoMethod *method, int pos, gboolean expandValueType)
+describe_variable (InterpFrame *frame, MonoMethod *method, MonoMethodHeader *header, int pos, int gpflags)
 {
-	ERROR_DECL (error);
-	MonoMethodHeader *header = NULL;
-
 	MonoType *type = NULL;
 	gpointer addr = NULL;
 	if (pos < 0) {
+		MonoMethodSignature *sig = mono_method_signature_internal (method);
 		pos = -pos - 1;
-		type = mono_method_signature_internal (method)->params [pos];
+
+		if (pos >= sig->param_count) {
+			DEBUG_PRINTF(1, "BUG: describe_variable, trying to access param indexed %d, but the method (%s) has only %d params\n", pos, method->name, sig->param_count);
+			return FALSE;
+		}
+
+		type = sig->params [pos];
 		addr = mini_get_interp_callbacks ()->frame_get_arg (frame, pos);
 	} else {
-		header = mono_method_get_header_checked (method, error);
-		mono_error_assert_ok (error); /* FIXME report error */
+		if (pos >= header->num_locals) {
+			DEBUG_PRINTF(1, "BUG: describe_variable, trying to access local indexed %d, but the method (%s) has only %d locals\n", pos, method->name, header->num_locals);
+			return FALSE;
+		}
 
 		type = header->locals [pos];
 		addr = mini_get_interp_callbacks ()->frame_get_local (frame, pos);
@@ -1295,41 +1440,45 @@ describe_variable (InterpFrame *frame, MonoMethod *method, int pos, gboolean exp
 
 	DEBUG_PRINTF (2, "adding val %p type [%p] %s\n", addr, type, mono_type_full_name (type));
 
-	describe_value(type, addr, expandValueType);
-	if (header)
-		mono_metadata_free_mh (header);
-
-	return TRUE;
+	return describe_value(type, addr, gpflags);
 }
 
 static gboolean
 describe_variables_on_frame (MonoStackFrameInfo *info, MonoContext *ctx, gpointer ud)
 {
+	ERROR_DECL (error);
 	FrameDescData *data = (FrameDescData*)ud;
+
+	++data->cur_frame;
 
 	//skip wrappers
 	if (info->type != FRAME_TYPE_MANAGED && info->type != FRAME_TYPE_INTERP) {
 		return FALSE;
 	}
 
-	if (data->cur_frame < data->target_frame) {
-		++data->cur_frame;
+	if (data->cur_frame != data->target_frame)
 		return FALSE;
-	}
+
+	data->found = TRUE;
 
 	InterpFrame *frame = (InterpFrame*)info->interp_frame;
 	g_assert (frame);
 	MonoMethod *method = frame->imethod->method;
 	g_assert (method);
 
+	MonoMethodHeader *header = mono_method_get_header_checked (method, error);
+	mono_error_assert_ok (error); /* FIXME report error */
+
 	for (int i = 0; i < data->len; i++)
 	{
-		describe_variable (frame, method, data->pos[i], TRUE);
+		if (!describe_variable (frame, method, header, data->pos[i], GPFLAG_EXPAND_VALUETYPES))
+			mono_wasm_add_typed_value("symbol", "<unreadable value>", 0);
 	}
 
 	describe_async_method_locals (frame, method);
 	describe_non_async_this (frame, method);
 
+	mono_metadata_free_mh (header);
 	return TRUE;
 }
 
@@ -1343,39 +1492,42 @@ mono_wasm_get_deref_ptr_value (void *value_addr, MonoClass *klass)
 	}
 
 	mono_wasm_add_properties_var ("deref", -1);
-	describe_value (type->data.type, value_addr, TRUE);
-	return TRUE;
+	return describe_value (type->data.type, value_addr, GPFLAG_EXPAND_VALUETYPES);
 }
 
 //FIXME this doesn't support getting the return value pseudo-var
 EMSCRIPTEN_KEEPALIVE gboolean
 mono_wasm_get_local_vars (int scope, int* pos, int len)
 {
+	if (scope < 0)
+		return FALSE;
+
 	FrameDescData data;
 	data.target_frame = scope;
-	data.cur_frame = 0;
+	data.cur_frame = -1;
 	data.len = len;
 	data.pos = pos;
+	data.found = FALSE;
 
 	mono_walk_stack_with_ctx (describe_variables_on_frame, NULL, MONO_UNWIND_NONE, &data);
 
-	return TRUE;
+	return data.found;
 }
 
 EMSCRIPTEN_KEEPALIVE gboolean
-mono_wasm_get_object_properties (int object_id, gboolean expand_value_types)
+mono_wasm_get_object_properties (int object_id, int gpflags)
 {
-	DEBUG_PRINTF (2, "getting properties of object %d\n", object_id);
+	DEBUG_PRINTF (2, "getting properties of object %d, gpflags: %d\n", object_id, gpflags);
 
-	return describe_object_properties (object_id, FALSE, expand_value_types);
+	return describe_object_properties (object_id, FALSE, gpflags);
 }
 
 EMSCRIPTEN_KEEPALIVE gboolean
-mono_wasm_get_array_values (int object_id, int start_idx, int count, gboolean expand_value_types)
+mono_wasm_get_array_values (int object_id, int start_idx, int count, int gpflags)
 {
-	DEBUG_PRINTF (2, "getting array values %d, startIdx: %d, count: %d, expandValueType: %d\n", object_id, start_idx, count, expand_value_types);
+	DEBUG_PRINTF (2, "getting array values %d, startIdx: %d, count: %d, gpflags: 0x%x\n", object_id, start_idx, count, gpflags);
 
-	return describe_array_values (object_id, start_idx, count, expand_value_types);
+	return describe_array_values (object_id, start_idx, count, gpflags);
 }
 
 EMSCRIPTEN_KEEPALIVE gboolean

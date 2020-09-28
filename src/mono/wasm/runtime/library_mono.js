@@ -10,6 +10,13 @@
  * @property {object} o - value parsed as JSON
  */
 
+/**
+ * @typedef Event
+ * @type {object}
+ * @property {string} eventName - name of the event being raised
+ * @property {object} eventArgs - arguments for the event itself
+ */
+
 var MonoSupportLib = {
 	$MONO__postset: 'MONO.export_functions (Module);',
 	$MONO: {
@@ -47,6 +54,113 @@ var MonoSupportLib = {
 			module ["mono_wasm_new_root"] = MONO.mono_wasm_new_root;
 			module ["mono_wasm_new_roots"] = MONO.mono_wasm_new_roots;
 			module ["mono_wasm_release_roots"] = MONO.mono_wasm_release_roots;
+		},
+
+		_base64Converter: {
+			// Code from JSIL:
+			// https://github.com/sq/JSIL/blob/1d57d5427c87ab92ffa3ca4b82429cd7509796ba/JSIL.Libraries/Includes/Bootstrap/Core/Classes/System.Convert.js#L149
+			// Thanks to Katelyn Gadd @kg
+
+			_base64Table: [
+				'A', 'B', 'C', 'D',
+				'E', 'F', 'G', 'H',
+				'I', 'J', 'K', 'L',
+				'M', 'N', 'O', 'P',
+				'Q', 'R', 'S', 'T',
+				'U', 'V', 'W', 'X',
+				'Y', 'Z',
+				'a', 'b', 'c', 'd',
+				'e', 'f', 'g', 'h',
+				'i', 'j', 'k', 'l',
+				'm', 'n', 'o', 'p',
+				'q', 'r', 's', 't',
+				'u', 'v', 'w', 'x',
+				'y', 'z',
+				'0', '1', '2', '3',
+				'4', '5', '6', '7',
+				'8', '9',
+				'+', '/'
+			],
+
+			_makeByteReader: function (bytes, index, count) {
+				var position = (typeof (index) === "number") ? index : 0;
+				var endpoint;
+
+				if (typeof (count) === "number")
+					endpoint = (position + count);
+				else
+					endpoint = (bytes.length - position);
+
+				var result = {
+					read: function () {
+						if (position >= endpoint)
+							return false;
+
+						var nextByte = bytes[position];
+						position += 1;
+						return nextByte;
+					}
+				};
+
+				Object.defineProperty(result, "eof", {
+					get: function () {
+						return (position >= endpoint);
+					},
+					configurable: true,
+					enumerable: true
+				});
+
+				return result;
+			},
+
+			toBase64StringImpl: function (inArray, offset, length) {
+				var reader = this._makeByteReader(inArray, offset, length);
+				var result = "";
+				var ch1 = 0, ch2 = 0, ch3 = 0, bits = 0, equalsCount = 0, sum = 0;
+				var mask1 = (1 << 24) - 1, mask2 = (1 << 18) - 1, mask3 = (1 << 12) - 1, mask4 = (1 << 6) - 1;
+				var shift1 = 18, shift2 = 12, shift3 = 6, shift4 = 0;
+
+				while (true) {
+					ch1 = reader.read();
+					ch2 = reader.read();
+					ch3 = reader.read();
+
+					if (ch1 === false)
+						break;
+					if (ch2 === false) {
+						ch2 = 0;
+						equalsCount += 1;
+					}
+					if (ch3 === false) {
+						ch3 = 0;
+						equalsCount += 1;
+					}
+
+					// Seems backwards, but is right!
+					sum = (ch1 << 16) | (ch2 << 8) | (ch3 << 0);
+
+					bits = (sum & mask1) >> shift1;
+					result += this._base64Table[bits];
+					bits = (sum & mask2) >> shift2;
+					result += this._base64Table[bits];
+
+					if (equalsCount < 2) {
+						bits = (sum & mask3) >> shift3;
+						result += this._base64Table[bits];
+					}
+
+					if (equalsCount === 2) {
+						result += "==";
+					} else if (equalsCount === 1) {
+						result += "=";
+					} else {
+						bits = (sum & mask4) >> shift4;
+						result += this._base64Table[bits];
+					}
+				}
+
+				return result;
+			},
 		},
 
 		_mono_wasm_root_buffer_prototype: {
@@ -287,43 +401,108 @@ var MonoSupportLib = {
 			var i = 0;
 			while (i < var_list.length) {
 				let o = var_list [i];
-				const name = o.name;
-				if (name == null || name == undefined) {
-					i ++;
-					out_list.push (o);
-					continue;
-				}
+				const this_has_name = o.name !== undefined;
+				let next_has_value_or_get_set = false;
 
 				if (i + 1 < var_list.length) {
+					const next = var_list [i+1];
+					next_has_value_or_get_set = next.value !== undefined || next.get !== undefined || next.set !== undefined;
+				}
+
+				if (!this_has_name) {
+					// insert the object as-is
+					// Eg. in case of locals, the names are added
+					// later
+					i ++;
+				} else if (next_has_value_or_get_set) {
+					// found a {name} followed by a {value/get}
 					o = Object.assign (o, var_list [i + 1]);
+					i += 2;
+				} else {
+					// missing value/get, so add a placeholder one
+					o.value = {
+						type: "symbol",
+						value: "<unreadable value>",
+						description: "<unreadable value>"
+					};
+					i ++;
 				}
 
 				out_list.push (o);
-				i += 2;
 			}
 
 			return out_list;
 		},
 
-		_filter_automatic_properties: function (props) {
-			let names_found = {};
-			let final_var_list = [];
+		_filter_automatic_properties: function (props, accessors_only=false) {
+			// Note: members in @props, have derived class members, followed by
+			//       those from parent classes
 
-			for (var i in props) {
-				var p = props [i];
-				if (p.name in names_found)
-					continue;
+			// Note: Auto-properties have backing fields, named with a special suffix.
+			//       @props here will have the backing field, *and* the getter.
+			//
+			//       But we want to return only one name/value pair:
+			//          [name of the auto-property] = value of the backing field
 
-				if (p.name.endsWith ("k__BackingField"))
-					p.name = p.name.replace ("k__BackingField", "")
-							.replace ('<', '')
-							.replace ('>', '');
+			let getters = {};
+			let all_fields_except_backing_fields = {};
+			let backing_fields = {};
 
-				names_found [p.name] = p.name;
-				final_var_list.push (p);
-			}
+			// Split props into the 3 groups - backing_fields, getters, and all_fields_except_backing_fields
+			props.forEach(p => {
+				if (p.name === undefined) {
+					console.debug(`Bug: Found a member with no name. Skipping it. p: ${JSON.stringify(p)}`);
+					return;
+				}
 
-			return final_var_list;
+				if (p.name.endsWith('k__BackingField')) {
+					const auto_prop_name = p.name.replace ('k__BackingField', '')
+						.replace ('<', '')
+						.replace ('>', '');
+
+					// Only take the first one, as that is overriding others
+					if (!(auto_prop_name in backing_fields))
+						backing_fields[auto_prop_name] = Object.assign(p, { name: auto_prop_name });
+
+				} else if (p.get !== undefined) {
+					// if p wasn't overridden by a getter or a field,
+					// from a more derived class
+					if (!(p.name in getters) && !(p.name in all_fields_except_backing_fields))
+						getters[p.name] = p;
+
+				} else if (!(p.name in all_fields_except_backing_fields)) {
+					all_fields_except_backing_fields[p.name] = p;
+				}
+			});
+
+			// Filter/merge backing fields, and getters
+			Object.values(backing_fields).forEach(backing_field => {
+				const auto_prop_name = backing_field.name;
+				const getter = getters[auto_prop_name];
+
+				if (getter === undefined) {
+					// backing field with no getter
+					// eg. when a field overrides/`new string foo=..`
+					//     an autoproperty
+					return;
+				}
+
+				if (auto_prop_name in all_fields_except_backing_fields) {
+					delete getters[auto_prop_name];
+				} else if (getter.__args.owner_class === backing_field.__args.owner_class) {
+					// getter+backing_field are from the same class.
+					// Add the backing_field value as a field
+					all_fields_except_backing_fields[auto_prop_name] = backing_field;
+
+					// .. and drop the auto-prop getter
+					delete getters[auto_prop_name];
+				}
+			});
+
+			if (accessors_only)
+				return Object.values(getters);
+
+			return Object.values(all_fields_except_backing_fields).concat(Object.values(getters));
 		},
 
 		/** Given `dotnet:object:foo:bar`,
@@ -361,27 +540,103 @@ var MonoSupportLib = {
 			return res;
 		},
 
+        _resolve_member_by_name: function (base_object, base_name, expr_parts) {
+            if (base_object === undefined || base_object.value === undefined)
+                throw new Error(`Bug: base_object is undefined`);
+
+            if (base_object.value.type === 'object' && base_object.value.subtype === 'null')
+                throw new ReferenceError(`Null reference: ${base_name} is null`);
+
+            if (base_object.value.type !== 'object')
+                throw new ReferenceError(`'.' is only supported on non-primitive types. Failed on '${base_name}'`);
+
+            if (expr_parts.length == 0)
+                throw new Error(`Invalid member access expression`);//FIXME: need the full expression here
+
+            const root = expr_parts[0];
+            const props = this.mono_wasm_get_details(base_object.value.objectId, {});
+            let resObject = props.find(l => l.name == root);
+            if (resObject !== undefined) {
+                if (resObject.value === undefined && resObject.get !== undefined)
+                    resObject = this._invoke_getter(base_object.value.objectId, root);
+            }
+
+            if (resObject === undefined || expr_parts.length == 1)
+                return resObject;
+            else {
+                expr_parts.shift();
+                return this._resolve_member_by_name(resObject, root, expr_parts);
+            }
+        },
+
+        mono_wasm_eval_member_access: function (scope, var_list, rootObjectId, expr) {
+            if (expr === undefined || expr.length == 0)
+                throw new Error(`expression argument required`);
+
+            let parts = expr.split('.');
+            if (parts.length == 0)
+                throw new Error(`Invalid member access expression: ${expr}`);
+
+            const root = parts[0];
+
+            const locals = this.mono_wasm_get_variables(scope, var_list);
+            let rootObject = locals.find(l => l.name === root);
+            if (rootObject === undefined) {
+                // check `this`
+                const thisObject = locals.find(l => l.name == "this");
+                if (thisObject === undefined)
+                    throw new ReferenceError(`Could not find ${root} in locals, and no 'this' found.`);
+
+                const thisProps = this.mono_wasm_get_details(thisObject.value.objectId, {});
+                rootObject = thisProps.find(tp => tp.name == root);
+                if (rootObject === undefined)
+                    throw new ReferenceError(`Could not find ${root} in locals, or in 'this'`);
+
+                if (rootObject.value === undefined && rootObject.get !== undefined)
+                    rootObject = this._invoke_getter(thisObject.value.objectId, root);
+            }
+
+            parts.shift();
+
+            if (parts.length == 0)
+                return rootObject;
+
+            if (rootObject === undefined || rootObject.value === undefined)
+                throw new Error(`Could not get a value for ${root}`);
+
+            return this._resolve_member_by_name(rootObject, root, parts);
+        },
+
 		/**
 		 * @param  {WasmId} id
 		 * @returns {object[]}
 		 */
-		_get_vt_properties: function (id) {
-			let entry = this._id_table [id.idStr];
-			if (entry !== undefined && entry.members !== undefined)
-				return entry.members;
+		_get_vt_properties: function (id, args={}) {
+			let entry = this._get_id_props (id.idStr);
 
-			if (!isNaN (id.o.containerId))
-				this._get_object_properties (id.o.containerId, true);
-			else if (!isNaN (id.o.arrayId))
-				this._get_array_values (id, Number (id.o.arrayIdx), 1, true);
-			else
-				throw new Error (`Invalid valuetype id (${id.idStr}). Can't get properties for it.`);
+			if (entry === undefined || entry.members === undefined) {
+				if (!isNaN (id.o.containerId)) {
+					// We are expanding, so get *all* the members.
+					// Which ones to return based on @args, can be determined
+					// at the time of return
+					this._get_object_properties (id.o.containerId, { expandValueTypes: true });
+				} else if (!isNaN (id.o.arrayId))
+					this._get_array_values (id, Number (id.o.arrayIdx), 1, true);
+				else
+					throw new Error (`Invalid valuetype id (${id.idStr}). Can't get properties for it.`);
+			}
 
+			// Let's try again
 			entry = this._get_id_props (id.idStr);
-			if (entry !== undefined && entry.members !== undefined)
-				return entry.members;
 
-			throw new Error (`Unknown valuetype id: ${id.idStr}`);
+			if (entry !== undefined && entry.members !== undefined) {
+				if (args.accessorPropertiesOnly === true)
+					return entry.accessors;
+
+				return entry.members;
+			}
+
+			throw new Error (`Unknown valuetype id: ${id.idStr}. Failed to get properties for it.`);
 		},
 
 		/**
@@ -455,17 +710,37 @@ var MonoSupportLib = {
 			return res;
 		},
 
+		// Keep in sync with the flags in mini-wasm-debugger.c
+		_get_properties_args_to_gpflags: function (args) {
+			let gpflags =0;
+			/*
+				Disabled for now. Instead, we ask debugger.c to return
+				~all~ the members, and then handle the filtering in mono.js .
+
+			if (args.ownProperties)
+				gpflags |= 1;
+			if (args.accessorPropertiesOnly)
+				gpflags |= 2;
+			*/
+			if (args.expandValueTypes)
+				gpflags |= 4;
+
+			return gpflags;
+		},
+
 		/**
 		 * @param  {number} idNum
 		 * @param  {boolean} expandValueTypes
 		 * @returns {object}
 		 */
-		_get_object_properties: function(idNum, expandValueTypes) {
-			let { res_ok, res } = this.mono_wasm_get_object_properties_info (idNum, expandValueTypes);
+		_get_object_properties: function(idNum, args={}) {
+			let gpflags = this._get_properties_args_to_gpflags (args);
+
+			let { res_ok, res } = this.mono_wasm_get_object_properties_info (idNum, gpflags);
 			if (!res_ok)
 				throw new Error (`Failed to get properties for ${idNum}`);
 
-			res = MONO._filter_automatic_properties (res);
+			res = MONO._filter_automatic_properties (res, args.accessorPropertiesOnly === true);
 			res = this._assign_vt_ids (res, v => ({ containerId: idNum, fieldOffset: v.fieldOffset }));
 			res = this._post_process_details (res);
 
@@ -483,7 +758,8 @@ var MonoSupportLib = {
 			if (isNaN (id.o.arrayId) || isNaN (startIdx))
 				throw new Error (`Invalid array id: ${id.idStr}`);
 
-			let { res_ok, res } = this.mono_wasm_get_array_values_info (id.o.arrayId, startIdx, count, expandValueTypes);
+			let gpflags = this._get_properties_args_to_gpflags({ expandValueTypes });
+			let { res_ok, res } = this.mono_wasm_get_array_values_info (id.o.arrayId, startIdx, count, gpflags);
 			if (!res_ok)
 				throw new Error (`Failed to get properties for array id ${id.idStr}`);
 
@@ -505,6 +781,8 @@ var MonoSupportLib = {
 			if (details.length > 0)
 				this._extract_and_cache_value_types(details);
 
+			// remove __args added by add_properties_var
+			details.forEach(d => delete d.__args);
 			return details;
 		},
 
@@ -540,12 +818,20 @@ var MonoSupportLib = {
 				if (value.type != "object" || value.isValueType != true || value.expanded != true) // undefined would also give us false
 					continue;
 
+				if (value.members === undefined) {
+					// this could happen for valuetypes that maybe
+					// we were not able to describe, like `ref` parameters
+					// So, skip that
+					continue;
+				}
+
 				// Generate objectId for expanded valuetypes
 				value.objectId = value.objectId || this._new_or_add_id_props ({ scheme: 'valuetype' });
 
 				this._extract_and_cache_value_types (value.members);
 
-				const new_props = Object.assign ({ members: value.members }, value.__extra_vt_props);
+				const accessors = value.members.filter(m => m.get !== undefined);
+				const new_props = Object.assign ({ members: value.members, accessors }, value.__extra_vt_props);
 
 				this._new_or_add_id_props ({ objectId: value.objectId, props: new_props });
 				delete value.members;
@@ -695,7 +981,7 @@ var MonoSupportLib = {
 			return res;
 		},
 
-		mono_wasm_get_details: function (objectId, args) {
+		mono_wasm_get_details: function (objectId, args={}) {
 			let id = this._parse_object_id (objectId, true);
 
 			switch (id.scheme) {
@@ -703,14 +989,15 @@ var MonoSupportLib = {
 					if (isNaN (id.value))
 						throw new Error (`Invalid objectId: ${objectId}. Expected a numeric id.`);
 
-					return this._get_object_properties(id.value, false);
+					args.expandValueTypes = false;
+					return this._get_object_properties(id.value, args);
 				}
 
 				case "array":
 					return this._get_array_values (id);
 
 				case "valuetype":
-					return this._get_vt_properties(id);
+					return this._get_vt_properties(id, args);
 
 				case "cfo_res":
 					return this._get_cfo_res_details (objectId, args);
@@ -940,8 +1227,8 @@ var MonoSupportLib = {
 			this._call_function_res_cache = {};
 
 			this._c_fn_table = {};
-			this._register_c_var_fn ('mono_wasm_get_object_properties',   'bool', [ 'number', 'bool' ]);
-			this._register_c_var_fn ('mono_wasm_get_array_values',        'bool', [ 'number', 'number', 'number', 'bool' ]);
+			this._register_c_var_fn ('mono_wasm_get_object_properties',   'bool', [ 'number', 'number' ]);
+			this._register_c_var_fn ('mono_wasm_get_array_values',        'bool', [ 'number', 'number', 'number', 'number' ]);
 			this._register_c_var_fn ('mono_wasm_invoke_getter_on_object', 'bool', [ 'number', 'string' ]);
 			this._register_c_var_fn ('mono_wasm_invoke_getter_on_value',  'bool', [ 'number', 'number', 'string' ]);
 			this._register_c_var_fn ('mono_wasm_get_local_vars',          'bool', [ 'number', 'number', 'number']);
@@ -1467,7 +1754,7 @@ var MonoSupportLib = {
 		},
 
 		_mono_wasm_add_string_var: function(var_value) {
-			if (var_value == 0) {
+			if (var_value === 0) {
 				MONO.mono_wasm_add_null_var ("string");
 				return;
 			}
@@ -1481,31 +1768,20 @@ var MonoSupportLib = {
 			});
 		},
 
-		_mono_wasm_add_getter_var: function(className, invokable) {
+		_mono_wasm_add_getter_var: function(className) {
 			const fixed_class_name = MONO._mono_csharp_fixup_class_name (className);
-			if (invokable != 0) {
-				var name;
-				if (MONO.var_info.length > 0)
-					name = MONO.var_info [MONO.var_info.length - 1].name;
-				name = (name === undefined) ? "" : name;
+			var name;
+			if (MONO.var_info.length > 0)
+				name = MONO.var_info [MONO.var_info.length - 1].name;
+			name = (name === undefined) ? "" : name;
 
-				MONO.var_info.push({
-					get: {
-						className: "Function",
-						description: `get ${name} () {}`,
-						type: "function",
-					}
-				});
-			} else {
-				var value = `${fixed_class_name} { get; }`;
-				MONO.var_info.push({
-					value: {
-						type: "symbol",
-						description: value,
-						value: value,
-					}
-				});
-			}
+			MONO.var_info.push({
+				get: {
+					className: "Function",
+					description: `get ${name} () {}`,
+					type: "function",
+				}
+			});
 		},
 
 		_mono_wasm_add_array_var: function(className, objectId, length) {
@@ -1550,7 +1826,7 @@ var MonoSupportLib = {
 				value: {
 					type            : "object",
 					className       : fixed_class_name,
-					description     : (toString == 0 ? fixed_class_name: Module.UTF8ToString (toString)),
+					description     : (toString === 0 ? fixed_class_name: Module.UTF8ToString (toString)),
 					expanded        : true,
 					isValueType     : true,
 					__extra_vt_props: { klass: args.klass, value64: base64String },
@@ -1592,17 +1868,36 @@ var MonoSupportLib = {
 				value: {
 					type: "object",
 					className: fixed_class_name,
-					description: (toString == 0 ? fixed_class_name : Module.UTF8ToString (toString)),
+					description: (toString === 0 ? fixed_class_name : Module.UTF8ToString (toString)),
 					isValueType: true
 				}
 			});
 		},
 
+		mono_wasm_add_properties_var: function (name, args) {
+			if (typeof args !== 'object')
+				args = { field_offset: args };
+
+			if (args.owner_class !== undefined && args.owner_class !== 0)
+				args.owner_class = Module.UTF8ToString(args.owner_class);
+
+			let name_obj = {
+				name: Module.UTF8ToString (name),
+				fieldOffset: args.field_offset,
+				__args: args
+			};
+			if (args.is_own)
+				name_obj.isOwn = true;
+
+			MONO.var_info.push(name_obj);
+		},
 
 		mono_wasm_add_typed_value: function (type, str_value, value) {
 			let type_str = type;
 			if (typeof type != 'string')
 				type_str = Module.UTF8ToString (type);
+
+			if (str_value !== 0)
 				str_value = Module.UTF8ToString (str_value);
 
 			switch (type_str) {
@@ -1645,7 +1940,7 @@ var MonoSupportLib = {
 				break;
 
 			case "getter":
-				MONO._mono_wasm_add_getter_var (str_value, value);
+				MONO._mono_wasm_add_getter_var (str_value);
 				break;
 
 			case "array":
@@ -1685,6 +1980,20 @@ var MonoSupportLib = {
 						}
 					});
 				}
+				}
+				break;
+
+			case "symbol": {
+				if (typeof value === 'object' && value.isClassName)
+					str_value = MONO._mono_csharp_fixup_class_name (str_value);
+
+				MONO.var_info.push ({
+					value: {
+						type: "symbol",
+						value: str_value,
+						description: str_value
+					}
+				});
 				}
 				break;
 
@@ -1761,18 +2070,34 @@ var MonoSupportLib = {
 				data = data.slice(length);
 			}
 			return true;
-		}
+		},
+
+		/**
+		 * Raises an event for the debug proxy
+		 *
+		 * @param {Event} event - event to be raised
+		 * @param {object} args - arguments for raising this event, eg. `{trace: true}`
+		 */
+		mono_wasm_raise_debug_event: function(event, args={}) {
+			if (typeof event !== 'object')
+				throw new Error(`event must be an object, but got ${JSON.stringify(event)}`);
+
+			if (event.eventName === undefined)
+				throw new Error(`event.eventName is a required parameter, in event: ${JSON.stringify(event)}`);
+
+			if (typeof args !== 'object')
+				throw new Error(`args must be an object, but got ${JSON.stringify(args)}`);
+
+			console.debug('mono_wasm_debug_event_raised:aef14bca-5519-4dfe-b35a-f867abc123ae', JSON.stringify(event), JSON.stringify(args));
+		},
 	},
 
 	mono_wasm_add_typed_value: function (type, str_value, value) {
 		MONO.mono_wasm_add_typed_value (type, str_value, value);
 	},
 
-	mono_wasm_add_properties_var: function(name, field_offset) {
-		MONO.var_info.push({
-			name: Module.UTF8ToString (name),
-			fieldOffset: field_offset
-		});
+	mono_wasm_add_properties_var: function(name, args) {
+		MONO.mono_wasm_add_properties_var (name, args);
 	},
 
 	mono_wasm_set_is_async_method: function(objectId) {
@@ -1820,7 +2145,7 @@ var MonoSupportLib = {
 			value: {
 				type: "object",
 				className: fixed_class_name,
-				description: (toString == 0 ? fixed_class_name : Module.UTF8ToString (toString)),
+				description: (toString === 0 ? fixed_class_name : Module.UTF8ToString (toString)),
 				objectId: "dotnet:object:"+ objectId,
 			}
 		});
@@ -1851,14 +2176,15 @@ var MonoSupportLib = {
 			var args_sig = parts.splice (1).join (', ');
 			return `${ret_sig} ${method_name} (${args_sig})`;
 		}
-
 		let tgt_sig;
 		if (targetName != 0)
 			tgt_sig = args_to_sig (Module.UTF8ToString (targetName));
 
 		const type_name = MONO._mono_csharp_fixup_class_name (Module.UTF8ToString (className));
+		if (tgt_sig === undefined)
+			tgt_sig = type_name;
 
-		if (objectId == -1) {
+		if (objectId == -1 || targetName === 0) {
 			// Target property
 			MONO.var_info.push ({
 				value: {
@@ -1879,14 +2205,15 @@ var MonoSupportLib = {
 		}
 	},
 
-	mono_wasm_add_frame: function(il, method, assembly_name, method_full_name) {
+	mono_wasm_add_frame: function(il, method, frame_id, assembly_name, method_full_name) {
 		var parts = Module.UTF8ToString (method_full_name).split (":", 2);
 		MONO.active_frames.push( {
 			il_pos: il,
 			method_token: method,
 			assembly_name: Module.UTF8ToString (assembly_name),
 			// Extract just the method name from `{class_name}:{method_name}`
-			method_name: parts [parts.length - 1]
+			method_name: parts [parts.length - 1],
+			frame_id
 		});
 	},
 
@@ -1937,6 +2264,36 @@ var MonoSupportLib = {
 			uncaught    : uncaught
 		};
 		debugger;
+	},
+
+	mono_wasm_asm_loaded: function (assembly_name, assembly_ptr, assembly_len, pdb_ptr, pdb_len) {
+		// Only trigger this codepath for assemblies loaded after app is ready
+		if (MONO.mono_wasm_runtime_is_ready !== true)
+			return;
+
+		if (!this.mono_wasm_assembly_already_added)
+			this.mono_wasm_assembly_already_added = Module.cwrap ("mono_wasm_assembly_already_added", 'number', ['string']);
+
+		// And for assemblies that have not already been loaded
+		const assembly_name_str = assembly_name !== 0 ? Module.UTF8ToString(assembly_name).concat('.dll') : '';
+		if (this.mono_wasm_assembly_already_added(assembly_name_str))
+			return;
+
+		const assembly_data = new Uint8Array(Module.HEAPU8.buffer, assembly_ptr, assembly_len);
+		const assembly_b64 = MONO._base64Converter.toBase64StringImpl(assembly_data);
+
+		let pdb_b64;
+		if (pdb_ptr) {
+			const pdb_data = new Uint8Array(Module.HEAPU8.buffer, pdb_ptr, pdb_len);
+			pdb_b64 = MONO._base64Converter.toBase64StringImpl(pdb_data);
+		}
+
+		MONO.mono_wasm_raise_debug_event({
+			eventName: 'AssemblyLoaded',
+			assembly_name: assembly_name_str,
+			assembly_b64,
+			pdb_b64
+		});
 	},
 };
 

@@ -2,9 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Security.Cryptography.Tests;
+using Xunit;
 
 namespace System.Security.Cryptography.EcDiffieHellman.Tests
 {
+    [SkipOnMono("Not supported on Browser", TestPlatforms.Browser)]
     public class ECDhKeyFileTests : ECKeyFileTests<ECDiffieHellman>
     {
         protected override ECDiffieHellman CreateKey()
