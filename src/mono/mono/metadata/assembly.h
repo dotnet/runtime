@@ -122,6 +122,14 @@ typedef struct {
 	unsigned int size;
 } MonoBundledAssembly;
 
+typedef struct WasmAssembly_ WasmAssembly;
+
+struct WasmAssembly_ {
+	MonoBundledAssembly assembly;
+	mono_bool is_user_assembly;
+	WasmAssembly *next;
+};
+
 MONO_API void          mono_register_bundled_assemblies (const MonoBundledAssembly **assemblies);
 MONO_API void          mono_register_config_for_assembly (const char* assembly_name, const char* config_xml);
 MONO_API void          mono_register_symfile_for_assembly (const char* assembly_name, const mono_byte *raw_contents, int size);

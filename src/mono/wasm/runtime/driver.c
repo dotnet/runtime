@@ -175,13 +175,6 @@ mono_wasm_deregister_root (char *addr) {
 #include "driver-gen.c"
 #endif
 
-typedef struct WasmAssembly_ WasmAssembly;
-
-struct WasmAssembly_ {
-	MonoBundledAssembly assembly;
-	WasmAssembly *next;
-};
-
 static WasmAssembly *assemblies;
 static int assembly_count;
 
@@ -204,6 +197,25 @@ mono_wasm_add_assembly (const char *name, const unsigned char *data, unsigned in
 	assemblies = entry;
 	++assembly_count;
 	return mono_has_pdb_checksum (data, size);
+}
+
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_set_user_assembly (const char *assembly_name)
+{
+	WasmAssembly *entry = assemblies;
+	while (entry != NULL) {
+		if (strcmp (entry->assembly.name, assembly_name) == 0) {
+			printf("Set assembly - %s - as user assembly.\n", assembly_name);
+			entry->is_user_assembly = 1;
+			return;
+		}
+		entry = entry->next;
+	}
+}
+
+WasmAssembly *mono_wasm_get_assembly_list ()
+{
+	return assemblies;
 }
 
 EMSCRIPTEN_KEEPALIVE int

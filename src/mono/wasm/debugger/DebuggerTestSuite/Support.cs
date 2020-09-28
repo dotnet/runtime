@@ -517,7 +517,7 @@ namespace DebuggerTests
                 AssertEqual(function_name, wait_res["callFrames"]?[0]?["functionName"]?.Value<string>(), top_frame?.ToString());
             }
 
-            Console.WriteLine (top_frame);
+            //Console.WriteLine (top_frame);
             if (script_loc != null && line >= 0)
                 CheckLocation(script_loc, line, column, ctx.scripts, top_frame["location"]);
 

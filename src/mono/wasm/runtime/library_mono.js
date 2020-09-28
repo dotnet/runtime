@@ -1255,6 +1255,18 @@ var MonoSupportLib = {
 			return this.mono_wasm_pause_on_exceptions (state_enum);
 		},
 
+		mono_wasm_set_debug_just_my_code: function (state) {
+			if (!this.mono_wasm_debug_just_my_code)
+				this.mono_wasm_debug_just_my_code = Module.cwrap ("mono_wasm_debug_just_my_code", 'void', ['boolean']);
+			this.mono_wasm_debug_just_my_code (state);
+		},
+
+		mono_wasm_add_user_assembly: function (assembly_name) {
+			if (!this.mono_wasm_set_user_assembly)
+				this.mono_wasm_set_user_assembly = Module.cwrap ("mono_wasm_set_user_assembly", 'void', ['string']);
+			this.mono_wasm_set_user_assembly (assembly_name);
+		},
+
 		_register_c_fn: function (name, ...args) {
 			Object.defineProperty (this._c_fn_table, name + '_wrapper', { value: Module.cwrap (name, ...args) });
 		},

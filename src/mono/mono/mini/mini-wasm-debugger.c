@@ -53,6 +53,7 @@ EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_get_array_values (int object_id, int sta
 EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_invoke_getter_on_object (int object_id, const char* name);
 EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_invoke_getter_on_value (void *value, MonoClass *klass, const char *name);
 EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_get_deref_ptr_value (void *value_addr, MonoClass *klass);
+EMSCRIPTEN_KEEPALIVE void mono_wasm_debug_just_my_code (int state);
 
 //JS functions imported that we use
 extern void mono_wasm_add_frame (int il_offset, int method_token, int frame_id, const char *assembly_name, const char *method_name);
@@ -81,6 +82,7 @@ static GHashTable *objrefs;
 static GHashTable *obj_to_objref;
 static int objref_id = 0;
 static int pause_on_exc = EXCEPTION_MODE_NONE;
+static int debug_just_my_code = 0;
 
 static const char*
 all_getters_allowed_class_names[] = {
@@ -299,13 +301,38 @@ typedef struct {
 } BpEvents;
 
 static void*
+create_event_list (GPtrArray *ss_reqs, GPtrArray *bp_reqs, MonoJitInfo *ji, EventKind kind)
+{
+	gboolean filtered = FALSE;
+	gboolean found = FALSE;
+	if (debug_just_my_code) {
+		WasmAssembly *assemblies = mono_wasm_get_assembly_list ();
+
+		while (assemblies != NULL) {
+			if (assemblies->is_user_assembly && assemblies->assembly.data == (const unsigned char *)(m_class_get_image (jinfo_get_method (ji)->klass)->raw_data)) {
+				found = TRUE;
+			}
+			assemblies = assemblies->next;
+		}
+
+		if (!found)
+			filtered = TRUE;
+	}
+	
+	if (!filtered) {
+		BpEvents *evts = g_new0 (BpEvents, 1); //just a non-null value to make sure we can raise it on process_breakpoint_events
+		evts->is_ss = (ss_reqs && ss_reqs->len);
+		return evts;
+	}
+	return NULL;
+}
+
+static void*
 create_breakpoint_events (GPtrArray *ss_reqs, GPtrArray *bp_reqs, MonoJitInfo *ji, EventKind kind)
 {
 	DEBUG_PRINTF (1, "ss_reqs %d bp_reqs %d\n", ss_reqs->len, bp_reqs->len);
 	if ((ss_reqs && ss_reqs->len) || (bp_reqs && bp_reqs->len)) {
-		BpEvents *evts = g_new0 (BpEvents, 1); //just a non-null value to make sure we can raise it on process_breakpoint_events
-		evts->is_ss = (ss_reqs && ss_reqs->len);
-		return evts;
+		return create_event_list (ss_reqs, bp_reqs, ji, kind);
 	}
 	return NULL;
 }
@@ -434,6 +461,13 @@ mono_wasm_pause_on_exceptions (int state)
 	pause_on_exc = state;
 	DEBUG_PRINTF (1, "setting pause on exception: %d\n", pause_on_exc);
 	return 1;
+}
+
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_debug_just_my_code (int state)
+{
+	debug_just_my_code = (gboolean) state;
+	DEBUG_PRINTF (1, "setting debug just my code: %d\n", debug_just_my_code);
 }
 
 EMSCRIPTEN_KEEPALIVE int

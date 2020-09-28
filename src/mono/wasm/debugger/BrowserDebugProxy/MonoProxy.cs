@@ -369,11 +369,29 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
 
                 // Protocol extensions
+                case "DotnetDebugger.setDebugJustMyCode":
+                    {
+                        Console.WriteLine("cheguei aqui DotnetDebugger.setDebugJustMyCode");
+                        int state = args["state"].Value<int>();
+                        Console.WriteLine(state);
+                        await SendMonoCommand(id, MonoCommands.SetDebugJustMyCode(state), token);
+                        Console.WriteLine("voltei DotnetDebugger.setDebugJustMyCode");
+                        SendResponse(id, Result.Ok(new JObject()), token);
+                        return true;
+                    }
+                case "DotnetDebugger.addUserAssembliesList":
+                    {
+                        string assemblyName = args["assemblyName"]?.Value<string>();
+                        await SendMonoCommand(id, MonoCommands.AddUserAssembly(assemblyName), token);
+                        SendResponse(id, Result.Ok(new JObject()), token);
+                        return true;
+                    }
                 case "DotnetDebugger.addSymbolServerUrl":
                     {
                         string url = args["url"]?.Value<string>();
                         if (!string.IsNullOrEmpty(url) && !urlSymbolServerList.Contains(url))
                             urlSymbolServerList.Add(url);
+                        SendResponse(id, Result.Ok(new JObject()), token);
                         return true;
                     }
                 case "DotnetDebugger.getMethodLocation":

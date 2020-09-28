@@ -3,6 +3,7 @@
 
 #include <mono/utils/mono-sigcontext.h>
 #include <mono/utils/mono-context.h>
+#include <mono/metadata/assembly.h>
 
 #define MONO_ARCH_CPU_SPEC mono_wasm_desc
 
@@ -111,5 +112,7 @@ void mono_wasm_set_timeout (int timeout, int id);
 
 void mono_wasm_single_step_hit (void);
 void mono_wasm_breakpoint_hit (void);
+
+WasmAssembly *mono_wasm_get_assembly_list (void);
 
 #endif /* __MONO_MINI_WASM_H__ */  
