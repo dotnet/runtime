@@ -53,7 +53,7 @@ namespace Microsoft.Extensions.Logging.Test
                 .AddTraceSource(secondSwitch));
 
             var logger = factory.CreateLogger("Test");
-            
+
             // Assert
             Assert.Equal(expected, logger.IsEnabled(LogLevel.Information));
         }
