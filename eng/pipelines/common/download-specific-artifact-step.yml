@@ -11,10 +11,10 @@ steps:
     displayName: 'Download specific ${{ parameters.displayName }}'
     inputs:
       buildType: specific
-      project:  'public'
-      pipeline: 'runtime-coreclr outerloop'
+      project:  'internal'
+      pipeline: 'runtime-coreclr superpmi'
       buildVersionToDownload: 'latest'
-      branchName: 'refs/heads/master'
+      # branchName: 'refs/heads/master'
       allowPartiallySucceededBuilds: true
       # buildId: '20200925.3'
       downloadType: single
