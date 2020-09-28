@@ -388,7 +388,7 @@ namespace System.Runtime.Serialization
             else
             {
                 return (type.IsVisible &&
-                    type.GetConstructor(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public, Array.Empty<Type>()) != null);
+                    type.GetConstructor(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public, null, Array.Empty<Type>(), null) != null);
             }
         }
 
@@ -1368,7 +1368,7 @@ namespace System.Runtime.Serialization
                 {
                     _isKeyValuePairAdapter = true;
                     _keyValuePairGenericArguments = type.GetGenericArguments();
-                    _keyValuePairCtorInfo = type.GetConstructor(Globals.ScanAllMembers, new Type[] { Globals.TypeOfKeyValuePair.MakeGenericType(_keyValuePairGenericArguments) });
+                    _keyValuePairCtorInfo = type.GetConstructor(Globals.ScanAllMembers, null, new Type[] { Globals.TypeOfKeyValuePair.MakeGenericType(_keyValuePairGenericArguments) }, null);
                     _getKeyValuePairMethodInfo = type.GetMethod("GetKeyValuePair", Globals.ScanAllMembers)!;
                 }
             }
@@ -1425,7 +1425,7 @@ namespace System.Runtime.Serialization
                 if (type.IsValueType)
                     return null;
 
-                ConstructorInfo? ctor = type.GetConstructor(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public, Array.Empty<Type>());
+                ConstructorInfo? ctor = type.GetConstructor(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public, null, Array.Empty<Type>(), null);
                 if (ctor == null)
                     throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.NonAttributedSerializableTypesMustHaveDefaultConstructor, DataContract.GetClrTypeFullName(type))));
 

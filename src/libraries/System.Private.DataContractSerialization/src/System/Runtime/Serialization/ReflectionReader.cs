@@ -441,7 +441,7 @@ namespace System.Runtime.Serialization
             else if (collectionContract.Kind == CollectionKind.GenericDictionary && collectionContract.UnderlyingType.IsInterface)
             {
                 Type type = Globals.TypeOfDictionaryGeneric.MakeGenericType(collectionContract.ItemType.GetGenericArguments());
-                ConstructorInfo ci = type.GetConstructor(BindingFlags.Instance | BindingFlags.Public, Array.Empty<Type>())!;
+                ConstructorInfo ci = type.GetConstructor(BindingFlags.Instance | BindingFlags.Public, null, Array.Empty<Type>(), null)!;
                 object newGenericDict = ci.Invoke(Array.Empty<object>());
                 return newGenericDict;
             }

@@ -56,9 +56,9 @@ namespace System.Runtime.Serialization
                 if (_helper.XmlFormatWriterMethod == null)
                 {
                     if (UnderlyingType.IsValueType)
-                        _helper.XmlFormatWriterMethod = typeof(XmlWriterDelegator).GetMethod(WriteMethodName, Globals.ScanAllMembers, new Type[] { UnderlyingType, typeof(XmlDictionaryString), typeof(XmlDictionaryString) })!;
+                        _helper.XmlFormatWriterMethod = typeof(XmlWriterDelegator).GetMethod(WriteMethodName, Globals.ScanAllMembers, null, new Type[] { UnderlyingType, typeof(XmlDictionaryString), typeof(XmlDictionaryString) }, null)!;
                     else
-                        _helper.XmlFormatWriterMethod = typeof(XmlObjectSerializerWriteContext).GetMethod(WriteMethodName, Globals.ScanAllMembers, new Type[] { typeof(XmlWriterDelegator), UnderlyingType, typeof(XmlDictionaryString), typeof(XmlDictionaryString) })!;
+                        _helper.XmlFormatWriterMethod = typeof(XmlObjectSerializerWriteContext).GetMethod(WriteMethodName, Globals.ScanAllMembers, null, new Type[] { typeof(XmlWriterDelegator), UnderlyingType, typeof(XmlDictionaryString), typeof(XmlDictionaryString) }, null)!;
                 }
                 return _helper.XmlFormatWriterMethod;
             }
@@ -71,9 +71,9 @@ namespace System.Runtime.Serialization
                 if (_helper.XmlFormatContentWriterMethod == null)
                 {
                     if (UnderlyingType.IsValueType)
-                        _helper.XmlFormatContentWriterMethod = typeof(XmlWriterDelegator).GetMethod(WriteMethodName, Globals.ScanAllMembers, new Type[] { UnderlyingType })!;
+                        _helper.XmlFormatContentWriterMethod = typeof(XmlWriterDelegator).GetMethod(WriteMethodName, Globals.ScanAllMembers, null, new Type[] { UnderlyingType }, null)!;
                     else
-                        _helper.XmlFormatContentWriterMethod = typeof(XmlObjectSerializerWriteContext).GetMethod(WriteMethodName, Globals.ScanAllMembers, new Type[] { typeof(XmlWriterDelegator), UnderlyingType })!;
+                        _helper.XmlFormatContentWriterMethod = typeof(XmlObjectSerializerWriteContext).GetMethod(WriteMethodName, Globals.ScanAllMembers, null, new Type[] { typeof(XmlWriterDelegator), UnderlyingType }, null)!;
                 }
                 return _helper.XmlFormatContentWriterMethod;
             }
