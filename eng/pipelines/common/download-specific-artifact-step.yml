@@ -12,7 +12,7 @@ steps:
     inputs:
       buildType: specific
       project:  'internal'
-      pipeline: 'runtime-coreclr superpmi'
+      pipeline: 'runtime-coreclr outerloop'
       buildVersionToDownload: 'latest'
       allowPartiallySucceededBuilds: true
       downloadType: single
