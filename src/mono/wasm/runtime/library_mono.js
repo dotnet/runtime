@@ -85,7 +85,6 @@ var MonoSupportLib = {
 			module ["mono_wasm_new_root"] = MONO.mono_wasm_new_root;
 			module ["mono_wasm_new_roots"] = MONO.mono_wasm_new_roots;
 			module ["mono_wasm_release_roots"] = MONO.mono_wasm_release_roots;
-			//module ["mono_wasm_browser_crypto_getRandomValues"] = MONO.mono_wasm_browser_crypto_getRandomValues;
 		},
 
 		_base64Converter: {
