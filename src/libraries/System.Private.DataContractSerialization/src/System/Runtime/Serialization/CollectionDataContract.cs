@@ -65,22 +65,14 @@ namespace System.Runtime.Serialization
         }
     }
 
-#if USE_REFEMIT
-    public interface IKeyValue
-#else
     internal interface IKeyValue
-#endif
     {
         object? Key { get; set; }
         object? Value { get; set; }
     }
 
     [DataContract(Namespace = "http://schemas.microsoft.com/2003/10/Serialization/Arrays")]
-#if USE_REFEMIT
-    public struct KeyValue<K, V> : IKeyValue
-#else
     internal struct KeyValue<K, V> : IKeyValue
-#endif
     {
         private K _key;
         private V _value;
@@ -132,11 +124,7 @@ namespace System.Runtime.Serialization
         Array,
     }
 
-#if USE_REFEMIT
-    public sealed class CollectionDataContract : DataContract
-#else
     internal sealed class CollectionDataContract : DataContract
-#endif
     {
         private XmlDictionaryString _collectionItemName;
 

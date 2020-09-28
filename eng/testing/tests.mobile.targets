@@ -14,8 +14,13 @@
 
   <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
     <!-- We need to set this in order to get extensibility on xunit category traits and other arguments we pass down to xunit via MSBuild properties -->
-    <RunScriptCommand>$HARNESS_RUNNER wasm test --engine=$(JSEngine) $(JSEngineArgs) --js-file=runtime.js -v --output-directory=$XHARNESS_OUT -- --run WasmTestRunner.dll $(AssemblyName).dll</RunScriptCommand>
+    <RunScriptCommand>$HARNESS_RUNNER wasm test --engine=$(JSEngine) $(JSEngineArgs) --js-file=runtime.js -v --output-directory=$XHARNESS_OUT --  $(RunTestsJSArguments) --run WasmTestRunner.dll $(AssemblyName).dll</RunScriptCommand>
   </PropertyGroup>
+
+  <ItemGroup>
+    <RunScriptCommands Include="TEST_NAME=$(TestProjectName)" />
+    <RunScriptCommands Include="TARGET_ARCH=$(TargetArchitecture)" />
+  </ItemGroup>
 
   <!-- Generate a self-contained app bundle for Android with tests. -->
   <UsingTask Condition="'$(TargetOS)' == 'Android'"
@@ -72,6 +77,7 @@
     <Error Condition="!Exists('$(MicrosoftNetCoreAppRuntimePackRidDir)')" Text="MicrosoftNetCoreAppRuntimePackRidDir=$(MicrosoftNetCoreAppRuntimePackRidDir) doesn't exist" />
     <Error Condition="('$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'arm') and '$(DevTeamProvisioning)' == ''"
            Text="'DevTeamProvisioning' needs to be set for device builds. Set it to 'UBF8T346G9' if you're part of the Microsoft team account." />
+    <Error Condition="'$(TestArchiveTestsDir)' == ''" Text="TestArchiveTestsDir property to archive the test folder must be set." />
 
     <WriteLinesToFile File="$(PublishDir)xunit-excludes.txt" Lines="$(_withoutCategories.Replace(';', '%0dcategory='))" />
 
@@ -114,7 +120,16 @@
     </AppleAppBuilderTask>
     <Message Importance="High" Text="Xcode: $(XcodeProjectPath)"/>
     <Message Importance="High" Text="App: $(AppBundlePath)"/>
-    <!-- This app is now can be consumed by xharness CLI to deploy on a device or simulator -->
+
+    <ItemGroup>
+      <_appFiles Include="$(AppBundlePath)/../**/*" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(_appFiles)"
+          DestinationFolder="$(TestArchiveTestsDir)/%(RecursiveDir)"
+          SkipUnchangedFiles="true"
+          Condition="'$(ArchiveTests)' == 'true' and '$(IgnoreForCI)' != 'true'" />
+
   </Target>
 
   <UsingTask TaskName="WasmAppBuilder"
@@ -147,28 +162,9 @@
       MainAssembly="$(PublishDir)WasmTestRunner.dll"
       MainJS="$(MonoProjectRoot)\wasm\runtime-test.js"
       ExtraAssemblies="@(ExtraAssemblies)"
+      SatelliteAssemblies="@(WasmSatelliteAssemblies)"
       FilesToIncludeInFileSystem="@(WasmFilesToIncludeInFileSystem)"
       AssemblySearchPaths="@(AssemblySearchPaths)" />
-  </Target>
-
-  <UsingTask TaskName="DownloadTimeZoneData"
-             AssemblyFile="$(CreateCreateWasmBundlesAssemblyPath)" />
-  <Target Condition="'$(TargetOS)' == 'Browser'" Name="LoadTimeZone" >
-    <PropertyGroup>
-      <TimeZoneDataVersion>2020a</TimeZoneDataVersion>
-    </PropertyGroup>
-    <DownloadTimeZoneData
-      InputDirectory="$(BundleDir)obj/data/input"
-      OutputDirectory="$(BundleDir)obj/data/output"
-      Version="$(TimeZoneDataVersion)"/>
-  </Target>
-
-  <UsingTask TaskName="CreateWasmBundle"
-             AssemblyFile="$(CreateCreateWasmBundlesAssemblyPath)" />
-  <Target Condition="'$(TargetOS)' == 'Browser'" Name="BundleWasmTestData" DependsOnTargets="LoadTimeZone">
-    <CreateWasmBundle
-      InputDirectory="$(BundleDir)obj/data/output"
-      OutputFileName="$(MicrosoftNetCoreAppRuntimePackRidDir)dotnet.timezones.blat" />
   </Target>
 
   <Target Name="AddTestRunnersToPublishedFiles"
@@ -186,5 +182,5 @@
   <Target Name="PublishTestAsSelfContained"
           Condition="'$(IsCrossTargetingBuild)' != 'true'"
           AfterTargets="Build"
-          DependsOnTargets="Publish;BundleTestAppleApp;BundleTestAndroidApp;BundleTestWasmApp;BundleWasmTestData;ArchiveTests" />
+          DependsOnTargets="Publish;BundleTestAppleApp;BundleTestAndroidApp;BundleTestWasmApp;ArchiveTests" />
 </Project>

@@ -28,50 +28,10 @@
 const WCHAR szCommonFileW[] = 
             {'c','h','i','l','d','d','a','t','a','.','t','m','p','\0'};
 
-const WCHAR szPathDelimW[] = {'\\','\0'};
 
-const char *szCommonStringA = "058d2d057111a313aa82401c2e856002\0";
+#define szCommonStringA "058d2d057111a313aa82401c2e856002\0"
 
-/*
- * Take two wide strings representing file and directory names
- * (dirName, fileName), join the strings with the appropriate path
- * delimiter and populate a wide character buffer (absPathName) with
- * the resulting string.
- *
- * Returns: The number of wide characters in the resulting string.
- * 0 is returned on Error.
- */
-int 
-mkAbsoluteFilenameW ( 
-    LPWSTR dirName,  
-    DWORD dwDirLength, 
-    LPCWSTR fileName, 
-    DWORD dwFileLength,
-    LPWSTR absPathName )
-{
-    extern const WCHAR szPathDelimW[];
-
-    DWORD sizeDN, sizeFN, sizeAPN;
-
-    sizeDN = wcslen( dirName );
-    sizeFN = wcslen( fileName );
-    sizeAPN = (sizeDN + 1 + sizeFN + 1);
-
-    /* insure ((dirName + DELIM + fileName + \0) =< _MAX_PATH ) */
-    if ( sizeAPN > _MAX_PATH )
-    {
-	return ( 0 );
-    }
-    
-    wcsncpy(absPathName, dirName, dwDirLength +1);
-    wcsncpy(absPathName, szPathDelimW, 2);
-    wcsncpy(absPathName, fileName, dwFileLength +1);
-
-    return (sizeAPN);
-
-} 
-
-int __cdecl main( int argc, char **argv ) 
+PALTEST(threading_CreateProcessW_test1_paltest_createprocessw_test1_child, "threading/CreateProcessW/test1/paltest_createprocessw_test1_child")
 {
 
     static FILE * fp;

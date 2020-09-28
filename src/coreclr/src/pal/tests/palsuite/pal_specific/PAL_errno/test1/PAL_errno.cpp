@@ -13,7 +13,7 @@
 **============================================================*/
 #include <palsuite.h>
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(pal_specific_PAL_errno_test1_paltest_pal_errno_test1, "pal_specific/PAL_errno/test1/paltest_pal_errno_test1")
 {
     int err;
     FILE *pFile = NULL;

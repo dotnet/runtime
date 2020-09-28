@@ -788,7 +788,8 @@ void CodeGen::genCodeForDivMod(GenTreeOp* treeNode)
     genCopyRegIfNeeded(dividend, REG_RAX);
 
     // zero or sign extend rax to rdx
-    if (oper == GT_UMOD || oper == GT_UDIV)
+    if (oper == GT_UMOD || oper == GT_UDIV ||
+        (dividend->IsIntegralConst() && (dividend->AsIntConCommon()->IconValue() > 0)))
     {
         instGen_Set_Reg_To_Zero(EA_PTRSIZE, REG_EDX);
     }
@@ -1769,7 +1770,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             // Have to clear the ShadowSP of the nesting level which encloses the finally. Generates:
             //     mov dword ptr [ebp-0xC], 0  // for some slot of the ShadowSP local var
 
-            unsigned finallyNesting;
+            size_t finallyNesting;
             finallyNesting = treeNode->AsVal()->gtVal1;
             noway_assert(treeNode->AsVal()->gtVal1 < compiler->compHndBBtabCount);
             noway_assert(finallyNesting < compiler->compHndBBtabCount);
@@ -1781,9 +1782,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             filterEndOffsetSlotOffs =
                 (unsigned)(compiler->lvaLclSize(compiler->lvaShadowSPslotsVar) - TARGET_POINTER_SIZE);
 
-            unsigned curNestingSlotOffs;
+            size_t curNestingSlotOffs;
             curNestingSlotOffs = filterEndOffsetSlotOffs - ((finallyNesting + 1) * TARGET_POINTER_SIZE);
-            GetEmitter()->emitIns_S_I(INS_mov, EA_PTRSIZE, compiler->lvaShadowSPslotsVar, curNestingSlotOffs, 0);
+            GetEmitter()->emitIns_S_I(INS_mov, EA_PTRSIZE, compiler->lvaShadowSPslotsVar, (unsigned)curNestingSlotOffs,
+                                      0);
             break;
 #endif // !FEATURE_EH_FUNCLETS
 
@@ -2106,13 +2108,13 @@ void CodeGen::genStackPointerConstantAdjustment(ssize_t spDelta, regNumber regTm
         // creating a way to temporarily turn off the emitter's tracking of ESP, maybe marking instrDescs as "don't
         // track".
         inst_RV_RV(INS_mov, regTmp, REG_SPBASE, TYP_I_IMPL);
-        inst_RV_IV(INS_sub, regTmp, -spDelta, EA_PTRSIZE);
+        inst_RV_IV(INS_sub, regTmp, (target_ssize_t)-spDelta, EA_PTRSIZE);
         inst_RV_RV(INS_mov, REG_SPBASE, regTmp, TYP_I_IMPL);
     }
     else
 #endif // TARGET_X86
     {
-        inst_RV_IV(INS_sub, REG_SPBASE, -spDelta, EA_PTRSIZE);
+        inst_RV_IV(INS_sub, REG_SPBASE, (target_ssize_t)-spDelta, EA_PTRSIZE);
     }
 }
 
@@ -3687,18 +3689,28 @@ void CodeGen::genRangeCheck(GenTree* oper)
     noway_assert(oper->OperIsBoundsCheck());
     GenTreeBoundsChk* bndsChk = oper->AsBoundsChk();
 
-    GenTree* arrIndex  = bndsChk->gtIndex;
-    GenTree* arrLen    = bndsChk->gtArrLen;
-    GenTree* arrRef    = nullptr;
-    int      lenOffset = 0;
+    GenTree* arrIndex = bndsChk->gtIndex;
+    GenTree* arrLen   = bndsChk->gtArrLen;
 
     GenTree *    src1, *src2;
     emitJumpKind jmpKind;
+    instruction  cmpKind;
 
     genConsumeRegs(arrIndex);
     genConsumeRegs(arrLen);
 
-    if (arrIndex->isContainedIntOrIImmed())
+    if (arrIndex->IsIntegralConst(0) && arrLen->isUsedFromReg())
+    {
+        // arrIndex is 0 and arrLen is in a reg. In this case
+        // we can generate
+        //      test reg, reg
+        // since arrLen is non-negative
+        src1    = arrLen;
+        src2    = arrLen;
+        jmpKind = EJ_je;
+        cmpKind = INS_test;
+    }
+    else if (arrIndex->isContainedIntOrIImmed())
     {
         // arrIndex is a contained constant.  In this case
         // we will generate one of the following
@@ -3711,6 +3723,7 @@ void CodeGen::genRangeCheck(GenTree* oper)
         src1    = arrLen;
         src2    = arrIndex;
         jmpKind = EJ_jbe;
+        cmpKind = INS_cmp;
     }
     else
     {
@@ -3719,7 +3732,7 @@ void CodeGen::genRangeCheck(GenTree* oper)
         //      cmp  [mem], immed   (if arrLen is a constant)
         //      cmp  [mem], reg     (if arrLen is in a reg)
         //      cmp  reg, immed     (if arrIndex is in a reg)
-        //      cmp  reg1, reg2     (if arraIndex is in reg1)
+        //      cmp  reg1, reg2     (if arrIndex is in reg1)
         //      cmp  reg, [mem]     (if arrLen is a memory op)
         //
         // That is only one of arrIndex or arrLen can be a memory op.
@@ -3728,6 +3741,7 @@ void CodeGen::genRangeCheck(GenTree* oper)
         src1    = arrIndex;
         src2    = arrLen;
         jmpKind = EJ_jae;
+        cmpKind = INS_cmp;
     }
 
     var_types bndsChkType = src2->TypeGet();
@@ -3739,7 +3753,7 @@ void CodeGen::genRangeCheck(GenTree* oper)
     assert(emitTypeSize(bndsChkType) >= emitTypeSize(src1->TypeGet()));
 #endif // DEBUG
 
-    GetEmitter()->emitInsBinary(INS_cmp, emitTypeSize(bndsChkType), src1, src2);
+    GetEmitter()->emitInsBinary(cmpKind, emitTypeSize(bndsChkType), src1, src2);
     genJumpToThrowHlpBlk(jmpKind, bndsChk->gtThrowKind, bndsChk->gtIndRngFailBB);
 }
 
@@ -4156,7 +4170,7 @@ void CodeGen::genCodeForShiftLong(GenTree* tree)
 
     assert(shiftBy->isContainedIntOrIImmed());
 
-    unsigned int count = shiftBy->AsIntConCommon()->IconValue();
+    unsigned int count = (unsigned int)shiftBy->AsIntConCommon()->IconValue();
 
     regNumber regResult = (oper == GT_LSH_HI) ? regHi : regLo;
 
@@ -5014,7 +5028,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
 #if defined(TARGET_X86) || defined(UNIX_AMD64_ABI)
     // The call will pop its arguments.
     // for each putarg_stk:
-    ssize_t stackArgBytes = 0;
+    target_ssize_t stackArgBytes = 0;
     for (GenTreeCall::Use& use : call->Args())
     {
         GenTree* arg = use.GetNode();
@@ -5160,7 +5174,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
     // adjust its stack level accordingly.
     // If the caller needs to explicitly pop its arguments, we must pass a negative value, and then do the
     // pop when we're done.
-    ssize_t argSizeForEmitter = stackArgBytes;
+    target_ssize_t argSizeForEmitter = stackArgBytes;
     if (fCallerPop)
     {
         argSizeForEmitter = -stackArgBytes;
@@ -5633,7 +5647,7 @@ void CodeGen::genJmpMethod(GenTree* jmp)
 #if defined(UNIX_AMD64_ABI)
         if (varTypeIsStruct(varDsc))
         {
-            CORINFO_CLASS_HANDLE typeHnd = varDsc->lvVerTypeInfo.GetClassHandle();
+            CORINFO_CLASS_HANDLE typeHnd = varDsc->GetStructHnd();
             assert(typeHnd != nullptr);
 
             SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
@@ -5929,6 +5943,27 @@ void CodeGen::genCompareInt(GenTree* treeNode)
     }
     else if (op1->isUsedFromReg() && op2->IsIntegralConst(0))
     {
+        emitAttr targetSize = emitActualTypeSize(op1->TypeGet());
+        emitAttr op1Size    = emitActualTypeSize(op1->TypeGet());
+
+        // Optimize "x<0" and "x>=0" to "x>>31" if "x" is not a jump condition and in a reg.
+        // Morph/Lowering are responsible to rotate "0<x" to "x>0" so we won't handle it here.
+        if ((targetSize >= 4) && (op1Size >= 4) && (targetReg != REG_NA) && tree->OperIs(GT_LT, GT_GE))
+        {
+            if (targetReg != op1->GetRegNum())
+            {
+                inst_RV_RV(INS_mov, targetReg, op1->GetRegNum(), op1->TypeGet());
+            }
+            if (tree->OperIs(GT_GE))
+            {
+                // emit "not" for "x>=0" case
+                inst_RV(INS_not, targetReg, tree->TypeGet(), op1Size);
+            }
+            inst_RV_IV(INS_shr_N, targetReg, (int)op1Size * 8 - 1, op1Size);
+            genProduceReg(tree);
+            return;
+        }
+
         if (compiler->opts.OptimizationEnabled())
         {
             canReuseFlags = true;
@@ -8120,13 +8155,13 @@ void* CodeGen::genCreateAndStoreGCInfoJIT32(unsigned codeSize,
 
     if (0)
     {
-        BYTE*    temp = (BYTE*)infoPtr;
-        unsigned size = compiler->compInfoBlkAddr - temp;
-        BYTE*    ptab = temp + headerSize;
+        BYTE*  temp = (BYTE*)infoPtr;
+        size_t size = compiler->compInfoBlkAddr - temp;
+        BYTE*  ptab = temp + headerSize;
 
         noway_assert(size == headerSize + ptrMapSize);
 
-        printf("Method info block - header [%u bytes]:", headerSize);
+        printf("Method info block - header [%zu bytes]:", headerSize);
 
         for (unsigned i = 0; i < size; i++)
         {
@@ -8154,7 +8189,7 @@ void* CodeGen::genCreateAndStoreGCInfoJIT32(unsigned codeSize,
     if (compiler->opts.dspGCtbls)
     {
         const BYTE* base = (BYTE*)infoPtr;
-        unsigned    size;
+        size_t      size;
         unsigned    methodSize;
         InfoHdr     dumpHeader;
 

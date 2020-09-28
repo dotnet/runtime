@@ -24,16 +24,14 @@ For Windows:
 
 ```powershell
 .\build.cmd -subset clr+libs -c release
-cd src\coreclr
-.\build-test.cmd Release generatelayoutonly
+.\src\tests\build.cmd Release generatelayoutonly
 ```
 
 For Linux:
 
 ```bash
 ./build.sh -subset clr+libs -c release
-cd src/coreclr
-./build-test.sh -release -generatelayoutonly
+./src/tests/build.sh -release -generatelayoutonly
 ```
 
 ### Generate a Configuration File for ASP&#46;NET Benchmarking Runs

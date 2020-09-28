@@ -22,7 +22,7 @@ namespace System.Net.Security
 
         private enum Framing
         {
-            Unknown = 0,    // Initial before any frame is processd.
+            Unknown = 0,    // Initial before any frame is processed.
             BeforeSSL3,     // SSlv2
             SinceSSL3,      // SSlv3 & TLS
             Unified,        // Intermediate on first frame until response is processes.
@@ -761,8 +761,8 @@ namespace System.Net.Security
             Dispose(disposing: false);
         }
 
-        //We will only free the read buffer if it
-        //actually contains no decrypted or encrypted bytes
+        // We will only free the read buffer if it
+        // actually contains no decrypted or encrypted bytes
         private void ReturnReadBufferIfEmpty()
         {
             if (_internalBuffer != null && _decryptedBytesCount == 0 && _internalBufferCount == 0)

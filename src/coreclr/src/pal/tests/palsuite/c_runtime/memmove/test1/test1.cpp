@@ -13,7 +13,7 @@
 
 #include <palsuite.h>
 
-int __cdecl main(int argc, char **argv)
+PALTEST(c_runtime_memmove_test1_paltest_memmove_test1, "c_runtime/memmove/test1/paltest_memmove_test1")
 {
     char testA[11] = "abcdefghij";
     char testB[15] = "aabbccddeeffgg";

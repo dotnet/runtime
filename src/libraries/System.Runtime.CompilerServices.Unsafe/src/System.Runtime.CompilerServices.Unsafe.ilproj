@@ -28,12 +28,13 @@
   </ItemGroup>
 
   <Target Name="GenerateVersionFile"
-          DependsOnTargets="ResolveReferences"
+          DependsOnTargets="GetAssemblyVersion;ResolveReferences"
           Inputs="$(MSBuildAllProjects)"
           Outputs="'$(VersionFilePath)">
    <PropertyGroup>
       <IncludePath>$([MSBuild]::NormalizeDirectory('$(IntermediateOutputPath)', 'version'))</IncludePath>
-      <IlasmFlags>$(IlasmFlags) -INCLUDE=$(IncludePath)</IlasmFlags>
+      <IncludePathTrimmed>$(IncludePath.TrimEnd('\'))</IncludePathTrimmed>
+      <IlasmFlags>$(IlasmFlags) -INCLUDE="$(IncludePathTrimmed)"</IlasmFlags>
       <VersionFilePath Condition="'$(VersionFilePath)' == ''">$([MSBuild]::NormalizePath('$(IncludePath)', 'version.h'))</VersionFilePath>
       <_AssemblyVersion>$(AssemblyVersion.Replace('.', ':'))</_AssemblyVersion>
       <_coreAssemblyName Condition="'%(ReferencePath.FileName)' == '$(CoreAssembly)'">%(ReferencePath.FusionName)</_coreAssemblyName>
@@ -51,6 +52,8 @@
 #define CORE_ASSEMBLY "$(CoreAssembly)"
 #define ASSEMBLY_VERSION "$(_AssemblyVersion)"
 #define CORE_ASSEMBLY_VERSION "$(_CoreAssemblyVersion)"
+#define FILE_VERSION "{string('$(FileVersion)')}"
+#define INFORMATIONAL_VERSION "{string('$(InformationalVersion)')}"
 $(ExtraMacros)
 // Metadata version: v4.0.30319
 .assembly extern CORE_ASSEMBLY

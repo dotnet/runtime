@@ -22,8 +22,9 @@ namespace System.Net.Http.Json.Functional.Tests
             AssertExtensions.Throws<ArgumentNullException>("content", () => content.ReadFromJsonAsync(typeof(Person)));
         }
 
-        [Fact]
-        public async Task HttpContentGetThenReadFromJsonAsync()
+        [Theory]
+        [MemberData(nameof(ReadFromJsonTestData))]
+        public async Task HttpContentGetThenReadFromJsonAsync(string json)
         {
             await HttpMessageHandlerLoopbackServer.CreateClientAndServerAsync(
                 async (handler, uri) =>
@@ -42,7 +43,14 @@ namespace System.Net.Http.Json.Functional.Tests
                         per.Validate();
                     }
                 },
-                server => server.HandleRequestAsync(headers: _headers, content: Person.Create().Serialize()));
+                server => server.HandleRequestAsync(headers: _headers, content: json));
+        }
+
+        public static IEnumerable<object[]> ReadFromJsonTestData()
+        {
+            Person per = Person.Create();
+            yield return new object[] { per.Serialize() };
+            yield return new object[] { per.SerializeWithNumbersAsStrings() };
         }
 
         [Fact]

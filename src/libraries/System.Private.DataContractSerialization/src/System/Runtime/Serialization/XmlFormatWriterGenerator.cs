@@ -15,15 +15,9 @@ using System.Diagnostics;
 
 namespace System.Runtime.Serialization
 {
-#if USE_REFEMIT
-    public delegate void XmlFormatClassWriterDelegate(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext context, ClassDataContract dataContract);
-    public delegate void XmlFormatCollectionWriterDelegate(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext context, CollectionDataContract dataContract);
-    public sealed class XmlFormatWriterGenerator
-#else
     internal delegate void XmlFormatClassWriterDelegate(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext context, ClassDataContract dataContract);
     internal delegate void XmlFormatCollectionWriterDelegate(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext context, CollectionDataContract dataContract);
     internal sealed class XmlFormatWriterGenerator
-#endif
     {
         private readonly CriticalHelper _helper;
 
@@ -49,7 +43,6 @@ namespace System.Runtime.Serialization
         /// </SecurityNote>
         private class CriticalHelper
         {
-#if !USE_REFEMIT
             private CodeGenerator _ilg = null!; // initialized in GenerateXXXWriter
             private ArgBuilder _xmlWriterArg = null!; // initialized in InitArgs
             private ArgBuilder _contextArg = null!; // initialized in InitArgs
@@ -62,7 +55,6 @@ namespace System.Runtime.Serialization
             private LocalBuilder? _childElementNamespacesLocal;
             private int _typeIndex = 1;
             private int _childElementIndex;
-#endif
 
             private XmlFormatClassWriterDelegate CreateReflectionXmlFormatClassWriterDelegate()
             {
@@ -77,9 +69,6 @@ namespace System.Runtime.Serialization
                 }
                 else
                 {
-#if USE_REFEMIT
-                    throw new InvalidOperationException("Cannot generate class writer");
-#else
                     _ilg = new CodeGenerator();
                     bool memberAccessFlag = classContract.RequiresMemberAccessForWrite(null);
                     try
@@ -100,7 +89,6 @@ namespace System.Runtime.Serialization
                     InitArgs(classContract.UnderlyingType);
                     WriteClass(classContract);
                     return (XmlFormatClassWriterDelegate)_ilg.EndMethod();
-#endif
                 }
             }
 
@@ -117,9 +105,6 @@ namespace System.Runtime.Serialization
                 }
                 else
                 {
-#if USE_REFEMIT
-                    throw new InvalidOperationException("Cannot generate class writer");
-#else
                     _ilg = new CodeGenerator();
                     bool memberAccessFlag = collectionContract.RequiresMemberAccessForWrite(null);
                     try
@@ -140,11 +125,9 @@ namespace System.Runtime.Serialization
                     InitArgs(collectionContract.UnderlyingType);
                     WriteCollection(collectionContract);
                     return (XmlFormatCollectionWriterDelegate)_ilg.EndMethod();
-#endif
                 }
             }
 
-#if !USE_REFEMIT
             private void InitArgs(Type objType)
             {
                 _xmlWriterArg = _ilg.GetArg(0);
@@ -777,7 +760,6 @@ namespace System.Runtime.Serialization
                 }
                 return false;
             }
-#endif
         }
     }
 }

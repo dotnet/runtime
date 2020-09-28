@@ -1,9 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// TODO: Enable after System.Private.Xml is annotated
-#nullable disable
-
 using System.Diagnostics;
 
 #pragma warning disable 0618 // ignore obsolete warning about XmlDataDocument
@@ -16,18 +13,18 @@ namespace System.Xml
         private readonly XmlNode _nodeTop;
         private XmlNode _currentNode;
 
-        internal TreeIterator(XmlNode nodeTop) : base(((XmlDataDocument)(nodeTop.OwnerDocument)).Mapper)
+        internal TreeIterator(XmlNode nodeTop) : base(((XmlDataDocument)(nodeTop.OwnerDocument!)).Mapper)
         {
             Debug.Assert(nodeTop != null);
             _nodeTop = nodeTop;
             _currentNode = nodeTop;
         }
 
-        internal override XmlNode CurrentNode => _currentNode;
+        internal override XmlNode? CurrentNode => _currentNode;
 
         internal override bool Next()
         {
-            XmlNode nextNode;
+            XmlNode? nextNode;
 
             // Try to move to the first child
             nextNode = _currentNode.FirstChild;
@@ -47,11 +44,11 @@ namespace System.Xml
             // Make sure we do not get past the nodeTop if we call NextRight on a just initialized iterator and nodeTop has no children
             if (_currentNode == _nodeTop)
             {
-                _currentNode = null;
+                _currentNode = null!;
                 return false;
             }
 
-            XmlNode nextNode = _currentNode.NextSibling;
+            XmlNode? nextNode = _currentNode.NextSibling;
 
             if (nextNode != null)
             {
@@ -61,19 +58,19 @@ namespace System.Xml
 
             // No next sibling, try the first sibling of from the parent chain
             nextNode = _currentNode;
-            while (nextNode != _nodeTop && nextNode.NextSibling == null)
+            while (nextNode != _nodeTop && nextNode!.NextSibling == null)
             {
                 nextNode = nextNode.ParentNode;
             }
 
             if (nextNode == _nodeTop)
             {
-                _currentNode = null;
+                _currentNode = null!;
                 return false;
             }
 
+            Debug.Assert(nextNode.NextSibling != null);
             _currentNode = nextNode.NextSibling;
-            Debug.Assert(_currentNode != null);
             return true;
         }
     }

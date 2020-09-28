@@ -835,9 +835,6 @@
   <data name="Argument_AttributeNamesMustBeUnique" xml:space="preserve">
     <value>Attribute names must be unique.</value>
   </data>
-  <data name="Argument_BadAttributeOnInterfaceMethod" xml:space="preserve">
-    <value>Interface method must be abstract and virtual.</value>
-  </data>
   <data name="Argument_BadConstantValue" xml:space="preserve">
     <value>Bad default value.</value>
   </data>

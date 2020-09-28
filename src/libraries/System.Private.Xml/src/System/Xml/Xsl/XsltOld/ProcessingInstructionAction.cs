@@ -3,7 +3,6 @@
 
 namespace System.Xml.Xsl.XsltOld
 {
-    using System;
     using System.Diagnostics;
     using System.Xml;
     using System.Xml.XPath;
@@ -129,9 +128,8 @@ namespace System.Xml.Xsl.XsltOld
 
             int nameLength = name.Length;
             int position = 0;
-            XmlCharType xmlCharType = XmlCharType.Instance;
 
-            while (position < nameLength && xmlCharType.IsWhiteSpace(name[position]))
+            while (position < nameLength && XmlCharType.IsWhiteSpace(name[position]))
             {
                 position++;
             }
@@ -148,7 +146,7 @@ namespace System.Xml.Xsl.XsltOld
             }
             position += len;
 
-            while (position < nameLength && xmlCharType.IsWhiteSpace(name[position]))
+            while (position < nameLength && XmlCharType.IsWhiteSpace(name[position]))
             {
                 position++;
             }

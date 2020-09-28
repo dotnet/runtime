@@ -582,30 +582,6 @@ int32_t GlobalizationNative_LastIndexOf(
 }
 
 /*
-Static Function:
-AreEqualOrdinalIgnoreCase
-*/
-static int AreEqualOrdinalIgnoreCase(UChar32 one, UChar32 two)
-{
-    // Return whether the two characters are identical or would be identical if they were upper-cased.
-
-    if (one == two)
-    {
-        return TRUE;
-    }
-
-    if (one == 0x0131 || two == 0x0131)
-    {
-        // On Windows with InvariantCulture, the LATIN SMALL LETTER DOTLESS I (U+0131)
-        // capitalizes to itself, whereas with ICU it capitalizes to LATIN CAPITAL LETTER I (U+0049).
-        // We special case it to match the Windows invariant behavior.
-        return FALSE;
-    }
-
-    return u_toupper(one) == u_toupper(two);
-}
-
-/*
  collation element is an int used for sorting. It consists of 3 components:
     * primary - first 16 bits, representing the base letter
     * secondary - next 8 bits, typically an accent

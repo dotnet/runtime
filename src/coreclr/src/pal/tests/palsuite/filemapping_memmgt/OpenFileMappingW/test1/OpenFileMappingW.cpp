@@ -15,7 +15,7 @@
 #define UNICODE
 #include <palsuite.h>
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(filemapping_memmgt_OpenFileMappingW_test1_paltest_openfilemappingw_test1, "filemapping_memmgt/OpenFileMappingW/test1/paltest_openfilemappingw_test1")
 {
 
     HANDLE  lpMapViewAddress;

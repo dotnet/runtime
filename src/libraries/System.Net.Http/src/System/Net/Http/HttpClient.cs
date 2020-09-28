@@ -945,7 +945,7 @@ namespace System.Net.Http
 
             if (!HttpUtilities.IsHttpUri(baseAddress))
             {
-                throw new ArgumentException(SR.net_http_client_http_baseaddress_required, parameterName);
+                throw new ArgumentException(HttpUtilities.InvalidUriMessage, parameterName);
             }
         }
 

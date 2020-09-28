@@ -32,11 +32,11 @@ namespace R2RTest
         protected override string CompilerFileName => _options.DotNetCli;
         protected readonly List<string> _referenceFiles = new List<string>();
 
-        private string Crossgen2Path => Path.Combine(_options.CoreRootDirectory.FullName, "crossgen2", "crossgen2.dll");
+        private string Crossgen2Path => _options.Crossgen2Path != null ? _options.Crossgen2Path.FullName : Path.Combine(_options.CoreRootDirectory.FullName, "crossgen2", "crossgen2.dll");
         private bool CompositeMode => Crossgen2RunnerOptions != null ? Crossgen2RunnerOptions.Composite : _options.Composite;
 
-        public Crossgen2Runner(BuildOptions options, Crossgen2RunnerOptions crossgen2RunnerOptions, IEnumerable<string> references)
-            : base(options, references)
+        public Crossgen2Runner(BuildOptions options, Crossgen2RunnerOptions crossgen2RunnerOptions, IEnumerable<string> references, string overrideOutputPath = null)
+            : base(options, references, overrideOutputPath)
         {
             Crossgen2RunnerOptions = crossgen2RunnerOptions;
 
@@ -86,8 +86,15 @@ namespace R2RTest
             // Output
             yield return $"-o:{outputFileName}";
 
-            // Todo: Allow cross-architecture compilation
-            //yield return "--targetarch=x64";
+            if (_options.TargetArch != null)
+            {
+                yield return $"--targetarch={_options.TargetArch}";
+            }
+
+            if (_options.VerifyTypeAndFieldLayout)
+            {
+                yield return "--verify-type-and-field-layout";
+            }
 
             if (_options.Map)
             {

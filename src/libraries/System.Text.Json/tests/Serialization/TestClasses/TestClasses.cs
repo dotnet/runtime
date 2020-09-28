@@ -1866,9 +1866,9 @@ namespace System.Text.Json.Serialization.Tests
         }
     }
 
-    public class ClassWithType
+    public class ClassWithType<T>
     {
-        public Type Type { get; set; }
+        public T Prop { get; set; }
     }
 
     public class ConverterForInt32 : JsonConverter<int>

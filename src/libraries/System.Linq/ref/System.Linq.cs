@@ -36,7 +36,11 @@ namespace System.Linq
         public static double? Average<TSource>(this System.Collections.Generic.IEnumerable<TSource> source, System.Func<TSource, long?> selector) { throw null; }
         public static float? Average<TSource>(this System.Collections.Generic.IEnumerable<TSource> source, System.Func<TSource, float?> selector) { throw null; }
         public static float Average<TSource>(this System.Collections.Generic.IEnumerable<TSource> source, System.Func<TSource, float> selector) { throw null; }
-        public static System.Collections.Generic.IEnumerable<TResult?> Cast<TResult>(this System.Collections.IEnumerable source) { throw null; }
+        public static System.Collections.Generic.IEnumerable<
+#nullable disable
+            TResult
+#nullable restore
+            > Cast<TResult>(this System.Collections.IEnumerable source) { throw null; }
         public static System.Collections.Generic.IEnumerable<TSource> Concat<TSource>(this System.Collections.Generic.IEnumerable<TSource> first, System.Collections.Generic.IEnumerable<TSource> second) { throw null; }
         public static bool Contains<TSource>(this System.Collections.Generic.IEnumerable<TSource> source, TSource value) { throw null; }
         public static bool Contains<TSource>(this System.Collections.Generic.IEnumerable<TSource> source, TSource value, System.Collections.Generic.IEqualityComparer<TSource>? comparer) { throw null; }

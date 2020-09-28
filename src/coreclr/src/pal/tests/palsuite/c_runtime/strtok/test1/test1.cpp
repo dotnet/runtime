@@ -16,7 +16,7 @@
 #include <palsuite.h>
 
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime_strtok_test1_paltest_strtok_test1, "c_runtime/strtok/test1/paltest_strtok_test1")
 {
     char str[] = "foo bar baz";
     char *result1= "foo \0ar baz";

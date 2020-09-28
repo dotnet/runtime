@@ -51,31 +51,15 @@ The build has a number of options that you can learn about using build -?.
 
 ### WebAssembly
 
-In addition to the normal build requirements, WebAssembly builds require a local emsdk to be downloaded. This can either be external or acquired via a make target.
+See the instructions in [../libraries/webassembly-instructions.md].
 
-To acquire it externally, move to a directory outside of the runtime repository and run:
-```bash
-git clone https://github.com/emscripten-core/emsdk.git
-```
+### Android
 
-To use the make target, from the root of the runtime repo:
-```bash
-cd src/mono/wasm
-make provision-wasm
-cd ../../..
-```
+See the instructions for [Testing Android](../../testing/libraries/testing-android.md)
 
-When building for WebAssembly, regardless of the machine architecture, you must set the `EMSDK_PATH` environmental variable and architecture/os, calling build.sh like so:
-```bash
-EMSDK_PATH={path to emsdk repo} ./build.sh --subset mono+libs --arch wasm --os browser -c release
-```
+### IOS
 
-If using the locally provisioned emsdk, this will be:
-```bash
-EMSDK_PATH={path to runtime repo}/src/mono/wasm/emsdk ./build.sh --subset mono+libs --arch wasm --os browser -c release
-```
-
-Artifacts will be placed in `artifacts/bin/microsoft.netcore.app.runtime.browser-wasm/Release/`. When rebuilding with `build.sh`, you _must_ rebuild with `mono+libs` even for mono-only changes, or this directory will not be updated. Alternative, you can rebuild just the runtime-specific bits from the `src/mono/wasm` directory by running either `make runtime` or `make corlib` when modifying Mono or System.Private.CoreLib respectively.
+See the instructions for [Testing IOS](../../testing/libraries/testing-apple.md)
 
 ## Packages
 
@@ -95,6 +79,14 @@ The following packages will be created under `artifacts\packages\<configuration>
 - `runtime.<OS>.Microsoft.NETCore.Runtime.Mono.<version>-dev.<number>.1.nupkg`
 - `transport.Microsoft.NETCore.Runtime.Mono.<version>-dev.<number>.1.nupkg`
 - `transport.runtime.<OS>.Microsoft.NETCore.Runtime.Mono.<version>-dev.<number>.1.nupkg`
+
+## To get started with "Hello World"
+
+Try the sample at `src/mono/netcore/sample/HelloWorld`.
+To run this sample, from the above folder
+```cd ../..
+make run-sample
+```
 
 ## Important Notes
 

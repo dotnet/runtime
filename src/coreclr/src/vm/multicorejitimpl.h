@@ -427,7 +427,7 @@ public:
 
     void RecordMethodJit(MethodDesc * pMethod, bool application);
 
-    PCODE RequestMethodCode(MethodDesc * pMethod, MulticoreJitManager * pManager);
+    MulticoreJitCodeInfo RequestMethodCode(MethodDesc * pMethod, MulticoreJitManager * pManager);
 
     HRESULT StartProfile(const WCHAR * pRoot, const WCHAR * pFileName, int suffix, LONG nSession);
 
