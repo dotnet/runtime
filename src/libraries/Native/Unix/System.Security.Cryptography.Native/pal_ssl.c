@@ -11,6 +11,7 @@
 #include <assert.h>
 #include <string.h>
 #include <stdbool.h>
+#include <unistd.h>
 
 c_static_assert(PAL_SSL_ERROR_NONE == SSL_ERROR_NONE);
 c_static_assert(PAL_SSL_ERROR_SSL == SSL_ERROR_SSL);
@@ -118,6 +119,8 @@ static void DetectCiphersuiteConfiguration()
     g_config_specified_ciphersuites = 1;
 
 #endif
+    write(0, "config\n", 7);
+    write(0, g_config_specified_ciphersuites == 1 ? "1\n" : "0\n", 2);
 }
 
 void CryptoNative_EnsureLibSslInitialized()
