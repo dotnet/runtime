@@ -100,8 +100,14 @@ if(CLR_CMAKE_TARGET_ANDROID)
 endif()
 
 string(TOUPPER ${CMAKE_BUILD_TYPE} UPPERCASE_CMAKE_BUILD_TYPE)
-if (UPPERCASE_CMAKE_BUILD_TYPE STREQUAL DEBUG)
-    add_compile_options(-O0)
+
+if (UPPERCASE_CMAKE_BUILD_TYPE STREQUAL DEBUG OR UPPERCASE_CMAKE_BUILD_TYPE STREQUAL CHECKED)
+    if (UPPERCASE_CMAKE_BUILD_TYPE STREQUAL DEBUG)
+        add_compile_options(-O0)
+    elseif (UPPERCASE_CMAKE_BUILD_TYPE STREQUAL CHECKED)
+        add_compile_options(-O2)
+    endif ()
+
     add_definitions(-DDEBUG)
 
     # obtain settings from running coreclr\enablesanitizers.sh
@@ -118,10 +124,10 @@ if (UPPERCASE_CMAKE_BUILD_TYPE STREQUAL DEBUG)
         message("Undefined Behavior Sanitizer (ubsan) enabled")
       endif ()
 
-      set(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} ${CLR_SANITIZE_LINK_FLAGS}")
+      set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${CLR_SANITIZE_LINK_FLAGS}")
 
       # -Wl and --gc-sections: drop unused sections\functions (similar to Windows /Gy function-level-linking)
-      set(CMAKE_SHARED_LINKER_FLAGS_DEBUG "${CMAKE_SHARED_LINKER_FLAGS_DEBUG} ${CLR_SANITIZE_LINK_FLAGS} -Wl,--gc-sections")
+      set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${CLR_SANITIZE_LINK_FLAGS} -Wl,--gc-sections")
     endif ()
 elseif (UPPERCASE_CMAKE_BUILD_TYPE STREQUAL RELEASE)
     # Use O1 option when the clang version is smaller than 3.9

@@ -86,4 +86,4 @@ endif(CLR_CMAKE_HOST_OSX)
 
 endif(CLR_CMAKE_HOST_WIN32)
 
-install_clr(TARGETS createdump ADDITIONAL_DESTINATION sharedFramework)
+install_clr(TARGETS createdump ADDITIONAL_DESTINATIONS sharedFramework)

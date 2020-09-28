@@ -916,7 +916,7 @@ namespace System.Net.Http
                      (responseMessage.StatusCode >= HttpStatusCode.RedirectKeepVerb && responseMessage.StatusCode <= (HttpStatusCode)308)) &&
                     state.RequestMessage.RequestUri.Scheme == Uri.UriSchemeHttps && responseMessage.Headers.Location?.Scheme == Uri.UriSchemeHttp)
                 {
-                    NetEventSource.Error(this, $"Insecure https to http redirect from {state.RequestMessage.RequestUri.ToString()} to {responseMessage.Headers.Location.ToString()} blocked.");
+                    NetEventSource.Error(this, $"Insecure https to http redirect from {state.RequestMessage.RequestUri} to {responseMessage.Headers.Location} blocked.");
                 }
             }
             catch (Exception ex)

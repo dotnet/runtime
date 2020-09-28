@@ -18,16 +18,16 @@ namespace Microsoft.NET.HostModel.Bundle
     /// </summary>
     public class Bundler
     {
-        readonly string HostName;
-        readonly string OutputDir;
-        readonly string DepsJson;
-        readonly string RuntimeConfigJson;
-        readonly string RuntimeConfigDevJson;
+        private readonly string HostName;
+        private readonly string OutputDir;
+        private readonly string DepsJson;
+        private readonly string RuntimeConfigJson;
+        private readonly string RuntimeConfigDevJson;
 
-        readonly Trace Tracer;
+        private readonly Trace Tracer;
         public readonly Manifest BundleManifest;
-        readonly TargetInfo Target;
-        readonly BundleOptions Options;
+        private readonly TargetInfo Target;
+        private readonly BundleOptions Options;
 
         public Bundler(string hostName,
                        string outputDir,
@@ -58,7 +58,7 @@ namespace Microsoft.NET.HostModel.Bundle
         /// </summary>
         /// <returns>Returns the offset of the start 'file' within 'bundle'</returns>
 
-        long AddToBundle(Stream bundle, Stream file, FileType type)
+        private long AddToBundle(Stream bundle, Stream file, FileType type)
         {
             if (type == FileType.Assembly)
             {
@@ -78,17 +78,17 @@ namespace Microsoft.NET.HostModel.Bundle
             return startOffset;
         }
 
-        bool IsHost(string fileRelativePath)
+        private bool IsHost(string fileRelativePath)
         {
             return fileRelativePath.Equals(HostName);
         }
 
-        bool ShouldIgnore(string fileRelativePath)
+        private bool ShouldIgnore(string fileRelativePath)
         {
             return fileRelativePath.Equals(RuntimeConfigDevJson);
         }
 
-        bool ShouldExclude(FileType type, string relativePath)
+        private bool ShouldExclude(FileType type, string relativePath)
         {
             switch (type)
             {
@@ -112,7 +112,7 @@ namespace Microsoft.NET.HostModel.Bundle
             }
         }
 
-        bool IsAssembly(string path, out bool isPE)
+        private bool IsAssembly(string path, out bool isPE)
         {
             isPE = false;
 
@@ -134,7 +134,7 @@ namespace Microsoft.NET.HostModel.Bundle
             return false;
         }
 
-        FileType InferType(FileSpec fileSpec)
+        private FileType InferType(FileSpec fileSpec)
         {
             if (fileSpec.BundleRelativePath.Equals(DepsJson))
             {
@@ -172,7 +172,7 @@ namespace Microsoft.NET.HostModel.Bundle
         /// </summary>
         /// <param name="fileSpecs">
         /// An enumeration FileSpecs for the files to be embedded.
-        /// 
+        ///
         /// Files in fileSpecs that are not bundled within the single file bundle,
         /// and should be published as separate files are marked as "IsExcluded" by this method.
         /// This doesn't include unbundled files that should be dropped, and not publised as output.
@@ -271,4 +271,3 @@ namespace Microsoft.NET.HostModel.Bundle
         }
     }
 }
-

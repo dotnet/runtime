@@ -1077,7 +1077,7 @@ namespace System.Net.WebSockets
                 if (NetEventSource.Log.IsEnabled())
                 {
                     string methodName = _completedOperation == HttpListenerAsyncOperation.Receive ? nameof(ReadAsyncFast) : nameof(WriteAsyncFast);
-                    NetEventSource.Error(_currentStream, $"{methodName} {exception.ToString()}");
+                    NetEventSource.Error(_currentStream, $"{methodName} {exception}");
                 }
 
                 Complete();

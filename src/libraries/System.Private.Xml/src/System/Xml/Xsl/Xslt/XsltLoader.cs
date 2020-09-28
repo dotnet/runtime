@@ -469,7 +469,7 @@ namespace System.Xml.Xsl.Xslt
         // It's OK to suppress the SxS warning.
         private void LoadImport()
         {
-            ContextInfo ctxInfo = _input.GetAttributes(_importIncludeAttributes);
+            _input.GetAttributes(_importIncludeAttributes);
 
             if (_input.MoveToXsltAttribute(0, "href"))
             {
@@ -498,7 +498,7 @@ namespace System.Xml.Xsl.Xslt
         // It's OK to suppress the SxS warning.
         private void LoadInclude()
         {
-            ContextInfo ctxInfo = _input.GetAttributes(_importIncludeAttributes);
+            _input.GetAttributes(_importIncludeAttributes);
 
             if (_input.MoveToXsltAttribute(0, "href"))
             {
@@ -568,7 +568,7 @@ namespace System.Xml.Xsl.Xslt
         };
         private void LoadOutput()
         {
-            ContextInfo ctxInfo = _input.GetAttributes(_outputAttributes);
+            _input.GetAttributes(_outputAttributes);
 
             Output output = _compiler.Output;
             XmlWriterSettings settings = output.Settings;
@@ -844,7 +844,7 @@ namespace System.Xml.Xsl.Xslt
             QilName keyName = ParseQNameAttribute(0)!;
             string? match = ParseStringAttribute(1, "match");
             string? use = ParseStringAttribute(2, "use");
-            string? collation = ParseCollationAttribute(3);
+            ParseCollationAttribute(3);
 
             _input.MoveToElement();
 
@@ -1931,7 +1931,6 @@ namespace System.Xml.Xsl.Xslt
                 XslNodeType.Unknown
             );
             Debug.Assert(nodeType != XslNodeType.Unknown);
-            bool isParam = Ref.Equal(localName, _atoms.Param);
             ContextInfo ctxInfo = _input.GetAttributes(
                 nodeType == XslNodeType.Variable ? _variableAttributes :
                 nodeType == XslNodeType.Param ? _paramAttributes :
@@ -2138,7 +2137,7 @@ namespace System.Xml.Xsl.Xslt
             string? select = ParseStringAttribute(0, "select");
             string? lang = ParseStringAttribute(1, "lang");
             string? order = ParseStringAttribute(2, "order");
-            string? collation = ParseCollationAttribute(3);
+            ParseCollationAttribute(3);
             TriState stable = ParseYesNoAttribute(4, "stable");
             string? caseOrder = ParseStringAttribute(5, "case-order");
             string? dataType = ParseStringAttribute(6, "data-type");

@@ -21,7 +21,7 @@ typedef struct
 } testCase;
 
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(miscellaneous__i64tow_test1_paltest_i64tow_test1, "miscellaneous/_i64tow/test1/paltest_i64tow_test1")
 {
     WCHAR buffer[256];
     WCHAR *testStr;

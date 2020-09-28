@@ -2485,7 +2485,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     {
         // The following flags are lost when inlining. (They are removed in
         // Compiler::fgInvokeInlineeCompiler().)
-        assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT));
         assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR));
         assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_PROF_ENTERLEAVE));
         assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_DEBUG_EnC));
@@ -2740,6 +2739,49 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.compFastTailCalls = true;
 #endif // FEATURE_FASTTAILCALL
 
+    // Profile data
+    //
+    fgBlockCounts                = nullptr;
+    fgProfileData_ILSizeMismatch = false;
+    fgNumProfileRuns             = 0;
+    if (jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT))
+    {
+        HRESULT hr;
+        hr = info.compCompHnd->getMethodBlockCounts(info.compMethodHnd, &fgBlockCountsCount, &fgBlockCounts,
+                                                    &fgNumProfileRuns);
+
+        JITDUMP("BBOPT set -- VM query for profile data for %s returned: hr=%0x; counts at %p, %d blocks, %d runs\n",
+                info.compFullName, hr, fgBlockCounts, fgBlockCountsCount, fgNumProfileRuns);
+
+        // a failed result that also has a non-NULL fgBlockCounts
+        // indicates that the ILSize for the method no longer matches
+        // the ILSize for the method when profile data was collected.
+        //
+        // We will discard the IBC data in this case
+        //
+        if (FAILED(hr) && (fgBlockCounts != nullptr))
+        {
+            fgProfileData_ILSizeMismatch = true;
+            fgBlockCounts                = nullptr;
+        }
+#ifdef DEBUG
+        // A successful result implies a non-NULL fgBlockCounts
+        //
+        if (SUCCEEDED(hr))
+        {
+            assert(fgBlockCounts != nullptr);
+        }
+
+        // A failed result implies a NULL fgBlockCounts
+        //   see implementation of Compiler::fgHaveProfileData()
+        //
+        if (FAILED(hr))
+        {
+            assert(fgBlockCounts == nullptr);
+        }
+#endif
+    }
+
     if (compIsForInlining())
     {
         return;
@@ -2902,6 +2944,10 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
                     opts.dspDebugInfo = true;
                 }
             }
+        }
+        if (opts.disAsm && JitConfig.JitDisasmWithGC())
+        {
+            opts.disasmWithGC = true;
         }
 
 #ifdef LATE_DISASM
@@ -3147,45 +3193,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 #endif
     }
 
-    fgBlockCounts                = nullptr;
-    fgProfileData_ILSizeMismatch = false;
-    fgNumProfileRuns             = 0;
-    if (jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT))
-    {
-        assert(!compIsForInlining());
-        HRESULT hr;
-        hr = info.compCompHnd->getMethodBlockCounts(info.compMethodHnd, &fgBlockCountsCount, &fgBlockCounts,
-                                                    &fgNumProfileRuns);
-
-        // a failed result that also has a non-NULL fgBlockCounts
-        // indicates that the ILSize for the method no longer matches
-        // the ILSize for the method when profile data was collected.
-        //
-        // We will discard the IBC data in this case
-        //
-        if (FAILED(hr) && (fgBlockCounts != nullptr))
-        {
-            fgProfileData_ILSizeMismatch = true;
-            fgBlockCounts                = nullptr;
-        }
-#ifdef DEBUG
-        // A successful result implies a non-NULL fgBlockCounts
-        //
-        if (SUCCEEDED(hr))
-        {
-            assert(fgBlockCounts != nullptr);
-        }
-
-        // A failed result implies a NULL fgBlockCounts
-        //   see implementation of Compiler::fgHaveProfileData()
-        //
-        if (FAILED(hr))
-        {
-            assert(fgBlockCounts == nullptr);
-        }
-#endif
-    }
-
 #ifdef DEBUG
     // Now, set compMaxUncheckedOffsetForNullObject for STRESS_NULL_OBJECT_CHECK
     if (compStressCompile(STRESS_NULL_OBJECT_CHECK, 30))
@@ -3253,18 +3260,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         }
     }
 #endif
-
-    opts.compGCPollType = GCPOLL_NONE;
-    if (jitFlags->IsSet(JitFlags::JIT_FLAG_GCPOLL_CALLS))
-    {
-        opts.compGCPollType = GCPOLL_CALL;
-    }
-    else if (jitFlags->IsSet(JitFlags::JIT_FLAG_GCPOLL_INLINE))
-    {
-        // make sure that the EE didn't set both flags.
-        assert(opts.compGCPollType == GCPOLL_NONE);
-        opts.compGCPollType = GCPOLL_INLINE;
-    }
 
 #ifdef PROFILING_SUPPORTED
 #ifdef UNIX_AMD64_ABI
@@ -4534,7 +4529,11 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
 
     // Compute bbNum, bbRefs and bbPreds
     //
-    // This is the first time full (not cheap) preds will be computed
+    // This is the first time full (not cheap) preds will be computed.
+    // And, if we have profile data, we can now check integrity.
+    //
+    // From this point on the flowgraph information such as bbNum,
+    // bbRefs or bbPreds has to be kept updated.
     //
     auto computePredsPhase = [this]() {
         JITDUMP("\nRenumbering the basic blocks for fgComputePred\n");
@@ -4561,9 +4560,6 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
         DoPhase(this, PHASE_EARLY_UPDATE_FLOW_GRAPH, earlyUpdateFlowGraphPhase);
     }
 
-    // From this point on the flowgraph information such as bbNum,
-    // bbRefs or bbPreds has to be kept updated
-    //
     // Promote struct locals
     //
     auto promoteStructsPhase = [this]() {
@@ -4641,18 +4637,6 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
         }
     };
     DoPhase(this, PHASE_GS_COOKIE, gsPhase);
-
-    // If we need to emit GC Poll calls, mark the blocks that need them now.
-    // This is conservative and can be optimized later.
-    //
-    // GC Poll marking assumes block bbnums match lexical block order,
-    // so make sure this is the case.
-    //
-    auto gcPollPhase = [this]() {
-        fgRenumberBlocks();
-        fgMarkGCPollBlocks();
-    };
-    DoPhase(this, PHASE_MARK_GC_POLL_BLOCKS, gcPollPhase);
 
     // Compute the block and edge weights
     //
@@ -4949,6 +4933,8 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
     {
 #if MEASURE_CLRAPI_CALLS
         EndPhase(PHASE_CLR_API);
+#else
+        EndPhase(PHASE_POST_EMIT);
 #endif
         pCompJitTimer->Terminate(this, CompTimeSummaryInfo::s_compTimeSummary, true);
     }
@@ -8885,14 +8871,14 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                         chars += printf("[ICON_STR_HDL]");
                         break;
 
-                    case GTF_ICON_PSTR_HDL:
+                    case GTF_ICON_CONST_PTR:
 
-                        chars += printf("[ICON_PSTR_HDL]");
+                        chars += printf("[ICON_CONST_PTR]");
                         break;
 
-                    case GTF_ICON_PTR_HDL:
+                    case GTF_ICON_GLOBAL_PTR:
 
-                        chars += printf("[ICON_PTR_HDL]");
+                        chars += printf("[ICON_GLOBAL_PTR]");
                         break;
 
                     case GTF_ICON_VARG_HDL:

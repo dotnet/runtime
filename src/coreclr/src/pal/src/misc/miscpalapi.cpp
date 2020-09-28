@@ -106,42 +106,6 @@ EXIT:
     return bRet;
 }
 
-BOOL
-PAL_GetPALDirectoryA(PathCharString& lpDirectoryName)
-{
-    BOOL bRet;
-    PathWCharString directory;
-
-    PERF_ENTRY(PAL_GetPALDirectoryA);
-
-    bRet = PAL_GetPALDirectoryW(directory);
-
-    if (bRet)
-    {
-
-        int length = WideCharToMultiByte(CP_ACP, 0, directory.GetString(), -1, NULL, 0, NULL, 0);
-        LPSTR DirectoryName = lpDirectoryName.OpenStringBuffer(length);
-        if (NULL == DirectoryName)
-        {
-            SetLastError( ERROR_INSUFFICIENT_BUFFER );
-            bRet = FALSE;
-        }
-
-        length = WideCharToMultiByte(CP_ACP, 0, directory.GetString(), -1, DirectoryName, length, NULL, 0);
-
-        if (0 == length)
-        {
-            bRet = FALSE;
-            length++;
-        }
-
-        lpDirectoryName.CloseBuffer(length - 1);
-    }
-
-    PERF_EXIT(PAL_GetPALDirectoryA);
-    return bRet;
-}
-
 /*++
 
 Function :
@@ -186,43 +150,6 @@ PAL_GetPALDirectoryW( OUT LPWSTR lpDirectoryName, IN OUT UINT* cchDirectoryName 
     PERF_EXIT(PAL_GetPALDirectoryW);
     return bRet;
 
-}
-
-PALIMPORT
-BOOL
-PALAPI
-PAL_GetPALDirectoryA(
-             OUT LPSTR lpDirectoryName,
-             IN UINT*  cchDirectoryName)
-{
-    BOOL bRet;
-    PathCharString directory;
-
-    PERF_ENTRY(PAL_GetPALDirectoryA);
-    ENTRY( "PAL_GetPALDirectoryA( %p, %d )\n", lpDirectoryName, *cchDirectoryName );
-
-    bRet = PAL_GetPALDirectoryA(directory);
-
-    if (bRet)
-    {
-        if (directory.GetCount() > *cchDirectoryName)
-        {
-            SetLastError( ERROR_INSUFFICIENT_BUFFER );
-            bRet = FALSE;
-            *cchDirectoryName = directory.GetCount();
-        }
-        else if (strcpy_s(lpDirectoryName, directory.GetCount(), directory.GetString()) == SAFECRT_SUCCESS)
-        {
-        }
-        else
-        {
-            bRet = FALSE;
-        }
-    }
-
-    LOGEXIT( "PAL_GetPALDirectoryA returns BOOL %d.\n", bRet);
-    PERF_EXIT(PAL_GetPALDirectoryA);
-    return bRet;
 }
 
 VOID

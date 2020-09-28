@@ -16,7 +16,12 @@ namespace System.Text.Json.Serialization.Converters
     {
         protected override void Add(string key, in object? value, JsonSerializerOptions options, ref ReadStack state)
         {
-            ((IDictionary)state.Current.ReturnValue!)[key] = value;
+            TCollection collection = (TCollection)state.Current.ReturnValue!;
+            collection[key] = value;
+            if (IsValueType)
+            {
+                state.Current.ReturnValue = collection;
+            };
         }
 
         private JsonConverter<object>? _objectConverter;

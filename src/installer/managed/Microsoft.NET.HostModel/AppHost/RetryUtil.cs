@@ -12,10 +12,10 @@ namespace Microsoft.NET.HostModel
     /// <summary>
     /// HostModel library implements several services for updating the AppHost DLL.
     /// These updates involve multiple file open/close operations.
-    /// An Antivirus scanner may intercept in-between and lock the file, 
+    /// An Antivirus scanner may intercept in-between and lock the file,
     /// causing the operations to fail with IO-Error.
     /// So, the operations are retried a few times on failures such as
-    /// - IOException 
+    /// - IOException
     /// - Failure with Win32 errors indicating file-lock
     /// </summary>
     public static class RetryUtil

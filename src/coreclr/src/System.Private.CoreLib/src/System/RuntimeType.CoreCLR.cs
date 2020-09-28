@@ -2203,7 +2203,7 @@ namespace System
         private static bool FilterApplyType(
             Type type, BindingFlags bindingFlags, string name, bool prefixLookup, string? ns)
         {
-            Debug.Assert((object)type != null);
+            Debug.Assert(type is not null);
             Debug.Assert(type is RuntimeType);
 
             bool isPublic = type.IsNestedPublic || type.IsPublic;
@@ -2341,7 +2341,7 @@ namespace System
                             for (int i = 0; i < parameterInfos.Length; i++)
                             {
                                 // a null argument type implies a null arg which is always a perfect match
-                                if ((object)argumentTypes[i] != null && !argumentTypes[i].MatchesParameterTypeExactly(parameterInfos[i]))
+                                if (argumentTypes[i] is Type t && !t.MatchesParameterTypeExactly(parameterInfos[i]))
                                     return false;
                             }
                         }
@@ -2834,7 +2834,7 @@ namespace System
                 {
                     PropertyInfo firstCandidate = candidates[0];
 
-                    if ((object?)returnType != null && !returnType.IsEquivalentTo(firstCandidate.PropertyType))
+                    if (returnType is not null && !returnType.IsEquivalentTo(firstCandidate.PropertyType))
                         return null;
 
                     return firstCandidate;
@@ -4084,24 +4084,6 @@ namespace System
             string name, BindingFlags invokeAttr, object target, object?[]? args,
             bool[]? byrefModifiers, int culture, string[]? namedParameters);
 #endif // FEATURE_COMINTEROP
-
-#if FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern Type? GetTypeFromProgIDImpl(string progID, string? server, bool throwOnError);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern Type? GetTypeFromCLSIDImpl(Guid clsid, string? server, bool throwOnError);
-#else // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
-        internal static Type GetTypeFromProgIDImpl(string progID, string? server, bool throwOnError)
-        {
-            throw new NotImplementedException("CoreCLR_REMOVED -- Unmanaged activation removed");
-        }
-
-        internal static Type GetTypeFromCLSIDImpl(Guid clsid, string? server, bool throwOnError)
-        {
-            throw new NotImplementedException("CoreCLR_REMOVED -- Unmanaged activation removed");
-        }
-#endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
 
         #endregion
 

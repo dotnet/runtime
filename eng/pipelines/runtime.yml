@@ -17,8 +17,6 @@ trigger:
     - eng/Version.Details.xml
     - .github/*
     - docs/*
-    - ISSUE_TEMPLATE/*
-    - PULL_REQUEST_TEMPLATE/*
     - CODE-OF-CONDUCT.md
     - CONTRIBUTING.md
     - LICENSE.TXT
@@ -41,8 +39,6 @@ pr:
     - eng/Version.Details.xml
     - .github/*
     - docs/*
-    - ISSUE_TEMPLATE/*
-    - PULL_REQUEST_TEMPLATE/*
     - CODE-OF-CONDUCT.md
     - CONTRIBUTING.md
     - LICENSE.TXT
