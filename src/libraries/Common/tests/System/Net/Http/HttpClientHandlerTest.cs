@@ -2483,11 +2483,11 @@ namespace System.Net.Http.Functional.Tests
                         string responseContent = await response.Content.ReadAsStringAsync();
 
                         Assert.Contains($"\"Content-Length\": \"{request.Content.Headers.ContentLength.Value}\"", responseContent);
-
-                        Assert.Contains(stringContent.Substring(startingPosition), responseContent);
+                        string bodyContent = System.Text.Json.JsonDocument.Parse(responseContent).RootElement.GetProperty("BodyContent").GetString();
+                        Assert.Contains(stringContent.Substring(startingPosition), bodyContent);
                         if (startingPosition != 0)
                         {
-                            Assert.DoesNotContain(stringContent.Substring(0, startingPosition), responseContent);
+                            Assert.DoesNotContain(stringContent.Substring(0, startingPosition), bodyContent);
                         }
                     }
                 }

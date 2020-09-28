@@ -103,9 +103,10 @@ mono_arch_get_unbox_trampoline (MonoMethod *method, gpointer addr)
 	guint8 *code, *start;
 	int this_pos = s390_r2;
 	MonoDomain *domain = mono_domain_get ();
+	MonoMemoryManager *mem_manager = m_method_get_mem_manager (domain, m);
 	char trampName[128];
 
-	start = code = mono_domain_code_reserve (domain, 28);
+	start = code = mono_mem_manager_code_reserve (mem_manager, 28);
 
 	S390_SET  (code, s390_r1, addr);
 	s390_aghi (code, this_pos, MONO_ABI_SIZEOF (MonoObject));
@@ -549,7 +550,7 @@ mono_arch_invalidate_method (MonoJitInfo *ji, void *func, gpointer func_arg)
 /*------------------------------------------------------------------*/
 
 gpointer
-mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_type, MonoDomain *domain, guint32 *code_len)
+mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_type, MonoMemoryManager *mem_manager, guint32 *code_len)
 {
 	guint8 *code, *buf, *tramp;
 	gint32 displace;
@@ -561,7 +562,7 @@ mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_ty
 	/* purpose is to provide the generic part with the          */
 	/* MonoMethod *method pointer. We'll use r1 to keep it.     */
 	/*----------------------------------------------------------*/
-	code = buf = mono_domain_code_reserve (domain, SPECIFIC_TRAMPOLINE_SIZE);
+	code = buf = mono_mem_manager_code_reserve (mem_manager, SPECIFIC_TRAMPOLINE_SIZE);
 
 	S390_SET  (buf, s390_r1, arg1);
 	displace = (tramp - buf) / 2;
@@ -680,8 +681,9 @@ mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot, MonoTrampInfo **info
 	s390_lgr (code, MONO_ARCH_VTABLE_REG, s390_r2);
 #endif
 
+	MonoMemoryManager *mem_manager = mono_domain_ambient_memory_manager (mono_get_root_domain ());
 	tramp = (guint8*)mono_arch_create_specific_trampoline (GUINT_TO_POINTER (slot),
-		MONO_TRAMPOLINE_RGCTX_LAZY_FETCH, mono_get_root_domain (), NULL);
+		MONO_TRAMPOLINE_RGCTX_LAZY_FETCH, mem_manager, NULL);
 
 	/* jump to the actual trampoline */
 	displace = (tramp - code) / 2;
@@ -711,17 +713,16 @@ mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot, MonoTrampInfo **info
 /*------------------------------------------------------------------*/
 
 gpointer
-mono_arch_get_static_rgctx_trampoline (gpointer arg, gpointer addr)
+mono_arch_get_static_rgctx_trampoline (MonoMemoryManager *mem_manager, gpointer arg, gpointer addr)
 {
 	guint8 *code, *start;
 	gint32 displace;
 	int buf_len;
-
 	MonoDomain *domain = mono_domain_get ();
 
 	buf_len = 32;
 
-	start = code = mono_domain_code_reserve (domain, buf_len);
+	start = code = mono_mem_manager_code_reserve (mem_manager, buf_len);
 
 	S390_SET  (code, MONO_ARCH_RGCTX_REG, arg);
 	displace = ((uintptr_t) addr - (uintptr_t) code) / 2;

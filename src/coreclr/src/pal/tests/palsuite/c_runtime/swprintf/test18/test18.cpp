@@ -19,7 +19,7 @@
  * Uses memcmp & wcslen
  */
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime_swprintf_test18_paltest_swprintf_test18, "c_runtime/swprintf/test18/paltest_swprintf_test18")
 {
     double val = 2560.001;
     double neg = -2560.001;

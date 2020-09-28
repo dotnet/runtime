@@ -372,7 +372,9 @@ namespace Internal.TypeSystem
     /// </summary>
     public abstract partial class MethodDesc : TypeSystemEntity
     {
+#pragma warning disable CA1825 // avoid Array.Empty<T>() instantiation for TypeLoader
         public static readonly MethodDesc[] EmptyMethods = new MethodDesc[0];
+#pragma warning restore CA1825
 
         private int _hashcode;
 
@@ -414,11 +416,11 @@ namespace Internal.TypeSystem
             return TypeHashingAlgorithms.ComputeMethodHashCode(OwningType.GetHashCode(), TypeHashingAlgorithms.ComputeNameHashCode(Name));
         }
 
-        public override bool Equals(Object o)
+        public override bool Equals(object o)
         {
             // Its only valid to compare two MethodDescs in the same context
-            Debug.Assert(Object.ReferenceEquals(o, null) || !(o is MethodDesc) || Object.ReferenceEquals(((MethodDesc)o).Context, this.Context));
-            return Object.ReferenceEquals(this, o);
+            Debug.Assert(object.ReferenceEquals(o, null) || !(o is MethodDesc) || object.ReferenceEquals(((MethodDesc)o).Context, this.Context));
+            return object.ReferenceEquals(this, o);
         }
 
         /// <summary>

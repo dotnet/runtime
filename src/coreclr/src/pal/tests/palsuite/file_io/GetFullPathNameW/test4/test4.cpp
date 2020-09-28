@@ -29,17 +29,17 @@
 #define UNICODE
 #include <palsuite.h>
 
+PALTEST(file_io_GetFullPathNameW_test4_paltest_getfullpathnamew_test4, "file_io/GetFullPathNameW/test4/paltest_getfullpathnamew_test4")
+{
 #ifdef WIN32
     const WCHAR szSeperator[] = {'\\','\\','\0'};
 #else
     const WCHAR szSeperator[] = {'/','/','\0'};
 #endif
 
-const WCHAR szDotDot[]   = {'.','.','\0'};
-const WCHAR szFileName[] = {'t','e','s','t','i','n','g','.','t','m','p','\0'};
+    const WCHAR szDotDot[]   = {'.','.','\0'};
+    const WCHAR szFileName[] = {'t','e','s','t','i','n','g','.','t','m','p','\0'};
 
-int __cdecl main(int argc, char *argv[])
-{
     DWORD   dwRc = 0;
 
     WCHAR   szReturnedPath[_MAX_DIR+1];

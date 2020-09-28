@@ -12,7 +12,7 @@
 **============================================================*/
 #include <palsuite.h>
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(filemapping_memmgt_LocalAlloc_test1_paltest_localalloc_test1, "filemapping_memmgt/LocalAlloc/test1/paltest_localalloc_test1")
 {
     HLOCAL LocalHeap;
     HLOCAL FreeHeap;

@@ -57,7 +57,7 @@ namespace System.Xml.Tests
         public static void InvalidEncoding()
         {
             var xmlDocument = new XmlDocument();
-            var decl = xmlDocument.CreateXmlDeclaration("1.0", "wrong", "yes");
+            xmlDocument.CreateXmlDeclaration("1.0", "wrong", "yes");
         }
 
         [Fact]

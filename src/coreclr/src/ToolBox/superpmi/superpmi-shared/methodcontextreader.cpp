@@ -81,7 +81,7 @@ MethodContextReader::MethodContextReader(
     , Offset(offset)
     , Increment(increment)
 {
-    this->mutex = CreateMutexA(NULL, FALSE, nullptr);
+    this->mutex = CreateMutexW(NULL, FALSE, nullptr);
 
     std::string tocFileName, mchFileName;
 

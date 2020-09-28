@@ -91,7 +91,7 @@ namespace System.Linq
 
             return count <= 0 ?
                 Empty<TSource>() :
-                TakeLastEnumerableFactory(source, count);
+                TakeLastIterator(source, count);
         }
 
         private static IEnumerable<TSource> TakeLastIterator<TSource>(IEnumerable<TSource> source, int count)

@@ -24,13 +24,13 @@ namespace Internal.TypeSystem
             protected override bool CompareKeyToValue(MethodDesc key, MethodDesc value)
             {
                 Debug.Assert(key.Context == value.Context);
-                return Object.ReferenceEquals(key, value);
+                return object.ReferenceEquals(key, value);
             }
 
             protected override bool CompareValueToValue(MethodDesc value1, MethodDesc value2)
             {
                 Debug.Assert(value1.Context == value2.Context);
-                return Object.ReferenceEquals(value1, value2);
+                return object.ReferenceEquals(value1, value2);
             }
 
             protected override MethodDesc CreateValueFromKey(MethodDesc key)
@@ -42,10 +42,10 @@ namespace Internal.TypeSystem
         private class UnificationGroup
         {
             private MethodDesc[] _members = MethodDesc.EmptyMethods;
-            private int _memberCount = 0;
+            private int _memberCount;
 
             private MethodDesc[] _methodsRequiringSlotUnification = MethodDesc.EmptyMethods;
-            private int _methodsRequiringSlotUnificationCount = 0;
+            private int _methodsRequiringSlotUnificationCount;
 
             /// <summary>
             /// Custom enumerator struct for Unification group. Makes enumeration require 0 allocations.
@@ -130,7 +130,7 @@ namespace Internal.TypeSystem
 
             public bool RequiresSlotUnification(MethodDesc method)
             {
-                for(int i = 0; i < _methodsRequiringSlotUnificationCount; i++)
+                for (int i = 0; i < _methodsRequiringSlotUnificationCount; i++)
                 {
                     if (_methodsRequiringSlotUnification[i] == method)
                         return true;
@@ -318,9 +318,9 @@ namespace Internal.TypeSystem
         /// </summary>
         /// <param name="targetMethod"></param>
         /// <param name="currentType"></param>
-        /// <param name="reverseMethodSearch">Used to control the order of the search. For historical purposes to 
-        /// match .NET Framework behavior, this is typically true, but not always. There is no particular rationale 
-        /// for the particular orders other than to attempt to be consistent in virtual method override behavior 
+        /// <param name="reverseMethodSearch">Used to control the order of the search. For historical purposes to
+        /// match .NET Framework behavior, this is typically true, but not always. There is no particular rationale
+        /// for the particular orders other than to attempt to be consistent in virtual method override behavior
         /// betweeen runtimes.</param>
         /// <param name="nameSigMatchMethodIsValidCandidate"></param>
         /// <returns></returns>
@@ -355,7 +355,7 @@ namespace Internal.TypeSystem
             return implMethod;
         }
 
-        // This function is used to find the name/sig based override for a given method. This method ignores all 
+        // This function is used to find the name/sig based override for a given method. This method ignores all
         // method impl's as it assumes they have been resolved. The algorithm is simple. Walk to the base type looking
         // for overrides by name and signature. If one is found, return it as long as the newslot defining method
         // for the found method matches that of the target method.
@@ -408,9 +408,9 @@ namespace Internal.TypeSystem
         /// </summary>
         /// <param name="method"></param>
         /// <param name="currentType"></param>
-        /// <param name="reverseMethodSearch">Used to control the order of the search. For historical purposes to 
-        /// match .NET Framework behavior, this is typically true, but not always. There is no particular rationale 
-        /// for the particular orders other than to attempt to be consistent in virtual method override behavior 
+        /// <param name="reverseMethodSearch">Used to control the order of the search. For historical purposes to
+        /// match .NET Framework behavior, this is typically true, but not always. There is no particular rationale
+        /// for the particular orders other than to attempt to be consistent in virtual method override behavior
         /// betweeen runtimes.</param>
         /// <returns></returns>
         private static MethodDesc FindMatchingVirtualMethodOnTypeByNameAndSigWithSlotCheck(MethodDesc method, DefType currentType, bool reverseMethodSearch)
@@ -434,7 +434,7 @@ namespace Internal.TypeSystem
             MethodDesc methodImpl = FindImplFromDeclFromMethodImpls(currentType, unificationGroup.DefiningMethod);
             if (methodImpl != null)
             {
-                if(methodImpl.RequiresSlotUnification())
+                if (methodImpl.RequiresSlotUnification())
                 {
                     unificationGroup.AddMethodRequiringSlotUnification(unificationGroup.DefiningMethod);
                     unificationGroup.AddMethodRequiringSlotUnification(methodImpl);
@@ -518,7 +518,7 @@ namespace Internal.TypeSystem
                             addDeclGroup.IsInGroupOrIsDefiningSlot(declSlot) ||
                             (addDeclGroup.RequiresSlotUnification(declSlot) && addDeclGroup.DefiningMethod.Signature.EqualsWithCovariantReturnType(declSlot.Signature)));
 
-                        foreach(MethodDesc methodImplRequiredToRemainInEffect in addDeclGroup.MethodsRequiringSlotUnification)
+                        foreach (MethodDesc methodImplRequiredToRemainInEffect in addDeclGroup.MethodsRequiringSlotUnification)
                         {
                             unificationGroup.AddMethodRequiringSlotUnification(methodImplRequiredToRemainInEffect);
                         }
@@ -538,7 +538,7 @@ namespace Internal.TypeSystem
                             }
                         }
 
-                        if(unificationGroup.RequiresSlotUnification(declSlot))
+                        if (unificationGroup.RequiresSlotUnification(declSlot))
                         {
                             unificationGroup.AddMethodRequiringSlotUnification(implSlot);
                         }
@@ -574,14 +574,14 @@ namespace Internal.TypeSystem
         //Interface function resolution
         //    Interface function resolution follows the following rules
         //    1.    Apply any method impl that may exist, if once of these exists, resolve to target immediately.
-        //    2.    If an interface is explicitly defined on a type, then attempt to perform a namesig match on the 
-        //          current type to resolve.If the interface isn't resolved, if it isn't implemented on a base type, 
+        //    2.    If an interface is explicitly defined on a type, then attempt to perform a namesig match on the
+        //          current type to resolve.If the interface isn't resolved, if it isn't implemented on a base type,
         //          scan all base types for name / sig matches.
-        //    3.    If implicitly defined, attempt to perform a namesig match if the interface method implementation 
+        //    3.    If implicitly defined, attempt to perform a namesig match if the interface method implementation
         //          has not been found on some base type.
-        //    The above will resolve an interface to a virtual method slot. From there perform virtual resolution 
-        //    to find out the actual target.Note, to preserve correct behavior in the presence of variance, this 
-        //    function returns null if the interface method implementation is not defined by the current type in 
+        //    The above will resolve an interface to a virtual method slot. From there perform virtual resolution
+        //    to find out the actual target.Note, to preserve correct behavior in the presence of variance, this
+        //    function returns null if the interface method implementation is not defined by the current type in
         //    the hierarchy.For variance to work correctly, this requires that interfaces be queried in correct order.
         //    See current interface call resolution for details on how that happens.
         private static MethodDesc ResolveInterfaceMethodToVirtualMethodOnType(MethodDesc interfaceMethod, MetadataType currentType)
@@ -601,9 +601,9 @@ namespace Internal.TypeSystem
 
             if (foundExplicitInterface)
             {
-                MethodDesc foundOnCurrentType = FindMatchingVirtualMethodOnTypeByNameAndSig(interfaceMethod, currentType
-                    , reverseMethodSearch: false /* When searching for name/sig overrides on a type that explicitly defines an interface, search through the type in the forward direction*/
-                    , nameSigMatchMethodIsValidCandidate :null);
+                MethodDesc foundOnCurrentType = FindMatchingVirtualMethodOnTypeByNameAndSig(interfaceMethod, currentType,
+                    reverseMethodSearch: false, /* When searching for name/sig overrides on a type that explicitly defines an interface, search through the type in the forward direction*/
+                    nameSigMatchMethodIsValidCandidate :null);
                 foundOnCurrentType = FindSlotDefiningMethodForVirtualMethod(foundOnCurrentType);
 
                 if (baseType == null)
@@ -630,7 +630,7 @@ namespace Internal.TypeSystem
                 }
 
                 // This is an implicitly implemented interface method. Only return a vlaue if this is the first type in the class
-                // hierarchy that implements the interface. NOTE: If we pay attention to whether or not the parent type is 
+                // hierarchy that implements the interface. NOTE: If we pay attention to whether or not the parent type is
                 // abstract or not, we may be able to be more efficient here, but let's skip that for now
                 MethodDesc baseClassImplementationOfInterfaceMethod = ResolveInterfaceMethodToVirtualMethodOnTypeRecursive(interfaceMethod, baseType);
                 if (baseClassImplementationOfInterfaceMethod != null)
@@ -639,9 +639,9 @@ namespace Internal.TypeSystem
                 }
                 else
                 {
-                    MethodDesc foundOnCurrentType = FindMatchingVirtualMethodOnTypeByNameAndSig(interfaceMethod, currentType
-                                            , reverseMethodSearch: false /* When searching for name/sig overrides on a type that is the first type in the hierarchy to require the interface, search through the type in the forward direction*/
-                                            , nameSigMatchMethodIsValidCandidate: null);
+                    MethodDesc foundOnCurrentType = FindMatchingVirtualMethodOnTypeByNameAndSig(interfaceMethod, currentType,
+                                            reverseMethodSearch: false, /* When searching for name/sig overrides on a type that is the first type in the hierarchy to require the interface, search through the type in the forward direction*/
+                                            nameSigMatchMethodIsValidCandidate: null);
 
                     foundOnCurrentType = FindSlotDefiningMethodForVirtualMethod(foundOnCurrentType);
 
@@ -685,7 +685,7 @@ namespace Internal.TypeSystem
         private static MethodDesc ResolveInterfaceMethodToVirtualMethodOnTypeRecursive(MethodDesc interfaceMethod, MetadataType currentType)
         {
             while (true)
-            {       
+            {
                 if (currentType == null)
                     return null;
 
@@ -713,9 +713,9 @@ namespace Internal.TypeSystem
                 if (currentType == null)
                     return null;
 
-                MethodDesc nameSigOverride = FindMatchingVirtualMethodOnTypeByNameAndSig(interfaceMethod, currentType
-                    , reverseMethodSearch: true /* When searching for a name sig match for an interface on parent types search in reverse order of declaration */
-                    , nameSigMatchMethodIsValidCandidate:null);
+                MethodDesc nameSigOverride = FindMatchingVirtualMethodOnTypeByNameAndSig(interfaceMethod, currentType,
+                    reverseMethodSearch: true, /* When searching for a name sig match for an interface on parent types search in reverse order of declaration */
+                    nameSigMatchMethodIsValidCandidate:null);
 
                 if (nameSigOverride != null)
                 {

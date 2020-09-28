@@ -290,7 +290,6 @@ namespace System.Xml.Tests
         public void ProvideValidXsiType()
         {
             XmlSchemaValidator val;
-            XmlSchemaInfo info = new XmlSchemaInfo();
             XmlNamespaceManager ns = new XmlNamespaceManager(new NameTable());
             XmlSchemaSet schemas = new XmlSchemaSet();
 
@@ -308,7 +307,6 @@ namespace System.Xml.Tests
         public void ProvideInvalidXsiType()
         {
             XmlSchemaValidator val;
-            XmlSchemaInfo info = new XmlSchemaInfo();
             XmlNamespaceManager ns = new XmlNamespaceManager(new NameTable());
             XmlSchemaSet schemas = new XmlSchemaSet();
 

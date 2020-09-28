@@ -87,7 +87,9 @@ size_t FASTCALL decodeSigned(PTR_CBYTE src, int* val)
 /*****************************************************************************/
 
 #if defined(_MSC_VER)
+#ifdef HOST_X86
 #pragma optimize("tgy", on)
+#endif
 #endif
 
 PTR_CBYTE FASTCALL decodeHeader(PTR_CBYTE table, UINT32 version, InfoHdr* header)

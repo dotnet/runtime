@@ -16,7 +16,7 @@
 /* memcmp is used to verify the results, so this test is dependent on it. */
 /* ditto with wcslen */
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime_vswprintf_test18_paltest_vswprintf_test18, "c_runtime/vswprintf/test18/paltest_vswprintf_test18")
 {
     double val = 2560.001;
     double neg = -2560.001;

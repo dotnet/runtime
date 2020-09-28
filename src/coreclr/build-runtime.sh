@@ -22,6 +22,10 @@ usage_list+=("-nopgooptimize: do not use profile guided optimizations.")
 usage_list+=("-pgoinstrument: generate instrumented code for profile guided optimization enabled binaries.")
 usage_list+=("-skipcrossarchnative: Skip building cross-architecture native binaries.")
 usage_list+=("-staticanalyzer: skip native image generation.")
+usage_list+=("-skipjit: skip building jit.")
+usage_list+=("-skipalljits: skip building crosstargetting jits.")
+usage_list+=("-skipruntime: skip building runtime.")
+usage_list+=("-paltests: build the pal tests.")
 
 setup_dirs_local()
 {
@@ -121,6 +125,21 @@ handle_arguments_local() {
             __StaticAnalyzer=1
             ;;
 
+        skipjit|-skipjit)
+            __BuildJit=0
+            ;;
+
+        skipalljits|-skipalljits)
+            __BuildAllJits=0
+            ;;
+
+        skipruntime|-skipruntime)
+            __BuildRuntime=0
+            ;;
+
+        paltests|-paltests)
+            __BuildPALTests=1
+            ;;
         *)
             __UnprocessedBuildArgs="$__UnprocessedBuildArgs $1"
             ;;
@@ -173,6 +192,9 @@ __UseNinja=0
 __VerboseBuild=0
 __ValidateCrossArg=1
 __CMakeArgs=""
+__BuildPALTests=0
+__BuildAllJits=1
+__BuildRuntime=1
 
 source "$__ProjectRoot"/_build-commons.sh
 
@@ -229,6 +251,8 @@ restore_optdata
 
 # Build the coreclr (native) components.
 __CMakeArgs="-DCLR_CMAKE_PGO_INSTRUMENT=$__PgoInstrument -DCLR_CMAKE_OPTDATA_PATH=$__PgoOptDataPath -DCLR_CMAKE_PGO_OPTIMIZE=$__PgoOptimize -DCLR_REPO_ROOT_DIR=\"$__RepoRootDir\" $__CMakeArgs"
+__CMakeArgs="-DCLR_CMAKE_BUILD_SUBSET_JIT=$__BuildJit -DCLR_CMAKE_BUILD_SUBSET_ALLJITS=$__BuildAllJits -DCLR_CMAKE_BUILD_SUBSET_RUNTIME=$__BuildRuntime $__CMakeArgs"
+__CMakeArgs="-DCLR_CMAKE_BUILD_TESTS=$__BuildPALTests $__CMakeArgs"
 
 if [[ "$__SkipConfigure" == 0 && "$__CodeCoverage" == 1 ]]; then
     __CMakeArgs="-DCLR_CMAKE_ENABLE_CODE_COVERAGE=1 $__CMakeArgs"

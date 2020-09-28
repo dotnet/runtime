@@ -17,28 +17,28 @@
 
 #include <palsuite.h>
 
-DWORD dwTestResult;  /* global for test result */
+DWORD dwTestResult_ReleaseMutex_test3;  /* global for test result */
 
-DWORD dwThreadId;  /* consumer thread identifier */
+DWORD dwThreadId_ReleaseMutex_test3;  /* consumer thread identifier */
 
-HANDLE hMutex;  /* handle to mutex */
+HANDLE hMutex_ReleaseMutex_test3;  /* handle to mutex */
 
-HANDLE hThread;  /* handle to thread */
+HANDLE hThread_ReleaseMutex_test3;  /* handle to thread */
 
 /* 
  * Thread function. 
  */
 DWORD
 PALAPI 
-ThreadFunction( LPVOID lpNoArg )
+ThreadFunction_ReleaseMutex_test3( LPVOID lpNoArg )
 {
 
-    dwTestResult = ReleaseMutex(hMutex);
+    dwTestResult_ReleaseMutex_test3 = ReleaseMutex(hMutex_ReleaseMutex_test3);
 
     return 0;
 }
 
-int __cdecl main (int argc, char **argv) 
+PALTEST(threading_ReleaseMutex_test3_paltest_releasemutex_test3, "threading/ReleaseMutex/test3/paltest_releasemutex_test3")
 {
 
     if(0 != (PAL_Initialize(argc, argv)))
@@ -49,17 +49,17 @@ int __cdecl main (int argc, char **argv)
     /*
      * set dwTestResult so test fails even if ReleaseMutex is not called
      */
-    dwTestResult = 1;
+    dwTestResult_ReleaseMutex_test3 = 1;
 
     /*
      * Create mutex
      */
-    hMutex = CreateMutexW (
+    hMutex_ReleaseMutex_test3 = CreateMutexW (
 	NULL,
 	TRUE,
 	NULL);
 
-    if ( NULL == hMutex ) 
+    if ( NULL == hMutex_ReleaseMutex_test3 ) 
     {
         Fail ( "hMutex = CreateMutex () - returned NULL\n"
 		 "Failing Test.\nGetLastError returned %d\n", GetLastError());
@@ -68,15 +68,15 @@ int __cdecl main (int argc, char **argv)
     /* 
      * Create ThreadFunction
      */
-    hThread = CreateThread(
+    hThread_ReleaseMutex_test3 = CreateThread(
 	NULL, 
 	0,    
-	ThreadFunction,
+	ThreadFunction_ReleaseMutex_test3,
 	NULL,          
 	0,             
-	&dwThreadId);  
+	&dwThreadId_ReleaseMutex_test3);  
 
-    if ( NULL == hThread ) 
+    if ( NULL == hThread_ReleaseMutex_test3 ) 
     {
 
 	Fail ( "CreateThread() returned NULL.  Failing test.\n"
@@ -86,12 +86,12 @@ int __cdecl main (int argc, char **argv)
     /*
      * Wait for ThreadFunction to complete
      */
-    WaitForSingleObject (hThread, INFINITE);
+    WaitForSingleObject (hThread_ReleaseMutex_test3, INFINITE);
     
-    if (dwTestResult)
+    if (dwTestResult_ReleaseMutex_test3)
     {
 	Fail ("ReleaseMutex() test was expected to return 0.\n" 
-		"It returned %d.  Failing test.\n", dwTestResult );
+		"It returned %d.  Failing test.\n", dwTestResult_ReleaseMutex_test3 );
     }
 
     Trace ("ReleaseMutex() test returned 0.\nTest passed.\n");

@@ -48,6 +48,7 @@ namespace System.Net.Sockets
 
                     try
                     {
+                        Debug.Assert(OperatingSystem.IsWindows());
                         // The handle (this) may have been already released:
                         // E.g.: The socket has been disposed in the main thread. A completion callback may
                         //       attempt starting another operation.
@@ -105,6 +106,7 @@ namespace System.Net.Sockets
             // ThreadPoolBoundHandle allows FreeNativeOverlapped even after it has been disposed.
             if (_iocpBoundHandle != null)
             {
+                Debug.Assert(OperatingSystem.IsWindows());
                 _iocpBoundHandle.Dispose();
             }
 

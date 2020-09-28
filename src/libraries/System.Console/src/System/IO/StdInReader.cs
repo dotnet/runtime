@@ -267,10 +267,9 @@ namespace System.IO
             if (_availableKeys.Count > 0)
             {
                 ConsoleKeyInfo keyInfo = peek ? _availableKeys.Peek() : _availableKeys.Pop();
-                char keyChar = (keyInfo.KeyChar == '\r') ? '\n' : keyInfo.KeyChar; // Map CR chars to LF
-                if (!IsEol(keyChar))
+                if (!IsEol(keyInfo.KeyChar))
                 {
-                    return keyChar;
+                    return keyInfo.KeyChar;
                 }
             }
 
@@ -298,6 +297,7 @@ namespace System.IO
                 case '\t':
                     return ConsoleKey.Tab;
 
+                case '\n':
                 case '\r':
                     return ConsoleKey.Enter;
 
@@ -459,7 +459,6 @@ namespace System.IO
                 }
 
                 MapBufferToConsoleKey(out key, out ch, out isShift, out isAlt, out isCtrl);
-
                 return new ConsoleKeyInfo(ch, key, isShift, isAlt, isCtrl);
             }
             finally
