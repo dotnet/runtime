@@ -6640,7 +6640,6 @@ void Compiler::fgValueNumberBlockAssignment(GenTree* tree)
                         rhsVarDsc          = &lvaTable[rhsLclNum];
                         if (!lvaInSsa(rhsLclNum) || rhsFldSeq == FieldSeqStore::NotAField())
                         {
-                            rhsVNPair.SetBoth(vnStore->VNForExpr(compCurBB, rhsLclVarTree->TypeGet()));
                             isNewUniq = true;
                         }
                         else
@@ -6655,7 +6654,6 @@ void Compiler::fgValueNumberBlockAssignment(GenTree* tree)
                     }
                     else
                     {
-                        rhsVNPair.SetBoth(vnStore->VNForExpr(compCurBB, rhs->TypeGet()));
                         isNewUniq = true;
                     }
                 }
