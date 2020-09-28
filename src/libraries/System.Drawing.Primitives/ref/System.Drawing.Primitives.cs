@@ -135,6 +135,7 @@ namespace System.Drawing
         public static System.Drawing.Color PowderBlue { get { throw null; } }
         public static System.Drawing.Color Purple { get { throw null; } }
         public byte R { get { throw null; } }
+        public static System.Drawing.Color RebeccaPurple { get { throw null; } }
         public static System.Drawing.Color Red { get { throw null; } }
         public static System.Drawing.Color RosyBrown { get { throw null; } }
         public static System.Drawing.Color RoyalBlue { get { throw null; } }
