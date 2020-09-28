@@ -63,7 +63,7 @@ jobs:
         value: '$(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(buildConfigUpper)'
       
       - name: librariesBuildArtifactName
-        value: 'libraries_bin_$(osGroup)$(osSubgroup)_$(archType)_$(liveLibrariesBuildConfig)'
+        value: 'libraries_bin_$(osGroup)$(osSubgroup)_$(archType)_$(parameters.liveLibrariesBuildConfig)'
 
       - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
         - name: archiveExtension
