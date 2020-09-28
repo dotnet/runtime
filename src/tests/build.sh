@@ -134,7 +134,7 @@ generate_layout()
     build_MSBuild_projects "Tests_Overlay_Managed" "$__RepoRootDir/src/tests/run.proj" "Creating test overlay" "/t:CreateTestOverlay"
 
     if [[ "$__TargetOS" != "OSX" && "$__SkipStressDependencies" == 0 ]]; then
-        nextCommand="\"${__RepoRootDir}/src/coreclr/tests/setup-stress-dependencies.sh\" --arch=$__BuildArch --outputDir=$CORE_ROOT"
+        nextCommand="\"${__RepoRootDir}/src/tests/Common/setup-stress-dependencies.sh\" --arch=$__BuildArch --outputDir=$CORE_ROOT"
         echo "Resolve runtime dependences via $nextCommand"
         eval $nextCommand
 
@@ -680,7 +680,7 @@ if [[ "$__RunTests" -ne 0 ]]; then
 
     echo "Run Tests..."
 
-    nextCommand="$__TestDir/runtest.sh --testRootDir=$__TestBinDir --coreClrBinDir=$__BinDir --coreFxBinDir=$CORE_ROOT --testNativeBinDir=$__testNativeBinDir"
+    nextCommand="$__TestDir/run.sh --testRootDir=$__TestBinDir --coreClrBinDir=$__BinDir --coreFxBinDir=$CORE_ROOT --testNativeBinDir=$__testNativeBinDir"
     echo "$nextCommand"
     eval $nextCommand
 
@@ -692,9 +692,9 @@ else
     echo "    coreFxBinDir     = $CORE_ROOT"
     echo "    testNativeBinDir = $__testNativeBinDir"
     echo " -------------------------------------------------- "
-    echo " Example runtest.sh command"
+    echo " Example run.sh command"
     echo ""
-    echo " ./tests/runtest.sh --coreOverlayDir=$CORE_ROOT --testNativeBinDir=$__testNativeBinDir --testRootDir=$__TestBinDir --copyNativeTestBin $__BuildType"
+    echo " src/tests/run.sh --coreOverlayDir=$CORE_ROOT --testNativeBinDir=$__testNativeBinDir --testRootDir=$__TestBinDir --copyNativeTestBin $__BuildType"
     echo " -------------------------------------------------- "
     echo "To run single test use the following command:"
     echo "    bash ${__TestBinDir}/__TEST_PATH__/__TEST_NAME__.sh -coreroot=${CORE_ROOT}"

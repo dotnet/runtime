@@ -167,15 +167,15 @@ if(GCC)
 
   set(WARNINGS "-Wall -Wunused -Wmissing-declarations -Wpointer-arith -Wno-cast-qual -Wwrite-strings -Wno-switch -Wno-switch-enum -Wno-unused-value -Wno-attributes -Wmissing-prototypes -Wstrict-prototypes -Wnested-externs -Wno-format-zero-length -Wno-unused-function")
 
-  if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  if (CMAKE_C_COMPILER_ID MATCHES "Clang")
     set(WARNINGS "${WARNINGS} -Qunused-arguments -Wno-tautological-compare -Wno-parentheses-equality -Wno-self-assign -Wno-return-stack-address -Wno-constant-logical-operand -Wno-zero-length-array")
   endif()
 
   check_c_compiler_flag("-Werror=incompatible-pointer-types" WERROR_INCOMPATIBLE_POINTER_TYPES)
   if(WERROR_INCOMPATIBLE_POINTER_TYPES)
-    set(WERROR "${WERROR} -Werror=incompatible-pointer-types")
+    set(WERROR "-Werror=incompatible-pointer-types")
   endif()
-  set(WERROR "${WERROR} -Werror=return-type -Werror-implicit-function-declaration")
+  set(WERROR "-Werror=return-type -Werror-implicit-function-declaration")
 
   append("${WARNINGS} ${WERROR}" CMAKE_C_FLAGS CMAKE_CXX_FLAGS)
 
@@ -371,6 +371,8 @@ if(LLVM_PREFIX)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${llvm_cflags}")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${llvm_cxxflags} -fexceptions -fno-rtti")
   add_definitions(-DLLVM_API_VERSION=${llvm_api_version})
+else()
+  set(LLVM_LIBS)
 endif()
 
 ######################################
@@ -469,4 +471,3 @@ add_subdirectory(mono)
 
 configure_file(cmake/config.h.in config.h)
 configure_file(cmake/eglib-config.h.cmake.in mono/eglib/eglib-config.h)
-configure_file(cmake/netcore-config.make.in netcore/config.make)

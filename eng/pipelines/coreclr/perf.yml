@@ -3,7 +3,7 @@ trigger:
   branches:
     include:
     - master
-    - release/5.0
+    - release/*
   paths:
     include:
     - '*'

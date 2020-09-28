@@ -104,6 +104,8 @@
     <Compile Include="System\Text\Json\Serialization\Converters\Value\DateTimeConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Value\DateTimeOffsetConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Value\DecimalConverter.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\Value\DisallowedTypeConverter.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\Value\DisallowedTypeConverterFactory.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Value\DoubleConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Value\EnumConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Value\EnumConverterFactory.cs" />
@@ -120,7 +122,6 @@
     <Compile Include="System\Text\Json\Serialization\Converters\Value\SByteConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Value\SingleConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Value\StringConverter.cs" />
-    <Compile Include="System\Text\Json\Serialization\Converters\Value\TypeConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Value\UInt16Converter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Value\UInt32Converter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Value\UInt64Converter.cs" />
@@ -145,7 +146,6 @@
     <Compile Include="System\Text\Json\Serialization\JsonPropertyInfoOfT.cs" />
     <Compile Include="System\Text\Json\Serialization\GenericMethodHolder.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonResumableConverterOfT.cs" />
-    <Compile Include="System\Text\Json\Serialization\JsonSerializer.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializer.Read.HandleMetadata.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializer.Read.HandlePropertyName.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializer.Read.Helpers.cs" />

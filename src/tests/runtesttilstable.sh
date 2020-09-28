@@ -4,21 +4,21 @@ function print_usage {
     echo ''
     echo 'CoreCLR test runner wrapper script.'
     echo ''
-    echo 'Run tests using runtest.sh, then rerun the failures, if any,'
+    echo 'Run tests using run.sh, then rerun the failures, if any,'
     echo 'until the number of failures stabilizes. Thus, when running'
     echo 'flaky tests, or running tests on a flaky platform, only the'
     echo 'repeatable, "real", failures are reported.'
     echo ''
-    echo 'Tests are rerun in sequential mode (passing --sequential to runtest.sh).'
+    echo 'Tests are rerun in sequential mode (passing --sequential to run.sh).'
     echo 'This hopefully avoids resource exhaustion and other parallel run problems.'
     echo ''
     echo 'A maximum number of iterations can be specified.'
     echo ''
     echo 'Command line:'
     echo ''
-    echo 'runtesttilstable.sh [options] [arguments for runtest.sh]'
+    echo 'runtesttilstable.sh [options] [arguments for run.sh]'
     echo ''
-    echo 'Any unknown argument is passed directly to runtest.sh.'
+    echo 'Any unknown argument is passed directly to run.sh.'
     echo ''
     echo 'Optional arguments:'
     echo '  -h|--help                        : Show usage information.'
@@ -89,7 +89,7 @@ do
             ;;
         --testRootDir=*)
             testRootDir=${i#*=}
-            # Also pass it on to runtest.sh
+            # Also pass it on to run.sh
             __UnprocessedBuildArgs="$__UnprocessedBuildArgs $i"
             ;;
         *)
@@ -98,7 +98,7 @@ do
     esac
 done
 
-# Check testRootDir; this check is also done by runtest.sh.
+# Check testRootDir; this check is also done by run.sh.
 
 if [ -z "$testRootDir" ]; then
     echo "--testRootDir is required."
@@ -112,7 +112,7 @@ fi
 
 # Now start running the tests.
 
-nextcmd="${scriptPath}/runtest.sh ${playlistArgument} ${__UnprocessedBuildArgs}"
+nextcmd="${scriptPath}/run.sh ${playlistArgument} ${__UnprocessedBuildArgs}"
 echo "Running: $nextcmd"
 $nextcmd
 exitCode=$?
@@ -143,7 +143,7 @@ if [ $exitCode -eq $EXIT_CODE_TEST_FAILURE ]; then
         fi
         mv "$testRootDir/coreclrtests.fail.txt" "$retryFile"
 
-        nextcmd="${scriptPath}/runtest.sh --sequential --playlist=${retryFile} ${__UnprocessedBuildArgs}"
+        nextcmd="${scriptPath}/run.sh --sequential --playlist=${retryFile} ${__UnprocessedBuildArgs}"
         echo "Running: $nextcmd"
         $nextcmd
         exitCode=$?

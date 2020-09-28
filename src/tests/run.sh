@@ -6,7 +6,7 @@ function print_usage {
     echo ''
     echo 'Typical command line:'
     echo ''
-    echo 'coreclr/tests/runtest.sh <arch> <configurations>'
+    echo 'src/tests/run.sh <arch> <configurations>'
     echo ''
     echo 'Optional arguments:'
     echo '  --testRootDir=<path>             : Root directory of the test build (e.g. runtime/artifacts/tests/Windows_NT.x64.Debug).'
