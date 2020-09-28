@@ -990,10 +990,10 @@ namespace System.IO
         public static bool EndsInDirectorySeparator(string path) => PathInternal.EndsInDirectorySeparator(path);
 
         /// <summary>
-        /// Removes redundant segments from the specified path string.
+        /// Removes redundant segments from the specified string containing a path.
         /// </summary>
-        /// <param name="path">The path to analyze.</param>
-        /// <returns>A string without redundant segments.</returns>
+        /// <param name="path">The path to remove redundant segments from.</param>
+        /// <returns>The <paramref name="path" /> without redundant segments, or <see langword="null" /> if <paramref name="path"/> is <see langword="null" />, or <see cref="string.Empty"/> if <paramref name="path"/> is effectively empty (an empty string or whitespace characters).</returns>
         [return: NotNullIfNotNull("path")]
         public static string? RemoveRedundantSegments(string? path)
         {
@@ -1020,10 +1020,10 @@ namespace System.IO
         }
 
         /// <summary>
-        /// Removes redundant segments from the specified path read-only span.
+        /// Removes redundant segments from the specified read-only span of characters containing a path.
         /// </summary>
-        /// <param name="path">The path to analyze.</param>
-        /// <returns>A string without redundant segments.</returns>
+        /// <param name="path">The path to remove redundant segments from.</param>
+        /// <returns>The <paramref name="path" /> without redundant segments, or <see cref="string.Empty"/> if <paramref name="path"/> is effectively empty (an empty string or whitespace characters).</returns>
         public static string RemoveRedundantSegments(ReadOnlySpan<char> path)
         {
             if (PathInternal.IsEffectivelyEmpty(path))
@@ -1048,9 +1048,9 @@ namespace System.IO
         /// Tries to remove redundant segments from the specified path read-only span.
         /// </summary>
         /// <param name="path">The path to analyze.</param>
-        /// <param name="destination">A span where the output is saved.</param>
+        /// <param name="destination">When this method returns <see langword="true" />, if <paramref name="path"/> contained redundant segments, this parameter contains the <paramref name="path"/> without redundant segments, or if <paramref name="path"/> did not contain redundant segments, or was an invalid path, this parameter contains the value of <paramref name="path"/>, unmodified; when this method returns <see langword="false" />, this parameter does not contain a valid value.</param>
         /// <param name="charsWritten">The total number of characters written to <paramref name="destination" />, which is less or equal than the length of <paramref name="path" />.</param>
-        /// <returns><see langword="true" /> if the original path was modified and writing into <paramref name="destination" /> was successful; <see langword="false" /> otherwise.</returns>
+        /// <returns><see langword="true" /> if the original path was modified and writing into <paramref name="destination" /> was successful; <see langword="false" /> if <paramref name="path" /> is effectively empty (an empty string or whitespace characters) or there was a problem attempting to write into <paramref name="destination"/>.</returns>
         public static bool TryRemoveRedundantSegments(ReadOnlySpan<char> path, Span<char> destination, out int charsWritten)
         {
             charsWritten = 0;
