@@ -469,7 +469,7 @@ namespace System.Threading
             EnsureThreadRequested();
         }
 
-        internal bool LocalFindAndPop(object callback)
+        internal static bool LocalFindAndPop(object callback)
         {
             ThreadPoolWorkQueueThreadLocals? tl = ThreadPoolWorkQueueThreadLocals.threadLocals;
             return tl != null && tl.workStealingQueue.LocalFindAndPop(callback);
@@ -508,7 +508,7 @@ namespace System.Threading
             return callback;
         }
 
-        public long LocalCount
+        public static long LocalCount
         {
             get
             {
@@ -1186,7 +1186,7 @@ namespace System.Threading
         internal static bool TryPopCustomWorkItem(object workItem)
         {
             Debug.Assert(null != workItem);
-            return s_workQueue.LocalFindAndPop(workItem);
+            return ThreadPoolWorkQueue.LocalFindAndPop(workItem);
         }
 
         // Get all workitems.  Called by TaskScheduler in its debugger hooks.
@@ -1278,7 +1278,7 @@ namespace System.Threading
             get
             {
                 ThreadPoolWorkQueue workQueue = s_workQueue;
-                return workQueue.LocalCount + workQueue.GlobalCount + PendingUnmanagedWorkItemCount;
+                return ThreadPoolWorkQueue.LocalCount + workQueue.GlobalCount + PendingUnmanagedWorkItemCount;
             }
         }
     }

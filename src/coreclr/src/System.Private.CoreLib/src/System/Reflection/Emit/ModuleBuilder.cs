@@ -122,12 +122,12 @@ namespace System.Reflection.Emit
             return SymbolType.FormCompoundType(strFormat, baseType, 0);
         }
 
-        internal void CheckContext(params Type[]?[]? typess)
+        internal static void CheckContext(params Type[]?[]? typess)
         {
             AssemblyBuilder.CheckContext(typess);
         }
 
-        internal void CheckContext(params Type?[]? types)
+        internal static void CheckContext(params Type?[]? types)
         {
             AssemblyBuilder.CheckContext(types);
         }
@@ -458,7 +458,7 @@ namespace System.Reflection.Emit
             return sig;
         }
 
-        private MethodBase GetGenericMethodBaseDefinition(MethodBase methodBase)
+        private static MethodBase GetGenericMethodBaseDefinition(MethodBase methodBase)
         {
             // methodInfo = G<Foo>.M<Bar> ==> methDef = G<T>.M<S>
             MethodInfo? masmi = methodBase as MethodInfo;

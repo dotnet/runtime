@@ -135,14 +135,14 @@ namespace System.Reflection.Emit
 
         #region Internal Members
 
-        internal void CheckContext(params Type[]?[]? typess)
+        internal static void CheckContext(params Type[]?[]? typess)
         {
-            m_module.CheckContext(typess);
+            ModuleBuilder.CheckContext(typess);
         }
 
-        internal void CheckContext(params Type?[]? types)
+        internal static void CheckContext(params Type?[]? types)
         {
-            m_module.CheckContext(types);
+            ModuleBuilder.CheckContext(types);
         }
 
         internal void CreateMethodBodyHelper(ILGenerator il)
