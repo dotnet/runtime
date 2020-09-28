@@ -247,18 +247,22 @@ if(CLR_CMAKE_TARGET_OSX)
     "-DUNW_REMOTE_ONLY"
   )
 else()
-  add_library(coreclrpal_dac STATIC
-    exception/remote-unwind.cpp
-  )
+  if(NOT FEATURE_CROSSBITNESS)
+    add_library(coreclrpal_dac STATIC
+      exception/remote-unwind.cpp
+    )
+  endif(NOT FEATURE_CROSSBITNESS)
 endif(CLR_CMAKE_TARGET_OSX)
 
-target_include_directories(coreclrpal_dac PUBLIC
-  ${CMAKE_CURRENT_SOURCE_DIR}/libunwind/include
-  ${CMAKE_CURRENT_SOURCE_DIR}/libunwind/include/tdep
-  ${CMAKE_CURRENT_BINARY_DIR}
-  ${CMAKE_CURRENT_BINARY_DIR}/libunwind/include
-  ${CMAKE_CURRENT_BINARY_DIR}/libunwind/include/tdep
-)
+if(NOT FEATURE_CROSSBITNESS)
+  target_include_directories(coreclrpal_dac PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/libunwind/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/libunwind/include/tdep
+    ${CMAKE_CURRENT_BINARY_DIR}
+    ${CMAKE_CURRENT_BINARY_DIR}/libunwind/include
+    ${CMAKE_CURRENT_BINARY_DIR}/libunwind/include/tdep
+  )
+endif(NOT FEATURE_CROSSBITNESS)
 
 # There is only one function exported in 'tracepointprovider.cpp' namely 'PAL_InitializeTracing',
 # which is guarded with '#if defined(__linux__)'. On macOS, Xcode issues the following warning:
