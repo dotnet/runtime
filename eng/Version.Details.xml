@@ -16,7 +16,7 @@
     </Dependency>
     <Dependency Name="Microsoft.DotNet.Helix.Sdk" Version="5.0.0-beta.20471.1">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>0365488709f58e37de6c2180e7fb243203ca0a9c</Sha>
+      <Sha>a8d7ecca110a9932c8ee7fc9e1065b6ad7c96dfd</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.ApiCompat" Version="5.0.0-beta.20471.1">
       <Uri>https://github.com/dotnet/arcade</Uri>
