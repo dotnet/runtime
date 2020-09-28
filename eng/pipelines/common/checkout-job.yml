@@ -34,31 +34,7 @@ jobs:
   pool:
     vmImage: 'macOS-10.14'
 
-  variables:
-    - name: buildProductArtifactName
-      value: 'CoreCLRProduct__Windows_NT_x64_checked'
-      # value: 'CoreCLRProduct_${{ parameters.runtimeVariant }}_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
-
-    - name: buildProductRootFolderPath
-      value: '$(Build.SourcesDirectory)/artifacts/bin/coreclr/Windows_NT.x64.Checked'
-      # value: '$(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(buildConfigUpper)'
-
   steps:
-  - task: PowerShell@2
-    name: Blah
-    displayName: Displaying build id
-    inputs:
-      targetType: inline
-      script: |
-          Write-Host buildId is $Env:Build_BuildId
-
-  - template: /eng/pipelines/common/download-specific-artifact-step.yml
-    parameters:
-      unpackFolder: $(buildProductRootFolderPath)
-      artifactFileName: '$(buildProductArtifactName)$(archiveExtension)'
-      artifactName: '$(buildProductArtifactName)'
-      displayName: 'Coreclr product build'
-
   - checkout: self
     clean: true
     fetchDepth: 20

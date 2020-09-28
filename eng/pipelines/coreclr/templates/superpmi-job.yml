@@ -53,7 +53,26 @@ jobs:
     #  - ${{ if ne(parameters.testGroup, 'innerloop') }}:
     #     - '${{ parameters.runtimeType }}_common_test_build_p1_AnyOS_AnyCPU_${{parameters.buildConfig }}'
 
-    variables: ${{ parameters.variables }}
+    variables: 
+      - name: buildProductArtifactName
+        # value: 'CoreCLRProduct__Windows_NT_x64_checked'
+        value: 'CoreCLRProduct_${{ parameters.runtimeVariant }}_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+
+      - name: buildProductRootFolderPath
+        # value: '$(Build.SourcesDirectory)/artifacts/bin/coreclr/Windows_NT.x64.Checked'
+        value: '$(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(buildConfigUpper)'
+      
+      - name: librariesBuildArtifactName
+        value: 'libraries_bin_$(osGroup)$(osSubgroup)_$(archType)_$(liveLibrariesBuildConfig)'
+
+      - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+        - name: archiveExtension
+          value: '.zip'
+
+      - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+        - name: archiveExtension
+          value: '.tar.gz'
+      - ${{ parameters.variables }}
 
     frameworks:
       - ${{ parameters.framework }}
