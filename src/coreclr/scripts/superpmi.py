@@ -1674,11 +1674,12 @@ def determine_jit_name(coreclr_args):
         return coreclr_args.altjit
 
     jit_base_name = "clrjit"
-        jit_base_name = "clrjit_win_arm64_x64" if coreclr_args.altjit else jit_base_name
-        return jit_base_name + ".dll"
+    if coreclr_args.host_os == "OSX":
+        return "lib" + jit_base_name + ".dylib"
     elif coreclr_args.host_os == "Linux":
-        jit_base_name = "clrjit_unix_arm64_x64" if coreclr_args.altjit else jit_base_name
         return "lib" + jit_base_name + ".so"
+    elif coreclr_args.host_os == "Windows_NT":
+        return jit_base_name + ".dll"
     else:
         raise RuntimeError("Unknown OS.")
 
