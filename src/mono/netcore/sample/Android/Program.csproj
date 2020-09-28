@@ -35,11 +35,11 @@
       <StripDebugSymbols>False</StripDebugSymbols>
       <StripDebugSymbols Condition="'$(Configuration)' == 'Release'">True</StripDebugSymbols>
       <AdbTool>$(ANDROID_SDK_ROOT)\platform-tools\adb</AdbTool>
-      <ApkDir>$(MSBuildThisFileDirectory)\bin\apk</ApkDir>
+      <ApkDir>$(MSBuildThisFileDirectory)bin\apk</ApkDir>
     </PropertyGroup>
 
     <ItemGroup>
-      <AssemblySearchPaths Include="bin"/>
+      <AssemblySearchPaths Include="bin" />
       <AssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackDir)native"/>
       <AssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackDir)lib\$(NetCoreAppCurrent)"/>
     </ItemGroup>
@@ -47,7 +47,7 @@
     <RemoveDir Directories="$(ApkDir)" />
 
     <AndroidAppBuilderTask
-        SourceDir="$(MSBuildThisFileDirectory)\bin"
+        SourceDir="$(MSBuildThisFileDirectory)bin"
         Abi="$(AndroidAbi)"
         ProjectName="HelloAndroid"
         MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackDir)\native\include\mono-2.0"
