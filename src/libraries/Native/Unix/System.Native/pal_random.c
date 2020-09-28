@@ -55,10 +55,6 @@ void SystemNative_GetNonCryptographicallySecureRandomBytes(uint8_t* buffer, int3
 #endif // HAVE_ARC4RANDOM_BUF
 }
 
-#ifdef __EMSCRIPTEN__
-int32_t mono_wasm_browser_crypto_getRandomValues(uint8_t* buffer, int32_t bufferLength);
-#endif
-
 /*
 
 Generate cryptographically strong random bytes.
@@ -73,6 +69,10 @@ int32_t SystemNative_GetCryptographicallySecureRandomBytes(uint8_t* buffer, int3
     assert(buffer != NULL);
 
 #ifdef __EMSCRIPTEN__
+    #include <emscripten.h>
+    EMSCRIPTEN_KEEPALIVE int32_t
+    mono_wasm_browser_crypto_getRandomValues(uint8_t* buffer, int32_t bufferLength);
+
     static bool sMissingBrowserCrypto;
     if (!sMissingBrowserCrypto)
     {
