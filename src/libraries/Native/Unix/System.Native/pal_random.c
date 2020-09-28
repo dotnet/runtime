@@ -63,9 +63,6 @@ Return 0 on success, -1 on failure.
 */
 int32_t SystemNative_GetCryptographicallySecureRandomBytes(uint8_t* buffer, int32_t bufferLength)
 {
-    static volatile int rand_des = -1;
-    static bool sMissingDevURandom;
-
     assert(buffer != NULL);
 
 #ifdef __EMSCRIPTEN__
@@ -82,7 +79,10 @@ int32_t SystemNative_GetCryptographicallySecureRandomBytes(uint8_t* buffer, int3
         else
             return 0;
     }
-#endif
+#else
+
+    static volatile int rand_des = -1;
+    static bool sMissingDevURandom;
 
     if (!sMissingDevURandom)
     {
@@ -137,6 +137,6 @@ int32_t SystemNative_GetCryptographicallySecureRandomBytes(uint8_t* buffer, int3
             return 0;
         }
     }
-
+#endif
     return -1;
 }
