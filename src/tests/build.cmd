@@ -104,7 +104,7 @@ if /i "%1" == "skipnative"            (set __SkipNative=1&set __CopyNativeProjec
 if /i "%1" == "skiptestwrappers"      (set __SkipTestWrappers=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "skipgeneratelayout"    (set __SkipGenerateLayout=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
-if /i "%1" == "copynativeonly"        (set __CopyNativeTestBinaries=1&set __SkipStressDependencies=1&set __SkipNative=1&set __CopyNativeProjectsAfterCombinedTestBuild=false&set __SkipGenerateLayout=1&set __SkipCrossgenFramework=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "copynativeonly"        (set __CopyNativeTestBinaries=1&set __SkipStressDependencies=1&set __SkipNative=1&set __CopyNativeProjectsAfterCombinedTestBuild=false&set __SkipGenerateLayout=1&set __SkipTestWrappers=1&set __SkipCrossgenFramework=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "generatelayoutonly"    (set __SkipManaged=1&set __SkipNative=1&set __CopyNativeProjectsAfterCombinedTestBuild=false&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "buildtestwrappersonly" (set __SkipNative=1&set __SkipManaged=1&set __BuildTestWrappersOnly=1&set __SkipGenerateLayout=1&set __SkipStressDependencies=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "crossgenframeworkonly" (set __SkipRestorePackages=1&set __SkipStressDependencies=1&set __SkipNative=1&set __SkipManaged=1&set __SkipGenerateLayout=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
@@ -202,7 +202,7 @@ REM ============================================================================
 
 if defined __SkipStressDependencies goto skipstressdependencies
 
-call "%__RepoRootDir%\src\coreclr\tests\setup-stress-dependencies.cmd" /arch %__BuildArch% /outputdir %__BinDir%
+call "%__RepoRootDir%\src\tests\Common\setup-stress-dependencies.cmd" /arch %__BuildArch% /outputdir %__BinDir%
 if errorlevel 1 (
     echo %__ErrMsgPrefix%%__MsgPrefix%Error: setup-stress-dependencies failed.
     goto     :Exit_Failure

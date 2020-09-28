@@ -26,7 +26,7 @@ namespace System.IO.MemoryMappedFiles
             }
             if (memMappedFileHandle.IsClosed)
             {
-                throw new ObjectDisposedException(typeof(MemoryMappedFile).Name);
+                throw new ObjectDisposedException(nameof(MemoryMappedFile));
             }
 
             if (requestedSize == MemoryMappedFile.DefaultSize)

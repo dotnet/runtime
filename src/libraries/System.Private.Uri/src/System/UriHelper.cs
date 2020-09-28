@@ -497,8 +497,7 @@ namespace System
 
                         int byteCount = 1;
                         // lazy initialization of max size, will reuse the array for next sequences
-                        if ((object?)bytes == null)
-                            bytes = new byte[end - next];
+                        bytes ??= new byte[end - next];
 
                         bytes[0] = (byte)ch;
                         next += 3;

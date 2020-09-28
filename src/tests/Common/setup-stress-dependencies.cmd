@@ -4,6 +4,7 @@ setlocal
 set __ThisScriptShort=%0
 set __ThisScriptFull=%~f0
 set __ThisScriptPath=%~dp0
+set __RepoRootDir=%~dp0\..\..\..\
 
 REM =========================================================================================
 REM ===
@@ -52,7 +53,7 @@ REM === Check if dotnet CLI and necessary directories exist
 REM ===
 REM =========================================================================================
 
-set __DotNetCmd=%__ThisScriptPath%..\..\..\dotnet.cmd
+set __DotNetCmd=%__RepoRootDir%dotnet.cmd
 set __CsprojPath=%__ThisScriptPath%\stress_dependencies\stress_dependencies.csproj
 
 REM Create directories needed
@@ -66,12 +67,14 @@ REM ============================================================================
 
 REM Download the package
 echo Downloading CoreDisTools package
-set CoreDisToolsPackagePathOutputFile="%__ThisScriptPath%\..\..\..\artifacts\obj\coreclr\Windows_NT.%__Arch%\coredistoolspath.txt"
-set DOTNETCMD="%__DotNetCmd%" restore "%__CsprojPath%"
+set CoreDisToolsPackagePathOutputFile="%__RepoRootDir%artifacts\obj\coreclr\Windows_NT.%__Arch%\coredistoolspath.txt"
+set CommonMSBuildOptions=/p:TargetArchitecture=%__Arch% /p:Configuration=%__BuildType% /p:RuntimeIdentifier="win-%__Arch%" /p:PackageRuntimeIdentifier="win-%__Arch%"
+
+set DOTNETCMD="%__DotNetCmd%" restore "%__CsprojPath%" %CommonMSBuildOptions%
 echo %DOTNETCMD%
 call %DOTNETCMD%
 if errorlevel 1 goto Fail
-set DOTNETCMD="%__DotNetCmd%" msbuild "%__CsprojPath%" /t:DumpCoreDisToolsPackagePath /p:CoreDisToolsPackagePathOutputFile="%CoreDisToolsPackagePathOutputFile%" /p:RuntimeIdentifier="win-%__Arch%"
+set DOTNETCMD="%__DotNetCmd%" msbuild "%__CsprojPath%" /t:DumpCoreDisToolsPackagePath /p:CoreDisToolsPackagePathOutputFile="%CoreDisToolsPackagePathOutputFile%" %CommonMSBuildOptions%
 call %DOTNETCMD%
 if errorlevel 1 goto Fail
 

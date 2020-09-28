@@ -268,7 +268,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public override int GetHashCode() => assembly.GetHashCode() ^ document.GetHashCode();
 
-        public static bool operator ==(SourceId a, SourceId b) => ((object)a == null) ? (object)b == null : a.Equals(b);
+        public static bool operator ==(SourceId a, SourceId b) => a is null ? b is null : a.Equals(b);
 
         public static bool operator !=(SourceId a, SourceId b) => !a.Equals(b);
     }

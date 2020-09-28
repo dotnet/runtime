@@ -11,7 +11,7 @@ FIND_PROGRAM(TLBIMP tlbimp.exe)
 FIND_PROGRAM(MIDL midl.exe)
 add_custom_command(
     OUTPUT "${DIALib}"
-    COMMAND ${MIDL} /I "${DIASDK_DIR}/include" "${DIASDK_DIR}/idl/dia2.idl" /tlb "${CMAKE_CURRENT_BINARY_DIR}/dia2.tlb"
+    COMMAND ${MIDL} /no_stamp /I "${DIASDK_DIR}/include" "${DIASDK_DIR}/idl/dia2.idl" /tlb "${CMAKE_CURRENT_BINARY_DIR}/dia2.tlb"
     COMMAND ${TLBIMP} dia2.tlb /out:"${DIALib}"
 )
 add_custom_target(gen_dialib DEPENDS "${DIALib}")

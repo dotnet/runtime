@@ -1360,62 +1360,6 @@ gpointer
 	return lock_free_mempool_alloc0 (domain->lock_free_mp, size);
 }
 
-/*
- * mono_domain_code_reserve:
- *
- * LOCKING: Acquires the default memory manager lock.
- */
-void*
-(mono_domain_code_reserve) (MonoDomain *domain, int size)
-{
-	MonoMemoryManager *memory_manager = mono_domain_memory_manager (domain);
-
-	return mono_mem_manager_code_reserve (memory_manager, size);
-}
-
-/*
- * mono_domain_code_reserve_align:
- *
- * LOCKING: Acquires the default memory manager lock.
- */
-void*
-(mono_domain_code_reserve_align) (MonoDomain *domain, int size, int alignment)
-{
-	MonoMemoryManager *memory_manager = mono_domain_memory_manager (domain);
-
-	return mono_mem_manager_code_reserve_align (memory_manager, size, alignment);
-}
-
-/*
- * mono_domain_code_commit:
- *
- * LOCKING: Acquires the default memory manager lock.
- */
-void
-mono_domain_code_commit (MonoDomain *domain, void *data, int size, int newsize)
-{
-	MonoMemoryManager *memory_manager = mono_domain_memory_manager (domain);
-
-	mono_mem_manager_code_commit (memory_manager, data, size, newsize);
-}
-
-/*
- * mono_domain_code_foreach:
- * Iterate over the code thunks of the code manager of @domain.
- * 
- * The @func callback MUST not take any locks. If it really needs to, it must respect
- * the locking rules of the runtime: http://www.mono-project.com/Mono:Runtime:Documentation:ThreadSafety 
- * LOCKING: Acquires the default memory manager lock.
- */
-
-void
-mono_domain_code_foreach (MonoDomain *domain, MonoCodeManagerFunc func, void *user_data)
-{
-	MonoMemoryManager *memory_manager = mono_domain_memory_manager (domain);
-
-	mono_mem_manager_code_foreach (memory_manager, func, user_data);
-}
-
 /**
  * mono_context_set:
  */

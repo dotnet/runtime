@@ -431,9 +431,9 @@ def create_and_use_test_env(_os, env, func):
 
     Notes:
         Using the env passed, create a temporary file to use as the
-        test_env to be passed for runtest.cmd. Note that this only happens
+        test_env to be passed for run.cmd. Note that this only happens
         on windows, until xunit is used on unix there is no managed code run
-        in runtest.sh.
+        in run.sh.
     """
     global gc_stress
 
