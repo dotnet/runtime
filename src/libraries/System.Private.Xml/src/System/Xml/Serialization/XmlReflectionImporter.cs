@@ -438,7 +438,7 @@ namespace System.Xml.Serialization
                             // We allow XmlRoot attribute on IXmlSerializable, but not others
                             if ((a.XmlFlags & ~XmlAttributeFlags.Root) != 0)
                             {
-                                throw new InvalidOperationException(SR.Format(SR.XmlSerializableAttributes, model.TypeDesc.FullName, typeof(XmlSchemaProviderAttribute).Name));
+                                throw new InvalidOperationException(SR.Format(SR.XmlSerializableAttributes, model.TypeDesc.FullName, nameof(XmlSchemaProviderAttribute)));
                             }
                         }
                         else
@@ -476,10 +476,10 @@ namespace System.Xml.Serialization
 
             MethodInfo? getMethod = getMethod = type.GetMethod(provider.MethodName, /* BindingFlags.DeclaredOnly | */ BindingFlags.Static | BindingFlags.Public, new Type[] { typeof(XmlSchemaSet) });
             if (getMethod == null)
-                throw new InvalidOperationException(SR.Format(SR.XmlGetSchemaMethodMissing, provider.MethodName, typeof(XmlSchemaSet).Name, type.FullName));
+                throw new InvalidOperationException(SR.Format(SR.XmlGetSchemaMethodMissing, provider.MethodName, nameof(XmlSchemaSet), type.FullName));
 
             if (!(typeof(XmlQualifiedName).IsAssignableFrom(getMethod.ReturnType)) && !(typeof(XmlSchemaType).IsAssignableFrom(getMethod.ReturnType)))
-                throw new InvalidOperationException(SR.Format(SR.XmlGetSchemaMethodReturnType, type.Name, provider.MethodName, typeof(XmlSchemaProviderAttribute).Name, typeof(XmlQualifiedName).FullName, typeof(XmlSchemaType).FullName));
+                throw new InvalidOperationException(SR.Format(SR.XmlGetSchemaMethodReturnType, type.Name, provider.MethodName, nameof(XmlSchemaProviderAttribute), typeof(XmlQualifiedName).FullName, typeof(XmlSchemaType).FullName));
 
             return getMethod;
         }
@@ -574,7 +574,7 @@ namespace System.Xml.Serialization
             }
             if (srcSchemas.Count > 1)
             {
-                throw new InvalidOperationException(SR.Format(SR.XmlGetSchemaInclude, baseQname.Namespace, typeof(IXmlSerializable).Name, "GetSchema"));
+                throw new InvalidOperationException(SR.Format(SR.XmlGetSchemaInclude, baseQname.Namespace, nameof(IXmlSerializable), "GetSchema"));
             }
             XmlSchema s = (XmlSchema)srcSchemas[0]!;
 
@@ -1540,7 +1540,7 @@ namespace System.Xml.Serialization
                     {
                         if (accessor.TypeDesc.ArrayElementTypeDesc.Kind == TypeKind.Serializable)
                         {
-                            throw new InvalidOperationException(SR.Format(SR.XmlIllegalAttrOrTextInterface, accessorName, accessor.TypeDesc.ArrayElementTypeDesc.FullName, typeof(IXmlSerializable).Name));
+                            throw new InvalidOperationException(SR.Format(SR.XmlIllegalAttrOrTextInterface, accessorName, accessor.TypeDesc.ArrayElementTypeDesc.FullName, nameof(IXmlSerializable)));
                         }
                         else
                         {
@@ -1834,7 +1834,7 @@ namespace System.Xml.Serialization
                     {
                         if (accessor.TypeDesc.Kind == TypeKind.Serializable)
                         {
-                            throw new InvalidOperationException(SR.Format(SR.XmlIllegalAttrOrTextInterface, accessorName, accessor.TypeDesc.FullName, typeof(IXmlSerializable).Name));
+                            throw new InvalidOperationException(SR.Format(SR.XmlIllegalAttrOrTextInterface, accessorName, accessor.TypeDesc.FullName, nameof(IXmlSerializable)));
                         }
                         else
                         {
@@ -2050,7 +2050,7 @@ namespace System.Xml.Serialization
                     if (choiceTypes.Contains(type))
                     {
                         // You need to add {0} to the '{1}'.
-                        throw new InvalidOperationException(SR.Format(SR.XmlChoiceIdentiferMissing, typeof(XmlChoiceIdentifierAttribute).Name, accessorName));
+                        throw new InvalidOperationException(SR.Format(SR.XmlChoiceIdentiferMissing, nameof(XmlChoiceIdentifierAttribute), accessorName));
                     }
                     else
                     {
@@ -2061,7 +2061,7 @@ namespace System.Xml.Serialization
             if (choiceTypes.Contains(typeof(XmlElement)) && a.XmlAnyElements.Count > 0)
             {
                 // You need to add {0} to the '{1}'.
-                throw new InvalidOperationException(SR.Format(SR.XmlChoiceIdentiferMissing, typeof(XmlChoiceIdentifierAttribute).Name, accessorName));
+                throw new InvalidOperationException(SR.Format(SR.XmlChoiceIdentiferMissing, nameof(XmlChoiceIdentifierAttribute), accessorName));
             }
 
             XmlArrayItemAttributes items = a.XmlArrayItems;
@@ -2076,7 +2076,7 @@ namespace System.Xml.Serialization
                     XmlArrayItemAttribute? item = (XmlArrayItemAttribute?)arrayTypes[type.FullName, ns];
                     if (item != null)
                     {
-                        throw new InvalidOperationException(SR.Format(SR.XmlArrayItemAmbiguousTypes, accessorName, item.ElementName, items[i]!.ElementName, typeof(XmlElementAttribute).Name, typeof(XmlChoiceIdentifierAttribute).Name, accessorName));
+                        throw new InvalidOperationException(SR.Format(SR.XmlArrayItemAmbiguousTypes, accessorName, item.ElementName, items[i]!.ElementName, nameof(XmlElementAttribute), nameof(XmlChoiceIdentifierAttribute), accessorName));
                     }
                     else
                     {

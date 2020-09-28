@@ -518,6 +518,11 @@ namespace Microsoft.CSharp
 
         private void GenerateStatement(CodeStatement e)
         {
+            if (e == null)
+            {
+                throw new ArgumentNullException(nameof(e));
+            }
+
             if (e.StartDirectives.Count > 0)
             {
                 GenerateDirectives(e.StartDirectives);
@@ -683,25 +688,13 @@ namespace Microsoft.CSharp
                 Output.Write(((ulong)e.Value).ToString(CultureInfo.InvariantCulture));
                 Output.Write("ul");
             }
-            else
-            {
-                GeneratePrimitiveExpressionBase(e);
-            }
-        }
-
-        private void GeneratePrimitiveExpressionBase(CodePrimitiveExpression e)
-        {
-            if (e.Value == null)
+            else if (e.Value == null)
             {
                 Output.Write(NullToken);
             }
             else if (e.Value is string)
             {
                 Output.Write(QuoteSnippetString((string)e.Value));
-            }
-            else if (e.Value is char)
-            {
-                Output.Write("'" + e.Value.ToString() + "'");
             }
             else if (e.Value is byte)
             {
@@ -744,7 +737,7 @@ namespace Microsoft.CSharp
             }
             else
             {
-                throw new ArgumentException(SR.Format(SR.InvalidPrimitiveType, e.Value.GetType()));
+                throw new ArgumentException(SR.Format(SR.InvalidPrimitiveType, e.Value.GetType()), nameof(e));
             }
         }
 
@@ -929,8 +922,8 @@ namespace Microsoft.CSharp
             GenerateStatements(e.TrueStatements);
             Indent--;
 
-            CodeStatementCollection falseStatemetns = e.FalseStatements;
-            if (falseStatemetns.Count > 0)
+            CodeStatementCollection falseStatements = e.FalseStatements;
+            if (falseStatements.Count > 0)
             {
                 Output.Write('}');
                 if (_options.ElseOnClosing)
@@ -2557,7 +2550,11 @@ namespace Microsoft.CSharp
 
         private void GenerateAttributes(CodeAttributeDeclarationCollection attributes, string prefix, bool inLine)
         {
-            if (attributes.Count == 0) return;
+            if (attributes.Count == 0)
+            {
+                return;
+            }
+
             bool paramArray = false;
             foreach (CodeAttributeDeclaration current in attributes)
             {
@@ -2666,12 +2663,17 @@ namespace Microsoft.CSharp
         {
             if (!IsValidIdentifier(value))
             {
-                throw new ArgumentException(SR.Format(SR.InvalidIdentifier, value));
+                throw new ArgumentException(SR.Format(SR.InvalidIdentifier, value), nameof(value));
             }
         }
 
         public string CreateValidIdentifier(string name)
         {
+            if (name == null)
+            {
+                throw new ArgumentNullException(nameof(name));
+            }
+
             if (CSharpHelpers.IsPrefixTwoUnderscore(name))
             {
                 name = "_" + name;
@@ -2687,6 +2689,11 @@ namespace Microsoft.CSharp
 
         public string CreateEscapedIdentifier(string name)
         {
+            if (name == null)
+            {
+                throw new ArgumentNullException(nameof(name));
+            }
+
             return CSharpHelpers.CreateEscapedIdentifier(name);
         }
 

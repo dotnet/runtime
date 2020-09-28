@@ -1291,15 +1291,6 @@ namespace System.Reflection.Emit
 
             ThrowIfCreated();
 
-#if !FEATURE_DEFAULT_INTERFACES
-            if (!m_isHiddenGlobalType)
-            {
-                if (((m_iAttr & TypeAttributes.ClassSemanticsMask) == TypeAttributes.Interface) &&
-                   (attributes & MethodAttributes.Abstract) == 0 && (attributes & MethodAttributes.Static) == 0)
-                    throw new ArgumentException(SR.Argument_BadAttributeOnInterfaceMethod);
-            }
-#endif
-
             // pass in Method attributes
             MethodBuilder method = new MethodBuilder(
                 name, attributes, callingConvention,

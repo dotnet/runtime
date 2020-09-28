@@ -39,7 +39,7 @@ LocalInfoType Locales[] =
 int NumLocales = sizeof(Locales) / sizeof(Locales[0]);
 
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(locale_info_GetLocaleInfoW_test1_paltest_getlocaleinfow_test1, "locale_info/GetLocaleInfoW/test1/paltest_getlocaleinfow_test1")
 {    
     WCHAR buffer[256] = { 0 };
     int ret;

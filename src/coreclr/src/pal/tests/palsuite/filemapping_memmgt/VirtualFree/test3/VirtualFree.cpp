@@ -16,7 +16,7 @@
 #define VIRTUALSIZE 1024
 
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(filemapping_memmgt_VirtualFree_test3_paltest_virtualfree_test3, "filemapping_memmgt/VirtualFree/test3/paltest_virtualfree_test3")
 {
     int err;
     LPVOID lpVirtualAddress;

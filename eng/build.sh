@@ -36,6 +36,8 @@ usage()
   echo "                                  Checked is exclusive to the CLR runtime. It is the same as Debug, except code is"
   echo "                                  compiled with optimizations enabled."
   echo "                                  [Default: Debug]"
+  echo "  -runtimeFlavor (-rf)            Runtime flavor: CoreCLR or Mono."
+  echo "                                  [Default: CoreCLR]"
   echo "  --subset (-s)                   Build a subset, print available subsets with -subset help."
   echo "                                 '--subset' can be omitted if the subset is given as the first argument."
   echo "                                  [Default: Builds the entire repo.]"
@@ -172,7 +174,7 @@ while [[ $# > 0 ]]; do
   firstArgumentChecked=1
 
   case "$opt" in
-     -help|-h)
+     -help|-h|-\?|/?)
       usage
       exit 0
       ;;
@@ -322,6 +324,26 @@ while [[ $# > 0 ]]; do
       shift 2
       ;;
 
+     -runtimeflavor|-rf)
+      if [ -z ${2+x} ]; then
+        echo "No runtime flavor supplied. See help (--help) for supported runtime flavors." 1>&2
+        exit 1
+      fi
+      passedRuntimeFlav="$(echo "$2" | awk '{print tolower($0)}')"
+      case "$passedRuntimeFlav" in
+        coreclr|mono)
+          val="$(tr '[:lower:]' '[:upper:]' <<< ${passedRuntimeFlav:0:1})${passedRuntimeFlav:1}"
+          ;;
+        *)
+          echo "Unsupported runtime flavor '$2'."
+          echo "The allowed values are CoreCLR and Mono."
+          exit 1
+          ;;
+      esac
+      arguments="$arguments /p:RuntimeFlavor=$val"
+      shift 2
+      ;;
+
      -librariesconfiguration|-lc)
       if [ -z ${2+x} ]; then
         echo "No libraries configuration supplied. See help (--help) for supported libraries configurations." 1>&2
@@ -389,6 +411,11 @@ done
 
 if [ ${#actInt[@]} -eq 0 ]; then
     arguments="-restore -build $arguments"
+fi
+
+if [ "$os" = "Browser" ] && [ "$arch" != "wasm" ]; then
+    # override default arch for Browser, we only support wasm
+    arch=wasm
 fi
 
 initDistroRid $os $arch $crossBuild $portableBuild

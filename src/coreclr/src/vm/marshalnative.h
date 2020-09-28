@@ -159,20 +159,6 @@ public:
     static FCDECL2(Object*, GetObjectsForNativeVariants, VARIANT* aSrcNativeVariant, int cVars);
 
     //====================================================================
-    // Methods to retrieve information from TypeLibs and TypeInfos.
-    //====================================================================
-    static FCDECL2(void, DoGetTypeLibGuid, GUID * result, Object* refTlbUNSAFE);
-    static FCDECL1(LCID, GetTypeLibLcid, Object* refTlbUNSAFE);
-    static FCDECL3(void, GetTypeLibVersion, Object* refTlbUNSAFE, int *pMajor, int *pMinor);
-    static FCDECL2(void, DoGetTypeInfoGuid, GUID * result, Object* refTypeInfoUNSAFE);
-
-    //====================================================================
-    // Given a assembly, return the TLBID that will be generated for the
-    // typelib exported from the assembly.
-    //====================================================================
-    static FCDECL2(void, DoGetTypeLibGuidForAssembly, GUID * result, AssemblyBaseObject* refAsmUNSAFE);
-
-    //====================================================================
     // These methods are used to map COM slots to method info's.
     //====================================================================
     static FCDECL1(int, GetStartComSlot, ReflectClassBaseObject* tUNSAFE);
@@ -181,6 +167,12 @@ public:
     static FCDECL1(Object*, WrapIUnknownWithComObject, IUnknown* pUnk);
 
     static FCDECL2(void, ChangeWrapperHandleStrength, Object* orefUNSAFE, CLR_BOOL fIsWeak);
+
+    //====================================================================
+    // Create type for given CLSID.
+    //====================================================================
+    static void QCALLTYPE GetTypeFromCLSID(REFCLSID clsid, PCWSTR wszServer, QCall::ObjectHandleOnStack retType);
+
 private:
     static int GetComSlotInfo(MethodTable *pMT, MethodTable **ppDefItfMT);
     static BOOL IsObjectInContext(OBJECTREF *pObj);

@@ -323,7 +323,7 @@ function(strip_symbols targetName outputFilename)
         POST_BUILD
         VERBATIM
         COMMAND ${CMAKE_OBJCOPY} --only-keep-debug ${strip_source_file} ${strip_destination_file}
-        COMMAND ${CMAKE_OBJCOPY} --strip-debug ${strip_source_file}
+        COMMAND ${CMAKE_OBJCOPY} --strip-unneeded ${strip_source_file}
         COMMAND ${CMAKE_OBJCOPY} --add-gnu-debuglink=${strip_destination_file} ${strip_source_file}
         COMMENT "Stripping symbols from ${strip_source_file} into file ${strip_destination_file}"
         )
@@ -356,11 +356,10 @@ function(install_symbols symbol_file destination_path)
   endif()
 endfunction()
 
-# install_clr(TARGETS TARGETS targetName [targetName2 ...] [ADDITIONAL_DESTINATION destination])
+# install_clr(TARGETS TARGETS targetName [targetName2 ...] [ADDITIONAL_DESTINATIONS destination])
 function(install_clr)
-  set(oneValueArgs ADDITIONAL_DESTINATION)
-  set(multiValueArgs TARGETS)
-  cmake_parse_arguments(INSTALL_CLR "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGV})
+  set(multiValueArgs TARGETS ADDITIONAL_DESTINATIONS)
+  cmake_parse_arguments(INSTALL_CLR "" "" "${multiValueArgs}" ${ARGV})
 
   if ("${INSTALL_CLR_TARGETS}" STREQUAL "")
     message(FATAL_ERROR "At least one target must be passed to install_clr(TARGETS )")
@@ -368,8 +367,8 @@ function(install_clr)
 
   set(destinations ".")
 
-  if (NOT "${INSTALL_CLR_ADDITIONAL_DESTINATION}" STREQUAL "")
-    list(APPEND destinations ${INSTALL_CLR_ADDITIONAL_DESTINATION})
+  if (NOT "${INSTALL_CLR_ADDITIONAL_DESTINATIONS}" STREQUAL "")
+    list(APPEND destinations ${INSTALL_CLR_ADDITIONAL_DESTINATIONS})
   endif()
 
   foreach(targetName ${INSTALL_CLR_TARGETS})
@@ -439,11 +438,11 @@ function(_add_executable)
 endfunction()
 
 function(_add_library)
-    if(NOT WIN32)
+    if(NOT WIN32 AND "${ARGV1}" STREQUAL "SHARED")
       add_library(${ARGV} ${VERSION_FILE_PATH})
     else()
       add_library(${ARGV})
-    endif(NOT WIN32)
+    endif(NOT WIN32 AND "${ARGV1}" STREQUAL "SHARED")
     list(FIND CLR_CROSS_COMPONENTS_LIST ${ARGV0} INDEX)
     if (DEFINED CLR_CROSS_COMPONENTS_LIST AND ${INDEX} EQUAL -1)
      set_target_properties(${ARGV0} PROPERTIES EXCLUDE_FROM_ALL 1)

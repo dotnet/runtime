@@ -15,7 +15,7 @@
 
 const   int MAPPINGSIZE = 2048;
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(filemapping_memmgt_CreateFileMappingW_test3_paltest_createfilemappingw_test3, "filemapping_memmgt/CreateFileMappingW/test3/paltest_createfilemappingw_test3")
 {
 
     HANDLE  hFile;

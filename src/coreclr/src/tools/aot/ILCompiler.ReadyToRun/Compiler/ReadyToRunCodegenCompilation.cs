@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using Internal.IL;
 using Internal.IL.Stubs;
 using Internal.JitInterface;
+using Internal.ReadyToRunConstants;
 using Internal.TypeSystem;
 
 using ILCompiler.DependencyAnalysis;
@@ -328,6 +329,15 @@ namespace ILCompiler
 
             Directory.CreateDirectory(Path.GetDirectoryName(outputFile));
 
+            ReadyToRunFlags flags =
+                ReadyToRunFlags.READYTORUN_FLAG_Component |
+                ReadyToRunFlags.READYTORUN_FLAG_NonSharedPInvokeStubs;
+
+            if (inputModule.IsPlatformNeutral)
+            {
+                flags |= ReadyToRunFlags.READYTORUN_FLAG_PlatformNeutralSource;
+            }
+
             CopiedCorHeaderNode copiedCorHeader = new CopiedCorHeaderNode(inputModule);
             DebugDirectoryNode debugDirectory = new DebugDirectoryNode(inputModule, outputFile);
             NodeFactory componentFactory = new NodeFactory(
@@ -337,8 +347,7 @@ namespace ILCompiler
                 copiedCorHeader,
                 debugDirectory,
                 win32Resources: new Win32Resources.ResourceData(inputModule),
-                Internal.ReadyToRunConstants.ReadyToRunFlags.READYTORUN_FLAG_Component |
-                Internal.ReadyToRunConstants.ReadyToRunFlags.READYTORUN_FLAG_NonSharedPInvokeStubs);
+                flags);
 
             IComparer<DependencyNodeCore<NodeFactory>> comparer = new SortableDependencyNode.ObjectNodeComparer(new CompilerComparer());
             DependencyAnalyzerBase<NodeFactory> componentGraph = new DependencyAnalyzer<NoLogStrategy<NodeFactory>, NodeFactory>(componentFactory, comparer);
@@ -458,11 +467,7 @@ namespace ILCompiler
         {
             using (PerfEventSource.StartStopEvents.JitEvents())
             {
-                ParallelOptions options = new ParallelOptions
-                {
-                    MaxDegreeOfParallelism = _parallelism
-                };
-                Parallel.ForEach(obj, options, dependency =>
+                Action<DependencyNodeCore<NodeFactory>> compileOneMethod = (DependencyNodeCore<NodeFactory> dependency) =>
                 {
                     MethodWithGCInfo methodCodeNodeNeedingCode = dependency as MethodWithGCInfo;
                     MethodDesc method = methodCodeNodeNeedingCode.Method;
@@ -477,6 +482,8 @@ namespace ILCompiler
                     {
                         using (PerfEventSource.StartStopEvents.JitMethodEvents())
                         {
+                            // Create only 1 CorInfoImpl per thread.
+                            // This allows SuperPMI to rely on non-reuse of handles in ObjectToHandle
                             CorInfoImpl corInfoImpl = _corInfoImpls.GetValue(Thread.CurrentThread, thread => new CorInfoImpl(this));
                             corInfoImpl.CompileMethod(methodCodeNodeNeedingCode);
                         }
@@ -497,7 +504,23 @@ namespace ILCompiler
                         if (Logger.IsVerbose)
                             Logger.Writer.WriteLine($"Warning: Method `{method}` was not compiled because `{ex.Message}` requires runtime JIT");
                     }
-                });
+                };
+
+                // Use only main thread to compile if parallelism is 1. This allows SuperPMI to rely on non-reuse of handles in ObjectToHandle
+                if (_parallelism == 1)
+                {
+                    foreach (var dependency in obj)
+                        compileOneMethod(dependency);
+                }
+                else
+                {
+                    ParallelOptions options = new ParallelOptions
+                    {
+                        MaxDegreeOfParallelism = _parallelism
+                    };
+
+                    Parallel.ForEach(obj, options, compileOneMethod);
+                }
             }
 
             if (_methodILCache.Count > 1000)

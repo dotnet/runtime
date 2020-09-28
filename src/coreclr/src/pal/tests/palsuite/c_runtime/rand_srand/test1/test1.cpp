@@ -21,7 +21,7 @@
 #include <palsuite.h>
 
 
-int __cdecl main(int argc, char **argv)
+PALTEST(c_runtime_rand_srand_test1_paltest_rand_srand_test1, "c_runtime/rand_srand/test1/paltest_rand_srand_test1")
 {   
     int RandNumber[10];
     int TempRandNumber;

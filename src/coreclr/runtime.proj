@@ -21,6 +21,11 @@
       <_CoreClrBuildArg Condition="$([MSBuild]::IsOsPlatform(Windows)) and '$(CrossDac)' != ''" Include="-$(CrossDac)dac" />
       <_CoreClrBuildArg Condition="'$(OfficialBuildId)' != ''" Include="/p:OfficialBuildId=$(OfficialBuildId)" />
       <_CoreClrBuildArg Condition="'$(NoPgoOptimize)' == 'true'" Include="-nopgooptimize" />
+      <_CoreClrBuildArg Condition="'$(ClrRuntimeSubset)' != 'true'" Include="-skipruntime" />
+      <_CoreClrBuildArg Condition="'$(ClrJitSubset)' != 'true'" Include="-skipjit" />
+      <_CoreClrBuildArg Condition="'$(ClrPalTestsSubset)' == 'true'" Include="-paltests" />
+      <_CoreClrBuildArg Condition="'$(ClrAllJitsSubset)' != 'true'" Include="-skipalljits" />
+      <_CoreClrBuildArg Condition="'$(NoPgoOptimize)' == 'true'" Include="-nopgooptimize" />
     </ItemGroup>
 
     <PropertyGroup>

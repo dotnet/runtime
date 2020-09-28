@@ -7,11 +7,7 @@ using System.Globalization;
 
 namespace System.Runtime.Serialization
 {
-#if USE_REFEMIT
-    public class XmlWriterDelegator
-#else
     internal class XmlWriterDelegator
-#endif
     {
         protected XmlWriter writer;
         protected XmlDictionaryWriter? dictionaryWriter;
@@ -45,11 +41,7 @@ namespace System.Runtime.Serialization
             writer.WriteEndAttribute();
         }
 
-#if USE_REFEMIT
-        public void WriteEndElement()
-#else
         internal void WriteEndElement()
-#endif
         {
             writer.WriteEndElement();
             depth--;
@@ -227,11 +219,7 @@ namespace System.Runtime.Serialization
             _prefixes = 1;
         }
 
-#if USE_REFEMIT
-        public void WriteStartElement(XmlDictionaryString localName, XmlDictionaryString namespaceUri)
-#else
         internal void WriteStartElement(XmlDictionaryString localName, XmlDictionaryString? namespaceUri)
-#endif
         {
             WriteStartElement(null, localName, namespaceUri);
         }
@@ -274,11 +262,7 @@ namespace System.Runtime.Serialization
             get { return writer.XmlSpace; }
         }
 
-#if USE_REFEMIT
-        public void WriteNamespaceDecl(XmlDictionaryString ns)
-#else
         internal void WriteNamespaceDecl(XmlDictionaryString ns)
-#endif
         {
             WriteXmlnsAttribute(ns);
         }
@@ -459,11 +443,7 @@ namespace System.Runtime.Serialization
         {
             writer.WriteValue(value);
         }
-#if USE_REFEMIT
-        public void WriteBoolean(bool value, XmlDictionaryString name, XmlDictionaryString? ns)
-#else
         internal void WriteBoolean(bool value, XmlDictionaryString name, XmlDictionaryString? ns)
-#endif
         {
             WriteStartElementPrimitive(name, ns);
             WriteBoolean(value);
@@ -475,11 +455,7 @@ namespace System.Runtime.Serialization
             WriteString(XmlConvert.ToString(value, XmlDateTimeSerializationMode.RoundtripKind));
         }
 
-#if USE_REFEMIT
-        public void WriteDateTime(DateTime value, XmlDictionaryString name, XmlDictionaryString? ns)
-#else
         internal void WriteDateTime(DateTime value, XmlDictionaryString name, XmlDictionaryString? ns)
-#endif
         {
             WriteStartElementPrimitive(name, ns);
             WriteDateTime(value);
@@ -490,11 +466,7 @@ namespace System.Runtime.Serialization
         {
             writer.WriteValue(value);
         }
-#if USE_REFEMIT
-        public void WriteDecimal(decimal value, XmlDictionaryString name, XmlDictionaryString? ns)
-#else
         internal void WriteDecimal(decimal value, XmlDictionaryString name, XmlDictionaryString? ns)
-#endif
         {
             WriteStartElementPrimitive(name, ns);
             WriteDecimal(value);
@@ -505,11 +477,8 @@ namespace System.Runtime.Serialization
         {
             writer.WriteValue(value);
         }
-#if USE_REFEMIT
-        public void WriteDouble(double value, XmlDictionaryString name, XmlDictionaryString? ns)
-#else
+
         internal void WriteDouble(double value, XmlDictionaryString name, XmlDictionaryString? ns)
-#endif
         {
             WriteStartElementPrimitive(name, ns);
             WriteDouble(value);
@@ -520,11 +489,8 @@ namespace System.Runtime.Serialization
         {
             writer.WriteValue(value);
         }
-#if USE_REFEMIT
-        public void WriteInt(int value, XmlDictionaryString name, XmlDictionaryString? ns)
-#else
+
         internal void WriteInt(int value, XmlDictionaryString name, XmlDictionaryString? ns)
-#endif
         {
             WriteStartElementPrimitive(name, ns);
             WriteInt(value);
@@ -535,11 +501,8 @@ namespace System.Runtime.Serialization
         {
             writer.WriteValue(value);
         }
-#if USE_REFEMIT
-        public void WriteLong(long value, XmlDictionaryString name, XmlDictionaryString? ns)
-#else
+
         internal void WriteLong(long value, XmlDictionaryString name, XmlDictionaryString? ns)
-#endif
         {
             WriteStartElementPrimitive(name, ns);
             WriteLong(value);
@@ -550,11 +513,8 @@ namespace System.Runtime.Serialization
         {
             writer.WriteValue(value);
         }
-#if USE_REFEMIT
-        public void WriteFloat(float value, XmlDictionaryString name, XmlDictionaryString? ns)
-#else
+
         internal void WriteFloat(float value, XmlDictionaryString name, XmlDictionaryString? ns)
-#endif
         {
             WriteStartElementPrimitive(name, ns);
             WriteFloat(value);
@@ -573,11 +533,8 @@ namespace System.Runtime.Serialization
         {
             writer.WriteValue(value);
         }
-#if USE_REFEMIT
-        public void WriteShort(short value, XmlDictionaryString name, XmlDictionaryString? ns)
-#else
+
         internal void WriteShort(short value, XmlDictionaryString name, XmlDictionaryString? ns)
-#endif
         {
             WriteStartElementPrimitive(name, ns);
             WriteShort(value);
@@ -588,11 +545,8 @@ namespace System.Runtime.Serialization
         {
             writer.WriteValue(value);
         }
-#if USE_REFEMIT
-        public void WriteUnsignedByte(byte value, XmlDictionaryString name, XmlDictionaryString? ns)
-#else
+
         internal void WriteUnsignedByte(byte value, XmlDictionaryString name, XmlDictionaryString? ns)
-#endif
         {
             WriteStartElementPrimitive(name, ns);
             WriteUnsignedByte(value);
@@ -603,12 +557,8 @@ namespace System.Runtime.Serialization
         {
             writer.WriteValue(value);
         }
-#if USE_REFEMIT
-        [CLSCompliant(false)]
-        public void WriteSignedByte(sbyte value, XmlDictionaryString name, XmlDictionaryString? ns)
-#else
+
         internal void WriteSignedByte(sbyte value, XmlDictionaryString name, XmlDictionaryString? ns)
-#endif
         {
             WriteStartElementPrimitive(name, ns);
             WriteSignedByte(value);
@@ -619,12 +569,8 @@ namespace System.Runtime.Serialization
         {
             writer.WriteValue(value);
         }
-#if USE_REFEMIT
-        [CLSCompliant(false)]
-        public void WriteUnsignedInt(uint value, XmlDictionaryString name, XmlDictionaryString? ns)
-#else
+
         internal void WriteUnsignedInt(uint value, XmlDictionaryString name, XmlDictionaryString? ns)
-#endif
         {
             WriteStartElementPrimitive(name, ns);
             WriteUnsignedInt(value);
@@ -635,12 +581,7 @@ namespace System.Runtime.Serialization
         {
             writer.WriteRaw(XmlConvert.ToString(value));
         }
-#if USE_REFEMIT
-        [CLSCompliant(false)]
-        public void WriteUnsignedLong(ulong value, XmlDictionaryString name, XmlDictionaryString? ns)
-#else
         internal void WriteUnsignedLong(ulong value, XmlDictionaryString name, XmlDictionaryString? ns)
-#endif
         {
             WriteStartElementPrimitive(name, ns);
             WriteUnsignedLong(value);
@@ -651,12 +592,8 @@ namespace System.Runtime.Serialization
         {
             writer.WriteValue(value);
         }
-#if USE_REFEMIT
-        [CLSCompliant(false)]
-        public void WriteUnsignedShort(ushort value, XmlDictionaryString name, XmlDictionaryString? ns)
-#else
+
         internal void WriteUnsignedShort(ushort value, XmlDictionaryString name, XmlDictionaryString? ns)
-#endif
         {
             WriteStartElementPrimitive(name, ns);
             WriteUnsignedShort(value);
@@ -667,11 +604,8 @@ namespace System.Runtime.Serialization
         {
             writer.WriteValue((int)value);
         }
-#if USE_REFEMIT
-        public void WriteChar(char value, XmlDictionaryString name, XmlDictionaryString? ns)
-#else
+
         internal void WriteChar(char value, XmlDictionaryString name, XmlDictionaryString? ns)
-#endif
         {
             WriteStartElementPrimitive(name, ns);
             WriteChar(value);
@@ -690,11 +624,7 @@ namespace System.Runtime.Serialization
             WriteEndElementPrimitive();
         }
 
-#if USE_REFEMIT
-        public void WriteTimeSpan(TimeSpan value, XmlDictionaryString name, XmlDictionaryString? ns)
-#else
         internal void WriteTimeSpan(TimeSpan value, XmlDictionaryString name, XmlDictionaryString? ns)
-#endif
         {
             WriteStartElementPrimitive(name, ns);
             WriteTimeSpan(value);
@@ -705,11 +635,8 @@ namespace System.Runtime.Serialization
         {
             writer.WriteRaw(value.ToString());
         }
-#if USE_REFEMIT
-        public void WriteGuid(Guid value, XmlDictionaryString name, XmlDictionaryString? ns)
-#else
+
         internal void WriteGuid(Guid value, XmlDictionaryString name, XmlDictionaryString? ns)
-#endif
         {
             WriteStartElementPrimitive(name, ns);
             WriteGuid(value);
@@ -750,11 +677,7 @@ namespace System.Runtime.Serialization
                 dictionaryWriter.WriteQualifiedName(localName, ns);
         }
 
-#if USE_REFEMIT
-        public void WriteBooleanArray(bool[] value, XmlDictionaryString itemName, XmlDictionaryString itemNamespace)
-#else
         internal void WriteBooleanArray(bool[] value, XmlDictionaryString itemName, XmlDictionaryString itemNamespace)
-#endif
         {
             if (dictionaryWriter == null)
             {
@@ -769,11 +692,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-#if USE_REFEMIT
-        public void WriteDateTimeArray(DateTime[] value, XmlDictionaryString itemName, XmlDictionaryString itemNamespace)
-#else
         internal void WriteDateTimeArray(DateTime[] value, XmlDictionaryString itemName, XmlDictionaryString itemNamespace)
-#endif
         {
             if (dictionaryWriter == null)
             {
@@ -788,11 +707,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-#if USE_REFEMIT
-        public void WriteDecimalArray(decimal[] value, XmlDictionaryString itemName, XmlDictionaryString itemNamespace)
-#else
         internal void WriteDecimalArray(decimal[] value, XmlDictionaryString itemName, XmlDictionaryString itemNamespace)
-#endif
         {
             if (dictionaryWriter == null)
             {
@@ -807,11 +722,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-#if USE_REFEMIT
-        public void WriteInt32Array(int[] value, XmlDictionaryString itemName, XmlDictionaryString itemNamespace)
-#else
         internal void WriteInt32Array(int[] value, XmlDictionaryString itemName, XmlDictionaryString itemNamespace)
-#endif
         {
             if (dictionaryWriter == null)
             {
@@ -826,11 +737,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-#if USE_REFEMIT
-        public void WriteInt64Array(long[] value, XmlDictionaryString itemName, XmlDictionaryString itemNamespace)
-#else
         internal void WriteInt64Array(long[] value, XmlDictionaryString itemName, XmlDictionaryString itemNamespace)
-#endif
         {
             if (dictionaryWriter == null)
             {
@@ -845,11 +752,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-#if USE_REFEMIT
-        public void WriteSingleArray(float[] value, XmlDictionaryString itemName, XmlDictionaryString itemNamespace)
-#else
         internal void WriteSingleArray(float[] value, XmlDictionaryString itemName, XmlDictionaryString itemNamespace)
-#endif
         {
             if (dictionaryWriter == null)
             {
@@ -864,11 +767,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-#if USE_REFEMIT
-        public void WriteDoubleArray(double[] value, XmlDictionaryString itemName, XmlDictionaryString itemNamespace)
-#else
         internal void WriteDoubleArray(double[] value, XmlDictionaryString itemName, XmlDictionaryString itemNamespace)
-#endif
         {
             if (dictionaryWriter == null)
             {

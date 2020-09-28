@@ -5,7 +5,7 @@
 **
 ** Source:  test2.c
 **
-** Purpose: Tests that a child thread in the middle of a 
+** Purpose: Tests that a child thread in the middle of a
 **          WaitForMultipleObjectsEx call will be interrupted by QueueUserAPC
 **          if the alert flag was set.
 **
@@ -17,17 +17,17 @@
 /* Based on SleepEx/test2 */
 
 const unsigned int ChildThreadWaitTime = 1000;
-const unsigned int InterruptTime = 500; 
+const unsigned int InterruptTime = 500;
 
 #define TOLERANCE 10
 
-void RunTest(BOOL AlertThread);
-VOID PALAPI APCFunc(ULONG_PTR dwParam);
-DWORD PALAPI WaiterProc(LPVOID lpParameter);
+void RunTest_WFMO_test2(BOOL AlertThread);
+VOID PALAPI APCFunc_WFMO_test2(ULONG_PTR dwParam);
+DWORD PALAPI WaiterProc_WFMO_test2(LPVOID lpParameter);
 
-DWORD ThreadWaitDelta;
+DWORD ThreadWaitDelta_WFMO_test2;
 
-int __cdecl main( int argc, char **argv ) 
+PALTEST(threading_WaitForMultipleObjectsEx_test2_paltest_waitformultipleobjectsex_test2, "threading/WaitForMultipleObjectsEx/test2/paltest_waitformultipleobjectsex_test2")
 {
 
     DWORD delta = 0;
@@ -38,47 +38,47 @@ int __cdecl main( int argc, char **argv )
     }
 
     /*
-      On some platforms (e.g. FreeBSD 4.9) the first call to some synch objects 
-      (such as conditions) involves some pthread internal initialization that 
+      On some platforms (e.g. FreeBSD 4.9) the first call to some synch objects
+      (such as conditions) involves some pthread internal initialization that
       can make the first wait slighty longer, potentially going above the
       acceptable delta for this test. Let's add a dummy wait to preinitialize
       internal structures
     */
     Sleep(100);
 
-  
-    /* 
+
+    /*
      * Check that Queueing an APC in the middle of a wait does interrupt
      * it, if it's in an alertable state.
      */
-    RunTest(TRUE);
-    // Make sure that the wait returns in time greater than interrupt and less than 
+    RunTest_WFMO_test2(TRUE);
+    // Make sure that the wait returns in time greater than interrupt and less than
     // wait timeout
     if ( 
-        ((ThreadWaitDelta >= ChildThreadWaitTime) && (ThreadWaitDelta - ChildThreadWaitTime) > TOLERANCE) 
-        || (( ThreadWaitDelta < InterruptTime) && (ThreadWaitDelta - InterruptTime) > TOLERANCE)
+        ((ThreadWaitDelta_WFMO_test2 >= ChildThreadWaitTime) && (ThreadWaitDelta_WFMO_test2 - ChildThreadWaitTime) > TOLERANCE)
+        || (( ThreadWaitDelta_WFMO_test2 < InterruptTime) && (ThreadWaitDelta_WFMO_test2 - InterruptTime) > TOLERANCE)
         )
     {
         Fail("Expected thread to wait for %d ms (and get interrupted).\n"
-             "Interrupt Time: %d ms,  ThreadWaitDelta %u\n", 
-             ChildThreadWaitTime, InterruptTime, ThreadWaitDelta);
+             "Interrupt Time: %d ms,  ThreadWaitDelta %u\n",
+             ChildThreadWaitTime, InterruptTime, ThreadWaitDelta_WFMO_test2);
     }
 
-    /* 
-     * Check that Queueing an APC in the middle of a wait does NOT interrupt 
+    /*
+     * Check that Queueing an APC in the middle of a wait does NOT interrupt
      * it, if it is not in an alertable state.
      */
-    RunTest(FALSE);
+    RunTest_WFMO_test2(FALSE);
 
     // Make sure that time taken for thread to return from wait is more than interrupt
     // and also not less than the complete child thread wait time
 
-    delta = ThreadWaitDelta - ChildThreadWaitTime;
-    if( (ThreadWaitDelta < ChildThreadWaitTime) && ( delta > TOLERANCE) ) 
+    delta = ThreadWaitDelta_WFMO_test2 - ChildThreadWaitTime;
+    if( (ThreadWaitDelta_WFMO_test2 < ChildThreadWaitTime) && ( delta > TOLERANCE) )
     {
         Fail("Expected thread to wait for %d ms (and not get interrupted).\n"
-             "Interrupt Time: %d ms,  ThreadWaitDelta %u\n", 
-             ChildThreadWaitTime, InterruptTime, ThreadWaitDelta);
+             "Interrupt Time: %d ms,  ThreadWaitDelta %u\n",
+             ChildThreadWaitTime, InterruptTime, ThreadWaitDelta_WFMO_test2);
     }
 
 
@@ -86,15 +86,15 @@ int __cdecl main( int argc, char **argv )
     return PASS;
 }
 
-void RunTest(BOOL AlertThread)
+void RunTest_WFMO_test2(BOOL AlertThread)
 {
     HANDLE hThread = 0;
     DWORD dwThreadId = 0;
     int ret;
 
-    hThread = CreateThread( NULL, 
-                            0, 
-                            (LPTHREAD_START_ROUTINE)WaiterProc,
+    hThread = CreateThread( NULL,
+                            0,
+                            (LPTHREAD_START_ROUTINE)WaiterProc_WFMO_test2,
                             (LPVOID) AlertThread,
                             0,
                             &dwThreadId);
@@ -107,28 +107,28 @@ void RunTest(BOOL AlertThread)
 
     Sleep(InterruptTime);
 
-    ret = QueueUserAPC(APCFunc, hThread, 0);
+    ret = QueueUserAPC(APCFunc_WFMO_test2, hThread, 0);
     if (ret == 0)
     {
-        Fail("QueueUserAPC failed! GetLastError returned %d\n", 
+        Fail("QueueUserAPC failed! GetLastError returned %d\n",
             GetLastError());
     }
 
     ret = WaitForSingleObject(hThread, INFINITE);
     if (ret == WAIT_FAILED)
     {
-        Fail("Unable to wait on child thread!\nGetLastError returned %d.\n", 
+        Fail("Unable to wait on child thread!\nGetLastError returned %d.\n",
             GetLastError());
     }
 }
 
 /* Function doesn't do anything, just needed to interrupt the wait*/
-VOID PALAPI APCFunc(ULONG_PTR dwParam)
-{    
+VOID PALAPI APCFunc_WFMO_test2(ULONG_PTR dwParam)
+{
 }
 
 /* Entry Point for child thread. */
-DWORD PALAPI WaiterProc(LPVOID lpParameter)
+DWORD PALAPI WaiterProc_WFMO_test2(LPVOID lpParameter)
 {
     HANDLE Semaphore;
     UINT64 OldTimeStamp;
@@ -137,7 +137,7 @@ DWORD PALAPI WaiterProc(LPVOID lpParameter)
     DWORD ret;
 
     /* Create a semaphore that is not in the signalled state */
-    Semaphore = CreateSemaphoreW(NULL, 0, 1, NULL);
+    Semaphore = CreateSemaphoreExW(NULL, 0, 1, NULL, 0, 0);
 
     if (Semaphore == NULL)
     {
@@ -155,9 +155,9 @@ DWORD PALAPI WaiterProc(LPVOID lpParameter)
 
     OldTimeStamp = GetHighPrecisionTimeStamp(performanceFrequency);
 
-    ret = WaitForMultipleObjectsEx(1, &Semaphore, FALSE, ChildThreadWaitTime, 
+    ret = WaitForMultipleObjectsEx(1, &Semaphore, FALSE, ChildThreadWaitTime,
         Alertable);
-    
+
     NewTimeStamp = GetHighPrecisionTimeStamp(performanceFrequency);
 
 
@@ -172,7 +172,7 @@ DWORD PALAPI WaiterProc(LPVOID lpParameter)
             "Expected return of WAIT_TIMEOUT, got %d.\n", ret);
     }
 
-    ThreadWaitDelta = NewTimeStamp - OldTimeStamp;
+    ThreadWaitDelta_WFMO_test2 = NewTimeStamp - OldTimeStamp;
 
     ret = CloseHandle(Semaphore);
     if (!ret)

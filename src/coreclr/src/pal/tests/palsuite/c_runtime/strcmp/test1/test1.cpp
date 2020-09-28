@@ -21,24 +21,24 @@ typedef struct
     char string2[50];
 } testCase;
 
-testCase testCases[]=
+PALTEST(c_runtime_strcmp_test1_paltest_strcmp_test1, "c_runtime/strcmp/test1/paltest_strcmp_test1")
 {
-     {0,"Hello","Hello"},
-     {1,"hello","Hello"},
-     {-1,"Hello","hello"},
-     {0,"0Test","0Test"},
-     {0,"***???","***???"},
-     {0,"Testing the string for string comparison","Testing the string for "
-        "string comparison"},
-     {-1,"Testing the string for string comparison","Testing the string for "
-         "string comparsioa"},
-     {1,"Testing the string for string comparison","Testing the string for "
-        "comparison"},
-     {-1,"aaaabbbbb","aabcdefeccg"}
-};
+    testCase testCases[]=
+    {
+        {0,"Hello","Hello"},
+        {1,"hello","Hello"},
+        {-1,"Hello","hello"},
+        {0,"0Test","0Test"},
+        {0,"***???","***???"},
+        {0,"Testing the string for string comparison","Testing the string for "
+            "string comparison"},
+        {-1,"Testing the string for string comparison","Testing the string for "
+            "string comparsioa"},
+        {1,"Testing the string for string comparison","Testing the string for "
+            "comparison"},
+        {-1,"aaaabbbbb","aabcdefeccg"}
+    };
 
-int __cdecl main(int argc, char *argv[])
-{
     int i = 0;
     int result = 0;
     

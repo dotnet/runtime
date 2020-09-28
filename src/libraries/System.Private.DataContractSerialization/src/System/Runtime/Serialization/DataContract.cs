@@ -18,11 +18,7 @@ namespace System.Runtime.Serialization
     using System.Diagnostics.CodeAnalysis;
     using System.Diagnostics;
 
-#if USE_REFEMIT
-    public abstract class DataContract
-#else
     internal abstract class DataContract
-#endif
     {
         private XmlDictionaryString _name;
 
@@ -159,11 +155,7 @@ namespace System.Runtime.Serialization
             DataContractCriticalHelper.ThrowInvalidDataContractException(message, type);
         }
 
-#if USE_REFEMIT
-        internal DataContractCriticalHelper Helper
-#else
         protected DataContractCriticalHelper Helper
-#endif
         {
             get
             { return _helper; }
@@ -452,10 +444,6 @@ namespace System.Runtime.Serialization
                         }
                         catch (Exception ex)
                         {
-                            if (DiagnosticUtility.IsFatal(ex))
-                            {
-                                throw;
-                            }
                             throw DiagnosticUtility.ExceptionUtility.ThrowHelperFatal(ex.Message, ex);
                         }
                     }
@@ -939,10 +927,6 @@ namespace System.Runtime.Serialization
                     }
                     catch (Exception ex)
                     {
-                        if (DiagnosticUtility.IsFatal(ex))
-                        {
-                            throw;
-                        }
                         throw DiagnosticUtility.ExceptionUtility.ThrowHelperFatal(ex.Message, ex);
                     }
                     return key;
@@ -963,10 +947,6 @@ namespace System.Runtime.Serialization
                         }
                         catch (Exception ex)
                         {
-                            if (DiagnosticUtility.IsFatal(ex))
-                            {
-                                throw;
-                            }
                             throw DiagnosticUtility.ExceptionUtility.ThrowHelperFatal(ex.Message, ex);
                         }
                     }
@@ -980,10 +960,6 @@ namespace System.Runtime.Serialization
                     }
                     catch (Exception ex)
                     {
-                        if (DiagnosticUtility.IsFatal(ex))
-                        {
-                            throw;
-                        }
                         throw DiagnosticUtility.ExceptionUtility.ThrowHelperFatal(ex.Message, ex);
                     }
                     return value;
@@ -1004,10 +980,6 @@ namespace System.Runtime.Serialization
                         }
                         catch (Exception ex)
                         {
-                            if (DiagnosticUtility.IsFatal(ex))
-                            {
-                                throw;
-                            }
                             throw DiagnosticUtility.ExceptionUtility.ThrowHelperFatal(ex.Message, ex);
                         }
                     }
@@ -1298,12 +1270,8 @@ namespace System.Runtime.Serialization
             {
                 return false;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                if (DiagnosticUtility.IsFatal(ex))
-                {
-                    throw;
-                }
                 return false;
             }
         }

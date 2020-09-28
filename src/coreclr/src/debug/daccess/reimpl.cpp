@@ -97,7 +97,7 @@ DacGetThreadContext(Thread* thread, T_CONTEXT* context)
 
     ULONG32 contextFlags;
 
-    contextFlags = CONTEXT_ALL;
+    contextFlags = DT_CONTEXT_ALL;
 
     HRESULT status =
         g_dacImpl->m_pTarget->

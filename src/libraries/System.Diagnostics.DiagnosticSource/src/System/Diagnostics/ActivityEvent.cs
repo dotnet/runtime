@@ -47,6 +47,6 @@ namespace System.Diagnostics
         /// <summary>
         /// Gets the collection of tags associated with the event.
         /// </summary>
-        public IEnumerable<KeyValuePair<string, object>> Tags { get; }
+        public IEnumerable<KeyValuePair<string, object?>> Tags { get; }
     }
 }

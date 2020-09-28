@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Buffers;
 using System.Collections;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace System
 {
@@ -12,36 +12,22 @@ namespace System
     {
         private static string? GetEnvironmentVariableCore(string variable)
         {
-            Span<char> buffer = stackalloc char[128]; // a somewhat reasonable default size
-            int requiredSize = Interop.Kernel32.GetEnvironmentVariable(variable, buffer);
+            var builder = new ValueStringBuilder(stackalloc char[128]);
 
-            if (requiredSize == 0 && Marshal.GetLastWin32Error() == Interop.Errors.ERROR_ENVVAR_NOT_FOUND)
+            uint length;
+            while ((length = Interop.Kernel32.GetEnvironmentVariable(variable, ref builder.GetPinnableReference(), (uint)builder.Capacity)) > builder.Capacity)
             {
+                builder.EnsureCapacity((int)length);
+            }
+
+            if (length == 0 && Marshal.GetLastWin32Error() == Interop.Errors.ERROR_ENVVAR_NOT_FOUND)
+            {
+                builder.Dispose();
                 return null;
             }
 
-            if (requiredSize <= buffer.Length)
-            {
-                return new string(buffer.Slice(0, requiredSize));
-            }
-
-            char[] chars = ArrayPool<char>.Shared.Rent(requiredSize);
-            try
-            {
-                buffer = chars;
-                requiredSize = Interop.Kernel32.GetEnvironmentVariable(variable, buffer);
-                if ((requiredSize == 0 && Marshal.GetLastWin32Error() == Interop.Errors.ERROR_ENVVAR_NOT_FOUND) ||
-                    requiredSize > buffer.Length)
-                {
-                    return null;
-                }
-
-                return new string(buffer.Slice(0, requiredSize));
-            }
-            finally
-            {
-                ArrayPool<char>.Shared.Return(chars);
-            }
+            builder.Length = (int)length;
+            return builder.ToString();
         }
 
         private static void SetEnvironmentVariableCore(string variable, string? value)

@@ -26,6 +26,7 @@ public:
             , actionILDump(false)
             , actionInteg(false)
             , actionMerge(false)
+            , actionPrintJITEEVersion(false)
             , actionRemoveDup(false)
             , actionStat(false)
             , actionStrip(false)
@@ -52,6 +53,7 @@ public:
         bool  actionILDump;
         bool  actionInteg;
         bool  actionMerge;
+        bool  actionPrintJITEEVersion;
         bool  actionRemoveDup;
         bool  actionStat;
         bool  actionStrip;

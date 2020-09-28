@@ -22,7 +22,7 @@
 /*
  * NaN: any double with maximum exponent (0x7ff) and non-zero fraction
  */
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime__isnan_test1_paltest_isnan_test1, "c_runtime/_isnan/test1/paltest_isnan_test1")
 {
     /*
      * Initialize the PAL and return FAIL if this fails

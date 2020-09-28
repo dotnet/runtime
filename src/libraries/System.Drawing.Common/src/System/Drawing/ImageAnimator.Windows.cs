@@ -256,7 +256,7 @@ namespace System.Drawing
                     if (s_animationThread == null)
                     {
                         s_animationThread = new Thread(new ThreadStart(AnimateImages50ms));
-                        s_animationThread.Name = typeof(ImageAnimator).Name;
+                        s_animationThread.Name = nameof(ImageAnimator);
                         s_animationThread.IsBackground = true;
                         s_animationThread.Start();
                     }

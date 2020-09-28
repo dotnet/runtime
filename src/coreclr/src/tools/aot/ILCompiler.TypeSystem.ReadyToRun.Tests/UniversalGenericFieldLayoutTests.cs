@@ -444,10 +444,13 @@ namespace TypeSystemTests
                                       out genOfUL);
 
             Assert.Equal(4, genOfIU.BaseType.GetFields().First().Offset.AsInt);
-            Assert.Equal(8, genOfLU.BaseType.GetFields().First().Offset.AsInt);
-            Assert.Equal(LayoutInt.Indeterminate, genOfUU.BaseType.GetFields().First().Offset);
-            Assert.Equal(LayoutInt.Indeterminate, genOfUI.BaseType.GetFields().First().Offset);
-            Assert.Equal(LayoutInt.Indeterminate, genOfUL.BaseType.GetFields().First().Offset);
+            Assert.Equal(4, genOfLU.BaseType.GetFields().First().Offset.AsInt);
+
+            // Like X64, X86 first field location is always 4 bytes from start
+            // This results in 8 byte aligned quantities being aligned at unusual offsets
+            Assert.Equal(4, genOfUU.BaseType.GetFields().First().Offset.AsInt);
+            Assert.Equal(4, genOfUI.BaseType.GetFields().First().Offset.AsInt);
+            Assert.Equal(4, genOfUL.BaseType.GetFields().First().Offset.AsInt);
 
             if (context.Target.MaximumAlignment <= 8)
             {

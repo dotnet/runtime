@@ -732,12 +732,13 @@ namespace System.Threading.Threads.Tests
 
             Action verify = () =>
             {
-#pragma warning disable SYSLIB0006, 618 // Obsolete: Abort, Suspend, Resume
+#pragma warning disable SYSLIB0006, 618 // Obsolete: Abort, Suspend, Resume, ResetAbort
                 Assert.Throws<PlatformNotSupportedException>(() => t.Abort());
                 Assert.Throws<PlatformNotSupportedException>(() => t.Abort(t));
+                Assert.Throws<PlatformNotSupportedException>(() => Thread.ResetAbort());
                 Assert.Throws<PlatformNotSupportedException>(() => t.Suspend());
                 Assert.Throws<PlatformNotSupportedException>(() => t.Resume());
-#pragma warning restore SYSLIB0006, 618 // Obsolete: Abort, Suspend, Resume
+#pragma warning restore SYSLIB0006, 618 // Obsolete: Abort, Suspend, Resume, ResetAbort
             };
             verify();
 
@@ -745,9 +746,7 @@ namespace System.Threading.Threads.Tests
             verify();
 
             e.Set();
-            waitForThread();
-
-            Assert.Throws<PlatformNotSupportedException>(() => Thread.ResetAbort());
+            waitForThread(); 
         }
 
         private static void VerifyLocalDataSlot(LocalDataStoreSlot slot)
