@@ -65,6 +65,15 @@ jobs:
       - name: librariesBuildArtifactName
         value: 'libraries_bin_$(osGroup)$(osSubgroup)_$(archType)_Release'
 
+      - name: binTestsPath
+        value: '$(Build.SourcesDirectory)/artifacts/tests/coreclr'
+
+      - name: managedGenericTestArtifactName
+        value: 'CoreCLRManagedTestArtifacts_AnyOS_AnyCPU_$(buildConfig)'
+
+      - name: managedTestArtifactRootFolderPath
+        value: '$(binTestsPath)/$(osGroup).$(archType).$(buildConfigUpper)'
+
       - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
         - name: archiveExtension
           value: '.zip'
