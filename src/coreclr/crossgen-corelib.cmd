@@ -8,7 +8,7 @@ set "__MsgPrefix=CROSSGEN-CORELIB: "
 echo %__MsgPrefix%Starting Build at %TIME%
 
 set __ThisScriptFull="%~f0"
-set __ThisScriptDir="%~dp0"
+set __ThisScriptDir=%~dp0
 
 :: Note that the msbuild project files (specifically, dir.proj) will use the following variables, if set:
 ::      __BuildArch         -- default: x64

@@ -1323,8 +1323,11 @@ mono_de_ss_start (SingleStepReq *ss_req, SingleStepArgs *ss_args)
 	} else {
 		frame_index = 1;
 
+#ifndef TARGET_WASM
 		if (ss_args->ctx && !frames) {
-
+#else
+		if (!frames) {
+#endif
 			mono_loader_lock ();
 			locked = TRUE;
 
@@ -1655,6 +1658,27 @@ set_set_notification_for_wait_completion_flag (DbgEngineStackFrame *frame)
 	mono_runtime_invoke_checked (method, builder, args, error);
 	mono_error_assert_ok (error);
 	return TRUE;
+}
+
+MonoMethod*
+get_object_id_for_debugger_method (MonoClass* async_builder_class)
+{
+	ERROR_DECL (error);
+	GPtrArray *array = mono_class_get_methods_by_name (async_builder_class, "get_ObjectIdForDebugger", 0x24, 1, FALSE, error);
+	mono_error_assert_ok (error);
+	if (array->len != 1) {
+		g_ptr_array_free (array, TRUE);
+		//if we don't find method get_ObjectIdForDebugger we try to find the property Task to continue async debug.
+		MonoProperty *prop = mono_class_get_property_from_name_internal (async_builder_class, "Task");
+		if (!prop) {
+			DEBUG_PRINTF (1, "Impossible to debug async methods.\n");
+			return NULL;
+		}
+		return prop->get;
+	}
+	MonoMethod *method = (MonoMethod *)g_ptr_array_index (array, 0);
+	g_ptr_array_free (array, TRUE);
+	return method;
 }
 
 gpointer

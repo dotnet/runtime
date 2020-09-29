@@ -73,7 +73,8 @@
     <!-- When running from Desktop MSBuild, DOTNET_HOST_PATH is not set.
       In this case, explicitly specify the path to the dotnet host. -->
     <PropertyGroup Condition=" '$(DOTNET_HOST_PATH)' == '' ">
-      <_DotNetHostDirectory>$(DotNetRoot)</_DotNetHostDirectory>
+      <!-- This is defined when building in Visual Studio. -->
+      <_DotNetHostDirectory>$(NetCoreRoot)</_DotNetHostDirectory>
       <_DotNetHostFileName>$([System.IO.Path]::GetFileName('$(DotNetTool)'))</_DotNetHostFileName>
     </PropertyGroup>
 

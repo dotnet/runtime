@@ -418,6 +418,8 @@
              Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Err.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Keychain.cs"
              Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Keychain.cs" />
+    <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.KeyAgree.cs"
+             Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.KeyAgree.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.PAL_HashAlgorithm.cs"
              Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.PAL_HashAlgorithm.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.RSA.cs"
@@ -450,6 +452,10 @@
              Link="Common\System\Security\Cryptography\EccSecurityTransforms.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\ECDsaSecurityTransforms.cs"
              Link="Common\System\Security\Cryptography\ECDsaSecurityTransforms.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\ECDiffieHellmanSecurityTransforms.cs"
+             Link="Common\System\Security\Cryptography\ECDiffieHellmanSecurityTransforms.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\ECDiffieHellmanDerivation.cs"
+             Link="Common\System\Security\Cryptography\ECDiffieHellmanDerivation.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\KeyFormatHelper.cs"
              Link="Common\System\Security\Cryptography\KeyFormatHelper.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\PasswordBasedEncryption.cs"

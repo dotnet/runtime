@@ -1148,7 +1148,7 @@ inline GenTreeCall* Compiler::gtNewRuntimeLookupHelperCallNode(CORINFO_RUNTIME_L
                                                                GenTree*                ctxTree,
                                                                void*                   compileTimeHandle)
 {
-    GenTree* argNode = gtNewIconEmbHndNode(pRuntimeLookup->signature, nullptr, GTF_ICON_TOKEN_HDL, compileTimeHandle);
+    GenTree* argNode = gtNewIconEmbHndNode(pRuntimeLookup->signature, nullptr, GTF_ICON_GLOBAL_PTR, compileTimeHandle);
     GenTreeCall::Use* helperArgs = gtNewCallArgs(ctxTree, argNode);
 
     return gtNewHelperCallNode(pRuntimeLookup->helper, TYP_I_IMPL, helperArgs);

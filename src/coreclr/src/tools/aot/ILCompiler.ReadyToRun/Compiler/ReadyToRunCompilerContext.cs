@@ -17,6 +17,70 @@ namespace ILCompiler
         {
             _genericsMode = genericsMode;
         }
+
+        private object _normalizedLock = new object();
+        private HashSet<TypeDesc> _nonNormalizedTypes = new HashSet<TypeDesc>();
+        private Dictionary<TypeDesc, TypeFlags> _normalizedTypeCategory = new Dictionary<TypeDesc, TypeFlags>();
+
+        public TypeFlags NormalizedCategoryFor4ByteStructOnX86(TypeDesc type)
+        {
+            // Fast early out for cases which don't need normalization
+            var typeCategory = type.Category;
+
+            if (((typeCategory != TypeFlags.ValueType) && (typeCategory != TypeFlags.Enum)) || (type.GetElementSize().AsInt != 4))
+            {
+                return typeCategory;
+            }
+
+            lock(_normalizedLock)
+            {
+                if (_nonNormalizedTypes.Contains(type))
+                    return typeCategory;
+                
+                if (_normalizedTypeCategory.TryGetValue(type, out TypeFlags category))
+                    return category;
+
+                if (Target.Architecture != TargetArchitecture.X86)
+                {
+                    throw new NotSupportedException();
+                }
+
+                TypeDesc typeOfEmbeddedField = null;
+                foreach (var field in type.GetFields())
+                {
+                    if (field.IsStatic)
+                        continue;
+                    if (typeOfEmbeddedField != null)
+                    {
+                        // Type has more than one instance field
+                        _nonNormalizedTypes.Add(type);
+                        return typeCategory;
+                    }
+
+                    typeOfEmbeddedField = field.FieldType;
+                }
+
+                if ((typeOfEmbeddedField != null) && ((typeOfEmbeddedField.IsValueType) || (typeOfEmbeddedField.IsPointer)))
+                {
+                    TypeFlags singleElementFieldType = NormalizedCategoryFor4ByteStructOnX86(typeOfEmbeddedField);
+                    if (singleElementFieldType == TypeFlags.Pointer)
+                        singleElementFieldType = TypeFlags.UIntPtr;
+                    
+                    switch (singleElementFieldType)
+                    {
+                        case TypeFlags.IntPtr:
+                        case TypeFlags.UIntPtr:
+                        case TypeFlags.Int32:
+                        case TypeFlags.UInt32:
+                            _normalizedTypeCategory.Add(type, singleElementFieldType);
+                            return singleElementFieldType;
+                    }
+                }
+
+                _nonNormalizedTypes.Add(type);
+                return typeCategory;
+            }
+        }
     }
 
     public partial class ReadyToRunCompilerContext : CompilerTypeSystemContext

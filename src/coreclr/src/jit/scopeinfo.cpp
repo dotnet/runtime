@@ -1550,7 +1550,7 @@ void CodeGen::psiBegProlog()
             SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
             if (varTypeIsStruct(lclVarDsc))
             {
-                CORINFO_CLASS_HANDLE typeHnd = lclVarDsc->lvVerTypeInfo.GetClassHandle();
+                CORINFO_CLASS_HANDLE typeHnd = lclVarDsc->GetStructHnd();
                 assert(typeHnd != nullptr);
                 compiler->eeGetSystemVAmd64PassStructInRegisterDescriptor(typeHnd, &structDesc);
                 if (structDesc.passedInRegisters)

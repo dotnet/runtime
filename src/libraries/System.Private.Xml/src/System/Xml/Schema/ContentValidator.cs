@@ -1261,7 +1261,6 @@ namespace System.Xml.Schema
             {
                 if (ContentType == XmlSchemaContentType.Mixed)
                 {
-                    string ctype = IsOpen ? "Any" : "TextOnly";
                     return IsOpen ? ContentValidator.Any : ContentValidator.TextOnly;
                 }
                 else
@@ -1281,7 +1280,6 @@ namespace System.Xml.Schema
             _contentNode.ExpandTree(contentRoot, _symbols, _positions);
 
             // calculate followpos
-            int symbolsCount = _symbols.Count;
             int positionsCount = _positions.Count;
             BitSet firstpos = new BitSet(positionsCount);
             BitSet lastpos = new BitSet(positionsCount);
@@ -1880,7 +1878,6 @@ namespace System.Xml.Schema
 
         public override void InitValidation(ValidationState context)
         {
-            int positionsCount = _positions.Count;
             List<RangePositionInfo>? runningPositions = context.RunningPositions;
             if (runningPositions != null)
             {

@@ -61,14 +61,14 @@ namespace System.Security.Cryptography
 
         public bool Equals(RSASignaturePadding? other)
         {
-            return !object.ReferenceEquals(other, null) && _mode == other._mode;
+            return other is not null && _mode == other._mode;
         }
 
         public static bool operator ==(RSASignaturePadding? left, RSASignaturePadding? right)
         {
-            if (object.ReferenceEquals(left, null))
+            if (left is null)
             {
-                return object.ReferenceEquals(right, null);
+                return right is null;
             }
 
             return left.Equals(right);

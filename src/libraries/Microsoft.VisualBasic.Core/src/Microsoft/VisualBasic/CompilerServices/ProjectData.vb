@@ -2,8 +2,6 @@
 ' The .NET Foundation licenses this file to you under the MIT license.
 
 Imports System
-Imports Microsoft.VisualBasic.CompilerServices.Utils
-Imports Microsoft.VisualBasic.FileIO
 
 Namespace Global.Microsoft.VisualBasic.CompilerServices
 
