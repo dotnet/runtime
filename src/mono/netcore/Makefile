@@ -28,7 +28,7 @@ MONO_PROJ=/p:CoreClrTestConfig=$(CORECLR_TESTS_CONFIG) /p:LibrariesTestConfig=$(
 # run sample using local .dotnet-mono
 # build it with .dotnet first in order to be able to use LLVM only for the actual sample
 run-sample:
-	cd sample/HelloWorld && make run
+	make run -C sample/HelloWorld
 
 # run sample using local .dotnet (coreclr)
 run-sample-coreclr:
