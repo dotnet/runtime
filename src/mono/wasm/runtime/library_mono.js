@@ -2389,17 +2389,6 @@ var MonoSupportLib = {
 			pdb_b64
 		});
 	},
-
-	mono_wasm_browser_crypto_getRandomValues : function (buffer, bufferLength) {
-		// check that we have crypto available
-		if (!(typeof crypto !== 'undefined' && crypto.subtle && typeof crypto.getRandomValues === 'function')) {
-			return -1;
-		}
-		// map the work array to the memory buffer passed with the length
-		var wrkArray = new Uint8Array(Module.HEAPU8.buffer, buffer, bufferLength);
-		crypto.getRandomValues(wrkArray);
-		return 0;
-	},
 };
 
 autoAddDeps(MonoSupportLib, '$MONO')
