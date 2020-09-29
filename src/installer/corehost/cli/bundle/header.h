@@ -41,7 +41,8 @@ namespace bundle
     enum header_flags_t : uint64_t
     {
         none = 0,
-        netcoreapp3_compat_mode = 1
+        netcoreapp3_compat_mode = 1,
+        needs_native_libraries_extraction = 2,
     };
 
     struct location_t
@@ -66,6 +67,7 @@ namespace bundle
         header_flags_t flags;
 
         bool is_netcoreapp3_compat_mode() const { return (flags & header_flags_t::netcoreapp3_compat_mode) != 0; }
+        bool needs_native_libraries_extraction() const { return (flags & header_flags_t::needs_native_libraries_extraction) != 0; }
     };
 #pragma pack(pop)
 
@@ -85,6 +87,7 @@ namespace bundle
 
         const location_t& deps_json_location() const { return m_v2_header.deps_json_location; }
         const location_t& runtimeconfig_json_location() const { return m_v2_header.runtimeconfig_json_location; }
+        bool needs_native_libraries_extraction() const { return m_v2_header.needs_native_libraries_extraction(); }
         bool is_netcoreapp3_compat_mode() const { return m_v2_header.is_netcoreapp3_compat_mode(); }
 
         static const uint32_t major_version = 2;

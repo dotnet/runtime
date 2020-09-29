@@ -58,7 +58,8 @@ namespace Microsoft.NET.HostModel.Bundle
         private enum HeaderFlags : ulong
         {
             None = 0,
-            NetcoreApp3CompatMode = 1
+            NetcoreApp3CompatMode = 1,
+            NeedsNativeLibrariesExtraction = 2,
         }
 
         // Bundle ID is a string that is used to uniquely
@@ -81,12 +82,13 @@ namespace Microsoft.NET.HostModel.Bundle
 
         public List<FileEntry> Files;
 
-        public Manifest(uint desiredVersion, bool netcoreapp3CompatMode = false)
+        public Manifest(uint desiredVersion, in BundleOptions options)
         {
             DesiredMajorVersion = desiredVersion;
             Files = new List<FileEntry>();
             BundleID = Path.GetRandomFileName();
-            Flags = (netcoreapp3CompatMode) ? HeaderFlags.NetcoreApp3CompatMode: HeaderFlags.None;
+            Flags = options.HasFlag(BundleOptions.BundleAllContent) ? HeaderFlags.NetcoreApp3CompatMode :
+                    options.HasFlag(BundleOptions.BundleNativeBinaries) ? HeaderFlags.NeedsNativeLibrariesExtraction : HeaderFlags.None;
         }
 
         public FileEntry AddEntry(FileType type, string relativePath, long offset, long size)

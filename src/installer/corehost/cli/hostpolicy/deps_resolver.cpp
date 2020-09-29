@@ -877,6 +877,19 @@ bool deps_resolver_t::resolve_probe_dirs(
         }
     }
 
+    // If this is a single-file app, add the app's dir to the native search directories.
+    if (bundle::info_t::is_single_file_bundle() && !is_resources)
+    {
+        auto bundle = bundle::runner_t::app();
+        add_unique_path(asset_type, bundle->base_path(), &items, output, &non_serviced, core_servicing);
+
+        // If native components are self-extracted, add the extraction path too.
+        if (bundle->needs_native_libraries_extraction())
+        {
+            add_unique_path(asset_type, bundle->extraction_path(), &items, output, &non_serviced, core_servicing);
+        }
+    }
+
     output->append(non_serviced);
 
     return true;
