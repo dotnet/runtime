@@ -11,7 +11,7 @@ steps:
     displayName: 'Download specific ${{ parameters.displayName }}'
     inputs:
       buildType: specific
-      project:  'internal'
+      project:  'public'
       pipeline: 'runtime-coreclr outerloop'
       buildVersionToDownload: 'latest'
       allowPartiallySucceededBuilds: true
