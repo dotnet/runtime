@@ -46,10 +46,10 @@ namespace System.Net.Test.Common
 
                 _uri = new Uri($"{scheme}://{host}:{localEndPoint.Port}/");
             }
-            finally
+            catch
             {
-                if (_listenSocket != null)
-                    _listenSocket.Dispose();
+                _listenSocket?.Dispose();
+                throw;
             }
         }
 
