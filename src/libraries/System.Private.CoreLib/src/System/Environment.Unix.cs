@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
@@ -111,12 +112,10 @@ namespace System
             throw new IOException(errorInfo.GetErrorMessage(), errorInfo.RawErrno);
         }
 
-        private static int GetCurrentProcessId() => Interop.Sys.GetPid();
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        private static int GetProcessId() => Interop.Sys.GetPid();
 
-        /// <summary>
-        /// Returns the path of the executable that started the currently executing process. Returns null when the path is not available.
-        /// </summary>
-        /// <returns>Path of the executable that started the currently executing process</returns>
-        public static string? ProcessPath => Interop.Sys.GetProcessPath();
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        private static string? GetProcessPath() => Interop.Sys.GetProcessPath();
     }
 }

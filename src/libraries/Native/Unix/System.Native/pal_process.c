@@ -907,6 +907,11 @@ char* SystemNative_GetProcessPath()
     }
 
     return strdup(path);
+#elif defined(__sun)
+    const char* path = getexecname();
+    if (path == NULL)
+        return NULL;
+    return realpath(path, NULL);
 #else
 
 #ifdef __linux__
@@ -915,7 +920,7 @@ char* SystemNative_GetProcessPath()
 #define symlinkEntrypointExecutable "/proc/curproc/exe"
 #endif
 
-    // Resove the symlink to the executable from /proc
+    // Resolve the symlink to the executable from /proc
     return realpath(symlinkEntrypointExecutable, NULL);
 #endif
 }

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -86,30 +87,24 @@ namespace System
             Interop.Kernel32.GetComputerName() ??
             throw new InvalidOperationException(SR.InvalidOperation_ComputerName);
 
-        private static int GetCurrentProcessId() => unchecked((int)Interop.Kernel32.GetCurrentProcessId());
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        private static int GetProcessId() => unchecked((int)Interop.Kernel32.GetCurrentProcessId());
 
-        /// <summary>
-        /// Returns the path of the executable that started the currently executing process. Returns null when the path is not available.
-        /// </summary>
-        /// <returns>Path of the executable that started the currently executing process</returns>
-        public static string? ProcessPath
+        private static string GetProcessPath()
         {
-            get
+            var builder = new ValueStringBuilder(stackalloc char[Interop.Kernel32.MAX_PATH]);
+
+            uint length;
+            while ((length = Interop.Kernel32.GetModuleFileName(IntPtr.Zero, ref builder.GetPinnableReference(), (uint)builder.Capacity)) >= builder.Capacity)
             {
-                var builder = new ValueStringBuilder(stackalloc char[Interop.Kernel32.MAX_PATH]);
-
-                uint length;
-                while ((length = Interop.Kernel32.GetModuleFileName(IntPtr.Zero, ref builder.GetPinnableReference(), (uint)builder.Capacity)) >= builder.Capacity)
-                {
-                    builder.EnsureCapacity((int)length);
-                }
-
-                if (length == 0)
-                    throw Win32Marshal.GetExceptionForLastWin32Error();
-
-                builder.Length = (int)length;
-                return builder.ToString();
+                builder.EnsureCapacity((int)length);
             }
+
+            if (length == 0)
+                throw Win32Marshal.GetExceptionForLastWin32Error();
+
+            builder.Length = (int)length;
+            return builder.ToString();
         }
 
         private static unsafe OperatingSystem GetOSVersion()
