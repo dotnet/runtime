@@ -6,6 +6,12 @@
 
 namespace System.Net.Quic
 {
+    public static class QuicImplementationProviders
+    {
+        public static Implementations.QuicImplementationProvider Mock => throw null;
+        public static Implementations.QuicImplementationProvider MsQuic => throw null;
+        public static Implementations.QuicImplementationProvider Default => throw null;
+    }
     public sealed class QuicStream : System.IO.Stream
     {
         internal QuicStream() => throw null;
@@ -59,5 +65,12 @@ namespace System.Net.Quic
     {
         public QuicStreamAbortedException(string message, long errorCode) : base(default) { throw null; }
         public long ErrorCode { get { throw null; } }
+    }
+}
+namespace System.Net.Quic.Implementations
+{
+    public abstract class QuicImplementationProvider
+    {
+        internal QuicImplementationProvider() { }
     }
 }

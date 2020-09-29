@@ -3,7 +3,7 @@
 
 namespace System.Net.Quic
 {
-    internal static class QuicImplementationProviders
+    public static class QuicImplementationProviders
     {
         public static Implementations.QuicImplementationProvider Mock { get; } = new Implementations.Mock.MockImplementationProvider();
         public static Implementations.QuicImplementationProvider MsQuic { get; } = new Implementations.MsQuic.MsQuicImplementationProvider();
