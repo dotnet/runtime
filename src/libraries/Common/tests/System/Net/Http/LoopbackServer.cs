@@ -48,7 +48,8 @@ namespace System.Net.Test.Common
             }
             catch
             {
-                _listenSocket.Dispose();
+                _listenSocket?.Dispose();
+                throw;
             }
         }
 

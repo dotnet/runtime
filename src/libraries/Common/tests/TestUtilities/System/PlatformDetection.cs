@@ -48,6 +48,9 @@ namespace System
         public static bool IsThreadingSupported => !IsBrowser;
         public static bool IsBinaryFormatterSupported => !IsBrowser;
 
+        public static bool IsBrowserDomSupported => GetIsBrowserDomSupported();
+        public static bool IsNotBrowserDomSupported => !IsBrowserDomSupported;
+
         // Please make sure that you have the libgdiplus dependency installed.
         // For details, see https://docs.microsoft.com/dotnet/core/install/dependencies?pivots=os-macos&tabs=netcore31#libgdiplus
         public static bool IsDrawingSupported
@@ -366,6 +369,15 @@ namespace System
             // within the runtime.
             var val = Environment.GetEnvironmentVariable("MONO_ENV_OPTIONS");
             return (val != null && val.Contains("--interpreter"));
+        }
+
+        private static bool GetIsBrowserDomSupported()
+        {
+            if (!IsBrowser)
+                return false;
+
+            var val = Environment.GetEnvironmentVariable("IsBrowserDomSupported");
+            return (val != null && val == "true");
         }
     }
 }
