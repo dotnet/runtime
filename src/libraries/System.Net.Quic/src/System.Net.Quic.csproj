@@ -13,6 +13,15 @@
     <Compile Include="System\Net\Quic\Implementations\MsQuic\Internal\*.cs" />
     <Compile Include="System\Net\Quic\Interop\*.cs" />
   </ItemGroup>
+  <!-- System.Net common -->
+  <ItemGroup>
+    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs" Link="Common\System\Threading\Tasks\TaskToApm.cs" />
+    <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs" Link="Common\System\Net\Logging\NetEventSource.Common.cs" />
+  </ItemGroup>
+  <!-- Interop -->
+  <ItemGroup>
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs" Link="Common\Interop\Windows\Interop.Libraries.cs" />
+  </ItemGroup>
   <!-- Resources -->
   <ItemGroup>
     <None Include="Resources\SR.resx" />
