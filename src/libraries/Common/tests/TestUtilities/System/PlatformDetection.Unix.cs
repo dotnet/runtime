@@ -48,7 +48,7 @@ namespace System
         public static bool IsNotDebian10 => !IsDebian10;
 
         // Android
-        public static bool IsAndroid => RuntimeInformation.IsOSPlatform(OSPlatform.Create("Android");
+        public static bool IsAndroid => RuntimeInformation.IsOSPlatform(OSPlatform.Create("Android"));
 
         public static bool IsSuperUser => IsBrowser || IsWindows ? false : libc.geteuid() == 0;
 
