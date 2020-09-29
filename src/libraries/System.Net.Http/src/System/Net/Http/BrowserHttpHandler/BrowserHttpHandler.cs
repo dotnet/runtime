@@ -224,8 +224,8 @@ namespace System.Net.Http
                 JSObject t = (JSObject)await response.ConfigureAwait(continueOnCapturedContext: true);
 
                 var status = new WasmFetchResponse(t, abortController, abortCts, abortRegistration);
-
                 HttpResponseMessage httpResponse = new HttpResponseMessage((HttpStatusCode)status.Status);
+                httpResponse.RequestMessage = request;
 
                 bool streamingEnabled = false;
                 if (StreamingSupported)
