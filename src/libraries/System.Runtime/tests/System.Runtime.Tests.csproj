@@ -160,6 +160,7 @@
     <Compile Include="System\Diagnostics\CodeAnalysis\DynamicallyAccessedMembersAttributeTests.cs" />
     <Compile Include="System\Diagnostics\CodeAnalysis\RequiresUnreferencedCodeAttributeTests.cs" />
     <Compile Include="System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttributeTests.cs" />
+    <Compile Include="System\Diagnostics\StackTraceHiddenAttributeTests.cs" />
     <Compile Include="System\IO\DirectoryNotFoundExceptionTests.cs" />
     <Compile Include="System\IO\DirectoryNotFoundException.InteropTests.cs" />
     <Compile Include="System\IO\EndOfStreamExceptionTests.cs" />

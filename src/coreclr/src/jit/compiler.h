@@ -5025,10 +5025,6 @@ public:
     // Initialize the per-block variable sets (used for liveness analysis).
     void fgInitBlockVarSets();
 
-    // true if we've gone through and created GC Poll calls.
-    bool        fgGCPollsCreated;
-    void        fgMarkGCPollBlocks();
-    void        fgCreateGCPolls();
     PhaseStatus fgInsertGCPolls();
     BasicBlock* fgCreateGCPoll(GCPollType pollType, BasicBlock* block);
 
@@ -8888,8 +8884,6 @@ public:
 #else // !ARM_SOFTFP
         static const bool compUseSoftFP = false;
 #endif
-
-        GCPollType compGCPollType;
     } opts;
 
 #ifdef ALT_JIT

@@ -6,7 +6,7 @@ function print_usage {
     echo ''
     echo 'Typical command line:'
     echo ''
-    echo 'coreclr/tests/runtest.sh'
+    echo 'src/tests/run.sh'
     echo '    --testRootDir="temp/Windows_NT.x64.Debug"'
     echo '    --testNativeBinDir="runtime/artifacts/obj/Linux.x64.Debug/tests"'
     echo '    --coreOverlayDir="runtime/artifacts/tests/Linux.x64.Debug/Tests/Core_Root"'
@@ -100,7 +100,7 @@ countSkippedTests=0
 xunitOutputPath=
 xunitTestOutputPath=
 
-# Variables for text file output. These can be passed back to runtest.sh using the "--playlist" argument
+# Variables for text file output. These can be passed back to run.sh using the "--playlist" argument
 # to rerun specific tests.
 testsPassOutputPath=
 testsFailOutputPath=

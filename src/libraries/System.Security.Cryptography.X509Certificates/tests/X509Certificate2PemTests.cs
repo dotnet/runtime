@@ -185,7 +185,7 @@ MII
         {
             X509Certificate2 cert = X509Certificate2.CreateFromEncryptedPem(
                 TestData.RsaCertificate,
-                TestData.RsaEncryptedPkcs8Key, 
+                TestData.RsaEncryptedPkcs8Key,
                 "test");
 
             using (cert)
@@ -252,6 +252,16 @@ MII
             {
                 Assert.Equal("E844FA74BC8DCE46EF4F8605EA00008F161AB56F", cert.Thumbprint);
                 AssertKeysMatch(TestData.ECDsaEncryptedPkcs8Key, cert.GetECDsaPrivateKey, "test");
+            }
+        }
+
+        [Fact]
+        public static void CreateFromPem_ECDH_Pkcs8_Success()
+        {
+            using (X509Certificate2 cert = X509Certificate2.CreateFromPem(TestData.EcDhCertificate, TestData.EcDhPkcs8Key))
+            {
+                Assert.Equal("6EAE9D3E34F7672106585583AA4623B6CC5AE2F7", cert.Thumbprint);
+                AssertKeysMatch(TestData.EcDhPkcs8Key, cert.GetECDiffieHellmanPrivateKey);
             }
         }
 
@@ -399,6 +409,7 @@ MII
                 RSA => RSA.Create(),
                 DSA => DSA.Create(),
                 ECDsa => ECDsa.Create(),
+                ECDiffieHellman => ECDiffieHellman.Create(),
                 _ => null
             };
 
@@ -429,6 +440,21 @@ MII
                     case (DSA dsa, DSA dsaPem):
                         byte[] dsaSignature = dsa.SignData(data, HashAlgorithmName.SHA1);
                         Assert.True(dsaPem.VerifyData(data, dsaSignature, HashAlgorithmName.SHA1));
+                        break;
+                    case (ECDiffieHellman ecdh, ECDiffieHellman ecdhPem):
+                        ECCurve curve = ecdh.KeySize switch {
+                            256 => ECCurve.NamedCurves.nistP256,
+                            384 => ECCurve.NamedCurves.nistP384,
+                            521 => ECCurve.NamedCurves.nistP521,
+                            _ => throw new CryptographicException("Unknown key size")
+                        };
+
+                        using (ECDiffieHellman otherParty = ECDiffieHellman.Create(curve))
+                        {
+                            byte[] key1 = ecdh.DeriveKeyFromHash(otherParty.PublicKey, HashAlgorithmName.SHA256);
+                            byte[] key2 = ecdhPem.DeriveKeyFromHash(otherParty.PublicKey, HashAlgorithmName.SHA256);
+                            Assert.Equal(key1, key2);
+                        }
                         break;
                     default:
                         throw new CryptographicException("Unknown key algorithm");
