@@ -6,4 +6,9 @@
 
 namespace System.Net.Quic
 {
+    public class QuicException : Exception
+    {
+        public QuicException(string? message) { throw null; }
+        public QuicException(string? message, Exception? innerException) { throw null; }
+    }
 }

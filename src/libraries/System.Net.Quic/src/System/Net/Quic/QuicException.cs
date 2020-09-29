@@ -4,7 +4,7 @@
 #nullable enable
 namespace System.Net.Quic
 {
-    internal class QuicException : Exception
+    public class QuicException : Exception
     {
         public QuicException(string? message)
             : base(message)
