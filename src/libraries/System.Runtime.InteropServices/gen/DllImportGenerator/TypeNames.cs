@@ -17,5 +17,7 @@ namespace DllImportGenerator
         public const string System_Span = "System.Span`1";
 
         public const string System_Runtime_InteropServices_StructLayoutAttribute = "System.Runtime.InteropServices.StructLayoutAttribute";
+
+        public const string System_Runtime_InteropServices_MarshalAsAttribute = "System.Runtime.InteropServices.MarshalAsAttribute";
     }
 }

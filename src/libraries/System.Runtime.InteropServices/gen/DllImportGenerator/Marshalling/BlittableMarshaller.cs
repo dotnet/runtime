@@ -7,7 +7,7 @@ using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop
 {
-    internal class NumericMarshaller : IMarshallingGenerator
+    internal class BlittableMarshaller : IMarshallingGenerator
     {
         public TypeSyntax AsNativeType(TypePositionInfo info)
         {
@@ -25,23 +25,48 @@ namespace Microsoft.Interop
 
         public ArgumentSyntax AsArgument(TypePositionInfo info, StubCodeContext context)
         {
-            if (info.IsByRef)
+            if (!info.IsByRef)
             {
-                return Argument(
+                return Argument(IdentifierName(info.InstanceIdentifier));
+            }
+            else if (context.PinningSupported)
+            {
+                return Argument(IdentifierName(context.GetIdentifiers(info).native));
+                
+            }
+            return Argument(
                     PrefixUnaryExpression(
                         SyntaxKind.AddressOfExpression,
                         IdentifierName(context.GetIdentifiers(info).native)));
-            }
-
-            return Argument(IdentifierName(info.InstanceIdentifier));
         }
 
         public IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubCodeContext context)
         {
-            if (!info.IsByRef || info.IsManagedReturnPosition)
+            if (!UsesNativeIdentifier(info, context))
                 yield break;
 
             (string managedIdentifier, string nativeIdentifier) = context.GetIdentifiers(info);
+
+            if (context.PinningSupported)
+            {
+                if (context.CurrentStage == StubCodeContext.Stage.Pin)
+                {
+                    yield return FixedStatement(
+                        VariableDeclaration(
+                            PointerType(AsNativeType(info)),
+                            SingletonSeparatedList(
+                                VariableDeclarator(Identifier(nativeIdentifier))
+                                    .WithInitializer(EqualsValueClause(
+                                        PrefixUnaryExpression(SyntaxKind.AddressOfExpression,
+                                            IdentifierName(managedIdentifier))
+                                    ))
+                            )
+                        ),
+                        EmptyStatement()
+                    );
+                }
+                yield break;
+            }
             switch (context.CurrentStage)
             {
                 case StubCodeContext.Stage.Setup:
@@ -72,6 +97,11 @@ namespace Microsoft.Interop
                 default:
                     break;
             }
+        }
+
+        public bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context)
+        {
+            return info.IsByRef && !info.IsManagedReturnPosition;
         }
     }
 

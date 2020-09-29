@@ -1,5 +1,5 @@
 ﻿using System.Collections.Generic;
-
+using System.Runtime.InteropServices;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
@@ -45,15 +45,27 @@ namespace Microsoft.Interop
         /// <see cref="FixedStatementSyntax"/> will be ignored.
         /// </remarks>
         IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubCodeContext context);
+
+        /// <summary>
+        /// Returns whether or not this marshaller uses an identifier for the native value in addition
+        /// to an identifer for the managed value.
+        /// </summary>
+        /// <param name="info">Object to marshal</param>
+        /// <param name="context">Code generation context</param>
+        /// <returns>If the marshaller uses an identifier for the native value, true; otherwise, false.</returns>
+        bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context);
     }
 
     internal class MarshallingGenerators
     {
-        public static readonly BoolMarshaller Bool = new BoolMarshaller();
+        public static readonly CBoolMarshaller CBool = new CBoolMarshaller();
+        public static readonly WinBoolMarshaller WinBool = new WinBoolMarshaller();
+        public static readonly VariantBoolMarshaller VariantBool = new VariantBoolMarshaller();
         public static readonly Forwarder Forwarder = new Forwarder();
-        public static readonly NumericMarshaller Numeric = new NumericMarshaller();
+        public static readonly BlittableMarshaller Blittable = new BlittableMarshaller();
+        public static readonly DelegateMarshaller Delegate = new DelegateMarshaller();
 
-        public static bool TryCreate(TypePositionInfo info, out IMarshallingGenerator generator)
+        public static bool TryCreate(TypePositionInfo info, StubCodeContext context, out IMarshallingGenerator generator)
         {
 #if GENERATE_FORWARDER
             generator = MarshallingGenerators.Forwarder;
@@ -65,26 +77,57 @@ namespace Microsoft.Interop
                 // Debug.Assert(info.ManagedType.SpecialType == SpecialType.System_Int32)
             }
 
-            switch (info.ManagedType.SpecialType)
+            switch (info)
             {
-                case SpecialType.System_SByte:
-                case SpecialType.System_Byte:
-                case SpecialType.System_Int16:
-                case SpecialType.System_UInt16:
-                case SpecialType.System_Int32:
-                case SpecialType.System_UInt32:
-                case SpecialType.System_Int64:
-                case SpecialType.System_UInt64:
-                case SpecialType.System_Single:
-                case SpecialType.System_Double:
-                    generator = MarshallingGenerators.Numeric;
+                // Blittable primitives with no marshalling info or with a compatible [MarshalAs] attribute.
+                case { ManagedType: { SpecialType: SpecialType.System_SByte }, MarshallingAttributeInfo: null or MarshalAsInfo { UnmanagedType: UnmanagedType.I1 } }
+                    or { ManagedType: { SpecialType: SpecialType.System_Byte }, MarshallingAttributeInfo: null or MarshalAsInfo { UnmanagedType: UnmanagedType.U1 } }
+                    or { ManagedType: { SpecialType: SpecialType.System_Int16 }, MarshallingAttributeInfo: null or MarshalAsInfo { UnmanagedType: UnmanagedType.I2 } }
+                    or { ManagedType: { SpecialType: SpecialType.System_UInt16 }, MarshallingAttributeInfo: null or MarshalAsInfo { UnmanagedType: UnmanagedType.U2 } }
+                    or { ManagedType: { SpecialType: SpecialType.System_Int32 }, MarshallingAttributeInfo: null or MarshalAsInfo { UnmanagedType: UnmanagedType.I4 } }
+                    or { ManagedType: { SpecialType: SpecialType.System_UInt32 }, MarshallingAttributeInfo: null or MarshalAsInfo { UnmanagedType: UnmanagedType.U4 } }
+                    or { ManagedType: { SpecialType: SpecialType.System_Int64 }, MarshallingAttributeInfo: null or MarshalAsInfo { UnmanagedType: UnmanagedType.I8 } }
+                    or { ManagedType: { SpecialType: SpecialType.System_UInt64 }, MarshallingAttributeInfo: null or MarshalAsInfo { UnmanagedType: UnmanagedType.U8 } }
+                    or { ManagedType: { SpecialType: SpecialType.System_IntPtr }, MarshallingAttributeInfo: null }
+                    or { ManagedType: { SpecialType: SpecialType.System_UIntPtr }, MarshallingAttributeInfo: null}
+                    or { ManagedType: { SpecialType: SpecialType.System_Single }, MarshallingAttributeInfo: null or MarshalAsInfo { UnmanagedType: UnmanagedType.R4 } }
+                    or { ManagedType: { SpecialType: SpecialType.System_Double }, MarshallingAttributeInfo: null or MarshalAsInfo { UnmanagedType: UnmanagedType.R8 } }:
+                    generator = Blittable;
                     return true;
 
-                case SpecialType.System_Boolean:
-                    generator = MarshallingGenerators.Bool;
+                case { ManagedType: { SpecialType: SpecialType.System_Boolean }, MarshallingAttributeInfo: null }:
+                    generator = CBool;
                     return true;
+                case { ManagedType: { SpecialType: SpecialType.System_Boolean }, MarshallingAttributeInfo: MarshalAsInfo { UnmanagedType: UnmanagedType.I1 or UnmanagedType.U1 } }:
+                    generator = CBool;
+                    return true;
+                case { ManagedType: { SpecialType: SpecialType.System_Boolean }, MarshallingAttributeInfo: MarshalAsInfo { UnmanagedType: UnmanagedType.I4 or UnmanagedType.U4 } }:
+                    generator = WinBool;
+                    return true;
+                case { ManagedType: { SpecialType: SpecialType.System_Boolean }, MarshallingAttributeInfo: MarshalAsInfo { UnmanagedType: UnmanagedType.VariantBool } }:
+                    generator = VariantBool;
+                    return true;
+
+                case { ManagedType: { TypeKind: TypeKind.Delegate }, MarshallingAttributeInfo: null or MarshalAsInfo { UnmanagedType: UnmanagedType.FunctionPtr } }:
+                    generator = Delegate;
+                    return true;
+
+                case { MarshallingAttributeInfo: BlittableTypeAttributeInfo _ }:
+                    generator = Blittable;
+                    return true;
+
+                // Marshalling in new model    
+                case { MarshallingAttributeInfo: NativeMarshallingAttributeInfo marshalInfo }:
+                    generator = Forwarder;
+                    return false;
+
+                // Simple marshalling with new attribute model, only have type name.
+                case { MarshallingAttributeInfo: GeneratedNativeMarshallingAttributeInfo { NativeMarshallingFullyQualifiedTypeName: string name } }:
+                    generator = Forwarder;
+                    return false;
+
                 default:
-                    generator = MarshallingGenerators.Forwarder;
+                    generator = Forwarder;
                     return false;
             }
 #endif

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 
@@ -16,19 +17,78 @@ namespace Microsoft.Interop
             CurrentStage = stage;
         }
 
+        public override bool PinningSupported => true;
+
+        public override bool StackSpaceUsable => true;
+
+        /// <summary>
+        /// Identifier for managed return value
+        /// </summary>
+        public const string ReturnIdentifier = "__retVal";
+
+        /// <summary>
+        /// Identifier for native return value
+        /// </summary>
+        /// <remarks>Same as the managed identifier by default</remarks>
+        public string ReturnNativeIdentifier { get; private set; } = ReturnIdentifier;
+
+        private const string InvokeReturnIdentifier = "__invokeRetVal";
+
+        /// <summary>
+        /// Generate an identifier for the native return value and update the context with the new value
+        /// </summary>
+        /// <returns>Identifier for the native return value</returns>
+        public void GenerateReturnNativeIdentifier()
+        {
+            if (CurrentStage != Stage.Setup)
+                throw new InvalidOperationException();
+
+            // Update the native identifier for the return value
+            ReturnNativeIdentifier = $"{ReturnIdentifier}{GeneratedNativeIdentifierSuffix}";
+        }
+
+        public override (string managed, string native) GetIdentifiers(TypePositionInfo info)
+        {
+            if (info.IsManagedReturnPosition && !info.IsNativeReturnPosition)
+            {
+                return (ReturnIdentifier, ReturnNativeIdentifier);
+            }
+            else if (!info.IsManagedReturnPosition && info.IsNativeReturnPosition)
+            {
+                return (InvokeReturnIdentifier, InvokeReturnIdentifier);
+            }
+            else if (info.IsManagedReturnPosition && info.IsNativeReturnPosition)
+            {
+                return (ReturnIdentifier, ReturnNativeIdentifier);
+            }
+            else
+            {
+                // If the info isn't in either the managed or native return position,
+                // then we can use the base implementation since we have an identifier name provided
+                // in the original metadata.
+                return base.GetIdentifiers(info);
+            }
+        }
+
         public static (BlockSyntax Code, MethodDeclarationSyntax DllImport) GenerateSyntax(
             IMethodSymbol stubMethod,
             IEnumerable<TypePositionInfo> paramsTypeInfo,
             TypePositionInfo retTypeInfo)
         {
             Debug.Assert(retTypeInfo.IsNativeReturnPosition);
+            
+            var context = new StubCodeGenerator(Stage.Setup);
 
             string dllImportName = stubMethod.Name + "__PInvoke__";
-            var paramMarshallers = paramsTypeInfo.Select(p => GetMarshalInfo(p)).ToList();
-            var retMarshaller = GetMarshalInfo(retTypeInfo);
+            var paramMarshallers = paramsTypeInfo.Select(p => GetMarshalInfo(p, context)).ToList();
+            var retMarshaller = GetMarshalInfo(retTypeInfo, context);
 
-            var context = new StubCodeGenerator(Stage.Setup);
             var statements = new List<StatementSyntax>();
+
+            if (retMarshaller.Generator.UsesNativeIdentifier(retTypeInfo, context))
+            {
+                context.GenerateReturnNativeIdentifier();
+            }
 
             foreach (var marshaller in paramMarshallers)
             {
@@ -79,6 +139,7 @@ namespace Microsoft.Interop
                 Stage.Marshal,
                 Stage.Pin,
                 Stage.Invoke,
+                Stage.KeepAlive,
                 Stage.Unmarshal,
                 Stage.Cleanup
             };
@@ -196,10 +257,10 @@ namespace Microsoft.Interop
             return (codeBlock, dllImport);
         }
 
-        private static (TypePositionInfo TypeInfo, IMarshallingGenerator Generator) GetMarshalInfo(TypePositionInfo info)
+        private static (TypePositionInfo TypeInfo, IMarshallingGenerator Generator) GetMarshalInfo(TypePositionInfo info, StubCodeContext context)
         {
             IMarshallingGenerator generator;
-            if (!MarshallingGenerators.TryCreate(info, out generator))
+            if (!MarshallingGenerators.TryCreate(info, context, out generator))
             {
                 // [TODO] Report warning
             }

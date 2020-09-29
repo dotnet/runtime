@@ -569,7 +569,7 @@ struct Native
 }";
 
             await VerifyCS.VerifyAnalyzerAsync(source,
-                VerifyCS.Diagnostic(StackallocMarshallingShouldSupportAllocatingMarshallingFallbackRule).WithSpan(11, 1, 15, 2).WithArguments("Native"));
+                VerifyCS.Diagnostic(StackallocMarshallingShouldSupportAllocatingMarshallingFallbackRule).WithSpan(11, 1, 17, 2).WithArguments("Native"));
         }
 
         [Fact]
@@ -596,7 +596,7 @@ struct Native
 }";
 
             await VerifyCS.VerifyAnalyzerAsync(source,
-                VerifyCS.Diagnostic(StackallocMarshallingShouldSupportAllocatingMarshallingFallbackRule).WithSpan(12, 1, 17, 2).WithArguments("Native"),
+                VerifyCS.Diagnostic(StackallocMarshallingShouldSupportAllocatingMarshallingFallbackRule).WithSpan(12, 1, 19, 2).WithArguments("Native"),
                 VerifyCS.Diagnostic(GetPinnableReferenceShouldSupportAllocatingMarshallingFallbackRule).WithSpan(5, 2, 5, 35).WithArguments("S", "Native"));
         }
 

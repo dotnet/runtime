@@ -30,5 +30,7 @@ namespace Microsoft.Interop
         {
             return Array.Empty<StatementSyntax>();
         }
+
+        public bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context) => false;
     }
 }

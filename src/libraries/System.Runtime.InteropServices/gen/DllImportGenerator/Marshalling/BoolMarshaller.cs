@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 using Microsoft.CodeAnalysis;
@@ -8,24 +9,23 @@ using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop
 {
-    internal class BoolMarshaller : IMarshallingGenerator
+    internal abstract class BoolMarshallerBase : IMarshallingGenerator
     {
+        private readonly PredefinedTypeSyntax _nativeType;
+        private readonly int _trueValue;
+        private readonly int _falseValue;
+
+        protected BoolMarshallerBase(PredefinedTypeSyntax nativeType, int trueValue, int falseValue)
+        {
+            _nativeType = nativeType;
+            _trueValue = trueValue;
+            _falseValue = falseValue;
+        }
+
         public TypeSyntax AsNativeType(TypePositionInfo info)
         {
-            var syntax = SyntaxKind.ByteKeyword;
-            if (info.MarshalAsInfo != null)
-            {
-                syntax = info.MarshalAsInfo.UnmanagedType switch
-                {
-                    UnmanagedType.Bool => SyntaxKind.IntKeyword,
-                    UnmanagedType.U1 => SyntaxKind.ByteKeyword,
-                    UnmanagedType.I1 => SyntaxKind.SByteKeyword,
-                    UnmanagedType.VariantBool => SyntaxKind.ShortKeyword,
-                    _ => SyntaxKind.ByteKeyword
-                };
-            }
-
-            return PredefinedType(Token(syntax));
+            Debug.Assert(info.ManagedType.SpecialType == SpecialType.System_Boolean);
+            return _nativeType;
         }
 
         public ParameterSyntax AsParameter(TypePositionInfo info)
@@ -57,9 +57,6 @@ namespace Microsoft.Interop
             switch (context.CurrentStage)
             {
                 case StubCodeContext.Stage.Setup:
-                    if (info.IsManagedReturnPosition)
-                        nativeIdentifier = context.GenerateReturnNativeIdentifier();
-
                     yield return LocalDeclarationStatement(
                         VariableDeclaration(
                             AsNativeType(info),
@@ -67,7 +64,7 @@ namespace Microsoft.Interop
 
                     break;
                 case StubCodeContext.Stage.Marshal:
-                    // <nativeIdentifier> = (<nativeType>)(<managedIdentifier> ? 1 : 0);
+                    // <nativeIdentifier> = (<nativeType>)(<managedIdentifier> ? _trueValue : _falseValue);
                     if (info.RefKind != RefKind.Out)
                     {
                         yield return ExpressionStatement(
@@ -78,13 +75,13 @@ namespace Microsoft.Interop
                                     AsNativeType(info),
                                     ParenthesizedExpression(
                                         ConditionalExpression(IdentifierName(managedIdentifier),
-                                            LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(1)),
-                                            LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(0)))))));
+                                            LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(_trueValue)),
+                                            LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(_falseValue)))))));
                     }
 
                     break;
                 case StubCodeContext.Stage.Unmarshal:
-                    if (info.IsManagedReturnPosition || info.IsByRef)
+                    if (info.IsManagedReturnPosition || (info.IsByRef && info.RefKind != RefKind.In))
                     {
                         // <managedIdentifier> = <nativeIdentifier> != 0;
                         yield return ExpressionStatement(
@@ -94,12 +91,40 @@ namespace Microsoft.Interop
                                 BinaryExpression(
                                     SyntaxKind.NotEqualsExpression,
                                     IdentifierName(nativeIdentifier),
-                                    LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(0)))));
+                                    LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(_falseValue)))));
                     }
                     break;
                 default:
                     break;
             }
+        }
+
+        public bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context) => true;
+    }
+
+    internal class CBoolMarshaller : BoolMarshallerBase
+    {
+        public CBoolMarshaller()
+            : base(PredefinedType(Token(SyntaxKind.ByteKeyword)), 0, 1)
+        {
+        }
+    }
+
+    internal class WinBoolMarshaller : BoolMarshallerBase
+    {
+        public WinBoolMarshaller()
+            : base(PredefinedType(Token(SyntaxKind.IntKeyword)), 0, 1)
+        {
+        }
+    }
+    
+    internal class VariantBoolMarshaller : BoolMarshallerBase
+    {
+        private const short VARIANT_TRUE = -1;
+        private const short VARIANT_FALSE = 0;
+        public VariantBoolMarshaller()
+            : base(PredefinedType(Token(SyntaxKind.ShortKeyword)), VARIANT_TRUE, VARIANT_FALSE)
+        {
         }
     }
 }

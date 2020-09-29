@@ -365,5 +365,27 @@ partial class Test
     [GeneratedDllImport(""DoesNotExist"", PreserveSig = false)]
     public static partial void Method();
 }}";
+
+        public static string DelegateParametersAndModifiers = BasicParametersAndModifiers("MyDelegate") + @"
+delegate int MyDelegate(int a);";
+        public static string DelegateMarshalAsParametersAndModifiers = MarshalAsParametersAndModifiers("MyDelegate", UnmanagedType.FunctionPtr) + @"
+delegate int MyDelegate(int a);";
+
+        public static string BlittableStructParametersAndModifiers = BasicParametersAndModifiers("MyStruct") + @"
+#pragma warning disable CS0169
+[BlittableType]
+struct MyStruct
+{
+    private int i;
+    private short s;
+}";
+        public static string GenericBlittableStructParametersAndModifiers = BasicParametersAndModifiers("MyStruct<int>") + @"
+#pragma warning disable CS0169
+[BlittableType]
+struct MyStruct<T>
+{
+    private T t;
+    private short s;
+}";
     }
 }
