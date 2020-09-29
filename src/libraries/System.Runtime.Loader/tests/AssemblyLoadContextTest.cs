@@ -78,6 +78,7 @@ namespace System.Runtime.Loader.Tests
             var asm = loadContext.LoadFromAssemblyName(asmName);
 
             Assert.NotNull(asm);
+            Assert.Same(loadContext, AssemblyLoadContext.GetLoadContext(asm));
             Assert.Contains(asm.DefinedTypes, t => t.Name == "TestClass");
         }
 
@@ -91,6 +92,7 @@ namespace System.Runtime.Loader.Tests
             var asm = loadContext.LoadFromAssemblyName(asmName);
 
             Assert.NotNull(asm);
+            Assert.Same(loadContext, AssemblyLoadContext.GetLoadContext(asm));
             Assert.Contains(asm.DefinedTypes, t => t.Name == "TestClass");
         }
 
@@ -122,6 +124,23 @@ namespace System.Runtime.Loader.Tests
         }
 
         [Fact]
+        public static void LoadFromAssemblyName_FallbackToDefaultContext()
+        {
+            var asmName = typeof(System.Linq.Enumerable).Assembly.GetName();
+            asmName.CodeBase = null;
+            var loadContext = new AssemblyLoadContext("FallbackToDefaultContextTest");
+
+            // This should not have any special handlers, so it should just find the version in the default context
+            var asm = loadContext.LoadFromAssemblyName(asmName);
+            Assert.NotNull(asm);
+            var loadedContext = AssemblyLoadContext.GetLoadContext(asm);
+            Assert.NotNull(loadedContext);
+            Assert.Same(AssemblyLoadContext.Default, loadedContext);
+            Assert.NotEqual(loadContext, loadedContext);
+            Assert.Same(typeof(System.Linq.Enumerable).Assembly, asm);
+        }
+
+        [Fact]
         public static void GetLoadContextTest_ValidUserAssembly()
         {
             var asmName = new AssemblyName(TestAssembly);
@@ -141,6 +160,7 @@ namespace System.Runtime.Loader.Tests
             var context = AssemblyLoadContext.GetLoadContext(asm);
 
             Assert.NotNull(context);
+            Assert.Same(AssemblyLoadContext.Default, context);
         }
 
         [Fact]
