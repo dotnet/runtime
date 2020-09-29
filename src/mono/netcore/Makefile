@@ -27,14 +27,12 @@ MONO_PROJ=/p:CoreClrTestConfig=$(CORECLR_TESTS_CONFIG) /p:LibrariesTestConfig=$(
 
 # run sample using local .dotnet-mono
 # build it with .dotnet first in order to be able to use LLVM only for the actual sample
-run-sample: patch-mono-dotnet
-	$(DOTNET) build -c Release sample/HelloWorld
-	MONO_ENV_OPTIONS="--llvm" COMPlus_DebugWriteToStdErr=1 \
-	$(DOTNET_MONO) sample/HelloWorld/bin/HelloWorld.dll
+run-sample:
+	cd sample/HelloWorld && make run
 
 # run sample using local .dotnet (coreclr)
 run-sample-coreclr:
-	$(DOTNET) run -c Debug -p sample/HelloWorld
+	$(DOTNET) run -c Release -p sample/HelloWorld
 
 # build System.Private.CoreLib.dll
 bcl corelib:
@@ -43,14 +41,6 @@ bcl corelib:
 # build runtime and copy to artifacts
 runtime:
 	../../.././build.sh -c $(MONO_RUNTIME_CONFIG) -subset Mono.Runtime
-
-# call it if you want to use $(DOTNET_MONO) in this Makefile
-patch-mono-dotnet:
-	$(DOTNET) msbuild /t:PatchLocalMonoDotnet $(MONO_PROJ)
-
-# precompile (AOT) managed libs in .dotnet-mono
-patch-mono-dotnet-aot:
-	$(DOTNET) msbuild /t:PrecompileLocalMonoDotnetBcl $(MONO_PROJ)
 
 # copy mono runtime bits from artifacts to $(DST)
 copy-runtime-files-to:
@@ -71,17 +61,3 @@ run-tests-coreclr-all:
 # for `System.Runtime.Tests` (the rule builds both the lib and the test if needed)
 run-tests-corefx-%:
 	$(DOTNET) msbuild /t:RunLibrariesTest /p:LibraryToTest=$* $(MONO_PROJ)
-
-# precompile (AOT) all libraries' tests
-aot-tests-corefx:
-	$(DOTNET) msbuild /t:PrecompileLibrariesTests $(MONO_PROJ)
-
-# precompile (AOT) all libraries inside testhost (it's used for libraries' tests)
-aot-testhost-corefx:
-	$(DOTNET) msbuild /t:PrecompileTesthostLibraries $(MONO_PROJ)
-
-# run 'dotnet/performance' benchmarks
-# e.g. 'make run-benchmarks BenchmarksRepo=/prj/performance'
-# you can append BDN parameters at the end, e.g. ` -- --filter Burgers --keepFiles`
-run-benchmarks: patch-local-dotnet
-	$(DOTNET) msbuild /t:RunBenchmarks /p:BenchmarksRepo=$(BenchmarksRepo)
