@@ -12,6 +12,56 @@ namespace System.Net.Quic
         public static Implementations.QuicImplementationProvider MsQuic => throw null;
         public static Implementations.QuicImplementationProvider Default => throw null;
     }
+    public sealed class QuicListener : IDisposable
+    {
+        public QuicListener(IPEndPoint listenEndPoint, System.Net.Security.SslServerAuthenticationOptions sslServerAuthenticationOptions) => throw null;
+        public QuicListener(Implementations.QuicImplementationProvider implementationProvider, IPEndPoint listenEndPoint, System.Net.Security.SslServerAuthenticationOptions sslServerAuthenticationOptions) => throw null;
+        public QuicListener(Implementations.QuicImplementationProvider implementationProvider, QuicListenerOptions options) => throw null;
+        public IPEndPoint ListenEndPoint => throw null;
+        public System.Threading.Tasks.ValueTask<QuicConnection> AcceptConnectionAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public void Start() => throw null;
+        public void Close() => throw null;
+        public void Dispose() => throw null;
+    }
+    public class QuicListenerOptions
+    {
+        public System.Net.Security.SslServerAuthenticationOptions? ServerAuthenticationOptions { get => throw null; set => throw null; }
+        public string? CertificateFilePath { get => throw null; set => throw null; }
+        public string? PrivateKeyFilePath { get => throw null; set => throw null; }
+        public IPEndPoint? ListenEndPoint { get => throw null; set => throw null; }
+        public int ListenBacklog { get => throw null; set => throw null; }
+        public long MaxBidirectionalStreams { get => throw null; set => throw null; }
+        public long MaxUnidirectionalStreams { get => throw null; set => throw null; }
+        public TimeSpan IdleTimeout { get => throw null; set => throw null; }
+    }
+    public sealed class QuicConnection : IDisposable
+    {
+        public static bool IsQuicSupported => throw null;
+        public QuicConnection(System.Net.EndPoint remoteEndPoint, System.Net.Security.SslClientAuthenticationOptions? sslClientAuthenticationOptions, System.Net.IPEndPoint? localEndPoint = null) => throw null;
+        public QuicConnection(Implementations.QuicImplementationProvider implementationProvider, System.Net.EndPoint remoteEndPoint, System.Net.Security.SslClientAuthenticationOptions? sslClientAuthenticationOptions, System.Net.IPEndPoint? localEndPoint = null) => throw null;
+        public QuicConnection(Implementations.QuicImplementationProvider implementationProvider, QuicClientConnectionOptions options) => throw null;
+        public bool Connected => throw null;
+        public System.Net.IPEndPoint LocalEndPoint => throw null;
+        public System.Net.EndPoint RemoteEndPoint => throw null;
+        public System.Net.Security.SslApplicationProtocol NegotiatedApplicationProtocol => throw null;
+        public System.Threading.Tasks.ValueTask ConnectAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public QuicStream OpenUnidirectionalStream() => throw null;
+        public QuicStream OpenBidirectionalStream() => throw null;
+        public System.Threading.Tasks.ValueTask<QuicStream> AcceptStreamAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public System.Threading.Tasks.ValueTask CloseAsync(long errorCode, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public void Dispose() => throw null;
+        public long GetRemoteAvailableUnidirectionalStreamCount() => throw null;
+        public long GetRemoteAvailableBidirectionalStreamCount() => throw null;
+    }
+    public class QuicClientConnectionOptions
+    {
+        public System.Net.Security.SslClientAuthenticationOptions? ClientAuthenticationOptions { get => throw null; set => throw null; }
+        public IPEndPoint? LocalEndPoint { get => throw null; set => throw null; }
+        public EndPoint? RemoteEndPoint { get => throw null; set => throw null; }
+        public long MaxBidirectionalStreams { get => throw null; set => throw null; }
+        public long MaxUnidirectionalStreams { get => throw null; set => throw null; }
+        public TimeSpan IdleTimeout { get => throw null; set => throw null; }
+    }
     public sealed class QuicStream : System.IO.Stream
     {
         internal QuicStream() => throw null;

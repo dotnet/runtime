@@ -9,7 +9,7 @@ namespace System.Net.Quic
     /// <summary>
     /// Options to provide to the <see cref="QuicListener"/>.
     /// </summary>
-    internal class QuicListenerOptions
+    public class QuicListenerOptions
     {
         /// <summary>
         /// Server Ssl options to use for ALPN, SNI, etc.
