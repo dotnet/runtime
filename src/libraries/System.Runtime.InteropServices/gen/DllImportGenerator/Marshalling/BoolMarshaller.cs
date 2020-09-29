@@ -105,7 +105,7 @@ namespace Microsoft.Interop
     internal class CBoolMarshaller : BoolMarshallerBase
     {
         public CBoolMarshaller()
-            : base(PredefinedType(Token(SyntaxKind.ByteKeyword)), 0, 1)
+            : base(PredefinedType(Token(SyntaxKind.ByteKeyword)), trueValue: 1, falseValue: 0)
         {
         }
     }
@@ -113,7 +113,7 @@ namespace Microsoft.Interop
     internal class WinBoolMarshaller : BoolMarshallerBase
     {
         public WinBoolMarshaller()
-            : base(PredefinedType(Token(SyntaxKind.IntKeyword)), 0, 1)
+            : base(PredefinedType(Token(SyntaxKind.IntKeyword)), trueValue: 1, falseValue: 0)
         {
         }
     }
