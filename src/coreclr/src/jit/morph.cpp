@@ -17591,7 +17591,9 @@ void Compiler::fgPromoteStructs()
     lvaStructPromotionInfo structPromotionInfo;
     bool                   tooManyLocalsReported = false;
 
-    // Clear the structPromotionHelper, since it is conservative about looking up SIMD info.
+    // Clear the structPromotionHelper, since it is used during inlining, at which point it
+    // may be conservative about looking up SIMD info.
+    // We don't want to preserve those conservative decisions for the actual struct promotion.
     structPromotionHelper->Clear();
 
     for (unsigned lclNum = 0; lclNum < startLvaCount; lclNum++)
