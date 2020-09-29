@@ -5270,6 +5270,7 @@ void MethodContext::recIsMoreSpecificType(CORINFO_CLASS_HANDLE cls1, CORINFO_CLA
     key.B = (DWORDLONG)cls2;
 
     IsMoreSpecificType->Add(key, (DWORD)result);
+    DEBUG_REC(dmpIsMoreSpecificType(key, (DWORD)result));
 }
 void MethodContext::dmpIsMoreSpecificType(DLDL key, DWORD value)
 {
@@ -5293,6 +5294,7 @@ BOOL MethodContext::repIsMoreSpecificType(CORINFO_CLASS_HANDLE cls1, CORINFO_CLA
 
     value = IsMoreSpecificType->Get(key);
 
+    DEBUG_REP(dmpIsMoreSpecificType(key, value));
     return (BOOL)value;
 }
 
