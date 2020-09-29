@@ -20,7 +20,7 @@ public class ApkBuilder
     public bool StripDebugSymbols { get; set; }
 
     public (string apk, string packageId) BuildApk(
-        string sourceDir, string abi, string entryPointLibDir, string entryPointLib, string monoRuntimeHeaders)
+        string sourceDir, string abi, string entryPointLib, string monoRuntimeHeaders)
     {
         if (!Directory.Exists(sourceDir))
             throw new ArgumentException($"sourceDir='{sourceDir}' is empty or doesn't exist");
