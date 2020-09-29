@@ -3,8 +3,6 @@ ifeq ($(wildcard ../../../.dotnet),)
 endif
 
 DOTNET := $(shell bash init-tools.sh | tail -1)
-# DOTNET_MONO is a copy of DOTNET (local .dotnet) with Mono Runtime bits (see patch-mono-dotnet rule)
-DOTNET_MONO = ../../../.dotnet-mono/dotnet
 
 LIBRARIES_TESTS_CONFIG=Release
 CORECLR_TESTS_CONFIG=Release
@@ -60,4 +58,6 @@ run-tests-coreclr-all:
 #   make run-tests-corefx-System.Runtime 
 # for `System.Runtime.Tests` (the rule builds both the lib and the test if needed)
 run-tests-corefx-%:
-	$(DOTNET) msbuild /t:RunLibrariesTest /p:LibraryToTest=$* $(MONO_PROJ)
+	$(DOTNET) msbuild /t:PatchLibrariesTesthost $(MONO_PROJ)
+	$(DOTNET) build ../../../src/libraries/$*/tests -c $(LIBRARIES_TESTS_CONFIG) /p:RuntimeFlavor=mono /t:Test
+
