@@ -261,7 +261,7 @@ def copy_files(src_path, dst_path, file_names):
 
     print('### Copying below files to {0}:'.format(dst_path))
     print('')
-    print(os.linesep.join(file_names))
+    print(file_names)
     for f in file_names:
         # Create same structure in dst so we don't clobber same files names present in different directories
         dst_path_of_file = f.replace(src_path, dst_path)

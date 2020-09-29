@@ -89,8 +89,8 @@ jobs:
     
     - template: /eng/pipelines/coreclr/run-superpmi-job.yml
       parameters:
-        archType: $(archType)
-        osGroup: $(osGroup)
+        archType: ${{ parameters.archType }}
+        osGroup: ${{ parameters.osGroup }}
         osSubgroup: $(osSubgroup)
         helixSource: '$(HelixSourcePrefix)/$(Build.Repository.Name)/$(Build.SourceBranch)'
         helixType: 'test/superpmi/$(_Framework)/$(Architecture)'
@@ -111,8 +111,8 @@ jobs:
 
     - template: /eng/pipelines/coreclr/run-superpmi-job.yml
       parameters:
-        archType: $(archType)
-        osGroup: $(osGroup)
+        archType: ${{ parameters.archType }}
+        osGroup: ${{ parameters.osGroup }}
         osSubgroup: $(osSubgroup)
         HelixSource: '$(HelixSourcePrefix)/$(Build.Repository.Name)/$(Build.SourceBranch)'
         HelixType: 'test/superpmi/$(_Framework)/$(Architecture)'
