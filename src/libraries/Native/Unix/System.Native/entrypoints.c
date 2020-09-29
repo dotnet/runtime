@@ -253,5 +253,6 @@ FCFuncStart(gEmbedded_Sys)
     // more trimmed
     QCFuncElement("GetNonCryptographicallySecureRandomBytes", "SystemNative_GetNonCryptographicallySecureRandomBytes")
     QCFuncElement("GetCryptographicallySecureRandomBytes", "SystemNative_GetCryptographicallySecureRandomBytes")
+    QCFuncElement("Sync", "SystemNative_Sync")
 FCFuncEnd()
 
