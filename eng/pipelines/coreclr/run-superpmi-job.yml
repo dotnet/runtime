@@ -13,8 +13,8 @@ parameters:
   helixSource: ''                 # sources must start with pr/, official/, prodcon/, or agent/
   helixType: ''                   # required -- helix type
   helixTargetQueues: ''           # required -- helix target queue to run the job on
-  creator: ''                     # required -- creator
-  helixAccessToken: ''            # required -- access token to make Helix API requests; should be provided by the appropriate variable group
+  Creator: ''                     # required -- creator
+  HelixAccessToken: ''            # required -- access token to make Helix API requests; should be provided by the appropriate variable group
   workItemTimeout: 4:00           # optional -- work item timeout
   workItemDirectory: ''           # required -- work item directory
   correlationPayloadDirectory: '' # required -- correlation payload directory
@@ -33,9 +33,9 @@ steps:
       HelixSource: ${{ parameters.helixSource }}
       HelixType: ${{ parameters.helixType }}
       HelixPreCommands: ''
-      HelixAccessToken: ${{ parameters.helixAccessToken }}
+      HelixAccessToken: ${{ parameters.HelixAccessToken }}
       HelixTargetQueues: ${{ parameters.helixTargetQueues }}
-      Creator: ${{ parameters.creator }}
+      Creator: ${{ parameters.Creator }}
       WorkItemTimeout: ${{ parameters.workItemTimeout }}
       WorkItemDirectory: ${{ parameters.workItemDirectory }}
       CorrelationPayloadDirectory: ${{ parameters.correlationPayloadDirectory}}
