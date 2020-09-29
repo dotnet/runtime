@@ -57,12 +57,12 @@
   <ItemGroup>
     <!-- libraries payload -->
     <PartitionDirectories Include="$([System.IO.Directory]::GetDirectories($(PmiAssembliesSubDirectory)))"/>
-    <Partition Include="@(PartitionDirectories -> '%(Filename)')" PmiAssemblies="Core_Root$(FileSeparatorChar)%(Filename)" OutputMchName="$(OutputSPMICollectionName).pmi" PartitionId="%(Filename)" />
+    <Partition Include="@(PartitionDirectories -> '%(Filename)')" PmiAssemblies="Core_Root$(FileSeparatorChar)%(Filename)" PartitionId="%(Filename)" />
   </ItemGroup>
 
   <ItemGroup>
     <HelixWorkItem Include="@(Partition)">
-      <OutputFileName>%(HelixWorkItem.OutputMchName).$(MchFileTag).%(HelixWorkItem.PartitionId)</OutputFileName>
+      <OutputFileName>%(HelixWorkItem.PartitionId).$(MchFileTag)</OutputFileName>
       <PayloadDirectory>$(PmiAssembliesPayload)$(FileSeparatorChar)%(HelixWorkItem.PmiAssemblies)</PayloadDirectory>
       <Command>$(WorkItemCommand) -output_mch_path $(OutputMchPath)$(FileSeparatorChar)%(OutputFileName).mch -log_file $(OutputMchPath)$(FileSeparatorChar)%(OutputFileName).log</Command>
       <Timeout>$(WorkItemTimeout)</Timeout>
@@ -82,8 +82,8 @@
 <!--    
    <PropertyGroup>
      <HelixTargetQueues>Some_Queue</HelixTargetQueues>
-     <PmiAssembliesSubDirectory>D:\git\runtime\workitem-unix\pmiAssembliesDirectory\Tests</PmiAssembliesSubDirectory>
-     <OutputSPMICollectionName>tests</OutputSPMICollectionName>
+     <PmiAssembliesSubDirectory>D:\git\runtime\workitem\pmiAssembliesDirectory\Tests</PmiAssembliesSubDirectory>
+     <MchFileTag>Windows_NT.x64.Checked</MchFileTag>
    </PropertyGroup>
   <Target Name="printItems">
         <Message Text="@(HelixWorkItem -> 'name: %(HelixWorkItem.Identity)

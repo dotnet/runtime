@@ -21,7 +21,6 @@ parameters:
   continueOnError: false                 # optional -- determines whether to continue the build if the step errors; defaults to false
   BuildConfig: 'checked'                 # optional -- Mostly, superpmi will be run on checked builds
   PmiAssembliesSubDirectory: ''
-  OutputSPMICollectionName: ''
 
 steps:
 - template: /eng/pipelines/common/templates/runtimes/send-to-helix-inner-step.yml
@@ -35,7 +34,6 @@ steps:
       MchFileTag: $(MchFileTag)
       BuildConfig:  ${{ parameters.BuildConfig }}
       PmiAssembliesSubDirectory: ${{ parameters.PmiAssembliesSubDirectory }}
-      OutputSPMICollectionName: ${{ parameters.OutputSPMICollectionName }}
       HelixSource: ${{ parameters.HelixSource }}
       HelixType: ${{ parameters.HelixType }}
       HelixBuild: ${{ parameters.HelixBuild }}
