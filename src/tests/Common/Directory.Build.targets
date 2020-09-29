@@ -41,7 +41,7 @@
       <RunTimeArtifactsExcludeFiles Include="PDB/mscordaccore.pdb" />
       <RunTimeArtifactsExcludeFiles Include="PDB/mscordbi.pdb" />
       <RunTimeArtifactsExcludeFiles Include="PDB/mscorrc.pdb" />
-      <RunTimeArtifactsExcludeFiles Include="PDB/protononjit.pdb" />
+      <RunTimeArtifactsExcludeFiles Include="PDB/clrjit_*.pdb" />
       <RunTimeArtifactsExcludeFiles Include="PDB/superpmi.pdb" />
       <RunTimeArtifactsExcludeFiles Include="PDB/superpmi-shim-collector.pdb" />
       <RunTimeArtifactsExcludeFiles Include="PDB/superpmi-shim-counter.pdb" />
