@@ -12,8 +12,7 @@ run:
 	/p:TargetArchitecture=$(MONO_ARCH) \
 	/p:TargetOS=Android \
 	/p:Configuration=$(MONO_CONFIG) \
-	/p:DeployAndRun=true \
-	Program.csproj
+	/p:DeployAndRun=true
 
 clean:
 	rm -rf bin

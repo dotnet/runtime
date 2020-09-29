@@ -1,14 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk" DefaultTargets="BuildApp">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <OutputPath>bin</OutputPath>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <TargetArchitecture Condition="'$(TargetArchitecture)'==''">x64</TargetArchitecture>
     <TargetOS>Android</TargetOS>
     <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.android-$(TargetArchitecture)\$(Configuration)\runtimes\android-$(TargetArchitecture)\</MicrosoftNetCoreAppRuntimePackDir>
-    <BuildDir>$(MSBuildThisFileDirectory)obj\$(Configuration)\android</BuildDir>
-    <AppDir>$(MSBuildThisFileDirectory)bin\$(Configuration)\publish</AppDir>
     <NoWarn>$(NoWarn),CA1050</NoWarn>
   </PropertyGroup>
 
@@ -35,7 +32,7 @@
       <StripDebugSymbols>False</StripDebugSymbols>
       <StripDebugSymbols Condition="'$(Configuration)' == 'Release'">True</StripDebugSymbols>
       <AdbTool>$(ANDROID_SDK_ROOT)\platform-tools\adb</AdbTool>
-      <ApkDir>$(MSBuildThisFileDirectory)bin\apk</ApkDir>
+      <ApkDir>$(OutputPath)apk</ApkDir>
     </PropertyGroup>
 
     <ItemGroup>
@@ -47,11 +44,11 @@
     <RemoveDir Directories="$(ApkDir)" />
 
     <AndroidAppBuilderTask
-        SourceDir="$(MSBuildThisFileDirectory)bin"
+        SourceDir="$(OutputPath)"
         Abi="$(AndroidAbi)"
         ProjectName="HelloAndroid"
         MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackDir)\native\include\mono-2.0"
-        MainLibraryFileName="Program.dll"
+        MainLibraryFileName="$(AssemblyName).dll"
         StripDebugSymbols="$(StripDebugSymbols)"
         AssemblySearchPaths="@(AssemblySearchPaths)"
         OutputDir="$(ApkDir)">
