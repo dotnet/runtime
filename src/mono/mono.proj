@@ -814,20 +814,14 @@
     <Message Text="Copying Mono Runtime artifacts from '$(BinDir)' to '$(Destination)'.'" Importance="High" />
     <Copy SourceFiles="@(_MonoRuntimeArtifacts)" 
           DestinationFolder="$(Destination)"
-          OverwriteReadOnlyFiles="true" />
+          OverwriteReadOnlyFiles="true"
+          SkipUnchangedFiles="true" />
   </Target>
 
   <!-- Copy Mono runtime bits to the coreclr's Core_Root in order to run runtime tests -->
   <Target Name="PatchCoreClrCoreRoot">
     <MSBuild Projects="$(MSBuildProjectFullPath)"
              Properties="Destination=$(CoreClrTestCoreRoot)"
-             Targets="CopyMonoRuntimeFilesFromArtifactsToDestination" />
-  </Target>
-
-  <!-- Copy Mono runtime bits to the coreclr's Core_Root in order to run runtime tests -->
-  <Target Name="PatchLibrariesTesthost">
-    <MSBuild Projects="$(MSBuildProjectFullPath)"
-             Properties="Destination=$(LibrariesTesthostRuntimeDir)"
              Targets="CopyMonoRuntimeFilesFromArtifactsToDestination" />
   </Target>
 
@@ -849,14 +843,6 @@
   <Target Name="RunCoreClrTests" DependsOnTargets="PatchCoreClrCoreRoot">
     <Exec Condition="'$(OS)' == 'Windows_NT'" Command="$(MonoProjectRoot)..\tests\run.cmd $(CoreClrTestConfig)" ContinueOnError="ErrorAndContinue" />
     <Exec Condition="'$(OS)' != 'Windows_NT'" Command="$(MonoProjectRoot)../tests/run.sh $(CoreClrTestConfig)" ContinueOnError="ErrorAndContinue" />
-  </Target>
-
-  <!-- Run Libraries tests using testhost -->
-  <Target Name="RunLibrariesTest" DependsOnTargets="PatchLibrariesTesthost">
-    <Error Condition="$(LibraryToTest) == ''" Text="LibraryToTest variable is not set" />
-    <Error Condition="$(LibraryToTest.EndsWith('.Tests'))" Text="LibraryToTest should not end with .Tests, e.g. just 'System.Runtime'" />
-    <MSBuild Projects="$(RepoRoot)src\libraries\$(LibraryToTest)\tests\$(LibraryToTest).Tests.csproj" 
-             Properties="Configuration=$(LibrariesTestConfig)" Targets="Test" />
   </Target>
 
   <Target Name="BuildMonoRuntimeCMake" Condition="'$(MonoEnableCMake)' == 'true'">
