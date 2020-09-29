@@ -60,18 +60,17 @@ namespace System.IO.FileSystem.DriveInfoTests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/dotnet/runtime/issues/18487
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Android)]
         public void PropertiesOfValidDrive()
         {
-            var rootdir = PlatformDetection.IsAndroid ?  "/storage" : "/";
-            var root = new DriveInfo(rootdir);
+            var root = new DriveInfo("/");
             var format = root.DriveFormat;
             Assert.Equal(PlatformDetection.IsBrowser ? DriveType.Unknown : DriveType.Fixed, root.DriveType);
             Assert.True(root.IsReady);
-            Assert.Equal(rootdir, root.Name);
-            Assert.Equal(rootdir, root.ToString());
-            Assert.Equal(rootdir, root.RootDirectory.FullName);
-            Assert.Equal(rootdir, root.VolumeLabel);
+            Assert.Equal("/", root.Name);
+            Assert.Equal("/", root.ToString());
+            Assert.Equal("/", root.RootDirectory.FullName);
+            Assert.Equal("/", root.VolumeLabel);
 
             if (PlatformDetection.IsBrowser)
             {
