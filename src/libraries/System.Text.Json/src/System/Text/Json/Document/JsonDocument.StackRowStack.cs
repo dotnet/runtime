@@ -14,20 +14,13 @@ namespace System.Text.Json
             private byte[]? _rentedBuffer;
             private int _topOfStack;
 
-            internal StackRowStack(int initialSize)
+            public void Initialize(int initialSize)
             {
-                if (initialSize == -1)
-                {
-                    // Used for primitive values that don't need a stack.
-                    _rentedBuffer = null;
-                    _topOfStack = 0;
-                }
-                else
-                {
-                    _rentedBuffer = ArrayPool<byte>.Shared.Rent(initialSize);
-                    _topOfStack = _rentedBuffer.Length;
-                }
+                _rentedBuffer = ArrayPool<byte>.Shared.Rent(initialSize);
+                _topOfStack = _rentedBuffer.Length;
             }
+
+            public bool IsInitialized { get { return _rentedBuffer != null; } }
 
             public void Dispose()
             {

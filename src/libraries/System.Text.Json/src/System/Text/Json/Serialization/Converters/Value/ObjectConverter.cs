@@ -12,7 +12,7 @@ namespace System.Text.Json.Serialization.Converters
 
         public override object Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            return JsonElement.Parse(ref reader);
+            return JsonElement.ParseValue(ref reader);
         }
 
         public override void Write(Utf8JsonWriter writer, object value, JsonSerializerOptions options)
@@ -42,7 +42,7 @@ namespace System.Text.Json.Serialization.Converters
 
         internal override object ReadNumberWithCustomHandling(ref Utf8JsonReader reader, JsonNumberHandling handling)
         {
-            return JsonElement.Parse(ref reader);
+            return JsonElement.ParseValue(ref reader);
         }
     }
 }

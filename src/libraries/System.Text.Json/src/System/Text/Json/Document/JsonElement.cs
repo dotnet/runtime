@@ -27,45 +27,9 @@ namespace System.Text.Json
             _idx = idx;
         }
 
-        /// <summary>
-        ///   Parses one JSON value (including objects or arrays) from the provided reader.
-        ///   This is intended to be used when the <see cref="JsonDocument.Dispose"/> pattern is not
-        ///   applicable. If the Dispose pattern is applicable, then use the <see cref="JsonDocument"/>
-        ///   Parse methods instead since they have better performance.
-        /// </summary>
-        /// <param name="reader">The reader to read.</param>
-        /// <returns>
-        ///   A JsonElement representing the value (and nested values) read from the reader.
-        /// </returns>
-        /// <remarks>
-        ///   <para>
-        ///     If the <see cref="Utf8JsonReader.TokenType"/> property of <paramref name="reader"/>
-        ///     is <see cref="JsonTokenType.PropertyName"/> or <see cref="JsonTokenType.None"/>, the
-        ///     reader will be advanced by one call to <see cref="Utf8JsonReader.Read"/> to determine
-        ///     the start of the value.
-        ///   </para>
-        ///
-        ///   <para>
-        ///     Upon completion of this method <paramref name="reader"/> will be positioned at the
-        ///     final token in the JSON value.  If an exception is thrown the reader is reset to
-        ///     the state it was in when the method was called.
-        ///   </para>
-        ///
-        ///   <para>
-        ///     This method makes a copy of the data the reader acted on, so there is no caller
-        ///     requirement to maintain data integrity beyond the return of this method.
-        ///   </para>
-        /// </remarks>
-        /// <exception cref="ArgumentException">
-        ///   <paramref name="reader"/> is using unsupported options.
-        /// </exception>
-        /// <exception cref="ArgumentException">
-        ///   The current <paramref name="reader"/> token does not start or represent a value.
-        /// </exception>
-        /// <exception cref="JsonException">
-        ///   A value could not be read from the reader.
-        /// </exception>
-        internal static JsonElement Parse(ref Utf8JsonReader reader)
+        // Currently used only as an optimization by the serializer, which does not want to
+        // return elements that are based on the <see cref="JsonDocument.Dispose"/> pattern.
+        internal static JsonElement ParseValue(ref Utf8JsonReader reader)
         {
             bool ret = JsonDocument.TryParseValue(ref reader, out JsonDocument? document, shouldThrow: true, useArrayPools: false);
 

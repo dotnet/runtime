@@ -428,6 +428,8 @@ namespace System.Text.Json
                         break;
                     }
 
+                    case JsonTokenType.False:
+                    case JsonTokenType.True:
                     case JsonTokenType.Null:
                         if (useArrayPools)
                         {
@@ -443,46 +445,7 @@ namespace System.Text.Json
                             break;
                         }
 
-                        s_nullLiteral ??= CreateForLiteral(JsonConstants.NullValue.ToArray(), reader.TokenType);
-                        document = s_nullLiteral;
-                        return true;
-
-                    case JsonTokenType.True:
-                        if (useArrayPools)
-                        {
-                            if (reader.HasValueSequence)
-                            {
-                                valueSequence = reader.ValueSequence;
-                            }
-                            else
-                            {
-                                valueSpan = reader.ValueSpan;
-                            }
-
-                            break;
-                        }
-
-                        s_trueLiteral ??= CreateForLiteral(JsonConstants.TrueValue.ToArray(), reader.TokenType);
-                        document = s_trueLiteral;
-                        return true;
-
-                    case JsonTokenType.False:
-                        if (useArrayPools)
-                        {
-                            if (reader.HasValueSequence)
-                            {
-                                valueSequence = reader.ValueSequence;
-                            }
-                            else
-                            {
-                                valueSpan = reader.ValueSpan;
-                            }
-
-                            break;
-                        }
-
-                        s_falseLiteral ??= CreateForLiteral(JsonConstants.FalseValue.ToArray(), reader.TokenType);
-                        document = s_falseLiteral;
+                        document = CreateForLiteral(reader.TokenType);
                         return true;
 
                     case JsonTokenType.Number:
@@ -622,11 +585,28 @@ namespace System.Text.Json
             return true;
         }
 
-        private static JsonDocument CreateForLiteral(byte[] utf8Json, JsonTokenType tokenType)
+        private static JsonDocument CreateForLiteral(JsonTokenType tokenType)
         {
-            MetadataDb database = MetadataDb.CreateLocked(utf8Json.Length);
-            database.Append(tokenType, startLocation: 0, utf8Json.Length);
-            return new JsonDocument(utf8Json, database, extraRentedBytes: null);
+            switch (tokenType)
+            {
+                case JsonTokenType.False:
+                    s_falseLiteral ??= Create(JsonConstants.FalseValue.ToArray());
+                    return s_falseLiteral;
+                case JsonTokenType.True:
+                    s_trueLiteral ??= Create(JsonConstants.TrueValue.ToArray());
+                    return s_trueLiteral;
+                default:
+                    Debug.Assert(tokenType == JsonTokenType.Null);
+                    s_nullLiteral ??= Create(JsonConstants.NullValue.ToArray());
+                    return s_nullLiteral;
+            }
+
+            JsonDocument Create(byte[] utf8Json)
+            {
+                MetadataDb database = MetadataDb.CreateLocked(utf8Json.Length);
+                database.Append(tokenType, startLocation: 0, utf8Json.Length);
+                return new JsonDocument(utf8Json, database, extraRentedBytes: null);
+            }
         }
 
         private static JsonDocument Parse(
@@ -636,20 +616,15 @@ namespace System.Text.Json
         {
             ReadOnlySpan<byte> utf8JsonSpan = utf8Json.Span;
             var database = MetadataDb.CreateRented(utf8Json.Length, convertToAlloc: false);
-            var stack = new StackRowStack(JsonDocumentOptions.DefaultMaxDepth * StackRow.Size);
 
             try
             {
-                Parse(utf8JsonSpan, readerOptions, ref database, ref stack);
+                Parse(utf8JsonSpan, readerOptions, ref database);
             }
             catch
             {
                 database.Dispose();
                 throw;
-            }
-            finally
-            {
-                stack.Dispose();
             }
 
             return new JsonDocument(utf8Json, database, extraRentedBytes);
@@ -674,22 +649,12 @@ namespace System.Text.Json
             {
                 // For primitive types, we can avoid renting and there is no need for a StackRowStack.
                 database = MetadataDb.CreateLocked(utf8Json.Length);
-                var _ = new StackRowStack(initialSize: -1);
-                Parse(utf8JsonSpan, readerOptions, ref database, ref _);
+                Parse(utf8JsonSpan, readerOptions, ref database);
             }
             else
             {
                 database = MetadataDb.CreateRented(utf8Json.Length, convertToAlloc: true);
-                var stack = new StackRowStack(JsonDocumentOptions.DefaultMaxDepth * StackRow.Size);
-
-                try
-                {
-                    Parse(utf8JsonSpan, readerOptions, ref database, ref stack);
-                }
-                finally
-                {
-                    stack.Dispose();
-                }
+                Parse(utf8JsonSpan, readerOptions, ref database);
             }
 
             return new JsonDocument(utf8Json, database, extraRentedBytes: null);

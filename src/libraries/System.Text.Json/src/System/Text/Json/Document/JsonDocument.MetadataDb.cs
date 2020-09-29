@@ -165,10 +165,6 @@ namespace System.Text.Json
                 {
                     if (_convertToAlloc)
                     {
-                        // Mutate the _data. This is faster and allocates less than creating a new MetadataDb.
-                        // This is used by JsonElement.Parse() so there are no concurrency concerns since the element
-                        // is not returned until it is done parsing.
-
                         Debug.Assert(_data != null);
                         byte[] returnBuf = _data;
                         _data = _data.AsSpan(0, Length).ToArray();
