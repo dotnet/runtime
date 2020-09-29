@@ -12,7 +12,7 @@
              AssemblyFile="$(AndroidAppBuilderDir)\AndroidAppBuilder.dll" />
 
   <!-- Build APK during 'dotnet publish' -->
-  <Target Name="BuildAppBundle" AfterTargets="Build">
+  <Target Name="BuildApp">
     <PropertyGroup>
       <AndroidAbi Condition="'$(Platform)'=='arm64'">arm64-v8a</AndroidAbi>
       <AndroidAbi Condition="'$(Platform)'=='arm'">armeabi-v7a</AndroidAbi>
@@ -26,7 +26,6 @@
     <ItemGroup>
       <AssemblySearchPaths Include="bin"/>
       <AssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackDir)native"/>
-      <AssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackDir)lib\$(NetCoreAppCurrent)"/>
     </ItemGroup>
 
     <RemoveDir Directories="$(ApkDir)" />
@@ -41,9 +40,9 @@
         Abi="$(AndroidAbi)"
         MonoRuntimeHeaders="$(CORE_ROOT)/monoRuntimeHeaders"
         MainLibraryFileName="$(TestAssembly)"
-        MainLibraryDir="$(TestBinDir)"
+        AssemblySearchPaths="@(AssemblySearchPaths)"
         StripDebugSymbols="$(StripDebugSymbols)"
-        SourceDir="$(CORE_ROOT)/runtimepack/native"
+        SourceDir="$(TestBinDir)"
         OutputDir="$(ApkDir)">
         <Output TaskParameter="ApkBundlePath" PropertyName="ApkBundlePath" />
         <Output TaskParameter="ApkPackageId" PropertyName="ApkPackageId" />

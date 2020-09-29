@@ -146,8 +146,9 @@
           Include="$(ArtifactsDir)\TargetingPack\**"
           TargetDir="TargetingPack/"/>
 
+        <!-- Android App Builder always builds in Debug -->
         <RunTimeDependencyCopyLocal
-          Include="$(ArtifactsBinDir)AndroidAppBuilder\$(Configuration)\$(NetCoreAppCurrent)\**"
+          Include="$(ArtifactsBinDir)AndroidAppBuilder\Debug\$(NetCoreAppCurrent)\**"
           TargetDir="AndroidAppBuilder/"/>
 
         <RunTimeDependencyCopyLocal
