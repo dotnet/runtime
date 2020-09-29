@@ -3038,7 +3038,8 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 		m = (MonoMethod *)image_g_new0 (image, MonoMethodPInvoke, 1);
 	else
 		m = (MonoMethod *)image_g_new0 (image, MonoDynamicMethod, 1);
-
+	if (dynamic)
+		((MonoDynamicMethod*)m)->mem_manager = mono_mem_manager_create_dynamic_method (mono_domain_get ());
 	wrapperm = (MonoMethodWrapper*)m;
 
 	m->dynamic = dynamic;

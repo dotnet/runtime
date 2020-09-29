@@ -1402,9 +1402,10 @@ mono_free_method  (MonoMethod *method)
 		/* mono_metadata_free_method_signature (method->signature); */
 		/* g_free (method->signature); */
 	}
-	
+
 	if (method_is_dynamic (method)) {
 		MonoMethodWrapper *mw = (MonoMethodWrapper*)method;
+		MonoMemoryManager *mem_manager = ((MonoDynamicMethod*)method)->mem_manager;
 		int i;
 
 		mono_marshal_free_dynamic_wrappers (method);
@@ -1422,6 +1423,8 @@ mono_free_method  (MonoMethod *method)
 		g_free (mw->method_data);
 		g_free (method->signature);
 		g_free (method);
+
+		mono_mem_manager_free_dynamic_method (mem_manager);
 	}
 }
 

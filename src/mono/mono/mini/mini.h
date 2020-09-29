@@ -155,7 +155,6 @@ typedef struct
 
 typedef struct {
 	MonoJitInfo *ji;
-	MonoCodeManager *code_mp;
 } MonoJitDynamicMethodInfo;
 
 /* An extension of MonoGenericParamFull used in generic sharing */
@@ -2789,7 +2788,7 @@ gboolean mini_is_gsharedvt_sharable_inst (MonoGenericInst *inst);
 gboolean mini_method_is_default_method (MonoMethod *m);
 gboolean mini_method_needs_mrgctx (MonoMethod *m);
 gpointer mini_method_get_rgctx (MonoMethod *m);
-void mini_init_gsctx (MonoDomain *domain, MonoMemPool *mp, MonoGenericContext *context, MonoGenericSharingContext *gsctx);
+void mini_init_gsctx (MonoGenericContext *context, MonoGenericSharingContext *gsctx);
 
 gpointer mini_get_gsharedvt_wrapper (gboolean gsharedvt_in, gpointer addr, MonoMethodSignature *normal_sig, MonoMethodSignature *gsharedvt_sig,
 									 gint32 vcall_offset, gboolean calli);

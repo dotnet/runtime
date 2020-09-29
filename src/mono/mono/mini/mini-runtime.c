@@ -1456,16 +1456,11 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 	case MONO_PATCH_INFO_SWITCH: {
 		gpointer *jump_table;
 		int i;
-		if (method && method->dynamic) {
-			jump_table = (void **)mono_code_manager_reserve (mono_dynamic_code_hash_lookup (domain, method)->code_mp, sizeof (gpointer) * patch_info->data.table->table_size);
-		} else {
-			MonoMemoryManager *mem_manager = m_method_get_mem_manager (domain, method);
-			if (mono_aot_only) {
-				jump_table = (void **)mono_mem_manager_alloc (mem_manager, sizeof (gpointer) * patch_info->data.table->table_size);
-			} else {
-				jump_table = (void **)mono_mem_manager_code_reserve (mem_manager, sizeof (gpointer) * patch_info->data.table->table_size);
-			}
-		}
+		MonoMemoryManager *mem_manager = method ? m_method_get_mem_manager (domain, method) : mono_domain_memory_manager (domain);
+		if (mono_aot_only)
+			jump_table = (void **)mono_mem_manager_alloc (mem_manager, sizeof (gpointer) * patch_info->data.table->table_size);
+		else
+			jump_table = (void **)mono_mem_manager_code_reserve (mem_manager, sizeof (gpointer) * patch_info->data.table->table_size);
 
 		mono_codeman_enable_write ();
 		for (i = 0; i < patch_info->data.table->table_size; i++) {
@@ -1803,7 +1798,7 @@ mini_patch_llvm_jit_callees (MonoDomain *domain, MonoMethod *method, gpointer ad
 }
 
 void
-mini_init_gsctx (MonoDomain *domain, MonoMemPool *mp, MonoGenericContext *context, MonoGenericSharingContext *gsctx)
+mini_init_gsctx (MonoGenericContext *context, MonoGenericSharingContext *gsctx)
 {
 	MonoGenericInst *inst;
 	int i;
@@ -2752,6 +2747,7 @@ mono_jit_free_method (MonoDomain *domain, MonoMethod *method)
 	GHashTableIter iter;
 	MonoJumpList *jlist;
 	MonoJitDomainInfo *info = domain_jit_info (domain);
+	MonoDynamicMethod *dmethod = (MonoDynamicMethod*)method;
 
 	g_assert (method->dynamic);
 
@@ -2824,8 +2820,11 @@ mono_jit_free_method (MonoDomain *domain, MonoMethod *method)
 	 */
 	mono_jit_info_table_remove (domain, ji->ji);
 
+	/* Free the code manager here if needed, the mem manager will be freed in mono_free_method () */
 	if (destroy)
-		mono_code_manager_destroy (ji->code_mp);
+		mono_code_manager_destroy (dmethod->mem_manager->code_mp);
+	dmethod->mem_manager->code_mp = NULL;
+
 	g_free (ji);
 }
 
@@ -4204,7 +4203,6 @@ static void
 dynamic_method_info_free (gpointer key, gpointer value, gpointer user_data)
 {
 	MonoJitDynamicMethodInfo *di = (MonoJitDynamicMethodInfo *)value;
-	mono_code_manager_destroy (di->code_mp);
 	g_free (di);
 }
 

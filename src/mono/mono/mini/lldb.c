@@ -428,22 +428,15 @@ mono_lldb_save_method_info (MonoCompile *cfg)
 	/* Find the codegen region which contains the code */
 	memset (&udata, 0, sizeof (udata));
 	udata.code = cfg->native_code;
+	mono_mem_manager_code_foreach (cfg->mem_manager, find_code_region, &udata);
+	g_assert (udata.found);
+	region_id = register_codegen_region (udata.region_start, udata.region_size, cfg->method->dynamic);
 	if (cfg->method->dynamic) {
-		mono_code_manager_foreach (cfg->dynamic_info->code_mp, find_code_region, &udata);
-		g_assert (udata.found);
-
-		region_id = register_codegen_region (udata.region_start, udata.region_size, TRUE);
-
 		lldb_lock ();
 		if (!dyn_codegen_regions)
 			dyn_codegen_regions = g_hash_table_new (NULL, NULL);
 		g_hash_table_insert (dyn_codegen_regions, cfg->method, GINT_TO_POINTER (region_id));
 		lldb_unlock ();
-	} else {
-		mono_mem_manager_code_foreach (cfg->mem_manager, find_code_region, &udata);
-		g_assert (udata.found);
-
-		region_id = register_codegen_region (udata.region_start, udata.region_size, FALSE);
 	}
 
 	buffer_init (buf, 256);

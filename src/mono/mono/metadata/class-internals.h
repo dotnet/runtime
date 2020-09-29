@@ -106,6 +106,11 @@ struct _MonoMethodWrapper {
 struct _MonoDynamicMethod {
 	MonoMethodWrapper method;
 	MonoAssembly *assembly;
+	/*
+	 * Memory whose lifetime is equal to the lifetime of the dynamic method
+	 * should be allocated from this memory manager.
+	 */
+	MonoMemoryManager *mem_manager;
 };
 
 struct _MonoMethodPInvoke {
@@ -1625,6 +1630,8 @@ m_class_alloc0 (MonoDomain *domain, MonoClass *klass, guint size)
 static inline MonoMemoryManager*
 m_method_get_mem_manager (MonoDomain *domain, MonoMethod *method)
 {
+	if (method->dynamic)
+		return ((MonoDynamicMethod*)method)->mem_manager;
 #ifdef ENABLE_NETCORE
 	// FIXME:
 	return mono_domain_memory_manager (domain);
@@ -1633,16 +1640,29 @@ m_method_get_mem_manager (MonoDomain *domain, MonoMethod *method)
 #endif
 }
 
-static inline void *
+/*
+ * m_method_alloc:
+ *
+ * Allocate memory whose lifetime is equal to:
+ * - domain+method, if domain != NULL
+ * - method, if domain == NULL.
+ */
+static inline void*
 m_method_alloc (MonoDomain *domain, MonoMethod *method, guint size)
 {
 	return mono_mem_manager_alloc (m_method_get_mem_manager (domain, method), size);
 }
 
-static inline void *
+static inline void*
 m_method_alloc0 (MonoDomain *domain, MonoMethod *method, guint size)
 {
 	return mono_mem_manager_alloc0 (m_method_get_mem_manager (domain, method), size);
+}
+
+static inline char*
+m_method_strdup (MonoDomain *domain, MonoMethod *method, const char *s)
+{
+	return mono_mem_manager_strdup (m_method_get_mem_manager (domain, method), s);
 }
 
 // Enum and static storage for JIT icalls.

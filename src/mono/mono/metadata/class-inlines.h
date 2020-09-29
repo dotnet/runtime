@@ -218,4 +218,10 @@ m_method_is_wrapper (MonoMethod *method)
 	return method->wrapper_type != 0;
 }
 
+static inline gboolean
+m_method_is_dynamic (MonoMethod *method)
+{
+	return method->dynamic;
+}
+
 #endif

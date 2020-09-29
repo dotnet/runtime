@@ -88,7 +88,9 @@ create_method_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *signature, int 
 	image = m_class_get_image (mb->method->klass);
 
 	if (mb->dynamic) {
-		method = mb->method;
+		method = (MonoMethod*)g_new0 (MonoDynamicMethod, 1);
+		memcpy (method, mb->method, sizeof (MonoMethodWrapper));
+		((MonoDynamicMethod*)method)->mem_manager = mono_mem_manager_create_dynamic_method (mono_domain_get ());
 		mw = (MonoMethodWrapper*)method;
 
 		method->name = mb->name;
@@ -102,10 +104,8 @@ create_method_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *signature, int 
 		for (i = 0, l = mb->locals_list; l; l = l->next, i++) {
 			header->locals [i] = (MonoType*)l->data;
 		}
-	} else
-	{
+	} else {
 		/* Realloc the method info into a mempool */
-
 		method = (MonoMethod *)mono_image_alloc0 (image, sizeof (MonoMethodWrapper));
 		memcpy (method, mb->method, sizeof (MonoMethodWrapper));
 		mw = (MonoMethodWrapper*) method;

@@ -89,6 +89,8 @@ struct _MonoMemoryManager {
 	gboolean is_generic;
 	// Whether the MemoryManager is in the process of being freed
 	gboolean freeing;
+	// Whenever this is owned by a dynamic method
+	gboolean dynamic_method;
 
 	// If taking this with the loader lock, always take this second
 	// Currently unused, we take the domain lock instead
@@ -212,6 +214,12 @@ mono_mem_manager_free_singleton (MonoSingletonMemoryManager *memory_manager, gbo
 
 void
 mono_mem_manager_free_objects_singleton (MonoSingletonMemoryManager *memory_manager);
+
+MonoMemoryManager *
+mono_mem_manager_create_dynamic_method (MonoDomain *domain);
+
+void
+mono_mem_manager_free_dynamic_method (MonoMemoryManager *memory_manager);
 
 void
 mono_mem_manager_lock (MonoMemoryManager *memory_manager);

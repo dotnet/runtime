@@ -101,18 +101,21 @@ create_method_noilgen (MonoMethodBuilder *mb, MonoMethodSignature *signature, in
 
 	image = m_class_get_image (mb->method->klass);
 
-	{
-		/* Realloc the method info into a mempool */
-
+	/* Realloc the method info into a mempool */
+	if (mb->dynamic)
+		method = (MonoMethod *)g_malloc0 (sizeof (MonoDynamicMethod));
+	else
 		method = (MonoMethod *)mono_image_alloc0 (image, sizeof (MonoMethodWrapper));
-		memcpy (method, mb->method, sizeof (MonoMethodWrapper));
-		mw = (MonoMethodWrapper*) method;
+	memcpy (method, mb->method, sizeof (MonoMethodWrapper));
+	mw = (MonoMethodWrapper*) method;
 
-		if (mb->no_dup_name)
-			method->name = mb->name;
-		else
-			method->name = mono_image_strdup (image, mb->name);
-	}
+	if (mb->dynamic)
+		((MonoDynamicMethod*)method)->mem_manager = mono_mem_manager_create_dynamic_method (mono_domain_get ());
+
+	if (mb->no_dup_name)
+		method->name = mb->name;
+	else
+		method->name = mono_image_strdup (image, mb->name);
 
 	method->signature = signature;
 	if (!signature->hasthis)

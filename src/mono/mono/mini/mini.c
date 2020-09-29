@@ -2102,12 +2102,7 @@ mono_postprocess_patches (MonoCompile *cfg)
 			break;
 		}
 		case MONO_PATCH_INFO_SWITCH: {
-			gpointer *table;
-			if (cfg->method->dynamic) {
-				table = (void **)mono_code_manager_reserve (cfg->dynamic_info->code_mp, sizeof (gpointer) * patch_info->data.table->table_size);
-			} else {
-				table = (void **)mono_mem_manager_code_reserve (cfg->mem_manager, sizeof (gpointer) * patch_info->data.table->table_size);
-			}
+			gpointer *table = (void **)mono_mem_manager_code_reserve (cfg->mem_manager, sizeof (gpointer) * patch_info->data.table->table_size);
 
 			for (i = 0; i < patch_info->data.table->table_size; i++) {
 				/* Might be NULL if the switch is eliminated */
@@ -2232,21 +2227,12 @@ mono_codegen (MonoCompile *cfg)
 #endif
 
 	if (cfg->method->dynamic) {
-		/* Allocate the code into a separate memory pool so it can be freed */
 		cfg->dynamic_info = g_new0 (MonoJitDynamicMethodInfo, 1);
-		cfg->dynamic_info->code_mp = mono_code_manager_new_dynamic ();
 		mono_domain_lock (cfg->domain);
 		mono_dynamic_code_hash_insert (cfg->domain, cfg->method, cfg->dynamic_info);
 		mono_domain_unlock (cfg->domain);
-
-		if (mono_using_xdebug)
-			/* See the comment for cfg->code_domain */
-			code = (guint8 *)mono_mem_manager_code_reserve (code_mem_manager, cfg->code_size + cfg->thunk_area + unwindlen);
-		else
-			code = (guint8 *)mono_code_manager_reserve (cfg->dynamic_info->code_mp, cfg->code_size + cfg->thunk_area + unwindlen);
-	} else {
-		code = (guint8 *)mono_mem_manager_code_reserve (code_mem_manager, cfg->code_size + cfg->thunk_area + unwindlen);
 	}
+	code = (guint8 *)mono_mem_manager_code_reserve (code_mem_manager, cfg->code_size + cfg->thunk_area + unwindlen);
 
 	mono_codeman_enable_write ();
 
@@ -2333,14 +2319,7 @@ mono_codegen (MonoCompile *cfg)
 	}
 #endif
 
-	if (cfg->method->dynamic) {
-		if (mono_using_xdebug)
-			mono_mem_manager_code_commit (code_mem_manager, cfg->native_code, cfg->code_size, cfg->code_len);
-		else
-			mono_code_manager_commit (cfg->dynamic_info->code_mp, cfg->native_code, cfg->code_size, cfg->code_len);
-	} else {
-		mono_mem_manager_code_commit (code_mem_manager, cfg->native_code, cfg->code_size, cfg->code_len);
-	}
+	mono_mem_manager_code_commit (code_mem_manager, cfg->native_code, cfg->code_size, cfg->code_len);
 
 	mono_codeman_disable_write ();
 
@@ -2487,6 +2466,7 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 		num_clauses = header->num_clauses;
 
 	if (cfg->method->dynamic)
+		/* mono_jit_info_free_or_queue () depends on this being malloc-ed */
 		jinfo = (MonoJitInfo *)g_malloc0 (mono_jit_info_size (flags, num_clauses, num_holes));
 	else
 		jinfo = (MonoJitInfo *)mono_mem_manager_alloc0 (cfg->mem_manager, mono_jit_info_size (flags, num_clauses, num_holes));
@@ -2506,11 +2486,8 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 		gi = mono_jit_info_get_generic_jit_info (jinfo);
 		g_assert (gi);
 
-		if (cfg->method->dynamic)
-			gi->generic_sharing_context = g_new0 (MonoGenericSharingContext, 1);
-		else
-			gi->generic_sharing_context = (MonoGenericSharingContext *)mono_mem_manager_alloc0 (cfg->mem_manager, sizeof (MonoGenericSharingContext));
-		mini_init_gsctx (cfg->method->dynamic ? NULL : cfg->domain, NULL, cfg->gsctx_context, gi->generic_sharing_context);
+		gi->generic_sharing_context = (MonoGenericSharingContext *)mono_mem_manager_alloc0 (cfg->mem_manager, sizeof (MonoGenericSharingContext));
+		mini_init_gsctx (cfg->gsctx_context, gi->generic_sharing_context);
 
 		if ((method_to_compile->flags & METHOD_ATTRIBUTE_STATIC) ||
 				mini_method_get_context (method_to_compile)->method_inst ||
@@ -2538,10 +2515,7 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 			int i;
 
 			gi->nlocs = g_slist_length (loclist);
-			if (cfg->method->dynamic)
-				gi->locations = (MonoDwarfLocListEntry *)g_malloc0 (gi->nlocs * sizeof (MonoDwarfLocListEntry));
-			else
-				gi->locations = (MonoDwarfLocListEntry *)mono_mem_manager_alloc0 (cfg->mem_manager, gi->nlocs * sizeof (MonoDwarfLocListEntry));
+			gi->locations = (MonoDwarfLocListEntry *)mono_mem_manager_alloc0 (cfg->mem_manager, gi->nlocs * sizeof (MonoDwarfLocListEntry));
 			i = 0;
 			for (l = loclist; l; l = l->next) {
 				memcpy (&(gi->locations [i]), l->data, sizeof (MonoDwarfLocListEntry));
@@ -3259,7 +3233,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 			context = &inflated->context;
 		}
 
-		mini_init_gsctx (NULL, cfg->mempool, context, &cfg->gsctx);
+		mini_init_gsctx (context, &cfg->gsctx);
 		cfg->gsctx_context = context;
 
 		cfg->gsharedvt = TRUE;

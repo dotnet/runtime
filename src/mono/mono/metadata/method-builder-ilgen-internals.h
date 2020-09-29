@@ -19,9 +19,9 @@ struct _MonoMethodBuilder {
 	MonoMethod *method;
 	gchar *name;
 	gboolean no_dup_name;
+	gboolean dynamic;
 	GList *locals_list;
 	gint locals;
-	gboolean dynamic;
 	gboolean skip_visibility;
 	gboolean init_locals;
 	guint32 code_size;
