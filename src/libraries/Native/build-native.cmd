@@ -140,7 +140,7 @@ for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy ByPass "& ""%__
 :GenVSSolution
 :: generate version file
 powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__repoRoot%\eng\common\msbuild.ps1" /clp:nosummary %__ArcadeScriptArgs%^
-    %__repoRoot%\eng\empty.csproj /p:NativeVersionFile="%__artifactsDir%\obj\_version.h"^
+    "%__repoRoot%\eng\empty.csproj" /p:NativeVersionFile="%__artifactsDir%\obj\_version.h"^
     /t:GenerateNativeVersionFile /restore
 :: Regenerate the VS solution
 

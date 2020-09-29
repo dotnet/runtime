@@ -2347,7 +2347,6 @@ namespace System.Xml.Xsl.Xslt
             Debug.Assert(expr != null);
             XPathScanner scanner;
             QilNode result;
-            int startPos = pos;
 
             SetEnvironmentFlags(/*allowVariables:*/true, /*allowCurrent:*/true, /*allowKey:*/true);
             try

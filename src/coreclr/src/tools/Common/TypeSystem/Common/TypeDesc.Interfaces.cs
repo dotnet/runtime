@@ -16,7 +16,7 @@ namespace Internal.TypeSystem
         /// <summary>
         /// The interfaces implemented by this type at runtime. There may be duplicates in this list.
         /// </summary>
-        /// 
+        ///
         public DefType[] RuntimeInterfaces
         {
             get

@@ -10,7 +10,7 @@ echo %__MsgPrefix%Starting Build at %TIME%
 set __ThisScriptFull="%~f0"
 set __ThisScriptDir="%~dp0"
 
-call "%__ThisScriptDir%"\setup_vs_tools.cmd
+call %__ThisScriptDir%\setup_vs_tools.cmd
 if NOT '%ERRORLEVEL%' == '0' goto ExitWithError
 
 if defined VS160COMNTOOLS (
@@ -67,6 +67,7 @@ set __PgoInstrument=0
 set __PgoOptimize=1
 set __EnforcePgo=0
 set __IbcTuning=
+set __ConsoleLoggingParameters=/clp:ForceNoAlign;Summary
 
 REM __PassThroughArgs is a set of things that will be passed through to nested calls to build.cmd
 REM when using "all".
@@ -84,6 +85,7 @@ set __SkipCrossArchNative=0
 set __SkipGenerateVersion=0
 set __RestoreOptData=1
 set __BuildJit=1
+set __BuildPALTests=0
 set __BuildAllJits=1
 set __BuildRuntime=1
 set __CrossArch=
@@ -301,8 +303,8 @@ if not exist "%__IntermediatesDir%"    md "%__IntermediatesDir%"
 if not exist "%__LogsDir%"             md "%__LogsDir%"
 if not exist "%__MsbuildDebugLogsDir%" md "%__MsbuildDebugLogsDir%"
 
-if not exist "%__RootBinDir%\Directory.Build.props" copy %__ProjectDir%\EmptyProps.props %__RootBinDir%\Directory.Build.props
-if not exist "%__RootBinDir%\Directory.Build.targets" copy %__ProjectDir%\EmptyProps.props %__RootBinDir%\Directory.Build.targets
+if not exist "%__RootBinDir%\Directory.Build.props" copy "%__ProjectDir%\EmptyProps.props" "%__RootBinDir%\Directory.Build.props"
+if not exist "%__RootBinDir%\Directory.Build.targets" copy "%__ProjectDir%\EmptyProps.props" "%__RootBinDir%\Directory.Build.targets"
 
 REM Set up the directory for MSBuild debug logs.
 set MSBUILDDEBUGPATH=%__MsbuildDebugLogsDir%
@@ -343,9 +345,9 @@ REM ============================================================================
 
 if %__SkipGenerateVersion% EQU 0 (
     echo %__MsgPrefix%Generating native version headers
-    set "__BinLog=%__LogsDir%\GenerateVersionHeaders_%__TargetOS%__%__BuildArch%__%__BuildType%.binlog"
+    set "__BinLog=\"%__LogsDir%\GenerateVersionHeaders_%__TargetOS%__%__BuildArch%__%__BuildType%.binlog\""
     powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\msbuild.ps1" /clp:nosummary %__ArcadeScriptArgs%^
-        %__RepoRootDir%\eng\empty.csproj /t:GenerateRuntimeVersionFile /restore^
+        "%__RepoRootDir%\eng\empty.csproj" /t:GenerateRuntimeVersionFile /restore^
         /p:NativeVersionFile="%__RootBinDir%\obj\coreclr\_version.h"^
         /p:RuntimeVersionFile="%__RootBinDir%\obj\coreclr\runtime_version.h"^
         %__CommonMSBuildArgs% %__UnprocessedBuildArgs% /bl:!__BinLog!
@@ -365,9 +367,9 @@ REM ============================================================================
 set OptDataProjectFilePath=%__ProjectDir%\src\.nuget\optdata\optdata.csproj
 if %__RestoreOptData% EQU 1 (
     echo %__MsgPrefix%Restoring the OptimizationData Package
-    set "__BinLog=%__LogsDir%\OptRestore_%__TargetOS%__%__BuildArch%__%__BuildType%.binlog"
+    set "__BinLog=\"%__LogsDir%\OptRestore_%__TargetOS%__%__BuildArch%__%__BuildType%.binlog\""
     powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\msbuild.ps1" /clp:nosummary %__ArcadeScriptArgs%^
-        %OptDataProjectFilePath% /t:Restore^
+        "%OptDataProjectFilePath%" /t:Restore^
         %__CommonMSBuildArgs% %__UnprocessedBuildArgs%^
         /nodereuse:false /bl:!__BinLog!
     if not !errorlevel! == 0 (
@@ -378,8 +380,8 @@ if %__RestoreOptData% EQU 1 (
 )
 set __PgoOptDataPath=
 if %__PgoOptimize% EQU 1 (
-    set PgoDataPackagePathOutputFile="%__IntermediatesDir%\optdatapath.txt"
-    set "__BinLog=%__LogsDir%\PgoVersionRead_%__TargetOS%__%__BuildArch%__%__BuildType%.binlog"
+    set PgoDataPackagePathOutputFile=%__IntermediatesDir%\optdatapath.txt
+    set "__BinLog=\"%__LogsDir%\PgoVersionRead_%__TargetOS%__%__BuildArch%__%__BuildType%.binlog\""
 
     REM Parse the optdata package versions out of msbuild so that we can pass them on to CMake
     powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\msbuild.ps1" /clp:nosummary %__ArcadeScriptArgs%^
@@ -465,7 +467,7 @@ if %__BuildCrossArchNative% EQU 1 (
         if /i "%__CrossArch2%" == "x86" ( set __VCBuildArch=x86 )
         if /i "%__CrossArch2%" == "x64" ( set __VCBuildArch=x86_amd64 )
 
-        set __CMakeBinDir=%__CrossComponent2BinDir%
+        set __CMakeBinDir="%__CrossComponent2BinDir%"
         set "__CMakeBinDir=!__CMakeBinDir:\=/!"
         
         if %__Ninja% EQU 1 (
@@ -501,15 +503,15 @@ if %__BuildCrossArchNative% EQU 1 (
     if defined __ConfigureOnly goto SkipCrossCompBuild
 
     set __BuildLogRootName=Cross
-    set "__BuildLog=%__LogsDir%\!__BuildLogRootName!_%__TargetOS%__%__BuildArch%__%__BuildType%.log"
-    set "__BuildWrn=%__LogsDir%\!__BuildLogRootName!_%__TargetOS%__%__BuildArch%__%__BuildType%.wrn"
-    set "__BuildErr=%__LogsDir%\!__BuildLogRootName!_%__TargetOS%__%__BuildArch%__%__BuildType%.err"
-    set "__BinLog=%__LogsDir%\!__BuildLogRootName!_%__TargetOS%__%__BuildArch%__%__BuildType%.binlog"
+    set "__BuildLog="%__LogsDir%\!__BuildLogRootName!_%__TargetOS%__%__BuildArch%__%__BuildType%.log""
+    set "__BuildWrn="%__LogsDir%\!__BuildLogRootName!_%__TargetOS%__%__BuildArch%__%__BuildType%.wrn""
+    set "__BuildErr="%__LogsDir%\!__BuildLogRootName!_%__TargetOS%__%__BuildArch%__%__BuildType%.err""
+    set "__BinLog="%__LogsDir%\!__BuildLogRootName!_%__TargetOS%__%__BuildArch%__%__BuildType%.binlog""
     set "__MsbuildLog=/flp:Verbosity=normal;LogFile=!__BuildLog!"
     set "__MsbuildWrn=/flp1:WarningsOnly;LogFile=!__BuildWrn!"
     set "__MsbuildErr=/flp2:ErrorsOnly;LogFile=!__BuildErr!"
     set "__MsbuildBinLog=/bl:!__BinLog!"
-    set "__Logging=!__MsbuildLog! !__MsbuildWrn! !__MsbuildErr! !__MsbuildBinLog!"
+    set "__Logging=!__MsbuildLog! !__MsbuildWrn! !__MsbuildErr! !__MsbuildBinLog! !__ConsoleLoggingParameters!"
 
     set __CmakeBuildToolArgs=
 
@@ -541,10 +543,18 @@ if %__BuildCrossArchNative% EQU 1 (
         set "__MsbuildWrn=/flp1:WarningsOnly;LogFile=!__BuildWrn!"
         set "__MsbuildErr=/flp2:ErrorsOnly;LogFile=!__BuildErr!"
         set "__MsbuildBinLog=/bl:!__BinLog!"
-        set "__Logging=!__MsbuildLog! !__MsbuildWrn! !__MsbuildErr! !__MsbuildBinLog!"
+        set "__Logging=!__MsbuildLog! !__MsbuildWrn! !__MsbuildErr! !__MsbuildBinLog! !__ConsoleLoggingParameters!"
 
-        REM We pass the /m flag directly to MSBuild so that we can get both MSBuild and CL parallelism, which is fastest for our builds.
-        "%CMakePath%" --build %__CrossComp2IntermediatesDir% --target install --config %__BuildType% -- /nologo /m !__Logging!
+        set __CmakeBuildToolArgs=
+
+        if %__Ninja% EQU 1 (
+            set __CmakeBuildToolArgs=
+        ) else (
+            REM We pass the /m flag directly to MSBuild so that we can get both MSBuild and CL parallelism, which is fastest for our builds.
+            set __CmakeBuildToolArgs=/nologo /m !__Logging!
+        )
+
+        "%CMakePath%" --build %__CrossComp2IntermediatesDir% --target install --config %__BuildType% -- !__CmakeBuildToolArgs!
 
         if not !errorlevel! == 0 (
             set __exitCode=!errorlevel!
@@ -620,15 +630,15 @@ if %__BuildNative% EQU 1 (
     if defined __ConfigureOnly goto SkipNativeBuild
 
     set __BuildLogRootName=CoreCLR
-    set "__BuildLog=%__LogsDir%\!__BuildLogRootName!_%__TargetOS%__%__BuildArch%__%__BuildType%.log"
-    set "__BuildWrn=%__LogsDir%\!__BuildLogRootName!_%__TargetOS%__%__BuildArch%__%__BuildType%.wrn"
-    set "__BuildErr=%__LogsDir%\!__BuildLogRootName!_%__TargetOS%__%__BuildArch%__%__BuildType%.err"
-    set "__BinLog=%__LogsDir%\!__BuildLogRootName!_%__TargetOS%__%__BuildArch%__%__BuildType%.binlog"
+    set "__BuildLog="%__LogsDir%\!__BuildLogRootName!_%__TargetOS%__%__BuildArch%__%__BuildType%.log""
+    set "__BuildWrn="%__LogsDir%\!__BuildLogRootName!_%__TargetOS%__%__BuildArch%__%__BuildType%.wrn""
+    set "__BuildErr="%__LogsDir%\!__BuildLogRootName!_%__TargetOS%__%__BuildArch%__%__BuildType%.err""
+    set "__BinLog="%__LogsDir%\!__BuildLogRootName!_%__TargetOS%__%__BuildArch%__%__BuildType%.binlog""
     set "__MsbuildLog=/flp:Verbosity=normal;LogFile=!__BuildLog!"
     set "__MsbuildWrn=/flp1:WarningsOnly;LogFile=!__BuildWrn!"
     set "__MsbuildErr=/flp2:ErrorsOnly;LogFile=!__BuildErr!"
     set "__MsbuildBinLog=/bl:!__BinLog!"
-    set "__Logging=!__MsbuildLog! !__MsbuildWrn! !__MsbuildErr! !__MsbuildBinLog!"
+    set "__Logging=!__MsbuildLog! !__MsbuildWrn! !__MsbuildErr! !__MsbuildBinLog! !__ConsoleLoggingParameters!"
 
     set __CmakeBuildToolArgs=
     if %__Ninja% EQU 1 (

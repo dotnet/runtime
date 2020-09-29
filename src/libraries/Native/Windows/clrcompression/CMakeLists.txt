@@ -88,14 +88,12 @@ SET_TARGET_PROPERTIES(clrcompression-static PROPERTIES PREFIX "")
 SET_TARGET_PROPERTIES(clrcompression-static PROPERTIES OUTPUT_NAME libclrcompression)
 
 # Allow specification of arguments that should be passed to the linker
-SET_TARGET_PROPERTIES(clrcompression PROPERTIES LINK_FLAGS ${__LinkArgs})
-SET_TARGET_PROPERTIES(clrcompression-static PROPERTIES LINK_FLAGS ${__LinkArgs})
+SET_TARGET_PROPERTIES(clrcompression PROPERTIES LINK_OPTIONS "${__LinkArgs};${__SharedLinkArgs}")
+SET_TARGET_PROPERTIES(clrcompression-static PROPERTIES STATIC_LIBRARY_OPTIONS "${__LinkArgs}")
 
 # Allow specification of libraries that should be linked against
-# CMake doesn't like space delimiters as input to target_link_libraries
-separate_arguments(linker_libs_sanitized WINDOWS_COMMAND ${__LinkLibraries})
-target_link_libraries(clrcompression ${linker_libs_sanitized})
-target_link_libraries(clrcompression-static ${linker_libs_sanitized})
+target_link_libraries(clrcompression ${__LinkLibraries})
+target_link_libraries(clrcompression-static ${__LinkLibraries})
 
 GENERATE_EXPORT_HEADER( clrcompression
      BASE_NAME clrcompression

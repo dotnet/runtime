@@ -11,12 +11,12 @@
     <WarningsNotAsErrors>42025</WarningsNotAsErrors>
     <DefineConstants>$(DefineConstants),LATEBINDING=True</DefineConstants>
     <DefineConstants Condition="'$(TargetsWindows)' == 'true'">$(DefineConstants),TARGET_WINDOWS=True</DefineConstants>
-    <NoWarn Condition="'$(TargetsWindows)' != 'true'">$(NoWarn);CA1823</NoWarn> <!-- Avoid unused fields warnings in Unix build -->
+    <NoWarn>$(NoWarn),CA1810,CA2200</NoWarn>
+    <NoWarn Condition="'$(TargetsWindows)' != 'true'">$(NoWarn);CA1823</NoWarn>
+    <!-- Avoid unused fields warnings in Unix build -->
     <AssemblyName>Microsoft.VisualBasic.Core</AssemblyName>
     <RemoveIntegerChecks>false</RemoveIntegerChecks>
     <RootNamespace />
-    <!-- No plans to fix the analyzer issues. -->
-    <EnableAnalyzers>false</EnableAnalyzers>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-Windows_NT</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">

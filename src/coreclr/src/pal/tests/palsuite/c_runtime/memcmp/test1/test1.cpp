@@ -13,7 +13,7 @@
 
 #include <palsuite.h>
 
-int __cdecl main(int argc, char **argv)
+PALTEST(c_runtime_memcmp_test1_paltest_memcmp_test1, "c_runtime/memcmp/test1/paltest_memcmp_test1")
 {
 
     char testA[] = "aaaaaaaaaaaaaaaaaaaa";

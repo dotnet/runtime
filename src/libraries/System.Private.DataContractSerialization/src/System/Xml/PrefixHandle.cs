@@ -179,7 +179,7 @@ namespace System.Xml
 
         public bool Equals(PrefixHandle? prefix2)
         {
-            if (ReferenceEquals(prefix2, null))
+            if (prefix2 is null)
                 return false;
             PrefixHandleType type1 = _type;
             PrefixHandleType type2 = prefix2._type;

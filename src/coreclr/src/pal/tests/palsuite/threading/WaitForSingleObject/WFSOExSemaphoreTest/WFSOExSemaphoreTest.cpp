@@ -5,7 +5,7 @@
 **
 ** Source:  	WFSOExSemaphore.c
 **
-** Purpose: 	Tests a child thread in the middle of a 
+** Purpose: 	Tests a child thread in the middle of a
 **          		WaitForSingleObjectEx call will be interrupted by QueueUserAPC
 **         		if the alert flag was set.
 **
@@ -20,13 +20,13 @@ const int ChildThreadWaitTime = 4000;
 const int InterruptTime = 2000;
 const DWORD AcceptableDelta = 300;
 
-void RunTest(BOOL AlertThread);
-VOID PALAPI APCFunc(ULONG_PTR dwParam);
-DWORD PALAPI WaiterProc(LPVOID lpParameter);
+void RunTest_WFSOExSemaphoreTest(BOOL AlertThread);
+VOID PALAPI APCFunc_WFSOExSemaphoreTest(ULONG_PTR dwParam);
+DWORD PALAPI WaiterProc_WFSOExSemaphoreTest(LPVOID lpParameter);
 
-DWORD ThreadWaitDelta;
+DWORD ThreadWaitDelta_WFSOExSemaphoreTest;
 
-int __cdecl main( int argc, char **argv ) 
+PALTEST(threading_WaitForSingleObject_WFSOExSemaphoreTest_paltest_waitforsingleobject_wfsoexsemaphoretest, "threading/WaitForSingleObject/WFSOExSemaphoreTest/paltest_waitforsingleobject_wfsoexsemaphoretest")
 {
     if (0 != (PAL_Initialize(argc, argv)))
     {
@@ -34,38 +34,38 @@ int __cdecl main( int argc, char **argv )
     }
 
 	/*
-      On some platforms (e.g. FreeBSD 4.9) the first call to some synch objects 
-      (such as conditions) involves some pthread internal initialization that 
+      On some platforms (e.g. FreeBSD 4.9) the first call to some synch objects
+      (such as conditions) involves some pthread internal initialization that
       can make the first wait slighty longer, potentially going above the
       acceptable delta for this test. Let's add a dummy wait to preinitialize
       internal structures
     */
     Sleep(100);
 
-      /* 
+      /*
      * Check that Queueing an APC in the middle of a wait does interrupt
      * it, if it's in an alertable state.
      */
 
-    RunTest(TRUE);
-    if ((ThreadWaitDelta - InterruptTime) > AcceptableDelta)
+    RunTest_WFSOExSemaphoreTest(TRUE);
+    if ((ThreadWaitDelta_WFSOExSemaphoreTest - InterruptTime) > AcceptableDelta)
     {
         Fail("Expected thread to wait for %d ms (and get interrupted).\n"
-            "Thread waited for %d ms! (Acceptable delta: %d)\n", 
-            InterruptTime, ThreadWaitDelta, AcceptableDelta);
+            "Thread waited for %d ms! (Acceptable delta: %d)\n",
+            InterruptTime, ThreadWaitDelta_WFSOExSemaphoreTest, AcceptableDelta);
     }
 
 
-     /* 
-     * Check that Queueing an APC in the middle of a wait does NOT interrupt 
+     /*
+     * Check that Queueing an APC in the middle of a wait does NOT interrupt
      * it, if it is not in an alertable state.
      */
-    RunTest(FALSE);
-    if ((ThreadWaitDelta - ChildThreadWaitTime) > AcceptableDelta)
+    RunTest_WFSOExSemaphoreTest(FALSE);
+    if ((ThreadWaitDelta_WFSOExSemaphoreTest - ChildThreadWaitTime) > AcceptableDelta)
     {
         Fail("Expected thread to wait for %d ms (and not be interrupted).\n"
-            "Thread waited for %d ms! (Acceptable delta: %d)\n", 
-            ChildThreadWaitTime, ThreadWaitDelta, AcceptableDelta);
+            "Thread waited for %d ms! (Acceptable delta: %d)\n",
+            ChildThreadWaitTime, ThreadWaitDelta_WFSOExSemaphoreTest, AcceptableDelta);
     }
 
 
@@ -73,15 +73,15 @@ int __cdecl main( int argc, char **argv )
     return PASS;
 }
 
-void RunTest(BOOL AlertThread)
+void RunTest_WFSOExSemaphoreTest(BOOL AlertThread)
 {
     HANDLE hThread = 0;
     DWORD dwThreadId = 0;
     int ret;
 
-    hThread = CreateThread( NULL, 
-                            0, 
-                            (LPTHREAD_START_ROUTINE)WaiterProc,
+    hThread = CreateThread( NULL,
+                            0,
+                            (LPTHREAD_START_ROUTINE)WaiterProc_WFSOExSemaphoreTest,
                             (LPVOID) AlertThread,
                             0,
                             &dwThreadId);
@@ -94,34 +94,34 @@ void RunTest(BOOL AlertThread)
 
     Sleep(InterruptTime);
 
-    ret = QueueUserAPC(APCFunc, hThread, 0);
+    ret = QueueUserAPC(APCFunc_WFSOExSemaphoreTest, hThread, 0);
     if (ret == 0)
     {
-        Fail("QueueUserAPC failed! GetLastError returned %d\n", 
+        Fail("QueueUserAPC failed! GetLastError returned %d\n",
             GetLastError());
     }
 
     ret = WaitForSingleObject(hThread, INFINITE);
     if (ret == WAIT_FAILED)
     {
-        Fail("Unable to wait on child thread!\nGetLastError returned %d.\n", 
+        Fail("Unable to wait on child thread!\nGetLastError returned %d.\n",
             GetLastError());
     }
 
   if (0==CloseHandle(hThread))
 	    	{
-	    	Trace("Could not close Thread handle\n"); 
-		Fail ( "GetLastError returned %d\n", GetLastError());  
-    	} 	
+	    	Trace("Could not close Thread handle\n");
+		Fail ( "GetLastError returned %d\n", GetLastError());
+    	}
 }
 
 /* Function doesn't do anything, just needed to interrupt the wait*/
-VOID PALAPI APCFunc(ULONG_PTR dwParam)
-{    
+VOID PALAPI APCFunc_WFSOExSemaphoreTest(ULONG_PTR dwParam)
+{
 }
 
 /* Entry Point for child thread. */
-DWORD PALAPI WaiterProc(LPVOID lpParameter)
+DWORD PALAPI WaiterProc_WFSOExSemaphoreTest(LPVOID lpParameter)
 {
     HANDLE hSemaphore;
     UINT64 OldTimeStamp;
@@ -136,7 +136,7 @@ DWORD PALAPI WaiterProc(LPVOID lpParameter)
     }
 
     /* Create a semaphore that is not in the signalled state */
-    hSemaphore = CreateSemaphoreW(NULL, 0, 1, NULL);
+    hSemaphore = CreateSemaphoreExW(NULL, 0, 1, NULL, 0, 0);
 
     if (hSemaphore == NULL)
     {
@@ -148,10 +148,10 @@ DWORD PALAPI WaiterProc(LPVOID lpParameter)
 
     OldTimeStamp = GetHighPrecisionTimeStamp(performanceFrequency);
 
-    ret = WaitForSingleObjectEx(	hSemaphore, 
-								ChildThreadWaitTime, 
+    ret = WaitForSingleObjectEx(	hSemaphore,
+								ChildThreadWaitTime,
         							Alertable);
-    
+
     NewTimeStamp = GetHighPrecisionTimeStamp(performanceFrequency);
 
 
@@ -167,7 +167,7 @@ DWORD PALAPI WaiterProc(LPVOID lpParameter)
     }
 
 
-    ThreadWaitDelta = NewTimeStamp - OldTimeStamp;
+    ThreadWaitDelta_WFSOExSemaphoreTest = NewTimeStamp - OldTimeStamp;
 
     ret = CloseHandle(hSemaphore);
     if (!ret)

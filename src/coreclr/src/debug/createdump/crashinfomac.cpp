@@ -24,49 +24,7 @@ void
 CrashInfo::CleanupAndResumeProcess()
 {
     // Resume all the threads suspended in EnumerateAndSuspendThreads
-    for (ThreadInfo* thread : m_threads)
-    {
-        ::thread_resume(thread->Port());
-    }
-}
-
-static
-kern_return_t
-SuspendMachThread(thread_act_t thread, int tid)
-{
-    kern_return_t result;
-
-    while (true)
-    {
-        result = thread_suspend(thread);
-        if (result != KERN_SUCCESS)
-        {
-            fprintf(stderr, "thread_suspend(%d) FAILED %x %s\n", tid, result, mach_error_string(result));
-            break;
-        }
-
-        // Ensure that if the thread was running in the kernel, the kernel operation
-        // is safely aborted so that it can be restarted later.
-        result = thread_abort_safely(thread);
-        if (result == KERN_SUCCESS)
-        {
-            break;
-        }
-        else
-        {
-            TRACE("thread_abort_safely(%d) FAILED %x %s\n", tid, result, mach_error_string(result));
-        }
-        // The thread was running in the kernel executing a non-atomic operation
-        // that cannot be restarted, so we need to resume the thread and retry
-        result = thread_resume(thread);
-        if (result != KERN_SUCCESS)
-        {
-            fprintf(stderr, "thread_resume(%d) FAILED %x %s\n", tid, result, mach_error_string(result));
-            break;
-        }
-    }
-
-    return result;
+    ::task_resume(Task());
 }
 
 //
@@ -78,7 +36,14 @@ CrashInfo::EnumerateAndSuspendThreads()
     thread_act_port_array_t threadList;
     mach_msg_type_number_t threadCount;
 
-    kern_return_t result = ::task_threads(Task(), &threadList, &threadCount);
+    kern_return_t result = ::task_suspend(Task());
+    if (result != KERN_SUCCESS)
+    {
+        fprintf(stderr, "task_suspend(%d) FAILED %x %s\n", m_pid, result, mach_error_string(result));
+        return false;
+    }
+
+    result = ::task_threads(Task(), &threadList, &threadCount);
     if (result != KERN_SUCCESS)
     {
         fprintf(stderr, "task_threads(%d) FAILED %x %s\n", m_pid, result, mach_error_string(result));
@@ -102,11 +67,6 @@ CrashInfo::EnumerateAndSuspendThreads()
             tid = tident.thread_id;
         }
 
-        result = SuspendMachThread(threadList[i], tid);
-        if (result != KERN_SUCCESS)
-        {
-            return false;
-        }
         // Add to the list of threads
         ThreadInfo* thread = new ThreadInfo(*this, tid, threadList[i]);
         m_threads.push_back(thread);
@@ -148,7 +108,7 @@ CrashInfo::EnumerateMemoryRegions()
             fprintf(stderr, "mach_vm_region_recurse for address %016llx %08llx FAILED %x %s\n", address, size, result, mach_error_string(result));
             return false;
         }
-        TRACE("%016llx - %016llx (%06llx) %08llx %s %d %d %d %c%c%c\n",
+        TRACE("%016llx - %016llx (%06llx) %08llx %s %d %d %d %c%c%c %02x\n",
             address,
             address + size,
             size / PAGE_SIZE,
@@ -159,14 +119,15 @@ CrashInfo::EnumerateMemoryRegions()
             depth,
             (info.protection & VM_PROT_READ) ? 'r' : '-',
             (info.protection & VM_PROT_WRITE) ? 'w' : '-',
-            (info.protection & VM_PROT_EXECUTE) ? 'x' : '-');
+            (info.protection & VM_PROT_EXECUTE) ? 'x' : '-',
+            info.protection);
 
         if (info.is_submap) {
             depth++;
         }
         else
         {
-            if (info.share_mode != SM_EMPTY && (info.protection & (VM_PROT_READ | VM_PROT_WRITE | VM_PROT_EXECUTE)) != 0)
+            if ((info.protection & (VM_PROT_READ | VM_PROT_WRITE | VM_PROT_EXECUTE)) != 0)
             {
                 MemoryRegion memoryRegion(ConvertProtectionFlags(info.protection), address, address + size, info.offset);
                 m_allMemoryRegions.insert(memoryRegion);

@@ -1021,7 +1021,8 @@ private:
         // otherwise the below layout equality check would be insufficient.
         assert(varDsc->GetLayout() != nullptr);
 
-        if ((val.Offset() == 0) && (structLayout == varDsc->GetLayout()))
+        if ((val.Offset() == 0) && (structLayout != nullptr) &&
+            ClassLayout::AreCompatible(structLayout, varDsc->GetLayout()))
         {
             indir->ChangeOper(GT_LCL_VAR);
             indir->AsLclVar()->SetLclNum(val.LclNum());

@@ -32,14 +32,12 @@ set(MDCOMPILER_HEADERS
   ../inc/metamodelrw.h
   ../inc/rwutil.h
   ../inc/stgio.h
-  cacheload.h
   classfactory.h
   custattr.h
   disp.h
   filtermanager.h
   importhelper.h
   mdperf.h
-  mdsighelper.h
   mdutil.h
   regmeta.h
 )

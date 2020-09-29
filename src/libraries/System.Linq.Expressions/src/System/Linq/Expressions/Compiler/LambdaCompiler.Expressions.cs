@@ -803,7 +803,7 @@ namespace System.Linq.Expressions.Compiler
             }
 
             var fld = member as FieldInfo;
-            if ((object?)fld != null)
+            if (fld is not null)
             {
                 _ilg.EmitFieldSet((FieldInfo)member);
             }
@@ -840,7 +840,7 @@ namespace System.Linq.Expressions.Compiler
         private void EmitMemberGet(MemberInfo member, Type? objectType)
         {
             var fi = member as FieldInfo;
-            if ((object?)fi != null)
+            if (fi is not null)
             {
                 if (fi.IsLiteral)
                 {

@@ -3,6 +3,7 @@
 
 using System;
 using System.IO;
+using System.Linq;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 
@@ -10,6 +11,10 @@ public class AndroidAppBuilderTask : Task
 {
     [Required]
     public string SourceDir { get; set; } = ""!;
+
+    public ITaskItem[]? AssemblySearchPaths { get; set; }
+
+    public ITaskItem[]? ExtraAssemblies { get; set; }
 
     [Required]
     public string MonoRuntimeHeaders { get; set; } = ""!;
@@ -31,20 +36,20 @@ public class AndroidAppBuilderTask : Task
     public string? OutputDir { get; set; }
 
     public string? AndroidSdk { get; set; }
-    
+
     public string? AndroidNdk { get; set; }
-    
+
     public string? MinApiLevel { get; set; }
-    
+
     public string? BuildApiLevel { get; set; }
-    
+
     public string? BuildToolsVersion { get; set; }
 
     public bool StripDebugSymbols { get; set; }
 
     [Output]
     public string ApkBundlePath { get; set; } = ""!;
-    
+
     [Output]
     public string ApkPackageId { get; set; } = ""!;
 
@@ -61,8 +66,10 @@ public class AndroidAppBuilderTask : Task
         apkBuilder.BuildApiLevel = BuildApiLevel;
         apkBuilder.BuildToolsVersion = BuildToolsVersion;
         apkBuilder.StripDebugSymbols = StripDebugSymbols;
+        apkBuilder.AssemblySearchPaths = AssemblySearchPaths?.Select(a => a.ItemSpec)?.ToArray();
+        apkBuilder.ExtraAssemblies = ExtraAssemblies?.Select(a => a.ItemSpec)?.ToArray();
         (ApkBundlePath, ApkPackageId) = apkBuilder.BuildApk(SourceDir, Abi, MainLibraryFileName, MonoRuntimeHeaders);
-        
+
         return true;
     }
 }

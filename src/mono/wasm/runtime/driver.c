@@ -39,6 +39,7 @@ void mono_wasm_enable_debugging (int);
 
 int mono_wasm_register_root (char *start, size_t size, const char *name);
 void mono_wasm_deregister_root (char *addr);
+int mono_wasm_assembly_already_added (const char *assembly_name);
 
 void mono_ee_interp_init (const char *opts);
 void mono_marshal_ilgen_init (void);
@@ -203,6 +204,22 @@ mono_wasm_add_assembly (const char *name, const unsigned char *data, unsigned in
 	assemblies = entry;
 	++assembly_count;
 	return mono_has_pdb_checksum (data, size);
+}
+
+EMSCRIPTEN_KEEPALIVE int
+mono_wasm_assembly_already_added (const char *assembly_name)
+{
+	if (assembly_count == 0)
+		return 0;
+
+	WasmAssembly *entry = assemblies;
+	while (entry != NULL) {
+		if (strcmp (entry->assembly.name, assembly_name) == 0)
+			return 1;
+		entry = entry->next;
+	}
+
+	return 0;
 }
 
 typedef struct WasmSatelliteAssembly_ WasmSatelliteAssembly;
@@ -624,6 +641,17 @@ mono_wasm_string_from_js (const char *str)
 {
 	if (str)
 		return mono_string_new (root_domain, str);
+	else
+		return NULL;
+}
+
+EMSCRIPTEN_KEEPALIVE MonoString *
+mono_wasm_string_from_utf16 (const mono_unichar2 * chars, int length)
+{
+	assert (length >= 0);
+
+	if (chars)
+		return mono_string_new_utf16 (root_domain, chars, length);
 	else
 		return NULL;
 }
