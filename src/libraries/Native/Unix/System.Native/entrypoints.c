@@ -249,5 +249,9 @@ FCFuncStart(gEmbedded_Sys)
     QCFuncElement("GetActiveUdpListeners", "SystemNative_GetActiveUdpListeners")
     QCFuncElement("GetNativeIPInterfaceStatistics", "SystemNative_GetNativeIPInterfaceStatistics")
     QCFuncElement("SystemNative_GetNumRoutes", "SystemNative_GetNumRoutes")
+
+    // more trimmed
+    QCFuncElement("GetNonCryptographicallySecureRandomBytes", "SystemNative_GetNonCryptographicallySecureRandomBytes")
+    QCFuncElement("GetCryptographicallySecureRandomBytes", "SystemNative_GetCryptographicallySecureRandomBytes")
 FCFuncEnd()
 
