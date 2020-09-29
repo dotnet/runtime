@@ -100,10 +100,12 @@ namespace System.Net.Http.Functional.Tests
         [MemberData(nameof(GetAsync_AllowedSSLVersion_Succeeds_MemberData))]
         public async Task GetAsync_AllowedSSLVersion_Succeeds(SslProtocols acceptedProtocol, bool requestOnlyThisProtocol)
         {
+            int count = 0;
             using (HttpClientHandler handler = CreateHttpClientHandler())
             using (HttpClient client = CreateHttpClient(handler))
             {
-                handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+                handler.ServerCertificateCustomValidationCallback =
+                    (request, cert, chain, errors) => { count++; return true; };
 
                 if (requestOnlyThisProtocol)
                 {
@@ -131,6 +133,8 @@ namespace System.Net.Http.Functional.Tests
                         server.AcceptConnectionSendResponseAndCloseAsync(),
                         client.GetAsync(url));
                 }, options);
+
+                Assert.Equal(1, count);
             }
         }
 

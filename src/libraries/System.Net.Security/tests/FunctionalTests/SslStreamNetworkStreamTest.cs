@@ -230,6 +230,7 @@ namespace System.Net.Security.Tests
         public async Task SslStream_TargetHostName_Succeeds(bool useEmptyName)
         {
             string targetName = useEmptyName ? string.Empty : Guid.NewGuid().ToString("N");
+            int count = 0;
 
             (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
             using (clientStream)
@@ -248,7 +249,7 @@ namespace System.Net.Security.Tests
                     {
                         SslStream stream = (SslStream)sender;
                         Assert.Equal(targetName, stream.TargetHostName);
-
+                        count++;
                         return true;
                     };
 
@@ -265,8 +266,12 @@ namespace System.Net.Security.Tests
                 await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
                                 client.AuthenticateAsClientAsync(clientOptions),
                                 server.AuthenticateAsServerAsync(serverOptions));
+
+                await TestHelper.PingPong(client, server);
+
                 Assert.Equal(targetName, client.TargetHostName);
                 Assert.Equal(targetName, server.TargetHostName);
+                Assert.Equal(1, count);
             }
         }
 
