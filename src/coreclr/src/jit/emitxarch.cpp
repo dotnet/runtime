@@ -524,6 +524,7 @@ bool TakesRexWPrefix(instruction ins, emitAttr attr)
             case INS_mulx:
             case INS_pdep:
             case INS_pext:
+            case INS_rorx:
                 return true;
             default:
                 return false;
@@ -758,6 +759,7 @@ unsigned emitter::emitOutputRexOrVexPrefixIfNeeded(instruction ins, BYTE* dst, c
                         {
                             switch (ins)
                             {
+                                case INS_rorx:
                                 case INS_pdep:
                                 case INS_mulx:
                                 {
@@ -1242,6 +1244,7 @@ bool emitter::emitInsCanOnlyWriteSSE2OrAVXReg(instrDesc* id)
         case INS_pextrq:
         case INS_pextrw:
         case INS_pextrw_sse41:
+        case INS_rorx:
         {
             // These SSE instructions write to a general purpose integer register.
             return false;
@@ -14944,6 +14947,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_tzcnt:
         case INS_popcnt:
         case INS_crc32:
+        case INS_rorx:
         case INS_pdep:
         case INS_pext:
         case INS_addsubps:
