@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <linker>
-  <assembly fullname="System.Private.CoreLib, Culture=neutral, PublicKeyToken=7cec85d7bea7798e">
+  <assembly fullname="System.Private.CoreLib, PublicKeyToken=7cec85d7bea7798e">
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>
       <argument>IL2026</argument>

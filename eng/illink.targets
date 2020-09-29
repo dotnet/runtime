@@ -83,17 +83,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <BinPlaceTargetFrameworks Include="$(NetCoreAppCurrent)">
-      <RuntimePath>$(ILLinkTrimAssemblySuppressionsXmlsDir)</RuntimePath>
-      <ItemName>ILLinkSuppressionsXmls</ItemName>
-    </BinPlaceTargetFrameworks>
-    <BinPlaceTargetFrameworks Include="$(NetCoreAppCurrent)-$(TargetOS)">
-      <RuntimePath>$(ILLinkTrimAssemblySuppressionsXmlsDir)</RuntimePath>
-      <ItemName>ILLinkSuppressionsXmls</ItemName>
-    </BinPlaceTargetFrameworks>
-  </ItemGroup>
-
-  <ItemGroup>
     <ILLinkSuppressionsXmls Condition="Exists('$(ILLinkSuppressionsXmlFile)')"
                             Include="$(ILLinkSuppressionsXmlFile)" />
     <ILLinkSuppressionsXmls Condition="Exists('$(ILLinkSuppressionsConfigurationSpecificXmlFile)')"
@@ -103,6 +92,17 @@
     <ILLinkSuppressionsXmls Condition="'$(TargetOs)' != 'Windows_NT' and Exists('$(ILLinkSuppressionsNonWindowsXmlFile)')"
                             Include="$(ILLinkSuppressionsNonWindowsXmlFile)" />
     <ILLinkSuppressionsXmls Update="@(ILLinkSuppressionsXmls)" TargetPath="%(FileName).$(AssemblyName).xml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <BinPlaceTargetFrameworks Include="$(NetCoreAppCurrent)">
+      <RuntimePath>$(ILLinkTrimAssemblySuppressionsXmlsDir)</RuntimePath>
+      <ItemName>ILLinkSuppressionsXmls</ItemName>
+    </BinPlaceTargetFrameworks>
+    <BinPlaceTargetFrameworks Include="$(NetCoreAppCurrent)-$(TargetOS)">
+      <RuntimePath>$(ILLinkTrimAssemblySuppressionsXmlsDir)</RuntimePath>
+      <ItemName>ILLinkSuppressionsXmls</ItemName>
+    </BinPlaceTargetFrameworks>
   </ItemGroup>
 
   <Target Name="_EmbedILLinkXmls"
