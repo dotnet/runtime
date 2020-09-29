@@ -321,6 +321,7 @@ if (CLR_CMAKE_HOST_UNIX)
   add_compile_options(-Wno-unused-variable)
   add_compile_options(-Wno-unused-value)
   add_compile_options(-Wno-unused-function)
+  add_compile_options(-Wno-tautological-compare)
 
   #These seem to indicate real issues
   add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-invalid-offsetof>)
@@ -334,8 +335,6 @@ if (CLR_CMAKE_HOST_UNIX)
     add_compile_options(-Wno-unused-private-field)
     # Explicit constructor calls are not supported by clang (this->ClassName::ClassName())
     add_compile_options(-Wno-microsoft)
-    # This warning is caused by comparing 'this' to NULL
-    add_compile_options(-Wno-tautological-compare)
     # There are constants of type BOOL used in a condition. But BOOL is defined as int
     # and so the compiler thinks that there is a mistake.
     add_compile_options(-Wno-constant-logical-operand)
