@@ -5,7 +5,7 @@
     If they ever need to take part, we can conditionally include them as documented
     here https://docs.microsoft.com/en-us/visualstudio/msbuild/customize-your-build#directorybuildprops-and-directorybuildtargets
   -->
-  <Import Project="$(RepoRoot)src/coreclr/tests/disableversioncheck.targets"
+  <Import Project="$(MSBuildThisFileDirectory)/disableversioncheck.targets"
           Condition="'$(DisableVersionCheckImported)' != 'true'" />
 
   <Import Project="$(RepoRoot)eng/liveBuilds.targets" />
@@ -87,6 +87,15 @@
           Exclude="@(RunTimeArtifactsExcludeFiles -> '$(CoreCLRArtifactsPath)%(Identity)')"
           TargetDir="%(RunTimeArtifactsIncludeFolders.Identity)" />
 
+      <RunTimeDependencyCopyLocal
+          Condition="'$(TargetArchitecture)' != 'x64'"
+          Include="$(CoreCLRArtifactsPath)x64/crossgen2/clrjit_*"
+          TargetDir="crossgen2/" />
+
+      <RunTimeDependencyCopyLocal
+          Condition="'$(TargetArchitecture)' != 'x64'"
+          Include="$(CoreCLRArtifactsPath)x64/crossgen2/jitinterface_*"
+          TargetDir="crossgen2/" />
 
     </ItemGroup>
 

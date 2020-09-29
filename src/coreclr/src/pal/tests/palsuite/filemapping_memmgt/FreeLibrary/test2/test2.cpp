@@ -14,7 +14,7 @@
 
 #include <palsuite.h>
 
-int __cdecl main(int argc, char* argv[])
+PALTEST(filemapping_memmgt_FreeLibrary_test2_paltest_freelibrary_test2, "filemapping_memmgt/FreeLibrary/test2/paltest_freelibrary_test2")
 {
     HANDLE hLib;
 

@@ -12,7 +12,7 @@
 **============================================================*/
 #include <palsuite.h>
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime_isprint_test1_paltest_isprint_test1, "c_runtime/isprint/test1/paltest_isprint_test1")
 {
     int err;
     int index;

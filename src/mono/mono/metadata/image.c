@@ -449,6 +449,21 @@ mono_image_load_cli_header (MonoImage *image, MonoCLIImageInfo *iinfo)
 	return TRUE;
 }
 
+/**
+ * mono_metadata_module_mvid:
+ *
+ * Return the module mvid GUID or NULL if the image doesn't have a module table.
+ */
+static const guint8 *
+mono_metadata_module_mvid (MonoImage *image)
+{
+	if (!image->tables [MONO_TABLE_MODULE].base)
+		return NULL;
+	guint32 module_cols [MONO_MODULE_SIZE];
+	mono_metadata_decode_row (&image->tables [MONO_TABLE_MODULE], 0, module_cols, MONO_MODULE_SIZE);
+	return (const guint8*) mono_metadata_guid_heap (image, module_cols [MONO_MODULE_MVID]);
+}
+
 static gboolean
 load_metadata_ptrs (MonoImage *image, MonoCLIImageInfo *iinfo)
 {
@@ -543,6 +558,21 @@ load_metadata_ptrs (MonoImage *image, MonoCLIImageInfo *iinfo)
 			ptr += 4 - (pad % 4);
 	}
 
+	{
+		/* Compute the precise size of the string heap by walking back over the trailing nul padding.
+		 *
+		 * ENC minimal delta images require the precise size of the base image string heap to be known.
+		 */
+		const char *p;
+		p = image->heap_strings.data + image->heap_strings.size - 1;
+		pad = 0;
+		while (p [0] == '\0' && p [-1] == '\0') {
+			p--;
+			pad++;
+		}
+		image->heap_strings.size -= pad;
+	}
+
 	i = ((MonoImageLoader*)image->loader)->load_tables (image);
 
 	if (!image->metadata_only) {
@@ -551,12 +581,17 @@ load_metadata_ptrs (MonoImage *image, MonoCLIImageInfo *iinfo)
 
 		image->guid = mono_guid_to_string ((guint8*)image->heap_guid.data);
 	} else {
-		/* PPDB files have no guid */
-		guint8 empty_guid [16];
+		const guint8 *guid = mono_metadata_module_mvid (image);
+		if (guid)
+			image->guid = mono_guid_to_string (guid);
+		else {
+			/* PPDB files have no guid */
+			guint8 empty_guid [16];
 
-		memset (empty_guid, 0, sizeof (empty_guid));
+			memset (empty_guid, 0, sizeof (empty_guid));
 
-		image->guid = mono_guid_to_string (empty_guid);
+			image->guid = mono_guid_to_string (empty_guid);
+		}
 	}
 
 	return i;
@@ -1174,7 +1209,10 @@ mono_image_load_names (MonoImage *image)
 	}
 
 	/* Portable pdb images don't have a MODULE row */
-	if (image->tables [MONO_TABLE_MODULE].rows) {
+	/* Minimal ENC delta images index the combined string heap of the base and delta image,
+	 * so the module index is out of bounds here.
+	 */
+	if (image->tables [MONO_TABLE_MODULE].rows && !image->minimal_delta) {
 		image->module_name = mono_metadata_string_heap (image,
 			mono_metadata_decode_row_col (&image->tables [MONO_TABLE_MODULE],
 					0, MONO_MODULE_NAME));

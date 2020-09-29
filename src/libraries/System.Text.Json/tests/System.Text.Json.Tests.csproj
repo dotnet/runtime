@@ -60,6 +60,7 @@
     <Compile Include="Serialization\ConstructorTests\ConstructorTests.Exceptions.cs" />
     <Compile Include="Serialization\ConstructorTests\ConstructorTests.ParameterMatching.cs" />
     <Compile Include="Serialization\ConstructorTests\ConstructorTests.Stream.cs" />
+    <Compile Include="Serialization\ContinuationTests.cs" />
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.Array.cs" />
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.Attribute.cs" />
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.BadConverters.cs" />

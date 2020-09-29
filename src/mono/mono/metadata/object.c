@@ -1713,15 +1713,13 @@ mono_vtable_build_imt_slot (MonoVTable* vtable, int imt_slot)
 
 /**
  * mono_method_alloc_generic_virtual_trampoline:
- * \param domain a domain
+ * \param mem_manager a memory manager
  * \param size size in bytes
  * Allocs \p size bytes to be used for the code of a generic virtual
- * trampoline.  It's either allocated from the domain's code manager or
- * reused from a previously invalidated piece.
- * LOCKING: The domain lock must be held.
+ * trampoline.
  */
 gpointer
-(mono_method_alloc_generic_virtual_trampoline) (MonoDomain *domain, int size)
+(mono_method_alloc_generic_virtual_trampoline) (MonoMemoryManager *mem_manager, int size)
 {
 	MONO_REQ_GC_NEUTRAL_MODE;
 
@@ -1735,7 +1733,7 @@ gpointer
 	}
 	generic_virtual_trampolines_size += size;
 
-	return mono_domain_code_reserve (domain, size);
+	return mono_mem_manager_code_reserve (mem_manager, size);
 }
 
 typedef struct _GenericVirtualCase {
@@ -5545,22 +5543,23 @@ MonoObject*
 mono_runtime_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 			   MonoObject **exc)
 {
+	MonoObject *res;
+	MONO_ENTER_GC_UNSAFE;
 	ERROR_DECL (error);
 	if (exc) {
-		MonoObject *result = mono_runtime_try_invoke_array (method, obj, params, exc, error);
+		res = mono_runtime_try_invoke_array (method, obj, params, exc, error);
 		if (*exc) {
+			res = NULL;
 			mono_error_cleanup (error);
-			return NULL;
-		} else {
-			if (!is_ok (error))
-				*exc = (MonoObject*)mono_error_convert_to_exception (error);
-			return result;
+		} else if (!is_ok (error)) {
+			*exc = (MonoObject*)mono_error_convert_to_exception (error);
 		}
 	} else {
-		MonoObject *result = mono_runtime_try_invoke_array (method, obj, params, NULL, error);
+		res = mono_runtime_try_invoke_array (method, obj, params, NULL, error);
 		mono_error_raise_exception_deprecated (error); /* OK to throw, external only without a good alternative */
-		return result;
 	}
+	MONO_EXIT_GC_UNSAFE;
+	return res;
 }
 
 /**

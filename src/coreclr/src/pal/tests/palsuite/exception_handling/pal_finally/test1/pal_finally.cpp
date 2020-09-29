@@ -152,7 +152,7 @@ void NestedFunc2 (void)
     PAL_ENDTRY ;
 }
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(exception_handling_pal_finally_test1_paltest_pal_finally_test1, "exception_handling/pal_finally/test1/paltest_pal_finally_test1")
 {
     if (0 != PAL_Initialize(argc, argv))
     {

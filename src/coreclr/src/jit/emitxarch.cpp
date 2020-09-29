@@ -10523,7 +10523,7 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
 
             case IF_SWR: // Stack Write (So we need to update GC live for stack var)
                 // Write stack                    -- GC var may be born
-                emitGCvarLiveUpd(adr, varNum, id->idGCref(), dst);
+                emitGCvarLiveUpd(adr, varNum, id->idGCref(), dst DEBUG_ARG(varNum));
                 break;
 
             case IF_SRD_CNS:
@@ -10547,7 +10547,7 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
 
             case IF_SWR_RRD: // Stack Write, Register Read (So we need to update GC live for stack var)
                 // Read  register, write stack    -- GC var may be born
-                emitGCvarLiveUpd(adr, varNum, id->idGCref(), dst);
+                emitGCvarLiveUpd(adr, varNum, id->idGCref(), dst DEBUG_ARG(varNum));
                 break;
 
             case IF_RRW_SRD: // Register Read/Write, Stack Read (So we need to update GC live for register)
@@ -13726,6 +13726,12 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
         regMaskTP regMask = genRegMask(inst3opImulReg(ins));
         assert((regMask & (emitThisGCrefRegs | emitThisByrefRegs)) == 0);
+    }
+
+    // Output any delta in GC info.
+    if (EMIT_GC_VERBOSE || emitComp->opts.disasmWithGC)
+    {
+        emitDispGCInfoDelta();
     }
 #endif
 

@@ -14,7 +14,7 @@
 
 #include <palsuite.h>
 
-INT __cdecl main( int argc, char **argv ) 
+PALTEST(threading_GetCurrentProcessId_test1_paltest_getcurrentprocessid_test1, "threading/GetCurrentProcessId/test1/paltest_getcurrentprocessid_test1")
 {
 
     DWORD dwProcessId; 

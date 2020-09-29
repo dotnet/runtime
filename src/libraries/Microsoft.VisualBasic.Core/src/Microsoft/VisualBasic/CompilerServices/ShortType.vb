@@ -2,7 +2,6 @@
 ' The .NET Foundation licenses this file to you under the MIT license.
 
 Imports System
-Imports System.Globalization
 
 Imports Microsoft.VisualBasic.CompilerServices.Utils
 

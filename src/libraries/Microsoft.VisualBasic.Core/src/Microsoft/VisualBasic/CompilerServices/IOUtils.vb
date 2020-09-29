@@ -6,7 +6,6 @@ Imports System.Security
 Imports System.IO
 
 Imports Microsoft.VisualBasic.CompilerServices.ExceptionUtils
-Imports Microsoft.VisualBasic.CompilerServices.Utils
 
 Namespace Microsoft.VisualBasic.CompilerServices
 

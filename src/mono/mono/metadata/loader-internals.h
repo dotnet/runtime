@@ -27,6 +27,8 @@
 #endif
 #endif
 
+G_BEGIN_DECLS
+
 typedef struct _MonoLoadedImages MonoLoadedImages;
 typedef struct _MonoAssemblyLoadContext MonoAssemblyLoadContext;
 typedef struct _MonoMemoryManager MonoMemoryManager;
@@ -232,6 +234,8 @@ mono_mem_manager_alloc0_nolock (MonoMemoryManager *memory_manager, guint size);
 void *
 mono_mem_manager_code_reserve (MonoMemoryManager *memory_manager, int size);
 
+#define mono_mem_manager_code_reserve(mem_manager, size) (g_cast (mono_mem_manager_code_reserve ((mem_manager), (size))))
+
 void *
 mono_mem_manager_code_reserve_align (MonoMemoryManager *memory_manager, int size, int newsize);
 
@@ -240,5 +244,10 @@ mono_mem_manager_code_commit (MonoMemoryManager *memory_manager, void *data, int
 
 void
 mono_mem_manager_code_foreach (MonoMemoryManager *memory_manager, MonoCodeManagerFunc func, void *user_data);
+
+char*
+mono_mem_manager_strdup (MonoMemoryManager *memory_manager, const char *s);
+
+G_END_DECLS
 
 #endif
