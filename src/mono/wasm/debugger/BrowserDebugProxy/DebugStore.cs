@@ -848,6 +848,12 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public AssemblyInfo GetAssemblyByUnqualifiedName(string name) => assemblies.FirstOrDefault(a => a.AssemblyNameUnqualified.Equals(name, StringComparison.InvariantCultureIgnoreCase));
 
+        public SourceFile GetSourceFileByRegex(string regex)
+        {
+            Regex rx = new Regex(regex, RegexOptions.Compiled | RegexOptions.IgnoreCase);
+            return AllSources().FirstOrDefault(a => rx.Matches (a.SourceUri.AbsoluteUri).Count > 0);
+        }
+
         /*
         V8 uses zero based indexing for both line and column.
         PPDBs uses one based indexing for both line and column.

@@ -49,3 +49,13 @@ public class Fancy
         var d = usMin + usMax;
     }
 }
+
+public class ClassToBeCalledFromAnotherSource {
+    public static void CallFromAnotherSource()
+    {
+        Console.WriteLine("first line");
+        Console.WriteLine("second line");
+        Console.WriteLine("third line");
+        
+    }
+}

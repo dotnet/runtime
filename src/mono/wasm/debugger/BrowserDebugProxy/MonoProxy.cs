@@ -368,21 +368,35 @@ namespace Microsoft.WebAssembly.Diagnostics
                         return false;
                     }
 
+                case "Debugger.setBlackboxPatterns":
+                    {
+                        IEnumerable<string> patterns = args["patterns"].Values<string>();
+                        await SendMonoCommand(id, MonoCommands.ClearAllBlackBoxSources(), token);
+                        foreach (string pattern in patterns)
+                        {
+                            var store = await LoadStore(id, token);
+                            var src = store.GetSourceFileByRegex(pattern);
+                            if ( src != null)
+                            {
+                                await SendMonoCommand(id, MonoCommands.AddBlackBoxSource(src.DebuggerFileName), token);
+                            }
+                        }
+                        return false;
+                    }
+
                 // Protocol extensions
                 case "DotnetDebugger.setDebugJustMyCode":
                     {
-                        Console.WriteLine("cheguei aqui DotnetDebugger.setDebugJustMyCode");
                         int state = args["state"].Value<int>();
                         Console.WriteLine(state);
                         await SendMonoCommand(id, MonoCommands.SetDebugJustMyCode(state), token);
-                        Console.WriteLine("voltei DotnetDebugger.setDebugJustMyCode");
                         SendResponse(id, Result.Ok(new JObject()), token);
                         return true;
                     }
-                case "DotnetDebugger.addUserAssembliesList":
+                case "DotnetDebugger.markAsUserAssembly":
                     {
                         string assemblyName = args["assemblyName"]?.Value<string>();
-                        await SendMonoCommand(id, MonoCommands.AddUserAssembly(assemblyName), token);
+                        await SendMonoCommand(id, MonoCommands.MarkAsUserAssembly(assemblyName), token);
                         SendResponse(id, Result.Ok(new JObject()), token);
                         return true;
                     }

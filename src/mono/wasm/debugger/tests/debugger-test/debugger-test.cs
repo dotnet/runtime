@@ -556,3 +556,12 @@ public class HiddenSequencePointTest {
     }
 #line default
 }
+
+public class ClassToCallAnotherSource {
+    public static void CallAnotherSource()
+    {
+        ClassToBeCalledFromAnotherSource.CallFromAnotherSource();
+        Console.WriteLine ($"debugger should stop here");
+    }
+}
+

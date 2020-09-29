@@ -1261,10 +1261,22 @@ var MonoSupportLib = {
 			this.mono_wasm_debug_just_my_code (state);
 		},
 
-		mono_wasm_add_user_assembly: function (assembly_name) {
-			if (!this.mono_wasm_set_user_assembly)
-				this.mono_wasm_set_user_assembly = Module.cwrap ("mono_wasm_set_user_assembly", 'void', ['string']);
-			this.mono_wasm_set_user_assembly (assembly_name);
+		mono_wasm_add_black_box_source: function (source) {
+			if (!this.mono_wasm_add_blackbox_source)
+				this.mono_wasm_add_blackbox_source = Module.cwrap ("mono_wasm_add_blackbox_source", 'void', ['string']);
+			this.mono_wasm_add_blackbox_source (source);
+		},
+
+		mono_wasm_clear_all_black_box_sources: function () {
+			if (!this.mono_wasm_clear_all_blackbox_sources)
+				this.mono_wasm_clear_all_blackbox_sources = Module.cwrap ("mono_wasm_clear_all_blackbox_sources", null);
+			this.mono_wasm_clear_all_blackbox_sources ();
+		},
+
+		mono_wasm_mark_as_user_assembly: function (assembly_name) {
+			if (!this.mono_wasm_mark_user_assembly)
+				this.mono_wasm_mark_user_assembly = Module.cwrap ("mono_wasm_mark_as_user_assembly", 'void', ['string']);
+			this.mono_wasm_mark_user_assembly (assembly_name);
 		},
 
 		_register_c_fn: function (name, ...args) {

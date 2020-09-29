@@ -200,12 +200,11 @@ mono_wasm_add_assembly (const char *name, const unsigned char *data, unsigned in
 }
 
 EMSCRIPTEN_KEEPALIVE void
-mono_wasm_set_user_assembly (const char *assembly_name)
+mono_wasm_mark_as_user_assembly (const char *assembly_name)
 {
 	WasmAssembly *entry = assemblies;
 	while (entry != NULL) {
 		if (strcmp (entry->assembly.name, assembly_name) == 0) {
-			printf("Set assembly - %s - as user assembly.\n", assembly_name);
 			entry->is_user_assembly = 1;
 			return;
 		}

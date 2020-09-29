@@ -477,7 +477,7 @@ namespace DebuggerTests
             return res;
         }
 
-        internal async Task<JObject> StepAndCheck(StepKind kind, string script_loc, int line, int column, string function_name,
+        internal async Task<JObject> StepAndCheck(StepKind kind, string script_loc = null, int line = -1, int column = -1, string function_name = null,
             Func<JObject, Task> wait_for_event_fn = null, Action<JToken> locals_fn = null, int times = 1)
         {
             string method = (kind == StepKind.Resume ? "Debugger.resume" : $"Debugger.step{kind}");
@@ -500,7 +500,7 @@ namespace DebuggerTests
             wait_for_event_fn: wait_for_event_fn,
             locals_fn: locals_fn);
 
-        internal async Task<JObject> SendCommandAndCheck(JObject args, string method, string script_loc, int line, int column, string function_name,
+        internal async Task<JObject> SendCommandAndCheck(JObject args, string method, string script_loc = null, int line = -1, int column = -1, string function_name = null,
             Func<JObject, Task> wait_for_event_fn = null, Action<JToken> locals_fn = null, string waitForEvent = Inspector.PAUSE)
         {
             var res = await ctx.cli.SendCommand(method, args, ctx.token);

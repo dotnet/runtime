@@ -1,8 +1,10 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.WebAssembly.Diagnostics;
 using Newtonsoft.Json.Linq;
 using Xunit;
+using System.Collections.Generic;
 
 namespace DebuggerTests
 {
@@ -806,7 +808,21 @@ namespace DebuggerTests
         }
 
         [Fact]
-        public async Task BreakAfterAwaitThenStepOverTillBackToCaller()
+        public async Task BreakAfterAwaitThenStepOverTillBackToCaller_UserCodeOnly()
+            => await Check_BreakAfterAwaitThenStepOverTillBackToCaller_WithUserCodeOnlySetting
+                        (just_my_code: true, send_user_assemblies: true, expect_pause_in_user_code: true);
+
+        [Fact]
+        public async Task BreakAfterAwaitThenStepOverTillBackToCaller_UserCodeOnly_NoUserAssemblies()
+            => await Check_BreakAfterAwaitThenStepOverTillBackToCaller_WithUserCodeOnlySetting
+                        (just_my_code: true, send_user_assemblies: false, expect_pause_in_user_code: false);
+
+        [Fact]
+        public async Task BreakAfterAwaitThenStepOverTillBackToCaller_AnyCode()
+            => await Check_BreakAfterAwaitThenStepOverTillBackToCaller_WithUserCodeOnlySetting
+                        (just_my_code: false, send_user_assemblies: false, expect_pause_in_user_code: false);
+
+        async Task Check_BreakAfterAwaitThenStepOverTillBackToCaller_WithUserCodeOnlySetting(bool? just_my_code, bool send_user_assemblies, bool expect_pause_in_user_code)
         {
             var insp = new Inspector();
             //Collect events
@@ -817,7 +833,21 @@ namespace DebuggerTests
             {
                 ctx = new DebugTestContext(cli, insp, token, scripts);
 
-                var bp = await SetBreakpointInMethod("debugger-test.dll", "DebuggerTests.AsyncStepClass", "TestAsyncStepOut2", 2);
+                if (just_my_code != null)
+                {
+                    var req = JObject.FromObject(new { state = just_my_code.Value ? 1 : 0 });
+                    Result res = await ctx.cli.SendCommand("DotnetDebugger.setDebugJustMyCode", req, ctx.token);
+                    Assert.True(res.IsOk, "setDebugJustMyCode failed");
+                }
+
+                if (send_user_assemblies)
+                {
+                    var req = JObject.FromObject(new { assemblyName = "debugger-test.dll" });
+                    Result res = await ctx.cli.SendCommand("DotnetDebugger.markAsUserAssembly", req, ctx.token);
+                    Assert.True(res.IsOk, "addUserAssembliesList failed");
+                }
+
+                await SetBreakpointInMethod("debugger-test.dll", "DebuggerTests.AsyncStepClass", "TestAsyncStepOut2", 2);
                 await EvaluateAndCheck(
                     "window.setTimeout(function() { invoke_static_method_async('[debugger-test] DebuggerTests.AsyncStepClass:TestAsyncStepOut'); }, 1);",
                     "dotnet://debugger-test.dll/debugger-async-step.cs", 21, 12,
@@ -827,12 +857,22 @@ namespace DebuggerTests
 
                 await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-async-step.cs", 24, 8, "MoveNext");
 
-                await StepAndCheck(StepKind.Over, "dotnet://System.Private.CoreLib.dll/Task.cs", 755, 16, "NotifyDebuggerOfWaitCompletionIfNecessary");
+                if (expect_pause_in_user_code)
+                {
+                    await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-async-step.cs", 15, 12, "MoveNext");
+                }
+                else
+                {
+                    JObject wait_res = await StepAndCheck(StepKind.Over);
+                    string loc_id = wait_res["callFrames"][0]["location"]["scriptId"]?.Value<string>();
+                    Assert.NotEqual("dotnet://debugger-test.dll", scripts[loc_id]);
+                }
             });
         }
 
+
         [Fact]
-        public async Task BreakAfterAwaitThenStepOverTillBackToCallerUserCodeOnly()
+        public async Task TrivalSteppingWithBlackBoxSource()
         {
             var insp = new Inspector();
             //Collect events
@@ -843,22 +883,51 @@ namespace DebuggerTests
             {
                 ctx = new DebugTestContext(cli, insp, token, scripts);
 
-                var req = JObject.FromObject(new { state = 1 });
-                var res = await ctx.cli.SendCommand("DotnetDebugger.setDebugJustMyCode", req, ctx.token);
-                req = JObject.FromObject(new { assemblyName = "debugger-test.dll" });
-                res = await ctx.cli.SendCommand("DotnetDebugger.addUserAssembliesList", req, ctx.token);
+                await SetBreakpointInMethod("debugger-test.dll", "ClassToCallAnotherSource", "CallAnotherSource", 1);
 
-                var bp = await SetBreakpointInMethod("debugger-test.dll", "DebuggerTests.AsyncStepClass", "TestAsyncStepOut2", 2);
                 await EvaluateAndCheck(
-                    "window.setTimeout(function() { invoke_static_method_async('[debugger-test] DebuggerTests.AsyncStepClass:TestAsyncStepOut'); }, 1);",
-                    "dotnet://debugger-test.dll/debugger-async-step.cs", 21, 12,
-                    "MoveNext");
+                    "window.setTimeout(function() { invoke_static_method ('[debugger-test] ClassToCallAnotherSource:CallAnotherSource'); }, 1);",
+                    "dotnet://debugger-test.dll/debugger-test.cs", 562, 8,
+                    "CallAnotherSource");
 
-                await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-async-step.cs", 23, 12, "MoveNext");
+                var req = JObject.FromObject(new { patterns = new List<string> {"^file://.*/debugger-test2\\.cs$"} });
+                Result res = await ctx.cli.SendCommand("Debugger.setBlackboxPatterns", req, ctx.token);
+                Assert.True(res.IsOk, "setBlackboxPatterns failed");
 
-                await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-async-step.cs", 24, 8, "MoveNext");
+                JObject wait_res = await StepAndCheck(StepKind.Into);
+                string url = wait_res["callFrames"][0]["url"]?.Value<string>();
+                Assert.NotEqual("dotnet://debugger-test.dll/debugger-test2.cs", url);
+            });
+        }
+        
+        [Fact]
+        public async Task TrivalSteppingWithBlackBoxSourceRemoved()
+        {
+            var insp = new Inspector();
+            //Collect events
+            var scripts = SubscribeToScripts(insp);
 
-                await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-async-step.cs", 15, 12, "MoveNext");
+            await Ready();
+            await insp.Ready(async (cli, token) =>
+            {
+                ctx = new DebugTestContext(cli, insp, token, scripts);
+
+                await SetBreakpointInMethod("debugger-test.dll", "ClassToCallAnotherSource", "CallAnotherSource", 1);
+
+                await EvaluateAndCheck(
+                    "window.setTimeout(function() { invoke_static_method ('[debugger-test] ClassToCallAnotherSource:CallAnotherSource'); }, 1);",
+                    "dotnet://debugger-test.dll/debugger-test.cs", 562, 8,
+                    "CallAnotherSource");
+
+                var req = JObject.FromObject(new { patterns = new List<string> {"^file://.*/debugger-test2\\.cs$"} });
+                Result res = await ctx.cli.SendCommand("Debugger.setBlackboxPatterns", req, ctx.token);
+                Assert.True(res.IsOk, "setBlackboxPatterns failed");
+
+                req = JObject.FromObject(new { patterns = new List<string> {} });
+                res = await ctx.cli.SendCommand("Debugger.setBlackboxPatterns", req, ctx.token);
+                Assert.True(res.IsOk, "setBlackboxPatterns to empty failed");
+
+                await StepAndCheck(StepKind.Into, "dotnet://debugger-test.dll/debugger-test2.cs", 54, 4, "CallFromAnotherSource");
             });
         }
 
@@ -874,7 +943,6 @@ namespace DebuggerTests
             await insp.Ready(async (cli, token) =>
             {
                 ctx = new DebugTestContext(cli, insp, token, scripts);
-                string source_file = "dotnet://System.Private.CoreLib.dll/Task.cs";
 
                 await SetBreakpointInMethod("debugger-test.dll", "DebuggerTests.AsyncStepClass", "TestAsyncStepOut2", 2);
                 await EvaluateAndCheck(
@@ -882,10 +950,12 @@ namespace DebuggerTests
                     "dotnet://debugger-test.dll/debugger-async-step.cs", 21, 12,
                     "MoveNext");
 
-                await StepAndCheck(StepKind.Out, source_file, 755, 16, "NotifyDebuggerOfWaitCompletionIfNecessary");
+                JObject wait_res = await StepAndCheck(StepKind.Over);
+                string loc_id = wait_res["callFrames"][0]["location"]["scriptId"]?.Value<string>();
+                Assert.NotEqual("dotnet://debugger-test.dll", scripts[loc_id]);
             });
         }
-        
+
         [Fact]
         public async Task StepOutOfAsyncMethodUserCodeOnly()
         {
@@ -897,11 +967,11 @@ namespace DebuggerTests
             await insp.Ready(async (cli, token) =>
             {
                 ctx = new DebugTestContext(cli, insp, token, scripts);
-                
+
                 var req = JObject.FromObject(new { state = 1 });
                 var res = await ctx.cli.SendCommand("DotnetDebugger.setDebugJustMyCode", req, ctx.token);
                 req = JObject.FromObject(new { assemblyName = "debugger-test.dll" });
-                res = await ctx.cli.SendCommand("DotnetDebugger.addUserAssembliesList", req, ctx.token);
+                res = await ctx.cli.SendCommand("DotnetDebugger.markAsUserAssembly", req, ctx.token);
 
                 string source_file = "dotnet://debugger-test.dll/debugger-async-step.cs";
 

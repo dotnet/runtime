@@ -54,6 +54,8 @@ EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_invoke_getter_on_object (int object_id, 
 EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_invoke_getter_on_value (void *value, MonoClass *klass, const char *name);
 EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_get_deref_ptr_value (void *value_addr, MonoClass *klass);
 EMSCRIPTEN_KEEPALIVE void mono_wasm_debug_just_my_code (int state);
+EMSCRIPTEN_KEEPALIVE void mono_wasm_add_blackbox_source (const char *source);
+EMSCRIPTEN_KEEPALIVE void mono_wasm_clear_all_blackbox_sources (void);
 
 //JS functions imported that we use
 extern void mono_wasm_add_frame (int il_offset, int method_token, int frame_id, const char *assembly_name, const char *method_name);
@@ -83,6 +85,7 @@ static GHashTable *obj_to_objref;
 static int objref_id = 0;
 static int pause_on_exc = EXCEPTION_MODE_NONE;
 static int debug_just_my_code = 0;
+static GPtrArray *blackbox_source_list;
 
 static const char*
 all_getters_allowed_class_names[] = {
@@ -300,31 +303,53 @@ typedef struct {
 	gboolean is_ss; //do I need this?
 } BpEvents;
 
-static void*
-create_event_list (GPtrArray *ss_reqs, GPtrArray *bp_reqs, MonoJitInfo *ji, EventKind kind)
-{
-	gboolean filtered = FALSE;
-	gboolean found = FALSE;
-	if (debug_just_my_code) {
-		WasmAssembly *assemblies = mono_wasm_get_assembly_list ();
 
-		while (assemblies != NULL) {
-			if (assemblies->is_user_assembly && assemblies->assembly.data == (const unsigned char *)(m_class_get_image (jinfo_get_method (ji)->klass)->raw_data)) {
-				found = TRUE;
-			}
-			assemblies = assemblies->next;
+static gboolean
+is_jit_method_in_user_assembly (MonoJitInfo *ji)
+{
+	WasmAssembly *assemblies = mono_wasm_get_assembly_list ();
+	int num_user_assemblies = 0;
+
+	while (assemblies != NULL) {
+		if (assemblies->is_user_assembly) {
+			num_user_assemblies++;
+
+			if (assemblies->assembly.data == (const unsigned char *)(m_class_get_image (jinfo_get_method (ji)->klass)->raw_data))
+				return TRUE;
 		}
 
-		if (!found)
-			filtered = TRUE;
+		assemblies = assemblies->next;
 	}
-	
-	if (!filtered) {
-		BpEvents *evts = g_new0 (BpEvents, 1); //just a non-null value to make sure we can raise it on process_breakpoint_events
-		evts->is_ss = (ss_reqs && ss_reqs->len);
-		return evts;
+
+	// If we had no user assemblies at all, then just treat it
+	// like this *is* a user assembly
+	return num_user_assemblies == 0;
+}
+
+static gboolean
+is_jit_method_in_blackbox_source_list (MonoJitInfo *ji)
+{
+	if (blackbox_source_list->len == 0)
+		return FALSE;
+		
+	MonoDebugMethodInfo *minfo = mono_debug_lookup_method (jinfo_get_method (ji));
+	GPtrArray *source_file_list;
+	int *source_files;
+	int n_il_offsets;
+	char *source_file;
+	MonoSymSeqPoint *sym_seq_points;
+
+	if (minfo) {
+		mono_debug_get_seq_points (minfo, &source_file, &source_file_list, &source_files, &sym_seq_points, &n_il_offsets);
+		int i = 0;
+		while (i < blackbox_source_list->len) {
+			const char *source = (const char *)g_ptr_array_index (blackbox_source_list, i);
+			if (strcmp (source, source_file) == 0)
+				return TRUE;
+			i++;
+		}
 	}
-	return NULL;
+	return FALSE;
 }
 
 static void*
@@ -332,7 +357,15 @@ create_breakpoint_events (GPtrArray *ss_reqs, GPtrArray *bp_reqs, MonoJitInfo *j
 {
 	DEBUG_PRINTF (1, "ss_reqs %d bp_reqs %d\n", ss_reqs->len, bp_reqs->len);
 	if ((ss_reqs && ss_reqs->len) || (bp_reqs && bp_reqs->len)) {
-		return create_event_list (ss_reqs, bp_reqs, ji, kind);
+		if (debug_just_my_code && !is_jit_method_in_user_assembly(ji))
+			return NULL;
+		
+		if (is_jit_method_in_blackbox_source_list(ji))
+			return NULL;
+
+		BpEvents *evts = g_new0 (BpEvents, 1); //just a non-null value to make sure we can raise it on process_breakpoint_events
+		evts->is_ss = (ss_reqs && ss_reqs->len);
+		return evts;
 	}
 	return NULL;
 }
@@ -443,6 +476,8 @@ mono_wasm_debugger_init (void)
 
 	obj_to_objref = g_hash_table_new (NULL, NULL);
 	objrefs = g_hash_table_new_full (NULL, NULL, NULL, mono_debugger_free_objref);
+	
+	blackbox_source_list = g_ptr_array_new ();
 
 	mini_get_dbg_callbacks ()->handle_exception = handle_exception;
 }
@@ -453,6 +488,24 @@ mono_wasm_enable_debugging (int debug_level)
 	DEBUG_PRINTF (1, "DEBUGGING ENABLED\n");
 	debugger_enabled = TRUE;
 	log_level = debug_level;
+}
+
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_add_blackbox_source (const char *source)
+{
+	g_ptr_array_add (blackbox_source_list, g_strdup(source));
+}
+
+
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_clear_all_blackbox_sources ()
+{
+	int i = 0;
+	while (i < blackbox_source_list->len) {
+		char *source = (char *)g_ptr_array_index (blackbox_source_list, i);
+		g_ptr_array_remove_index_fast (blackbox_source_list, i);
+		g_free (source);
+	}
 }
 
 EMSCRIPTEN_KEEPALIVE int

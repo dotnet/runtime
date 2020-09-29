@@ -212,7 +212,11 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public static MonoCommands SetDebugJustMyCode(int state) => new MonoCommands($"MONO.mono_wasm_set_debug_just_my_code({state})");
 
-        public static MonoCommands AddUserAssembly(string assemblyName) => new MonoCommands($"MONO.mono_wasm_add_user_assembly(\"{assemblyName}\")");
+        public static MonoCommands MarkAsUserAssembly(string assemblyName) => new MonoCommands($"MONO.mono_wasm_mark_as_user_assembly(\"{assemblyName}\")");
+
+        public static MonoCommands AddBlackBoxSource(string sourceName) => new MonoCommands($"MONO.mono_wasm_add_black_box_source(\"{sourceName}\")");
+
+        public static MonoCommands ClearAllBlackBoxSources() => new MonoCommands($"MONO.mono_wasm_clear_all_black_box_sources()");
     }
 
     internal enum MonoErrorCodes
