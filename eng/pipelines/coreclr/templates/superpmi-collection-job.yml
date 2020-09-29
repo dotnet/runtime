@@ -103,26 +103,31 @@ jobs:
         correlationPayloadDirectory: '$(CorrelationPayloadDirectory)'
         buildConfig: ${{ parameters.buildConfig }}
         pythonScript: $(PythonScript)
-        pmiAssembliesSubDirectory: '$(LibrariesArtifacts)'
-        outputSPMICollectionName: 'libraries'
         coreRootDir: '$(Core_Root_Dir)'
         mchFileLocation: '$(MchFilesLocation)'
         mchFileTag: '$(MchFileTag)'
+        pmiAssembliesSubDirectory: '$(LibrariesArtifacts)'
+        outputSPMICollectionName: 'libraries'
 
     - template: /eng/pipelines/coreclr/run-superpmi-job.yml
       parameters:
         archType: ${{ parameters.archType }}
         osGroup: ${{ parameters.osGroup }}
         osSubgroup: $(osSubgroup)
-        HelixSource: '$(HelixSourcePrefix)/$(Build.Repository.Name)/$(Build.SourceBranch)'
-        HelixType: 'test/superpmi/$(_Framework)/$(Architecture)'
-        HelixTargetQueues: $(Queue)
-        HelixPreCommands: $(HelixPreCommand)
+        helixSource: '$(HelixSourcePrefix)/$(Build.Repository.Name)/$(Build.SourceBranch)'
+        helixType: 'test/superpmi/$(_Framework)/$(Architecture)'
+        helixTargetQueues: $(Queue)
+        helixPreCommands: $(HelixPreCommand)
+        HelixAccessToken: $(HelixApiAccessToken)
         Creator: $(Creator)
-        WorkItemTimeout: 4:00 # 4 hours
-        WorkItemDirectory: '$(WorkItemDirectory)'
-        CorrelationPayloadDirectory: '$(CorrelationPayloadDirectory)'
-        BuildConfig: ${{ parameters.buildConfig }}
+        workItemTimeout: 4:00 # 4 hours
+        workItemDirectory: '$(WorkItemDirectory)'
+        correlationPayloadDirectory: '$(CorrelationPayloadDirectory)'
+        buildConfig: ${{ parameters.buildConfig }}
+        pythonScript: $(PythonScript)
+        coreRootDir: '$(Core_Root_Dir)'
+        mchFileLocation: '$(MchFilesLocation)'
+        mchFileTag: '$(MchFileTag)'
         PmiAssembliesSubDirectory: '$(TestsArtifacts)'
         OutputSPMICollectionName: 'tests'
  

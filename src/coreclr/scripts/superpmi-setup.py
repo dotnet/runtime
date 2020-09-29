@@ -272,12 +272,13 @@ def copy_files(src_path, dst_path, file_names):
         shutil.copy2(f, dst_path_of_file)
 
 
-def partition_files(src_directory, dst_directory, max_size, exclude_directories=[], exclude_files=native_binaries_to_ignore):
+def partition_files(src_directory, dst_directory, directory_tag, max_size, exclude_directories=[], exclude_files=native_binaries_to_ignore):
     """ Copy bucketized files based on size to destination folder.
 
     Args:
         src_directory (string): Source folder containing files to be copied.
         dst_directory (string): Destination folder where files should be copied.
+        directory_tag (string) : directory tag to be used for partition folder
         max_size (int): Maximum partition size in bytes
         exclude_directories ([string]): List of folder names to be excluded.
         exclude_files ([string]): List of files names to be excluded.
@@ -289,7 +290,7 @@ def partition_files(src_directory, dst_directory, max_size, exclude_directories=
     index = 0
     for p_index in partitions:
         file_names = [curr_file[0] for curr_file in partitions[p_index]]
-        curr_dst_path = path.join(dst_directory, str(index), "binaries")
+        curr_dst_path = path.join(dst_directory, directory_tag + "_" + str(index), "binaries")
         copy_files(src_directory, curr_dst_path, file_names)
         index += 1
 
@@ -362,11 +363,11 @@ def main(main_args):
 
     # libraries
     libraries_artifacts = path.join(pmiassemblies_directory, "Core_Root")
-    partition_files(coreclr_args.libraries_directory, libraries_artifacts, coreclr_args.max_size)
+    partition_files(coreclr_args.libraries_directory, libraries_artifacts, "libraries_pmi", coreclr_args.max_size)
 
     # test
     tests_artifacts = path.join(pmiassemblies_directory, "Tests")
-    partition_files(coreclr_args.tests_directory, tests_artifacts, coreclr_args.max_size, ["Core_Root"])
+    partition_files(coreclr_args.tests_directory, tests_artifacts, "tests_pmi", coreclr_args.max_size, ["Core_Root"])
 
     # Set variables
     print('Setting pipeline variables:')
