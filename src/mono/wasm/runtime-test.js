@@ -40,12 +40,13 @@ if (typeof console !== "undefined") {
 		console.error = console.log;
 }
 
-if (typeof crypto == 'undefined') {
+if (typeof crypto === 'undefined') {
 	// /dev/random doesn't work on js shells, so define our own
 	// See library_fs.js:createDefaultDevices ()
 	var crypto = {
 		getRandomValues: function (buffer) {
-			buffer[0] = (Math.random()*256)|0;
+			for (var i = 0; i < buffer.length; i++)
+				buffer[i] = (Math.random()*256)|0;
 		}
 	}
 }
@@ -120,7 +121,9 @@ runtime_args = [];
 enable_gc = true;
 enable_zoneinfo = false;
 working_dir='/';
+extra_scripts=[];
 while (args !== undefined && args.length > 0) {
+    console.log("processign arg: " + args [0]);
 	if (args [0].startsWith ("--profile=")) {
 		var arg = args [0].substring ("--profile=".length);
 
@@ -144,6 +147,10 @@ while (args !== undefined && args.length > 0) {
 	} else if (args [0].startsWith ("--working-dir=")) {
 		var arg = args [0].substring ("--working-dir=".length);
 		working_dir = arg;
+        args = args.slice (1);
+	} else if (args [0].startsWith ("--extra-scripts=")) {
+		var extras = args [0].substring ("--extra-scripts=".length);
+		extra_scripts = extras.split(',');
 		args = args.slice (1);
 	} else {
 		break;
@@ -170,6 +177,19 @@ function loadScript (url)
 }
 
 loadScript ("mono-config.js");
+
+// Load the extra script files which may contain poly fills to be loaded
+extra_scripts.forEach(scriptToLoad => {
+    try {
+        loadScript (scriptToLoad);
+    } catch (error) {
+        console.log(error + ": " + scriptToLoad);
+    }
+});
+
+// check if crypto polyfill is loaded
+if (typeof msrCrypto !== 'undefined')
+    var crypto = msrCrypto; /*polyfill*/
 
 var Module = {
 	mainScriptUrlOrBlob: "dotnet.js",
