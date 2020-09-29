@@ -3,10 +3,6 @@
 
 #include <stdint.h>
 
-// TODO: HACK HACK HACK  how to get right values? does it matter?
-#define HAVE_GSSFW_HEADERS 0
-#define HAVE_HEIMDAL_HEADERS 0
-
 // Include System.Net.Security.Native headers
 #include "pal_gssapi.h"
 
