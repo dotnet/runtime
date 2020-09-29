@@ -57,7 +57,8 @@
   <ItemGroup>
     <!-- libraries payload -->
     <PartitionDirectories Include="$([System.IO.Directory]::GetDirectories($(PmiAssembliesSubDirectory)))"/>
-    <Partition Include="@(PartitionDirectories -> '%(Filename)')" PmiAssemblies="Core_Root$(FileSeparatorChar)%(Filename)" PartitionId="%(Filename)" />
+    <SubDirectoryName Include="$([System.IO.Path]::GetFileName($(PmiAssembliesSubDirectory)))"></SubDirectoryName>
+    <Partition Include="@(PartitionDirectories -> '%(Filename)')" PmiAssemblies="@(SubDirectoryName)$(FileSeparatorChar)%(Filename)" PartitionId="%(Filename)" />
   </ItemGroup>
 
   <ItemGroup>
