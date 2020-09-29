@@ -298,7 +298,7 @@ namespace System.Net.Http.Functional.Tests
             Assert.Equal(before, after);
         }
 
-        [SkipOnMono("System.Net.Sockets is not supported on this platform", TestPlatforms.Browser)]
+        [SkipOnMono("Browser doesn't support Synchronous reads", TestPlatforms.Browser)]
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
@@ -613,7 +613,7 @@ namespace System.Net.Http.Functional.Tests
 
 
         [Fact]
-        [SkipOnMono("System.Net.Sockets is not supported on this platform", TestPlatforms.Browser)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/39187", TestPlatforms.Browser)]
         public async Task ReadAsStringAsync_Buffered_IgnoresCancellationToken()
         {
             string content = Guid.NewGuid().ToString();
@@ -640,7 +640,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [SkipOnMono("System.Net.Sockets is not supported on this platform", TestPlatforms.Browser)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/39187", TestPlatforms.Browser)]
         public async Task ReadAsStringAsync_Unbuffered_CanBeCanceled_AlreadyCanceledCts()
         {
             await LoopbackServer.CreateClientAndServerAsync(
@@ -668,7 +668,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [SkipOnMono("System.Net.Sockets is not supported on this platform", TestPlatforms.Browser)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/39187", TestPlatforms.Browser)]
         public async Task ReadAsStringAsync_Unbuffered_CanBeCanceled()
         {
             var cts = new CancellationTokenSource();
@@ -703,7 +703,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [SkipOnMono("System.Net.Sockets is not supported on this platform", TestPlatforms.Browser)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/39187", TestPlatforms.Browser)]
         public async Task ReadAsByteArrayAsync_Buffered_IgnoresCancellationToken()
         {
             string content = Guid.NewGuid().ToString();
@@ -731,7 +731,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [SkipOnMono("System.Net.Sockets is not supported on this platform", TestPlatforms.Browser)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/39187", TestPlatforms.Browser)]
         public async Task ReadAsByteArrayAsync_Unbuffered_CanBeCanceled_AlreadyCanceledCts()
         {
             await LoopbackServer.CreateClientAndServerAsync(
@@ -759,7 +759,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [SkipOnMono("System.Net.Sockets is not supported on this platform", TestPlatforms.Browser)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/39187", TestPlatforms.Browser)]
         public async Task ReadAsByteArrayAsync_Unbuffered_CanBeCanceled()
         {
             var cts = new CancellationTokenSource();
@@ -796,7 +796,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        [SkipOnMono("System.Net.Sockets is not supported on this platform", TestPlatforms.Browser)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/39187", TestPlatforms.Browser)]
         public async Task ReadAsStreamAsync_Buffered_IgnoresCancellationToken(bool readStreamAsync)
         {
             string content = Guid.NewGuid().ToString();
@@ -828,7 +828,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        [SkipOnMono("System.Net.Sockets is not supported on this platform", TestPlatforms.Browser)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/39187", TestPlatforms.Browser)]
         public async Task ReadAsStreamAsync_Unbuffered_IgnoresCancellationToken(bool readStreamAsync)
         {
             string content = Guid.NewGuid().ToString();
