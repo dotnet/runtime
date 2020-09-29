@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace System.Net.Quic
 {
-    internal sealed class QuicStream : Stream
+    public sealed class QuicStream : Stream
     {
         private readonly QuicStreamProvider _provider;
 
