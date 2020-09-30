@@ -71,7 +71,7 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables
             return key.Replace("__", ConfigurationPath.KeyDelimiter);
         }
 
-        private static IEnumerable<DictionaryEntry> AzureEnvToAppEnv(DictionaryEntry entry, string envPrefix = default)
+        private static IEnumerable<DictionaryEntry> AzureEnvToAppEnv(DictionaryEntry entry, string envPrefix)
         {
             string key = (string)entry.Key;
             string prefix = string.Empty;
@@ -100,7 +100,7 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables
             {
                 // This prevents the prefix from being normalized.
                 // We can also do a fast path branch, I guess? No point in reallocating if the prefix is empty.
-                entry.Key = !string.IsNullOrEmpty(envPrefix)
+                entry.Key = envPrefix != string.Empty
                     ? envPrefix + NormalizeKey(key.Substring(envPrefix.Length))
                     : NormalizeKey(key);
 
