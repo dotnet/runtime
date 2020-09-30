@@ -872,8 +872,8 @@ int32_t SystemNative_SchedGetAffinity(int32_t pid, intptr_t* mask)
 // The caller is responsible for releasing the buffer. Returns null on error.
 char* SystemNative_GetProcessPath()
 {
-    // Get path to the executable for the current process using
-    // platform specific means.
+    // Get the path to the executable for the current process using
+    // platform-specific means.
 #if defined(__APPLE__)
     // On Mac, we ask the OS for the absolute path to the entrypoint executable
     uint32_t path_length = 0;
