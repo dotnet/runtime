@@ -18,9 +18,10 @@ namespace System.Text.Json
             {
                 _rentedBuffer = ArrayPool<byte>.Shared.Rent(initialSize);
                 _topOfStack = _rentedBuffer.Length;
+                Debug.Assert(IsInitialized);
             }
 
-            public bool IsInitialized { get { return _rentedBuffer != null; } }
+            private bool IsInitialized { get { return _rentedBuffer != null; } }
 
             public void Dispose()
             {
@@ -39,6 +40,11 @@ namespace System.Text.Json
 
             internal void Push(StackRow row)
             {
+                if (!IsInitialized)
+                {
+                    Initialize(JsonDocumentOptions.DefaultMaxDepth * StackRow.Size);
+                }
+
                 if (_topOfStack < StackRow.Size)
                 {
                     Enlarge();
@@ -50,7 +56,9 @@ namespace System.Text.Json
 
             internal StackRow Pop()
             {
+                Debug.Assert(IsInitialized);
                 Debug.Assert(_topOfStack <= _rentedBuffer!.Length - StackRow.Size);
+
                 StackRow row = MemoryMarshal.Read<StackRow>(_rentedBuffer.AsSpan(_topOfStack));
                 _topOfStack += StackRow.Size;
                 return row;

@@ -926,14 +926,14 @@ namespace System.Text.Json
             int numberOfRowsForMembers = 0;
             int numberOfRowsForValues = 0;
 
+            Utf8JsonReader reader = new Utf8JsonReader(
+                utf8JsonSpan,
+                isFinalBlock: true,
+                new JsonReaderState(options: readerOptions));
+
             StackRowStack stack = default;
             using (stack)
             {
-                Utf8JsonReader reader = new Utf8JsonReader(
-                    utf8JsonSpan,
-                    isFinalBlock: true,
-                    new JsonReaderState(options: readerOptions));
-
                 while (reader.Read())
                 {
                     JsonTokenType tokenType = reader.TokenType;
@@ -953,7 +953,7 @@ namespace System.Text.Json
                         numberOfRowsForValues++;
                         database.Append(tokenType, tokenStart, DbRow.UnknownSize);
                         var row = new StackRow(numberOfRowsForMembers + 1);
-                        Push(row);
+                        stack.Push(row);
                         numberOfRowsForMembers = 0;
                     }
                     else if (tokenType == JsonTokenType.EndObject)
@@ -969,7 +969,7 @@ namespace System.Text.Json
                         database.SetNumberOfRows(rowIndex, numberOfRowsForMembers);
                         database.SetNumberOfRows(newRowIndex, numberOfRowsForMembers);
 
-                        StackRow row = Pop();
+                        StackRow row = stack.Pop();
                         numberOfRowsForMembers += row.SizeOrLength;
                     }
                     else if (tokenType == JsonTokenType.StartArray)
@@ -982,7 +982,7 @@ namespace System.Text.Json
                         numberOfRowsForMembers++;
                         database.Append(tokenType, tokenStart, DbRow.UnknownSize);
                         var row = new StackRow(arrayItemsCount, numberOfRowsForValues + 1);
-                        Push(row);
+                        stack.Push(row);
                         arrayItemsCount = 0;
                         numberOfRowsForValues = 0;
                     }
@@ -1014,7 +1014,7 @@ namespace System.Text.Json
                         database.Append(tokenType, tokenStart, reader.ValueSpan.Length);
                         database.SetNumberOfRows(newRowIndex, numberOfRowsForValues);
 
-                        StackRow row = Pop();
+                        StackRow row = stack.Pop();
                         arrayItemsCount = row.SizeOrLength;
                         numberOfRowsForValues += row.NumberOfRows;
                     }
@@ -1070,22 +1070,6 @@ namespace System.Text.Json
                 Debug.Assert(reader.BytesConsumed == utf8JsonSpan.Length);
 
                 database.CompleteAllocations();
-            }
-
-            void Push(StackRow row)
-            {
-                if (!stack.IsInitialized)
-                {
-                    stack.Initialize(JsonDocumentOptions.DefaultMaxDepth * StackRow.Size);
-                }
-
-                stack.Push(row);
-            }
-
-            StackRow Pop()
-            {
-                Debug.Assert(stack.IsInitialized);
-                return stack.Pop();
             }
         }
 

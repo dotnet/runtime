@@ -647,16 +647,15 @@ namespace System.Text.Json
             if (tokenType == JsonTokenType.String ||
                 tokenType == JsonTokenType.Number)
             {
-                // For primitive types, we can avoid renting and there is no need for a StackRowStack.
+                // For primitive types, we can avoid renting.
                 database = MetadataDb.CreateLocked(utf8Json.Length);
-                Parse(utf8JsonSpan, readerOptions, ref database);
             }
             else
             {
                 database = MetadataDb.CreateRented(utf8Json.Length, convertToAlloc: true);
-                Parse(utf8JsonSpan, readerOptions, ref database);
             }
 
+            Parse(utf8JsonSpan, readerOptions, ref database);
             return new JsonDocument(utf8Json, database, extraRentedBytes: null);
         }
 
