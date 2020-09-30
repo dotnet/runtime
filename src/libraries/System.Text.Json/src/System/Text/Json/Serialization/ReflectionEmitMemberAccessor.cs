@@ -171,7 +171,7 @@ namespace System.Text.Json.Serialization
             return dynamicMethod;
         }
 
-        public override Func<IEnumerable<TElement>, TCollection> CreateImmutableEnumerableCreateRangeDelegate<TElement, TCollection>() =>
+        public override Func<IEnumerable<TElement>, TCollection> CreateImmutableEnumerableCreateRangeDelegate<TCollection, TElement>() =>
             CreateDelegate<Func<IEnumerable<TElement>, TCollection>>(
                 CreateImmutableEnumerableCreateRangeDelegate(typeof(TCollection), typeof(TElement), typeof(IEnumerable<TElement>)));
 
@@ -195,13 +195,13 @@ namespace System.Text.Json.Serialization
             return dynamicMethod;
         }
 
-        public override Func<IEnumerable<KeyValuePair<string, TElement>>, TCollection> CreateImmutableDictionaryCreateRangeDelegate<TElement, TCollection>() =>
-            CreateDelegate<Func<IEnumerable<KeyValuePair<string, TElement>>, TCollection>>(
-                CreateImmutableDictionaryCreateRangeDelegate(typeof(TCollection), typeof(TElement), typeof(IEnumerable<KeyValuePair<string, TElement>>)));
+        public override Func<IEnumerable<KeyValuePair<TKey, TValue>>, TCollection> CreateImmutableDictionaryCreateRangeDelegate<TCollection, TKey, TValue>() =>
+            CreateDelegate<Func<IEnumerable<KeyValuePair<TKey, TValue>>, TCollection>>(
+                CreateImmutableDictionaryCreateRangeDelegate(typeof(TCollection), typeof(TKey), typeof(TValue), typeof(IEnumerable<KeyValuePair<TKey, TValue>>)));
 
-        private static DynamicMethod CreateImmutableDictionaryCreateRangeDelegate(Type collectionType, Type elementType, Type enumerableType)
+        private static DynamicMethod CreateImmutableDictionaryCreateRangeDelegate(Type collectionType, Type keyType, Type valueType, Type enumerableType)
         {
-            MethodInfo realMethod = collectionType.GetImmutableDictionaryCreateRangeMethod(elementType);
+            MethodInfo realMethod = collectionType.GetImmutableDictionaryCreateRangeMethod(keyType, valueType);
 
             var dynamicMethod = new DynamicMethod(
                 realMethod.Name,
