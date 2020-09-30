@@ -14,7 +14,6 @@ using Newtonsoft.Json.Linq;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
-
     public struct SessionId
     {
         public readonly string sessionId;

@@ -207,11 +207,11 @@ namespace System.Diagnostics
             {
                 if (_output != null)
                 {
-                    _output.WaitUtilEOF();
+                    _output.WaitUntilEOF();
                 }
                 if (_error != null)
                 {
-                    _error.WaitUtilEOF();
+                    _error.WaitUntilEOF();
                 }
             }
 

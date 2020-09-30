@@ -8457,7 +8457,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_SSSE3_ALIGNR: {
 			LLVMValueRef mask_values [16];
 			for (int i = 0; i < 16; i++)
-				mask_values [i] = LLVMConstInt (LLVMInt8Type (), i + ins->inst_c0, FALSE);
+				mask_values [i] = LLVMConstInt (LLVMInt32Type (), i + ins->inst_c0, FALSE);
 			LLVMValueRef shuffled = LLVMBuildShuffleVector (builder, 
 				convert (ctx, rhs, sse_i1_t),
 				convert (ctx, lhs, sse_i1_t),
@@ -8836,9 +8836,21 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_XEXTRACT_I32:
 		case OP_XEXTRACT_I64:
 		case OP_XEXTRACT_R8:
-		case OP_XEXTRACT_R4:
-			values [ins->dreg] = LLVMBuildExtractElement (builder, lhs, rhs, "");
+		case OP_XEXTRACT_R4: {
+			LLVMTypeRef rhst = LLVMTypeOf (rhs);
+			LLVMValueRef mask = NULL;
+			switch (ins->opcode) {
+			case OP_XEXTRACT_I32: case OP_XEXTRACT_R4:
+				mask = LLVMConstInt (rhst, 0x3, FALSE); break;
+			case OP_XEXTRACT_I64: case OP_XEXTRACT_R8:
+				mask = LLVMConstInt (rhst, 0x1, FALSE); break;
+			default:
+				g_assert_not_reached ();
+			}
+			LLVMValueRef selector = LLVMBuildAnd (builder, rhs, mask, "");
+			values [ins->dreg] = LLVMBuildExtractElement (builder, lhs, selector, "");
 			break;
+		}
 		case OP_POPCNT32:
 			values [ins->dreg] = call_intrins (ctx, INTRINS_CTPOP_I32, &lhs, "");
 			break;

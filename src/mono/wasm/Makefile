@@ -5,7 +5,7 @@ DOTNET=$(TOP)/dotnet.sh
 JSVU=$(HOME)/.jsvu
 
 #
-# These variables are set by wasm.targets
+# These variables are set by wasm.proj
 #
 EMSDK_PATH?=$(TOP)/src/mono/wasm/emsdk
 CONFIG?=Release
@@ -15,6 +15,7 @@ PINVOKE_TABLE?=$(TOP)/artifacts/obj/wasm/pinvoke-table.h
 MONO_BIN_DIR?=$(BINDIR)/mono/Browser.wasm.$(CONFIG)
 NATIVE_BIN_DIR?=$(BINDIR)/native/net5.0-Browser-$(CONFIG)-wasm
 ICU_LIBDIR?=
+ENABLE_ES6?=false
 
 all: build-native icu-data
 
@@ -59,6 +60,10 @@ MONO_LIBS = \
 	$(ICU_LIBDIR)/libicudata.a
 
 EMCC_FLAGS=--profiling-funcs -s WASM=1 -s ALLOW_MEMORY_GROWTH=1 -s BINARYEN=1 -s ALIASING_FUNCTION_POINTERS=0 -s NO_EXIT_RUNTIME=1 -s "EXTRA_EXPORTED_RUNTIME_METHODS=['ccall', 'FS_createPath', 'FS_createDataFile', 'cwrap', 'setValue', 'getValue', 'UTF8ToString', 'UTF8ArrayToString', 'addFunction']" -s "EXPORTED_FUNCTIONS=['_putchar']" --source-map-base http://example.com  -emit-llvm -s FORCE_FILESYSTEM=1 -s USE_ZLIB=1
+ifneq ($(ENABLE_ES6),false)
+    EMCC_FLAGS+=-s MODULARIZE=1 -s EXPORT_ES6=1
+endif
+
 EMCC_DEBUG_FLAGS =-g -Os -s ASSERTIONS=1 -DENABLE_NETCORE=1 -DDEBUG=1
 EMCC_RELEASE_FLAGS=-Oz --llvm-opts 2 -DENABLE_NETCORE=1
 
@@ -144,20 +149,24 @@ run-tests-jsc-%:
 run-tests-%:
 	PATH="$(JSVU):$(PATH)" $(DOTNET) build $(TOP)/src/libraries/$*/tests/ /t:Test /p:TargetOS=Browser /p:TargetArchitecture=wasm /p:Configuration=$(CONFIG) $(MSBUILD_ARGS)
 
-build-debugger-test-app: 
-	$(DOTNET) build --configuration debug --nologo /p:TargetArchitecture=wasm /p:TargetOS=Browser /p:Configuration=Debug /p:RuntimeConfiguration=$(CONFIG) $(TOP)/src/mono/wasm/debugger/tests
-	cp $(TOP)/src/mono/wasm/debugger/tests/debugger-driver.html $(TOP)/src/mono/wasm/debugger/tests/bin/Debug/publish
-	cp $(TOP)/src/mono/wasm/debugger/tests/other.js $(TOP)/src/mono/wasm/debugger/tests/bin/Debug/publish
-	cp $(TOP)/src/mono/wasm/debugger/tests/runtime-debugger.js $(TOP)/src/mono/wasm/debugger/tests/bin/Debug/publish
+build-debugger-test-app:
+	$(DOTNET) build --configuration debug --nologo /p:TargetArchitecture=wasm /p:TargetOS=Browser /p:Configuration=Debug /p:RuntimeConfiguration=$(CONFIG) $(TOP)/src/mono/wasm/debugger/tests/debugger-test
+	$(DOTNET) build --configuration debug --nologo /p:TargetArchitecture=wasm /p:TargetOS=Browser /p:Configuration=Debug /p:RuntimeConfiguration=$(CONFIG) $(TOP)/src/mono/wasm/debugger/tests/lazy-debugger-test
+	$(DOTNET) build --configuration debug --nologo /p:TargetArchitecture=wasm /p:TargetOS=Browser /p:Configuration=Debug /p:RuntimeConfiguration=$(CONFIG) $(TOP)/src/mono/wasm/debugger/tests/lazy-debugger-test-embedded
+	cp $(TOP)/src/mono/wasm/debugger/tests/debugger-test/debugger-driver.html $(TOP)/src/mono/wasm/debugger/tests/debugger-test/bin/Debug/publish
+	cp $(TOP)/src/mono/wasm/debugger/tests/debugger-test/other.js $(TOP)/src/mono/wasm/debugger/tests/debugger-test/bin/Debug/publish
+	cp $(TOP)/src/mono/wasm/debugger/tests/debugger-test/runtime-debugger.js $(TOP)/src/mono/wasm/debugger/tests/debugger-test/bin/Debug/publish
+	cp $(TOP)/src/mono/wasm/debugger/tests/lazy-debugger-test/bin/Debug/publish/managed/* $(TOP)/src/mono/wasm/debugger/tests/debugger-test/bin/Debug/publish
+	cp $(TOP)/src/mono/wasm/debugger/tests/lazy-debugger-test-embedded/bin/Debug/publish/managed/* $(TOP)/src/mono/wasm/debugger/tests/debugger-test/bin/Debug/publish
 
 run-debugger-tests: build-debugger-test-app build-dbg-testsuite
 	if [ ! -z "$(TEST_FILTER)" ]; then \
-		export TEST_SUITE_PATH=$(TOP)/src/mono/wasm/debugger/tests/bin/Debug/publish; \
+		export TEST_SUITE_PATH=$(TOP)/src/mono/wasm/debugger/tests/debugger-test/bin/Debug/publish; \
 		export LC_ALL=en_US.UTF-8; \
 		$(DOTNET) test  $(TOP)/src/mono/wasm/debugger/DebuggerTestSuite --filter FullyQualifiedName~$(TEST_FILTER); \
 		unset TEST_SUITE_PATH LC_ALL; \
 	else \
-		export TEST_SUITE_PATH=$(TOP)/src/mono/wasm/debugger/tests/bin/Debug/publish; \
+		export TEST_SUITE_PATH=$(TOP)/src/mono/wasm/debugger/tests/debugger-test/bin/Debug/publish; \
 		export LC_ALL=en_US.UTF-8; \
 		$(DOTNET) test  $(TOP)/src/mono/wasm/debugger/DebuggerTestSuite $(TEST_ARGS); \
 		unset TEST_SUITE_PATH LC_ALL; \

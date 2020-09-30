@@ -27,6 +27,7 @@ internal static partial class Interop
         internal const uint LOCALE_SNAME                = 0x0000005C;
         internal const uint LOCALE_INEUTRAL             = 0x00000071;
         internal const uint LOCALE_SSHORTTIME           = 0x00000079;
+        internal const uint LOCALE_ICONSTRUCTEDLOCALE   = 0x0000007d;
         internal const uint LOCALE_STIMEFORMAT          = 0x00001003;
         internal const uint LOCALE_IFIRSTDAYOFWEEK      = 0x0000100C;
         internal const uint LOCALE_RETURN_NUMBER        = 0x20000000;

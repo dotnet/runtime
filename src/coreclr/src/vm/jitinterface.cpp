@@ -12496,16 +12496,6 @@ CorJitResult CallCompileMethodWithSEHWrapper(EEJitManager *jitMgr,
         flags.Set(CORJIT_FLAGS::CORJIT_FLAG_PINVOKE_RESTORE_ESP);
 #endif // TARGET_X86
 
-    //See if we should instruct the JIT to emit calls to JIT_PollGC for thread suspension.  If we have a
-    //non-default value in the EE Config, then use that.  Otherwise select the platform specific default.
-#ifdef FEATURE_ENABLE_GCPOLL
-    EEConfig::GCPollType pollType = g_pConfig->GetGCPollType();
-    if (EEConfig::GCPOLL_TYPE_POLL == pollType)
-        flags.Set(CORJIT_FLAGS::CORJIT_FLAG_GCPOLL_CALLS);
-    else if (EEConfig::GCPOLL_TYPE_INLINE == pollType)
-        flags.Set(CORJIT_FLAGS::CORJIT_FLAG_GCPOLL_INLINE);
-#endif //FEATURE_ENABLE_GCPOLL
-
     // Set flags based on method's ImplFlags.
     if (!ftn->IsNoMetadata())
     {

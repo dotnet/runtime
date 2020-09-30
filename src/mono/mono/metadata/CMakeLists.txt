@@ -247,6 +247,7 @@ set(metadata_common_sources
     loaded-images-netcore.c
     abi-details.h
     abi.c
+    memory-manager.c
     mono-config-dirs.h
     mono-config-dirs.c
     icall-table.h

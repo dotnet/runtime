@@ -709,4 +709,17 @@ class Tests
 		return 0;
 	}
 #endif
+
+	struct DummyStruct {
+	}
+
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+	static void array_ienumerable<T1, T> (T t) where T: IEnumerable<T1> {
+		var e = t.GetEnumerator ();
+	}
+
+	public static int test_0_array_ienumerable_constrained () {
+		array_ienumerable<DummyStruct, DummyStruct[]> (new DummyStruct [0]);
+		return 0;
+	}
 }

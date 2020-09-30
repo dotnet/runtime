@@ -1713,15 +1713,13 @@ mono_vtable_build_imt_slot (MonoVTable* vtable, int imt_slot)
 
 /**
  * mono_method_alloc_generic_virtual_trampoline:
- * \param domain a domain
+ * \param mem_manager a memory manager
  * \param size size in bytes
  * Allocs \p size bytes to be used for the code of a generic virtual
- * trampoline.  It's either allocated from the domain's code manager or
- * reused from a previously invalidated piece.
- * LOCKING: The domain lock must be held.
+ * trampoline.
  */
 gpointer
-(mono_method_alloc_generic_virtual_trampoline) (MonoDomain *domain, int size)
+(mono_method_alloc_generic_virtual_trampoline) (MonoMemoryManager *mem_manager, int size)
 {
 	MONO_REQ_GC_NEUTRAL_MODE;
 
@@ -1735,7 +1733,7 @@ gpointer
 	}
 	generic_virtual_trampolines_size += size;
 
-	return mono_domain_code_reserve (domain, size);
+	return mono_mem_manager_code_reserve (mem_manager, size);
 }
 
 typedef struct _GenericVirtualCase {

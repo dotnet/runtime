@@ -120,7 +120,7 @@
 
   </Target>
 
-  <Import Project="$(RepoRoot)src\coreclr\tests\dir.traversal.targets" />
+  <Import Project="$(MSBuildThisFileDirectory)dir.traversal.targets" />
 
   <!-- Override clean from dir.traversal.targets and just remove the full BinDir -->
   <Target Name="Clean">

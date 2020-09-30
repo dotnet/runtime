@@ -5,9 +5,34 @@
 
 //glue code to deal with the differences between chrome, ch, d8, jsc and sm.
 var is_browser = typeof window != "undefined";
+var consoleWebSocket;
+var print;
 
 if (is_browser) {
 	// We expect to be run by tests/runtime/run.js which passes in the arguments using http parameters
+	window.real_print = console.log;
+	print = function(_msg) { window.real_print(_msg); };
+	console.log = print;
+	console.debug = print;
+	console.error = print;
+	console.trace = print;
+	console.warn = print;
+	console.info = print;
+
+	const consoleUrl = `${window.location.origin}/console`.replace('http://', 'ws://');
+
+	consoleWebSocket = new WebSocket(consoleUrl);
+	consoleWebSocket.onopen = function(event) {
+		consoleWebSocket.send("browser: Console websocket connected.");
+
+		window.real_print = function(msg) {
+			consoleWebSocket.send(msg);
+		};
+	};
+	consoleWebSocket.onerror = function(event) {
+		console.log(`websocket error: ${event}`);
+	};
+
 	var url = new URL (decodeURI (window.location));
 	arguments = [];
 	for (var v of url.searchParams) {
@@ -17,9 +42,6 @@ if (is_browser) {
 		}
 	}
 }
-
-if (is_browser || typeof print === "undefined")
-	print = console.log;
 
 // JavaScript core does not have a console defined
 if (typeof console === "undefined") {
@@ -150,6 +172,9 @@ while (args !== undefined && args.length > 0) {
 	}
 }
 testArguments = args;
+
+// cheap way to let the testing infrastructure know we're running in a browser context (or not)
+setenv["IsBrowserDomSupported"] = is_browser.toString().toLowerCase();
 
 function writeContentToFile(content, path)
 {

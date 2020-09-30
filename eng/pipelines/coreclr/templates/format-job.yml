@@ -52,7 +52,7 @@ jobs:
       displayName: Run tests/scripts/format.py
       inputs:
         scriptSource: 'filePath'
-        scriptPath: $(Build.SourcesDirectory)/src/coreclr/tests/scripts/format.py
+        scriptPath: $(Build.SourcesDirectory)/src/tests/Common/scripts/format.py
         arguments: '-c $(Build.SourcesDirectory)/src/coreclr -o $(osGroup) -a $(archType)'
     - task: PublishBuildArtifacts@1
       displayName: Publish format.patch

@@ -806,8 +806,8 @@ namespace System.Net.WebSockets
                         {
                             throw new WebSocketException(WebSocketError.InvalidMessageType,
                                 SR.Format(SR.net_WebSockets_InvalidMessageType,
-                                    typeof(WebSocket).Name + "." + nameof(CloseAsync),
-                                    typeof(WebSocket).Name + "." + nameof(CloseOutputAsync),
+                                    nameof(WebSocket) + "." + nameof(CloseAsync),
+                                    nameof(WebSocket) + "." + nameof(CloseOutputAsync),
                                     receiveResult.MessageType));
                         }
                     }

@@ -59,8 +59,8 @@ BYTE*,byte*,unsigned char*
 GSCookie*,IntPtr*,void*
 GSCookie**,IntPtr**,void**
 
-BOOL*,[MarshalAs(UnmanagedType.Bool)] ref bool,int*
-bool*,[MarshalAs(UnmanagedType.U1)] ref bool
+BOOL*,BOOL*,int*
+bool*,ref bool,bool*
 BoolStar,byte*,bool*
 UINT32*,ref uint,unsigned int*
 ULONG*,ref uint,unsigned long*
@@ -154,12 +154,6 @@ ICorDebugInfo::NativeVarInfo*,NativeVarInfo*,void*
 ICorDebugInfo::BoundaryTypes*,BoundaryTypes*,void*
 
 struct _EXCEPTION_POINTERS*,_EXCEPTION_POINTERS*,void*
-
-RETURNTYPES
-BOOL,[return: MarshalAs(UnmanagedType.Bool)]bool,int
-bool,[return: MarshalAs(UnmanagedType.I1)]bool
-; NOTE in managed SIZE_T is an enum that is 64bits in size, and returning one of those causing mcg to do the wrong thing.
-size_t,byte*,size_t
 
 FUNCTIONS
     DWORD getMethodAttribs(        CORINFO_METHOD_HANDLE       ftn        );

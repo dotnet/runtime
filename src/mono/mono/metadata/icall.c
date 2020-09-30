@@ -9605,7 +9605,7 @@ mono_create_icall_signatures (void)
 	int n;
 	while ((n = sig->param_count)) {
 		--sig->param_count; // remove ret
-		gsize_a *types = (gsize*)(sig + 1);
+		gsize_a *types = (gsize_a*)(sig + 1);
 		for (int i = 0; i < n; ++i) {
 			gsize index = *types++;
 			g_assert (index < G_N_ELEMENTS (lookup));
