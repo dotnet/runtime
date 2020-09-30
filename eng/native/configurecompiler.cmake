@@ -48,7 +48,6 @@ add_compile_definitions("$<$<OR:$<CONFIG:RELEASE>,$<CONFIG:RELWITHDEBINFO>>:NDEB
 
 if (MSVC)
   add_linker_flag(/GUARD:CF)
-  add_linker_flag(/MAP)
 
   # Linker flags
   #

@@ -5,6 +5,7 @@
     <Platform>AnyCPU</Platform>
     <OutputPath>$(BinDir)\DacTableGen</OutputPath>
     <IsShipping>false</IsShipping>
+    <RunAnalyzers>false</RunAnalyzers>
   </PropertyGroup>
 
   <ItemGroup>
