@@ -153,6 +153,38 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables.Test
             Assert.Equal("System.Data.SqlClient", envConfigSrc.Get("ConnectionStrings:_db1_ProviderName"));
         }
 
+        [Fact]
+        public void ReplaceDoubleUnderscoreInEnvironmentVariablesButNotPrefix()
+        {
+            var dict = new Hashtable()
+                {
+                    {"test__prefix__with__double__underscores__data__ConnectionString", "connection"},
+                    {"SQLCONNSTR__db1", "connStr"}
+                };
+            var envConfigSrc = new EnvironmentVariablesConfigurationProvider("test__prefix__with__double__underscores__");
+
+            envConfigSrc.Load(dict);
+
+            Assert.Equal("connection", envConfigSrc.Get("data:ConnectionString"));
+            Assert.Equal("System.Data.SqlClient", envConfigSrc.Get("ConnectionStrings:_db1_ProviderName"));
+        }
+
+        [Fact]
+        public void ReplaceDoubleUnderscoreInEnvironmentVariablesWithDuplicatedPrefix()
+        {
+            var dict = new Hashtable()
+                {
+                    {"test__test__ConnectionString", "connection"},
+                    {"SQLCONNSTR__db1", "connStr"}
+                };
+            var envConfigSrc = new EnvironmentVariablesConfigurationProvider("test__");
+
+            envConfigSrc.Load(dict);
+
+            Assert.Equal("connection", envConfigSrc.Get("test:ConnectionString"));
+            Assert.Equal("System.Data.SqlClient", envConfigSrc.Get("ConnectionStrings:_db1_ProviderName"));
+        }
+
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void BindingDoesNotThrowIfReloadedDuringBinding()
         {

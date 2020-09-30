@@ -52,12 +52,14 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables
 
             IEnumerable<DictionaryEntry> filteredEnvVariables = envVariables
                 .Cast<DictionaryEntry>()
-                .SelectMany(AzureEnvToAppEnv)
-                .Where(entry => ((string)entry.Key).StartsWith(_prefix, StringComparison.OrdinalIgnoreCase));
+                .SelectMany(x => AzureEnvToAppEnv(x, _prefix));
 
             foreach (DictionaryEntry envVariable in filteredEnvVariables)
             {
-                string key = ((string)envVariable.Key).Substring(_prefix.Length);
+                string key = envVariable.Key as string;
+                if (key.StartsWith(_prefix, StringComparison.OrdinalIgnoreCase))
+                    key = key.Substring(_prefix.Length);
+
                 data[key] = (string)envVariable.Value;
             }
 
@@ -69,7 +71,7 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables
             return key.Replace("__", ConfigurationPath.KeyDelimiter);
         }
 
-        private static IEnumerable<DictionaryEntry> AzureEnvToAppEnv(DictionaryEntry entry)
+        private static IEnumerable<DictionaryEntry> AzureEnvToAppEnv(DictionaryEntry entry, string envPrefix = default)
         {
             string key = (string)entry.Key;
             string prefix = string.Empty;
@@ -94,10 +96,19 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables
             {
                 prefix = CustomPrefix;
             }
+            else if (key.StartsWith(envPrefix, StringComparison.OrdinalIgnoreCase))
+            {
+                // This prevents the prefix from being normalized.
+                // We can also do a fast path branch, I guess? No point in reallocating if the prefix is empty.
+                entry.Key = !string.IsNullOrEmpty(envPrefix)
+                    ? envPrefix + NormalizeKey(key.Substring(envPrefix.Length))
+                    : NormalizeKey(key);
+
+                yield return entry;
+                yield break;
+            }
             else
             {
-                entry.Key = NormalizeKey(key);
-                yield return entry;
                 yield break;
             }
 
