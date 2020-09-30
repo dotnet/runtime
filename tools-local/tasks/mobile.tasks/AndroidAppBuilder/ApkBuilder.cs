@@ -18,6 +18,8 @@ public class ApkBuilder
     public string? BuildToolsVersion { get; set; }
     public string? OutputDir { get; set; }
     public bool StripDebugSymbols { get; set; }
+    public string[]? AssemblySearchPaths { get; set; }
+    public string[]? ExtraAssemblies { get; set; }
 
     public (string apk, string packageId) BuildApk(
         string sourceDir, string abi, string entryPointLib, string monoRuntimeHeaders)
@@ -31,7 +33,8 @@ public class ApkBuilder
         if (string.IsNullOrEmpty(entryPointLib))
             throw new ArgumentException("entryPointLib shouldn't be empty");
 
-        if (!File.Exists(Path.Combine(sourceDir, entryPointLib)))
+        string entryPointLibPath = Path.Combine(sourceDir, entryPointLib);
+        if (!File.Exists(entryPointLibPath))
             throw new ArgumentException($"{entryPointLib} was not found in sourceDir='{sourceDir}'");
 
         if (string.IsNullOrEmpty(ProjectName))
@@ -93,7 +96,38 @@ public class ApkBuilder
             extensionsToIgnore.Add(".dbg");
         }
 
-        // Copy AppDir to OutputDir/assets-tozip (ignore native files)
+        var assembliesToResolve = new List<string> { entryPointLibPath };
+        if (ExtraAssemblies != null)
+            assembliesToResolve.AddRange(ExtraAssemblies);
+
+        // try to resolve dependencies of entryPointLib + ExtraAssemblies from AssemblySearchPaths
+        // and copy them to sourceDir
+        if (AssemblySearchPaths?.Length > 0)
+        {
+            string[] resolvedDependencies = AssemblyResolver.ResolveDependencies(assembliesToResolve.ToArray(), AssemblySearchPaths, true);
+            foreach (string resolvedDependency in resolvedDependencies)
+            {
+                string destination = Path.Combine(sourceDir, Path.GetFileName(resolvedDependency));
+                if (!File.Exists(destination))
+                    File.Copy(resolvedDependency, destination);
+            }
+        }
+        else
+        {
+            AssemblySearchPaths = new[] {OutputDir};
+        }
+
+        // copy all native libs from AssemblySearchPaths to sourceDir
+        // TODO: skip some if not used by the app
+        string[] allFiles = AssemblySearchPaths.SelectMany(p => Directory.GetFiles(p, "*", SearchOption.AllDirectories)).ToArray();
+        foreach (string nativeLib in allFiles.Where(f => f.EndsWith(".a") || f.EndsWith(".so")))
+        {
+            string destination = Path.Combine(sourceDir, Path.GetFileName(nativeLib));
+            if (!File.Exists(destination))
+                File.Copy(nativeLib, destination);
+        }
+
+        // Copy sourceDir to OutputDir/assets-tozip (ignore native files)
         // these files then will be zipped and copied to apk/assets/assets.zip
         Utils.DirectoryCopy(sourceDir, Path.Combine(OutputDir, "assets-tozip"), file =>
         {
@@ -195,7 +229,6 @@ public class ApkBuilder
         Utils.RunProcess(aapt, $"package -f -m -F {apkFile} -A assets -M AndroidManifest.xml -I {androidJar}", workingDir: OutputDir);
 
         var dynamicLibs = new List<string>();
-        dynamicLibs.Add(Path.Combine(OutputDir, "monodroid", "libmonodroid.so"));
         dynamicLibs.AddRange(Directory.GetFiles(sourceDir, "*.so"));
 
         // add all *.so files to lib/%abi%/
