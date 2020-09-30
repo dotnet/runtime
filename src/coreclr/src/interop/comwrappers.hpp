@@ -32,6 +32,8 @@ namespace ABI
 }
 
 // Class for wrapping a managed object and projecting it in a non-managed environment
+// Any change to layout require an update to the interfaces defined in src/debug/daccess/request.cpp
+// There is a contract on the layout of this class with the DAC
 class ManagedObjectWrapper
 {
 public:

@@ -18,10 +18,13 @@ using CreateComInterfaceFlags = InteropLib::Com::CreateComInterfaceFlags;
 namespace
 {
     // This class is used to track the external object within the runtime.
+    // Keep in sync with ExternalObjectContextInterface in request.cpp
     struct ExternalObjectContext
     {
+        static constexpr intptr_t ExternalObjectContextSentinelValue = (intptr_t)0xE0E0E0E0E0E0E0E0;
         static const DWORD InvalidSyncBlockIndex;
 
+        intptr_t Sentinel;
         void* Identity;
         void* ThreadContext;
         DWORD SyncBlockIndex;
@@ -55,6 +58,7 @@ namespace
             }
             CONTRACTL_END;
 
+            cxt->Sentinel = ExternalObjectContext::ExternalObjectContextSentinelValue; 
             cxt->Identity = (void*)identity;
             cxt->ThreadContext = threadContext;
             cxt->SyncBlockIndex = syncBlockIndex;
@@ -1359,7 +1363,7 @@ void QCALLTYPE ComWrappersNative::GetIUnknownImpl(
     END_QCALL;
 }
 
-void ComWrappersNative::DestroyManagedObjectComWrapper(_In_ void* wrapper)
+void ComWrappersNative::DestroyManagedObjectComWrapper(_In_ void* wrapper, void *unused)
 {
     CONTRACTL
     {
@@ -1368,6 +1372,8 @@ void ComWrappersNative::DestroyManagedObjectComWrapper(_In_ void* wrapper)
         PRECONDITION(wrapper != NULL);
     }
     CONTRACTL_END;
+
+    _ASSERTE(unused == NULL && "Someone is passing data to this function but it is ignoring it.");
 
     STRESS_LOG1(LF_INTEROP, LL_INFO100, "Destroying MOW: 0x%p\n", wrapper);
     InteropLib::Com::DestroyWrapperForObject(wrapper);
