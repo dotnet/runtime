@@ -4018,29 +4018,39 @@ bool Compiler::compRsvdRegCheck(FrameLayoutState curState)
 // compGetTieringName: get a string describing tiered compilation settings
 //   for this method
 //
+// Arguments:
+//   wantShortName - true if a short name is ok (say for using in file names)
+//
 // Returns:
 //   String describing tiering decisions for this method, including cases
 //   where the jit codegen will differ from what the runtime requested.
 //
-const char* Compiler::compGetTieringName() const
+const char* Compiler::compGetTieringName(bool wantShortName) const
 {
-    bool tier0 = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0);
-    bool tier1 = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER1);
+    const bool tier0 = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0);
+    const bool tier1 = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER1);
     assert(!tier0 || !tier1); // We don't expect multiple TIER flags to be set at one time.
 
     if (tier0)
     {
-        return "Tier-0";
+        return "Tier0";
     }
     else if (tier1)
     {
-        return "Tier-1";
+        if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_OSR))
+        {
+            return "Tier1-OSR";
+        }
+        else
+        {
+            return "Tier1";
+        }
     }
     else if (opts.OptimizationEnabled())
     {
         if (compSwitchedToOptimized)
         {
-            return "Tier-0 switched to FullOpts";
+            return wantShortName ? "Tier0-FullOpts" : "Tier-0 switched to FullOpts";
         }
         else
         {
@@ -4053,11 +4063,11 @@ const char* Compiler::compGetTieringName() const
         {
             if (compSwitchedToOptimized)
             {
-                return "Tier-0 switched to FullOpts, then to MinOpts";
+                return wantShortName ? "Tier0-FullOpts-MinOpts" : "Tier-0 switched to FullOpts, then to MinOpts";
             }
             else
             {
-                return "Tier-1/FullOpts switched to MinOpts";
+                return wantShortName ? "Tier0-MinOpts" : "Tier-0 switched MinOpts";
             }
         }
         else
@@ -4071,7 +4081,7 @@ const char* Compiler::compGetTieringName() const
     }
     else
     {
-        return "Unknown optimization level";
+        return wantShortName ? "Unknown" : "Unknown optimization level";
     }
 }
 

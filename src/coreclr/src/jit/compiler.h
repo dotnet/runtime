@@ -9039,7 +9039,7 @@ public:
 #endif
     }
 
-    const char* compGetTieringName() const;
+    const char* compGetTieringName(bool wantShortName = false) const;
     const char* compGetStressMessage() const;
 
     codeOptimize compCodeOpt()
