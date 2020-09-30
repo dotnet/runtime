@@ -11,7 +11,7 @@ namespace Mono.Linker.Tests.Cases.Attributes
 		}
 
 		[Kept]
-		static void Method ([Foo] [KeptAttributeAttribute (typeof (FooAttribute))] string arg)
+		static void Method ([Foo][KeptAttributeAttribute (typeof (FooAttribute))] string arg)
 		{
 		}
 

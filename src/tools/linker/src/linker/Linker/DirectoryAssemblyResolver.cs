@@ -6,8 +6,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.MemoryMappedFiles;
-using Mono.Collections.Generic;
 using Mono.Cecil;
+using Mono.Collections.Generic;
 
 #if FEATURE_ILLINK
 namespace Mono.Linker {

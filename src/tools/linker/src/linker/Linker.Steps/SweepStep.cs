@@ -30,8 +30,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using Mono.Cecil;
-using Mono.Collections.Generic;
 using Mono.Cecil.Cil;
+using Mono.Collections.Generic;
 
 namespace Mono.Linker.Steps
 {

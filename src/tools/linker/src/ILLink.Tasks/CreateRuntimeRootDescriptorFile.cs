@@ -1,9 +1,9 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Xml;
-using System.Collections.Generic;
-using Microsoft.Build.Utilities; // Task
 using Microsoft.Build.Framework; // ITaskItem
+using Microsoft.Build.Utilities; // Task
 
 namespace ILLink.Tasks
 {

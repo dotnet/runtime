@@ -1,6 +1,6 @@
-﻿using Mono.Linker.Tests.TestCasesRunner;
+﻿using System;
+using Mono.Linker.Tests.TestCasesRunner;
 using NUnit.Framework;
-using System;
 
 namespace Mono.Linker.Tests.TestCases
 {

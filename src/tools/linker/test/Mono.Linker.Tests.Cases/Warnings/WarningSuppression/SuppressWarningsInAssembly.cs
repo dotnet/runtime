@@ -1,8 +1,8 @@
-﻿using Mono.Linker.Tests.Cases.Expectations.Assertions;
-using Mono.Linker.Tests.Cases.Expectations.Metadata;
-using System;
+﻿using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
+using Mono.Linker.Tests.Cases.Expectations.Assertions;
+using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 [assembly: UnconditionalSuppressMessage ("Test", "IL2072:Suppress unrecognized reflection pattern warnings in this assembly")]
 

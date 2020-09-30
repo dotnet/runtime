@@ -1,6 +1,6 @@
+using Mono.Linker.Tests.Cases.DynamicDependencies.Dependencies;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
-using Mono.Linker.Tests.Cases.DynamicDependencies.Dependencies;
 
 namespace Mono.Linker.Tests.Cases.DynamicDependencies
 {

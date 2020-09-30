@@ -28,7 +28,7 @@ namespace Mono.Linker.Tests.Cases.TypeForwarding
 		}
 
 		[Kept]
-		public static void Test_1 ([KeptAttributeAttribute (typeof (TestType3Attribute))] [TestType3 (typeof (ImplementationLibrary))] int arg)
+		public static void Test_1 ([KeptAttributeAttribute (typeof (TestType3Attribute))][TestType3 (typeof (ImplementationLibrary))] int arg)
 		{
 		}
 

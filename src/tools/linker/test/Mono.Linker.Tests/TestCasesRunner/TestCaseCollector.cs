@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using Mono.Cecil;
-using Mono.Linker.Tests.TestCases;
-using Mono.Linker.Tests.Extensions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
+using Mono.Linker.Tests.Extensions;
+using Mono.Linker.Tests.TestCases;
 
 namespace Mono.Linker.Tests.TestCasesRunner
 {
