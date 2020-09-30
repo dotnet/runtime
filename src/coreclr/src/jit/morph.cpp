@@ -783,7 +783,7 @@ void fgArgTabEntry::Dump() const
             printf(" %s", getRegName(regNums[i]));
         }
     }
-    if (GetStackSlotsNumber() > 0)
+    if (GetStackByteSize() > 0)
     {
 #if defined(DEBUG_NOT_OSX_ARM64_ABI)
         printf(", numSlots=%u, slotNum=%u, byteSize=%u, byteOffset=%u", numSlots, slotNum, m_byteSize, m_byteOffset);

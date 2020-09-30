@@ -4922,8 +4922,8 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
     m_pLowering->Run();
 
 #if !defined(OSX_ARM64_ABI)
-    // Set stack levels, this informmation is necessary for x86
-    // but on other platforms it is used only in asserts
+    // Set stack levels; this information is necessary for x86
+    // but on other platforms it is used only in asserts.
     // TODO: do not run it in release on other platforms, see https://github.com/dotnet/runtime/issues/42673.
     StackLevelSetter stackLevelSetter(this);
     stackLevelSetter.Run();

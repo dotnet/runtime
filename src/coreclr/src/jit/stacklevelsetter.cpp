@@ -249,9 +249,9 @@ unsigned StackLevelSetter::PopArgumentsFromCall(GenTreeCall* call)
     {
         for (unsigned i = 0; i < argInfo->ArgCount(); ++i)
         {
-            const fgArgTabEntry* argTab      = argInfo->ArgTable()[i];
-            const unsigned       slotsNumber = argTab->GetStackSlotsNumber();
-            if (slotsNumber != 0)
+            const fgArgTabEntry* argTab    = argInfo->ArgTable()[i];
+            const unsigned       slotCount = argTab->GetStackSlotsNumber();
+            if (slotCount != 0)
             {
                 GenTree* node = argTab->GetNode();
                 assert(node->OperIsPutArgStkOrSplit());
@@ -259,13 +259,13 @@ unsigned StackLevelSetter::PopArgumentsFromCall(GenTreeCall* call)
                 GenTreePutArgStk* putArg = node->AsPutArgStk();
 
 #if !FEATURE_FIXED_OUT_ARGS
-                assert(slotsNumber == putArg->gtNumSlots);
+                assert(slotCount == putArg->gtNumSlots);
 #endif // !FEATURE_FIXED_OUT_ARGS
 
-                putArgNumSlots.Set(putArg, slotsNumber);
+                putArgNumSlots.Set(putArg, slotCount);
 
-                usedStackSlotsCount += slotsNumber;
-                AddStackLevel(slotsNumber);
+                usedStackSlotsCount += slotCount;
+                AddStackLevel(slotCount);
             }
         }
     }
