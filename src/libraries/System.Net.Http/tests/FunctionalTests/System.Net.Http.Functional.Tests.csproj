@@ -2,6 +2,7 @@
   <PropertyGroup>
     <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
     <DefineConstants Condition="'$(TargetsWindows)'=='true'">$(DefineConstants);TargetsWindows</DefineConstants>
+    <DefineConstants Condition="'$(TargetsBrowser)'=='true'">$(DefineConstants);TARGETS_BROWSER</DefineConstants>
     <DefineConstants>$(DefineConstants);SYSNETHTTP_NO_OPENSSL;HTTP3</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
@@ -92,6 +93,8 @@
              Link="Common\System\Diagnostics\Tracing\TestEventListener.cs" />
     <Compile Include="$(CommonTestPath)System\Diagnostics\Tracing\ConsoleEventListener.cs"
              Link="Common\System\Diagnostics\Tracing\ConsoleEventListener.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\ByteLoggingStream.cs"
+             Link="Common\System\IO\ByteLoggingStream.cs" />
     <Compile Include="$(CommonTestPath)System\IO\DelegateStream.cs"
              Link="Common\System\IO\DelegateStream.cs" />
     <Compile Include="$(CommonTestPath)System\Net\RemoteServerQuery.cs"
@@ -191,7 +194,7 @@
     <Compile Include="HttpClientHandlerTestBase.SocketsHttpHandler.cs" />
     <Compile Include="DiagnosticsTests.cs" />
     <Compile Include="HttpClientTest.cs" />
-    <Compile Include="$(CommonTestPath)System\Net\Http\HttpClientEKUTest.cs"
+    <Compile Include="$(CommonTestPath)System\Net\Http\HttpClientEKUTest.cs" Condition="'$(TargetsBrowser)' != 'true'"
              Link="Common\System\Net\Http\HttpClientEKUTest.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\HttpClient.SelectedSitesTest.cs"
              Link="Common\System\Net\Http\HttpClient.SelectedSitesTest.cs" />

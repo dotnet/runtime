@@ -27,7 +27,11 @@ else
 	HARNESS_RUNNER="dotnet xharness"
 fi
 
-$HARNESS_RUNNER wasm test --engine=${JS_ENGINE} ${JS_ENGINE_ARGS} --js-file=runtime.js -v --output-directory=$XHARNESS_OUT -- ${RUN_TESTS_JS_ARGUMENTS} --run WasmTestRunner.dll ${TEST_NAME}.dll
+if [ -z "$XHARNESS_COMMAND" ]; then
+	XHARNESS_COMMAND="test"
+fi
+
+$HARNESS_RUNNER wasm ${XHARNESS_COMMAND} --app=. --engine=${JS_ENGINE} ${JS_ENGINE_ARGS} --js-file=runtime.js -v --output-directory=$XHARNESS_OUT -- ${RUN_TESTS_JS_ARGUMENTS} --run WasmTestRunner.dll ${TEST_NAME}.dll
 
 _exitCode=$?
 

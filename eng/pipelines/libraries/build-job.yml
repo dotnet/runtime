@@ -3,6 +3,7 @@ parameters:
   osGroup: ''
   osSubgroup: ''
   archType: ''
+  targetRid: ''
   crossrootfsDir: ''
   framework: 'net5.0'
   isOfficialBuild: false
@@ -134,6 +135,7 @@ jobs:
           - template: /eng/pipelines/libraries/helix.yml
             parameters:
               osGroup: ${{ parameters.osGroup }}
+              targetRid: ${{ parameters.targetRid }}
               archType: ${{ parameters.archType }}
               buildConfig: ${{ parameters.buildConfig }}
               helixQueues: ${{ parameters.helixQueues }}

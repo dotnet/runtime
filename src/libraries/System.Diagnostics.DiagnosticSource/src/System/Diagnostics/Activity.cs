@@ -434,7 +434,7 @@ namespace System.Diagnostics
 
             if (_baggage != null || Interlocked.CompareExchange(ref _baggage, new LinkedList<KeyValuePair<string, string?>>(kvp), null) != null)
             {
-                _baggage.Add(kvp);
+                _baggage.AddFront(kvp);
             }
 
             return this;
@@ -1288,10 +1288,21 @@ namespace System.Diagnostics
             {
                 LinkedListNode<T> newNode = new LinkedListNode<T>(value);
 
-                lock (_first)
+                lock (this)
                 {
                     _last.Next = newNode;
                     _last = newNode;
+                }
+            }
+
+            public void AddFront(T value)
+            {
+                LinkedListNode<T> newNode = new LinkedListNode<T>(value);
+
+                lock (this)
+                {
+                    newNode.Next = _first;
+                    _first = newNode;
                 }
             }
 

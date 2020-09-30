@@ -110,7 +110,7 @@ namespace System.Xml
             if ((object?)a == (object?)b)
                 return true;
 
-            if ((object?)a == null || (object?)b == null)
+            if (a is null || b is null)
                 return false;
 
             return a.Name == b.Name && a.Namespace == b.Namespace;

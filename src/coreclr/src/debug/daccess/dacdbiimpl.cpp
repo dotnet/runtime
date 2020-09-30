@@ -5767,7 +5767,7 @@ void DacDbiInterfaceImpl::GetContext(VMPTR_Thread vmThread, DT_CONTEXT * pContex
     if (pFilterContext == NULL)
     {
         // If the filter context is NULL, then we use the true context of the thread.
-        pContextBuffer->ContextFlags = CONTEXT_ALL;
+        pContextBuffer->ContextFlags = DT_CONTEXT_ALL;
         HRESULT hr = m_pTarget->GetThreadContext(pThread->GetOSThreadId(),
                                                 pContextBuffer->ContextFlags,
                                                 sizeof(*pContextBuffer),

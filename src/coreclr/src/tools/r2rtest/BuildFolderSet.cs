@@ -223,7 +223,7 @@ namespace R2RTest
             string coreRoot = _options.CoreRootDirectory.FullName;
             string[] frameworkFolderFiles = Directory.GetFiles(coreRoot);
 
-            IEnumerable<CompilerRunner> frameworkRunners = _options.CompilerRunners(isFramework: true);
+            IEnumerable<CompilerRunner> frameworkRunners = _options.CompilerRunners(isFramework: true, overrideOutputPath: _options.OutputDirectory.FullName);
 
             // Pre-populate the output folders with the input files so that we have backdrops
             // for failing compilations.

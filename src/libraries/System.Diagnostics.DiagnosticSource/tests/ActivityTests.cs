@@ -84,9 +84,9 @@ namespace System.Diagnostics.Tests
                     Assert.Equal("world", anotherActivity.GetBaggageItem("hello"));
                     Assert.Equal(4, anotherActivity.Baggage.Count());
                     Assert.Equal(new KeyValuePair<string, string>("hello", "world"), anotherActivity.Baggage.First());
-                    Assert.Equal(new KeyValuePair<string, string>(Key + 0, Value + 0), anotherActivity.Baggage.Skip(1).First());
+                    Assert.Equal(new KeyValuePair<string, string>(Key + 2, Value + 2), anotherActivity.Baggage.Skip(1).First());
                     Assert.Equal(new KeyValuePair<string, string>(Key + 1, Value + 1), anotherActivity.Baggage.Skip(2).First());
-                    Assert.Equal(new KeyValuePair<string, string>(Key + 2, Value + 2), anotherActivity.Baggage.Skip(3).First());
+                    Assert.Equal(new KeyValuePair<string, string>(Key + 0, Value + 0), anotherActivity.Baggage.Skip(3).First());
                 }
                 finally
                 {
@@ -97,6 +97,69 @@ namespace System.Diagnostics.Tests
             {
                 activity.Stop();
             }
+        }
+
+        [Fact]
+        public void TestBaggageOrderAndDuplicateKeys()
+        {
+            Activity a = new Activity("Baggage");
+            a.AddBaggage("1", "1");
+            a.AddBaggage("1", "2");
+            a.AddBaggage("1", "3");
+            a.AddBaggage("1", "4");
+
+            int value = 4;
+
+            foreach (KeyValuePair<string, string> kvp in a.Baggage)
+            {
+                Assert.Equal("1", kvp.Key);
+                Assert.Equal(value.ToString(), kvp.Value);
+                value--;
+            }
+
+            Assert.Equal("4", a.GetBaggageItem("1"));
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TestBaggageWithChainedActivities()
+        {
+            RemoteExecutor.Invoke(() => {
+                Activity a1 = new Activity("a1");
+                a1.Start();
+
+                a1.AddBaggage("1", "1");
+                a1.AddBaggage("2", "2");
+
+                IEnumerable<KeyValuePair<string, string>> baggages = a1.Baggage;
+                Assert.Equal(2, baggages.Count());
+                Assert.Equal(new KeyValuePair<string, string>("2", "2"), baggages.ElementAt(0));
+                Assert.Equal(new KeyValuePair<string, string>("1", "1"), baggages.ElementAt(1));
+
+                Activity a2 = new Activity("a2");
+                a2.Start();
+
+                a2.AddBaggage("3", "3");
+                baggages = a2.Baggage;
+                Assert.Equal(3, baggages.Count());
+                Assert.Equal(new KeyValuePair<string, string>("3", "3"), baggages.ElementAt(0));
+                Assert.Equal(new KeyValuePair<string, string>("2", "2"), baggages.ElementAt(1));
+                Assert.Equal(new KeyValuePair<string, string>("1", "1"), baggages.ElementAt(2));
+
+                Activity a3 = new Activity("a3");
+                a3.Start();
+
+                a3.AddBaggage("4", "4");
+                baggages = a3.Baggage;
+                Assert.Equal(4, baggages.Count());
+                Assert.Equal(new KeyValuePair<string, string>("4", "4"), baggages.ElementAt(0));
+                Assert.Equal(new KeyValuePair<string, string>("3", "3"), baggages.ElementAt(1));
+                Assert.Equal(new KeyValuePair<string, string>("2", "2"), baggages.ElementAt(2));
+                Assert.Equal(new KeyValuePair<string, string>("1", "1"), baggages.ElementAt(3));
+
+                a3.Dispose();
+                a2.Dispose();
+                a1.Dispose();
+            }).Dispose();
         }
 
         /// <summary>

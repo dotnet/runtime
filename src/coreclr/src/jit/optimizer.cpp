@@ -3798,8 +3798,6 @@ void Compiler::optUnrollLoops()
                             testCopyStmt->SetRootNode(sideEffList);
                         }
                         newBlock->bbJumpKind = BBJ_NONE;
-                        newBlock->bbFlags &=
-                            ~BBF_NEEDS_GCPOLL; // Clear any NEEDS_GCPOLL flag as this block no longer can be a back edge
 
                         // Exit this loop; we've walked all the blocks.
                         break;
@@ -3842,7 +3840,7 @@ void Compiler::optUnrollLoops()
             {
                 block->bbStmtList = nullptr;
                 block->bbJumpKind = BBJ_NONE;
-                block->bbFlags &= ~(BBF_NEEDS_GCPOLL | BBF_LOOP_HEAD);
+                block->bbFlags &= ~BBF_LOOP_HEAD;
                 if (block->bbJumpDest != nullptr)
                 {
                     block->bbJumpDest = nullptr;
@@ -3871,7 +3869,6 @@ void Compiler::optUnrollLoops()
                 initStmt->SetNextStmt(nullptr);
                 preHeaderStmt->SetPrevStmt(initStmt);
                 head->bbJumpKind = BBJ_NONE;
-                head->bbFlags &= ~BBF_NEEDS_GCPOLL;
             }
             else
             {

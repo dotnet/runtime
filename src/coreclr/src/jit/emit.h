@@ -1489,6 +1489,19 @@ protected:
     const char* emitFldName(CORINFO_FIELD_HANDLE fieldVal);
     const char* emitFncName(CORINFO_METHOD_HANDLE callVal);
 
+    // GC Info changes are not readily available at each instruction.
+    // We use debug-only sets to track the per-instruction state, and to remember
+    // what the state was at the last time it was output (instruction or label).
+    VARSET_TP  debugPrevGCrefVars;
+    VARSET_TP  debugThisGCrefVars;
+    regPtrDsc* debugPrevRegPtrDsc;
+    regMaskTP  debugPrevGCrefRegs;
+    regMaskTP  debugPrevByrefRegs;
+    void emitDispGCDeltaTitle(const char* title);
+    void emitDispGCRegDelta(const char* title, regMaskTP prevRegs, regMaskTP curRegs);
+    void emitDispGCVarDelta();
+    void emitDispGCInfoDelta();
+
     void emitDispIGflags(unsigned flags);
     void emitDispIG(insGroup* ig, insGroup* igPrev = nullptr, bool verbose = false);
     void emitDispIGlist(bool verbose = false);
@@ -2129,9 +2142,9 @@ public:
     void emitGCregDeadUpd(regNumber reg, BYTE* addr);
     void emitGCregDeadSet(GCtype gcType, regMaskTP mask, BYTE* addr);
 
-    void emitGCvarLiveUpd(int offs, int varNum, GCtype gcType, BYTE* addr);
+    void emitGCvarLiveUpd(int offs, int varNum, GCtype gcType, BYTE* addr DEBUG_ARG(unsigned actualVarNum));
     void emitGCvarLiveSet(int offs, GCtype gcType, BYTE* addr, ssize_t disp = -1);
-    void emitGCvarDeadUpd(int offs, BYTE* addr);
+    void emitGCvarDeadUpd(int offs, BYTE* addr DEBUG_ARG(unsigned varNum));
     void emitGCvarDeadSet(int offs, BYTE* addr, ssize_t disp = -1);
 
     GCtype emitRegGCtype(regNumber reg);
@@ -2295,6 +2308,13 @@ public:
         VarSetOps::AssignNoCopy(emitComp, emitPrevGCrefVars, VarSetOps::MakeEmpty(emitComp));
         VarSetOps::AssignNoCopy(emitComp, emitInitGCrefVars, VarSetOps::MakeEmpty(emitComp));
         VarSetOps::AssignNoCopy(emitComp, emitThisGCrefVars, VarSetOps::MakeEmpty(emitComp));
+#if defined(DEBUG)
+        VarSetOps::AssignNoCopy(emitComp, debugPrevGCrefVars, VarSetOps::MakeEmpty(emitComp));
+        VarSetOps::AssignNoCopy(emitComp, debugThisGCrefVars, VarSetOps::MakeEmpty(emitComp));
+        debugPrevRegPtrDsc = nullptr;
+        debugPrevGCrefRegs = RBM_NONE;
+        debugPrevByrefRegs = RBM_NONE;
+#endif
     }
 };
 

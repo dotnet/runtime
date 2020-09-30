@@ -489,6 +489,19 @@ namespace Internal.Cryptography.Pal
             return new ECDsaImplementation.ECDsaSecurityTransforms(publicKey, privateKey);
         }
 
+        public ECDiffieHellman? GetECDiffieHellmanPrivateKey()
+        {
+            if (_identityHandle == null)
+                return null;
+
+            Debug.Assert(!_identityHandle.IsInvalid);
+            SafeSecKeyRefHandle publicKey = Interop.AppleCrypto.X509GetPublicKey(_certHandle);
+            SafeSecKeyRefHandle privateKey = Interop.AppleCrypto.X509GetPrivateKeyFromIdentity(_identityHandle);
+            Debug.Assert(!publicKey.IsInvalid);
+
+            return new ECDiffieHellmanImplementation.ECDiffieHellmanSecurityTransforms(publicKey, privateKey);
+        }
+
         public ICertificatePal CopyWithPrivateKey(DSA privateKey)
         {
             var typedKey = privateKey as DSAImplementation.DSASecurityTransforms;
@@ -521,6 +534,25 @@ namespace Internal.Cryptography.Pal
 
             using (PinAndClear.Track(ecParameters.D!))
             using (typedKey = new ECDsaImplementation.ECDsaSecurityTransforms())
+            {
+                typedKey.ImportParameters(ecParameters);
+                return CopyWithPrivateKey(typedKey.GetKeys());
+            }
+        }
+
+        public ICertificatePal CopyWithPrivateKey(ECDiffieHellman privateKey)
+        {
+            var typedKey = privateKey as ECDiffieHellmanImplementation.ECDiffieHellmanSecurityTransforms;
+
+            if (typedKey != null)
+            {
+                return CopyWithPrivateKey(typedKey.GetKeys());
+            }
+
+            ECParameters ecParameters = privateKey.ExportParameters(true);
+
+            using (PinAndClear.Track(ecParameters.D!))
+            using (typedKey = new ECDiffieHellmanImplementation.ECDiffieHellmanSecurityTransforms())
             {
                 typedKey.ImportParameters(ecParameters);
                 return CopyWithPrivateKey(typedKey.GetKeys());

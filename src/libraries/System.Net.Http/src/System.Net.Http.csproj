@@ -10,7 +10,7 @@
     <DefineConstants>$(DefineConstants);SYSNETHTTP_NO_OPENSSL</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetsBrowser)' == 'true'">
-    <DefineConstants>$(DefineConstants);TARGETS_BROWSER</DefineConstants>
+    <DefineConstants>$(DefineConstants);TARGET_BROWSER</DefineConstants>
   </PropertyGroup>
   <!-- ILLinker settings -->
   <PropertyGroup>
@@ -546,6 +546,7 @@
   <ItemGroup>
     <Compile Include="System\Net\Http\DiagnosticsHandler.cs" />
     <Compile Include="System\Net\Http\DiagnosticsHandlerLoggingStrings.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\SocketsHttpPlaintextStreamFilterContext.cs" />
     <Compile Include="$(CommonPath)System\Net\Mail\DomainLiteralReader.cs"
              Link="Common\System\Net\Mail\DomainLiteralReader.cs" />
     <Compile Include="$(CommonPath)System\Net\Mail\DotAtomReader.cs"

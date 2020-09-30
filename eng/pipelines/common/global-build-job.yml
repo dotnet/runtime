@@ -8,6 +8,7 @@ parameters:
   container: ''
   crossrootfsDir: ''
   variables: []
+  targetRid: ''
   timeoutInMinutes: ''
   pool: ''
   condition: true
@@ -92,6 +93,7 @@ jobs:
           buildConfig: ${{ parameters.buildConfig }}
           runtimeFlavor: ${{ parameters.runtimeFlavor }}
           helixQueues: ${{ parameters.helixQueues }}
+          targetRid: ${{ parameters.targetRid }}
           ${{ insert }}: ${{ parameters.extraStepsParameters }}
 
     - task: PublishBuildArtifacts@1

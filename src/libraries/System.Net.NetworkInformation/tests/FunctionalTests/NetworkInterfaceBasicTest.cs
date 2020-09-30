@@ -47,6 +47,11 @@ namespace System.Net.NetworkInformation.Tests
 
                 _log.WriteLine("SupportsMulticast: " + nic.SupportsMulticast);
                 _log.WriteLine("GetPhysicalAddress(): " + nic.GetPhysicalAddress());
+
+                if (nic.NetworkInterfaceType == NetworkInterfaceType.Ethernet)
+                {
+                    Assert.Equal(6, nic.GetPhysicalAddress().GetAddressBytes().Length);
+                }
             }
         }
 
@@ -81,6 +86,11 @@ namespace System.Net.NetworkInformation.Tests
 
                 _log.WriteLine("SupportsMulticast: " + nic.SupportsMulticast);
                 _log.WriteLine("GetPhysicalAddress(): " + nic.GetPhysicalAddress());
+
+                if (nic.NetworkInterfaceType == NetworkInterfaceType.Ethernet)
+                {
+                    Assert.Equal(6, nic.GetPhysicalAddress().GetAddressBytes().Length);
+                }
             }
         }
 
@@ -111,6 +121,11 @@ namespace System.Net.NetworkInformation.Tests
                 {
                     // Ethernet, WIFI and loopback should have known status.
                     Assert.True((nic.OperationalStatus == OperationalStatus.Up) || (nic.OperationalStatus == OperationalStatus.Down));
+                }
+
+                if (nic.NetworkInterfaceType == NetworkInterfaceType.Ethernet)
+                {
+                    Assert.Equal(6, nic.GetPhysicalAddress().GetAddressBytes().Length);
                 }
             }
         }

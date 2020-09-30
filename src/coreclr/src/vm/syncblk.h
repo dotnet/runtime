@@ -1140,7 +1140,7 @@ class SyncBlock
         return m_Monitor.LeaveCompletely();
     }
 
-    BOOL Wait(INT32 timeOut, BOOL exitContext);
+    BOOL Wait(INT32 timeOut);
     void Pulse();
     void PulseAll();
 
@@ -1569,7 +1569,7 @@ class ObjHeader
         return dac_cast<PTR_Object>(dac_cast<TADDR>(this + 1));
     }
 
-    BOOL Wait(INT32 timeOut, BOOL exitContext);
+    BOOL Wait(INT32 timeOut);
     void Pulse();
     void PulseAll();
 

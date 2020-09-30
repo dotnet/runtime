@@ -531,3 +531,28 @@ public class LoadDebuggerTest {
         Console.WriteLine($"Loaded - {loadedAssembly}");
     }
 }
+
+public class HiddenSequencePointTest {
+    public static void StepOverHiddenSP()
+    {
+        Console.WriteLine("first line");
+        #line hidden
+        Console.WriteLine("second line");
+        StepOverHiddenSP2();
+        #line default
+        Console.WriteLine("third line");
+        MethodWithHiddenLinesAtTheEnd();
+    }
+    public static void StepOverHiddenSP2()
+    {
+        Console.WriteLine("StepOverHiddenSP2");
+    }
+
+    public static void MethodWithHiddenLinesAtTheEnd()
+    {
+        Console.WriteLine ($"MethodWithHiddenLinesAtTheEnd");
+#line hidden
+        Console.WriteLine ($"debugger shouldn't be able to step here");
+    }
+#line default
+}

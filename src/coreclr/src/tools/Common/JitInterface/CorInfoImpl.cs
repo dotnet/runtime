@@ -55,7 +55,6 @@ namespace Internal.JitInterface
         private IntPtr _jit;
 
         private IntPtr _unmanagedCallbacks; // array of pointers to JIT-EE interface callbacks
-        private Object _keepAlive; // Keeps delegates for the callbacks alive
 
         private ExceptionDispatchInfo _lastException;
 
@@ -122,7 +121,7 @@ namespace Internal.JitInterface
                 throw new IOException("Failed to initialize JIT");
             }
 
-            _unmanagedCallbacks = GetUnmanagedCallbacks(out _keepAlive);
+            _unmanagedCallbacks = GetUnmanagedCallbacks();
         }
 
         public TextWriter Log
@@ -1043,7 +1042,7 @@ namespace Internal.JitInterface
 
         private bool satisfiesMethodConstraints(CORINFO_CLASS_STRUCT_* parent, CORINFO_METHOD_STRUCT_* method)
         { throw new NotImplementedException("satisfiesMethodConstraints"); }
-        private bool isCompatibleDelegate(CORINFO_CLASS_STRUCT_* objCls, CORINFO_CLASS_STRUCT_* methodParentCls, CORINFO_METHOD_STRUCT_* method, CORINFO_CLASS_STRUCT_* delegateCls, ref bool pfIsOpenDelegate)
+        private bool isCompatibleDelegate(CORINFO_CLASS_STRUCT_* objCls, CORINFO_CLASS_STRUCT_* methodParentCls, CORINFO_METHOD_STRUCT_* method, CORINFO_CLASS_STRUCT_* delegateCls, BOOL* pfIsOpenDelegate)
         { throw new NotImplementedException("isCompatibleDelegate"); }
         private void setPatchpointInfo(PatchpointInfo* patchpointInfo)
         { throw new NotImplementedException("setPatchpointInfo"); }
@@ -1529,7 +1528,7 @@ namespace Internal.JitInterface
             Marshal.FreeCoTaskMem((IntPtr)obj);
         }
 
-        private byte* getClassModuleIdForStatics(CORINFO_CLASS_STRUCT_* cls, CORINFO_MODULE_STRUCT_** pModule, void** ppIndirection)
+        private UIntPtr getClassModuleIdForStatics(CORINFO_CLASS_STRUCT_* cls, CORINFO_MODULE_STRUCT_** pModule, void** ppIndirection)
         { throw new NotImplementedException("getClassModuleIdForStatics"); }
 
         private uint getClassSize(CORINFO_CLASS_STRUCT_* cls)
@@ -2525,7 +2524,7 @@ namespace Internal.JitInterface
             return (uint)HandleToObject(ftn).GetHashCode();
         }
 
-        private byte* findNameOfToken(CORINFO_MODULE_STRUCT_* moduleHandle, mdToken token, byte* szFQName, UIntPtr FQNameCapacity)
+        private UIntPtr findNameOfToken(CORINFO_MODULE_STRUCT_* moduleHandle, mdToken token, byte* szFQName, UIntPtr FQNameCapacity)
         { throw new NotImplementedException("findNameOfToken"); }
 
         private bool getSystemVAmd64PassStructInRegisterDescriptor(CORINFO_CLASS_STRUCT_* structHnd, SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* structPassInRegDescPtr)
@@ -2615,7 +2614,7 @@ namespace Internal.JitInterface
             ppIndirection = null;
             return null;
         }
-        private void GetProfilingHandle(ref bool pbHookFunction, ref void* pProfilerHandle, ref bool pbIndirectedHandles)
+        private void GetProfilingHandle(BOOL* pbHookFunction, ref void* pProfilerHandle, BOOL* pbIndirectedHandles)
         { throw new NotImplementedException("GetProfilingHandle"); }
 
         /// <summary>

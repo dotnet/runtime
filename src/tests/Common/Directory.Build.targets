@@ -5,7 +5,7 @@
     If they ever need to take part, we can conditionally include them as documented
     here https://docs.microsoft.com/en-us/visualstudio/msbuild/customize-your-build#directorybuildprops-and-directorybuildtargets
   -->
-  <Import Project="$(RepoRoot)src/coreclr/tests/disableversioncheck.targets"
+  <Import Project="$(MSBuildThisFileDirectory)/disableversioncheck.targets"
           Condition="'$(DisableVersionCheckImported)' != 'true'" />
 
   <Import Project="$(RepoRoot)eng/liveBuilds.targets" />
@@ -41,7 +41,7 @@
       <RunTimeArtifactsExcludeFiles Include="PDB/mscordaccore.pdb" />
       <RunTimeArtifactsExcludeFiles Include="PDB/mscordbi.pdb" />
       <RunTimeArtifactsExcludeFiles Include="PDB/mscorrc.pdb" />
-      <RunTimeArtifactsExcludeFiles Include="PDB/protononjit.pdb" />
+      <RunTimeArtifactsExcludeFiles Include="PDB/clrjit_*.pdb" />
       <RunTimeArtifactsExcludeFiles Include="PDB/superpmi.pdb" />
       <RunTimeArtifactsExcludeFiles Include="PDB/superpmi-shim-collector.pdb" />
       <RunTimeArtifactsExcludeFiles Include="PDB/superpmi-shim-counter.pdb" />
