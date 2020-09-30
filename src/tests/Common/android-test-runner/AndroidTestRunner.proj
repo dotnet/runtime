@@ -1,15 +1,14 @@
-<Project Sdk="Microsoft.Build.NoTargets/1.0.53" DefaultTargets="BuildApp">
+<Project Sdk="Microsoft.NET.Sdk" DefaultTargets="BuildApp">
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <MicrosoftNetCoreAppRuntimePackDir>$(CORE_ROOT)/runtimepack</MicrosoftNetCoreAppRuntimePackDir>
-    <AndroidAppBuilderDir>$(CORE_ROOT)/AndroidAppBuilder</AndroidAppBuilderDir>
     <EnableTargetingPackDownload>false</EnableTargetingPackDownload>
     <InvariantGlobalization>true</InvariantGlobalization> <!-- workaround for https://github.com/dotnet/runtime/issues/41866 -->
     <NoWarn>$(NoWarn),CA1050</NoWarn>
   </PropertyGroup>
 
   <UsingTask TaskName="AndroidAppBuilderTask"
-             AssemblyFile="$(AndroidAppBuilderDir)\AndroidAppBuilder.dll" />
+             AssemblyFile="$(CORE_ROOT)/AndroidAppBuilder/publish/AndroidAppBuilder.dll" />
 
   <!-- Build APK during 'dotnet publish' -->
   <Target Name="BuildApp">
@@ -29,11 +28,6 @@
     </ItemGroup>
 
     <RemoveDir Directories="$(ApkDir)" />
-
-    <!-- These native libs are not needed for HelloWorld
-         and can be deleted to save 0.4 Mb for APK size 
-    <Delete Files="$(PublishDir)\libSystem.IO.Compression.Native.so" />
-    <Delete Files="$(PublishDir)\libSystem.Security.Cryptography.Native.OpenSsl.so" /> -->
 
     <!--ProjectName="$([System.IO.Path]::GetFileNameWithoutExtension('$(TestAssembly)'))" -->
     <AndroidAppBuilderTask
