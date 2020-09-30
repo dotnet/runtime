@@ -104,6 +104,25 @@ namespace AppHost.Bundle.Tests
         }
 
         [Fact]
+        public void AppContext_Native_Search_Dirs_Contains_Bundle_Dir()
+        {
+            var fixture = sharedTestState.TestFixture.Copy();
+            Bundler bundler = BundleHelper.BundleApp(fixture, out string singleFile);
+            string extractionDir = BundleHelper.GetExtractionDir(fixture, bundler).FullName;
+            string bundleDir = BundleHelper.GetBundleDir(fixture).FullName;
+
+            // If we don't extract anything to disk, the extraction dir shouldn't
+            // appear in the native search dirs.
+            Command.Create(singleFile, "native_search_dirs")
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .Execute()
+                .Should().Pass()
+                .And.HaveStdOutContaining(bundleDir)
+                .And.NotHaveStdOutContaining(extractionDir);
+        }
+
+        [Fact]
         public void AppContext_Native_Search_Dirs_Contains_Bundle_And_Extraction_Dirs()
         {
             var fixture = sharedTestState.TestFixture.Copy();
