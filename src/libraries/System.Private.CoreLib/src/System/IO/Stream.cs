@@ -492,6 +492,7 @@ namespace System.IO
                 {
                     Debug.Assert(t.IsCompletedSuccessfully, "The semaphore wait should always complete successfully.");
                     var rwt = (ReadWriteTask)state!;
+                    Debug.Assert(rwt._stream != null, "Validates that this code isn't run a second time.");
                     RunReadWriteTask(rwt); // RunReadWriteTask(readWriteTask);
                 }, readWriteTask, default, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
             }
