@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Security;
@@ -958,7 +957,7 @@ namespace System.Net.Security
                 X509Certificate2? certificate = CertificateValidationPal.GetRemoteCertificate(_securityContext, out remoteCertificateStore);
 
                 if (_remoteCertificate != null && certificate != null &&
-                    certificate.RawData.SequenceEqual(_remoteCertificate.RawData))
+                    certificate.RawData.AsSpan().SequenceEqual(_remoteCertificate.RawData))
                 {
                     // This is renegotiation or TLS 1.3 and the certificate did not change.
                     // There is no reason to process callback again as we already established trust.
