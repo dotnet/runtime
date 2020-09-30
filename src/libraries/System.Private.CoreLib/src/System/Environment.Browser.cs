@@ -31,6 +31,6 @@ namespace System
         /// Returns the path of the executable that started the currently executing process. Returns null when the path is not available.
         /// </summary>
         /// <returns>Path of the executable that started the currently executing process</returns>
-        private static string GetProcessPath() => "";
+        private static string? GetProcessPath() => "";
     }
 }

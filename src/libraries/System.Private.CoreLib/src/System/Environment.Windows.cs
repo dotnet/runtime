@@ -90,7 +90,7 @@ namespace System
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
         private static int GetProcessId() => unchecked((int)Interop.Kernel32.GetCurrentProcessId());
 
-        private static string GetProcessPath()
+        private static string? GetProcessPath()
         {
             var builder = new ValueStringBuilder(stackalloc char[Interop.Kernel32.MAX_PATH]);
 

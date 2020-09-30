@@ -152,8 +152,8 @@ namespace System
                 string? processPath = s_processPath;
                 if (processPath == null)
                 {
-                    // The value is cache both as a performance optimization and to ensure that the API always returns
-                    // same path in the given process.
+                    // The value is cached both as a performance optimization and to ensure that the API always returns
+                    // the same path in a given process.
                     Interlocked.CompareExchange(ref s_processPath, GetProcessPath() ?? "", null);
                     processPath = s_processPath;
                     Debug.Assert(processPath != null);
