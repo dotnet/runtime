@@ -20361,8 +20361,8 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
 
     if (createDotFile)
     {
-        fprintf(fgxFile, "digraph %s\n{\n", info.compMethodName);
-        fprintf(fgxFile, "/* Method %d, after phase %s */\n", Compiler::jitTotalMethodCompiled, PhaseNames[phase]);
+        fprintf(fgxFile, "digraph FlowGraph {\n");
+        fprintf(fgxFile, "    graph [label = \"%s\\nafter\\n%s\"];\n", info.compMethodName, PhaseNames[phase]);
         fprintf(fgxFile, "    node [shape = \"Box\"];\n");
     }
     else
@@ -20501,37 +20501,138 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
         fprintf(fgxFile, ">");
     }
 
-    unsigned    edgeNum = 1;
-    BasicBlock* bTarget;
-    for (bTarget = fgFirstBB; bTarget != nullptr; bTarget = bTarget->bbNext)
+    if (fgComputePredsDone)
     {
-        double targetWeightDivisor;
-        if (bTarget->bbWeight == BB_ZERO_WEIGHT)
+        unsigned    edgeNum = 1;
+        BasicBlock* bTarget;
+        for (bTarget = fgFirstBB; bTarget != nullptr; bTarget = bTarget->bbNext)
         {
-            targetWeightDivisor = 1.0;
-        }
-        else
-        {
-            targetWeightDivisor = (double)bTarget->bbWeight;
-        }
-
-        flowList* edge;
-        for (edge = bTarget->bbPreds; edge != nullptr; edge = edge->flNext, edgeNum++)
-        {
-            BasicBlock* bSource = edge->flBlock;
-            double      sourceWeightDivisor;
-            if (bSource->bbWeight == BB_ZERO_WEIGHT)
+            double targetWeightDivisor;
+            if (bTarget->bbWeight == BB_ZERO_WEIGHT)
             {
-                sourceWeightDivisor = 1.0;
+                targetWeightDivisor = 1.0;
             }
             else
             {
-                sourceWeightDivisor = (double)bSource->bbWeight;
+                targetWeightDivisor = (double)bTarget->bbWeight;
             }
-            if (createDotFile)
-            {
-                fprintf(fgxFile, "    " FMT_BB " -> " FMT_BB, bSource->bbNum, bTarget->bbNum);
 
+            flowList* edge;
+            for (edge = bTarget->bbPreds; edge != nullptr; edge = edge->flNext, edgeNum++)
+            {
+                BasicBlock* bSource = edge->flBlock;
+                double      sourceWeightDivisor;
+                if (bSource->bbWeight == BB_ZERO_WEIGHT)
+                {
+                    sourceWeightDivisor = 1.0;
+                }
+                else
+                {
+                    sourceWeightDivisor = (double)bSource->bbWeight;
+                }
+                if (createDotFile)
+                {
+                    fprintf(fgxFile, "    " FMT_BB " -> " FMT_BB, bSource->bbNum, bTarget->bbNum);
+
+                    if (bSource->bbNum > bTarget->bbNum)
+                    {
+                        // Lexical backedge
+                        fprintf(fgxFile, " [color=green]\n");
+                    }
+                    else if ((bSource->bbNum + 1) == bTarget->bbNum)
+                    {
+                        // Lexical successor
+                        fprintf(fgxFile, " [color=blue, weight=20]\n");
+                    }
+                    else
+                    {
+                        fprintf(fgxFile, ";\n");
+                    }
+                }
+                else
+                {
+                    fprintf(fgxFile, "\n        <edge");
+                    fprintf(fgxFile, "\n            id=\"%d\"", edgeNum);
+                    fprintf(fgxFile, "\n            source=\"%d\"", bSource->bbNum);
+                    fprintf(fgxFile, "\n            target=\"%d\"", bTarget->bbNum);
+                    if (bSource->bbJumpKind == BBJ_SWITCH)
+                    {
+                        if (edge->flDupCount >= 2)
+                        {
+                            fprintf(fgxFile, "\n            switchCases=\"%d\"", edge->flDupCount);
+                        }
+                        if (bSource->bbJumpSwt->getDefault() == bTarget)
+                        {
+                            fprintf(fgxFile, "\n            switchDefault=\"true\"");
+                        }
+                    }
+                    if (validWeights)
+                    {
+                        unsigned edgeWeight = (edge->edgeWeightMin() + edge->edgeWeightMax()) / 2;
+                        fprintf(fgxFile, "\n            weight=");
+                        fprintfDouble(fgxFile, ((double)edgeWeight) / weightDivisor);
+
+                        if (edge->edgeWeightMin() != edge->edgeWeightMax())
+                        {
+                            fprintf(fgxFile, "\n            minWeight=");
+                            fprintfDouble(fgxFile, ((double)edge->edgeWeightMin()) / weightDivisor);
+                            fprintf(fgxFile, "\n            maxWeight=");
+                            fprintfDouble(fgxFile, ((double)edge->edgeWeightMax()) / weightDivisor);
+                        }
+
+                        if (edgeWeight > 0)
+                        {
+                            if (edgeWeight < bSource->bbWeight)
+                            {
+                                fprintf(fgxFile, "\n            out=");
+                                fprintfDouble(fgxFile, ((double)edgeWeight) / sourceWeightDivisor);
+                            }
+                            if (edgeWeight < bTarget->bbWeight)
+                            {
+                                fprintf(fgxFile, "\n            in=");
+                                fprintfDouble(fgxFile, ((double)edgeWeight) / targetWeightDivisor);
+                            }
+                        }
+                    }
+                }
+                if (!createDotFile)
+                {
+                    fprintf(fgxFile, ">");
+                    fprintf(fgxFile, "\n        </edge>");
+                }
+            }
+        }
+    }
+
+    // For dot, show edges w/o pred lists, and add invisible bbNext links.
+    //
+    if (createDotFile)
+    {
+        for (BasicBlock* bSource = fgFirstBB; bSource != nullptr; bSource = bSource->bbNext)
+        {
+            // Invisible edge for bbNext chain
+            //
+            if (bSource->bbNext != nullptr)
+            {
+                fprintf(fgxFile, "    " FMT_BB " -> " FMT_BB " [style=\"invis\", weight=25];\n", bSource->bbNum,
+                        bSource->bbNext->bbNum);
+            }
+
+            if (fgComputePredsDone)
+            {
+                // Already emitted pred edges above.
+                //
+                continue;
+            }
+
+            // Emit successor edges
+            //
+            const unsigned numSuccs = bSource->NumSucc();
+
+            for (unsigned i = 0; i < numSuccs; i++)
+            {
+                BasicBlock* const bTarget = bSource->GetSucc(i);
+                fprintf(fgxFile, "    " FMT_BB " -> " FMT_BB, bSource->bbNum, bTarget->bbNum);
                 if (bSource->bbNum > bTarget->bbNum)
                 {
                     // Lexical backedge
@@ -20540,66 +20641,16 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
                 else if ((bSource->bbNum + 1) == bTarget->bbNum)
                 {
                     // Lexical successor
-                    fprintf(fgxFile, " [color=blue, weight=20]\n");
+                    fprintf(fgxFile, " [color=blue]\n");
                 }
                 else
                 {
-                    fprintf(fgxFile, "\n");
+                    fprintf(fgxFile, ";\n");
                 }
-            }
-            else
-            {
-                fprintf(fgxFile, "\n        <edge");
-                fprintf(fgxFile, "\n            id=\"%d\"", edgeNum);
-                fprintf(fgxFile, "\n            source=\"%d\"", bSource->bbNum);
-                fprintf(fgxFile, "\n            target=\"%d\"", bTarget->bbNum);
-                if (bSource->bbJumpKind == BBJ_SWITCH)
-                {
-                    if (edge->flDupCount >= 2)
-                    {
-                        fprintf(fgxFile, "\n            switchCases=\"%d\"", edge->flDupCount);
-                    }
-                    if (bSource->bbJumpSwt->getDefault() == bTarget)
-                    {
-                        fprintf(fgxFile, "\n            switchDefault=\"true\"");
-                    }
-                }
-                if (validWeights)
-                {
-                    unsigned edgeWeight = (edge->edgeWeightMin() + edge->edgeWeightMax()) / 2;
-                    fprintf(fgxFile, "\n            weight=");
-                    fprintfDouble(fgxFile, ((double)edgeWeight) / weightDivisor);
-
-                    if (edge->edgeWeightMin() != edge->edgeWeightMax())
-                    {
-                        fprintf(fgxFile, "\n            minWeight=");
-                        fprintfDouble(fgxFile, ((double)edge->edgeWeightMin()) / weightDivisor);
-                        fprintf(fgxFile, "\n            maxWeight=");
-                        fprintfDouble(fgxFile, ((double)edge->edgeWeightMax()) / weightDivisor);
-                    }
-
-                    if (edgeWeight > 0)
-                    {
-                        if (edgeWeight < bSource->bbWeight)
-                        {
-                            fprintf(fgxFile, "\n            out=");
-                            fprintfDouble(fgxFile, ((double)edgeWeight) / sourceWeightDivisor);
-                        }
-                        if (edgeWeight < bTarget->bbWeight)
-                        {
-                            fprintf(fgxFile, "\n            in=");
-                            fprintfDouble(fgxFile, ((double)edgeWeight) / targetWeightDivisor);
-                        }
-                    }
-                }
-            }
-            if (!createDotFile)
-            {
-                fprintf(fgxFile, ">");
-                fprintf(fgxFile, "\n        </edge>");
             }
         }
     }
+
     if (createDotFile)
     {
         fprintf(fgxFile, "}\n");
