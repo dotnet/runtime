@@ -1044,9 +1044,9 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, fgArgTabEntry* inf
         unsigned slotNumber = info->GetByteOffset() / TARGET_POINTER_SIZE;
 #if defined(FEATURE_PUT_STRUCT_ARG_STK)
         unsigned numberOfStackSlots = info->GetStackSlotsNumber();
-        DEBUG_NOT_OSX_ARM64_ASSERT(numberOfStackSlots == info->numSlots);
+        DEBUG_ARG_SLOTS_ASSERT(numberOfStackSlots == info->numSlots);
 #endif
-        DEBUG_NOT_OSX_ARM64_ASSERT(slotNumber == info->slotNum);
+        DEBUG_ARG_SLOTS_ASSERT(slotNumber == info->slotNum);
 
         putArg = new (comp, GT_PUTARG_SPLIT)
             GenTreePutArgSplit(arg, slotNumber PUT_STRUCT_ARG_STK_ONLY_ARG(numberOfStackSlots), info->numRegs,
@@ -1159,9 +1159,9 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, fgArgTabEntry* inf
             unsigned slotNumber = info->GetByteOffset() / TARGET_POINTER_SIZE;
 #if defined(FEATURE_PUT_STRUCT_ARG_STK)
             unsigned numberOfStackSlots = info->GetStackSlotsNumber();
-            DEBUG_NOT_OSX_ARM64_ASSERT(numberOfStackSlots == info->numSlots);
+            DEBUG_ARG_SLOTS_ASSERT(numberOfStackSlots == info->numSlots);
 #endif
-            DEBUG_NOT_OSX_ARM64_ASSERT(slotNumber == info->slotNum);
+            DEBUG_ARG_SLOTS_ASSERT(slotNumber == info->slotNum);
 
             putArg =
                 new (comp, GT_PUTARG_STK) GenTreePutArgStk(GT_PUTARG_STK, TYP_VOID, arg,
@@ -2135,7 +2135,7 @@ GenTree* Lowering::LowerTailCallViaJitHelper(GenTreeCall* call, GenTree* callTar
     unsigned  nNewStkArgsBytes = call->fgArgInfo->GetNextSlotByteOffset();
     const int wordSize         = 4;
     unsigned  nNewStkArgsWords = nNewStkArgsBytes / wordSize;
-    DEBUG_NOT_OSX_ARM64_ASSERT(call->fgArgInfo->GetNextSlotNum() == nNewStkArgsWords);
+    DEBUG_ARG_SLOTS_ASSERT(call->fgArgInfo->GetNextSlotNum() == nNewStkArgsWords);
     assert(nNewStkArgsWords >= 4); // There must be at least the four special stack args.
     nNewStkArgsWords -= 4;
 

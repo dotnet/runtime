@@ -785,7 +785,7 @@ void fgArgTabEntry::Dump() const
     }
     if (GetStackByteSize() > 0)
     {
-#if defined(DEBUG_NOT_OSX_ARM64_ABI)
+#if defined(DEBUG_ARG_SLOTS)
         printf(", numSlots=%u, slotNum=%u, byteSize=%u, byteOffset=%u", numSlots, slotNum, m_byteSize, m_byteOffset);
 #else
         printf(", byteSize=%u, byteOffset=%u", m_byteSize, m_byteOffset);
@@ -842,7 +842,7 @@ fgArgInfo::fgArgInfo(Compiler* comp, GenTreeCall* call, unsigned numArgs)
     compiler = comp;
     callTree = call;
     argCount = 0; // filled in arg count, starts at zero
-    DEBUG_NOT_OSX_ARM64(nextSlotNum = INIT_ARG_STACK_SLOT;)
+    DEBUG_ARG_SLOTS_ONLY(nextSlotNum = INIT_ARG_STACK_SLOT;)
     nextStackByteOffset = INIT_ARG_STACK_SLOT * TARGET_POINTER_SIZE;
     stkLevel            = 0;
 #if defined(UNIX_X86_ABI)
@@ -890,7 +890,7 @@ fgArgInfo::fgArgInfo(GenTreeCall* newCall, GenTreeCall* oldCall)
     compiler = oldArgInfo->compiler;
     callTree = newCall;
     argCount = 0; // filled in arg count, starts at zero
-    DEBUG_NOT_OSX_ARM64(nextSlotNum = INIT_ARG_STACK_SLOT;)
+    DEBUG_ARG_SLOTS_ONLY(nextSlotNum = INIT_ARG_STACK_SLOT;)
     nextStackByteOffset = INIT_ARG_STACK_SLOT * TARGET_POINTER_SIZE;
     stkLevel            = oldArgInfo->stkLevel;
 #if defined(UNIX_X86_ABI)
@@ -967,7 +967,7 @@ fgArgInfo::fgArgInfo(GenTreeCall* newCall, GenTreeCall* oldCall)
     }
 
     argCount = oldArgInfo->argCount;
-    DEBUG_NOT_OSX_ARM64(nextSlotNum = oldArgInfo->nextSlotNum;)
+    DEBUG_ARG_SLOTS_ONLY(nextSlotNum = oldArgInfo->nextSlotNum;)
     nextStackByteOffset = oldArgInfo->nextStackByteOffset;
 
     hasRegArgs   = oldArgInfo->hasRegArgs;
@@ -1007,7 +1007,7 @@ fgArgTabEntry* fgArgInfo::AddRegArg(unsigned          argNum,
     curArgTabEntry->lateUse = nullptr;
     curArgTabEntry->numRegs = numRegs;
 
-#if defined(DEBUG_NOT_OSX_ARM64_ABI)
+#if defined(DEBUG_ARG_SLOTS)
     curArgTabEntry->slotNum  = 0;
     curArgTabEntry->numSlots = 0;
 #endif
@@ -1085,19 +1085,19 @@ fgArgTabEntry* fgArgInfo::AddStkArg(unsigned          argNum,
 {
     fgArgTabEntry* curArgTabEntry = new (compiler, CMK_fgArgInfo) fgArgTabEntry;
 
-#if defined(DEBUG_NOT_OSX_ARM64_ABI)
+#if defined(DEBUG_ARG_SLOTS)
     nextSlotNum = roundUp(nextSlotNum, byteAlignment / TARGET_POINTER_SIZE);
 #endif
 
     nextStackByteOffset = roundUp(nextStackByteOffset, byteAlignment);
-    DEBUG_NOT_OSX_ARM64_ASSERT(nextStackByteOffset / TARGET_POINTER_SIZE == nextSlotNum);
+    DEBUG_ARG_SLOTS_ASSERT(nextStackByteOffset / TARGET_POINTER_SIZE == nextSlotNum);
 
     curArgTabEntry->setRegNum(0, REG_STK);
     curArgTabEntry->argNum  = argNum;
     curArgTabEntry->argType = node->TypeGet();
     curArgTabEntry->use     = use;
     curArgTabEntry->lateUse = nullptr;
-#if defined(DEBUG_NOT_OSX_ARM64_ABI)
+#if defined(DEBUG_ARG_SLOTS)
     curArgTabEntry->numSlots = numSlots;
     curArgTabEntry->slotNum  = nextSlotNum;
 #endif
@@ -1128,14 +1128,14 @@ fgArgTabEntry* fgArgInfo::AddStkArg(unsigned          argNum,
 
     hasStackArgs = true;
     AddArg(curArgTabEntry);
-    DEBUG_NOT_OSX_ARM64(nextSlotNum += numSlots;)
+    DEBUG_ARG_SLOTS_ONLY(nextSlotNum += numSlots;)
     nextStackByteOffset += byteSize;
     return curArgTabEntry;
 }
 
 void fgArgInfo::RemorphReset()
 {
-    DEBUG_NOT_OSX_ARM64(nextSlotNum = INIT_ARG_STACK_SLOT;)
+    DEBUG_ARG_SLOTS_ONLY(nextSlotNum = INIT_ARG_STACK_SLOT;)
     nextStackByteOffset = INIT_ARG_STACK_SLOT * TARGET_POINTER_SIZE;
 }
 
@@ -1182,7 +1182,7 @@ void fgArgInfo::UpdateStkArg(fgArgTabEntry* curArgTabEntry, GenTree* node, bool 
     noway_assert(curArgTabEntry->use != callTree->gtCallThisArg);
     assert((curArgTabEntry->GetRegNum() == REG_STK) || curArgTabEntry->IsSplit());
     assert(curArgTabEntry->use->GetNode() == node);
-#if defined(DEBUG_NOT_OSX_ARM64_ABI)
+#if defined(DEBUG_ARG_SLOTS)
     nextSlotNum = roundUp(nextSlotNum, curArgTabEntry->byteAlignment / TARGET_POINTER_SIZE);
     assert(curArgTabEntry->slotNum == nextSlotNum);
     nextSlotNum += curArgTabEntry->numSlots;
@@ -1220,18 +1220,18 @@ void fgArgInfo::SplitArg(unsigned argNum, unsigned numRegs, unsigned numSlots)
     {
         assert(curArgTabEntry->IsSplit() == true);
         assert(curArgTabEntry->numRegs == numRegs);
-        DEBUG_NOT_OSX_ARM64(assert(curArgTabEntry->numSlots == numSlots);)
+        DEBUG_ARG_SLOTS_ONLY(assert(curArgTabEntry->numSlots == numSlots);)
         assert(hasStackArgs == true);
     }
     else
     {
         curArgTabEntry->SetSplit(true);
         curArgTabEntry->numRegs = numRegs;
-        DEBUG_NOT_OSX_ARM64(curArgTabEntry->numSlots = numSlots;)
+        DEBUG_ARG_SLOTS_ONLY(curArgTabEntry->numSlots = numSlots;)
         curArgTabEntry->SetByteOffset(0);
         hasStackArgs = true;
     }
-    DEBUG_NOT_OSX_ARM64(nextSlotNum += numSlots;)
+    DEBUG_ARG_SLOTS_ONLY(nextSlotNum += numSlots;)
     // TODO-Cleanup: structs are aligned to 8 bytes on arm64 apple, so it would work, but pass the precise size.
     nextStackByteOffset += numSlots * TARGET_POINTER_SIZE;
 }
@@ -2433,7 +2433,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
     unsigned argIndex     = 0;
     unsigned intArgRegNum = 0;
     unsigned fltArgRegNum = 0;
-    DEBUG_NOT_OSX_ARM64(unsigned argSlots = 0;)
+    DEBUG_ARG_SLOTS_ONLY(unsigned argSlots = 0;)
 
     bool callHasRetBuffArg = call->HasRetBufArg();
     bool callIsVararg      = call->IsVarargs();
@@ -2803,7 +2803,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         fltArgRegNum++;
 #endif // WINDOWS_AMD64_ABI
         argIndex++;
-        DEBUG_NOT_OSX_ARM64(argSlots++;)
+        DEBUG_ARG_SLOTS_ONLY(argSlots++;)
     }
 
 #ifdef TARGET_X86
@@ -3497,7 +3497,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
             newArgEntry->argType = argx->TypeGet();
         }
 
-        DEBUG_NOT_OSX_ARM64(argSlots += size;)
+        DEBUG_ARG_SLOTS_ONLY(argSlots += size;)
     } // end foreach argument loop
 
 #ifdef DEBUG
@@ -3560,7 +3560,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
 
     unsigned argIndex = 0;
 
-    DEBUG_NOT_OSX_ARM64(unsigned argSlots = 0;)
+    DEBUG_ARG_SLOTS_ONLY(unsigned argSlots = 0;)
 
     bool reMorphing = call->AreArgsComplete();
 
@@ -3599,7 +3599,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
         flagsSummary |= argx->gtFlags;
         assert(argIndex == 0);
         argIndex++;
-        DEBUG_NOT_OSX_ARM64(argSlots++;)
+        DEBUG_ARG_SLOTS_ONLY(argSlots++;)
     }
 
     // Note that this name is a bit of a misnomer - it indicates that there are struct args
@@ -3616,10 +3616,10 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
         *parentArgx = argx;
         assert(argx == args->GetNode());
 
-        DEBUG_NOT_OSX_ARM64(unsigned size = argEntry->getSize();)
+        DEBUG_ARG_SLOTS_ONLY(unsigned size = argEntry->getSize();)
         CORINFO_CLASS_HANDLE copyBlkClass = NO_CLASS_HANDLE;
 
-#if defined(DEBUG_NOT_OSX_ARM64_ABI)
+#if defined(DEBUG_ARG_SLOTS)
         if (argEntry->byteAlignment == 2 * TARGET_POINTER_SIZE)
         {
             if (argSlots % 2 == 1)
@@ -3636,8 +3636,8 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
             flagsSummary |= argx->gtFlags;
             continue;
         }
-        DEBUG_NOT_OSX_ARM64_ASSERT(size != 0);
-        DEBUG_NOT_OSX_ARM64(argSlots += argEntry->getSlotCount();)
+        DEBUG_ARG_SLOTS_ASSERT(size != 0);
+        DEBUG_ARG_SLOTS_ONLY(argSlots += argEntry->getSlotCount();)
 
         if (argx->IsLocalAddrExpr() != nullptr)
         {
@@ -3688,7 +3688,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
             // First, handle the case where the argument is passed by reference.
             if (argEntry->passedByRef)
             {
-                DEBUG_NOT_OSX_ARM64_ASSERT(size == 1);
+                DEBUG_ARG_SLOTS_ASSERT(size == 1);
                 copyBlkClass = objClass;
 #ifdef UNIX_AMD64_ABI
                 assert(!"Structs are not passed by reference on x64/ux");
@@ -3700,7 +3700,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
 #ifndef TARGET_X86
                 // Check to see if we can transform this into load of a primitive type.
                 // 'size' must be the number of pointer sized items
-                DEBUG_NOT_OSX_ARM64_ASSERT(size == roundupSize / TARGET_POINTER_SIZE);
+                DEBUG_ARG_SLOTS_ASSERT(size == roundupSize / TARGET_POINTER_SIZE);
 
                 structSize           = originalSize;
                 unsigned passingSize = originalSize;
@@ -3798,10 +3798,10 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                     // Change our argument, as needed, into a value of the appropriate type.
                     CLANG_FORMAT_COMMENT_ANCHOR;
 #ifdef TARGET_ARM
-                    DEBUG_NOT_OSX_ARM64_ASSERT((size == 1) || ((structBaseType == TYP_DOUBLE) && (size == 2)));
+                    DEBUG_ARG_SLOTS_ASSERT((size == 1) || ((structBaseType == TYP_DOUBLE) && (size == 2)));
 #else
-                    DEBUG_NOT_OSX_ARM64_ASSERT((size == 1) || (varTypeIsSIMD(structBaseType) &&
-                                                               size == (genTypeSize(structBaseType) / REGSIZE_BYTES)));
+                    DEBUG_ARG_SLOTS_ASSERT((size == 1) || (varTypeIsSIMD(structBaseType) &&
+                                                           size == (genTypeSize(structBaseType) / REGSIZE_BYTES)));
 #endif
 
                     assert((structBaseType != TYP_STRUCT) && (genTypeSize(structBaseType) >= originalSize));
@@ -4075,7 +4075,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
 
         const unsigned outgoingArgSpaceSize = GetOutgoingArgByteSize(call->fgArgInfo->GetNextSlotByteOffset());
 
-#if defined(DEBUG_NOT_OSX_ARM64_ABI)
+#if defined(DEBUG_ARG_SLOTS)
         unsigned preallocatedArgCount = call->fgArgInfo->GetNextSlotNum();
         assert(outgoingArgSpaceSize == preallocatedArgCount * REGSIZE_BYTES);
 #endif
@@ -4085,7 +4085,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
         if (verbose)
         {
             const fgArgInfo* argInfo = call->fgArgInfo;
-#if defined(DEBUG_NOT_OSX_ARM64_ABI)
+#if defined(DEBUG_ARG_SLOTS)
             printf("argSlots=%d, preallocatedArgCount=%d, nextSlotNum=%d, nextSlotByteOffset=%d, "
                    "outgoingArgSpaceSize=%d\n",
                    argSlots, preallocatedArgCount, argInfo->GetNextSlotNum(), argInfo->GetNextSlotByteOffset(),

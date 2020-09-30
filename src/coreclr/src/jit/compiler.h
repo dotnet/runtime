@@ -1459,7 +1459,7 @@ public:
     unsigned structFloatRegs;
 #endif // UNIX_AMD64_ABI
 
-#if defined(DEBUG_NOT_OSX_ARM64_ABI)
+#if defined(DEBUG_ARG_SLOTS)
     // These fields were used to calculate stack size in stack slots for arguments
     // but now they are replaced by precise `m_byteOffset/m_byteSize` because of
     // arm64 apple abi requirements.
@@ -1467,7 +1467,7 @@ public:
     // A slot is a pointer sized region in the OutArg area.
     unsigned slotNum;  // When an argument is passed in the OutArg area this is the slot number in the OutArg area
     unsigned numSlots; // Count of number of slots that this argument uses
-#endif                 // DEBUG_NOT_OSX_ARM64_ABI
+#endif                 // DEBUG_ARG_SLOTS
 
     // Return number of stack slots that this argument is taking.
     // TODO-Cleanup: this function does not align with arm64 apple model,
@@ -1741,7 +1741,7 @@ public:
         return !IsSplit() && ((numRegs == 1) || (m_byteSize <= TARGET_POINTER_SIZE));
     }
 
-#if defined(DEBUG_NOT_OSX_ARM64_ABI)
+#if defined(DEBUG_ARG_SLOTS)
     // Returns the number of "slots" used, where for this purpose a
     // register counts as a slot.
     unsigned getSlotCount() const
@@ -1764,7 +1764,7 @@ public:
     }
 #endif
 
-#if defined(DEBUG_NOT_OSX_ARM64_ABI)
+#if defined(DEBUG_ARG_SLOTS)
     // Returns the size as a multiple of pointer-size.
     // For targets without HFAs, this is the same as getSlotCount().
     unsigned getSize() const
@@ -1809,19 +1809,19 @@ private:
 public:
     void SetByteOffset(unsigned byteOffset)
     {
-        DEBUG_NOT_OSX_ARM64_ASSERT(byteOffset / TARGET_POINTER_SIZE == slotNum);
+        DEBUG_ARG_SLOTS_ASSERT(byteOffset / TARGET_POINTER_SIZE == slotNum);
         m_byteOffset = byteOffset;
     }
 
     unsigned GetByteOffset() const
     {
-        DEBUG_NOT_OSX_ARM64_ASSERT(m_byteOffset / TARGET_POINTER_SIZE == slotNum);
+        DEBUG_ARG_SLOTS_ASSERT(m_byteOffset / TARGET_POINTER_SIZE == slotNum);
         return m_byteOffset;
     }
 
     void SetByteSize(unsigned byteSize)
     {
-#if defined(DEBUG_NOT_OSX_ARM64_ABI)
+#if defined(DEBUG_ARG_SLOTS)
         assert(byteAlignment != 0);
         if (!isStruct)
         {
@@ -1919,7 +1919,7 @@ class fgArgInfo
     Compiler*    compiler; // Back pointer to the compiler instance so that we can allocate memory
     GenTreeCall* callTree; // Back pointer to the GT_CALL node for this fgArgInfo
     unsigned     argCount; // Updatable arg count value
-#if defined(DEBUG_NOT_OSX_ARM64_ABI)
+#if defined(DEBUG_ARG_SLOTS)
     unsigned nextSlotNum; // Updatable slot count value
 #endif
     unsigned nextStackByteOffset;
@@ -2011,7 +2011,7 @@ public:
         return argTable;
     }
 
-#if defined(DEBUG_NOT_OSX_ARM64_ABI)
+#if defined(DEBUG_ARG_SLOTS)
     unsigned GetNextSlotNum() const
     {
         return nextSlotNum;
