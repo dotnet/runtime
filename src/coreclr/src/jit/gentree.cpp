@@ -6240,6 +6240,7 @@ GenTreeCall* Compiler::gtNewCallNode(
     node->gtRetClsHnd     = nullptr;
     node->gtControlExpr   = nullptr;
     node->gtCallMoreFlags = 0;
+    node->unmgdCallConv = (CorInfoUnmanagedCallConv)0;
 
     if (callType == CT_INDIRECT)
     {
@@ -19176,7 +19177,7 @@ void ReturnTypeDesc::InitializeStructReturnType(Compiler* comp, CORINFO_CLASS_HA
     unsigned structSize = comp->info.compCompHnd->getClassSize(retClsHnd);
 
     Compiler::structPassingKind howToReturnStruct;
-    var_types                   returnType = comp->getReturnTypeForStruct(retClsHnd, &howToReturnStruct, structSize);
+    var_types                   returnType = comp->getReturnTypeForStruct(retClsHnd, comp->compMethodInfoGetUnmanagedCallConv(comp->info.compMethodInfo), &howToReturnStruct, structSize);
 
     switch (howToReturnStruct)
     {

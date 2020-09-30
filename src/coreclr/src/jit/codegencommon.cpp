@@ -10060,7 +10060,7 @@ void CodeGen::genVzeroupperIfNeeded(bool check256bitOnly /* = true*/)
 // Return Value:
 //     true if type is returned in multiple registers, false otherwise.
 //
-bool Compiler::IsMultiRegReturnedType(CORINFO_CLASS_HANDLE hClass)
+bool Compiler::IsMultiRegReturnedType(CORINFO_CLASS_HANDLE hClass, CorInfoUnmanagedCallConv callConv)
 {
     if (hClass == NO_CLASS_HANDLE)
     {
@@ -10068,7 +10068,7 @@ bool Compiler::IsMultiRegReturnedType(CORINFO_CLASS_HANDLE hClass)
     }
 
     structPassingKind howToReturnStruct;
-    var_types         returnType = getReturnTypeForStruct(hClass, &howToReturnStruct);
+    var_types         returnType = getReturnTypeForStruct(hClass, callConv, &howToReturnStruct);
 
 #ifdef TARGET_ARM64
     return (varTypeIsStruct(returnType) && (howToReturnStruct != SPK_PrimitiveType));

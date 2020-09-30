@@ -6953,6 +6953,7 @@ void Compiler::impCheckForPInvokeCall(
     JITLOG((LL_INFO1000000, "\nInline a CALLI PINVOKE call from method %s", info.compFullName));
 
     call->gtFlags |= GTF_CALL_UNMANAGED;
+    call->unmgdCallConv = unmanagedCallConv;
     if (!call->IsSuppressGCTransition())
     {
         info.compUnmanagedCallCountWithGCTransition++;
@@ -7505,10 +7506,12 @@ void Compiler::impInsertHelperCall(CORINFO_HELPER_DESC* helperInfo)
 // so that callee can be tail called. Note that here we don't check
 // compatibility in IL Verifier sense, but on the lines of return type
 // sizes are equal and get returned in the same return register.
-bool Compiler::impTailCallRetTypeCompatible(var_types            callerRetType,
-                                            CORINFO_CLASS_HANDLE callerRetTypeClass,
-                                            var_types            calleeRetType,
-                                            CORINFO_CLASS_HANDLE calleeRetTypeClass)
+bool Compiler::impTailCallRetTypeCompatible(var_types                callerRetType,
+                                            CORINFO_CLASS_HANDLE     callerRetTypeClass,
+                                            CorInfoUnmanagedCallConv callerCallConv,
+                                            var_types                calleeRetType,
+                                            CORINFO_CLASS_HANDLE     calleeRetTypeClass,
+                                            CorInfoUnmanagedCallConv calleeCallConv)
 {
     // Note that we can not relax this condition with genActualType() as the
     // calling convention dictates that the caller of a function with a small
@@ -7546,9 +7549,9 @@ bool Compiler::impTailCallRetTypeCompatible(var_types            callerRetType,
     unsigned callerRetTypeSize = 0;
     unsigned calleeRetTypeSize = 0;
     bool     isCallerRetTypMBEnreg =
-        VarTypeIsMultiByteAndCanEnreg(callerRetType, callerRetTypeClass, &callerRetTypeSize, true, info.compIsVarArgs);
+        VarTypeIsMultiByteAndCanEnreg(callerRetType, callerRetTypeClass, &callerRetTypeSize, true, info.compIsVarArgs, callerCallConv);
     bool isCalleeRetTypMBEnreg =
-        VarTypeIsMultiByteAndCanEnreg(calleeRetType, calleeRetTypeClass, &calleeRetTypeSize, true, info.compIsVarArgs);
+        VarTypeIsMultiByteAndCanEnreg(calleeRetType, calleeRetTypeClass, &calleeRetTypeSize, true, info.compIsVarArgs, calleeCallConv);
 
     if (varTypeIsIntegral(callerRetType) || isCallerRetTypMBEnreg)
     {
@@ -8744,8 +8747,12 @@ DONE:
         // a small-typed return value is responsible for normalizing the return val
 
         if (canTailCall &&
-            !impTailCallRetTypeCompatible(info.compRetType, info.compMethodInfo->args.retTypeClass, callRetTyp,
-                                          sig->retTypeClass))
+            !impTailCallRetTypeCompatible(info.compRetType,
+                                          info.compMethodInfo->args.retTypeClass,
+                                          compMethodInfoGetUnmanagedCallConv(info.compMethodInfo),
+                                          callRetTyp,
+                                          sig->retTypeClass,
+                                          call->AsCall()->unmgdCallConv))
         {
             canTailCall             = false;
             szCanTailCallFailReason = "Return types are not tail call compatible";
@@ -9104,7 +9111,7 @@ bool Compiler::impMethodInfo_hasRetBuffArg(CORINFO_METHOD_INFO* methInfo)
 
         structPassingKind howToReturnStruct = SPK_Unknown;
 
-        var_types returnType = getReturnTypeForStruct(methInfo->args.retTypeClass, &howToReturnStruct);
+        var_types returnType = getReturnTypeForStruct(methInfo->args.retTypeClass, compMethodInfoGetUnmanagedCallConv(methInfo), &howToReturnStruct);
 
         if (howToReturnStruct == SPK_ByReference)
         {
@@ -9252,7 +9259,7 @@ GenTree* Compiler::impFixupCallStructReturn(GenTreeCall* call, CORINFO_CLASS_HAN
             // No need to assign a multi-reg struct to a local var if:
             //  - It is a tail call or
             //  - The call is marked for in-lining later
-            return impAssignMultiRegTypeToVar(call, retClsHnd);
+            return impAssignMultiRegTypeToVar(call, retClsHnd DEBUGARG(call->unmgdCallConv));
         }
     }
 
@@ -9274,7 +9281,7 @@ GenTree* Compiler::impFixupCallStructReturn(GenTreeCall* call, CORINFO_CLASS_HAN
     else
 #endif
     {
-        returnType = getReturnTypeForStruct(retClsHnd, &howToReturnStruct);
+        returnType = getReturnTypeForStruct(retClsHnd, call->unmgdCallConv, &howToReturnStruct);
     }
 
     if (howToReturnStruct == SPK_ByReference)
@@ -9341,7 +9348,7 @@ GenTree* Compiler::impFixupCallStructReturn(GenTreeCall* call, CORINFO_CLASS_HAN
                 // No need to assign a multi-reg struct to a local var if:
                 //  - It is a tail call or
                 //  - The call is marked for in-lining later
-                return impAssignMultiRegTypeToVar(call, retClsHnd);
+                return impAssignMultiRegTypeToVar(call, retClsHnd DEBUGARG(call->unmgdCallConv));
             }
         }
 #endif // FEATURE_MULTIREG_RET
@@ -9358,7 +9365,7 @@ GenTree* Compiler::impFixupCallStructReturn(GenTreeCall* call, CORINFO_CLASS_HAN
    Note that this method is only call for !TARGET_X86
  */
 
-GenTree* Compiler::impFixupStructReturnType(GenTree* op, CORINFO_CLASS_HANDLE retClsHnd)
+GenTree* Compiler::impFixupStructReturnType(GenTree* op, CORINFO_CLASS_HANDLE retClsHnd, CorInfoUnmanagedCallConv unmgdCallConv)
 {
     assert(varTypeIsStruct(info.compRetType));
     assert(info.compRetBuffArg == BAD_VAR_NUM);
@@ -9373,7 +9380,7 @@ GenTree* Compiler::impFixupStructReturnType(GenTree* op, CORINFO_CLASS_HANDLE re
     assert(!info.compIsVarArgs);
 
     // Is method returning a multi-reg struct?
-    if (varTypeIsStruct(info.compRetNativeType) && IsMultiRegReturnedType(retClsHnd))
+    if (varTypeIsStruct(info.compRetNativeType) && IsMultiRegReturnedType(retClsHnd, unmgdCallConv))
     {
         // In case of multi-reg struct return, we force IR to be one of the following:
         // GT_RETURN(lclvar) or GT_RETURN(call).  If op is anything other than a
@@ -9396,11 +9403,11 @@ GenTree* Compiler::impFixupStructReturnType(GenTree* op, CORINFO_CLASS_HANDLE re
             return op;
         }
 
-        return impAssignMultiRegTypeToVar(op, retClsHnd);
+        return impAssignMultiRegTypeToVar(op, retClsHnd DEBUGARG(unmgdCallConv));
     }
 #elif defined(TARGET_X86)
     // Is method returning a multi-reg struct?
-    if (varTypeIsStruct(info.compRetNativeType) && IsMultiRegReturnedType(retClsHnd))
+    if (varTypeIsStruct(info.compRetNativeType) && IsMultiRegReturnedType(retClsHnd, unmgdCallConv))
     {
         // In case of multi-reg struct return, we force IR to be one of the following:
         // GT_RETURN(lclvar) or GT_RETURN(call).  If op is anything other than a
@@ -9423,7 +9430,7 @@ GenTree* Compiler::impFixupStructReturnType(GenTree* op, CORINFO_CLASS_HANDLE re
             return op;
         }
 
-        return impAssignMultiRegTypeToVar(op, retClsHnd);
+        return impAssignMultiRegTypeToVar(op, retClsHnd DEBUGARG(unmgdCallConv));
     }
 #else  // !UNIX_AMD64_ABI
     assert(info.compRetNativeType != TYP_STRUCT);
@@ -9460,13 +9467,13 @@ GenTree* Compiler::impFixupStructReturnType(GenTree* op, CORINFO_CLASS_HANDLE re
                 return op;
             }
         }
-        return impAssignMultiRegTypeToVar(op, retClsHnd);
+        return impAssignMultiRegTypeToVar(op, retClsHnd DEBUGARG(unmgdCallConv));
     }
 
 #elif FEATURE_MULTIREG_RET && defined(TARGET_ARM64)
 
     // Is method returning a multi-reg struct?
-    if (IsMultiRegReturnedType(retClsHnd))
+    if (IsMultiRegReturnedType(retClsHnd, unmgdCallConv))
     {
         if (op->gtOper == GT_LCL_VAR)
         {
@@ -9499,7 +9506,7 @@ GenTree* Compiler::impFixupStructReturnType(GenTree* op, CORINFO_CLASS_HANDLE re
                 return op;
             }
         }
-        return impAssignMultiRegTypeToVar(op, retClsHnd);
+        return impAssignMultiRegTypeToVar(op, retClsHnd DEBUGARG(unmgdCallConv));
     }
 
 #endif //  FEATURE_MULTIREG_RET && FEATURE_HFA
@@ -9585,7 +9592,7 @@ REDO_RETURN_NODE:
     }
     else if (op->gtOper == GT_COMMA)
     {
-        op->AsOp()->gtOp2 = impFixupStructReturnType(op->AsOp()->gtOp2, retClsHnd);
+        op->AsOp()->gtOp2 = impFixupStructReturnType(op->AsOp()->gtOp2, retClsHnd, unmgdCallConv);
     }
 
     op->gtType = info.compRetNativeType;
@@ -13399,7 +13406,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         // Calls with large struct return value have to go through this.
                         // Helper calls with small struct return value also have to go
                         // through this since they do not follow Unix calling convention.
-                        if (op1->gtOper != GT_CALL || !IsMultiRegReturnedType(clsHnd) ||
+                        if (op1->gtOper != GT_CALL || !IsMultiRegReturnedType(clsHnd, op1->AsCall()->unmgdCallConv) ||
                             op1->AsCall()->gtCallType == CT_HELPER)
 #endif // UNIX_AMD64_ABI
                         {
@@ -15792,7 +15799,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
 #if FEATURE_MULTIREG_RET
 
-                    if (varTypeIsStruct(op1) && IsMultiRegReturnedType(resolvedToken.hClass))
+                    if (varTypeIsStruct(op1) && IsMultiRegReturnedType(resolvedToken.hClass, CORINFO_UNMANAGED_CALLCONV_UNKNOWN))
                     {
                         // Unbox nullable helper returns a TYP_STRUCT.
                         // For the multi-reg case we need to spill it to a temp so that
@@ -16661,7 +16668,7 @@ GenTree* Compiler::impAssignSmallStructTypeToVar(GenTree* op, CORINFO_CLASS_HAND
 // Returns:
 //     Tree with reference to struct local to use as call return value.
 
-GenTree* Compiler::impAssignMultiRegTypeToVar(GenTree* op, CORINFO_CLASS_HANDLE hClass)
+GenTree* Compiler::impAssignMultiRegTypeToVar(GenTree* op, CORINFO_CLASS_HANDLE hClass DEBUGARG(CorInfoUnmanagedCallConv callConv))
 {
     unsigned tmpNum = lvaGrabTemp(true DEBUGARG("Return value temp for multireg return"));
     impAssignTempGen(tmpNum, op, hClass, (unsigned)CHECK_SPILL_ALL);
@@ -16670,7 +16677,7 @@ GenTree* Compiler::impAssignMultiRegTypeToVar(GenTree* op, CORINFO_CLASS_HANDLE 
     // TODO-1stClassStructs: Handle constant propagation and CSE-ing of multireg returns.
     ret->gtFlags |= GTF_DONT_CSE;
 
-    assert(IsMultiRegReturnedType(hClass));
+    assert(IsMultiRegReturnedType(hClass, callConv));
 
     // Mark the var so that fields are not promoted and stay together.
     lvaTable[tmpNum].lvIsMultiRegRet = true;
@@ -16824,7 +16831,7 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
                     noway_assert(info.compRetBuffArg == BAD_VAR_NUM);
                     // adjust the type away from struct to integral
                     // and no normalizing
-                    op2 = impFixupStructReturnType(op2, retClsHnd);
+                    op2 = impFixupStructReturnType(op2, retClsHnd, compMethodInfoGetUnmanagedCallConv(info.compMethodInfo));
                 }
                 else
                 {
@@ -17182,7 +17189,7 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
         // Also on System V AMD64 the multireg structs returns are also left as structs.
         noway_assert(info.compRetNativeType != TYP_STRUCT);
 #endif
-        op2 = impFixupStructReturnType(op2, retClsHnd);
+        op2 = impFixupStructReturnType(op2, retClsHnd, compMethodInfoGetUnmanagedCallConv(info.compMethodInfo));
         // return op2
         var_types returnType;
         if (compDoOldStructRetyping())

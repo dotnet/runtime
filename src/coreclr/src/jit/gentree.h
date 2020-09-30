@@ -4509,6 +4509,8 @@ struct GenTreeCall final : public GenTree
     unsigned char gtCallType : 3;   // value from the gtCallTypes enumeration
     unsigned char gtReturnType : 5; // exact return type
 
+    CorInfoUnmanagedCallConv unmgdCallConv;
+
     CORINFO_CLASS_HANDLE gtRetClsHnd; // The return type handle of the call if it is a struct; always available
 
     union {

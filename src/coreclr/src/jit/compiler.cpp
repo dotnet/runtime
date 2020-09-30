@@ -910,9 +910,10 @@ var_types Compiler::getArgTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
 //        Whenever this method's return value is TYP_STRUCT it always means
 //         that multiple registers are used to return this struct.
 //
-var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
-                                           structPassingKind*   wbReturnStruct /* = nullptr */,
-                                           unsigned             structSize /* = 0 */)
+var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
+                                           CorInfoUnmanagedCallConv callConv,
+                                           structPassingKind*       wbReturnStruct /* = nullptr */,
+                                           unsigned                 structSize /* = 0 */)
 {
     var_types         useType             = TYP_UNKNOWN;
     structPassingKind howToReturnStruct   = SPK_Unknown; // We must change this before we return
@@ -1998,6 +1999,11 @@ unsigned Compiler::compGetTypeSize(CorInfoType cit, CORINFO_CLASS_HANDLE clsHnd)
 bool Compiler::compMethodIsNativeInstanceMethod(CORINFO_METHOD_INFO* mthInfo)
 {
     return mthInfo->args.getCallConv() == CORINFO_CALLCONV_THISCALL;
+}
+
+CorInfoUnmanagedCallConv Compiler::compMethodInfoGetUnmanagedCallConv(CORINFO_METHOD_INFO* mthInfo)
+{
+    return (CorInfoUnmanagedCallConv)mthInfo->args.getCallConv();
 }
 
 #ifdef DEBUG

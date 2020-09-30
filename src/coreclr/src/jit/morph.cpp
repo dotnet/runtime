@@ -5012,7 +5012,7 @@ void Compiler::fgFixupStructReturn(GenTree* callNode)
     }
     else
     {
-        returnType = getReturnTypeForStruct(retClsHnd, &howToReturnStruct);
+        returnType = getReturnTypeForStruct(retClsHnd, call->unmgdCallConv, &howToReturnStruct);
     }
 
     if (howToReturnStruct == SPK_ByReference)
@@ -6699,7 +6699,9 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
     {
         var_types retType = (compDoOldStructRetyping() ? info.compRetNativeType : info.compRetType);
         assert(impTailCallRetTypeCompatible(retType, info.compMethodInfo->args.retTypeClass,
-                                            (var_types)callee->gtReturnType, callee->gtRetClsHnd));
+                                            compMethodInfoGetUnmanagedCallConv(info.compMethodInfo),
+                                            (var_types)callee->gtReturnType, callee->gtRetClsHnd,
+                                            callee->unmgdCallConv));
     }
 #endif
 
@@ -7620,7 +7622,7 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
             {
                 CORINFO_CLASS_HANDLE        retClsHnd = call->gtRetClsHnd;
                 Compiler::structPassingKind howToReturnStruct;
-                callType = getReturnTypeForStruct(retClsHnd, &howToReturnStruct);
+                callType = getReturnTypeForStruct(retClsHnd, call->unmgdCallConv, &howToReturnStruct);
                 assert((howToReturnStruct != SPK_Unknown) && (howToReturnStruct != SPK_ByReference));
                 if (howToReturnStruct == SPK_ByValue)
                 {
@@ -7983,7 +7985,7 @@ GenTree* Compiler::fgCreateCallDispatcherAndGetResult(GenTreeCall*          orig
 
         if (varTypeIsStruct(origCall->gtType))
         {
-            retVal = impFixupStructReturnType(retVal, origCall->gtRetClsHnd);
+            retVal = impFixupStructReturnType(retVal, origCall->gtRetClsHnd, origCall->unmgdCallConv);
         }
     }
     else
