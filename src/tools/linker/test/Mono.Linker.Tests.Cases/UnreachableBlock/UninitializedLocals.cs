@@ -13,6 +13,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		{
 #if IL_ASSEMBLY_AVAILABLE
 			Mono.Linker.Tests.Cases.UnreachableBlock.Dependencies.ClassA.Method_1 ();
+			Mono.Linker.Tests.Cases.UnreachableBlock.Dependencies.ClassA.Method_2 ();
 #endif
 		}
 	}

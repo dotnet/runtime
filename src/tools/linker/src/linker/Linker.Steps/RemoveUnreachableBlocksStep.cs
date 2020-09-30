@@ -1219,9 +1219,8 @@ namespace Mono.Linker.Steps
 
 			Instruction GetLocalsValue (int index, MethodBody body)
 			{
-				var instr = locals?[index];
-				if (instr != null)
-					return instr;
+				if (locals != null && locals.TryGetValue (index, out Instruction instruction))
+					return instruction;
 
 				if (!body.InitLocals)
 					return null;
