@@ -255,7 +255,6 @@ namespace System.Net.Http
 
             (CancellationTokenSource cts, bool disposeCts, long timeoutTime) = PrepareCancellationTokenSource(cancellationToken);
             HttpResponseMessage? response = null;
-            Stream? buffer = null;
             try
             {
                 // Wait for the response message and make sure it completed successfully.
@@ -279,7 +278,7 @@ namespace System.Net.Http
                 // at the end will be the exact size needed, in which case it's more beneficial to use
                 // ArrayPool buffers and copy out to a new array at the end.
                 long? contentLength = c.Headers.ContentLength;
-                buffer = contentLength.HasValue ?
+                using Stream buffer = contentLength.HasValue ?
                     new HttpContent.LimitMemoryStream(_maxResponseContentBufferSize, (int)contentLength.GetValueOrDefault()) :
                     new HttpContent.LimitArrayPoolWriteStream(_maxResponseContentBufferSize);
 
@@ -305,7 +304,6 @@ namespace System.Net.Http
             }
             finally
             {
-                buffer?.Dispose();
                 FinishSend(cts, disposeCts, telemetryStarted, responseContentTelemetryStarted);
             }
         }

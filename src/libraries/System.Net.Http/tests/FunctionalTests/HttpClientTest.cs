@@ -441,7 +441,7 @@ namespace System.Net.Http.Functional.Tests
                 TimeSpan.FromSeconds(1) :
                 Timeout.InfiniteTimeSpan;
 
-            await LoopbackServer.CreateClientAndServerAsync(
+            await LoopbackServerFactory.CreateClientAndServerAsync(
                 async uri =>
                 {
                     try
@@ -478,7 +478,7 @@ namespace System.Net.Http.Functional.Tests
                 {
                     await server.AcceptConnectionAsync(async connection =>
                     {
-                        await connection.ReadRequestHeaderAsync();
+                        await connection.ReadRequestDataAsync(readBody: false);
                         await connection.SendResponseAsync(HttpStatusCode.OK, headers: new HttpHeaderData[] { new HttpHeaderData("Content-Length", "5") });
                         await connection.SendResponseBodyAsync("he");
 
