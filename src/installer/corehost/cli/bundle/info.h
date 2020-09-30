@@ -60,7 +60,6 @@ namespace bundle
         static StatusCode process_bundle(const pal::char_t* bundle_path, const pal::char_t *app_path, int64_t header_offset);
         static bool is_single_file_bundle() { return the_app != nullptr; }
 
-        bool needs_native_libraries_extraction() const { return m_header.needs_native_libraries_extraction(); }
         bool is_netcoreapp3_compat_mode() const { return m_header.is_netcoreapp3_compat_mode(); }
         const pal::string_t& base_path() const { return m_base_path; }
         int64_t header_offset() const { return m_header_offset; }

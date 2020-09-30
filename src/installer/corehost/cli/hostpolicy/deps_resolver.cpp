@@ -883,8 +883,8 @@ bool deps_resolver_t::resolve_probe_dirs(
         auto bundle = bundle::runner_t::app();
         add_unique_path(asset_type, bundle->base_path(), &items, output, &non_serviced, core_servicing);
 
-        // If native components are self-extracted, add the extraction path too.
-        if (bundle->needs_native_libraries_extraction())
+        // Add the extraction path if it exists.
+        if (pal::directory_exists(bundle->extraction_path()))
         {
             add_unique_path(asset_type, bundle->extraction_path(), &items, output, &non_serviced, core_servicing);
         }

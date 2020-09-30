@@ -85,13 +85,51 @@ namespace AppHost.Bundle.Tests
                 .HaveStdOutContaining(appPath);
         }
 
+        [Fact]
+        public void AppContext_Deps_Files_Bundled_Self_Contained()
+        {
+            var fixture = sharedTestState.TestFixture.Copy();
+            var singleFile = BundleHelper.BundleApp(fixture);
+
+            Command.Create(singleFile, "appcontext")
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .Execute()
+                .Should()
+                .Pass()
+                .And
+                .NotHaveStdOutContaining("SingleFileApiTests.deps.json")
+                .And
+                .NotHaveStdOutContaining("Microsoft.NETCore.App.deps.json");
+        }
+
+        [Fact]
+        public void AppContext_Native_Search_Dirs_Contains_Bundle_And_Extraction_Dirs()
+        {
+            var fixture = sharedTestState.TestFixture.Copy();
+            Bundler bundler = BundleHelper.BundleApp(fixture, out string singleFile, BundleOptions.BundleNativeBinaries);
+            string extractionDir = BundleHelper.GetExtractionDir(fixture, bundler).FullName;
+            string bundleDir = BundleHelper.GetBundleDir(fixture).FullName;
+
+            Command.Create(singleFile, "native_search_dirs")
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .Execute()
+                .Should().Pass()
+                .And.HaveStdOutContaining(extractionDir)
+                .And.HaveStdOutContaining(bundleDir);
+        }
+
         public class SharedTestState : SharedTestStateBase, IDisposable
         {
             public TestProjectFixture TestFixture { get; set; }
 
             public SharedTestState()
             {
-                TestFixture = PreparePublishedSelfContainedTestProject("SingleFileApiTests");
+                // We include mockcoreclr in our project to test native binaries extraction.
+                string mockCoreClrPath = Path.Combine(RepoDirectories.Artifacts, "corehost_test",
+                    RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("mockcoreclr"));
+                TestFixture = PreparePublishedSelfContainedTestProject("SingleFileApiTests", $"/p:AddFile={mockCoreClrPath}");
             }
 
             public void Dispose()
