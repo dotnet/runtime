@@ -101,4 +101,4 @@ jobs:
     # Create Core_Root
     - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(buildConfig) $(archType) generatelayoutonly $(librariesOverrideArg)
       displayName: Create Core_Root
-      condition: and(succeeded(), ne(variables.runtimeFlavorName, 'Mono'))
+      condition: succeeded()

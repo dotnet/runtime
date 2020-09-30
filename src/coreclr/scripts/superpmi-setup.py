@@ -8,8 +8,27 @@
 #
 # Notes:
 #
-# Script to setup directory structure to perform SuperPMI collection in CI.
-#
+# Script to setup directory structure required to perform SuperPMI collection in CI.
+# It does the following steps:
+# 1.  It creates `correlation_payload_directory` that contains files from CORE_ROOT, src\coreclr\scripts.
+#     This directory is the one that is sent to all the helix machines that performs SPMI collection.
+# 2.  It clones dotnet/jitutils, builds it and then copies the `pmi.dll` to `correlation_payload_directory` folder.
+#     This file is needed to do pmi SPMI runs.
+# 3.  The script takes `libraries_artifacts` and `tests_artifacts` parameters which contains managed .dlls and .exes on
+#     which SPMI needs to be run. This script will partition these folders into equal buckets of approximately `max_size`
+#     bytes and stores them under `payload` directory. Each sub-folder inside `payload` directory is sent to individual
+#     helix machine to do SPMI collection on. E.g. for `libraries_artifacts` the parameter would be path to `CORE_ROOT`
+#     folder and this script will copy `max_size` bytes of those files under `payload/Core_Root/libraries_0/binaries`,
+#     `payload/Core_Root/libraries_1/binaries` and so forth.
+# 4.  Lastly, it sets the pipeline variables.
+
+# Below are the helix queues it sets depending on the OS/architecture:
+# | Arch  | Windows_NT       | Linux                                                                                                                                |
+# |-------|------------------|--------------------------------------------------------------------------------------------------------------------------------------|
+# | x86   | Windows.10.Amd64 | -                                                                                                                                    |
+# | x64   | Windows.10.Amd64 | Ubuntu.1804.Amd64                                                                                                                    |
+# | arm   | -                | (Ubuntu.1804.Arm32)Ubuntu.1804.Armarch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm32v7-bfcd90a-20200121150440 |
+# | arm64 | Windows.10.Arm64 | (Ubuntu.1804.Arm64)Ubuntu.1804.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm64v8-a45aeeb-20190620155855 |
 ################################################################################
 ################################################################################
 
@@ -315,7 +334,7 @@ def main(main_args):
     coreclr_args = setup_args(main_args)
     source_directory = coreclr_args.source_directory
 
-    # CorelationPayload directories
+    # CorrelationPayload directories
     correlation_payload_directory = path.join(coreclr_args.source_directory, "payload")
     superpmi_src_directory = path.join(source_directory, 'src', 'coreclr', 'scripts')
     superpmi_dst_directory = path.join(correlation_payload_directory, "superpmi")
@@ -346,10 +365,8 @@ def main(main_args):
                 ["git", "clone", "--quiet", "--depth", "1", "https://github.com/dotnet/jitutils", jitutils_directory])
             # Set dotnet path to run bootstrap
             os.environ["PATH"] = path.join(source_directory, ".dotnet") + os.pathsep + os.environ["PATH"]
-            if is_windows:
-                run_command([path.join(jitutils_directory, "bootstrap.cmd")], jitutils_directory)
-            else:
-                run_command([path.join(jitutils_directory, "bootstrap.sh")], jitutils_directory)
+            bootstrap_file = "bootstrap.cmd" if is_windows else "bootstrap.sh"
+            run_command([path.join(jitutils_directory, bootstrap_file)], jitutils_directory)
 
             copy_files(path.join(jitutils_directory, "bin"), superpmi_dst_directory, [path.join(jitutils_directory, "bin", "pmi.dll")])
     except PermissionError as pe_error:
