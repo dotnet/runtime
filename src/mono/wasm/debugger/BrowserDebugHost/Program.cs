@@ -16,6 +16,8 @@ namespace Microsoft.WebAssembly.Diagnostics
     public class ProxyOptions
     {
         public Uri DevToolsUrl { get; set; } = new Uri("http://localhost:9222");
+
+        public int? OwnerPid { get; set; }
     }
 
     public class Program

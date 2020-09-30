@@ -215,9 +215,10 @@ namespace System.Text.RegularExpressions
 
         /// <summary>Enumerates all of the matches with the specified regex, invoking the callback for each.</summary>
         /// <remarks>
-        /// This repeatedly hands out the same Match instance, updated with new information.
+        /// This optionally repeatedly hands out the same Match instance, updated with new information.
+        /// <paramref name="reuseMatchObject"/> should be set to false if the Match object is handed out to user code.
         /// </remarks>
-        internal void Scan<TState>(Regex regex, string text, int textstart, ref TState state, MatchCallback<TState> callback, TimeSpan timeout)
+        internal void Scan<TState>(Regex regex, string text, int textstart, ref TState state, MatchCallback<TState> callback, bool reuseMatchObject, TimeSpan timeout)
         {
             // Handle timeout argument
             _timeout = -1; // (int)Regex.InfiniteMatchTimeout.TotalMilliseconds
@@ -297,12 +298,27 @@ namespace System.Text.RegularExpressions
                     if (match._matchcount[0] > 0)
                     {
                         // Hand it out to the callback in canonical form.
+                        if (!reuseMatchObject)
+                        {
+                            // We're not reusing match objects, so null out our field reference to the instance.
+                            // It'll be recreated the next time one is needed.
+                            runmatch = null;
+                        }
                         match.Tidy(runtextpos);
                         initialized = false;
                         if (!callback(ref state, match))
                         {
                             // If the callback returns false, we're done.
-                            match.Text = runtext = null!; // drop reference to text to avoid keeping it alive in a cache
+                            // Drop reference to text to avoid keeping it alive in a cache.
+                            runtext = null!;
+                            if (reuseMatchObject)
+                            {
+                                // We're reusing the single match instance, so clear out its text as well.
+                                // We don't do this if we're not reusing instances, as in that case we're
+                                // dropping the whole reference to the match, and we no longer own the instance
+                                // having handed it out to the callback.
+                                match.Text = null!;
+                            }
                             return;
                         }
 
@@ -314,7 +330,13 @@ namespace System.Text.RegularExpressions
                         {
                             if (runtextpos == stoppos)
                             {
-                                match.Text = runtext = null!; // drop reference to text to avoid keeping it alive in a cache
+                                // Drop reference to text to avoid keeping it alive in a cache.
+                                runtext = null!;
+                                if (reuseMatchObject)
+                                {
+                                    // See above comment.
+                                    match.Text = null!;
+                                }
                                 return;
                             }
 
@@ -335,7 +357,10 @@ namespace System.Text.RegularExpressions
                 if (runtextpos == stoppos)
                 {
                     runtext = null; // drop reference to text to avoid keeping it alive in a cache
-                    if (runmatch != null) runmatch.Text = null!;
+                    if (runmatch != null)
+                    {
+                        runmatch.Text = null!;
+                    }
                     return;
                 }
 

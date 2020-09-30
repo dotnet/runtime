@@ -66,6 +66,12 @@ namespace System.Diagnostics.Tests
             return line == "Success" ? SuccessExitCode : SuccessExitCode + 1;
         }
 
+        public static int Echo(string value)
+        {
+            Console.WriteLine(value);
+            return SuccessExitCode;
+        }
+
         public static int ReadLineWriteIfNull()
         {
             string line = Console.ReadLine();

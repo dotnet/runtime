@@ -104,6 +104,108 @@ namespace System.Net.Sockets.Tests
             }
         }
 
+        [Theory]
+        [InlineData(false, false, false)]
+        [InlineData(false, false, true)]
+        [InlineData(false, true, false)]
+        [InlineData(false, true, true)]
+        [InlineData(true, false, false)]
+        [InlineData(true, false, true)]
+        [InlineData(true, true, false)]
+        [InlineData(true, true, true)]
+        public async Task SendFile_NoFile_Succeeds(bool useAsync, bool usePreBuffer, bool usePostBuffer)
+        {
+            using var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            using var listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            listener.BindToAnonymousPort(IPAddress.Loopback);
+            listener.Listen(1);
+
+            client.Connect(listener.LocalEndPoint);
+            using Socket server = listener.Accept();
+
+            if (useAsync)
+            {
+                await Task.Factory.FromAsync<string>(server.BeginSendFile, server.EndSendFile, null, null);
+            }
+            else
+            {
+                server.SendFile(null);
+            }
+            Assert.Equal(0, client.Available);
+
+            byte[] preBuffer = usePreBuffer ? new byte[1] : null;
+            byte[] postBuffer = usePostBuffer ? new byte[1] : null;
+            int bytesExpected = (usePreBuffer ? 1 : 0) + (usePostBuffer ? 1 : 0);
+
+            if (useAsync)
+            {
+                await Task.Factory.FromAsync((c, s) => server.BeginSendFile(null, preBuffer, postBuffer, TransmitFileOptions.UseDefaultWorkerThread, c, s), server.EndSendFile, null);
+            }
+            else
+            {
+                server.SendFile(null, preBuffer, postBuffer, TransmitFileOptions.UseDefaultWorkerThread);
+            }
+
+            byte[] receiveBuffer = new byte[1];
+            for (int i = 0; i < bytesExpected; i++)
+            {
+                Assert.Equal(1, client.Receive(receiveBuffer));
+            }
+
+            Assert.Equal(0, client.Available);
+        }
+
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/42534", TestPlatforms.Windows)]
+        [OuterLoop("Creates and sends a file several gigabytes long")]
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task SendFile_GreaterThan2GBFile_SendsAllBytes(bool useAsync)
+        {
+            const long FileLength = 100L + int.MaxValue;
+
+            string tmpFile = GetTestFilePath();
+            using (FileStream fs = File.Create(tmpFile))
+            {
+                fs.SetLength(FileLength);
+            }
+
+            using var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            using var listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            listener.BindToAnonymousPort(IPAddress.Loopback);
+            listener.Listen(1);
+
+            client.Connect(listener.LocalEndPoint);
+            using Socket server = listener.Accept();
+
+            await new Task[]
+            {
+                Task.Run(async () =>
+                {
+                    if (useAsync)
+                    {
+                        await Task.Factory.FromAsync(server.BeginSendFile, server.EndSendFile, tmpFile, null);
+                    }
+                    else
+                    {
+                        server.SendFile(tmpFile);
+                    }
+                }),
+                Task.Run(() =>
+                {
+                    byte[] buffer = new byte[100_000];
+                    long count = 0;
+                    while (count < FileLength)
+                    {
+                        int received = client.Receive(buffer);
+                        Assert.NotEqual(0, received);
+                        count += received;
+                    }
+                    Assert.Equal(0, client.Available);
+                })
+            }.WhenAllOrAnyFailed();
+        }
+
         [OuterLoop]
         [Theory]
         [MemberData(nameof(SendFileSync_MemberData))]

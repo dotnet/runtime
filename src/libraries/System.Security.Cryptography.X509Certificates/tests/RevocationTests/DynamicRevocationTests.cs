@@ -27,7 +27,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
             CertificateAuthority root,
             CertificateAuthority intermediate,
             X509Certificate2 endEntity,
-            ChainHolder chainHolder);
+            ChainHolder chainHolder,
+            RevocationResponder responder);
 
         public static IEnumerable<object[]> AllViableRevocation
         {
@@ -80,7 +81,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         {
             SimpleTest(
                 pkiOptions,
-                (root, intermediate, endEntity, holder) =>
+                (root, intermediate, endEntity, holder, responder) =>
                 {
                     SimpleRevocationBody(
                         holder,
@@ -98,7 +99,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         {
             SimpleTest(
                 pkiOptions,
-                (root, intermediate, endEntity, holder) =>
+                (root, intermediate, endEntity, holder, responder) =>
                 {
                     using (X509Certificate2 intermediateCert = intermediate.CloneIssuerCert())
                     {
@@ -123,7 +124,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         {
             SimpleTest(
                 pkiOptions,
-                (root, intermediate, endEntity, holder) =>
+                (root, intermediate, endEntity, holder, responder) =>
                 {
                     DateTimeOffset now = DateTimeOffset.UtcNow;
                     intermediate.Revoke(endEntity, now);
@@ -145,7 +146,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         {
             SimpleTest(
                 pkiOptions,
-                (root, intermediate, endEntity, holder) =>
+                (root, intermediate, endEntity, holder, responder) =>
                 {
                     using (X509Certificate2 intermediateCert = intermediate.CloneIssuerCert())
                     {
@@ -174,7 +175,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         {
             SimpleTest(
                 pkiOptions,
-                (root, intermediate, endEntity, holder) =>
+                (root, intermediate, endEntity, holder, responder) =>
                 {
                     DateTimeOffset now = DateTimeOffset.UtcNow;
                     X509Chain chain = holder.Chain;
@@ -211,7 +212,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         {
             SimpleTest(
                 pkiOptions,
-                (root, intermediate, endEntity, holder) =>
+                (root, intermediate, endEntity, holder, responder) =>
                 {
                     DateTimeOffset now = DateTimeOffset.UtcNow;
                     X509Chain chain = holder.Chain;
@@ -246,7 +247,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         {
             SimpleTest(
                 pkiOptions,
-                (root, intermediate, endEntity, holder) =>
+                (root, intermediate, endEntity, holder, responder) =>
                 {
                     DateTimeOffset now = DateTimeOffset.UtcNow;
                     X509Chain chain = holder.Chain;
@@ -282,7 +283,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         {
             SimpleTest(
                 pkiOptions,
-                (root, intermediate, endEntity, holder) =>
+                (root, intermediate, endEntity, holder, responder) =>
                 {
                     DateTimeOffset now = DateTimeOffset.UtcNow;
                     X509Chain chain = holder.Chain;
@@ -320,7 +321,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         {
             SimpleTest(
                 pkiOptions,
-                (root, intermediate, endEntity, holder) =>
+                (root, intermediate, endEntity, holder, responder) =>
                 {
                     DateTimeOffset now = DateTimeOffset.UtcNow;
 
@@ -405,7 +406,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         {
             SimpleTest(
                 pkiOptions,
-                (root, intermediate, endEntity, holder) =>
+                (root, intermediate, endEntity, holder, responder) =>
                 {
                     DateTimeOffset now = DateTimeOffset.UtcNow;
 
@@ -494,7 +495,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         {
             SimpleTest(
                 PkiOptions.OcspEverywhere,
-                (root, intermediate, endEntity, holder) =>
+                (root, intermediate, endEntity, holder, responder) =>
                 {
                     DateTimeOffset now = DateTimeOffset.UtcNow;
                     X509Chain chain = holder.Chain;
@@ -581,7 +582,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         {
             SimpleTest(
                 PkiOptions.OcspEverywhere,
-                (root, intermediate, endEntity, holder) =>
+                (root, intermediate, endEntity, holder, responder) =>
                 {
                     DateTimeOffset now = DateTimeOffset.UtcNow;
                     X509Chain chain = holder.Chain;
@@ -809,7 +810,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         {
             SimpleTest(
                 pkiOptions,
-                (root, intermediate, endEntity, holder) =>
+                (root, intermediate, endEntity, holder, responder) =>
                 {
                     intermediate.CorruptRevocationSignature = true;
 
@@ -824,7 +825,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         {
             SimpleTest(
                 pkiOptions,
-                (root, intermediate, endEntity, holder) =>
+                (root, intermediate, endEntity, holder, responder) =>
                 {
                     root.CorruptRevocationSignature = true;
 
@@ -838,7 +839,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         {
             SimpleTest(
                 pkiOptions,
-                (root, intermediate, endEntity, holder) =>
+                (root, intermediate, endEntity, holder, responder) =>
                 {
                     intermediate.CorruptRevocationIssuerName = true;
 
@@ -853,7 +854,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         {
             SimpleTest(
                 pkiOptions,
-                (root, intermediate, endEntity, holder) =>
+                (root, intermediate, endEntity, holder, responder) =>
                 {
                     root.CorruptRevocationIssuerName = true;
 
@@ -867,7 +868,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         {
             SimpleTest(
                 pkiOptions,
-                (root, intermediate, endEntity, holder) =>
+                (root, intermediate, endEntity, holder, responder) =>
                 {
                     DateTime revocationTime = endEntity.NotBefore;
                     holder.Chain.ChainPolicy.VerificationTime = revocationTime.AddSeconds(1);
@@ -891,7 +892,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         {
             SimpleTest(
                 pkiOptions,
-                (root, intermediate, endEntity, holder) =>
+                (root, intermediate, endEntity, holder, responder) =>
                 {
                     DateTime revocationTime = endEntity.NotBefore;
                     holder.Chain.ChainPolicy.VerificationTime = revocationTime.AddSeconds(1);
@@ -917,7 +918,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         {
             SimpleTest(
                 pkiOptions,
-                (root, intermediate, endEntity, holder) =>
+                (root, intermediate, endEntity, holder, responder) =>
                 {
                     intermediate.RevocationExpiration = endEntity.NotBefore;
 
@@ -932,7 +933,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         {
             SimpleTest(
                 pkiOptions,
-                (root, intermediate, endEntity, holder) =>
+                (root, intermediate, endEntity, holder, responder) =>
                 {
                     root.RevocationExpiration = endEntity.NotBefore;
 
@@ -946,7 +947,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         {
             SimpleTest(
                 PkiOptions.CrlEverywhere,
-                (root, intermediate, endEntity, holder) =>
+                (root, intermediate, endEntity, holder, responder) =>
                 {
                     intermediate.OmitNextUpdateInCrl = true;
 
@@ -969,7 +970,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         {
             SimpleTest(
                 PkiOptions.CrlEverywhere,
-                (root, intermediate, endEntity, holder) =>
+                (root, intermediate, endEntity, holder, responder) =>
                 {
                     intermediate.OmitNextUpdateInCrl = true;
 
@@ -987,6 +988,99 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                         rootRevoked: false,
                         issrRevoked: false,
                         leafRevoked: true);
+                });
+        }
+
+        [Fact]
+        [PlatformSpecific(~TestPlatforms.OSX)] //macOS does not support offline chain building.
+        public static void TestRevocation_Offline_NotRevoked()
+        {
+            SimpleTest(
+                PkiOptions.CrlEverywhere,
+                (root, intermediate, endEntity, onlineHolder, responder) =>
+                {
+                    using ChainHolder offlineHolder = new ChainHolder();
+                    X509Chain offlineChain = offlineHolder.Chain;
+                    X509Chain onlineChain = onlineHolder.Chain;
+                    CopyChainPolicy(from: onlineChain, to: offlineChain);
+                    offlineChain.ChainPolicy.RevocationMode = X509RevocationMode.Offline;
+
+                    SimpleRevocationBody(
+                        onlineHolder,
+                        endEntity,
+                        rootRevoked: false,
+                        issrRevoked: false,
+                        leafRevoked: false);
+
+                    responder.Stop();
+
+                    SimpleRevocationBody(
+                        offlineHolder,
+                        endEntity,
+                        rootRevoked: false,
+                        issrRevoked: false,
+                        leafRevoked: false);
+
+                    // Everything should look just like the online chain:
+                    Assert.Equal(onlineChain.ChainElements.Count, offlineChain.ChainElements.Count);
+
+                    for (int i = 0; i < offlineChain.ChainElements.Count; i++)
+                    {
+                        X509ChainElement onlineElement = onlineChain.ChainElements[i];
+                        X509ChainElement offlineElement = offlineChain.ChainElements[i];
+
+                        Assert.Equal(onlineElement.ChainElementStatus, offlineElement.ChainElementStatus);
+                        Assert.Equal(onlineElement.Certificate, offlineElement.Certificate);
+                    }
+                });
+        }
+
+        [Fact]
+        [PlatformSpecific(~TestPlatforms.OSX)] //macOS does not support offline chain building.
+        public static void TestRevocation_Offline_Revoked()
+        {
+            SimpleTest(
+                PkiOptions.CrlEverywhere,
+                (root, intermediate, endEntity, onlineHolder, responder) =>
+                {
+                    DateTimeOffset revokeTime = DateTimeOffset.UtcNow;
+                    intermediate.Revoke(endEntity, revokeTime);
+
+                    using ChainHolder offlineHolder = new ChainHolder();
+                    X509Chain offlineChain = offlineHolder.Chain;
+                    X509Chain onlineChain = onlineHolder.Chain;
+                    onlineChain.ChainPolicy.VerificationTime = revokeTime.AddSeconds(1).UtcDateTime;
+
+                    CopyChainPolicy(from: onlineChain, to: offlineChain);
+                    offlineChain.ChainPolicy.RevocationMode = X509RevocationMode.Offline;
+
+                    SimpleRevocationBody(
+                        onlineHolder,
+                        endEntity,
+                        rootRevoked: false,
+                        issrRevoked: false,
+                        leafRevoked: true);
+
+                    responder.Stop();
+
+                    SimpleRevocationBody(
+                        offlineHolder,
+                        endEntity,
+                        rootRevoked: false,
+                        issrRevoked: false,
+                        leafRevoked: true);
+
+                    // Everything should look just like the online chain:
+                    Assert.Equal(onlineChain.ChainElements.Count, offlineChain.ChainElements.Count);
+
+                    for (int i = 0; i < offlineChain.ChainElements.Count; i++)
+                    {
+                        X509ChainElement onlineElement = onlineChain.ChainElements[i];
+                        X509ChainElement offlineElement = offlineChain.ChainElements[i];
+
+                        Assert.Equal(onlineElement.ChainElementStatus, offlineElement.ChainElementStatus);
+                        Assert.Equal(onlineElement.Certificate, offlineElement.Certificate);
+                    }
                 });
         }
 
@@ -1287,7 +1381,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                 chain.ChainPolicy.VerificationTime = endEntity.NotBefore.AddMinutes(1);
                 chain.ChainPolicy.UrlRetrievalTimeout = s_urlRetrievalLimit;
 
-                callback(root, intermediate, endEntity, holder);
+                callback(root, intermediate, endEntity, holder, responder);
             }
         }
 
@@ -1355,6 +1449,16 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
             }
 
             return $"CN=\"{cn}\", O=\"{testName}\"";
+        }
+
+        private static void CopyChainPolicy(X509Chain from, X509Chain to)
+        {
+            to.ChainPolicy.VerificationFlags = from.ChainPolicy.VerificationFlags;
+            to.ChainPolicy.VerificationTime = from.ChainPolicy.VerificationTime;
+            to.ChainPolicy.RevocationFlag = from.ChainPolicy.RevocationFlag;
+            to.ChainPolicy.TrustMode = from.ChainPolicy.TrustMode;
+            to.ChainPolicy.ExtraStore.AddRange(from.ChainPolicy.ExtraStore);
+            to.ChainPolicy.CustomTrustStore.AddRange(from.ChainPolicy.CustomTrustStore);
         }
     }
 }

@@ -22,22 +22,24 @@ namespace Microsoft.Extensions.Logging.TraceSource
             {
                 return;
             }
+
             string message = string.Empty;
+
             if (formatter != null)
             {
                 message = formatter(state, exception);
             }
-            else
+            else if (state != null)
             {
-                if (state != null)
-                {
-                    message += state;
-                }
-                if (exception != null)
-                {
-                    message += Environment.NewLine + exception;
-                }
+                message += state;
             }
+
+            if (exception != null)
+            {
+                string exceptionDelimiter = string.IsNullOrEmpty(message) ? string.Empty : " " ;
+                message += exceptionDelimiter + exception;
+            }
+
             if (!string.IsNullOrEmpty(message))
             {
                 _traceSource.TraceEvent(GetEventType(logLevel), eventId.Id, message);

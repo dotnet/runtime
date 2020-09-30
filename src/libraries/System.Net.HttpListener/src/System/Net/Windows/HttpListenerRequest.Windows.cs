@@ -329,7 +329,7 @@ namespace System.Net
             _isDisposed = true;
         }
 
-        private ListenerClientCertAsyncResult BeginGetClientCertificateCore(AsyncCallback requestCallback, object state)
+        private ListenerClientCertAsyncResult BeginGetClientCertificateCore(AsyncCallback? requestCallback, object? state)
         {
             ListenerClientCertAsyncResult? asyncResult = null;
             //--------------------------------------------------------------------

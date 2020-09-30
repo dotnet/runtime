@@ -96,20 +96,22 @@ check_struct_has_member("struct sockaddr_in6" sin6_len "netinet/in.h" HAVE_SOCKA
 check_struct_has_member("struct stat" st_atim "sys/types.h;sys/stat.h;unistd.h" HAVE_STRUCT_STAT_ST_ATIM)
 check_struct_has_member("struct stat" st_atimespec "sys/types.h;sys/stat.h;unistd.h" HAVE_STRUCT_STAT_ST_ATIMESPEC)
 
+check_type_size("int" SIZEOF_INT)
 check_type_size("void*" SIZEOF_VOID_P)
 check_type_size("long" SIZEOF_LONG)
 check_type_size("long long" SIZEOF_LONG_LONG)
 check_type_size("size_t" SIZEOF_SIZE_T)
 
 # ICONV
+set(ICONV_LIB)
 find_library(LIBICONV_FOUND iconv)
 if(NOT LIBICONV_FOUND STREQUAL "LIBICONV_FOUND-NOTFOUND")
   set(ICONV_LIB "iconv")
 endif()
 
-file(WRITE ${CMAKE_BINARY_DIR}{$CMAKE_FILES_DIRECTORY}/CMakeTmp/test.c
+file(WRITE ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeTmp/test.c
   "#include <sched.h>\n"
   "void main () { CPU_COUNT((void *) 0); }\n"
 )
-try_compile(GLIBC_HAS_CPU_COUNT ${CMAKE_BINARY_DIR}/CMakeTmp SOURCES "${CMAKE_BINARY_DIR}{$CMAKE_FILES_DIRECTORY}/CMakeTmp/test.c"
+try_compile(GLIBC_HAS_CPU_COUNT ${CMAKE_BINARY_DIR}/CMakeTmp SOURCES "${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeTmp/test.c"
     COMPILE_DEFINITIONS "-D_GNU_SOURCE")
