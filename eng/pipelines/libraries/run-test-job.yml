@@ -3,6 +3,7 @@ parameters:
   osGroup: ''
   osSubgroup: ''
   archType: ''
+  targetRid: ''
   framework: 'net5.0'
   isOfficialBuild: false
   liveRuntimeBuildConfig: ''
@@ -113,6 +114,7 @@ jobs:
           parameters:
             runtimeFlavor: ${{ parameters.runtimeFlavor }}
             osGroup: ${{ parameters.osGroup }}
+            targetRid: ${{ parameters.targetRid }}
             archType: ${{ parameters.archType }}
             buildConfig: ${{ parameters.buildConfig }}
             helixQueues: ${{ parameters.helixQueues }}
