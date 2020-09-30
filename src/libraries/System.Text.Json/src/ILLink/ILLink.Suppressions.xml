@@ -23,7 +23,7 @@
       <argument>ILLink</argument>
       <argument>IL2060</argument>
       <property name="Scope">member</property>
-      <property name="Target">M:System.Text.Json.Serialization.IEnumerableConverterFactoryHelpers.GetImmutableDictionaryCreateRangeMethod(System.Type,System.Type)</property>
+      <property name="Target">M:System.Text.Json.Serialization.IEnumerableConverterFactoryHelpers.GetImmutableDictionaryCreateRangeMethod(System.Type,System.Type,System.Type)</property>
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>
@@ -59,7 +59,7 @@
       <argument>ILLink</argument>
       <argument>IL2075</argument>
       <property name="Scope">member</property>
-      <property name="Target">M:System.Text.Json.Serialization.IEnumerableConverterFactoryHelpers.GetImmutableDictionaryCreateRangeMethod(System.Type,System.Type)</property>
+      <property name="Target">M:System.Text.Json.Serialization.IEnumerableConverterFactoryHelpers.GetImmutableDictionaryCreateRangeMethod(System.Type,System.Type,System.Type)</property>
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>
