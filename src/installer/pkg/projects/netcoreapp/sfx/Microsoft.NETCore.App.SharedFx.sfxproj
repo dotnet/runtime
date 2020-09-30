@@ -2,6 +2,7 @@
   <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
 
   <PropertyGroup>
+    <NoWarn>$(NoWarn);NU1603</NoWarn>
     <SfxIdentity>Microsoft.NETCore.App</SfxIdentity>
     <SfxPackageIdentity>$(SfxIdentity).Internal</SfxPackageIdentity>
 

@@ -44,6 +44,9 @@
       -->
       <PkgProjects Include="$(PkgDir)*\*.pkgproj" Exclude="$(MSBuildThisFileDirectory)pkg\*Private*\*.pkgproj" />
       <PkgProjects Include="*\pkg\**\*.pkgproj" />
+      <PkgProjects Remove="Microsoft.Extensions.HostFactoryResolver\pkg\Microsoft.Extensions.HostFactoryResolver.Sources.pkgproj" />
+      <PkgProjects Remove="System.Numerics.Tensors\pkg\System.Numerics.Tensors.pkgproj" />
+      <PkgProjects Remove="$(PkgDir)Microsoft.Extensions.Internal.Transport\Microsoft.Extensions.Internal.Transport.pkgproj" />
     </ItemGroup>
 
     <MSBuild Targets="GetPackageIdentityIfStable"
