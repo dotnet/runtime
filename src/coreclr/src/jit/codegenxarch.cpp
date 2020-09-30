@@ -4080,10 +4080,11 @@ void CodeGen::genCodeForShift(GenTree* tree)
 
     if (shiftBy->isContainedIntOrIImmed())
     {
+        emitAttr size = emitTypeSize(tree);
+
         // Optimize "X<<1" to "lea [reg+reg]" or "add reg, reg"
         if (tree->OperIs(GT_LSH) && !tree->gtOverflowEx() && !tree->gtSetFlags() && shiftBy->IsIntegralConst(1))
         {
-            emitAttr size = emitTypeSize(tree);
             if (tree->GetRegNum() == operandReg)
             {
                 GetEmitter()->emitIns_R_R(INS_add, size, tree->GetRegNum(), operandReg);
@@ -4095,6 +4096,21 @@ void CodeGen::genCodeForShift(GenTree* tree)
         }
         else
         {
+            int shiftByValue = (int)shiftBy->AsIntConCommon()->IconValue();
+
+#if defined(TARGET_64BIT)
+            // Try to emit rorx if BMI2 is available instead of mov+rol
+            // it makes sense only for 64bit integers
+            if ((genActualType(targetType) == TYP_LONG) && (tree->GetRegNum() != operandReg) &&
+                compiler->compOpportunisticallyDependsOn(InstructionSet_BMI2) && tree->OperIs(GT_ROL, GT_ROR) &&
+                (shiftByValue > 0) && (shiftByValue < 64))
+            {
+                const int value = tree->OperIs(GT_ROL) ? (64 - shiftByValue) : shiftByValue;
+                GetEmitter()->emitIns_R_R_I(INS_rorx, size, tree->GetRegNum(), operandReg, value);
+                genProduceReg(tree);
+                return;
+            }
+#endif
             // First, move the operand to the destination register and
             // later on perform the shift in-place.
             // (LSRA will try to avoid this situation through preferencing.)
@@ -4102,9 +4118,7 @@ void CodeGen::genCodeForShift(GenTree* tree)
             {
                 inst_RV_RV(INS_mov, tree->GetRegNum(), operandReg, targetType);
             }
-
-            int shiftByValue = (int)shiftBy->AsIntConCommon()->IconValue();
-            inst_RV_SH(ins, emitTypeSize(tree), tree->GetRegNum(), shiftByValue);
+            inst_RV_SH(ins, size, tree->GetRegNum(), shiftByValue);
         }
     }
     else

@@ -1049,8 +1049,6 @@ if(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
   list(INSERT CMAKE_REQUIRED_INCLUDES 0 ${CMAKE_CURRENT_SOURCE_DIR}/libunwind/include ${CMAKE_CURRENT_BINARY_DIR}/libunwind/include)
 endif()
 
-set(CMAKE_REQUIRED_FLAGS "-c -Werror=implicit-function-declaration")
-
 check_c_source_compiles("
 #include <libunwind.h>
 #include <ucontext.h>
@@ -1062,29 +1060,9 @@ int main(int argc, char **argv)
         return 0;
 }" UNWIND_CONTEXT_IS_UCONTEXT_T)
 
-check_c_source_compiles("
-#include <libunwind.h>
+check_symbol_exists(unw_get_save_loc libunwind.h HAVE_UNW_GET_SAVE_LOC)
+check_symbol_exists(unw_get_accessors libunwind.h HAVE_UNW_GET_ACCESSORS)
 
-int main(int argc, char **argv) {
-  unw_cursor_t cursor;
-  unw_save_loc_t saveLoc;
-  int reg = UNW_REG_IP;
-  unw_get_save_loc(&cursor, reg, &saveLoc);
-
-  return 0;
-}" HAVE_UNW_GET_SAVE_LOC)
-
-check_c_source_compiles("
-#include <libunwind.h>
-
-int main(int argc, char **argv) {
-  unw_addr_space_t as;
-  unw_get_accessors(as);
-
-  return 0;
-}" HAVE_UNW_GET_ACCESSORS)
-
-set(CMAKE_REQUIRED_FLAGS)
 if(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
   list(REMOVE_AT CMAKE_REQUIRED_INCLUDES 0 1)
 endif()

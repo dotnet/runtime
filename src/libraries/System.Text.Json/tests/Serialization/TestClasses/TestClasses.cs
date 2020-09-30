@@ -1939,17 +1939,19 @@ namespace System.Text.Json.Serialization.Tests
             yield return typeof(GenericIReadOnlyDictionaryWrapper<string, TElement>); // IReadOnlyDictionaryOfStringTValueConverter
         }
 
-        public static IEnumerable<Type> DeserializableDictionaryTypes<TElement>()
+        public static IEnumerable<Type> DeserializableDictionaryTypes<TKey, TValue>()
         {
-            yield return typeof(Dictionary<string, TElement>); // DictionaryOfStringTValueConverter
+            yield return typeof(Dictionary<TKey, TValue>); // DictionaryOfStringTValueConverter
             yield return typeof(Hashtable); // IDictionaryConverter
-            yield return typeof(ConcurrentDictionary<string, TElement>); // IDictionaryOfStringTValueConverter
-            yield return typeof(GenericIDictionaryWrapper<string, TElement>); // IDictionaryOfStringTValueConverter
-            yield return typeof(ImmutableDictionary<string, TElement>); // ImmutableDictionaryOfStringTValueConverter
-            yield return typeof(IReadOnlyDictionary<string, TElement>); // IReadOnlyDictionaryOfStringTValueConverter
+            yield return typeof(IDictionary); // IDictionaryConverter
+            yield return typeof(ConcurrentDictionary<TKey, TValue>); // IDictionaryOfStringTValueConverter
+            yield return typeof(IDictionary<TKey, TValue>); // IDictionaryOfStringTValueConverter
+            yield return typeof(GenericIDictionaryWrapper<TKey, TValue>); // IDictionaryOfStringTValueConverter
+            yield return typeof(ImmutableDictionary<TKey, TValue>); // ImmutableDictionaryOfStringTValueConverter
+            yield return typeof(IReadOnlyDictionary<TKey, TValue>); // IReadOnlyDictionaryOfStringTValueConverter
         }
 
-        public static IEnumerable<Type> DeserializableNonDictionaryTypes<TElement>()
+        public static IEnumerable<Type> DeserializableNonGenericDictionaryTypes()
         {
             yield return typeof(Hashtable); // IDictionaryConverter
             yield return typeof(SortedList); // IDictionaryConverter
