@@ -1,11 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Microsoft.AspNetCore.Testing;
 using Xunit;
 
 namespace Microsoft.Extensions.DependencyInjection
@@ -45,7 +43,7 @@ namespace Microsoft.Extensions.DependencyInjection
             var serviceProvider = CreateTestServiceProvider(0);
 
             // Act + Assert
-            ExceptionAssert.Throws<InvalidOperationException>(() => serviceProvider.GetRequiredService<IFoo>(),
+            AssertExtensions.Throws<InvalidOperationException>(() => serviceProvider.GetRequiredService<IFoo>(),
                 $"No service for type '{typeof(IFoo)}' has been registered.");
         }
 
@@ -56,7 +54,7 @@ namespace Microsoft.Extensions.DependencyInjection
             var serviceProvider = new RequiredServiceSupportingProvider();
 
             // Act + Assert
-            ExceptionAssert.Throws<RankException>(() => serviceProvider.GetRequiredService<IFoo>());
+            AssertExtensions.Throws<RankException>(() => serviceProvider.GetRequiredService<IFoo>());
         }
 
         [Fact]
@@ -66,7 +64,7 @@ namespace Microsoft.Extensions.DependencyInjection
             var serviceProvider = CreateTestServiceProvider(0);
 
             // Act + Assert
-            ExceptionAssert.Throws<InvalidOperationException>(() => serviceProvider.GetRequiredService(typeof(IFoo)),
+            AssertExtensions.Throws<InvalidOperationException>(() => serviceProvider.GetRequiredService(typeof(IFoo)),
                 $"No service for type '{typeof(IFoo)}' has been registered.");
         }
 
@@ -77,7 +75,7 @@ namespace Microsoft.Extensions.DependencyInjection
             var serviceProvider = new RequiredServiceSupportingProvider();
 
             // Act + Assert
-            ExceptionAssert.Throws<RankException>(() => serviceProvider.GetRequiredService(typeof(IFoo)));
+            AssertExtensions.Throws<RankException>(() => serviceProvider.GetRequiredService(typeof(IFoo)));
         }
 
         [Fact]

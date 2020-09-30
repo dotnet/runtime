@@ -801,6 +801,11 @@ typedef struct {
 	guint32 intType;
 } MonoInterfaceTypeAttribute;
 
+typedef struct {
+	MonoObject object;
+	guint32 intType;
+} MonoClassInterfaceAttribute;
+
 /* Safely access System.Delegate from native code */
 TYPED_HANDLE_DECL (MonoDelegate);
 
@@ -1658,7 +1663,7 @@ typedef struct {
 	MonoEvent *resolving;
 	MonoEvent *unloading;
 	MonoString *name;
-	gpointer *native_assembly_load_context;
+	MonoAssemblyLoadContext *native_assembly_load_context;
 	gint64 id;
 	gint32 internal_state;
 	MonoBoolean is_collectible;
@@ -1903,9 +1908,9 @@ mono_method_add_generic_virtual_invocation (MonoDomain *domain, MonoVTable *vtab
 											MonoMethod *method, gpointer code);
 
 gpointer
-mono_method_alloc_generic_virtual_trampoline (MonoDomain *domain, int size);
+mono_method_alloc_generic_virtual_trampoline (MonoMemoryManager *mem_manager, int size);
 
-#define mono_method_alloc_generic_virtual_trampoline(domain, size) (g_cast (mono_method_alloc_generic_virtual_trampoline ((domain), (size))))
+#define mono_method_alloc_generic_virtual_trampoline(mem_manager, size) (g_cast (mono_method_alloc_generic_virtual_trampoline ((mem_manager), (size))))
 
 typedef enum {
 	MONO_UNHANDLED_POLICY_LEGACY,
@@ -2045,6 +2050,9 @@ mono_exception_handle_get_native_backtrace (MonoExceptionHandle exc);
 
 char *
 mono_exception_get_managed_backtrace (MonoException *exc);
+
+gboolean
+mono_exception_try_get_managed_backtrace (MonoException *exc, const char *prefix, char **result);
 
 void
 mono_copy_value (MonoType *type, void *dest, void *value, int deref_pointer);

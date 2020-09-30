@@ -9,6 +9,7 @@ call "%~dp0src\coreclr\setup_vs_tools.cmd" 1
 
 set _args=%*
 if "%~1"=="-?" set _args=-help
+if "%~1"=="/?" set _args=-help
 
 powershell -ExecutionPolicy ByPass -NoProfile -Command "& '%~dp0eng\build.ps1'" %_args%
 exit /b %ERRORLEVEL%

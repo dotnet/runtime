@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Globalization;
@@ -13,7 +12,7 @@ namespace System.ComponentModel.DataAnnotations
         AllowMultiple = false)]
     public sealed class FileExtensionsAttribute : DataTypeAttribute
     {
-        private string _extensions;
+        private string? _extensions;
 
         public FileExtensionsAttribute()
             : base(DataType.Upload)
@@ -43,7 +42,7 @@ namespace System.ComponentModel.DataAnnotations
         public override string FormatErrorMessage(string name) =>
             string.Format(CultureInfo.CurrentCulture, ErrorMessageString, name, ExtensionsFormatted);
 
-        public override bool IsValid(object value) =>
+        public override bool IsValid(object? value) =>
             value == null || value is string valueAsString && ValidateExtension(valueAsString);
 
         private bool ValidateExtension(string fileName)

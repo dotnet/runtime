@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ===========================================================================
 // File: compile.cpp
 //
@@ -277,7 +276,7 @@ HRESULT CEECompileInfo::LoadAssemblyByPath(
         AssemblySpec spec;
         spec.InitializeSpec(TokenFromRid(1, mdtAssembly), pImage->GetMDImport(), NULL);
 
-        if (spec.IsMscorlib())
+        if (spec.IsCoreLib())
         {
             pAssembly = SystemDomain::System()->SystemAssembly();
         }
@@ -425,18 +424,13 @@ HRESULT CEECompileInfo::SetCompilationTarget(CORINFO_ASSEMBLY_HANDLE     assembl
 
     if (!pAssembly->IsSystem())
     {
-        // It is possible to get through a compile without calling BindAssemblySpec on mscorlib.  This
-        // is because refs to mscorlib are short circuited in a number of places.  So, we will explicitly
+        // It is possible to get through a compile without calling BindAssemblySpec on CoreLib.  This
+        // is because refs to CoreLib are short circuited in a number of places.  So, we will explicitly
         // add it to our dependencies.
 
-        AssemblySpec mscorlib;
-        mscorlib.InitializeSpec(SystemDomain::SystemFile());
-        GetAppDomain()->BindAssemblySpec(&mscorlib,TRUE);
-
-        if (!IsReadyToRunCompilation() && !SystemDomain::SystemFile()->HasNativeImage())
-        {
-            return NGEN_E_SYS_ASM_NI_MISSING;
-        }
+        AssemblySpec corelib;
+        corelib.InitializeSpec(SystemDomain::SystemFile());
+        GetAppDomain()->BindAssemblySpec(&corelib,TRUE);
     }
 
     if (IsReadyToRunCompilation() && !pModule->GetFile()->IsILOnly())
@@ -705,207 +699,10 @@ void CEECompileInfo::GetAssemblyCodeBase(CORINFO_ASSEMBLY_HANDLE hAssembly, SStr
     COOPERATIVE_TRANSITION_END();
 }
 
-//=================================================================================
-
-void FakePromote(PTR_PTR_Object ppObj, ScanContext *pSC, uint32_t dwFlags)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    } CONTRACTL_END;
-
-    CORCOMPILE_GCREFMAP_TOKENS newToken = (dwFlags & GC_CALL_INTERIOR) ? GCREFMAP_INTERIOR : GCREFMAP_REF;
-
-    _ASSERTE((*(CORCOMPILE_GCREFMAP_TOKENS *)ppObj == NULL) || (*(CORCOMPILE_GCREFMAP_TOKENS *)ppObj == newToken));
-
-    *(CORCOMPILE_GCREFMAP_TOKENS *)ppObj = newToken;
-}
-
-//=================================================================================
-
-void FakePromoteCarefully(promote_func *fn, Object **ppObj, ScanContext *pSC, uint32_t dwFlags)
-{
-    (*fn)(ppObj, pSC, dwFlags);
-}
-
-//=================================================================================
-
-void FakeGcScanRoots(MetaSig& msig, ArgIterator& argit, MethodDesc * pMD, BYTE * pFrame)
-{
-    STANDARD_VM_CONTRACT;
-
-    ScanContext sc;
-
-    // Encode generic instantiation arg
-    if (argit.HasParamType())
-    {
-        // Note that intrinsic array methods have hidden instantiation arg too, but it is not reported to GC
-        if (pMD->RequiresInstMethodDescArg())
-            *(CORCOMPILE_GCREFMAP_TOKENS *)(pFrame + argit.GetParamTypeArgOffset()) = GCREFMAP_METHOD_PARAM;
-        else
-        if (pMD->RequiresInstMethodTableArg())
-            *(CORCOMPILE_GCREFMAP_TOKENS *)(pFrame + argit.GetParamTypeArgOffset()) = GCREFMAP_TYPE_PARAM;
-    }
-
-    // If the function has a this pointer, add it to the mask
-    if (argit.HasThis())
-    {
-        BOOL interior = pMD->GetMethodTable()->IsValueType() && !pMD->IsUnboxingStub();
-
-        FakePromote((Object **)(pFrame + argit.GetThisOffset()), &sc, interior ? GC_CALL_INTERIOR : 0);
-    }
-
-    if (argit.IsVarArg())
-    {
-        *(CORCOMPILE_GCREFMAP_TOKENS *)(pFrame + argit.GetVASigCookieOffset()) = GCREFMAP_VASIG_COOKIE;
-
-        // We are done for varargs - the remaining arguments are reported via vasig cookie
-        return;
-    }
-
-    // Also if the method has a return buffer, then it is the first argument, and could be an interior ref,
-    // so always promote it.
-    if (argit.HasRetBuffArg())
-    {
-        FakePromote((Object **)(pFrame + argit.GetRetBuffArgOffset()), &sc, GC_CALL_INTERIOR);
-    }
-
-    //
-    // Now iterate the arguments
-    //
-
-    // Cycle through the arguments, and call msig.GcScanRoots for each
-    int argOffset;
-    while ((argOffset = argit.GetNextOffset()) != TransitionBlock::InvalidOffset)
-    {
-        ArgDestination argDest(pFrame, argOffset, argit.GetArgLocDescForStructInRegs());
-        msig.GcScanRoots(&argDest, &FakePromote, &sc, &FakePromoteCarefully);
-    }
-}
-
 void CEECompileInfo::GetCallRefMap(CORINFO_METHOD_HANDLE hMethod, GCRefMapBuilder * pBuilder, bool isDispatchCell)
 {
-#ifdef _DEBUG
-    DWORD dwInitialLength = pBuilder->GetBlobLength();
-    UINT nTokensWritten = 0;
-#endif
-
     MethodDesc *pMD = (MethodDesc *)hMethod;
-
-    SigTypeContext typeContext(pMD);
-    PCCOR_SIGNATURE pSig;
-    DWORD cbSigSize;
-    pMD->GetSig(&pSig, &cbSigSize);
-    MetaSig msig(pSig, cbSigSize, pMD->GetModule(), &typeContext);
-
-    //
-    // Shared default interface methods (i.e. virtual interface methods with an implementation) require
-    // an instantiation argument. But if we're in a situation where we haven't resolved the method yet
-    // we need to pretent that unresolved default interface methods are like any other interface
-    // methods and don't have an instantiation argument.
-    // See code:CEEInfo::getMethodSigInternal
-    //
-    assert(!isDispatchCell || !pMD->RequiresInstArg() || pMD->GetMethodTable()->IsInterface());
-    if (pMD->RequiresInstArg() && !isDispatchCell)
-    {
-        msig.SetHasParamTypeArg();
-    }
-
-    ArgIterator argit(&msig);
-
-    UINT nStackBytes = argit.SizeOfFrameArgumentArray();
-
-    // Allocate a fake stack
-    CQuickBytes qbFakeStack;
-    qbFakeStack.AllocThrows(sizeof(TransitionBlock) + nStackBytes);
-    memset(qbFakeStack.Ptr(), 0, qbFakeStack.Size());
-
-    BYTE * pFrame = (BYTE *)qbFakeStack.Ptr();
-
-    // Fill it in
-    FakeGcScanRoots(msig, argit, pMD, pFrame);
-
-    //
-    // Encode the ref map
-    //
-
-    UINT nStackSlots;
-
-#ifdef TARGET_X86
-    UINT cbStackPop = argit.CbStackPop();
-    pBuilder->WriteStackPop(cbStackPop / sizeof(TADDR));
-
-    nStackSlots = nStackBytes / sizeof(TADDR) + NUM_ARGUMENT_REGISTERS;
-#else
-    nStackSlots = (sizeof(TransitionBlock) + nStackBytes - TransitionBlock::GetOffsetOfFirstGCRefMapSlot()) / TARGET_POINTER_SIZE;
-#endif
-
-    for (UINT pos = 0; pos < nStackSlots; pos++)
-    {
-        int ofs;
-
-#ifdef TARGET_X86
-        ofs = (pos < NUM_ARGUMENT_REGISTERS) ?
-            (TransitionBlock::GetOffsetOfArgumentRegisters() + ARGUMENTREGISTERS_SIZE - (pos + 1) * sizeof(TADDR)) :
-            (TransitionBlock::GetOffsetOfArgs() + (pos - NUM_ARGUMENT_REGISTERS) * sizeof(TADDR));
-#else
-        ofs = TransitionBlock::GetOffsetOfFirstGCRefMapSlot() + pos * TARGET_POINTER_SIZE;
-#endif
-
-        CORCOMPILE_GCREFMAP_TOKENS token = *(CORCOMPILE_GCREFMAP_TOKENS *)(pFrame + ofs);
-
-        if (token != 0)
-        {
-            INDEBUG(nTokensWritten++;)
-            pBuilder->WriteToken(pos, token);
-        }
-    }
-
-    // We are done
-    pBuilder->Flush();
-
-#ifdef _DEBUG
-    //
-    // Verify that decoder produces what got encoded
-    //
-
-    DWORD dwFinalLength;
-    PVOID pBlob = pBuilder->GetBlob(&dwFinalLength);
-
-    UINT nTokensDecoded = 0;
-
-    GCRefMapDecoder decoder((BYTE *)pBlob + dwInitialLength);
-
-#ifdef TARGET_X86
-    _ASSERTE(decoder.ReadStackPop() * sizeof(TADDR) == cbStackPop);
-#endif
-
-    while (!decoder.AtEnd())
-    {
-        int pos = decoder.CurrentPos();
-        int token = decoder.ReadToken();
-
-        int ofs;
-
-#ifdef TARGET_X86
-        ofs = (pos < NUM_ARGUMENT_REGISTERS) ?
-            (TransitionBlock::GetOffsetOfArgumentRegisters() + ARGUMENTREGISTERS_SIZE - (pos + 1) * sizeof(TADDR)) :
-            (TransitionBlock::GetOffsetOfArgs() + (pos - NUM_ARGUMENT_REGISTERS) * sizeof(TADDR));
-#else
-        ofs = TransitionBlock::GetOffsetOfFirstGCRefMapSlot() + pos * TARGET_POINTER_SIZE;
-#endif
-
-        if (token != 0)
-        {
-            _ASSERTE(*(CORCOMPILE_GCREFMAP_TOKENS *)(pFrame + ofs) == token);
-            nTokensDecoded++;
-        }
-    }
-
-    // Verify that all tokens got decoded.
-    _ASSERTE(nTokensWritten == nTokensDecoded);
-#endif // _DEBUG
+    ComputeCallRefMap(pMD, pBuilder, isDispatchCell);
 }
 
 void CEECompileInfo::CompressDebugInfo(
@@ -1327,7 +1124,7 @@ void CEECompileInfo::EncodeClass(
     COOPERATIVE_TRANSITION_END();
 }
 
-CORINFO_MODULE_HANDLE CEECompileInfo::GetLoaderModuleForMscorlib()
+CORINFO_MODULE_HANDLE CEECompileInfo::GetLoaderModuleForCoreLib()
 {
     STANDARD_VM_CONTRACT;
 
@@ -1400,7 +1197,7 @@ mdToken CEECompileInfo::TryEncodeMethodAsToken(
     {
         _ASSERTE(pResolvedToken != NULL);
 
-        Module * pReferencingModule = (Module *)pResolvedToken->tokenScope;
+        Module * pReferencingModule = GetModule(pResolvedToken->tokenScope);
 
         if (!pReferencingModule->IsInCurrentVersionBubble())
             return mdTokenNil;
@@ -1635,7 +1432,7 @@ void CEECompileInfo::EncodeGenericSignature(
 {
     STANDARD_VM_CONTRACT;
 
-    Module * pInfoModule = MscorlibBinder::GetModule();
+    Module * pInfoModule = CoreLibBinder::GetModule();
 
     SigPointer ptr((PCCOR_SIGNATURE)signature);
 
@@ -4803,7 +4600,7 @@ static BOOL CanSatisfyConstraints(Instantiation typicalInst, Instantiation candi
 
 
 //
-// This method has duplicated logic from bcl\system\collections\generic\comparer.cs
+// This method has duplicated logic from coreclr\src\System.Private.CoreLib\src\System\Collections\Generic\ComparerHelpers.cs
 //
 static void SpecializeComparer(SString& ss, Instantiation& inst)
 {
@@ -4820,7 +4617,7 @@ static void SpecializeComparer(SString& ss, Instantiation& inst)
     // Override the default ObjectComparer for special cases
     //
     if (elemTypeHnd.CanCastTo(
-        TypeHandle(MscorlibBinder::GetClass(CLASS__ICOMPARABLEGENERIC)).Instantiate(Instantiation(&elemTypeHnd, 1))))
+        TypeHandle(CoreLibBinder::GetClass(CLASS__ICOMPARABLEGENERIC)).Instantiate(Instantiation(&elemTypeHnd, 1))))
     {
         ss.Set(W("System.Collections.Generic.GenericComparer`1"));
         return;
@@ -4830,7 +4627,7 @@ static void SpecializeComparer(SString& ss, Instantiation& inst)
     {
         Instantiation nullableInst = elemTypeHnd.AsMethodTable()->GetInstantiation();
         if (nullableInst[0].CanCastTo(
-            TypeHandle(MscorlibBinder::GetClass(CLASS__ICOMPARABLEGENERIC)).Instantiate(nullableInst)))
+            TypeHandle(CoreLibBinder::GetClass(CLASS__ICOMPARABLEGENERIC)).Instantiate(nullableInst)))
         {
             ss.Set(W("System.Collections.Generic.NullableComparer`1"));
             inst = nullableInst;
@@ -4843,33 +4640,21 @@ static void SpecializeComparer(SString& ss, Instantiation& inst)
         CorElementType et = elemTypeHnd.GetVerifierCorElementType();
         if (et == ELEMENT_TYPE_I1 ||
             et == ELEMENT_TYPE_I2 ||
-            et == ELEMENT_TYPE_I4)
-        {
-            ss.Set(W("System.Collections.Generic.Int32EnumComparer`1"));
-            return;
-        }
-        if (et == ELEMENT_TYPE_U1 ||
+            et == ELEMENT_TYPE_I4 ||
+            et == ELEMENT_TYPE_I8 ||
+            et == ELEMENT_TYPE_U1 ||
             et == ELEMENT_TYPE_U2 ||
-            et == ELEMENT_TYPE_U4)
+            et == ELEMENT_TYPE_U4 ||
+            et == ELEMENT_TYPE_U8)
         {
-            ss.Set(W("System.Collections.Generic.UInt32EnumComparer`1"));
-            return;
-        }
-        if (et == ELEMENT_TYPE_I8)
-        {
-            ss.Set(W("System.Collections.Generic.Int64EnumComparer`1"));
-            return;
-        }
-        if (et == ELEMENT_TYPE_U8)
-        {
-            ss.Set(W("System.Collections.Generic.UInt64EnumComparer`1"));
+            ss.Set(W("System.Collections.Generic.EnumComparer`1"));
             return;
         }
     }
 }
 
 //
-// This method has duplicated logic from bcl\system\collections\generic\equalitycomparer.cs
+// This method has duplicated logic from coreclr\src\System.Private.CoreLib\src\System\Collections\Generic\ComparerHelpers.cs
 // and matching logic in jitinterface.cpp
 //
 static void SpecializeEqualityComparer(SString& ss, Instantiation& inst)
@@ -4887,7 +4672,7 @@ static void SpecializeEqualityComparer(SString& ss, Instantiation& inst)
     // Override the default ObjectEqualityComparer for special cases
     //
     if (elemTypeHnd.CanCastTo(
-        TypeHandle(MscorlibBinder::GetClass(CLASS__IEQUATABLEGENERIC)).Instantiate(Instantiation(&elemTypeHnd, 1))))
+        TypeHandle(CoreLibBinder::GetClass(CLASS__IEQUATABLEGENERIC)).Instantiate(Instantiation(&elemTypeHnd, 1))))
     {
         ss.Set(W("System.Collections.Generic.GenericEqualityComparer`1"));
         return;
@@ -4897,7 +4682,7 @@ static void SpecializeEqualityComparer(SString& ss, Instantiation& inst)
     {
         Instantiation nullableInst = elemTypeHnd.AsMethodTable()->GetInstantiation();
         if (nullableInst[0].CanCastTo(
-            TypeHandle(MscorlibBinder::GetClass(CLASS__IEQUATABLEGENERIC)).Instantiate(nullableInst)))
+            TypeHandle(CoreLibBinder::GetClass(CLASS__IEQUATABLEGENERIC)).Instantiate(nullableInst)))
         {
             ss.Set(W("System.Collections.Generic.NullableEqualityComparer`1"));
             inst = nullableInst;
@@ -4907,23 +4692,17 @@ static void SpecializeEqualityComparer(SString& ss, Instantiation& inst)
 
     if (elemTypeHnd.IsEnum())
     {
-        // Note: We have different comparers for Short and SByte because for those types we need to make sure we call GetHashCode on the actual underlying type as the
-        // implementation of GetHashCode is more complex than for the other types.
         CorElementType et = elemTypeHnd.GetVerifierCorElementType();
-        if (et == ELEMENT_TYPE_I4 ||
-            et == ELEMENT_TYPE_U4 ||
-            et == ELEMENT_TYPE_U2 ||
+        if (et == ELEMENT_TYPE_I1 ||
             et == ELEMENT_TYPE_I2 ||
+            et == ELEMENT_TYPE_I4 ||
+            et == ELEMENT_TYPE_I8 ||
             et == ELEMENT_TYPE_U1 ||
-            et == ELEMENT_TYPE_I1)
+            et == ELEMENT_TYPE_U2 ||
+            et == ELEMENT_TYPE_U4 ||
+            et == ELEMENT_TYPE_U8)
         {
             ss.Set(W("System.Collections.Generic.EnumEqualityComparer`1"));
-            return;
-        }
-        else if (et == ELEMENT_TYPE_I8 ||
-                 et == ELEMENT_TYPE_U8)
-        {
-            ss.Set(W("System.Collections.Generic.LongEnumEqualityComparer`1"));
             return;
         }
     }
@@ -4944,7 +4723,7 @@ void CEEPreloader::ApplyTypeDependencyProductionsForType(TypeHandle t)
 
     pMT = pMT->GetCanonicalMethodTable();
 
-    // The TypeDependencyAttribute attribute is currently only allowed on mscorlib types
+    // The TypeDependencyAttribute attribute is currently only allowed on CoreLib types
     // Don't even look for the attribute on types in other assemblies.
     if(!pMT->GetModule()->IsSystem()) {
         return;
@@ -5023,7 +4802,7 @@ void CEEPreloader::ApplyTypeDependencyProductionsForType(TypeHandle t)
             TypeHandle typicalDepTH = TypeName::GetTypeUsingCASearchRules(ss.GetUnicode(), pMT->GetAssembly());
 
             _ASSERTE(!typicalDepTH.IsNull());
-            // This attribute is currently only allowed to refer to mscorlib types
+            // This attribute is currently only allowed to refer to CoreLib types
             _ASSERTE(typicalDepTH.GetModule()->IsSystem());
             if (!typicalDepTH.GetModule()->IsSystem())
                 continue;
@@ -5031,7 +4810,7 @@ void CEEPreloader::ApplyTypeDependencyProductionsForType(TypeHandle t)
             // For IList<T>, ICollection<T>, IEnumerable<T>, IReadOnlyCollection<T> & IReadOnlyList<T>, include SZArrayHelper's
             // generic methods (or at least the relevant ones) in the ngen image in
             // case someone casts a T[] to an IList<T> (or ICollection<T> or IEnumerable<T>, etc).
-            if (MscorlibBinder::IsClass(typicalDepTH.AsMethodTable(), CLASS__SZARRAYHELPER))
+            if (CoreLibBinder::IsClass(typicalDepTH.AsMethodTable(), CLASS__SZARRAYHELPER))
             {
 #ifdef FEATURE_FULL_NGEN
                 if (pMT->GetNumGenericArgs() != 1 || !pMT->IsInterface()) {
@@ -5110,14 +4889,14 @@ void CEEPreloader::ApplyTypeDependencyForSZArrayHelper(MethodTable * pInterfaceM
         METHOD__SZARRAYHELPER__REMOVEAT, // Last method of IList<T>
     };
 
-    // Assuming the binder ID's are properly laid out in mscorlib.h
+    // Assuming the binder ID's are properly laid out in corelib.h
 #if _DEBUG
     for(unsigned int i=0; i < NumItems(LastMethodOnGenericArrayInterfaces) - 1; i++) {
         _ASSERTE(LastMethodOnGenericArrayInterfaces[i] < LastMethodOnGenericArrayInterfaces[i+1]);
     }
 #endif
 
-    MethodTable* pExactMT = MscorlibBinder::GetClass(CLASS__SZARRAYHELPER);
+    MethodTable* pExactMT = CoreLibBinder::GetClass(CLASS__SZARRAYHELPER);
 
     // Subtract one from the non-generic IEnumerable that the generic IEnumerable<T>
     // inherits from.
@@ -5133,7 +4912,7 @@ void CEEPreloader::ApplyTypeDependencyForSZArrayHelper(MethodTable * pInterfaceM
         if (SZArrayHelperMethodIDs[i] > LastMethodOnGenericArrayInterfaces[inheritanceDepth])
             continue;
 
-        MethodDesc * pPrimaryMD = MscorlibBinder::GetMethod(SZArrayHelperMethodIDs[i]);
+        MethodDesc * pPrimaryMD = CoreLibBinder::GetMethod(SZArrayHelperMethodIDs[i]);
 
         MethodDesc * pInstantiatedMD = MethodDesc::FindOrCreateAssociatedMethodDesc(pPrimaryMD,
                                            pExactMT, false, Instantiation(&elemTypeHnd, 1), false);
@@ -5937,12 +5716,6 @@ void CEEPreloader::GenerateMethodStubs(
     if (IsReadyToRunCompilation() && (!GetAppDomain()->ToCompilationDomain()->GetTargetModule()->IsSystem() || !pMD->IsNDirect()))
         return;
 
-#if defined(TARGET_ARM) && defined(TARGET_UNIX)
-    // Cross-bitness compilation of il stubs does not work. Disable here.
-    if (IsReadyToRunCompilation())
-        return;
-#endif // defined(TARGET_ARM) && defined(TARGET_UNIX)
-
     DWORD dwNGenStubFlags = NDIRECTSTUB_FL_NGENEDSTUB;
 
     if (fNgenProfilerImage)
@@ -6297,7 +6070,7 @@ CorCompileILRegion CEEPreloader::GetILRegion(mdMethodDef token)
             else
             if (MethodIsVisibleOutsideItsAssembly(pMD))
             {
-                // We are inlining only leaf methods, except for mscorlib. Thus we can assume that only methods
+                // We are inlining only leaf methods, except for CoreLib. Thus we can assume that only methods
                 // visible outside its assembly are likely to be inlined.
                 region = CORCOMPILE_ILREGION_INLINEABLE;
             }
@@ -6636,7 +6409,7 @@ HRESULT CompilationDomain::AddDependencyEntry(PEAssembly *pFile,
     if (pFile)
     {
         DomainAssembly *pAssembly = GetAppDomain()->LoadDomainAssembly(NULL, pFile, FILE_LOAD_CREATE);
-        // Note that this can trigger an assembly load (of mscorlib)
+        // Note that this can trigger an assembly load (of CoreLib)
         pAssembly->GetOptimizedIdentitySignature(&pDependency->signAssemblyDef);
 
 
@@ -6667,17 +6440,17 @@ HRESULT CompilationDomain::AddDependency(AssemblySpec *pRefSpec,
     // This assert prevents dependencies from silently being loaded without being recorded.
     _ASSERTE(m_pEmit);
 
-    // Normalize any reference to mscorlib; we don't want to record other non-canonical
-    // mscorlib references in the ngen image since fusion doesn't understand how to bind them.
+    // Normalize any reference to CoreLib; we don't want to record other non-canonical
+    // CoreLib references in the ngen image since fusion doesn't understand how to bind them.
     // (Not to mention the fact that they are redundant.)
     AssemblySpec spec;
-    if (pRefSpec->IsMscorlib())
+    if (pRefSpec->IsCoreLib())
     {
-        _ASSERTE(pFile); // mscorlib had better not be missing
+        _ASSERTE(pFile); // CoreLib had better not be missing
         if (!pFile)
             return E_UNEXPECTED;
 
-        // Don't store a binding from mscorlib to itself.
+        // Don't store a binding from CoreLib to itself.
         if (m_pTargetAssembly == SystemDomain::SystemAssembly())
             return S_OK;
 
@@ -6686,8 +6459,8 @@ HRESULT CompilationDomain::AddDependency(AssemblySpec *pRefSpec,
     }
     else if (m_pTargetAssembly == NULL && pFile)
     {
-        // If target assembly is still NULL, we must be loading either the target assembly or mscorlib.
-        // Mscorlib is already handled above, so we must be loading the target assembly if we get here.
+        // If target assembly is still NULL, we must be loading either the target assembly or CoreLib.
+        // CoreLib is already handled above, so we must be loading the target assembly if we get here.
         // Use the assembly name given in the target assembly so that the native image is deterministic
         // regardless of how the target assembly is specified on the command line.
         spec.InitializeSpec(pFile);
@@ -6786,7 +6559,7 @@ BOOL CompilationDomain::CanEagerBindToZapFile(Module *targetModule, BOOL limitTo
 
     //
     // CoreCLR does not have attributes for fine grained eager binding control.
-    // We hard bind to mscorlib.dll only.
+    // We hard bind to CoreLib only.
     //
     return targetModule->IsSystem();
 }

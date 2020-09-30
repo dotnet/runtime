@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -396,7 +395,6 @@ struct BasicBlock : private LIR::Range
 #define BBF_TRY_BEG             0x00000100 // BB starts a 'try' block
 #define BBF_FUNCLET_BEG         0x00000200 // BB is the beginning of a funclet
 #define BBF_HAS_NULLCHECK       0x00000400 // BB contains a null check
-#define BBF_NEEDS_GCPOLL        0x00000800 // This BB is the source of a back edge and needs a GC Poll
 
 #define BBF_RUN_RARELY          0x00001000 // BB is rarely run (catch clauses, blocks with throws etc)
 #define BBF_LOOP_HEAD           0x00002000 // BB is the head of a loop
@@ -446,6 +444,7 @@ struct BasicBlock : private LIR::Range
 #define BBF_DOMINATED_BY_EXCEPTIONAL_ENTRY 0x800000000 // Block is dominated by exceptional entry.
 #define BBF_BACKWARD_JUMP_TARGET          0x1000000000 // Block is a target of a backward jump
 #define BBF_PATCHPOINT                    0x2000000000 // Block is a patchpoint
+#define BBF_HAS_SUPPRESSGC_CALL           0x4000000000 // BB contains a call to a method with SuppressGCTransitionAttribute
 
 // clang-format on
 
@@ -465,8 +464,8 @@ struct BasicBlock : private LIR::Range
 // Flags to update when two blocks are compacted
 
 #define BBF_COMPACT_UPD                                                                                                \
-    (BBF_CHANGED | BBF_GC_SAFE_POINT | BBF_HAS_JMP | BBF_NEEDS_GCPOLL | BBF_HAS_IDX_LEN | BBF_BACKWARD_JUMP |          \
-     BBF_HAS_NEWARRAY | BBF_HAS_NEWOBJ | BBF_HAS_NULLCHECK | BBF_HAS_VTABREF)
+    (BBF_CHANGED | BBF_GC_SAFE_POINT | BBF_HAS_JMP | BBF_HAS_IDX_LEN | BBF_BACKWARD_JUMP | BBF_HAS_NEWARRAY |          \
+     BBF_HAS_NEWOBJ | BBF_HAS_NULLCHECK | BBF_HAS_VTABREF)
 
 // Flags a block should not have had before it is split.
 

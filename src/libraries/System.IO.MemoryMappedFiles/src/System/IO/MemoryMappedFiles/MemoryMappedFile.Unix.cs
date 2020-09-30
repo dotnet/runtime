@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
 
@@ -151,10 +150,6 @@ namespace System.IO.MemoryMappedFiles
             throw CreateNamedMapsNotSupportedException();
         }
 
-        // -----------------------------
-        // ---- PAL layer ends here ----
-        // -----------------------------
-
         /// <summary>Gets an exception indicating that named maps are not supported on this platform.</summary>
         private static Exception CreateNamedMapsNotSupportedException()
         {
@@ -174,10 +169,6 @@ namespace System.IO.MemoryMappedFiles
             return CreateSharedBackingObjectUsingMemory(protections, capacity, inheritability)
                 ?? CreateSharedBackingObjectUsingFile(protections, capacity, inheritability);
         }
-
-        // -----------------------------
-        // ---- PAL layer ends here ----
-        // -----------------------------
 
         private static FileStream? CreateSharedBackingObjectUsingMemory(
            Interop.Sys.MemoryMappedProtections protections, long capacity, HandleInheritability inheritability)

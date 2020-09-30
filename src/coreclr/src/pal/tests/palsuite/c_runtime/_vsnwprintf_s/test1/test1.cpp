@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*=====================================================================
 **
@@ -18,7 +17,7 @@
 /* ditto with wcslen */
 
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime__vsnwprintf_s_test1_paltest_vsnwprintf_test1, "c_runtime/_vsnwprintf_s/test1/paltest_vsnwprintf_test1")
 {
     WCHAR *checkstr;
     WCHAR buf[256] = { 0 };

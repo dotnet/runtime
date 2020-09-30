@@ -14,6 +14,8 @@
 
 #include "sgen-gc.h"
 
+#ifndef DISABLE_SGEN_BINARY_PROTOCOL
+
 #define PROTOCOL_HEADER_CHECK 0xde7ec7ab1ec0de
 /*
  * The version needs to be bumped every time we introduce breaking changes (like
@@ -243,5 +245,71 @@ gboolean sgen_binary_protocol_flush_buffers (gboolean force);
 #undef TYPE_SIZE
 #undef TYPE_POINTER
 #undef TYPE_BOOL
+
+#else
+
+#ifndef TYPE_INT
+#define TYPE_INT int
+#endif
+#ifndef TYPE_LONGLONG
+#define TYPE_LONGLONG long long
+#endif
+#ifndef TYPE_SIZE
+#define TYPE_SIZE size_t
+#endif
+#ifndef TYPE_POINTER
+#define TYPE_POINTER gpointer
+#endif
+#ifndef TYPE_BOOL
+#define TYPE_BOOL gboolean
+#endif
+
+#define BEGIN_PROTOCOL_ENTRY0(method) \
+	static inline void sgen_ ## method (void) {}
+#define BEGIN_PROTOCOL_ENTRY1(method,t1,f1) \
+	static inline void sgen_ ## method (t1 f1) {}
+#define BEGIN_PROTOCOL_ENTRY2(method,t1,f1,t2,f2) \
+	static inline void sgen_ ## method (t1 f1, t2 f2) {}
+#define BEGIN_PROTOCOL_ENTRY3(method,t1,f1,t2,f2,t3,f3) \
+	static inline void sgen_ ## method (t1 f1, t2 f2, t3 f3) {}
+#define BEGIN_PROTOCOL_ENTRY4(method,t1,f1,t2,f2,t3,f3,t4,f4) \
+	static inline void sgen_ ## method (t1 f1, t2 f2, t3 f3, t4 f4) {}
+#define BEGIN_PROTOCOL_ENTRY5(method,t1,f1,t2,f2,t3,f3,t4,f4,t5,f5) \
+	static inline void sgen_ ## method (t1 f1, t2 f2, t3 f3, t4 f4, t5 f5) {}
+#define BEGIN_PROTOCOL_ENTRY6(method,t1,f1,t2,f2,t3,f3,t4,f4,t5,f5,t6,f6) \
+	static inline void sgen_ ## method (t1 f1, t2 f2, t3 f3, t4 f4, t5 f5, t6 f6) {}
+#define BEGIN_PROTOCOL_ENTRY_HEAVY0(method) \
+	static inline void sgen_ ## method (void) {}
+#define BEGIN_PROTOCOL_ENTRY_HEAVY1(method,t1,f1) \
+	static inline void sgen_ ## method (t1 f1) {}
+#define BEGIN_PROTOCOL_ENTRY_HEAVY2(method,t1,f1,t2,f2) \
+	static inline void sgen_ ## method (t1 f1, t2 f2) {}
+#define BEGIN_PROTOCOL_ENTRY_HEAVY3(method,t1,f1,t2,f2,t3,f3) \
+	static inline void sgen_ ## method (t1 f1, t2 f2, t3 f3) {}
+#define BEGIN_PROTOCOL_ENTRY_HEAVY4(method,t1,f1,t2,f2,t3,f3,t4,f4) \
+	static inline void sgen_ ## method (t1 f1, t2 f2, t3 f3, t4 f4) {}
+#define BEGIN_PROTOCOL_ENTRY_HEAVY5(method,t1,f1,t2,f2,t3,f3,t4,f4,t5,f5) \
+	static inline void sgen_ ## method (t1 f1, t2 f2, t3 f3, t4 f4, t5 f5) {}
+#define BEGIN_PROTOCOL_ENTRY_HEAVY6(method,t1,f1,t2,f2,t3,f3,t4,f4,t5,f5,t6,f6) \
+	static inline void sgen_ ## method (t1 f1, t2 f2, t3 f3, t4 f4, t5 f5, t6 f6) {}
+#define DEFAULT_PRINT()
+#define CUSTOM_PRINT(_)
+
+#define IS_ALWAYS_MATCH(_)
+#define MATCH_INDEX(_)
+#define IS_VTABLE_MATCH(_)
+
+#define END_PROTOCOL_ENTRY
+#define END_PROTOCOL_ENTRY_FLUSH
+#define END_PROTOCOL_ENTRY_HEAVY
+
+#include "sgen-protocol-def.h"
+
+static inline void sgen_binary_protocol_init (const char *filename, long long limit) {}
+static inline gboolean sgen_binary_protocol_is_enabled (void) { return FALSE; }
+static inline gboolean sgen_binary_protocol_flush_buffers (gboolean force) { return FALSE; }
+static inline gboolean sgen_binary_protocol_is_heavy_enabled () { return FALSE; }
+
+#endif
 
 #endif

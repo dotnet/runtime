@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Collections.Generic;
@@ -318,6 +317,12 @@ namespace System.IO.Pipelines
                 if ((uint)bytes > (uint)_writingHeadMemory.Length)
                 {
                     ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.bytes);
+                }
+
+                // If the reader is completed we no-op Advance but leave GetMemory and FlushAsync alone
+                if (_readerCompletion.IsCompleted)
+                {
+                    return;
                 }
 
                 AdvanceCore(bytes);
@@ -853,6 +858,10 @@ namespace System.IO.Pipelines
             finally
             {
                 cancellationTokenRegistration.Dispose();
+            }
+
+            if (result.IsCanceled)
+            {
                 cancellationToken.ThrowIfCancellationRequested();
             }
 
@@ -949,6 +958,11 @@ namespace System.IO.Pipelines
             if (_writerCompletion.IsCompleted)
             {
                 ThrowHelper.ThrowInvalidOperationException_NoWritingAllowed();
+            }
+
+            if (_readerCompletion.IsCompleted)
+            {
+                return new ValueTask<FlushResult>(new FlushResult(isCanceled: false, isCompleted: true));
             }
 
             CompletionData completionData;

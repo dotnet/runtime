@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -18,8 +17,23 @@ namespace ILCompiler.Reflection.ReadyToRun
     {
         public uint StartOffset;
         public uint EndOffset;
+        // TODO: Eliminate this
         public uint VariableNumber;
+        public Variable Variable { get; internal set; }
         public VarLoc VariableLocation;
+    }
+
+    public enum VariableType
+    {
+        Parameter,
+        Local,
+        // TODO: Special
+    }
+
+    public class Variable
+    {
+        public VariableType Type { get; internal set; }
+        public int Index { get; internal set; }
     }
 
     [Flags]

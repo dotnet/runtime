@@ -1,16 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Xml;
 
 namespace System.Runtime.Serialization
 {
-#if USE_REFEMIT
-    public static class DictionaryGlobals
-#else
     internal static class DictionaryGlobals
-#endif
     {
         // Update array size when adding new strings or templates
         private static readonly XmlDictionary s_dictionary = new XmlDictionary(61);

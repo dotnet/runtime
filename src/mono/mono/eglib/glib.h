@@ -726,6 +726,7 @@ void       g_ptr_array_set_size           (GPtrArray *array, gint length);
 gpointer  *g_ptr_array_free               (GPtrArray *array, gboolean free_seg);
 void       g_ptr_array_foreach            (GPtrArray *array, GFunc func, gpointer user_data);
 guint      g_ptr_array_capacity           (GPtrArray *array);
+gboolean   g_ptr_array_find               (GPtrArray *array, gconstpointer needle, guint *index);
 #define    g_ptr_array_index(array,index) (array)->pdata[(index)]
 //FIXME previous missing parens
 
@@ -779,6 +780,7 @@ GLogLevelFlags g_log_set_fatal_mask   (const gchar *log_domain, GLogLevelFlags f
 void           g_logv                 (const gchar *log_domain, GLogLevelFlags log_level, const gchar *format, va_list args);
 G_EXTERN_C // Used by MonoPosixHelper or MonoSupportW, at least.
 void           g_log                  (const gchar *log_domain, GLogLevelFlags log_level, const gchar *format, ...);
+void           g_log_disabled         (const gchar *log_domain, GLogLevelFlags log_level, const char *file, int line);
 G_EXTERN_C // Used by MonoPosixHelper or MonoSupportW, at least.
 void           g_assertion_message    (const gchar *format, ...) G_GNUC_NORETURN;
 void           mono_assertion_message_disabled  (const char *file, int line) G_GNUC_NORETURN;
@@ -786,6 +788,7 @@ void           mono_assertion_message  (const char *file, int line, const char *
 void           mono_assertion_message_unreachable (const char *file, int line) G_GNUC_NORETURN;
 const char *   g_get_assertion_message (void);
 
+#ifndef DISABLE_ASSERT_MESSAGES
 #ifdef HAVE_C99_SUPPORT
 /* The for (;;) tells gc thats g_error () doesn't return, avoiding warnings */
 #define g_error(format, ...)    do { g_log (G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, format, __VA_ARGS__); for (;;); } while (0)
@@ -800,6 +803,13 @@ const char *   g_get_assertion_message (void);
 #define g_message(...)  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_MESSAGE, __VA_ARGS__)
 #define g_debug(...)    g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, __VA_ARGS__)
 #endif  /* ndef HAVE_C99_SUPPORT */
+#else
+#define g_error(...)    do { g_log_disabled (G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, __FILE__, __LINE__); for (;;); } while (0)
+#define g_critical(...) g_log_disabled (G_LOG_DOMAIN, G_LOG_LEVEL_CRITICAL, __FILE__, __LINE__)
+#define g_warning(...)  g_log_disabled (G_LOG_DOMAIN, G_LOG_LEVEL_WARNING, __FILE__, __LINE__)
+#define g_message(...)  g_log_disabled (G_LOG_DOMAIN, G_LOG_LEVEL_MESSAGE, __FILE__, __LINE__)
+#define g_debug(...)    g_log_disabled (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, __FILE__, __LINE__)
+#endif
 
 typedef void (*GLogFunc) (const gchar *log_domain, GLogLevelFlags log_level, const gchar *message, gpointer user_data);
 typedef void (*GPrintFunc) (const gchar *string);

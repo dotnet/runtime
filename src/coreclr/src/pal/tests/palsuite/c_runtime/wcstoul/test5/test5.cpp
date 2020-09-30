@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================================
 **
@@ -18,7 +17,7 @@
  */
 
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime_wcstoul_test5_paltest_wcstoul_test5, "c_runtime/wcstoul/test5/paltest_wcstoul_test5")
 {
     WCHAR overstr[] = {'4','2','9','4','9','6','7','2','9','6',0};
     WCHAR understr[] = {'-','1',0}; 

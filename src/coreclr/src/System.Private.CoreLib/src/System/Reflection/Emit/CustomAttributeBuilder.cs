@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================
 **
@@ -63,10 +62,12 @@ namespace System.Reflection.Emit
                 throw new ArgumentNullException(nameof(namedFields));
             if (fieldValues == null)
                 throw new ArgumentNullException(nameof(fieldValues));
+#pragma warning disable CA2208 // Instantiate argument exceptions correctly, combination of arguments used
             if (namedProperties.Length != propertyValues.Length)
                 throw new ArgumentException(SR.Arg_ArrayLengthsDiffer, "namedProperties, propertyValues");
             if (namedFields.Length != fieldValues.Length)
                 throw new ArgumentException(SR.Arg_ArrayLengthsDiffer, "namedFields, fieldValues");
+#pragma warning restore CA2208
 
             if ((con.Attributes & MethodAttributes.Static) == MethodAttributes.Static ||
                 (con.Attributes & MethodAttributes.MemberAccessMask) == MethodAttributes.Private)

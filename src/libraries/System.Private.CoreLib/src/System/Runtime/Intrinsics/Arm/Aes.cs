@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.CompilerServices;
 
@@ -16,6 +15,14 @@ namespace System.Runtime.Intrinsics.Arm
         internal Aes() { }
 
         public static new bool IsSupported { get => IsSupported; }
+
+        [Intrinsic]
+        public new abstract class Arm64 : ArmBase.Arm64
+        {
+            internal Arm64() { }
+
+            public static new bool IsSupported { get => IsSupported; }
+        }
 
         /// <summary>
         /// uint8x16_t vaesdq_u8 (uint8x16_t data, uint8x16_t key)

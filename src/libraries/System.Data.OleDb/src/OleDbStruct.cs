@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.InteropServices;
 
@@ -249,13 +248,13 @@ namespace System.Data.OleDb
     internal sealed class tagDBLITERALINFO
     {
         [MarshalAs(UnmanagedType.LPWStr)]
-        internal string pwszLiteralValue = null;
+        internal string? pwszLiteralValue = null;
 
         [MarshalAs(UnmanagedType.LPWStr)]
-        internal string pwszInvalidChars = null;
+        internal string? pwszInvalidChars = null;
 
         [MarshalAs(UnmanagedType.LPWStr)]
-        internal string pwszInvalidStartingChars = null;
+        internal string? pwszInvalidStartingChars = null;
 
         internal int it;
 
@@ -310,7 +309,7 @@ namespace System.Data.OleDb
     internal interface ItagDBPROP
     {
         OleDbPropertyStatus dwStatus { get; }
-        object vValue { get; }
+        object? vValue { get; }
         int dwPropertyID { get; }
     }
 
@@ -319,7 +318,7 @@ namespace System.Data.OleDb
     {
         OleDbPropertyStatus ItagDBPROP.dwStatus => this.dwStatus;
 
-        object ItagDBPROP.vValue => this.vValue;
+        object? ItagDBPROP.vValue => this.vValue;
 
         int ItagDBPROP.dwPropertyID => this.dwPropertyID;
 
@@ -330,7 +329,7 @@ namespace System.Data.OleDb
         internal tagDBIDX columnid;
 
         // Variant
-        [MarshalAs(UnmanagedType.Struct)] internal object vValue;
+        [MarshalAs(UnmanagedType.Struct)] internal object? vValue;
 
         internal tagDBPROP_x86()
         {
@@ -349,7 +348,7 @@ namespace System.Data.OleDb
     {
         OleDbPropertyStatus ItagDBPROP.dwStatus => this.dwStatus;
 
-        object ItagDBPROP.vValue => this.vValue;
+        object? ItagDBPROP.vValue => this.vValue;
 
         int ItagDBPROP.dwPropertyID => this.dwPropertyID;
         internal int dwPropertyID;
@@ -359,7 +358,7 @@ namespace System.Data.OleDb
         internal tagDBIDX columnid;
 
         // Variant
-        [MarshalAs(UnmanagedType.Struct)] internal object vValue;
+        [MarshalAs(UnmanagedType.Struct)] internal object? vValue;
 
         internal tagDBPROP()
         {
@@ -417,22 +416,22 @@ namespace System.Data.OleDb
     internal sealed class tagDBCOLUMNINFO
     {
         [MarshalAs(UnmanagedType.LPWStr)]
-        internal string pwszName = null;
+        internal string? pwszName = null;
 
         //[MarshalAs(UnmanagedType.Interface)]
         internal IntPtr pTypeInfo = (IntPtr)0;
 
         internal IntPtr iOrdinal = (IntPtr)0;
 
-        internal int dwFlags = 0;
+        internal int dwFlags;
 
         internal IntPtr ulColumnSize = (IntPtr)0;
 
-        internal short wType = 0;
+        internal short wType;
 
-        internal byte bPrecision = 0;
+        internal byte bPrecision;
 
-        internal byte bScale = 0;
+        internal byte bScale;
 
         internal tagDBIDX columnid;
 
@@ -494,8 +493,8 @@ namespace System.Data.OleDb
         int dwPropertyID { get; }
         int dwFlags { get; }
         int vtType { get; }
-        object vValue { get; }
-        string pwszDescription { get; }
+        object? vValue { get; }
+        string? pwszDescription { get; }
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 2)]
@@ -507,18 +506,18 @@ namespace System.Data.OleDb
 
         int ItagDBPROPINFO.vtType => this.vtType;
 
-        object ItagDBPROPINFO.vValue => this.vValue;
+        object? ItagDBPROPINFO.vValue => this.vValue;
 
-        string ItagDBPROPINFO.pwszDescription => this.pwszDescription;
+        string? ItagDBPROPINFO.pwszDescription => this.pwszDescription;
 
-        [MarshalAs(UnmanagedType.LPWStr)] internal string pwszDescription;
+        [MarshalAs(UnmanagedType.LPWStr)] internal string? pwszDescription;
 
         internal int dwPropertyID;
         internal int dwFlags;
 
         internal short vtType;
 
-        [MarshalAs(UnmanagedType.Struct)] internal object vValue;
+        [MarshalAs(UnmanagedType.Struct)] internal object? vValue;
 
         internal tagDBPROPINFO_x86()
         {
@@ -534,17 +533,17 @@ namespace System.Data.OleDb
 
         int ItagDBPROPINFO.vtType => this.vtType;
 
-        object ItagDBPROPINFO.vValue => this.vValue;
+        object? ItagDBPROPINFO.vValue => this.vValue;
 
-        string ItagDBPROPINFO.pwszDescription => this.pwszDescription;
-        [MarshalAs(UnmanagedType.LPWStr)] internal string pwszDescription;
+        string? ItagDBPROPINFO.pwszDescription => this.pwszDescription;
+        [MarshalAs(UnmanagedType.LPWStr)] internal string? pwszDescription;
 
         internal int dwPropertyID;
         internal int dwFlags;
 
         internal short vtType;
 
-        [MarshalAs(UnmanagedType.Struct)] internal object vValue;
+        [MarshalAs(UnmanagedType.Struct)] internal object? vValue;
 
         internal tagDBPROPINFO()
         {

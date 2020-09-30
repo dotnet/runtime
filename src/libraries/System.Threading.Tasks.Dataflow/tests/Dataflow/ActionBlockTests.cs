@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Linq;
 using Xunit;
@@ -197,7 +196,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task TestInputCount()
         {
             foreach (bool sync in DataflowTestHelpers.BooleanValues)
@@ -254,7 +253,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task TestNonGreedy()
         {
             foreach (bool sync in DataflowTestHelpers.BooleanValues)
@@ -417,7 +416,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
                 actual: sumOfOdds);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task TestParallelExecution()
         {
             int dop = 2;
@@ -437,7 +436,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task TestReleasingOfPostponedMessages()
         {
             foreach (bool sync in DataflowTestHelpers.BooleanValues)

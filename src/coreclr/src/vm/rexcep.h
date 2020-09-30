@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //====================================================================
 
 //
@@ -279,15 +278,5 @@ DEFINE_EXCEPTION(g_SystemNS,           OutOfMemoryException,           false,  E
 
 
 DEFINE_EXCEPTION(g_SystemNS,           ArgumentNullException,          false,  E_POINTER)
-
-#define kLastExceptionInMscorlib kArgumentNullException
-
-//
-// All exceptions defined in other .NET Framework assemblies have to be at the end
-//
-
-
-
-// Please see comments on at the top of this list
 
 #undef DEFINE_EXCEPTION

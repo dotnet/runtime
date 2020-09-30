@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*****************************************************************************
  **                                                                         **
@@ -964,7 +963,7 @@ typedef enum CorCallingConvention
     IMAGE_CEE_CS_CALLCONV_FIELD         = 0x6,
     IMAGE_CEE_CS_CALLCONV_LOCAL_SIG     = 0x7,
     IMAGE_CEE_CS_CALLCONV_PROPERTY      = 0x8,
-    IMAGE_CEE_CS_CALLCONV_UNMGD         = 0x9,
+    IMAGE_CEE_CS_CALLCONV_UNMANAGED     = 0x9,  // Unmanaged calling convention encoded as modopts
     IMAGE_CEE_CS_CALLCONV_GENERICINST   = 0xa,  // generic method instantiation
     IMAGE_CEE_CS_CALLCONV_NATIVEVARARG  = 0xb,  // used ONLY for 64bit vararg PInvoke calls
     IMAGE_CEE_CS_CALLCONV_MAX           = 0xc,  // first invalid calling convention
@@ -1939,4 +1938,3 @@ typedef struct COR_SECATTR {
 } COR_SECATTR;
 
 #endif // __CORHDR_H__
-

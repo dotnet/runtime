@@ -38,11 +38,9 @@
     <Compile Include="XmlWriterTestCaseBase.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="$(CommonTestPath)System\Xml\XmlDiff\XmlDiff.csproj" />
+    <PackageReference Include="xunit.extensibility.execution" Version="$(XUnitVersion)" />
     <ProjectReference Include="$(CommonTestPath)System\Xml\ModuleCore\ModuleCore.csproj" />
     <ProjectReference Include="$(CommonTestPath)System\Xml\XmlCoreTest\XmlCoreTest.csproj" />
-  </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="xunit.extensibility.execution" Version="$(XUnitVersion)" />
+    <ProjectReference Include="$(CommonTestPath)System\Xml\XmlDiff\XmlDiff.csproj" />
   </ItemGroup>
 </Project>

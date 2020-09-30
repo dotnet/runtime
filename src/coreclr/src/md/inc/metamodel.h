@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // MetaModel.h -- header file for compressed COM+ metadata.
 //
@@ -21,6 +20,11 @@
 
 #include "../datablob.h"
 #include "../debug_metadata.h"
+
+#ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
+#include "portablepdbmdds.h"
+#include "portablepdbmdi.h"
+#endif
 
 #define ALLOCATED_MEMORY_MARKER 0xff
 
@@ -1596,6 +1600,9 @@ public:
 #undef MiniMdTable
 #define MiniMdTable(tbl) ULONG getCount##tbl##s() { return _TBLCNT(tbl); }
     MiniMdTables();
+#ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
+    PortablePdbMiniMdTables();
+#endif
     // macro misspells some names.
     ULONG getCountProperties() {return getCountPropertys();}
     ULONG getCountMethodSemantics() {return getCountMethodSemanticss();}
@@ -1608,6 +1615,9 @@ public:
 #define MiniMdTable(tbl) __checkReturn HRESULT Get##tbl##Record(RID rid, tbl##Rec **ppRecord) { \
         return getRow(TBL_##tbl, rid, reinterpret_cast<void **>(ppRecord)); }
     MiniMdTables();
+#ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
+    PortablePdbMiniMdTables();
+#endif
 
     //*************************************************************************
     // These are specialized searching functions.  Mostly generic (ie, find

@@ -7,8 +7,28 @@
     -->
     <BuildLineupPackage>false</BuildLineupPackage>
 
+    <ShouldVerifyClosure>true</ShouldVerifyClosure>
+
     <FrameworkListTargetPath>data/</FrameworkListTargetPath>
     <SkipBuildOnRuntimePackOnlyOS>true</SkipBuildOnRuntimePackOnlyOS>
   </PropertyGroup>
 
+  <ItemGroup>
+    <!-- windows.winmd is not part of the framework -->
+    <IgnoredReference Include="Windows" />
+
+    <!-- Exclude shims from the closure verification -->
+    <ExcludeFromClosure Include="mscorlib" />
+    <ExcludeFromClosure Include="System" />
+    <ExcludeFromClosure Include="System.Configuration" />
+    <ExcludeFromClosure Include="System.Core" />
+    <ExcludeFromClosure Include="System.Data" />
+    <ExcludeFromClosure Include="System.Drawing" />
+    <ExcludeFromClosure Include="System.Net" />
+    <ExcludeFromClosure Include="System.Security" />
+    <ExcludeFromClosure Include="System.ServiceModel.Web" />
+    <ExcludeFromClosure Include="System.ServiceProcess" />
+    <ExcludeFromClosure Include="System.Transactions" />
+    <ExcludeFromClosure Include="WindowsBase" />
+  </ItemGroup>
 </Project>

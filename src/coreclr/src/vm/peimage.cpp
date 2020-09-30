@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // --------------------------------------------------------------------------------
 // PEImage.cpp
 //
@@ -368,7 +367,9 @@ BOOL PEImage::CompareImage(UPTR u1, UPTR u2)
     EX_TRY
     {
         SString path(SString::Literal, pLocator->m_pPath);
-        if (PathEquals(path, pImage->GetPath()))
+        BOOL isInBundle = pLocator->m_bIsInBundle;
+        if (PathEquals(path, pImage->GetPath()) &&
+            (!isInBundle == !pImage->IsInBundle()))
             ret = TRUE;
     }
     EX_CATCH_HRESULT(hr); //<TODO>ignores failure!</TODO>
@@ -1420,38 +1421,3 @@ BOOL PEImage::IsPtrInImage(PTR_CVOID data)
 
     return FALSE;
 }
-
-
-#if !defined(DACCESS_COMPILE)
-PEImage * PEImage::OpenImage(
-    ICLRPrivResource * pIResource,
-    MDInternalImportFlags flags)
-{
-    STANDARD_VM_CONTRACT;
-    HRESULT hr = S_OK;
-
-    PEImageHolder pPEImage;
-
-
-    IID iidResource;
-    IfFailThrow(pIResource->GetResourceType(&iidResource));
-
-    if (iidResource == __uuidof(ICLRPrivResourcePath))
-    {
-        ReleaseHolder<ICLRPrivResourcePath> pIResourcePath;
-        IfFailThrow(pIResource->QueryInterface(__uuidof(ICLRPrivResourcePath), (LPVOID*)&pIResourcePath));
-        WCHAR wzPath[_MAX_PATH];
-        DWORD cchPath = NumItems(wzPath);
-        IfFailThrow(pIResourcePath->GetPath(cchPath, &cchPath, wzPath));
-        pPEImage = PEImage::OpenImage(wzPath, flags);
-    }
-    else
-    {
-        ThrowHR(COR_E_BADIMAGEFORMAT);
-    }
-
-    return pPEImage.Extract();
-}
-#endif
-
-

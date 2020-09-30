@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 
 namespace System.Threading
 {
@@ -252,11 +252,13 @@ namespace System.Threading
 
         internal static void UninterruptibleSleep0() => SleepInternal(0, false);
 
+        [UnsupportedOSPlatform("browser")]
         public void Start()
         {
             StartInternal(this);
         }
 
+        [UnsupportedOSPlatform("browser")]
         public void Start(object parameter)
         {
             if (m_start is ThreadStart)
@@ -322,9 +324,8 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static Thread InitializeCurrentThread()
         {
-            Thread? thread = null;
-            InitializeCurrentThread_icall(ref thread);
-            return thread;
+            InitializeCurrentThread_icall(ref t_currentThread);
+            return t_currentThread;
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]

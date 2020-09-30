@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: enummem.cpp
 //
@@ -277,7 +276,7 @@ HRESULT ClrDataAccess::EnumMemCLRStatic(IN CLRDataEnumMemoryFlags flags)
     }
     CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( g_pEEDbgInterfaceImpl.EnumMem(); )
     CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( g_CORDebuggerControlFlags.EnumMem(); )
-    CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( g_Mscorlib.EnumMem(); )
+    CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( g_CoreLib.EnumMem(); )
     CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( g_pPredefinedArrayTypes[ELEMENT_TYPE_OBJECT].EnumMemoryRegions(flags); )
     CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( StubManager::EnumMemoryRegions(flags); )
     CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( g_pFinalizerThread.EnumMem(); )

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -67,7 +66,7 @@ namespace ILCompiler.Reflection.ReadyToRun
 
         public static string FormatSignature(IAssemblyResolver assemblyResolver, ReadyToRunReader r2rReader, int imageOffset, out ReadyToRunSignature result)
         {
-            SignatureDecoder decoder = new SignatureDecoder(assemblyResolver, r2rReader.GetGlobalMetadataReader(), r2rReader, imageOffset);
+            SignatureDecoder decoder = new SignatureDecoder(assemblyResolver, r2rReader.GetGlobalMetadata()?.MetadataReader, r2rReader, imageOffset);
             string answer = decoder.ReadR2RSignature(out result);
             return answer;
         }
@@ -698,8 +697,8 @@ namespace ILCompiler.Reflection.ReadyToRun
                 case CorElementType.ELEMENT_TYPE_MODULE_ZAPSIG:
                     {
                         int moduleIndex = (int)ReadUInt();
-                        MetadataReader refAsmReader = _contextReader.OpenReferenceAssembly(moduleIndex);
-                        var refAsmDecoder = new R2RSignatureDecoder<TType, TMethod, TGenericContext>(_provider, Context, refAsmReader, _image, _offset, _outerReader, _contextReader);
+                        IAssemblyMetadata refAsmReader = _contextReader.OpenReferenceAssembly(moduleIndex);
+                        var refAsmDecoder = new R2RSignatureDecoder<TType, TMethod, TGenericContext>(_provider, Context, refAsmReader.MetadataReader, _image, _offset, _outerReader, _contextReader);
                         var result = refAsmDecoder.ParseType();
                         _offset = refAsmDecoder.Offset;
                         return result;
@@ -1066,8 +1065,8 @@ namespace ILCompiler.Reflection.ReadyToRun
             {
                 fixupType &= ~(uint)ReadyToRunFixupKind.ModuleOverride;
                 int moduleIndex = (int)ReadUIntAndEmitInlineSignatureBinary(builder);
-                MetadataReader refAsmEcmaReader = _contextReader.OpenReferenceAssembly(moduleIndex);
-                moduleDecoder = new SignatureDecoder(Context.Options, refAsmEcmaReader, _image, Offset, refAsmEcmaReader, _contextReader);
+                IAssemblyMetadata refAsmEcmaReader = _contextReader.OpenReferenceAssembly(moduleIndex);
+                moduleDecoder = new SignatureDecoder(Context.Options, refAsmEcmaReader.MetadataReader, _image, Offset, refAsmEcmaReader.MetadataReader, _contextReader);
             }
 
             ReadyToRunSignature result = moduleDecoder.ParseSignature((ReadyToRunFixupKind)fixupType, builder);
@@ -1255,6 +1254,7 @@ namespace ILCompiler.Reflection.ReadyToRun
 
 
                 case ReadyToRunFixupKind.Check_TypeLayout:
+                case ReadyToRunFixupKind.Verify_TypeLayout:
                     ParseType(builder);
                     ReadyToRunTypeLayoutFlags layoutFlags = (ReadyToRunTypeLayoutFlags)ReadUInt();
                     builder.Append($" Flags {layoutFlags}");
@@ -1287,13 +1287,23 @@ namespace ILCompiler.Reflection.ReadyToRun
                         }
                     }
 
-                    builder.Append(" (CHECK_TYPE_LAYOUT)");
+                    if (fixupType == ReadyToRunFixupKind.Check_TypeLayout)
+                        builder.Append(" (CHECK_TYPE_LAYOUT)");
+                    else
+                        builder.Append(" (VERIFY_TYPE_LAYOUT)");
                     break;
 
                 case ReadyToRunFixupKind.Check_FieldOffset:
                     builder.Append($"{ReadUInt()} ");
                     ParseField(builder);
                     builder.Append(" (CHECK_FIELD_OFFSET)");
+                    break;
+
+                case ReadyToRunFixupKind.Verify_FieldOffset:
+                    builder.Append($"{ReadUInt()} ");
+                    builder.Append($"{ReadUInt()} ");
+                    ParseField(builder);
+                    builder.Append(" (VERIFY_FIELD_OFFSET)");
                     break;
 
                 case ReadyToRunFixupKind.Check_InstructionSetSupport:
@@ -1346,7 +1356,7 @@ namespace ILCompiler.Reflection.ReadyToRun
             builder.Append(base.ParseType());
         }
 
-        public MetadataReader GetMetadataReaderFromModuleOverride()
+        public IAssemblyMetadata GetMetadataReaderFromModuleOverride()
         {
             if (PeekElementType() == CorElementType.ELEMENT_TYPE_MODULE_ZAPSIG)
             {
@@ -1354,7 +1364,7 @@ namespace ILCompiler.Reflection.ReadyToRun
 
                 ReadElementType();
                 int moduleIndex = (int)ReadUInt();
-                MetadataReader refAsmReader = _contextReader.OpenReferenceAssembly(moduleIndex);
+                IAssemblyMetadata refAsmReader = _contextReader.OpenReferenceAssembly(moduleIndex);
 
                 UpdateOffset(currentOffset);
 
@@ -1462,6 +1472,9 @@ namespace ILCompiler.Reflection.ReadyToRun
                     builder.Append("GC_COOKIE");
                     break;
 
+                case ReadyToRunHelper.IndirectTrapThreads:
+                    builder.Append("INDIRECT_TRAP_THREADS");
+                    break;
 
                 //
                 // Delay load helpers

@@ -50,7 +50,7 @@ target_link_libraries(crossgen
     ${CLRJIT_CROSSGEN}
     gcinfo_crossgen
     corzap_crossgen
-    mscorlib_crossgen
+    corelib_crossgen
     utilcode_crossgen
 )
 
@@ -80,4 +80,4 @@ add_subdirectory(../../zap ../../zap)
 add_subdirectory(../../vm/crossgen ../../vm/crossgen)
 
 # add the install targets
-install_clr(TARGETS crossgen ADDITIONAL_DESTINATION sharedFramework)
+install_clr(TARGETS crossgen ADDITIONAL_DESTINATIONS sharedFramework)

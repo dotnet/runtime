@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Xml.XPath;
@@ -13,7 +12,7 @@ namespace MS.Internal.Xml.XPath
     // It doesn't generate DOD of the output even when input is DOD.
     internal sealed class DescendantOverDescendantQuery : DescendantBaseQuery
     {
-        private int _level = 0;
+        private int _level;
 
         public DescendantOverDescendantQuery(Query qyParent, bool matchSelf, string name, string prefix, XPathNodeType typeTest, bool abbrAxis) :
             base(qyParent, name, prefix, typeTest, matchSelf, abbrAxis)
@@ -29,7 +28,7 @@ namespace MS.Internal.Xml.XPath
             base.Reset();
         }
 
-        public override XPathNavigator Advance()
+        public override XPathNavigator? Advance()
         {
             while (true)
             {
@@ -61,6 +60,7 @@ namespace MS.Internal.Xml.XPath
                 }
                 do
                 {
+                    Debug.Assert(currentNode != null);
                     if (matches(currentNode))
                     {
                         position++;
@@ -72,6 +72,7 @@ namespace MS.Internal.Xml.XPath
 
         private bool MoveToFirstChild()
         {
+            Debug.Assert(currentNode != null);
             if (currentNode.MoveToFirstChild())
             {
                 _level++;
@@ -82,6 +83,7 @@ namespace MS.Internal.Xml.XPath
 
         private bool MoveUpUntilNext()
         { // move up until we can move next
+            Debug.Assert(currentNode != null);
             while (!currentNode.MoveToNext())
             {
                 --_level;

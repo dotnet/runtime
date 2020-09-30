@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Data.Common;
 using System.Diagnostics;
@@ -24,7 +23,7 @@ namespace System.Data.ProviderBase
             }
         }
 
-        protected override void Activate(SysTx.Transaction transaction)
+        protected override void Activate(SysTx.Transaction? transaction)
         {
             throw ADP.ClosedConnectionError();
         }
@@ -44,12 +43,12 @@ namespace System.Data.ProviderBase
             throw ADP.ClosedConnectionError();
         }
 
-        public override void EnlistTransaction(SysTx.Transaction transaction)
+        public override void EnlistTransaction(SysTx.Transaction? transaction)
         {
             throw ADP.ClosedConnectionError();
         }
 
-        protected internal override DataTable GetSchema(DbConnectionFactory factory, DbConnectionPoolGroup poolGroup, DbConnection outerConnection, string collectionName, string[] restrictions)
+        protected internal override DataTable GetSchema(DbConnectionFactory factory, DbConnectionPoolGroup poolGroup, DbConnection outerConnection, string collectionName, string?[]? restrictions)
         {
             throw ADP.ClosedConnectionError();
         }
@@ -59,7 +58,7 @@ namespace System.Data.ProviderBase
             throw ADP.ClosedConnectionError();
         }
 
-        internal override bool TryOpenConnection(DbConnection outerConnection, DbConnectionFactory connectionFactory, TaskCompletionSource<DbConnectionInternal> retry, DbConnectionOptions userOptions)
+        internal override bool TryOpenConnection(DbConnection outerConnection, DbConnectionFactory connectionFactory, TaskCompletionSource<DbConnectionInternal>? retry, DbConnectionOptions? userOptions)
         {
             return base.TryOpenConnectionInternal(outerConnection, connectionFactory, retry, userOptions);
         }
@@ -71,7 +70,7 @@ namespace System.Data.ProviderBase
         {
         }
 
-        internal override bool TryOpenConnection(DbConnection outerConnection, DbConnectionFactory connectionFactory, TaskCompletionSource<DbConnectionInternal> retry, DbConnectionOptions userOptions)
+        internal override bool TryOpenConnection(DbConnection outerConnection, DbConnectionFactory connectionFactory, TaskCompletionSource<DbConnectionInternal>? retry, DbConnectionOptions? userOptions)
         {
             throw ADP.ConnectionAlreadyOpen(State);
         }
@@ -112,7 +111,7 @@ namespace System.Data.ProviderBase
             connectionFactory.SetInnerConnectionTo(owningObject, DbConnectionClosedPreviouslyOpened.SingletonInstance);
         }
 
-        internal override bool TryOpenConnection(DbConnection outerConnection, DbConnectionFactory connectionFactory, TaskCompletionSource<DbConnectionInternal> retry, DbConnectionOptions userOptions)
+        internal override bool TryOpenConnection(DbConnection outerConnection, DbConnectionFactory connectionFactory, TaskCompletionSource<DbConnectionInternal>? retry, DbConnectionOptions? userOptions)
         {
             if (retry == null || !retry.Task.IsCompleted)
             {

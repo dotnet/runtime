@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -78,10 +77,11 @@ namespace System.Text.Json.Serialization.Converters
                 {
                     if (options.ReferenceHandler != null)
                     {
-                        if (JsonSerializer.ResolveMetadata(this, ref reader, ref state))
+                        if (JsonSerializer.ResolveMetadataForJsonObject<T>(ref reader, ref state, options))
                         {
                             if (state.Current.ObjectState == StackFrameObjectState.ReadRefEndObject)
                             {
+                                // This will never throw since it was previously validated in ResolveMetadataForJsonObject.
                                 value = (T)state.Current.ReturnValue!;
                                 return true;
                             }
@@ -92,8 +92,6 @@ namespace System.Text.Json.Serialization.Converters
                             return false;
                         }
                     }
-
-                    state.Current.ObjectState = StackFrameObjectState.PropertyValue;
                 }
 
                 if (state.Current.ObjectState < StackFrameObjectState.CreatedObject)
@@ -104,13 +102,6 @@ namespace System.Text.Json.Serialization.Converters
                     }
 
                     obj = state.Current.JsonClassInfo.CreateObject!()!;
-                    if (state.Current.MetadataId != null)
-                    {
-                        state.ReferenceResolver.AddReference(state.Current.MetadataId, obj);
-                        // Clear metadata name, if the next read fails
-                        // we want to point the JSON path to the property's object.
-                        state.Current.JsonPropertyName = null;
-                    }
 
                     state.Current.ReturnValue = obj;
                     state.Current.ObjectState = StackFrameObjectState.CreatedObject;
@@ -266,6 +257,7 @@ namespace System.Text.Json.Serialization.Converters
 
                     // Remember the current property for JsonPath support if an exception is thrown.
                     state.Current.DeclaredJsonPropertyInfo = jsonPropertyInfo;
+                    state.Current.NumberHandling = jsonPropertyInfo.NumberHandling;
 
                     if (jsonPropertyInfo.ShouldSerialize)
                     {
@@ -322,6 +314,7 @@ namespace System.Text.Json.Serialization.Converters
                 {
                     JsonPropertyInfo jsonPropertyInfo = propertyCacheArray![state.Current.EnumeratorIndex];
                     state.Current.DeclaredJsonPropertyInfo = jsonPropertyInfo;
+                    state.Current.NumberHandling = jsonPropertyInfo.NumberHandling;
 
                     if (jsonPropertyInfo.ShouldSerialize)
                     {
@@ -416,6 +409,17 @@ namespace System.Text.Json.Serialization.Converters
             }
 
             return true;
+        }
+
+        internal sealed override void CreateInstanceForReferenceResolver(ref Utf8JsonReader reader, ref ReadStack state, JsonSerializerOptions options)
+        {
+            if (state.Current.JsonClassInfo.CreateObject == null)
+            {
+                ThrowHelper.ThrowNotSupportedException_DeserializeNoConstructor(state.Current.JsonClassInfo.Type, ref reader, ref state);
+            }
+
+            object obj = state.Current.JsonClassInfo.CreateObject!()!;
+            state.Current.ReturnValue = obj;
         }
     }
 }

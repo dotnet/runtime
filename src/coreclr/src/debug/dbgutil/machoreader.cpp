@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include <windows.h>
 #include <clrdata.h>
@@ -225,12 +224,6 @@ MachOModule::ReadLoadCommands()
                     segment->flags,
                     segment->segname);
 
-                // TODO - remove
-                m_reader.Trace("CMD: base + fileoff %016llx vmaddr - fileoff %016llx base - vmaddr %016llx\n",
-                    m_baseAddress + segment->fileoff,
-                    segment->vmaddr - segment->fileoff,
-                    m_baseAddress - segment->vmaddr);
-
                 section_64* section = (section_64*)((uint64_t)segment + sizeof(segment_command_64));
                 for (int s = 0; s < segment->nsects; s++, section++)
                 {
@@ -408,6 +401,7 @@ MachOReader::ReadString(const char* address, std::string& str)
         char c = 0;
         if (!ReadMemory((void*)(address + i), &c, sizeof(char)))
         {
+            Trace("ERROR: Failed to read string at %p\n", (void*)(address + i));
             return false;
         }
         if (c == '\0')

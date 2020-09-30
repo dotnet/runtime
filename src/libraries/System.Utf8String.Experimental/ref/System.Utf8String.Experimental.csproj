@@ -3,25 +3,31 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- disable warnings about obsolete APIs -->
     <NoWarn>$(NoWarn);0809;0618</NoWarn>
-    <TargetFrameworks>netstandard2.0;netstandard2.1;netcoreapp3.0;$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;netstandard2.1;netcoreapp3.0;$(NetCoreAppCurrent);net461</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup Condition="'$(IsPrerelease)' != 'false'">
     <Compile Include="System.Utf8String.Experimental.cs" />
     <Compile Include="System.Utf8String.Experimental.Forwards.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(IsPrerelease)' != 'false' AND '$(TargetFramework)' == 'netstandard2.0'">
+  <ItemGroup Condition="'$(IsPrerelease)' != 'false' and ('$(TargetFramework)' == 'netstandard2.0' or '$(TargetFramework)' == 'net461')">
     <Compile Include="System.Utf8String.Experimental.Range.cs" />
     <Compile Include="System.Utf8String.Experimental.Rune.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(IsPrerelease)' != 'false' AND '$(TargetFramework)' == 'netstandard2.1'">
+  <ItemGroup Condition="'$(IsPrerelease)' != 'false' and '$(TargetFramework)' == 'netstandard2.1'">
     <Compile Include="System.Utf8String.Experimental.Rune.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(IsPrerelease)' != 'false' AND '$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+  <ItemGroup Condition="'$(IsPrerelease)' != 'false' and '$(TargetFramework)' == '$(NetCoreAppCurrent)'">
     <Compile Include="System.Utf8String.Experimental.net5.0.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
-    <Reference Include="System.Memory" />
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' or '$(TargetFramework)' == 'net461'">
+    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Net.Http\ref\System.Net.Http.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Net.Primitives\ref\System.Net.Primitives.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\ref\System.Runtime.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\ref\System.Runtime.InteropServices.csproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.0'">
     <Reference Include="netstandard" />
@@ -30,10 +36,8 @@
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.InteropServices" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
-    <ProjectReference Include="..\..\System.Net.Http\ref\System.Net.Http.csproj" />
-    <ProjectReference Include="..\..\System.Net.Primitives\ref\System.Net.Primitives.csproj" />
-    <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
-    <ProjectReference Include="..\..\System.Runtime.InteropServices\ref\System.Runtime.InteropServices.csproj" />
+  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
+    <Reference Include="System.Net.Http" />
+    <PackageReference Include="System.ValueTuple" Version="$(SystemValueTupleVersion)" Condition="'$(TargetFramework)' == 'net461'" />
   </ItemGroup>
 </Project>

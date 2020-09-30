@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #define API_ENTER(name) wrapComp->CLR_API_Enter(API_##name);
 #define API_LEAVE(name) wrapComp->CLR_API_Leave(API_##name);
@@ -655,11 +654,10 @@ CorInfoInitClassResult WrapICorJitInfo::initClass(
             CORINFO_FIELD_HANDLE    field,
 
             CORINFO_METHOD_HANDLE   method,
-            CORINFO_CONTEXT_HANDLE  context,
-            BOOL                    speculative)
+            CORINFO_CONTEXT_HANDLE  context)
 {
     API_ENTER(initClass);
-    CorInfoInitClassResult temp = wrapHnd->initClass(field, method, context, speculative);
+    CorInfoInitClassResult temp = wrapHnd->initClass(field, method, context);
     API_LEAVE(initClass);
     return temp;
 }

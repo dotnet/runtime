@@ -1,0 +1,39 @@
+<!-- This project requires an explicit SDK version number because it is used on Helix,
+      and global.json is not available. -->
+<Project Sdk="Microsoft.Build.NoTargets/1.0.53" DefaultTargets="BuildApp">
+  <PropertyGroup>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <MicrosoftNetCoreAppRuntimePackDir>$(CORE_ROOT)\runtimepack</MicrosoftNetCoreAppRuntimePackDir>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <BuildDir>$(MSBuildThisFileDirectory)\obj\$(Configuration)\wasm</BuildDir>
+    <AppDir>$(TestBinDir)/WasmApp/</AppDir>
+  </PropertyGroup>
+
+  <UsingTask TaskName="WasmAppBuilder" 
+      AssemblyFile="$(CORE_ROOT)/WasmAppBuilder/WasmAppBuilder.dll"/>
+
+  <Target Name="BuildApp">
+    <ItemGroup>
+      <AssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackDir)\native"/>
+      <AssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackDir)"/>
+      <AssemblySearchPaths Include="$(CORE_ROOT)/TargetingPack" />
+      <AssemblySearchPaths Include="$(TestBinDir)" />
+    </ItemGroup>
+  
+    <Message Importance="High" Text="AppDir: $(AppDir)" />
+    <Message Importance="High" Text="TestBinDir: $(TestBinDir)" />
+    <Message Importance="High" Text="ArtifactsBinDir: $(ArtifactsBinDir)" />
+
+    <WasmAppBuilder
+      AppDir="$(AppDir)"
+      MicrosoftNetCoreAppRuntimePackDir="$(MicrosoftNetCoreAppRuntimePackDir)"
+      MainAssembly="$(TestAssembly)"
+      MainJS="$(CORE_ROOT)\runtime-test\runtime-test.js"
+      AssemblySearchPaths="@(AssemblySearchPaths)"
+      SkipMissingAssemblies="True"
+      />
+
+
+    <Exec Command="chmod a+x $(AppDir)/run-v8.sh" />
+  </Target>
+</Project>

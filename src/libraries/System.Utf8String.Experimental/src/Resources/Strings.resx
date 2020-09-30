@@ -165,4 +165,7 @@
   <data name="Utf8String_InputContainedMalformedUtf8" xml:space="preserve">
     <value>The input buffer contained ill-formed UTF-8 data.</value>
   </data>
+  <data name="Arg_MustBeRune" xml:space="preserve">
+    <value>Object must be of type Rune.</value>
+  </data>
 </root>

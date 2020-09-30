@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable enable
 using Microsoft.Win32.SafeHandles;
@@ -20,7 +19,7 @@ namespace System.Net.Security
         private SafeEvpPKeyHandle? _certKeyHandle;
         private SslProtocols _protocols = SslProtocols.None;
         private EncryptionPolicy _policy;
-        private bool _isInvalid = false;
+        private bool _isInvalid;
 
         internal SafeX509Handle? CertHandle
         {

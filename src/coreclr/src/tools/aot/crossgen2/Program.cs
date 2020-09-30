@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -292,7 +291,36 @@ namespace ILCompiler
                     SharedGenericsMode genericsMode = SharedGenericsMode.CanonicalReferenceTypes;
 
                     var targetDetails = new TargetDetails(_targetArchitecture, _targetOS, TargetAbi.CoreRT, instructionSetSupport.GetVectorTSimdVector());
-                    _typeSystemContext = new ReadyToRunCompilerContext(targetDetails, genericsMode);
+
+                    bool versionBubbleIncludesCoreLib = false;
+                    if (_commandLineOptions.InputBubble)
+                    {
+                        versionBubbleIncludesCoreLib = true;
+                    }
+                    else
+                    {
+                        foreach (var inputFile in _inputFilePaths)
+                        {
+                            if (String.Compare(inputFile.Key, "System.Private.CoreLib", StringComparison.OrdinalIgnoreCase) == 0)
+                            {
+                                versionBubbleIncludesCoreLib = true;
+                                break;
+                            }
+                        }
+                        if (!versionBubbleIncludesCoreLib)
+                        {
+                            foreach (var inputFile in _unrootedInputFilePaths)
+                            {
+                                if (String.Compare(inputFile.Key, "System.Private.CoreLib", StringComparison.OrdinalIgnoreCase) == 0)
+                                {
+                                    versionBubbleIncludesCoreLib = true;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    _typeSystemContext = new ReadyToRunCompilerContext(targetDetails, genericsMode, versionBubbleIncludesCoreLib);
 
                     string compositeRootPath = _commandLineOptions.CompositeRootPath?.FullName;
 
@@ -383,7 +411,14 @@ namespace ILCompiler
                     _typeSystemContext.SetSystemModule((EcmaModule)_typeSystemContext.GetModuleForSimpleName(systemModuleName));
 
                     if (_typeSystemContext.InputFilePaths.Count == 0)
+                    {
+                        if (_commandLineOptions.InputFilePaths.Count() > 0)
+                        {
+                            Console.WriteLine(SR.InputWasNotLoadable);
+                            return 2;
+                        }
                         throw new CommandLineException(SR.NoInputFiles);
+                    }
 
                     //
                     // Initialize compilation group and compilation roots
@@ -524,6 +559,7 @@ namespace ILCompiler
                         .UseJitPath(_commandLineOptions.JitPath)
                         .UseInstructionSetSupport(instructionSetSupport)
                         .UseCustomPESectionAlignment(_commandLineOptions.CustomPESectionAlignment)
+                        .UseVerifyTypeAndFieldLayout(_commandLineOptions.VerifyTypeAndFieldLayout)
                         .GenerateOutputFile(_commandLineOptions.OutputFilePath.FullName)
                         .UseILProvider(ilProvider)
                         .UseBackendOptions(_commandLineOptions.CodegenOptions)
@@ -573,7 +609,7 @@ namespace ILCompiler
 
         private MethodDesc CheckAndParseSingleMethodModeArguments(CompilerTypeSystemContext context)
         {
-            if (_commandLineOptions.SingleMethodName == null && _commandLineOptions.SingleMethodTypeName == null && _commandLineOptions.SingleMethodGenericArgs == null)
+            if (_commandLineOptions.SingleMethodName == null && _commandLineOptions.SingleMethodTypeName == null && _commandLineOptions.SingleMethodGenericArg == null)
                 return null;
 
             if (_commandLineOptions.SingleMethodName == null || _commandLineOptions.SingleMethodTypeName == null)
@@ -586,8 +622,8 @@ namespace ILCompiler
             if (method == null)
                 throw new CommandLineException(string.Format(SR.MethodNotFoundOnType, _commandLineOptions.SingleMethodName, _commandLineOptions.SingleMethodTypeName));
 
-            if (method.HasInstantiation != (_commandLineOptions.SingleMethodGenericArgs != null) ||
-                (method.HasInstantiation && (method.Instantiation.Length != _commandLineOptions.SingleMethodGenericArgs.Length)))
+            if (method.HasInstantiation != (_commandLineOptions.SingleMethodGenericArg != null) ||
+                (method.HasInstantiation && (method.Instantiation.Length != _commandLineOptions.SingleMethodGenericArg.Length)))
             {
                 throw new CommandLineException(
                     string.Format(SR.GenericArgCountMismatch, method.Instantiation.Length, _commandLineOptions.SingleMethodName, _commandLineOptions.SingleMethodTypeName));
@@ -596,7 +632,7 @@ namespace ILCompiler
             if (method.HasInstantiation)
             {
                 List<TypeDesc> genericArguments = new List<TypeDesc>();
-                foreach (var argString in _commandLineOptions.SingleMethodGenericArgs)
+                foreach (var argString in _commandLineOptions.SingleMethodGenericArg)
                     genericArguments.Add(FindType(context, argString));
                 method = method.MakeInstantiatedMethod(genericArguments.ToArray());
             }

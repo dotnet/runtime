@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 
@@ -24,6 +23,14 @@ namespace System
                 maxBinaryExponent: 127,
                 exponentBias: 127,
                 infinityBits: 0x7F800000
+            );
+
+            public static readonly FloatingPointInfo Half = new FloatingPointInfo(
+                denormalMantissaBits: 10,
+                exponentBits: 5,
+                maxBinaryExponent: 15,
+                exponentBias: 15,
+                infinityBits: 0x7C00
             );
 
             public ulong ZeroBits { get; }
@@ -365,7 +372,7 @@ namespace System
 
             byte* src = number.GetDigitsPointer();
 
-            if ((info.DenormalMantissaBits == 23) && (totalDigits <= 7) && (fastExponent <= 10))
+            if ((info.DenormalMantissaBits <= 23) && (totalDigits <= 7) && (fastExponent <= 10))
             {
                 // It is only valid to do this optimization for single-precision floating-point
                 // values since we can lose some of the mantissa bits and would return the
@@ -383,6 +390,10 @@ namespace System
                     result *= scale;
                 }
 
+                if (info.DenormalMantissaBits == 10)
+                {
+                    return (ushort)(BitConverter.HalfToInt16Bits((Half)result));
+                }
                 return (uint)(BitConverter.SingleToInt32Bits(result));
             }
 
@@ -404,10 +415,14 @@ namespace System
                 {
                     return (ulong)(BitConverter.DoubleToInt64Bits(result));
                 }
+                else if (info.DenormalMantissaBits == 23)
+                {
+                    return (uint)(BitConverter.SingleToInt32Bits((float)(result)));
+                }
                 else
                 {
-                    Debug.Assert(info.DenormalMantissaBits == 23);
-                    return (uint)(BitConverter.SingleToInt32Bits((float)(result)));
+                    Debug.Assert(info.DenormalMantissaBits == 10);
+                    return (uint)(BitConverter.HalfToInt16Bits((Half)(result)));
                 }
             }
 

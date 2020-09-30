@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================================
 **
@@ -22,7 +21,7 @@
  * feed), even if it says it only wants spaces tabs and newlines. 
  */
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime_swscanf_test2_paltest_swscanf_test2, "c_runtime/swscanf/test2/paltest_swscanf_test2")
 {
 
     if (PAL_Initialize(argc, argv))

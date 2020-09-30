@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk.IL">
+
+  <!-- This project exists to restore ilasm and ildasm, which are
+       needed by the IL SDK. -->
+
+  <PropertyGroup>
+    <RuntimeIdentifier>$(TargetRid)</RuntimeIdentifier>
+    <ProjectAssetsFile>$(TestSourceDir)Common\ilasm\obj\project.assets.json</ProjectAssetsFile>
+  </PropertyGroup>
+</Project>

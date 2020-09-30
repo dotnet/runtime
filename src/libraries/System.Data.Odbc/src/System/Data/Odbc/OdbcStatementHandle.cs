@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Data.Common;
 using System.Runtime.InteropServices;
@@ -63,7 +62,7 @@ namespace System.Data.Odbc
 
     internal sealed class OdbcStatementHandle : OdbcHandle
     {
-        internal OdbcStatementHandle(OdbcConnectionHandle connectionHandle) : base(ODBC32.SQL_HANDLE.STMT, connectionHandle)
+        internal OdbcStatementHandle(OdbcConnectionHandle? connectionHandle) : base(ODBC32.SQL_HANDLE.STMT, connectionHandle)
         {
         }
 
@@ -216,7 +215,7 @@ namespace System.Data.Odbc
             return retcode;
         }
 
-        internal ODBC32.RetCode PrimaryKeys(string catalogName, string schemaName, string tableName)
+        internal ODBC32.RetCode PrimaryKeys(string? catalogName, string? schemaName, string tableName)
         {
             ODBC32.RetCode retcode = Interop.Odbc.SQLPrimaryKeysW(this,
                             catalogName, ODBC.ShortStringLength(catalogName),          // CatalogName
@@ -243,10 +242,10 @@ namespace System.Data.Odbc
             return retcode;
         }
 
-        internal ODBC32.RetCode ProcedureColumns(string procedureCatalog,
-                                                 string procedureSchema,
-                                                 string procedureName,
-                                                 string columnName)
+        internal ODBC32.RetCode ProcedureColumns(string? procedureCatalog,
+                                                 string? procedureSchema,
+                                                 string? procedureName,
+                                                 string? columnName)
         {
             ODBC32.RetCode retcode = Interop.Odbc.SQLProcedureColumnsW(this,
                                                                               procedureCatalog,
@@ -288,8 +287,8 @@ namespace System.Data.Odbc
             return retcode;
         }
 
-        internal ODBC32.RetCode Statistics(string tableCatalog,
-                                           string tableSchema,
+        internal ODBC32.RetCode Statistics(string? tableCatalog,
+                                           string? tableSchema,
                                            string tableName,
                                            short unique,
                                            short accuracy)

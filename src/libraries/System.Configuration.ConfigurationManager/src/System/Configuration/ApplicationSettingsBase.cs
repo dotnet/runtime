@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.ComponentModel;
@@ -14,7 +13,7 @@ namespace System.Configuration
     /// </summary>
     public abstract class ApplicationSettingsBase : SettingsBase, INotifyPropertyChanged
     {
-        private bool _explicitSerializeOnClass = false;
+        private bool _explicitSerializeOnClass;
         private object[] _classAttributes;
         private readonly IComponent _owner;
         private PropertyChangedEventHandler _onPropertyChanged;
@@ -27,7 +26,7 @@ namespace System.Configuration
         private SettingsSavingEventHandler _onSettingsSaving;
         private string _settingsKey = string.Empty;
         private bool _firstLoad = true;
-        private bool _initialized = false;
+        private bool _initialized;
 
         /// <summary>
         /// Default constructor without a concept of "owner" component.
@@ -726,7 +725,9 @@ namespace System.Configuration
                     }
                 }
 
-                object temp = base[propertyName];
+                // we query the value first so that we initialize all values from value providers and so that we don't end up
+                // on an infinite recursion when calling Properties[propertyName] as that calls this.
+                _ = base[propertyName];
                 SettingsProperty setting = Properties[propertyName];
                 SettingsProvider provider = setting != null ? setting.Provider : null;
 

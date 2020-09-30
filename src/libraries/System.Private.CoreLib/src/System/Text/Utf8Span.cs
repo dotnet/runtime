@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.ComponentModel;
@@ -231,7 +230,7 @@ namespace System.Text
             // TODO_UTF8STRING: Since we know the underlying data is immutable, well-formed UTF-8,
             // we can perform transcoding using an optimized code path that skips all safety checks.
 
-#if !NETSTANDARD2_0
+#if (!NETSTANDARD2_0 && !NETFRAMEWORK)
             return Encoding.UTF8.GetString(Bytes);
 #else
             if (IsEmpty)
@@ -274,9 +273,9 @@ namespace System.Text
                 int utf16CharCount = Length + utf16CodeUnitCountAdjustment;
                 Debug.Assert(utf16CharCount <= Length && utf16CharCount >= 0);
 
-#if !NETSTANDARD2_0
+#if (!NETSTANDARD2_0 && !NETFRAMEWORK)
                 // TODO_UTF8STRING: Can we call string.FastAllocate directly?
-                return string.Create(utf16CharCount, (pbData: (IntPtr)pData, cbData: Length), (chars, state) =>
+                return string.Create(utf16CharCount, (pbData: (IntPtr)pData, cbData: Length), static (chars, state) =>
                 {
                     OperationStatus status = Utf8.ToUtf16(new ReadOnlySpan<byte>((byte*)state.pbData, state.cbData), chars, out _, out _, replaceInvalidSequences: false);
                     Debug.Assert(status == OperationStatus.Done, "Did somebody mutate this Utf8String instance unexpectedly?");

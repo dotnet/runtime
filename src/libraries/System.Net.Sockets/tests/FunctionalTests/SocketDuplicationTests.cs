@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Drawing.Drawing2D;
@@ -27,14 +26,6 @@ namespace System.Net.Sockets.Tests
         private static ArraySegment<byte> TestBytes => Encoding.ASCII.GetBytes(TestMessage);
         private static string GetMessageString(ArraySegment<byte> data, int count) =>
             Encoding.ASCII.GetString(data.AsSpan().Slice(0, count));
-
-        private static readonly Lazy<int> s_currentProcessId = new Lazy<int>(() =>
-        {
-            using var process = Process.GetCurrentProcess();
-            return process.Id;
-        }, LazyThreadSafetyMode.PublicationOnly);
-
-        private static int CurrentProcessId => s_currentProcessId.Value;
 
         [Fact]
         public void UseOnlyOverlappedIO_AlwaysFalse()
@@ -63,7 +54,7 @@ namespace System.Net.Sockets.Tests
             Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
             socket.Dispose();
 
-            Assert.Throws<ObjectDisposedException>(() => socket.DuplicateAndClose(CurrentProcessId));
+            Assert.Throws<ObjectDisposedException>(() => socket.DuplicateAndClose(Environment.ProcessId));
         }
 
         [PlatformSpecific(TestPlatforms.Windows)]
@@ -78,7 +69,7 @@ namespace System.Net.Sockets.Tests
             };
             Assert.Equal(blocking, original.Blocking);
 
-            SocketInformation info = original.DuplicateAndClose(CurrentProcessId);
+            SocketInformation info = original.DuplicateAndClose(Environment.ProcessId);
 
             using Socket clone = new Socket(info);
             Assert.Equal(blocking, clone.Blocking);
@@ -113,7 +104,7 @@ namespace System.Net.Sockets.Tests
         public void DuplicateAndClose_Unix_ThrowsPlatformNotSupportedException()
         {
             using Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-            int processId = CurrentProcessId;
+            int processId = Environment.ProcessId;
 
             Assert.Throws<PlatformNotSupportedException>(() => socket.DuplicateAndClose(processId));
         }
@@ -128,11 +119,11 @@ namespace System.Net.Sockets.Tests
 
             using Socket client0 = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 
-            using Socket client1 = new Socket(client0.DuplicateAndClose(CurrentProcessId));
+            using Socket client1 = new Socket(client0.DuplicateAndClose(Environment.ProcessId));
             Assert.False(client1.Connected);
             client1.Connect(listener.LocalEndPoint);
 
-            using Socket client2 = new Socket(client1.DuplicateAndClose(CurrentProcessId));
+            using Socket client2 = new Socket(client1.DuplicateAndClose(Environment.ProcessId));
             Assert.True(client2.Connected);
 
             using Socket handler = await listener.AcceptAsync();
@@ -152,7 +143,7 @@ namespace System.Net.Sockets.Tests
             listener0.Bind(new IPEndPoint(IPAddress.Loopback, 0));
             listener0.Listen(1);
 
-            using Socket listener1 = new Socket(listener0.DuplicateAndClose(CurrentProcessId));
+            using Socket listener1 = new Socket(listener0.DuplicateAndClose(Environment.ProcessId));
 
             using Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             await client.ConnectAsync(listener1.LocalEndPoint);
@@ -183,7 +174,7 @@ namespace System.Net.Sockets.Tests
                 listenerProto.Listen(1);
                 EndPoint ep = listenerProto.LocalEndPoint;
 
-                using Socket listenerDuplicate = new Socket(listenerProto.DuplicateAndClose(CurrentProcessId));
+                using Socket listenerDuplicate = new Socket(listenerProto.DuplicateAndClose(Environment.ProcessId));
 
                 using var serverPipe = new AnonymousPipeServerStream(PipeDirection.Out, HandleInheritability.Inheritable);
 
@@ -229,7 +220,7 @@ namespace System.Net.Sockets.Tests
 
                 await originalServer.ReceiveAsync(_receiveBuffer, SocketFlags.None);
 
-                SocketInformation info = originalServer.DuplicateAndClose(CurrentProcessId);
+                SocketInformation info = originalServer.DuplicateAndClose(Environment.ProcessId);
 
                 using Socket cloneServer = new Socket(info);
                 await Assert.ThrowsAsync<InvalidOperationException>(() =>
@@ -244,7 +235,7 @@ namespace System.Net.Sockets.Tests
             if (!Socket.OSSupportsUnixDomainSockets) return;
 
             using Socket original = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
-            SocketInformation info = original.DuplicateAndClose(CurrentProcessId);
+            SocketInformation info = original.DuplicateAndClose(Environment.ProcessId);
             Assert.ThrowsAny<NotSupportedException>(() => _ = new Socket(info));
         }
 
@@ -332,7 +323,7 @@ namespace System.Net.Sockets.Tests
                 if (sameProcess)
                 {
                     Task handlerCode = Task.Run(() => HandlerServerCode(_ipcPipeName));
-                    RunCommonHostLogic(CurrentProcessId);
+                    RunCommonHostLogic(Environment.ProcessId);
                     await handlerCode;
                 }
                 else

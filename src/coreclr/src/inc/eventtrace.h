@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // File: eventtrace.h
 // Abstract: This module implements Event Tracing support.  This includes
@@ -173,6 +172,8 @@ namespace ETW
         static void Cleanup();
         static VOID DeleteTypeHashNoLock(AllLoggedTypes **ppAllLoggedTypes);
         static VOID FlushObjectAllocationEvents();
+        static UINT32 TypeLoadBegin();
+        static VOID TypeLoadEnd(UINT32 typeLoad, TypeHandle th, UINT16 loadLevel);
 
     private:
         static BOOL ShouldLogType(TypeHandle th);

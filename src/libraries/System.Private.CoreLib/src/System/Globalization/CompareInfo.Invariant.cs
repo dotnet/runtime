@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers.Binary;
 using System.Diagnostics;
@@ -40,7 +39,7 @@ namespace System.Globalization
             }
         }
 
-        private static unsafe int InvariantLastIndexOf(string source, string value, int startIndex, int count, bool ignoreCase)
+        internal static unsafe int InvariantLastIndexOf(string source, string value, int startIndex, int count, bool ignoreCase)
         {
             Debug.Assert(!string.IsNullOrEmpty(source));
             Debug.Assert(value != null);

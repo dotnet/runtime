@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Security.Cryptography;
 using Internal.NativeCrypto;
@@ -15,11 +14,13 @@ namespace Internal.Cryptography
             byte[] key,
             byte[]? iv,
             int blockSize,
+            int feedbackSize,
+            int paddingSize,
             bool encrypting)
         {
-            SafeAlgorithmHandle algorithm = DesBCryptModes.GetSharedHandle(cipherMode);
+            SafeAlgorithmHandle algorithm = DesBCryptModes.GetSharedHandle(cipherMode, feedbackSize);
 
-            BasicSymmetricCipher cipher = new BasicSymmetricCipherBCrypt(algorithm, cipherMode, blockSize, key, false, iv, encrypting);
+            BasicSymmetricCipher cipher = new BasicSymmetricCipherBCrypt(algorithm, cipherMode, blockSize, paddingSize, key, false, iv, encrypting);
             return UniversalCryptoTransform.Create(paddingMode, cipher, encrypting);
         }
     }

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Text;
@@ -78,7 +77,7 @@ namespace Internal.TypeSystem
 
             public static string Type(string @namespace, string name)
             {
-                return String.IsNullOrEmpty(@namespace) ? name : @namespace + "." + name;
+                return string.IsNullOrEmpty(@namespace) ? name : @namespace + "." + name;
             }
 
             public static string Field(TypeDesc owningType, string fieldName)

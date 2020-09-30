@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
 //
@@ -21,8 +20,7 @@ namespace System.Linq
         // Helper method to find the minimum or maximum element in the source.
         //
 
-        [return: MaybeNull]
-        private static T Reduce(IEnumerable<T> source, int sign)
+        private static T? Reduce(IEnumerable<T> source, int sign)
         {
             Debug.Assert(source != null);
             Debug.Assert(sign == -1 || sign == 1);
@@ -42,8 +40,7 @@ namespace System.Linq
         // Helper method to find the minimum element in the source.
         //
 
-        [return: MaybeNull]
-        internal static T ReduceMin(IEnumerable<T> source)
+        internal static T? ReduceMin(IEnumerable<T> source)
         {
             return Reduce(source, -1);
         }
@@ -52,8 +49,7 @@ namespace System.Linq
         // Helper method to find the maximum element in the source.
         //
 
-        [return: MaybeNull]
-        internal static T ReduceMax(IEnumerable<T> source)
+        internal static T? ReduceMax(IEnumerable<T> source)
         {
             return Reduce(source, 1);
         }

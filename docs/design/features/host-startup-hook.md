@@ -57,8 +57,8 @@ Each part may be either
   * the assembly name must be considered a valid assembly name as specified
     by the `AssemblyName` class.
 
-Note that white-spaces are preserved and considered part of the specified 
-path/name. So for example path separator followed by a white-space and 
+Note that white-spaces are preserved and considered part of the specified
+path/name. So for example path separator followed by a white-space and
 another path separator is invalid, since the white-space only string
 in between the path separators will be considered as assembly name.
 
@@ -90,10 +90,10 @@ centralized, while still allowing user code to do its own thing if it
 so desires.
 
 The producer of `StartupHook.dll` needs to ensure that
-`StartupHook.dll` is compatible with the dependencies specified in the 
-main application's deps.json, since those dependencies are put on the 
-Trusted Platform Assemblies (TPA) list during the runtime startup, 
-before `StartupHook.dll` is loaded. This means that `StartupHook.dll` 
+`StartupHook.dll` is compatible with the dependencies specified in the
+main application's deps.json, since those dependencies are put on the
+Trusted Platform Assemblies (TPA) list during the runtime startup,
+before `StartupHook.dll` is loaded. This means that `StartupHook.dll`
 needs to be built against the same or lower version of .NET Core than the app.
 
 ## Example

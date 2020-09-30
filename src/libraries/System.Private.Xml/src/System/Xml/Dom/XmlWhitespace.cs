@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Xml.XPath;
 
 namespace System.Xml
@@ -10,7 +10,7 @@ namespace System.Xml
     // Represents the text content of an element or attribute.
     public class XmlWhitespace : XmlCharacterData
     {
-        protected internal XmlWhitespace(string strData, XmlDocument doc) : base(strData, doc)
+        protected internal XmlWhitespace(string? strData, XmlDocument doc) : base(strData, doc)
         {
             if (!doc.IsLoading && !base.CheckOnData(strData))
                 throw new ArgumentException(SR.Xdom_WS_Char);
@@ -21,7 +21,7 @@ namespace System.Xml
         {
             get
             {
-                return OwnerDocument.strNonSignificantWhitespaceName;
+                return OwnerDocument!.strNonSignificantWhitespaceName;
             }
         }
 
@@ -30,7 +30,7 @@ namespace System.Xml
         {
             get
             {
-                return OwnerDocument.strNonSignificantWhitespaceName;
+                return OwnerDocument!.strNonSignificantWhitespaceName;
             }
         }
 
@@ -43,11 +43,11 @@ namespace System.Xml
             }
         }
 
-        public override XmlNode ParentNode
+        public override XmlNode? ParentNode
         {
             get
             {
-                switch (parentNode.NodeType)
+                switch (parentNode!.NodeType)
                 {
                     case XmlNodeType.Document:
                         return base.ParentNode;
@@ -55,10 +55,10 @@ namespace System.Xml
                     case XmlNodeType.CDATA:
                     case XmlNodeType.Whitespace:
                     case XmlNodeType.SignificantWhitespace:
-                        XmlNode parent = parentNode.parentNode;
+                        XmlNode parent = parentNode.parentNode!;
                         while (parent.IsText)
                         {
-                            parent = parent.parentNode;
+                            parent = parent.parentNode!;
                         }
                         return parent;
                     default:
@@ -67,13 +67,12 @@ namespace System.Xml
             }
         }
 
-        public override string Value
+        public override string? Value
         {
             get
             {
                 return Data;
             }
-
             set
             {
                 if (CheckOnData(value))
@@ -120,14 +119,15 @@ namespace System.Xml
             }
         }
 
-        public override XmlNode PreviousText
+        public override XmlNode? PreviousText
         {
             get
             {
-                if (parentNode.IsText)
+                if (parentNode != null && parentNode.IsText)
                 {
                     return parentNode;
                 }
+
                 return null;
             }
         }

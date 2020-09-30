@@ -1,0 +1,12 @@
+[
+    {
+        "Name": "NuGet3MinVersion",
+        "Description": "When using NuGet 3.x this package requires at least version {0}.",
+        "CommonTypes": [ ]
+    },
+    {
+        "Name": "Microsoft.NETCore.BrowserDebugHost.Transport",
+        "Description": "Internal package for sharing BrowserDebugHost.",
+        "CommonTypes": [ ]
+    }
+]

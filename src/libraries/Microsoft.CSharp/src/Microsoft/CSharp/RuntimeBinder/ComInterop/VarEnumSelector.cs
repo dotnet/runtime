@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #pragma warning disable 618 // The *Wrapper classes for COM are obsolete
 
@@ -98,8 +97,8 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
                 { VarEnum.VT_UI2,       typeof(ushort) },
                 { VarEnum.VT_UI4,       typeof(uint) },
                 { VarEnum.VT_UI8,       typeof(ulong) },
-                { VarEnum.VT_INT,       typeof(IntPtr) },
-                { VarEnum.VT_UINT,      typeof(UIntPtr) },
+                { VarEnum.VT_INT,       typeof(int) },
+                { VarEnum.VT_UINT,      typeof(uint) },
                 { VarEnum.VT_BOOL,      typeof(bool) },
                 { VarEnum.VT_R4,        typeof(float) },
                 { VarEnum.VT_R8,        typeof(double) },

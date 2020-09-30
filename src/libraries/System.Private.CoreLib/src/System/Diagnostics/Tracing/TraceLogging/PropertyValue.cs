@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #if ES_BUILD_STANDALONE
 using System;
@@ -218,7 +217,7 @@ namespace System.Diagnostics.Tracing
             {
                 Type type = property.PropertyType;
 
-                if (!Statics.IsValueType(type))
+                if (!type.IsValueType)
                 {
                     var getter = (Func<TContainer, object?>)GetGetMethod(property, type);
                     return container => new PropertyValue(getter((TContainer)container.ReferenceValue!));

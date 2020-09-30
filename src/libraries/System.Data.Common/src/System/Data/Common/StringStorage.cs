@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Collections;
@@ -10,7 +9,7 @@ namespace System.Data.Common
     // The string storage does not use BitArrays in DataStorage
     internal sealed class StringStorage : DataStorage
     {
-        private string[] _values;
+        private string?[] _values = default!; // Late-initialized
 
         public StringStorage(DataColumn column)
         : base(column, typeof(string), string.Empty, StorageType.String)
@@ -72,7 +71,7 @@ namespace System.Data.Common
                     int count = 0;
                     for (i = 0; i < recordNos.Length; i++)
                     {
-                        object value = _values[recordNos[i]];
+                        object? value = _values[recordNos[i]];
                         if (value != null)
                             count++;
                     }
@@ -83,10 +82,10 @@ namespace System.Data.Common
 
         public override int Compare(int recordNo1, int recordNo2)
         {
-            string valueNo1 = _values[recordNo1];
-            string valueNo2 = _values[recordNo2];
+            string? valueNo1 = _values[recordNo1];
+            string? valueNo2 = _values[recordNo2];
 
-            if (valueNo1 == (object)valueNo2)
+            if (valueNo1 == (object?)valueNo2)
                 return 0;
 
             if (valueNo1 == null)
@@ -97,11 +96,11 @@ namespace System.Data.Common
             return _table.Compare(valueNo1, valueNo2);
         }
 
-        public override int CompareValueTo(int recordNo, object value)
+        public override int CompareValueTo(int recordNo, object? value)
         {
             Debug.Assert(recordNo != -1, "Invalid (-1) parameter: 'recordNo'");
             Debug.Assert(null != value, "null value");
-            string valueNo1 = _values[recordNo];
+            string? valueNo1 = _values[recordNo];
 
             if (null == valueNo1)
             {
@@ -121,13 +120,13 @@ namespace System.Data.Common
             return _table.Compare(valueNo1, (string)value);
         }
 
-        public override object ConvertValue(object value)
+        public override object ConvertValue(object? value)
         {
             if (_nullValue != value)
             {
                 if (null != value)
                 {
-                    value = value.ToString();
+                    value = value.ToString()!;
                 }
                 else
                 {
@@ -144,7 +143,7 @@ namespace System.Data.Common
 
         public override object Get(int recordNo)
         {
-            string value = _values[recordNo];
+            string? value = _values[recordNo];
 
             if (null != value)
             {
@@ -155,7 +154,7 @@ namespace System.Data.Common
 
         public override int GetStringLength(int record)
         {
-            string value = _values[record];
+            string? value = _values[record];
             return ((null != value) ? value.Length : 0);
         }
 
@@ -204,14 +203,14 @@ namespace System.Data.Common
 
         protected override void CopyValue(int record, object store, BitArray nullbits, int storeIndex)
         {
-            string[] typedStore = (string[])store;
+            string?[] typedStore = (string?[])store;
             typedStore[storeIndex] = _values[record];
             nullbits.Set(storeIndex, IsNull(record));
         }
 
         protected override void SetStorage(object store, BitArray nullbits)
         {
-            _values = (string[])store;
+            _values = (string?[])store;
             //           SetNullStorage(nullbits);
         }
     }

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*++
 
@@ -351,160 +350,6 @@ GetCurrentProcess(
     /* return a pseudo handle */
     return hPseudoCurrentProcess;
 }
-
-/*++
-Function:
-  CreateProcessA
-
-Note:
-  Only Standard handles need to be inherited.
-  Security attributes parameters are not used.
-
-See MSDN doc.
---*/
-BOOL
-PALAPI
-CreateProcessA(
-           IN LPCSTR lpApplicationName,
-           IN LPSTR lpCommandLine,
-           IN LPSECURITY_ATTRIBUTES lpProcessAttributes,
-           IN LPSECURITY_ATTRIBUTES lpThreadAttributes,
-           IN BOOL bInheritHandles,
-           IN DWORD dwCreationFlags,
-           IN LPVOID lpEnvironment,
-           IN LPCSTR lpCurrentDirectory,
-           IN LPSTARTUPINFOA lpStartupInfo,
-           OUT LPPROCESS_INFORMATION lpProcessInformation)
-{
-    PAL_ERROR palError = NO_ERROR;
-    CPalThread *pThread;
-    STARTUPINFOW StartupInfoW;
-    LPWSTR CommandLineW = NULL;
-    LPWSTR ApplicationNameW = NULL;
-    LPWSTR CurrentDirectoryW = NULL;
-
-    int n;
-
-    PERF_ENTRY(CreateProcessA);
-    ENTRY("CreateProcessA(lpAppName=%p (%s), lpCmdLine=%p (%s), lpProcessAttr=%p, "
-          "lpThreadAttr=%p, bInherit=%d, dwFlags=%#x, lpEnv=%p, "
-          "lpCurrentDir=%p (%s), lpStartupInfo=%p, lpProcessInfo=%p)\n",
-           lpApplicationName?lpApplicationName:"NULL",
-           lpApplicationName?lpApplicationName:"NULL",
-           lpCommandLine?lpCommandLine:"NULL",
-           lpCommandLine?lpCommandLine:"NULL",
-           lpProcessAttributes, lpThreadAttributes, bInheritHandles,
-           dwCreationFlags, lpEnvironment,
-           lpCurrentDirectory?lpCurrentDirectory:"NULL",
-           lpCurrentDirectory?lpCurrentDirectory:"NULL",
-           lpStartupInfo, lpProcessInformation);
-
-    pThread = InternalGetCurrentThread();
-
-    if(lpStartupInfo == NULL)
-    {
-        ASSERT("lpStartupInfo is NULL!\n");
-        palError = ERROR_INVALID_PARAMETER;
-        goto done;
-    }
-
-    /* convert parameters to Unicode */
-
-    if(lpApplicationName)
-    {
-        n = MultiByteToWideChar(CP_ACP, 0, lpApplicationName, -1, NULL, 0);
-        if(0 == n)
-        {
-            ASSERT("MultiByteToWideChar failed!\n");
-            palError = ERROR_INTERNAL_ERROR;
-            goto done;
-        }
-        ApplicationNameW = (LPWSTR)InternalMalloc(sizeof(WCHAR)*n);
-        if(!ApplicationNameW)
-        {
-            ERROR("malloc() failed!\n");
-            palError = ERROR_NOT_ENOUGH_MEMORY;
-            goto done;
-        }
-        MultiByteToWideChar(CP_ACP, 0, lpApplicationName, -1, ApplicationNameW,
-                            n);
-    }
-
-    if(lpCommandLine)
-    {
-        n = MultiByteToWideChar(CP_ACP, 0, lpCommandLine, -1, NULL, 0);
-        if(0 == n)
-        {
-            ASSERT("MultiByteToWideChar failed!\n");
-            palError = ERROR_INTERNAL_ERROR;
-            goto done;
-        }
-        CommandLineW = (LPWSTR)InternalMalloc(sizeof(WCHAR)*n);
-        if(!CommandLineW)
-        {
-            ERROR("malloc() failed!\n");
-            palError = ERROR_NOT_ENOUGH_MEMORY;
-            goto done;
-        }
-        MultiByteToWideChar(CP_ACP, 0, lpCommandLine, -1, CommandLineW, n);
-    }
-
-    if(lpCurrentDirectory)
-    {
-        n = MultiByteToWideChar(CP_ACP, 0, lpCurrentDirectory, -1, NULL, 0);
-        if(0 == n)
-        {
-            ASSERT("MultiByteToWideChar failed!\n");
-            palError = ERROR_INTERNAL_ERROR;
-            goto done;
-        }
-        CurrentDirectoryW = (LPWSTR)InternalMalloc(sizeof(WCHAR)*n);
-        if(!CurrentDirectoryW)
-        {
-            ERROR("malloc() failed!\n");
-            palError = ERROR_NOT_ENOUGH_MEMORY;
-            goto done;
-        }
-        MultiByteToWideChar(CP_ACP, 0, lpCurrentDirectory, -1,
-                            CurrentDirectoryW, n);
-    }
-
-    // lpEnvironment should remain ansi on the call to CreateProcessW
-
-    StartupInfoW.cb = sizeof StartupInfoW;
-    StartupInfoW.dwFlags = lpStartupInfo->dwFlags;
-    StartupInfoW.hStdError = lpStartupInfo->hStdError;
-    StartupInfoW.hStdInput = lpStartupInfo->hStdInput;
-    StartupInfoW.hStdOutput = lpStartupInfo->hStdOutput;
-    /* all other members are PAL_Undefined, we can ignore them */
-
-    palError  = InternalCreateProcess(
-        pThread,
-        ApplicationNameW,
-        CommandLineW,
-        lpProcessAttributes,
-        lpThreadAttributes,
-        dwCreationFlags,
-        lpEnvironment,
-        CurrentDirectoryW,
-        &StartupInfoW,
-        lpProcessInformation
-        );
-done:
-    free(ApplicationNameW);
-    free(CommandLineW);
-    free(CurrentDirectoryW);
-
-    if (NO_ERROR != palError)
-    {
-        pThread->SetLastError(palError);
-    }
-
-    LOGEXIT("CreateProcessA returns BOOL %d\n", NO_ERROR == palError);
-    PERF_EXIT(CreateProcessA);
-    return NO_ERROR == palError;
-}
-
 
 /*++
 Function:
@@ -2011,12 +1856,7 @@ PAL_NotifyRuntimeStarted()
     _ASSERTE(ret == TRUE || processIdDisambiguationKey == 0);
 
     UnambiguousProcessDescriptor unambiguousProcessDescriptor(gPID, processIdDisambiguationKey);
-    LPCSTR applicationGroupId =
-#ifdef __APPLE__
-        PAL_GetApplicationGroupId();
-#else
-        nullptr;
-#endif
+    LPCSTR applicationGroupId = PAL_GetApplicationGroupId();
     CreateSemaphoreName(startupSemName, RuntimeStartupSemaphoreName, unambiguousProcessDescriptor, applicationGroupId);
     CreateSemaphoreName(continueSemName, RuntimeContinueSemaphoreName, unambiguousProcessDescriptor, applicationGroupId);
 
@@ -2066,13 +1906,18 @@ exit:
     return launched;
 }
 
-#ifdef __APPLE__
 LPCSTR
 PALAPI
 PAL_GetApplicationGroupId()
 {
+#ifdef __APPLE__
     return gApplicationGroupId;
+#else
+    return nullptr;
+#endif
 }
+
+#ifdef __APPLE__
 
 // We use 7bits from each byte, so this computes the extra size we need to encode a given byte count
 constexpr int GetExtraEncodedAreaSize(UINT rawByteCount)

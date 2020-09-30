@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Diagnostics.Tracing
 {
@@ -76,7 +75,7 @@ namespace System.Diagnostics.Tracing
         // Get or set the per-thread activity ID.
         int IEventProvider.EventActivityIdControl(Interop.Advapi32.ActivityControl ControlCode, ref Guid ActivityId)
         {
-            return EventPipeInternal.EventActivityIdControl((uint)ControlCode, ref ActivityId);
+            return EventActivityIdControl(ControlCode, ref ActivityId);
         }
 
         // Define an EventPipeEvent handle.
@@ -85,6 +84,12 @@ namespace System.Diagnostics.Tracing
         {
             IntPtr eventHandlePtr = EventPipeInternal.DefineEvent(m_provHandle, eventID, keywords, eventVersion, level, pMetadata, metadataLength);
             return eventHandlePtr;
+        }
+
+        // Get or set the per-thread activity ID.
+        internal static int EventActivityIdControl(Interop.Advapi32.ActivityControl ControlCode, ref Guid ActivityId)
+        {
+            return EventPipeInternal.EventActivityIdControl((uint)ControlCode, ref ActivityId);
         }
     }
 }

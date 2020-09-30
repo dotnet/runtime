@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections;
@@ -224,7 +223,7 @@ namespace R2RTest
             string coreRoot = _options.CoreRootDirectory.FullName;
             string[] frameworkFolderFiles = Directory.GetFiles(coreRoot);
 
-            IEnumerable<CompilerRunner> frameworkRunners = _options.CompilerRunners(isFramework: true);
+            IEnumerable<CompilerRunner> frameworkRunners = _options.CompilerRunners(isFramework: true, overrideOutputPath: _options.OutputDirectory.FullName);
 
             // Pre-populate the output folders with the input files so that we have backdrops
             // for failing compilations.

@@ -1,15 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Runtime.Versioning;
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.Threading
 {
+    [UnsupportedOSPlatform("browser")]
     public sealed class RegisteredWaitHandle : MarshalByRefObject
     {
         internal RegisteredWaitHandle(WaitHandle waitHandle, _ThreadPoolWaitOrTimerCallback callbackHelper,
@@ -107,8 +108,12 @@ namespace System.Threading
         }
 
         [DynamicDependency("Callback")]
+        [DynamicDependency("PumpThreadPool")]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void QueueCallback();
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        private static extern void PumpThreadPool(); // NOTE: this method is called via reflection by test code
 
         private static void Callback()
         {

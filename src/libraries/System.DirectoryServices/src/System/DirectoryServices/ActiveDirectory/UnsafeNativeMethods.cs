@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 //
 //NOTE:
@@ -592,14 +591,14 @@ namespace System.DirectoryServices.ActiveDirectory
         public string DomainNameDns;
         [MarshalAs(UnmanagedType.LPWStr)]
         public string DomainForestName;
-        public Guid DomainGuid = default;
+        public Guid DomainGuid;
     }
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     internal sealed class SID_AND_ATTR
     {
         public IntPtr pSid = IntPtr.Zero;
-        public int attrs = 0;
+        public int attrs;
     }
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
@@ -611,12 +610,12 @@ namespace System.DirectoryServices.ActiveDirectory
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     internal sealed class SID_IDENTIFIER_AUTHORITY
     {
-        public byte b1 = 0;
-        public byte b2 = 0;
-        public byte b3 = 0;
-        public byte b4 = 0;
-        public byte b5 = 0;
-        public byte b6 = 0;
+        public byte b1;
+        public byte b2;
+        public byte b3;
+        public byte b4;
+        public byte b5;
+        public byte b6;
     }
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]

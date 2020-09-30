@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -1149,7 +1148,7 @@ inline GenTreeCall* Compiler::gtNewRuntimeLookupHelperCallNode(CORINFO_RUNTIME_L
                                                                GenTree*                ctxTree,
                                                                void*                   compileTimeHandle)
 {
-    GenTree* argNode = gtNewIconEmbHndNode(pRuntimeLookup->signature, nullptr, GTF_ICON_TOKEN_HDL, compileTimeHandle);
+    GenTree* argNode = gtNewIconEmbHndNode(pRuntimeLookup->signature, nullptr, GTF_ICON_GLOBAL_PTR, compileTimeHandle);
     GenTreeCall::Use* helperArgs = gtNewCallArgs(ctxTree, argNode);
 
     return gtNewHelperCallNode(pRuntimeLookup->helper, TYP_I_IMPL, helperArgs);
@@ -3170,6 +3169,7 @@ inline regMaskTP genIntAllRegArgMask(unsigned numRegs)
 
 inline regMaskTP genFltAllRegArgMask(unsigned numRegs)
 {
+#ifndef TARGET_X86
     assert(numRegs <= MAX_FLOAT_REG_ARG);
 
     regMaskTP result = RBM_NONE;
@@ -3178,6 +3178,10 @@ inline regMaskTP genFltAllRegArgMask(unsigned numRegs)
         result |= fltArgMasks[i];
     }
     return result;
+#else
+    assert(!"no x86 float arg regs\n");
+    return RBM_NONE;
+#endif
 }
 
 /*

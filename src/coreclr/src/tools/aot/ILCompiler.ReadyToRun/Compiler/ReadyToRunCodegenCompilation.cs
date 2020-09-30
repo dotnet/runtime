@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -13,6 +12,7 @@ using System.Threading.Tasks;
 using Internal.IL;
 using Internal.IL.Stubs;
 using Internal.JitInterface;
+using Internal.ReadyToRunConstants;
 using Internal.TypeSystem;
 
 using ILCompiler.DependencyAnalysis;
@@ -253,7 +253,8 @@ namespace ILCompiler
             ProfileDataManager profileData,
             ReadyToRunMethodLayoutAlgorithm methodLayoutAlgorithm,
             ReadyToRunFileLayoutAlgorithm fileLayoutAlgorithm,
-            int? customPESectionAlignment)
+            int? customPESectionAlignment,
+            bool verifyTypeAndFieldLayout)
             : base(
                   dependencyGraph,
                   nodeFactory,
@@ -268,7 +269,7 @@ namespace ILCompiler
             _parallelism = parallelism;
             _generateMapFile = generateMapFile;
             _customPESectionAlignment = customPESectionAlignment;
-            SymbolNodeFactory = new ReadyToRunSymbolNodeFactory(nodeFactory);
+            SymbolNodeFactory = new ReadyToRunSymbolNodeFactory(nodeFactory, verifyTypeAndFieldLayout);
             _corInfoImpls = new ConditionalWeakTable<Thread, CorInfoImpl>();
             _inputFiles = inputFiles;
             _compositeRootPath = compositeRootPath;
@@ -310,9 +311,9 @@ namespace ILCompiler
                     foreach (string inputFile in _inputFiles)
                     {
                         string relativeMsilPath = Path.GetRelativePath(_compositeRootPath, inputFile);
-                        if (relativeMsilPath.StartsWith(s_folderUpPrefix))
+                        if (relativeMsilPath == inputFile || relativeMsilPath.StartsWith(s_folderUpPrefix, StringComparison.Ordinal))
                         {
-                            // Input file not in the composite root, emit to root output folder
+                            // Input file not under the composite root, emit to root output folder
                             relativeMsilPath = Path.GetFileName(inputFile);
                         }
                         string standaloneMsilOutputFile = Path.Combine(outputDirectory, relativeMsilPath);
@@ -328,6 +329,15 @@ namespace ILCompiler
 
             Directory.CreateDirectory(Path.GetDirectoryName(outputFile));
 
+            ReadyToRunFlags flags =
+                ReadyToRunFlags.READYTORUN_FLAG_Component |
+                ReadyToRunFlags.READYTORUN_FLAG_NonSharedPInvokeStubs;
+
+            if (inputModule.IsPlatformNeutral)
+            {
+                flags |= ReadyToRunFlags.READYTORUN_FLAG_PlatformNeutralSource;
+            }
+
             CopiedCorHeaderNode copiedCorHeader = new CopiedCorHeaderNode(inputModule);
             DebugDirectoryNode debugDirectory = new DebugDirectoryNode(inputModule, outputFile);
             NodeFactory componentFactory = new NodeFactory(
@@ -337,8 +347,7 @@ namespace ILCompiler
                 copiedCorHeader,
                 debugDirectory,
                 win32Resources: new Win32Resources.ResourceData(inputModule),
-                Internal.ReadyToRunConstants.ReadyToRunFlags.READYTORUN_FLAG_Component |
-                Internal.ReadyToRunConstants.ReadyToRunFlags.READYTORUN_FLAG_NonSharedPInvokeStubs);
+                flags);
 
             IComparer<DependencyNodeCore<NodeFactory>> comparer = new SortableDependencyNode.ObjectNodeComparer(new CompilerComparer());
             DependencyAnalyzerBase<NodeFactory> componentGraph = new DependencyAnalyzer<NoLogStrategy<NodeFactory>, NodeFactory>(componentFactory, comparer);
@@ -458,11 +467,7 @@ namespace ILCompiler
         {
             using (PerfEventSource.StartStopEvents.JitEvents())
             {
-                ParallelOptions options = new ParallelOptions
-                {
-                    MaxDegreeOfParallelism = _parallelism
-                };
-                Parallel.ForEach(obj, options, dependency =>
+                Action<DependencyNodeCore<NodeFactory>> compileOneMethod = (DependencyNodeCore<NodeFactory> dependency) =>
                 {
                     MethodWithGCInfo methodCodeNodeNeedingCode = dependency as MethodWithGCInfo;
                     MethodDesc method = methodCodeNodeNeedingCode.Method;
@@ -477,6 +482,8 @@ namespace ILCompiler
                     {
                         using (PerfEventSource.StartStopEvents.JitMethodEvents())
                         {
+                            // Create only 1 CorInfoImpl per thread.
+                            // This allows SuperPMI to rely on non-reuse of handles in ObjectToHandle
                             CorInfoImpl corInfoImpl = _corInfoImpls.GetValue(Thread.CurrentThread, thread => new CorInfoImpl(this));
                             corInfoImpl.CompileMethod(methodCodeNodeNeedingCode);
                         }
@@ -484,17 +491,36 @@ namespace ILCompiler
                     catch (TypeSystemException ex)
                     {
                         // If compilation fails, don't emit code for this method. It will be Jitted at runtime
-                        Logger.Writer.WriteLine($"Warning: Method `{method}` was not compiled because: {ex.Message}");
+                        if (Logger.IsVerbose)
+                            Logger.Writer.WriteLine($"Warning: Method `{method}` was not compiled because: {ex.Message}");
                     }
                     catch (RequiresRuntimeJitException ex)
                     {
-                        Logger.Writer.WriteLine($"Info: Method `{method}` was not compiled because `{ex.Message}` requires runtime JIT");
+                        if (Logger.IsVerbose)
+                            Logger.Writer.WriteLine($"Info: Method `{method}` was not compiled because `{ex.Message}` requires runtime JIT");
                     }
                     catch (CodeGenerationFailedException ex) when (_resilient)
                     {
-                        Logger.Writer.WriteLine($"Warning: Method `{method}` was not compiled because `{ex.Message}` requires runtime JIT");
+                        if (Logger.IsVerbose)
+                            Logger.Writer.WriteLine($"Warning: Method `{method}` was not compiled because `{ex.Message}` requires runtime JIT");
                     }
-                });
+                };
+
+                // Use only main thread to compile if parallelism is 1. This allows SuperPMI to rely on non-reuse of handles in ObjectToHandle
+                if (_parallelism == 1)
+                {
+                    foreach (var dependency in obj)
+                        compileOneMethod(dependency);
+                }
+                else
+                {
+                    ParallelOptions options = new ParallelOptions
+                    {
+                        MaxDegreeOfParallelism = _parallelism
+                    };
+
+                    Parallel.ForEach(obj, options, compileOneMethod);
+                }
             }
 
             if (_methodILCache.Count > 1000)

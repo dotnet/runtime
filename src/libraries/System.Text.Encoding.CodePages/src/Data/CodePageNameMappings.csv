@@ -1,7 +1,7 @@
 ﻿#
 # This file contains data for mapping from IANA encoding names to their corresponding code page numbers
 #
-# This can be used as input to the EncodingData tool when generating EncodingTable.Data.cs
+# This can be used as input to the EncodingDataGenerator tool when generating EncodingTable.Data.cs
 #
 # Format:
 #   - Fields in a mapping entry are semi-colon separated
@@ -42,6 +42,7 @@ cp01149;1149
 cp037;37
 cp1025;21025
 cp1026;1026
+cp1252;1252
 cp1256;1256
 cp273;20273
 cp278;20278

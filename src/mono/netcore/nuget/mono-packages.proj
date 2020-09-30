@@ -1,0 +1,13 @@
+<Project>
+  <Import Sdk="Microsoft.Build.Traversal" Project="Sdk.props" />
+
+  <ItemGroup Condition="'$(TargetOS)' == 'Browser'">
+    <ProjectReference Include="Microsoft.NETCore.BrowserDebugHost.Transport\Microsoft.NETCore.BrowserDebugHost.Transport.pkgproj" />
+  </ItemGroup>
+
+  <Import Sdk="Microsoft.Build.Traversal" Project="Sdk.targets" />
+
+  <!-- Ordering matters! Overwriting the Pack target which should just invoke Build. -->
+  <Target Name="Pack" DependsOnTargets="Build">
+  </Target>
+</Project>

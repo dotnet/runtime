@@ -42,7 +42,7 @@ An object allocated on the pinned heap can be referenced by other objects normal
 
 ## API - allocating an array on the pinned heap
 
-For users who want to allocate their objects pinned, we provide [a new API](https://github.com/dotnet/corefx/issues/31787) to allocate such an object. The API declaration is the following:
+For users who want to allocate their objects pinned, we provide [a new API](https://github.com/dotnet/runtime/issues/27146) to allocate such an object. The API declaration is the following:
 
 ```csharp
 class GC
@@ -154,7 +154,7 @@ It might make sense to provide an additional API to allocate an array of these o
 
 **Alignment support**
 
-However, there is another scenario for high perf that could warrant a generational pinned heap which is objects with a specified alignment mostly [for SIMD operations](https://github.com/dotnet/corefx/issues/22790) or aligning on cache lines to avoid false sharing. This scenario doesn’t imply the object always needs to be pinned, however being pinned does mean they would be convenient for interop. For example, matrix multiplication with SIMD where the matrix is also used in native code. It also isn’t clear the object is necessarily long lived, however we do make the assumption that the amount of memory occupied by pinned objects should be small compared to non pinned objects so treating all of them as part of gen2 is acceptable. A different design option would be to allocate these on the normal heap but keep their alignment when compacting but this makes compaction slower.
+However, there is another scenario for high perf that could warrant a generational pinned heap which is objects with a specified alignment mostly [for SIMD operations](https://github.com/dotnet/runtime/issues/22990) or aligning on cache lines to avoid false sharing. This scenario doesn’t imply the object always needs to be pinned, however being pinned does mean they would be convenient for interop. For example, matrix multiplication with SIMD where the matrix is also used in native code. It also isn’t clear the object is necessarily long lived, however we do make the assumption that the amount of memory occupied by pinned objects should be small compared to non pinned objects so treating all of them as part of gen2 is acceptable. A different design option would be to allocate these on the normal heap but keep their alignment when compacting but this makes compaction slower.
 
 For alignment support, we can also limit it to a few specific alignments if it makes the implementation noticeably easier – 16, 32, 64, 128 bytes, and possibly page size (unclear if this is really needed).
 

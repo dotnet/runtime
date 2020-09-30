@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 
@@ -167,10 +166,21 @@ namespace Internal.TypeSystem
                 case TypeFlags.SzArray:
                     return ((ArrayType)thisType).CanCastArrayTo(otherType, protect);
 
+                case TypeFlags.ByRef:
+                case TypeFlags.Pointer:
+                    if (otherType.Category == thisType.Category)
+                    {
+                        return ((ParameterizedType)thisType).CanCastParamTo(((ParameterizedType)otherType).ParameterType, protect);
+                    }
+                    return false;
+
+                case TypeFlags.FunctionPointer:
+                    return false;
+
                 default:
                     Debug.Assert(thisType.IsDefType);
                     return thisType.CanCastToClassOrInterface(otherType, protect);
-            }            
+            }
         }
 
         private static bool CanCastGenericParameterTo(this GenericParameterDesc thisType, TypeDesc otherType, StackOverflowProtect protect)
@@ -350,7 +360,7 @@ namespace Internal.TypeSystem
         {
             if (!otherType.HasVariance)
             {
-                return thisType.CanCastToNonVariantInterface(otherType,protect);
+                return thisType.CanCastToNonVariantInterface(otherType, protect);
             }
             else
             {
@@ -416,7 +426,7 @@ namespace Internal.TypeSystem
             {
                 TypeDesc arg = instantiationThis[i];
                 TypeDesc targetArg = instantiationTarget[i];
-                
+
                 if (arg != targetArg)
                 {
                     GenericParameterDesc openArgType = (GenericParameterDesc)instantiationOpen[i];

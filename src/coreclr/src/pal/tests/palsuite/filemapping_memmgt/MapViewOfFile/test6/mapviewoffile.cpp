@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*=============================================================
 **
@@ -18,7 +17,7 @@
 **============================================================*/
 #include <palsuite.h>
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(filemapping_memmgt_MapViewOfFile_test6_paltest_mapviewoffile_test6, "filemapping_memmgt/MapViewOfFile/test6/paltest_mapviewoffile_test6")
 {
 
     const   int MAPPINGSIZE = 2048;

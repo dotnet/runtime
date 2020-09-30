@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Collections.Generic;
@@ -42,7 +41,7 @@ namespace System
             {
                 Debug.Assert(option == SpecialFolderOption.Create);
 
-                Func<string, object> createDirectory = LazyInitializer.EnsureInitialized(ref s_directoryCreateDirectory, () =>
+                Func<string, object> createDirectory = LazyInitializer.EnsureInitialized(ref s_directoryCreateDirectory, static () =>
                 {
                     Type dirType = Type.GetType("System.IO.Directory, System.IO.FileSystem, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", throwOnError: true)!;
                     MethodInfo mi = dirType.GetTypeInfo().GetDeclaredMethod("CreateDirectory")!;

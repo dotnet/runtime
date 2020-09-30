@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 using System.Threading;
@@ -29,7 +28,6 @@ namespace System.Net.Http
                 if (bytesRead == 0)
                 {
                     // We cannot reuse this connection, so close it.
-                    if (HttpTelemetry.IsEnabled) LogRequestStop();
                     _connection = null;
                     connection.Dispose();
                 }
@@ -82,7 +80,6 @@ namespace System.Net.Http
                     CancellationHelper.ThrowIfCancellationRequested(cancellationToken);
 
                     // We cannot reuse this connection, so close it.
-                    if (HttpTelemetry.IsEnabled) LogRequestStop();
                     _connection = null;
                     connection.Dispose();
                 }
@@ -106,7 +103,7 @@ namespace System.Net.Http
                     return Task.CompletedTask;
                 }
 
-                Task copyTask = connection.CopyToUntilEofAsync(destination, bufferSize, cancellationToken);
+                Task copyTask = connection.CopyToUntilEofAsync(destination, async: true, bufferSize, cancellationToken);
                 if (copyTask.IsCompletedSuccessfully)
                 {
                     Finish(connection);
@@ -144,7 +141,6 @@ namespace System.Net.Http
             private void Finish(HttpConnection connection)
             {
                 // We cannot reuse this connection, so close it.
-                if (HttpTelemetry.IsEnabled) LogRequestStop();
                 _connection = null;
                 connection.Dispose();
             }

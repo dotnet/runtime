@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Xunit;
 
@@ -8,6 +7,7 @@ namespace System.Security.Cryptography.Encryption.RC2.Tests
 {
     using RC2 = System.Security.Cryptography.RC2;
 
+    [SkipOnMono("Not supported on Browser", TestPlatforms.Browser)]
     public static partial class RC2Tests
     {
         [Fact]

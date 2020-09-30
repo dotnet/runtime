@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 
@@ -11,12 +10,12 @@ namespace Microsoft.NET.HostModel.AppHost
         // The Linux Headers are copied from elf.h
 
 #pragma warning disable 0649
-        struct ElfHeader
+        private struct ElfHeader
         {
-            byte EI_MAG0;
-            byte EI_MAG1;
-            byte EI_MAG2;
-            byte EI_MAG3;
+            private byte EI_MAG0;
+            private byte EI_MAG1;
+            private byte EI_MAG2;
+            private byte EI_MAG3;
 
             public bool IsValid()
             {
@@ -50,4 +49,3 @@ namespace Microsoft.NET.HostModel.AppHost
         }
     }
 }
-

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // File: MultiCoreJITImpl.h
 //
@@ -428,7 +427,7 @@ public:
 
     void RecordMethodJit(MethodDesc * pMethod, bool application);
 
-    PCODE RequestMethodCode(MethodDesc * pMethod, MulticoreJitManager * pManager);
+    MulticoreJitCodeInfo RequestMethodCode(MethodDesc * pMethod, MulticoreJitManager * pManager);
 
     HRESULT StartProfile(const WCHAR * pRoot, const WCHAR * pFileName, int suffix, LONG nSession);
 

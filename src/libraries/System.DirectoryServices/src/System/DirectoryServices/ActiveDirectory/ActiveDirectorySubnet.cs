@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.InteropServices;
 using System.Diagnostics;
@@ -9,13 +8,13 @@ namespace System.DirectoryServices.ActiveDirectory
 {
     public class ActiveDirectorySubnet : IDisposable
     {
-        private ActiveDirectorySite _site = null;
-        private readonly string _name = null;
-        internal readonly DirectoryContext context = null;
-        private bool _disposed = false;
+        private ActiveDirectorySite _site;
+        private readonly string _name;
+        internal readonly DirectoryContext context;
+        private bool _disposed;
 
-        internal bool existing = false;
-        internal DirectoryEntry cachedEntry = null;
+        internal bool existing;
+        internal DirectoryEntry cachedEntry;
 
         public static ActiveDirectorySubnet FindByName(DirectoryContext context, string subnetName)
         {

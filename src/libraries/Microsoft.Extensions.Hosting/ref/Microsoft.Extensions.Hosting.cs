@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ------------------------------------------------------------------------------
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
@@ -53,9 +52,7 @@ namespace Microsoft.Extensions.Hosting
 }
 namespace Microsoft.Extensions.Hosting.Internal
 {
-#pragma warning disable CS0618 // Type or member is obsolete
     public partial class ApplicationLifetime : Microsoft.Extensions.Hosting.IApplicationLifetime, Microsoft.Extensions.Hosting.IHostApplicationLifetime
-#pragma warning restore CS0618 // Type or member is obsolete
     {
         public ApplicationLifetime(Microsoft.Extensions.Logging.ILogger<Microsoft.Extensions.Hosting.Internal.ApplicationLifetime> logger) { }
         public System.Threading.CancellationToken ApplicationStarted { get { throw null; } }
@@ -73,9 +70,7 @@ namespace Microsoft.Extensions.Hosting.Internal
         public System.Threading.Tasks.Task StopAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
         public System.Threading.Tasks.Task WaitForStartAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
     }
-#pragma warning disable CS0618 // Type or member is obsolete
     public partial class HostingEnvironment : Microsoft.Extensions.Hosting.IHostEnvironment, Microsoft.Extensions.Hosting.IHostingEnvironment
-#pragma warning restore CS0618 // Type or member is obsolete
     {
         public HostingEnvironment() { }
         public string ApplicationName { get { throw null; } set { } }

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /************************************************************************/
 /*       Overall emitter control (including startup and shutdown)       */
@@ -33,7 +32,7 @@ unsigned emitEndCodeGen(Compiler* comp,
                         unsigned* epilogSize,
                         void**    codeAddr,
                         void**    coldCodeAddr,
-                        void**    consAddr);
+                        void** consAddr DEBUGARG(unsigned* instrCount));
 
 /************************************************************************/
 /*                      Method prolog and epilog                        */

@@ -1,5 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
-// See the LICENSE file in the project root for more information.
+// The .NET Foundation licenses this file to you under the MIT license.
 //
 // Copyright (C) 2004,2006-2008 Novell, Inc (http://www.novell.com)
 //
@@ -283,13 +283,18 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalTheory(Helpers.IsDrawingSupported)]
-        [InlineData(typeof(Icon), null)]
         [InlineData(typeof(Icon), "")]
         [InlineData(typeof(Icon), "48x48_multiple_entries_4bit.ico")]
         [InlineData(typeof(IconTests), "48x48_MULTIPLE_entries_4bit.ico")]
         public void Ctor_InvalidResource_ThrowsArgumentException(Type type, string resource)
         {
             AssertExtensions.Throws<ArgumentException>(null, () => new Icon(type, resource));
+        }
+
+        [ConditionalFact(Helpers.IsDrawingSupported)]
+        public void Ctor_InvalidResource_ThrowsArgumentNullException()
+        {
+            AssertExtensions.Throws<ArgumentNullException, ArgumentException>("resource", null, () => new Icon(typeof(Icon), null));
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
@@ -437,7 +442,7 @@ namespace System.Drawing.Tests
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void ExtractAssociatedIcon_InvalidFilePath_ThrowsArgumentException()
         {
-            AssertExtensions.Throws<ArgumentException>("path", null, () => Icon.ExtractAssociatedIcon(""));
+            AssertExtensions.Throws<ArgumentException>("filePath", null, () => Icon.ExtractAssociatedIcon(""));
         }
 
 
@@ -759,7 +764,7 @@ namespace System.Drawing.Tests
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void FromHandle_Zero_ThrowsArgumentException()
         {
-            AssertExtensions.Throws<ArgumentException>(null, () => Icon.FromHandle(IntPtr.Zero));
+            AssertExtensions.Throws<ArgumentException>("handle", null, () => Icon.FromHandle(IntPtr.Zero));
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]

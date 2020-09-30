@@ -17,8 +17,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ReferencePath Include="$(RuntimePath)System.*.dll;$(RuntimePath)Microsoft.Win32.*.dll;$(RuntimePath)netstandard.dll"
-                   Exclude="$(RuntimePath)$(MSBuildProjectName).dll" />
+    <ReferencePath Include="$(NetCoreAppCurrentRuntimePath)System.*.dll;
+                            $(NetCoreAppCurrentRuntimePath)Microsoft.Win32.*.dll;
+                            $(NetCoreAppCurrentRuntimePath)netstandard.dll"
+                   Exclude="$(NetCoreAppCurrentRuntimePath)$(MSBuildProjectName).dll" />
     <ProjectReference Include="$(CoreLibProject)" />
   </ItemGroup>
 </Project>

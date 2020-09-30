@@ -76,6 +76,8 @@ mono_class_get_flags (MonoClass *klass)
 		/* all arrays are marked serializable and sealed, bug #42779 */
 		return TYPE_ATTRIBUTE_CLASS | TYPE_ATTRIBUTE_SERIALIZABLE | TYPE_ATTRIBUTE_SEALED | TYPE_ATTRIBUTE_PUBLIC;
 	case MONO_CLASS_POINTER:
+		if (m_class_get_byval_arg (klass)->type == MONO_TYPE_FNPTR)
+			return TYPE_ATTRIBUTE_SEALED | TYPE_ATTRIBUTE_PUBLIC;
 		return TYPE_ATTRIBUTE_CLASS | (mono_class_get_flags (m_class_get_element_class (klass)) & TYPE_ATTRIBUTE_VISIBILITY_MASK);
 	}
 	g_assert_not_reached ();

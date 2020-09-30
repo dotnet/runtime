@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Globalization;
@@ -96,31 +95,31 @@ namespace System.Data
         private readonly char _exponentL = 'e';
         private readonly char _exponentU = 'E';
 
-        internal char[] _text;
-        internal int _pos = 0;
-        internal int _start = 0;
+        internal char[] _text = default!; // Always initialized in LoadExpression before use
+        internal int _pos;
+        internal int _start;
         internal Tokens _token;
         internal int _op = Operators.Noop;
 
         internal OperatorInfo[] _ops = new OperatorInfo[MaxPredicates];
-        internal int _topOperator = 0;
-        internal int _topNode = 0;
+        internal int _topOperator;
+        internal int _topNode;
 
-        private readonly DataTable _table;
+        private readonly DataTable? _table;
 
         private const int MaxPredicates = 100;
         internal ExpressionNode[] _nodeStack = new ExpressionNode[MaxPredicates];
 
         internal int _prevOperand;
 
-        internal ExpressionNode _expression = null;
+        internal ExpressionNode? _expression;
 
-        internal ExpressionParser(DataTable table)
+        internal ExpressionParser(DataTable? table)
         {
             _table = table;
         }
 
-        internal void LoadExpression(string data)
+        internal void LoadExpression(string? data)
         {
             int length;
 
@@ -206,8 +205,8 @@ namespace System.Data
                     case Tokens.Float:
                     case Tokens.StringConst:
                     case Tokens.Date:
-                        ExpressionNode node = null;
-                        string str = null;
+                        ExpressionNode? node = null;
+                        string? str = null;
 
                         /* Constants and identifiers: create leaf node */
 
@@ -234,7 +233,7 @@ namespace System.Data
                         switch (_token)
                         {
                             case Tokens.Parent:
-                                string relname;
+                                string? relname;
                                 string colname;
 
                                 // parsing Parent[(relation_name)].column_name)
@@ -346,7 +345,7 @@ namespace System.Data
 
                             BuildExpression(Operators.priProc);
                             _prevOperand = Empty;
-                            ExpressionNode nodebefore = NodePeek();
+                            ExpressionNode? nodebefore = NodePeek();
 
                             if (nodebefore == null || nodebefore.GetType() != typeof(NameNode))
                             {
@@ -414,7 +413,7 @@ namespace System.Data
                                     ExpressionNode argument = NodePop();
 
                                     /* Get the procedure name and append argument */
-                                    Debug.Assert(_topNode > 0 && NodePeek().GetType() == typeof(FunctionNode), "The function node should be created on '('");
+                                    Debug.Assert(_topNode > 0 && NodePeek()!.GetType() == typeof(FunctionNode), "The function node should be created on '('");
 
                                     FunctionNode func = (FunctionNode)NodePop();
                                     func.AddArgument(argument);
@@ -526,7 +525,7 @@ namespace System.Data
 
                     case Tokens.Dot:
                         //if there is a name on the stack append it.
-                        ExpressionNode before = NodePeek();
+                        ExpressionNode? before = NodePeek();
 
                         if (before != null && before.GetType() == typeof(NameNode))
                         {
@@ -564,7 +563,7 @@ namespace System.Data
             Debug.Assert(_token == Tokens.LeftParen, "ParseAggregateArgument(): Invalid argument, token <> '('");
 
             bool child;
-            string relname;
+            string? relname;
             string colname;
 
             Scan();
@@ -626,7 +625,7 @@ namespace System.Data
         /// <summary>
         ///     NodePeek - Peek at the top node.
         /// </summary>
-        private ExpressionNode NodePeek()
+        private ExpressionNode? NodePeek()
         {
             if (_topNode <= 0)
                 return null;
@@ -655,7 +654,7 @@ namespace System.Data
 
         private void BuildExpression(int pri)
         {
-            ExpressionNode expr = null;
+            ExpressionNode? expr = null;
 
             Debug.Assert(pri > Operators.priStart && pri <= Operators.priMax, "Invalid priority value");
 
@@ -672,7 +671,7 @@ namespace System.Data
                 Debug.Assert(opInfo._priority >= pri, "Invalid prioriry value");
                 _topOperator--;
 
-                ExpressionNode nodeLeft;
+                ExpressionNode? nodeLeft;
                 ExpressionNode nodeRight;
                 switch (opInfo._type)
                 {
@@ -1396,9 +1395,9 @@ namespace System.Data
     /// </summary>
     internal sealed class OperatorInfo
     {
-        internal Nodes _type = 0;
-        internal int _op = 0;
-        internal int _priority = 0;
+        internal Nodes _type;
+        internal int _op;
+        internal int _priority;
 
         internal OperatorInfo(Nodes type, int op, int pri)
         {

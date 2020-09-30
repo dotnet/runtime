@@ -179,6 +179,12 @@ if(CLR_CMAKE_HOST_WIN32 AND CLR_CMAKE_TARGET_UNIX)
     )
 endif(CLR_CMAKE_HOST_WIN32 AND CLR_CMAKE_TARGET_UNIX)
 
+if(CLR_CMAKE_HOST_OSX)
+    list(APPEND COREDAC_LIBRARIES
+        coreclrpal_dac
+    )
+endif(CLR_CMAKE_HOST_OSX)
+
 target_link_libraries(mscordaccore PRIVATE ${COREDAC_LIBRARIES})
 
 # Create the DAC module index header file containing the DAC build id
@@ -188,7 +194,7 @@ if(FEATURE_SINGLE_FILE_DIAGNOSTICS)
 endif(FEATURE_SINGLE_FILE_DIAGNOSTICS)
 
 # add the install targets
-install_clr(TARGETS mscordaccore ADDITIONAL_DESTINATION sharedFramework)
+install_clr(TARGETS mscordaccore ADDITIONAL_DESTINATIONS sharedFramework)
 
 if(CLR_CMAKE_HOST_WIN32)
     set(LONG_NAME_HOST_ARCH ${CLR_CMAKE_HOST_ARCH})

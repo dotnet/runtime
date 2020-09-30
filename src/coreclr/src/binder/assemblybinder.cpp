@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ============================================================
 //
 // AssemblyBinder.cpp
@@ -397,9 +396,9 @@ namespace BINDER_SPACE
         BundleFileLocation bundleFileLocation = Bundle::ProbeAppBundle(sCoreLibName, /*pathIsBundleRelative */ true);
         if (!bundleFileLocation.IsValid())
         {
-            sCoreLib.Set(systemDirectory);
             pathSource = BinderTracing::PathSource::ApplicationAssemblies;
         }
+        sCoreLib.Set(systemDirectory);
         CombinePath(sCoreLib, sCoreLibName, sCoreLib);
 
         IF_FAIL_GO(AssemblyBinder::GetAssembly(sCoreLib,
@@ -448,25 +447,25 @@ namespace BINDER_SPACE
         // Satellite assembly's path:
         //   * Absolute path when looking for a file on disk
         //   * Bundle-relative path when looking within the single-file bundle.
-        StackSString sMscorlibSatellite;
+        StackSString sCoreLibSatellite;
 
         BinderTracing::PathSource pathSource = BinderTracing::PathSource::Bundle;
         BundleFileLocation bundleFileLocation = Bundle::ProbeAppBundle(relativePath, /*pathIsBundleRelative */ true);
         if (!bundleFileLocation.IsValid())
         {
-            sMscorlibSatellite.Set(systemDirectory);
+            sCoreLibSatellite.Set(systemDirectory);
             pathSource = BinderTracing::PathSource::ApplicationAssemblies;
         }
-        CombinePath(sMscorlibSatellite, relativePath, sMscorlibSatellite);
+        CombinePath(sCoreLibSatellite, relativePath, sCoreLibSatellite);
 
         ReleaseHolder<Assembly> pSystemAssembly;
-        IF_FAIL_GO(AssemblyBinder::GetAssembly(sMscorlibSatellite,
+        IF_FAIL_GO(AssemblyBinder::GetAssembly(sCoreLibSatellite,
                                                TRUE /* fIsInGAC */,
                                                FALSE /* fExplicitBindToNativeImage */,
                                                &pSystemAssembly,
                                                NULL /* szMDAssemblyPath */,
                                                bundleFileLocation));
-        BinderTracing::PathProbed(sMscorlibSatellite, pathSource, hr);
+        BinderTracing::PathProbed(sCoreLibSatellite, pathSource, hr);
 
         *ppSystemAssembly = pSystemAssembly.Extract();
 

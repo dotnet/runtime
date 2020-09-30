@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*++
 
@@ -11,7 +10,7 @@ Module Name:
     unicode/utf8.c
 
 Abstract:
-    Functions to encode and decode UTF-8 strings. This is a port of the C# version from mscorlib.
+    Functions to encode and decode UTF-8 strings. This is a port of the C# version from Utf8Encoding.cs.
 
 Revision History:
 
@@ -52,7 +51,7 @@ struct Char
         return (c & 0xFC00) == CharUnicodeInfo::LOW_SURROGATE_START;
     }
 
-    // Test if the wide character is a low surrogate
+    // Test if the wide character is a surrogate half
     static bool IsSurrogate(const WCHAR c)
     {
         return (c & 0xF800) == CharUnicodeInfo::HIGH_SURROGATE_START;
@@ -70,7 +69,7 @@ struct Char
         return IsLowSurrogate(s[index]);
     }
 
-    // Test if the wide character is a low surrogate
+    // Test if the wide character is a surrogate half
     static bool IsSurrogate(const WCHAR* s, int index)
     {
         return IsSurrogate(s[index]);

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Threading;
 using System.Threading.Tasks;
@@ -177,7 +176,7 @@ namespace System.Threading.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(LockRecursionPolicy.NoRecursion)]
         [InlineData(LockRecursionPolicy.SupportsRecursion)]
         public static void InvalidExits(LockRecursionPolicy policy)
@@ -237,7 +236,7 @@ namespace System.Threading.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void WritersAreMutuallyExclusiveFromReaders()
         {
             using (Barrier barrier = new Barrier(2))
@@ -262,7 +261,7 @@ namespace System.Threading.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void WritersAreMutuallyExclusiveFromWriters()
         {
             using (Barrier barrier = new Barrier(2))
@@ -287,7 +286,7 @@ namespace System.Threading.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void ReadersMayBeConcurrent()
         {
             using (Barrier barrier = new Barrier(2))
@@ -321,7 +320,7 @@ namespace System.Threading.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void WriterToWriterChain()
         {
             using (AutoResetEvent are = new AutoResetEvent(false))
@@ -341,7 +340,7 @@ namespace System.Threading.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void WriterToReaderChain()
         {
             using (AutoResetEvent are = new AutoResetEvent(false))
@@ -361,7 +360,7 @@ namespace System.Threading.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void WriterToUpgradeableReaderChain()
         {
             using (AutoResetEvent are = new AutoResetEvent(false))

@@ -1905,7 +1905,7 @@ void mono_arch_code_chunk_destroy (void *chunk)
 }
 #endif /* MONO_ARCH_HAVE_UNWIND_TABLE */
 
-#if MONO_SUPPORT_TASKLETS && !defined(DISABLE_JIT)
+#if MONO_SUPPORT_TASKLETS && !defined(DISABLE_JIT) && !defined(ENABLE_NETCORE)
 MonoContinuationRestore
 mono_tasklets_arch_restore (void)
 {
@@ -1956,7 +1956,7 @@ mono_tasklets_arch_restore (void)
 	saved = start;
 	return (MonoContinuationRestore)saved;
 }
-#endif /* MONO_SUPPORT_TASKLETS && !defined(DISABLE_JIT) */
+#endif /* MONO_SUPPORT_TASKLETS && !defined(DISABLE_JIT) && !defined(ENABLE_NETCORE) */
 
 /*
  * mono_arch_setup_resume_sighandler_ctx:
@@ -1975,14 +1975,14 @@ mono_arch_setup_resume_sighandler_ctx (MonoContext *ctx, gpointer func)
 	MONO_CONTEXT_SET_IP (ctx, func);
 }
 
-#if !MONO_SUPPORT_TASKLETS || defined(DISABLE_JIT)
+#if (!MONO_SUPPORT_TASKLETS || defined(DISABLE_JIT)) && !defined(ENABLE_NETCORE)
 MonoContinuationRestore
 mono_tasklets_arch_restore (void)
 {
 	g_assert_not_reached ();
 	return NULL;
 }
-#endif /* !MONO_SUPPORT_TASKLETS || defined(DISABLE_JIT) */
+#endif /* (!MONO_SUPPORT_TASKLETS || defined(DISABLE_JIT)) && !defined(ENABLE_NETCORE) */
 
 void
 mono_arch_undo_ip_adjustment (MonoContext *ctx)

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #ifndef _NATIVEIMAGE_H
 #define _NATIVEIMAGE_H
@@ -119,7 +118,7 @@ public:
     PTR_Assembly *GetManifestMetadataAssemblyRefMap() { return m_pNativeMetadataAssemblyRefMap; }
     AssemblyLoadContext *GetAssemblyLoadContext() const { return m_pAssemblyLoadContext; }
 
-    Assembly *LoadManifestAssembly(uint32_t rowid);
+    Assembly *LoadManifestAssembly(uint32_t rowid, DomainAssembly *pParentAssembly);
     
     PTR_READYTORUN_CORE_HEADER GetComponentAssemblyHeader(LPCUTF8 assemblySimpleName);
     

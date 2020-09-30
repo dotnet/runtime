@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Reflection;
 using System.Runtime.Serialization;
@@ -167,7 +166,7 @@ namespace System
             return ret;
         }
 
-        /* Based on the Boyer–Moore string search algorithm */
+        /* Based on the Boyer-Moore string search algorithm */
         private int LastIndexOf(Delegate[] haystack, Delegate[] needle)
         {
             if (haystack.Length < needle.Length)

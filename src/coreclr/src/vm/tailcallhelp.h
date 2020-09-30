@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #ifndef TAILCALL_HELP_H
 #define TAILCALL_HELP_H
@@ -15,22 +14,21 @@ class TailCallHelp
 {
 public:
     static FCDECL2(void*, AllocTailCallArgBuffer, INT32, void*);
-    static FCDECL0(void,  FreeTailCallArgBuffer);
     static FCDECL2(void*, GetTailCallInfo, void**, void**);
 
     static void CreateTailCallHelperStubs(
         MethodDesc* pCallerMD, MethodDesc* pCalleeMD,
-        MetaSig& callSiteSig, bool virt, bool thisArgByRef,
+        MetaSig& callSiteSig, bool virt, bool thisArgByRef, bool hasInstArg,
         MethodDesc** storeArgsStub, bool* storeArgsNeedsTarget,
         MethodDesc** callTargetStub);
 
-    static MethodDesc* GetOrCreateTailCallDispatcherMD();
+    static MethodDesc* GetOrLoadTailCallDispatcherMD();
     static MethodDesc* GetTailCallDispatcherMD();
 private:
 
     static void LayOutArgBuffer(
         MetaSig& callSiteSig, MethodDesc* calleeMD,
-        bool storeTarget, bool thisArgByRef, ArgBufferLayout* layout);
+        bool storeTarget, bool thisArgByRef, bool hasInstArg, ArgBufferLayout* layout);
     static TypeHandle NormalizeSigType(TypeHandle tyHnd);
     static bool GenerateGCDescriptor(MethodDesc* pTargetMD, const ArgBufferLayout& values, GCRefMapBuilder* builder);
 

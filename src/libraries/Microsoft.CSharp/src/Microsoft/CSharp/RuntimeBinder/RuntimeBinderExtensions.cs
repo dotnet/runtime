@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -279,7 +278,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                     // See if MetadataToken property is available.
                     PropertyInfo property = memberInfo.GetProperty("MetadataToken", typeof(int), Array.Empty<Type>());
 
-                    if ((object)property != null && property.CanRead)
+                    if (property is not null && property.CanRead)
                     {
                         // (parameter1, parameter2) => parameter1.MetadataToken == parameter2.MetadataToken
                         var parameter1 = Expression.Parameter(memberInfo);

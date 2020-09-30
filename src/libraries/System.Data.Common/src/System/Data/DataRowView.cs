@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data
 {
@@ -28,7 +28,7 @@ namespace System.Data
         /// to understand if they need to add a <see cref="PropertyChanged"/> event handler.
         /// </remarks>
         /// <returns><see cref="object.ReferenceEquals"/></returns>
-        public override bool Equals(object other) => ReferenceEquals(this, other);
+        public override bool Equals(object? other) => ReferenceEquals(this, other);
 
         /// <returns>Hashcode of <see cref="Row"/></returns>
         public override int GetHashCode()
@@ -49,6 +49,7 @@ namespace System.Data
         /// <remarks>Uses either <see cref="DataRowVersion.Default"/> or <see cref="DataRowVersion.Original"/> to access <see cref="Row"/></remarks>
         /// <exception cref="DataException"><see cref="System.Data.DataView.get_AllowEdit"/> when setting a value.</exception>
         /// <exception cref="IndexOutOfRangeException"><see cref="DataColumnCollection.get_Item(int)"/></exception>
+        [AllowNull]
         public object this[int ndx]
         {
             get { return Row[ndx, RowVersionDefault]; }
@@ -58,7 +59,7 @@ namespace System.Data
                 {
                     throw ExceptionBuilder.CanNotEdit();
                 }
-                SetColumnValue(_dataView.Table.Columns[ndx], value);
+                SetColumnValue(_dataView.Table!.Columns[ndx], value);
             }
         }
 
@@ -68,11 +69,12 @@ namespace System.Data
         /// <exception cref="ArgumentException">Unmatched <paramref name="property"/> when getting a value.</exception>
         /// <exception cref="DataException">Unmatched <paramref name="property"/> when setting a value.</exception>
         /// <exception cref="DataException"><see cref="System.Data.DataView.get_AllowEdit"/> when setting a value.</exception>
+        [AllowNull]
         public object this[string property]
         {
             get
             {
-                DataColumn column = _dataView.Table.Columns[property];
+                DataColumn? column = _dataView.Table!.Columns[property];
                 if (null != column)
                 {
                     return Row[column, RowVersionDefault];
@@ -85,7 +87,7 @@ namespace System.Data
             }
             set
             {
-                DataColumn column = _dataView.Table.Columns[property];
+                DataColumn? column = _dataView.Table!.Columns[property];
                 if (null == column)
                 {
                     throw ExceptionBuilder.SetFailed(property);
@@ -98,10 +100,13 @@ namespace System.Data
             }
         }
 
+// TODO: Enable after System.ComponentModel.TypeConverter is annotated
+#nullable disable
         // IDataErrorInfo stuff
         string IDataErrorInfo.this[string colName] => Row.GetColumnError(colName);
 
         string IDataErrorInfo.Error => Row.RowError;
+#nullable enable
 
         /// <summary>
         /// Gets the current version description of the <see cref="DataRow"/>
@@ -119,7 +124,7 @@ namespace System.Data
 
         internal object GetColumnValue(DataColumn column) => Row[column, RowVersionDefault];
 
-        internal void SetColumnValue(DataColumn column, object value)
+        internal void SetColumnValue(DataColumn column, object? value)
         {
             if (_delayBeginEdit)
             {
@@ -173,7 +178,7 @@ namespace System.Data
         /// <param name="followParent">The parent object.</param>
         /// <exception cref="ArgumentException">Unmatched <paramref name="relationName"/>.</exception>
         public DataView CreateChildView(string relationName, bool followParent) =>
-            CreateChildView(DataView.Table.ChildRelations[relationName], followParent);
+            CreateChildView(DataView.Table!.ChildRelations[relationName]!, followParent);
 
         public DataView CreateChildView(string relationName) =>
             CreateChildView(relationName, followParent: false);
@@ -221,12 +226,13 @@ namespace System.Data
         // This is so a generic event handler like Windows Presentation Foundation can redirect as appropriate.
         // Having DataView.Equals is not sufficient for WPF, because two different instances may be equal but not equivalent.
         // For DataRowView, if two instances are equal then they are equivalent.
-        public event PropertyChangedEventHandler PropertyChanged;
+        public event PropertyChangedEventHandler? PropertyChanged;
 
         // Do not try catch, we would mask users bugs. if they throw we would catch
         internal void RaisePropertyChangedEvent(string propName) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propName));
 
         #region ICustomTypeDescriptor
+#nullable disable
         AttributeCollection ICustomTypeDescriptor.GetAttributes() => new AttributeCollection(null);
         string ICustomTypeDescriptor.GetClassName() => null;
         string ICustomTypeDescriptor.GetComponentName() => null;
@@ -240,6 +246,7 @@ namespace System.Data
         PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties(Attribute[] attributes) =>
             (_dataView.Table != null ? _dataView.Table.GetPropertyDescriptorCollection(attributes) : s_zeroPropertyDescriptorCollection);
         object ICustomTypeDescriptor.GetPropertyOwner(PropertyDescriptor pd) => this;
+#nullable enable
         #endregion
     }
 }

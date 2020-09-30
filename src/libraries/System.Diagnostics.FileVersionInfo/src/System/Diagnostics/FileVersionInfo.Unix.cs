@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.IO;
@@ -32,10 +31,6 @@ namespace System.Diagnostics
                 // we can add more cases here as we find need and opportunity.
             }
         }
-
-        // -----------------------------
-        // ---- PAL layer ends here ----
-        // -----------------------------
 
         /// <summary>Attempt to load our fields from the metadata of the file, if it's a managed assembly.</summary>
         /// <returns>true if the file is a managed assembly; otherwise, false.</returns>

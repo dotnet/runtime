@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Buffers.Binary;
@@ -112,7 +111,6 @@ namespace System.Net.Security
             None = 0,
             Http11 = 1,
             Http2 = 2,
-            Http3 = 4,
             Other = 128
         }
 
@@ -563,7 +561,6 @@ namespace System.Net.Security
             }
 
             // Following can underflow but it is ok due to equality check below
-            int hostNameStructLength = BinaryPrimitives.ReadUInt16BigEndian(serverName) - sizeof(NameType);
             NameType nameType = (NameType)serverName[NameTypeOffset];
             ReadOnlySpan<byte> hostNameStruct = serverName.Slice(HostNameStructOffset);
             if (nameType != NameType.HostName)
@@ -673,10 +670,6 @@ namespace System.Net.Security
                     if (protocol.SequenceEqual(SslApplicationProtocol.Http2.Protocol.Span))
                     {
                         alpn |= ApplicationProtocolInfo.Http2;
-                    }
-                    else if (protocol.SequenceEqual(SslApplicationProtocol.Http3.Protocol.Span))
-                    {
-                        alpn |= ApplicationProtocolInfo.Http3;
                     }
                     else
                     {

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using SerializationTypes;
 using System;
@@ -2560,7 +2559,7 @@ public static partial class DataContractJsonSerializerTests
         Assert.Equal(value, actual);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
     public static void DCJS_VerifyDateTimeForFormatStringDCJsonSerSettings()
     {
         var jsonTypes = new JsonTypes();
@@ -2620,7 +2619,7 @@ public static partial class DataContractJsonSerializerTests
         Assert.True(actual6 == dateTime);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
     public static void DCJS_VerifyDateTimeForDateTimeFormat()
     {
         var jsonTypes = new JsonTypes();

@@ -1,4 +1,5 @@
-﻿<root>
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
   <!-- 
     Microsoft ResX Schema 
     
@@ -1162,5 +1163,8 @@
   </data>
   <data name="MustBeGreaterThanZero" xml:space="preserve">
     <value>'{0}' must be greater than 0.</value>
+  </data>
+  <data name="ReadOnlyCollectionDeserialization" xml:space="preserve">
+    <value>Collection type '{0}' cannot be deserialized since it</value>
   </data>
 </root>

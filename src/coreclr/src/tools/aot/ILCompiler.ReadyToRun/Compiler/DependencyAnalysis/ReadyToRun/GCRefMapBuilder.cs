@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -80,6 +79,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
             CallingConventions callingConventions = (hasThis ? CallingConventions.ManagedInstance : CallingConventions.ManagedStatic);
             bool hasParamType = method.RequiresInstArg() && !isUnboxingStub;
+
+            // On X86 the Array address method doesn't use IL stubs, and instead has a custom calling convention
+            if ((method.Context.Target.Architecture == TargetArchitecture.X86) &&
+                (method.IsArrayAddressMethod()) &&
+                method.OwningType.ConvertToCanonForm(CanonicalFormKind.Specific).IsCanonicalSubtype(CanonicalFormKind.Any))
+            {
+                hasParamType = true;
+            }
+
             bool extraFunctionPointerArg = false;
             bool[] forcedByRefParams = new bool[parameterTypes.Length];
             bool skipFirstArg = false;

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // Implementation of _CONTEXT_CaptureContext for the ARM platform.
 // This function is processor dependent.  It is used by exception handling,
@@ -14,7 +13,9 @@
 //  x0: Context*
 //
 LEAF_ENTRY CONTEXT_CaptureContext, _TEXT
-    sub sp, sp, #32
+    PROLOG_STACK_ALLOC 32
+    .cfi_adjust_cfa_offset 32
+
     // save x1, x2 and x3 on stack so we can use them as scratch
     stp x1, x2, [sp]
     str x3, [sp, 16]
@@ -104,7 +105,7 @@ LOCAL_LABEL(Done_CONTEXT_INTEGER):
 
 LOCAL_LABEL(Done_CONTEXT_FLOATING_POINT):
 
-    add sp, sp, #32
+    EPILOG_STACK_FREE 32
     ret
 LEAF_END CONTEXT_CaptureContext, _TEXT
 
@@ -112,7 +113,8 @@ LEAF_END CONTEXT_CaptureContext, _TEXT
 //  x0: Context*
 
 LEAF_ENTRY RtlCaptureContext, _TEXT
-    sub sp, sp, #16
+    PROLOG_STACK_ALLOC 16
+    .cfi_adjust_cfa_offset 16
     str x1, [sp]
     // same as above, clang doesn't like mov with #imm32
     // keep this in sync if CONTEXT_FULL changes
@@ -123,7 +125,7 @@ LEAF_ENTRY RtlCaptureContext, _TEXT
     orr w1, w1, #0x8
     str w1, [x0, CONTEXT_ContextFlags]
     ldr x1, [sp]
-    add sp, sp, #16
+    EPILOG_STACK_FREE 16
     b C_FUNC(CONTEXT_CaptureContext)
 LEAF_END RtlCaptureContext, _TEXT
 

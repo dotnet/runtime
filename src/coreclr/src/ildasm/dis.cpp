@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 //
 // Disassembler
@@ -2684,7 +2683,7 @@ bool IsLocalToQuote(const char *name)
     // No such thing as an empty name that doesn't require quoting (handled in IsNameToQuote)
     _ASSERTE(*name);
     // return true if there's a '.' anywhere in the name, after position 1
-    return !!strchr(name + 1, '.');
+    return strchr(name + 1, '.') != 0;
 }
 
 /********************************************************************/

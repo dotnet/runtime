@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -1765,6 +1764,10 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     info.compPerfScore = 0.0;
 #endif // defined(DEBUG) || defined(LATE_DISASM)
 
+#if defined(DEBUG) || defined(INLINE_DATA)
+    info.compMethodHashPrivate = 0;
+#endif // defined(DEBUG) || defined(INLINE_DATA)
+
 #ifdef DEBUG
     // Opt-in to jit stress based on method hash ranges.
     //
@@ -2482,7 +2485,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     {
         // The following flags are lost when inlining. (They are removed in
         // Compiler::fgInvokeInlineeCompiler().)
-        assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT));
         assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR));
         assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_PROF_ENTERLEAVE));
         assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_DEBUG_EnC));
@@ -2737,6 +2739,49 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.compFastTailCalls = true;
 #endif // FEATURE_FASTTAILCALL
 
+    // Profile data
+    //
+    fgBlockCounts                = nullptr;
+    fgProfileData_ILSizeMismatch = false;
+    fgNumProfileRuns             = 0;
+    if (jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT))
+    {
+        HRESULT hr;
+        hr = info.compCompHnd->getMethodBlockCounts(info.compMethodHnd, &fgBlockCountsCount, &fgBlockCounts,
+                                                    &fgNumProfileRuns);
+
+        JITDUMP("BBOPT set -- VM query for profile data for %s returned: hr=%0x; counts at %p, %d blocks, %d runs\n",
+                info.compFullName, hr, fgBlockCounts, fgBlockCountsCount, fgNumProfileRuns);
+
+        // a failed result that also has a non-NULL fgBlockCounts
+        // indicates that the ILSize for the method no longer matches
+        // the ILSize for the method when profile data was collected.
+        //
+        // We will discard the IBC data in this case
+        //
+        if (FAILED(hr) && (fgBlockCounts != nullptr))
+        {
+            fgProfileData_ILSizeMismatch = true;
+            fgBlockCounts                = nullptr;
+        }
+#ifdef DEBUG
+        // A successful result implies a non-NULL fgBlockCounts
+        //
+        if (SUCCEEDED(hr))
+        {
+            assert(fgBlockCounts != nullptr);
+        }
+
+        // A failed result implies a NULL fgBlockCounts
+        //   see implementation of Compiler::fgHaveProfileData()
+        //
+        if (FAILED(hr))
+        {
+            assert(fgBlockCounts == nullptr);
+        }
+#endif
+    }
+
     if (compIsForInlining())
     {
         return;
@@ -2899,6 +2944,10 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
                     opts.dspDebugInfo = true;
                 }
             }
+        }
+        if (opts.disAsm && JitConfig.JitDisasmWithGC())
+        {
+            opts.disasmWithGC = true;
         }
 
 #ifdef LATE_DISASM
@@ -3144,45 +3193,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 #endif
     }
 
-    fgBlockCounts                = nullptr;
-    fgProfileData_ILSizeMismatch = false;
-    fgNumProfileRuns             = 0;
-    if (jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT))
-    {
-        assert(!compIsForInlining());
-        HRESULT hr;
-        hr = info.compCompHnd->getMethodBlockCounts(info.compMethodHnd, &fgBlockCountsCount, &fgBlockCounts,
-                                                    &fgNumProfileRuns);
-
-        // a failed result that also has a non-NULL fgBlockCounts
-        // indicates that the ILSize for the method no longer matches
-        // the ILSize for the method when profile data was collected.
-        //
-        // We will discard the IBC data in this case
-        //
-        if (FAILED(hr) && (fgBlockCounts != nullptr))
-        {
-            fgProfileData_ILSizeMismatch = true;
-            fgBlockCounts                = nullptr;
-        }
-#ifdef DEBUG
-        // A successful result implies a non-NULL fgBlockCounts
-        //
-        if (SUCCEEDED(hr))
-        {
-            assert(fgBlockCounts != nullptr);
-        }
-
-        // A failed result implies a NULL fgBlockCounts
-        //   see implementation of Compiler::fgHaveProfileData()
-        //
-        if (FAILED(hr))
-        {
-            assert(fgBlockCounts == nullptr);
-        }
-#endif
-    }
-
 #ifdef DEBUG
     // Now, set compMaxUncheckedOffsetForNullObject for STRESS_NULL_OBJECT_CHECK
     if (compStressCompile(STRESS_NULL_OBJECT_CHECK, 30))
@@ -3250,18 +3260,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         }
     }
 #endif
-
-    opts.compGCPollType = GCPOLL_NONE;
-    if (jitFlags->IsSet(JitFlags::JIT_FLAG_GCPOLL_CALLS))
-    {
-        opts.compGCPollType = GCPOLL_CALL;
-    }
-    else if (jitFlags->IsSet(JitFlags::JIT_FLAG_GCPOLL_INLINE))
-    {
-        // make sure that the EE didn't set both flags.
-        assert(opts.compGCPollType == GCPOLL_NONE);
-        opts.compGCPollType = GCPOLL_INLINE;
-    }
 
 #ifdef PROFILING_SUPPORTED
 #ifdef UNIX_AMD64_ABI
@@ -3414,7 +3412,7 @@ bool Compiler::compStressCompileHelper(compStressArea stressArea, unsigned weigh
         }
 
         // This stress mode name did not match anything in the stress
-        // mode whitelist. If user has requested only enable mode,
+        // mode allowlist. If user has requested only enable mode,
         // don't allow this stress mode to turn on.
         const bool onlyEnableMode = JitConfig.JitStressModeNamesOnly() != 0;
 
@@ -4221,7 +4219,7 @@ void Compiler::EndPhase(Phases phase)
 //  code:CILJit::compileMethod function.
 //
 //  For an overview of the structure of the JIT, see:
-//   https://github.com/dotnet/runtime/blob/master/docs/design/coreclr/botr/ryujit-overview.md
+//   https://github.com/dotnet/runtime/blob/master/docs/design/coreclr/jit/ryujit-overview.md
 //
 //  Also called for inlinees, though they will only be run through the first few phases.
 //
@@ -4364,7 +4362,7 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
 
         // Insert call to class constructor as the first basic block if
         // we were asked to do so.
-        if (info.compCompHnd->initClass(nullptr /* field */, info.compMethodHnd /* method */,
+        if (info.compCompHnd->initClass(nullptr /* field */, nullptr /* method */,
                                         impTokenLookupContextHandle /* context */) &
             CORINFO_INITCLASS_USE_HELPER)
         {
@@ -4531,7 +4529,11 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
 
     // Compute bbNum, bbRefs and bbPreds
     //
-    // This is the first time full (not cheap) preds will be computed
+    // This is the first time full (not cheap) preds will be computed.
+    // And, if we have profile data, we can now check integrity.
+    //
+    // From this point on the flowgraph information such as bbNum,
+    // bbRefs or bbPreds has to be kept updated.
     //
     auto computePredsPhase = [this]() {
         JITDUMP("\nRenumbering the basic blocks for fgComputePred\n");
@@ -4558,9 +4560,6 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
         DoPhase(this, PHASE_EARLY_UPDATE_FLOW_GRAPH, earlyUpdateFlowGraphPhase);
     }
 
-    // From this point on the flowgraph information such as bbNum,
-    // bbRefs or bbPreds has to be kept updated
-    //
     // Promote struct locals
     //
     auto promoteStructsPhase = [this]() {
@@ -4638,18 +4637,6 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
         }
     };
     DoPhase(this, PHASE_GS_COOKIE, gsPhase);
-
-    // If we need to emit GC Poll calls, mark the blocks that need them now.
-    // This is conservative and can be optimized later.
-    //
-    // GC Poll marking assumes block bbnums match lexical block order,
-    // so make sure this is the case.
-    //
-    auto gcPollPhase = [this]() {
-        fgRenumberBlocks();
-        fgMarkGCPollBlocks();
-    };
-    DoPhase(this, PHASE_MARK_GC_POLL_BLOCKS, gcPollPhase);
 
     // Compute the block and edge weights
     //
@@ -4757,8 +4744,6 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
                 DoPhase(this, PHASE_BUILD_SSA, &Compiler::fgSsaBuild);
             }
 
-            DoPhase(this, PHASE_ZERO_INITS, &Compiler::optRemoveRedundantZeroInits);
-
             if (doEarlyProp)
             {
                 // Propagate array length and rewrite getType() method call
@@ -4843,6 +4828,9 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
     //  Check if we need to add the Quirk for the PPP backward compat issue
     compQuirkForPPPflag = compQuirkForPPP();
 #endif
+
+    // Insert GC Polls
+    DoPhase(this, PHASE_INSERT_GC_POLLS, &Compiler::fgInsertGCPolls);
 
     // Determine start of cold region if we are hot/cold splitting
     //
@@ -4945,6 +4933,8 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
     {
 #if MEASURE_CLRAPI_CALLS
         EndPhase(PHASE_CLR_API);
+#else
+        EndPhase(PHASE_POST_EMIT);
 #endif
         pCompJitTimer->Terminate(this, CompTimeSummaryInfo::s_compTimeSummary, true);
     }
@@ -5287,10 +5277,6 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
     verbose = compIsForInlining() ? impInlineInfo->InlinerCompiler->verbose : false;
 #endif
 
-#if defined(DEBUG) || defined(INLINE_DATA)
-    info.compMethodHashPrivate = 0;
-#endif // defined(DEBUG) || defined(INLINE_DATA)
-
 #if FUNC_INFO_LOGGING
     LPCWSTR tmpJitFuncInfoFilename = JitConfig.JitFuncInfoFile();
 
@@ -5304,9 +5290,9 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
             compJitFuncInfoFile = _wfopen(compJitFuncInfoFilename, W("a"));
             if (compJitFuncInfoFile == nullptr)
             {
-#if defined(DEBUG) && !defined(TARGET_UNIX) // no 'perror' in the PAL
+#if defined(DEBUG) && !defined(HOST_UNIX) // no 'perror' in the PAL
                 perror("Failed to open JitFuncInfoLogFile");
-#endif // defined(DEBUG) && !defined(TARGET_UNIX)
+#endif // defined(DEBUG) && !defined(HOST_UNIX)
             }
         }
     }
@@ -5392,7 +5378,7 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
     }
     else
     {
-        impTokenLookupContextHandle = MAKE_METHODCONTEXT(info.compMethodHnd);
+        impTokenLookupContextHandle = METHOD_BEING_COMPILED_CONTEXT();
 
         info.compClassHnd  = info.compCompHnd->getMethodClass(info.compMethodHnd);
         info.compClassAttr = info.compCompHnd->getClassAttribs(info.compClassHnd);
@@ -8885,14 +8871,14 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                         chars += printf("[ICON_STR_HDL]");
                         break;
 
-                    case GTF_ICON_PSTR_HDL:
+                    case GTF_ICON_CONST_PTR:
 
-                        chars += printf("[ICON_PSTR_HDL]");
+                        chars += printf("[ICON_CONST_PTR]");
                         break;
 
-                    case GTF_ICON_PTR_HDL:
+                    case GTF_ICON_GLOBAL_PTR:
 
-                        chars += printf("[ICON_PTR_HDL]");
+                        chars += printf("[ICON_GLOBAL_PTR]");
                         break;
 
                     case GTF_ICON_VARG_HDL:
@@ -9284,4 +9270,25 @@ bool Compiler::lvaIsOSRLocal(unsigned varNum)
     }
 
     return false;
+}
+
+//------------------------------------------------------------------------------
+// gtChangeOperToNullCheck: helper to change tree oper to a NULLCHECK.
+//
+// Arguments:
+//    tree       - the node to change;
+//    basicBlock - basic block of the node.
+//
+// Notes:
+//    the function should not be called after lowering for platforms that do not support
+//    emitting NULLCHECK nodes, like arm32. Use `Lowering::TransformUnusedIndirection`
+//    that handles it and calls this function when appropriate.
+//
+void Compiler::gtChangeOperToNullCheck(GenTree* tree, BasicBlock* block)
+{
+    assert(tree->OperIs(GT_FIELD, GT_IND, GT_OBJ, GT_BLK, GT_DYN_BLK));
+    tree->ChangeOper(GT_NULLCHECK);
+    tree->ChangeType(TYP_INT);
+    block->bbFlags |= BBF_HAS_NULLCHECK;
+    optMethodFlags |= OMF_HAS_NULLCHECK;
 }

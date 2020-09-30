@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Linq;
@@ -42,7 +41,7 @@ namespace System.IO.FileSystem.DriveInfoTests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Browser)]
         public void PropertiesOfInvalidDrive()
         {
             string invalidDriveName = "NonExistentDriveName";
@@ -65,16 +64,26 @@ namespace System.IO.FileSystem.DriveInfoTests
         public void PropertiesOfValidDrive()
         {
             var root = new DriveInfo("/");
-            Assert.True(root.AvailableFreeSpace > 0);
             var format = root.DriveFormat;
-            Assert.Equal(DriveType.Fixed, root.DriveType);
+            Assert.Equal(PlatformDetection.IsBrowser ? DriveType.Unknown : DriveType.Fixed, root.DriveType);
             Assert.True(root.IsReady);
             Assert.Equal("/", root.Name);
             Assert.Equal("/", root.ToString());
             Assert.Equal("/", root.RootDirectory.FullName);
-            Assert.True(root.TotalFreeSpace > 0);
-            Assert.True(root.TotalSize > 0);
             Assert.Equal("/", root.VolumeLabel);
+
+            if (PlatformDetection.IsBrowser)
+            {
+                Assert.True(root.AvailableFreeSpace == 0);
+                Assert.True(root.TotalFreeSpace == 0);
+                Assert.True(root.TotalSize == 0);
+            }
+            else
+            {
+                Assert.True(root.AvailableFreeSpace > 0);
+                Assert.True(root.TotalFreeSpace > 0);
+                Assert.True(root.TotalSize > 0);
+            }
         }
 
         [Fact]

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -251,6 +250,36 @@ namespace System.Net.Sockets.Tests
             listener.Stop();
 
             Assert.True(listener.ExclusiveAddressUse);
+        }
+
+        [Fact]
+        public void EndAcceptSocket_WhenStopped_ThrowsObjectDisposedException()
+        {
+            var listener = new TcpListener(IPAddress.Loopback, 0);
+            listener.Start();
+
+            IAsyncResult iar = listener.BeginAcceptSocket(callback: null, state: null);
+
+            // Give some time for the underlying OS operation to start:
+            Thread.Sleep(50);
+            listener.Stop();
+
+            Assert.Throws<ObjectDisposedException>(() => listener.EndAcceptSocket(iar));
+        }
+
+        [Fact]
+        public void EndAcceptTcpClient_WhenStopped_ThrowsObjectDisposedException()
+        {
+            var listener = new TcpListener(IPAddress.Loopback, 0);
+            listener.Start();
+
+            IAsyncResult iar = listener.BeginAcceptTcpClient(callback: null, state: null);
+
+            // Give some time for the underlying OS operation to start:
+            Thread.Sleep(50);
+            listener.Stop();
+
+            Assert.Throws<ObjectDisposedException>(() => listener.EndAcceptTcpClient(iar));
         }
 
         private sealed class DerivedTcpListener : TcpListener

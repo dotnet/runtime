@@ -33,7 +33,7 @@ else
 fi
 
 case "$CPUName" in
-    aarch64)
+    arm64|aarch64)
         arch=arm64
         ;;
 

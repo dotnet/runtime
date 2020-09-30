@@ -85,6 +85,7 @@
 #include <mono/utils/mono-io-portability.h>
 #include <mono/utils/w32api.h>
 #include <mono/utils/mono-errno.h>
+#include <mono/utils/mono-once.h>
 #include <mono/utils/mono-error-internals.h>
 #include <mono/utils/mono-threads-coop.h>
 #include "object-internals.h"
@@ -594,6 +595,8 @@ process_set_name (MonoW32HandleProcess *process_handle)
 	}
 }
 
+static mono_once_t init_state = MONO_ONCE_INIT;
+
 void
 mono_w32process_init (void)
 {
@@ -615,6 +618,7 @@ mono_w32process_init (void)
 	g_assert (current_process != INVALID_HANDLE_VALUE);
 
 	mono_coop_mutex_init (&processes_mutex);
+	mono_once (&init_state, &mono_w32process_platform_init_once);
 }
 
 void

@@ -8,6 +8,8 @@
 #include "mini.h"
 #include <mono/metadata/seq-points-data.h>
 #include <mono/mini/debugger-state-machine.h>
+#include <mono/metadata/mono-debug.h>
+#include <mono/mini/interp/interp-internals.h>
 
 /*
 FIXME:
@@ -206,6 +208,34 @@ typedef struct {
 	MonoGCHandle handle;
 } ObjRef;
 
+typedef struct
+{
+	//Must be the first field to ensure pointer equivalence
+	DbgEngineStackFrame de;
+	int id;
+	guint32 il_offset;
+	/*
+	 * If method is gshared, this is the actual instance, otherwise this is equal to
+	 * method.
+	 */
+	MonoMethod *actual_method;
+	/*
+	 * This is the method which is visible to debugger clients. Same as method,
+	 * except for native-to-managed wrappers.
+	 */
+	MonoMethod *api_method;
+	MonoContext ctx;
+	MonoDebugMethodJitInfo *jit;
+	MonoInterpFrameHandle interp_frame;
+	gpointer frame_addr;
+	int flags;
+	host_mgreg_t *reg_locations [MONO_MAX_IREGS];
+	/*
+	 * Whenever ctx is set. This is FALSE for the last frame of running threads, since
+	 * the frame can become invalid.
+	 */
+	gboolean has_ctx;
+} StackFrame;
 
 void mono_debugger_free_objref (gpointer value);
 
@@ -287,4 +317,11 @@ DbgEngineErrorCode mono_de_ss_create (MonoInternalThread *thread, StepSize size,
 void mono_de_cancel_ss (SingleStepReq *req);
 void mono_de_cancel_all_ss (void);
 
+gboolean set_set_notification_for_wait_completion_flag (DbgEngineStackFrame *frame);
+MonoClass * get_class_to_get_builder_field(DbgEngineStackFrame *frame);
+gpointer get_this_addr (DbgEngineStackFrame *the_frame);
+gpointer get_async_method_builder (DbgEngineStackFrame *frame);
+MonoMethod* get_set_notification_method (MonoClass* async_builder_class);
+MonoMethod* get_notify_debugger_of_wait_completion_method (void);
+MonoMethod* get_object_id_for_debugger_method (MonoClass* async_builder_class);
 #endif

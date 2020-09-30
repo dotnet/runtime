@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Diagnostics;
@@ -237,7 +236,7 @@ namespace System.IO.Pipelines
 
             if (!_leaveOpen)
             {
-#if !NETSTANDARD2_0
+#if (!NETSTANDARD2_0 && !NETFRAMEWORK)
                 await InnerStream.DisposeAsync().ConfigureAwait(false);
 #else
                 InnerStream.Dispose();
@@ -356,7 +355,7 @@ namespace System.IO.Pipelines
 
                 if (returnSegment.Length > 0 && writeToStream)
                 {
-#if !NETSTANDARD2_0
+#if (!NETSTANDARD2_0 && !NETFRAMEWORK)
                     InnerStream.Write(returnSegment.Memory.Span);
 #else
                     InnerStream.Write(returnSegment.Memory);

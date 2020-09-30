@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.IO;
@@ -18,8 +17,8 @@ namespace System.Net.Mime
     internal class MimePart : MimeBasePart, IDisposable
     {
         private Stream? _stream;
-        private bool _streamSet = false;
-        private bool _streamUsedOnce = false;
+        private bool _streamSet;
+        private bool _streamUsedOnce;
         private AsyncCallback? _readCallback;
         private AsyncCallback? _writeCallback;
         private const int maxBufferSize = 0x4400;  //seems optimal for send based on perf analysis

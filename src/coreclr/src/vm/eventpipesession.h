@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #ifndef __EVENTPIPE_SESSION_H__
 #define __EVENTPIPE_SESSION_H__
@@ -9,12 +8,11 @@
 
 #include "common.h"
 #include "threadsuspend.h"
+#include "eventpipesessionprovider.h"
 
 class EventPipeBufferManager;
 class EventPipeEventInstance;
 class EventPipeFile;
-class EventPipeSessionProvider;
-class EventPipeSessionProviderList;
 class EventPipeThread;
 
 // TODO: Revisit the need of this enum and its usage.
@@ -22,7 +20,8 @@ enum class EventPipeSessionType
 {
     File,
     Listener,
-    IpcStream
+    IpcStream,
+    Synchronous
 };
 
 enum class EventPipeSerializationFormat
@@ -68,6 +67,9 @@ private:
     // For determininig if a particular session needs rundown events
     const bool m_rundownRequested;
 
+    // For synchronous sessions
+    EventPipeSessionSynchronousCallback m_synchronousCallback;
+
     // Start date and time in UTC.
     FILETIME m_sessionStartTime;
 
@@ -94,6 +96,20 @@ private:
 
     void DisableIpcStreamingThread();
 
+    // Note - access to this field is NOT synchronized
+    //
+    // This field is currently modified in EventPipe::EnableViaEnvironmentVariables() during process startup
+    // and GCToEEInterface::AnalyzeSurvivorsFinished() while the GC has already synchronized all the threads.
+    // 
+    // It is read in EventPipeSession::WriteEvent(). While it is possible for other preemptive threads to read
+    // the field while GC is happening, it should not happen because the only gcGenAwareSession only subscribe
+    // to GC events.
+    // 
+    // This functionality is a workaround because we couldn't safely Enable()/Disable() the session where we wanted to due to lock-leveling.
+    // we expect to remove it in the future once that limitation is resolved
+    // other scenarios are discouraged from using this given that we plan to make it go away
+    bool m_paused;
+
 public:
     EventPipeSession(
         uint32_t index,
@@ -105,8 +121,27 @@ public:
         uint32_t circularBufferSizeInMB,
         const EventPipeProviderConfiguration *pProviders,
         uint32_t numProviders,
-        bool rundownEnabled = false);
+        EventPipeSessionSynchronousCallback callback = nullptr);
+
     ~EventPipeSession();
+
+    /**
+     * Please do not use this function, see EventPipeSession::m_paused for more information
+     */
+    void Pause();
+
+    /**
+     * Please do not use this function, see EventPipeSession::m_paused for more information
+     */
+    void Resume();
+
+    /**
+     * Please do not use this function, see EventPipeSession::m_paused for more information
+     */
+    bool Paused()
+    {
+        return this->m_paused;
+    }
 
     uint64_t GetMask() const
     {
@@ -182,6 +217,12 @@ public:
         return m_pIpcStreamingThread;
     }
 
+    EventPipeSessionProviderIterator GetProviders()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_pProviderList->GetProviders();
+    }
+
     // Add a new provider to the session.
     void AddSessionProvider(EventPipeSessionProvider *pProvider);
 
@@ -190,7 +231,11 @@ public:
 
     bool WriteAllBuffersToFile(bool *pEventsWritten);
 
-    bool WriteEventBuffered(
+    // If a session is non-synchronous (i.e. a file, pipe, etc) WriteEvent will
+    // put the event in a buffer and return as quick as possible. If a session is
+    // synchronous (callback to the profiler) then this method will block until the
+    // profiler is done parsing and reacting to it.
+    bool WriteEvent(
         Thread *pThread,
         EventPipeEvent &event,
         EventPipeEventPayload &payload,

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -71,7 +70,7 @@ namespace R2RDump
         /// <param name="parentFile">Name of assembly from which we're performing the lookup</param>
         /// <returns></returns>
 
-        public MetadataReader FindAssembly(MetadataReader metadataReader, AssemblyReferenceHandle assemblyReferenceHandle, string parentFile)
+        public IAssemblyMetadata FindAssembly(MetadataReader metadataReader, AssemblyReferenceHandle assemblyReferenceHandle, string parentFile)
         {
             string simpleName = metadataReader.GetString(metadataReader.GetAssemblyReference(assemblyReferenceHandle).Name);
             return FindAssembly(simpleName, parentFile);
@@ -84,7 +83,7 @@ namespace R2RDump
         /// <param name="simpleName">Simple name of the assembly to look up</param>
         /// <param name="parentFile">Name of assembly from which we're performing the lookup</param>
         /// <returns></returns>
-        public MetadataReader FindAssembly(string simpleName, string parentFile)
+        public IAssemblyMetadata FindAssembly(string simpleName, string parentFile)
         {
             foreach (FileInfo refAsm in Reference ?? Enumerable.Empty<FileInfo>())
             {
@@ -118,7 +117,7 @@ namespace R2RDump
             return null;
         }
 
-        private static unsafe MetadataReader Open(string filename)
+        private static unsafe IAssemblyMetadata Open(string filename)
         {
             byte[] image = File.ReadAllBytes(filename);
 
@@ -129,7 +128,7 @@ namespace R2RDump
                 throw new BadImageFormatException($"ECMA metadata not found in file '{filename}'");
             }
 
-            return peReader.GetMetadataReader();
+            return new StandaloneAssemblyMetadata(peReader);
         }
     }
 
@@ -396,7 +395,7 @@ namespace R2RDump
                     pdbWriter.WritePDBData(r2r.Filename, ProducePdbWriterMethods(r2r));
                 }
 
-                if (!_options.Header && standardDump)
+                if (standardDump)
                 {
                     _dumper.DumpAllMethods();
                 }
@@ -412,8 +411,8 @@ namespace R2RDump
                 MethodInfo mi = new MethodInfo();
                 mi.Name = method.SignatureString;
                 mi.HotRVA = (uint)method.RuntimeFunctions[0].StartAddress;
-                mi.MethodToken = (uint)MetadataTokens.GetToken(method.MetadataReader, method.MethodHandle);
-                mi.AssemblyName = method.MetadataReader.GetString(method.MetadataReader.GetAssemblyDefinition().Name);
+                mi.MethodToken = (uint)MetadataTokens.GetToken(method.ComponentReader.MetadataReader, method.MethodHandle);
+                mi.AssemblyName = method.ComponentReader.MetadataReader.GetString(method.ComponentReader.MetadataReader.GetAssemblyDefinition().Name);
                 mi.ColdRVA = 0;
                 
                 yield return mi;
@@ -429,7 +428,7 @@ namespace R2RDump
         {
             int id;
             bool isNum = ArgStringToInt(query, out id);
-            bool idMatch = isNum && (method.Rid == id || MetadataTokens.GetRowNumber(method.MetadataReader, method.MethodHandle) == id);
+            bool idMatch = isNum && (method.Rid == id || MetadataTokens.GetRowNumber(method.ComponentReader.MetadataReader, method.MethodHandle) == id);
 
             bool sigMatch = false;
             if (exact)

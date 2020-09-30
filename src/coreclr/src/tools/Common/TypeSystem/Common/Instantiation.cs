@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Runtime.CompilerServices;
@@ -65,7 +64,7 @@ namespace Internal.TypeSystem
         public override string ToString()
         {
             if (_genericParameters == null)
-                return String.Empty;
+                return string.Empty;
 
             StringBuilder sb = new StringBuilder();
             for (int i = 0; i < _genericParameters.Length; i++)

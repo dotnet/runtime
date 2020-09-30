@@ -8,6 +8,7 @@ set(MDRUNTIMERW_SOURCES
   stgtiggerstorage.cpp
   stgtiggerstream.cpp
   mdinternalrw.cpp
+  pdbheap.cpp
 )
 
 set(MDRUNTIMERW_HEADERS
@@ -29,6 +30,9 @@ set(MDRUNTIMERW_HEADERS
   ../inc/metamodel.h
   ../inc/metamodelro.h
   ../inc/metamodelrw.h
+  ../inc/pdbheap.h
+  ../inc/portablepdbmdds.h
+  ../inc/portablepdbmdi.h
   ../inc/rwutil.h
   ../inc/stgio.h
   ../inc/stgtiggerstorage.h
@@ -48,9 +52,11 @@ add_library_clr(mdruntimerw_dac ${MDRUNTIMERW_SOURCES})
 set_target_properties(mdruntimerw_dac PROPERTIES DAC_COMPONENT TRUE)
 target_precompile_header(TARGET mdruntimerw_dac HEADER stdafx.h)
 
-add_library_clr(mdruntimerw_wks ${MDRUNTIMERW_SOURCES})
-target_compile_definitions(mdruntimerw_wks PRIVATE FEATURE_METADATA_EMIT_ALL)
-target_precompile_header(TARGET mdruntimerw_wks HEADER stdafx.h)
+add_library_clr(mdruntimerw_wks_obj OBJECT ${MDRUNTIMERW_SOURCES})
+target_compile_definitions(mdruntimerw_wks_obj PRIVATE FEATURE_METADATA_EMIT_ALL)
+target_precompile_header(TARGET mdruntimerw_wks_obj HEADER stdafx.h)
+add_library(mdruntimerw_wks INTERFACE)
+target_sources(mdruntimerw_wks INTERFACE $<TARGET_OBJECTS:mdruntimerw_wks_obj>)
 
 add_library_clr(mdruntimerw-dbi ${MDRUNTIMERW_SOURCES})
 set_target_properties(mdruntimerw-dbi PROPERTIES DBI_COMPONENT TRUE)
@@ -59,3 +65,7 @@ target_precompile_header(TARGET mdruntimerw-dbi HEADER stdafx.h)
 add_library_clr(mdruntimerw_crossgen ${MDRUNTIMERW_SOURCES})
 set_target_properties(mdruntimerw_crossgen PROPERTIES CROSSGEN_COMPONENT TRUE)
 target_precompile_header(TARGET mdruntimerw_crossgen HEADER stdafx.h)
+
+add_library_clr(mdruntimerw_ppdb ${MDRUNTIMERW_SOURCES})
+target_compile_definitions(mdruntimerw_ppdb PRIVATE FEATURE_METADATA_EMIT_ALL FEATURE_METADATA_EMIT_PORTABLE_PDB)
+target_precompile_header(TARGET mdruntimerw_ppdb HEADER stdafx.h)

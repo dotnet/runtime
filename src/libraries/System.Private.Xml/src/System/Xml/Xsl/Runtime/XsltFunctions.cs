@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
+#nullable disable
 using System.IO;
 using System.Text;
 using System.Reflection;
@@ -104,13 +104,12 @@ namespace System.Xml.Xsl.Runtime
 
         public static string NormalizeSpace(string value)
         {
-            XmlCharType xmlCharType = XmlCharType.Instance;
             StringBuilder sb = null;
             int idx, idxStart = 0, idxSpace = 0;
 
             for (idx = 0; idx < value.Length; idx++)
             {
-                if (xmlCharType.IsWhiteSpace(value[idx]))
+                if (XmlCharType.IsWhiteSpace(value[idx]))
                 {
                     if (idx == idxStart)
                     {

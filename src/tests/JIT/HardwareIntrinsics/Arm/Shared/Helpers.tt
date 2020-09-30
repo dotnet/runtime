@@ -1,0 +1,1600 @@
+<#@ template debug="false" hostspecific="true" language="C#" #>
+<#@ output extension=".cs" #>
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+// This file is auto-generated from template file Helpers.tt
+// In order to make changes to this file, please update Helpers.tt
+// and run the following command from Developer Command Prompt for Visual Studio
+//   "%DevEnvDir%\TextTransform.exe" .\Helpers.tt
+
+using System;
+using System.Linq;
+
+namespace JIT.HardwareIntrinsics.Arm
+{
+    static class Helpers
+    {
+<#
+        string[] typeNames = { "sbyte", "short", "int" };
+        foreach (string typeName in typeNames)
+        {
+#>
+        public static <#= typeName #> CountLeadingSignBits(<#= typeName #> op1)
+        {
+            return (<#= typeName #>)(CountLeadingZeroBits((<#= typeName #>)((ulong)op1 ^ ((ulong)op1 >> 1))) - 1);
+        }
+
+<#
+        }
+
+        foreach (string typeName in new string[] { "sbyte", "byte", "short", "ushort", "int", "uint" })
+        {
+#>
+        public static <#= typeName #> CountLeadingZeroBits(<#= typeName #> op1)
+        {
+            return (<#= typeName #>)(8 * sizeof(<#= typeName #>) - (HighestSetBit(op1) + 1));
+        }
+
+        private static int HighestSetBit(<#= typeName #> op1)
+        {
+            for (int i = 8 * sizeof(<#= typeName #>) - 1; i >= 0; i--)
+            {
+                if (((ulong)op1 & (1UL << i)) != 0)
+                {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+
+<#
+        }
+
+        foreach (string typeName in new string [] { "sbyte", "byte" })
+        {
+#>
+        public static <#= typeName #> BitCount(<#= typeName #> op1)
+        {
+            int result = 0;
+
+            for (int i = 0; i < 8 * sizeof(<#= typeName #>); i++)
+            {
+                if (((ulong)op1 & (1UL << i)) != 0)
+                {
+                    result = result + 1;
+                }
+            }
+
+            return (<#= typeName #>)result;
+        }
+
+<#
+        }
+
+        foreach (var type in new[] { (name: "byte", unsigned: "byte"),
+                                     (name: "int", unsigned: "uint"),
+                                     (name: "long", unsigned: "ulong"),
+                                     (name: "sbyte", unsigned: "byte"),
+                                     (name: "uint", unsigned: "uint"),
+                                     (name: "ulong", unsigned: "ulong") })
+        {
+#>
+        public static <#= type.name #> ReverseElementBits(<#= type.name #> op1)
+        {
+            <#= type.unsigned #> val = (<#= type.unsigned #>)op1;
+            <#= type.unsigned #> result = 0;
+            const int bitsize = sizeof(<#= type.unsigned #>) * 8;
+            const <#= type.unsigned #> cst_one = 1;
+
+            for (int i = 0; i < bitsize; i++)
+            {
+                if ((val & (cst_one << i)) != 0)
+                {
+                    result |= (<#= type.unsigned #>)(cst_one << (bitsize  - 1 - i));
+                }
+            }
+
+            return (<#= type.name #>)result;
+        }
+
+<#
+        }
+
+        foreach (string typeName in new string[] { "sbyte", "byte", "short", "ushort", "int", "uint", "long", "ulong" })
+        {
+#>
+        public static <#= typeName #> And(<#= typeName #> op1, <#= typeName #> op2) => (<#= typeName #>)(op1 & op2);
+
+        public static <#= typeName #> BitwiseClear(<#= typeName #> op1, <#= typeName #> op2) => (<#= typeName #>)(op1 & ~op2);
+
+        public static <#= typeName #> BitwiseSelect(<#= typeName #> op1, <#= typeName #> op2, <#= typeName #> op3)
+        {
+            ulong result = 0;
+
+            for (int i = 0; i < 8 * sizeof(<#= typeName #>); i++)
+            {
+                if (((ulong)op1 & (1UL << i)) != 0)
+                {
+                    result = result | ((ulong)op2 & (1UL << i));
+                }
+                else
+                {
+                    result = result | ((ulong)op3 & (1UL << i));
+                }
+            }
+
+            return (<#= typeName #>)result;
+        }
+
+        public static <#= typeName #> Not(<#= typeName #> op1) => (<#= typeName #>)(~op1);
+
+        public static <#= typeName #> Or(<#= typeName #> op1, <#= typeName #> op2) => (<#= typeName #>)(op1 | op2);
+
+        public static <#= typeName #> OrNot(<#= typeName #> op1, <#= typeName #> op2) => (<#= typeName #>)(op1 | ~op2);
+
+        public static <#= typeName #> Xor(<#= typeName #> op1, <#= typeName #> op2) => (<#= typeName #>)(op1 ^ op2);
+
+<#
+        }
+#>
+        public static float Not(float op1) => BitConverter.Int32BitsToSingle(~BitConverter.SingleToInt32Bits(op1));
+
+        public static double Not(double op1) => BitConverter.Int64BitsToDouble(~BitConverter.DoubleToInt64Bits(op1));
+
+<#
+        foreach (string helperName in new string[] { "And", "BitwiseClear", "Or", "OrNot", "Xor" })
+        {
+#>
+        public static float <#= helperName #>(float op1, float op2) => BitConverter.Int32BitsToSingle(<#= helperName #>(BitConverter.SingleToInt32Bits(op1), BitConverter.SingleToInt32Bits(op2)));
+
+        public static double <#= helperName #>(double op1, double op2) => BitConverter.Int64BitsToDouble(<#= helperName #>(BitConverter.DoubleToInt64Bits(op1), BitConverter.DoubleToInt64Bits(op2)));
+
+<#
+        }
+#>
+        public static float BitwiseSelect(float op1, float op2, float op3) => BitConverter.Int32BitsToSingle(BitwiseSelect(BitConverter.SingleToInt32Bits(op1), BitConverter.SingleToInt32Bits(op2), BitConverter.SingleToInt32Bits(op3)));
+        public static double BitwiseSelect(double op1, double op2, double op3) => BitConverter.Int64BitsToDouble(BitwiseSelect(BitConverter.DoubleToInt64Bits(op1), BitConverter.DoubleToInt64Bits(op2), BitConverter.DoubleToInt64Bits(op3)));
+
+<#
+        foreach (string typeName in new string[] { "sbyte", "byte", "short", "ushort", "int", "uint", "long", "ulong" })
+        {
+
+        foreach ((string methodName, string compareOp) in new (string, string)[] {
+          ("CompareEqual", "=="),
+          ("CompareGreaterThan", ">"),
+          ("CompareGreaterThanOrEqual", ">="),
+          ("CompareLessThan", "<"),
+          ("CompareLessThanOrEqual", "<=") })
+        {
+#>
+        public static <#= typeName #> <#= methodName #>(<#= typeName #> left, <#= typeName #> right)
+        {
+            long result = 0;
+
+            if (left <#= compareOp #> right)
+            {
+                result = -1;
+            }
+
+            return (<#= typeName #>)result;
+        }
+
+<#
+        } // foreach ((string methodName, string compareOp) in ... )
+#>
+        public static <#= typeName #> CompareTest(<#= typeName #> left, <#= typeName #> right)
+        {
+            long result = 0;
+
+            if ((left & right) != 0)
+            {
+                result = -1;
+            }
+
+            return (<#= typeName #>)result;
+        }
+
+<#
+        } // foreach (string typeName in ... )
+
+        foreach ((string methodName, string compareOp, bool absoluteCompare) in new (string, string, bool)[] {
+          ("AbsoluteCompareGreaterThan", ">", true),
+          ("AbsoluteCompareGreaterThanOrEqual", ">=", true),
+          ("AbsoluteCompareLessThan", "<", true),
+          ("AbsoluteCompareLessThanOrEqual", "<=", true),
+          ("CompareEqual", "==", false),
+          ("CompareGreaterThan", ">", false),
+          ("CompareGreaterThanOrEqual", ">=", false),
+          ("CompareLessThan", "<", false),
+          ("CompareLessThanOrEqual", "<=", false),
+        })
+        {
+#>
+        public static double <#= methodName #>(double left, double right)
+        {
+            long result = 0;
+
+<#
+            if (absoluteCompare)
+            {
+#>
+            left = Math.Abs(left);
+            right = Math.Abs(right);
+
+<#
+            }
+#>
+            if (left <#= compareOp #> right)
+            {
+                result = -1;
+            }
+
+            return BitConverter.Int64BitsToDouble(result);
+        }
+
+        public static float <#= methodName #>(float left, float right)
+        {
+            int result = 0;
+
+<#
+            if (absoluteCompare)
+            {
+#>
+            left = Math.Abs(left);
+            right = Math.Abs(right);
+
+<#
+            }
+#>
+            if (left <#= compareOp #> right)
+            {
+                result = -1;
+            }
+
+            return BitConverter.Int32BitsToSingle(result);
+        }
+
+<#
+        }
+#>
+        public static double CompareTest(double left, double right)
+        {
+            long result = 0;
+
+            if ((BitConverter.DoubleToInt64Bits(left) & BitConverter.DoubleToInt64Bits(right)) != 0)
+            {
+                result = -1;
+            }
+
+            return BitConverter.Int64BitsToDouble(result);
+        }
+
+        public static float CompareTest(float left, float right)
+        {
+            int result = 0;
+
+            if ((BitConverter.SingleToInt32Bits(left) & BitConverter.SingleToInt32Bits(right)) != 0)
+            {
+                result = -1;
+            }
+
+            return BitConverter.Int32BitsToSingle(result);
+        }
+
+<#
+        foreach (var type in new[] { (name: "sbyte",  unsigned: "byte"),
+                                     (name: "short",  unsigned: "ushort"),
+                                     (name: "int",    unsigned: "uint"),
+                                     (name: "long",   unsigned: "ulong") })
+        {
+#>
+        public static <#= type.unsigned #> Abs(<#= type.name #> value) => value < 0 ? (<#= type.unsigned #>)-value : (<#= type.unsigned #>)value;
+
+<#
+        }
+#>
+        public static float Abs(float value) => Math.Abs(value);
+
+        public static double Abs(double value) => Math.Abs(value);
+
+        public static float Divide(float op1, float op2) => op1 / op2;
+
+        public static double Divide(double op1, double op2) => op1 / op2;
+
+        public static float Sqrt(float value) => MathF.Sqrt(value);
+
+        public static double Sqrt(double value) => Math.Sqrt(value);
+
+<#
+        foreach (var type in new[] { (name: "sbyte",  unsigned: "byte"),
+                                     (name: "short",  unsigned: "ushort"),
+                                     (name: "int",    unsigned: "uint"),
+                                     (name: "byte",   unsigned: "byte"),
+                                     (name: "ushort", unsigned: "ushort"),
+                                     (name: "uint",   unsigned: "uint") })
+        {
+#>
+        public static <#= type.unsigned #> AbsoluteDifference(<#= type.name #> op1, <#= type.name #> op2) => op1 < op2 ? (<#= type.unsigned #>)(op2 - op1) : (<#= type.unsigned #>)(op1 - op2);
+
+        public static <#= type.name #> AbsoluteDifferenceAdd(<#= type.name #> op1, <#= type.name #> op2, <#= type.name #> op3) => (<#= type.name #>)(op1 + AbsoluteDifference(op2, op3));
+
+<#
+        }
+
+        foreach (var type in new[] { (name: "sbyte",  wideUnsigned: "ushort", wide: "short"),
+                                     (name: "short",  wideUnsigned: "uint",   wide: "int"),
+                                     (name: "int",    wideUnsigned: "ulong",  wide: "long"),
+                                     (name: "byte",   wideUnsigned: "ushort", wide: "ushort"),
+                                     (name: "ushort", wideUnsigned: "uint",   wide: "uint"),
+                                     (name: "uint",   wideUnsigned: "ulong",  wide: "ulong") })
+        {
+#>
+        public static <#= type.wideUnsigned #> AbsoluteDifferenceWidening(<#= type.name #> op1, <#= type.name #> op2) => op1 < op2 ? (<#= type.wideUnsigned #>)(op2 - op1) : (<#= type.wideUnsigned #>)(op1 - op2);
+
+        public static <#= type.wideUnsigned #> AbsoluteDifferenceWideningUpper(<#= type.name #>[] op1, <#= type.name #>[] op2, int i) => AbsoluteDifferenceWidening(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
+
+        public static <#= type.wide #> AbsoluteDifferenceWideningAndAdd(<#= type.wide #> op1, <#= type.name #> op2, <#= type.name #> op3) => (<#= type.wide #>)(op1 + (<#= type.wide #>)AbsoluteDifferenceWidening(op2, op3));
+
+        public static <#= type.wide #> AbsoluteDifferenceWideningUpperAndAdd(<#= type.wide #>[] op1, <#= type.name #>[] op2, <#= type.name #>[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
+
+        public static <#= type.wide #> AddAcrossWidening(<#= type.name #>[] op1) => Reduce(AddWidening, op1);
+
+        public static <#= type.wide #> AddPairwiseWidening(<#= type.name #>[] op1, int i) => AddWidening(op1[2 * i], op1[2 * i + 1]);
+
+        public static <#= type.wide #> AddPairwiseWideningAndAdd(<#= type.wide #>[] op1, <#= type.name #>[] op2, int i) => (<#= type.wide #>)(op1[i] + AddWidening(op2[2 * i], op2[2 * i + 1]));
+
+        private static <#= type.name #> HighNarrowing(<#= type.wide #> op1, bool round)
+        {
+            <#= type.wideUnsigned #> roundConst = 0;
+            if (round)
+            {
+                roundConst = (<#= type.wideUnsigned #>)1 << (8 * sizeof(<#= type.name #>) - 1);
+            }
+            return (<#= type.name #>)(((<#= type.wideUnsigned #>)op1 + roundConst) >> (8 * sizeof(<#= type.name #>)));
+        }
+
+        public static <#= type.name #> AddHighNarrowing(<#= type.wide #> op1, <#= type.wide #> op2) => HighNarrowing((<#= type.wide #>)(op1 + op2), round: false);
+
+        public static <#= type.name #> AddHighNarrowingUpper(<#= type.name #>[] op1, <#= type.wide #>[] op2, <#= type.wide #>[] op3, int i) => i < op1.Length ? op1[i] : AddHighNarrowing(op2[i - op1.Length], op3[i - op1.Length]);
+
+        public static <#= type.name #> AddRoundedHighNarrowing(<#= type.wide #> op1, <#= type.wide #> op2) => HighNarrowing((<#= type.wide #>)(op1 + op2), round: true);
+
+        public static <#= type.wide #> AddRoundedHighNarrowingUpper(<#= type.name #>[] op1, <#= type.wide #>[] op2, <#= type.wide #>[] op3, int i) => i < op1.Length ? op1[i] : AddRoundedHighNarrowing(op2[i - op1.Length], op3[i - op1.Length]);
+
+        public static <#= type.wide #> AddWidening(<#= type.name #> op1, <#= type.name #> op2) => (<#= type.wide #>)((<#= type.wide #>)op1 + (<#= type.wide #>)op2);
+
+        public static <#= type.wide #> AddWidening(<#= type.wide #> op1, <#= type.name #> op2) => (<#= type.wide #>)(op1 + op2);
+
+        public static <#= type.wide #> AddWideningUpper(<#= type.name #>[] op1, <#= type.name #>[] op2, int i) => AddWidening(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
+
+        public static <#= type.wide #> AddWideningUpper(<#= type.wide #>[] op1, <#= type.name #>[] op2, int i) => AddWidening(op1[i], op2[i + op2.Length / 2]);
+
+        public static <#= type.name #> ExtractNarrowing(<#= type.wide #> op1) => (<#= type.name #>)op1;
+
+        public static <#= type.name #> ExtractNarrowingUpper(<#= type.name #>[] op1, <#= type.wide #>[] op2, int i) => i < op1.Length ? op1[i] : ExtractNarrowing(op2[i - op1.Length]);
+
+        public static <#= type.name #> FusedAddHalving(<#= type.name #> op1, <#= type.name #> op2) => (<#= type.name #>)((<#= type.wideUnsigned #>)((<#= type.wide #>)op1 + (<#= type.wide #>)op2) >> 1);
+
+        public static <#= type.name #> FusedAddRoundedHalving(<#= type.name #> op1, <#= type.name #> op2) => (<#= type.name #>)((<#= type.wideUnsigned #>)((<#= type.wide #>)op1 + (<#= type.wide #>)op2 + 1) >> 1);
+
+        public static <#= type.name #> FusedSubtractHalving(<#= type.name #> op1, <#= type.name #> op2) => (<#= type.name #>)((<#= type.wideUnsigned #>)((<#= type.wide #>)op1 - (<#= type.wide #>)op2) >> 1);
+
+        public static <#= type.wide #> MultiplyByScalarWideningUpper(<#= type.name #>[] op1, <#= type.name #> op2, int i) => MultiplyWidening(op1[i + op1.Length / 2], op2);
+
+        public static <#= type.wide #> MultiplyByScalarWideningUpperAndAdd(<#= type.wide #>[] op1, <#= type.name #>[] op2, <#= type.name #> op3, int i) => MultiplyWideningAndAdd(op1[i], op2[i + op2.Length / 2], op3);
+
+        public static <#= type.wide #> MultiplyByScalarWideningUpperAndSubtract(<#= type.wide #>[] op1, <#= type.name #>[] op2, <#= type.name #> op3, int i) => MultiplyWideningAndSubtract(op1[i], op2[i + op2.Length / 2], op3);
+
+        public static <#= type.wide #> MultiplyWidening(<#= type.name #> op1, <#= type.name #> op2) => (<#= type.wide #>)((<#= type.wide #>)op1 * (<#= type.wide #>)op2);
+
+        public static <#= type.wide #> MultiplyWideningAndAdd(<#= type.wide #> op1, <#= type.name #> op2, <#= type.name #> op3) => (<#= type.wide #>)(op1 + MultiplyWidening(op2, op3));
+
+        public static <#= type.wide #> MultiplyWideningAndSubtract(<#= type.wide #> op1, <#= type.name #> op2, <#= type.name #> op3) => (<#= type.wide #>)(op1 - MultiplyWidening(op2, op3));
+
+        public static <#= type.wide #> MultiplyWideningUpper(<#= type.name #>[] op1, <#= type.name #>[] op2, int i) => MultiplyWidening(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
+
+        public static <#= type.wide #> MultiplyWideningUpperAndAdd(<#= type.wide #>[] op1, <#= type.name #>[] op2, <#= type.name #>[] op3, int i) => MultiplyWideningAndAdd(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
+
+        public static <#= type.wide #> MultiplyWideningUpperAndSubtract(<#= type.wide #>[] op1, <#= type.name #>[] op2, <#= type.name #>[] op3, int i) => MultiplyWideningAndSubtract(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
+
+        public static <#= type.name #> SubtractHighNarrowing(<#= type.wide #> op1, <#= type.wide #> op2) => HighNarrowing((<#= type.wide #>)(op1 - op2), round: false);
+
+        public static <#= type.wide #> SubtractHighNarrowingUpper(<#= type.name #>[] op1, <#= type.wide #>[] op2, <#= type.wide #>[] op3, int i) => i < op1.Length ? op1[i] : SubtractHighNarrowing(op2[i - op1.Length], op3[i - op1.Length]);
+
+        public static <#= type.name #> SubtractRoundedHighNarrowing(<#= type.wide #> op1, <#= type.wide #> op2) => HighNarrowing((<#= type.wide #>)(op1 - op2), round: true);
+
+        public static <#= type.wide #> SubtractRoundedHighNarrowingUpper(<#= type.name #>[] op1, <#= type.wide #>[] op2, <#= type.wide #>[] op3, int i) => i < op1.Length ? op1[i] : SubtractRoundedHighNarrowing(op2[i - op1.Length], op3[i - op1.Length]);
+
+        public static <#= type.wide #> SubtractWidening(<#= type.name #> op1, <#= type.name #> op2) => (<#= type.wide #>)((<#= type.wide #>)op1 - (<#= type.wide #>)op2);
+
+        public static <#= type.wide #> SubtractWidening(<#= type.wide #> op1, <#= type.name #> op2) => (<#= type.wide #>)(op1 - op2);
+
+        public static <#= type.wide #> SubtractWideningUpper(<#= type.name #>[] op1, <#= type.name #>[] op2, int i) => SubtractWidening(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
+
+        public static <#= type.wide #> SubtractWideningUpper(<#= type.wide #>[] op1, <#= type.name #>[] op2, int i) => SubtractWidening(op1[i], op2[i + op2.Length / 2]);
+
+        public static <#= type.wide #> ZeroExtendWidening(<#= type.name #> op1) => (<#= type.wide #>)(<#= type.wideUnsigned #>)op1;
+
+        public static <#= type.wide #> ZeroExtendWideningUpper(<#= type.name #>[] op1, int i) => ZeroExtendWidening(op1[i + op1.Length / 2]);
+
+        private static <#= type.wide #> Reduce(Func<<#= type.wide #>, <#= type.name #>, <#= type.wide #>> reduceOp, <#= type.name #>[] op1)
+        {
+            <#= type.wide #> acc = op1[0];
+
+            for (int i = 1; i < op1.Length; i++)
+            {
+                acc = reduceOp(acc, op1[i]);
+            }
+
+            return acc;
+        }
+
+<#
+        }
+
+        foreach (var type in new[] { (name: "sbyte", unsigned: "byte",   wide: "short", wideUnsigned: "ushort"),
+                                     (name: "short", unsigned: "ushort", wide: "int",   wideUnsigned: "uint"),
+                                     (name: "int",   unsigned: "uint",   wide: "long",  wideUnsigned: "ulong") })
+        {
+#>
+        private static bool SignedSatQ(<#= type.wide #> val, out <#= type.name #> result)
+        {
+            bool saturated = false;
+
+            if (val > <#= type.name #>.MaxValue)
+            {
+                result = <#= type.name #>.MaxValue;
+                saturated = true;
+            }
+            else if (val < <#= type.name #>.MinValue)
+            {
+                result = <#= type.name #>.MinValue;
+                saturated = true;
+            }
+            else
+            {
+                result = (<#= type.name #>)val;
+            }
+
+            return saturated;
+        }
+
+        private static bool UnsignedSatQ(<#= type.wide #> val, out <#= type.unsigned #> result)
+        {
+            bool saturated = false;
+
+            if (val > <#= type.unsigned #>.MaxValue)
+            {
+                result = <#= type.unsigned #>.MaxValue;
+                saturated = true;
+            }
+            else if (val < 0)
+            {
+                result = 0;
+                saturated = true;
+            }
+            else
+            {
+                result = (<#= type.unsigned #>)val;
+            }
+
+            return saturated;
+        }
+
+        private static bool UnsignedSatQ(<#= type.wideUnsigned #> val, out <#= type.unsigned #> result)
+        {
+            bool saturated = false;
+
+            if (val > <#= type.unsigned #>.MaxValue)
+            {
+                result = <#= type.unsigned #>.MaxValue;
+                saturated = true;
+            }
+            else if (val < 0)
+            {
+                result = 0;
+                saturated = true;
+            }
+            else
+            {
+                result = (<#= type.unsigned #>)val;
+            }
+
+            return saturated;
+        }
+
+        private static bool SatQ(<#= type.wide #> val, out <#= type.name #> result, bool reinterpretAsUnsigned = false)
+        {
+            bool saturated;
+
+            if (reinterpretAsUnsigned)
+            {
+                <#= type.unsigned #> res;
+                saturated = UnsignedSatQ((<#= type.wideUnsigned #>)val, out res);
+                result = (<#= type.name #>)res;
+            }
+            else
+            {
+                saturated = SignedSatQ(val, out result);
+            }
+
+            return saturated;
+        }
+
+        private static bool SatQ(<#= type.wideUnsigned #> val, out <#= type.unsigned #> result) => UnsignedSatQ(val, out result);
+
+        public static <#= type.name #> ExtractNarrowingSaturate(<#= type.wide #> op1)
+        {
+            <#= type.name #> result;
+
+            SatQ(op1, out result);
+
+            return result;
+        }
+
+        public static <#= type.name #> ExtractNarrowingSaturateUpper(<#= type.name #>[] op1, <#= type.wide #>[] op2, int i) => i < op1.Length ? op1[i] : ExtractNarrowingSaturate(op2[i - op1.Length]);
+
+        public static <#= type.unsigned #> ExtractNarrowingSaturate(<#= type.wideUnsigned #> op1)
+        {
+            <#= type.unsigned #> result;
+
+            SatQ(op1, out result);
+
+            return result;
+        }
+
+        public static <#= type.unsigned #> ExtractNarrowingSaturateUpper(<#= type.unsigned #>[] op1, <#= type.wideUnsigned #>[] op2, int i) => i < op1.Length ? op1[i] : ExtractNarrowingSaturate(op2[i - op1.Length]);
+
+        public static <#= type.unsigned #> ExtractNarrowingSaturateUnsigned(<#= type.wide #> op1)
+        {
+            <#= type.unsigned #> result;
+
+            UnsignedSatQ(op1, out result);
+
+            return result;
+        }
+
+        public static <#= type.unsigned #> ExtractNarrowingSaturateUnsignedUpper(<#= type.unsigned #>[] op1, <#= type.wide #>[] op2, int i) => i < op1.Length ? op1[i] : ExtractNarrowingSaturateUnsigned(op2[i - op1.Length]);
+
+        private static (<#= type.wide #> val, bool ovf) MultiplyDoublingOvf(<#= type.name #> op1, <#= type.name #> op2, bool rounding, <#= type.wide #> op3, bool subOp)
+        {
+            <#= type.wide #> product = (<#= type.wide #>)((<#= type.wide #>)op1 * (<#= type.wide #>)op2);
+
+            bool dblOvf;
+            (product, dblOvf) = AddOvf(product, product);
+
+            bool addOvf;
+            <#= type.wide #> accum;
+
+            if (subOp)
+            {
+                (accum, addOvf) = SubtractOvf(op3, product);
+            }
+            else
+            {
+                (accum, addOvf) = AddOvf(op3, product);
+            }
+
+            <#= type.wide #> roundConst = 0;
+
+            if (rounding)
+            {
+                roundConst = (<#= type.wide#>)1 << (8 * sizeof(<#= type.name #>) - 1);
+            }
+
+            bool rndOvf;
+            <#= type.wide #> result;
+
+            (result, rndOvf) = AddOvf(accum, roundConst);
+
+            return (result, addOvf ^ rndOvf ^ dblOvf);
+        }
+
+        private static <#= type.name #> SaturateHigh(<#= type.wide #> val, bool ovf)
+        {
+            if (ovf)
+            {
+                return val < 0 ? <#= type.name #>.MaxValue : <#= type.name #>.MinValue;
+            }
+
+            return (<#= type.name #>)UnsignedShift(val, (<#= type.wide #>)(-8 * sizeof(<#= type.name #>)));
+        }
+
+        public static <#= type.name #> MultiplyDoublingSaturateHigh(<#= type.name #> op1, <#= type.name #> op2)
+        {
+            var (val, ovf) = MultiplyDoublingOvf(op1, op2, rounding: false, (<#= type.wide #>)0, subOp: false);
+
+            return SaturateHigh(val, ovf);
+        }
+
+        public static <#= type.name #> MultiplyRoundedDoublingSaturateHigh(<#= type.name #> op1, <#= type.name #> op2)
+        {
+            var (val, ovf) = MultiplyDoublingOvf(op1, op2, rounding: true, (<#= type.wide #>)0, subOp: false);
+
+            return SaturateHigh(val, ovf);
+        }
+
+        public static <#= type.wide #> MultiplyDoublingWideningSaturate(<#= type.name #> op1, <#= type.name #> op2)
+        {
+            var (product, ovf) = MultiplyDoublingOvf(op1, op2, rounding: false, (<#= type.wide #>)0, subOp: false);
+
+            if (ovf)
+            {
+                return product < 0 ? <#= type.name #>.MaxValue : <#= type.name #>.MinValue;
+            }
+
+            return product;
+        }
+
+        public static <#= type.name #> MultiplyRoundedDoublingAndAddSaturateHigh(<#= type.name #> op1, <#= type.name #> op2, <#= type.name #> op3)
+        {
+            <#= type.wide #> addend = UnsignedShift((<#= type.wide #>)op1, (<#= type.wide #>)(8 * sizeof(<#= type.name #>)));
+
+            var (val, ovf) = MultiplyDoublingOvf(op2, op3, rounding: true, addend, subOp: false);
+
+            return SaturateHigh(val, ovf);
+        }
+
+        public static <#= type.name #> MultiplyRoundedDoublingAndSubtractSaturateHigh(<#= type.name #> op1, <#= type.name #> op2, <#= type.name #> op3)
+        {
+            <#= type.wide #> minuend = UnsignedShift((<#= type.wide #>)op1, (<#= type.wide #>)(8 * sizeof(<#= type.name #>)));
+
+            var (val, ovf) = MultiplyDoublingOvf(op2, op3, rounding: true, minuend, subOp: true);
+
+            return SaturateHigh(val, ovf);
+        }
+
+        public static <#= type.wide #> MultiplyDoublingWideningAndAddSaturate(<#= type.wide #> op1, <#= type.name #> op2, <#= type.name #> op3) => AddSaturate(op1, MultiplyDoublingWideningSaturate(op2, op3));
+
+        public static <#= type.wide #> MultiplyDoublingWideningAndSubtractSaturate(<#= type.wide #> op1, <#= type.name #> op2, <#= type.name #> op3) => SubtractSaturate(op1, MultiplyDoublingWideningSaturate(op2, op3));
+
+        public static <#= type.wide #> MultiplyDoublingWideningSaturateUpperByScalar(<#= type.name #>[] op1, <#= type.name #> op2, int i) => MultiplyDoublingWideningSaturate(op1[i + op1.Length / 2], op2);
+
+        public static <#= type.wide #> MultiplyDoublingWideningUpperByScalarAndAddSaturate(<#= type.wide #>[] op1, <#= type.name #>[] op2, <#= type.name #> op3, int i) => MultiplyDoublingWideningAndAddSaturate(op1[i], op2[i + op2.Length / 2], op3);
+
+        public static <#= type.wide #> MultiplyDoublingWideningUpperByScalarAndSubtractSaturate(<#= type.wide #>[] op1, <#= type.name #>[] op2, <#= type.name #> op3, int i) => MultiplyDoublingWideningAndSubtractSaturate(op1[i], op2[i + op2.Length / 2], op3);
+
+        public static <#= type.wide #> MultiplyDoublingWideningSaturateUpper(<#= type.name #>[] op1, <#= type.name #>[] op2, int i) => MultiplyDoublingWideningSaturate(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
+
+        public static <#= type.wide #> MultiplyDoublingWideningUpperAndAddSaturate(<#= type.wide #>[] op1, <#= type.name #>[] op2, <#= type.name #>[] op3, int i) => MultiplyDoublingWideningAndAddSaturate(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
+
+        public static <#= type.wide #> MultiplyDoublingWideningUpperAndSubtractSaturate(<#= type.wide #>[] op1, <#= type.name #>[] op2, <#= type.name #>[] op3, int i) => MultiplyDoublingWideningAndSubtractSaturate(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
+
+        public static <#= type.wide #> ShiftLeftLogicalWidening(<#= type.name #> op1, byte op2) => UnsignedShift((<#= type.wide #>)op1, (<#= type.wide #>)op2);
+
+        public static <#= type.wideUnsigned #> ShiftLeftLogicalWidening(<#= type.unsigned #> op1, byte op2) => UnsignedShift((<#= type.wideUnsigned #>)op1, (<#= type.wide #>)op2);
+
+        public static <#= type.wide #> ShiftLeftLogicalWideningUpper(<#= type.name #>[] op1, byte op2, int i) => ShiftLeftLogicalWidening(op1[i + op1.Length / 2], op2);
+
+        public static <#= type.wideUnsigned #> ShiftLeftLogicalWideningUpper(<#= type.unsigned #>[] op1, byte op2, int i) => ShiftLeftLogicalWidening(op1[i + op1.Length / 2], op2);
+
+        public static <#= type.name #> ShiftRightArithmeticRoundedNarrowingSaturate(<#= type.wide #> op1, byte op2)
+        {
+            <#= type.name #> result;
+
+            SatQ(SignedShift(op1, (<#= type.wide #>)(-op2), rounding: true), out result);
+
+            return result;
+        }
+
+        public static <#= type.unsigned #> ShiftRightArithmeticRoundedNarrowingSaturateUnsigned(<#= type.wide #> op1, byte op2)
+        {
+            <#= type.unsigned #> result;
+
+            UnsignedSatQ(SignedShift(op1, (<#= type.wide #>)(-op2), rounding: true), out result);
+
+            return result;
+        }
+
+        public static <#= type.unsigned #> ShiftRightArithmeticRoundedNarrowingSaturateUnsignedUpper(<#= type.unsigned #>[] op1, <#= type.wide #>[] op2, byte op3, int i) => i < op1.Length ? op1[i] : (<#= type.unsigned #>)ShiftRightArithmeticRoundedNarrowingSaturateUnsigned(op2[i - op1.Length], op3);
+
+        public static <#= type.name #> ShiftRightArithmeticRoundedNarrowingSaturateUpper(<#= type.name #>[] op1, <#= type.wide #>[] op2, byte op3, int i) => i < op1.Length ? op1[i] : (<#= type.name #>)ShiftRightArithmeticRoundedNarrowingSaturate(op2[i - op1.Length], op3);
+
+        public static <#= type.name #> ShiftRightArithmeticNarrowingSaturate(<#= type.wide #> op1, byte op2)
+        {
+            <#= type.name #> result;
+
+            SatQ(SignedShift(op1, (<#= type.wide #>)(-op2)), out result);
+
+            return result;
+        }
+
+        public static <#= type.unsigned #> ShiftRightArithmeticNarrowingSaturateUnsigned(<#= type.wide #> op1, byte op2)
+        {
+            <#= type.unsigned #> result;
+
+            UnsignedSatQ(SignedShift(op1, (<#= type.wide #>)(-op2)), out result);
+
+            return result;
+        }
+
+        public static <#= type.unsigned #> ShiftRightArithmeticNarrowingSaturateUnsignedUpper(<#= type.unsigned #>[] op1, <#= type.wide #>[] op2, byte op3, int i) => i < op1.Length ? op1[i] : (<#= type.unsigned #>)ShiftRightArithmeticNarrowingSaturateUnsigned(op2[i - op1.Length], op3);
+
+        public static <#= type.name #> ShiftRightArithmeticNarrowingSaturateUpper(<#= type.name #>[] op1, <#= type.wide #>[] op2, byte op3, int i) => i < op1.Length ? op1[i] : (<#= type.name #>)ShiftRightArithmeticNarrowingSaturate(op2[i - op1.Length], op3);
+
+        public static <#= type.name #> ShiftRightLogicalNarrowing(<#= type.wide #> op1, byte op2) => (<#= type.name #>)UnsignedShift(op1, (<#= type.wide #>)(-op2));
+
+        public static <#= type.unsigned #> ShiftRightLogicalNarrowing(<#= type.wideUnsigned #> op1, byte op2) => (<#= type.unsigned #>)UnsignedShift(op1, (<#= type.wide #>)(-op2));
+
+        public static <#= type.name #> ShiftRightLogicalRoundedNarrowing(<#= type.wide #> op1, byte op2) => (<#= type.name #>)UnsignedShift(op1, (<#= type.wide #>)(-op2), rounding: true);
+
+        public static <#= type.unsigned #> ShiftRightLogicalRoundedNarrowing(<#= type.wideUnsigned #> op1, byte op2) => (<#= type.unsigned #>)UnsignedShift(op1, (<#= type.wide #>)(-op2), rounding: true);
+
+        public static <#= type.name #> ShiftRightLogicalRoundedNarrowingUpper(<#= type.name #>[] op1, <#= type.wide #>[] op2, byte op3, int i) => i < op1.Length ? op1[i] : (<#= type.name #>)ShiftRightLogicalRoundedNarrowing(op2[i - op1.Length], op3);
+
+        public static <#= type.unsigned #> ShiftRightLogicalRoundedNarrowingUpper(<#= type.unsigned #>[] op1, <#= type.wideUnsigned #>[] op2, byte op3, int i) => i < op1.Length ? op1[i] : (<#= type.unsigned #>)ShiftRightLogicalRoundedNarrowing(op2[i - op1.Length], op3);
+
+        public static <#= type.name #> ShiftRightLogicalRoundedNarrowingSaturate(<#= type.wide #> op1, byte op2)
+        {
+            <#= type.name #> result;
+
+            SatQ(UnsignedShift(op1, (<#= type.wide #>)(-op2), rounding: true), out result, reinterpretAsUnsigned: true);
+
+            return result;
+        }
+
+        public static <#= type.unsigned #> ShiftRightLogicalRoundedNarrowingSaturate(<#= type.wideUnsigned #> op1, byte op2)
+        {
+            <#= type.unsigned #> result;
+
+            SatQ(UnsignedShift(op1, (<#= type.wide #>)(-op2), rounding: true), out result);
+
+            return result;
+        }
+
+        public static <#= type.name #> ShiftRightLogicalRoundedNarrowingSaturateUpper(<#= type.name #>[] op1, <#= type.wide #>[] op2, byte op3, int i) => i < op1.Length ? op1[i] : (<#= type.name #>)ShiftRightLogicalRoundedNarrowingSaturate(op2[i - op1.Length], op3);
+
+        public static <#= type.unsigned #> ShiftRightLogicalRoundedNarrowingSaturateUpper(<#= type.unsigned #>[] op1, <#= type.wideUnsigned #>[] op2, byte op3, int i) => i < op1.Length ? op1[i] : (<#= type.unsigned #>)ShiftRightLogicalRoundedNarrowingSaturate(op2[i - op1.Length], op3);
+
+        public static <#= type.name #> ShiftRightLogicalNarrowingUpper(<#= type.name #>[] op1, <#= type.wide #>[] op2, byte op3, int i) => i < op1.Length ? op1[i] : (<#= type.name #>)ShiftRightLogicalNarrowing(op2[i - op1.Length], op3);
+
+        public static <#= type.unsigned #> ShiftRightLogicalNarrowingUpper(<#= type.unsigned #>[] op1, <#= type.wideUnsigned #>[] op2, byte op3, int i) => i < op1.Length ? op1[i] : (<#= type.unsigned #>)ShiftRightLogicalNarrowing(op2[i - op1.Length], op3);
+
+        public static <#= type.name #> ShiftRightLogicalNarrowingSaturate(<#= type.wide #> op1, byte op2)
+        {
+            <#= type.name #> result;
+
+            SatQ(UnsignedShift(op1, (<#= type.wide #>)(-op2)), out result, reinterpretAsUnsigned: true);
+
+            return result;
+        }
+
+        public static <#= type.unsigned #> ShiftRightLogicalNarrowingSaturate(<#= type.wideUnsigned #> op1, byte op2)
+        {
+            <#= type.unsigned #> result;
+
+            SatQ(UnsignedShift(op1, (<#= type.wide #>)(-op2)), out result);
+
+            return result;
+        }
+
+        public static <#= type.name #> ShiftRightLogicalNarrowingSaturateUpper(<#= type.name #>[] op1, <#= type.wide #>[] op2, byte op3, int i) => i < op1.Length ? op1[i] : (<#= type.name #>)ShiftRightLogicalNarrowingSaturate(op2[i - op1.Length], op3);
+
+        public static <#= type.unsigned #> ShiftRightLogicalNarrowingSaturateUpper(<#= type.unsigned #>[] op1, <#= type.wideUnsigned #>[] op2, byte op3, int i) => i < op1.Length ? op1[i] : (<#= type.unsigned #>)ShiftRightLogicalNarrowingSaturate(op2[i - op1.Length], op3);
+
+        public static <#= type.wide #> SignExtendWidening(<#= type.name #> op1) => op1;
+
+        public static <#= type.wide #> SignExtendWideningUpper(<#= type.name #>[] op1, int i) => SignExtendWidening(op1[i + op1.Length / 2]);
+
+<#
+        }
+
+        foreach (var type in new[] { (name: "sbyte", unsigned: "byte"),
+                                     (name: "short", unsigned: "ushort"),
+                                     (name: "int",   unsigned: "uint"),
+                                     (name: "long",  unsigned: "ulong") })
+        {
+#>
+        public static <#= type.name #> ShiftArithmetic(<#= type.name #> op1, <#= type.name #> op2) => SignedShift(op1, op2);
+
+        public static <#= type.name #> ShiftArithmeticRounded(<#= type.name #> op1, <#= type.name #> op2) => SignedShift(op1, op2, rounding: true);
+
+        public static <#= type.name #> ShiftArithmeticSaturate(<#= type.name #> op1, <#= type.name #> op2) => SignedShift(op1, op2, saturating: true);
+
+        public static <#= type.name #> ShiftArithmeticRoundedSaturate(<#= type.name #> op1, <#= type.name #> op2) => SignedShift(op1, op2, rounding: true, saturating: true);
+
+        private static <#= type.name #> SignedShift(<#= type.name #> op1, <#= type.name #> op2, bool rounding = false, bool saturating = false)
+        {
+            int shift = (sbyte)(op2 & 0xFF);
+
+            <#= type.name #> rndCns = 0;
+
+            if (rounding)
+            {
+                bool ovf;
+
+                (rndCns, ovf) = ShiftOvf((<#= type.name #>)1, -shift-1);
+
+                if (ovf)
+                {
+                    return 0;
+                }
+            }
+
+            <#= type.name #> result;
+
+            bool addOvf;
+
+            (result, addOvf) = AddOvf(op1, rndCns);
+
+            if (addOvf)
+            {
+                result = (<#= type.name #>)ShiftOvf((<#= type.unsigned #>)result, shift).val;
+            }
+            else
+            {
+                bool shiftOvf;
+
+                (result, shiftOvf) = ShiftOvf(result, shift);
+
+                if (saturating)
+                {
+                    if (shiftOvf)
+                    {
+                        result = <#= type.name #>.MaxValue;
+                    }
+                }
+            }
+
+            return result;
+        }
+
+        public static <#= type.name #> ShiftLeftLogical(<#= type.name #> op1, byte op2) => UnsignedShift(op1, (<#= type.name #>)op2);
+
+        public static <#= type.unsigned #> ShiftLeftLogical(<#= type.unsigned #> op1, byte op2) => UnsignedShift(op1, (<#= type.name #>)op2);
+
+        public static <#= type.name #> ShiftLeftLogicalSaturate(<#= type.name #> op1, byte op2) => SignedShift(op1, (<#= type.name #>)op2, saturating: true);
+
+        public static <#= type.unsigned #> ShiftLeftLogicalSaturate(<#= type.unsigned #> op1, byte op2) => UnsignedShift(op1, (<#= type.name #>)op2, saturating: true);
+
+        public static <#= type.unsigned #> ShiftLeftLogicalSaturateUnsigned(<#= type.name #> op1, byte op2) => (<#= type.unsigned #>)UnsignedShift(op1, (<#= type.name #>)op2, saturating: true);
+
+        public static <#= type.name #> ShiftLogical(<#= type.name #> op1, <#= type.name #> op2) => UnsignedShift(op1, op2);
+
+        public static <#= type.unsigned #> ShiftLogical(<#= type.unsigned #> op1, <#= type.name #> op2) => UnsignedShift(op1, op2);
+
+        public static <#= type.unsigned #> ShiftLogicalRounded(<#= type.unsigned #> op1, <#= type.name #> op2) => UnsignedShift(op1, op2, rounding: true);
+
+        public static <#= type.name #> ShiftLogicalRounded(<#= type.name #> op1, <#= type.name #> op2) => UnsignedShift(op1, op2, rounding: true);
+
+        public static <#= type.unsigned #> ShiftLogicalRoundedSaturate(<#= type.unsigned #> op1, <#= type.name #> op2) => UnsignedShift(op1, op2, rounding: true, saturating: true);
+
+        public static <#= type.name #> ShiftLogicalRoundedSaturate(<#= type.name #> op1, <#= type.name #> op2) => UnsignedShift(op1, op2, rounding: true, saturating: true);
+
+        public static <#= type.name #> ShiftLogicalSaturate(<#= type.name #> op1, <#= type.name #> op2) => UnsignedShift(op1, op2, saturating: true);
+
+        public static <#= type.unsigned #> ShiftLogicalSaturate(<#= type.unsigned #> op1, <#= type.name #> op2) => UnsignedShift(op1, op2, saturating: true);
+
+        public static <#= type.name #> ShiftRightArithmetic(<#= type.name #> op1, byte op2) => SignedShift(op1, (<#= type.name #>)(-op2));
+
+        public static <#= type.name #> ShiftRightArithmeticAdd(<#= type.name #> op1, <#= type.name #> op2, byte op3) =>  (<#= type.name #>)(op1 + ShiftRightArithmetic(op2, op3));
+
+        public static <#= type.name #> ShiftRightArithmeticRounded(<#= type.name #> op1, byte op2) => SignedShift(op1, (<#= type.name #>)(-op2), rounding: true);
+
+        public static <#= type.name #> ShiftRightArithmeticRoundedAdd(<#= type.name #> op1, <#= type.name #> op2, byte op3) =>  (<#= type.name #>)(op1 + ShiftRightArithmeticRounded(op2, op3));
+
+        public static <#= type.name #> ShiftRightLogical(<#= type.name #> op1, byte op2) => UnsignedShift(op1, (<#= type.name #>)(-op2));
+
+        public static <#= type.unsigned #> ShiftRightLogical(<#= type.unsigned #> op1, byte op2) => UnsignedShift(op1, (<#= type.name #>)(-op2));
+
+        public static <#= type.name #> ShiftRightLogicalAdd(<#= type.name #> op1, <#= type.name #> op2, byte op3) => (<#= type.name #>)(op1 + ShiftRightLogical(op2, op3));
+
+        public static <#= type.unsigned #> ShiftRightLogicalAdd(<#= type.unsigned #> op1, <#= type.unsigned #> op2, byte op3) => (<#= type.unsigned #>)(op1 + ShiftRightLogical(op2, op3));
+
+        public static <#= type.name #> ShiftRightLogicalRounded(<#= type.name #> op1, byte op2) => UnsignedShift(op1, (<#= type.name #>)(-op2), rounding: true);
+
+        public static <#= type.unsigned #> ShiftRightLogicalRounded(<#= type.unsigned #> op1, byte op2) => UnsignedShift(op1, (<#= type.name #>)(-op2), rounding: true);
+
+        public static <#= type.name #> ShiftRightLogicalRoundedAdd(<#= type.name #> op1, <#= type.name #> op2, byte op3) => (<#= type.name #>)(op1 + ShiftRightLogicalRounded(op2, op3));
+
+        public static <#= type.unsigned #> ShiftRightLogicalRoundedAdd(<#= type.unsigned #> op1, <#= type.unsigned #> op2, byte op3) => (<#= type.unsigned #>)(op1 + ShiftRightLogicalRounded(op2, op3));
+
+        private static <#= type.unsigned #> UnsignedShift(<#= type.unsigned #> op1, <#= type.name #> op2, bool rounding = false, bool saturating = false)
+        {
+            int shift = (sbyte)(op2 & 0xFF);
+
+            <#= type.unsigned #> rndCns = 0;
+
+            if (rounding)
+            {
+                bool ovf;
+
+                (rndCns, ovf) = ShiftOvf((<#= type.unsigned #>)1, -shift-1);
+
+                if (ovf)
+                {
+                    return 0;
+                }
+            }
+
+            (<#= type.unsigned #> result, bool addOvf) = AddOvf(op1, rndCns);
+
+            bool shiftOvf;
+
+            (result, shiftOvf) = ShiftOvf(result, shift);
+
+            if (addOvf)
+            {
+                <#= type.unsigned #> shiftedCarry = ShiftOvf((<#= type.unsigned #>)1, 8 * sizeof(<#= type.unsigned #>) + shift).val;
+                result = (<#= type.unsigned #>)(result | shiftedCarry);
+            }
+
+            if (saturating)
+            {
+                if (shiftOvf)
+                {
+                    result = <#= type.unsigned #>.MaxValue;
+                }
+            }
+
+            return result;
+        }
+
+        private static <#= type.name #> UnsignedShift(<#= type.name #> op1, <#= type.name #> op2, bool rounding = false, bool saturating = false) => (<#= type.name #>)UnsignedShift((<#= type.unsigned #>)op1, op2, rounding, saturating);
+
+        private static (<#= type.name #> val, bool ovf) AddOvf(<#= type.name #> op1, <#= type.name #> op2)
+        {
+            <#= type.name #> result = (<#= type.name #>)(op1 + op2);
+
+            bool ovf = false;
+
+            if ((op1 > 0) && (op2 > 0))
+            {
+                ovf = (result < 0);
+            }
+            else if ((op1 < 0) && (op2 < 0))
+            {
+                ovf = (result > 0);
+            }
+
+            return (result, ovf);
+        }
+
+        private static (<#= type.name #> val, bool ovf) AddOvf(<#= type.name #> op1, <#= type.unsigned #> op2)
+        {
+            <#= type.name #> result = (<#= type.name #>)(op1 + (<#= type.name #>)op2);
+
+            bool ovf = (result < op1);
+
+            return (result, ovf);
+        }
+
+        private static (<#= type.unsigned #> val, bool ovf) AddOvf(<#= type.unsigned #> op1, <#= type.name #> op2)
+        {
+            <#= type.unsigned #> result = (<#= type.unsigned #>)(op1 + (<#= type.unsigned #>)op2);
+
+            bool ovf;
+
+            if (op2 < 0)
+            {
+                ovf = (result > op1);
+            }
+            else
+            {
+                ovf = (result < op1);
+            }
+
+            return (result, ovf);
+        }
+
+        private static (<#= type.unsigned #> val, bool ovf) AddOvf(<#= type.unsigned #> op1, <#= type.unsigned #> op2)
+        {
+            <#= type.unsigned #> result = (<#= type.unsigned #>)(op1 + op2);
+
+            bool ovf = (result < op1);
+
+            return (result, ovf);
+        }
+
+        private static (<#= type.name #> val, bool ovf) SubtractOvf(<#= type.name #> op1, <#= type.name #> op2)
+        {
+            <#= type.name #> result = (<#= type.name #>)(op1 - op2);
+
+            bool ovf;
+
+            if (op2 < 0)
+            {
+                ovf = (result < op1);
+            }
+            else
+            {
+                ovf = (result > op1);
+            }
+
+            return (result, ovf);
+        }
+
+        private static (<#= type.unsigned #> val, bool ovf) SubtractOvf(<#= type.unsigned #> op1, <#= type.unsigned #> op2)
+        {
+            <#= type.unsigned #> result = (<#= type.unsigned #>)(op1 - op2);
+
+            bool ovf = (op1 < op2);
+
+            return (result, ovf);
+        }
+
+        public static <#= type.name #> AbsSaturate(<#= type.name #> op1) => op1 < 0 ? NegateSaturate(op1) : op1;
+
+        public static <#= type.name #> AddSaturate(<#= type.name #> op1, <#= type.name #> op2)
+        {
+            var (result, ovf) = AddOvf(op1, op2);
+            return ovf ? (result > 0 ? <#= type.name #>.MinValue : <#= type.name #>.MaxValue) : result;
+        }
+
+        public static <#= type.name #> AddSaturate(<#= type.name #> op1, <#= type.unsigned #> op2)
+        {
+            var (result, ovf) = AddOvf(op1, op2);
+            return ovf ? <#= type.name #>.MaxValue : result;
+        }
+
+        public static <#= type.unsigned #> AddSaturate(<#= type.unsigned #> op1, <#= type.name #> op2)
+        {
+            var (result, ovf) = AddOvf(op1, op2);
+            return ovf ? (result < op1 ? <#= type.unsigned #>.MaxValue : <#= type.unsigned #>.MinValue) : result;
+        }
+
+        public static <#= type.unsigned #> AddSaturate(<#= type.unsigned #> op1, <#= type.unsigned #> op2)
+        {
+            var (result, ovf) = AddOvf(op1, op2);
+            return ovf ? <#= type.unsigned #>.MaxValue : result;
+        }
+
+        public static <#= type.name #> NegateSaturate(<#= type.name #> op1) => SubtractSaturate((<#= type.name #>)0, op1);
+
+        public static <#= type.name #> SubtractSaturate(<#= type.name #> op1, <#= type.name #> op2)
+        {
+            var (result, ovf) = SubtractOvf(op1, op2);
+            return ovf ? (result > 0 ? <#= type.name #>.MinValue : <#= type.name #>.MaxValue) : result;
+        }
+
+        public static <#= type.unsigned #> SubtractSaturate(<#= type.unsigned #> op1, <#= type.unsigned #> op2)
+        {
+            var (result, ovf) = SubtractOvf(op1, op2);
+            return ovf ? <#= type.unsigned #>.MinValue : result;
+        }
+
+<#
+        }
+
+        foreach (string typeName in new string[] { "sbyte", "byte", "short", "ushort", "int", "uint", "long", "ulong" })
+        {
+#>
+
+        private static (<#= typeName #> val, bool ovf) ShiftOvf(<#= typeName #> value, int shift)
+        {
+            <#= typeName #> result = value;
+
+            bool ovf = false;
+            <#= typeName #> msb = 1;
+            msb = (<#= typeName #>)(msb << (8 * sizeof(<#= typeName #>) - 1));
+
+            for (int i = 0; i < shift; i++)
+            {
+                ovf = ovf || ((result & msb) != 0);
+                result <<= 1;
+            }
+
+            for (int i = 0; i > shift; i--)
+            {
+                result >>= 1;
+            }
+
+            if ((value > 0) && (result < 0))
+            {
+                ovf = true;
+            }
+
+            return (result, ovf);
+        }
+
+<#
+        }
+
+        foreach ((string typeName, string className) in new (string, string)[] { ("float", "MathF"), ("double", "Math") })
+        {
+#>
+        public static <#= typeName #> AbsoluteDifference(<#= typeName #> op1, <#= typeName #> op2) => <#= className #>.Abs(op1 - op2);
+
+        public static <#= typeName #> FusedMultiplyAdd(<#= typeName #> op1, <#= typeName #> op2, <#= typeName #> op3) => <#= className #>.FusedMultiplyAdd(op2, op3, op1);
+
+        public static <#= typeName #> FusedMultiplyAddNegated(<#= typeName #> op1, <#= typeName #> op2, <#= typeName #> op3) => <#= className #>.FusedMultiplyAdd(-op2, op3, -op1);
+
+        public static <#= typeName #> FusedMultiplySubtract(<#= typeName #> op1, <#= typeName #> op2, <#= typeName #> op3) => <#= className #>.FusedMultiplyAdd(-op2, op3, op1);
+
+        public static <#= typeName #> FusedMultiplySubtractNegated(<#= typeName #> op1, <#= typeName #> op2, <#= typeName #> op3) => <#= className #>.FusedMultiplyAdd(op2, op3, -op1);
+
+        public static <#= typeName #> MaxNumber(<#= typeName #> op1, <#= typeName #> op2) => <#= typeName #>.IsNaN(op1) ? op2 : (<#= typeName #>.IsNaN(op2) ? op1 : <#= className #>.Max(op1, op2));
+
+        public static <#= typeName #> MaxNumberPairwise(<#= typeName #>[] op1, int i) => Pairwise(MaxNumber, op1, i);
+
+        public static <#= typeName #> MaxNumberPairwise(<#= typeName #>[] op1, <#= typeName #>[] op2, int i) => Pairwise(MaxNumber, op1, op2, i);
+
+        public static <#= typeName #> MinNumber(<#= typeName #> op1, <#= typeName #> op2) => <#= typeName #>.IsNaN(op1) ? op2 : (<#= typeName #>.IsNaN(op2) ? op1 : <#= className #>.Min(op1, op2));
+
+        public static <#= typeName #> MinNumberPairwise(<#= typeName #>[] op1, int i) => Pairwise(MinNumber, op1, i);
+
+        public static <#= typeName #> MinNumberPairwise(<#= typeName #>[] op1, <#= typeName #>[] op2, int i) => Pairwise(MinNumber, op1, op2, i);
+
+        public static <#= typeName #> MultiplyExtended(<#= typeName #> op1, <#= typeName #> op2)
+        {
+            bool inf1 = <#= typeName #>.IsInfinity(op1);
+            bool inf2 = <#= typeName #>.IsInfinity(op2);
+
+            bool zero1 = (op1 == 0);
+            bool zero2 = (op2 == 0);
+
+            if ((inf1 && zero2) || (zero1 && inf2))
+            {
+                return <#= className #>.CopySign(2, (zero1 ? op2 : op1));
+            }
+            else
+            {
+                return op1 * op2;
+            }
+        }
+
+        public static <#= typeName #> FPRecipStepFused(<#= typeName #> op1, <#= typeName #> op2) => FusedMultiplySubtract(2, op1, op2);
+
+        public static <#= typeName #> FPRSqrtStepFused(<#= typeName #> op1, <#= typeName #> op2) => FusedMultiplySubtract(3, op1, op2) / 2;
+
+<#
+        }
+#>
+        private static uint RecipEstimate(uint a)
+        {
+            a = a * 2 + 1;
+
+            uint b = (1 << 19) / a;
+            uint r = (b + 1) / 2;
+
+            return r;
+        }
+
+        private static uint RecipSqrtEstimate(uint a)
+        {
+            if (a < 256)
+            {
+                a = a * 2 + 1;
+            }
+            else
+            {
+                a = (a >> 1) << 1;
+                a = (a + 1) * 2;
+            }
+
+            uint b = 512;
+
+            while (a * (b + 1) * (b + 1) < (1 << 28))
+            {
+                b = b + 1;
+            }
+
+            uint r = (b + 1) / 2;
+
+            return r;
+        }
+
+<#
+        foreach (string typeName in new string[] { "uint" })
+        {
+#>
+        private static <#= typeName #> ExtractBits(<#= typeName #> val, byte msbPos, byte lsbPos)
+        {
+            <#= typeName #> andMask = 0;
+
+            for (byte pos = lsbPos; pos <= msbPos; pos++)
+            {
+                andMask |= (<#= typeName #>)1 << pos;
+            }
+
+            return (val & andMask) >> lsbPos;
+        }
+
+<#
+        }
+#>
+        public static uint UnsignedRecipEstimate(uint op1)
+        {
+            uint result;
+
+            if ((op1 & (1 << 31)) == 0)
+            {
+                result = ~0U;
+            }
+            else
+            {
+                uint estimate = RecipEstimate(ExtractBits(op1, 31, 23));
+                result = ExtractBits(estimate, 8, 0) << 31;
+            }
+
+            return result;
+        }
+
+        public static uint UnsignedRSqrtEstimate(uint op1)
+        {
+            uint result;
+
+            if ((op1 & (3 << 30)) == 0)
+            {
+                result = ~0U;
+            }
+            else
+            {
+                uint estimate = RecipSqrtEstimate(ExtractBits(op1, 31, 23));
+                result = ExtractBits(estimate, 8, 0) << 31;
+            }
+
+            return result;
+        }
+
+<#
+        foreach (string typeName in new string[] { "sbyte", "byte", "short", "ushort", "int", "uint", "long", "ulong", "float", "double" })
+        {
+#>
+        public static <#= typeName #> Add(<#= typeName #> op1, <#= typeName #> op2) => (<#= typeName #>)(op1 + op2);
+
+        public static <#= typeName #> AddPairwise(<#= typeName #>[] op1, int i) => Pairwise(Add, op1, i);
+
+        public static <#= typeName #> AddPairwise(<#= typeName #>[] op1, <#= typeName #>[] op2, int i) => Pairwise(Add, op1, op2, i);
+
+        public static <#= typeName #> Max(<#= typeName #> op1, <#= typeName #> op2) => Math.Max(op1, op2);
+
+        public static <#= typeName #> MaxPairwise(<#= typeName #>[] op1, int i) => Pairwise(Max, op1, i);
+
+        public static <#= typeName #> MaxPairwise(<#= typeName #>[] op1, <#= typeName #>[] op2, int i) => Pairwise(Max, op1, op2, i);
+
+        public static <#= typeName #> Min(<#= typeName #> op1, <#= typeName #> op2) => Math.Min(op1, op2);
+
+        public static <#= typeName #> MinPairwise(<#= typeName #>[] op1, int i) => Pairwise(Min, op1, i);
+
+        public static <#= typeName #> MinPairwise(<#= typeName #>[] op1, <#= typeName #>[] op2, int i) => Pairwise(Min, op1, op2, i);
+
+        public static <#= typeName #> Multiply(<#= typeName #> op1, <#= typeName #> op2) => (<#= typeName #>)(op1 * op2);
+
+        public static <#= typeName #> MultiplyAdd(<#= typeName #> op1, <#= typeName #> op2, <#= typeName #> op3) => (<#= typeName #>)(op1 + (<#= typeName #>)(op2 * op3));
+
+        public static <#= typeName #> MultiplySubtract(<#= typeName #> op1, <#= typeName #> op2, <#= typeName #> op3) => (<#= typeName #>)(op1 - (<#= typeName #>)(op2 * op3));
+
+        public static <#= typeName #> Subtract(<#= typeName #> op1, <#= typeName #> op2) => (<#= typeName #>)(op1 - op2);
+
+        private static <#= typeName #> Pairwise(Func<<#= typeName #>, <#= typeName #>, <#= typeName #>> pairOp, <#= typeName #>[] op1, int i)
+        {
+            if (2 * i + 1 < op1.Length)
+            {
+                return pairOp(op1[2 * i], op1[2 * i + 1]);
+            }
+            else
+            {
+                return 0;
+            }
+        }
+
+        private static <#= typeName #> Pairwise(Func<<#= typeName #>, <#= typeName #>, <#= typeName #>> pairOp, <#= typeName #>[] op1, <#= typeName #>[] op2, int i)
+        {
+            if (2 * i + 1 < op1.Length)
+            {
+                return pairOp(op1[2 * i], op1[2 * i + 1]);
+            }
+            else
+            {
+                return pairOp(op2[2 * i - op1.Length], op2[2 * i + 1 - op1.Length]);
+            }
+        }
+
+<#
+        }
+
+        foreach (string typeName in new string[] { "sbyte", "short", "int", "long", "float", "double" })
+        {
+#>
+        public static <#= typeName #> Negate(<#= typeName #> op1) => (<#= typeName #>)(-op1);
+
+<#
+        }
+
+        foreach (string typeName in new string[] { "sbyte", "byte", "short", "ushort", "int", "uint", "float", "double" })
+        {
+#>
+        public static <#= typeName #> AddAcross(<#= typeName #>[] op1) => Reduce(Add, op1);
+
+        public static <#= typeName #> MaxAcross(<#= typeName #>[] op1) => Reduce(Max, op1);
+
+        public static <#= typeName #> MinAcross(<#= typeName #>[] op1) => Reduce(Min, op1);
+
+        private static <#= typeName #> Reduce(Func<<#= typeName #>, <#= typeName #>, <#= typeName #>> reduceOp, <#= typeName #>[] op1)
+        {
+            <#= typeName #> acc = op1[0];
+
+            for (int i = 1; i < op1.Length; i++)
+            {
+                acc = reduceOp(acc, op1[i]);
+            }
+
+            return acc;
+        }
+
+<#
+        }
+#>
+        public static float MaxNumberAcross(float[] op1) => Reduce(MaxNumber, op1);
+
+        public static float MinNumberAcross(float[] op1) => Reduce(MinNumber, op1);
+
+        private struct poly128_t
+        {
+            public ulong lo;
+            public ulong hi;
+
+            public static poly128_t operator ^(poly128_t op1, poly128_t op2)
+            {
+                op1.lo ^= op2.lo;
+                op1.hi ^= op2.hi;
+
+                return op1;
+            }
+
+            public static poly128_t operator <<(poly128_t val, int shiftAmount)
+            {
+                for (int i = 0; i < shiftAmount; i++)
+                {
+                    val.hi <<= 1;
+
+                    if ((val.lo & 0x8000000000000000U) != 0)
+                    {
+                       val.hi |= 1;
+                    }
+
+                    val.lo <<= 1;
+                }
+
+                return val;
+            }
+
+            public static implicit operator poly128_t(ulong lo)
+            {
+                poly128_t result = new poly128_t();
+                result.lo = lo;
+                return result;
+            }
+
+            public static explicit operator poly128_t(long lo)
+            {
+                poly128_t result = new poly128_t();
+                result.lo = (ulong)lo;
+                return result;
+            }
+        }
+
+<#
+        foreach (var type in new[] { (name: "byte",  wide: "ushort"),
+                                     (name: "sbyte", wide: "short"),
+                                     (name: "ulong", wide: "poly128_t"),
+                                     (name: "long",  wide: "poly128_t") })
+        {
+#>
+        private static <#= type.wide #> PolynomialMult(<#= type.name #> op1, <#= type.name #> op2)
+        {
+            <#= type.wide #> result = default(<#= type.wide #>);
+            <#= type.wide #> extendedOp2 = (<#= type.wide #>)op2;
+
+            for (int i = 0; i < 8 * sizeof(<#= type.name #>); i++)
+            {
+                if ((op1 & ((<#= type.name #>)1 << i)) != 0)
+                {
+                    result = (<#= type.wide #>)(result ^ (extendedOp2 << i));
+                }
+            }
+
+            return result;
+        }
+
+<#
+        }
+
+        foreach (var type in new[] { (name: "byte",  wide: "ushort"),
+                                     (name: "sbyte", wide: "short") })
+        {
+
+#>
+        public static <#= type.name #> PolynomialMultiply(<#= type.name #> op1, <#= type.name #> op2) => (<#= type.name #>)PolynomialMult(op1, op2);
+
+        public static <#= type.wide #> PolynomialMultiplyWidening(<#= type.name #> op1, <#= type.name #> op2) => PolynomialMult(op1, op2);
+
+        public static <#= type.wide #> PolynomialMultiplyWideningUpper(<#= type.name #>[] op1, <#= type.name #>[] op2, int i) => PolynomialMultiplyWidening(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
+
+<#
+        }
+#>
+        public static ulong PolynomialMultiplyWideningLo64(ulong op1, ulong op2) => PolynomialMult(op1, op2).lo;
+
+        public static long PolynomialMultiplyWideningLo64(long op1, long op2) => (long)PolynomialMult(op1, op2).lo;
+
+        public static ulong PolynomialMultiplyWideningHi64(ulong op1, ulong op2) => PolynomialMult(op1, op2).hi;
+
+        public static long PolynomialMultiplyWideningHi64(long op1, long op2) => (long)PolynomialMult(op1, op2).hi;
+
+<#
+        foreach (string typeName in new string[] { "sbyte", "byte", "short", "ushort", "int", "uint", "long", "ulong", "float", "double" })
+        {
+#>
+        public static <#= typeName #> Concat(<#= typeName #>[] op1, <#= typeName #>[] op2, int i) => (i < op1.Length) ? op1[i] : op2[i - op1.Length];
+
+        public static <#= typeName #> ConcatScalar(<#= typeName #>[] op1, <#= typeName #>[] op2, int i)
+        {
+            return i switch
+            {
+                0 => op1[0],
+                1 => op2[0],
+                _ => 0
+            };
+        }
+
+        public static <#= typeName #> ExtractVector(<#= typeName #>[] op1, <#= typeName #>[] op2, int op3, int i) => Concat(op1, op2, op3 + i);
+
+        public static <#= typeName #> Insert(<#= typeName #>[] op1, int op2, <#= typeName #> op3, int i) => (op2 != i) ? op1[i] : op3;
+
+<#
+        }
+
+        foreach (string typeName in new string[] { "sbyte", "byte" })
+        {
+#>
+        public static <#= typeName #> TableVectorExtension(int i, <#= typeName #>[] defaultValues, <#= typeName #>[] indices, params <#= typeName #>[][] table)
+        {
+            <#= typeName #>[] fullTable = table.SelectMany(x => x).ToArray();
+            int index = indices[i];
+
+            if (index < 0 || index >= fullTable.Length)
+              return defaultValues[i];
+
+            return fullTable[index];
+        }
+
+        public static <#= typeName #> TableVectorLookup(int i, <#= typeName #>[] indices, params <#= typeName #>[][] table)
+        {
+            <#= typeName #>[] zeros = new <#= typeName #>[indices.Length];
+            Array.Fill<<#= typeName #>>(zeros, 0, 0, indices.Length);
+
+            return TableVectorExtension(i, zeros, indices, table);
+        }
+
+<#
+        }
+
+        foreach (var typeName in new[] { (original: "byte",   unsigned: "byte"),
+                                         (original: "short",  unsigned: "ushort"),
+                                         (original: "int",    unsigned: "uint"),
+                                         (original: "long",   unsigned: "ulong"),
+                                         (original: "sbyte",  unsigned: "byte"),
+                                         (original: "ushort", unsigned: "ushort"),
+                                         (original: "uint",   unsigned: "uint"),
+                                         (original: "ulong",  unsigned: "ulong") })
+        {
+#>
+        public static <#= typeName.original #> ShiftLeftAndInsert(<#= typeName.original #> left, <#= typeName.original #> right, byte shift)
+        {
+            <#= typeName.unsigned #> mask = (<#= typeName.unsigned #>)~(<#= typeName.unsigned #>.MaxValue << shift);
+            <#= typeName.unsigned #> value = (<#= typeName.unsigned #>)(right << shift);
+            <#= typeName.original #> newval = (<#= typeName.original #>)(((<#= typeName.unsigned #>)left & mask) | value);
+            return newval;
+        }
+
+        public static <#= typeName.original #> ShiftRightAndInsert(<#= typeName.original #> left, <#= typeName.original #> right, byte shift)
+        {
+            <#= typeName.unsigned #> mask = (<#= typeName.unsigned #>)~(<#= typeName.unsigned #>.MaxValue >> shift);
+            <#= typeName.unsigned #> value = (<#= typeName.unsigned #>)(right >> shift);
+            <#= typeName.original #> newval = (<#= typeName.original #>)(((<#= typeName.unsigned #>)left & mask) | value);
+            return newval;
+        }
+
+<#
+        }
+
+        foreach ((string fpType, string mathClass) in new (string, string)[] { ("double", "Math"), ("float", "MathF") })
+        {
+#>
+        public static <#= fpType #> Ceiling(<#= fpType #> op1) => <#= mathClass #>.Ceiling(op1);
+
+        public static <#= fpType #> Floor(<#= fpType #> op1) => <#= mathClass #>.Floor(op1);
+
+        public static <#= fpType #> RoundAwayFromZero(<#= fpType #> op1) => <#= mathClass #>.Round(op1, MidpointRounding.AwayFromZero);
+
+        public static <#= fpType #> RoundToNearest(<#= fpType #> op1) => <#= mathClass #>.Round(op1, MidpointRounding.ToEven);
+
+        public static <#= fpType #> RoundToNegativeInfinity(<#= fpType #> op1) => <#= mathClass #>.Round(op1, MidpointRounding.ToNegativeInfinity);
+
+        public static <#= fpType #> RoundToPositiveInfinity(<#= fpType #> op1) => <#= mathClass #>.Round(op1, MidpointRounding.ToPositiveInfinity);
+
+        public static <#= fpType #> RoundToZero(<#= fpType #> op1) => <#= mathClass #>.Round(op1, MidpointRounding.ToZero);
+
+<#
+        }
+#>
+        private static int ConvertToInt32(float op1) => (int)Math.Clamp(op1, int.MinValue, int.MaxValue);
+
+        private static long ConvertToInt64(double op1) => (long)Math.Clamp(op1, long.MinValue, long.MaxValue);
+
+        private static uint ConvertToUInt32(float op1) => (uint)Math.Clamp(op1, uint.MinValue, uint.MaxValue);
+
+        private static ulong ConvertToUInt64(double op1) => (ulong)Math.Clamp(op1, ulong.MinValue, ulong.MaxValue);
+
+<#
+        foreach ((string fpType, string intType) in new (string, string)[] { ("float", "Int32"), ("double", "Int64"), ("float", "UInt32"), ("double", "UInt64") })
+        {
+#>
+        public static <#= intType #> ConvertTo<#= intType #>RoundAwayFromZero(<#= fpType #> op1) => ConvertTo<#= intType #>(RoundAwayFromZero(op1));
+
+        public static <#= intType #> ConvertTo<#= intType #>RoundToEven(<#= fpType #> op1) => ConvertTo<#= intType #>(RoundToNearest(op1));
+
+        public static <#= intType #> ConvertTo<#= intType #>RoundToNegativeInfinity(<#= fpType #> op1) => ConvertTo<#= intType #>(RoundToNegativeInfinity(op1));
+
+        public static <#= intType #> ConvertTo<#= intType #>RoundToPositiveInfinity(<#= fpType #> op1) => ConvertTo<#= intType #>(RoundToPositiveInfinity(op1));
+
+        public static <#= intType #> ConvertTo<#= intType #>RoundToZero(<#= fpType #> op1) => ConvertTo<#= intType #>(RoundToZero(op1));
+
+<#
+        }
+#>
+        public static float ConvertToSingle(int op1) => op1;
+
+        public static float ConvertToSingle(uint op1) => op1;
+
+        public static float ConvertToSingle(double op1) => (float)op1;
+
+        public static float ConvertToSingleUpper(float[] op1, double[] op2, int i) => i < op1.Length ? op1[i] : ConvertToSingle(op2[i - op1.Length]);
+
+        public static double ConvertToDouble(float op1) => op1;
+
+        public static double ConvertToDoubleUpper(float[] op1, int i) => ConvertToDouble(op1[i + op1.Length / 2]);
+
+        public static double ConvertToDouble(long op1) => op1;
+
+        public static double ConvertToDouble(ulong op1) => op1;
+<#
+        foreach ((string typeName, int elementSizeInBits) in new (string, int)[] {
+            ("short", 8), ("ushort", 8), ("int", 8), ("uint", 8), ("long", 8), ("ulong", 8),
+            ("int", 16), ("uint", 16), ("long", 16), ("ulong", 16), ("long", 32), ("ulong", 32) })
+        {
+#>
+
+        public static <#= typeName #> ReverseElement<#= elementSizeInBits #>(<#= typeName #> val)
+        {
+            ulong result = 0UL;
+
+            int numberOfElements = (8 * sizeof(<#= typeName #>)) / <#= elementSizeInBits #>;
+            ulong elementMask = ((1UL << <#= elementSizeInBits #>) - 1);
+
+            for (int i = 0; i < numberOfElements; i++)
+            {
+                ulong element = ((ulong)val >> (<#= elementSizeInBits #> * i)) & elementMask;
+                ulong reversedElement = element << (<#= elementSizeInBits #> * (numberOfElements - 1 - i));
+                result |= reversedElement;
+            }
+
+            return (<#= typeName #>)result;
+        }
+<#
+        }
+
+        foreach (var type in new[] { (name: "byte",  wide: "uint"), (name: "sbyte", wide: "int") })
+        {
+#>
+
+        public static <#= type.wide #> DotProduct(<#= type.wide #> op1, <#= type.name #>[] op2, int s, <#= type.name #>[] op3, int t)
+        {
+            <#= type.wide #> result = op1;
+
+            for (int i = 0; i < 4; i++)
+            {
+                result += (<#= type.wide #>)((<#= type.wide #>)op2[s + i] * (<#= type.wide #>)op3[t + i]);
+            }
+
+            return result;
+        }
+<#
+        }
+#>
+    }
+}

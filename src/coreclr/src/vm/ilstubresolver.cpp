@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // File: ILStubResolver.cpp
 //
@@ -89,7 +88,6 @@ LPCUTF8 ILStubResolver::GetStubMethodName()
         case WrapperDelegateStub:    return "IL_STUB_WrapperDelegate_Invoke";
         case TailCallStoreArgsStub:  return "IL_STUB_StoreTailCallArgs";
         case TailCallCallTargetStub: return "IL_STUB_CallTailCallTarget";
-        case TailCallDispatcherStub: return "IL_STUB_DispatchTailCalls";
         default:
             UNREACHABLE_MSG("Unknown stub type");
     }

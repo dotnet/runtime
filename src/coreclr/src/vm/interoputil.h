@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 
 #ifndef _H_INTEROP_UTIL
@@ -354,12 +353,8 @@ void IUInvokeDispMethod(
 // Class Factory helpers
 
 //--------------------------------------------------------------------------
-// GetComClassFromProgID used by reflection class to setup a Class based on ProgID
-void GetComClassFromProgID(STRINGREF srefProgID, STRINGREF srefServer, OBJECTREF* pRef);
-
-//--------------------------------------------------------------------------
 // GetComClassFromCLSID used by reflection class to setup a Class based on CLSID
-void GetComClassFromCLSID(REFCLSID clsid, STRINGREF srefServer, OBJECTREF* pRef);
+void GetComClassFromCLSID(REFCLSID clsid, _In_opt_z_ PCWSTR wszServer, OBJECTREF* pRef);
 
 //-------------------------------------------------------------
 // check if a ComClassFactory has been setup for this class

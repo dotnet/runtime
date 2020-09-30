@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -147,20 +146,6 @@ namespace System.Globalization
             return ConvertIcuTimeFormatString(span.Slice(0, span.IndexOf('\0')));
         }
 
-        private int IcuGetFirstDayOfWeek() => IcuGetLocaleInfo(LocaleNumberData.FirstDayOfWeek);
-
-        private string[] IcuGetTimeFormats()
-        {
-            string format = IcuGetTimeFormatString(false);
-            return new string[] { format };
-        }
-
-        private string[] IcuGetShortTimeFormats()
-        {
-            string format = IcuGetTimeFormatString(true);
-            return new string[] { format };
-        }
-
         private static CultureData? IcuGetCultureDataFromRegionName(string? regionName)
         {
             // no support to lookup by region name, other than the hard-coded list in CultureData
@@ -241,34 +226,6 @@ namespace System.Globalization
 
             int lcid = IcuLocaleData.GetLocaleDataNumericPart(cultureName, IcuLocaleDataParts.Lcid);
             return lcid == -1 ? CultureInfo.LOCALE_CUSTOM_UNSPECIFIED : lcid;
-        }
-
-        private static int IcuGetAnsiCodePage(string cultureName)
-        {
-            Debug.Assert(!GlobalizationMode.UseNls);
-            int ansiCodePage = IcuLocaleData.GetLocaleDataNumericPart(cultureName, IcuLocaleDataParts.AnsiCodePage);
-            return ansiCodePage == -1 ? CultureData.Invariant.ANSICodePage : ansiCodePage;
-        }
-
-        private static int IcuGetOemCodePage(string cultureName)
-        {
-            Debug.Assert(!GlobalizationMode.UseNls);
-            int oemCodePage = IcuLocaleData.GetLocaleDataNumericPart(cultureName, IcuLocaleDataParts.OemCodePage);
-            return oemCodePage == -1 ? CultureData.Invariant.OEMCodePage : oemCodePage;
-        }
-
-        private static int IcuGetMacCodePage(string cultureName)
-        {
-            Debug.Assert(!GlobalizationMode.UseNls);
-            int macCodePage = IcuLocaleData.GetLocaleDataNumericPart(cultureName, IcuLocaleDataParts.MacCodePage);
-            return macCodePage == -1 ? CultureData.Invariant.MacCodePage : macCodePage;
-        }
-
-        private static int IcuGetEbcdicCodePage(string cultureName)
-        {
-            Debug.Assert(!GlobalizationMode.UseNls);
-            int ebcdicCodePage = IcuLocaleData.GetLocaleDataNumericPart(cultureName, IcuLocaleDataParts.EbcdicCodePage);
-            return ebcdicCodePage == -1 ? CultureData.Invariant.EBCDICCodePage : ebcdicCodePage;
         }
 
         private static int IcuGetGeoId(string cultureName)

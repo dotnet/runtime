@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
@@ -13,21 +12,6 @@ namespace System.Runtime.InteropServices
     public partial class Marshal
     {
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public static extern IntPtr AllocCoTaskMem(int cb);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public static extern IntPtr AllocHGlobal(IntPtr cb);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public static extern void FreeBSTR(IntPtr ptr);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public static extern void FreeCoTaskMem(IntPtr ptr);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public static extern void FreeHGlobal(IntPtr hglobal);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern int GetLastWin32Error();
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -37,19 +21,7 @@ namespace System.Runtime.InteropServices
         public static extern IntPtr OffsetOf(Type t, string fieldName);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public static extern string PtrToStringBSTR(IntPtr ptr);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public static extern IntPtr ReAllocCoTaskMem(IntPtr pv, int cb);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public static extern IntPtr ReAllocHGlobal(IntPtr pv, IntPtr cb);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern void StructureToPtr(object structure, IntPtr ptr, bool fDeleteOld);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern unsafe IntPtr BufferToBSTR(char* ptr, int slen);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern bool IsPinnableType(Type type);
@@ -343,22 +315,6 @@ namespace System.Runtime.InteropServices
             throw new PlatformNotSupportedException();
         }
 
-        internal static unsafe IntPtr AllocBSTR(int length)
-        {
-            IntPtr res = BufferToBSTR((char*)IntPtr.Zero, length);
-            if (res == IntPtr.Zero)
-                throw new OutOfMemoryException();
-            return res;
-        }
-
-        public static unsafe IntPtr StringToBSTR(string? s)
-        {
-            if (s == null)
-                return IntPtr.Zero;
-            fixed (char* fixed_s = s)
-                return BufferToBSTR(fixed_s, s.Length);
-        }
-
         private sealed class MarshalerInstanceKeyComparer : IEqualityComparer<(Type, string)>
         {
             public bool Equals((Type, string) lhs, (Type, string) rhs)
@@ -374,7 +330,7 @@ namespace System.Runtime.InteropServices
 
         private static Dictionary<(Type, string), ICustomMarshaler>? MarshalerInstanceCache;
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
             Justification = "Implementation detail of MarshalAs.CustomMarshaler")]
         internal static ICustomMarshaler? GetCustomMarshalerInstance(Type type, string cookie)
         {

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // File: StubGen.cpp
 //
@@ -134,7 +133,7 @@ void ILStubLinker::DumpIL_FormatToken(mdToken token, SString &strTokenFormatting
                 sig.GetSignature(&pSig, &cbSig);
             }
 
-            IMDInternalImport * pIMDI = MscorlibBinder::GetModule()->GetMDImport();
+            IMDInternalImport * pIMDI = CoreLibBinder::GetModule()->GetMDImport();
             CQuickBytes sigStr;
             PrettyPrintSig(pSig, cbSig, "", &sigStr, pIMDI, NULL);
 
@@ -960,11 +959,11 @@ BYTE* ILStubLinker::GenerateCodeWorker(BYTE* pbBuffer, ILInstruction* pInstrBuff
                 case 8:
                     {
                         UINT64 uVal = pInstrBuffer[i].uArg;
-#ifndef HOST_64BIT  // We don't have room on 32-bit platforms to store the CLR_NAN_64 value, so
+#ifndef TARGET_64BIT  // We don't have room on 32-bit platforms to store the CLR_NAN_64 value, so
                 // we use a special value to represent CLR_NAN_64 and then recreate it here.
                         if ((instr == ILCodeStream::CEE_LDC_R8) && (((UINT32)uVal) == ILCodeStream::SPECIAL_VALUE_NAN_64_ON_32))
                             uVal = CLR_NAN_64;
-#endif // HOST_64BIT
+#endif // TARGET_64BIT
                         SET_UNALIGNED_VAL64(pbBuffer, uVal);
                     }
                     break;
@@ -1419,7 +1418,7 @@ void ILCodeStream::EmitLDC(DWORD_PTR uConst)
 {
     WRAPPER_NO_CONTRACT;
     Emit(
-#ifdef HOST_64BIT
+#ifdef TARGET_64BIT
         CEE_LDC_I8
 #else
         CEE_LDC_I4
@@ -1434,14 +1433,14 @@ void ILCodeStream::EmitLDC_R4(UINT32 uConst)
 void ILCodeStream::EmitLDC_R8(UINT64 uConst)
 {
     STANDARD_VM_CONTRACT;
-#ifndef HOST_64BIT  // We don't have room on 32-bit platforms to stor the CLR_NAN_64 value, so
+#ifndef TARGET_64BIT  // We don't have room on 32-bit platforms to stor the CLR_NAN_64 value, so
                 // we use a special value to represent CLR_NAN_64 and then recreate it later.
     CONSISTENCY_CHECK(((UINT32)uConst) != SPECIAL_VALUE_NAN_64_ON_32);
     if (uConst == CLR_NAN_64)
         uConst = SPECIAL_VALUE_NAN_64_ON_32;
     else
         CONSISTENCY_CHECK(FitsInU4(uConst));
-#endif // HOST_64BIT
+#endif // TARGET_64BIT
     Emit(CEE_LDC_R8, 1, (UINT_PTR)uConst);
 }
 void ILCodeStream::EmitLDELEMA(int token)
@@ -1823,28 +1822,28 @@ void ILCodeStream::EmitUNALIGNED(BYTE alignment)
 void ILCodeStream::EmitNEWOBJ(BinderMethodID id, int numInArgs)
 {
     STANDARD_VM_CONTRACT;
-    EmitNEWOBJ(GetToken(MscorlibBinder::GetMethod(id)), numInArgs);
+    EmitNEWOBJ(GetToken(CoreLibBinder::GetMethod(id)), numInArgs);
 }
 
 void ILCodeStream::EmitCALL(BinderMethodID id, int numInArgs, int numRetArgs)
 {
     STANDARD_VM_CONTRACT;
-    EmitCALL(GetToken(MscorlibBinder::GetMethod(id)), numInArgs, numRetArgs);
+    EmitCALL(GetToken(CoreLibBinder::GetMethod(id)), numInArgs, numRetArgs);
 }
 void ILCodeStream::EmitLDFLD(BinderFieldID id)
 {
     STANDARD_VM_CONTRACT;
-    EmitLDFLD(GetToken(MscorlibBinder::GetField(id)));
+    EmitLDFLD(GetToken(CoreLibBinder::GetField(id)));
 }
 void ILCodeStream::EmitSTFLD(BinderFieldID id)
 {
     STANDARD_VM_CONTRACT;
-    EmitSTFLD(GetToken(MscorlibBinder::GetField(id)));
+    EmitSTFLD(GetToken(CoreLibBinder::GetField(id)));
 }
 void ILCodeStream::EmitLDFLDA(BinderFieldID id)
 {
     STANDARD_VM_CONTRACT;
-    EmitLDFLDA(GetToken(MscorlibBinder::GetField(id)));
+    EmitLDFLDA(GetToken(CoreLibBinder::GetField(id)));
 }
 
 void ILStubLinker::SetHasThis (bool fHasThis)
@@ -1882,7 +1881,7 @@ void ILCodeStream::EmitArgIteratorCreateAndLoad()
     //
     // we insert the ArgIterator in the same spot that the VASigCookie will go for sanity
     //
-    LocalDesc   aiLoc(MscorlibBinder::GetClass(CLASS__ARG_ITERATOR));
+    LocalDesc   aiLoc(CoreLibBinder::GetClass(CLASS__ARG_ITERATOR));
     int         aiLocNum;
 
     aiLocNum = NewLocal(aiLoc);
@@ -1896,7 +1895,7 @@ void ILCodeStream::EmitArgIteratorCreateAndLoad()
     aiLoc.ElementType[0]    = ELEMENT_TYPE_BYREF;
     aiLoc.ElementType[1]    = ELEMENT_TYPE_INTERNAL;
     aiLoc.cbType            = 2;
-    aiLoc.InternalToken     = MscorlibBinder::GetClass(CLASS__ARG_ITERATOR);
+    aiLoc.InternalToken     = CoreLibBinder::GetClass(CLASS__ARG_ITERATOR);
 
     SetStubTargetArgType(&aiLoc, false);
 }

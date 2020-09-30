@@ -1,6 +1,5 @@
 # This is a custom file written for .NET Core's build system
 # It overwrites the one found in upstream
-
 project(unwind)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
@@ -69,6 +68,28 @@ if(CLR_CMAKE_HOST_UNIX)
         # Disable warning for a bug in the libunwind source src/x86/Gos-linux.c, but not in code that we exercise
         add_compile_options(-Wno-incompatible-pointer-types)
     endif()
+
+    if (CLR_CMAKE_HOST_OSX)
+        add_definitions(-D_XOPEN_SOURCE)
+        add_definitions(-DUNW_REMOTE_ONLY)
+        add_definitions(-D__APPLE__)
+        add_compile_options(-Wno-sometimes-uninitialized)
+        add_compile_options(-Wno-implicit-function-declaration)
+
+        # Our posix abstraction layer will provide these headers
+        set(HAVE_ELF_H 1)
+        set(HAVE_ENDIAN_H 1)
+
+        # include paths
+        include_directories(include/tdep)
+        include_directories(include)
+        include_directories(${CMAKE_CURRENT_BINARY_DIR}/include/tdep)
+        include_directories(${CMAKE_CURRENT_BINARY_DIR}/include)
+
+        # files for macos compilation
+        include_directories(../libunwind_mac/include)
+    endif(CLR_CMAKE_HOST_OSX)
+
 endif(CLR_CMAKE_HOST_UNIX)
 
 if(CLR_CMAKE_HOST_WIN32)

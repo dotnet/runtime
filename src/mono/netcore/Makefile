@@ -58,7 +58,7 @@ copy-runtime-files-to:
 
 # run specific coreclr test, e.g.:
 # make run-tests-coreclr CoreClrTest="bash ../../artifacts/tests/coreclr/OSX.x64.Release/JIT/opt/InstructionCombining/DivToMul/DivToMul.sh"
-# NOTE: make sure you've built them (cd src/coreclr && ./build-test.sh release)
+# NOTE: make sure you've built them (cd src/tests && ./build.sh release)
 run-tests-coreclr:
 	$(DOTNET) msbuild /t:RunCoreClrTest /p:CoreClrTest="$(CoreClrTest)" $(MONO_PROJ)
 

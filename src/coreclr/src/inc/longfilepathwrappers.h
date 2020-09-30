@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #ifndef _WIN_PATH_APIS_WRAPPER_
 #define _WIN_PATH_APIS_WRAPPER_
@@ -50,7 +49,7 @@ FindFirstFileExWrapper(
     _In_ DWORD dwAdditionalFlags
     );
 
-#ifndef TARGET_UNIX
+#ifndef HOST_UNIX
 BOOL
 CopyFileExWrapper(
     _In_        LPCWSTR lpExistingFileName,
@@ -61,7 +60,7 @@ CopyFileExWrapper(
     _Inout_opt_ LPBOOL pbCancel,
     _In_        DWORD dwCopyFlags
     );
-#endif //TARGET_UNIX
+#endif //HOST_UNIX
 
 BOOL
 MoveFileExWrapper(

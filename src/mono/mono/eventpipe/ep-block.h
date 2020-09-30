@@ -6,6 +6,13 @@
 #ifdef ENABLE_PERFTRACING
 #include "ep-rt-config.h"
 #include "ep-types.h"
+#include "ep-stream.h"
+
+#undef EP_IMPL_GETTER_SETTER
+#ifdef EP_IMPL_BLOCK_GETTER_SETTER
+#define EP_IMPL_GETTER_SETTER
+#endif
+#include "ep-getter-setter.h"
 
 /*
  * EventPipeBlock
@@ -22,7 +29,13 @@ struct _EventPipeBlockVtable {
 	EventPipeBlockSerializeHeaderFunc serialize_header_func;
 };
 
-#if defined(EP_INLINE_GETTER_SETTER) || defined(EP_IMPL_GETTER_SETTER)
+// The base type for all file blocks in the Nettrace file format
+// This class handles memory management to buffer the block data,
+// bookkeeping, block version numbers, and serializing the data
+// to the file with correct alignment.
+// Sub-types decide the format of the block contents and how
+// the blocks are named.
+#if defined(EP_INLINE_GETTER_SETTER) || defined(EP_IMPL_BLOCK_GETTER_SETTER)
 struct _EventPipeBlock {
 #else
 struct _EventPipeBlock_Internal {
@@ -34,7 +47,7 @@ struct _EventPipeBlock_Internal {
 	EventPipeSerializationFormat format;
 };
 
-#if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_GETTER_SETTER)
+#if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_BLOCK_GETTER_SETTER)
 struct _EventPipeBlock {
 	uint8_t _internal [sizeof (struct _EventPipeBlock_Internal)];
 };
@@ -101,15 +114,15 @@ ep_block_fast_serialize_vcall (
  */
 
 struct _EventPipeEventHeader {
-	int32_t metadata_id;
-	int32_t sequence_number;
-	uint64_t thread_id;
-	uint64_t capture_thread_id;
-	int32_t capture_proc_number;
-	int32_t stack_id;
-	uint64_t timestamp;
 	uint8_t activity_id [EP_ACTIVITY_ID_SIZE];
 	uint8_t related_activity_id [EP_ACTIVITY_ID_SIZE];
+	ep_timestamp_t timestamp;
+	uint64_t thread_id;
+	uint64_t capture_thread_id;
+	int32_t metadata_id;
+	int32_t sequence_number;
+	int32_t capture_proc_number;
+	int32_t stack_id;
 	int32_t data_len;
 };
 
@@ -117,7 +130,8 @@ struct _EventPipeEventHeader {
  * EventPipeEventBlockBase
  */
 
-#if defined(EP_INLINE_GETTER_SETTER) || defined(EP_IMPL_GETTER_SETTER)
+// The base type for blocks that contain events (EventBlock and EventMetadataBlock).
+#if defined(EP_INLINE_GETTER_SETTER) || defined(EP_IMPL_BLOCK_GETTER_SETTER)
 struct _EventPipeEventBlockBase {
 #else
 struct _EventPipeEventBlockBase_Internal {
@@ -125,12 +139,12 @@ struct _EventPipeEventBlockBase_Internal {
 	EventPipeBlock block;
 	EventPipeEventHeader last_header;
 	uint8_t compressed_header [100];
+	ep_timestamp_t min_timestamp;
+	ep_timestamp_t max_timestamp;
 	bool use_header_compression;
-	uint64_t min_timestamp;
-	uint64_t max_timestamp;
 };
 
-#if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_GETTER_SETTER)
+#if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_BLOCK_GETTER_SETTER)
 struct _EventPipeEventBlockBase {
 	uint8_t _internal [sizeof (struct _EventPipeEventBlockBase_Internal)];
 };
@@ -138,12 +152,12 @@ struct _EventPipeEventBlockBase {
 
 EP_DEFINE_GETTER_REF(EventPipeEventBlockBase *, event_block_base, EventPipeBlock *, block)
 EP_DEFINE_GETTER_REF(EventPipeEventBlockBase *, event_block_base, EventPipeEventHeader *, last_header)
+EP_DEFINE_GETTER(EventPipeEventBlockBase *, event_block_base, ep_timestamp_t, min_timestamp)
+EP_DEFINE_SETTER(EventPipeEventBlockBase *, event_block_base, ep_timestamp_t, min_timestamp)
+EP_DEFINE_GETTER(EventPipeEventBlockBase *, event_block_base, ep_timestamp_t, max_timestamp)
+EP_DEFINE_SETTER(EventPipeEventBlockBase *, event_block_base, ep_timestamp_t, max_timestamp)
 EP_DEFINE_GETTER(EventPipeEventBlockBase *, event_block_base, bool, use_header_compression)
 EP_DEFINE_GETTER_ARRAY_REF(EventPipeEventBlockBase *, event_block_base, uint8_t *, const uint8_t *, compressed_header, compressed_header[0])
-EP_DEFINE_GETTER(EventPipeEventBlockBase *, event_block_base, uint64_t, min_timestamp)
-EP_DEFINE_SETTER(EventPipeEventBlockBase *, event_block_base, uint64_t, min_timestamp)
-EP_DEFINE_GETTER(EventPipeEventBlockBase *, event_block_base, uint64_t, max_timestamp)
-EP_DEFINE_SETTER(EventPipeEventBlockBase *, event_block_base, uint64_t, max_timestamp)
 
 EventPipeEventBlockBase *
 ep_event_block_base_init (
@@ -180,7 +194,7 @@ ep_event_block_base_write_event (
  * EventPipeEventBlock.
  */
 
-#if defined(EP_INLINE_GETTER_SETTER) || defined(EP_IMPL_GETTER_SETTER)
+#if defined(EP_INLINE_GETTER_SETTER) || defined(EP_IMPL_BLOCK_GETTER_SETTER)
 struct _EventPipeEventBlock {
 #else
 struct _EventPipeEventBlock_Internal {
@@ -188,7 +202,7 @@ struct _EventPipeEventBlock_Internal {
 	EventPipeEventBlockBase event_block_base;
 };
 
-#if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_GETTER_SETTER)
+#if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_BLOCK_GETTER_SETTER)
 struct _EventPipeEventBlock {
 	uint8_t _internal [sizeof (struct _EventPipeEventBlock_Internal)];
 };
@@ -230,7 +244,7 @@ ep_event_block_clear (EventPipeEventBlock *event_block)
  * EventPipeMetadataBlock.
  */
 
-#if defined(EP_INLINE_GETTER_SETTER) || defined(EP_IMPL_GETTER_SETTER)
+#if defined(EP_INLINE_GETTER_SETTER) || defined(EP_IMPL_BLOCK_GETTER_SETTER)
 struct _EventPipeMetadataBlock {
 #else
 struct _EventPipeMetadataBlock_Internal {
@@ -238,7 +252,7 @@ struct _EventPipeMetadataBlock_Internal {
 	EventPipeEventBlockBase event_block_base;
 };
 
-#if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_GETTER_SETTER)
+#if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_BLOCK_GETTER_SETTER)
 struct _EventPipeMetadataBlock {
 	uint8_t _internal [sizeof (struct _EventPipeMetadataBlock_Internal)];
 };
@@ -278,7 +292,7 @@ ep_metadata_block_clear (EventPipeMetadataBlock *metadata_block)
  * EventPipeSequencePointBlock.
  */
 
-#if defined(EP_INLINE_GETTER_SETTER) || defined(EP_IMPL_GETTER_SETTER)
+#if defined(EP_INLINE_GETTER_SETTER) || defined(EP_IMPL_BLOCK_GETTER_SETTER)
 struct _EventPipeSequencePointBlock {
 #else
 struct _EventPipeSequencePointBlock_Internal {
@@ -286,7 +300,7 @@ struct _EventPipeSequencePointBlock_Internal {
 	EventPipeEventBlockBase event_block_base;
 };
 
-#if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_GETTER_SETTER)
+#if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_BLOCK_GETTER_SETTER)
 struct _EventPipeSequencePointBlock {
 	uint8_t _internal [sizeof (struct _EventPipeSequencePointBlock_Internal)];
 };
@@ -310,7 +324,7 @@ ep_sequence_point_block_free (EventPipeSequencePointBlock *sequence_point_block)
  * EventPipeStackBlock.
  */
 
-#if defined(EP_INLINE_GETTER_SETTER) || defined(EP_IMPL_GETTER_SETTER)
+#if defined(EP_INLINE_GETTER_SETTER) || defined(EP_IMPL_BLOCK_GETTER_SETTER)
 struct _EventPipeStackBlock {
 #else
 struct _EventPipeStackBlock_Internal {
@@ -321,19 +335,11 @@ struct _EventPipeStackBlock_Internal {
 	bool has_initial_index;
 };
 
-#if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_GETTER_SETTER)
+#if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_BLOCK_GETTER_SETTER)
 struct _EventPipeStackBlock {
 	uint8_t _internal [sizeof (struct _EventPipeStackBlock_Internal)];
 };
 #endif
-
-EP_DEFINE_GETTER_REF(EventPipeStackBlock *, stack_block, EventPipeEventBlockBase *, event_block_base)
-EP_DEFINE_GETTER(EventPipeStackBlock *, stack_block, uint32_t, initial_index)
-EP_DEFINE_SETTER(EventPipeStackBlock *, stack_block, uint32_t, initial_index)
-EP_DEFINE_GETTER(EventPipeStackBlock *, stack_block, uint32_t, count)
-EP_DEFINE_SETTER(EventPipeStackBlock *, stack_block, uint32_t, count)
-EP_DEFINE_GETTER(EventPipeStackBlock *, stack_block, bool, has_initial_index)
-EP_DEFINE_SETTER(EventPipeStackBlock *, stack_block, bool, has_initial_index)
 
 EventPipeStackBlock *
 ep_stack_block_alloc (uint32_t max_block_size);

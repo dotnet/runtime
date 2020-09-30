@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -22,7 +21,7 @@ namespace System.Security.Cryptography.Pkcs
         }
 
         public EnvelopedCms(ContentInfo contentInfo)
-            : this(contentInfo, new AlgorithmIdentifier(Oid.FromOidValue(Oids.Aes256Cbc, OidGroup.EncryptionAlgorithm)))
+            : this(contentInfo, new AlgorithmIdentifier(Oids.Aes256CbcOid.CopyOid()))
         {
         }
 
@@ -130,6 +129,20 @@ namespace System.Security.Cryptography.Pkcs
             if (encodedMessage == null)
                 throw new ArgumentNullException(nameof(encodedMessage));
 
+            Decode(new ReadOnlySpan<byte>(encodedMessage));
+        }
+
+        /// <summary>
+        ///   Decodes the provided data as a CMS/PKCS#7 EnvelopedData message.
+        /// </summary>
+        /// <param name="encodedMessage">
+        ///   The data to decode.
+        /// </param>
+        /// <exception cref="CryptographicException">
+        ///   The <paramref name="encodedMessage"/> parameter was not successfully decoded.
+        /// </exception>
+        public void Decode(ReadOnlySpan<byte> encodedMessage)
+        {
             if (_decryptorPal != null)
             {
                 _decryptorPal.Dispose();

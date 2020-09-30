@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetFrameworkCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;net461</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="EventInstanceTests.cs" />
@@ -21,5 +21,8 @@
     <Compile Include="System\Diagnostics\Reader\EventLogSessionTests.cs" />
     <Compile Include="System\Diagnostics\Reader\EventLogWatcherTests.cs" /> 
     <Compile Include="System\Diagnostics\Reader\ProviderMetadataTests.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="$(TargetFramework.StartsWith('$(NetCoreAppCurrent)'))">
+    <ProjectReference Include="..\src\System.Diagnostics.EventLog.csproj" />
   </ItemGroup>
 </Project>

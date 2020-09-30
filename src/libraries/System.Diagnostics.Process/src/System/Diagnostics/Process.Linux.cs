@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Buffers;
@@ -241,10 +240,6 @@ namespace System.Diagnostics
             // RLIMIT_RSS with setrlimit not supported on Linux > 2.4.30.
             throw new PlatformNotSupportedException(SR.MinimumWorkingSetNotSupported);
         }
-
-        // -----------------------------
-        // ---- PAL layer ends here ----
-        // -----------------------------
 
         /// <summary>Gets the path to the executable for the process, or null if it could not be retrieved.</summary>
         /// <param name="processId">The pid for the target process, or -1 for the current process.</param>

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 
@@ -8,10 +7,10 @@ namespace System.Data
 {
     internal sealed class RelatedView : DataView, IFilter
     {
-        private readonly Nullable<DataKey> _parentKey;
+        private readonly DataKey? _parentKey;
         private readonly DataKey _childKey;
-        private readonly DataRowView _parentRowView;
-        private readonly object[] _filterValues;
+        private readonly DataRowView? _parentRowView;
+        private readonly object[]? _filterValues;
 
         public RelatedView(DataColumn[] columns, object[] values) : base(columns[0].Table, false)
         {
@@ -38,24 +37,24 @@ namespace System.Data
             base.ResetRowViewCache();
         }
 
-        private object[] GetParentValues()
+        private object[]? GetParentValues()
         {
             if (_filterValues != null)
             {
                 return _filterValues;
             }
 
-            if (!_parentRowView.HasRecord())
+            if (!_parentRowView!.HasRecord())
             {
                 return null;
             }
-            return _parentKey.Value.GetKeyValues(_parentRowView.GetRecord());
+            return _parentKey!.Value.GetKeyValues(_parentRowView.GetRecord());
         }
 
 
         public bool Invoke(DataRow row, DataRowVersion version)
         {
-            object[] parentValues = GetParentValues();
+            object[]? parentValues = GetParentValues();
             if (parentValues == null)
             {
                 return false;
@@ -80,7 +79,7 @@ namespace System.Data
                 }
             }
 
-            IFilter baseFilter = base.GetFilter();
+            IFilter? baseFilter = base.GetFilter();
             if (baseFilter != null)
             {
                 allow &= baseFilter.Invoke(row, version);
@@ -95,19 +94,19 @@ namespace System.Data
         public override DataRowView AddNew()
         {
             DataRowView addNewRowView = base.AddNew();
-            addNewRowView.Row.SetKeyValues(_childKey, GetParentValues());
+            addNewRowView.Row.SetKeyValues(_childKey, GetParentValues()!);
             return addNewRowView;
         }
 
-        internal override void SetIndex(string newSort, DataViewRowState newRowStates, IFilter newRowFilter)
+        internal override void SetIndex(string newSort, DataViewRowState newRowStates, IFilter? newRowFilter)
         {
             SetIndex2(newSort, newRowStates, newRowFilter, false);
             Reset();
         }
 
-        public override bool Equals(DataView dv)
+        public override bool Equals(DataView? dv)
         {
-            RelatedView other = dv as RelatedView;
+            RelatedView? other = dv as RelatedView;
             if (other == null)
             {
                 return false;
@@ -128,12 +127,12 @@ namespace System.Data
                 }
 
                 return (CompareArray(_childKey.ColumnsReference, other._childKey.ColumnsReference) &&
-                        CompareArray(_parentKey.Value.ColumnsReference, _parentKey.Value.ColumnsReference) &&
-                        _parentRowView.Equals(other._parentRowView));
+                        CompareArray(_parentKey!.Value.ColumnsReference, _parentKey.Value.ColumnsReference) &&
+                        _parentRowView!.Equals(other._parentRowView));
             }
         }
 
-        private bool CompareArray(object[] value1, object[] value2)
+        private bool CompareArray(object?[]? value1, object?[]? value2)
         {
             if (value1 == null || value2 == null)
             {

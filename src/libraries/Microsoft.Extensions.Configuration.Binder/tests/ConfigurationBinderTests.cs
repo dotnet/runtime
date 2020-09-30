@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -102,6 +101,12 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
         public class DerivedOptionsWithIConfigurationSection : DerivedOptions
         {
             public IConfigurationSection DerivedSection { get; set; }
+        }
+
+        public struct ValueTypeOptions
+        {
+            public int MyInt32 { get; set; }
+            public string MyString { get; set; }
         }
 
         [Fact]
@@ -788,6 +793,23 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             Assert.Equal(
                 SR.Format(SR.Error_CannotActivateAbstractOrInterface, typeof(ISomeInterface)),
                 exception.Message);
+        }
+
+        [Fact]
+        public void CanBindValueTypeOptions()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"MyInt32", "42"},
+                {"MyString", "hello world"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ValueTypeOptions>();
+            Assert.Equal(42, options.MyInt32);
+            Assert.Equal("hello world", options.MyString);
         }
 
         private interface ISomeInterface

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.ComponentModel;
@@ -79,7 +78,7 @@ namespace System.Data
             dataRowView.SetColumnValue(Column, DBNull.Value); // no need to ccheck for the col type and set Sql...Null!
         }
 
-        public override void SetValue(object component, object value)
+        public override void SetValue(object component, object? value)
         {
             DataRowView dataRowView = (DataRowView)component;
             dataRowView.SetColumnValue(Column, value);

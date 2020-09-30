@@ -27,6 +27,17 @@
     </PropertyGroup>
   </Target>
 
+  <!--
+    We should not build some pkgproj in source-build (i.e. targeting-pack).
+  -->
+  <Target Name="GetSourceBuildSkipBuildProps"
+          Condition="'$(DotNetBuildFromSource)' == 'true' and '$(AlwaysBuildEvenInSourceBuild)' != 'true'"
+          BeforeTargets="GetSkipBuildProps">
+    <PropertyGroup Condition="'$(FrameworkPackType)' == 'targeting'">
+      <SkipBuild>true</SkipBuild>
+    </PropertyGroup>
+  </Target>
+
   <PropertyGroup Condition="'$(RuntimeFlavor)' == 'Mono' and '$(TargetsMobile)' != 'true'">
     <RuntimeSpecificFrameworkSuffix>.Mono</RuntimeSpecificFrameworkSuffix>
   </PropertyGroup>
@@ -135,6 +146,15 @@
   </Target>
 
   <!--
+    Ensures package reports dir exists, to work around the issue in VerifyClosure task:
+    https://github.com/dotnet/arcade/issues/6090
+    Remove this target, once the issue is fixed.
+  -->
+  <Target Name="EnsureDepenedencyGraphDir" BeforeTargets="VerifyClosure">
+    <MakeDir Directories="$(PackageReportDir)" />
+  </Target>
+
+  <!--
     Finds symbol files and injects them into the package build.
   -->
   <Target Name="GetSymbolPackageFiles"
@@ -156,6 +176,15 @@
       -->
       <File Remove="@(SiblingSymbolFile)" />
       <File Include="@(SiblingSymbolFile)" />
+    </ItemGroup>
+
+    <!-- On Windows, native symbols are installed to a PDB subdirectory -->
+    <ItemGroup>
+      <WindowsSymbolFileInSubdirectory Include="@(WindowsSymbolFile -> '%(RootDir)%(Directory)PDB\%(Filename)%(Extension)')" />
+      <ExistingWindowsSymbolFileInSubdirectory Include="@(WindowsSymbolFileInSubdirectory)" Condition="Exists('%(Identity)')" />
+      <File Include="@(ExistingWindowsSymbolFileInSubdirectory)">
+        <IsSymbolFile>true</IsSymbolFile>
+      </File>
     </ItemGroup>
 
     <PropertyGroup>

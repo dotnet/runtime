@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // File: clsload.hpp
 //
@@ -944,6 +943,8 @@ public:
     TypeHandle LoadTypeHandleThrowing(NameHandle* pName, ClassLoadLevel level = CLASS_LOADED,
                                       Module* pLookInThisModuleOnly=NULL);
 
+    static void ValidateMethodsWithCovariantReturnTypes(MethodTable* pMT);
+
 private:
 
 #ifndef DACCESS_COMPILE
@@ -970,7 +971,7 @@ private:
 
     static void LoadExactParentAndInterfacesTransitively(MethodTable *pMT);
 
-    static void ValidateMethodsWithCovariantReturnTypes(MethodTable* pMT);
+    static void PropagateCovariantReturnMethodImplSlots(MethodTable* pMT);
 
     static bool IsCompatibleWith(TypeHandle hType1, TypeHandle hType2);
     static CorElementType GetReducedTypeElementType(TypeHandle hType);

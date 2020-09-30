@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics.SymbolStore;
 using System.Runtime.InteropServices;
@@ -429,6 +428,8 @@ namespace System.Reflection.Emit
         private int GetMemberRefToken(MethodBase methodInfo, Type[]? optionalParameterTypes)
         {
             Type[]? parameterTypes;
+            Type[][]? requiredCustomModifiers;
+            Type[][]? optionalCustomModifiers;
 
             if (optionalParameterTypes != null && (methodInfo.CallingConvention & CallingConventions.VarArgs) == 0)
                 throw new InvalidOperationException(SR.InvalidOperation_NotAVarArgCallingConvention);
@@ -443,17 +444,28 @@ namespace System.Reflection.Emit
             if (paramInfo != null && paramInfo.Length != 0)
             {
                 parameterTypes = new Type[paramInfo.Length];
+                requiredCustomModifiers = new Type[parameterTypes.Length][];
+                optionalCustomModifiers = new Type[parameterTypes.Length][];
+
                 for (int i = 0; i < paramInfo.Length; i++)
+                {
                     parameterTypes[i] = paramInfo[i].ParameterType;
+                    requiredCustomModifiers[i] = paramInfo[i].GetRequiredCustomModifiers();
+                    optionalCustomModifiers[i] = paramInfo[i].GetOptionalCustomModifiers();
+                }
             }
             else
             {
                 parameterTypes = null;
+                requiredCustomModifiers = null;
+                optionalCustomModifiers = null;
             }
 
             SignatureHelper sig = GetMemberRefSignature(methodInfo.CallingConvention,
                                                      MethodBuilder.GetMethodBaseReturnType(methodInfo),
                                                      parameterTypes,
+                                                     requiredCustomModifiers,
+                                                     optionalCustomModifiers,
                                                      optionalParameterTypes);
 
             if (rtMeth != null)
@@ -466,13 +478,17 @@ namespace System.Reflection.Emit
                                                 CallingConventions call,
                                                 Type? returnType,
                                                 Type[]? parameterTypes,
+                                                Type[][]? requiredCustomModifiers,
+                                                Type[][]? optionalCustomModifiers,
                                                 Type[]? optionalParameterTypes)
         {
             SignatureHelper sig = SignatureHelper.GetMethodSigHelper(call, returnType);
             if (parameterTypes != null)
             {
-                foreach (Type t in parameterTypes)
-                    sig.AddArgument(t);
+                for (int i = 0; i < parameterTypes.Length; i++)
+                {
+                    sig.AddArgument(parameterTypes[i], requiredCustomModifiers![i], optionalCustomModifiers![i]);
+                }
             }
             if (optionalParameterTypes != null && optionalParameterTypes.Length != 0)
             {

@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -147,7 +146,7 @@ namespace Microsoft.Extensions.DependencyModel
 
         private static Exception CreateUnexpectedException(ref Utf8JsonReader reader, string expected)
         {
-            // Replace with public API once https://github.com/dotnet/corefx/issues/34768 is fixed
+            // Replace with public API once https://github.com/dotnet/runtime/issues/28482 is fixed
             object boxedState = reader.CurrentState;
             long lineNumber = (long)(typeof(JsonReaderState).GetField("_lineNumber", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(boxedState) ?? -1);
             long bytePositionInLine = (long)(typeof(JsonReaderState).GetField("_bytePositionInLine", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(boxedState) ?? -1);

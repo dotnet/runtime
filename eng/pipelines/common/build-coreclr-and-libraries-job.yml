@@ -11,6 +11,8 @@ parameters:
   stagedBuild: false
   variables: {}
   pool: ''
+  platform: ''
+  testBuildPlatforms: []
 
 jobs:
 - template: /eng/pipelines/coreclr/templates/build-job.yml
@@ -41,8 +43,8 @@ jobs:
     testGroup: ${{ parameters.testGroup }}
     crossrootfsDir: ${{ parameters.crossrootfsDir }}
     timeoutInminutes: ${{ parameters.timeoutInMinutes }}
-    signBinaries: ${{ parameters.signBinaries }}
-    stagedBuild: ${{ parameters.stagedBuild }}
     variables: ${{ parameters.variables }}
     pool: ${{ parameters.pool }}
     liveRuntimeBuildConfig: ${{ parameters.buildConfig }}
+    platform: ${{ parameters.platform }}
+    testBuildPlatforms: ${{ parameters.testBuildPlatforms }}

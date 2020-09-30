@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #ifndef __DIAGNOSTIC_SERVER_H__
 #define __DIAGNOSTIC_SERVER_H__
@@ -35,14 +34,6 @@ public:
 private:
     static Volatile<bool> s_shuttingDown;
     static CLREventStatic *s_ResumeRuntimeStartupEvent;
-};
-
-class DiagnosticServerProtocolHelper
-{
-public:
-    // IPC event handlers.
-    static void HandleIpcMessage(DiagnosticsIpc::IpcMessage& message, IpcStream *pStream);
-    static void ResumeRuntimeStartup(DiagnosticsIpc::IpcMessage& message, IpcStream *pStream);
 };
 
 #endif // FEATURE_PERFTRACING

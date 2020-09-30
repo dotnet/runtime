@@ -1,13 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Dynamic;
 using System.Dynamic.Utils;
 using System.Reflection;
-using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 
 namespace System.Linq.Expressions.Interpreter
@@ -160,17 +159,7 @@ namespace System.Linq.Expressions.Interpreter
 #endif
 
 #if FEATURE_DLG_INVOKE
-        // TODO: replace these with DynamicallyAccessedMembersAttribute (https://github.com/dotnet/runtime/issues/37837)
-        [DynamicDependency("#ctor", typeof(ActionCallInstruction))]
-        [DynamicDependency("#ctor", typeof(ActionCallInstruction<>))]
-        [DynamicDependency("#ctor", typeof(ActionCallInstruction<,>))]
-        [DynamicDependency("#ctor", typeof(ActionCallInstruction<,,>))]
-        [DynamicDependency("#ctor", typeof(ActionCallInstruction<,,,>))]
-        [DynamicDependency("#ctor", typeof(FuncCallInstruction<>))]
-        [DynamicDependency("#ctor", typeof(FuncCallInstruction<,>))]
-        [DynamicDependency("#ctor", typeof(FuncCallInstruction<,,>))]
-        [DynamicDependency("#ctor", typeof(FuncCallInstruction<,,,>))]
-        [DynamicDependency("#ctor", typeof(FuncCallInstruction<,,,,>))]
+        [return: DynamicallyAccessedMembersAttribute(DynamicallyAccessedMemberTypes.PublicConstructors)]
         private static Type GetHelperType(MethodInfo info, Type[] arrTypes)
         {
             Type t;

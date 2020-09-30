@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.CompilerServices;
 using Internal.Runtime.CompilerServices;
@@ -269,8 +268,8 @@ namespace System
 
         public static T[] AllocateUninitializedArray<T>(int length, bool pinned = false)
         {
-            // Mono only does explicit zeroning if the array is to big for the nursery, but less than 1 Mb - 4 kb.
-            // If it is bigger than that, we grab memoroy directly from the OS which comes pre-zeroed.
+            // Mono only does explicit zeroing if the array is too big for the nursery, but less than 1 Mb - 4 kb.
+            // If it is bigger than that, we grab memory directly from the OS which comes pre-zeroed.
             // Experimentation shows that if we just skip the zeroing in this case, we do not save a measurable
             // amount of time. So we just allocate the normal way here.
             // Revist if we change LOS implementation.

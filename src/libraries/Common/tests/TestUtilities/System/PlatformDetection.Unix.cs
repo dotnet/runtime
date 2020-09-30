@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 using System.Runtime.InteropServices;
@@ -48,9 +47,7 @@ namespace System
         public static bool IsNotFedoraOrRedHatFamily => !IsFedora && !IsRedHatFamily;
         public static bool IsNotDebian10 => !IsDebian10;
 
-        public static bool IsSuperUser => !IsWindows ?
-            libc.geteuid() == 0 :
-            throw new PlatformNotSupportedException();
+        public static bool IsSuperUser => IsBrowser || IsWindows ? false : libc.geteuid() == 0;
 
         public static Version OpenSslVersion => !IsOSXLike && !IsWindows ?
             GetOpenSslVersion() :

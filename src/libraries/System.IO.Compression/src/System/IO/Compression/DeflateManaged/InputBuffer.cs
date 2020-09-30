@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 
@@ -21,8 +20,8 @@ namespace System.IO.Compression
         private byte[]? _buffer;           // byte array to store input
         private int _start;               // start poisition of the buffer
         private int _end;                 // end position of the buffer
-        private uint _bitBuffer = 0;      // store the bits here, we can quickly shift in this buffer
-        private int _bitsInBuffer = 0;    // number of bits available in bitBuffer
+        private uint _bitBuffer;      // store the bits here, we can quickly shift in this buffer
+        private int _bitsInBuffer;    // number of bits available in bitBuffer
 
         /// <summary>Total bits available in the input buffer.</summary>
         public int AvailableBits => _bitsInBuffer;

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ------------------------------------------------------------------------------
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
@@ -268,7 +267,6 @@ namespace System.Configuration
     }
     public partial class ConfigurationErrorsException : System.Configuration.ConfigurationException
     {
-#pragma warning disable CS0618
         public ConfigurationErrorsException() { }
         protected ConfigurationErrorsException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public ConfigurationErrorsException(string message) { }
@@ -279,7 +277,6 @@ namespace System.Configuration
         public ConfigurationErrorsException(string message, string filename, int line) { }
         public ConfigurationErrorsException(string message, System.Xml.XmlNode node) { }
         public ConfigurationErrorsException(string message, System.Xml.XmlReader reader) { }
-#pragma warning restore CS0618
         public override string BareMessage { get { throw null; } }
         public System.Collections.ICollection Errors { get { throw null; } }
         public override string Filename { get { throw null; } }
@@ -293,29 +290,29 @@ namespace System.Configuration
     }
     public partial class ConfigurationException : System.SystemException
     {
-        [System.ObsoleteAttribute("This class is obsolete, to create a new exception create a System.Configuration!System.Configuration.ConfigurationErrorsException")]
+        [System.ObsoleteAttribute("This class is obsolete, to create a new exception create a System.Configuration.ConfigurationErrorsException")]
         public ConfigurationException() { }
         protected ConfigurationException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
-        [System.ObsoleteAttribute("This class is obsolete, to create a new exception create a System.Configuration!System.Configuration.ConfigurationErrorsException")]
+        [System.ObsoleteAttribute("This class is obsolete, to create a new exception create a System.Configuration.ConfigurationErrorsException")]
         public ConfigurationException(string message) { }
-        [System.ObsoleteAttribute("This class is obsolete, to create a new exception create a System.Configuration!System.Configuration.ConfigurationErrorsException")]
+        [System.ObsoleteAttribute("This class is obsolete, to create a new exception create a System.Configuration.ConfigurationErrorsException")]
         public ConfigurationException(string message, System.Exception inner) { }
-        [System.ObsoleteAttribute("This class is obsolete, to create a new exception create a System.Configuration!System.Configuration.ConfigurationErrorsException")]
+        [System.ObsoleteAttribute("This class is obsolete, to create a new exception create a System.Configuration.ConfigurationErrorsException")]
         public ConfigurationException(string message, System.Exception inner, string filename, int line) { }
-        [System.ObsoleteAttribute("This class is obsolete, to create a new exception create a System.Configuration!System.Configuration.ConfigurationErrorsException")]
+        [System.ObsoleteAttribute("This class is obsolete, to create a new exception create a System.Configuration.ConfigurationErrorsException")]
         public ConfigurationException(string message, System.Exception inner, System.Xml.XmlNode node) { }
-        [System.ObsoleteAttribute("This class is obsolete, to create a new exception create a System.Configuration!System.Configuration.ConfigurationErrorsException")]
+        [System.ObsoleteAttribute("This class is obsolete, to create a new exception create a System.Configuration.ConfigurationErrorsException")]
         public ConfigurationException(string message, string filename, int line) { }
-        [System.ObsoleteAttribute("This class is obsolete, to create a new exception create a System.Configuration!System.Configuration.ConfigurationErrorsException")]
+        [System.ObsoleteAttribute("This class is obsolete, to create a new exception create a System.Configuration.ConfigurationErrorsException")]
         public ConfigurationException(string message, System.Xml.XmlNode node) { }
         public virtual string BareMessage { get { throw null; } }
         public virtual string Filename { get { throw null; } }
         public virtual int Line { get { throw null; } }
         public override string Message { get { throw null; } }
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
-        [System.ObsoleteAttribute("This class is obsolete, use System.Configuration!System.Configuration.ConfigurationErrorsException.GetFilename instead")]
+        [System.ObsoleteAttribute("This class is obsolete, use System.Configuration.ConfigurationErrorsException.GetFilename instead")]
         public static string GetXmlNodeFilename(System.Xml.XmlNode node) { throw null; }
-        [System.ObsoleteAttribute("This class is obsolete, use System.Configuration!System.Configuration.ConfigurationErrorsException.GetLinenumber instead")]
+        [System.ObsoleteAttribute("This class is obsolete, use System.Configuration.ConfigurationErrorsException.GetLinenumber instead")]
         public static int GetXmlNodeLineNumber(System.Xml.XmlNode node) { throw null; }
     }
     public partial class ConfigurationFileMap : System.ICloneable
@@ -497,9 +494,9 @@ namespace System.Configuration
     public sealed partial class ConfigurationSettings
     {
         internal ConfigurationSettings() { }
-        [System.ObsoleteAttribute("This method is obsolete, it has been replaced by System.Configuration!System.Configuration.ConfigurationManager.AppSettings")]
+        [System.ObsoleteAttribute("This property is obsolete, it has been replaced by System.Configuration.ConfigurationManager.AppSettings")]
         public static System.Collections.Specialized.NameValueCollection AppSettings { get { throw null; } }
-        [System.ObsoleteAttribute("This method is obsolete, it has been replaced by System.Configuration!System.Configuration.ConfigurationManager.GetSection")]
+        [System.ObsoleteAttribute("This method is obsolete, it has been replaced by System.Configuration.ConfigurationManager.GetSection")]
         public static object GetConfig(string sectionName) { throw null; }
     }
     public enum ConfigurationUserLevel
@@ -610,6 +607,7 @@ namespace System.Configuration
         protected virtual string ValueAttributeName { get { throw null; } }
         public virtual object Create(object parent, object context, System.Xml.XmlNode section) { throw null; }
     }
+    [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
     public sealed partial class DpapiProtectedConfigurationProvider : System.Configuration.ProtectedConfigurationProvider
     {
         public DpapiProtectedConfigurationProvider() { }

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================
 **
@@ -23,10 +22,6 @@
 #include "strongnameinternal.h"
 #include "strongnameholders.h"
 #include "eventtrace.h"
-
-#ifdef FEATURE_COMINTEROP
-#include "clrprivbinderutil.h"
-#endif
 
 #include "../binder/inc/bindertracing.h"
 
@@ -249,7 +244,7 @@ void AssemblySpec::InitializeSpec(PEAssembly * pFile)
     {
         // We should aways having the binding context in the PEAssembly. The only exception to this are the following:
         //
-        // 1) when we are here during EEStartup and loading mscorlib.dll.
+        // 1) when we are here during EEStartup and loading CoreLib.
         // 2) We are dealing with dynamic assemblies
         _ASSERTE((pExpectedBinder != NULL) || pFile->IsSystem() || pFile->IsDynamic());
         SetBindingContext(pExpectedBinder);
@@ -428,7 +423,7 @@ void AssemblySpec::AssemblyNameInit(ASSEMBLYNAMEREF* pAsmName, PEImage* pImageIn
     if ((m_context.usMajorVersion != (USHORT) -1) &&
         (m_context.usMinorVersion != (USHORT) -1)) {
 
-        MethodTable* pVersion = MscorlibBinder::GetClass(CLASS__VERSION);
+        MethodTable* pVersion = CoreLibBinder::GetClass(CLASS__VERSION);
 
         // version
         gc.Version = AllocateObject(pVersion);
@@ -500,7 +495,7 @@ void AssemblySpec::AssemblyNameInit(ASSEMBLYNAMEREF* pAsmName, PEImage* pImageIn
     // cultureinfo
     if (m_context.szLocale) {
 
-        MethodTable* pCI = MscorlibBinder::GetClass(CLASS__CULTURE_INFO);
+        MethodTable* pCI = CoreLibBinder::GetClass(CLASS__CULTURE_INFO);
         gc.CultureInfo = AllocateObject(pCI);
 
         gc.Locale = StringObject::NewString(m_context.szLocale);
@@ -1034,7 +1029,7 @@ AssemblySpecBindingCache::AssemblyBinding* AssemblySpecBindingCache::LookupInter
 
     // Check if the AssemblySpec already has specified its binding context. This will be set for assemblies that are
     // attempted to be explicitly bound using AssemblyLoadContext LoadFrom* methods.
-    if(!pSpec->IsAssemblySpecForMscorlib())
+    if(!pSpec->IsAssemblySpecForCoreLib())
         pBinderContextForLookup = pSpec->GetBindingContext();
     else
     {
@@ -1051,9 +1046,9 @@ AssemblySpecBindingCache::AssemblyBinding* AssemblySpecBindingCache::LookupInter
 
     if (fGetBindingContextFromParent)
     {
-        // MScorlib does not have a binding context associated with it and its lookup will only be done
+        // CoreLib does not have a binding context associated with it and its lookup will only be done
         // using its AssemblySpec hash.
-        if (!pSpec->IsAssemblySpecForMscorlib())
+        if (!pSpec->IsAssemblySpecForCoreLib())
         {
             pBinderContextForLookup = pSpec->GetBindingContextFromParentAssembly(pSpecDomain);
             pSpec->SetBindingContext(pBinderContextForLookup);
@@ -1458,7 +1453,7 @@ BOOL AssemblySpecBindingCache::StoreException(AssemblySpec *pSpec, Exception* pE
         pBinderToSaveException = pSpec->GetBindingContext();
         if (pBinderToSaveException == NULL)
         {
-            if (!pSpec->IsAssemblySpecForMscorlib())
+            if (!pSpec->IsAssemblySpecForCoreLib())
             {
                 pBinderToSaveException = pSpec->GetBindingContextFromParentAssembly(pSpec->GetAppDomain());
                 UINT_PTR binderID = 0;

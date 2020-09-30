@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Linq;
@@ -72,7 +71,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             DataflowTestHelpers.TestArgumentsExceptions<Tuple<int, int, int>>(new JoinBlock<int, int, int>());
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public async Task TestPostThenReceive()
         {
             const int Iters = 3;

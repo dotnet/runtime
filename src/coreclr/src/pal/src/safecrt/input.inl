@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /***
 *input.c - C formatted input, used by scanf, etc.
@@ -45,31 +44,6 @@
 #define _END_SECURE_CRT_DEPRECATION_DISABLE
 
 #define _CVTBUFSIZE (309+40) /* # of digits in max. dp value + slop */
-
-//#include <cruntime.h>
-//#include <stdio.h>
-//#include <ctype.h>
-//#include <cvt.h>
-//#include <conio.h>
-//#include <stdarg.h>
-//#include <string.h>
-//#include <internal.h>
-//#include <fltintrn.h>
-//#include <malloc.h>
-//#include <locale.h>
-//#include <mtdll.h>
-//#include <stdlib.h>
-//#include <setlocal.h>
-//#include <dbgint.h>
-
-//#ifndef _INC_INTERNAL_SAFECRT
-//#include <internal_securecrt.h>
-//#endif  /* _INC_INTERNAL_SAFECRT */
-
-//#ifdef _MBCS
-//#undef _MBCS
-//#endif  /* _MBCS */
-//#include <tchar.h>
 
 #define _MBTOWC(x,y,z) _minimal_chartowchar( x, y )
 

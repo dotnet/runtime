@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.Tracing;
 using System.Runtime.InteropServices;
 using System.Threading;
 
@@ -198,9 +198,36 @@ namespace System.Net.Sockets
 
         public event EventHandler<SocketAsyncEventArgs>? Completed;
 
+        private void OnCompletedInternal()
+        {
+            if (SocketsTelemetry.Log.IsEnabled())
+            {
+                AfterConnectAcceptTelemetry();
+            }
+
+            OnCompleted(this);
+        }
+
         protected virtual void OnCompleted(SocketAsyncEventArgs e)
         {
             Completed?.Invoke(e._currentSocket, e);
+        }
+
+        private void AfterConnectAcceptTelemetry()
+        {
+            switch (LastOperation)
+            {
+                case SocketAsyncOperation.Accept:
+                    SocketsTelemetry.Log.AfterAccept(SocketError);
+                    break;
+
+                case SocketAsyncOperation.Connect:
+                    if (_multipleConnect is null)
+                    {
+                        SocketsTelemetry.Log.AfterConnect(SocketError);
+                    }
+                    break;
+            }
         }
 
         // DisconnectResuseSocket property.
@@ -420,7 +447,7 @@ namespace System.Net.Sockets
         private static void ExecutionCallback(object? state)
         {
             var thisRef = (SocketAsyncEventArgs)state!;
-            thisRef.OnCompleted(thisRef);
+            thisRef.OnCompletedInternal();
         }
 
         // Marks this object as no longer "in-use". Will also execute a Dispose deferred
@@ -509,7 +536,9 @@ namespace System.Net.Sockets
             _currentSocket = socket;
 
             // Capture execution context if needed (it is unless explicitly disabled).
-            if (_flowExecutionContext)
+            // If Telemetry is enabled, make sure to capture the context if we're making a Connect or Accept call to preserve the activity
+            if (_flowExecutionContext ||
+                (SocketsTelemetry.Log.IsEnabled() && (operation == SocketAsyncOperation.Connect || operation == SocketAsyncOperation.Accept)))
             {
                 _context = ExecutionContext.Capture();
             }
@@ -605,6 +634,8 @@ namespace System.Net.Sockets
                     break;
             }
 
+            // Don't log transfered byte count in case of a failure.
+
             Complete();
         }
 
@@ -625,7 +656,7 @@ namespace System.Net.Sockets
 
             if (context == null)
             {
-                OnCompleted(this);
+                OnCompletedInternal();
             }
             else
             {
@@ -641,7 +672,7 @@ namespace System.Net.Sockets
 
             if (context == null)
             {
-                OnCompleted(this);
+                OnCompletedInternal();
             }
             else
             {
@@ -655,12 +686,14 @@ namespace System.Net.Sockets
             _currentSocket = connectSocket;
             _connectSocket = connectSocket;
 
+            if (SocketsTelemetry.Log.IsEnabled()) LogBytesTransferEvents(connectSocket?.SocketType, SocketAsyncOperation.Connect, bytesTransferred);
+
             // Complete the operation and raise the event.
             ExecutionContext? context = _context; // store context before it's cleared as part of completing the operation
             Complete();
             if (context == null)
             {
-                OnCompleted(this);
+                OnCompletedInternal();
             }
             else
             {
@@ -672,7 +705,7 @@ namespace System.Net.Sockets
         {
             SetResults(SocketError.Success, bytesTransferred, flags);
 
-            if (NetEventSource.IsEnabled && bytesTransferred > 0)
+            if (NetEventSource.Log.IsEnabled() && bytesTransferred > 0)
             {
                 LogBuffer(bytesTransferred);
             }
@@ -690,7 +723,7 @@ namespace System.Net.Sockets
                     {
                         _acceptSocket = _currentSocket.UpdateAcceptSocket(_acceptSocket!, _currentSocket._rightEndPoint!.Create(remoteSocketAddress));
 
-                        if (NetEventSource.IsEnabled)
+                        if (NetEventSource.Log.IsEnabled())
                         {
                             try
                             {
@@ -711,7 +744,7 @@ namespace System.Net.Sockets
                     socketError = FinishOperationConnect();
                     if (socketError == SocketError.Success)
                     {
-                        if (NetEventSource.IsEnabled)
+                        if (NetEventSource.Log.IsEnabled())
                         {
                             try
                             {
@@ -775,6 +808,8 @@ namespace System.Net.Sockets
                     break;
             }
 
+            if (SocketsTelemetry.Log.IsEnabled()) LogBytesTransferEvents(_currentSocket?.SocketType, _completedOperation, bytesTransferred);
+
             Complete();
         }
 
@@ -787,7 +822,7 @@ namespace System.Net.Sockets
             // Raise completion event.
             if (context == null)
             {
-                OnCompleted(this);
+                OnCompletedInternal();
             }
             else
             {
@@ -806,6 +841,29 @@ namespace System.Net.Sockets
             else
             {
                 FinishOperationSyncFailure(socketError, bytesTransferred, flags);
+            }
+
+            if (SocketsTelemetry.Log.IsEnabled()) AfterConnectAcceptTelemetry();
+        }
+
+        private static void LogBytesTransferEvents(SocketType? socketType, SocketAsyncOperation operation, int bytesTransferred)
+        {
+            switch (operation)
+            {
+                case SocketAsyncOperation.Receive:
+                case SocketAsyncOperation.ReceiveFrom:
+                case SocketAsyncOperation.ReceiveMessageFrom:
+                case SocketAsyncOperation.Accept:
+                    SocketsTelemetry.Log.BytesReceived(bytesTransferred);
+                    if (socketType == SocketType.Dgram) SocketsTelemetry.Log.DatagramReceived();
+                    break;
+                case SocketAsyncOperation.Send:
+                case SocketAsyncOperation.SendTo:
+                case SocketAsyncOperation.SendPackets:
+                case SocketAsyncOperation.Connect:
+                    SocketsTelemetry.Log.BytesSent(bytesTransferred);
+                    if (socketType == SocketType.Dgram) SocketsTelemetry.Log.DatagramSent();
+                    break;
             }
         }
     }

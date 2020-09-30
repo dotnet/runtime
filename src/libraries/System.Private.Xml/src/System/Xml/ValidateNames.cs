@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
-#nullable enable
 using System;
 using System.Xml.XPath;
 using System.Diagnostics;
@@ -27,8 +25,6 @@ namespace System.Xml
             AllExceptPrefixMapping = 0x3,
         };
 
-        private static XmlCharType s_xmlCharType = XmlCharType.Instance;
-
         //-----------------------------------------------
         // Nmtoken parsing
         //-----------------------------------------------
@@ -45,15 +41,10 @@ namespace System.Xml
             int i = offset;
             while (i < s.Length)
             {
-                if (s_xmlCharType.IsNCNameSingleChar(s[i]))
+                if (XmlCharType.IsNCNameSingleChar(s[i]))
                 {
                     i++;
                 }
-#if XML10_FIFTH_EDITION
-                else if (xmlCharType.IsNCNameSurrogateChar(s, i)) {
-                    i += 2;
-                }
-#endif
                 else
                 {
                     break;
@@ -81,16 +72,10 @@ namespace System.Xml
             int i = offset;
             while (i < s.Length)
             {
-                if (s_xmlCharType.IsNameSingleChar(s[i]) || s[i] == ':')
+                if (XmlCharType.IsNameSingleChar(s[i]) || s[i] == ':')
                 {
                     i++;
                 }
-#if XML10_FIFTH_EDITION
-                else if (xmlCharType.IsNCNameSurrogateChar(s, i))
-                {
-                    i += 2;
-                }
-#endif
                 else
                 {
                     break;
@@ -125,16 +110,10 @@ namespace System.Xml
             int i = offset;
             if (i < s.Length)
             {
-                if (s_xmlCharType.IsStartNCNameSingleChar(s[i]) || s[i] == ':')
+                if (XmlCharType.IsStartNCNameSingleChar(s[i]) || s[i] == ':')
                 {
                     i++;
                 }
-#if XML10_FIFTH_EDITION
-                else if (xmlCharType.IsNCNameSurrogateChar(s, i))
-                {
-                    i += 2;
-                }
-#endif
                 else
                 {
                     return 0; // no valid StartNCName char
@@ -143,16 +122,10 @@ namespace System.Xml
                 // Keep parsing until the end of string or an invalid NCName character is reached
                 while (i < s.Length)
                 {
-                    if (s_xmlCharType.IsNCNameSingleChar(s[i]) || s[i] == ':')
+                    if (XmlCharType.IsNCNameSingleChar(s[i]) || s[i] == ':')
                     {
                         i++;
                     }
-#if XML10_FIFTH_EDITION
-                    else if (xmlCharType.IsNCNameSurrogateChar(s, i))
-                    {
-                        i += 2;
-                    }
-#endif
                     else
                     {
                         break;
@@ -187,15 +160,10 @@ namespace System.Xml
             int i = offset;
             if (i < s.Length)
             {
-                if (s_xmlCharType.IsStartNCNameSingleChar(s[i]))
+                if (XmlCharType.IsStartNCNameSingleChar(s[i]))
                 {
                     i++;
                 }
-#if XML10_FIFTH_EDITION
-                else if (s_xmlCharType.IsNCNameSurrogateChar(s, i)) {
-                    i += 2;
-                }
-#endif
                 else
                 {
                     return 0; // no valid StartNCName char
@@ -204,15 +172,10 @@ namespace System.Xml
                 // Keep parsing until the end of string or an invalid NCName character is reached
                 while (i < s.Length)
                 {
-                    if (s_xmlCharType.IsNCNameSingleChar(s[i]))
+                    if (XmlCharType.IsNCNameSingleChar(s[i]))
                     {
                         i++;
                     }
-#if XML10_FIFTH_EDITION
-                    else if (s_xmlCharType.IsNCNameSurrogateChar(s, i)) {
-                        i += 2;
-                    }
-#endif
                     else
                     {
                         break;
@@ -402,7 +365,7 @@ namespace System.Xml
 
             Debug.Assert(offsetBadChar < s.Length);
 
-            if (s_xmlCharType.IsNCNameSingleChar(s[offsetBadChar]) && !XmlCharType.Instance.IsStartNCNameSingleChar(s[offsetBadChar]))
+            if (XmlCharType.IsNCNameSingleChar(s[offsetBadChar]) && !XmlCharType.IsStartNCNameSingleChar(s[offsetBadChar]))
             {
                 // The error character is a valid name character, but is not a valid start name character
                 throw new XmlException(SR.Xml_BadStartNameChar, XmlException.BuildCharExceptionArgs(s, offsetBadChar));
@@ -422,7 +385,7 @@ namespace System.Xml
 
             Debug.Assert(offsetBadChar < s.Length);
 
-            if (s_xmlCharType.IsNCNameSingleChar(s[offsetBadChar]) && !s_xmlCharType.IsStartNCNameSingleChar(s[offsetBadChar]))
+            if (XmlCharType.IsNCNameSingleChar(s[offsetBadChar]) && !XmlCharType.IsStartNCNameSingleChar(s[offsetBadChar]))
             {
                 // The error character is a valid name character, but is not a valid start name character
                 return new XmlException(SR.Xml_BadStartNameChar, XmlException.BuildCharExceptionArgs(s, offsetBadChar));

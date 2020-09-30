@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Net.Test.Common;
@@ -43,6 +42,7 @@ namespace System.Net.Security.Tests
                 SslProtocols serverSslProtocols = SslProtocols.Tls11 | SslProtocols.Tls12;
                 EncryptionPolicy serverEncryption = EncryptionPolicy.AllowNoEncryption;
                 RemoteCertificateValidationCallback serverRemoteCallback = new RemoteCertificateValidationCallback(delegate { return true; });
+                SslStreamCertificateContext certificateContext = SslStreamCertificateContext.Create(serverCert, null, false);
 
                 var network = new VirtualNetwork();
                 using (var client = new SslStream(new VirtualNetworkStream(network, isServer: false)))
@@ -72,7 +72,8 @@ namespace System.Net.Security.Tests
                         EnabledSslProtocols = serverSslProtocols,
                         EncryptionPolicy = serverEncryption,
                         RemoteCertificateValidationCallback = serverRemoteCallback,
-                        ServerCertificate = serverCert
+                        ServerCertificate = serverCert,
+                        ServerCertificateContext = certificateContext,
                     };
 
                     // Authenticate
@@ -103,6 +104,7 @@ namespace System.Net.Security.Tests
                     Assert.Equal(serverEncryption, serverOptions.EncryptionPolicy);
                     Assert.Same(serverRemoteCallback, serverOptions.RemoteCertificateValidationCallback);
                     Assert.Same(serverCert, serverOptions.ServerCertificate);
+                    Assert.Same(certificateContext, serverOptions.ServerCertificateContext);
                 }
             }
         }

@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Xunit;
 
@@ -62,11 +61,11 @@ namespace System.PrivateUri.Tests
             testUri = new Uri("abc://127.00.000.001:01234");
             Assert.Equal("127.00.000.001:1234", testUri.Authority);
 
-            // Known limitation: port 0 is ignored.
+            // Port 0 is parsed correctly.
             testUri = new Uri("cbd://127.00.1.2:0000");
-            Assert.Equal("127.00.1.2", testUri.Authority);
+            Assert.Equal("127.00.1.2:0", testUri.Authority);
             testUri = new Uri("cbd://127.00.1.2:0");
-            Assert.Equal("127.00.1.2", testUri.Authority);
+            Assert.Equal("127.00.1.2:0", testUri.Authority);
 
             testUri = new Uri("eb://[0000::01:123.32.123.23]/dir");
             Assert.Equal("[::1:7b20:7b17]", testUri.Authority);

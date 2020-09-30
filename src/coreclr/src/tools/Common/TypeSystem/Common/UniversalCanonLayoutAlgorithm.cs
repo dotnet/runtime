@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 
@@ -30,7 +29,8 @@ namespace Internal.TypeSystem
                 FieldAlignment = LayoutInt.Indeterminate,
                 ByteCountUnaligned = LayoutInt.Indeterminate,
                 ByteCountAlignment = LayoutInt.Indeterminate,
-                Offsets = Array.Empty<FieldAndOffset>()
+                Offsets = Array.Empty<FieldAndOffset>(),
+                LayoutAbiStable = true
             };
         }
 

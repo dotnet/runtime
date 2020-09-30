@@ -1,12 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
+using System.Runtime.Versioning;
 
 namespace System.Threading
 {
@@ -15,8 +15,8 @@ namespace System.Threading
         private Delegate _start;
         internal CultureInfo? _startCulture;
         internal CultureInfo? _startUICulture;
-        private object? _startArg = null;
-        private ExecutionContext? _executionContext = null;
+        private object? _startArg;
+        private ExecutionContext? _executionContext;
 
         internal ThreadHelper(Delegate start)
         {
@@ -183,6 +183,7 @@ namespace System.Threading
         /// method on the IThreadable interface passed in the constructor. Once the
         /// thread is dead, it cannot be restarted with another call to Start.
         /// </summary>
+        [UnsupportedOSPlatform("browser")]
         public void Start(object? parameter)
         {
             // In the case of a null delegate (second call to start on same thread)
@@ -197,6 +198,7 @@ namespace System.Threading
             Start();
         }
 
+        [UnsupportedOSPlatform("browser")]
         public void Start()
         {
 #if FEATURE_COMINTEROP_APARTMENT_SUPPORT
@@ -319,6 +321,8 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern DeserializationTracker GetThreadDeserializationTracker(ref StackCrawlMark stackMark);
 
+        internal const bool IsThreadStartSupported = true;
+
         /// <summary>Returns true if the thread has been started and is not dead.</summary>
         public extern bool IsAlive
         {
@@ -388,17 +392,10 @@ namespace System.Threading
         /// An unstarted thread can be marked to indicate that it will host a
         /// single-threaded or multi-threaded apartment.
         /// </summary>
-        private bool TrySetApartmentStateUnchecked(ApartmentState state) =>
 #if FEATURE_COMINTEROP_APARTMENT_SUPPORT
-            SetApartmentStateHelper(state, false);
-#else // !FEATURE_COMINTEROP_APARTMENT_SUPPORT
-            state == ApartmentState.Unknown;
-#endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
-
-#if FEATURE_COMINTEROP_APARTMENT_SUPPORT
-        internal bool SetApartmentStateHelper(ApartmentState state, bool fireMDAOnMismatch)
+        private bool TrySetApartmentStateUnchecked(ApartmentState state)
         {
-            ApartmentState retState = (ApartmentState)SetApartmentStateNative((int)state, fireMDAOnMismatch);
+            ApartmentState retState = (ApartmentState)SetApartmentStateNative((int)state);
 
             // Special case where we pass in Unknown and get back MTA.
             //  Once we CoUninitialize the thread, the OS will still
@@ -421,7 +418,12 @@ namespace System.Threading
         internal extern int GetApartmentStateNative();
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal extern int SetApartmentStateNative(int state, bool fireMDAOnMismatch);
+        internal extern int SetApartmentStateNative(int state);
+#else // FEATURE_COMINTEROP_APARTMENT_SUPPORT
+        private bool TrySetApartmentStateUnchecked(ApartmentState state)
+        {
+            return state == ApartmentState.Unknown;
+        }
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
 #if FEATURE_COMINTEROP

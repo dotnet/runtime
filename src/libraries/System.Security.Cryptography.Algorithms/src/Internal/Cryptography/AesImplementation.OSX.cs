@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Security.Cryptography;
 
@@ -14,6 +13,8 @@ namespace Internal.Cryptography
             byte[] key,
             byte[]? iv,
             int blockSize,
+            int paddingSize,
+            int feedbackSizeInBytes,
             bool encrypting)
         {
             BasicSymmetricCipher cipher = new AppleCCCryptor(
@@ -22,13 +23,11 @@ namespace Internal.Cryptography
                 blockSize,
                 key,
                 iv,
-                encrypting);
+                encrypting,
+                feedbackSizeInBytes,
+                paddingSize);
 
             return UniversalCryptoTransform.Create(paddingMode, cipher, encrypting);
         }
-
-        // -----------------------------
-        // ---- PAL layer ends here ----
-        // -----------------------------
     }
 }

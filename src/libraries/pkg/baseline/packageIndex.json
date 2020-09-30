@@ -24,10 +24,11 @@
       "StableVersions": [
         "1.0.0"
       ],
-      "BaselineVersion": "1.0.0",
+      "BaselineVersion": "6.0.0",
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
-        "1.0.0.0": "1.0.0"
+        "1.0.0.0": "1.0.0",
+        "5.0.0.0": "6.0.0"
       }
     },
     "Microsoft.Bcl.HashCode": {
@@ -136,13 +137,13 @@
         "2.0.1",
         "2.1.0"
       ],
-      "BaselineVersion": "5.0.0",
+      "BaselineVersion": "6.0.0",
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
         "2.0.0.0": "2.0.0",
         "2.0.1.0": "2.0.1",
         "2.0.2.0": "2.1.0",
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "Microsoft.Extensions.Caching.Abstractions": {
@@ -170,7 +171,7 @@
       ],
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "Microsoft.Extensions.Caching.Memory": {
@@ -198,7 +199,7 @@
       ],
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "Microsoft.Extensions.Configuration": {
@@ -225,7 +226,7 @@
       ],
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "Microsoft.Extensions.Configuration.Abstractions": {
@@ -252,7 +253,7 @@
       ],
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "Microsoft.Extensions.Configuration.Binder": {
@@ -281,7 +282,7 @@
       ],
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "Microsoft.Extensions.Configuration.CommandLine": {
@@ -308,7 +309,7 @@
       ],
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "Microsoft.Extensions.Configuration.EnvironmentVariables": {
@@ -336,7 +337,7 @@
       ],
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "Microsoft.Extensions.Configuration.FileExtensions": {
@@ -363,7 +364,7 @@
       ],
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "Microsoft.Extensions.Configuration.Ini": {
@@ -390,7 +391,7 @@
       ],
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "Microsoft.Extensions.Configuration.Json": {
@@ -417,7 +418,7 @@
       ],
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "Microsoft.Extensions.Configuration.UserSecrets": {
@@ -444,7 +445,7 @@
       ],
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "Microsoft.Extensions.Configuration.Xml": {
@@ -471,7 +472,7 @@
       ],
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "Microsoft.Extensions.DependencyInjection": {
@@ -495,7 +496,7 @@
       ],
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "Microsoft.Extensions.DependencyInjection.Abstractions": {
@@ -519,7 +520,7 @@
       ],
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "Microsoft.Extensions.DependencyModel": {
@@ -545,15 +546,17 @@
         "3.1.2",
         "3.1.3",
         "3.1.4",
-        "3.1.5"
+        "3.1.5",
+        "3.1.6"
       ],
-      "BaselineVersion": "5.0.0",
+      "BaselineVersion": "6.0.0",
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
         "3.1.3.0": "3.1.3",
         "3.1.4.0": "3.1.4",
         "3.1.5.0": "3.1.5",
-        "5.0.0.0": "5.0.0"
+        "3.1.6.0": "3.1.6",
+        "5.0.0.0": "6.0.0"
       }
     },
     "Microsoft.Extensions.FileProviders.Abstractions": {
@@ -577,7 +580,7 @@
       ],
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "Microsoft.Extensions.FileProviders.Composite": {
@@ -601,7 +604,7 @@
       ],
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "Microsoft.Extensions.FileProviders.Physical": {
@@ -625,7 +628,7 @@
       ],
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "Microsoft.Extensions.FileSystemGlobbing": {
@@ -647,7 +650,7 @@
       ],
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "Microsoft.Extensions.HostFactoryResolver.Sources": {
@@ -668,7 +671,7 @@
       ],
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "Microsoft.Extensions.Hosting.Abstractions": {
@@ -690,7 +693,7 @@
       ],
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "Microsoft.Extensions.Http": {
@@ -708,7 +711,7 @@
       ],
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "Microsoft.Extensions.Logging": {
@@ -735,7 +738,7 @@
       ],
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "Microsoft.Extensions.Logging.Abstractions": {
@@ -762,7 +765,7 @@
       ],
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "Microsoft.Extensions.Logging.Configuration": {
@@ -783,7 +786,7 @@
       ],
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "Microsoft.Extensions.Logging.Console": {
@@ -810,7 +813,7 @@
       ],
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "Microsoft.Extensions.Logging.Debug": {
@@ -837,7 +840,7 @@
       ],
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "Microsoft.Extensions.Logging.EventLog": {
@@ -864,7 +867,7 @@
       ],
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "Microsoft.Extensions.Logging.EventSource": {
@@ -888,7 +891,7 @@
       ],
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "Microsoft.Extensions.Logging.TraceSource": {
@@ -915,7 +918,7 @@
       ],
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "Microsoft.Extensions.Options": {
@@ -942,7 +945,7 @@
       ],
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "Microsoft.Extensions.Options.ConfigurationExtensions": {
@@ -969,7 +972,7 @@
       ],
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "Microsoft.Extensions.Options.DataAnnotations": {
@@ -985,7 +988,7 @@
       ],
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "Microsoft.Extensions.Primitives": {
@@ -1009,18 +1012,18 @@
       ],
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "Microsoft.IO.Redist": {
       "StableVersions": [
         "4.6.0"
       ],
-      "BaselineVersion": "5.0.0",
+      "BaselineVersion": "6.0.0",
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.6.0",
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "Microsoft.JScript": {
@@ -1050,7 +1053,7 @@
         "2.2.2",
         "3.0.0"
       ],
-      "BaselineVersion": "5.0.0",
+      "BaselineVersion": "6.0.0",
       "InboxOn": {}
     },
     "Microsoft.NETCore.Targets": {
@@ -1072,7 +1075,7 @@
         "2.1.0",
         "3.0.0"
       ],
-      "BaselineVersion": "5.0.0",
+      "BaselineVersion": "6.0.0",
       "InboxOn": {}
     },
     "Microsoft.Phone": {
@@ -1207,7 +1210,7 @@
         "4.5.0",
         "4.6.0"
       ],
-      "BaselineVersion": "5.0.0",
+      "BaselineVersion": "6.0.0",
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
@@ -1215,7 +1218,7 @@
         "4.1.0.0": "4.4.0",
         "4.1.1.0": "4.5.0",
         "4.1.2.0": "4.6.0",
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "Microsoft.Win32.Registry.AccessControl": {
@@ -1226,7 +1229,7 @@
         "4.5.0",
         "4.6.0"
       ],
-      "BaselineVersion": "5.0.0",
+      "BaselineVersion": "6.0.0",
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
@@ -1234,7 +1237,7 @@
         "4.0.2.0": "4.4.0",
         "4.0.3.0": "4.5.0",
         "4.0.4.0": "4.6.0",
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "Microsoft.Win32.SystemEvents": {
@@ -1242,12 +1245,12 @@
         "4.5.0",
         "4.6.0"
       ],
-      "BaselineVersion": "5.0.0",
+      "BaselineVersion": "6.0.0",
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.5.0",
         "4.0.1.0": "4.6.0",
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "Microsoft.Windows.Compatibility": {
@@ -1274,13 +1277,13 @@
         "2.0.0",
         "2.1.0"
       ],
-      "BaselineVersion": "5.0.0",
+      "BaselineVersion": "6.0.0",
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
         "1.0.0.0": "1.0.0",
         "1.0.1.0": "1.1.0",
         "2.0.0.0": "2.0.0",
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "Microsoft.Xna.Framework": {
@@ -1450,14 +1453,14 @@
         "4.5.0",
         "4.6.0"
       ],
-      "BaselineVersion": "5.0.0",
+      "BaselineVersion": "6.0.0",
       "InboxOn": {}
     },
     "runtime.native.System.IO.Ports": {
       "StableVersions": [
         "4.6.0"
       ],
-      "BaselineVersion": "5.0.0",
+      "BaselineVersion": "6.0.0",
       "InboxOn": {}
     },
     "SMDiagnostics": {
@@ -1565,9 +1568,10 @@
         "4.0.0",
         "4.3.0",
         "4.4.0",
-        "4.5.0"
+        "4.5.0",
+        "4.5.1"
       ],
-      "BaselineVersion": "4.5.0",
+      "BaselineVersion": "4.5.1",
       "InboxOn": {
         "netcoreapp2.0": "4.0.2.0",
         "netcoreapp2.1": "4.0.3.0",
@@ -1588,13 +1592,13 @@
         "4.5.0",
         "4.6.0"
       ],
-      "BaselineVersion": "5.0.0",
+      "BaselineVersion": "6.0.0",
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.4.0",
         "4.0.1.0": "4.5.0",
         "4.0.2.0": "4.6.0",
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "System.Collections": {
@@ -1687,9 +1691,11 @@
         "1.3.2",
         "1.4.0",
         "1.5.0",
-        "1.6.0"
+        "1.6.0",
+        "1.7.0",
+        "1.7.1"
       ],
-      "BaselineVersion": "5.0.0",
+      "BaselineVersion": "6.0.0",
       "InboxOn": {
         "netcoreapp2.0": "1.2.2.0",
         "netcoreapp2.1": "1.2.3.0",
@@ -1705,7 +1711,7 @@
         "1.2.2.0": "1.4.0",
         "1.2.3.0": "1.5.0",
         "1.2.4.0": "1.6.0",
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "System.Collections.NonGeneric": {
@@ -1813,7 +1819,7 @@
         "4.5.0",
         "4.6.0"
       ],
-      "BaselineVersion": "5.0.0",
+      "BaselineVersion": "6.0.0",
       "InboxOn": {
         "netcoreapp2.0": "4.2.0.0",
         "netcoreapp2.1": "4.2.1.0",
@@ -1840,7 +1846,7 @@
         "4.2.0.0": "4.4.0",
         "4.2.1.0": "4.5.0",
         "4.3.0.0": "4.6.0",
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "System.ComponentModel.Composition": {
@@ -1848,7 +1854,7 @@
         "4.5.0",
         "4.6.0"
       ],
-      "BaselineVersion": "5.0.0",
+      "BaselineVersion": "6.0.0",
       "InboxOn": {
         "net45": "4.0.0.0",
         "monoandroid10": "Any",
@@ -1867,13 +1873,13 @@
       "StableVersions": [
         "4.6.0"
       ],
-      "BaselineVersion": "5.0.0",
+      "BaselineVersion": "6.0.0",
       "InboxOn": {
         "net45": "4.0.0.0"
       },
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.6.0",
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "System.ComponentModel.DataAnnotations": {
@@ -1997,7 +2003,7 @@
         "1.2.0",
         "1.3.0"
       ],
-      "BaselineVersion": "5.0.0",
+      "BaselineVersion": "6.0.0",
       "InboxOn": {}
     },
     "System.Composition.AttributedModel": {
@@ -2007,14 +2013,14 @@
         "1.2.0",
         "1.3.0"
       ],
-      "BaselineVersion": "5.0.0",
+      "BaselineVersion": "6.0.0",
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
         "1.0.31.0": "1.0.31",
         "1.0.32.0": "1.1.0",
         "1.0.33.0": "1.2.0",
         "1.0.34.0": "1.3.0",
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "System.Composition.Convention": {
@@ -2024,14 +2030,14 @@
         "1.2.0",
         "1.3.0"
       ],
-      "BaselineVersion": "5.0.0",
+      "BaselineVersion": "6.0.0",
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
         "1.0.31.0": "1.0.31",
         "1.0.32.0": "1.1.0",
         "1.0.33.0": "1.2.0",
         "1.0.34.0": "1.3.0",
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "System.Composition.Hosting": {
@@ -2041,14 +2047,14 @@
         "1.2.0",
         "1.3.0"
       ],
-      "BaselineVersion": "5.0.0",
+      "BaselineVersion": "6.0.0",
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
         "1.0.31.0": "1.0.31",
         "1.0.32.0": "1.1.0",
         "1.0.33.0": "1.2.0",
         "1.0.34.0": "1.3.0",
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "System.Composition.Runtime": {
@@ -2058,14 +2064,14 @@
         "1.2.0",
         "1.3.0"
       ],
-      "BaselineVersion": "5.0.0",
+      "BaselineVersion": "6.0.0",
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
         "1.0.31.0": "1.0.31",
         "1.0.32.0": "1.1.0",
         "1.0.33.0": "1.2.0",
         "1.0.34.0": "1.3.0",
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "System.Composition.TypedParts": {
@@ -2075,14 +2081,14 @@
         "1.2.0",
         "1.3.0"
       ],
-      "BaselineVersion": "5.0.0",
+      "BaselineVersion": "6.0.0",
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
         "1.0.31.0": "1.0.31",
         "1.0.32.0": "1.1.0",
         "1.0.33.0": "1.2.0",
         "1.0.34.0": "1.3.0",
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "System.Configuration": {
@@ -2099,13 +2105,13 @@
         "4.5.0",
         "4.6.0"
       ],
-      "BaselineVersion": "5.0.0",
+      "BaselineVersion": "6.0.0",
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.4.0",
         "4.0.1.0": "4.5.0",
         "4.0.2.0": "4.6.0",
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "System.Configuration.Install": {
@@ -2244,23 +2250,23 @@
         "4.5.0",
         "4.6.0"
       ],
-      "BaselineVersion": "5.0.0",
+      "BaselineVersion": "6.0.0",
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.5.0",
         "4.0.1.0": "4.6.0",
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "System.Data.OleDb": {
       "StableVersions": [
         "4.6.0"
       ],
-      "BaselineVersion": "5.0.0",
+      "BaselineVersion": "6.0.0",
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.6.0",
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "System.Data.OracleClient": {
@@ -2326,7 +2332,7 @@
         "4.5.0.0": "4.6.0",
         "4.5.0.1": "4.6.1",
         "4.6.0.0": "4.7.0",
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "System.Data.SqlXml": {
@@ -2445,7 +2451,7 @@
         "4.5.1",
         "4.6.0"
       ],
-      "BaselineVersion": "5.0.0",
+      "BaselineVersion": "6.0.0",
       "InboxOn": {
         "netcoreapp2.0": "4.0.2.1",
         "netcoreapp2.1": "4.0.3.1",
@@ -2460,7 +2466,7 @@
         "4.0.3.0": "4.5.0",
         "4.0.3.1": "4.5.1",
         "4.0.4.0": "4.6.0",
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "System.Diagnostics.EventLog": {
@@ -2468,12 +2474,12 @@
         "4.5.0",
         "4.6.0"
       ],
-      "BaselineVersion": "5.0.0",
+      "BaselineVersion": "6.0.0",
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.5.0",
         "4.0.1.0": "4.6.0",
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "System.Diagnostics.FileVersionInfo": {
@@ -2506,7 +2512,7 @@
         "4.5.0",
         "4.6.0"
       ],
-      "BaselineVersion": "5.0.0",
+      "BaselineVersion": "6.0.0",
       "InboxOn": {
         "monoandroid10": "Any",
         "monotouch10": "Any",
@@ -2518,7 +2524,7 @@
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.5.0",
         "4.0.1.0": "4.6.0",
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "System.Diagnostics.Process": {
@@ -2724,7 +2730,7 @@
         "4.5.0",
         "4.6.0"
       ],
-      "BaselineVersion": "5.0.0",
+      "BaselineVersion": "6.0.0",
       "InboxOn": {
         "net45": "4.0.0.0"
       },
@@ -2737,7 +2743,7 @@
         "4.5.0",
         "4.6.0"
       ],
-      "BaselineVersion": "5.0.0",
+      "BaselineVersion": "6.0.0",
       "InboxOn": {
         "net45": "4.0.0.0"
       },
@@ -2750,7 +2756,7 @@
         "4.5.0",
         "4.6.0"
       ],
-      "BaselineVersion": "5.0.0",
+      "BaselineVersion": "6.0.0",
       "InboxOn": {
         "net45": "4.0.0.0"
       },
@@ -2775,7 +2781,7 @@
         "4.6.2",
         "4.7.0"
       ],
-      "BaselineVersion": "5.0.0",
+      "BaselineVersion": "6.0.0",
       "InboxOn": {
         "monoandroid10": "Any",
         "monotouch10": "Any",
@@ -2789,7 +2795,7 @@
         "4.0.0.1": "4.5.1",
         "4.0.1.0": "4.6.0",
         "4.0.1.1": "4.6.1",
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "System.Drawing.Design": {
@@ -2881,13 +2887,13 @@
     "System.Formats.Asn1": {
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "System.Formats.Cbor": {
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "System.Globalization": {
@@ -3172,7 +3178,7 @@
         "4.5.0",
         "4.6.0"
       ],
-      "BaselineVersion": "5.0.0",
+      "BaselineVersion": "6.0.0",
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
@@ -3180,7 +3186,7 @@
         "4.0.2.0": "4.4.0",
         "4.0.3.0": "4.5.0",
         "4.0.4.0": "4.6.0",
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "System.IO.FileSystem.DriveInfo": {
@@ -3328,7 +3334,7 @@
         "4.5.0",
         "4.6.0"
       ],
-      "BaselineVersion": "5.0.0",
+      "BaselineVersion": "6.0.0",
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
@@ -3336,7 +3342,7 @@
         "4.0.2.0": "4.4.0",
         "4.0.3.0": "4.5.0",
         "4.0.4.0": "4.6.0",
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "System.IO.Pipelines": {
@@ -3347,13 +3353,13 @@
         "4.5.3",
         "4.6.0"
       ],
-      "BaselineVersion": "5.0.0",
+      "BaselineVersion": "6.0.0",
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.5.0",
         "4.0.0.1": "4.5.2",
         "4.0.1.0": "4.6.0",
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "System.IO.Pipes": {
@@ -3382,13 +3388,13 @@
         "4.5.0",
         "4.5.1"
       ],
-      "BaselineVersion": "5.0.0",
+      "BaselineVersion": "6.0.0",
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
         "4.0.1.0": "4.3.0",
         "4.0.2.0": "4.4.0",
         "4.0.3.0": "4.5.0",
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "System.IO.Ports": {
@@ -3397,7 +3403,7 @@
         "4.5.0",
         "4.6.0"
       ],
-      "BaselineVersion": "5.0.0",
+      "BaselineVersion": "6.0.0",
       "InboxOn": {
         "uap10.0.16299": "4.0.1.0"
       },
@@ -3405,7 +3411,7 @@
         "4.0.0.0": "4.4.0",
         "4.0.1.0": "4.5.0",
         "4.0.2.0": "4.6.0",
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "System.IO.UnmanagedMemoryStream": {
@@ -3583,7 +3589,7 @@
         "4.0.1",
         "4.3.0"
       ],
-      "BaselineVersion": "5.0.0",
+      "BaselineVersion": "6.0.0",
       "InboxOn": {
         "netcoreapp2.0": "4.0.3.0",
         "net5.0": "5.0.0.0",
@@ -3622,7 +3628,7 @@
         "4.5.0",
         "4.6.0"
       ],
-      "BaselineVersion": "5.0.0",
+      "BaselineVersion": "6.0.0",
       "InboxOn": {
         "net45": "4.0.0.0"
       },
@@ -3640,9 +3646,10 @@
         "4.5.0",
         "4.5.1",
         "4.5.2",
-        "4.5.3"
+        "4.5.3",
+        "4.5.4"
       ],
-      "BaselineVersion": "4.5.3",
+      "BaselineVersion": "4.5.4",
       "InboxOn": {
         "netcoreapp2.1": "4.1.0.0",
         "netcoreapp3.0": "4.2.0.0",
@@ -3763,7 +3770,7 @@
     "System.Net.Http.Json": {
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "System.Net.Http.Rtc": {
@@ -3819,7 +3826,7 @@
         "4.5.4",
         "4.6.0"
       ],
-      "BaselineVersion": "5.0.0",
+      "BaselineVersion": "6.0.0",
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
@@ -3830,7 +3837,7 @@
         "4.0.3.1": "4.5.1",
         "4.0.3.2": "4.5.3",
         "4.0.4.0": "4.6.0",
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "System.Net.HttpListener": {
@@ -4239,14 +4246,14 @@
         "4.5.3",
         "4.6.0"
       ],
-      "BaselineVersion": "5.0.0",
+      "BaselineVersion": "6.0.0",
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.5.0",
         "4.0.0.1": "4.5.2",
         "4.0.0.2": "4.5.3",
         "4.0.1.0": "4.6.0",
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "System.Numerics": {
@@ -4274,12 +4281,12 @@
       "StableVersions": [
         "0.1.0"
       ],
-      "BaselineVersion": "5.0.0",
+      "BaselineVersion": "6.0.0",
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
         "0.1.0.0": "0.1.0",
         "0.2.0.0": "0.2.0",
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "System.Numerics.Vectors": {
@@ -4322,7 +4329,7 @@
         "4.0.1",
         "4.3.0"
       ],
-      "BaselineVersion": "5.0.0",
+      "BaselineVersion": "6.0.0",
       "InboxOn": {
         "uap10.0.16299": "4.0.4.0"
       },
@@ -4472,7 +4479,7 @@
         "4.3.0",
         "4.6.0"
       ],
-      "BaselineVersion": "5.0.0",
+      "BaselineVersion": "6.0.0",
       "InboxOn": {
         "net45": "4.0.0.0",
         "portable46-net451+win81": "4.0.0.0",
@@ -4495,13 +4502,16 @@
         "4.4.0",
         "4.5.0",
         "4.5.1",
-        "4.6.0"
+        "4.6.0",
+        "4.7.0",
+        "4.7.1"
       ],
-      "BaselineVersion": "5.0.0",
+      "BaselineVersion": "4.7.1",
       "InboxOn": {
         "netcoreapp2.0": "4.0.3.0",
         "netcoreapp2.1": "4.0.4.0",
         "netcoreapp3.0": "4.0.5.0",
+        "netstandard2.1": "4.0.5.0",
         "net5.0": "5.0.0.0",
         "monoandroid10": "Any",
         "monotouch10": "Any",
@@ -4518,7 +4528,7 @@
         "4.0.3.0": "4.4.0",
         "4.0.4.0": "4.5.0",
         "4.0.5.0": "4.6.0",
-        "5.0.0.0": "5.0.0"
+        "4.0.6.0": "4.7.0"
       }
     },
     "System.Reflection.Emit": {
@@ -4665,7 +4675,7 @@
         "1.6.0",
         "1.7.0"
       ],
-      "BaselineVersion": "5.0.0",
+      "BaselineVersion": "6.0.0",
       "InboxOn": {
         "netcoreapp2.0": "1.4.2.0",
         "netcoreapp2.1": "1.4.3.0",
@@ -4682,18 +4692,18 @@
         "1.4.2.0": "1.5.0",
         "1.4.3.0": "1.6.0",
         "1.4.4.0": "1.7.0",
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "System.Reflection.MetadataLoadContext": {
       "StableVersions": [
         "4.6.0"
       ],
-      "BaselineVersion": "5.0.0",
+      "BaselineVersion": "6.0.0",
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.6.0",
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "System.Reflection.Primitives": {
@@ -4768,18 +4778,18 @@
         "4.1.2.0": "4.4.0",
         "4.1.3.0": "4.5.0",
         "4.1.4.0": "4.6.0",
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "System.Resources.Extensions": {
       "StableVersions": [
         "4.6.0"
       ],
-      "BaselineVersion": "5.0.0",
+      "BaselineVersion": "6.0.0",
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.6.0",
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "System.Resources.Reader": {
@@ -4928,7 +4938,7 @@
         "4.5.0",
         "4.6.0"
       ],
-      "BaselineVersion": "5.0.0",
+      "BaselineVersion": "6.0.0",
       "InboxOn": {
         "net45": "4.0.0.0",
         "monoandroid10": "Any",
@@ -4953,7 +4963,7 @@
         "4.6.0",
         "4.7.0"
       ],
-      "BaselineVersion": "5.0.0",
+      "BaselineVersion": "6.0.0",
       "InboxOn": {
         "netcoreapp3.0": "4.0.5.0",
         "net5.0": "5.0.0.0"
@@ -4963,7 +4973,7 @@
         "4.0.4.0": "4.5.0",
         "4.0.4.1": "4.5.2",
         "4.0.5.0": "4.6.0",
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "System.Runtime.CompilerServices.VisualC": {
@@ -5113,6 +5123,11 @@
         "4.1.1.0": "4.3.0"
       }
     },
+    "System.Private.Runtime.InteropServices.JavaScript": {
+      "InboxOn": {
+        "net5.0": "5.0.0.0"
+      }
+    },
     "System.Runtime.InteropServices.RuntimeInformation": {
       "StableVersions": [
         "4.0.0",
@@ -5143,7 +5158,7 @@
         "4.0.1",
         "4.3.0"
       ],
-      "BaselineVersion": "5.0.0",
+      "BaselineVersion": "6.0.0",
       "InboxOn": {
         "netcoreapp2.0": "4.0.3.0",
         "net5.0": "5.0.0.0",
@@ -5442,7 +5457,7 @@
         "4.3.0",
         "4.6.0"
       ],
-      "BaselineVersion": "5.0.0",
+      "BaselineVersion": "6.0.0",
       "InboxOn": {
         "net45": "4.0.0.0",
         "net451": "4.0.10.0",
@@ -5472,7 +5487,7 @@
         "4.3.0",
         "4.6.0"
       ],
-      "BaselineVersion": "5.0.0",
+      "BaselineVersion": "6.0.0",
       "InboxOn": {
         "net45": "4.0.0.0",
         "portable46-win81+wpa81": "4.0.0.0",
@@ -5504,7 +5519,7 @@
         "4.5.0",
         "4.6.0"
       ],
-      "BaselineVersion": "5.0.0",
+      "BaselineVersion": "6.0.0",
       "InboxOn": {
         "uap10.0.16299": "4.1.1.0"
       },
@@ -5514,7 +5529,7 @@
         "4.1.0.0": "4.4.0",
         "4.1.1.0": "4.5.0",
         "4.1.2.0": "4.6.0",
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "System.Security.Claims": {
@@ -5551,12 +5566,11 @@
         "4.3.0",
         "4.3.1"
       ],
-      "BaselineVersion": "4.3.0",
+      "BaselineVersion": "4.3.1",
       "InboxOn": {
         "netcoreapp2.0": "4.3.0.0",
         "netcoreapp2.1": "4.3.1.0",
         "net5.0": "5.0.0.0",
-        "net461": "4.2.0.0",
         "netstandard2.0": "4.2.0.0",
         "monoandroid10": "Any",
         "monotouch10": "Any",
@@ -5582,7 +5596,7 @@
         "4.6.0",
         "4.6.1"
       ],
-      "BaselineVersion": "5.0.0",
+      "BaselineVersion": "6.0.0",
       "InboxOn": {
         "monoandroid10": "Any",
         "monotouch10": "Any",
@@ -5601,7 +5615,7 @@
         "4.3.1.0": "4.5.0",
         "4.3.2.0": "4.6.0",
         "4.3.2.1": "4.6.1",
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "System.Security.Cryptography.Csp": {
@@ -5665,7 +5679,7 @@
         "4.5.1",
         "4.6.0"
       ],
-      "BaselineVersion": "5.0.0",
+      "BaselineVersion": "6.0.0",
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
@@ -5674,7 +5688,7 @@
         "4.1.1.0": "4.5.0",
         "4.1.1.1": "4.5.1",
         "4.1.2.0": "4.6.0",
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "System.Security.Cryptography.Pkcs": {
@@ -5687,7 +5701,7 @@
         "4.5.2",
         "4.6.0"
       ],
-      "BaselineVersion": "5.0.0",
+      "BaselineVersion": "6.0.0",
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
@@ -5698,7 +5712,7 @@
         "4.0.3.2": "4.5.2",
         "4.0.4.0": "4.6.0",
         "4.1.0.0": "4.6.0",
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "System.Security.Cryptography.Primitives": {
@@ -5734,7 +5748,7 @@
         "4.5.0",
         "4.6.0"
       ],
-      "BaselineVersion": "5.0.0",
+      "BaselineVersion": "6.0.0",
       "InboxOn": {
         "monoandroid10": "Any",
         "monotouch10": "Any",
@@ -5749,7 +5763,7 @@
         "4.0.2.0": "4.4.0",
         "4.0.3.0": "4.5.0",
         "4.0.4.0": "4.6.0",
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "System.Security.Cryptography.X509Certificates": {
@@ -5790,13 +5804,13 @@
         "4.5.0",
         "4.6.0"
       ],
-      "BaselineVersion": "5.0.0",
+      "BaselineVersion": "6.0.0",
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.4.0",
         "4.0.1.0": "4.5.0",
         "4.0.2.0": "4.6.0",
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "System.Security.Permissions": {
@@ -5806,13 +5820,13 @@
         "4.5.0",
         "4.6.0"
       ],
-      "BaselineVersion": "5.0.0",
+      "BaselineVersion": "6.0.0",
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.4.0",
         "4.0.1.0": "4.5.0",
         "4.0.2.0": "4.6.0",
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "System.Security.Principal": {
@@ -5866,7 +5880,7 @@
         "4.5.1",
         "4.6.0"
       ],
-      "BaselineVersion": "5.0.0",
+      "BaselineVersion": "6.0.0",
       "InboxOn": {
         "uap10.0.16299": "4.1.1.0"
       },
@@ -5877,7 +5891,7 @@
         "4.1.1.0": "4.5.0",
         "4.1.1.1": "4.5.1",
         "4.1.2.0": "4.6.0",
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "System.Security.SecureString": {
@@ -6046,12 +6060,12 @@
         "4.5.0",
         "4.6.0"
       ],
-      "BaselineVersion": "5.0.0",
+      "BaselineVersion": "6.0.0",
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.5.0",
         "4.0.1.0": "4.6.0",
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "System.ServiceModel.Web": {
@@ -6096,7 +6110,7 @@
         "4.5.0",
         "4.6.0"
       ],
-      "BaselineVersion": "5.0.0",
+      "BaselineVersion": "6.0.0",
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
         "4.1.0.0": "4.1.0",
@@ -6104,7 +6118,7 @@
         "4.2.0.0": "4.4.0",
         "4.2.1.0": "4.5.0",
         "4.2.2.0": "4.6.0",
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "System.Speech": {
@@ -6166,7 +6180,7 @@
         "4.5.1",
         "4.6.0"
       ],
-      "BaselineVersion": "5.0.0",
+      "BaselineVersion": "6.0.0",
       "InboxOn": {
         "netcoreapp3.0": "4.1.2.0",
         "net5.0": "5.0.0.0",
@@ -6185,7 +6199,7 @@
         "4.1.0.0": "4.4.0",
         "4.1.1.0": "4.5.0",
         "4.1.2.0": "4.6.0",
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "System.Text.Encoding.Extensions": {
@@ -6242,7 +6256,7 @@
         "4.5.0",
         "4.6.0"
       ],
-      "BaselineVersion": "5.0.0",
+      "BaselineVersion": "6.0.0",
       "InboxOn": {
         "netcoreapp3.0": "4.0.4.0",
         "net5.0": "5.0.0.0"
@@ -6253,21 +6267,21 @@
         "4.0.2.0": "4.4.0",
         "4.0.3.0": "4.5.0",
         "4.0.4.0": "4.6.0",
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "System.Text.Json": {
       "StableVersions": [
         "4.6.0"
       ],
-      "BaselineVersion": "5.0.0",
+      "BaselineVersion": "6.0.0",
       "InboxOn": {
         "netcoreapp3.0": "4.0.0.0",
         "net5.0": "5.0.0.0"
       },
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.6.0",
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "System.Text.RegularExpressions": {
@@ -6369,7 +6383,7 @@
         "4.5.0",
         "4.6.0"
       ],
-      "BaselineVersion": "5.0.0",
+      "BaselineVersion": "6.0.0",
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
@@ -6377,7 +6391,7 @@
         "4.0.2.0": "4.4.0",
         "4.0.3.0": "4.5.0",
         "4.0.4.0": "4.6.0",
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "System.Threading.Channels": {
@@ -6385,7 +6399,7 @@
         "4.5.0",
         "4.6.0"
       ],
-      "BaselineVersion": "5.0.0",
+      "BaselineVersion": "6.0.0",
       "InboxOn": {
         "netcoreapp3.0": "4.0.1.0",
         "net5.0": "5.0.0.0"
@@ -6393,7 +6407,7 @@
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.5.0",
         "4.0.1.0": "4.6.0",
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "System.Threading.Overlapped": {
@@ -6479,7 +6493,7 @@
         "4.9.0",
         "4.10.0"
       ],
-      "BaselineVersion": "5.0.0",
+      "BaselineVersion": "6.0.0",
       "InboxOn": {
         "netcoreapp2.0": "4.6.2.0",
         "netcoreapp2.1": "4.6.3.0",
@@ -6494,7 +6508,7 @@
         "4.6.2.0": "4.8.0",
         "4.6.3.0": "4.9.0",
         "4.6.4.0": "4.10.0",
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "System.Threading.Tasks.Extensions": {
@@ -6505,9 +6519,10 @@
         "4.5.0",
         "4.5.1",
         "4.5.2",
-        "4.5.3"
+        "4.5.3",
+        "4.5.4"
       ],
-      "BaselineVersion": "4.5.2",
+      "BaselineVersion": "4.5.4",
       "InboxOn": {
         "netcoreapp2.0": "4.1.1.0",
         "netcoreapp2.1": "4.3.0.0",
@@ -6524,6 +6539,7 @@
         "4.1.0.0": "4.3.0",
         "4.1.1.0": "4.4.0",
         "4.2.0.0": "4.5.0",
+        "4.2.0.1": "4.5.4",
         "4.2.1.0": "4.6.0"
       }
     },
@@ -6665,11 +6681,11 @@
       }
     },
     "System.Utf8String.Experimental": {
-      "BaselineVersion": "5.0.0",
+      "BaselineVersion": "6.0.0",
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.6.0",
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "System.ValueTuple": {
@@ -6829,11 +6845,11 @@
       "StableVersions": [
         "4.6.0"
       ],
-      "BaselineVersion": "5.0.0",
+      "BaselineVersion": "6.0.0",
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.6.0",
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "6.0.0"
       }
     },
     "System.Windows.Forms": {
