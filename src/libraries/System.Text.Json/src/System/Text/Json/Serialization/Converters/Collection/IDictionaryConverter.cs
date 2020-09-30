@@ -40,6 +40,7 @@ namespace System.Text.Json.Serialization.Converters
                     ThrowHelper.ThrowNotSupportedException_CannotPopulateCollection(TypeToConvert, ref reader, ref state);
                 }
 
+                // Strings are intentionally used as keys when deserializing non-generic dictionaries.
                 state.Current.ReturnValue = new Dictionary<string, object>();
             }
             else

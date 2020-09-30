@@ -6,6 +6,7 @@ parameters:
   container: ''
   helixQueuesTemplate: ''
   platform: ''
+  targetRid: ''
   jobParameters: {}
   variables: []
 
@@ -92,6 +93,7 @@ jobs:
     osGroup: ${{ parameters.osGroup }}
     osSubgroup: ${{ parameters.osSubgroup }}
     archType: ${{ parameters.archType }}
+    targetRid: ${{ parameters.targetRid }}
     platform: ${{ parameters.platform }}
 
     ${{ if ne(parameters.container, '') }}:

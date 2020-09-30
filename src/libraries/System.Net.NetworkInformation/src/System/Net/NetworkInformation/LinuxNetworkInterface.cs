@@ -88,6 +88,11 @@ namespace System.Net.NetworkInformation
                     lni._mtu = nii->Mtu;
                     lni._supportsMulticast = nii->SupportsMulticast != 0;
 
+                    if (nii->NumAddressBytes > 0)
+                    {
+                        lni._physicalAddress = new PhysicalAddress(new ReadOnlySpan<byte>(nii->AddressBytes, nii->NumAddressBytes).ToArray());
+                    }
+
                     interfaces[i] = lni;
                     interfacesByIndex.Add(nii->InterfaceIndex, lni);
                     nii++;

@@ -1,6 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
+using System.Formats.Asn1;
+using System.Runtime.InteropServices;
+using System.Security.Cryptography.Asn1;
+
 using Internal.Cryptography;
 using Internal.Cryptography.Pal;
 
@@ -16,6 +21,39 @@ namespace System.Security.Cryptography.X509Certificates
             _oid = oid;
             EncodedParameters = new AsnEncodedData(parameters);
             EncodedKeyValue = new AsnEncodedData(keyValue);
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="PublicKey" /> class
+        /// using SubjectPublicKeyInfo from an <see cref="AsymmetricAlgorithm" />.
+        /// </summary>
+        /// <param name="key">
+        /// An asymmetric algorithm to obtain the SubjectPublicKeyInfo from.
+        /// </param>
+        /// <exception cref="CryptographicException">
+        /// The SubjectPublicKeyInfo could not be decoded. The
+        /// <see cref="AsymmetricAlgorithm.ExportSubjectPublicKeyInfo" /> must return a
+        /// valid ASN.1-DER encoded X.509 SubjectPublicKeyInfo.
+        /// </exception>
+        /// <exception cref="NotImplementedException">
+        /// <see cref="AsymmetricAlgorithm.ExportSubjectPublicKeyInfo" /> has not been overridden
+        /// in a derived class.
+        /// </exception>
+        public PublicKey(AsymmetricAlgorithm key)
+        {
+            byte[] subjectPublicKey = key.ExportSubjectPublicKeyInfo();
+            DecodeSubjectPublicKeyInfo(
+                subjectPublicKey,
+                out Oid localOid,
+                out AsnEncodedData localParameters,
+                out AsnEncodedData localKeyValue);
+
+            _oid = localOid;
+            EncodedParameters = localParameters;
+            EncodedKeyValue = localKeyValue;
+
+            // Do not assign _key = key. Otherwise, the public Key property
+            // will start returning non Rsa / Dsa types.
         }
 
         public AsnEncodedData EncodedKeyValue { get; private set; }
@@ -49,5 +87,105 @@ namespace System.Security.Cryptography.X509Certificates
         }
 
         public Oid Oid => _oid;
+
+        /// <summary>
+        /// Attempts to export the current key in the X.509 SubjectPublicKeyInfo format into a provided buffer.
+        /// </summary>
+        /// <param name="destination">
+        /// The byte span to receive the X.509 SubjectPublicKeyInfo data.
+        /// </param>
+        /// <param name="bytesWritten">
+        /// When this method returns, contains a value that indicates the number of bytes written to
+        /// <paramref name="destination" />. This parameter is treated as uninitialized.
+        /// </param>
+        /// <returns>
+        /// <see langword="true"/> if <paramref name="destination"/> is big enough to receive the output;
+        /// otherwise, <see langword="false"/>.
+        /// </returns>
+        public bool TryExportSubjectPublicKeyInfo(Span<byte> destination, out int bytesWritten) =>
+            EncodeSubjectPublicKeyInfo().TryEncode(destination, out bytesWritten);
+
+        /// <summary>
+        /// Exports the current key in the X.509 SubjectPublicKeyInfo format.
+        /// </summary>
+        /// <returns>
+        /// A byte array containing the X.509 SubjectPublicKeyInfo representation of this key.
+        /// </returns>
+        public byte[] ExportSubjectPublicKeyInfo() =>
+            EncodeSubjectPublicKeyInfo().Encode();
+
+        /// <summary>
+        /// Creates a new instance of <see cref="PublicKey" /> from a X.509 SubjectPublicKeyInfo.
+        /// </summary>
+        /// <param name="source">
+        /// The bytes of an X.509 SubjectPublicKeyInfo structure in the ASN.1-DER encoding.
+        /// </param>
+        /// <param name="bytesRead">
+        /// When this method returns, contains a value that indicates the number of bytes read from
+        /// <paramref name="source" />. This parameter is treated as uninitialized.
+        /// </param>
+        /// <returns>A public key representing the SubjectPublicKeyInfo.</returns>
+        /// <exception cref="CryptographicException">
+        /// The SubjectPublicKeyInfo could not be decoded.
+        /// </exception>
+        public static PublicKey CreateFromSubjectPublicKeyInfo(ReadOnlySpan<byte> source, out int bytesRead)
+        {
+            int read = DecodeSubjectPublicKeyInfo(
+                source,
+                out Oid localOid,
+                out AsnEncodedData localParameters,
+                out AsnEncodedData localKeyValue);
+
+            bytesRead = read;
+            return new PublicKey(localOid, localParameters, localKeyValue);
+        }
+
+        private AsnWriter EncodeSubjectPublicKeyInfo()
+        {
+            SubjectPublicKeyInfoAsn spki = new SubjectPublicKeyInfoAsn
+            {
+                Algorithm = new AlgorithmIdentifierAsn
+                {
+                    Algorithm = _oid.Value ?? string.Empty,
+                    Parameters = EncodedParameters.RawData,
+                },
+                SubjectPublicKey = EncodedKeyValue.RawData,
+            };
+
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+            spki.Encode(writer);
+            return writer;
+        }
+
+        private static unsafe int DecodeSubjectPublicKeyInfo(
+            ReadOnlySpan<byte> source,
+            out Oid oid,
+            out AsnEncodedData parameters,
+            out AsnEncodedData keyValue)
+        {
+            fixed (byte* ptr = &MemoryMarshal.GetReference(source))
+            using (MemoryManager<byte> manager = new PointerMemoryManager<byte>(ptr, source.Length))
+            {
+                AsnValueReader reader = new AsnValueReader(source, AsnEncodingRules.DER);
+
+                int read;
+                SubjectPublicKeyInfoAsn spki;
+
+                try
+                {
+                    read = reader.PeekEncodedValue().Length;
+                    SubjectPublicKeyInfoAsn.Decode(ref reader, manager.Memory, out spki);
+                }
+                catch (AsnContentException e)
+                {
+                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+                }
+
+                oid = new Oid(spki.Algorithm.Algorithm, null);
+                parameters = new AsnEncodedData(spki.Algorithm.Parameters?.ToArray() ?? Array.Empty<byte>());
+                keyValue = new AsnEncodedData(spki.SubjectPublicKey.ToArray());
+                return read;
+            }
+        }
     }
 }
