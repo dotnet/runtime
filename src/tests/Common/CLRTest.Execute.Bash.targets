@@ -282,7 +282,7 @@ else
   __Command+=" dotnet"
 fi
 
-$__Command publish $CORE_ROOT/android-test-runner/AndroidTestRunner.proj -c $(Configuration) -r android-$(TargetArchitecture) /p:Platform=$(TargetArchitecture) /p:TargetArchitecture=$(TargetArchitecture) /p:NetCoreAppCurrent=$(NetCoreAppCurrent) /p:TestAssembly=`pwd`/$(MsBuildProjectName).dll /p:TestBinDir=`pwd`
+$__Command build $CORE_ROOT/android-test-runner/AndroidTestRunner.proj -c $(Configuration) -r android-$(TargetArchitecture) /p:Platform=$(TargetArchitecture) /p:TargetArchitecture=$(TargetArchitecture) /p:NetCoreAppCurrent=$(NetCoreAppCurrent) /p:TestAssembly=`pwd`/$(MsBuildProjectName).dll /p:TestBinDir=`pwd`
 
    ]]>
       </BashCLRTestPreCommands>
