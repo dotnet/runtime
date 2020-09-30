@@ -47,7 +47,7 @@
     <ILLinkSuppressionsXmlFilePrefix>$(ILLinkDirectory)ILLink.Suppressions</ILLinkSuppressionsXmlFilePrefix>
     <ILLinkSuppressionsXmlFile>$(ILLinkSuppressionsXmlFilePrefix).xml</ILLinkSuppressionsXmlFile>
     <ILLinkSuppressionsConfigurationSpecificXmlFile>$(ILLinkSuppressionsXmlFilePrefix).$(Configuration).xml</ILLinkSuppressionsConfigurationSpecificXmlFile>
-    <ILLinkSuppressionsTargetArchitectureSpecificXmlFile>$(ILLinkSuppressionsXmlFilePrefix).$(TargetArchitecture).xml</ILLinkSuppressionsTargetArchitectureSpecificXmlFile>
+    <ILLinkSuppressionsTargetOSSpecificXmlFile>$(ILLinkSuppressionsXmlFilePrefix).$(TargetOS).xml</ILLinkSuppressionsTargetOSSpecificXmlFile>
     <ILLinkSuppressionsNonWindowsXmlFile>$(ILLinkSuppressionsXmlFilePrefix).NonWindows.xml</ILLinkSuppressionsNonWindowsXmlFile>
 
     <!-- if building a PDB, tell illink to rewrite the symbols file -->
@@ -58,6 +58,11 @@
     <None Include="$(ILLinkTrimXmlLibraryBuild)" Condition="'$(ILLinkTrimXmlLibraryBuild)' != ''" />
     <None Include="@(ILLinkSubstitutionsXmls)" />
   </ItemGroup>
+
+  <PropertyGroup>
+    <ILLinkTrimAssemblyArtifactsRootDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'ILLinkTrimAssembly', '$(BuildSettings)'))</ILLinkTrimAssemblyArtifactsRootDir>
+    <ILLinkTrimAssemblySuppressionsXmlsDir>$(ILLinkTrimAssemblyArtifactsRootDir)suppressions-xmls\</ILLinkTrimAssemblySuppressionsXmlsDir>
+  </PropertyGroup>
 
   <!-- Custom binplacing for pre/post-trimming and reports that is useful for analysis
        Must be enabled by setting BinPlaceILLinkTrimAssembly=true
@@ -77,19 +82,14 @@
     </BinPlaceTargetFramework>
   </ItemGroup>
 
-  <PropertyGroup>
-    <ILLinkTrimAssemblyArtifactsRootDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'ILLinkTrimAssembly', '$(BuildSettings)'))</ILLinkTrimAssemblyArtifactsRootDir>
-    <ILLinkTrimAssemblySuppressionsXmlsDir>$(ILLinkTrimAssemblyArtifactsRootDir)suppressions-xmls\</ILLinkTrimAssemblySuppressionsXmlsDir>
-  </PropertyGroup>
-
   <ItemGroup>
     <ILLinkSuppressionsXmls Condition="Exists('$(ILLinkSuppressionsXmlFile)')"
                             Include="$(ILLinkSuppressionsXmlFile)" />
     <ILLinkSuppressionsXmls Condition="Exists('$(ILLinkSuppressionsConfigurationSpecificXmlFile)')"
                             Include="$(ILLinkSuppressionsConfigurationSpecificXmlFile)" />
-    <ILLinkSuppressionsXmls Condition="Exists('$(ILLinkSuppressionsTargetArchitectureSpecificXmlFile)')"
-                            Include="$(ILLinkSuppressionsTargetArchitectureSpecificXmlFile)" />
-    <ILLinkSuppressionsXmls Condition="'$(TargetOs)' != 'Windows_NT' and Exists('$(ILLinkSuppressionsNonWindowsXmlFile)')"
+    <ILLinkSuppressionsXmls Condition="Exists('$(ILLinkSuppressionsTargetOSSpecificXmlFile)')"
+                            Include="$(ILLinkSuppressionsTargetOSSpecificXmlFile)" />
+    <ILLinkSuppressionsXmls Condition="'$(TargetOS)' != 'Windows_NT' and Exists('$(ILLinkSuppressionsNonWindowsXmlFile)')"
                             Include="$(ILLinkSuppressionsNonWindowsXmlFile)" />
     <ILLinkSuppressionsXmls Update="@(ILLinkSuppressionsXmls)" TargetPath="%(FileName).$(AssemblyName).xml" />
   </ItemGroup>
