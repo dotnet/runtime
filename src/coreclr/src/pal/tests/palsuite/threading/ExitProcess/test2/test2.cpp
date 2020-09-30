@@ -16,7 +16,7 @@
 
 
 
-int __cdecl main( int argc, char **argv ) 
+PALTEST(threading_ExitProcess_test2_paltest_exitprocess_test2, "threading/ExitProcess/test2/paltest_exitprocess_test2")
 
 {
     /* call ExitProcess() -- should work without PAL_Initialize() */

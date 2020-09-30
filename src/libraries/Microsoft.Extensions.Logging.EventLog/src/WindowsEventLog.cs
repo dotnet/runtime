@@ -4,9 +4,11 @@
 using System;
 using System.Diagnostics;
 using System.Security;
+using System.Runtime.Versioning;
 
 namespace Microsoft.Extensions.Logging.EventLog
 {
+    [SupportedOSPlatform("windows")]
     internal class WindowsEventLog : IEventLog
     {
         // https://msdn.microsoft.com/EN-US/library/windows/desktop/aa363679.aspx

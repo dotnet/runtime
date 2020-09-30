@@ -221,7 +221,7 @@ namespace System
         //    to form a new delegate.
         protected sealed override Delegate CombineImpl(Delegate? follow)
         {
-            if ((object?)follow == null) // cast to object for a more efficient test
+            if (follow is null)
                 return this;
 
             // Verify that the types are the same...

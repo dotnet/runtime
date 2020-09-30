@@ -1592,6 +1592,59 @@ m_field_get_offset (MonoClassField *field)
 	return field->offset;
 }
 
+/*
+ * Memory allocation for classes/methods
+ *
+ *   These should be used to allocate memory whose lifetime is equal to
+ * the lifetime of the domain+class/method pair.
+ */
+
+static inline MonoMemoryManager*
+m_class_get_mem_manager (MonoDomain *domain, MonoClass *klass)
+{
+#ifdef ENABLE_NETCORE
+	// FIXME:
+	return mono_domain_memory_manager (domain);
+#else
+	return mono_domain_memory_manager (domain);
+#endif
+}
+
+static inline void *
+m_class_alloc (MonoDomain *domain, MonoClass *klass, guint size)
+{
+	return mono_mem_manager_alloc (m_class_get_mem_manager (domain, klass), size);
+}
+
+static inline void *
+m_class_alloc0 (MonoDomain *domain, MonoClass *klass, guint size)
+{
+	return mono_mem_manager_alloc0 (m_class_get_mem_manager (domain, klass), size);
+}
+
+static inline MonoMemoryManager*
+m_method_get_mem_manager (MonoDomain *domain, MonoMethod *method)
+{
+#ifdef ENABLE_NETCORE
+	// FIXME:
+	return mono_domain_memory_manager (domain);
+#else
+	return mono_domain_memory_manager (domain);
+#endif
+}
+
+static inline void *
+m_method_alloc (MonoDomain *domain, MonoMethod *method, guint size)
+{
+	return mono_mem_manager_alloc (m_method_get_mem_manager (domain, method), size);
+}
+
+static inline void *
+m_method_alloc0 (MonoDomain *domain, MonoMethod *method, guint size)
+{
+	return mono_mem_manager_alloc0 (m_method_get_mem_manager (domain, method), size);
+}
+
 // Enum and static storage for JIT icalls.
 #include "jit-icall-reg.h"
 

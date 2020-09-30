@@ -22,7 +22,7 @@ BOOL bTry_nested2    = FALSE;
 BOOL bExcept_nested2 = FALSE;
 
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(exception_handling_pal_except_test6_paltest_pal_except_test6, "exception_handling/pal_except/test6/paltest_pal_except_test6")
 {
     if (0 != PAL_Initialize(argc, argv))
     {

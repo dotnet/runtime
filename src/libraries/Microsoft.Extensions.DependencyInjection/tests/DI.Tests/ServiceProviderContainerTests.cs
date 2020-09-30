@@ -156,6 +156,63 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             }
         }
 
+        public enum TheEnum
+        {
+            HelloWorld = -1,
+            NiceWorld = 0,
+            GoodByeWorld = 1,
+        }
+
+        [Theory]
+        [InlineData(ServiceLifetime.Transient)]
+        [InlineData(ServiceLifetime.Scoped)]
+        [InlineData(ServiceLifetime.Singleton)]
+        public void ResolvesConstantValueTypeServicesCorrectly(ServiceLifetime lifetime)
+        {
+            var serviceCollection = new ServiceCollection();
+            if (lifetime == ServiceLifetime.Transient)
+            {
+                serviceCollection.AddTransient(typeof(int), _ => 4);
+                serviceCollection.AddTransient(typeof(DateTime), _ => new DateTime());
+                serviceCollection.AddTransient(typeof(TheEnum), _ => TheEnum.HelloWorld);
+
+                serviceCollection.AddTransient(typeof(TimeSpan), _ => TimeSpan.Zero);
+                serviceCollection.AddTransient(typeof(TimeSpan), _ => new TimeSpan(1, 2, 3));
+            }
+            else if (lifetime == ServiceLifetime.Scoped)
+            {
+                serviceCollection.AddScoped(typeof(int), _ => 4);
+                serviceCollection.AddScoped(typeof(DateTime), _ => new DateTime());
+                serviceCollection.AddScoped(typeof(TheEnum), _ => TheEnum.HelloWorld);
+
+                serviceCollection.AddScoped(typeof(TimeSpan), _ => TimeSpan.Zero);
+                serviceCollection.AddScoped(typeof(TimeSpan), _ => new TimeSpan(1, 2, 3));
+            }
+            else if (lifetime == ServiceLifetime.Singleton)
+            {
+                serviceCollection.AddSingleton(typeof(int), 4);
+                serviceCollection.AddSingleton(typeof(DateTime), new DateTime());
+                serviceCollection.AddSingleton(typeof(TheEnum), TheEnum.HelloWorld);
+
+                serviceCollection.AddSingleton(typeof(TimeSpan), TimeSpan.Zero);
+                serviceCollection.AddSingleton(typeof(TimeSpan), _ => new TimeSpan(1, 2, 3));
+            }
+
+            var provider = CreateServiceProvider(serviceCollection);
+
+            int i = provider.GetService<int>();
+            Assert.Equal(4, i);
+
+            DateTime d = provider.GetService<DateTime>();
+            Assert.Equal(new DateTime(), d);
+
+            TheEnum e = provider.GetService<TheEnum>();
+            Assert.Equal(TheEnum.HelloWorld, e);
+
+            IEnumerable<TimeSpan> times = provider.GetServices<TimeSpan>();
+            Assert.Equal(new[] { TimeSpan.Zero, new TimeSpan(1, 2, 3) }, times);
+        }
+
         [Fact]
         public void RootProviderDispose_PreventsServiceResolution()
         {
@@ -208,7 +265,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             Assert.NotNull(provider.CreateScope());
         }
 
-        [Theory(Skip = "We don't support value task services currently")]
+        [Theory(Skip = "https://github.com/dotnet/runtime/issues/42160 - We don't support value task services currently")]
         [InlineData(ServiceLifetime.Transient)]
         [InlineData(ServiceLifetime.Scoped)]
         [InlineData(ServiceLifetime.Singleton)]

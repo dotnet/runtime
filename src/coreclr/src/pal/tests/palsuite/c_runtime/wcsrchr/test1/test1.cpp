@@ -16,7 +16,7 @@
 
 #include <palsuite.h>
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime_wcsrchr_test1_paltest_wcsrchr_test1, "c_runtime/wcsrchr/test1/paltest_wcsrchr_test1")
 {
     WCHAR str[] = {'f','o','o',' ','b','a','r',' ','b','a','z',0};
     WCHAR c = (WCHAR)' ';

@@ -14,7 +14,8 @@
 #define UNICODE
 #include <palsuite.h>
 
-int __cdecl main(int argc, char *argv[]) {
+PALTEST(miscellaneous_FormatMessageW_test5_paltest_formatmessagew_test5, "miscellaneous/FormatMessageW/test5/paltest_formatmessagew_test5")
+{
 
     WCHAR *  TheString;
     LPWSTR OutBuffer;

@@ -3,8 +3,8 @@
 
 using System;
 using System.Diagnostics;
+using System.Runtime.Versioning;
 using System.Security.Cryptography;
-
 using Internal.Cryptography;
 
 namespace System.Security.Cryptography
@@ -14,6 +14,7 @@ namespace System.Security.Cryptography
     // preexisting contract from the .NET Framework locks all of these into deriving directly from HMAC, it can't be helped.
     //
 
+    [UnsupportedOSPlatform("browser")]
     public class HMACSHA256 : HMAC
     {
         public HMACSHA256()

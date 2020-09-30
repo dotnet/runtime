@@ -17,7 +17,7 @@
 
 
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime_vfprintf_test6_paltest_vfprintf_test6, "c_runtime/vfprintf/test6/paltest_vfprintf_test6")
 {
     WCHAR wc = (WCHAR) 'c';
     

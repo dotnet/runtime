@@ -789,7 +789,7 @@ void EEStartupHelper()
 #ifndef CROSSGEN_COMPILE
 
         // Cross-process named objects are not supported in PAL
-        // (see CorUnix::InternalCreateEvent - src/pal/src/synchobj/event.cpp.272)
+        // (see CorUnix::InternalCreateEvent - src/pal/src/synchobj/event.cpp)
 #if !defined(TARGET_UNIX)
         // Initialize the sweeper thread.
         if (g_pConfig->GetZapBBInstr() != NULL)
@@ -839,7 +839,7 @@ void EEStartupHelper()
 #ifndef CROSSGEN_COMPILE
 
         InitializeGarbageCollector();
-        
+
         if (!GCHandleUtilities::GetGCHandleManager()->Initialize())
         {
             IfFailGo(E_OUTOFMEMORY);

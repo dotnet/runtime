@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Security.Authentication;
+using System.Security.Cryptography.X509Certificates;
 using System.IO;
 using System.Net.Sockets;
 
@@ -93,6 +94,7 @@ namespace System.Net.Test.Common
     {
         public IPAddress Address { get; set; } = IPAddress.Loopback;
         public bool UseSsl { get; set; } = PlatformDetection.SupportsAlpn && !Capability.Http2ForceUnencryptedLoopback();
+        public X509Certificate2 Certificate { get; set; }
         public SslProtocols SslProtocols { get; set; } =
 #if !NETSTANDARD2_0 && !NETFRAMEWORK
                 SslProtocols.Tls13 |

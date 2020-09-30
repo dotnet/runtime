@@ -18,7 +18,7 @@
  * Depends on memcmp, strlen, fopen, fgets, fseek and fclose.
  */
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime_fprintf_test1_paltest_fprintf_test1, "c_runtime/fprintf/test1/paltest_fprintf_test1")
 {
     FILE *fp;
     char testfile[] = "testfile.txt";

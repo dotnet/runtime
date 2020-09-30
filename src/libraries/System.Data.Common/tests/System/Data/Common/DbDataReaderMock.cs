@@ -149,7 +149,7 @@ namespace System.Data.Common.Tests
             foreach (var column in _testDataTable.Columns.Cast<DataColumn>())
             {
                 var row = table.NewRow();
-                row["ColumnName"] = column!.ColumnName;
+                row["ColumnName"] = column.ColumnName;
                 row["DataType"] = column.DataType;
                 table.Rows.Add(row);
             }

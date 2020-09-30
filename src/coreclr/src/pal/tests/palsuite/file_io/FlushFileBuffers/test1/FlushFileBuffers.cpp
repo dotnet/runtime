@@ -21,7 +21,7 @@
 #include <palsuite.h>
 
 
-int __cdecl main(int argc, char **argv)
+PALTEST(file_io_FlushFileBuffers_test1_paltest_flushfilebuffers_test1, "file_io/FlushFileBuffers/test1/paltest_flushfilebuffers_test1")
 {
     
     int TheReturn;

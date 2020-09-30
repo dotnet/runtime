@@ -389,6 +389,9 @@ struct _MonoImage {
 	/* Whenever this image is considered as platform code for the CoreCLR security model */
 	guint8 core_clr_platform_code : 1;
 
+	/* Whether a #JTD stream was present. Indicates that this image was a minimal delta and its heaps only include the new heap entries */
+	guint8 minimal_delta : 1;
+
 	/* The path to the file for this image or an arbitrary name for images loaded from data. */
 	char *name;
 

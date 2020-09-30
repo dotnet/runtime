@@ -356,11 +356,10 @@ function(install_symbols symbol_file destination_path)
   endif()
 endfunction()
 
-# install_clr(TARGETS TARGETS targetName [targetName2 ...] [ADDITIONAL_DESTINATION destination])
+# install_clr(TARGETS TARGETS targetName [targetName2 ...] [ADDITIONAL_DESTINATIONS destination])
 function(install_clr)
-  set(oneValueArgs ADDITIONAL_DESTINATION)
-  set(multiValueArgs TARGETS)
-  cmake_parse_arguments(INSTALL_CLR "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGV})
+  set(multiValueArgs TARGETS ADDITIONAL_DESTINATIONS)
+  cmake_parse_arguments(INSTALL_CLR "" "" "${multiValueArgs}" ${ARGV})
 
   if ("${INSTALL_CLR_TARGETS}" STREQUAL "")
     message(FATAL_ERROR "At least one target must be passed to install_clr(TARGETS )")
@@ -368,8 +367,8 @@ function(install_clr)
 
   set(destinations ".")
 
-  if (NOT "${INSTALL_CLR_ADDITIONAL_DESTINATION}" STREQUAL "")
-    list(APPEND destinations ${INSTALL_CLR_ADDITIONAL_DESTINATION})
+  if (NOT "${INSTALL_CLR_ADDITIONAL_DESTINATIONS}" STREQUAL "")
+    list(APPEND destinations ${INSTALL_CLR_ADDITIONAL_DESTINATIONS})
   endif()
 
   foreach(targetName ${INSTALL_CLR_TARGETS})

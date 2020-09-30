@@ -1809,9 +1809,9 @@ namespace System.Net.Sockets
         }
 
         public static SocketError SendFileAsync(SafeSocketHandle handle, FileStream fileStream, Action<long, SocketError> callback) =>
-            SendFileAsync(handle, fileStream, 0, (int)fileStream.Length, callback);
+            SendFileAsync(handle, fileStream, 0, fileStream.Length, callback);
 
-        private static SocketError SendFileAsync(SafeSocketHandle handle, FileStream fileStream, long offset, int count, Action<long, SocketError> callback)
+        private static SocketError SendFileAsync(SafeSocketHandle handle, FileStream fileStream, long offset, long count, Action<long, SocketError> callback)
         {
             long bytesSent;
             SocketError socketError = handle.AsyncContext.SendFileAsync(fileStream.SafeFileHandle, offset, count, out bytesSent, callback);
@@ -1849,7 +1849,7 @@ namespace System.Net.Sockets
 
                             var tcs = new TaskCompletionSource<SocketError>();
                             error = SendFileAsync(socket.InternalSafeHandle, fs, e.OffsetLong,
-                                e.Count > 0 ? e.Count : checked((int)(fs.Length - e.OffsetLong)),
+                                e.Count > 0 ? e.Count : fs.Length - e.OffsetLong,
                                 (transferred, se) =>
                                 {
                                     bytesTransferred += transferred;

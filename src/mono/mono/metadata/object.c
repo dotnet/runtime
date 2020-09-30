@@ -331,6 +331,7 @@ get_type_init_exception_for_vtable (MonoVTable *vtable)
 	ERROR_DECL (error);
 	MonoDomain *domain = vtable->domain;
 	MonoClass *klass = vtable->klass;
+	MonoMemoryManager *memory_manager = mono_domain_ambient_memory_manager (domain);
 	MonoException *ex;
 	gchar *full_name;
 
@@ -342,10 +343,9 @@ get_type_init_exception_for_vtable (MonoVTable *vtable)
 	 * in the hash.
 	 */
 	ex = NULL;
-	mono_domain_lock (domain);
-	if (domain->type_init_exception_hash)
-		ex = (MonoException *)mono_g_hash_table_lookup (domain->type_init_exception_hash, klass);
-	mono_domain_unlock (domain);
+	mono_mem_manager_lock (memory_manager);
+	ex = (MonoException *)mono_g_hash_table_lookup (memory_manager->type_init_exception_hash, klass);
+	mono_mem_manager_unlock (memory_manager);
 
 	if (!ex) {
 		const char *klass_name_space = m_class_get_name_space (klass);
@@ -446,6 +446,7 @@ mono_runtime_class_init_full (MonoVTable *vtable, MonoError *error)
 		return TRUE;
 
 	MonoClass *klass = vtable->klass;
+	MonoMemoryManager *memory_manager = mono_domain_ambient_memory_manager (domain);
 
 	MonoImage *klass_image = m_class_get_image (klass);
 	if (!mono_runtime_run_module_cctor(klass_image, vtable->domain, error)) {
@@ -593,11 +594,9 @@ mono_runtime_class_init_full (MonoVTable *vtable, MonoError *error)
 			 * Store the exception object so it could be thrown on subsequent
 			 * accesses.
 			 */
-			mono_domain_lock (domain);
-			if (!domain->type_init_exception_hash)
-				domain->type_init_exception_hash = mono_g_hash_table_new_type_internal (mono_aligned_addr_hash, NULL, MONO_HASH_VALUE_GC, MONO_ROOT_SOURCE_DOMAIN, domain, "Domain Type Initialization Exception Table");
-			mono_g_hash_table_insert_internal (domain->type_init_exception_hash, klass, exc_to_throw);
-			mono_domain_unlock (domain);
+			mono_mem_manager_lock (memory_manager);
+			mono_g_hash_table_insert_internal (memory_manager->type_init_exception_hash, klass, exc_to_throw);
+			mono_mem_manager_unlock (memory_manager);
 		}
 
 		if (last_domain)
@@ -1714,15 +1713,13 @@ mono_vtable_build_imt_slot (MonoVTable* vtable, int imt_slot)
 
 /**
  * mono_method_alloc_generic_virtual_trampoline:
- * \param domain a domain
+ * \param mem_manager a memory manager
  * \param size size in bytes
  * Allocs \p size bytes to be used for the code of a generic virtual
- * trampoline.  It's either allocated from the domain's code manager or
- * reused from a previously invalidated piece.
- * LOCKING: The domain lock must be held.
+ * trampoline.
  */
 gpointer
-(mono_method_alloc_generic_virtual_trampoline) (MonoDomain *domain, int size)
+(mono_method_alloc_generic_virtual_trampoline) (MonoMemoryManager *mem_manager, int size)
 {
 	MONO_REQ_GC_NEUTRAL_MODE;
 
@@ -1736,7 +1733,7 @@ gpointer
 	}
 	generic_virtual_trampolines_size += size;
 
-	return mono_domain_code_reserve (domain, size);
+	return mono_mem_manager_code_reserve (mem_manager, size);
 }
 
 typedef struct _GenericVirtualCase {
@@ -1997,6 +1994,7 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *klass, MonoErro
 	MonoVTable *vt;
 	MonoClassRuntimeInfo *runtime_info;
 	MonoClassField *field;
+	MonoMemoryManager *memory_manager;
 	char *t;
 	int i, vtable_slots;
 	size_t imt_table_bytes;
@@ -2283,7 +2281,10 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *klass, MonoErro
 
 	/*  class_vtable_array keeps an array of created vtables
 	 */
-	g_ptr_array_add (domain->class_vtable_array, vt);
+	memory_manager = mono_domain_ambient_memory_manager (domain);
+	mono_mem_manager_lock (memory_manager);
+	g_ptr_array_add (memory_manager->class_vtable_array, vt);
+	mono_mem_manager_unlock (memory_manager);
 	/* klass->runtime_info is protected by the loader lock, both when
 	 * it it enlarged and when it is stored info.
 	 */
@@ -2705,6 +2706,7 @@ mono_remote_class (MonoDomain *domain, MonoStringHandle class_name, MonoClass *p
 	MonoRemoteClass *rc;
 	gpointer* key, *mp_key;
 	char *name;
+	MonoMemoryManager *memory_manager = mono_domain_ambient_memory_manager (domain);
 	
 	error_init (error);
 
@@ -2719,7 +2721,9 @@ mono_remote_class (MonoDomain *domain, MonoStringHandle class_name, MonoClass *p
 		return rc;
 	}
 
-	name = mono_string_to_utf8_mp (domain->mp, MONO_HANDLE_RAW (class_name), error);
+	mono_mem_manager_lock (memory_manager);
+	name = mono_string_to_utf8_mp (memory_manager->mp, MONO_HANDLE_RAW (class_name), error);
+	mono_mem_manager_unlock (memory_manager);
 	if (!is_ok (error)) {
 		g_free (key);
 		mono_domain_unlock (domain);
@@ -5539,22 +5543,23 @@ MonoObject*
 mono_runtime_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 			   MonoObject **exc)
 {
+	MonoObject *res;
+	MONO_ENTER_GC_UNSAFE;
 	ERROR_DECL (error);
 	if (exc) {
-		MonoObject *result = mono_runtime_try_invoke_array (method, obj, params, exc, error);
+		res = mono_runtime_try_invoke_array (method, obj, params, exc, error);
 		if (*exc) {
+			res = NULL;
 			mono_error_cleanup (error);
-			return NULL;
-		} else {
-			if (!is_ok (error))
-				*exc = (MonoObject*)mono_error_convert_to_exception (error);
-			return result;
+		} else if (!is_ok (error)) {
+			*exc = (MonoObject*)mono_error_convert_to_exception (error);
 		}
 	} else {
-		MonoObject *result = mono_runtime_try_invoke_array (method, obj, params, NULL, error);
+		res = mono_runtime_try_invoke_array (method, obj, params, NULL, error);
 		mono_error_raise_exception_deprecated (error); /* OK to throw, external only without a good alternative */
-		return result;
 	}
+	MONO_EXIT_GC_UNSAFE;
+	return res;
 }
 
 /**

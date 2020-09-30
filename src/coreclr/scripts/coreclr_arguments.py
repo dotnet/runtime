@@ -15,26 +15,18 @@
 ################################################################################
 
 import argparse
-import datetime
-import json
 import os
 import platform
-import shutil
 import subprocess
 import sys
-import tempfile
-import time
-import re
-import string
-
-import xml.etree.ElementTree
-
-from collections import defaultdict
 
 ################################################################################
 ################################################################################
+
 
 class CoreclrArguments:
+    """ Class to process arguments for CoreCLR specific Python code.
+    """
 
     ############################################################################
     # ctor
@@ -82,9 +74,14 @@ class CoreclrArguments:
     ############################################################################
 
     def check_build_type(self, build_type):
-        if build_type == None:
+        """ Process the `build_type` argument.
+
+            If unset, provide a default. Otherwise, check that it is valid.
+        """
+
+        if build_type is None:
             build_type = self.default_build_type
-            assert(build_type in self.valid_build_types)
+            assert build_type in self.valid_build_types
             return build_type
 
         if len(build_type) > 0:
@@ -146,7 +143,7 @@ class CoreclrArguments:
         else:
             arg_value = args
 
-        if modify_arg != None and not modify_after_validation:
+        if modify_arg is not None and not modify_after_validation:
             arg_value = modify_arg(arg_value)
 
         try:
@@ -154,17 +151,17 @@ class CoreclrArguments:
         except:
             pass
 
-        if verified == False and isinstance(failure_str, str):
+        if verified is False and isinstance(failure_str, str):
             print(failure_str)
             sys.exit(1)
-        elif verified == False:
+        elif verified is False:
             print(failure_str(arg_value))
             sys.exit(1)
 
-        if modify_arg != None and modify_after_validation:
+        if modify_arg is not None and modify_after_validation:
             arg_value = modify_arg(arg_value)
 
-        if verified != True and arg_value is None:
+        if verified is not True and arg_value is None:
             arg_value = verified
 
         # Add a new member variable based on the verified arg
@@ -176,6 +173,11 @@ class CoreclrArguments:
 
     @staticmethod
     def provide_default_host_os():
+        """ Return a string representing the current host operating system.
+
+            Returns one of: Linux, OSX, Windows_NT, illumos, Solaris
+        """
+
         if sys.platform == "linux" or sys.platform == "linux2":
             return "Linux"
         elif sys.platform == "darwin":
@@ -191,6 +193,11 @@ class CoreclrArguments:
 
     @staticmethod
     def provide_default_arch():
+        """ Return a string representing the current processor architecture.
+
+            Returns one of: x64, x86, arm, armel, arm64.
+        """
+
         platform_machine = platform.machine().lower()
         if platform_machine == "x86_64" or platform_machine == "amd64":
             return "x64"

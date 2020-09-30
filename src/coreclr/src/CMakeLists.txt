@@ -15,9 +15,11 @@ endif(CLR_CMAKE_TARGET_WIN32 AND FEATURE_EVENT_TRACE)
 add_subdirectory(debug/dbgutil)
 
 if(CLR_CMAKE_HOST_UNIX)
-  if(CLR_CMAKE_HOST_OSX OR (CLR_CMAKE_HOST_LINUX AND NOT CLR_CMAKE_HOST_UNIX_X86 AND NOT CLR_CMAKE_HOST_ANDROID))
-    add_subdirectory(debug/createdump)
-  endif(CLR_CMAKE_HOST_OSX OR (CLR_CMAKE_HOST_LINUX AND NOT CLR_CMAKE_HOST_UNIX_X86 AND NOT CLR_CMAKE_HOST_ANDROID))
+  if(CLR_CMAKE_BUILD_SUBSET_RUNTIME)
+    if(CLR_CMAKE_HOST_OSX OR (CLR_CMAKE_HOST_LINUX AND NOT CLR_CMAKE_HOST_UNIX_X86 AND NOT CLR_CMAKE_HOST_ANDROID))
+      add_subdirectory(debug/createdump)
+    endif(CLR_CMAKE_HOST_OSX OR (CLR_CMAKE_HOST_LINUX AND NOT CLR_CMAKE_HOST_UNIX_X86 AND NOT CLR_CMAKE_HOST_ANDROID))
+  endif(CLR_CMAKE_BUILD_SUBSET_RUNTIME)
 
   # Include the dummy c++ include files
   include_directories("pal/inc/rt/cpp")
@@ -84,5 +86,12 @@ if (CLR_CMAKE_BUILD_SUBSET_RUNTIME)
   if(CLR_CMAKE_HOST_WIN32)
     add_subdirectory(hosts)
   endif(CLR_CMAKE_HOST_WIN32)
+else()
+  if(CLR_CMAKE_HOST_UNIX)
+    # this is needed to compile the jit on unix platforms.
+    # When the runtime subset is compiled, the add_subdirectory(dlls) above
+    # brings the mscorrc library into the build graph
+    add_subdirectory(dlls/mscorrc)
+  endif(CLR_CMAKE_HOST_UNIX)
 endif(CLR_CMAKE_BUILD_SUBSET_RUNTIME)
 

@@ -100,7 +100,9 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                     ScopeParameter);
             }
 
-            return Expression.Lambda<Func<ServiceProviderEngineScope, object>>(VisitCallSite(callSite, null), ScopeParameter);
+            return Expression.Lambda<Func<ServiceProviderEngineScope, object>>(
+                Convert(VisitCallSite(callSite, null), typeof(object), forceValueTypeConversion: true),
+                ScopeParameter);
         }
 
         protected override Expression VisitRootCache(ServiceCallSite singletonCallSite, object context)
@@ -188,10 +190,11 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             return Expression.New(callSite.ConstructorInfo, parameterExpressions);
         }
 
-        private static Expression Convert(Expression expression, Type type)
+        private static Expression Convert(Expression expression, Type type, bool forceValueTypeConversion = false)
         {
             // Don't convert if the expression is already assignable
-            if (type.GetTypeInfo().IsAssignableFrom(expression.Type.GetTypeInfo()))
+            if (type.GetTypeInfo().IsAssignableFrom(expression.Type.GetTypeInfo())
+                && (!expression.Type.GetTypeInfo().IsValueType || !forceValueTypeConversion))
             {
                 return expression;
             }

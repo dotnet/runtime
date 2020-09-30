@@ -13,10 +13,10 @@
 #include <palsuite.h>
 
 /* Execution flags */
-BOOL bTry    = FALSE;
-BOOL bExcept = FALSE;
+BOOL bTry_pal_except_test1    = FALSE;
+BOOL bExcept_pal_except_test1 = FALSE;
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(exception_handling_pal_except_test1_paltest_pal_except_test1, "exception_handling/pal_except/test1/paltest_pal_except_test1")
 {
     if (0 != PAL_Initialize(argc, argv))
     {
@@ -27,34 +27,34 @@ int __cdecl main(int argc, char *argv[])
     {
         int* p = 0x00000000;   /* NULL pointer */
 
-        bTry = TRUE;    /* indicate we hit the PAL_TRY block */
+        bTry_pal_except_test1 = TRUE;    /* indicate we hit the PAL_TRY block */
         *p = 13;        /* causes an access violation exception */
 
         Fail("ERROR: code was executed after the access violation.\n");
     }
     PAL_EXCEPT(EXCEPTION_EXECUTE_HANDLER)
     {
-        if (!bTry)
+        if (!bTry_pal_except_test1)
         {
             Fail("ERROR: PAL_EXCEPT was hit without PAL_TRY being hit.\n");
         }
 
-        bExcept = TRUE; /* indicate we hit the PAL_EXCEPT block */
+        bExcept_pal_except_test1 = TRUE; /* indicate we hit the PAL_EXCEPT block */
     }
     PAL_ENDTRY;
 
-    if (!bTry)
+    if (!bTry_pal_except_test1)
     {
         Trace("ERROR: the code in the PAL_TRY block was not executed.\n");
     }
 
-    if (!bExcept)
+    if (!bExcept_pal_except_test1)
     {
         Trace("ERROR: the code in the PAL_EXCEPT block was not executed.\n");
     }
 
     /* did we hit all the code blocks? */
-    if(!bTry || !bExcept)
+    if(!bTry_pal_except_test1 || !bExcept_pal_except_test1)
     {
         Fail("");
     }

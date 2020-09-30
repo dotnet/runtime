@@ -22,7 +22,7 @@ namespace Internal.TypeSystem
                 ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
             }
 
-            // CLI - Partition 1, section 9.5 - Generic types shall not be marked explicitlayout.  
+            // CLI - Partition 1, section 9.5 - Generic types shall not be marked explicitlayout.
             if (type.HasInstantiation && type.IsExplicitLayout)
             {
                 ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadExplicitGeneric, type.GetTypeDefinition());
@@ -63,8 +63,8 @@ namespace Internal.TypeSystem
             }
 
             // CLI - Partition 2, section 22.8
-            // A type has layout if it is marked SequentialLayout or ExplicitLayout.  If any type within an inheritance chain has layout, 
-            // then so shall all its base classes, up to the one that descends immediately from System.ValueType (if it exists in the type's 
+            // A type has layout if it is marked SequentialLayout or ExplicitLayout.  If any type within an inheritance chain has layout,
+            // then so shall all its base classes, up to the one that descends immediately from System.ValueType (if it exists in the type's
             // hierarchy); otherwise, from System.Object
             // Note: While the CLI isn't clearly worded, the layout needs to be the same for the entire chain.
             // If the current type isn't ValueType or System.Object and has a layout and the parent type isn't
@@ -379,6 +379,23 @@ namespace Internal.TypeSystem
             return computedLayout;
         }
 
+        private static LayoutInt AlignUpInstanceFieldOffset(TypeDesc typeWithField, LayoutInt cumulativeInstanceFieldPos, LayoutInt alignment, TargetDetails target)
+        {
+            if (!typeWithField.IsValueType && target.Architecture == TargetArchitecture.X86 && cumulativeInstanceFieldPos != new LayoutInt(0))
+            {
+                // Alignment of fields is relative to the start of the field list, not the start of the object
+                //
+                // The code in the VM is written as if this is the rule for all architectures, but for ARM 32bit platforms
+                // there is an additional adjustment via dwOffsetBias that aligns fields based on the start of the object
+                cumulativeInstanceFieldPos = cumulativeInstanceFieldPos - new LayoutInt(target.PointerSize);
+                return LayoutInt.AlignUp(cumulativeInstanceFieldPos, alignment, target) + new LayoutInt(target.PointerSize);
+            }
+            else
+            {
+                return LayoutInt.AlignUp(cumulativeInstanceFieldPos, alignment, target);
+            }
+        }
+
         protected static ComputedInstanceFieldLayout ComputeSequentialFieldLayout(MetadataType type, int numInstanceFields)
         {
             var offsets = new FieldAndOffset[numInstanceFields];
@@ -404,7 +421,7 @@ namespace Internal.TypeSystem
 
                 largestAlignmentRequirement = LayoutInt.Max(fieldSizeAndAlignment.Alignment, largestAlignmentRequirement);
 
-                cumulativeInstanceFieldPos = LayoutInt.AlignUp(cumulativeInstanceFieldPos, fieldSizeAndAlignment.Alignment, type.Context.Target);
+                cumulativeInstanceFieldPos = AlignUpInstanceFieldOffset(type, cumulativeInstanceFieldPos, fieldSizeAndAlignment.Alignment, type.Context.Target);
                 offsets[fieldOrdinal] = new FieldAndOffset(field, cumulativeInstanceFieldPos);
                 cumulativeInstanceFieldPos = checked(cumulativeInstanceFieldPos + fieldSizeAndAlignment.Size);
 
@@ -433,15 +450,16 @@ namespace Internal.TypeSystem
         {
             // For types inheriting from another type, field offsets continue on from where they left off
             LayoutInt cumulativeInstanceFieldPos = ComputeBytesUsedInParentType(type);
+            TypeSystemContext context = type.Context;
 
             var layoutMetadata = type.GetClassLayout();
 
             int packingSize = ComputePackingSize(type, layoutMetadata);
+            packingSize = Math.Min(context.Target.MaximumAutoLayoutPackingSize, packingSize);
 
             var offsets = new FieldAndOffset[numInstanceFields];
             int fieldOrdinal = 0;
 
-            TypeSystemContext context = type.Context;
 
             // Iterate over the instance fields and keep track of the number of fields of each category
             // For the non-GC Pointer fields, we will keep track of the number of fields by log2(size)
@@ -467,7 +485,7 @@ namespace Internal.TypeSystem
                     instanceGCPointerFieldsCount++;
                 }
                 else
-                {                    
+                {
                     Debug.Assert(fieldType.IsPrimitive || fieldType.IsPointer || fieldType.IsFunctionPointer || fieldType.IsEnum);
 
                     var fieldSizeAndAlignment = ComputeFieldSizeAndAlignment(fieldType, packingSize, out bool _);
@@ -528,7 +546,7 @@ namespace Internal.TypeSystem
                 }
             }
 
-            largestAlignmentRequired = type.Context.Target.GetObjectAlignment(largestAlignmentRequired);
+            largestAlignmentRequired = context.Target.GetObjectAlignment(largestAlignmentRequired);
             bool requiresAlign8 = !largestAlignmentRequired.IsIndeterminate && largestAlignmentRequired.AsInt > 4;
             AlignBaseOffsetIfNecessary(type, ref cumulativeInstanceFieldPos, requiresAlign8);
 
@@ -572,7 +590,7 @@ namespace Internal.TypeSystem
                         // (the subsequent loop will place fields from large to small fields)
                         if (j > maxLog2Size)
                             break;
-                        
+
                         // Check whether there are any small enough fields
                         // We must consider both GC Pointers and non-GC Pointers
                         for (j = i; j >= 0; j--)
@@ -644,12 +662,12 @@ namespace Internal.TypeSystem
 
                 if (fieldSizeAndAlignment.Alignment.IsIndeterminate)
                 {
-                    cumulativeInstanceFieldPos = LayoutInt.AlignUp(cumulativeInstanceFieldPos, fieldSizeAndAlignment.Alignment, context.Target);
+                    cumulativeInstanceFieldPos = AlignUpInstanceFieldOffset(type, cumulativeInstanceFieldPos, fieldSizeAndAlignment.Alignment, context.Target);
                 }
                 else
                 {
                     LayoutInt AlignmentRequired = LayoutInt.Max(fieldSizeAndAlignment.Alignment, context.Target.LayoutPointerSize);
-                    cumulativeInstanceFieldPos = LayoutInt.AlignUp(cumulativeInstanceFieldPos, AlignmentRequired, context.Target);
+                    cumulativeInstanceFieldPos = AlignUpInstanceFieldOffset(type, cumulativeInstanceFieldPos, AlignmentRequired, context.Target);
                 }
                 offsets[fieldOrdinal] = new FieldAndOffset(instanceValueClassFieldsArr[i], cumulativeInstanceFieldPos);
 
@@ -670,9 +688,9 @@ namespace Internal.TypeSystem
             {
                 minAlign = LayoutInt.Indeterminate;
             }
-            else if (cumulativeInstanceFieldPos.AsInt > type.Context.Target.PointerSize)
+            else if (cumulativeInstanceFieldPos.AsInt > context.Target.PointerSize)
             {
-                minAlign = type.Context.Target.LayoutPointerSize;
+                minAlign = context.Target.LayoutPointerSize;
             }
             else
             {
@@ -699,7 +717,7 @@ namespace Internal.TypeSystem
         {
             var fieldSizeAndAlignment = ComputeFieldSizeAndAlignment(field.FieldType, packingSize, out bool _);
 
-            instanceFieldPos = LayoutInt.AlignUp(instanceFieldPos, fieldSizeAndAlignment.Alignment, field.Context.Target);
+            instanceFieldPos = AlignUpInstanceFieldOffset(field.OwningType, instanceFieldPos, fieldSizeAndAlignment.Alignment, field.Context.Target);
             offsets[fieldOrdinal] = new FieldAndOffset(field, instanceFieldPos);
             instanceFieldPos = checked(instanceFieldPos + fieldSizeAndAlignment.Size);
 
@@ -801,7 +819,7 @@ namespace Internal.TypeSystem
         private static SizeAndAlignment ComputeInstanceSize(MetadataType type, LayoutInt instanceSize, LayoutInt alignment, int classLayoutSize, out SizeAndAlignment byteCount)
         {
             SizeAndAlignment result;
-            
+
             // Pad the length of structs to be 1 if they are empty so we have no zero-length structures
             if (type.IsValueType && instanceSize == LayoutInt.Zero)
             {
@@ -844,7 +862,7 @@ namespace Internal.TypeSystem
             }
 
             // Determine the alignment needed by the type when allocated
-            // This is target specific, and not just pointer sized due to 
+            // This is target specific, and not just pointer sized due to
             // 8 byte alignment requirements on ARM for longs and doubles
             alignment = target.GetObjectAlignment(alignment);
 
@@ -880,7 +898,7 @@ namespace Internal.TypeSystem
             MetadataType metadataType = (MetadataType)type;
 
             // No HAs with explicit layout. There may be cases where explicit layout may be still
-            // eligible for HA, but it is hard to tell the real intent. Make it simple and just 
+            // eligible for HA, but it is hard to tell the real intent. Make it simple and just
             // unconditionally disable HAs for explicit layout.
             if (metadataType.IsExplicitLayout)
                 return NotHA;

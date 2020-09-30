@@ -5,6 +5,7 @@ parameters:
   creator: ''
   helixQueues: ''
   osGroup: ''
+  targetRid: ''
   testRunNamePrefixSuffix: ''
   testScope: 'innerloop' # innerloop | outerloop | all
   interpreter: ''
@@ -17,6 +18,7 @@ steps:
             $(Build.SourcesDirectory)/src/libraries/sendtohelix.proj
             /p:RuntimeFlavor=${{ parameters.runtimeFlavor }}
             /p:TargetArchitecture=${{ parameters.archType }}
+            /p:TargetRuntimeIdentifier=${{ parameters.targetRid }}
             /p:Configuration=${{ parameters.buildConfig }}
             /p:TargetOS=${{ parameters.osGroup }}
             /p:MonoEnableInterpreter=${{ parameters.interpreter }}

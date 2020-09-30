@@ -24,7 +24,10 @@ namespace System.Text.Json.Serialization.Converters
         }
 
         internal override object ReadWithQuotes(ref Utf8JsonReader reader)
-            => throw new NotSupportedException();
+        {
+            ThrowHelper.ThrowNotSupportedException_DictionaryKeyTypeNotSupported(TypeToConvert);
+            return null!;
+        }
 
         internal override void WriteWithQuotes(Utf8JsonWriter writer, object value, JsonSerializerOptions options, ref WriteStack state)
         {

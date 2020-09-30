@@ -91,6 +91,10 @@ jobs:
         - OSX.1014.Amd64.Open
         - OSX.1015.Amd64.Open
 
+    # iOS x64/x86
+    - ${{ if in(parameters.platform, 'iOS_x64', 'iOS_x86') }}:
+      - OSX.1015.Amd64.Open
+
     # Windows_NT x64
     - ${{ if eq(parameters.platform, 'Windows_NT_x64') }}:
       # netcoreapp

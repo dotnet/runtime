@@ -14,7 +14,7 @@
 
 #include <palsuite.h>
 
-int __cdecl main(int argc, char **argv)
+PALTEST(c_runtime_fclose_test2_paltest_fclose_test2, "c_runtime/fclose/test2/paltest_fclose_test2")
 {
     HANDLE  hReadPipe   = NULL;
     HANDLE  hWritePipe  = NULL;

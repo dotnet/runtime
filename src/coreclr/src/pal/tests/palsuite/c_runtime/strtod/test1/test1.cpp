@@ -23,7 +23,7 @@ struct testCase
 };
 
 
-int __cdecl main(int argc, char **argv)
+PALTEST(c_runtime_strtod_test1_paltest_strtod_test1, "c_runtime/strtod/test1/paltest_strtod_test1")
 {
 
     char * endptr;

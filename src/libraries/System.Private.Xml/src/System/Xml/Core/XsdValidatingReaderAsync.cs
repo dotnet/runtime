@@ -346,7 +346,6 @@ namespace System.Xml
         // Skips to the end tag of the current element.
         public override async Task SkipAsync()
         {
-            int startDepth = Depth;
             switch (NodeType)
             {
                 case XmlNodeType.Element:

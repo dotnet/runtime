@@ -19,4 +19,3 @@ namespace Microsoft.NET.HostModel.Bundle
         BundleAllContent = BundleNativeBinaries | BundleOtherFiles,
     };
 }
-

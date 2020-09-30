@@ -3,7 +3,9 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Net.Security;
+using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Diagnostics.CodeAnalysis;
@@ -11,6 +13,7 @@ using System.Text;
 
 namespace System.Net.Http
 {
+    [UnsupportedOSPlatform("browser")]
     public sealed class SocketsHttpHandler : HttpMessageHandler
     {
         private readonly HttpConnectionSettings _settings = new HttpConnectionSettings();
@@ -362,6 +365,32 @@ namespace System.Net.Http
         internal bool SupportsProxy => true;
         internal bool SupportsRedirectConfiguration => true;
 
+        /// <summary>
+        /// When non-null, a custom callback used to open new connections.
+        /// </summary>
+        public Func<SocketsHttpConnectionContext, CancellationToken, ValueTask<Stream>>? ConnectCallback
+        {
+            get => _settings._connectCallback;
+            set
+            {
+                CheckDisposedOrStarted();
+                _settings._connectCallback = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets a custom callback that provides access to the plaintext HTTP protocol stream.
+        /// </summary>
+        public Func<SocketsHttpPlaintextStreamFilterContext, CancellationToken, ValueTask<Stream>>? PlaintextStreamFilter
+        {
+            get => _settings._plaintextStreamFilter;
+            set
+            {
+                CheckDisposedOrStarted();
+                _settings._plaintextStreamFilter = value;
+            }
+        }
+
         public IDictionary<string, object?> Properties =>
             _settings._properties ?? (_settings._properties = new Dictionary<string, object?>());
 
@@ -466,6 +495,11 @@ namespace System.Net.Http
 
             CheckDisposed();
             HttpMessageHandlerStage handler = _handler ?? SetupHandlerChain();
+
+            if (_settings._plaintextStreamFilter is not null)
+            {
+                throw new NotSupportedException(SR.net_http_sync_operations_not_allowed_with_plaintext_filter);
+            }
 
             Exception? error = ValidateAndNormalizeRequest(request);
             if (error != null)

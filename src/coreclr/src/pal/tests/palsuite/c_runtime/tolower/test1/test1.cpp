@@ -21,7 +21,7 @@ struct testCase
     int start;
 };
 
-int __cdecl main(int argc, char **argv)
+PALTEST(c_runtime_tolower_test1_paltest_tolower_test1, "c_runtime/tolower/test1/paltest_tolower_test1")
 {
   
     int result;  

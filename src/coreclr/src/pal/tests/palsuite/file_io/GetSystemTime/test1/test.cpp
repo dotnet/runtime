@@ -20,7 +20,7 @@
 #include <palsuite.h>
 
 
-int __cdecl main(int argc, char *argv[]) 
+PALTEST(file_io_GetSystemTime_test1_paltest_getsystemtime_test1, "file_io/GetSystemTime/test1/paltest_getsystemtime_test1")
 {
     SYSTEMTIME TheTime;
     SYSTEMTIME firstTime;

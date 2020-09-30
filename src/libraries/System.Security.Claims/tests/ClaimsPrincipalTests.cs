@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -203,7 +204,7 @@ namespace System.Security.Claims
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void Current_FallsBackToThread()
+        public void Current_FallsBackToThread_NoPrincipalPolicy()
         {
             RemoteExecutor.Invoke(() =>
             {
@@ -225,9 +226,19 @@ namespace System.Security.Claims
                 Assert.NotNull(current);
                 Assert.Equal("NonClaimsIdentity_Name", current.Identity.Name);
 
-                // match .NET Framework behavior by throwing ArgumentNullException when Thread.CurrentPrincipal is null
                 Thread.CurrentPrincipal = null;
-                Assert.Throws<ArgumentNullException>(() => ClaimsPrincipal.Current);
+                Assert.Null(ClaimsPrincipal.Current);
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void Current_FallsBackToThread_UnauthenticatedPrincipalPolicy()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                AppDomain.CurrentDomain.SetPrincipalPolicy(PrincipalPolicy.UnauthenticatedPrincipal);
+                Thread.CurrentPrincipal = null;
+                Assert.IsType<GenericPrincipal>(ClaimsPrincipal.Current);
             }).Dispose();
         }
 

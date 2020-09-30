@@ -29,14 +29,9 @@ namespace System.Text.Json.Serialization.Converters
         /// </summary>
         protected virtual void CreateCollection(ref Utf8JsonReader reader, ref ReadStack state) { }
 
-        private static Type s_valueType = typeof(TValue);
+        internal override Type ElementType => typeof(TValue);
 
-        internal override Type ElementType => s_valueType;
-
-        protected Type KeyType = typeof(TKey);
-        // For string keys we don't use a key converter
-        // in order to avoid performance regression on already supported types.
-        protected bool IsStringKey = typeof(TKey) == typeof(string);
+        protected static readonly Type KeyType = typeof(TKey);
 
         protected JsonConverter<TKey>? _keyConverter;
         protected JsonConverter<TValue>? _valueConverter;
@@ -93,7 +88,7 @@ namespace System.Text.Json.Serialization.Converters
 
                         // Read the value and add.
                         reader.ReadWithVerify();
-                        TValue element = valueConverter.Read(ref reader, s_valueType, options);
+                        TValue element = valueConverter.Read(ref reader, ElementType, options);
                         Add(key, element!, options, ref state);
                     }
                 }
@@ -118,7 +113,7 @@ namespace System.Text.Json.Serialization.Converters
                         reader.ReadWithVerify();
 
                         // Get the value from the converter and add it.
-                        valueConverter.TryRead(ref reader, s_valueType, options, ref state, out TValue element);
+                        valueConverter.TryRead(ref reader, ElementType, options, ref state, out TValue element);
                         Add(key, element!, options, ref state);
                     }
                 }
@@ -243,7 +238,7 @@ namespace System.Text.Json.Serialization.Converters
                 string unescapedPropertyNameAsString;
 
                 // Special case string to avoid calling GetString twice and save one allocation.
-                if (IsStringKey)
+                if (KeyType == typeof(string))
                 {
                     unescapedPropertyNameAsString = reader.GetString()!;
                     key = (TKey)(object)unescapedPropertyNameAsString;

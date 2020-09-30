@@ -870,7 +870,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/2280", TestRuntimes.Mono)]
         public static void GetTotalAllocatedBytes()
         {
             byte[] stash;

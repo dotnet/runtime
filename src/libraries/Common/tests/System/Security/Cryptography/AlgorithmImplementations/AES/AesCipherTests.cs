@@ -406,7 +406,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                 128);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [Fact]
         public static void VerifyKnownTransform_CFB8_256_NoPadding()
         {
             TestAesTransformDirectKey(
@@ -494,7 +494,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                 128);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [Fact]
         public static void VerifyKnownTransform_CFB8_192_NoPadding()
         {
             TestAesTransformDirectKey(
@@ -626,7 +626,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [Fact]
         public static void VerifyKnownTransform_CFB8_128_NoPadding_4()
         {
             // NIST CAVP AESMMT.ZIP CFB8MMT128.rsp, [ENCRYPT] COUNT=4
@@ -669,7 +669,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                 feedbackSize: 128);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [Fact]
         public static void VerifyKnownTransform_CFB8_128_PKCS7_4()
         {
             TestAesTransformDirectKey(
@@ -682,7 +682,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                 feedbackSize: 8);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [Fact]
         public static void VerifyKnownTransform_CFB8_128_NoPadding_0_Extended()
         {
             // NIST CAVP AESMMT.ZIP CFB8MMT128.rsp, [ENCRYPT] COUNT=0
@@ -698,7 +698,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                 feedbackSize: 8);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [Fact]
         public static void VerifyKnownTransform_CFB8_128_NoPadding_9_Extended()
         {
             // NIST CAVP AESMMT.ZIP CFB8MMT128.rsp, [ENCRYPT] COUNT=9
@@ -714,7 +714,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                 feedbackSize: 8);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [Fact]
         public static void VerifyKnownTransform_CFB8_192_NoPadding_0_Extended()
         {
             // NIST CAVP AESMMT.ZIP CFB8MMT192.rsp, [ENCRYPT] COUNT=0
@@ -730,7 +730,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                 feedbackSize: 8);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [Fact]
         public static void VerifyKnownTransform_CFB8_192_NoPadding_9_Extended()
         {
             // NIST CAVP AESMMT.ZIP CFB8MMT192.rsp, [ENCRYPT] COUNT=9
@@ -746,7 +746,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                 feedbackSize: 8);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [Fact]
         public static void VerifyKnownTransform_CFB8_256_NoPadding_0_Extended()
         {
             // NIST CAVP AESMMT.ZIP CFB8MMT256.rsp, [ENCRYPT] COUNT=0
@@ -762,7 +762,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                 feedbackSize: 8);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [Fact]
         public static void VerifyKnownTransform_CFB8_256_NoPadding_9_Extended()
         {
             // NIST CAVP AESMMT.ZIP CFB8MMT256.rsp, [ENCRYPT] COUNT=9
