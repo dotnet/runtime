@@ -10,13 +10,13 @@
 namespace bundle
 {
     // FileEntry: Records information about embedded files.
-    // 
-    // The bundle manifest records the following meta-data for each 
+    //
+    // The bundle manifest records the following meta-data for each
     // file embedded in the bundle:
     // Fixed size portion (file_entry_fixed_t)
-    //   - Offset     
-    //   - Size       
-    //   - File Entry Type       
+    //   - Offset
+    //   - Size
+    //   - File Entry Type
     // Variable Size portion
     //   - relative path (7-bit extension encoded length prefixed string)
 
@@ -37,15 +37,19 @@ namespace bundle
             , m_size(0)
             , m_type(file_type_t::__last)
             , m_relative_path()
+            , m_force_extraction(false)
         {
         }
 
-        file_entry_t(const file_entry_fixed_t *fixed_data)
-            :m_relative_path()
+        file_entry_t(
+            const file_entry_fixed_t *fixed_data,
+            const bool force_extraction = false)
+            : m_relative_path()
+            , m_force_extraction(force_extraction)
         {
-            // File_entries in the bundle-manifest are expected to be used 
+            // File_entries in the bundle-manifest are expected to be used
             // beyond startup (for loading files directly from bundle, lazy extraction, etc.).
-            // The contents of fixed_data are copied on to file_entry in order to 
+            // The contents of fixed_data are copied on to file_entry in order to
             // avoid memory mapped IO later.
 
             m_offset = fixed_data->offset;
@@ -59,13 +63,14 @@ namespace bundle
         file_type_t type() const { return m_type; }
         bool needs_extraction() const;
 
-        static file_entry_t read(reader_t &reader);
+        static file_entry_t read(reader_t &reader, bool force_extraction);
 
     private:
         int64_t m_offset;
         int64_t m_size;
         file_type_t m_type;
         pal::string_t m_relative_path; // Path of an embedded file, relative to the extraction directory.
+        bool m_force_extraction;
         bool is_valid() const;
     };
 }
