@@ -1,9 +1,9 @@
-using Mono.Linker.Tests.Cases.Expectations.Assertions;
-using System.Linq.Expressions;
 using System;
 using System.Linq;
-using Mono.Linker.Tests.Cases.Expectations.Metadata;
+using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
+using Mono.Linker.Tests.Cases.Expectations.Assertions;
+using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Reflection
 {

@@ -18,7 +18,7 @@ namespace Mono.Linker.Tests.Cases.Attributes.OnlyKeepUsed
 		class Bar
 		{
 			[Kept]
-			public void Method ([Foo] [KeptAttributeAttribute (typeof (FooAttribute))] string arg)
+			public void Method ([Foo][KeptAttributeAttribute (typeof (FooAttribute))] string arg)
 			{
 			}
 		}

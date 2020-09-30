@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using Xunit;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 using Mono.Linker;
+using Xunit;
 
 namespace ILLink.Tasks.Tests
 {

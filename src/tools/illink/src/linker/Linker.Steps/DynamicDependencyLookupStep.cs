@@ -4,8 +4,8 @@
 
 using System;
 using System.Diagnostics;
-using Mono.Cecil;
 using System.Diagnostics.CodeAnalysis;
+using Mono.Cecil;
 
 #nullable enable
 

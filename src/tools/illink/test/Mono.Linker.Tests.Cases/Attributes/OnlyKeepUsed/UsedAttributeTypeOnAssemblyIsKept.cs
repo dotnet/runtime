@@ -1,7 +1,7 @@
 ﻿using System;
 using Mono.Linker.Tests.Cases.Attributes.OnlyKeepUsed;
-using Mono.Linker.Tests.Cases.Expectations.Metadata;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
+using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 [assembly: UsedAttributeTypeOnAssemblyIsKept.Foo]
 [assembly: KeptAttributeAttribute (typeof (UsedAttributeTypeOnAssemblyIsKept.FooAttribute))]

@@ -1,6 +1,6 @@
 using System;
-using Mono.Cecil;
 using System.Linq;
+using Mono.Cecil;
 
 namespace ILLink.Tasks
 {

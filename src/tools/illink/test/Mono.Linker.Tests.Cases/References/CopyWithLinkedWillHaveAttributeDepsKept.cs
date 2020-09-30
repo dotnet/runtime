@@ -69,7 +69,7 @@ namespace Mono.Linker.Tests.Cases.References
 			}
 
 			[Kept]
-			static void MethodWithParameter ([KeptAttributeAttribute (typeof (WithLinked_Attrs.ParameterAttribute))] [WithLinked_Attrs.Parameter] int arg)
+			static void MethodWithParameter ([KeptAttributeAttribute (typeof (WithLinked_Attrs.ParameterAttribute))][WithLinked_Attrs.Parameter] int arg)
 			{
 			}
 		}

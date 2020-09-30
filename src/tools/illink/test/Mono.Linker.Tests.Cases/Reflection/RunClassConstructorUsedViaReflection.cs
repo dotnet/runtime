@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
-using System.Runtime.CompilerServices;
 
 namespace Mono.Linker.Tests.Cases.Reflection
 {
