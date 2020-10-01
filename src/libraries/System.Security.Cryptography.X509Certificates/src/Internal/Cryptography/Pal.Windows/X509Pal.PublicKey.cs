@@ -43,7 +43,6 @@ namespace Internal.Cryptography.Pal
         {
             if (certificatePal is CertificatePal pal)
             {
-                Debug.Assert(OperatingSystem.IsWindows());
                 return DecodeECPublicKey(
                     pal,
 #pragma warning disable CA1416 // Validate platform compatibility
