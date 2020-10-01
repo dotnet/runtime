@@ -143,7 +143,7 @@ namespace System
         /// </summary>
         /// <returns>Path of the executable that started the currently executing process</returns>
         /// <remarks>
-        /// If the executable is renamed or deleted, the return value is undefined and depends on the operating system.
+        /// If the executable is renamed or deleted before this property is first accessed, the return value is undefined and depends on the operating system.
         /// </remarks>
         public static string? ProcessPath
         {
