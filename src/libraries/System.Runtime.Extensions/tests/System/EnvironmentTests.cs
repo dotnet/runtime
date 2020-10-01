@@ -96,7 +96,7 @@ namespace System.Tests
         }
 
         [Fact]
-        public void ProcessPath_MatchedExpectedValue()
+        public void ProcessPath_MatchesExpectedValue()
         {
             string expectedProcessPath = PlatformDetection.IsBrowser ? null : Process.GetCurrentProcess().MainModule.FileName;
             Assert.Equal(expectedProcessPath, Environment.ProcessPath);
