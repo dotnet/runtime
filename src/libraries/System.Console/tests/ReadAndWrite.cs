@@ -6,9 +6,17 @@ using System.IO;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
+using Xunit.Abstractions;
 
 public class ReadAndWrite
 {
+    private readonly ITestOutputHelper _output;
+
+    public ReadAndWrite(ITestOutputHelper output)
+    {
+        _output = output;
+    }
+
     [Fact]
     public static void WriteOverloads()
     {
@@ -259,7 +267,7 @@ public class ReadAndWrite
 
     [Fact]
     [PlatformSpecific(~TestPlatforms.Browser)]
-    public static unsafe void OutputEncodingPreamble()
+    public unsafe void OutputEncodingPreamble()
     {
         Encoding curEncoding = Console.OutputEncoding;
 
@@ -273,16 +281,19 @@ public class ReadAndWrite
             Console.OutputEncoding = Encoding.Unicode;
             // The primary purpose of ConsoleEncoding is to return an empty preamble.
             Assert.Equal(Array.Empty<byte>(), Console.Out.Encoding.GetPreamble());
+
+            _output.WriteLine("L285: success");
         }
         finally
         {
+            _output.WriteLine("L289: " + curEncoding.EncodingName);
             Console.OutputEncoding = curEncoding;
         }
     }
 
     [Fact]
     [PlatformSpecific(~TestPlatforms.Browser)]
-    public static unsafe void OutputEncoding()
+    public unsafe void OutputEncoding()
     {
         Encoding curEncoding = Console.OutputEncoding;
 
@@ -299,9 +310,12 @@ public class ReadAndWrite
             Console.OutputEncoding = Encoding.Unicode;
             Assert.Equal(Console.OutputEncoding.CodePage, Encoding.Unicode.CodePage);
             ValidateConsoleEncoding(Console.Out.Encoding);
+
+            _output.WriteLine("L314: success");
         }
         finally
         {
+            _output.WriteLine("L318: " + curEncoding.EncodingName);
             Console.OutputEncoding = curEncoding;
         }
     }
