@@ -19,11 +19,12 @@ public partial class ReadKey
     {
         // If handle is not to a character device, we must be redirected:
         uint fileType = Interop.Kernel32.GetFileType(handle);
+        _output.WriteLine($"fileTypeOutput '{desc}': {fileType}");
+
+
         if ((fileType & Interop.Kernel32.FileTypes.FILE_TYPE_CHAR) != Interop.Kernel32.FileTypes.FILE_TYPE_CHAR)
             return true;
         
-        _output.WriteLine($"fileTypeOutput '{desc}': {fileType}");
-
         // We are on a char device if GetConsoleMode succeeds and so we are not redirected.
         return (!Interop.Kernel32.IsGetConsoleModeCallSuccessful(handle));
     }

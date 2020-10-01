@@ -6,17 +6,9 @@ using System.IO;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
-using Xunit.Abstractions;
 
 public class ReadAndWrite
 {
-    private readonly ITestOutputHelper _output;
-
-    public ReadAndWrite(ITestOutputHelper output)
-    {
-        _output = output;
-    }
-
     [Fact]
     public static void WriteOverloads()
     {
@@ -269,6 +261,7 @@ public class ReadAndWrite
     [PlatformSpecific(~TestPlatforms.Browser)]
     public unsafe void OutputEncodingPreamble()
     {
+        // On Windows Nano Server this returns "Codepage - 0" which defaults to nothing. Therefore disabling th
         Encoding curEncoding = Console.OutputEncoding;
 
         try
