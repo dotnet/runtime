@@ -219,6 +219,7 @@ void UninitializeTerminal()
     {
         if (!g_terminalUninitialized)
         {
+            // Avoid configuring the terminal: only reset terminal settings when our process has touched them.
             if (g_terminalConfigured)
             {
                 TcSetAttr(&g_initTermios, /* blockIfBackground */ false);
@@ -274,8 +275,8 @@ void SystemNative_ConfigureTerminalForChildProcess(int32_t childUsesTerminal)
             g_hasCurrentTermios = false;
         }
 
-        // Change terminal settings for child, or when there are no more children and the terminal was configured.
-        if (childUsesTerminal || g_terminalConfigured)
+        // Avoid configuring the terminal: only change terminal settings when our process has touched them.
+        if (g_terminalConfigured)
         {
             ConfigureTerminal(g_signalForBreak, /* forChild */ childUsesTerminal, /* minChars */ 1, /* decisecondsTimeout */ 0, /* blockIfBackground */ false, /* convertCrToNl */ false);
         }
