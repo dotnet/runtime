@@ -4911,10 +4911,13 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
     m_pLowering = new (this, CMK_LSRA) Lowering(this, m_pLinearScan); // PHASE_LOWERING
     m_pLowering->Run();
 
-    // Set stack levels
-    //
+#if !defined(OSX_ARM64_ABI)
+    // Set stack levels; this information is necessary for x86
+    // but on other platforms it is used only in asserts.
+    // TODO: do not run it in release on other platforms, see https://github.com/dotnet/runtime/issues/42673.
     StackLevelSetter stackLevelSetter(this);
     stackLevelSetter.Run();
+#endif // !OSX_ARM64_ABI
 
     // We can not add any new tracked variables after this point.
     lvaTrackedFixed = true;
@@ -5018,7 +5021,7 @@ void Compiler::generatePatchpointInfo()
         assert(varDsc->lvFramePointerBased);
 
         // Record FramePtr relative offset (no localloc yet)
-        patchpointInfo->SetOffset(lclNum, varDsc->lvStkOffs);
+        patchpointInfo->SetOffset(lclNum, varDsc->GetStackOffset());
 
         // Note if IL stream contained an address-of that potentially leads to exposure.
         // This bit of IL may be skipped by OSR partial importation.
@@ -5051,7 +5054,7 @@ void Compiler::generatePatchpointInfo()
     {
         assert(lvaGSSecurityCookie != BAD_VAR_NUM);
         LclVarDsc* const varDsc = lvaGetDesc(lvaGSSecurityCookie);
-        patchpointInfo->SetSecurityCookieOffset(varDsc->lvStkOffs);
+        patchpointInfo->SetSecurityCookieOffset(varDsc->GetStackOffset());
         JITDUMP("--OSR-- security cookie V%02u offset is FP %d\n", lvaGSSecurityCookie,
                 patchpointInfo->SecurityCookieOffset());
     }
