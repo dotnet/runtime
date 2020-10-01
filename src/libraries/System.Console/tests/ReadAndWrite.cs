@@ -265,7 +265,7 @@ public class ReadAndWrite
         }
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer), nameof(PlatformDetection.IsNotWindowsServerCore), nameof(PlatformDetection.IsNotWindowsIoTCore))]
     [PlatformSpecific(~TestPlatforms.Browser)]
     public unsafe void OutputEncodingPreamble()
     {
@@ -281,12 +281,9 @@ public class ReadAndWrite
             Console.OutputEncoding = Encoding.Unicode;
             // The primary purpose of ConsoleEncoding is to return an empty preamble.
             Assert.Equal(Array.Empty<byte>(), Console.Out.Encoding.GetPreamble());
-
-            _output.WriteLine("L285: success");
         }
         finally
         {
-            _output.WriteLine("L289: " + curEncoding.EncodingName);
             Console.OutputEncoding = curEncoding;
         }
     }
@@ -310,12 +307,9 @@ public class ReadAndWrite
             Console.OutputEncoding = Encoding.Unicode;
             Assert.Equal(Console.OutputEncoding.CodePage, Encoding.Unicode.CodePage);
             ValidateConsoleEncoding(Console.Out.Encoding);
-
-            _output.WriteLine("L314: success");
         }
         finally
         {
-            _output.WriteLine("L318: " + curEncoding.EncodingName);
             Console.OutputEncoding = curEncoding;
         }
     }
