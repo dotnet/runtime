@@ -736,7 +736,8 @@ void deps_resolver_t::get_app_context_deps_files_range(fx_definition_vector_t::i
     auto begin_iter = m_fx_definitions.begin();
     auto end_iter = m_fx_definitions.end();
 
-    if ((m_host_mode == host_mode_t::libhost || bundle::info_t::is_single_file_bundle())
+    if ((m_host_mode == host_mode_t::libhost
+        || (bundle::info_t::is_single_file_bundle() && !bundle::runner_t::app()->is_netcoreapp3_compat_mode()))
         && begin_iter != end_iter)
     {
         // Neither in a libhost scenario nor in a bundled app

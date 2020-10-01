@@ -805,7 +805,20 @@ public:
     void incLvRefCntWtd(BasicBlock::weight_t delta, RefCountState state = RCS_NORMAL);
     void setLvRefCntWtd(BasicBlock::weight_t newValue, RefCountState state = RCS_NORMAL);
 
-    int      lvStkOffs;   // stack offset of home
+private:
+    int lvStkOffs; // stack offset of home in bytes.
+
+public:
+    int GetStackOffset() const
+    {
+        return lvStkOffs;
+    }
+
+    void SetStackOffset(int offset)
+    {
+        lvStkOffs = offset;
+    }
+
     unsigned lvExactSize; // (exact) size of the type in bytes
 
     // Is this a promoted struct?
@@ -1446,11 +1459,28 @@ public:
     unsigned structFloatRegs;
 #endif // UNIX_AMD64_ABI
 
+#if defined(DEBUG_ARG_SLOTS)
+    // These fields were used to calculate stack size in stack slots for arguments
+    // but now they are replaced by precise `m_byteOffset/m_byteSize` because of
+    // arm64 apple abi requirements.
+
     // A slot is a pointer sized region in the OutArg area.
     unsigned slotNum;  // When an argument is passed in the OutArg area this is the slot number in the OutArg area
     unsigned numSlots; // Count of number of slots that this argument uses
+#endif                 // DEBUG_ARG_SLOTS
 
-    unsigned alignment; // 1 or 2 (slots/registers)
+    // Return number of stack slots that this argument is taking.
+    // TODO-Cleanup: this function does not align with arm64 apple model,
+    // delete it. In most cases we just want to know if we it is using stack or not
+    // but in some cases we are checking if it is a multireg arg, like:
+    // `numRegs + GetStackSlotsNumber() > 1` that is harder to replace.
+    //
+    unsigned GetStackSlotsNumber() const
+    {
+        return roundUp(GetStackByteSize(), TARGET_POINTER_SIZE) / TARGET_POINTER_SIZE;
+    }
+
+    unsigned byteAlignment; // usually 8 or 16 bytes (slots/registers).
 private:
     unsigned _lateArgInx; // index into gtCallLateArgs list; UINT_MAX if this is not a late arg.
 public:
@@ -1600,9 +1630,19 @@ public:
         return 0;
     }
 
-    unsigned stackSize() const
+    // Get the number of bytes that this argument is occupying on the stack.
+    unsigned GetStackByteSize() const
     {
-        return (TARGET_POINTER_SIZE * this->numSlots);
+        if (!IsSplit() && numRegs > 0)
+        {
+            return 0;
+        }
+
+        assert(!IsHfaArg() || !IsSplit());
+
+        assert(GetByteSize() > TARGET_POINTER_SIZE * numRegs);
+        unsigned stackByteSize = GetByteSize() - TARGET_POINTER_SIZE * numRegs;
+        return GetByteSize() - TARGET_POINTER_SIZE * numRegs;
     }
 
     var_types GetHfaType() const
@@ -1620,7 +1660,7 @@ public:
         if (type != TYP_UNDEF)
         {
             // We must already have set the passing mode.
-            assert(numRegs != 0 || numSlots != 0);
+            assert(numRegs != 0 || GetStackByteSize() != 0);
             // We originally set numRegs according to the size of the struct, but if the size of the
             // hfaType is not the same as the pointer size, we need to correct it.
             // Note that hfaSlots is the number of registers we will use. For ARM, that is twice
@@ -1695,11 +1735,13 @@ public:
 #endif
     }
 
-    bool isSingleRegOrSlot() const
+    // Can we replace the struct type of this node with a primitive type for argument passing?
+    bool TryPassAsPrimitive() const
     {
-        return !IsSplit() && ((numRegs == 1) || (numSlots == 1));
+        return !IsSplit() && ((numRegs == 1) || (m_byteSize <= TARGET_POINTER_SIZE));
     }
 
+#if defined(DEBUG_ARG_SLOTS)
     // Returns the number of "slots" used, where for this purpose a
     // register counts as a slot.
     unsigned getSlotCount() const
@@ -1720,7 +1762,9 @@ public:
         }
         return numSlots + numRegs;
     }
+#endif
 
+#if defined(DEBUG_ARG_SLOTS)
     // Returns the size as a multiple of pointer-size.
     // For targets without HFAs, this is the same as getSlotCount().
     unsigned getSize() const
@@ -1756,6 +1800,43 @@ public:
         return size;
     }
 
+#endif // DEBUG && !OSX_ARM64_ABI
+
+private:
+    unsigned m_byteOffset;
+    unsigned m_byteSize;
+
+public:
+    void SetByteOffset(unsigned byteOffset)
+    {
+        DEBUG_ARG_SLOTS_ASSERT(byteOffset / TARGET_POINTER_SIZE == slotNum);
+        m_byteOffset = byteOffset;
+    }
+
+    unsigned GetByteOffset() const
+    {
+        DEBUG_ARG_SLOTS_ASSERT(m_byteOffset / TARGET_POINTER_SIZE == slotNum);
+        return m_byteOffset;
+    }
+
+    void SetByteSize(unsigned byteSize)
+    {
+#if defined(DEBUG_ARG_SLOTS)
+        assert(byteAlignment != 0);
+        if (!isStruct)
+        {
+            const unsigned alignedByteSize = roundUp(byteSize, byteAlignment);
+            assert(alignedByteSize == getSlotCount() * TARGET_POINTER_SIZE);
+        }
+#endif
+        m_byteSize = byteSize;
+    }
+
+    unsigned GetByteSize() const
+    {
+        return m_byteSize;
+    }
+
     // Set the register numbers for a multireg argument.
     // There's nothing to do on x64/Ux because the structDesc has already been used to set the
     // register numbers.
@@ -1785,6 +1866,7 @@ public:
 #endif // FEATURE_MULTIREG_ARGS && !defined(UNIX_AMD64_ABI)
     }
 
+#ifdef DEBUG
     // Check that the value of 'isStruct' is consistent.
     // A struct arg must be one of the following:
     // - A node of struct type,
@@ -1802,7 +1884,8 @@ public:
                 // This is the case where we are passing a struct as a primitive type.
                 // On most targets, this is always a single register or slot.
                 // However, on ARM this could be two slots if it is TYP_DOUBLE.
-                bool isPassedAsPrimitiveType = ((numRegs == 1) || ((numRegs == 0) && (numSlots == 1)));
+                bool isPassedAsPrimitiveType =
+                    ((numRegs == 1) || ((numRegs == 0) && (GetByteSize() <= TARGET_POINTER_SIZE)));
 #ifdef TARGET_ARM
                 if (!isPassedAsPrimitiveType)
                 {
@@ -1821,7 +1904,6 @@ public:
         }
     }
 
-#ifdef DEBUG
     void Dump() const;
 #endif
 };
@@ -1834,11 +1916,14 @@ public:
 
 class fgArgInfo
 {
-    Compiler*    compiler;    // Back pointer to the compiler instance so that we can allocate memory
-    GenTreeCall* callTree;    // Back pointer to the GT_CALL node for this fgArgInfo
-    unsigned     argCount;    // Updatable arg count value
-    unsigned     nextSlotNum; // Updatable slot count value
-    unsigned     stkLevel;    // Stack depth when we make this call (for x86)
+    Compiler*    compiler; // Back pointer to the compiler instance so that we can allocate memory
+    GenTreeCall* callTree; // Back pointer to the GT_CALL node for this fgArgInfo
+    unsigned     argCount; // Updatable arg count value
+#if defined(DEBUG_ARG_SLOTS)
+    unsigned nextSlotNum; // Updatable slot count value
+#endif
+    unsigned nextStackByteOffset;
+    unsigned stkLevel; // Stack depth when we make this call (for x86)
 
 #if defined(UNIX_X86_ABI)
     bool     alignmentDone; // Updateable flag, set to 'true' after we've done any required alignment.
@@ -1873,7 +1958,8 @@ public:
                              GenTreeCall::Use* use,
                              regNumber         regNum,
                              unsigned          numRegs,
-                             unsigned          alignment,
+                             unsigned          byteSize,
+                             unsigned          byteAlignment,
                              bool              isStruct,
                              bool              isVararg = false);
 
@@ -1883,7 +1969,8 @@ public:
                              GenTreeCall::Use*                                                use,
                              regNumber                                                        regNum,
                              unsigned                                                         numRegs,
-                             unsigned                                                         alignment,
+                             unsigned                                                         byteSize,
+                             unsigned                                                         byteAlignment,
                              const bool                                                       isStruct,
                              const bool                                                       isVararg,
                              const regNumber                                                  otherRegNum,
@@ -1896,7 +1983,8 @@ public:
                              GenTree*          node,
                              GenTreeCall::Use* use,
                              unsigned          numSlots,
-                             unsigned          alignment,
+                             unsigned          byteSize,
+                             unsigned          byteAlignment,
                              bool              isStruct,
                              bool              isVararg = false);
 
@@ -1922,10 +2010,19 @@ public:
     {
         return argTable;
     }
+
+#if defined(DEBUG_ARG_SLOTS)
     unsigned GetNextSlotNum() const
     {
         return nextSlotNum;
     }
+#endif
+
+    unsigned GetNextSlotByteOffset() const
+    {
+        return nextStackByteOffset;
+    }
+
     bool HasRegArgs() const
     {
         return hasRegArgs;
@@ -3198,6 +3295,12 @@ public:
     unsigned            lvaOutgoingArgSpaceVar;  // dummy TYP_LCLBLK var for fixed outgoing argument space
     PhasedVar<unsigned> lvaOutgoingArgSpaceSize; // size of fixed outgoing argument space
 #endif                                           // FEATURE_FIXED_OUT_ARGS
+
+    static unsigned GetOutgoingArgByteSize(unsigned sizeWithoutPadding)
+    {
+        return roundUp(sizeWithoutPadding, TARGET_POINTER_SIZE);
+    }
+
     // Variable representing the return address. The helper-based tailcall
     // mechanism passes the address of the return address to a runtime helper
     // where it is used to detect tail-call chains.
@@ -5709,8 +5812,8 @@ public:
         SpecialCodeKind acdKind; // what kind of a special block is this?
 #if !FEATURE_FIXED_OUT_ARGS
         bool     acdStkLvlInit; // has acdStkLvl value been already set?
-        unsigned acdStkLvl;
-#endif // !FEATURE_FIXED_OUT_ARGS
+        unsigned acdStkLvl;     // stack level in stack slots.
+#endif                          // !FEATURE_FIXED_OUT_ARGS
     };
 
 private:
@@ -9039,7 +9142,7 @@ public:
 #endif
     }
 
-    const char* compGetTieringName() const;
+    const char* compGetTieringName(bool wantShortName = false) const;
     const char* compGetStressMessage() const;
 
     codeOptimize compCodeOpt()
@@ -9122,8 +9225,8 @@ public:
         unsigned  compArgsCount;     // Number of arguments (incl. implicit and     hidden)
 
 #if FEATURE_FASTTAILCALL
-        size_t compArgStackSize; // Incoming argument stack size in bytes
-#endif                           // FEATURE_FASTTAILCALL
+        unsigned compArgStackSize; // Incoming argument stack size in bytes
+#endif                             // FEATURE_FASTTAILCALL
 
         unsigned compRetBuffArg; // position of hidden return param var (0, 1) (BAD_VAR_NUM means not present);
         int compTypeCtxtArg; // position of hidden param for type context for generic code (CORINFO_CALLCONV_PARAMTYPE)

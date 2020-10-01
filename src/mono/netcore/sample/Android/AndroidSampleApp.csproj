@@ -32,11 +32,11 @@
       <StripDebugSymbols>False</StripDebugSymbols>
       <StripDebugSymbols Condition="'$(Configuration)' == 'Release'">True</StripDebugSymbols>
       <AdbTool>$(ANDROID_SDK_ROOT)\platform-tools\adb</AdbTool>
-      <ApkDir>$(OutputPath)apk</ApkDir>
+      <ApkDir>$(OutputPath)apk\</ApkDir>
     </PropertyGroup>
 
     <ItemGroup>
-      <AssemblySearchPaths Include="bin" />
+      <AssemblySearchPaths Include="$(OutputPath)" />
       <AssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackDir)native"/>
       <AssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackDir)lib\$(NetCoreAppCurrent)"/>
     </ItemGroup>

@@ -4966,7 +4966,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
             }
 #endif // FEATURE_FIXED_OUT_ARGS
 
-            int offs = dsc->lvStkOffs;
+            int offs = dsc->GetStackOffset();
 
             /* Is it within the interesting range of offsets */
 
