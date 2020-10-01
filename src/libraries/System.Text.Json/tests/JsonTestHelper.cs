@@ -155,7 +155,7 @@ namespace System.Text.Json
             int innerCount = inner.Length;
             Assert.True(outerCount > innerCount);
 
-            for(int i = 0; i < outerCount - innerCount; ++i)
+            for(int i = 0; i <= outerCount - innerCount; ++i)
             {
                 bool found = true;
                 for(int j = 0; j < innerCount; ++j)
