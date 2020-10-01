@@ -168,7 +168,7 @@ while (args !== undefined && args.length > 0) {
 	} else if (args [0].startsWith ("--working-dir=")) {
 		var arg = args [0].substring ("--working-dir=".length);
 		working_dir = arg;
-        args = args.slice (1);
+		args = args.slice (1);
 	} else {
 		break;
 	}
