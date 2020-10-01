@@ -80,7 +80,7 @@ namespace R2RTest
                     }
 
                     // This is not a reliable way of building the publish folder
-                    string publishFolder = Path.Combine(appFolder, @"artifacts\Debug\net5.0\publish");
+                    string publishFolder = Path.Combine(appFolder, @"artifacts\Debug\net6.0\publish");
                     if (!Directory.Exists(publishFolder))
                     {
                         nugetLog.WriteLine($"Could not find folder {publishFolder} containing the published app.");

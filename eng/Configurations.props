@@ -21,10 +21,13 @@
       TODO: Update to $(MajorVersion).$(MinorVersion) when all sub-repos import
       Arcade at the beginning (SkipImportArcadeSdkFromRoot=false).
     -->
-    <NetCoreAppCurrentVersion>5.0</NetCoreAppCurrentVersion>
+    <NetCoreAppCurrentVersion>6.0</NetCoreAppCurrentVersion>
+    <NetCoreAppToolCurrentVersion>5.0</NetCoreAppToolCurrentVersion>
     <NetCoreAppCurrentIdentifier>.NETCoreApp</NetCoreAppCurrentIdentifier>
     <NetCoreAppCurrentTargetFrameworkMoniker>$(NetCoreAppCurrentIdentifier),Version=v$(NetCoreAppCurrentVersion)</NetCoreAppCurrentTargetFrameworkMoniker>
     <NetCoreAppCurrent>net$(NetCoreAppCurrentVersion)</NetCoreAppCurrent>
+    <NetCoreAppToolCurrent>net$(NetCoreAppToolCurrentVersion)</NetCoreAppToolCurrent>
+    <NetCoreAppCurrentToolTargetFrameworkMoniker>$(NetCoreAppCurrentIdentifier),Version=v$(NetCoreAppToolCurrentVersion)</NetCoreAppCurrentToolTargetFrameworkMoniker>
     <!-- Used by Microsoft.DotNet.Build.Tasks.SharedFramework.Sdk. -->
     <NETCoreAppFramework>$(NetCoreAppCurrent)</NETCoreAppFramework>
     <SharedFrameworkName>Microsoft.NETCore.App</SharedFrameworkName>
