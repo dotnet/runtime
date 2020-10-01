@@ -498,8 +498,6 @@ namespace System.Diagnostics.Tests
             Assert.Equal(RemoteExecutor.HostRunnerName, p.MainModule.ModuleName);
             Assert.EndsWith(RemoteExecutor.HostRunnerName, p.MainModule.FileName);
             Assert.Equal(string.Format("System.Diagnostics.ProcessModule ({0})", RemoteExecutor.HostRunnerName), p.MainModule.ToString());
-
-            Assert.Equal(Environment.ProcessPath, p.MainModule.FileName);
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
