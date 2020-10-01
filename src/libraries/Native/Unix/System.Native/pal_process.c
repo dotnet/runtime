@@ -868,7 +868,7 @@ int32_t SystemNative_SchedGetAffinity(int32_t pid, intptr_t* mask)
 }
 #endif
 
-// Returns the full path to the executable for the current process resolving symbolic links.
+// Returns the full path to the executable for the current process, resolving symbolic links.
 // The caller is responsible for releasing the buffer. Returns null on error.
 char* SystemNative_GetProcessPath()
 {
