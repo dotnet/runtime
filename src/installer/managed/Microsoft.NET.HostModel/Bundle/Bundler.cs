@@ -49,7 +49,7 @@ namespace Microsoft.NET.HostModel.Bundle
             RuntimeConfigJson = appAssemblyName + ".runtimeconfig.json";
             RuntimeConfigDevJson = appAssemblyName + ".runtimeconfig.dev.json";
 
-            BundleManifest = new Manifest(Target.BundleVersion, options);
+            BundleManifest = new Manifest(Target.BundleVersion, netcoreapp3CompatMode: options.HasFlag(BundleOptions.BundleAllContent));
             Options = Target.DefaultOptions | options;
         }
 
