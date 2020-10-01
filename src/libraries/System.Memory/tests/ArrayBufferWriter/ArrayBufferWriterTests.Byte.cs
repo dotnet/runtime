@@ -100,8 +100,14 @@ namespace System.Buffers.Tests
         {
             var output = new ArrayBufferWriter<byte>(int.MaxValue / 2 + 1);
             output.Advance(int.MaxValue / 2 + 1);
-            Memory<byte> memory = output.GetMemory(1); // Validate we can't double the buffer size, but can grow by sizeHint
-            Assert.Equal(1, memory.Length);
+
+            // Validate we can't double the buffer size, but can grow
+            Memory<byte> memory = output.GetMemory(1);
+
+            // The buffer should grow more than the 1 byte requested otherwise performance will not
+            // be usable between 1GB and 2GB
+            Assert.True(memory.Length > 1);
+
             Assert.Throws<OutOfMemoryException>(() => output.GetMemory(int.MaxValue));
         }
     }

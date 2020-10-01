@@ -167,6 +167,8 @@ namespace System.Buffers
             if (sizeHint > FreeCapacity)
             {
                 int currentLength = _buffer.Length;
+
+                // Attempt to grow by the larger of the minimum size and double the current size.
                 int growBy = Math.Max(sizeHint, currentLength);
 
                 if (currentLength == 0)
@@ -178,10 +180,19 @@ namespace System.Buffers
 
                 if ((uint)newSize > int.MaxValue)
                 {
-                    newSize = currentLength + sizeHint;
+                    // Attempt to grow by the larger of the minimum size and half of the available size.
+                    growBy = Math.Max(sizeHint, (int.MaxValue - currentLength) / 2 + 1);
+                    newSize = currentLength + growBy;
+
                     if ((uint)newSize > int.MaxValue)
                     {
-                        ThrowOutOfMemoryException((uint)newSize);
+                        // Attempt to grow by the minimum size.
+                        newSize = currentLength + sizeHint;
+
+                        if ((uint)newSize > int.MaxValue)
+                        {
+                            ThrowOutOfMemoryException((uint)newSize);
+                        }
                     }
                 }
 
