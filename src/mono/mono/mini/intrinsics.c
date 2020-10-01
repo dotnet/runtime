@@ -1763,7 +1763,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 					result = cosh (source);
 					break;
 				case OP_ROUND:
-					result = round (source);
+					result = round (source * 0.5) * 2.0;
 					break;
 				case OP_SIN:
 					result = sin (source);
