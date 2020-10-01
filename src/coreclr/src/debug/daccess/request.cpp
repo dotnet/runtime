@@ -15,25 +15,31 @@
 #include "typestring.h"
 #include <gccover.h>
 #include <virtualcallstub.h>
+
 #ifdef FEATURE_COMINTEROP
 #include <comcallablewrapper.h>
 #endif // FEATURE_COMINTEROP
+
 #ifdef FEATURE_COMWRAPPERS
+#include <interoplibinterface.h>
+#include <interoplibabi.h>
 
 // Public contract for ExternalObjectContext, keep in sync with definition in
 // interoplibinterface.cpp
-struct ExternalObjectContext
+struct ExternalObjectContextDACnterface
 {
-    static constexpr INT_PTR ExternalObjectContextSentinelValue = (intptr_t)0xE0E0E0E0E0E0E0E0;
     INT_PTR sentinel;
     PTR_VOID identity;
+    INT_PTR _padding1;
+    DWORD _padding2;
+    INT64 _padding3;
 };
 
-typedef DPTR(ExternalObjectContext) PTR_ExternalObjectContext;
+typedef DPTR(ExternalObjectContextDACnterface) PTR_ExternalObjectContext;
 
 // Public contract for ManagedObjectWrapper, keep in sync with definition in
 // comwrappers.hpp
-struct ManagedObjectWrapper
+struct ManagedObjectWrapperDACInterface
 {
     PTR_VOID managedObject;
     INT32 _padding1;
@@ -42,12 +48,12 @@ struct ManagedObjectWrapper
     INT_PTR _padding4;
     INT_PTR _padding6;
     LONGLONG _refCount;
+    INT32 _padding7;
 };
 
-typedef DPTR(ManagedObjectWrapper) PTR_ManagedObjectWrapper;
-#endif // FEATURE_COMWRAPPERS
+typedef DPTR(ManagedObjectWrapperDACInterface) PTR_ManagedObjectWrapper;
 
-#include <interoplibabi.h>
+#endif // FEATURE_COMWRAPPERS
 
 #ifndef TARGET_UNIX
 // It is unfortunate having to include this header just to get the definition of GenericModeBlock
@@ -4144,7 +4150,7 @@ TADDR ClrDataAccess::DACGetManagedObjectWrapperFromCCW(CLRDATA_ADDRESS ccwPtr)
 
     ULONG32 bytesRead = 0;
     TADDR managedObjectWrapperPtrPtr = ccwPtr & InteropLib::ABI::DispatchThisPtrMask;
-    TADDR managedObjectWrapperPtr;
+    TADDR managedObjectWrapperPtr = 0;
     if (FAILED(m_pTarget->ReadVirtual(managedObjectWrapperPtrPtr, (PBYTE)&managedObjectWrapperPtr, sizeof(TADDR), &bytesRead))
         || bytesRead != sizeof(TADDR))
     {
@@ -4891,6 +4897,7 @@ HRESULT ClrDataAccess::IsComWrappersCCW(CLRDATA_ADDRESS ccw, BOOL *isComWrappers
     {
         TADDR managedObjectWrapperPtr = DACGetManagedObjectWrapperFromCCW(ccw);
         *isComWrappersCCW = managedObjectWrapperPtr != NULL;
+        hr = *isComWrappersCCW ? S_OK : S_FALSE; 
     }
 
     SOSDacLeave();
@@ -4959,7 +4966,8 @@ HRESULT ClrDataAccess::IsComWrappersRCW(CLRDATA_ADDRESS rcw, BOOL *isComWrappers
     PTR_ExternalObjectContext pEOC(TO_TADDR(rcw));
     if (isComWrappersRCW != NULL)
     {
-        *isComWrappersRCW = pEOC->sentinel == ExternalObjectContext::ExternalObjectContextSentinelValue;
+        *isComWrappersRCW = pEOC->sentinel == ExternalObjectContextSentinelValue;
+        hr = *isComWrappersRCW ? S_OK : S_FALSE; 
     }
 
     SOSDacLeave();
@@ -4980,7 +4988,7 @@ HRESULT ClrDataAccess::GetComWrappersRCWData(CLRDATA_ADDRESS rcw, CLRDATA_ADDRES
     SOSDacEnter();
     
     PTR_ExternalObjectContext pEOC(TO_TADDR(rcw));
-    if (pEOC->sentinel != ExternalObjectContext::ExternalObjectContextSentinelValue)
+    if (pEOC->sentinel != ExternalObjectContextSentinelValue)
     {
         // Not a ComWrappers RCW
         hr = E_INVALIDARG;
