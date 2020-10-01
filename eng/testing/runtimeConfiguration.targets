@@ -9,8 +9,6 @@
     <GenerateAppConfigurationFile Condition="'$(IsTestProjectOrExecutable)' == 'true' and
                                              '$(TargetFrameworkIdentifier)' == '.NETFramework'">true</GenerateAppConfigurationFile>
     <AppConfig Condition="'$(GenerateAppConfigurationFile)' == 'true'">$(MSBuildThisFileDirectory)netfx.exe.config</AppConfig>
-    <!-- TODO: Change in RemoteExecutor -->
-    <RemoteClientAppConfigFile Condition="'$(GenerateAppConfigurationFile)' == 'true'">$(TargetPath).config</RemoteClientAppConfigFile>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(IsTestProjectOrExecutable)' == 'true'">
