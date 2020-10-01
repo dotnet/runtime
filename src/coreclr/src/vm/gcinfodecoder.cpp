@@ -1709,11 +1709,11 @@ OBJECTREF* GcInfoDecoder::GetCapturedRegister(
     _ASSERTE(regNum >= 0 && regNum <= 30);
     _ASSERTE(regNum != 18);
 
-    if(regNum == 29)
+    if (regNum == 29)
     {
         return (OBJECTREF*) &pRD->pCurrentContext->Fp;
     }
-    else if(regNum == 30)
+    else if (regNum == 30)
     {
         return (OBJECTREF*) &pRD->pCurrentContext->Lr;
     }
