@@ -381,5 +381,5 @@ REGUTIL::CORConfigLevel CLRConfig::GetConfigLevel(LookupOptions options)
     if(CheckLookupOption(options, IgnoreEnv) == FALSE)
         level = static_cast<REGUTIL::CORConfigLevel>(level | REGUTIL::COR_CONFIG_ENV);
 
-    return level;
+    return static_cast<REGUTIL::CORConfigLevel>(level | REGUTIL::COR_CONFIG_USER | REGUTIL::COR_CONFIG_MACHINE);
 }
