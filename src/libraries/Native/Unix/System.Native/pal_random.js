@@ -14,7 +14,8 @@ var DotNetEntropyLib = {
             return 0;
         } else {
             // we couldn't find a proper implementation, as Math.random() is not suitable
-            abort("no cryptographic support found for getRandomValues. Consider polyfilling it if you want to use something insecure like Math.random(), e.g. put this in a --pre-js: var crypto = { getRandomValues: function(array) { for (var i = 0; i < array.length; i++) array[i] = (Math.random()*256)|0 } };");
+            // instead of aborting here we will return and let managed code handle the message
+            return -1;
         }
     },
 };
