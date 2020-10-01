@@ -2620,7 +2620,7 @@ namespace System.Tests
         public static void Round_Double_Constant_Arg()
         {
             Assert.Equal( 0, Math.Round( 0.5));
-            Assert.Equal( 0, Math.Round( 0.5));
+            Assert.Equal( 0, Math.Round(-0.5));
             Assert.Equal( 2, Math.Round( 1.5));
             Assert.Equal(-2, Math.Round(-1.5));
             Assert.Equal( 2, Math.Round( 2.5));
@@ -2651,7 +2651,7 @@ namespace System.Tests
         public static void Round_Float_Constant_Arg()
         {
             Assert.Equal( 0, MathF.Round( 0.5f));
-            Assert.Equal( 0, MathF.Round( 0.5f));
+            Assert.Equal( 0, MathF.Round(-0.5f));
             Assert.Equal( 2, MathF.Round( 1.5f));
             Assert.Equal(-2, MathF.Round(-1.5f));
             Assert.Equal( 2, MathF.Round( 2.5f));
