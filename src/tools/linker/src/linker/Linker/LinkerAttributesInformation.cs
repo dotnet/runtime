@@ -72,16 +72,18 @@ namespace Mono.Linker
 			if (!(provider is MethodDefinition method))
 				return null;
 
-			if (customAttribute.HasConstructorArguments) {
-				string message = (string) customAttribute.ConstructorArguments[0].Value;
-				string url = null;
-				foreach (var prop in customAttribute.Properties) {
-					if (prop.Name == "Url") {
-						url = (string) prop.Argument.Value;
+			if (customAttribute.HasConstructorArguments && customAttribute.ConstructorArguments[0].Value is string message) {
+				var ruca = new RequiresUnreferencedCodeAttribute (message);
+				if (customAttribute.HasProperties) {
+					foreach (var prop in customAttribute.Properties) {
+						if (prop.Name == "Url") {
+							ruca.Url = prop.Argument.Value as string;
+							break;
+						}
 					}
 				}
 
-				return new RequiresUnreferencedCodeAttribute (message) { Url = url };
+				return ruca;
 			}
 
 			context.LogWarning (
