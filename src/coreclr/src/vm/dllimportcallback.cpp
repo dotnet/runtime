@@ -894,10 +894,6 @@ Stub *UMThunkMarshInfo::CompileNExportThunk(LoaderHeap *pLoaderHeap, PInvokeStat
             else if (argit.HasValueTypeReturn())
             {
                 stubInfo.m_wFlags |= umtmlThisCallHiddenArg | umtmlEnregRetValToBuf;
-                if (argit.HasMultiRegReturnStruct())
-                {
-                    stubInfo.m_wFlags |= umtmlMultiregRetVal;
-                }
             }
         }
     }

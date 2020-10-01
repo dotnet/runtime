@@ -23,7 +23,6 @@ enum UMThunkStubFlags
     umtmlThisCallHiddenArg   = 0x0004,
     umtmlFpu                 = 0x0008,
     umtmlEnregRetValToBuf    = 0x0010,
-    umtmlMultiregRetVal      = 0x0020,
 #ifdef TARGET_X86
     // the signature is trivial so stub need not be generated and the target can be called directly
     umtmlSkipStub            = 0x0080,

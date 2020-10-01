@@ -1841,26 +1841,6 @@ public:
         CorElementType type = m_pSig->GetReturnTypeNormalized(&thValueType);
         return type == ELEMENT_TYPE_VALUETYPE && !thValueType.IsEnum();
     }
-
-#if defined(TARGET_X86) && !defined(FEATURE_STUBS_AS_IL)
-    BOOL HasMultiRegReturnStruct()
-    {
-        WRAPPER_NO_CONTRACT;
-
-        TypeHandle thValueType;
-        CorElementType type = m_pSig->GetReturnTypeNormalized(&thValueType);
-        if (type != ELEMENT_TYPE_VALUETYPE || thValueType.IsEnum())
-        {
-            return FALSE;
-        }
-        unsigned int structSize = thValueType.GetSize();
-        if (structSize == ENREGISTERED_RETURNTYPE_MAXSIZE)
-        {
-            return TRUE;
-        }
-        return FALSE;
-    }
-#endif
 };
 
 // Conventience helper
