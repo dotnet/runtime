@@ -63,6 +63,7 @@ if (typeof console !== "undefined") {
 }
 
 if (typeof crypto === 'undefined') {
+	// **NOTE** this is a simple insecure polyfill for testing purposes only
 	// /dev/random doesn't work on js shells, so define our own
 	// See library_fs.js:createDefaultDevices ()
 	var crypto = {
