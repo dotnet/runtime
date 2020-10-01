@@ -23,7 +23,7 @@
 
 #include <palsuite.h>
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(file_io_CopyFileW_test1_paltest_copyfilew_test1, "file_io/CopyFileW/test1/paltest_copyfilew_test1")
 {
     LPSTR lpSource[2] = {"src_existing.tmp", "src_non-existant.tmp"};
     LPSTR lpDestination[2] = {"dst_existing.tmp", "dst_non-existant.tmp"};

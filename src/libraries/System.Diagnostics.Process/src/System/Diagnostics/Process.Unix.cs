@@ -207,11 +207,11 @@ namespace System.Diagnostics
             {
                 if (_output != null)
                 {
-                    _output.WaitUtilEOF();
+                    _output.WaitUntilEOF();
                 }
                 if (_error != null)
                 {
-                    _error.WaitUtilEOF();
+                    _error.WaitUntilEOF();
                 }
             }
 
@@ -680,7 +680,7 @@ namespace System.Diagnostics
             }
 
             // Then check the executable's directory
-            string? path = GetExePath();
+            string? path = Environment.ProcessPath;
             if (path != null)
             {
                 try

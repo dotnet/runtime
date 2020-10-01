@@ -8251,6 +8251,14 @@ mono_test_ccw_class_type_auto_dispatch (IDispatch *disp)
 	return 0;
 }
 
+static guint8 static_arr[] = { 1, 2, 3, 4 };
+
+LIBTEST_API guint8*
+mono_test_marshal_return_array (void)
+{
+	return static_arr;
+}
+
 #ifdef __cplusplus
 } // extern C
 #endif

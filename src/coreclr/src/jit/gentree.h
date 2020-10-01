@@ -32,8 +32,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 // Debugging GenTree is much easier if we add a magic virtual function to make the debugger able to figure out what type
 // it's got. This is enabled by default in DEBUG. To enable it in RET builds (temporarily!), you need to change the
 // build to define DEBUGGABLE_GENTREE=1, as well as pass /OPT:NOICF to the linker (or else all the vtables get merged,
-// making the debugging value supplied by them useless). See protojit.nativeproj for a commented example of setting the
-// build flags correctly.
+// making the debugging value supplied by them useless).
 #ifndef DEBUGGABLE_GENTREE
 #ifdef DEBUG
 #define DEBUGGABLE_GENTREE 1
@@ -904,11 +903,11 @@ public:
 #define GTF_ICON_FIELD_HDL          0x40000000 // GT_CNS_INT -- constant is a field handle
 #define GTF_ICON_STATIC_HDL         0x50000000 // GT_CNS_INT -- constant is a handle to static data
 #define GTF_ICON_STR_HDL            0x60000000 // GT_CNS_INT -- constant is a string handle
-#define GTF_ICON_PSTR_HDL           0x70000000 // GT_CNS_INT -- constant is a ptr to a string handle
-#define GTF_ICON_PTR_HDL            0x80000000 // GT_CNS_INT -- constant is a ldptr handle
+#define GTF_ICON_CONST_PTR          0x70000000 // GT_CNS_INT -- constant is a pointer to immutable data, (e.g. IAT_PPVALUE)
+#define GTF_ICON_GLOBAL_PTR         0x80000000 // GT_CNS_INT -- constant is a pointer to mutable data (e.g. from the VM state)
 #define GTF_ICON_VARG_HDL           0x90000000 // GT_CNS_INT -- constant is a var arg cookie handle
 #define GTF_ICON_PINVKI_HDL         0xA0000000 // GT_CNS_INT -- constant is a pinvoke calli handle
-#define GTF_ICON_TOKEN_HDL          0xB0000000 // GT_CNS_INT -- constant is a token handle
+#define GTF_ICON_TOKEN_HDL          0xB0000000 // GT_CNS_INT -- constant is a token handle (other than class, method or field)
 #define GTF_ICON_TLS_HDL            0xC0000000 // GT_CNS_INT -- constant is a TLS ref with offset
 #define GTF_ICON_FTN_ADDR           0xD0000000 // GT_CNS_INT -- constant is a function address
 #define GTF_ICON_CIDMID_HDL         0xE0000000 // GT_CNS_INT -- constant is a class ID or a module ID
@@ -6048,13 +6047,13 @@ struct GenTreePutArgStk : public GenTreeUnOp
 
 #endif // !FEATURE_FASTTAILCALL
 
-    unsigned getArgOffset()
+    unsigned getArgOffset() const
     {
         return gtSlotNum * TARGET_POINTER_SIZE;
     }
 
 #if defined(UNIX_X86_ABI)
-    unsigned getArgPadding()
+    unsigned getArgPadding() const
     {
         return gtPadAlign;
     }
@@ -6066,15 +6065,14 @@ struct GenTreePutArgStk : public GenTreeUnOp
 #endif
 
 #ifdef FEATURE_PUT_STRUCT_ARG_STK
-
-    unsigned getArgSize()
+    unsigned getArgSize() const
     {
         return gtNumSlots * TARGET_POINTER_SIZE;
     }
 
     // Return true if this is a PutArgStk of a SIMD12 struct.
     // This is needed because such values are re-typed to SIMD16, and the type of PutArgStk is VOID.
-    unsigned isSIMD12()
+    unsigned isSIMD12() const
     {
         return (varTypeIsSIMD(gtOp1) && (gtNumSlots == 3));
     }
@@ -6089,7 +6087,7 @@ struct GenTreePutArgStk : public GenTreeUnOp
     };
 
     Kind gtPutArgStkKind;
-    bool isPushKind()
+    bool isPushKind() const
     {
         return (gtPutArgStkKind == Kind::Push) || (gtPutArgStkKind == Kind::PushAllSlots);
     }
@@ -6227,7 +6225,7 @@ struct GenTreePutArgSplit : public GenTreePutArgStk
     // Return Value:
     //    var_type of the register specified by its index.
 
-    var_types GetRegType(unsigned index)
+    var_types GetRegType(unsigned index) const
     {
         assert(index < gtNumRegs);
         var_types result = m_regType[index];
@@ -6249,7 +6247,7 @@ struct GenTreePutArgSplit : public GenTreePutArgStk
     }
 
 #ifdef FEATURE_PUT_STRUCT_ARG_STK
-    unsigned getArgSize()
+    unsigned getArgSize() const
     {
         return (gtNumSlots + gtNumRegs) * TARGET_POINTER_SIZE;
     }

@@ -34,7 +34,8 @@ static void test(DWORD error )
 
 }
 
-int __cdecl main(int argc, char *argv[]) {
+PALTEST(miscellaneous_GetLastError_test1_paltest_getlasterror_test1, "miscellaneous/GetLastError/test1/paltest_getlasterror_test1")
+{
   
 
     /*

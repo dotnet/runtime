@@ -55,7 +55,6 @@ namespace Internal.JitInterface
         private IntPtr _jit;
 
         private IntPtr _unmanagedCallbacks; // array of pointers to JIT-EE interface callbacks
-        private Object _keepAlive; // Keeps delegates for the callbacks alive
 
         private ExceptionDispatchInfo _lastException;
 
@@ -122,7 +121,7 @@ namespace Internal.JitInterface
                 throw new IOException("Failed to initialize JIT");
             }
 
-            _unmanagedCallbacks = GetUnmanagedCallbacks(out _keepAlive);
+            _unmanagedCallbacks = GetUnmanagedCallbacks();
         }
 
         public TextWriter Log
@@ -403,6 +402,8 @@ namespace Internal.JitInterface
 
         private IntPtr ObjectToHandle(Object obj)
         {
+            // SuperPMI relies on the handle returned from this function being stable for the lifetime of the crossgen2 process
+            // If handle deletion is implemented, please update SuperPMI
             IntPtr handle;
             if (!_objectToHandle.TryGetValue(obj, out handle))
             {
@@ -658,6 +659,32 @@ namespace Internal.JitInterface
 
             if (type.IsValueType)
             {
+                if (_compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.X86)
+                {
+                    LayoutInt elementSize = type.GetElementSize();
+
+#if READYTORUN
+                    if (elementSize.IsIndeterminate)
+                    {
+                        throw new RequiresRuntimeJitException(type);
+                    }
+#endif
+#if READYTORUN
+                    if (elementSize.AsInt == 4)
+                    {
+                        var normalizedCategory = _compilation.TypeSystemContext.NormalizedCategoryFor4ByteStructOnX86(type);
+                        if (normalizedCategory != type.Category)
+                        {
+                            if (NeedsTypeLayoutCheck(type))
+                            {
+                                ISymbolNode node = _compilation.SymbolNodeFactory.CheckTypeLayout(type);
+                                _methodCodeNode.Fixups.Add(node);
+                            }
+                            return (CorInfoType)normalizedCategory;
+                        }
+                    }
+#endif
+                }
                 return CorInfoType.CORINFO_TYPE_VALUECLASS;
             }
 
@@ -1015,7 +1042,7 @@ namespace Internal.JitInterface
 
         private bool satisfiesMethodConstraints(CORINFO_CLASS_STRUCT_* parent, CORINFO_METHOD_STRUCT_* method)
         { throw new NotImplementedException("satisfiesMethodConstraints"); }
-        private bool isCompatibleDelegate(CORINFO_CLASS_STRUCT_* objCls, CORINFO_CLASS_STRUCT_* methodParentCls, CORINFO_METHOD_STRUCT_* method, CORINFO_CLASS_STRUCT_* delegateCls, ref bool pfIsOpenDelegate)
+        private bool isCompatibleDelegate(CORINFO_CLASS_STRUCT_* objCls, CORINFO_CLASS_STRUCT_* methodParentCls, CORINFO_METHOD_STRUCT_* method, CORINFO_CLASS_STRUCT_* delegateCls, BOOL* pfIsOpenDelegate)
         { throw new NotImplementedException("isCompatibleDelegate"); }
         private void setPatchpointInfo(PatchpointInfo* patchpointInfo)
         { throw new NotImplementedException("setPatchpointInfo"); }
@@ -1501,7 +1528,7 @@ namespace Internal.JitInterface
             Marshal.FreeCoTaskMem((IntPtr)obj);
         }
 
-        private byte* getClassModuleIdForStatics(CORINFO_CLASS_STRUCT_* cls, CORINFO_MODULE_STRUCT_** pModule, void** ppIndirection)
+        private UIntPtr getClassModuleIdForStatics(CORINFO_CLASS_STRUCT_* cls, CORINFO_MODULE_STRUCT_** pModule, void** ppIndirection)
         { throw new NotImplementedException("getClassModuleIdForStatics"); }
 
         private uint getClassSize(CORINFO_CLASS_STRUCT_* cls)
@@ -2497,7 +2524,7 @@ namespace Internal.JitInterface
             return (uint)HandleToObject(ftn).GetHashCode();
         }
 
-        private byte* findNameOfToken(CORINFO_MODULE_STRUCT_* moduleHandle, mdToken token, byte* szFQName, UIntPtr FQNameCapacity)
+        private UIntPtr findNameOfToken(CORINFO_MODULE_STRUCT_* moduleHandle, mdToken token, byte* szFQName, UIntPtr FQNameCapacity)
         { throw new NotImplementedException("findNameOfToken"); }
 
         private bool getSystemVAmd64PassStructInRegisterDescriptor(CORINFO_CLASS_STRUCT_* structHnd, SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* structPassInRegDescPtr)
@@ -2587,7 +2614,7 @@ namespace Internal.JitInterface
             ppIndirection = null;
             return null;
         }
-        private void GetProfilingHandle(ref bool pbHookFunction, ref void* pProfilerHandle, ref bool pbIndirectedHandles)
+        private void GetProfilingHandle(BOOL* pbHookFunction, ref void* pProfilerHandle, BOOL* pbIndirectedHandles)
         { throw new NotImplementedException("GetProfilingHandle"); }
 
         /// <summary>

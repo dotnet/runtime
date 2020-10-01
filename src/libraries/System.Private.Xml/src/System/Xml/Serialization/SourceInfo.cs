@@ -233,16 +233,16 @@ namespace System.Xml.Serialization
 
         public static bool operator !=(SourceInfo? a, SourceInfo? b)
         {
-            if ((object?)a != null)
+            if (a is not null)
                 return !a.Equals(b);
-            return (object?)b != null;
+            return b is not null;
         }
 
         public static bool operator ==(SourceInfo? a, SourceInfo? b)
         {
-            if ((object?)a != null)
+            if (a is not null)
                 return a.Equals(b);
-            return (object?)b == null;
+            return b is null;
         }
 
         public override bool Equals(object? obj)

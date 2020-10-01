@@ -171,6 +171,8 @@ typedef struct {
 } SynchronizedInnerWrapperInfo;
 
 typedef struct {
+	MonoClass *klass;
+	const char *name;
 	MonoMethod *method;
 } GenericArrayHelperWrapperInfo;
 

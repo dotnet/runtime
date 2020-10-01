@@ -15,7 +15,7 @@
 
 #include <palsuite.h>
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime_wcstok_test1_paltest_wcstok_test1, "c_runtime/wcstok/test1/paltest_wcstok_test1")
 {
     /* foo bar baz */
     WCHAR str[] = {'f','o','o',' ','b','a','r',' ','b','a','z','\0'};

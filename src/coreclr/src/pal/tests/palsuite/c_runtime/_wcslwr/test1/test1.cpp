@@ -16,7 +16,7 @@
 
 /* uses memcmp,wcslen */
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime__wcslwr_test1_paltest_wcslwr_test1, "c_runtime/_wcslwr/test1/paltest_wcslwr_test1")
 {
     WCHAR *test_str   = NULL;
     WCHAR *expect_str = NULL;

@@ -180,10 +180,10 @@ namespace System.Diagnostics
             {
                 // If we have a hard timeout, we cannot wait for the streams
                 if (_output != null && milliseconds == Timeout.Infinite)
-                    _output.WaitUtilEOF();
+                    _output.WaitUntilEOF();
 
                 if (_error != null && milliseconds == Timeout.Infinite)
-                    _error.WaitUtilEOF();
+                    _error.WaitUntilEOF();
 
                 handle?.Dispose();
             }

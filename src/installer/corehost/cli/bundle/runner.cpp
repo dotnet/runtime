@@ -28,7 +28,7 @@ StatusCode runner_t::extract()
         m_runtimeconfig_json.set_location(&m_header.runtimeconfig_json_location());
 
         // Read the bundle manifest
-        m_manifest = manifest_t::read(reader, m_header.num_embedded_files());
+        m_manifest = manifest_t::read(reader, m_header);
 
         // Extract the files if necessary
         if (m_manifest.files_need_extraction())
@@ -65,7 +65,8 @@ bool runner_t::probe(const pal::string_t& relative_path, int64_t* offset, int64_
 {
     const bundle::file_entry_t* entry = probe(relative_path);
 
-    if (entry == nullptr)
+    // Do not report extracted entries - those should be reported through either TPA or resource paths
+    if (entry == nullptr || entry->needs_extraction())
     {
         return false;
     }

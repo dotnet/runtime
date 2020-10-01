@@ -26147,7 +26147,7 @@ void gc_heap::gc_thread_stub (void* arg)
 
     // server GC threads run at a higher priority than normal.
     GCToOSInterface::BoostThreadPriority();
-    _alloca (256*heap->heap_number);
+    void* tmp = _alloca (256*heap->heap_number);
     heap->gc_thread_function();
 }
 #ifdef _MSC_VER

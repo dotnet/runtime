@@ -129,6 +129,15 @@ namespace System
             bool previouslyProcessed;
             ConsoleKeyInfo keyInfo = StdInReader.ReadKey(out previouslyProcessed);
 
+            // Replace the '\n' char for Enter by '\r' to match Windows behavior.
+            if (keyInfo.Key == ConsoleKey.Enter && keyInfo.KeyChar == '\n')
+            {
+                bool shift   = (keyInfo.Modifiers & ConsoleModifiers.Shift)   != 0;
+                bool alt     = (keyInfo.Modifiers & ConsoleModifiers.Alt)     != 0;
+                bool control = (keyInfo.Modifiers & ConsoleModifiers.Control) != 0;
+                keyInfo = new ConsoleKeyInfo('\r', keyInfo.Key, shift, alt, control);
+            }
+
             if (!intercept && !previouslyProcessed && keyInfo.KeyChar != '\0')
             {
                 Console.Write(keyInfo.KeyChar);
@@ -151,7 +160,7 @@ namespace System
                 if (!Console.IsInputRedirected)
                 {
                     EnsureConsoleInitialized();
-                    if (Interop.Sys.SetSignalForBreak(Convert.ToInt32(value)) == 0)
+                    if (Interop.Sys.SetSignalForBreak(Convert.ToInt32(!value)) == 0)
                         throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo());
                 }
             }
@@ -1210,19 +1219,11 @@ namespace System
         /// <returns>The number of bytes read, or a negative value if there's an error.</returns>
         internal static unsafe int Read(SafeFileHandle fd, byte[] buffer, int offset, int count)
         {
-            Interop.Sys.InitializeConsoleBeforeRead(convertCrToNl: true);
-            try
+            fixed (byte* bufPtr = buffer)
             {
-                fixed (byte* bufPtr = buffer)
-                {
-                    int result = Interop.CheckIo(Interop.Sys.Read(fd, (byte*)bufPtr + offset, count));
-                    Debug.Assert(result <= count);
-                    return result;
-                }
-            }
-            finally
-            {
-                Interop.Sys.UninitializeConsoleAfterRead();
+                int result = Interop.CheckIo(Interop.Sys.Read(fd, (byte*)bufPtr + offset, count));
+                Debug.Assert(result <= count);
+                return result;
             }
         }
 

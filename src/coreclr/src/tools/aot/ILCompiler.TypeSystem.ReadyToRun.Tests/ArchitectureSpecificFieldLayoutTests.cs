@@ -56,11 +56,11 @@ namespace TypeSystemTests
 
             Assert.Equal(0x11, tX64.InstanceByteCountUnaligned.AsInt);
             Assert.Equal(0x11, tARM.InstanceByteCountUnaligned.AsInt);
-            Assert.Equal(0x11, tX86.InstanceByteCountUnaligned.AsInt);
+            Assert.Equal(0xD, tX86.InstanceByteCountUnaligned.AsInt);
 
             Assert.Equal(0x18, tX64.InstanceByteCount.AsInt);
             Assert.Equal(0x18, tARM.InstanceByteCount.AsInt);
-            Assert.Equal(0x14, tX86.InstanceByteCount.AsInt);
+            Assert.Equal(0x10, tX86.InstanceByteCount.AsInt);
         }
 
         [Fact]
@@ -76,11 +76,11 @@ namespace TypeSystemTests
 
             Assert.Equal(0x19, tX64.InstanceByteCountUnaligned.AsInt);
             Assert.Equal(0x11, tARM.InstanceByteCountUnaligned.AsInt);
-            Assert.Equal(0x11, tX86.InstanceByteCountUnaligned.AsInt);
+            Assert.Equal(0x15, tX86.InstanceByteCountUnaligned.AsInt);
 
             Assert.Equal(0x20, tX64.InstanceByteCount.AsInt);
             Assert.Equal(0x18, tARM.InstanceByteCount.AsInt);
-            Assert.Equal(0x14, tX86.InstanceByteCount.AsInt);
+            Assert.Equal(0x18, tX86.InstanceByteCount.AsInt);
         }
     }
 }

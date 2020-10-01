@@ -122,16 +122,6 @@ namespace System.Reflection.Emit
             return SymbolType.FormCompoundType(strFormat, baseType, 0);
         }
 
-        internal void CheckContext(params Type[]?[]? typess)
-        {
-            AssemblyBuilder.CheckContext(typess);
-        }
-
-        internal void CheckContext(params Type?[]? types)
-        {
-            AssemblyBuilder.CheckContext(types);
-        }
-
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern int GetTypeRef(QCallModule module, string strFullName, QCallModule refedModule, string? strRefedModuleFileName, int tkResolution);
 
@@ -458,7 +448,7 @@ namespace System.Reflection.Emit
             return sig;
         }
 
-        private MethodBase GetGenericMethodBaseDefinition(MethodBase methodBase)
+        private static MethodBase GetGenericMethodBaseDefinition(MethodBase methodBase)
         {
             // methodInfo = G<Foo>.M<Bar> ==> methDef = G<T>.M<S>
             MethodInfo? masmi = methodBase as MethodInfo;
@@ -839,7 +829,7 @@ namespace System.Reflection.Emit
         {
             lock (SyncRoot)
             {
-                CheckContext(parent);
+                AssemblyBuilder.CheckContext(parent);
 
                 return DefineTypeNoLock(name, attr, parent, null, PackingSize.Unspecified, TypeBuilder.UnspecifiedTypeSize);
             }
@@ -895,7 +885,7 @@ namespace System.Reflection.Emit
         // Nested enum types can be defined manually using ModuleBuilder.DefineType.
         public EnumBuilder DefineEnum(string name, TypeAttributes visibility, Type underlyingType)
         {
-            CheckContext(underlyingType);
+            AssemblyBuilder.CheckContext(underlyingType);
             lock (SyncRoot)
             {
                 EnumBuilder enumBuilder = DefineEnumNoLock(name, visibility, underlyingType);
@@ -936,8 +926,8 @@ namespace System.Reflection.Emit
                     throw new ArgumentException(SR.Argument_GlobalFunctionHasToBeStatic);
                 }
 
-                CheckContext(returnType);
-                CheckContext(parameterTypes);
+                AssemblyBuilder.CheckContext(returnType);
+                AssemblyBuilder.CheckContext(parameterTypes);
 
                 return _moduleData._globalTypeBuilder.DefinePInvokeMethod(name, dllName, entryName, attributes, callingConvention, returnType, parameterTypes, nativeCallConv, nativeCharSet);
             }
@@ -987,10 +977,10 @@ namespace System.Reflection.Emit
                 throw new ArgumentException(SR.Argument_GlobalFunctionHasToBeStatic);
             }
 
-            CheckContext(returnType);
-            CheckContext(requiredReturnTypeCustomModifiers, optionalReturnTypeCustomModifiers, parameterTypes);
-            CheckContext(requiredParameterTypeCustomModifiers);
-            CheckContext(optionalParameterTypeCustomModifiers);
+            AssemblyBuilder.CheckContext(returnType);
+            AssemblyBuilder.CheckContext(requiredReturnTypeCustomModifiers, optionalReturnTypeCustomModifiers, parameterTypes);
+            AssemblyBuilder.CheckContext(requiredParameterTypeCustomModifiers);
+            AssemblyBuilder.CheckContext(optionalParameterTypeCustomModifiers);
 
             return _moduleData._globalTypeBuilder.DefineMethod(name, attributes, callingConvention,
                 returnType, requiredReturnTypeCustomModifiers, optionalReturnTypeCustomModifiers,
@@ -1100,7 +1090,7 @@ namespace System.Reflection.Emit
                 throw new ArgumentNullException(nameof(type));
             }
 
-            CheckContext(type);
+            AssemblyBuilder.CheckContext(type);
 
             // Return a token for the class relative to the Module.  Tokens
             // are used to indentify objects when the objects are used in IL
@@ -1406,8 +1396,8 @@ namespace System.Reflection.Emit
                 throw new ArgumentException(SR.Argument_HasToBeArrayClass);
             }
 
-            CheckContext(returnType, arrayClass);
-            CheckContext(parameterTypes);
+            AssemblyBuilder.CheckContext(returnType, arrayClass);
+            AssemblyBuilder.CheckContext(parameterTypes);
 
             // Return a token for the MethodInfo for a method on an Array.  This is primarily
             // used to get the LoadElementAddress method.
@@ -1424,8 +1414,8 @@ namespace System.Reflection.Emit
         public MethodInfo GetArrayMethod(Type arrayClass, string methodName, CallingConventions callingConvention,
             Type? returnType, Type[]? parameterTypes)
         {
-            CheckContext(returnType, arrayClass);
-            CheckContext(parameterTypes);
+            AssemblyBuilder.CheckContext(returnType, arrayClass);
+            AssemblyBuilder.CheckContext(parameterTypes);
 
             // GetArrayMethod is useful when you have an array of a type whose definition has not been completed and
             // you want to access methods defined on Array. For example, you might define a type and want to define a

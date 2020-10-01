@@ -1884,6 +1884,7 @@ namespace System
         public static string MachineName { get { throw null; } }
         public static string NewLine { get { throw null; } }
         public static System.OperatingSystem OSVersion { get { throw null; } }
+        public static string? ProcessPath { get { throw null; } }
         public static int ProcessId { get { throw null; } }
         public static int ProcessorCount { get { throw null; } }
         public static string StackTrace { get { throw null; } }
@@ -5786,6 +5787,11 @@ namespace System.Diagnostics
         public string? TargetTypeName { get { throw null; } set { } }
         public string? VisualizerObjectSourceTypeName { get { throw null; } }
         public string VisualizerTypeName { get { throw null; } }
+    }
+    [System.AttributeUsage(AttributeTargets.Class | System.AttributeTargets.Method | System.AttributeTargets.Constructor | System.AttributeTargets.Struct, Inherited = false)]
+    public sealed partial class StackTraceHiddenAttribute : Attribute
+    {
+        public StackTraceHiddenAttribute() { }
     }
     public partial class Stopwatch
     {

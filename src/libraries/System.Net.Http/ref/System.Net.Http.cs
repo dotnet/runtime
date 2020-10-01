@@ -378,14 +378,21 @@ namespace System.Net.Http
         protected internal override System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> SendAsync(System.Net.Http.HttpRequestMessage request, System.Threading.CancellationToken cancellationToken) { throw null; }
         public bool EnableMultipleHttp2Connections { get { throw null; } set { } }
         public Func<SocketsHttpConnectionContext, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<System.IO.Stream>>? ConnectCallback { get { throw null; } set { } }
+        public Func<SocketsHttpPlaintextStreamFilterContext, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<System.IO.Stream>>? PlaintextStreamFilter { get { throw null; } set { } }
     }
     public sealed class SocketsHttpConnectionContext
     {
         internal SocketsHttpConnectionContext() { }
         public DnsEndPoint DnsEndPoint { get { throw null; } }
-        public HttpRequestMessage RequestMessage { get { throw null; } }
+        public HttpRequestMessage InitialRequestMessage { get { throw null; } }
     }
-
+    public sealed class SocketsHttpPlaintextStreamFilterContext
+    {
+        internal SocketsHttpPlaintextStreamFilterContext() { }
+        public System.IO.Stream PlaintextStream { get { throw null; } }
+        public Version NegotiatedHttpVersion { get { throw null; } }
+        public HttpRequestMessage InitialRequestMessage { get { throw null; } }
+    }
     public enum HttpKeepAlivePingPolicy
     {
         WithActiveRequests,

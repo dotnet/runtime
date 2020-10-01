@@ -1156,6 +1156,16 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 					ref->method = target;
 				else
 					return FALSE;
+			} else if (subtype == WRAPPER_SUBTYPE_GENERIC_ARRAY_HELPER) {
+				MonoClass *klass = decode_klass_ref (module, p, &p, error);
+				if (!klass)
+					return FALSE;
+				MonoMethod *m = decode_resolve_method_ref (module, p, &p, error);
+				if (!m)
+					return FALSE;
+				int name_idx = decode_value (p, &p);
+				const char *name = (const char*)module->blob + name_idx;
+				ref->method = mono_marshal_get_generic_array_helper (klass, name, m);
 			}
 			break;
 		}

@@ -1271,8 +1271,8 @@ namespace Microsoft.VisualBasic
             GenerateVBStatements(e.TrueStatements);
             Indent--;
 
-            CodeStatementCollection falseStatemetns = e.FalseStatements;
-            if (falseStatemetns.Count > 0)
+            CodeStatementCollection falseStatements = e.FalseStatements;
+            if (falseStatements.Count > 0)
             {
                 Output.Write("Else");
                 Output.WriteLine();

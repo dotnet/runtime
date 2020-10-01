@@ -15,9 +15,10 @@
 #include <palsuite.h>
 
 
-const char* szStringTest = "The quick fox jumped over the lazy dog's back.";
-const char* szReadOnlyFile = "ReadOnly.txt";
-void do_cleanup()
+#define szStringTest "The quick fox jumped over the lazy dog's back."
+#define szReadOnlyFile "ReadOnly.txt"
+
+void do_cleanup_WriteFile_test1()
 {
 	BOOL bRc = FALSE;
 	bRc = DeleteFileA(szReadOnlyFile);
@@ -29,7 +30,7 @@ void do_cleanup()
 
 }
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(file_io_WriteFile_test1_paltest_writefile_test1, "file_io/WriteFile/test1/paltest_writefile_test1")
 {
     HANDLE hFile = NULL;
     DWORD dwBytesWritten;
@@ -78,7 +79,7 @@ int __cdecl main(int argc, char *argv[])
     {
 		last_error = GetLastError();
 		Trace("WriteFile: ERROR[%ld] -> Unable to make the file read-only.\n", last_error);
-		do_cleanup();
+		do_cleanup_WriteFile_test1();
         Fail("WriteFile: ERROR[%ld] -> Unable to make the file read-only.\n", last_error);
     }
 
@@ -86,7 +87,7 @@ int __cdecl main(int argc, char *argv[])
     if (bRc == TRUE)
     {	last_error = GetLastError();
 		Trace("WriteFile: ERROR[%ld] -> Able to write to a read-only file.\n", last_error);
-		do_cleanup();
+		do_cleanup_WriteFile_test1();
         Fail("WriteFile: ERROR[%ld] -> Able to write to a read-only file.\n", last_error);
     }
 
@@ -95,7 +96,7 @@ int __cdecl main(int argc, char *argv[])
     if (bRc != TRUE)
     {   last_error = GetLastError();
 		Trace("WriteFile: ERROR[%ld] -> Unable to close file \"%s\".\n", last_error, szReadOnlyFile);
-		do_cleanup();
+		do_cleanup_WriteFile_test1();
         Fail("WriteFile: ERROR -> Unable to close file \"%s\".\n", 
             szReadOnlyFile);
     }
@@ -107,7 +108,7 @@ int __cdecl main(int argc, char *argv[])
 	    Fail("WriteFile: ERROR[%ld] -> Unable to make the file attribute NORMAL.\n", last_error);
 
 	}
-	do_cleanup();
+	do_cleanup_WriteFile_test1();
     PAL_Terminate();
     return PASS;
 }

@@ -7,7 +7,6 @@ Imports System.Diagnostics
 Imports System.Collections.Generic
 
 Imports Microsoft.VisualBasic.CompilerServices.Symbols
-Imports Microsoft.VisualBasic.CompilerServices.ConversionResolution
 Imports Microsoft.VisualBasic.CompilerServices.ConversionResolution.OperatorCaches
 
 Namespace Microsoft.VisualBasic.CompilerServices
@@ -1197,13 +1196,8 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
             End Class
 
-            Friend Shared ReadOnly ConversionCache As FixedList
-            Friend Shared ReadOnly UnconvertibleTypeCache As FixedExistanceList
-
-            Shared Sub New()
-                ConversionCache = New FixedList
-                UnconvertibleTypeCache = New FixedExistanceList
-            End Sub
+            Friend Shared ReadOnly ConversionCache As FixedList = New FixedList
+            Friend Shared ReadOnly UnconvertibleTypeCache As FixedExistanceList = New FixedExistanceList
 
         End Class
     End Class

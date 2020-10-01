@@ -18,8 +18,5 @@ namespace System.Linq
                 if (--count == 0) break;
             }
         }
-
-        private static IEnumerable<TSource> TakeLastEnumerableFactory<TSource>(IEnumerable<TSource> source, int count) =>
-            TakeLastIterator<TSource>(source, count);
     }
 }

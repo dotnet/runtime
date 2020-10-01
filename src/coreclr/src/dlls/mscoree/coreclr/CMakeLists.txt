@@ -228,7 +228,7 @@ if(CLR_CMAKE_TARGET_WIN32)
 endif(CLR_CMAKE_TARGET_WIN32)
 
 # add the install targets
-install_clr(TARGETS coreclr ADDITIONAL_DESTINATION sharedFramework)
+install_clr(TARGETS coreclr ADDITIONAL_DESTINATIONS sharedFramework)
 
 # publish coreclr_static lib
 _install(TARGETS coreclr_static DESTINATION lib)

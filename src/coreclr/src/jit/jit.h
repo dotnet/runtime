@@ -245,6 +245,23 @@
 #define UNIX_AMD64_ABI_ONLY(x)
 #endif // defined(UNIX_AMD64_ABI)
 
+#if defined(DEBUG) && !defined(OSX_ARM64_ABI)
+// On all platforms except Arm64 OSX arguments on the stack are taking
+// register size slots. On these platforms we could check that stack slots count
+// matchs out new byte size calculations.
+#define DEBUG_ARG_SLOTS
+#endif
+
+#if defined(DEBUG_ARG_SLOTS)
+#define DEBUG_ARG_SLOTS_ARG(x) , x
+#define DEBUG_ARG_SLOTS_ONLY(x) x
+#define DEBUG_ARG_SLOTS_ASSERT(x) assert(x)
+#else
+#define DEBUG_ARG_SLOTS_ARG(x)
+#define DEBUG_ARG_SLOTS_ONLY(x)
+#define DEBUG_ARG_SLOTS_ASSERT(x)
+#endif
+
 #if defined(UNIX_AMD64_ABI) || !defined(TARGET_64BIT) || defined(TARGET_ARM64)
 #define FEATURE_PUT_STRUCT_ARG_STK 1
 #define PUT_STRUCT_ARG_STK_ONLY_ARG(x) , x

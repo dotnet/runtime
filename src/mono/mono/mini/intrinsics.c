@@ -1724,7 +1724,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			}
 
 			if (opcode) {
-				double *dest = (double *) mono_domain_alloc (cfg->domain, sizeof (double));
+				double *dest = (double *)mono_mem_manager_alloc (cfg->mem_manager, sizeof (double));
 				double result = 0;
 				MONO_INST_NEW (cfg, ins, OP_R8CONST);
 				ins->type = STACK_R8;

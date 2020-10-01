@@ -116,7 +116,7 @@ set "__TestWorkingDir=%__RootBinDir%\tests\coreclr\%__TargetOS%.%__BuildArch%.%_
 if not defined XunitTestBinBase       set  XunitTestBinBase=%__TestWorkingDir%\
 if not defined XunitTestReportDirBase set  XunitTestReportDirBase=%XunitTestBinBase%\Reports\
 
-REM We are not running in the official build scenario, call runtest.py
+REM We are not running in the official build scenario, call run.py
 
 set __RuntestPyArgs=-arch %__BuildArch% -build_type %__BuildType%
 
@@ -176,7 +176,7 @@ if defined RunInUnloadableContext (
     set __RuntestPyArgs=%__RuntestPyArgs% --run_in_context
 )
 
-set NEXTCMD=python "%__RepoRootDir%\src\coreclr\tests\runtest.py" %__RuntestPyArgs%
+set NEXTCMD=python "%__RepoRootDir%\src\tests\run.py" %__RuntestPyArgs%
 echo !NEXTCMD!
 !NEXTCMD!
 

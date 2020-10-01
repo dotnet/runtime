@@ -60,6 +60,21 @@ namespace System.Tests
             Assert.Equal(Environment.CurrentManagedThreadId, Environment.CurrentManagedThreadId);
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public void CurrentManagedThreadId_DifferentForActiveThreads()
+        {
+            var ids = new HashSet<int>();
+            Barrier b = new Barrier(10);
+            Task.WaitAll((from i in Enumerable.Range(0, b.ParticipantCount)
+                          select Task.Factory.StartNew(() =>
+                          {
+                              b.SignalAndWait();
+                              lock (ids) ids.Add(Environment.CurrentManagedThreadId);
+                              b.SignalAndWait();
+                          }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default)).ToArray());
+            Assert.Equal(b.ParticipantCount, ids.Count);
+        }
+
         [Fact]
         public void ProcessId_Idempotent()
         {
@@ -74,19 +89,17 @@ namespace System.Tests
             Assert.Equal(handle.Process.Id, int.Parse(handle.Process.StandardOutput.ReadToEnd()));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        public void CurrentManagedThreadId_DifferentForActiveThreads()
+        [Fact]
+        public void ProcessPath_Idempotent()
         {
-            var ids = new HashSet<int>();
-            Barrier b = new Barrier(10);
-            Task.WaitAll((from i in Enumerable.Range(0, b.ParticipantCount)
-                          select Task.Factory.StartNew(() =>
-                          {
-                              b.SignalAndWait();
-                              lock (ids) ids.Add(Environment.CurrentManagedThreadId);
-                              b.SignalAndWait();
-                          }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default)).ToArray());
-            Assert.Equal(b.ParticipantCount, ids.Count);
+            Assert.Same(Environment.ProcessPath, Environment.ProcessPath);
+        }
+
+        [Fact]
+        public void ProcessPath_MatchesExpectedValue()
+        {
+            string expectedProcessPath = PlatformDetection.IsBrowser ? null : Process.GetCurrentProcess().MainModule.FileName;
+            Assert.Equal(expectedProcessPath, Environment.ProcessPath);
         }
 
         [Fact]

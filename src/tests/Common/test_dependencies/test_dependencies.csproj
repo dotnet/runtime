@@ -16,10 +16,6 @@
 
   <Target Name="Build" DependsOnTargets="$(TraversalBuildDependsOn)" />
 
-  <PropertyGroup>
-    <ProjectAssetsFile>$(RepoRoot)src\tests\Common\test_dependencies\obj\project.assets.json</ProjectAssetsFile>
-  </PropertyGroup>
-
   <Target Name="AddUcrtFilesToCoreRoot" BeforeTargets="CopyDependencyToCoreRoot" Condition="'$(TargetOS)' == 'Windows_NT'">
     <ItemGroup>
       <NativeCopyLocalItems Include="$(UniversalCRTSDKDir)Redist\ucrt\DLLs\$(TargetArchitecture)\*.dll" />

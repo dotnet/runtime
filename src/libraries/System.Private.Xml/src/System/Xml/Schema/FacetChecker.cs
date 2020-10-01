@@ -474,7 +474,6 @@ namespace System.Xml.Schema
 
             internal void CompileFacetCombinations()
             {
-                RestrictionFacets baseRestriction = _datatype.Restriction!;
                 //They are not allowed on the same type but allowed on derived types.
                 if (
                     (_derivedRestriction.Flags & RestrictionFlags.MaxInclusive) != 0 &&
