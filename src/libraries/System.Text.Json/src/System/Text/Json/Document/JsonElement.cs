@@ -1169,6 +1169,22 @@ namespace System.Text.Json
             return _parent.GetRawValueAsString(_idx);
         }
 
+        /// <summary>
+        ///   Gets the original input data backing this value, returning it as a <see cref="ReadOnlyMemory{T}"/> of <see cref="byte"/>.
+        /// </summary>
+        /// <returns>
+        ///   The original input data backing this value, returning it as a <see cref="ReadOnlyMemory{T}"/> of <see cref="byte"/>.
+        /// </returns>
+        /// <exception cref="ObjectDisposedException">
+        ///   The parent <see cref="JsonDocument"/> has been disposed.
+        /// </exception>
+        public ReadOnlyMemory<byte> GetRawValue()
+        {
+            CheckValidInstance();
+
+            return _parent.GetRawValue(_idx);
+        }
+
         internal string GetPropertyRawText()
         {
             CheckValidInstance();

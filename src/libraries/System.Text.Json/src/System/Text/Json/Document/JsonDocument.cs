@@ -747,6 +747,12 @@ namespace System.Text.Json
             return false;
         }
 
+        internal ReadOnlyMemory<byte> GetRawValue(int index)
+        {
+            ReadOnlyMemory<byte> segment = GetRawValue(index, includeQuotes: true);
+            return segment;
+        }
+
         internal string GetRawValueAsString(int index)
         {
             ReadOnlyMemory<byte> segment = GetRawValue(index, includeQuotes: true);

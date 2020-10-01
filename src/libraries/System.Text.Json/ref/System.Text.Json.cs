@@ -59,6 +59,7 @@ namespace System.Text.Json
         public System.Text.Json.JsonElement GetProperty(System.ReadOnlySpan<char> propertyName) { throw null; }
         public System.Text.Json.JsonElement GetProperty(string propertyName) { throw null; }
         public string GetRawText() { throw null; }
+        public System.ReadOnlyMemory<byte> GetRawValue() { throw null; }
         [System.CLSCompliantAttribute(false)]
         public sbyte GetSByte() { throw null; }
         public float GetSingle() { throw null; }

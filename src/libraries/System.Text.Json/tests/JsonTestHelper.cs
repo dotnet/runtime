@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Text.Json.Tests;
 using System.Text.RegularExpressions;
 using Newtonsoft.Json;
@@ -144,6 +145,34 @@ namespace System.Text.Json
             var state = new JsonReaderState(new JsonReaderOptions { CommentHandling = commentHandling, MaxDepth = maxDepth });
             var reader = new Utf8JsonReader(sequence, true, state);
             return ReaderLoop(data.Length, out length, ref reader);
+        }
+
+        public static void AssertContainsSequence<T>(IEnumerable<T> outerEnumerable, IEnumerable<T> innerEnumerable)
+        {
+            var outer = outerEnumerable.ToArray();
+            var inner = innerEnumerable.ToArray();
+            int outerCount = outer.Length;
+            int innerCount = inner.Length;
+            Assert.True(outerCount > innerCount);
+
+            for(int i = 0; i < outerCount - innerCount; ++i)
+            {
+                bool found = true;
+                for(int j = 0; j < innerCount; ++j)
+                {
+                    if (!outer[i + j].Equals(inner[j]))
+                    {
+                        found = false;
+                        break;
+                    }
+                }
+                if (found)
+                {
+                    return;
+                }
+            }
+
+            Assert.True(false, "Expected outer sequence to contain inner sequence");
         }
 
         public static ReadOnlySequence<byte> CreateSegments(byte[] data)
