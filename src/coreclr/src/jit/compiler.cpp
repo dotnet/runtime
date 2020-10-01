@@ -956,7 +956,19 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
 #endif // UNIX_AMD64_ABI
 
 #ifdef UNIX_X86_ABI
-    canReturnInRegister = false;
+    if (callConv != CORINFO_UNMANAGED_CALLCONV_UNKNOWN)
+    {
+        canReturnInRegister = false;
+        howToReturnStruct = SPK_ByReference;
+        useType           = TYP_UNKNOWN;
+    }
+#elif defined(TARGET_WINDOWS) && !defined(TARGET_ARM)
+    if (callConv == CORINFO_UNMANAGED_CALLCONV_THISCALL)
+    {
+        canReturnInRegister = false;
+        howToReturnStruct = SPK_ByReference;
+        useType           = TYP_UNKNOWN;
+    }
 #endif
 
     // Check for cases where a small struct is returned in a register
@@ -1078,8 +1090,14 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
                 }
 #elif defined(TARGET_X86)
 
-                // Only 8-byte structs are return in multiple registers
-                if (structSize == MAX_RET_MULTIREG_BYTES)
+                // Only 8-byte structs are return in multiple registers.
+                // We also only support multireg struct returns
+                // on x86 to match the native calling convention.
+                // So only do it for native calling conventions that aren't
+                // instance methods
+                if (structSize == MAX_RET_MULTIREG_BYTES &&
+                    callConv != CORINFO_UNMANAGED_CALLCONV_UNKNOWN &&
+                    canReturnInRegister)
                 {
                     // setup wbPassType and useType indicate that this is return by value in multiple registers
                     howToReturnStruct = SPK_ByValue;
@@ -2003,7 +2021,12 @@ bool Compiler::compMethodIsNativeInstanceMethod(CORINFO_METHOD_INFO* mthInfo)
 
 CorInfoUnmanagedCallConv Compiler::compMethodInfoGetUnmanagedCallConv(CORINFO_METHOD_INFO* mthInfo)
 {
-    return (CorInfoUnmanagedCallConv)mthInfo->args.getCallConv();
+    CorInfoCallConv callConv = mthInfo->args.getCallConv();
+    if (callConv == CORINFO_CALLCONV_DEFAULT || callConv == CORINFO_CALLCONV_VARARG)
+    {
+        return CORINFO_UNMANAGED_CALLCONV_UNKNOWN;
+    }
+    return (CorInfoUnmanagedCallConv)callConv;
 }
 
 #ifdef DEBUG

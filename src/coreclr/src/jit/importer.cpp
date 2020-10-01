@@ -9091,14 +9091,7 @@ bool Compiler::impMethodInfo_hasRetBuffArg(CORINFO_METHOD_INFO* methInfo)
 
     if ((corType == CORINFO_TYPE_VALUECLASS) || (corType == CORINFO_TYPE_REFANY))
     {
-// We have some kind of STRUCT being returned
-#if defined(TARGET_WINDOWS) && !defined(TARGET_ARM)
-        if (compMethodIsNativeInstanceMethod(methInfo))
-        {
-            return true;
-        }
-#endif
-
+        // We have some kind of STRUCT being returned
         structPassingKind howToReturnStruct = SPK_Unknown;
 
         var_types returnType = getReturnTypeForStruct(methInfo->args.retTypeClass, compMethodInfoGetUnmanagedCallConv(methInfo), &howToReturnStruct);
@@ -9192,7 +9185,7 @@ GenTree* Compiler::impFixupCallStructReturn(GenTreeCall* call, CORINFO_CLASS_HAN
     call->gtRetClsHnd = retClsHnd;
 
 #if FEATURE_MULTIREG_RET
-    call->InitializeStructReturnType(this, retClsHnd);
+    call->InitializeStructReturnType(this, retClsHnd, call->unmgdCallConv);
 #endif // FEATURE_MULTIREG_RET
 
 #ifdef UNIX_AMD64_ABI
@@ -9262,17 +9255,7 @@ GenTree* Compiler::impFixupCallStructReturn(GenTreeCall* call, CORINFO_CLASS_HAN
     structPassingKind howToReturnStruct;
     var_types         returnType;
 
-#if defined(TARGET_WINDOWS) && !defined(TARGET_ARM)
-    if (call->gtCallMoreFlags & GTF_CALL_M_UNMGD_INST_CALL)
-    {
-        howToReturnStruct = SPK_ByReference;
-        returnType        = TYP_UNKNOWN;
-    }
-    else
-#endif
-    {
-        returnType = getReturnTypeForStruct(retClsHnd, call->unmgdCallConv, &howToReturnStruct);
-    }
+    returnType = getReturnTypeForStruct(retClsHnd, call->unmgdCallConv, &howToReturnStruct);
 
     if (howToReturnStruct == SPK_ByReference)
     {
@@ -15489,7 +15472,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     {
                         op1->AsCall()->gtRetClsHnd = classHandle;
 #if FEATURE_MULTIREG_RET
-                        op1->AsCall()->InitializeStructReturnType(this, classHandle);
+                        op1->AsCall()->InitializeStructReturnType(this, classHandle, op1->AsCall()->unmgdCallConv);
 #endif
                     }
 
@@ -15536,7 +15519,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 if (!compDoOldStructRetyping())
                 {
 #if FEATURE_MULTIREG_RET
-                    op1->AsCall()->InitializeStructReturnType(this, tokenType);
+                    op1->AsCall()->InitializeStructReturnType(this, tokenType, op1->AsCall()->unmgdCallConv);
 #endif
                     op1->AsCall()->gtRetClsHnd = tokenType;
                 }
@@ -17028,7 +17011,7 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
 // Same as !IsHfa but just don't bother with impAssignStructPtr.
 #else  // defined(UNIX_AMD64_ABI)
                 ReturnTypeDesc retTypeDesc;
-                retTypeDesc.InitializeStructReturnType(this, retClsHnd);
+                retTypeDesc.InitializeStructReturnType(this, retClsHnd, compMethodInfoGetUnmanagedCallConv(info.compMethodInfo));
                 unsigned retRegCount = retTypeDesc.GetReturnRegCount();
 
                 if (retRegCount != 0)
@@ -17062,7 +17045,7 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
                 else
 #elif defined(TARGET_ARM64)
                 ReturnTypeDesc retTypeDesc;
-                retTypeDesc.InitializeStructReturnType(this, retClsHnd);
+                retTypeDesc.InitializeStructReturnType(this, retClsHnd, compMethodInfoGetUnmanagedCallConv(info.compMethodInfo));
                 unsigned retRegCount = retTypeDesc.GetReturnRegCount();
 
                 if (retRegCount != 0)
@@ -17086,7 +17069,7 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
                 else
 #elif defined(TARGET_X86)
                 ReturnTypeDesc retTypeDesc;
-                retTypeDesc.InitializeStructReturnType(this, retClsHnd);
+                retTypeDesc.InitializeStructReturnType(this, retClsHnd, compMethodInfoGetUnmanagedCallConv(info.compMethodInfo));
                 unsigned retRegCount = retTypeDesc.GetReturnRegCount();
 
                 if (retRegCount != 0)

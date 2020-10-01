@@ -476,13 +476,11 @@ VOID UMEntryThunk::CompileUMThunkWorker(UMThunkStubInfo *pInfo,
             {
                 pcpusl->X86EmitPushReg(kEDI); // Save EDI register
                 // Move the return value from the enregisterd return from the JIT
-                // to the return buffer that the C++ compiler expects.
+                // to the return buffer that the native calling convention expects.
+                // NOTE: Since the managed calling convention does not enregister 8-byte
+                // struct returns on x86, we only need to handle the single-register 4-byte case.
                 pcpusl->X86EmitIndexRegLoad(kEDI, kEBX, retbufofs);
                 pcpusl->X86EmitIndexRegStore(kEDI, 0x0, kEAX);
-                if (pInfo->m_wFlags & umtmlMultiregRetVal)
-                {
-                    pcpusl->X86EmitIndexRegStore(kEDI, 0x4 /* skip EAX half of the return value */, kEDX);
-                }
                 pcpusl->X86EmitPopReg(kEDI); // Restore EDI register
             }
             // pretend that the method returned the ret buf hidden argument

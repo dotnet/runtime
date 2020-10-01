@@ -1548,14 +1548,10 @@ void ArgIteratorTemplate<ARGITERATOR_BASE>::ComputeReturnFlags()
                 flags |= RETURN_HAS_RET_BUFFER;
                 break;
             }
-            
-            if  (size <= ENREGISTERED_RETURNTYPE_MAXSIZE)
-                break;
-#else
+#endif // defined(TARGET_X86) || defined(TARGET_AMD64)
 
             if  (size <= ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE)
                 break;
-#endif // defined(TARGET_X86) || defined(TARGET_AMD64)
 #endif // UNIX_AMD64_ABI
         }
 #endif // ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE

@@ -15709,7 +15709,7 @@ GenTree* Compiler::gtNewRefCOMfield(GenTree*                objPtr,
 #if FEATURE_MULTIREG_RET
     if (varTypeIsStruct(call))
     {
-        call->InitializeStructReturnType(this, structType);
+        call->InitializeStructReturnType(this, structType, call->unmgdCallConv);
     }
 #endif // FEATURE_MULTIREG_RET
 
@@ -19206,7 +19206,7 @@ GenTree* Compiler::gtNewMustThrowException(unsigned helper, var_types type, CORI
 // Return Value
 //    None
 //
-void ReturnTypeDesc::InitializeStructReturnType(Compiler* comp, CORINFO_CLASS_HANDLE retClsHnd)
+void ReturnTypeDesc::InitializeStructReturnType(Compiler* comp, CORINFO_CLASS_HANDLE retClsHnd, CorInfoUnmanagedCallConv callConv)
 {
     assert(!m_inited);
 
@@ -19216,7 +19216,7 @@ void ReturnTypeDesc::InitializeStructReturnType(Compiler* comp, CORINFO_CLASS_HA
     unsigned structSize = comp->info.compCompHnd->getClassSize(retClsHnd);
 
     Compiler::structPassingKind howToReturnStruct;
-    var_types                   returnType = comp->getReturnTypeForStruct(retClsHnd, comp->compMethodInfoGetUnmanagedCallConv(comp->info.compMethodInfo), &howToReturnStruct, structSize);
+    var_types                   returnType = comp->getReturnTypeForStruct(retClsHnd, callConv, &howToReturnStruct, structSize);
 
     switch (howToReturnStruct)
     {

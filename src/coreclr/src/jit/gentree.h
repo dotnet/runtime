@@ -3634,7 +3634,7 @@ public:
     }
 
     // Initialize the Return Type Descriptor for a method that returns a struct type
-    void InitializeStructReturnType(Compiler* comp, CORINFO_CLASS_HANDLE retClsHnd);
+    void InitializeStructReturnType(Compiler* comp, CORINFO_CLASS_HANDLE retClsHnd, CorInfoUnmanagedCallConv callConv);
 
     // Initialize the Return Type Descriptor for a method that returns a TYP_LONG
     // Only needed for X86 and arm32.
@@ -3994,10 +3994,10 @@ struct GenTreeCall final : public GenTree
 #endif
     }
 
-    void InitializeStructReturnType(Compiler* comp, CORINFO_CLASS_HANDLE retClsHnd)
+    void InitializeStructReturnType(Compiler* comp, CORINFO_CLASS_HANDLE retClsHnd, CorInfoUnmanagedCallConv callConv)
     {
 #if FEATURE_MULTIREG_RET
-        gtReturnTypeDesc.InitializeStructReturnType(comp, retClsHnd);
+        gtReturnTypeDesc.InitializeStructReturnType(comp, retClsHnd, callConv);
 #endif
     }
 
