@@ -57,7 +57,7 @@
     <FailOnTestFailure Condition="'$(WaitForWorkItemCompletion)' != ''">$(WaitForWorkItemCompletion)</FailOnTestFailure>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TestPackages)' == 'true'">
+  <PropertyGroup Condition="'$(TestPackages)' == 'true' or $(BuildTargetFramework.StartsWith('net4'))">
     <!-- Use Helix feature to include dotnet CLI for every workitem and add it to the path -->
     <IncludeDotNetCli>true</IncludeDotNetCli>
     <DotNetCliPackageType>sdk</DotNetCliPackageType>
@@ -84,9 +84,29 @@
   </ItemGroup>
 
   <Choose>
-    <When Condition="'$(TestPackages)' != 'true'">
-      <PropertyGroup Condition="'$(TargetsMobile)' != 'true'">
-        <RollforwardExecArgument>exec --fx-version $(ProductVersion)</RollforwardExecArgument>
+    <When Condition="'$(TestPackages)' == 'true'">
+      <PropertyGroup>
+        <HelixCommand>dotnet msbuild %HELIX_CORRELATION_PAYLOAD%\test.msbuild</HelixCommand>
+        <HelixCommand>$(HelixCommand) /warnaserror</HelixCommand>
+        <HelixCommand>$(HelixCommand) /p:PackageTestProjectsDir=%HELIX_WORKITEM_PAYLOAD%</HelixCommand>
+        <HelixCommand>$(HelixCommand) /p:RestorePackagesPath=%HELIX_WORKITEM_PAYLOAD%\packages</HelixCommand>
+        <HelixCommand>$(HelixCommand) /p:LocalPackagesPath="%HELIX_CORRELATION_PAYLOAD%\packages\"</HelixCommand>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(TargetsMobile)' == 'true'">
+      <PropertyGroup>
+        <HelixCommand>./RunTests.sh $HELIX_WORKITEM_FRIENDLYNAME</HelixCommand>
+        <HelixCommand Condition="'$(TargetOS)' != 'Browser'">$(HelixCommand) $(TargetArchitecture)</HelixCommand>
+      </PropertyGroup>
+    </When>
+    <When Condition="$(BuildTargetFramework.StartsWith('net4'))">
+      <PropertyGroup>
+        <HelixCommand>dotnet test $HELIX_WORKITEM_FRIENDLYNAME.dll --settings .runsettings --platform $(TargetArchitecture)</HelixCommand>
+      </PropertyGroup>
+    </When>
+    <Otherwise>
+      <PropertyGroup>
+        <RollforwardExecArgument>exec --roll-forward LatestMajor</RollforwardExecArgument>
         <HelixCommand Condition="'$(TargetsWindows)' == 'true'">%HELIX_CORRELATION_PAYLOAD%\dotnet.exe $(RollforwardExecArgument) %HELIX_CORRELATION_PAYLOAD%\sdk\$(ProductVersion)\vstest.console.dll %HELIX_WORKITEM_FRIENDLYNAME%.dll --Settings:.runsettings</HelixCommand>
         <HelixCommand Condition="'$(TargetsWindows)' != 'true'">$HELIX_CORRELATION_PAYLOAD/dotnet $(RollforwardExecArgument) $HELIX_CORRELATION_PAYLOAD/sdk/$(ProductVersion)/vstest.console.dll $HELIX_WORKITEM_FRIENDLYNAME.dll --Settings:.runsettings</HelixCommand>
         <!-- arm64 as an explicit arch is currently not supported by vstest: https://github.com/microsoft/vstest/issues/2566. -->
@@ -95,26 +115,14 @@
         <HelixCommand Condition="'$(TargetsWindows)' == 'true' and '$(IncludeHelixCorrelationPayload)' == 'true'">$(HelixCommand) -- RunConfiguration.DotNetHostPath="%HELIX_CORRELATION_PAYLOAD%\dotnet.exe"</HelixCommand>
         <HelixCommand Condition="'$(TargetsWindows)' != 'true' and '$(IncludeHelixCorrelationPayload)' == 'true'">$(HelixCommand) -- RunConfiguration.DotNetHostPath="$HELIX_CORRELATION_PAYLOAD/dotnet"</HelixCommand>
       </PropertyGroup>
-      <PropertyGroup Condition="'$(TargetsMobile)' == 'true'">
-        <HelixCommand>./RunTests.sh $HELIX_WORKITEM_FRIENDLYNAME</HelixCommand>
-        <HelixCommand Condition="'$(TargetOS)' != 'Browser'">$(HelixCommand) $(TargetArchitecture)</HelixCommand>
-      </PropertyGroup>
-      <!-- Tell VSTest where to put dump files. -->
-      <ItemGroup>
-        <HelixPreCommand Condition="'$(TargetsWindows)' == 'true'" Include="set VSTEST_DUMP_PATH=%HELIX_WORKITEM_UPLOAD_ROOT%" />
-        <HelixPreCommand Condition="'$(TargetsWindows)' != 'true'" Include="export VSTEST_DUMP_PATH=$HELIX_WORKITEM_UPLOAD_ROOT" />
-      </ItemGroup>
-    </When>
-    <Otherwise>
-      <PropertyGroup>
-        <HelixCommand>dotnet msbuild %HELIX_CORRELATION_PAYLOAD%\test.msbuild</HelixCommand>
-        <HelixCommand>$(HelixCommand) /warnaserror</HelixCommand>
-        <HelixCommand>$(HelixCommand) /p:PackageTestProjectsDir=%HELIX_WORKITEM_PAYLOAD%</HelixCommand>
-        <HelixCommand>$(HelixCommand) /p:RestorePackagesPath=%HELIX_WORKITEM_PAYLOAD%\packages</HelixCommand>
-        <HelixCommand>$(HelixCommand) /p:LocalPackagesPath="%HELIX_CORRELATION_PAYLOAD%\packages\"</HelixCommand>
-      </PropertyGroup>
     </Otherwise>
   </Choose>
+
+  <!-- Tell VSTest where to put dump files. -->
+  <ItemGroup>
+    <HelixPreCommand Condition="'$(TargetsWindows)' == 'true'" Include="set VSTEST_DUMP_PATH=%HELIX_WORKITEM_UPLOAD_ROOT%" />
+    <HelixPreCommand Condition="'$(TargetsWindows)' != 'true'" Include="export VSTEST_DUMP_PATH=$HELIX_WORKITEM_UPLOAD_ROOT" />
+  </ItemGroup>
 
   <ItemGroup Condition="'$(MonoEnvOptions)' != ''">
     <HelixPreCommand Condition="'$(TargetsWindows)' == 'true'" Include="set MONO_ENV_OPTIONS='$(MonoEnvOptions)'" />

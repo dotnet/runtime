@@ -27,7 +27,8 @@
                       GeneratePathProperty="true"
                       ExcludeAssets="all"
                       PrivateAssets="all"
-                      Condition="'$(ContinuousIntegrationBuild)' == 'true'" />
+                      Condition="'$(ContinuousIntegrationBuild)' == 'true' and
+                                 !$(BuildTargetFramework.StartsWith('net4'))" />
   </ItemGroup>
 
   <!-- Setup the testing shared framework host -->
