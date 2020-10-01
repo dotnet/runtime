@@ -222,6 +222,7 @@ namespace System.Threading
         /// It will not automatically be reverted unlike <seealso cref="ExecutionContext.Run"/>.
         /// </remarks>
         /// <param name="executionContext">The ExecutionContext to set.</param>
+        /// <exception cref="InvalidOperationException"><paramref name="executionContext"/> is null.</exception>
         public static void Restore(ExecutionContext executionContext)
         {
             if (executionContext == null)
