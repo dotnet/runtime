@@ -1,11 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.Versioning;
 using System.Security.AccessControl;
 using System.Security.Principal;
 
 namespace System.IO.Pipes
 {
+    [SupportedOSPlatform("windows")]
     public sealed class PipeAccessRule : AccessRule
     {
         //

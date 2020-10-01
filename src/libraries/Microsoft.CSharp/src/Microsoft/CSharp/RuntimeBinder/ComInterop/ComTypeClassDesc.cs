@@ -17,11 +17,13 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 
         public object CreateInstance()
         {
+#pragma warning disable CA1416 // Validate platform compatibility, cannot use any of guard methods
             if (_typeObj == null)
             {
                 _typeObj = Type.GetTypeFromCLSID(Guid);
             }
             return Activator.CreateInstance(Type.GetTypeFromCLSID(Guid));
+#pragma warning restore CA1416
         }
 
         internal ComTypeClassDesc(ComTypes.ITypeInfo typeInfo, ComTypeLibDesc typeLibDesc) :

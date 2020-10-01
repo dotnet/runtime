@@ -5,9 +5,11 @@ using Microsoft.Win32.SafeHandles;
 using System.Security.AccessControl;
 using System.Security.Principal;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 
 namespace System.IO.Pipes
 {
+    [SupportedOSPlatform("windows")]
     public class PipeSecurity : NativeObjectSecurity
     {
         public PipeSecurity()

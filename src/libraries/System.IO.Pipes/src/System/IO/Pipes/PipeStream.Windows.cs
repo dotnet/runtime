@@ -41,6 +41,7 @@ namespace System.IO.Pipes
         /// <param name="handle">The handle.</param>
         private void InitializeAsyncHandle(SafePipeHandle handle)
         {
+            Debug.Assert(OperatingSystem.IsWindows());
             // If the handle is of async type, bind the handle to the ThreadPool so that we can use
             // the async operations (it's needed so that our native callbacks get called).
             _threadPoolBinding = ThreadPoolBoundHandle.BindHandle(handle);
@@ -50,6 +51,7 @@ namespace System.IO.Pipes
         {
             if (disposing)
             {
+                Debug.Assert(OperatingSystem.IsWindows());
                 _threadPoolBinding?.Dispose();
             }
         }
@@ -113,6 +115,7 @@ namespace System.IO.Pipes
 
                         unsafe
                         {
+                            Debug.Assert(OperatingSystem.IsWindows());
                             // Clear the overlapped status bit for this special case. Failure to do so looks
                             // like we are freeing a pending overlapped.
                             completionSource.Overlapped->InternalLow = IntPtr.Zero;
@@ -212,6 +215,7 @@ namespace System.IO.Pipes
                     }
                     if ((pipeFlags & Interop.Kernel32.PipeOptions.PIPE_TYPE_MESSAGE) != 0)
                     {
+                        Debug.Assert(OperatingSystem.IsWindows());
                         return PipeTransmissionMode.Message;
                     }
                     else
@@ -407,6 +411,7 @@ namespace System.IO.Pipes
 
             if (pipeSecurity != null)
             {
+                Debug.Assert(OperatingSystem.IsWindows());
                 byte[] securityDescriptor = pipeSecurity.GetSecurityDescriptorBinaryForm();
                 pinningHandle = GCHandle.Alloc(securityDescriptor, GCHandleType.Pinned);
                 fixed (byte* pSecurityDescriptor = securityDescriptor)
@@ -433,6 +438,7 @@ namespace System.IO.Pipes
 
             if ((flags & Interop.Kernel32.PipeOptions.PIPE_READMODE_MESSAGE) != 0)
             {
+                Debug.Assert(OperatingSystem.IsWindows());
                 _readMode = PipeTransmissionMode.Message;
             }
             else

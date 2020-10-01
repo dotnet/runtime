@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
 
@@ -114,6 +115,7 @@ namespace System.Net
             _boundHandle = boundHandle;
             _sentHeaders = sentHeaders;
 
+            Debug.Assert(OperatingSystem.IsWindows());
             if (size == 0)
             {
                 _dataChunks = null;
@@ -219,6 +221,7 @@ namespace System.Net
 
         private static unsafe void Callback(uint errorCode, uint numBytes, NativeOverlapped* nativeOverlapped)
         {
+            Debug.Assert(OperatingSystem.IsWindows());
             object state = ThreadPoolBoundHandle.GetNativeOverlappedState(nativeOverlapped)!;
             HttpResponseStreamAsyncResult asyncResult = (state as HttpResponseStreamAsyncResult)!;
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, "errorCode:0x" + errorCode.ToString("x8") + " numBytes:" + numBytes + " nativeOverlapped:0x" + ((IntPtr)nativeOverlapped).ToString("x8"));
@@ -232,6 +235,7 @@ namespace System.Net
             base.Cleanup();
             if (_pOverlapped != null)
             {
+                Debug.Assert(OperatingSystem.IsWindows());
                 _boundHandle!.FreeNativeOverlapped(_pOverlapped);
             }
         }

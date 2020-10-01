@@ -157,7 +157,9 @@ namespace System.Runtime.InteropServices
         {
             get
             {
+#pragma warning disable CA1416 // Validate platform compatibility, cannot use any of guard methods
                 return Marshal.GetObjectForNativeVariant(UnsafeMethods.ConvertVariantByrefToPtr(ref this));
+#pragma warning restore CA1416
             }
 
             set

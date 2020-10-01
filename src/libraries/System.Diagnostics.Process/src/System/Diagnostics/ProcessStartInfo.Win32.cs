@@ -17,6 +17,7 @@ namespace System.Diagnostics
                 if (string.IsNullOrEmpty(extension))
                     return Array.Empty<string>();
 
+                Debug.Assert(OperatingSystem.IsWindows());
                 using (RegistryKey? key = Registry.ClassesRoot.OpenSubKey(extension))
                 {
                     if (key == null)

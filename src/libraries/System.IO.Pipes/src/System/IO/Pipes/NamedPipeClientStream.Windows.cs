@@ -7,6 +7,7 @@ using System.Security.Principal;
 using System.Threading;
 using Microsoft.Win32.SafeHandles;
 using System.Runtime.Versioning;
+using System.Diagnostics;
 
 namespace System.IO.Pipes
 {
@@ -135,6 +136,7 @@ namespace System.IO.Pipes
             if (!IsCurrentUserOnly)
                 return;
 
+            Debug.Assert(OperatingSystem.IsWindows());
             PipeSecurity accessControl = this.GetAccessControl();
             IdentityReference? remoteOwnerSid = accessControl.GetOwner(typeof(SecurityIdentifier));
             using (WindowsIdentity currentIdentity = WindowsIdentity.GetCurrent())

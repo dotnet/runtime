@@ -4,6 +4,7 @@
 using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Security;
 using System.Threading;
 using System.Threading.Tasks;
@@ -29,7 +30,6 @@ namespace System.IO.Pipes
 #if DEBUG
         private bool _cancellationHasBeenRegistered;
 #endif
-
         // Using RunContinuationsAsynchronously for compat reasons (old API used ThreadPool.QueueUserWorkItem for continuations)
         protected PipeCompletionSource(ThreadPoolBoundHandle handle, ReadOnlyMemory<byte> bufferToPin)
             : base(TaskCreationOptions.RunContinuationsAsynchronously)
@@ -40,8 +40,10 @@ namespace System.IO.Pipes
             _state = NoResult;
 
             _pinnedMemory = bufferToPin.Pin();
+            Debug.Assert(OperatingSystem.IsWindows());
             _overlapped = _threadPoolBinding.AllocateNativeOverlapped((errorCode, numBytes, pOverlapped) =>
             {
+                Debug.Assert(OperatingSystem.IsWindows());
                 var completionSource = (PipeCompletionSource<TResult>)ThreadPoolBoundHandle.GetNativeOverlappedState(pOverlapped)!;
                 Debug.Assert(completionSource.Overlapped == pOverlapped);
 
@@ -98,6 +100,7 @@ namespace System.IO.Pipes
             // (this is why we disposed the registration above)
             if (_overlapped != null)
             {
+                Debug.Assert(OperatingSystem.IsWindows());
                 _threadPoolBinding.FreeNativeOverlapped(Overlapped);
                 _overlapped = null;
             }
@@ -138,6 +141,7 @@ namespace System.IO.Pipes
 
         private void Cancel()
         {
+            Debug.Assert(OperatingSystem.IsWindows());
             SafeHandle handle = _threadPoolBinding.Handle;
             NativeOverlapped* overlapped = Overlapped;
 

@@ -541,6 +541,7 @@ namespace System.Diagnostics
 
                     if (startInfo.UserName.Length != 0)
                     {
+                        Debug.Assert(OperatingSystem.IsWindows());
                         if (startInfo.Password != null && startInfo.PasswordInClearText != null)
                         {
                             throw new ArgumentException(SR.CantSetDuplicatePassword);

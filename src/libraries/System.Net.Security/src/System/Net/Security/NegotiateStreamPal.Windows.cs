@@ -48,6 +48,7 @@ namespace System.Net.Security
                     }
                     string authtype = context.ProtocolName;
 
+                    Debug.Assert(OperatingSystem.IsWindows());
                     // The following call was also specifying WindowsAccountType.Normal, true.
                     // WindowsIdentity.IsAuthenticated is no longer supported in .NET Core
                     result = new WindowsIdentity(token.DangerousGetHandle(), authtype);

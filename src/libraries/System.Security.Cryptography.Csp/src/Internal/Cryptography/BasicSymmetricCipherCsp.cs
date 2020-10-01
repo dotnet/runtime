@@ -122,6 +122,7 @@ namespace Internal.Cryptography
         private static SafeProvHandle AcquireSafeProviderHandle()
         {
             SafeProvHandle safeProvHandle;
+            Debug.Assert(OperatingSystem.IsWindows());
             var cspParams = new CspParameters((int)ProviderType.PROV_RSA_FULL);
             CapiHelper.AcquireCsp(cspParams, out safeProvHandle);
             return safeProvHandle;

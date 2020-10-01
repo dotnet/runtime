@@ -94,6 +94,7 @@ namespace System.Diagnostics
             Dictionary<int, string> stringTable;
             RegistryKey libraryKey;
 
+            Debug.Assert(OperatingSystem.IsWindows());
             libraryKey = Registry.PerformanceData;
 
             try
@@ -208,6 +209,7 @@ namespace System.Diagnostics
             [MemberNotNull(nameof(_perfDataKey))]
             private void Init()
             {
+                Debug.Assert(OperatingSystem.IsWindows());
                 if (ProcessManager.IsRemoteMachine(_machineName))
                 {
                     _perfDataKey = RegistryKey.OpenRemoteBaseKey(RegistryHive.PerformanceData, _machineName);
@@ -236,6 +238,7 @@ namespace System.Diagnostics
                 byte[]? data = null;
                 int error = 0;
 
+                Debug.Assert(OperatingSystem.IsWindows());
                 while (waitRetries > 0)
                 {
                     try

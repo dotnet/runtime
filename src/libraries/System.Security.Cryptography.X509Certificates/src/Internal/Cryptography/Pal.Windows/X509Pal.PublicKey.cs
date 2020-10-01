@@ -30,8 +30,10 @@ namespace Internal.Cryptography.Pal
             {
                 return DecodeECPublicKey(
                     pal,
+#pragma warning disable CA1416 // Validate platform compatibility, flow analysis bug
                     factory: cngKey => new ECDsaCng(cngKey),
                     import: (algorithm, ecParams) => algorithm.ImportParameters(ecParams));
+#pragma warning restore CA1416
             }
 
             throw new NotSupportedException(SR.NotSupported_KeyAlgorithm);
@@ -41,10 +43,13 @@ namespace Internal.Cryptography.Pal
         {
             if (certificatePal is CertificatePal pal)
             {
+                Debug.Assert(OperatingSystem.IsWindows());
                 return DecodeECPublicKey(
                     pal,
+#pragma warning disable CA1416 // Validate platform compatibility
                     factory: cngKey => new ECDiffieHellmanCng(cngKey),
                     import: (algorithm, ecParams) => algorithm.ImportParameters(ecParams),
+#pragma warning restore CA1416
                     importFlags: CryptImportPublicKeyInfoFlags.CRYPT_OID_INFO_PUBKEY_ENCRYPT_KEY_FLAG);
             }
 
@@ -59,6 +64,7 @@ namespace Internal.Cryptography.Pal
                 case AlgId.CALG_RSA_KEYX:
                 case AlgId.CALG_RSA_SIGN:
                     {
+                        Debug.Assert(OperatingSystem.IsWindows());
                         byte[] keyBlob = DecodeKeyBlob(CryptDecodeObjectStructType.CNG_RSA_PUBLIC_KEY_BLOB, encodedKeyValue);
                         CngKey cngKey = CngKey.Import(keyBlob, CngKeyBlobFormat.GenericPublicBlob);
                         return new RSACng(cngKey);
@@ -90,6 +96,7 @@ namespace Internal.Cryptography.Pal
                 byte[] keyBlob;
                 string? curveName = GetCurveName(bCryptKeyHandle);
 
+                Debug.Assert(OperatingSystem.IsWindows());
                 if (curveName == null)
                 {
                     if (HasExplicitParameters(bCryptKeyHandle))
@@ -149,6 +156,7 @@ namespace Internal.Cryptography.Pal
 
         private static byte[] ExportKeyBlob(SafeBCryptKeyHandle bCryptKeyHandle, CngKeyBlobFormat blobFormat)
         {
+            Debug.Assert(OperatingSystem.IsWindows());
             string blobFormatString = blobFormat.Format;
 
             int numBytesNeeded = 0;

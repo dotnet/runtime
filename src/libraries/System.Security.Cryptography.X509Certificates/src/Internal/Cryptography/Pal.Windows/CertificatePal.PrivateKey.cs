@@ -28,10 +28,12 @@ namespace Internal.Cryptography.Pal
             return GetPrivateKey<RSA>(
                 delegate (CspParameters csp)
                 {
+                    Debug.Assert(OperatingSystem.IsWindows());
                     return new RSACryptoServiceProvider(csp);
                 },
                 delegate (CngKey cngKey)
                 {
+                    Debug.Assert(OperatingSystem.IsWindows());
                     return new RSACng(cngKey);
                 }
             );
@@ -42,10 +44,12 @@ namespace Internal.Cryptography.Pal
             return GetPrivateKey<DSA>(
                 delegate (CspParameters csp)
                 {
+                    Debug.Assert(OperatingSystem.IsWindows());
                     return new DSACryptoServiceProvider(csp);
                 },
                 delegate (CngKey cngKey)
                 {
+                    Debug.Assert(OperatingSystem.IsWindows());
                     return new DSACng(cngKey);
                 }
             );
@@ -60,6 +64,7 @@ namespace Internal.Cryptography.Pal
                 },
                 delegate (CngKey cngKey)
                 {
+                    Debug.Assert(OperatingSystem.IsWindows());
                     return new ECDsaCng(cngKey);
                 }
             );
@@ -69,7 +74,9 @@ namespace Internal.Cryptography.Pal
         {
             return GetPrivateKey<ECDiffieHellman>(
                 csp => throw new NotSupportedException(SR.NotSupported_ECDiffieHellman_Csp),
+#pragma warning disable CA1416 // Validate platform compatibility
                 cngKey => new ECDiffieHellmanCng(cngKey)
+#pragma warning restore CA1416 // Validate platform compatibility
             );
         }
 
@@ -78,6 +85,7 @@ namespace Internal.Cryptography.Pal
             DSACng? dsaCng = dsa as DSACng;
             ICertificatePal? clone = null;
 
+            Debug.Assert(OperatingSystem.IsWindows());
             if (dsaCng != null)
             {
                 clone = CopyWithPersistedCngKey(dsaCng.Key);
@@ -115,6 +123,7 @@ namespace Internal.Cryptography.Pal
         {
             ECDsaCng? ecdsaCng = ecdsa as ECDsaCng;
 
+            Debug.Assert(OperatingSystem.IsWindows());
             if (ecdsaCng != null)
             {
                 ICertificatePal? clone = CopyWithPersistedCngKey(ecdsaCng.Key);
@@ -140,6 +149,7 @@ namespace Internal.Cryptography.Pal
         {
             ECDiffieHellmanCng? ecdhCng = ecdh as ECDiffieHellmanCng;
 
+            Debug.Assert(OperatingSystem.IsWindows());
             if (ecdhCng != null)
             {
                 ICertificatePal? clone = CopyWithPersistedCngKey(ecdhCng.Key);
@@ -166,6 +176,7 @@ namespace Internal.Cryptography.Pal
             RSACng? rsaCng = rsa as RSACng;
             ICertificatePal? clone = null;
 
+            Debug.Assert(OperatingSystem.IsWindows());
             if (rsaCng != null)
             {
                 clone = CopyWithPersistedCngKey(rsaCng.Key);
@@ -208,6 +219,7 @@ namespace Internal.Cryptography.Pal
         {
             CngKeyHandleOpenOptions cngHandleOptions;
             SafeNCryptKeyHandle? ncryptKey = TryAcquireCngPrivateKey(CertContext, out cngHandleOptions);
+            Debug.Assert(OperatingSystem.IsWindows());
             if (ncryptKey != null)
             {
                 CngKey cngKey = CngKey.Open(ncryptKey, cngHandleOptions);
@@ -244,6 +256,7 @@ namespace Internal.Cryptography.Pal
             Debug.Assert(certificateContext != null, "certificateContext != null");
             Debug.Assert(!certificateContext.IsClosed && !certificateContext.IsInvalid,
                          "!certificateContext.IsClosed && !certificateContext.IsInvalid");
+            Debug.Assert(OperatingSystem.IsWindows());
 
             IntPtr privateKeyPtr;
 
@@ -345,6 +358,7 @@ namespace Internal.Cryptography.Pal
                         throw Marshal.GetLastWin32Error().ToCryptographicException();
                     CRYPT_KEY_PROV_INFO* pKeyProvInfo = (CRYPT_KEY_PROV_INFO*)pPrivateKey;
 
+                    Debug.Assert(OperatingSystem.IsWindows());
                     CspParameters cspParameters = new CspParameters();
                     cspParameters.ProviderName = Marshal.PtrToStringUni((IntPtr)(pKeyProvInfo->pwszProvName));
                     cspParameters.KeyContainerName = Marshal.PtrToStringUni((IntPtr)(pKeyProvInfo->pwszContainerName));
@@ -358,6 +372,7 @@ namespace Internal.Cryptography.Pal
 
         private unsafe ICertificatePal? CopyWithPersistedCngKey(CngKey cngKey)
         {
+            Debug.Assert(OperatingSystem.IsWindows());
             if (string.IsNullOrEmpty(cngKey.KeyName))
             {
                 return null;
@@ -404,6 +419,7 @@ namespace Internal.Cryptography.Pal
             bool machineKey,
             CngAlgorithmGroup? algorithmGroup)
         {
+            Debug.Assert(OperatingSystem.IsWindows());
             if (provider == CngProvider.MicrosoftSoftwareKeyStorageProvider ||
                 provider == CngProvider.MicrosoftSmartCardKeyStorageProvider)
             {
@@ -457,6 +473,7 @@ namespace Internal.Cryptography.Pal
             CngAlgorithmGroup? algorithmGroup,
             out int keySpec)
         {
+            Debug.Assert(OperatingSystem.IsWindows());
             if (algorithmGroup == CngAlgorithmGroup.Rsa)
             {
                 return TryGuessRsaKeySpec(cspParameters, out keySpec);
@@ -493,6 +510,7 @@ namespace Internal.Cryptography.Pal
                 PROV_RSA_SIG,
             };
 
+            Debug.Assert(OperatingSystem.IsWindows());
             foreach (int provType in provTypes)
             {
                 cspParameters.ProviderType = provType;
@@ -528,6 +546,7 @@ namespace Internal.Cryptography.Pal
                 PROV_DSS,
             };
 
+            Debug.Assert(OperatingSystem.IsWindows());
             foreach (int provType in provTypes)
             {
                 cspParameters.ProviderType = provType;
@@ -554,6 +573,7 @@ namespace Internal.Cryptography.Pal
 
         private unsafe ICertificatePal? CopyWithPersistedCapiKey(CspKeyContainerInfo keyContainerInfo)
         {
+            Debug.Assert(OperatingSystem.IsWindows());
             if (string.IsNullOrEmpty(keyContainerInfo.KeyContainerName))
             {
                 return null;
@@ -588,6 +608,7 @@ namespace Internal.Cryptography.Pal
 
         private ICertificatePal CopyWithEphemeralKey(CngKey cngKey)
         {
+            Debug.Assert(OperatingSystem.IsWindows());
             Debug.Assert(string.IsNullOrEmpty(cngKey.KeyName));
 
             SafeNCryptKeyHandle handle = cngKey.Handle;

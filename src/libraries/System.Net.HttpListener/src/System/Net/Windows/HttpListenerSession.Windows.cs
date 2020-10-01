@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
 
@@ -22,6 +23,7 @@ namespace System.Net
                     {
                         if (_requestQueueBoundHandle == null)
                         {
+                            Debug.Assert(OperatingSystem.IsWindows());
                             _requestQueueBoundHandle = ThreadPoolBoundHandle.BindHandle(RequestQueueHandle);
                             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info($"ThreadPoolBoundHandle.BindHandle({RequestQueueHandle}) -> {_requestQueueBoundHandle}");
                         }
@@ -65,6 +67,7 @@ namespace System.Net
                 if (!RequestQueueHandle.IsInvalid)
                 {
                     if (NetEventSource.Log.IsEnabled()) NetEventSource.Info($"Dispose ThreadPoolBoundHandle: {_requestQueueBoundHandle}");
+                    Debug.Assert(OperatingSystem.IsWindows());
                     _requestQueueBoundHandle?.Dispose();
                     RequestQueueHandle.Dispose();
 

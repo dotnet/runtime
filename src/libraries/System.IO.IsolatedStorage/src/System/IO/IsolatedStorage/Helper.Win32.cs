@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Security.AccessControl;
 using System.Security.Principal;
 
@@ -35,6 +36,7 @@ namespace System.IO.IsolatedStorage
                 // (But applies CREATOR OWNER as expected for items and subdirectories.) Setting up front when creating the directory
                 // doesn't exhibit this behavior, but as we can't currently do that we'll take the rough equivalent for now.
 
+                Debug.Assert(OperatingSystem.IsWindows());
                 DirectorySecurity security = new DirectorySecurity();
 
                 // Don't inherit the existing rules

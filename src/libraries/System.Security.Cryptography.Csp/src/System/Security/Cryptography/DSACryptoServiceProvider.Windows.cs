@@ -24,11 +24,13 @@ namespace System.Security.Cryptography
         /// Initializes a new instance of the DSACryptoServiceProvider class.
         /// </summary>
         public DSACryptoServiceProvider()
+#pragma warning disable CA1416 // Validate platform compatibility
             : this(
                   new CspParameters(CapiHelper.DefaultDssProviderType,
                       null,
                       null,
                       s_useMachineKeyStore))
+#pragma warning restore CA1416 //
         {
         }
 
@@ -37,11 +39,13 @@ namespace System.Security.Cryptography
         /// </summary>
         /// <param name="dwKeySize">The size of the key for the asymmetric algorithm in bits.</param>
         public DSACryptoServiceProvider(int dwKeySize)
+#pragma warning disable CA1416 // Validate platform compatibility
             : this(dwKeySize,
                   new CspParameters(CapiHelper.DefaultDssProviderType,
                       null,
                       null,
                       s_useMachineKeyStore))
+#pragma warning restore CA1416 // Validate platform compatibility
         {
         }
 
@@ -324,6 +328,7 @@ namespace System.Security.Cryptography
         private SafeProvHandle AcquireSafeProviderHandle()
         {
             SafeProvHandle safeProvHandle;
+            Debug.Assert(OperatingSystem.IsWindows());
             CapiHelper.AcquireCsp(new CspParameters(CapiHelper.DefaultDssProviderType), out safeProvHandle);
             return safeProvHandle;
         }
@@ -348,6 +353,7 @@ namespace System.Security.Cryptography
             }
             else
             {
+                Debug.Assert(OperatingSystem.IsWindows());
                 CapiHelper.ImportKeyBlob(SafeProvHandle, _parameters.Flags, false, keyBlob, out safeKeyHandle);
             }
 
@@ -489,6 +495,7 @@ namespace System.Security.Cryptography
             if (rgbHash.Length != _sha1.HashSize / 8)
                 throw new CryptographicException(SR.Format(SR.Cryptography_InvalidHashSize, "SHA1", _sha1.HashSize / 8));
 
+            Debug.Assert(OperatingSystem.IsWindows());
             return CapiHelper.SignValue(
                 SafeProvHandle,
                 SafeKeyHandle,

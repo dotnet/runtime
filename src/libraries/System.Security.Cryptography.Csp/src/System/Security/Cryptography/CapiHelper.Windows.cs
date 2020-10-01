@@ -176,7 +176,7 @@ namespace Internal.NativeCrypto
         internal static void AcquireCsp(CspParameters cspParameters, out SafeProvHandle safeProvHandle)
         {
             Debug.Assert(cspParameters != null);
-            Debug.Assert(cspParameters.KeyContainerName == null);
+            Debug.Assert(OperatingSystem.IsWindows() && cspParameters.KeyContainerName == null);
 
             SafeProvHandle hProv;
             //
@@ -205,6 +205,7 @@ namespace Internal.NativeCrypto
                 throw new ArgumentException(SR.Format(SR.CspParameter_invalid, nameof(cspParameters)));
             }
 
+            Debug.Assert(OperatingSystem.IsWindows());
             //look for provider type in the cspParameters
             int providerType = cspParameters.ProviderType;
 
@@ -274,6 +275,7 @@ namespace Internal.NativeCrypto
             SafeProvHandle safeProvHandle;
             uint flag = 0;
             uint hr = unchecked((uint)OpenCSP(parameters, flag, out safeProvHandle));
+            Debug.Assert(OperatingSystem.IsWindows());
             //Open container failed
             if (hr != S_OK)
             {
@@ -664,6 +666,7 @@ namespace Internal.NativeCrypto
             out bool randomKeyContainer)
         {
             CspParameters parameters;
+            Debug.Assert(OperatingSystem.IsWindows());
             if (userParameters == null)
             {
                 parameters = new CspParameters(keyType == CspAlgorithmType.Dss ?
@@ -732,6 +735,7 @@ namespace Internal.NativeCrypto
         {
             // If the key already exists, use it, else generate a new one
             SafeKeyHandle hKey;
+            Debug.Assert(OperatingSystem.IsWindows());
             int hr = CapiHelper.GetUserKey(safeProvHandle, parameters.KeyNumber, out hKey);
             if (hr != S_OK)
             {

@@ -34,6 +34,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
         {
             Debug.Assert(ComBinder.IsComObject(rcw));
 
+#pragma warning disable CA1416 // Validate platform compatibility, cannot use any of guard methods
             object data = Marshal.GetComObjectData(rcw, s_comObjectInfoKey);
             if (data != null)
             {
@@ -53,6 +54,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
                 {
                     throw Error.SetComObjectDataFailed();
                 }
+#pragma warning restore CA1416
 
                 return comObjectInfo;
             }

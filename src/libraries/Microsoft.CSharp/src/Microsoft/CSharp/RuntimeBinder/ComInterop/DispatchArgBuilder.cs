@@ -24,10 +24,12 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             // parameter.WrappedObject
             if (_isWrapper)
             {
+#pragma warning disable CA1416 // Validate platform compatibility, cannot use any of guard methods
                 parameter = Expression.Property(
                     Helpers.Convert(parameter, typeof(DispatchWrapper)),
                     typeof(DispatchWrapper).GetProperty(nameof(DispatchWrapper.WrappedObject))
                 );
+#pragma warning restore CA1416
             }
 
             return Helpers.Convert(parameter, typeof(object));

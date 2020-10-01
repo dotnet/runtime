@@ -72,6 +72,7 @@ namespace System.IO.Pipes
             if (IsCurrentUserOnly)
             {
                 Debug.Assert(pipeSecurity == null);
+                Debug.Assert(OperatingSystem.IsWindows());
 
                 using (WindowsIdentity currentIdentity = WindowsIdentity.GetCurrent())
                 {

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Microsoft.Win32.SafeHandles;
+using System.Diagnostics;
 using System.Net.Security;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
@@ -175,6 +176,7 @@ namespace System.Net
             // For app-compat We want to ensure the store is opened under the **process** account.
             try
             {
+                Debug.Assert(OperatingSystem.IsWindows());
                 WindowsIdentity.RunImpersonated(SafeAccessTokenHandle.InvalidHandle, () =>
                 {
                     store.Open(OpenFlags.ReadOnly | OpenFlags.OpenExistingOnly);

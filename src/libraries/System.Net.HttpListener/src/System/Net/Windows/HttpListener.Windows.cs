@@ -703,6 +703,7 @@ namespace System.Net
                     WindowsPrincipal? principal = disconnectResult?.AuthenticatedConnection;
                     if (principal != null)
                     {
+                        Debug.Assert(OperatingSystem.IsWindows());
                         if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Principal: {principal} principal.Identity.Name: {principal.Identity.Name} creating request");
                         stoleBlob = true;
                         HttpListenerContext ntlmContext = new HttpListenerContext(session, memoryBlob);
@@ -967,6 +968,7 @@ namespace System.Net
                                                         $"HandleAuthentication creating new WindowsIdentity from user context: {userContext.DangerousGetHandle().ToString("x8")}");
                                                 }
 
+                                                Debug.Assert(OperatingSystem.IsWindows());
                                                 WindowsPrincipal windowsPrincipal = new WindowsPrincipal(
                                                     new WindowsIdentity(userContext.DangerousGetHandle(), context.ProtocolName));
 
@@ -1836,6 +1838,7 @@ namespace System.Net
                 _listenerSession = session;
                 _connectionId = connectionId;
 
+                Debug.Assert(OperatingSystem.IsWindows());
                 // we can call the Unsafe API here, we won't ever call user code
                 _nativeOverlapped = session.RequestQueueBoundHandle.AllocateNativeOverlapped(s_IOCallback, state: this, pinData: null);
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info($"DisconnectAsyncResult: ThreadPoolBoundHandle.AllocateNativeOverlapped({session.RequestQueueBoundHandle}) -> {_nativeOverlapped->GetHashCode()}");
@@ -1874,6 +1877,7 @@ namespace System.Net
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, "_connectionId:" + asyncResult._connectionId);
 
+                Debug.Assert(OperatingSystem.IsWindows());
                 asyncResult._listenerSession.RequestQueueBoundHandle.FreeNativeOverlapped(nativeOverlapped);
                 if (Interlocked.Exchange(ref asyncResult._ownershipState, 2) == 0)
                 {
@@ -1884,6 +1888,7 @@ namespace System.Net
             private static unsafe void WaitCallback(uint errorCode, uint numBytes, NativeOverlapped* nativeOverlapped)
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"errorCode: {errorCode}, numBytes: {numBytes}, nativeOverlapped: {((IntPtr)nativeOverlapped).ToString("x")}");
+                Debug.Assert(OperatingSystem.IsWindows());
                 // take the DisconnectAsyncResult object from the state
                 DisconnectAsyncResult asyncResult = (DisconnectAsyncResult)ThreadPoolBoundHandle.GetNativeOverlappedState(nativeOverlapped)!;
                 IOCompleted(asyncResult, errorCode, numBytes, nativeOverlapped);
@@ -1903,6 +1908,7 @@ namespace System.Net
                 // Clean up the identity. This is for scenarios where identity was not cleaned up before due to
                 // identity caching for unsafe ntlm authentication
 
+                Debug.Assert(OperatingSystem.IsWindows());
                 IDisposable? identity = _authenticatedConnection == null ? null : _authenticatedConnection.Identity as IDisposable;
                 if ((identity != null) &&
                     (_authenticatedConnection!.Identity.AuthenticationType == AuthenticationTypes.NTLM) &&

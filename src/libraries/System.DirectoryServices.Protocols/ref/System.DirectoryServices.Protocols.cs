@@ -469,7 +469,9 @@ namespace System.DirectoryServices.Protocols
     public partial class QuotaControl : System.DirectoryServices.Protocols.DirectoryControl
     {
         public QuotaControl() : base (default(string), default(byte[]), default(bool), default(bool)) { }
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public QuotaControl(System.Security.Principal.SecurityIdentifier querySid) : base (default(string), default(byte[]), default(bool), default(bool)) { }
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public System.Security.Principal.SecurityIdentifier QuerySid { get { throw null; } set { } }
         public override byte[] GetValue() { throw null; }
     }

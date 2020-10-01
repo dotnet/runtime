@@ -410,6 +410,7 @@ namespace Internal.Cryptography.Pal
             sb.AppendLine();
             sb.AppendLine("[Private Key]");
 
+            Debug.Assert(OperatingSystem.IsWindows());
             CspKeyContainerInfo? cspKeyContainerInfo = null;
             try
             {

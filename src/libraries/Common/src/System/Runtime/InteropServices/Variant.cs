@@ -130,7 +130,7 @@ namespace System.Runtime.InteropServices
                 }
                 return;
             }
-
+#pragma warning disable CA1416 // Validate platform compatibility, cannot use any of guard methods
             if ((vt & VarEnum.VT_ARRAY) != 0)
             {
                 Variant vArray;
@@ -224,6 +224,7 @@ namespace System.Runtime.InteropServices
                 default:
                     throw new ArgumentException();
             }
+#pragma warning restore CA1416
         }
 
         /// <summary>
@@ -269,7 +270,9 @@ namespace System.Runtime.InteropServices
                     {
                         fixed (void* pThis = &this)
                         {
+#pragma warning disable CA1416 // Validate platform compatibility, cannot use any of guard methods
                             return Marshal.GetObjectForNativeVariant((System.IntPtr)pThis);
+#pragma warning restore CA1416
                         }
                     }
             }
@@ -645,6 +648,7 @@ namespace System.Runtime.InteropServices
 
         // VT_UNKNOWN
 
+#pragma warning disable CA1416 // Validate platform compatibility, cannot use any of guard methods
         public object? AsUnknown
         {
             get
@@ -698,6 +702,7 @@ namespace System.Runtime.InteropServices
                 }
             }
         }
+#pragma warning restore CA1416
 
         public IntPtr AsByRefVariant
         {

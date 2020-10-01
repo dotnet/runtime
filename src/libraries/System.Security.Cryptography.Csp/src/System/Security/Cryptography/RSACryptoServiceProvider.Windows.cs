@@ -22,6 +22,7 @@ namespace System.Security.Cryptography
         private static volatile CspProviderFlags s_useMachineKeyStore;
         private bool _disposed;
 
+#pragma warning disable CA1416 // Validate platform compatibility
         public RSACryptoServiceProvider()
             : this(0, new CspParameters(CapiHelper.DefaultRsaProviderType,
                                        null,
@@ -39,6 +40,7 @@ namespace System.Security.Cryptography
                   s_useMachineKeyStore), false)
         {
         }
+#pragma warning restore CA1416
 
         [SupportedOSPlatform("windows")]
         public RSACryptoServiceProvider(int dwKeySize, CspParameters? parameters)
@@ -374,6 +376,7 @@ namespace System.Security.Cryptography
         private SafeProvHandle AcquireSafeProviderHandle()
         {
             SafeProvHandle safeProvHandle;
+            Debug.Assert(OperatingSystem.IsWindows());
             CapiHelper.AcquireCsp(new CspParameters(CapiHelper.DefaultRsaProviderType), out safeProvHandle);
             return safeProvHandle;
         }
@@ -397,6 +400,7 @@ namespace System.Security.Cryptography
             }
             else
             {
+                Debug.Assert(OperatingSystem.IsWindows());
                 CapiHelper.ImportKeyBlob(SafeProvHandle, _parameters.Flags, false, keyBlob, out safeKeyHandle);
             }
 
@@ -507,6 +511,7 @@ namespace System.Security.Cryptography
         private byte[] SignHash(byte[] rgbHash, int calgHash)
         {
             Debug.Assert(rgbHash != null);
+            Debug.Assert(OperatingSystem.IsWindows());
 
             return CapiHelper.SignValue(
                 SafeProvHandle,
@@ -714,6 +719,7 @@ namespace System.Security.Cryptography
         {
             get
             {
+                Debug.Assert(OperatingSystem.IsWindows());
                 if (_parameters.KeyNumber == (int)Interop.Advapi32.KeySpec.AT_KEYEXCHANGE)
                 {
                     return "RSA-PKCS1-KeyEx";

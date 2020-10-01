@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Security;
 using System.Security.Cryptography;
@@ -49,6 +50,7 @@ namespace System.Net
             {
                 return;
             }
+            Debug.Assert(OperatingSystem.IsWindows());
             if (_size != 0)
             {
                 _boundHandle!.FreeNativeOverlapped(_pOverlapped);
@@ -162,6 +164,7 @@ namespace System.Net
 
         private static unsafe void WaitCallback(uint errorCode, uint numBytes, NativeOverlapped* nativeOverlapped)
         {
+            Debug.Assert(OperatingSystem.IsWindows());
             ListenerClientCertAsyncResult asyncResult = (ListenerClientCertAsyncResult)ThreadPoolBoundHandle.GetNativeOverlappedState(nativeOverlapped)!;
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"errorCode:[{errorCode}] numBytes:[{numBytes}] nativeOverlapped:[{((long)nativeOverlapped)}]");
             IOCompleted(asyncResult, errorCode, numBytes);
@@ -173,6 +176,7 @@ namespace System.Net
             if (_pOverlapped != null)
             {
                 _memoryBlob = null;
+                Debug.Assert(OperatingSystem.IsWindows());
                 _boundHandle!.FreeNativeOverlapped(_pOverlapped);
                 _pOverlapped = null;
                 _boundHandle = null;
@@ -185,6 +189,7 @@ namespace System.Net
         {
             if (_pOverlapped != null && !Environment.HasShutdownStarted)
             {
+                Debug.Assert(OperatingSystem.IsWindows());
                 _boundHandle!.FreeNativeOverlapped(_pOverlapped);
                 _pOverlapped = null;  // Must do this in case application calls GC.ReRegisterForFinalize().
                 _boundHandle = null;

@@ -146,6 +146,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
                 Marshal.ThrowExceptionForHR(ComHresults.E_FAIL);
             }
 
+#pragma warning disable CA1416 // Validate platform compatibility, cannot use any of guard methods
             ComTypes.ITypeInfo typeInfo = null;
             try
             {
@@ -155,6 +156,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             {
                 Marshal.Release(typeInfoPtr);
             }
+#pragma warning restore CA1416
 
             return typeInfo;
         }
@@ -236,6 +238,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             return variant;
         }
 
+#pragma warning disable CA1416 // Validate platform compatibility, cannot use any of guard methods
         internal static void InitVariantForObject(object obj, ref Variant variant)
         {
             Debug.Assert(obj != null);
@@ -258,6 +261,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             IntPtr ptr = UnsafeMethods.ConvertVariantByrefToPtr(ref variant);
             return Marshal.GetObjectForNativeVariant(ptr);
         }
+#pragma warning restore CA1416
 
         // This method is intended for use through reflection and should only be used directly by IUnknownReleaseNotZero
         public static unsafe int IUnknownRelease(IntPtr interfacePointer)

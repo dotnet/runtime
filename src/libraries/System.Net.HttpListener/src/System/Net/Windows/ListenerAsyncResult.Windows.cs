@@ -96,6 +96,7 @@ namespace System.Net
 
         private static unsafe void WaitCallback(uint errorCode, uint numBytes, NativeOverlapped* nativeOverlapped)
         {
+            Debug.Assert(OperatingSystem.IsWindows());
             ListenerAsyncResult asyncResult = (ListenerAsyncResult)ThreadPoolBoundHandle.GetNativeOverlappedState(nativeOverlapped)!;
             IOCompleted(asyncResult, errorCode, numBytes);
         }

@@ -28,6 +28,7 @@ namespace System.Diagnostics
 
         private unsafe bool StartWithShellExecuteEx(ProcessStartInfo startInfo)
         {
+            Debug.Assert(OperatingSystem.IsWindows());
             if (!string.IsNullOrEmpty(startInfo.UserName) || startInfo.Password != null)
                 throw new InvalidOperationException(SR.CantStartAsUser);
 
@@ -166,6 +167,7 @@ namespace System.Diagnostics
                 {
                     ThreadStart threadStart = new ThreadStart(ShellExecuteFunction);
                     Thread executionThread = new Thread(threadStart) { IsBackground = true };
+                    Debug.Assert(OperatingSystem.IsWindows());
                     executionThread.SetApartmentState(ApartmentState.STA);
                     executionThread.Start();
                     executionThread.Join();

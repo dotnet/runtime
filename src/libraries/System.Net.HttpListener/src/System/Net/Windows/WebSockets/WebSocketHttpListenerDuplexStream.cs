@@ -908,6 +908,7 @@ namespace System.Net.WebSockets
                 DebugRefCountAllocNativeOverlapped();
 #endif
                 _boundHandle = boundHandle;
+                Debug.Assert(OperatingSystem.IsWindows());
                 _ptrNativeOverlapped = boundHandle.AllocateNativeOverlapped(CompletionPortCallback, null, null);
             }
 
@@ -922,6 +923,7 @@ namespace System.Net.WebSockets
 #if DEBUG
                         DebugRefCountReleaseNativeOverlapped();
 #endif
+                        Debug.Assert(OperatingSystem.IsWindows());
                         _boundHandle!.FreeNativeOverlapped(_ptrNativeOverlapped);
                         _ptrNativeOverlapped = null;
                     }

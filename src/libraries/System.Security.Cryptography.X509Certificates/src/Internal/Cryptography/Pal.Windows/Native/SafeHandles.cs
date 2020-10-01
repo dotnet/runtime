@@ -169,6 +169,7 @@ namespace Internal.Cryptography.Pal.Native
 
                         try
                         {
+                            Debug.Assert(OperatingSystem.IsWindows());
                             using (CngKey cngKey = CngKey.Open(keyContainerName, new CngProvider(providerName)))
                             {
                                 cngKey.Delete();

@@ -37,6 +37,7 @@ namespace System.Net
 
         private Interop.HttpApi.HTTP_REQUEST* Allocate(ThreadPoolBoundHandle boundHandle, uint size)
         {
+            Debug.Assert(OperatingSystem.IsWindows());
             uint newSize = size != 0 ? size : RequestBuffer == IntPtr.Zero ? 4096 : Size;
             if (_nativeOverlapped != null)
             {
@@ -75,6 +76,7 @@ namespace System.Net
 
                 NativeOverlapped* nativeOverlapped = _nativeOverlapped;
                 _nativeOverlapped = null;
+                Debug.Assert(OperatingSystem.IsWindows());
                 _boundHandle!.FreeNativeOverlapped(nativeOverlapped);
             }
         }
@@ -89,6 +91,7 @@ namespace System.Net
 #if DEBUG
                     DebugRefCountReleaseNativeOverlapped();
 #endif
+                    Debug.Assert(OperatingSystem.IsWindows());
                     _boundHandle!.FreeNativeOverlapped(_nativeOverlapped);
                 }
             }

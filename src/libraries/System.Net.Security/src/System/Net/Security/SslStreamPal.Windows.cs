@@ -506,6 +506,7 @@ namespace System.Net.Security
                 //
                 // For app-compat we want to ensure the credential are accessed under >>process<< account.
                 //
+                Debug.Assert(OperatingSystem.IsWindows());
                 return WindowsIdentity.RunImpersonated<SafeFreeCredentials>(SafeAccessTokenHandle.InvalidHandle, () =>
                 {
                     return SSPIWrapper.AcquireCredentialsHandle(GlobalSSPI.SSPISecureChannel, SecurityPackage, credUsage, secureCredential);
@@ -526,6 +527,7 @@ namespace System.Net.Security
                 //
                 // For app-compat we want to ensure the credential are accessed under >>process<< account.
                 //
+                Debug.Assert(OperatingSystem.IsWindows());
                 return WindowsIdentity.RunImpersonated<SafeFreeCredentials>(SafeAccessTokenHandle.InvalidHandle, () =>
                 {
                     return SSPIWrapper.AcquireCredentialsHandle(GlobalSSPI.SSPISecureChannel, SecurityPackage, credUsage, secureCredential);

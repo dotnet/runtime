@@ -215,7 +215,9 @@ namespace System.Runtime.InteropServices
             // convert result to VARIANT
             if (pVarResult != IntPtr.Zero)
             {
+#pragma warning disable CA1416 // Validate platform compatibility, cannot use any of guard methods
                 Marshal.GetNativeVariantForObject(result, pVarResult);
+#pragma warning restore CA1416
             }
 
             // Now we need to marshal all the byrefs back
@@ -237,7 +239,9 @@ namespace System.Runtime.InteropServices
             ppv = IntPtr.Zero;
             if (iid == _iidSourceItf || iid == typeof(IDispatch).GUID)
             {
+#pragma warning disable CA1416 // Validate platform compatibility, cannot use any of guard methods
                 ppv = Marshal.GetComInterfaceForObject(this, typeof(IDispatch), CustomQueryInterfaceMode.Ignore);
+#pragma warning restore CA1416
                 return CustomQueryInterfaceResult.Handled;
             }
 
@@ -267,7 +271,9 @@ namespace System.Runtime.InteropServices
             try
             {
                 _connectionPoint.Unadvise(_cookie);
+#pragma warning disable CA1416 // Validate platform compatibility, cannot use any of guard methods
                 Marshal.ReleaseComObject(_connectionPoint);
+#pragma warning restore CA1416
             }
             catch
             {

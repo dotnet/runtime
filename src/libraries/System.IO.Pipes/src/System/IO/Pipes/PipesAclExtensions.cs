@@ -2,10 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.Runtime.Versioning;
 using System.Security.AccessControl;
 
 namespace System.IO.Pipes
 {
+    [SupportedOSPlatform("windows")]
     public static class PipesAclExtensions
     {
         public static PipeSecurity GetAccessControl(this PipeStream stream)

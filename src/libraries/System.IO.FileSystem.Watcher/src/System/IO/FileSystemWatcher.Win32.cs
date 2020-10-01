@@ -51,6 +51,7 @@ namespace System.IO
                 int session = Interlocked.Increment(ref _currentSession);
                 byte[] buffer = AllocateBuffer();
 
+                Debug.Assert(OperatingSystem.IsWindows());
                 // Store all state, including a preallocated overlapped, into the state object that'll be
                 // passed from iteration to iteration during the lifetime of the operation.  The buffer will be pinned
                 // from now until the end of the operation.
@@ -59,6 +60,7 @@ namespace System.IO
                 {
                     state.PreAllocatedOverlapped = new PreAllocatedOverlapped((errorCode, numBytes, overlappedPointer) =>
                     {
+                        Debug.Assert(OperatingSystem.IsWindows());
                         AsyncReadState state = (AsyncReadState)ThreadPoolBoundHandle.GetNativeOverlappedState(overlappedPointer)!;
                         state.ThreadPoolBinding.FreeNativeOverlapped(overlappedPointer);
                         if (state.WeakWatcher.TryGetTarget(out FileSystemWatcher? watcher))
@@ -153,6 +155,7 @@ namespace System.IO
                 if (!_enabled || IsHandleInvalid(state.DirectoryHandle))
                     return;
 
+                Debug.Assert(OperatingSystem.IsWindows());
                 // Get the overlapped pointer to use for this iteration.
                 overlappedPointer = state.ThreadPoolBinding.AllocateNativeOverlapped(state.PreAllocatedOverlapped);
                 continueExecuting = Interop.Kernel32.ReadDirectoryChangesW(

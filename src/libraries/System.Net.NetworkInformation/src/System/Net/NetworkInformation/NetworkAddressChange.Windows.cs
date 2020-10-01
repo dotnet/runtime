@@ -4,6 +4,7 @@
 using Microsoft.Win32.SafeHandles;
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Net.Sockets;
 using System.Threading;
 
@@ -229,6 +230,8 @@ namespace System.Net.NetworkInformation
 
                     if (!s_isPending)
                     {
+                        Debug.Assert(OperatingSystem.IsWindows());
+
                         if (Socket.OSSupportsIPv4 && (startIPOptions & StartIPOptions.StartIPv4) != 0)
                         {
                             ThreadPool.RegisterWaitForSingleObject(
