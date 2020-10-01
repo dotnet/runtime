@@ -3713,7 +3713,7 @@ namespace System.Diagnostics.Tracing
             catch { }      // If we fail during last chance logging, well, we have to give up....
         }
 
-        private EventSourceSettings ValidateSettings(EventSourceSettings settings)
+        private static EventSourceSettings ValidateSettings(EventSourceSettings settings)
         {
             const EventSourceSettings evtFormatMask = EventSourceSettings.EtwManifestEventFormat |
                                 EventSourceSettings.EtwSelfDescribingEventFormat;
