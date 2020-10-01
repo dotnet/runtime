@@ -6,7 +6,6 @@
 #define __MONO_MATH_H__
 
 #include <math.h>
-#include <glib.h>
 #include <mono/utils/mono-publib.h>
 
 // Instead of isfinite, isinf, isnan, etc.,
@@ -81,14 +80,14 @@ inline double mono_trunc (double a)                 { return mono_trunc_double (
 
 #endif
 
-static inline gdouble
-mono_round_to_even (gdouble x)
+static inline double
+mono_round_to_even (double x)
 {
-	gdouble floor_tmp;
+	double floor_tmp;
 
 	/* If the number has no fractional part do nothing This shortcut is necessary
 	 * to workaround precision loss in borderline cases on some platforms */
-	if (x == (gdouble)(gint64) x)
+	if (x == (double)(int64_t) x)
 		return x;
 
 	floor_tmp = floor (x + 0.5);
