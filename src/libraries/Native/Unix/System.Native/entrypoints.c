@@ -107,6 +107,8 @@ FCFuncStart(gEmbedded_Sys)
     QCFuncElement("GetMaximumAddressSize", SystemNative_GetMaximumAddressSize)
     QCFuncElement("GetNameInfo", SystemNative_GetNameInfo)
     QCFuncElement("GetNetworkInterfaces", SystemNative_GetNetworkInterfaces)
+    // trimmed
+    QCFuncElement("GetCryptographicallySecureRandomBytes", SystemNative_GetCryptographicallySecureRandomBytes)
     QCFuncElement("GetNonCryptographicallySecureRandomBytes", SystemNative_GetNonCryptographicallySecureRandomBytes)
     QCFuncElement("GetOSArchitecture", SystemNative_GetOSArchitecture)
     QCFuncElement("GetPeerID", SystemNative_GetPeerID)
@@ -238,21 +240,26 @@ FCFuncStart(gEmbedded_Sys)
     QCFuncElement("GetSid", SystemNative_GetSid)
 
     // OSX (bsd?) only
-    QCFuncElement("GetTcpGlobalStatistics", "SystemNative_GetTcpGlobalStatistics")
-    QCFuncElement("GetIPv4GlobalStatistics", "SystemNative_GetIPv4GlobalStatistics")
-    QCFuncElement("GetUdpGlobalStatistics", "SystemNative_GetUdpGlobalStatistics")
-    QCFuncElement("GetIcmpv4GlobalStatistics", "SystemNative_GetIcmpv4GlobalStatistics")
-    QCFuncElement("GetIcmpv6GlobalStatistics", "SystemNative_GetIcmpv6GlobalStatistics")
-    QCFuncElement("GetEstimatedTcpConnectionCount", "SystemNative_GetEstimatedTcpConnectionCount")
-    QCFuncElement("GetActiveTcpConnectionInfos", "SystemNative_GetActiveTcpConnectionInfos")
-    QCFuncElement("GetEstimatedUdpListenerCount", "SystemNative_GetEstimatedUdpListenerCount")
-    QCFuncElement("GetActiveUdpListeners", "SystemNative_GetActiveUdpListeners")
-    QCFuncElement("GetNativeIPInterfaceStatistics", "SystemNative_GetNativeIPInterfaceStatistics")
-    QCFuncElement("SystemNative_GetNumRoutes", "SystemNative_GetNumRoutes")
+    QCFuncElement("GetTcpGlobalStatistics", SystemNative_GetTcpGlobalStatistics)
+    QCFuncElement("GetIPv4GlobalStatistics", SystemNative_GetIPv4GlobalStatistics)
+    QCFuncElement("GetUdpGlobalStatistics", SystemNative_GetUdpGlobalStatistics)
+    QCFuncElement("GetIcmpv4GlobalStatistics", SystemNative_GetIcmpv4GlobalStatistics)
+    QCFuncElement("GetIcmpv6GlobalStatistics", SystemNative_GetIcmpv6GlobalStatistics)
+    QCFuncElement("GetEstimatedTcpConnectionCount", SystemNative_GetEstimatedTcpConnectionCount)
+    QCFuncElement("GetActiveTcpConnectionInfos", SystemNative_GetActiveTcpConnectionInfos)
+    QCFuncElement("GetEstimatedUdpListenerCount", SystemNative_GetEstimatedUdpListenerCount)
+    QCFuncElement("GetActiveUdpListeners", SystemNative_GetActiveUdpListeners)
+    QCFuncElement("GetNativeIPInterfaceStatistics", SystemNative_GetNativeIPInterfaceStatistics)
+    QCFuncElement("SystemNative_GetNumRoutes", SystemNative_GetNumRoutes)
 
-    // more trimmed
-    QCFuncElement("GetNonCryptographicallySecureRandomBytes", "SystemNative_GetNonCryptographicallySecureRandomBytes")
-    QCFuncElement("GetCryptographicallySecureRandomBytes", "SystemNative_GetCryptographicallySecureRandomBytes")
-    QCFuncElement("Sync", "SystemNative_Sync")
+    // trimmed
+    QCFuncElement("Sync", SystemNative_Sync)
+
+    // trimmed
+    QCFuncElement("GetRLimit", SystemNative_GetRLimit)
+
+    // trimmed
+    QCFuncElement("SetRLimit", SystemNative_SetRLimit)
+
 FCFuncEnd()
 
