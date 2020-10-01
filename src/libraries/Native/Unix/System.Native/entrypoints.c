@@ -240,6 +240,7 @@ FCFuncStart(gEmbedded_Sys)
     QCFuncElement("GetSid", SystemNative_GetSid)
 
     // OSX (bsd?) only
+#if HAVE_NETINET_TCP_VAR_H
     QCFuncElement("GetTcpGlobalStatistics", SystemNative_GetTcpGlobalStatistics)
     QCFuncElement("GetIPv4GlobalStatistics", SystemNative_GetIPv4GlobalStatistics)
     QCFuncElement("GetUdpGlobalStatistics", SystemNative_GetUdpGlobalStatistics)
@@ -251,6 +252,7 @@ FCFuncStart(gEmbedded_Sys)
     QCFuncElement("GetActiveUdpListeners", SystemNative_GetActiveUdpListeners)
     QCFuncElement("GetNativeIPInterfaceStatistics", SystemNative_GetNativeIPInterfaceStatistics)
     QCFuncElement("SystemNative_GetNumRoutes", SystemNative_GetNumRoutes)
+#endif
 
     // trimmed
     QCFuncElement("Sync", SystemNative_Sync)
