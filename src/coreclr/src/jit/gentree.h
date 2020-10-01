@@ -3596,7 +3596,8 @@ struct GenTreeColon : public GenTreeOp
     }
 #endif
 
-    GenTreeColon(var_types typ, GenTree* thenNode, GenTree* elseNode, bool elseIsCold = false) : GenTreeOp(GT_COLON, typ, elseNode, thenNode)
+    GenTreeColon(var_types typ, GenTree* thenNode, GenTree* elseNode, bool elseIsCold = false)
+        : GenTreeOp(GT_COLON, typ, elseNode, thenNode)
     {
         gtElseIsCold = elseIsCold;
     }
