@@ -23,6 +23,7 @@
     <Compile Include="TermInfo.cs" />
     <Compile Include="RedirectedStream.cs" />
     <Compile Include="ReadKey.cs" />
+    <Compile Include="ReadKey2.cs" Condition="'$(TargetsWindows)' == 'true'" />
     <Compile Include="$(CommonTestPath)System\IO\InterceptStreamWriter.cs"
              Link="Common\System\IO\InterceptStreamWriter.cs" />
     <Compile Include="$(CommonTestPath)System\ShouldNotBeInvokedException.cs"
@@ -36,6 +37,12 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="ConsoleEncoding.Windows.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FileTypes.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetFileType_IntPtr.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetConsoleMode.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetStdHandle.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.HandleTypes.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' != 'true'">
     <Compile Include="CancelKeyPress.Unix.cs" />
@@ -44,13 +51,5 @@
              Link="Common\Interop\Windows\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Fcntl.cs"
              Link="Common\Interop\Unix\System.Native\Interop.Fcntl.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FileTypes.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetFileType_IntPtr.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetConsoleMode.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetStdHandle.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.HandleTypes.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs" />
   </ItemGroup>
 </Project>
