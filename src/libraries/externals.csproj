@@ -25,6 +25,8 @@
     <PackageReference Include="Microsoft.TestPlatform.CLI"
                       Version="$(MicrosoftTestPlatformCLIVersion)"
                       GeneratePathProperty="true"
+                      ExcludeAssets="all"
+                      PrivateAssets="all"
                       Condition="'$(ContinuousIntegrationBuild)' == 'true'" />
   </ItemGroup>
 
@@ -67,7 +69,7 @@
     </ItemGroup>
 
     <Copy SourceFiles="@(TestPlatformContent)"
-          DestinationFolder="$(TestHostRootPath)\sdk\$(ProductVersion)\"
+          DestinationFiles="@(TestPlatformContent->'$(TestHostRootPath)\sdk\$(ProductVersion)\%(RecursiveDir)%(Filename)%(Extension)')"
           SkipUnchangedFiles="true"
           UseHardlinksIfPossible="$(UseHardlink)"
           Condition="'@(TestPlatformContent)' != ''" />
