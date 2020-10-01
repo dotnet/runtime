@@ -565,7 +565,7 @@ namespace System.Net.Sockets
         {
             if (_operating == InProgress && _completedOperation == SocketAsyncOperation.Connect)
             {
-                var multipleConnect = _multipleConnect;
+                MultipleConnectAsync? multipleConnect = _multipleConnect;
                 if (multipleConnect != null)
                 {
                     // If a multiple connect is in progress, abort it.
