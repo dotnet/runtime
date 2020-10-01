@@ -15,7 +15,7 @@ namespace Mono.Linker
 	[System.AttributeUsage (System.AttributeTargets.Constructor | System.AttributeTargets.Field | System.AttributeTargets.Method, AllowMultiple = true, Inherited = false)]
 	internal class DynamicDependency : Attribute
 	{
-		public CustomAttribute? OriginalAttribute { get; set; }
+		public CustomAttribute? OriginalAttribute { get; private set; }
 		public DynamicDependency (string memberSignature)
 		{
 			MemberSignature = memberSignature;
@@ -86,40 +86,28 @@ namespace Mono.Linker
 			if (args.Count < 1 || args.Count > 3)
 				return null;
 
-			// First argument is string or DynamicallyAccessedMemberTypes
-			string? memberSignature = args[0].Value as string;
-			if (args.Count == 1)
-				return memberSignature == null ? null : new DynamicDependency (memberSignature);
-			DynamicallyAccessedMemberTypes? memberTypes = null;
-			if (memberSignature == null) {
-				var argType = args[0].Type;
-				if (!argType.IsTypeOf<DynamicallyAccessedMemberTypes> ())
-					return null;
-				try {
-					memberTypes = (DynamicallyAccessedMemberTypes) args[0].Value;
-				} catch (InvalidCastException) { }
-				if (memberTypes == null)
-					return null;
-			}
+			DynamicDependency? result = args[0].Value switch
+			{
+				string stringMemberSignature => args.Count switch
+				{
+					1 => new DynamicDependency (stringMemberSignature),
+					2 when args[1].Value is TypeReference type => new DynamicDependency (stringMemberSignature, type),
+					3 when args[1].Value is string typeName && args[2].Value is string assemblyName => new DynamicDependency (stringMemberSignature, typeName, assemblyName),
+					_ => null,
+				},
+				int memberTypes => args.Count switch
+				{
+					2 when args[1].Value is TypeReference type => new DynamicDependency ((DynamicallyAccessedMemberTypes) memberTypes, type),
+					3 when args[1].Value is string typeName && args[2].Value is string assemblyName => new DynamicDependency ((DynamicallyAccessedMemberTypes) memberTypes, typeName, assemblyName),
+					_ => null,
+				},
+				_ => null,
+			};
 
-			// Second argument is Type for ctors with two args, string for ctors with three args
-			if (args.Count == 2) {
-				if (!(args[1].Value is TypeReference type))
-					return null;
-				return memberSignature == null ? new DynamicDependency (memberTypes!.Value, type) : new DynamicDependency (memberSignature, type);
-			}
-			Debug.Assert (args.Count == 3);
-			if (!(args[1].Value is string typeName))
-				return null;
+			if (result != null)
+				result.OriginalAttribute = ca;
 
-			// Third argument is assembly name
-			if (!(args[2].Value is string assemblyName))
-				return null;
-
-			var dynamicDependency = memberSignature == null ? new DynamicDependency (memberTypes!.Value, typeName, assemblyName) : new DynamicDependency (memberSignature, typeName, assemblyName);
-			dynamicDependency.OriginalAttribute = ca;
-
-			return dynamicDependency;
+			return result;
 		}
 
 		public static bool ShouldProcess (LinkContext context, CustomAttribute ca)
