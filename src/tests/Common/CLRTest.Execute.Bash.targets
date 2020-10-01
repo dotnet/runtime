@@ -325,6 +325,7 @@ CLRTestExitCode=$?
       <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And $(TargetOS) == 'Android' ">
       <![CDATA[
 # run Android app
+cd AndroidApp
 AdbTool=$ANDROID_SDK_ROOT/platform-tools/adb
 $AdbTool kill-server
 $AdbTool start-server

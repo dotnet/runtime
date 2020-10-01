@@ -131,16 +131,12 @@
 
     <ItemGroup Condition="'$(TargetOS)' == 'Android'">
         <RunTimeDependencyCopyLocal
-          Include="@(RuntimeFiles)"
+          Include="$(ArtifactsBinDir)microsoft.netcore.app.runtime.android-$(TargetArchitecture)\$(Configuration)\runtimes\android-$(TargetArchitecture)\native\**"
           TargetDir="runtimepack/native/"/>
 
         <RunTimeDependencyCopyLocal
-          Include="@(LibrariesRuntimeFiles)"
-          TargetDir="runtimepack/native/"/>
-
-        <RunTimeDependencyCopyLocal
-          Include="$(ArtifactsBinDir)microsoft.netcore.app.runtime.android-$(TargetArchitecture)\$(Configuration)\runtimes\android-$(TargetArchitecture)\native\include\mono-2.0\**"
-          TargetDir="monoRuntimeHeaders/"/>
+          Include="$(ArtifactsBinDir)microsoft.netcore.app.runtime.android-$(TargetArchitecture)\$(Configuration)\runtimes\android-$(TargetArchitecture)\lib\**"
+          TargetDir="runtimepack/lib/"/>
 
        <RunTimeDependencyCopyLocal
           Include="$(ArtifactsDir)\TargetingPack\**"

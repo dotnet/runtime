@@ -17,26 +17,29 @@
       <AndroidAbi Condition="'$(Platform)'=='arm'">armeabi-v7a</AndroidAbi>
       <AndroidAbi Condition="'$(Platform)'=='x64'">x86_64</AndroidAbi>
       <AndroidAbi Condition="'$(AndroidAbi)'==''">$(Platform)</AndroidAbi>
-      <ApkDir>$(TestBinDir)\apk</ApkDir>
+      <OutputDir>$(TestBinDir)\AndroidApp</OutputDir>
+      <ApkDir>$(OutputDir)\apk</ApkDir>
       <StripDebugSymbols>False</StripDebugSymbols>
       <StripDebugSymbols Condition="'$(Configuration)' == 'Release'">True</StripDebugSymbols>
     </PropertyGroup>
 
+    <MakeDir Directories="$(OutputDir)"/>
+
     <ItemGroup>
-      <AssemblySearchPaths Include="bin"/>
-      <AssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackDir)native"/>
+      <AssemblySearchPaths Include="$(TestBinDir)"/>
+      <AssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackDir)/native"/>
+      <AssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackDir)/lib/$(NetCoreAppCurrent)"/>
     </ItemGroup>
 
     <RemoveDir Directories="$(ApkDir)" />
 
-    <!--ProjectName="$([System.IO.Path]::GetFileNameWithoutExtension('$(TestAssembly)'))" -->
     <AndroidAppBuilderTask
         Abi="$(AndroidAbi)"
-        MonoRuntimeHeaders="$(CORE_ROOT)/monoRuntimeHeaders"
+        MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackDir)/native/include/mono-2.0"
         MainLibraryFileName="$(TestAssembly)"
         AssemblySearchPaths="@(AssemblySearchPaths)"
         StripDebugSymbols="$(StripDebugSymbols)"
-        SourceDir="$(TestBinDir)"
+        SourceDir="$(OutputDir)"
         OutputDir="$(ApkDir)">
         <Output TaskParameter="ApkBundlePath" PropertyName="ApkBundlePath" />
         <Output TaskParameter="ApkPackageId" PropertyName="ApkPackageId" />
