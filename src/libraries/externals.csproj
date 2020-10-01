@@ -22,6 +22,10 @@
                       Version="$(MicrosoftNETCoreDotNetHostVersion)" />
     <PackageReference Include="Microsoft.NETCore.DotNetHostPolicy"
                       Version="$(MicrosoftNETCoreDotNetHostPolicyVersion)" />
+    <PackageReference Include="Microsoft.TestPlatform.CLI"
+                      Version="$(MicrosoftTestPlatformCLIVersion)"
+                      GeneratePathProperty="true"
+                      Condition="'$(ContinuousIntegrationBuild)' == 'true'" />
   </ItemGroup>
 
   <!-- Setup the testing shared framework host -->
@@ -56,6 +60,17 @@
           UseHardlinksIfPossible="$(UseHardlink)" />
 
     <Exec Command="chmod +x $(TestHostRootPath)%(DotnetExe.Filename)%(DotnetExe.Extension)" Condition="'$(TargetOS)' != 'Windows_NT' and '$(OS)' != 'Windows_NT'"/>
+
+    <!-- Binplacing VSTest into the testhost to not depend on the full SDK during CI testing. -->
+    <ItemGroup Condition="'$(PkgMicrosoft_TestPlatform_CLI)' != ''">
+      <TestPlatformContent Include="$(PkgMicrosoft_TestPlatform_CLI)\contentFiles\any\netcoreapp2.1\**\*" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(TestPlatformContent)"
+          DestinationFolder="$(TestHostRootPath)\sdk\$(ProductVersion)\"
+          SkipUnchangedFiles="true"
+          UseHardlinksIfPossible="$(UseHardlink)"
+          Condition="'@(TestPlatformContent)' != ''" />
   </Target>
 
   <Target Name="OverrideRuntimeCoreCLR"

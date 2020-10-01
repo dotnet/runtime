@@ -57,7 +57,7 @@
     <FailOnTestFailure Condition="'$(WaitForWorkItemCompletion)' != ''">$(WaitForWorkItemCompletion)</FailOnTestFailure>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetsMobile)' != 'true'">
+  <PropertyGroup Condition="'$(TestPackages)' == 'true'">
     <!-- Use Helix feature to include dotnet CLI for every workitem and add it to the path -->
     <IncludeDotNetCli>true</IncludeDotNetCli>
     <DotNetCliPackageType>sdk</DotNetCliPackageType>
@@ -86,10 +86,11 @@
   <Choose>
     <When Condition="'$(TestPackages)' != 'true'">
       <PropertyGroup Condition="'$(TargetsMobile)' != 'true'">
-        <HelixCommand Condition="'$(TargetsWindows)' == 'true'">dotnet test %HELIX_WORKITEM_FRIENDLYNAME%.dll --settings .runsettings</HelixCommand>
-        <HelixCommand Condition="'$(TargetsWindows)' != 'true'">dotnet test $HELIX_WORKITEM_FRIENDLYNAME.dll --settings .runsettings</HelixCommand>
+        <RollforwardExecArgument>exec --rollforward LatestMajor </RollforwardExecArgument>
+        <HelixCommand Condition="'$(TargetsWindows)' == 'true'">%HELIX_CORRELATION_PAYLOAD%\dotnet.exe $(RollforwardExecArgument) %HELIX_CORRELATION_PAYLOAD%\sdk\$(ProductVersion)\vstest.console.dll %HELIX_WORKITEM_FRIENDLYNAME%.dll --Settings:.runsettings</HelixCommand>
+        <HelixCommand Condition="'$(TargetsWindows)' != 'true'">$HELIX_CORRELATION_PAYLOAD/dotnet $(RollforwardExecArgument) $HELIX_CORRELATION_PAYLOAD/sdk/$(ProductVersion)/vstest.console.dll $HELIX_WORKITEM_FRIENDLYNAME.dll --Settings:.runsettings</HelixCommand>
         <!-- arm64 as an explicit arch is currently not supported by vstest: https://github.com/microsoft/vstest/issues/2566. -->
-        <HelixCommand Condition="'$(TargetArchitecture)' != 'arm64'">$(HelixCommand) --platform $(TargetArchitecture)</HelixCommand>
+        <HelixCommand Condition="'$(TargetArchitecture)' != 'arm64'">$(HelixCommand) --Platform:$(TargetArchitecture)</HelixCommand>
         <!-- Include the payload and link to our custom dotnet host. -->
         <HelixCommand Condition="'$(TargetsWindows)' == 'true' and '$(IncludeHelixCorrelationPayload)' == 'true'">$(HelixCommand) -- RunConfiguration.DotNetHostPath="%HELIX_CORRELATION_PAYLOAD%\dotnet.exe"</HelixCommand>
         <HelixCommand Condition="'$(TargetsWindows)' != 'true' and '$(IncludeHelixCorrelationPayload)' == 'true'">$(HelixCommand) -- RunConfiguration.DotNetHostPath="$HELIX_CORRELATION_PAYLOAD/dotnet"</HelixCommand>
