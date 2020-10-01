@@ -268,7 +268,7 @@ void SystemNative_ConfigureTerminalForChildProcess(int32_t childUsesTerminal)
             g_hasCurrentTermios = false;
         }
 
-        // Avoid configuring the terminal: only change terminal settings when our process has touched them.
+        // Avoid configuring the terminal: only change terminal settings when our process has changed them.
         if (g_terminalConfigured)
         {
             ConfigureTerminal(g_signalForBreak, /* forChild */ childUsesTerminal, /* minChars */ 1, /* decisecondsTimeout */ 0, /* blockIfBackground */ false);
