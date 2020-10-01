@@ -68,7 +68,7 @@ if (typeof crypto === 'undefined') {
 	var crypto = {
 		getRandomValues: function (buffer) {
 			for (var i = 0; i < buffer.length; i++)
-				buffer[i] = (Math.random()*256)|0;
+				buffer [i] = (Math.random () * 256) | 0;
 		}
 	}
 }
