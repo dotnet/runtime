@@ -108,7 +108,7 @@ namespace AppHost.Bundle.Tests
         {
             var fixture = sharedTestState.TestFixture.Copy();
             Bundler bundler = BundleHelper.BundleApp(fixture, out string singleFile);
-            string extractionDir = BundleHelper.GetExtractionDir(fixture, bundler).FullName;
+            string extractionDir = BundleHelper.GetExtractionDir(fixture, bundler).Name;
             string bundleDir = BundleHelper.GetBundleDir(fixture).FullName;
 
             // If we don't extract anything to disk, the extraction dir shouldn't
@@ -127,7 +127,7 @@ namespace AppHost.Bundle.Tests
         {
             var fixture = sharedTestState.TestFixture.Copy();
             Bundler bundler = BundleHelper.BundleApp(fixture, out string singleFile, BundleOptions.BundleNativeBinaries);
-            string extractionDir = BundleHelper.GetExtractionDir(fixture, bundler).FullName;
+            string extractionDir = BundleHelper.GetExtractionDir(fixture, bundler).Name;
             string bundleDir = BundleHelper.GetBundleDir(fixture).FullName;
 
             Command.Create(singleFile, "native_search_dirs")
