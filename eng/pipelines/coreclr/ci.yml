@@ -25,6 +25,7 @@ trigger:
     - eng/pipelines/runtime.yml
 
 jobs:
+
 #
 # Checkout repository
 #
