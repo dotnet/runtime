@@ -51,11 +51,6 @@ namespace Microsoft.Extensions.Logging.Console
                 return;
             }
             string computedAnsiString = sb.ToString();
-            sb.Clear();
-            if (sb.Capacity > 1024)
-            {
-                sb.Capacity = 1024;
-            }
             _queueProcessor.EnqueueMessage(new LogMessageEntry(computedAnsiString, logAsError: logLevel >= Options.LogToStandardErrorThreshold));
         }
 
