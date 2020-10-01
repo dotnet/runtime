@@ -112,10 +112,10 @@ namespace System
             throw new IOException(errorInfo.GetErrorMessage(), errorInfo.RawErrno);
         }
 
-        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Avoid inlining PInvoke frame into the hot path
         private static int GetProcessId() => Interop.Sys.GetPid();
 
-        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Avoid inlining PInvoke frame into the hot path
         private static string? GetProcessPath() => Interop.Sys.GetProcessPath();
     }
 }

@@ -872,10 +872,7 @@ int32_t SystemNative_SchedGetAffinity(int32_t pid, intptr_t* mask)
 // The caller is responsible for releasing the buffer. Returns null on error.
 char* SystemNative_GetProcessPath()
 {
-    // Get the path to the executable for the current process using
-    // platform-specific means.
 #if defined(__APPLE__)
-    // On Mac, we ask the OS for the absolute path to the entrypoint executable
     uint32_t path_length = 0;
     if (_NSGetExecutablePath(NULL, &path_length) != -1)
     {
@@ -915,9 +912,9 @@ char* SystemNative_GetProcessPath()
 #else
 
 #ifdef __linux__
-#define symlinkEntrypointExecutable "/proc/self/exe"
+    const char* symlinkEntrypointExecutable = "/proc/self/exe";
 #else
-#define symlinkEntrypointExecutable "/proc/curproc/exe"
+    const char* symlinkEntrypointExecutable = "/proc/curproc/exe";
 #endif
 
     // Resolve the symlink to the executable from /proc
