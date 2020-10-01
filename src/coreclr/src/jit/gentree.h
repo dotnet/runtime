@@ -3579,6 +3579,8 @@ struct GenTreeArgList : public GenTreeOp
 // TODO-Cleanup: If we could get these accessors used everywhere, then we could switch them.
 struct GenTreeColon : public GenTreeOp
 {
+    bool gtElseIsCold;
+
     GenTree*& ThenNode()
     {
         return gtOp2;
@@ -3594,8 +3596,9 @@ struct GenTreeColon : public GenTreeOp
     }
 #endif
 
-    GenTreeColon(var_types typ, GenTree* thenNode, GenTree* elseNode) : GenTreeOp(GT_COLON, typ, elseNode, thenNode)
+    GenTreeColon(var_types typ, GenTree* thenNode, GenTree* elseNode, bool elseIsCold = false) : GenTreeOp(GT_COLON, typ, elseNode, thenNode)
     {
+        gtElseIsCold = elseIsCold;
     }
 };
 

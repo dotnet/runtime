@@ -17220,9 +17220,10 @@ void Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
 #endif // DEBUG
 
     // Retrieve the operands.
-    GenTree* condExpr  = qmark->gtGetOp1();
-    GenTree* trueExpr  = qmark->gtGetOp2()->AsColon()->ThenNode();
-    GenTree* falseExpr = qmark->gtGetOp2()->AsColon()->ElseNode();
+    GenTree* condExpr    = qmark->gtGetOp1();
+    GenTree* trueExpr    = qmark->gtGetOp2()->AsColon()->ThenNode();
+    GenTree* falseExpr   = qmark->gtGetOp2()->AsColon()->ElseNode();
+    bool     falseIsCold = qmark->gtGetOp2()->AsColon()->gtElseIsCold;
 
     assert(condExpr->gtFlags & GTF_RELOP_QMARK);
     condExpr->gtFlags &= ~GTF_RELOP_QMARK;
@@ -17323,7 +17324,10 @@ void Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
         condBlock->bbJumpDest = remainderBlock;
         fgAddRefPred(remainderBlock, condBlock);
 
-        elseBlock->inheritWeightPercentage(condBlock, 50);
+        if (falseIsCold)
+            elseBlock->bbSetRunRarely();
+        else
+            elseBlock->inheritWeightPercentage(condBlock, 50);
     }
 
     GenTree*   jmpTree = gtNewOperNode(GT_JTRUE, TYP_VOID, qmark->gtGetOp1());
