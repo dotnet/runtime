@@ -39,29 +39,6 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         private readonly byte[] _sendBuffer = new byte[64 * 1024];
         private readonly byte[] _recvBuffer = new byte[64 * 1024];
 
-        protected class AsyncSocketArgs : SocketAsyncEventArgs
-        {
-            public AsyncSocketArgs()
-            {
-
-            }
-
-            public ResettableCompletionSource<SocketReceiveFromResult> CompletionSource { get; } = new ResettableCompletionSource<SocketReceiveFromResult>();
-
-            protected override void OnCompleted(SocketAsyncEventArgs e)
-            {
-                CompletionSource.Complete(
-                    new SocketReceiveFromResult()
-                    {
-                        ReceivedBytes = e.SocketError == SocketError.Success ? e.BytesTransferred : 0,
-                        RemoteEndPoint = e.RemoteEndPoint!
-                    });
-            }
-        }
-
-        protected AsyncSocketArgs SocketReceiveEventArgs { get; } = new AsyncSocketArgs();
-
-
         protected QuicSocketContext(IPEndPoint? localEndPoint, IPEndPoint? remoteEndPoint, bool isServer)
         {
             _localEndPoint = localEndPoint;
@@ -251,10 +228,48 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
         protected abstract int ReceiveFrom(byte[] buffer, ref EndPoint sender);
 
-        protected abstract Task<SocketReceiveFromResult> ReceiveFromAsync(byte[] buffer, EndPoint sender,
-            CancellationToken token);
-
         protected abstract void SendTo(byte[] buffer, int size, EndPoint receiver);
+
+        protected class ReceiveOperationAsyncSocketArgs : SocketAsyncEventArgs
+        {
+            public ResettableCompletionSource<SocketReceiveFromResult> CompletionSource { get; } = new ResettableCompletionSource<SocketReceiveFromResult>();
+
+            protected override void OnCompleted(SocketAsyncEventArgs e)
+            {
+                CompletionSource.Complete(
+                    new SocketReceiveFromResult()
+                    {
+                        ReceivedBytes = e.SocketError == SocketError.Success ? e.BytesTransferred : 0,
+                        RemoteEndPoint = e.RemoteEndPoint!
+                    });
+            }
+        }
+
+        protected ReceiveOperationAsyncSocketArgs SocketReceiveEventArgs { get; } = new ReceiveOperationAsyncSocketArgs();
+
+        protected abstract bool ReceiveFromAsync(ReceiveOperationAsyncSocketArgs args);
+
+        private ValueTask<SocketReceiveFromResult> ReceiveFromAsync(byte[] buffer, EndPoint sender,
+            CancellationToken token)
+        {
+            // TODO-RZ: utilize cancellation token
+
+            SocketReceiveEventArgs.SetBuffer(buffer);
+            SocketReceiveEventArgs.RemoteEndPoint = sender;
+
+            if (ReceiveFromAsync(SocketReceiveEventArgs))
+            {
+                return SocketReceiveEventArgs.CompletionSource.GetValueTask();
+            }
+
+            // operation completed synchronously
+            return new ValueTask<SocketReceiveFromResult>(
+                new SocketReceiveFromResult
+                {
+                    ReceivedBytes = SocketReceiveEventArgs.BytesTransferred,
+                    RemoteEndPoint = SocketReceiveEventArgs.RemoteEndPoint
+                });
+        }
 
         private async Task BackgroundWorker()
         {
@@ -325,7 +340,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
                         // update the recv task only if there is no outstanding async recv
                         socketReceiveTask ??= ReceiveFromAsync(_recvBuffer, _localEndPoint!,
-                            CancellationToken.None);
+                            CancellationToken.None).AsTask();
 
                         _signalTcs = new TaskCompletionSource<int>();
                         Task signalTask = _signalTcs.Task;
@@ -369,7 +384,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                     DoReceive(_recvBuffer.AsMemory(0, length), connection.UnsafeRemoteEndPoint);
                 }
             }
-            catch (SocketException e)
+            catch (SocketException)
             {
                 // "service temporarily unavailable", we are done
             }

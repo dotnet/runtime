@@ -111,8 +111,6 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             // Connection established -> transition to single connection  QuicSocketContext
             _newConnections.TryWrite(connection);
 
-            return;
-
             // Create new single connection context, this will bind a more specific socket to the
             // remote endpoint's address. Any further packets will be received by this context
 
@@ -169,9 +167,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
         protected override int ReceiveFrom(byte[] buffer, ref EndPoint sender) => Socket.ReceiveFrom(buffer, ref sender);
 
-        protected override Task<SocketReceiveFromResult> ReceiveFromAsync(byte[] buffer, EndPoint sender,
-            CancellationToken token)
-            => Socket.ReceiveFromAsync(buffer, SocketFlags.None, sender);
+        protected override bool ReceiveFromAsync(ReceiveOperationAsyncSocketArgs args) => Socket.ReceiveFromAsync(SocketReceiveEventArgs);
 
         protected override void SendTo(byte[] buffer, int size, EndPoint receiver)
             => Socket.SendTo(buffer, 0, size, SocketFlags.None, receiver);

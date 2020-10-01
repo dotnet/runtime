@@ -720,7 +720,7 @@ namespace System.Net.Quic.Implementations.Managed
         internal void ThrowIfError()
         {
             if (_socketContextException != null)
-                throw _socketContextException;
+                throw new Exception("Internal socket operation failed", _socketContextException);
 
             var error = _inboundError ?? _outboundError;
             // don't throw if connection was closed gracefully. By doing so, we still allow retrieving

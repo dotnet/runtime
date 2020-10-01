@@ -11,7 +11,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         private readonly IPEndPoint _remoteEndPoint;
         private readonly ManagedQuicConnection _connection;
 
-        internal SingleConnectionSocketContext(IPEndPoint? localEndpoint, IPEndPoint remoteEndPoint, ManagedQuicConnection connection)
+        internal SingleConnectionSocketContext(IPEndPoint? localEndpoint, IPEndPoint remoteEndPoint,
+            ManagedQuicConnection connection)
             : base(localEndpoint, remoteEndPoint, connection.IsServer)
         {
             _remoteEndPoint = remoteEndPoint;
@@ -47,6 +48,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                 {
                     Debug.Assert(newTimeout != oldTimeout);
                 }
+
                 UpdateTimeout(newTimeout);
             }
             else
@@ -73,6 +75,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                         // to a new connection.
                         DetachConnection(connection);
                     }
+
                     break;
                 case QuicConnectionState.Closed:
                     // draining timer elapsed, discard the state
@@ -92,31 +95,14 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             return Socket.Receive(buffer, SocketFlags.None, out _);
         }
 
-        private ValueTask<SocketReceiveFromResult> ReceiveFromAsyncCore(byte[] buffer, EndPoint sender,
-            CancellationToken token)
+        protected override bool ReceiveFromAsync(ReceiveOperationAsyncSocketArgs args)
         {
-            SocketReceiveEventArgs.SetBuffer(buffer);
-            SocketReceiveEventArgs.SocketFlags = SocketFlags.None;
-            SocketReceiveEventArgs.RemoteEndPoint = _remoteEndPoint;
+            // we are using connected sockets -> use Receive(...). We also have to set the expected
+            // receiver address
 
-            // use method without explicit address because we used connected socket
-            if (Socket.ReceiveAsync(SocketReceiveEventArgs))
-            {
-                return SocketReceiveEventArgs.CompletionSource.GetValueTask();
-            }
+            args.RemoteEndPoint = _remoteEndPoint;
 
-            return new ValueTask<SocketReceiveFromResult>(
-                new SocketReceiveFromResult
-                {
-                    ReceivedBytes = SocketReceiveEventArgs.BytesTransferred,
-                    RemoteEndPoint = _remoteEndPoint
-                });
-        }
-
-        protected override Task<SocketReceiveFromResult> ReceiveFromAsync(byte[] buffer, EndPoint sender,
-            CancellationToken token)
-        {
-            return ReceiveFromAsyncCore(buffer, sender, token).AsTask();
+            return Socket.ReceiveAsync(args);
         }
 
         protected override void SendTo(byte[] buffer, int size, EndPoint receiver)
