@@ -16,8 +16,6 @@
     <BaseOutputPathWithConfig>$([MSBuild]::NormalizePath('$(BaseOutputPath)\$(OSPlatformConfig)\'))</BaseOutputPathWithConfig>
     <TestBinDir>$(BaseOutputPathWithConfig)</TestBinDir>
 
-    <TestWorkingDir>$(BaseOutputPathWithConfig)</TestWorkingDir>
-
     <TestSrcDir>$([MSBuild]::NormalizePath('$(RepoRoot)/src/tests/'))</TestSrcDir>
     <TestSrcDir Condition="$([System.String]::new('$(MSBuildProjectDirectory)').StartsWith('$(BaseOutputPathWithConfig)'))">$(BaseOutputPathWithConfig)</TestSrcDir>
     <BuildProjectRelativeDir>$([MSBuild]::MakeRelative($(TestSrcDir), $(MSBuildProjectDirectory)))\$(MSBuildProjectName)\</BuildProjectRelativeDir>

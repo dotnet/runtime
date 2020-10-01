@@ -85,7 +85,6 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <TestBinDir>$([MSBuild]::NormalizeDirectory($(TestWorkingDir)))</TestBinDir>
     <CoreRootDirectory>$(TestBinDir)Tests\Core_Root\</CoreRootDirectory>
     <PayloadsRootDirectory>$(TestBinDir)Payloads\</PayloadsRootDirectory>
     <PayloadsRootDirectory>$([MSBuild]::NormalizeDirectory($(PayloadsRootDirectory)))</PayloadsRootDirectory>
