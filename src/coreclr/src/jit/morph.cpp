@@ -17293,8 +17293,16 @@ void Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
         fgAddRefPred(thenBlock, condBlock);
         fgAddRefPred(remainderBlock, thenBlock);
 
-        thenBlock->inheritWeightPercentage(condBlock, 50);
-        elseBlock->inheritWeightPercentage(condBlock, 50);
+        if (falseIsCold)
+        {
+            thenBlock->inheritWeight(condBlock);
+            elseBlock->bbSetRunRarely();
+        }
+        else
+        {
+            thenBlock->inheritWeightPercentage(condBlock, 50);
+            elseBlock->inheritWeightPercentage(condBlock, 50);
+        }
     }
     else if (hasTrueExpr)
     {
