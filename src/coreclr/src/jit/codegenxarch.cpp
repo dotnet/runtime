@@ -4080,10 +4080,11 @@ void CodeGen::genCodeForShift(GenTree* tree)
 
     if (shiftBy->isContainedIntOrIImmed())
     {
+        emitAttr size = emitTypeSize(tree);
+
         // Optimize "X<<1" to "lea [reg+reg]" or "add reg, reg"
         if (tree->OperIs(GT_LSH) && !tree->gtOverflowEx() && !tree->gtSetFlags() && shiftBy->IsIntegralConst(1))
         {
-            emitAttr size = emitTypeSize(tree);
             if (tree->GetRegNum() == operandReg)
             {
                 GetEmitter()->emitIns_R_R(INS_add, size, tree->GetRegNum(), operandReg);
@@ -4095,6 +4096,21 @@ void CodeGen::genCodeForShift(GenTree* tree)
         }
         else
         {
+            int shiftByValue = (int)shiftBy->AsIntConCommon()->IconValue();
+
+#if defined(TARGET_64BIT)
+            // Try to emit rorx if BMI2 is available instead of mov+rol
+            // it makes sense only for 64bit integers
+            if ((genActualType(targetType) == TYP_LONG) && (tree->GetRegNum() != operandReg) &&
+                compiler->compOpportunisticallyDependsOn(InstructionSet_BMI2) && tree->OperIs(GT_ROL, GT_ROR) &&
+                (shiftByValue > 0) && (shiftByValue < 64))
+            {
+                const int value = tree->OperIs(GT_ROL) ? (64 - shiftByValue) : shiftByValue;
+                GetEmitter()->emitIns_R_R_I(INS_rorx, size, tree->GetRegNum(), operandReg, value);
+                genProduceReg(tree);
+                return;
+            }
+#endif
             // First, move the operand to the destination register and
             // later on perform the shift in-place.
             // (LSRA will try to avoid this situation through preferencing.)
@@ -4102,9 +4118,7 @@ void CodeGen::genCodeForShift(GenTree* tree)
             {
                 inst_RV_RV(INS_mov, tree->GetRegNum(), operandReg, targetType);
             }
-
-            int shiftByValue = (int)shiftBy->AsIntConCommon()->IconValue();
-            inst_RV_SH(ins, emitTypeSize(tree), tree->GetRegNum(), shiftByValue);
+            inst_RV_SH(ins, size, tree->GetRegNum(), shiftByValue);
         }
     }
     else
@@ -5943,6 +5957,27 @@ void CodeGen::genCompareInt(GenTree* treeNode)
     }
     else if (op1->isUsedFromReg() && op2->IsIntegralConst(0))
     {
+        emitAttr targetSize = emitActualTypeSize(op1->TypeGet());
+        emitAttr op1Size    = emitActualTypeSize(op1->TypeGet());
+
+        // Optimize "x<0" and "x>=0" to "x>>31" if "x" is not a jump condition and in a reg.
+        // Morph/Lowering are responsible to rotate "0<x" to "x>0" so we won't handle it here.
+        if ((targetSize >= 4) && (op1Size >= 4) && (targetReg != REG_NA) && tree->OperIs(GT_LT, GT_GE))
+        {
+            if (targetReg != op1->GetRegNum())
+            {
+                inst_RV_RV(INS_mov, targetReg, op1->GetRegNum(), op1->TypeGet());
+            }
+            if (tree->OperIs(GT_GE))
+            {
+                // emit "not" for "x>=0" case
+                inst_RV(INS_not, targetReg, tree->TypeGet(), op1Size);
+            }
+            inst_RV_IV(INS_shr_N, targetReg, (int)op1Size * 8 - 1, op1Size);
+            genProduceReg(tree);
+            return;
+        }
+
         if (compiler->opts.OptimizationEnabled())
         {
             canReuseFlags = true;
@@ -8250,7 +8285,7 @@ void CodeGen::genCreateAndStoreGCInfoX64(unsigned codeSize, unsigned prologSize 
         unsigned reversePInvokeFrameVarNumber = compiler->lvaReversePInvokeFrameVar;
         assert(reversePInvokeFrameVarNumber != BAD_VAR_NUM && reversePInvokeFrameVarNumber < compiler->lvaRefCount);
         LclVarDsc& reversePInvokeFrameVar = compiler->lvaTable[reversePInvokeFrameVarNumber];
-        gcInfoEncoder->SetReversePInvokeFrameSlot(reversePInvokeFrameVar.lvStkOffs);
+        gcInfoEncoder->SetReversePInvokeFrameSlot(reversePInvokeFrameVar.GetStackOffset());
     }
 
     gcInfoEncoder->Build();
@@ -8526,7 +8561,7 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
                       EA_UNKNOWN); // retSize
 
     // Check that we have place for the push.
-    assert(compiler->fgPtrArgCntMax >= 1);
+    assert(compiler->fgGetPtrArgCntMax() >= 1);
 
 #if defined(UNIX_X86_ABI)
     // Restoring alignment manually. This is similar to CodeGen::genRemoveAlignmentAfterCall
@@ -8607,7 +8642,7 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
     genEmitHelperCall(helper, argSize, EA_UNKNOWN /* retSize */);
 
     // Check that we have place for the push.
-    assert(compiler->fgPtrArgCntMax >= 1);
+    assert(compiler->fgGetPtrArgCntMax() >= 1);
 
 #if defined(UNIX_X86_ABI)
     // Restoring alignment manually. This is similar to CodeGen::genRemoveAlignmentAfterCall

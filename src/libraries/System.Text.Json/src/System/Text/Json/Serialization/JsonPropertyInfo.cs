@@ -12,7 +12,6 @@ namespace System.Text.Json
     internal abstract class JsonPropertyInfo
     {
         public static readonly JsonPropertyInfo s_missingProperty = GetPropertyPlaceholder();
-        public static readonly Type s_NullableType = typeof(Nullable<>);
 
         private JsonClassInfo? _runtimeClassInfo;
 

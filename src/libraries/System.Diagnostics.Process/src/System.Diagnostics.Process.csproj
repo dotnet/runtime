@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <DefineConstants>$(DefineConstants);FEATURE_REGISTRY</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -39,6 +39,8 @@
              Link="Common\Interop\Windows\Interop.Errors.cs" />
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskCompletionSourceWithCancellation.cs"
              Link="Common\System\Threading\Tasks\TaskCompletionSourceWithCancellation.cs" />
+    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskTimeoutExtensions.cs"
+         Link="Common\System\Threading\Tasks\TaskTimeoutExtensions.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true'">
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.EnumProcessModules.cs"
@@ -240,8 +242,6 @@
              Link="Common\Interop\Unix\Interop.ForkAndExecProcess.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetGroupList.cs"
              Link="Common\Interop\Unix\Interop.GetGroupList.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetLine.cs"
-             Link="Common\Interop\Unix\Interop.GetLine.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetPwUid.cs"
              Link="Common\Interop\Unix\Interop.GetPwUid.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetSetPriority.cs"
@@ -262,8 +262,6 @@
              Link="Common\Interop\Unix\Interop.ResourceLimits.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.PathConf.cs"
              Link="Common\Interop\Unix\Interop.PathConf.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.POpen.cs"
-             Link="Common\Interop\Unix\Interop.POpen.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.WaitId.cs"
              Link="Common\Interop\Unix\Interop.WaitId.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.WaitPid.cs"

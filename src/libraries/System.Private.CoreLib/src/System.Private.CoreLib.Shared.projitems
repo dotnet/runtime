@@ -964,6 +964,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelMonitor.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ManualResetEvent.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ManualResetEventSlim.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Monitor.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Mutex.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\NativeOverlapped.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ParameterizedThreadStart.cs" />
@@ -1379,6 +1380,9 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetLongPathNameW.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.GetLongPathNameW.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetModuleFileName.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.GetModuleFileName.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetProcessMemoryInfo.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.GetProcessMemoryInfo.cs</Link>
     </Compile>
@@ -1544,6 +1548,9 @@
     <Compile Include="$(CommonPath)Interop\Windows\OleAut32\Interop.SysFreeString.cs">
       <Link>Common\Interop\Windows\OleAut32\Interop.SysFreeString.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Ole32\Interop.CLSIDFromProgID.cs">
+      <Link>Common\Interop\Windows\Ole32\Interop.CLSIDFromProgID.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Ole32\Interop.CoCreateGuid.cs">
       <Link>Common\Interop\Windows\Ole32\Interop.CoCreateGuid.cs</Link>
     </Compile>
@@ -1704,6 +1711,9 @@
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetHostName.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.GetHostName.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetProcessPath.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.GetProcessPath.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetRandomBytes.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.GetRandomBytes.cs</Link>

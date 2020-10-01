@@ -135,16 +135,6 @@ namespace System.Reflection.Emit
 
         #region Internal Members
 
-        internal void CheckContext(params Type[]?[]? typess)
-        {
-            m_module.CheckContext(typess);
-        }
-
-        internal void CheckContext(params Type?[]? types)
-        {
-            m_module.CheckContext(types);
-        }
-
         internal void CreateMethodBodyHelper(ILGenerator il)
         {
             // Sets the IL of the method.  An ILGenerator is passed as an argument and the method
@@ -657,14 +647,14 @@ namespace System.Reflection.Emit
 
         public void SetParameters(params Type[] parameterTypes)
         {
-            CheckContext(parameterTypes);
+            AssemblyBuilder.CheckContext(parameterTypes);
 
             SetSignature(null, null, null, parameterTypes, null, null);
         }
 
         public void SetReturnType(Type? returnType)
         {
-            CheckContext(returnType);
+            AssemblyBuilder.CheckContext(returnType);
 
             SetSignature(returnType, null, null, null, null, null);
         }
@@ -678,10 +668,10 @@ namespace System.Reflection.Emit
             if (m_tkMethod.Token != 0)
                 return;
 
-            CheckContext(returnType);
-            CheckContext(returnTypeRequiredCustomModifiers, returnTypeOptionalCustomModifiers, parameterTypes);
-            CheckContext(parameterTypeRequiredCustomModifiers);
-            CheckContext(parameterTypeOptionalCustomModifiers);
+            AssemblyBuilder.CheckContext(returnType);
+            AssemblyBuilder.CheckContext(returnTypeRequiredCustomModifiers, returnTypeOptionalCustomModifiers, parameterTypes);
+            AssemblyBuilder.CheckContext(parameterTypeRequiredCustomModifiers);
+            AssemblyBuilder.CheckContext(parameterTypeOptionalCustomModifiers);
 
             ThrowIfGeneric();
 

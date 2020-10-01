@@ -931,7 +931,7 @@
         </ExcludeList>
     </ItemGroup>
 
-    <!-- runtest.proj finds all the *.cmd/*.sh scripts in a test folder and creates corresponding test methods.
+    <!-- run.proj finds all the *.cmd/*.sh scripts in a test folder and creates corresponding test methods.
          Exclude these scripts to avoid creating such methods for the superpmicollect dependent test projects
          and running them separately from superpmicollect test. These should be excluded regardless of RuntimeFlavor/os/arch-->
 

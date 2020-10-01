@@ -799,7 +799,7 @@ HRESULT GetITypeInfoForMT(ComMethodTable *pMT, ITypeInfo **ppTI)
 
     pTI = pMT->GetITypeInfo();
 
-    if (pTI == 0)
+    if (pTI == NULL)
     {
         MethodTable *pClass = pMT->GetMethodTable();
 
@@ -809,6 +809,7 @@ HRESULT GetITypeInfoForMT(ComMethodTable *pMT, ITypeInfo **ppTI)
         {
             pMT->SetITypeInfo(pTI);
             SafeReleasePreemp(pTI);
+            pTI = pMT->GetITypeInfo();
         }
     }
 

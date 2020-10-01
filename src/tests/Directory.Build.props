@@ -1,7 +1,68 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <!-- SDK Style projects auto-magically include this file. -->
-  <Import Project="..\coreclr\tests\Directory.Build.props" />
+  <Import Project="$(MSBuildThisFileDirectory)\Common\dir.sdkbuild.props" Condition="'$(UsingMicrosoftNETSdk)' == 'true'"  />
+  <Import Project="$(MSBuildThisFileDirectory)\Common\dir.common.props" Condition="'$(UsingMicrosoftNETSdk)' != 'true'"  />
+
+  <PropertyGroup>
+    <RunningOnUnix Condition="('$(RunningOnUnix)' == '') And ('$(MSBuildRuntimeType)' == 'Core') And ('$(OS)'!='Windows_NT')">true</RunningOnUnix>
+  </PropertyGroup>
+
+  <!-- Common repo directories -->
+  <PropertyGroup>
+    <TestProjectDir>$(MSBuildThisFileDirectory)</TestProjectDir>
+    <TestSourceDir>$([MSBuild]::NormalizePath('$(RepoRoot)/src/tests/'))</TestSourceDir>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <AltJitArch>$(__AltJitArch)</AltJitArch>
+  </PropertyGroup>
+
+  <!-- Output paths -->
+  <PropertyGroup>
+    <!-- When not using the SDK, we want to set this property here so
+         that BuildVersionFile gets the correct value. -->
+    <BaseIntermediateOutputPath Condition="'$(BaseIntermediateOutputPath)' == '' Or '$(UsingMicrosoftNETSdk)' != 'true'">$(ArtifactsDir)obj\</BaseIntermediateOutputPath>
+    <IntermediateOutputPath Condition="'$(IntermediateOutputPath)' == ''">$(BaseIntermediateOutputPath)\$(TargetOS).$(TargetArchitecture).$(Configuration)</IntermediateOutputPath>
+    <OutputPath Condition="'$(OutputPath)' == ''">$(BaseIntermediateOutputPath)\coreclr\$(TargetOS).$(TargetArchitecture).$(Configuration)</OutputPath>
+  </PropertyGroup>
+
+    <!-- Targeting Package paths -->
+  <PropertyGroup>
+    <TargetingPackPath Condition="'$(BaseTargetingPackPath)' == ''">$(ArtifactsDir)TargetingPack\</TargetingPackPath>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(BuildAllProjects)'=='true'">
+    <!-- When we do a traversal build we get all packages up front, don't restore them again -->
+    <RestorePackages>false</RestorePackages>
+  </PropertyGroup>
+
+  <!-- Which tests shall we build? Default: Priority 0 tests.
+    At the command-line, the user can specify /p:CLRTestPriorityToBuild=666 (for example), and
+    all tests with CLRTestPriority 666,..., 1 AND 0 will build.
+
+    Consequently, specifying CLRTestPriorityToBuild=1 will build all tests with CLRTestPriority 1 and 0.
+
+    CLRTestPriority = 0 will build only priority 0 cases.
+
+    In other words, the CLRTestPriority cases of 0 are *essential* testcases. The higher the value,
+    the less priority we give them.
+   -->
+  <PropertyGroup>
+    <CLRTestPriorityToBuild>0</CLRTestPriorityToBuild>
+  </PropertyGroup>
+
+  <!-- Which tests can we build? Default: Build managed tests for this target.
+    At the command-line, the user can specify:
+    +  /p:CLRTestBuildAllTargets=allTargets    Build managed tests for all target platforms.
+   -->
+  <PropertyGroup>
+    <CLRTestBuildAllTargets></CLRTestBuildAllTargets>
+  </PropertyGroup>
+
+  <!-- Language settings -->
+  <PropertyGroup>
+    <RunAnalyzers>false</RunAnalyzers>
+  </PropertyGroup>
 
   <!-- Setup Default symbol and optimization for Configuration -->
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
@@ -25,17 +86,6 @@
 
   <!-- Setup the default output and intermediate paths -->
   <PropertyGroup>
-    <BaseOutputPath>$(RepoRoot)\artifacts\tests\coreclr</BaseOutputPath>
-    <BaseOutputPath Condition="'$(__TestRootDir)' != ''">$(__TestRootDir)</BaseOutputPath>
-    <BaseOutputPathWithConfig>$(BaseOutputPath)\$(OSPlatformConfig)\</BaseOutputPathWithConfig>
-    <BinDir>$(BaseOutputPathWithConfig)</BinDir>
-    <BaseIntermediateOutputPath>$(RepoRoot)\artifacts\tests\coreclr\obj\$(OSPlatformConfig)\Managed\</BaseIntermediateOutputPath>
-    <BaseIntermediateOutputPath Condition="'$(__ManagedTestIntermediatesDir)' != ''">$(__ManagedTestIntermediatesDir)\</BaseIntermediateOutputPath>
-    <__NativeTestIntermediatesDir Condition="'$(__NativeTestIntermediatesDir)' == ''">$([System.IO.Path]::GetFullPath($(BaseOutputPathWithConfig)..\..\coreclr\obj\$(TargetOS).$(TargetArchitecture).$(Configuration)\Native\))</__NativeTestIntermediatesDir>
-    <BuildProjectRelativeDir>$(MSBuildProjectName)\</BuildProjectRelativeDir>
-    <BuildProjectRelativeDir Condition="'$(MSBuildProjectDirectory.Contains($(TestSourceDir)))'">$([System.String]::Copy('$(MSBuildProjectDirectory)').Replace($(TestSourceDir),''))\$(MSBuildProjectName)</BuildProjectRelativeDir>
-    <IntermediateOutputPath>$(BaseIntermediateOutputPath)$(BuildProjectRelativeDir)\</IntermediateOutputPath>
-    <OutputPath>$(BaseOutputPathWithConfig)$(BuildProjectRelativeDir)\</OutputPath>
     <SkipXunitDependencyCopying>true</SkipXunitDependencyCopying>
   </PropertyGroup>
 
@@ -155,8 +205,6 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <RestoreOutputPath>$(MSBuildProjectDirectory)\obj</RestoreOutputPath>
-
     <!-- Specify the target framework of the common test dependency project.json. -->
     <NuGetTargetMoniker>$(NetCoreAppCurrentTargetFrameworkMoniker)</NuGetTargetMoniker>
     <NuGetTargetMonikerShort>$(NetCoreAppCurrent)</NuGetTargetMonikerShort>

@@ -5,7 +5,7 @@ DOTNET=$(TOP)/dotnet.sh
 JSVU=$(HOME)/.jsvu
 
 #
-# These variables are set by wasm.targets
+# These variables are set by wasm.proj
 #
 EMSDK_PATH?=$(TOP)/src/mono/wasm/emsdk
 CONFIG?=Release
@@ -15,6 +15,7 @@ PINVOKE_TABLE?=$(TOP)/artifacts/obj/wasm/pinvoke-table.h
 MONO_BIN_DIR?=$(BINDIR)/mono/Browser.wasm.$(CONFIG)
 NATIVE_BIN_DIR?=$(BINDIR)/native/net5.0-Browser-$(CONFIG)-wasm
 ICU_LIBDIR?=
+ENABLE_ES6?=false
 
 all: build-native icu-data
 
@@ -59,6 +60,10 @@ MONO_LIBS = \
 	$(ICU_LIBDIR)/libicudata.a
 
 EMCC_FLAGS=--profiling-funcs -s WASM=1 -s ALLOW_MEMORY_GROWTH=1 -s BINARYEN=1 -s ALIASING_FUNCTION_POINTERS=0 -s NO_EXIT_RUNTIME=1 -s "EXTRA_EXPORTED_RUNTIME_METHODS=['ccall', 'FS_createPath', 'FS_createDataFile', 'cwrap', 'setValue', 'getValue', 'UTF8ToString', 'UTF8ArrayToString', 'addFunction']" -s "EXPORTED_FUNCTIONS=['_putchar']" --source-map-base http://example.com  -emit-llvm -s FORCE_FILESYSTEM=1 -s USE_ZLIB=1
+ifneq ($(ENABLE_ES6),false)
+    EMCC_FLAGS+=-s MODULARIZE=1 -s EXPORT_ES6=1
+endif
+
 EMCC_DEBUG_FLAGS =-g -Os -s ASSERTIONS=1 -DENABLE_NETCORE=1 -DDEBUG=1
 EMCC_RELEASE_FLAGS=-Oz --llvm-opts 2 -DENABLE_NETCORE=1
 

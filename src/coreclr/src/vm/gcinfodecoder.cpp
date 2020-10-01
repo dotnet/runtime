@@ -1791,7 +1791,7 @@ OBJECTREF* GcInfoDecoder::GetStackSlot(
 
         SIZE_T * pFrameReg = (SIZE_T*) GetRegisterSlot(m_StackBaseRegister, pRD);
 
-#ifdef TARGET_UNIX
+#if defined(TARGET_UNIX) && !defined(FEATURE_REDHAWK)
         // On PAL, we don't always have the context pointers available due to
         // a limitation of an unwinding library. In such case, the context
         // pointers for some nonvolatile registers are NULL.
@@ -1799,7 +1799,7 @@ OBJECTREF* GcInfoDecoder::GetStackSlot(
         {
             pFrameReg = (SIZE_T*) GetCapturedRegister(m_StackBaseRegister, pRD);
         }
-#endif // TARGET_UNIX
+#endif // TARGET_UNIX && !FEATURE_REDHAWK
 
         pObjRef = (OBJECTREF*)(*pFrameReg + spOffset);
     }

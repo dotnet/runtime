@@ -95,21 +95,37 @@ namespace Internal.ReadyToRunConstants
                         switch (instructionSet)
                         {
                             case InstructionSet.X86_X86Base: return ReadyToRunInstructionSet.X86Base;
+                            case InstructionSet.X86_X86Base_X64: return null;
                             case InstructionSet.X86_SSE: return ReadyToRunInstructionSet.Sse;
+                            case InstructionSet.X86_SSE_X64: return null;
                             case InstructionSet.X86_SSE2: return ReadyToRunInstructionSet.Sse2;
+                            case InstructionSet.X86_SSE2_X64: return null;
                             case InstructionSet.X86_SSE3: return ReadyToRunInstructionSet.Sse3;
+                            case InstructionSet.X86_SSE3_X64: return null;
                             case InstructionSet.X86_SSSE3: return ReadyToRunInstructionSet.Ssse3;
+                            case InstructionSet.X86_SSSE3_X64: return null;
                             case InstructionSet.X86_SSE41: return ReadyToRunInstructionSet.Sse41;
+                            case InstructionSet.X86_SSE41_X64: return null;
                             case InstructionSet.X86_SSE42: return ReadyToRunInstructionSet.Sse42;
+                            case InstructionSet.X86_SSE42_X64: return null;
                             case InstructionSet.X86_AVX: return ReadyToRunInstructionSet.Avx;
+                            case InstructionSet.X86_AVX_X64: return null;
                             case InstructionSet.X86_AVX2: return ReadyToRunInstructionSet.Avx2;
+                            case InstructionSet.X86_AVX2_X64: return null;
                             case InstructionSet.X86_AES: return ReadyToRunInstructionSet.Aes;
+                            case InstructionSet.X86_AES_X64: return null;
                             case InstructionSet.X86_BMI1: return ReadyToRunInstructionSet.Bmi1;
+                            case InstructionSet.X86_BMI1_X64: return null;
                             case InstructionSet.X86_BMI2: return ReadyToRunInstructionSet.Bmi2;
+                            case InstructionSet.X86_BMI2_X64: return null;
                             case InstructionSet.X86_FMA: return ReadyToRunInstructionSet.Fma;
+                            case InstructionSet.X86_FMA_X64: return null;
                             case InstructionSet.X86_LZCNT: return ReadyToRunInstructionSet.Lzcnt;
+                            case InstructionSet.X86_LZCNT_X64: return null;
                             case InstructionSet.X86_PCLMULQDQ: return ReadyToRunInstructionSet.Pclmulqdq;
+                            case InstructionSet.X86_PCLMULQDQ_X64: return null;
                             case InstructionSet.X86_POPCNT: return ReadyToRunInstructionSet.Popcnt;
+                            case InstructionSet.X86_POPCNT_X64: return null;
                             case InstructionSet.X86_Vector128: return null;
                             case InstructionSet.X86_Vector256: return null;
 

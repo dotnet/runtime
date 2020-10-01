@@ -95,7 +95,7 @@ $(_XunitEpilog)
         <![CDATA[
 <Project>
 
-  <Import Project="$(TestProjectDir)dir.sdkbuild.props" />
+  <Import Project="$(TestProjectDir)Common/dir.sdkbuild.props" />
 
   <PropertyGroup>
     <OutputPath>$(XUnitTestBinBase)\$(CategoryWithSlash)</OutputPath>
@@ -110,7 +110,7 @@ $(_XunitEpilog)
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="$(RepoRoot)\src\tests\Common\Coreclr.TestWrapper\Coreclr.TestWrapper.csproj" />
+    <ProjectReference Include="$(TestProjectDir)Common\Coreclr.TestWrapper\Coreclr.TestWrapper.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -145,7 +145,7 @@ $(_XunitEpilog)
     <MSBuild Projects="$(XunitWrapperSrcDir)\$(XunitWrapper).csproj" Targets="Restore;Build" />
   </Target>
 
-  <Import Project="$(RepoRoot)/src/coreclr/tests/testgrouping.proj" />
+  <Import Project="$(MSBuildThisFileDirectory)Common/testgrouping.proj" />
 
   <Target Name="CreateXunitFacts">
     <!-- NOTE! semicolons must be escaped with %3B boooo -->
@@ -381,7 +381,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
   </Target>
 
   <Target Name="CreateAllWrappers" DependsOnTargets="GetListOfTestCmds;FindCmdDirectories">
-    <MSBuild Projects="$(MSBuildProjectFile)" Targets="CreateXunitWrapper;BuildXunitWrapper" Properties="_CMDDIR=%(TestDirectories.Identity);TestSrcDir=$(XunitTestBinBase)" />
+    <MSBuild Projects="$(MSBuildProjectFile)" Targets="CreateXunitWrapper;BuildXunitWrapper" Properties="_CMDDIR=%(TestDirectories.Identity)" />
   </Target>
 
   <Target Name="GetListOfTestCmds">
@@ -392,8 +392,8 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
     </ItemGroup>
   </Target>
 
-  <Import Project="$(RepoRoot)/src/coreclr/tests/tests.targets" />
-  <Import Project="$(RepoRoot)/src/coreclr/tests/publishdependency.targets" />
+  <Import Project="$(RepoRoot)/src/tests/Common/tests.targets" />
+  <Import Project="$(RepoRoot)/src/tests/Common/publishdependency.targets" />
 
   <Target Name="CreateTestOverlay">
     <MSBuild Projects="$(MSBuildProjectFile)"

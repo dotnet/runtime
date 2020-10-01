@@ -2945,6 +2945,10 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
                 }
             }
         }
+        if (opts.disAsm && JitConfig.JitDisasmWithGC())
+        {
+            opts.disasmWithGC = true;
+        }
 
 #ifdef LATE_DISASM
         if (JitConfig.JitLateDisasm().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
@@ -3256,18 +3260,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         }
     }
 #endif
-
-    opts.compGCPollType = GCPOLL_NONE;
-    if (jitFlags->IsSet(JitFlags::JIT_FLAG_GCPOLL_CALLS))
-    {
-        opts.compGCPollType = GCPOLL_CALL;
-    }
-    else if (jitFlags->IsSet(JitFlags::JIT_FLAG_GCPOLL_INLINE))
-    {
-        // make sure that the EE didn't set both flags.
-        assert(opts.compGCPollType == GCPOLL_NONE);
-        opts.compGCPollType = GCPOLL_INLINE;
-    }
 
 #ifdef PROFILING_SUPPORTED
 #ifdef UNIX_AMD64_ABI
@@ -4026,29 +4018,39 @@ bool Compiler::compRsvdRegCheck(FrameLayoutState curState)
 // compGetTieringName: get a string describing tiered compilation settings
 //   for this method
 //
+// Arguments:
+//   wantShortName - true if a short name is ok (say for using in file names)
+//
 // Returns:
 //   String describing tiering decisions for this method, including cases
 //   where the jit codegen will differ from what the runtime requested.
 //
-const char* Compiler::compGetTieringName() const
+const char* Compiler::compGetTieringName(bool wantShortName) const
 {
-    bool tier0 = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0);
-    bool tier1 = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER1);
+    const bool tier0 = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0);
+    const bool tier1 = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER1);
     assert(!tier0 || !tier1); // We don't expect multiple TIER flags to be set at one time.
 
     if (tier0)
     {
-        return "Tier-0";
+        return "Tier0";
     }
     else if (tier1)
     {
-        return "Tier-1";
+        if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_OSR))
+        {
+            return "Tier1-OSR";
+        }
+        else
+        {
+            return "Tier1";
+        }
     }
     else if (opts.OptimizationEnabled())
     {
         if (compSwitchedToOptimized)
         {
-            return "Tier-0 switched to FullOpts";
+            return wantShortName ? "Tier0-FullOpts" : "Tier-0 switched to FullOpts";
         }
         else
         {
@@ -4061,11 +4063,11 @@ const char* Compiler::compGetTieringName() const
         {
             if (compSwitchedToOptimized)
             {
-                return "Tier-0 switched to FullOpts, then to MinOpts";
+                return wantShortName ? "Tier0-FullOpts-MinOpts" : "Tier-0 switched to FullOpts, then to MinOpts";
             }
             else
             {
-                return "Tier-1/FullOpts switched to MinOpts";
+                return wantShortName ? "Tier0-MinOpts" : "Tier-0 switched MinOpts";
             }
         }
         else
@@ -4079,7 +4081,7 @@ const char* Compiler::compGetTieringName() const
     }
     else
     {
-        return "Unknown optimization level";
+        return wantShortName ? "Unknown" : "Unknown optimization level";
     }
 }
 
@@ -4537,7 +4539,11 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
 
     // Compute bbNum, bbRefs and bbPreds
     //
-    // This is the first time full (not cheap) preds will be computed
+    // This is the first time full (not cheap) preds will be computed.
+    // And, if we have profile data, we can now check integrity.
+    //
+    // From this point on the flowgraph information such as bbNum,
+    // bbRefs or bbPreds has to be kept updated.
     //
     auto computePredsPhase = [this]() {
         JITDUMP("\nRenumbering the basic blocks for fgComputePred\n");
@@ -4564,9 +4570,6 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
         DoPhase(this, PHASE_EARLY_UPDATE_FLOW_GRAPH, earlyUpdateFlowGraphPhase);
     }
 
-    // From this point on the flowgraph information such as bbNum,
-    // bbRefs or bbPreds has to be kept updated
-    //
     // Promote struct locals
     //
     auto promoteStructsPhase = [this]() {
@@ -4644,18 +4647,6 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
         }
     };
     DoPhase(this, PHASE_GS_COOKIE, gsPhase);
-
-    // If we need to emit GC Poll calls, mark the blocks that need them now.
-    // This is conservative and can be optimized later.
-    //
-    // GC Poll marking assumes block bbnums match lexical block order,
-    // so make sure this is the case.
-    //
-    auto gcPollPhase = [this]() {
-        fgRenumberBlocks();
-        fgMarkGCPollBlocks();
-    };
-    DoPhase(this, PHASE_MARK_GC_POLL_BLOCKS, gcPollPhase);
 
     // Compute the block and edge weights
     //
@@ -4920,10 +4911,13 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
     m_pLowering = new (this, CMK_LSRA) Lowering(this, m_pLinearScan); // PHASE_LOWERING
     m_pLowering->Run();
 
-    // Set stack levels
-    //
+#if !defined(OSX_ARM64_ABI)
+    // Set stack levels; this information is necessary for x86
+    // but on other platforms it is used only in asserts.
+    // TODO: do not run it in release on other platforms, see https://github.com/dotnet/runtime/issues/42673.
     StackLevelSetter stackLevelSetter(this);
     stackLevelSetter.Run();
+#endif // !OSX_ARM64_ABI
 
     // We can not add any new tracked variables after this point.
     lvaTrackedFixed = true;
@@ -5027,7 +5021,7 @@ void Compiler::generatePatchpointInfo()
         assert(varDsc->lvFramePointerBased);
 
         // Record FramePtr relative offset (no localloc yet)
-        patchpointInfo->SetOffset(lclNum, varDsc->lvStkOffs);
+        patchpointInfo->SetOffset(lclNum, varDsc->GetStackOffset());
 
         // Note if IL stream contained an address-of that potentially leads to exposure.
         // This bit of IL may be skipped by OSR partial importation.
@@ -5060,7 +5054,7 @@ void Compiler::generatePatchpointInfo()
     {
         assert(lvaGSSecurityCookie != BAD_VAR_NUM);
         LclVarDsc* const varDsc = lvaGetDesc(lvaGSSecurityCookie);
-        patchpointInfo->SetSecurityCookieOffset(varDsc->lvStkOffs);
+        patchpointInfo->SetSecurityCookieOffset(varDsc->GetStackOffset());
         JITDUMP("--OSR-- security cookie V%02u offset is FP %d\n", lvaGSSecurityCookie,
                 patchpointInfo->SecurityCookieOffset());
     }
@@ -8890,14 +8884,14 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                         chars += printf("[ICON_STR_HDL]");
                         break;
 
-                    case GTF_ICON_PSTR_HDL:
+                    case GTF_ICON_CONST_PTR:
 
-                        chars += printf("[ICON_PSTR_HDL]");
+                        chars += printf("[ICON_CONST_PTR]");
                         break;
 
-                    case GTF_ICON_PTR_HDL:
+                    case GTF_ICON_GLOBAL_PTR:
 
-                        chars += printf("[ICON_PTR_HDL]");
+                        chars += printf("[ICON_GLOBAL_PTR]");
                         break;
 
                     case GTF_ICON_VARG_HDL:

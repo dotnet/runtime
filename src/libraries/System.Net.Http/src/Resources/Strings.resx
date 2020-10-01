@@ -594,4 +594,16 @@
   <data name="net_http_sync_operations_not_allowed_with_connect_callback" xml:space="preserve">
     <value>Synchronous operation is not supported when a ConnectCallback is specified on the SocketsHttpHandler instance.</value>
   </data>
+  <data name="net_http_sync_operations_not_allowed_with_plaintext_filter" xml:space="preserve">
+    <value>Synchronous operation is not supported when a PlaintextStreamFilter is specified on the SocketsHttpHandler instance.</value>
+  </data>
+  <data name="net_http_exception_during_plaintext_filter" xml:space="preserve">
+    <value>An exception occurred while invoking the PlaintextStreamFilter.</value>
+  </data>
+  <data name="net_http_null_from_connect_callback" xml:space="preserve">
+    <value>The user-supplied ConnectCallback returned null.</value>
+  </data>
+  <data name="net_http_null_from_plaintext_filter" xml:space="preserve">
+    <value>The user-supplied PlaintextStreamFilter returned null.</value>
+  </data>
 </root>

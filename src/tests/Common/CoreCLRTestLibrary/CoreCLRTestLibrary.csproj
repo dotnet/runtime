@@ -6,7 +6,6 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <GenerateRunScript>false</GenerateRunScript>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <ProjectAssetsFile>$(TestSourceDir)Common\CoreCLRTestLibrary\obj\project.assets.json</ProjectAssetsFile>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Assertion.cs" />

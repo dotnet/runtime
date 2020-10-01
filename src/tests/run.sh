@@ -6,7 +6,7 @@ function print_usage {
     echo ''
     echo 'Typical command line:'
     echo ''
-    echo 'coreclr/tests/runtest.sh <arch> <configurations>'
+    echo 'src/tests/run.sh <arch> <configurations>'
     echo ''
     echo 'Optional arguments:'
     echo '  --testRootDir=<path>             : Root directory of the test build (e.g. runtime/artifacts/tests/Windows_NT.x64.Debug).'
@@ -309,7 +309,7 @@ fi
 export COMPlus_gcServer="$serverGC"
 
 ################################################################################
-# Runtest.py
+# Run.py
 ################################################################################
 
 runtestPyArguments=("-arch" "${buildArch}" "-build_type" "${buildConfiguration}")
@@ -415,7 +415,7 @@ __Python=python
     __Python=python3
 fi
 
-# Run the tests using cross platform runtest.py
-echo "python $repoRootDir/src/coreclr/tests/runtest.py ${runtestPyArguments[@]}"
-$__Python "$repoRootDir/src/coreclr/tests/runtest.py" "${runtestPyArguments[@]}"
+# Run the tests using cross platform run.py
+echo "python $repoRootDir/src/tests/run.py ${runtestPyArguments[@]}"
+$__Python "$repoRootDir/src/tests/run.py" "${runtestPyArguments[@]}"
 exit "$?"

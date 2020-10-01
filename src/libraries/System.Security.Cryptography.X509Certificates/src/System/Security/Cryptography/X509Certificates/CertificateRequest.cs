@@ -308,7 +308,7 @@ namespace System.Security.Cryptography.X509Certificates
 
             Debug.Assert(_generator != null);
 
-            byte[] serialNumber = new byte[8];
+            Span<byte> serialNumber = stackalloc byte[8];
             RandomNumberGenerator.Fill(serialNumber);
 
             using (X509Certificate2 certificate = Create(

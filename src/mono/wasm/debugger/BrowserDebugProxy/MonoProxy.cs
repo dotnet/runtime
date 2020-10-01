@@ -586,7 +586,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                             }
                             catch (Exception e)
                             {
-                                Log("info", $"Unable to find il offset: {il_pos} in method token: {method_token} assembly name: {assembly_name} exception: {e.ToString()}");
+                                Log("info", $"Unable to find il offset: {il_pos} in method token: {method_token} assembly name: {assembly_name} exception: {e}");
                                 continue;
                             }
                         }
@@ -739,7 +739,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
                     catch (Exception e)
                     {
-                        Log("info", $"Unable to load symbols on demand exception: {e.ToString()} url:{downloadURL} assembly: {asm.Name}");
+                        Log("info", $"Unable to load symbols on demand exception: {e} url:{downloadURL} assembly: {asm.Name}");
                     }
                 }
                 break;

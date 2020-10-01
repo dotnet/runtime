@@ -1323,8 +1323,11 @@ mono_de_ss_start (SingleStepReq *ss_req, SingleStepArgs *ss_args)
 	} else {
 		frame_index = 1;
 
+#ifndef TARGET_WASM
 		if (ss_args->ctx && !frames) {
-
+#else
+		if (!frames) {
+#endif
 			mono_loader_lock ();
 			locked = TRUE;
 
