@@ -86,7 +86,7 @@
   <Choose>
     <When Condition="'$(TestPackages)' != 'true'">
       <PropertyGroup Condition="'$(TargetsMobile)' != 'true'">
-        <RollforwardExecArgument>exec --rollforward LatestMajor </RollforwardExecArgument>
+        <RollforwardExecArgument>exec --roll-forward LatestMajor </RollforwardExecArgument>
         <HelixCommand Condition="'$(TargetsWindows)' == 'true'">%HELIX_CORRELATION_PAYLOAD%\dotnet.exe $(RollforwardExecArgument) %HELIX_CORRELATION_PAYLOAD%\sdk\$(ProductVersion)\vstest.console.dll %HELIX_WORKITEM_FRIENDLYNAME%.dll --Settings:.runsettings</HelixCommand>
         <HelixCommand Condition="'$(TargetsWindows)' != 'true'">$HELIX_CORRELATION_PAYLOAD/dotnet $(RollforwardExecArgument) $HELIX_CORRELATION_PAYLOAD/sdk/$(ProductVersion)/vstest.console.dll $HELIX_WORKITEM_FRIENDLYNAME.dll --Settings:.runsettings</HelixCommand>
         <!-- arm64 as an explicit arch is currently not supported by vstest: https://github.com/microsoft/vstest/issues/2566. -->
