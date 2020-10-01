@@ -154,9 +154,6 @@ namespace System.Net.Sockets.Tests
                 }
                 catch (SocketException se)
                 {
-                    // On connection timeout, retry.
-                    Assert.NotEqual(SocketError.TimedOut, se.SocketErrorCode);
-
                     localSocketError = se.SocketErrorCode;
                 }
                 catch (ObjectDisposedException)
@@ -166,6 +163,9 @@ namespace System.Net.Sockets.Tests
 
                 try
                 {
+                    // On connection timeout, retry.
+                    Assert.NotEqual(SocketError.TimedOut, localSocketError);
+
                     if (UsesApm)
                     {
                         Assert.Null(localSocketError);
