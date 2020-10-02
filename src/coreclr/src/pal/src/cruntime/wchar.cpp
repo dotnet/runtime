@@ -224,9 +224,12 @@ _wcslwr(
     PERF_ENTRY(_wcslwr);
     ENTRY("_wcslwr (string=%p (%S))\n", string?string:W16_NULLSTRING, string?string:W16_NULLSTRING);
 
-    for (i=0 ; string[i] != 0; i++)
+    if(string)
     {
-        string[i] = towlower(string[i]);
+        for (i=0 ; string[i] != 0; i++)
+        {
+            string[i] = towlower(string[i]);
+        }
     }
 
     LOGEXIT("_wcslwr returning wchar_t %p (%S)\n", string?string:W16_NULLSTRING, string?string:W16_NULLSTRING);
