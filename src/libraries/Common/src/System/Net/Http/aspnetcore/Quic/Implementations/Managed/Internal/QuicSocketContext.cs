@@ -23,6 +23,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         private TaskCompletionSource<int> _signalTcs =
             new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
         private bool _signalWanted;
+        private bool _started;
 
         private Task? _backgroundWorkerTask;
 
@@ -53,6 +54,11 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             _sendContext = new SendContext(sentPacketPool);
             _recvContext = new RecvContext(sentPacketPool);
 
+            SetupSocket(localEndPoint, remoteEndPoint);
+        }
+
+        private void SetupSocket(IPEndPoint? localEndPoint, IPEndPoint? remoteEndPoint)
+        {
             Socket.ExclusiveAddressUse = false;
 
             if (localEndPoint != null)
@@ -65,7 +71,21 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                 Socket.Connect(remoteEndPoint);
             }
 
-            Socket.Blocking = false;
+            // TODO-RZ: Find out why I can't use RuntimeInformation when building inside .NET Runtime
+#if FEATURE_QUIC_STANDALONE
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+#endif
+            {
+                // disable exception when client forcibly closes the socket.
+                // https://stackoverflow.com/questions/38191968/c-sharp-udp-an-existing-connection-was-forcibly-closed-by-the-remote-host
+
+                const int SIO_UDP_CONNRESET = -1744830452;
+                Socket.IOControl(
+                    (IOControlCode) SIO_UDP_CONNRESET,
+                    new byte[] {0, 0, 0, 0},
+                    null
+                );
+            }
         }
 
         public IPEndPoint LocalEndPoint => (IPEndPoint)Socket.LocalEndPoint!;
@@ -77,29 +97,16 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                 return;
             }
 
-            // TODO-RZ: Find out why I can't use RuntimeInformation when building inside .NET Runtime
-#if FEATURE_QUIC_STANDALONE
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-#endif
-            {
-                // disable exception when client forcibly closes the socket.
-                // https://stackoverflow.com/questions/38191968/c-sharp-udp-an-existing-connection-was-forcibly-closed-by-the-remote-host
-
-                const int SIO_UDP_CONNRESET = -1744830452;
-                Socket.IOControl(
-                    (IOControlCode)SIO_UDP_CONNRESET,
-                    new byte[] { 0, 0, 0, 0 },
-                    null
-                );
-            }
-
+            _started = true;
             _backgroundWorkerTask = Task.Run(BackgroundWorker);
         }
 
         protected void Stop()
         {
             _socketTaskCts.Cancel();
-            if (_backgroundWorkerTask == null)
+
+            // if never started also cleanup the socket, since the background worker will not do that
+            if (!_started)
             {
                 Socket.Dispose();
             }

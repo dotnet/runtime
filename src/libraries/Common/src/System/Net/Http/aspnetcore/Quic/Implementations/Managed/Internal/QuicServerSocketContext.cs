@@ -108,7 +108,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
         private void OnConnectionHandshakeCompleted(ManagedQuicConnection connection)
         {
-            // Connection established -> transition to single connection  QuicSocketContext
+            // Connection established -> pass it to the listener
             _newConnections.TryWrite(connection);
 
             // Create new single connection context, this will bind a more specific socket to the
