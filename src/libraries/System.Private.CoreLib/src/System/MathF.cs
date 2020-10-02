@@ -428,7 +428,6 @@ namespace System
             return x;
         }
 
-        
         public static float ScaleB(float x, int n)
         {
             // Implementation based on https://git.musl-libc.org/cgit/musl/tree/src/math/scalblnf.c
