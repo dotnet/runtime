@@ -1041,8 +1041,15 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, fgArgTabEntry* inf
 #endif // TARGET_ARM
         }
 
+        unsigned slotNumber = info->GetByteOffset() / TARGET_POINTER_SIZE;
+#if defined(FEATURE_PUT_STRUCT_ARG_STK)
+        unsigned numberOfStackSlots = info->GetStackSlotsNumber();
+        DEBUG_ARG_SLOTS_ASSERT(numberOfStackSlots == info->numSlots);
+#endif
+        DEBUG_ARG_SLOTS_ASSERT(slotNumber == info->slotNum);
+
         putArg = new (comp, GT_PUTARG_SPLIT)
-            GenTreePutArgSplit(arg, info->slotNum PUT_STRUCT_ARG_STK_ONLY_ARG(info->numSlots), info->numRegs,
+            GenTreePutArgSplit(arg, slotNumber PUT_STRUCT_ARG_STK_ONLY_ARG(numberOfStackSlots), info->numRegs,
                                call->IsFastTailCall(), call);
 
         // If struct argument is morphed to GT_FIELD_LIST node(s),
@@ -1126,12 +1133,16 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, fgArgTabEntry* inf
             // Mark this one as tail call arg if it is a fast tail call.
             // This provides the info to put this argument in in-coming arg area slot
             // instead of in out-going arg area slot.
+            CLANG_FORMAT_COMMENT_ANCHOR;
 
+#ifdef DEBUG
             // Make sure state is correct. The PUTARG_STK has TYP_VOID, as it doesn't produce
             // a result. So the type of its operand must be the correct type to push on the stack.
             // For a FIELD_LIST, this will be the type of the field (not the type of the arg),
             // but otherwise it is generally the type of the operand.
             info->checkIsStruct();
+#endif
+
             if ((arg->OperGet() != GT_FIELD_LIST))
             {
 #if defined(FEATURE_SIMD) && defined(FEATURE_PUT_STRUCT_ARG_STK)
@@ -1145,10 +1156,16 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, fgArgTabEntry* inf
                     assert(genActualType(arg->TypeGet()) == type);
                 }
             }
+            unsigned slotNumber = info->GetByteOffset() / TARGET_POINTER_SIZE;
+#if defined(FEATURE_PUT_STRUCT_ARG_STK)
+            unsigned numberOfStackSlots = info->GetStackSlotsNumber();
+            DEBUG_ARG_SLOTS_ASSERT(numberOfStackSlots == info->numSlots);
+#endif
+            DEBUG_ARG_SLOTS_ASSERT(slotNumber == info->slotNum);
 
             putArg =
                 new (comp, GT_PUTARG_STK) GenTreePutArgStk(GT_PUTARG_STK, TYP_VOID, arg,
-                                                           info->slotNum PUT_STRUCT_ARG_STK_ONLY_ARG(info->numSlots),
+                                                           slotNumber PUT_STRUCT_ARG_STK_ONLY_ARG(numberOfStackSlots),
                                                            call->IsFastTailCall(), call);
 
 #ifdef FEATURE_PUT_STRUCT_ARG_STK
@@ -1895,19 +1912,19 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
                 unsigned int argStart = callerArgLclNum * TARGET_POINTER_SIZE;
                 unsigned int argEnd   = argStart + static_cast<unsigned int>(callerArgDsc->lvArgStackSize());
 #else
-                assert(callerArgDsc->lvStkOffs != BAD_STK_OFFS);
+                assert(callerArgDsc->GetStackOffset() != BAD_STK_OFFS);
 
                 if (baseOff == -1)
                 {
-                    baseOff = callerArgDsc->lvStkOffs;
+                    baseOff = callerArgDsc->GetStackOffset();
                 }
 
                 // On all ABIs where we fast tail call the stack args should come in order.
-                assert(baseOff <= callerArgDsc->lvStkOffs);
+                assert(baseOff <= callerArgDsc->GetStackOffset());
 
                 // Compute offset of this stack argument relative to the first stack arg.
                 // This will be its offset into the incoming arg space area.
-                unsigned int argStart = static_cast<unsigned int>(callerArgDsc->lvStkOffs - baseOff);
+                unsigned int argStart = static_cast<unsigned int>(callerArgDsc->GetStackOffset() - baseOff);
                 unsigned int argEnd   = argStart + comp->lvaLclSize(callerArgLclNum);
 #endif
 
@@ -2115,7 +2132,10 @@ GenTree* Lowering::LowerTailCallViaJitHelper(GenTreeCall* call, GenTree* callTar
     // We need to figure out the size of the outgoing stack arguments, not including the special args.
     // The number of 4-byte words is passed to the helper for the incoming and outgoing argument sizes.
     // This number is exactly the next slot number in the call's argument info struct.
-    unsigned nNewStkArgsWords = call->fgArgInfo->GetNextSlotNum();
+    unsigned  nNewStkArgsBytes = call->fgArgInfo->GetNextSlotByteOffset();
+    const int wordSize         = 4;
+    unsigned  nNewStkArgsWords = nNewStkArgsBytes / wordSize;
+    DEBUG_ARG_SLOTS_ASSERT(call->fgArgInfo->GetNextSlotNum() == nNewStkArgsWords);
     assert(nNewStkArgsWords >= 4); // There must be at least the four special stack args.
     nNewStkArgsWords -= 4;
 
@@ -4167,7 +4187,7 @@ void Lowering::InsertPInvokeCallProlog(GenTreeCall* call)
         // On x86 targets, PInvoke calls need the size of the stack args in InlinedCallFrame.m_Datum.
         // This is because the callee pops stack arguments, and we need to keep track of this during stack
         // walking
-        const unsigned    numStkArgBytes = call->fgArgInfo->GetNextSlotNum() * TARGET_POINTER_SIZE;
+        const unsigned    numStkArgBytes = call->fgArgInfo->GetNextSlotByteOffset();
         GenTree*          stackBytes     = comp->gtNewIconNode(numStkArgBytes, TYP_INT);
         GenTreeCall::Use* args           = comp->gtNewCallArgs(frameAddr, stackBytes);
 #else
@@ -4201,9 +4221,9 @@ void Lowering::InsertPInvokeCallProlog(GenTreeCall* call)
     {
 #if !defined(TARGET_64BIT)
         // On 32-bit targets, indirect calls need the size of the stack args in InlinedCallFrame.m_Datum.
-        const unsigned numStkArgBytes = call->fgArgInfo->GetNextSlotNum() * TARGET_POINTER_SIZE;
+        const unsigned stackByteOffset = call->fgArgInfo->GetNextSlotByteOffset();
 
-        src = comp->gtNewIconNode(numStkArgBytes, TYP_INT);
+        src = comp->gtNewIconNode(stackByteOffset, TYP_INT);
 #else
         // On 64-bit targets, indirect calls may need the stub parameter value in InlinedCallFrame.m_Datum.
         // If the stub parameter value is not needed, m_Datum will be initialized by the VM.

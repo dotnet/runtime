@@ -11,6 +11,7 @@
     <MicrosoftNetCoreAppRuntimePackDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'microsoft.netcore.app.runtime.$(PackageRID)', '$(Configuration)'))</MicrosoftNetCoreAppRuntimePackDir>
     <MicrosoftNetCoreAppRuntimePackRidDir>$([MSBuild]::NormalizeDirectory('$(MicrosoftNetCoreAppRuntimePackDir)', 'runtimes', '$(PackageRID)'))</MicrosoftNetCoreAppRuntimePackRidDir>
     <MicrosoftNetCoreAppRuntimePackNativeDir>$([MSBuild]::NormalizeDirectory('$(MicrosoftNetCoreAppRuntimePackRidDir)', 'native'))</MicrosoftNetCoreAppRuntimePackNativeDir>
+    <WasmEnableES6 Condition="'$(WasmEnableES6)' == ''">false</WasmEnableES6>
   </PropertyGroup>
 
   <Target Name="CheckEnv">
@@ -83,7 +84,7 @@
           AfterTargets="Build"
           DependsOnTargets="BuildPInvokeTable;BundleTimeZones">
 
-    <Exec Command="make -C $(MonoProjectRoot)wasm all SHELL=/bin/bash BINDIR=$(ArtifactsBinDir) MONO_BIN_DIR=$(MonoArtifactsPath) OBJDIR=$(ArtifactsObjDir) NATIVE_BIN_DIR=$(NativeBinDir) CONFIG=$(Configuration) PINVOKE_TABLE=$(WasmPInvokeTablePath) ICU_LIBDIR=$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)/runtimes/browser-wasm/native/lib"
+    <Exec Command="make -C $(MonoProjectRoot)wasm all SHELL=/bin/bash BINDIR=$(ArtifactsBinDir) MONO_BIN_DIR=$(MonoArtifactsPath) OBJDIR=$(ArtifactsObjDir) NATIVE_BIN_DIR=$(NativeBinDir) CONFIG=$(Configuration) PINVOKE_TABLE=$(WasmPInvokeTablePath) ICU_LIBDIR=$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)/runtimes/browser-wasm/native/lib ENABLE_ES6=$(WasmEnableES6)"
           IgnoreStandardErrorWarningFormat="true" />
 
     <Copy SourceFiles="$(NativeBinDir)dotnet.js;

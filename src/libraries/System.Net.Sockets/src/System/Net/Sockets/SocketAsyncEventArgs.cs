@@ -589,20 +589,16 @@ namespace System.Net.Sockets
         {
             if (_operating == InProgress && _completedOperation == SocketAsyncOperation.Connect)
             {
-                if (_multipleConnect != null)
+                MultipleConnectAsync? multipleConnect = _multipleConnect;
+                if (multipleConnect != null)
                 {
                     // If a multiple connect is in progress, abort it.
-                    _multipleConnect.Cancel();
+                    multipleConnect.Cancel();
                 }
                 else
                 {
                     // Otherwise we're doing a normal ConnectAsync - cancel it by closing the socket.
-                    // _currentSocket will only be null if _multipleConnect was set, so we don't have to check.
-                    if (_currentSocket == null)
-                    {
-                        NetEventSource.Fail(this, "CurrentSocket and MultipleConnect both null!");
-                    }
-                    _currentSocket.Dispose();
+                    _currentSocket?.Dispose();
                 }
             }
         }

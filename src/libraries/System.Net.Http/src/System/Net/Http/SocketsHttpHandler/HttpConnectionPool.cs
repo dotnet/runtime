@@ -1424,7 +1424,6 @@ namespace System.Net.Http
             }
 
             Stream stream = tunnelResponse.Content.ReadAsStream(cancellationToken);
-            EndPoint remoteEndPoint = new DnsEndPoint(_originAuthority.IdnHost, _originAuthority.Port);
 
             return (stream, null);
         }

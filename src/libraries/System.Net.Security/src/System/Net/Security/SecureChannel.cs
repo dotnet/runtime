@@ -954,7 +954,17 @@ namespace System.Net.Security
 
             try
             {
-                _remoteCertificate = CertificateValidationPal.GetRemoteCertificate(_securityContext, out remoteCertificateStore);
+                X509Certificate2? certificate = CertificateValidationPal.GetRemoteCertificate(_securityContext, out remoteCertificateStore);
+
+                if (_remoteCertificate != null && certificate != null &&
+                    certificate.RawData.AsSpan().SequenceEqual(_remoteCertificate.RawData))
+                {
+                    // This is renegotiation or TLS 1.3 and the certificate did not change.
+                    // There is no reason to process callback again as we already established trust.
+                    return true;
+                }
+
+                _remoteCertificate = certificate;
 
                 if (_remoteCertificate == null)
                 {

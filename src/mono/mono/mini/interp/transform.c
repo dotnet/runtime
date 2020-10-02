@@ -1097,7 +1097,7 @@ get_interp_local_offset (TransformData *td, int local)
 	td->locals [local].offset = offset;
 
 	td->total_locals_size = offset + size;
-	g_assert (td->total_locals_size < G_MAXUINT16);
+	//g_assert (td->total_locals_size < G_MAXUINT16);
 
 	return offset;
 }
@@ -2353,12 +2353,14 @@ interp_inline_method (TransformData *td, MonoMethod *target_method, MonoMethodHe
 	td->inline_depth--;
 
 	if (!ret) {
+		if (!is_ok (error))
+			mono_error_cleanup (error);
+
 		if (td->verbose_level)
 			g_print ("Inline aborted method %s.%s\n", m_class_get_name (target_method->klass), target_method->name);
 		td->max_stack_height = prev_max_stack_height;
 		td->max_vt_sp = prev_max_vt_sp;
 		td->locals_size = prev_locals_size;
-
 
 		/* Remove any newly added items */
 		for (i = prev_n_data_items; i < td->n_data_items; i++) {
@@ -3256,7 +3258,7 @@ interp_method_compute_offsets (TransformData *td, InterpMethod *imethod, MonoMet
 	}
 	offset = ALIGN_TO (offset, MINT_VT_ALIGNMENT);
 
-	g_assert (offset < G_MAXUINT16);
+	//g_assert (offset < G_MAXUINT16);
 	td->total_locals_size = offset;
 }
 
@@ -8160,6 +8162,15 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, MonoG
 	interp_optimize_code (td);
 
 	generate_compacted_code (td);
+
+	if (td->total_locals_size >= G_MAXUINT16) {
+		char *name = mono_method_get_full_name (method);
+		char *msg = g_strdup_printf ("Unable to run method '%s': locals size too big.", name);
+		g_free (name);
+		mono_error_set_generic_error (error, "System", "InvalidProgramException", "%s", msg);
+		g_free (msg);
+		goto exit;
+	}
 
 	if (td->verbose_level) {
 		g_print ("Runtime method: %s %p\n", mono_method_full_name (method, TRUE), rtm);

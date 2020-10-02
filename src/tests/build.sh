@@ -134,7 +134,7 @@ generate_layout()
     build_MSBuild_projects "Tests_Overlay_Managed" "$__RepoRootDir/src/tests/run.proj" "Creating test overlay" "/t:CreateTestOverlay"
 
     if [[ "$__TargetOS" != "OSX" && "$__SkipStressDependencies" == 0 ]]; then
-        nextCommand="\"${__RepoRootDir}/src/coreclr/tests/setup-stress-dependencies.sh\" --arch=$__BuildArch --outputDir=$CORE_ROOT"
+        nextCommand="\"${__RepoRootDir}/src/tests/Common/setup-stress-dependencies.sh\" --arch=$__BuildArch --outputDir=$CORE_ROOT"
         echo "Resolve runtime dependences via $nextCommand"
         eval $nextCommand
 

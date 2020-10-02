@@ -626,13 +626,13 @@ namespace System.Text.Json.Serialization.Tests
 
             string jsonNumbersAsStrings = jsonBuilder_NumbersAsStrings.ToString();
 
-            foreach (Type type in CollectionTestTypes.DeserializableDictionaryTypes<T>())
+            foreach (Type type in CollectionTestTypes.DeserializableDictionaryTypes<string, T>())
             {
                 object obj = JsonSerializer.Deserialize(jsonNumbersAsStrings, type, s_optionReadAndWriteFromStr);
                 JsonTestHelper.AssertJsonEqual(jsonNumbersAsStrings, JsonSerializer.Serialize(obj, s_optionReadAndWriteFromStr));
             }
 
-            foreach (Type type in CollectionTestTypes.DeserializableNonDictionaryTypes<T>())
+            foreach (Type type in CollectionTestTypes.DeserializableNonGenericDictionaryTypes())
             {
                 Dictionary<T, T> dict = JsonSerializer.Deserialize<Dictionary<T, T>>(jsonNumbersAsStrings, s_optionReadAndWriteFromStr);
 

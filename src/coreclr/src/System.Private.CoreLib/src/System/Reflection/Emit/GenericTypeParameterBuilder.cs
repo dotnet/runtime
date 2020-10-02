@@ -220,13 +220,13 @@ namespace System.Reflection.Emit
 
         public void SetBaseTypeConstraint([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? baseTypeConstraint)
         {
-            m_type.CheckContext(baseTypeConstraint);
+            AssemblyBuilder.CheckContext(baseTypeConstraint);
             m_type.SetParent(baseTypeConstraint);
         }
 
         public void SetInterfaceConstraints(params Type[]? interfaceConstraints)
         {
-            m_type.CheckContext(interfaceConstraints);
+            AssemblyBuilder.CheckContext(interfaceConstraints);
             m_type.SetInterfaces(interfaceConstraints);
         }
 

@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <!--
-    Common files don't take part in the root tests\src\Directory.Build.targets
+    Common files don't take part in the root src\tests\Directory.Build.targets
     This file prevents them from including it as it gets included in its place
     If they ever need to take part, we can conditionally include them as documented
     here https://docs.microsoft.com/en-us/visualstudio/msbuild/customize-your-build#directorybuildprops-and-directorybuildtargets
   -->
-  <Import Project="$(RepoRoot)src/coreclr/tests/disableversioncheck.targets"
+  <Import Project="$(MSBuildThisFileDirectory)/Common/disableversioncheck.targets"
           Condition="'$(DisableVersionCheckImported)' != 'true'" />
 
   <!-- Default priority building values. -->
@@ -74,8 +74,6 @@
     </ProjectReference>
   </ItemGroup>
 
-  <Import Project="$(RepoRoot)src\coreclr\tests\Directory.Build.targets" />
-
   <!-- Determine if this project should be built or not -->
   <PropertyGroup>
     <BuildAllProjects Condition="'$(BuildAllProjects)' == ''">false</BuildAllProjects>
@@ -97,7 +95,7 @@
   <!-- RunOnly projects have a special build for dependent projects -->
   <Import Project="$(MSBuildThisFileDirectory)Common\runonly.targets" Condition="'$(CLRTestKind)' == 'RunOnly'" />
 
-  <Import Project="$(RepoRoot)src\coreclr\tests\override.targets" />
+  <Import Project="$(MSBuildThisFileDirectory)Common\override.targets" />
 
   <!-- We enable auto-unification of assembly references after importing the common targets.  Binding redirects are not needed
        for coreclr since it auto-unifies, so the warnings we get without this setting are just noise -->
@@ -240,7 +238,7 @@
   </Target>
 
   <PropertyGroup>
-    <ProjectAssetsFile>$(RepoRoot)src\tests\Common\test_dependencies\obj\project.assets.json</ProjectAssetsFile>
+    <ProjectAssetsFile>$(BaseOutputPath)\packages\Common\test_dependencies\test_dependencies\project.assets.json</ProjectAssetsFile>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(ReferenceSystemPrivateCoreLib)' == 'true' and '$(UsingMicrosoftNETSdk)' != 'true'">

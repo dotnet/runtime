@@ -14,23 +14,18 @@
 ################################################################################
 
 import argparse
+import locale
 import os
-import platform
 import shutil
 import sys
 import tempfile
-import string
-import urllib
 import urllib.request
 import zipfile
-
-import locale
-locale.setlocale(locale.LC_ALL, '')  # Use '' for auto, or force e.g. to 'en_US.UTF-8'
-
-from collections import defaultdict
-from sys import platform as _platform
+import re
 
 from coreclr_arguments import *
+
+locale.setlocale(locale.LC_ALL, '')  # Use '' for auto, or force e.g. to 'en_US.UTF-8'
 
 ################################################################################
 # Azure Storage information
@@ -112,15 +107,23 @@ list_parser.add_argument("--all", action="store_true", help="Show all JITs, not 
 # Helper classes
 ################################################################################
 
+
 class TempDir:
+    """ Class to create a temporary working directory, or use one that is passed as an argument.
+
+        Use with: "with TempDir() as temp_dir" to change to that directory and then automatically
+        change back to the original working directory afterwards and remove the temporary
+        directory and its contents (if args.skip_cleanup is False).
+    """
+
     def __init__(self, path=None):
-        self.dir = tempfile.mkdtemp() if path is None else path
+        self.mydir = tempfile.mkdtemp() if path is None else path
         self.cwd = None
 
     def __enter__(self):
         self.cwd = os.getcwd()
-        os.chdir(self.dir)
-        return self.dir
+        os.chdir(self.mydir)
+        return self.mydir
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         os.chdir(self.cwd)
@@ -128,19 +131,24 @@ class TempDir:
         # the `skip_cleanup` argument is not processed by CoreclrArguments, but is
         # just copied there.
         if not args.skip_cleanup:
-            shutil.rmtree(self.dir)
+            shutil.rmtree(self.mydir)
+
 
 class ChangeDir:
-    def __init__(self, dir):
-        self.dir = dir
+    """ Class to temporarily change to a given directory. Use with "with".
+    """
+
+    def __init__(self, mydir):
+        self.mydir = mydir
         self.cwd = None
 
     def __enter__(self):
         self.cwd = os.getcwd()
-        os.chdir(self.dir)
+        os.chdir(self.mydir)
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         os.chdir(self.cwd)
+
 
 def determine_jit_name(coreclr_args):
     """ Determine the jit based on the OS. If "-altjit" is specified, then use the specified altjit,
@@ -164,11 +172,11 @@ def determine_jit_name(coreclr_args):
         raise RuntimeError("Unknown OS.")
 
 
-def list_az_jits(coreclr_args, filter=lambda unused: True):
+def list_az_jits(filter_func=lambda unused: True):
     """ List the JITs in Azure Storage using REST api
 
     Args:
-        filter (lambda: string -> bool): filter to apply to the list. The filter takes a URL and returns True if this URL is acceptable.
+        filter_func (lambda: string -> bool): filter to apply to the list. The filter takes a URL and returns True if this URL is acceptable.
 
     Returns:
         urls (list): set of URLs in Azure Storage that match the filter.
@@ -217,7 +225,7 @@ def list_az_jits(coreclr_args, filter=lambda unused: True):
     urls = []
     for item in urls_split:
         url = item.split("</Url>")[0].strip()
-        if filter(url):
+        if filter_func(url):
             urls.append(url)
 
     return urls
@@ -237,11 +245,11 @@ def upload_command(coreclr_args):
 
         # Check if the blob already exists, and delete it if it does, before uploading / replacing it.
         try:
-            blob_properties = blob_client.get_blob_properties()
+            blob_client.get_blob_properties()
             # If no exception, then the blob already exists. Delete it!
             print("Warning: replacing existing blob!")
             blob_client.delete_blob()
-        except Exception as StorageErrorException:
+        except Exception:
             # Blob doesn't exist already; that's good
             pass
 
@@ -297,12 +305,12 @@ def upload_command(coreclr_args):
         raise RuntimeError("Unknown OS.")
 
     cross_jit_paths = [os.path.join(coreclr_args.product_location, item)
-            for item in os.listdir(coreclr_args.product_location)
-            if re.match(r'.*clrjit.*', item) and item != jit_name and any(item.endswith(extension) for extension in allowed_extensions)]
+                       for item in os.listdir(coreclr_args.product_location)
+                       if re.match(r'.*clrjit.*', item) and item != jit_name and any(item.endswith(extension) for extension in allowed_extensions)]
     files += cross_jit_paths
 
     # On Windows, grab the PDB files from a sub-directory.
-    #if coreclr_args.host_os == "Windows_NT":
+    # if coreclr_args.host_os == "Windows_NT":
     #    pdb_dir = os.path.join(coreclr_args.product_location, "PDB")
     #    if os.path.isdir(pdb_dir):
     #        pdb_paths = [os.path.join(pdb_dir, item) for item in os.listdir(pdb_dir) if re.match(r'.*clrjit.*', item)]
@@ -313,7 +321,7 @@ def upload_command(coreclr_args):
         print("  {}".format(item))
 
     try:
-        from azure.storage.blob import BlobServiceClient, BlobClient
+        from azure.storage.blob import BlobServiceClient
 
     except:
         print("Please install:")
@@ -441,7 +449,7 @@ def get_jit_urls(coreclr_args, find_all=False):
         url = url.lower()
         return find_all or url.startswith(blob_prefix_filter)
 
-    return list_az_jits(coreclr_args, filter_jits)
+    return list_az_jits(filter_jits)
 
 
 def download_command(coreclr_args):
@@ -497,7 +505,7 @@ def setup_args(args):
     coreclr_args = CoreclrArguments(args, require_built_core_root=False, require_built_product_dir=False, require_built_test_dir=False, default_build_type="Checked")
 
     coreclr_args.verify(args,
-                        "mode", # "mode" is from the `parser.add_subparsers(dest='mode')` call
+                        "mode",  # "mode" is from the `parser.add_subparsers(dest='mode')` call
                         lambda unused: True,
                         "Unable to set mode")
 
@@ -562,6 +570,7 @@ def setup_args(args):
 # main
 ################################################################################
 
+
 def main(args):
     """ Main method
     """
@@ -590,6 +599,7 @@ def main(args):
 ################################################################################
 # __main__
 ################################################################################
+
 
 if __name__ == "__main__":
     args = parser.parse_args()

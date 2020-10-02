@@ -361,9 +361,9 @@ namespace System.Net.Http
             }
         }
 
-        internal bool SupportsAutomaticDecompression => true;
-        internal bool SupportsProxy => true;
-        internal bool SupportsRedirectConfiguration => true;
+        internal const bool SupportsAutomaticDecompression = true;
+        internal const bool SupportsProxy = true;
+        internal const bool SupportsRedirectConfiguration = true;
 
         /// <summary>
         /// When non-null, a custom callback used to open new connections.
