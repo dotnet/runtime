@@ -242,8 +242,6 @@
              Link="Common\Interop\Unix\Interop.ForkAndExecProcess.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetGroupList.cs"
              Link="Common\Interop\Unix\Interop.GetGroupList.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetLine.cs"
-             Link="Common\Interop\Unix\Interop.GetLine.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetPwUid.cs"
              Link="Common\Interop\Unix\Interop.GetPwUid.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetSetPriority.cs"
@@ -264,8 +262,6 @@
              Link="Common\Interop\Unix\Interop.ResourceLimits.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.PathConf.cs"
              Link="Common\Interop\Unix\Interop.PathConf.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.POpen.cs"
-             Link="Common\Interop\Unix\Interop.POpen.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.WaitId.cs"
              Link="Common\Interop\Unix\Interop.WaitId.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.WaitPid.cs"

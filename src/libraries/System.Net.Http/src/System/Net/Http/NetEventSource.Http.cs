@@ -3,7 +3,6 @@
 
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
-using System.Net.Http;
 
 namespace System.Net
 {
@@ -12,8 +11,7 @@ namespace System.Net
     {
         private const int UriBaseAddressId = NextAvailableEventId;
         private const int ContentNullId = UriBaseAddressId + 1;
-        private const int ClientSendCompletedId = ContentNullId + 1;
-        private const int HeadersInvalidValueId = ClientSendCompletedId + 1;
+        private const int HeadersInvalidValueId = ContentNullId + 1;
         private const int HandlerMessageId = HeadersInvalidValueId + 1;
         private const int AuthenticationInfoId = HandlerMessageId + 1;
         private const int AuthenticationErrorId = AuthenticationInfoId + 1;
@@ -40,17 +38,6 @@ namespace System.Net
         [Event(ContentNullId, Keywords = Keywords.Debug, Level = EventLevel.Informational)]
         private void ContentNull(string objName, int objHash) =>
             WriteEvent(ContentNullId, objName, objHash);
-
-        [NonEvent]
-        public static void ClientSendCompleted(HttpClient httpClient, HttpResponseMessage response, HttpRequestMessage request)
-        {
-            Debug.Assert(Log.IsEnabled());
-            Log.ClientSendCompleted(response?.ToString(), GetHashCode(request), GetHashCode(response), GetHashCode(httpClient));
-        }
-
-        [Event(ClientSendCompletedId, Keywords = Keywords.Debug, Level = EventLevel.Verbose)]
-        private void ClientSendCompleted(string? responseString, int httpRequestMessageHash, int httpResponseMessageHash, int httpClientHash) =>
-            WriteEvent(ClientSendCompletedId, responseString, httpRequestMessageHash, httpResponseMessageHash, httpClientHash);
 
         [Event(HeadersInvalidValueId, Keywords = Keywords.Debug, Level = EventLevel.Error)]
         public void HeadersInvalidValue(string name, string rawValue) =>

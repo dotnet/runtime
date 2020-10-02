@@ -23,6 +23,29 @@ namespace System.Net.Http.Functional.Tests
         private sealed class DerivedHttpHeaders : HttpHeaders { }
 
         [Fact]
+        public async Task SendAsync_RequestWithSimpleHeader_ResponseReferencesUnmodifiedRequestHeaders()
+        {
+            const string HeaderKey = "some-header-123", HeaderValue = "this is the expected header value";
+
+            await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+            {
+                using HttpClient client = CreateHttpClient();
+
+                var requestMessage = new HttpRequestMessage(HttpMethod.Get, uri) { Version = UseVersion };
+                requestMessage.Headers.TryAddWithoutValidation(HeaderKey, HeaderValue);
+
+                using HttpResponseMessage response = await client.SendAsync(TestAsync, requestMessage);
+                Assert.Same(requestMessage, response.RequestMessage);
+                Assert.Equal(HeaderValue, requestMessage.Headers.GetValues(HeaderKey).First());
+            },
+            async server =>
+            {
+                HttpRequestData requestData = await server.HandleRequestAsync(HttpStatusCode.OK);
+                Assert.Equal(HeaderValue, requestData.GetSingleHeaderValue(HeaderKey));
+            });
+        }
+
+        [Fact]
         public async Task SendAsync_UserAgent_CorrectlyWritten()
         {
             string userAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.18 Safari/537.36";

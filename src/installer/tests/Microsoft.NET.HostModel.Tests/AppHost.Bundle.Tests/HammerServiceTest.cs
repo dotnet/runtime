@@ -11,7 +11,7 @@ using Xunit;
 
 namespace AppHost.Bundle.Tests
 {
-    public class HammerServiceTest : IClassFixture<HammerServiceTest.SharedTestState>
+    public class HammerServiceTest : BundleTestBase, IClassFixture<HammerServiceTest.SharedTestState>
     {
         private SharedTestState sharedTestState;
 
@@ -38,7 +38,7 @@ namespace AppHost.Bundle.Tests
             // Annotate the app as servicible, and then publish to a single-file.
             string depsjson = BundleHelper.GetDepsJsonPath(fixture);
             File.WriteAllText(depsjson, File.ReadAllText(depsjson).Replace("\"serviceable\": false", "\"serviceable\": true"));
-            var singleFile = BundleHelper.BundleApp(fixture);
+            var singleFile = BundleSelfContainedApp(fixture);
 
             // Create the servicing directory, and copy the servived DLL from service fixture to the servicing directory.
             var serviceBasePath = Path.Combine(fixture.TestProject.ProjectDirectory, "coreservicing");
@@ -68,20 +68,15 @@ namespace AppHost.Bundle.Tests
                 .HaveStdOutContaining("Hi Bengaluru!");
         }
 
-        public class SharedTestState : IDisposable
+        public class SharedTestState : SharedTestStateBase, IDisposable
         {
             public TestProjectFixture TestFixture { get; set; }
             public TestProjectFixture ServiceFixture { get; set; }
-            public RepoDirectoriesProvider RepoDirectories { get; set; }
 
             public SharedTestState()
             {
                 RepoDirectories = new RepoDirectoriesProvider();
-                TestFixture = new TestProjectFixture("HammerServiceApp", RepoDirectories);
-                TestFixture
-                    .EnsureRestoredForRid(TestFixture.CurrentRid, RepoDirectories.CorehostPackages)
-                    .PublishProject(runtime: TestFixture.CurrentRid, 
-                                    outputDirectory: BundleHelper.GetPublishPath(TestFixture));
+                TestFixture = PreparePublishedSelfContainedTestProject("HammerServiceApp");
 
                 ServiceFixture = new TestProjectFixture("ServicedLocation", RepoDirectories, assemblyName: "Location");
                 ServiceFixture

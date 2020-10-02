@@ -126,10 +126,7 @@ namespace System
 
         internal static bool IsPrimitive(RuntimeType type)
         {
-            CorElementType corElemType = GetCorElementType(type);
-            return (corElemType >= CorElementType.ELEMENT_TYPE_BOOLEAN && corElemType <= CorElementType.ELEMENT_TYPE_R8) ||
-                    corElemType == CorElementType.ELEMENT_TYPE_I ||
-                    corElemType == CorElementType.ELEMENT_TYPE_U;
+            return RuntimeHelpers.IsPrimitiveType(GetCorElementType(type));
         }
 
         internal static bool IsByRef(RuntimeType type)
