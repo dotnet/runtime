@@ -263,5 +263,7 @@ FCFuncStart(gEmbedded_Sys)
     // trimmed
     QCFuncElement("SetRLimit", SystemNative_SetRLimit)
 
+    // new
+    QCFuncElement("GetProcessPath", SystemNative_GetProcessPath)
 FCFuncEnd()
 
