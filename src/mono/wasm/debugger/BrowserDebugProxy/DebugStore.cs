@@ -389,6 +389,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         Dictionary<string, TypeInfo> typesByName = new Dictionary<string, TypeInfo>();
         readonly List<SourceFile> sources = new List<SourceFile>();
         internal string Url { get; }
+        public bool TriedToLoadSymbolsOnDemand { get; set; }
 
         public AssemblyInfo(IAssemblyResolver resolver, string url, byte[] assembly, byte[] pdb)
         {
@@ -446,7 +447,23 @@ namespace Microsoft.WebAssembly.Diagnostics
             this.logger = logger;
         }
 
-        void Populate()
+        public ModuleDefinition Image => image;
+
+        public void ClearDebugInfo()
+        {
+            foreach (var type in image.GetTypes())
+            {
+                var typeInfo = new TypeInfo(this, type);
+                typesByName[type.FullName] = typeInfo;
+
+                foreach (var method in type.Methods)
+                {
+                    method.DebugInformation = null;
+                }
+            }
+        }
+
+        public void Populate()
         {
             ProcessSourceLink();
 
