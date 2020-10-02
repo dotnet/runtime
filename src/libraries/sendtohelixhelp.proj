@@ -101,7 +101,7 @@
     </When>
     <When Condition="$(BuildTargetFramework.StartsWith('net4'))">
       <PropertyGroup>
-        <HelixCommand>dotnet test $HELIX_WORKITEM_FRIENDLYNAME.dll --settings .runsettings --platform $(TargetArchitecture)</HelixCommand>
+        <HelixCommand>dotnet test %HELIX_WORKITEM_FRIENDLYNAME%.dll --settings .runsettings --platform $(TargetArchitecture)</HelixCommand>
       </PropertyGroup>
     </When>
     <Otherwise>
