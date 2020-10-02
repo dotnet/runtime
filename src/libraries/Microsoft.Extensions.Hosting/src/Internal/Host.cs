@@ -55,10 +55,7 @@ namespace Microsoft.Extensions.Hosting.Internal
 
                 if (hostedService is BackgroundService backgroundService)
                 {
-                    _ = backgroundService.ExecuteTask.ContinueWith(t =>
-                    {
-                        _logger.BackgroundServiceFaulted(t.Exception);
-                    }, CancellationToken.None, TaskContinuationOptions.OnlyOnFaulted, TaskScheduler.Default);
+                    _ = HandleBackgroundException(backgroundService);
                 }
             }
 
@@ -66,6 +63,18 @@ namespace Microsoft.Extensions.Hosting.Internal
             _applicationLifetime.NotifyStarted();
 
             _logger.Started();
+        }
+
+        private async Task HandleBackgroundException(BackgroundService backgroundService)
+        {
+            try
+            {
+                await backgroundService.ExecuteTask.ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                _logger.BackgroundServiceFaulted(ex);
+            }
         }
 
         public async Task StopAsync(CancellationToken cancellationToken = default)
