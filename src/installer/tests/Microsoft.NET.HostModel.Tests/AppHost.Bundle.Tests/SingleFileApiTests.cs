@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Text.RegularExpressions;
 using BundleTests.Helpers;
 using Microsoft.DotNet.Cli.Build.Framework;
 using Microsoft.DotNet.CoreSetup.Test;
@@ -22,8 +23,10 @@ namespace AppHost.Bundle.Tests
         {
             var fixture = sharedTestState.TestFixture.Copy();
             var singleFile = BundleSelfContainedApp(fixture);
+            string extractionDir = BundleHelper.GetExtractionRootDir(fixture).Name;
+            string bundleDir = BundleHelper.GetBundleDir(fixture).FullName;
 
-            Command.Create(singleFile, "fullyqualifiedname codebase appcontext cmdlineargs executing_assembly_location basedirectory")
+            Command.Create(singleFile, "fullyqualifiedname codebase appcontext cmdlineargs executing_assembly_location basedirectory native_search_dirs")
                 .CaptureStdErr()
                 .CaptureStdOut()
                 .Execute()
@@ -37,7 +40,11 @@ namespace AppHost.Bundle.Tests
                 // For single-file, Environment.GetCommandLineArgs[0] should return the file path of the host.
                 .And.HaveStdOutContaining("Command line args: " + singleFile)
                 .And.HaveStdOutContaining("ExecutingAssembly.Location: " + Environment.NewLine)
-                .And.HaveStdOutContaining("AppContext.BaseDirectory: " + Path.GetDirectoryName(singleFile));
+                .And.HaveStdOutContaining("AppContext.BaseDirectory: " + Path.GetDirectoryName(singleFile))
+                // If we don't extract anything to disk, the extraction dir shouldn't
+                // appear in the native search dirs.
+                .And.HaveStdOutMatching($"NATIVE_DLL_SEARCH_DIRECTORIES: .*{Regex.Escape(bundleDir)}")
+                .And.NotHaveStdOutContaining(extractionDir);
         }
 
         [Fact]
@@ -45,12 +52,13 @@ namespace AppHost.Bundle.Tests
         {
             var fixture = sharedTestState.TestFixture.Copy();
             var singleFile = BundleSelfContainedApp(fixture, BundleOptions.BundleAllContent);
-            var extractionBaseDir = BundleHelper.GetExtractionRootDir(fixture);
+            string bundleDir = BundleHelper.GetBundleDir(fixture).FullName;
+            string extractionDir = BundleHelper.GetExtractionRootDir(fixture).FullName;
 
-            Command.Create(singleFile, "fullyqualifiedname codebase appcontext cmdlineargs executing_assembly_location basedirectory")
+            Command.Create(singleFile, "fullyqualifiedname codebase appcontext cmdlineargs executing_assembly_location basedirectory native_search_dirs")
                 .CaptureStdErr()
                 .CaptureStdOut()
-                .EnvironmentVariable(BundleHelper.DotnetBundleExtractBaseEnvVariable, extractionBaseDir.FullName)
+                .EnvironmentVariable(BundleHelper.DotnetBundleExtractBaseEnvVariable, extractionDir)
                 .Execute()
                 .Should()
                 .Pass()
@@ -62,63 +70,10 @@ namespace AppHost.Bundle.Tests
                 .And.NotHaveStdOutContaining("Microsoft.NETCore.App.deps.json") // No framework - it's self-contained
                 // For single-file, Environment.GetCommandLineArgs[0] should return the file path of the host.
                 .And.HaveStdOutContaining("Command line args: " + singleFile)
-                .And.HaveStdOutContaining("ExecutingAssembly.Location: " + extractionBaseDir.FullName) // Should point to the app's dll
-                .And.HaveStdOutContaining("AppContext.BaseDirectory: " + extractionBaseDir.FullName); // Should point to the extraction directory
-        }
-
-        [Fact]
-        public void GetCommandLineArgs_0_Non_Bundled_App()
-        {
-            var fixture = sharedTestState.TestFixture.Copy();
-            var dotnet = fixture.BuiltDotnet;
-            var appPath = BundleHelper.GetAppPath(fixture);
-
-            // For non single-file apps, Environment.GetCommandLineArgs[0]
-            // should return the file path of the managed entrypoint.
-            dotnet.Exec(appPath, "cmdlineargs")
-                .CaptureStdErr()
-                .CaptureStdOut()
-                .Execute()
-                .Should()
-                .Pass()
-                .And
-                .HaveStdOutContaining(appPath);
-        }
-
-        [Fact]
-        public void AppContext_Native_Search_Dirs_Contains_Bundle_Dir()
-        {
-            var fixture = sharedTestState.TestFixture.Copy();
-            Bundler bundler = BundleHelper.BundleApp(fixture, out string singleFile);
-            string extractionDir = BundleHelper.GetExtractionDir(fixture, bundler).Name;
-            string bundleDir = BundleHelper.GetBundleDir(fixture).FullName;
-
-            // If we don't extract anything to disk, the extraction dir shouldn't
-            // appear in the native search dirs.
-            Command.Create(singleFile, "native_search_dirs")
-                .CaptureStdErr()
-                .CaptureStdOut()
-                .Execute()
-                .Should().Pass()
-                .And.HaveStdOutContaining(bundleDir)
-                .And.NotHaveStdOutContaining(extractionDir);
-        }
-
-        [Fact]
-        public void AppContext_Native_Search_Dirs_Contains_Bundle_And_Extraction_Dirs()
-        {
-            var fixture = sharedTestState.TestFixture.Copy();
-            Bundler bundler = BundleHelper.BundleApp(fixture, out string singleFile, BundleOptions.BundleNativeBinaries);
-            string extractionDir = BundleHelper.GetExtractionDir(fixture, bundler).Name;
-            string bundleDir = BundleHelper.GetBundleDir(fixture).FullName;
-
-            Command.Create(singleFile, "native_search_dirs")
-                .CaptureStdErr()
-                .CaptureStdOut()
-                .Execute()
-                .Should().Pass()
-                .And.HaveStdOutContaining(extractionDir)
-                .And.HaveStdOutContaining(bundleDir);
+                .And.HaveStdOutContaining("ExecutingAssembly.Location: " + extractionDir) // Should point to the app's dll
+                .And.HaveStdOutContaining("AppContext.BaseDirectory: " + extractionDir) // Should point to the extraction directory
+                // In extraction mode, we should have both dirs
+                .And.HaveStdOutMatching($"NATIVE_DLL_SEARCH_DIRECTORIES: .*{Regex.Escape(extractionDir)}.*{Regex.Escape(bundleDir)}");
         }
 
         public class SharedTestState : SharedTestStateBase, IDisposable
