@@ -20,7 +20,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        public unsafe void BitwiseEquality_AreEqual()
+        public unsafe void EqualBitwiseComparables_AreEqual()
         {
             int someNumber = 1;
             var a = new BitwiseComparable();
@@ -28,10 +28,22 @@ namespace System.Reflection.Tests
             BitwiseComparable b = a;
 
             Assert.True(a.Equals(b));
+            Assert.Equal(a.GetHashCode(), b.GetHashCode());
         }
 
         [Fact]
-        public unsafe void BitwiseEquality_EqualWithSelf()
+        public unsafe void UnequalBitwiseComparables_AreUnequal()
+        {
+            int someNumber = 1;
+            var a = new BitwiseComparable();
+            a.PublicInt = &someNumber;
+            var b = new BitwiseComparable();
+
+            Assert.False(a.Equals(b));
+        }
+
+        [Fact]
+        public unsafe void SameBitwiseComparable_EqualWithSelf()
         {
             int someNumber = 1;
             var a = new BitwiseComparable();
@@ -41,7 +53,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        public unsafe void MemberwiseEquality_AreEqual()
+        public unsafe void EqualMemberwiseComparables_AreEqual()
         {
             int someNumber = 1;
             var a = new MemberwiseComparable();
@@ -49,16 +61,38 @@ namespace System.Reflection.Tests
             MemberwiseComparable b = a;
 
             Assert.True(a.Equals(b));
+            Assert.Equal(a.GetHashCode(), b.GetHashCode());
         }
 
         [Fact]
-        public unsafe void MemberwiseEquality_EqualWithSelf()
+        public unsafe void UnequalMemberwiseComparables_AreUnequal()
+        {
+            int someNumber = 1;
+            var a = new MemberwiseComparable();
+            a.PublicInt = &someNumber;
+            var b = new MemberwiseComparable();
+
+            Assert.False(a.Equals(b));
+        }
+
+        [Fact]
+        public unsafe void SameMemberwiseComparable_EqualWithSelf()
         {
             int someNumber = 1;
             var a = new MemberwiseComparable();
             a.PublicInt = &someNumber;
 
             Assert.True(a.Equals(a));
+        }
+
+        [Fact]
+        public unsafe void EqualPointers_AreEqual()
+        {
+            object a = Pointer.Box((void*)0x12340000, typeof(int*));
+            object b = Pointer.Box((void*)0x12340000, typeof(int*));
+
+            Assert.True(a.Equals(b));
+            Assert.Equal(a.GetHashCode(), b.GetHashCode());
         }
 
         [Fact]
@@ -68,6 +102,7 @@ namespace System.Reflection.Tests
             object b = Pointer.Box(null, typeof(int*));
 
             Assert.True(a.Equals(b));
+            Assert.Equal(a.GetHashCode(), b.GetHashCode());
         }
 
         [Fact]
@@ -77,6 +112,16 @@ namespace System.Reflection.Tests
             object b = Pointer.Box((void*)0x12340000, typeof(uint*));
 
             Assert.True(a.Equals(b));
+            Assert.Equal(a.GetHashCode(), b.GetHashCode());
+        }
+
+        [Fact]
+        public unsafe void DifferentPointers_AreUnequal()
+        {
+            object a = Pointer.Box((void*)0x12340000, typeof(int*));
+            object b = Pointer.Box((void*)0x56780000, typeof(int*));
+
+            Assert.False(a.Equals(b));
         }
     }
 }
