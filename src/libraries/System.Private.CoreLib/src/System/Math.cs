@@ -1105,6 +1105,12 @@ namespace System
 
         public static double ScaleB(double x, int n)
         {
+            // Implementation based on https://git.musl-libc.org/cgit/musl/tree/src/math/scalbln.c
+            //
+            // Performs the calculation x * 2^n efficiently. It constructs a double from 2^n by building
+            // the correct biased exponent. If n is greater than the maximum exponent (1023) or less than
+            // the minimum exponent (-1022), adjust x and n to compute correct result.
+
             double y = x;
             if (n > 1023)
             {

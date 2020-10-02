@@ -428,8 +428,15 @@ namespace System
             return x;
         }
 
+        
         public static float ScaleB(float x, int n)
         {
+            // Implementation based on https://git.musl-libc.org/cgit/musl/tree/src/math/scalblnf.c
+            //
+            // Performs the calculation x * 2^n efficiently. It constructs a float from 2^n by building
+            // the correct biased exponent. If n is greater than the maximum exponent (127) or less than
+            // the minimum exponent (-126), adjust x and n to compute correct result.
+
             float y = x;
             if (n > 127)
             {
