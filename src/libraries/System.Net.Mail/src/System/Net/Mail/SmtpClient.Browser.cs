@@ -47,7 +47,6 @@ namespace System.Net.Mail
 
         private void Initialize()
         {
-            //_transport = new SmtpTransport();
             throw new PlatformNotSupportedException();
         }
 
