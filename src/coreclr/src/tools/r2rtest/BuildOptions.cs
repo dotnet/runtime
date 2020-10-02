@@ -34,6 +34,7 @@ namespace R2RTest
         public bool LargeBubble { get; set; }
         public bool Composite { get; set; }
         public int Crossgen2Parallelism { get; set; }
+        public FileInfo Crossgen2JitPath { get; set; }
         public int CompilationTimeoutMinutes { get; set; }
         public int ExecutionTimeoutMinutes { get; set; }
         public DirectoryInfo[] ReferencePath { get; set; }
