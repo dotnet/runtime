@@ -107,15 +107,6 @@ elseif(CLR_CMAKE_TARGET_LINUX)
     #   )
     # endif(CLR_CMAKE_TARGET_OSX)
     # 
-    # # On OSX and *BSD, we use the libunwind that's part of the OS
-    # if(CLR_CMAKE_TARGET_FREEBSD)
-    #     find_unwind_libs(UNWIND_LIBS)
-    # 
-    #     LIST(APPEND CORECLR_LIBRARIES
-    #       ${UNWIND_LIBS}
-    #     )
-    # endif(CLR_CMAKE_TARGET_FREEBSD)
-    # 
     # if(CLR_CMAKE_TARGET_NETBSD)
     #     find_library(KVM kvm)
     # 
@@ -128,6 +119,15 @@ endif(CLR_CMAKE_TARGET_WIN32)
 # Path like: artifacts/bin/native/net5.0-Linux-Release-arm/
 set(NATIVE_LIBS_LOCATION "${NATIVE_LIBS_ARTIFACTS}")
 message ("Looking for native libs at location: '${NATIVE_LIBS_LOCATION}'.")
+
+# If/when OSX and *BSD are supported, they should also use the libunwind that's part of the OS
+if(CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
+    find_unwind_libs(UNWIND_LIBS)
+
+    LIST(APPEND CORECLR_LIBRARIES
+      ${UNWIND_LIBS}
+    )
+endif()
 
 if(NOT CLR_CMAKE_TARGET_LINUX)
     set(NATIVE_LIBS
