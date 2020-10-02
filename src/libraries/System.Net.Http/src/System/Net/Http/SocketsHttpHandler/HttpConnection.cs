@@ -748,7 +748,7 @@ namespace System.Net.Http
                         // Map the exception the same way as we normally do.
                         catch (Exception ex) when (MapSendException(ex, cancellationToken, out Exception mappedEx))
                         {
-                            throw;
+                            throw mappedEx;
                         }
                     }
                     LogExceptions(sendRequestContentTask);

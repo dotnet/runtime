@@ -176,7 +176,8 @@ namespace Internal.NativeCrypto
         internal static void AcquireCsp(CspParameters cspParameters, out SafeProvHandle safeProvHandle)
         {
             Debug.Assert(cspParameters != null);
-            Debug.Assert(OperatingSystem.IsWindows() && cspParameters.KeyContainerName == null);
+            Debug.Assert(OperatingSystem.IsWindows());
+            Debug.Assert(cspParameters.KeyContainerName == null);
 
             SafeProvHandle hProv;
             //
