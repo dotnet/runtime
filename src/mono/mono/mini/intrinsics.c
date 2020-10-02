@@ -3,6 +3,7 @@
  */
 
 #include <config.h>
+#include <glib.h>
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-math.h>
 #include <math.h>
