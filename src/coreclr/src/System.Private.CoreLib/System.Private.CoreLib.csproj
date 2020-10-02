@@ -104,7 +104,6 @@
 
   <!-- Sources -->
   <ItemGroup>
-    <Compile Include="$(BclSourcesRoot)\Internal\Console.cs" />
     <Compile Include="$(BclSourcesRoot)\Internal\Runtime\InteropServices\ComponentActivator.cs" />
     <Compile Include="$(BclSourcesRoot)\Internal\Runtime\InteropServices\IsolatedComponentLoadContext.cs" />
     <Compile Include="$(BclSourcesRoot)\System\__Canon.cs" />

@@ -37,6 +37,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)Internal\AssemblyAttributes.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Internal\Console.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Internal\Console.Unix.cs" Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)Internal\Console.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)Internal\IO\File.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Internal\Padding.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Internal\Runtime\CompilerServices\Unsafe.cs" />
@@ -1667,6 +1670,9 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.WriteFile_SafeHandle_IntPtr.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.WriteFile_SafeHandle_IntPtr.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.WriteFile_IntPtr.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.WriteFile_SafeHandle_IntPtr.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)System\IO\Win32Marshal.cs">
       <Link>Common\System\IO\Win32Marshal.cs</Link>
     </Compile>
@@ -1732,6 +1738,9 @@
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.LockFileRegion.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.LockFileRegion.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Log.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.Log.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.LowLevelMonitor.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.LowLevelMonitor.cs</Link>

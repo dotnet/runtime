@@ -8,8 +8,12 @@
 
 PALEXPORT void SystemNative_Log(uint8_t* buffer, int32_t length);
 
+#if defined(TARGET_IOS) || defined(TARGET_TVOS)
+
 PALEXPORT int32_t SystemNative_InitializeTerminalAndSignalHandling(void);
 
 // Called by pal_signal.cpp to reinitialize the console on SIGCONT/SIGCHLD.
 void ReinitializeTerminal(void) {}
 void UninitializeTerminal(void) {}
+
+#endif
