@@ -9718,7 +9718,6 @@ void MethodTableBuilder::CheckForSystemTypes()
         {
             pMT->SetIsNullable();
         }
-#ifndef TARGET_X86
         else if (strcmp(name, g_RuntimeArgumentHandleName) == 0)
         {
             pMT->SetInternalCorElementType (ELEMENT_TYPE_I);
@@ -9727,7 +9726,6 @@ void MethodTableBuilder::CheckForSystemTypes()
         {
             pMT->SetInternalCorElementType (ELEMENT_TYPE_I);
         }
-#endif
     }
     else
     {
