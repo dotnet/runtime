@@ -68,12 +68,3 @@ internal class ConsoleDiagnosticMessageSink : IMessageSink
         return false;
     }
 }
-
-public class UnitTests
-{
-    [Fact]
-    public void MyUnitTest()
-    {
-        Assert.True(false);
-    }
-}
