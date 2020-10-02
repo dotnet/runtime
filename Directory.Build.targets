@@ -22,6 +22,11 @@
     <NETCoreAppMaximumVersion>$(MajorVersion).$(MinorVersion)</NETCoreAppMaximumVersion>
   </PropertyGroup>
 
+  <!--
+    SDK currently doesnot know about net6.0 TargetFramework.
+    We need to manually add these to correctly resolve the targeting packs.
+    https://github.com/dotnet/sdk/issues/13950  
+  -->
   <ItemGroup>
     <KnownFrameworkReference Include="Microsoft.NETCore.App"
       DefaultRuntimeFrameworkVersion="5.0.0-rc.1.20451.14"
