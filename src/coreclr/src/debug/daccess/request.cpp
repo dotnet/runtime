@@ -4827,8 +4827,6 @@ HRESULT ClrDataAccess::GetObjectComWrappersData(CLRDATA_ADDRESS objAddr, CLRDATA
 
     };
 
-    // We could bail due to missing memory, want to return S_FALSE in that case
-    hr = S_FALSE;
     if (pNeeded != NULL)
     {
         *pNeeded = 0;
@@ -4862,18 +4860,21 @@ HRESULT ClrDataAccess::GetObjectComWrappersData(CLRDATA_ADDRESS objAddr, CLRDATA
             {
                 if (pos >= count)
                 {
-                    // Already set S_FALSE above
+                    hr = S_FALSE;
                     break;
                 }
 
                 mowList[pos] = comWrappers[pos];
             }
-
-            // hr is set to S_FALSE above because of the possiblity that the memory is missing and we 
-            // could hit the catch, the only codepath we want to return S_OK is if we successfully
-            // return data. Even if the memory exists but the array is too small we return S_FALSE too
-            hr = S_OK;
         }
+        else
+        {
+            hr = S_FALSE;
+        }
+    }
+    else
+    {
+        hr = S_FALSE;
     }
 
     SOSDacLeave();
