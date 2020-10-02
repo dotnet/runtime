@@ -15,10 +15,14 @@ namespace System.Buffers
 #endif
     sealed class ArrayBufferWriter<T> : IBufferWriter<T>
     {
+        // Copy of Array.MaxArrayLength. For byte arrays the limit is slightly larger
+        private const int MaxArrayLength = 0X7FEFFFFF;
+
+        private const int DefaultInitialBufferSize = 256;
+
         private T[] _buffer;
         private int _index;
 
-        private const int DefaultInitialBufferSize = 256;
 
         /// <summary>
         /// Creates an instance of an <see cref="ArrayBufferWriter{T}"/>, in which data can be written to,
@@ -168,7 +172,7 @@ namespace System.Buffers
             {
                 int currentLength = _buffer.Length;
 
-                // Attempt to grow by the larger of the minimum size and double the current size.
+                // Attempt to grow by the larger of the sizeHint and double the current size.
                 int growBy = Math.Max(sizeHint, currentLength);
 
                 if (currentLength == 0)
@@ -180,20 +184,15 @@ namespace System.Buffers
 
                 if ((uint)newSize > int.MaxValue)
                 {
-                    // Attempt to grow by the larger of the minimum size and half of the available size.
-                    growBy = Math.Max(sizeHint, (int.MaxValue - currentLength) / 2 + 1);
-                    newSize = currentLength + growBy;
+                    // Attempt to grow to MaxArrayLength.
+                    uint needed = (uint)(currentLength - FreeCapacity + sizeHint);
 
-                    if ((uint)newSize > int.MaxValue)
+                    if (needed > MaxArrayLength)
                     {
-                        // Attempt to grow by the minimum size.
-                        newSize = currentLength + sizeHint;
-
-                        if ((uint)newSize > int.MaxValue)
-                        {
-                            ThrowOutOfMemoryException((uint)newSize);
-                        }
+                        ThrowOutOfMemoryException(needed);
                     }
+
+                    newSize = MaxArrayLength;
                 }
 
                 Array.Resize(ref _buffer, newSize);
