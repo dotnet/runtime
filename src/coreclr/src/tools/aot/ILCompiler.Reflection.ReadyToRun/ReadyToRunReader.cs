@@ -91,7 +91,6 @@ namespace ILCompiler.Reflection.ReadyToRun
 
         // ImportSections
         private List<ReadyToRunImportSection> _importSections;
-        private Dictionary<int, string> _importCellNames;
         private Dictionary<int, ReadyToRunSignature> _importSignatures;
 
         // AvailableType
@@ -294,19 +293,6 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// <summary>
         /// Map from import cell addresses to their symbolic names.
         /// </summary>
-        public IReadOnlyDictionary<int, string> ImportCellNames
-        {
-            get
-            {
-                EnsureImportSections();
-                return _importCellNames;
-            }
-
-        }
-
-        /// <summary>
-        /// Map from import cell addresses to their symbolic names.
-        /// </summary>
         public IReadOnlyDictionary<int, ReadyToRunSignature> ImportSignatures
         {
             get
@@ -466,20 +452,6 @@ namespace ILCompiler.Reflection.ReadyToRun
                     }
                 }
             }
-        }
-
-        public IReadOnlyDictionary<TMethod, ReadyToRunMethod> GetCustomMethodToRuntimeFunctionMapping<TType, TMethod, TGenericContext>(IR2RSignatureTypeProvider<TType, TMethod, TGenericContext> provider)
-        {
-            EnsureEntrypointRuntimeFunctionToReadyToRunMethodDict();
-
-            Dictionary<TMethod, ReadyToRunMethod> customMethods = new Dictionary<TMethod, ReadyToRunMethod>();
-            if (ReadyToRunHeader.Sections.TryGetValue(ReadyToRunSectionType.RuntimeFunctions, out ReadyToRunSection runtimeFunctionSection))
-            {
-                ParseMethodDefEntrypoints((section, reader) => ParseMethodDefEntrypointsSectionCustom<TType, TMethod, TGenericContext>(provider, customMethods, section, reader));
-                ParseInstanceMethodEntrypointsCustom<TType, TMethod, TGenericContext>(provider, customMethods);
-            }
-
-            return customMethods;
         }
 
         private bool TryLocateNativeReadyToRunHeader()
@@ -664,20 +636,6 @@ namespace ILCompiler.Reflection.ReadyToRun
             }
         }
 
-        public bool InputArchitectureSupported()
-        {
-            return Machine != Machine.ArmThumb2; // CoreDisTools often fails to decode when disassembling ARM images (see https://github.com/dotnet/runtime/issues/10959)
-        }
-
-        // TODO: Fix R2RDump issue where an R2R image cannot be dissassembled with the x86 CoreDisTools
-        // For the short term, we want to error out with a decent message explaining the unexpected error
-        // Issue https://github.com/dotnet/runtime/issues/10928
-        public bool DisassemblerArchitectureSupported()
-        {
-            System.Runtime.InteropServices.Architecture val = System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture;
-            return val != System.Runtime.InteropServices.Architecture.X86;
-        }
-
         /// <summary>
         /// Each runtime function entry has 3 fields for Amd64 machines (StartAddress, EndAddress, UnwindRVA), otherwise 2 fields (StartAddress, UnwindRVA)
         /// </summary>
@@ -752,69 +710,6 @@ namespace ILCompiler.Reflection.ReadyToRun
         }
 
         /// <summary>
-        /// Parse a single method def entrypoint section. For composite R2R images, this method is called multiple times
-        /// are method entrypoints are stored separately for each component assembly of the composite R2R executable.
-        /// </summary>
-        /// <param name="section">Method entrypoint section to parse</param>
-        /// <param name="metadataReader">ECMA metadata reader representing this method entrypoint section</param>
-        /// <param name="isEntryPoint">Set to true for each runtime function index representing a method entrypoint</param>
-        private void ParseMethodDefEntrypointsSectionCustom<TType, TMethod, TGenericContext>(IR2RSignatureTypeProvider<TType, TMethod, TGenericContext> provider, Dictionary<TMethod, ReadyToRunMethod> foundMethods, ReadyToRunSection section, IAssemblyMetadata metadataReader)
-        {
-            int methodDefEntryPointsOffset = GetOffset(section.RelativeVirtualAddress);
-            NativeArray methodEntryPoints = new NativeArray(Image, (uint)methodDefEntryPointsOffset);
-            uint nMethodEntryPoints = methodEntryPoints.GetCount();
-
-            for (uint rid = 1; rid <= nMethodEntryPoints; rid++)
-            {
-                int offset = 0;
-                if (methodEntryPoints.TryGetAt(Image, rid - 1, ref offset))
-                {
-                    EntityHandle methodHandle = MetadataTokens.MethodDefinitionHandle((int)rid);
-                    int runtimeFunctionId;
-                    int? fixupOffset;
-                    GetRuntimeFunctionIndexFromOffset(offset, out runtimeFunctionId, out fixupOffset);
-                    ReadyToRunMethod r2rMethod = _runtimeFunctionToMethod[runtimeFunctionId];
-                    var customMethod = provider.GetMethodFromMethodDef(metadataReader.MetadataReader, MetadataTokens.MethodDefinitionHandle((int)rid), default(TType));
-                    
-                    if (!Object.ReferenceEquals(customMethod, null) && !foundMethods.ContainsKey(customMethod))
-                        foundMethods.Add(customMethod, r2rMethod);
-                }
-            }
-        }
-
-        /// <summary>
-        /// Initialize generic method instances with argument types and runtime function indices from InstanceMethodEntrypoints
-        /// </summary>
-        private void ParseInstanceMethodEntrypointsCustom<TType, TMethod, TGenericContext>(IR2RSignatureTypeProvider<TType, TMethod, TGenericContext> provider, Dictionary<TMethod, ReadyToRunMethod> foundMethods)
-        {
-            if (!ReadyToRunHeader.Sections.TryGetValue(ReadyToRunSectionType.InstanceMethodEntryPoints, out ReadyToRunSection instMethodEntryPointSection))
-            {
-                return;
-            }
-            int instMethodEntryPointsOffset = GetOffset(instMethodEntryPointSection.RelativeVirtualAddress);
-            NativeParser parser = new NativeParser(Image, (uint)instMethodEntryPointsOffset);
-            NativeHashtable instMethodEntryPoints = new NativeHashtable(Image, parser, (uint)(instMethodEntryPointsOffset + instMethodEntryPointSection.Size));
-            NativeHashtable.AllEntriesEnumerator allEntriesEnum = instMethodEntryPoints.EnumerateAllEntries();
-            NativeParser curParser = allEntriesEnum.GetNext();
-            while (!curParser.IsNull())
-            {
-                IAssemblyMetadata mdReader = GetGlobalMetadata();
-                var decoder = new R2RSignatureDecoder<TType, TMethod, TGenericContext>(provider, default(TGenericContext), mdReader.MetadataReader, this, (int)curParser.Offset);
-
-                TMethod customMethod = decoder.ParseMethod();
-
-                int runtimeFunctionId;
-                int? fixupOffset;
-                GetRuntimeFunctionIndexFromOffset((int)decoder.Offset, out runtimeFunctionId, out fixupOffset);
-                ReadyToRunMethod r2rMethod = _runtimeFunctionToMethod[runtimeFunctionId];
-                if (!Object.ReferenceEquals(customMethod, null) && !foundMethods.ContainsKey(customMethod))
-                    foundMethods.Add(customMethod, r2rMethod);
-                foundMethods.Add(customMethod, r2rMethod);
-                curParser = allEntriesEnum.GetNext();
-            }
-        }
-
-        /// <summary>
         /// Initialize generic method instances with argument types and runtime function indices from InstanceMethodEntrypoints
         /// </summary>
         private void ParseInstanceMethodEntrypoints(bool[] isEntryPoint)
@@ -831,7 +726,8 @@ namespace ILCompiler.Reflection.ReadyToRun
             while (!curParser.IsNull())
             {
                 IAssemblyMetadata mdReader = GetGlobalMetadata();
-                SignatureDecoder decoder = new SignatureDecoder(_assemblyResolver, mdReader?.MetadataReader, this, (int)curParser.Offset);
+                SignatureFormattingOptions dummyOptions = new SignatureFormattingOptions();
+                SignatureDecoder decoder = new SignatureDecoder(_assemblyResolver, dummyOptions, mdReader?.MetadataReader, this, (int)curParser.Offset);
 
                 string owningType = null;
 
@@ -1053,7 +949,6 @@ namespace ILCompiler.Reflection.ReadyToRun
                 return;
             }
             _importSections = new List<ReadyToRunImportSection>();
-            _importCellNames = new Dictionary<int, string>();
             _importSignatures = new Dictionary<int, ReadyToRunSignature>();
             if (!ReadyToRunHeader.Sections.TryGetValue(ReadyToRunSectionType.ImportSections, out ReadyToRunSection importSectionsSection))
             {
@@ -1107,10 +1002,8 @@ namespace ILCompiler.Reflection.ReadyToRun
                     long section = NativeReader.ReadInt64(Image, ref sectionOffset);
                     uint sigRva = NativeReader.ReadUInt32(Image, ref signatureOffset);
                     int sigOffset = GetOffset((int)sigRva);
-                    ReadyToRunSignature signature;
-                    string cellName = MetadataNameFormatter.FormatSignature(_assemblyResolver, this, sigOffset, out signature);
-                    entries.Add(new ReadyToRunImportSection.ImportSectionEntry(entries.Count, entryOffset, entryOffset + rva, section, sigRva, cellName));
-                    _importCellNames.Add(rva + entrySize * i, cellName);
+                    ReadyToRunSignature signature = MetadataNameFormatter.FormatSignature(_assemblyResolver, this, sigOffset);
+                    entries.Add(new ReadyToRunImportSection.ImportSectionEntry(entries.Count, entryOffset, entryOffset + rva, section, sigRva, signature));
                     _importSignatures.Add(rva + entrySize * i, signature);
                 }
 
