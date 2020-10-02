@@ -20,6 +20,7 @@ namespace Mono.Linker
 		public bool IsMarked (IMetadataTokenProvider provider) { throw null; }
 		public bool IsMarked (CustomAttribute attribute) { throw null; }
 
+		public void AddPreservedMethod (MethodDefinition key, MethodDefinition method) { throw null; }
 		public void AddPreservedMethod (TypeDefinition type, MethodDefinition method) { throw null; }
 		public void SetPreserve (TypeDefinition type, TypePreserve preserve) { throw null; }
 
