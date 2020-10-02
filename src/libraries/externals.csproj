@@ -67,6 +67,7 @@
     <!-- Binplacing VSTest into the testhost to not depend on the full SDK during CI testing. -->
     <ItemGroup Condition="'$(PkgMicrosoft_TestPlatform_CLI)' != ''">
       <TestPlatformContent Include="$(PkgMicrosoft_TestPlatform_CLI)\contentFiles\any\netcoreapp2.1\**\*" />
+      <TestPlatformRuntimeConfigFile Include="$(PkgMicrosoft_TestPlatform_CLI)\contentFiles\any\netcoreapp2.1\**\*.runtimeconfig.json" />
     </ItemGroup>
 
     <Copy SourceFiles="@(TestPlatformContent)"
@@ -74,6 +75,14 @@
           SkipUnchangedFiles="true"
           UseHardlinksIfPossible="$(UseHardlink)"
           Condition="'@(TestPlatformContent)' != ''" />
+
+    <!-- Patch VSTest runtimeconfig files -->
+    <WriteLinesToFile File="%(TestPlatformRuntimeConfigFile.Identity)"
+                      Lines="$([System.Text.RegularExpressions.Regex]::Replace('$([System.IO.File]::ReadAllText(%(TestPlatformRuntimeConfigFile.Identity)))',
+                                                                               '&quot;version&quot;: &quot;\d\.\d\.\d&quot;',
+                                                                               '&quot;version&quot;: &quot;$(ProductVersion)&quot;'))"
+                      Overwrite="true"
+                      Condition="'@(TestPlatformRuntimeConfigFile)' != ''" />
   </Target>
 
   <Target Name="OverrideRuntimeCoreCLR"
