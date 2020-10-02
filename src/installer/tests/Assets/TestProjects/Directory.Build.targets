@@ -8,7 +8,10 @@
   <Target Name="RemoveUpstackKnownFrameworkReferences"
           BeforeTargets="ProcessFrameworkReferences">
     <ItemGroup>
-      <KnownFrameworkReference Remove="Microsoft.AspNetCore.App" />
+    <KnownFrameworkReference Remove="Microsoft.AspNetCore.App" />
+    <KnownFrameworkReference Remove="Microsoft.WindowsDesktop.App" />
+    <KnownFrameworkReference Remove="Microsoft.WindowsDesktop.App.WPF" />
+    <KnownFrameworkReference Remove="Microsoft.WindowsDesktop.App.WindowsForms" />
     </ItemGroup>
   </Target>
 
