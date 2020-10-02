@@ -266,7 +266,7 @@ FCFuncStart(gEmbedded_Sys)
     // new
     QCFuncElement("GetProcessPath", SystemNative_GetProcessPath)
 
-#if HAVE_RT_MSGHDR && defined(CTL_NET)
+#if HAVE_RT_MSGHDR
     QCFuncElement("EnumerateGatewayAddressesForInterface", SystemNative_EnumerateGatewayAddressesForInterface)
 #endif
 
