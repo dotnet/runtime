@@ -2278,6 +2278,25 @@ if test x$host_win32 = xno; then
 
 	AC_CHECK_FUNCS(clock_nanosleep)
 
+	AC_MSG_CHECKING(for _SC_AVPHYS_PAGES)
+	AC_TRY_COMPILE([#include <unistd.h>], [
+		const int foo = _SC_AVPHYS_PAGES;
+	],[
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(HAVE__SC_AVPHYS_PAGES, 1, [_SC_AVPHYS_PAGES])
+	], [
+		AC_MSG_RESULT(no)
+	])
+	AC_MSG_CHECKING(for _SC_PHYS_PAGES)
+	AC_TRY_COMPILE([#include <unistd.h>], [
+		const int foo = _SC_PHYS_PAGES;
+	],[
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(HAVE__SC_PHYS_PAGES, 1, [_SC_PHYS_PAGES])
+	], [
+		AC_MSG_RESULT(no)
+	])
+
 	dnl dynamic loader support
 	AC_CHECK_FUNC(dlopen, DL_LIB="",
 		AC_CHECK_LIB(dl, dlopen, DL_LIB="-ldl", dl_support=no)
@@ -2861,6 +2880,7 @@ if test x$host_win32 = xno; then
 	AC_CHECK_FUNCS(pthread_attr_setstacksize)
 	AC_CHECK_FUNCS(pthread_attr_getstack pthread_attr_getstacksize)
 	AC_CHECK_FUNCS(pthread_get_stacksize_np pthread_get_stackaddr_np)
+	AC_CHECK_FUNCS(pthread_condattr_setclock)
 	dnl check that pthread_mutexattr_setprotocol is declared
 	AC_CHECK_DECLS([pthread_mutexattr_setprotocol], [], [], [[#include <pthread.h>]])
 	AC_CHECK_FUNCS(mincore mlock munlock)
@@ -5110,6 +5130,23 @@ fi
 AC_SUBST(SGEN_DEFINES)
 AM_CONDITIONAL(SUPPORT_SGEN, test x$buildsgen = xyes)
 
+dnl
+dnl CoreCLR GC checks (coregc)
+dnl
+COREGC_DEFINES=
+AC_ARG_WITH(coregc, [ --with-coregc=yes,no   CoreCLR GC, default=yes],[buildcoregc=$with_coregc],[buildcoregc=yes])
+if test x$buildcoregc = xyes; then
+   AC_DEFINE(HAVE_MOVING_COLLECTOR, 1, [Moving collector])
+   COREGC_DEFINES="-DHAVE_CORE_GC --std=gnu++11"
+   if test "x$gc_msg" = "x"; then
+      gc_msg="coregc"
+   else
+      gc_msg="coregc and $gc_msg"
+   fi
+fi
+AC_SUBST(COREGC_DEFINES)
+AM_CONDITIONAL(SUPPORT_COREGC, test x$buildcoregc = xyes)
+
 jit_status="Building and using the JIT"
 
 libsuffix=".so"
@@ -6827,7 +6864,7 @@ AC_SUBST(MONO_NATIVE_PLATFORM_TYPE_UNIFIED)
 #  mono/mini/Makefile.am.in we have CCLD=$MONO_CXXLD and CXXLD=$MONO_CXXLD which bypasses
 #  automake's autodetection and lets us use the linker that we want.
 #
-if test "x$enable_llvm_runtime" = "xyes"; then
+if test "x$enable_llvm_runtime" = "xyes" || test "x$buildcoregc" = "xyes"; then
 	AC_SUBST(MONO_CXXLD, [$CXX])
 	AC_SUBST(MONO_LIBTOOL_TAG, '--tag=CXX')
 else

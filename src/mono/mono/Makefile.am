@@ -4,6 +4,12 @@ if SUPPORT_SGEN
 sgen_dirs = sgen
 endif
 
+if SUPPORT_COREGC
+coregc_dirs = coregc
+endif
+
+
+
 if BTLS
 btls_dirs = btls
 endif
@@ -32,16 +38,16 @@ SUBDIRS = eglib arch utils sgen zlib $(eventpipe_dirs) metadata mini profiler $(
 else
 
 if CROSS_COMPILING
-SUBDIRS = $(btls_dirs) $(culture_dirs) eglib arch utils cil zlib $(sgen_dirs) metadata mini dis profiler $(native_dirs)
+SUBDIRS = $(btls_dirs) $(culture_dirs) eglib arch utils cil zlib $(sgen_dirs) $(coregc_dirs) metadata mini dis profiler $(native_dirs)
 else
 if INSTALL_MONOTOUCH
-SUBDIRS = $(btls_dirs) $(culture_dirs) eglib arch utils zlib $(sgen_dirs) metadata mini profiler $(native_dirs)
+SUBDIRS = $(btls_dirs) $(culture_dirs) eglib arch utils zlib $(sgen_dirs)  $(coregc_dirs) metadata mini profiler $(native_dirs)
 else
-SUBDIRS = $(btls_dirs) $(culture_dirs) eglib arch utils cil zlib $(sgen_dirs) metadata mini dis $(managed_unit_test_dirs) $(native_unit_test_dirs) benchmark profiler $(native_dirs)
+SUBDIRS = $(btls_dirs) $(culture_dirs) eglib arch utils cil zlib $(sgen_dirs) $(coregc_dirs) metadata mini dis $(managed_unit_test_dirs) $(native_unit_test_dirs) benchmark profiler $(native_dirs)
 endif
 endif
 endif
 
-DIST_SUBDIRS = btls $(culture_dirs) native eglib eventpipe arch utils cil zlib $(sgen_dirs) metadata mini dis $(managed_unit_test_dirs) $(native_unit_test_dirs) benchmark profiler
+DIST_SUBDIRS = btls $(culture_dirs) native eglib eventpipe arch utils cil zlib $(sgen_dirs) $(coregc_dirs) metadata mini dis $(managed_unit_test_dirs) $(native_unit_test_dirs) benchmark profiler
 
 EXTRA_DIST = eventpipe/Makefile
