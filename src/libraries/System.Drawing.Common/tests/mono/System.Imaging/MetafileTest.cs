@@ -408,8 +408,8 @@ namespace MonoTests.System.Drawing.Imaging
                 RectangleF rect = new RectangleF(0, 0, size.Width, size.Height);
                 Region[] region = g.MeasureCharacterRanges(text, test_font, rect, sf);
                 Assert.Equal(2, region.Length);
-                mf.Dispose();
             }
+            mf.Dispose();
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
