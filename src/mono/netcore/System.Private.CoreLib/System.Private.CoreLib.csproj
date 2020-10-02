@@ -15,7 +15,7 @@
     <DebugSymbols>true</DebugSymbols>
 
     <!-- Force System.Private.CoreLib.dll into a special IL output directory -->
-    <OutputPath>$(BinDir)IL/</OutputPath>
+    <OutputPath>$(RuntimeBinDir)IL/</OutputPath>
     <Configurations>Debug;Release;Checked</Configurations>
     <Platforms>x64;x86;arm;arm64;wasm</Platforms>
   </PropertyGroup>
@@ -306,8 +306,8 @@
   <Import Project="$(LibrariesProjectRoot)\System.Private.CoreLib\src\System.Private.CoreLib.Shared.projitems" Label="Shared" />
 
   <Target Name="CopyCoreLibToBinDir" AfterTargets="Build">
-    <Copy SourceFiles="$(BinDir)/IL/System.Private.CoreLib.dll;$(BinDir)/IL/System.Private.CoreLib.pdb"
-        DestinationFolder="$(BinDir)"
+    <Copy SourceFiles="$(RuntimeBinDir)/IL/System.Private.CoreLib.dll;$(RuntimeBinDir)/IL/System.Private.CoreLib.pdb"
+        DestinationFolder="$(RuntimeBinDir)"
         SkipUnchangedFiles="true" />
   </Target>
 

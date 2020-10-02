@@ -1014,7 +1014,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo)
 #endif // TARGET_XXX
 
 #if FEATURE_FASTTAILCALL
-            varDsc->lvStkOffs = varDscInfo->stackArgSize;
+            varDsc->SetStackOffset(varDscInfo->stackArgSize);
             varDscInfo->stackArgSize += roundUp(argSize, TARGET_POINTER_SIZE);
 #endif // FEATURE_FASTTAILCALL
         }
@@ -1030,7 +1030,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo)
         if (info.compIsVarArgs || (isHfaArg && varDsc->lvHfaSlots() != 1) || isSoftFPPreSpill)
         {
 #if defined(TARGET_X86)
-            varDsc->lvStkOffs = compArgSize;
+            varDsc->SetStackOffset(compArgSize);
 #else  // !TARGET_X86
             // TODO-CQ: We shouldn't have to go as far as to declare these
             // address-exposed -- DoNotEnregister should suffice.
@@ -1047,6 +1047,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo)
         }
 
     } // for each user arg
+    compArgSize = roundUp(compArgSize, TARGET_POINTER_SIZE);
 
 #ifdef TARGET_ARM
     if (doubleAlignMask != RBM_NONE)
@@ -1117,7 +1118,7 @@ void Compiler::lvaInitGenericsCtxt(InitVarDscInfo* varDscInfo)
             // returns false.
             varDsc->lvOnFrame = true;
 #if FEATURE_FASTTAILCALL
-            varDsc->lvStkOffs = varDscInfo->stackArgSize;
+            varDsc->SetStackOffset(varDscInfo->stackArgSize);
             varDscInfo->stackArgSize += TARGET_POINTER_SIZE;
 #endif // FEATURE_FASTTAILCALL
         }
@@ -1126,7 +1127,7 @@ void Compiler::lvaInitGenericsCtxt(InitVarDscInfo* varDscInfo)
 
 #if defined(TARGET_X86)
         if (info.compIsVarArgs)
-            varDsc->lvStkOffs = compArgSize;
+            varDsc->SetStackOffset(compArgSize);
 #endif // TARGET_X86
 
         varDscInfo->varNum++;
@@ -1187,7 +1188,7 @@ void Compiler::lvaInitVarArgsHandle(InitVarDscInfo* varDscInfo)
             // returns false.
             varDsc->lvOnFrame = true;
 #if FEATURE_FASTTAILCALL
-            varDsc->lvStkOffs = varDscInfo->stackArgSize;
+            varDsc->SetStackOffset(varDscInfo->stackArgSize);
             varDscInfo->stackArgSize += TARGET_POINTER_SIZE;
 #endif // FEATURE_FASTTAILCALL
         }
@@ -1200,7 +1201,7 @@ void Compiler::lvaInitVarArgsHandle(InitVarDscInfo* varDscInfo)
         varDscInfo->varDsc++;
 
 #if defined(TARGET_X86)
-        varDsc->lvStkOffs = compArgSize;
+        varDsc->SetStackOffset(compArgSize);
 
         // Allocate a temp to point at the beginning of the args
 
@@ -1339,7 +1340,7 @@ void Compiler::lvaInitVarDsc(LclVarDsc*              varDsc,
 #endif
 
 #ifdef DEBUG
-    varDsc->lvStkOffs = BAD_STK_OFFS;
+    varDsc->SetStackOffset(BAD_STK_OFFS);
 #endif
 
 #if FEATURE_MULTIREG_ARGS
@@ -4972,13 +4973,13 @@ void Compiler::lvaFixVirtualFrameOffsets()
         varDsc = &lvaTable[lvaPSPSym];
         assert(varDsc->lvFramePointerBased); // We always access it RBP-relative.
         assert(!varDsc->lvMustInit);         // It is never "must init".
-        varDsc->lvStkOffs = codeGen->genCallerSPtoInitialSPdelta() + lvaLclSize(lvaOutgoingArgSpaceVar);
+        varDsc->SetStackOffset(codeGen->genCallerSPtoInitialSPdelta() + lvaLclSize(lvaOutgoingArgSpaceVar));
 
         // With OSR the new frame RBP points at the base of the new frame, but the virtual offsets
         // are from the base of the old frame. Adjust.
         if (opts.IsOSR())
         {
-            varDsc->lvStkOffs -= info.compPatchpointInfo->FpToSpDelta();
+            varDsc->SetStackOffset(varDsc->GetStackOffset() - info.compPatchpointInfo->FpToSpDelta());
         }
     }
 #endif
@@ -5070,29 +5071,30 @@ void Compiler::lvaFixVirtualFrameOffsets()
 
         if (doAssignStkOffs)
         {
-            JITDUMP("-- V%02u was %d, now %d\n", lclNum, varDsc->lvStkOffs, varDsc->lvStkOffs + delta);
-            varDsc->lvStkOffs += delta;
+            JITDUMP("-- V%02u was %d, now %d\n", lclNum, varDsc->GetStackOffset(), varDsc->GetStackOffset() + delta);
+            varDsc->SetStackOffset(varDsc->GetStackOffset() + delta);
 
 #if DOUBLE_ALIGN
             if (genDoubleAlign() && !codeGen->isFramePointerUsed())
             {
                 if (varDsc->lvFramePointerBased)
                 {
-                    varDsc->lvStkOffs -= delta;
+                    varDsc->SetStackOffset(varDsc->GetStackOffset() - delta);
 
                     // We need to re-adjust the offsets of the parameters so they are EBP
                     // relative rather than stack/frame pointer relative
 
-                    varDsc->lvStkOffs += (2 * TARGET_POINTER_SIZE); // return address and pushed EBP
+                    varDsc->SetStackOffset(varDsc->GetStackOffset() +
+                                           (2 * TARGET_POINTER_SIZE)); // return address and pushed EBP
 
-                    noway_assert(varDsc->lvStkOffs >= FIRST_ARG_STACK_OFFS);
+                    noway_assert(varDsc->GetStackOffset() >= FIRST_ARG_STACK_OFFS);
                 }
             }
 #endif
             // On System V environments the stkOffs could be 0 for params passed in registers.
             //
             // For normal methods only EBP relative references can have negative offsets.
-            assert(codeGen->isFramePointerUsed() || varDsc->lvStkOffs >= 0);
+            assert(codeGen->isFramePointerUsed() || varDsc->GetStackOffset() >= 0);
         }
     }
 
@@ -5108,8 +5110,8 @@ void Compiler::lvaFixVirtualFrameOffsets()
 
     if (lvaOutgoingArgSpaceVar != BAD_VAR_NUM)
     {
-        varDsc                      = &lvaTable[lvaOutgoingArgSpaceVar];
-        varDsc->lvStkOffs           = 0;
+        varDsc = &lvaTable[lvaOutgoingArgSpaceVar];
+        varDsc->SetStackOffset(0);
         varDsc->lvFramePointerBased = false;
         varDsc->lvMustInit          = false;
     }
@@ -5126,7 +5128,7 @@ void Compiler::lvaFixVirtualFrameOffsets()
     assert(codeGen->isFramePointerUsed());
     if (lvaRetAddrVar != BAD_VAR_NUM)
     {
-        lvaTable[lvaRetAddrVar].lvStkOffs = REGSIZE_BYTES;
+        lvaTable[lvaRetAddrVar].SetStackOffset(REGSIZE_BYTES);
     }
 #endif
 }
@@ -5414,11 +5416,11 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
         if (varDsc->lvOnFrame)
         {
             // The offset for args needs to be set only for the stack homed arguments for System V.
-            varDsc->lvStkOffs = argOffs;
+            varDsc->SetStackOffset(argOffs);
         }
         else
         {
-            varDsc->lvStkOffs = 0;
+            varDsc->SetStackOffset(0);
         }
     }
     else
@@ -5435,7 +5437,7 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
         // method, which fixes the offsets, based on frame pointer existence, existence of alloca instructions, ret
         // address pushed, ets.
 
-        varDsc->lvStkOffs = *callerArgOffset;
+        varDsc->SetStackOffset(*callerArgOffset);
         // Structs passed on stack could be of size less than TARGET_POINTER_SIZE.
         // Make sure they get at least TARGET_POINTER_SIZE on the stack - this is required for alignment.
         if (argSize > TARGET_POINTER_SIZE)
@@ -5454,11 +5456,11 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
     if (varDsc->lvPromotedStruct())
     {
         unsigned firstFieldNum = varDsc->lvFieldLclStart;
-        int      offset        = varDsc->lvStkOffs;
+        int      offset        = varDsc->GetStackOffset();
         for (unsigned i = 0; i < varDsc->lvFieldCnt; i++)
         {
             LclVarDsc* fieldVarDsc = lvaGetDesc(firstFieldNum + i);
-            fieldVarDsc->lvStkOffs = offset;
+            fieldVarDsc->SetStackOffset(offset);
             offset += fieldVarDsc->lvFldOffset;
         }
     }
@@ -5466,7 +5468,7 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
     else if (varDsc->lvIsStructField)
     {
         noway_assert(varDsc->lvParentLcl < lvaCount);
-        lvaTable[varDsc->lvParentLcl].lvStkOffs = varDsc->lvStkOffs;
+        lvaTable[varDsc->lvParentLcl].SetStackOffset(varDsc->GetStackOffset());
     }
 
     if (Target::g_tgtArgOrder == Target::ARG_ORDER_R2L && !varDsc->lvIsRegArg)
@@ -5525,7 +5527,7 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
         argOffs += TARGET_POINTER_SIZE;
 #elif defined(TARGET_AMD64)
         // Register arguments on AMD64 also takes stack space. (in the backing store)
-        varDsc->lvStkOffs = argOffs;
+        varDsc->SetStackOffset(argOffs);
         argOffs += TARGET_POINTER_SIZE;
 #elif defined(TARGET_ARM64)
 // Register arguments on ARM64 only take stack space when they have a frame home.
@@ -5538,7 +5540,7 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
             {
                 // This is a split struct. It will account for an extra (8 bytes)
                 // of alignment.
-                varDsc->lvStkOffs += TARGET_POINTER_SIZE;
+                varDsc->SetStackOffset(varDsc->GetStackOffset() + TARGET_POINTER_SIZE);
                 argOffs += TARGET_POINTER_SIZE;
             }
         }
@@ -5546,7 +5548,7 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
 
 #elif defined(TARGET_ARM)
         // On ARM we spill the registers in codeGen->regSet.rsMaskPreSpillRegArg
-        // in the prolog, so we have to fill in lvStkOffs here
+        // in the prolog, so we have to do SetStackOffset() here
         //
         regMaskTP regMask = genRegMask(varDsc->GetArgReg());
         if (codeGen->regSet.rsMaskPreSpillRegArg & regMask)
@@ -5619,7 +5621,7 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
                     // No alignment of argOffs required
                     break;
             }
-            varDsc->lvStkOffs = argOffs;
+            varDsc->SetStackOffset(argOffs);
             argOffs += argSize;
         }
 #else // TARGET*
@@ -5738,7 +5740,7 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
         }
 #endif // TARGET_ARM
 
-        varDsc->lvStkOffs = argOffs;
+        varDsc->SetStackOffset(argOffs);
     }
 
     // For struct promoted parameters we need to set the offsets for both LclVars.
@@ -5750,9 +5752,9 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
     if ((varDsc->TypeGet() == TYP_LONG) && varDsc->lvPromoted)
     {
         noway_assert(varDsc->lvFieldCnt == 2);
-        fieldVarNum                         = varDsc->lvFieldLclStart;
-        lvaTable[fieldVarNum].lvStkOffs     = varDsc->lvStkOffs;
-        lvaTable[fieldVarNum + 1].lvStkOffs = varDsc->lvStkOffs + genTypeSize(TYP_INT);
+        fieldVarNum = varDsc->lvFieldLclStart;
+        lvaTable[fieldVarNum].SetStackOffset(varDsc->GetStackOffset());
+        lvaTable[fieldVarNum + 1].SetStackOffset(varDsc->GetStackOffset() + genTypeSize(TYP_INT));
     }
     else
 #endif // !defined(TARGET_64BIT)
@@ -5762,7 +5764,7 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
         for (unsigned i = 0; i < varDsc->lvFieldCnt; i++)
         {
             LclVarDsc* fieldVarDsc = lvaGetDesc(firstFieldNum + i);
-            fieldVarDsc->lvStkOffs = varDsc->lvStkOffs + fieldVarDsc->lvFldOffset;
+            fieldVarDsc->SetStackOffset(varDsc->GetStackOffset() + fieldVarDsc->lvFldOffset);
         }
     }
 
@@ -5820,7 +5822,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
     stkOffs -= TARGET_POINTER_SIZE; // return address;
     if (lvaRetAddrVar != BAD_VAR_NUM)
     {
-        lvaTable[lvaRetAddrVar].lvStkOffs = stkOffs;
+        lvaTable[lvaRetAddrVar].SetStackOffset(stkOffs);
     }
 
     // If we are an OSR method, we "inherit" the frame of the original method,
@@ -5888,7 +5890,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
     // top.
     if (lvaRetAddrVar != BAD_VAR_NUM)
     {
-        lvaTable[lvaRetAddrVar].lvStkOffs = stkOffs - REGSIZE_BYTES;
+        lvaTable[lvaRetAddrVar].SetStackOffset(stkOffs - REGSIZE_BYTES);
     }
 #endif
 
@@ -6199,7 +6201,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
                 JITDUMP("---OSR--- V%02u (on old frame) old rbp offset %d old frame offset %d new virt offset %d\n",
                         lclNum, originalOffset, originalFrameStkOffs, offset);
 
-                lvaTable[lclNum].lvStkOffs = offset;
+                lvaTable[lclNum].SetStackOffset(offset);
                 continue;
             }
 
@@ -6235,7 +6237,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
                             "virt offset %d\n",
                             lclNum, originalOffset, originalFrameStkOffs, offset);
 
-                    lvaTable[lclNum].lvStkOffs = offset;
+                    lvaTable[lclNum].SetStackOffset(offset);
                 }
 
                 continue;
@@ -6254,7 +6256,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
 #endif // JIT32_GCENCODER
                 lclNum == lvaRetAddrVar)
             {
-                assert(varDsc->lvStkOffs != BAD_STK_OFFS);
+                assert(varDsc->GetStackOffset() != BAD_STK_OFFS);
                 continue;
             }
 
@@ -6284,7 +6286,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
 #if defined(TARGET_AMD64) && !defined(UNIX_AMD64_ABI)
 
                 // On Windows AMD64 we can use the caller-reserved stack area that is already setup
-                assert(varDsc->lvStkOffs != BAD_STK_OFFS);
+                assert(varDsc->GetStackOffset() != BAD_STK_OFFS);
                 continue;
 
 #else // !TARGET_AMD64
@@ -6301,8 +6303,8 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
                 if (info.compIsVarArgs && varDsc->GetArgReg() != theFixedRetBuffArgNum())
                 {
                     // Stack offset to varargs (parameters) should point to home area which will be preallocated.
-                    varDsc->lvStkOffs =
-                        -initialStkOffs + genMapIntRegNumToRegArgNum(varDsc->GetArgReg()) * REGSIZE_BYTES;
+                    const unsigned regArgNum = genMapIntRegNumToRegArgNum(varDsc->GetArgReg());
+                    varDsc->SetStackOffset(-initialStkOffs + regArgNum * REGSIZE_BYTES);
                     continue;
                 }
 
@@ -6314,7 +6316,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
                 //
                 if ((codeGen->regSet.rsMaskPreSpillRegs(false) & genRegMask(varDsc->GetArgReg())) != 0)
                 {
-                    assert(varDsc->lvStkOffs != BAD_STK_OFFS);
+                    assert(varDsc->GetStackOffset() != BAD_STK_OFFS);
                     continue;
                 }
 #endif
@@ -6409,8 +6411,8 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
             {
                 noway_assert(varDsc->lvFieldCnt == 1); // We only handle one field here
 
-                unsigned fieldVarNum            = varDsc->lvFieldLclStart;
-                lvaTable[fieldVarNum].lvStkOffs = varDsc->lvStkOffs;
+                unsigned fieldVarNum = varDsc->lvFieldLclStart;
+                lvaTable[fieldVarNum].SetStackOffset(varDsc->GetStackOffset());
             }
 #endif // TARGET_ARM64
 #ifdef TARGET_ARM
@@ -6421,9 +6423,9 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
             {
                 assert(varTypeIsLong(varDsc) && (varDsc->lvFieldCnt == 2));
 
-                unsigned fieldVarNum                = varDsc->lvFieldLclStart;
-                lvaTable[fieldVarNum].lvStkOffs     = varDsc->lvStkOffs;
-                lvaTable[fieldVarNum + 1].lvStkOffs = varDsc->lvStkOffs + 4;
+                unsigned fieldVarNum = varDsc->lvFieldLclStart;
+                lvaTable[fieldVarNum].SetStackOffset(varDsc->GetStackOffset());
+                lvaTable[fieldVarNum + 1].SetStackOffset(varDsc->GetStackOffset() + 4);
             }
 #endif // TARGET_ARM
         }
@@ -6651,7 +6653,7 @@ int Compiler::lvaAllocLocalAndSetVirtualOffset(unsigned lclNum, unsigned size, i
 
     lvaIncrementFrameSize(size);
     stkOffs -= size;
-    lvaTable[lclNum].lvStkOffs = stkOffs;
+    lvaTable[lclNum].SetStackOffset(stkOffs);
 
 #ifdef DEBUG
     if (verbose)
@@ -6866,7 +6868,7 @@ void Compiler::lvaAssignFrameOffsetsToPromotedStructs()
                 noway_assert(varDsc->lvOnFrame);
                 if (parentvarDsc->lvOnFrame)
                 {
-                    varDsc->lvStkOffs = parentvarDsc->lvStkOffs + varDsc->lvFldOffset;
+                    varDsc->SetStackOffset(parentvarDsc->GetStackOffset() + varDsc->lvFldOffset);
                 }
                 else
                 {
@@ -7455,11 +7457,11 @@ int Compiler::lvaGetSPRelativeOffset(unsigned varNum)
     {
         // The stack offset is relative to the frame pointer, so convert it to be
         // relative to the stack pointer (which makes no sense for localloc functions).
-        spRelativeOffset = varDsc->lvStkOffs + codeGen->genSPtoFPdelta();
+        spRelativeOffset = varDsc->GetStackOffset() + codeGen->genSPtoFPdelta();
     }
     else
     {
-        spRelativeOffset = varDsc->lvStkOffs;
+        spRelativeOffset = varDsc->GetStackOffset();
     }
 
     assert(spRelativeOffset >= 0);
@@ -7479,7 +7481,7 @@ int Compiler::lvaGetCallerSPRelativeOffset(unsigned varNum)
     LclVarDsc* varDsc = lvaTable + varNum;
     assert(varDsc->lvOnFrame);
 
-    return lvaToCallerSPRelativeOffset(varDsc->lvStkOffs, varDsc->lvFramePointerBased);
+    return lvaToCallerSPRelativeOffset(varDsc->GetStackOffset(), varDsc->lvFramePointerBased);
 }
 
 int Compiler::lvaToCallerSPRelativeOffset(int offset, bool isFpBased) const
@@ -7526,7 +7528,7 @@ int Compiler::lvaGetInitialSPRelativeOffset(unsigned varNum)
     LclVarDsc* varDsc = lvaTable + varNum;
     assert(varDsc->lvOnFrame);
 
-    return lvaToInitialSPRelativeOffset(varDsc->lvStkOffs, varDsc->lvFramePointerBased);
+    return lvaToInitialSPRelativeOffset(varDsc->GetStackOffset(), varDsc->lvFramePointerBased);
 }
 
 // Given a local variable offset, and whether that offset is frame-pointer based, return its offset from Initial-SP.
