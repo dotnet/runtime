@@ -458,7 +458,7 @@ namespace System.Xml
             CheckAsyncCall();
             string strVal = ((int)ch).ToString("X", NumberFormatInfo.InvariantInfo);
 
-            if (_checkCharacters && !_xmlCharType.IsCharData(ch))
+            if (_checkCharacters && !XmlCharType.IsCharData(ch))
             {
                 // we just have a single char, not a surrogate, therefore we have to pass in '\0' for the second char
                 throw XmlConvert.CreateInvalidCharException(ch, '\0');
@@ -737,7 +737,7 @@ namespace System.Xml
                         pDstEnd = pDstBegin + _bufLen;
                     }
 
-                    while (pDst < pDstEnd && _xmlCharType.IsAttributeValueChar((char)(ch = *pSrc)))
+                    while (pDst < pDstEnd && XmlCharType.IsAttributeValueChar((char)(ch = *pSrc)))
                     {
                         *pDst = (char)ch;
                         pDst++;
@@ -941,7 +941,7 @@ namespace System.Xml
                         pDstEnd = pDstBegin + _bufLen;
                     }
 
-                    while (pDst < pDstEnd && _xmlCharType.IsAttributeValueChar((char)(ch = *pSrc)))
+                    while (pDst < pDstEnd && XmlCharType.IsAttributeValueChar((char)(ch = *pSrc)))
                     {
                         *pDst = (char)ch;
                         pDst++;
@@ -1357,7 +1357,7 @@ namespace System.Xml
                         pDstEnd = pDstBegin + _bufLen;
                     }
 
-                    while (pDst < pDstEnd && _xmlCharType.IsTextChar((char)(ch = *pSrc)))
+                    while (pDst < pDstEnd && XmlCharType.IsTextChar((char)(ch = *pSrc)))
                     {
                         *pDst = (char)ch;
                         pDst++;
@@ -1559,7 +1559,7 @@ namespace System.Xml
                             pDstEnd = pDstBegin + _bufLen;
                         }
 
-                        while (pDst < pDstEnd && (_xmlCharType.IsTextChar((char)(ch = *pSrc)) && ch != stopChar))
+                        while (pDst < pDstEnd && (XmlCharType.IsTextChar((char)(ch = *pSrc)) && ch != stopChar))
                         {
                             *pDst = (char)ch;
                             pDst++;
@@ -1749,7 +1749,7 @@ namespace System.Xml
                             pDstEnd = pDstBegin + _bufLen;
                         }
 
-                        while (pDst < pDstEnd && (_xmlCharType.IsAttributeValueChar((char)(ch = *pSrc)) && ch != ']'))
+                        while (pDst < pDstEnd && (XmlCharType.IsAttributeValueChar((char)(ch = *pSrc)) && ch != ']'))
                         {
                             *pDst = (char)ch;
                             pDst++;

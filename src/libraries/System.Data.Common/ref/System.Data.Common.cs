@@ -597,13 +597,13 @@ namespace System.Data
         public void WriteXml(System.Xml.XmlWriter? writer) { }
         public void WriteXml(System.Xml.XmlWriter? writer, System.Data.XmlWriteMode mode) { }
         public void WriteXmlSchema(System.IO.Stream? stream) { }
-        public void WriteXmlSchema(System.IO.Stream? stream, System.Converter<System.Type, string>? multipleTargetConverter) { }
+        public void WriteXmlSchema(System.IO.Stream? stream, System.Converter<System.Type, string> multipleTargetConverter) { }
         public void WriteXmlSchema(System.IO.TextWriter? writer) { }
-        public void WriteXmlSchema(System.IO.TextWriter? writer, System.Converter<System.Type, string>? multipleTargetConverter) { }
+        public void WriteXmlSchema(System.IO.TextWriter? writer, System.Converter<System.Type, string> multipleTargetConverter) { }
         public void WriteXmlSchema(string fileName) { }
-        public void WriteXmlSchema(string fileName, System.Converter<System.Type, string>? multipleTargetConverter) { }
+        public void WriteXmlSchema(string fileName, System.Converter<System.Type, string> multipleTargetConverter) { }
         public void WriteXmlSchema(System.Xml.XmlWriter? writer) { }
-        public void WriteXmlSchema(System.Xml.XmlWriter? writer, System.Converter<System.Type, string>? multipleTargetConverter) { }
+        public void WriteXmlSchema(System.Xml.XmlWriter? writer, System.Converter<System.Type, string> multipleTargetConverter) { }
     }
     public enum DataSetDateTime
     {
@@ -706,7 +706,7 @@ namespace System.Data
         public System.Data.DataRow[] GetErrors() { throw null; }
         public virtual void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         protected virtual System.Type GetRowType() { throw null; }
-        protected virtual System.Xml.Schema.XmlSchema GetSchema() { throw null; }
+        protected virtual System.Xml.Schema.XmlSchema? GetSchema() { throw null; }
         public void ImportRow(System.Data.DataRow? row) { }
         public void Load(System.Data.IDataReader reader) { }
         public void Load(System.Data.IDataReader reader, System.Data.LoadOption loadOption) { }
@@ -807,7 +807,7 @@ namespace System.Data
         public bool Contains(string? name) { throw null; }
         public bool Contains(string name, string tableNamespace) { throw null; }
         public void CopyTo(System.Data.DataTable[] array, int index) { }
-        public int IndexOf(System.Data.DataTable table) { throw null; }
+        public int IndexOf(System.Data.DataTable? table) { throw null; }
         public int IndexOf(string? tableName) { throw null; }
         public int IndexOf(string tableName, string tableNamespace) { throw null; }
         public void Remove(System.Data.DataTable table) { }
@@ -863,7 +863,7 @@ namespace System.Data
         public override System.Type GetProviderSpecificFieldType(int ordinal) { throw null; }
         public override object GetProviderSpecificValue(int ordinal) { throw null; }
         public override int GetProviderSpecificValues(object[] values) { throw null; }
-        public override System.Data.DataTable? GetSchemaTable() { throw null; }
+        public override System.Data.DataTable GetSchemaTable() { throw null; }
         public override string GetString(int ordinal) { throw null; }
         public override object GetValue(int ordinal) { throw null; }
         public override int GetValues(object[] values) { throw null; }
@@ -903,7 +903,8 @@ namespace System.Data
         [System.ComponentModel.DefaultValueAttribute(System.Data.DataViewRowState.CurrentRows)]
         public System.Data.DataViewRowState RowStateFilter { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute("")]
-        public string? Sort { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
+        public string Sort { get { throw null; } set { } }
         bool System.Collections.ICollection.IsSynchronized { get { throw null; } }
         object System.Collections.ICollection.SyncRoot { get { throw null; } }
         bool System.Collections.IList.IsFixedSize { get { throw null; } }
@@ -1598,7 +1599,7 @@ namespace System.Data
         public UniqueConstraint(string? name, System.Data.DataColumn[] columns) { }
         public UniqueConstraint(string? name, System.Data.DataColumn[] columns, bool isPrimaryKey) { }
         [System.ComponentModel.BrowsableAttribute(false)]
-        public UniqueConstraint(string name, string[]? columnNames, bool isPrimaryKey) { }
+        public UniqueConstraint(string? name, string[]? columnNames, bool isPrimaryKey) { }
         [System.ComponentModel.ReadOnlyAttribute(true)]
         public virtual System.Data.DataColumn[] Columns { get { throw null; } }
         public bool IsPrimaryKey { get { throw null; } }
@@ -1711,7 +1712,7 @@ namespace System.Data.Common
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public System.Data.DataColumn? GetDataColumnBySchemaAction(System.Data.DataTable dataTable, System.Type? dataType, System.Data.MissingSchemaAction schemaAction) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
-        public static System.Data.DataColumn GetDataColumnBySchemaAction(string? sourceColumn, string? dataSetColumn, System.Data.DataTable dataTable, System.Type? dataType, System.Data.MissingSchemaAction schemaAction) { throw null; }
+        public static System.Data.DataColumn? GetDataColumnBySchemaAction(string? sourceColumn, string? dataSetColumn, System.Data.DataTable dataTable, System.Type? dataType, System.Data.MissingSchemaAction schemaAction) { throw null; }
         object System.ICloneable.Clone() { throw null; }
         public override string ToString() { throw null; }
     }
@@ -2558,8 +2559,8 @@ namespace System.Data.SqlTypes
     public sealed partial class SqlAlreadyFilledException : System.Data.SqlTypes.SqlTypeException
     {
         public SqlAlreadyFilledException() { }
-        public SqlAlreadyFilledException(string message) { }
-        public SqlAlreadyFilledException(string message, System.Exception e) { }
+        public SqlAlreadyFilledException(string? message) { }
+        public SqlAlreadyFilledException(string? message, System.Exception? e) { }
     }
     [System.Xml.Serialization.XmlSchemaProviderAttribute("GetXsdType")]
     public partial struct SqlBinary : System.Data.SqlTypes.INullable, System.IComparable, System.Xml.Serialization.IXmlSerializable

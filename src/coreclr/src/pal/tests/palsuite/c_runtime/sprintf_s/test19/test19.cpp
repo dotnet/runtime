@@ -20,7 +20,7 @@
  */
 
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime_sprintf_s_test19_paltest_sprintf_test19, "c_runtime/sprintf_s/test19/paltest_sprintf_test19")
 {
     int n = -1;
 

@@ -187,7 +187,7 @@ namespace System.Xml
 
         internal bool CheckOnData(string? data)
         {
-            return XmlCharType.Instance.IsOnlyWhitespace(data);
+            return XmlCharType.IsOnlyWhitespace(data);
         }
 
         internal bool DecideXPNodeTypeForTextNodes(XmlNode node, ref XPathNodeType xnt)

@@ -13,12 +13,13 @@
     <DebugSymbols>true</DebugSymbols>
 
     <!-- Force System.Private.CoreLib.dll into a special IL output directory -->
-    <OutputPath>$(BinDir)/IL/</OutputPath>
+    <OutputPath>$(RuntimeBinDir)/IL/</OutputPath>
     <Configurations>Debug;Release;Checked</Configurations>
     <Platforms>x64;x86;arm;arm64</Platforms>
 
     <ILLinkTrimAssembly>true</ILLinkTrimAssembly>
     <ILLinkTrimXml>$(IntermediateOutputPath)System.Private.CoreLib.xml</ILLinkTrimXml>
+    <ILLinkDirectory>$(MSBuildThisFileDirectory)src\ILLink\</ILLinkDirectory>
   </PropertyGroup>
 
   <!-- Note that various places in SPCL depend on this resource name i.e. TplEventSource -->
@@ -48,7 +49,6 @@
 
     <SkipCommonResourcesIncludes>true</SkipCommonResourcesIncludes>
     <DocumentationFile>$(OutputPath)$(MSBuildProjectName).xml</DocumentationFile>
-    <EnableAnalyzers>true</EnableAnalyzers>
   </PropertyGroup>
 
   <!-- Platform specific properties -->
@@ -228,7 +228,7 @@
     <Compile Include="$(BclSourcesRoot)\System\Threading\ClrThreadPoolBoundHandleOverlapped.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\ClrThreadPoolPreAllocatedOverlapped.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\Interlocked.CoreCLR.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Threading\Monitor.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\Monitor.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\Overlapped.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\StackCrawlMark.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\SynchronizationContext.CoreCLR.cs" />
@@ -249,9 +249,6 @@
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.HandleTypes.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.HandleTypes.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\OleAut32\Interop.SysAllocStringByteLen.cs">
-      <Link>Common\Interop\Windows\OleAut32\Interop.SysAllocStringByteLen.cs</Link>
     </Compile>
   </ItemGroup>
   <!-- These classes are only used for FeatureCominterop, but they are referenced by tests

@@ -278,8 +278,8 @@ internal static partial class Interop
             public UNICODE_STRING* strCngAlgId;         // CNG algorithm identifier.
             public int cChainingModes;                  // Set to 0 if CNG algorithm does not have a chaining mode.
             public UNICODE_STRING* rgstrChainingModes;  // Set to NULL if CNG algorithm does not have a chaining mode.
-            public int dwMinBitLength;                  // Blacklist key sizes less than this. Set to 0 if not defined or CNG algorithm implies bit length.
-            public int dwMaxBitLength;                  // Blacklist key sizes greater than this. Set to 0 if not defined or CNG algorithm implies bit length.
+            public int dwMinBitLength;                  // Minimum bit length for the specified CNG algorithm. Set to 0 if not defined or CNG algorithm implies bit length.
+            public int dwMaxBitLength;                  // Maximum bit length for the specified CNG algorithm. Set to 0 if not defined or CNG algorithm implies bit length.
 
             public enum TlsAlgorithmUsage
             {

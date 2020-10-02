@@ -72,7 +72,6 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         public override bool Read()
         {
-            XmlCharType xmlCharType = XmlCharType.Instance;
             string ws = null;
 
             // Clear text value
@@ -107,7 +106,7 @@ namespace System.Xml.Xsl.Runtime
                         if (_shouldStrip)
                         {
                             // Reader may report whitespace as Text or CDATA
-                            if (xmlCharType.IsOnlyWhitespace(base.Value))
+                            if (XmlCharType.IsOnlyWhitespace(base.Value))
                                 goto case XmlNodeType.Whitespace;
 
                             // If whitespace was cached, then prepend it to text or CDATA value

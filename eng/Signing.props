@@ -54,10 +54,15 @@
       <ItemsToSign Include="$(CoreCLRCrossgen2Dir)ILCompiler.DependencyAnalysisFramework.dll" />
       <ItemsToSign Include="$(CoreCLRCrossgen2Dir)ILCompiler.ReadyToRun.dll" />
       <ItemsToSign Include="$(CoreCLRCrossgen2Dir)ILCompiler.TypeSystem.ReadyToRun.dll" />
-      <ItemsToSign Include="$(CoreCLRCrossgen2Dir)jitinterface.dll" />
+      <ItemsToSign Include="$(CoreCLRCrossgen2Dir)jitinterface_$(TargetArchitecture).dll" />
 
-      <ItemsToSign Condition="'$(TargetOS)' == 'Windows_NT'" Include="$(CoreCLRCrossgen2Dir)clrjit-win-$(TargetArchitecture).dll" />
-      <ItemsToSign Condition="'$(TargetOS)' != 'Windows_NT'" Include="$(CoreCLRCrossgen2Dir)clrjit-unix-$(TargetArchitecture).dll" />
+      <ItemsToSign Include="$(CoreCLRCrossgen2Dir)clrjit_win_x86_$(TargetArchitecture).dll" />
+      <ItemsToSign Include="$(CoreCLRCrossgen2Dir)clrjit_win_arm_$(TargetArchitecture).dll" />
+      <ItemsToSign Include="$(CoreCLRCrossgen2Dir)clrjit_unix_arm_$(TargetArchitecture).dll" />
+      <ItemsToSign Condition="'$(TargetArchitecture)' == 'arm64' or  '$(TargetArchitecture)' == 'x64'" Include="$(CoreCLRCrossgen2Dir)clrjit_win_x64_$(TargetArchitecture).dll" />
+      <ItemsToSign Condition="'$(TargetArchitecture)' == 'arm64' or  '$(TargetArchitecture)' == 'x64'" Include="$(CoreCLRCrossgen2Dir)clrjit_win_arm64_$(TargetArchitecture).dll" />
+      <ItemsToSign Condition="'$(TargetArchitecture)' == 'arm64' or  '$(TargetArchitecture)' == 'x64'" Include="$(CoreCLRCrossgen2Dir)clrjit_unix_x64_$(TargetArchitecture).dll" />
+      <ItemsToSign Condition="'$(TargetArchitecture)' == 'arm64' or  '$(TargetArchitecture)' == 'x64'" Include="$(CoreCLRCrossgen2Dir)clrjit_unix_arm64_$(TargetArchitecture).dll" />
 
       <ItemsToSign Include="@(CoreCLRCrossTargetItemsToSign)" />
 

@@ -313,6 +313,9 @@ jobs:
 
         runCrossGen: ${{ and(eq(parameters.readyToRun, true), ne(parameters.crossgen2, true)) }}
         runCrossGen2: ${{ and(eq(parameters.readyToRun, true), eq(parameters.crossgen2, true)) }}
+        ${{ if and(ne(parameters.testGroup, 'innerloop'), eq(parameters.runtimeFlavor, 'coreclr')) }}:
+          runPALTestsDir: '$(coreClrProductRootFolderPath)/paltests'
+
         compositeBuildMode: ${{ parameters.compositeBuildMode }}
         runInUnloadableContext: ${{ parameters.runInUnloadableContext }}
 
@@ -321,7 +324,7 @@ jobs:
           # DotNet-HelixApi-Access variable group
           helixAccessToken: $(HelixApiAccessToken)
 
-        helixProjectArguments: '$(Build.SourcesDirectory)/src/coreclr/tests/helixpublishwitharcade.proj'
+        helixProjectArguments: '$(Build.SourcesDirectory)/src/tests/Common/helixpublishwitharcade.proj'
 
         ${{ if in(parameters.testGroup, 'innerloop', 'outerloop') }}:
           scenarios:

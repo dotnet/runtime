@@ -392,7 +392,7 @@ namespace System.Diagnostics
         /// <param name="key">The tag key name</param>
         /// <param name="value">The tag value mapped to the input key</param>
         /// <returns>'this' for convenient chaining</returns>
-        public Activity SetTag(string key, object value)
+        public Activity SetTag(string key, object? value)
         {
             KeyValuePair<string, object?> kvp = new KeyValuePair<string, object?>(key, value);
 
@@ -434,7 +434,7 @@ namespace System.Diagnostics
 
             if (_baggage != null || Interlocked.CompareExchange(ref _baggage, new LinkedList<KeyValuePair<string, string?>>(kvp), null) != null)
             {
-                _baggage.Add(kvp);
+                _baggage.AddFront(kvp);
             }
 
             return this;
@@ -949,7 +949,12 @@ namespace System.Diagnostics
             else if (parentContext != default)
             {
                 activity._traceId = parentContext.TraceId.ToString();
-                activity._parentSpanId = parentContext.SpanId.ToString();
+
+                if (parentContext.SpanId != default)
+                {
+                    activity._parentSpanId = parentContext.SpanId.ToString();
+                }
+
                 activity.ActivityTraceFlags = parentContext.TraceFlags;
                 activity._traceState = parentContext.TraceState;
             }
@@ -1283,10 +1288,21 @@ namespace System.Diagnostics
             {
                 LinkedListNode<T> newNode = new LinkedListNode<T>(value);
 
-                lock (_first)
+                lock (this)
                 {
                     _last.Next = newNode;
                     _last = newNode;
+                }
+            }
+
+            public void AddFront(T value)
+            {
+                LinkedListNode<T> newNode = new LinkedListNode<T>(value);
+
+                lock (this)
+                {
+                    newNode.Next = _first;
+                    _first = newNode;
                 }
             }
 

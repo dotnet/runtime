@@ -82,7 +82,7 @@ namespace System.Xml.Xsl.XsltOld
         {
             BuilderInfo info = new BuilderInfo();
             info.Initialize(this);
-            Debug.Assert(info.NodeType != XmlNodeType.Text || XmlCharType.Instance.IsOnlyWhitespace(info.Value));
+            Debug.Assert(info.NodeType != XmlNodeType.Text || XmlCharType.IsOnlyWhitespace(info.Value));
             return info;
         }
 

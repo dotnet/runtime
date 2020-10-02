@@ -40,5 +40,12 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
         }
 
         protected override void Exercise(ECDiffieHellman key) => key.Exercise();
+
+        protected override Func<ECDiffieHellman, byte[]> PublicKeyWriteArrayFunc { get; } =
+            key => key.PublicKey.ExportSubjectPublicKeyInfo();
+
+        protected override WriteKeyToSpanFunc PublicKeyWriteSpanFunc { get; } =
+            (ECDiffieHellman key, Span<byte> destination, out int bytesWritten) =>
+                key.PublicKey.TryExportSubjectPublicKeyInfo(destination, out bytesWritten);
     }
 }

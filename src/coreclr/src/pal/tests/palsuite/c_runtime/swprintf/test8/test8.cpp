@@ -19,7 +19,7 @@
  * Uses memcmp & wcslen
  */
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime_swprintf_test8_paltest_swprintf_test8, "c_runtime/swprintf/test8/paltest_swprintf_test8")
 {
     int neg = -42;
     int pos = 42;

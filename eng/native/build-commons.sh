@@ -169,12 +169,14 @@ EOF
     export CXXFLAGS="${CXXFLAGS} ${EXTRA_CXXFLAGS}"
     export LDFLAGS="${LDFLAGS} ${EXTRA_LDFLAGS}"
 
+    local exit_code
     if [[ "$__StaticAnalyzer" == 1 ]]; then
         pushd "$intermediatesDir"
 
         buildTool="$SCAN_BUILD_COMMAND -o $__BinDir/scan-build-log $buildTool"
         echo "Executing $buildTool install -j $__NumProc"
         "$buildTool" install -j "$__NumProc"
+        exit_code="$?"
 
         popd
     else
@@ -185,13 +187,13 @@ EOF
 
         echo "Executing $cmake_command --build \"$intermediatesDir\" --target install -- -j $__NumProc"
         $cmake_command --build "$intermediatesDir" --target install -- -j "$__NumProc"
+        exit_code="$?"
     fi
 
     CFLAGS="${SAVED_CFLAGS}"
     CXXFLAGS="${SAVED_CXXFLAGS}"
     LDFLAGS="${SAVED_LDFLAGS}"
 
-    local exit_code="$?"
     if [[ "$exit_code" != 0 ]]; then
         echo "${__ErrMsgPrefix}Failed to build \"$message\"."
         exit "$exit_code"
@@ -223,6 +225,7 @@ usage()
     echo "-portablebuild: pass -portablebuild=false to force a non-portable build."
     echo "-skipconfigure: skip build configuration."
     echo "-skipgenerateversion: disable version generation even if MSBuild is supported."
+    echo "-keepnativesymbols: keep native/unmanaged debug symbols."
     echo "-verbose: optional argument to enable verbose build output."
     echo ""
     echo "Additional Options:"
@@ -350,6 +353,10 @@ while :; do
                 parts=(${version//./ })
                 __CompilerMajorVersion="${parts[0]}"
                 __CompilerMinorVersion="${parts[1]}"
+            ;;
+
+        keepnativesymbols|-keepnativesymbols)
+            __CMakeArgs="$__CMakeArgs -DCLR_CMAKE_KEEP_NATIVE_SYMBOLS=true"
             ;;
 
         msbuildonunsupportedplatform|-msbuildonunsupportedplatform)

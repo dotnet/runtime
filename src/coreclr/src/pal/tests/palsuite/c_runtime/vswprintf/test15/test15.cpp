@@ -17,7 +17,7 @@
 /* ditto with wcslen */
 
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime_vswprintf_test15_paltest_vswprintf_test15, "c_runtime/vswprintf/test15/paltest_vswprintf_test15")
 {
     double val = 256.0;
     double neg = -256.0;

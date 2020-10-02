@@ -4089,14 +4089,10 @@ void ComMethodTable::SetITypeInfo(ITypeInfo *pNew)
     }
     CONTRACTL_END;
 
-    SafeComHolder<ITypeInfo> pOld;
-    pOld = InterlockedExchangeT(&m_pITypeInfo, pNew);
-
-    // TypeLibs are refcounted pointers.
-    if (pNew == pOld)
-        pOld.SuppressRelease();
-    else
+    if (InterlockedCompareExchangeT(&m_pITypeInfo, pNew, NULL) == NULL)
+    {
         SafeAddRef(pNew);
+    }
 }
 
 //--------------------------------------------------------------------------

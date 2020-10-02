@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //
 // (C) 2001 Ximian, Inc.  http://www.ximian.com
 // Copyright (C) 2004-2005 Novell, Inc (http://www.novell.com)
@@ -371,6 +372,8 @@ namespace System.Reflection
          */
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2060:UnrecognizedReflectionPattern",
             Justification = "MethodInfo used with MakeGenericMethod doesn't have DynamicallyAccessedMembers generic parameters")]
+        [DynamicDependency("GetterAdapterFrame`2")]
+        [DynamicDependency("StaticGetterAdapterFrame`1")]
         private static GetterAdapter CreateGetterDelegate(MethodInfo method)
         {
             Type[] typeVector;

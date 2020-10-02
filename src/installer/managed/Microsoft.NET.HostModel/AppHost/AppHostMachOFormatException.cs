@@ -22,11 +22,11 @@ namespace Microsoft.NET.HostModel.AppHost
         SignBlobNotLast,        // Signature blob must be at the very end of the file
         SignDoesntFollowSymtab, // Signature blob must immediately follow the Symtab
         MemoryMapAccessFault,   // Error reading the memory-mapped apphost
-        InvalidUTF8             // UTF8 decoding failed 
+        InvalidUTF8             // UTF8 decoding failed
     }
 
     /// <summary>
-    /// The MachO application host executable cannot be customized because 
+    /// The MachO application host executable cannot be customized because
     /// it was not in the expected format
     /// </summary>
     public class AppHostMachOFormatException : AppHostUpdateException
@@ -39,4 +39,3 @@ namespace Microsoft.NET.HostModel.AppHost
         }
     }
 }
-

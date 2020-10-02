@@ -1,4 +1,3 @@
-// -*- indent-tabs-mode: nil -*-
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
@@ -30,7 +29,7 @@ public class WasmAppBuilder : Task
 
     // If true, continue when a referenced assembly cannot be found.
     // If false, throw an exception.
-    public bool SkipMissingAssemblies { get; set; } 
+    public bool SkipMissingAssemblies { get; set; }
 
     // full list of ICU data files we produce can be found here:
     // https://github.com/dotnet/icu/tree/maint/maint-67/icu-filters
@@ -40,12 +39,13 @@ public class WasmAppBuilder : Task
     public ITaskItem[]? AssemblySearchPaths { get; set; }
     public int DebugLevel { get; set; }
     public ITaskItem[]? ExtraAssemblies { get; set; }
+    public ITaskItem[]? SatelliteAssemblies { get; set; }
     public ITaskItem[]? FilesToIncludeInFileSystem { get; set; }
     public ITaskItem[]? RemoteSources { get; set; }
     public bool InvariantGlobalization { get; set; }
 
-    SortedDictionary<string, Assembly>? _assemblies;
-    Resolver? _resolver;
+    private SortedDictionary<string, Assembly>? _assemblies;
+    private Resolver? _resolver;
 
     private class WasmAppConfig
     {
@@ -74,6 +74,17 @@ public class WasmAppBuilder : Task
     private class AssemblyEntry : AssetEntry
     {
         public AssemblyEntry(string name) : base(name, "assembly") {}
+    }
+
+    private class SatelliteAssemblyEntry : AssetEntry
+    {
+        public SatelliteAssemblyEntry(string name, string culture) : base(name, "resource")
+        {
+            CultureName = culture;
+        }
+
+        [JsonPropertyName("culture")]
+        public string CultureName { get; set; }
     }
 
     private class VfsEntry : AssetEntry {
@@ -118,18 +129,18 @@ public class WasmAppBuilder : Task
         {
             foreach (var item in ExtraAssemblies)
             {
-		try
-	        {
-                	var refAssembly = mlc.LoadFromAssemblyPath(item.ItemSpec);
-                	Add(mlc, refAssembly);
-		}
-		catch (System.IO.FileLoadException)
-		{
-			if (!SkipMissingAssemblies)
-			{
-				throw;
-			}
-		}
+                try
+                {
+                    var refAssembly = mlc.LoadFromAssemblyPath(item.ItemSpec);
+                    Add(mlc, refAssembly);
+                }
+                catch (System.IO.FileLoadException)
+                {
+                    if (!SkipMissingAssemblies)
+                    {
+                        throw;
+                    }
+                }
             }
         }
 
@@ -161,16 +172,30 @@ public class WasmAppBuilder : Task
         File.WriteAllText(Path.Join(AppDir, "index.html"), html);
 
         foreach (var assembly in _assemblies.Values) {
-            config.Assets.Add(new AssemblyEntry (Path.GetFileName(assembly.Location)));
+            config.Assets.Add(new AssemblyEntry(Path.GetFileName(assembly.Location)));
             if (DebugLevel > 0) {
                 var pdb = assembly.Location;
                 pdb = Path.ChangeExtension(pdb, ".pdb");
                 if (File.Exists(pdb))
-                    config.Assets.Add(new AssemblyEntry (Path.GetFileName(pdb)));
+                    config.Assets.Add(new AssemblyEntry(Path.GetFileName(pdb)));
             }
         }
 
         config.DebugLevel = DebugLevel;
+
+        if (SatelliteAssemblies != null)
+        {
+            foreach (var assembly in SatelliteAssemblies)
+            {
+                string culture = assembly.GetMetadata("CultureName") ?? string.Empty;
+                string fullPath = assembly.GetMetadata("Identity");
+                string name = Path.GetFileName(fullPath);
+                string directory = Path.Join(AppDir, config.AssemblyRoot, culture);
+                Directory.CreateDirectory(directory);
+                File.Copy(fullPath, Path.Join(directory, name), true);
+                config.Assets.Add(new SatelliteAssemblyEntry(name, culture));
+            }
+        }
 
         if (FilesToIncludeInFileSystem != null)
         {
@@ -202,7 +227,7 @@ public class WasmAppBuilder : Task
 
         if (!InvariantGlobalization)
             config.Assets.Add(new IcuData(IcuDataFileName!) { LoadRemote = RemoteSources?.Length > 0 });
-            
+
         config.Assets.Add(new VfsEntry ("dotnet.timezones.blat") { VirtualPath = "/usr/share/zoneinfo/"});
 
         if (RemoteSources?.Length > 0) {
@@ -244,9 +269,9 @@ public class WasmAppBuilder : Task
     }
 }
 
-class Resolver : MetadataAssemblyResolver
+internal class Resolver : MetadataAssemblyResolver
 {
-    List<String> _searchPaths;
+    private List<string> _searchPaths;
 
     public Resolver(List<string> searchPaths)
     {

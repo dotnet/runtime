@@ -15,7 +15,7 @@
 **============================================================*/
 #include <palsuite.h>
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(pal_specific_PAL_get_stdout_test1_paltest_pal_get_stdout_test1, "pal_specific/PAL_get_stdout/test1/paltest_pal_get_stdout_test1")
 {
     int err;
     FILE *pPAL_stdout = NULL;  

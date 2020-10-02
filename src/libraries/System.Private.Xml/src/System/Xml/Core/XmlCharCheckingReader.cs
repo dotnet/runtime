@@ -39,7 +39,6 @@ namespace System.Xml
         private readonly DtdProcessing _dtdProcessing; // -1 means do nothing
 
         private XmlNodeType _lastNodeType;
-        private XmlCharType _xmlCharType;
 
         private ReadContentAsBinaryHelper? _readBinaryHelper;
 
@@ -60,11 +59,6 @@ namespace System.Xml
             _dtdProcessing = dtdProcessing;
 
             _lastNodeType = XmlNodeType.None;
-
-            if (checkCharacters)
-            {
-                _xmlCharType = XmlCharType.Instance;
-            }
         }
 
         //
@@ -320,7 +314,7 @@ namespace System.Xml
                             if (str != null)
                             {
                                 int i;
-                                if ((i = _xmlCharType.IsPublicId(str)) >= 0)
+                                if ((i = XmlCharType.IsPublicId(str)) >= 0)
                                 {
                                     Throw(SR.Xml_InvalidCharacter, XmlException.BuildCharExceptionArgs(str, i));
                                 }
@@ -622,7 +616,7 @@ namespace System.Xml
         private void CheckWhitespace(string value)
         {
             int i;
-            if ((i = _xmlCharType.IsOnlyWhitespaceWithPos(value)) != -1)
+            if ((i = XmlCharType.IsOnlyWhitespaceWithPos(value)) != -1)
             {
                 Throw(SR.Xml_InvalidWhitespaceCharacter, XmlException.BuildCharExceptionArgs(value, i));
             }

@@ -3,6 +3,7 @@ parameters:
   archType: ''
   osGroup: ''
   osSubgroup: ''
+  targetRid: ''
   container: ''
   testGroup: ''
   crossrootfsDir: ''
@@ -21,6 +22,7 @@ jobs:
     archType: ${{ parameters.archType }}
     osGroup: ${{ parameters.osGroup }}
     osSubgroup: ${{ parameters.osSubgroup }}
+    targetRid: ${{ parameters.targetRid }}
     container: ${{ parameters.container }}
     testGroup: ${{ parameters.testGroup }}
     crossrootfsDir: ${{ parameters.crossrootfsDir }}

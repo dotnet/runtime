@@ -466,34 +466,9 @@ namespace System.Net
 
                 if (NameResolutionTelemetry.Log.IsEnabled())
                 {
-                    ValueStopwatch stopwatch = NameResolutionTelemetry.Log.BeforeResolution(hostName);
-
-                    Task coreTask;
-                    try
-                    {
-                        coreTask = NameResolutionPal.GetAddrInfoAsync(hostName, justAddresses);
-                    }
-                    catch when (LogFailure(stopwatch))
-                    {
-                        Debug.Fail("LogFailure should return false");
-                        throw;
-                    }
-
-                    coreTask.ContinueWith(
-                        (task, state) =>
-                        {
-                            NameResolutionTelemetry.Log.AfterResolution(
-                                stopwatch: (ValueStopwatch)state!,
-                                successful: task.IsCompletedSuccessfully);
-                        },
-                        state: stopwatch,
-                        cancellationToken: default,
-                        TaskContinuationOptions.ExecuteSynchronously,
-                        TaskScheduler.Default);
-
-                    // coreTask is not actually a base Task, but Task<IPHostEntry> / Task<IPAddress[]>
-                    // We have to return it and not the continuation
-                    return coreTask;
+                    return justAddresses
+                        ? (Task)GetAddrInfoWithTelemetryAsync<IPAddress[]>(hostName, justAddresses)
+                        : (Task)GetAddrInfoWithTelemetryAsync<IPHostEntry>(hostName, justAddresses);
                 }
                 else
                 {
@@ -504,6 +479,23 @@ namespace System.Net
             return justAddresses ? (Task)
                 RunAsync(s => GetHostAddressesCore((string)s), hostName) :
                 RunAsync(s => GetHostEntryCore((string)s), hostName);
+        }
+
+        private static async Task<T> GetAddrInfoWithTelemetryAsync<T>(string hostName, bool justAddresses)
+            where T : class
+        {
+            ValueStopwatch stopwatch = NameResolutionTelemetry.Log.BeforeResolution(hostName);
+
+            T? result = null;
+            try
+            {
+                result = await ((Task<T>)NameResolutionPal.GetAddrInfoAsync(hostName, justAddresses)).ConfigureAwait(false);
+                return result;
+            }
+            finally
+            {
+                NameResolutionTelemetry.Log.AfterResolution(stopwatch, successful: result is not null);
+            }
         }
 
         private static Task<TResult> RunAsync<TResult>(Func<object, TResult> func, object arg) =>

@@ -3,7 +3,9 @@
  */
 
 #include <config.h>
+#include <glib.h>
 #include <mono/utils/mono-compiler.h>
+#include <mono/utils/mono-math.h>
 #include <math.h>
 
 #ifndef DISABLE_JIT
@@ -1724,7 +1726,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			}
 
 			if (opcode) {
-				double *dest = (double *) mono_domain_alloc (cfg->domain, sizeof (double));
+				double *dest = (double *)mono_mem_manager_alloc (cfg->mem_manager, sizeof (double));
 				double result = 0;
 				MONO_INST_NEW (cfg, ins, OP_R8CONST);
 				ins->type = STACK_R8;
@@ -1763,7 +1765,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 					result = cosh (source);
 					break;
 				case OP_ROUND:
-					result = round (source);
+					result = mono_round_to_even (source);
 					break;
 				case OP_SIN:
 					result = sin (source);

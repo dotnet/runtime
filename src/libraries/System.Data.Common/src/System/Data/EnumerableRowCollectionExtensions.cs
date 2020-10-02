@@ -152,7 +152,7 @@ namespace System.Data
 
                 Debug.Assert(source != null);
 
-                IEnumerable<TResult> typedEnumerable = Enumerable.Cast<TResult>(source)!;
+                IEnumerable<TResult> typedEnumerable = Enumerable.Cast<TResult>(source);
 
                 EnumerableRowCollection<TResult> newEdt = new EnumerableRowCollection<TResult>(
                     typedEnumerable,

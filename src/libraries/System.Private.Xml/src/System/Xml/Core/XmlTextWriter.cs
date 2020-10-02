@@ -174,9 +174,6 @@ namespace System.Xml
         private Dictionary<string, int>? _nsHashtable;
         private bool _useNsHashtable;
 
-        // char types
-        private XmlCharType _xmlCharType = XmlCharType.Instance;
-
         //
         // Constants and constant tables
         //
@@ -851,7 +848,7 @@ namespace System.Xml
                     ws = string.Empty;
                 }
 
-                if (!_xmlCharType.IsOnlyWhitespace(ws))
+                if (!XmlCharType.IsOnlyWhitespace(ws))
                 {
                     throw new ArgumentException(SR.Xml_NonWhitespace);
                 }

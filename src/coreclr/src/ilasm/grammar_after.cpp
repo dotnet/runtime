@@ -924,10 +924,6 @@ Its_An_Id:
                                     tok = parse_literal(curSym, curPos, FALSE);
                                     if(tok == QSTRING)
                                     {
-                                        // insert UTF-8 BOM prefix
-                                        yylval.binstr->insertInt8(0xEF);
-                                        yylval.binstr->insertInt8(0xBB);
-                                        yylval.binstr->insertInt8(0xBF);
                                         yylval.binstr->appendInt8(' ');
                                         DefineVar(newstr, yylval.binstr);
                                     }

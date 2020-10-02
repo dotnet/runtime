@@ -29,7 +29,7 @@
 
   <PropertyGroup>
     <_ILLinkTasksDirectoryRoot>$(PkgMicrosoft_NET_ILLink_Tasks)\tools\</_ILLinkTasksDirectoryRoot>
-    <_ILLinkTasksTFM>netcoreapp3.0</_ILLinkTasksTFM>
+    <_ILLinkTasksTFM>net5.0</_ILLinkTasksTFM>
     <_ILLinkTasksDirectory>$(_ILLinkTasksDirectoryRoot)$(_ILLinkTasksTFM)\</_ILLinkTasksDirectory>
     <ILLinkTasksAssembly>$(_ILLinkTasksDirectory)ILLink.Tasks.dll</ILLinkTasksAssembly>
   </PropertyGroup>

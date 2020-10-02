@@ -37,7 +37,6 @@ namespace System.Xml.Xsl.XsltOld
         private static readonly BuilderInfo s_DefaultInfo = new BuilderInfo();
 
         private readonly XmlEncoder _encoder = new XmlEncoder();
-        private XmlCharType _xmlCharType = XmlCharType.Instance;
 
         internal ReaderOutput(Processor processor)
         {
@@ -323,7 +322,7 @@ namespace System.Xml.Xsl.XsltOld
             }
 
             while (true)
-            { // while -- to ignor empty whitespace nodes.
+            { // while -- to ignore empty whitespace nodes.
                 if (_haveRecord)
                 {
                     _processor!.ResetOutput();
@@ -336,22 +335,22 @@ namespace System.Xml.Xsl.XsltOld
                 {
                     CheckCurrentInfo();
                     // check text nodes on whitespace;
-                    switch (this.NodeType)
+                    switch (NodeType)
                     {
                         case XmlNodeType.Text:
-                            if (_xmlCharType.IsOnlyWhitespace(this.Value))
+                            if (XmlCharType.IsOnlyWhitespace(Value))
                             {
                                 _currentInfo.NodeType = XmlNodeType.Whitespace;
                                 goto case XmlNodeType.Whitespace;
                             }
-                            Debug.Assert(this.Value.Length != 0, "It whould be Whitespace in this case");
+                            Debug.Assert(Value.Length != 0, "It whould be Whitespace in this case");
                             break;
                         case XmlNodeType.Whitespace:
-                            if (this.Value.Length == 0)
+                            if (Value.Length == 0)
                             {
                                 continue;                          // ignoring emty text nodes
                             }
-                            if (this.XmlSpace == XmlSpace.Preserve)
+                            if (XmlSpace == XmlSpace.Preserve)
                             {
                                 _currentInfo.NodeType = XmlNodeType.SignificantWhitespace;
                             }

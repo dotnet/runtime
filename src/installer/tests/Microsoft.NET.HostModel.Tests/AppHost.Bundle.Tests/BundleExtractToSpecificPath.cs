@@ -12,7 +12,7 @@ using Xunit;
 
 namespace AppHost.Bundle.Tests
 {
-    public class BundleExtractToSpecificPath : IClassFixture<BundleExtractToSpecificPath.SharedTestState>
+    public class BundleExtractToSpecificPath : BundleTestBase, IClassFixture<BundleExtractToSpecificPath.SharedTestState>
     {
         private SharedTestState sharedTestState;
 
@@ -28,8 +28,8 @@ namespace AppHost.Bundle.Tests
             var hostName = BundleHelper.GetHostName(fixture);
 
             // Publish the bundle
-            string singleFile;
-            Bundler bundler = BundleHelper.BundleApp(fixture, out singleFile, options: BundleOptions.BundleNativeBinaries);
+            UseSingleFileSelfContainedHost(fixture);
+            Bundler bundler = BundleHelper.BundleApp(fixture, out string singleFile, options: BundleOptions.BundleNativeBinaries);
 
             // Verify expected files in the bundle directory
             var bundleDir = BundleHelper.GetBundleDir(fixture);
@@ -65,7 +65,7 @@ namespace AppHost.Bundle.Tests
         private void Bundle_Extraction_To_Relative_Path_Succeeds (string relativePath)
         {
             var fixture = sharedTestState.TestFixture.Copy();
-            var singleFile = BundleHelper.BundleApp(fixture, BundleOptions.None);
+            var singleFile = BundleSelfContainedApp(fixture, BundleOptions.None);
 
             // Run the bundled app (extract files to <path>)
             Command.Create(singleFile)
@@ -85,8 +85,8 @@ namespace AppHost.Bundle.Tests
             var fixture = sharedTestState.TestFixture.Copy();
 
             // Publish the bundle
-            string singleFile;
-            Bundler bundler = BundleHelper.BundleApp(fixture, out singleFile, BundleOptions.BundleNativeBinaries);
+            UseSingleFileSelfContainedHost(fixture);
+            Bundler bundler = BundleHelper.BundleApp(fixture, out string singleFile, BundleOptions.BundleNativeBinaries);
 
             // Create a directory for extraction.
             var extractBaseDir = BundleHelper.GetExtractionRootDir(fixture);
@@ -103,7 +103,6 @@ namespace AppHost.Bundle.Tests
                 .And
                 .HaveStdOutContaining("Hello World");
 
-            var appBaseName = BundleHelper.GetAppBaseName(fixture);
             var extractDir = BundleHelper.GetExtractionDir(fixture, bundler);
 
             extractDir.Refresh();
@@ -136,8 +135,8 @@ namespace AppHost.Bundle.Tests
             var appName = Path.GetFileNameWithoutExtension(hostName);
 
             // Publish the bundle
-            string singleFile;
-            Bundler bundler = BundleHelper.BundleApp(fixture, out singleFile, BundleOptions.BundleNativeBinaries);
+            UseSingleFileSelfContainedHost(fixture);
+            Bundler bundler = BundleHelper.BundleApp(fixture, out string singleFile, BundleOptions.BundleNativeBinaries);
 
             // Create a directory for extraction.
             var extractBaseDir = BundleHelper.GetExtractionRootDir(fixture);
@@ -178,19 +177,13 @@ namespace AppHost.Bundle.Tests
             extractDir.Should().HaveFiles(extractedFiles);
         }
 
-        public class SharedTestState : IDisposable
+        public class SharedTestState : SharedTestStateBase, IDisposable
         {
             public TestProjectFixture TestFixture { get; set; }
-            public RepoDirectoriesProvider RepoDirectories { get; set; }
 
             public SharedTestState()
             {
-                RepoDirectories = new RepoDirectoriesProvider();
-                TestFixture = new TestProjectFixture("StandaloneApp", RepoDirectories);
-                TestFixture
-                    .EnsureRestoredForRid(TestFixture.CurrentRid, RepoDirectories.CorehostPackages)
-                    .PublishProject(runtime: TestFixture.CurrentRid, 
-                                    outputDirectory: BundleHelper.GetPublishPath(TestFixture));
+                TestFixture = PreparePublishedSelfContainedTestProject("StandaloneApp");
             }
 
             public void Dispose()

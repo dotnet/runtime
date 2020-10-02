@@ -111,6 +111,18 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
             }
         }
 
+        [Fact]
+        public static void PublicKey_TryExportSubjectPublicKeyInfo_TooSmall()
+        {
+            using (ECDiffieHellman ecdh = ECDiffieHellmanFactory.Create())
+            using (ECDiffieHellmanPublicKey publicKey = ecdh.PublicKey)
+            {
+                Span<byte> destination = stackalloc byte[1];
+                Assert.False(publicKey.TryExportSubjectPublicKeyInfo(destination, out int written));
+                Assert.Equal(0, written);
+            }
+        }
+
         [Theory]
         [InlineData(false)]
         [InlineData(true)]

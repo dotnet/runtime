@@ -23,8 +23,7 @@ namespace System.Xml
 
             int startPos = 0;
             StringBuilder? norValue = null;
-            XmlCharType xmlCharType = XmlCharType.Instance;
-            while (xmlCharType.IsWhiteSpace(value[startPos]))
+            while (XmlCharType.IsWhiteSpace(value[startPos]))
             {
                 startPos++;
                 if (startPos == len)
@@ -36,14 +35,14 @@ namespace System.Xml
             int i = startPos;
             while (i < len)
             {
-                if (!xmlCharType.IsWhiteSpace(value[i]))
+                if (!XmlCharType.IsWhiteSpace(value[i]))
                 {
                     i++;
                     continue;
                 }
 
                 int j = i + 1;
-                while (j < len && xmlCharType.IsWhiteSpace(value[j]))
+                while (j < len && XmlCharType.IsWhiteSpace(value[j]))
                 {
                     j++;
                 }
@@ -165,12 +164,11 @@ namespace System.Xml
 
             bool fSeenLetter = false;
             int i = startPos;
-            XmlCharType xmlCharType = XmlCharType.Instance;
 
             char ch = value[i];
-            if (xmlCharType.IsLetter(ch))
+            if (XmlCharType.IsLetter(ch))
             {
-                if (xmlCharType.IsLetter(value[++i]))
+                if (XmlCharType.IsLetter(value[++i]))
                 {
                     if (len == 2)
                     {
@@ -193,7 +191,7 @@ namespace System.Xml
                 while (len-- > 0)
                 {
                     ch = value[++i];
-                    if (xmlCharType.IsLetter(ch))
+                    if (XmlCharType.IsLetter(ch))
                     {
                         fSeenLetter = true;
                     }

@@ -22,7 +22,8 @@
 #define SECOND_VALUE 5
 #define THIRD_VALUE 10
 
-int __cdecl main(int argc, char *argv[]) {
+PALTEST(miscellaneous_InterlockedCompareExchange64_test1_paltest_interlockedcompareexchange64_test1, "miscellaneous/InterlockedCompareExchange64/test1/paltest_interlockedcompareexchange64_test1")
+{
   
     LONGLONG BaseVariableToManipulate = START_VALUE;
     LONGLONG ValueToExchange = SECOND_VALUE;

@@ -12,7 +12,7 @@
 
 #include <palsuite.h>
 
-int __cdecl main(int argc, char **argv)
+PALTEST(c_runtime_strtod_test2_paltest_strtod_test2, "c_runtime/strtod/test2/paltest_strtod_test2")
 {
     /* Representation of positive infinty for a IEEE 64-bit double */
     INT64 PosInifity = (INT64)(0x7ff00000) << 32;    

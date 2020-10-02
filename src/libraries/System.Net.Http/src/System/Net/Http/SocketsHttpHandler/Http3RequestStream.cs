@@ -519,9 +519,6 @@ namespace System.Net.Http
                 BufferBytes(_connection.Pool._http3EncodedAuthorityHostHeader);
             }
 
-            // The only way to reach H3 is to upgrade via an Alt-Svc header, so we can encode Alt-Used for every connection.
-            BufferBytes(_connection.AltUsedEncodedHeaderBytes);
-
             Debug.Assert(request.RequestUri != null);
             string pathAndQuery = request.RequestUri.PathAndQuery;
             if (pathAndQuery == "/")
@@ -532,6 +529,9 @@ namespace System.Net.Http
             {
                 BufferLiteralHeaderWithStaticNameReference(H3StaticTable.PathSlash, pathAndQuery);
             }
+
+            // The only way to reach H3 is to upgrade via an Alt-Svc header, so we can encode Alt-Used for every connection.
+            BufferBytes(_connection.AltUsedEncodedHeaderBytes);
 
             if (request.HasHeaders)
             {

@@ -23,6 +23,9 @@ mono_alc_init (MonoAssemblyLoadContext *alc, MonoDomain *domain, gboolean collec
 	alc->domain = domain;
 	alc->loaded_images = li;
 	alc->loaded_assemblies = NULL;
+	alc->memory_manager = mono_mem_manager_create_singleton (alc, domain, collectible);
+	alc->generic_memory_managers = g_ptr_array_new ();
+	mono_coop_mutex_init (&alc->memory_managers_lock);
 	alc->unloading = FALSE;
 	alc->collectible = collectible;
 	alc->pinvoke_scopes = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
@@ -151,6 +154,16 @@ mono_alc_cleanup (MonoAssemblyLoadContext *alc)
 
 	mono_alc_cleanup_assemblies (alc);
 
+	mono_mem_manager_free_singleton (alc->memory_manager, FALSE);
+	alc->memory_manager = NULL;
+
+	/*for (int i = 0; i < alc->generic_memory_managers->len; i++) {
+		MonoGenericMemoryManager *memory_manager = (MonoGenericMemoryManager *)alc->generic_memory_managers->pdata [i];
+		mono_mem_manager_free_generic (memory_manager, FALSE);
+	}*/
+	g_ptr_array_free (alc->generic_memory_managers, TRUE);
+	mono_coop_mutex_destroy (&alc->memory_managers_lock);
+
 	mono_gchandle_free_internal (alc->gchandle);
 	alc->gchandle = NULL;
 
@@ -178,6 +191,18 @@ void
 mono_alc_assemblies_unlock (MonoAssemblyLoadContext *alc)
 {
 	mono_coop_mutex_unlock (&alc->assemblies_lock);
+}
+
+void
+mono_alc_memory_managers_lock (MonoAssemblyLoadContext *alc)
+{
+	mono_coop_mutex_lock (&alc->memory_managers_lock);
+}
+
+void
+mono_alc_memory_managers_unlock (MonoAssemblyLoadContext *alc)
+{
+	mono_coop_mutex_unlock (&alc->memory_managers_lock);
 }
 
 gpointer

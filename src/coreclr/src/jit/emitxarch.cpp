@@ -524,6 +524,7 @@ bool TakesRexWPrefix(instruction ins, emitAttr attr)
             case INS_mulx:
             case INS_pdep:
             case INS_pext:
+            case INS_rorx:
                 return true;
             default:
                 return false;
@@ -758,6 +759,7 @@ unsigned emitter::emitOutputRexOrVexPrefixIfNeeded(instruction ins, BYTE* dst, c
                         {
                             switch (ins)
                             {
+                                case INS_rorx:
                                 case INS_pdep:
                                 case INS_mulx:
                                 {
@@ -1242,6 +1244,7 @@ bool emitter::emitInsCanOnlyWriteSSE2OrAVXReg(instrDesc* id)
         case INS_pextrq:
         case INS_pextrw:
         case INS_pextrw_sse41:
+        case INS_rorx:
         {
             // These SSE instructions write to a general purpose integer register.
             return false;
@@ -3945,7 +3948,7 @@ void emitter::emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, ssize_t
  *  Add an instruction referencing an integer constant.
  */
 
-void emitter::emitIns_I(instruction ins, emitAttr attr, int val)
+void emitter::emitIns_I(instruction ins, emitAttr attr, cnsval_ssize_t val)
 {
     UNATIVE_OFFSET sz;
     instrDesc*     id;
@@ -5349,7 +5352,7 @@ void emitter::emitIns_R_AI(instruction ins, emitAttr attr, regNumber ireg, ssize
     emitCurIGsize += sz;
 }
 
-void emitter::emitIns_AR_R(instruction ins, emitAttr attr, regNumber reg, regNumber base, int disp)
+void emitter::emitIns_AR_R(instruction ins, emitAttr attr, regNumber reg, regNumber base, cnsval_ssize_t disp)
 {
     emitIns_ARX_R(ins, attr, reg, base, REG_NA, 1, disp);
 }
@@ -5587,7 +5590,7 @@ void emitter::emitIns_R_ARX(
 }
 
 void emitter::emitIns_ARX_R(
-    instruction ins, emitAttr attr, regNumber reg, regNumber base, regNumber index, unsigned scale, int disp)
+    instruction ins, emitAttr attr, regNumber reg, regNumber base, regNumber index, unsigned scale, cnsval_ssize_t disp)
 {
     UNATIVE_OFFSET sz;
     instrDesc*     id = emitNewInstrAmd(attr, disp);
@@ -8263,11 +8266,11 @@ void emitter::emitDispIns(
     {
         printf(" %-9s", sstr);
     }
-#ifndef TARGET_UNIX
+#ifndef HOST_UNIX
     if (strnlen_s(sstr, 10) >= 8)
-#else  // TARGET_UNIX
+#else  // HOST_UNIX
     if (strnlen(sstr, 10) >= 8)
-#endif // TARGET_UNIX
+#endif // HOST_UNIX
     {
         printf(" ");
     }
@@ -10523,7 +10526,7 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
 
             case IF_SWR: // Stack Write (So we need to update GC live for stack var)
                 // Write stack                    -- GC var may be born
-                emitGCvarLiveUpd(adr, varNum, id->idGCref(), dst);
+                emitGCvarLiveUpd(adr, varNum, id->idGCref(), dst DEBUG_ARG(varNum));
                 break;
 
             case IF_SRD_CNS:
@@ -10547,7 +10550,7 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
 
             case IF_SWR_RRD: // Stack Write, Register Read (So we need to update GC live for stack var)
                 // Read  register, write stack    -- GC var may be born
-                emitGCvarLiveUpd(adr, varNum, id->idGCref(), dst);
+                emitGCvarLiveUpd(adr, varNum, id->idGCref(), dst DEBUG_ARG(varNum));
                 break;
 
             case IF_RRW_SRD: // Register Read/Write, Stack Read (So we need to update GC live for register)
@@ -10928,7 +10931,7 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         noway_assert(id->idIsDspReloc());
         dst += emitOutputLong(dst, 0);
 #else  // TARGET_X86
-        dst += emitOutputLong(dst, (int)target);
+        dst += emitOutputLong(dst, (int)(ssize_t)target);
 #endif // TARGET_X86
 
         if (id->idIsDspReloc())
@@ -12720,7 +12723,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 #ifdef TARGET_AMD64
                     dst += emitOutputLong(dst, 0);
 #else
-                    dst += emitOutputLong(dst, (int)addr);
+                    dst += emitOutputLong(dst, (int)(ssize_t)addr);
 #endif
                     emitRecordRelocation((void*)(dst - sizeof(int)), addr, IMAGE_REL_BASED_DISP32);
                 }
@@ -13726,6 +13729,12 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
         regMaskTP regMask = genRegMask(inst3opImulReg(ins));
         assert((regMask & (emitThisGCrefRegs | emitThisByrefRegs)) == 0);
+    }
+
+    // Output any delta in GC info.
+    if (EMIT_GC_VERBOSE || emitComp->opts.disasmWithGC)
+    {
+        emitDispGCInfoDelta();
     }
 #endif
 
@@ -14938,6 +14947,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_tzcnt:
         case INS_popcnt:
         case INS_crc32:
+        case INS_rorx:
         case INS_pdep:
         case INS_pext:
         case INS_addsubps:

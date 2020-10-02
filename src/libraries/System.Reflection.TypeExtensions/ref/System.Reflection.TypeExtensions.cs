@@ -28,7 +28,7 @@ namespace System.Reflection
     }
     public static partial class MethodInfoExtensions
     {
-        public static System.Reflection.MethodInfo? GetBaseDefinition(this System.Reflection.MethodInfo method) { throw null; }
+        public static System.Reflection.MethodInfo GetBaseDefinition(this System.Reflection.MethodInfo method) { throw null; }
     }
     public static partial class ModuleExtensions
     {

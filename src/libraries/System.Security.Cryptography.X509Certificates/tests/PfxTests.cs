@@ -193,6 +193,43 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
+        [Theory]
+        [MemberData(nameof(StorageFlags))]
+        public static void ReadECDHPrivateKey_WindowsPfx(X509KeyStorageFlags keyStorageFlags)
+        {
+            using (var cert = new X509Certificate2(TestData.EcDhP256_KeyAgree_Pfx_Windows, "test", keyStorageFlags))
+            {
+                using (ECDiffieHellman ecdh = cert.GetECDiffieHellmanPrivateKey())
+                {
+                    Verify_ECDHPrivateKey_WindowsPfx(ecdh);
+                }
+            }
+        }
+
+        [Fact]
+        public static void ECDHPrivateKeyProperty_WindowsPfx()
+        {
+            using (var cert = new X509Certificate2(TestData.EcDhP256_KeyAgree_Pfx_Windows, "test", Cert.EphemeralIfPossible))
+            using (var pubOnly = new X509Certificate2(cert.RawData))
+            {
+                Assert.True(cert.HasPrivateKey, "cert.HasPrivateKey");
+                Assert.Throws<NotSupportedException>(() => cert.PrivateKey);
+
+                Assert.False(pubOnly.HasPrivateKey, "pubOnly.HasPrivateKey");
+                Assert.Null(pubOnly.PrivateKey);
+
+                // Currently unable to set PrivateKey
+                Assert.Throws<PlatformNotSupportedException>(() => cert.PrivateKey = null);
+
+                using (ECDiffieHellman privKey = cert.GetECDiffieHellmanPrivateKey())
+                {
+                    Assert.NotNull(privKey);
+                    Assert.ThrowsAny<NotSupportedException>(() => cert.PrivateKey = privKey);
+                    Assert.ThrowsAny<NotSupportedException>(() => pubOnly.PrivateKey = privKey);
+                }
+            }
+        }
+
 #if !NO_DSA_AVAILABLE
         [Fact]
         public static void DsaPrivateKeyProperty()
@@ -224,6 +261,16 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             if (OperatingSystem.IsWindows())
             {
                 AssertEccAlgorithm(ecdsa, "ECDSA_P256");
+            }
+        }
+
+        private static void Verify_ECDHPrivateKey_WindowsPfx(ECDiffieHellman ecdh)
+        {
+            Assert.NotNull(ecdh);
+
+            if (OperatingSystem.IsWindows())
+            {
+                AssertEccAlgorithm(ecdh, "ECDH_P256");
             }
         }
 
@@ -406,9 +453,17 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         // FileNotFoundException on Unix.
         private static void AssertEccAlgorithm(ECDsa ecdsa, string algorithmId)
         {
-            ECDsaCng cng = ecdsa as ECDsaCng;
+            if (ecdsa is ECDsaCng cng)
+            {
+                Assert.Equal(algorithmId, cng.Key.Algorithm.Algorithm);
+            }
+        }
 
-            if (cng != null)
+        // Keep the ECDiffieHellmanCng-ness contained within this helper method so that it doesn't trigger a
+        // FileNotFoundException on Unix.
+        private static void AssertEccAlgorithm(ECDiffieHellman ecdh, string algorithmId)
+        {
+            if (ecdh is ECDiffieHellmanCng cng)
             {
                 Assert.Equal(algorithmId, cng.Key.Algorithm.Algorithm);
             }

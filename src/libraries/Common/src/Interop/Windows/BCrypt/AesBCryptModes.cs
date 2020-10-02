@@ -35,9 +35,20 @@ namespace Internal.Cryptography
                 hAlg.SetCipherMode(cipherMode);
 
                 // feedback is in bytes!
-                if (feedback > 0)
+                // The default feedback size is 1 (CFB8) on Windows. Do not set the CNG property
+                // if we would be setting it to the default. Windows 7 only supports CFB8 and
+                // does not permit setting the feedback size, so we don't call the property
+                // setter at all in that case.
+                if (feedback > 0 && feedback != 1)
                 {
-                    hAlg.SetFeedbackSize(feedback);
+                    try
+                    {
+                        hAlg.SetFeedbackSize(feedback);
+                    }
+                    catch (CryptographicException ex)
+                    {
+                        throw new CryptographicException(SR.Cryptography_FeedbackSizeNotSupported, ex);
+                    }
                 }
 
                 return hAlg;

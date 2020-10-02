@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -230,11 +229,10 @@ namespace MS.Internal.Xml.XPath
             int modifyPos = -1;
             char[] chars = value.ToCharArray();
             bool firstSpace = false; // Start false to trim the beginning
-            XmlCharType xmlCharType = XmlCharType.Instance;
 
             for (int comparePos = 0; comparePos < chars.Length; comparePos++)
             {
-                if (!xmlCharType.IsWhiteSpace(chars[comparePos]))
+                if (!XmlCharType.IsWhiteSpace(chars[comparePos]))
                 {
                     firstSpace = true;
                     modifyPos++;

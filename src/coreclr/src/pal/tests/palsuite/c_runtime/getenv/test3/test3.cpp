@@ -15,7 +15,7 @@
 
 #include <palsuite.h>
 
-int __cdecl main(int argc, char **argv)
+PALTEST(c_runtime_getenv_test3_paltest_getenv_test3, "c_runtime/getenv/test3/paltest_getenv_test3")
 {
 #if WIN32
 

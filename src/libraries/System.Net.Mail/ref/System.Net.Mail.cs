@@ -43,7 +43,7 @@ namespace System.Net.Mail
         public System.Text.Encoding? NameEncoding { get { throw null; } set { } }
         public static System.Net.Mail.Attachment CreateAttachmentFromString(string content, System.Net.Mime.ContentType contentType) { throw null; }
         public static System.Net.Mail.Attachment CreateAttachmentFromString(string content, string? name) { throw null; }
-        public static System.Net.Mail.Attachment CreateAttachmentFromString(string content, string? name, System.Text.Encoding? contentEncoding, string mediaType) { throw null; }
+        public static System.Net.Mail.Attachment CreateAttachmentFromString(string content, string? name, System.Text.Encoding? contentEncoding, string? mediaType) { throw null; }
     }
     public abstract partial class AttachmentBase : System.IDisposable
     {
@@ -114,7 +114,7 @@ namespace System.Net.Mail
         public override int GetHashCode() { throw null; }
         public static bool TryCreate(string address, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out MailAddress? result) { throw null; }
         public static bool TryCreate(string address, string? displayName, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out MailAddress? result) { throw null; }
-        public static bool TryCreate(string address, string? displayName, System.Text.Encoding displayNameEncoding, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out MailAddress? result) { throw null; }
+        public static bool TryCreate(string address, string? displayName, System.Text.Encoding? displayNameEncoding, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out MailAddress? result) { throw null; }
         public override string ToString() { throw null; }
     }
     public partial class MailAddressCollection : System.Collections.ObjectModel.Collection<System.Net.Mail.MailAddress>

@@ -2317,7 +2317,8 @@ static void
 emit_invalid_program_with_msg (MonoCompile *cfg, MonoError *error_msg, MonoMethod *caller, MonoMethod *callee)
 {
 	g_assert (!is_ok (error_msg));
-	char *str = mono_mempool_strdup (cfg->domain->mp, mono_error_get_message (error_msg));
+
+	char *str = mono_mem_manager_strdup (cfg->mem_manager, mono_error_get_message (error_msg));
 	MonoInst *iargs[1];
 	if (cfg->compile_aot)
 		EMIT_NEW_LDSTRLITCONST (cfg, iargs [0], str);
@@ -3623,14 +3624,14 @@ handle_delegate_ctor (MonoCompile *cfg, MonoClass *klass, MonoInst *target, Mono
 				domain_jit_info (domain)->method_code_hash = g_hash_table_new (NULL, NULL);
 			code_slot = (guint8 **)g_hash_table_lookup (domain_jit_info (domain)->method_code_hash, method);
 			if (!code_slot) {
-				code_slot = (guint8 **)mono_domain_alloc0 (domain, sizeof (gpointer));
+				code_slot = (guint8 **)m_method_alloc0 (domain, method, sizeof (gpointer));
 				g_hash_table_insert (domain_jit_info (domain)->method_code_hash, method, code_slot);
 			}
 			mono_domain_unlock (domain);
 
 			code_slot_ins = mini_emit_runtime_constant (cfg, MONO_PATCH_INFO_METHOD_CODE_SLOT, method);
 		}
-		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, obj->dreg, MONO_STRUCT_OFFSET (MonoDelegate, method_code), code_slot_ins->dreg);		
+		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, obj->dreg, MONO_STRUCT_OFFSET (MonoDelegate, method_code), code_slot_ins->dreg);
 	}
 
  	if (cfg->llvm_only) {
@@ -6856,7 +6857,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				use_aotconst = TRUE;
 #endif
 			/* FIXME: we should really allocate this only late in the compilation process */
-			f = (float *)mono_domain_alloc (cfg->domain, sizeof (float));
+			f = (float *)mono_mem_manager_alloc (cfg->mem_manager, sizeof (float));
 
 			if (use_aotconst) {
 				MonoInst *cons;
@@ -6889,7 +6890,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 #endif
 
 			/* FIXME: we should really allocate this only late in the compilation process */
-			d = (double *)mono_domain_alloc (cfg->domain, sizeof (double));
+			d = (double *)mono_mem_manager_alloc (cfg->mem_manager, sizeof (double));
 
 			if (use_aotconst) {
 				MonoInst *cons;
@@ -10787,7 +10788,7 @@ mono_ldptr:
 			if (cfg->compile_aot) {
 				EMIT_NEW_AOTCONST (cfg, ins, MONO_PATCH_INFO_METHOD_PINVOKE_ADDR_CACHE, pinvoke_method);
 			} else {
-				gpointer addr = mono_domain_alloc0 (cfg->domain, sizeof (gpointer));
+				gpointer addr = mono_mem_manager_alloc0 (cfg->mem_manager, sizeof (gpointer));
 				EMIT_NEW_PCONST (cfg, ins, addr);
 			}
 			*sp++ = ins;

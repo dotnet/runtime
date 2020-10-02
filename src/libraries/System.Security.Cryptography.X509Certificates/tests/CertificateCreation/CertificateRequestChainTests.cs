@@ -53,8 +53,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             using (ECDsa rootKey = ECDsa.Create(ECCurve.NamedCurves.nistP521))
             using (RSA intermed1Key = RSA.Create(2048))
             using (RSA intermed2Key = RSA.Create(2048))
-            using (ECDsa leafKey = ECDsa.Create(ECCurve.NamedCurves.nistP256))
-            using (ECDsa leafPubKey = ECDsa.Create(leafKey.ExportParameters(false)))
+            using (ECDiffieHellman leafKey = ECDiffieHellman.Create(ECCurve.NamedCurves.nistP256))
+            using (ECDiffieHellman leafPubKey = ECDiffieHellman.Create(leafKey.ExportParameters(false)))
             {
                 CreateAndTestChain(
                     rootKey,
@@ -205,18 +205,14 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             AsymmetricAlgorithm key,
             HashAlgorithmName hashAlgorithm)
         {
-            RSA rsa = key as RSA;
-
-            if (rsa != null)
-                return new CertificateRequest(dn, rsa, hashAlgorithm, RSASignaturePadding.Pkcs1);
-
-            ECDsa ecdsa = key as ECDsa;
-
-            if (ecdsa != null)
-                return new CertificateRequest(dn, ecdsa, hashAlgorithm);
-
-            throw new InvalidOperationException(
-                $"Had no handler for key of type {key?.GetType().FullName ?? "null"}");
+            X500DistinguishedName x500dn = new X500DistinguishedName(dn);
+            return key switch {
+                RSA rsa => new CertificateRequest(x500dn, rsa, hashAlgorithm, RSASignaturePadding.Pkcs1),
+                ECDsa ecdsa => new CertificateRequest(x500dn, ecdsa, hashAlgorithm),
+                ECDiffieHellman ecdh => new CertificateRequest(x500dn, new PublicKey(ecdh), hashAlgorithm),
+                _ => throw new InvalidOperationException(
+                    $"Had no handler for key of type {key?.GetType().FullName ?? "null"}")
+            };
         }
 
         private static X509SignatureGenerator OpenGenerator(AsymmetricAlgorithm key)

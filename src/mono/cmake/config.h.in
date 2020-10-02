@@ -55,6 +55,12 @@
 /* Host Platform is Darwin */
 #cmakedefine HOST_DARWIN 1
 
+/* Host Platform is iOS */
+#cmakedefine HOST_IOS 1
+
+/* Host Platform is tvOS */
+#cmakedefine HOST_TVOS 1
+
 /* Use classic Windows API support */
 #cmakedefine HAVE_CLASSIC_WINAPI_SUPPORT 1
 
@@ -479,6 +485,9 @@
 
 /* CLOCK_REALTIME */
 #cmakedefine HAVE_CLOCK_REALTIME 1
+
+/* clockid_t */
+#cmakedefine HAVE_CLOCKID_T 1
 
 /* mach_absolute_time */
 #cmakedefine HAVE_MACH_ABSOLUTE_TIME 1

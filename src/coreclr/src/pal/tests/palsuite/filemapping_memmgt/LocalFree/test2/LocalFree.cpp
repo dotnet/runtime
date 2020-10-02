@@ -13,7 +13,7 @@
 **============================================================*/
 #include <palsuite.h>
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(filemapping_memmgt_LocalFree_test2_paltest_localfree_test2, "filemapping_memmgt/LocalFree/test2/paltest_localfree_test2")
 {
     HLOCAL FreeHeap;
     int err;

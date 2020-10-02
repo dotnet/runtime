@@ -595,7 +595,6 @@
     <Compile Include="Internal\Cryptography\SHAHashProvider.Browser.cs" />
     <Compile Include="System\Security\Cryptography\RandomNumberGenerator.cs" />
     <Compile Include="System\Security\Cryptography\IncrementalHash.cs" />
-    <Compile Include="System\Security\Cryptography\MD5.cs" />
     <Compile Include="System\Security\Cryptography\SHA1.cs" />
     <Compile Include="System\Security\Cryptography\SHA1Managed.cs" />
     <Compile Include="System\Security\Cryptography\SHA256.cs" />

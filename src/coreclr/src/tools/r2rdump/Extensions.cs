@@ -232,8 +232,11 @@ namespace R2RDump
 
             if (theThis.EHInfo != null)
             {
-                writer.WriteLine($@"EH info @ {theThis.EHInfo.RelativeVirtualAddress:X4}, #clauses = {theThis.EHInfo.EHClauses.Count}");
-                theThis.EHInfo.WriteTo(writer);
+                if (options.Naked)
+                    writer.WriteLine($@"EH info, #clauses = {theThis.EHInfo.EHClauses.Count}");
+                else
+                    writer.WriteLine($@"EH info @ {theThis.EHInfo.RelativeVirtualAddress:X4}, #clauses = {theThis.EHInfo.EHClauses.Count}");
+                theThis.EHInfo.WriteTo(writer, !options.Naked);
                 writer.WriteLine();
             }
 

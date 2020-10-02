@@ -122,7 +122,7 @@ public class AppleAppBuilderTask : Task
             throw new ArgumentException($"ProjectName='{ProjectName}' should not contain spaces");
         }
 
-        string[] excludes = new string[0];
+        string[] excludes = Array.Empty<string>();
         if (ExcludeFromAppDir != null)
         {
             excludes = ExcludeFromAppDir
@@ -143,7 +143,7 @@ public class AppleAppBuilderTask : Task
         {
             // use AOT files if available
             var obj = file.GetMetadata("AssemblerFile");
-            if (!String.IsNullOrEmpty(obj))
+            if (!string.IsNullOrEmpty(obj))
             {
                 assemblerFiles.Add(obj);
             }

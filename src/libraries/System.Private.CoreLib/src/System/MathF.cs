@@ -373,7 +373,7 @@ namespace System
                     {
                         float fraction = ModF(x, &x);
 
-                        if (Abs(fraction) >= 0.5)
+                        if (Abs(fraction) >= 0.5f)
                         {
                             x += Sign(fraction);
                         }

@@ -62,9 +62,6 @@ namespace System.Xml
         private bool _dtdWritten;
         private bool _xmlDeclFollows;
 
-        // char type tables
-        private XmlCharType _xmlCharType = XmlCharType.Instance;
-
         //
         // Constants
         //
@@ -394,21 +391,21 @@ namespace System.Xml
                 {
                     if (pubid != null)
                     {
-                        if ((i = _xmlCharType.IsPublicId(pubid)) >= 0)
+                        if ((i = XmlCharType.IsPublicId(pubid)) >= 0)
                         {
                             throw new ArgumentException(SR.Format(SR.Xml_InvalidCharacter, XmlException.BuildCharExceptionArgs(pubid, i)), nameof(pubid));
                         }
                     }
                     if (sysid != null)
                     {
-                        if ((i = _xmlCharType.IsOnlyCharData(sysid)) >= 0)
+                        if ((i = XmlCharType.IsOnlyCharData(sysid)) >= 0)
                         {
                             throw new ArgumentException(SR.Format(SR.Xml_InvalidCharacter, XmlException.BuildCharExceptionArgs(sysid, i)), nameof(sysid));
                         }
                     }
                     if (subset != null)
                     {
-                        if ((i = _xmlCharType.IsOnlyCharData(subset)) >= 0)
+                        if ((i = XmlCharType.IsOnlyCharData(subset)) >= 0)
                         {
                             throw new ArgumentException(SR.Format(SR.Xml_InvalidCharacter, XmlException.BuildCharExceptionArgs(subset, i)), nameof(subset));
                         }
@@ -1047,7 +1044,7 @@ namespace System.Xml
                 {
                     ws = string.Empty;
                 }
-                if (!XmlCharType.Instance.IsOnlyWhitespace(ws))
+                if (!XmlCharType.IsOnlyWhitespace(ws))
                 {
                     throw new ArgumentException(SR.Xml_NonWhitespace);
                 }
@@ -2136,7 +2133,7 @@ namespace System.Xml
             int endPos = ncname.Length;
 
             // Check if first character is StartNCName (inc. surrogates)
-            if (_xmlCharType.IsStartNCNameSingleChar(ncname[0]))
+            if (XmlCharType.IsStartNCNameSingleChar(ncname[0]))
             {
                 i = 1;
             }
@@ -2148,7 +2145,7 @@ namespace System.Xml
             // Check if following characters are NCName (inc. surrogates)
             while (i < endPos)
             {
-                if (_xmlCharType.IsNCNameSingleChar(ncname[i]))
+                if (XmlCharType.IsNCNameSingleChar(ncname[i]))
                 {
                     i++;
                 }

@@ -358,8 +358,8 @@ namespace System.Data
         //
 
         public static Exception CannotModifyCollection() => _Argument(SR.Data_CannotModifyCollection);
-        public static Exception CaseInsensitiveNameConflict(string name) => _Argument(SR.Format(SR.Data_CaseInsensitiveNameConflict, name));
-        public static Exception NamespaceNameConflict(string name) => _Argument(SR.Format(SR.Data_NamespaceNameConflict, name));
+        public static Exception CaseInsensitiveNameConflict(string? name) => _Argument(SR.Format(SR.Data_CaseInsensitiveNameConflict, name));
+        public static Exception NamespaceNameConflict(string? name) => _Argument(SR.Format(SR.Data_NamespaceNameConflict, name));
         public static Exception InvalidOffsetLength() => _Argument(SR.Data_InvalidOffsetLength);
 
         //

@@ -215,11 +215,11 @@ namespace ILCompiler
 
         /// <summary>
         /// Determines whether an object of type '<paramref name="type"/>' requires 8-byte alignment on 
-        /// 32bit ARM architectures.
+        /// 32bit ARM or 32bit Wasm architectures.
         /// </summary>
         public static bool RequiresAlign8(this TypeDesc type)
         {
-            if (type.Context.Target.Architecture != TargetArchitecture.ARM)
+            if (type.Context.Target.Architecture != TargetArchitecture.ARM && type.Context.Target.Architecture != TargetArchitecture.Wasm32)
             {
                 return false;
             }

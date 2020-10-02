@@ -89,7 +89,7 @@ alloc_code (LLVMValueRef function, int size)
 {
 	auto cfg = (MonoCompile *)mono_native_tls_get_value (current_cfg_tls_id);
 	g_assert (cfg);
-	return (unsigned char *)mono_domain_code_reserve (cfg->domain, size);
+	return (unsigned char *)mono_mem_manager_code_reserve (cfg->mem_manager, size);
 }
 
 class MonoJitMemoryManager : public RTDyldMemoryManager

@@ -68,7 +68,7 @@ namespace System.Net.NetworkInformation
     public partial class PingCompletedEventArgs : System.ComponentModel.AsyncCompletedEventArgs
     {
         internal PingCompletedEventArgs() : base (default(System.Exception), default(bool), default(object)) { }
-        public System.Net.NetworkInformation.PingReply Reply { get { throw null; } }
+        public System.Net.NetworkInformation.PingReply? Reply { get { throw null; } }
     }
     public delegate void PingCompletedEventHandler(object sender, System.Net.NetworkInformation.PingCompletedEventArgs e);
     public partial class PingException : System.InvalidOperationException

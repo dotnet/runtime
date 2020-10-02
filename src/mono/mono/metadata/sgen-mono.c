@@ -840,6 +840,20 @@ sgen_finish_concurrent_work (const char *reason, gboolean stw)
 	sgen_major_collector.finish_sweeping ();
 }
 
+void
+mono_gc_stop_world ()
+{
+	LOCK_GC;
+	sgen_stop_world (0, FALSE);
+}
+
+void
+mono_gc_restart_world ()
+{
+	sgen_restart_world (0, FALSE);
+	UNLOCK_GC;
+}
+
 /*
  * When appdomains are unloaded we can easily remove objects that have finalizers,
  * but all the others could still be present in random places on the heap.
@@ -2202,7 +2216,7 @@ sgen_client_thread_detach_with_lock (SgenThreadInfo *p)
 
 	mono_tls_set_sgen_thread_info (NULL);
 
-	sgen_increment_bytes_allocated_detached (p->total_bytes_allocated);
+	sgen_increment_bytes_allocated_detached (p->total_bytes_allocated + (p->tlab_next - p->tlab_start));
 
 	tid = mono_thread_info_get_tid (p);
 

@@ -2271,6 +2271,7 @@ void CodeGen::genEmitMachineCode()
     GetEmitter()->emitComputeCodeSizes();
 
 #ifdef DEBUG
+    unsigned instrCount;
 
     // Code to test or stress our ability to run a fallback compile.
     // We trigger the fallback here, before asking the VM for any memory,
@@ -2319,7 +2320,7 @@ void CodeGen::genEmitMachineCode()
 
     codeSize = GetEmitter()->emitEndCodeGen(compiler, trackedStackPtrsContig, GetInterruptible(),
                                             IsFullPtrRegMapRequired(), compiler->compHndBBtabCount, &prologSize,
-                                            &epilogSize, codePtr, &coldCodePtr, &consPtr);
+                                            &epilogSize, codePtr, &coldCodePtr, &consPtr DEBUGARG(&instrCount));
 
 #ifdef DEBUG
     assert(compiler->compCodeGenDone == false);
@@ -2339,8 +2340,9 @@ void CodeGen::genEmitMachineCode()
 #ifdef DEBUG
     if (compiler->opts.disAsm || verbose)
     {
-        printf("\n; Total bytes of code %d, prolog size %d, PerfScore %.2f, (MethodHash=%08x) for method %s\n",
-               codeSize, prologSize, compiler->info.compPerfScore, compiler->info.compMethodHash(),
+        printf("\n; Total bytes of code %d, prolog size %d, PerfScore %.2f, instruction count %d (MethodHash=%08x) for "
+               "method %s\n",
+               codeSize, prologSize, compiler->info.compPerfScore, instrCount, compiler->info.compMethodHash(),
                compiler->info.compFullName);
         printf("; ============================================================\n\n");
         printf(""); // in our logic this causes a flush
@@ -2353,25 +2355,25 @@ void CodeGen::genEmitMachineCode()
     }
 #endif
 
-#if EMIT_TRACK_STACK_DEPTH
+#if EMIT_TRACK_STACK_DEPTH && defined(DEBUG) && !defined(OSX_ARM64_ABI)
     // Check our max stack level. Needed for fgAddCodeRef().
     // We need to relax the assert as our estimation won't include code-gen
     // stack changes (which we know don't affect fgAddCodeRef()).
     // NOTE: after emitEndCodeGen (including here), emitMaxStackDepth is a
     // count of DWORD-sized arguments, NOT argument size in bytes.
     {
-        unsigned maxAllowedStackDepth = compiler->fgPtrArgCntMax +    // Max number of pointer-sized stack arguments.
-                                        compiler->compHndBBtabCount + // Return address for locally-called finallys
-                                        genTypeStSz(TYP_LONG) +       // longs/doubles may be transferred via stack, etc
+        unsigned maxAllowedStackDepth = compiler->fgGetPtrArgCntMax() + // Max number of pointer-sized stack arguments.
+                                        compiler->compHndBBtabCount +   // Return address for locally-called finallys
+                                        genTypeStSz(TYP_LONG) + // longs/doubles may be transferred via stack, etc
                                         (compiler->compTailCallUsed ? 4 : 0); // CORINFO_HELP_TAILCALL args
 #if defined(UNIX_X86_ABI)
         // Convert maxNestedAlignment to DWORD count before adding to maxAllowedStackDepth.
         assert(maxNestedAlignment % sizeof(int) == 0);
         maxAllowedStackDepth += maxNestedAlignment / sizeof(int);
 #endif
-        noway_assert(GetEmitter()->emitMaxStackDepth <= maxAllowedStackDepth);
+        assert(GetEmitter()->emitMaxStackDepth <= maxAllowedStackDepth);
     }
-#endif // EMIT_TRACK_STACK_DEPTH
+#endif // EMIT_TRACK_STACK_DEPTH && DEBUG
 
     *nativeSizeOfCode                 = codeSize;
     compiler->info.compNativeCodeSize = (UNATIVE_OFFSET)codeSize;
@@ -3423,7 +3425,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
 #if defined(UNIX_AMD64_ABI)
         if (varTypeIsStruct(varDsc))
         {
-            CORINFO_CLASS_HANDLE typeHnd = varDsc->lvVerTypeInfo.GetClassHandle();
+            CORINFO_CLASS_HANDLE typeHnd = varDsc->GetStructHnd();
             assert(typeHnd != nullptr);
             SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
             compiler->eeGetSystemVAmd64PassStructInRegisterDescriptor(typeHnd, &structDesc);
@@ -4582,10 +4584,8 @@ void CodeGen::genCheckUseBlockInit()
 {
     assert(!compiler->compGeneratingProlog);
 
-    unsigned initStkLclCnt = 0;  // The number of int-sized stack local variables that need to be initialized (variables
-                                 // larger than int count for more than 1).
-    unsigned largeGcStructs = 0; // The number of "large" structs with GC pointers. Used as part of the heuristic to
-                                 // determine whether to use block init.
+    unsigned initStkLclCnt = 0; // The number of int-sized stack local variables that need to be initialized (variables
+                                // larger than int count for more than 1).
 
     unsigned   varNum;
     LclVarDsc* varDsc;
@@ -4686,55 +4686,7 @@ void CodeGen::genCheckUseBlockInit()
                     counted = true;
                 }
             }
-
-            continue;
         }
-
-        /* Ignore if not a pointer variable or value class with a GC field */
-
-        if (!varDsc->HasGCPtr())
-        {
-            continue;
-        }
-
-// TODO-Review: The code below is currently unreachable. We are guaranteed to execute one of the
-// 'continue' statements above.
-#if 0
-        /* If we don't know lifetimes of variables, must be conservative */
-        if (!compiler->backendRequiresLocalVarLifetimes())
-        {
-            varDsc->lvMustInit = true;
-            noway_assert(!varDsc->lvRegister);
-        }
-        else
-        {
-            if (!varDsc->lvTracked)
-            {
-                varDsc->lvMustInit = true;
-            }
-        }
-
-        /* Is this a 'must-init' stack pointer local? */
-
-        if (varDsc->lvMustInit && varDsc->lvOnFrame && !counted)
-        {
-            if (varDsc->TypeGet() == TYP_STRUCT)
-            {
-                initStkLclCnt += varDsc->GetLayout()->GetGCPtrCount();
-            }
-            else
-            {
-                assert(varTypeIsGC(varDsc->TypeGet()));
-                initStkLclCnt += 1;
-            }
-            counted = true;
-        }
-
-        if ((compiler->lvaLclSize(varNum) > (3 * TARGET_POINTER_SIZE)) && (largeGcStructs <= 4))
-        {
-            largeGcStructs++;
-        }
-#endif
     }
 
     /* Don't forget about spill temps that hold pointers */
@@ -4760,10 +4712,9 @@ void CodeGen::genCheckUseBlockInit()
     // Current heuristic is to use block init when more than 4 stores
     // are required.
     //
-    // Secondary factor is the presence of large structs that
-    // potentially only need some fields set to zero. We likely don't
-    // model this very well, but have left the logic as is for now.
-
+    // TODO: Consider taking into account the presence of large structs that
+    // potentially only need some fields set to zero.
+    //
     // Compiler::fgVarNeedsExplicitZeroInit relies on this logic to
     // find structs that are guaranteed to be block initialized.
     // If this logic changes, Compiler::fgVarNeedsExplicitZeroInit needs
@@ -4775,15 +4726,15 @@ void CodeGen::genCheckUseBlockInit()
 
     // We can clear using aligned SIMD so the threshold is lower,
     // and clears in order which is better for auto-prefetching
-    genUseBlockInit = (genInitStkLclCnt > (largeGcStructs + 4));
+    genUseBlockInit = (genInitStkLclCnt > 4);
 
 #else // !defined(TARGET_AMD64)
 
-    genUseBlockInit = (genInitStkLclCnt > (largeGcStructs + 8));
+    genUseBlockInit = (genInitStkLclCnt > 8);
 #endif
 #else
 
-    genUseBlockInit = (genInitStkLclCnt > (largeGcStructs + 4));
+    genUseBlockInit = (genInitStkLclCnt > 4);
 
 #endif // TARGET_64BIT
 
@@ -6812,15 +6763,15 @@ void CodeGen::genReportGenericContextArg(regNumber initReg, bool* pInitRegZeroed
         if (isFramePointerUsed())
         {
 #if defined(TARGET_ARM)
-            // lvStkOffs is always valid for incoming stack-arguments, even if the argument
+            // GetStackOffset() is always valid for incoming stack-arguments, even if the argument
             // will become enregistered.
             // On Arm compiler->compArgSize doesn't include r11 and lr sizes and hence we need to add 2*REGSIZE_BYTES
-            noway_assert((2 * REGSIZE_BYTES <= varDsc->lvStkOffs) &&
-                         (size_t(varDsc->lvStkOffs) < compiler->compArgSize + 2 * REGSIZE_BYTES));
+            noway_assert((2 * REGSIZE_BYTES <= varDsc->GetStackOffset()) &&
+                         (size_t(varDsc->GetStackOffset()) < compiler->compArgSize + 2 * REGSIZE_BYTES));
 #else
-            // lvStkOffs is always valid for incoming stack-arguments, even if the argument
+            // GetStackOffset() is always valid for incoming stack-arguments, even if the argument
             // will become enregistered.
-            noway_assert((0 < varDsc->lvStkOffs) && (size_t(varDsc->lvStkOffs) < compiler->compArgSize));
+            noway_assert((0 < varDsc->GetStackOffset()) && (size_t(varDsc->GetStackOffset()) < compiler->compArgSize));
 #endif
         }
 
@@ -6830,7 +6781,8 @@ void CodeGen::genReportGenericContextArg(regNumber initReg, bool* pInitRegZeroed
         *pInitRegZeroed = false;
 
         // mov reg, [compiler->info.compTypeCtxtArg]
-        GetEmitter()->emitIns_R_AR(ins_Load(TYP_I_IMPL), EA_PTRSIZE, reg, genFramePointerReg(), varDsc->lvStkOffs);
+        GetEmitter()->emitIns_R_AR(ins_Load(TYP_I_IMPL), EA_PTRSIZE, reg, genFramePointerReg(),
+                                   varDsc->GetStackOffset());
         regSet.verifyRegUsed(reg);
     }
 
@@ -7508,8 +7460,8 @@ void CodeGen::genFnProlog()
             continue;
         }
 
-        signed int loOffs = varDsc->lvStkOffs;
-        signed int hiOffs = varDsc->lvStkOffs + compiler->lvaLclSize(varNum);
+        signed int loOffs = varDsc->GetStackOffset();
+        signed int hiOffs = varDsc->GetStackOffset() + compiler->lvaLclSize(varNum);
 
         /* We need to know the offset range of tracked stack GC refs */
         /* We assume that the GC reference can be anywhere in the TYP_STRUCT */
@@ -7909,7 +7861,7 @@ void CodeGen::genFnProlog()
 #else
         // mov [lvaStubArgumentVar], EAX
         GetEmitter()->emitIns_AR_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_SECRET_STUB_PARAM, genFramePointerReg(),
-                                   compiler->lvaTable[compiler->lvaStubArgumentVar].lvStkOffs);
+                                   compiler->lvaTable[compiler->lvaStubArgumentVar].GetStackOffset());
 #endif
         assert(intRegState.rsCalleeRegArgMaskLiveIn & RBM_SECRET_STUB_PARAM);
 
@@ -8158,7 +8110,7 @@ void CodeGen::genFnProlog()
 
         LclVarDsc* lastArg = &compiler->lvaTable[compiler->info.compArgsCount - 1];
         noway_assert(!lastArg->lvRegister);
-        signed offset = lastArg->lvStkOffs;
+        signed offset = lastArg->GetStackOffset();
         assert(offset != BAD_STK_OFFS);
         noway_assert(lastArg->lvFramePointerBased);
 
@@ -10106,7 +10058,7 @@ var_types Compiler::GetHfaType(GenTree* tree)
 
 unsigned Compiler::GetHfaCount(GenTree* tree)
 {
-    return GetHfaCount(gtGetStructHandleIfPresent(tree));
+    return GetHfaCount(gtGetStructHandle(tree));
 }
 
 var_types Compiler::GetHfaType(CORINFO_CLASS_HANDLE hClass)
@@ -10666,8 +10618,8 @@ void CodeGen::genSetScopeInfo(unsigned       which,
         // Can't check compiler->lvaTable[varNum].lvOnFrame as we don't set it for
         // arguments of vararg functions to avoid reporting them to GC.
         noway_assert(!compiler->lvaTable[varNum].lvRegister);
-        unsigned cookieOffset = compiler->lvaTable[compiler->lvaVarargsHandleArg].lvStkOffs;
-        unsigned varOffset    = compiler->lvaTable[varNum].lvStkOffs;
+        unsigned cookieOffset = compiler->lvaTable[compiler->lvaVarargsHandleArg].GetStackOffset();
+        unsigned varOffset    = compiler->lvaTable[varNum].GetStackOffset();
 
         noway_assert(cookieOffset < varOffset);
         unsigned offset     = varOffset - cookieOffset;
@@ -11649,7 +11601,7 @@ void CodeGen::genStructReturn(GenTree* treeNode)
     if (actualOp1->OperIs(GT_LCL_VAR))
     {
         varDsc = compiler->lvaGetDesc(actualOp1->AsLclVar()->GetLclNum());
-        retTypeDesc.InitializeStructReturnType(compiler, varDsc->lvVerTypeInfo.GetClassHandle());
+        retTypeDesc.InitializeStructReturnType(compiler, varDsc->GetStructHnd());
         assert(varDsc->lvIsMultiRegRet);
     }
     else

@@ -98,20 +98,6 @@ namespace System.Reflection.Emit
                 throw new ArgumentException(SR.Arg_NoStaticVirtual);
             }
 
-#if !FEATURE_DEFAULT_INTERFACES
-            if ((attributes & MethodAttributes.SpecialName) != MethodAttributes.SpecialName)
-            {
-                if ((type.Attributes & TypeAttributes.Interface) == TypeAttributes.Interface)
-                {
-                    // methods on interface have to be abstract + virtual except special name methods such as type initializer
-                    if ((attributes & (MethodAttributes.Abstract | MethodAttributes.Virtual)) !=
-                        (MethodAttributes.Abstract | MethodAttributes.Virtual) &&
-                        (attributes & MethodAttributes.Static) == 0)
-                        throw new ArgumentException(SR.Argument_BadAttributeOnInterfaceMethod);
-                }
-            }
-#endif
-
             m_callingConvention = callingConvention;
 
             if (parameterTypes != null)
@@ -148,16 +134,6 @@ namespace System.Reflection.Emit
         #endregion
 
         #region Internal Members
-
-        internal void CheckContext(params Type[]?[]? typess)
-        {
-            m_module.CheckContext(typess);
-        }
-
-        internal void CheckContext(params Type?[]? types)
-        {
-            m_module.CheckContext(types);
-        }
 
         internal void CreateMethodBodyHelper(ILGenerator il)
         {
@@ -671,14 +647,14 @@ namespace System.Reflection.Emit
 
         public void SetParameters(params Type[] parameterTypes)
         {
-            CheckContext(parameterTypes);
+            AssemblyBuilder.CheckContext(parameterTypes);
 
             SetSignature(null, null, null, parameterTypes, null, null);
         }
 
         public void SetReturnType(Type? returnType)
         {
-            CheckContext(returnType);
+            AssemblyBuilder.CheckContext(returnType);
 
             SetSignature(returnType, null, null, null, null, null);
         }
@@ -692,10 +668,10 @@ namespace System.Reflection.Emit
             if (m_tkMethod.Token != 0)
                 return;
 
-            CheckContext(returnType);
-            CheckContext(returnTypeRequiredCustomModifiers, returnTypeOptionalCustomModifiers, parameterTypes);
-            CheckContext(parameterTypeRequiredCustomModifiers);
-            CheckContext(parameterTypeOptionalCustomModifiers);
+            AssemblyBuilder.CheckContext(returnType);
+            AssemblyBuilder.CheckContext(returnTypeRequiredCustomModifiers, returnTypeOptionalCustomModifiers, parameterTypes);
+            AssemblyBuilder.CheckContext(parameterTypeRequiredCustomModifiers);
+            AssemblyBuilder.CheckContext(parameterTypeOptionalCustomModifiers);
 
             ThrowIfGeneric();
 

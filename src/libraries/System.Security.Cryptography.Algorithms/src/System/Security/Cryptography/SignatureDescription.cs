@@ -2,9 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Runtime.Versioning;
 
 namespace System.Security.Cryptography
 {
+    [UnsupportedOSPlatform("browser")]
     public class SignatureDescription
     {
         public string? KeyAlgorithm { get; set; }

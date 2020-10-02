@@ -61,7 +61,7 @@ bool CodeGen::genInstrWithConstant(
     {
         case INS_add:
         case INS_sub:
-            immFitsInIns = validImmForInstr(ins, imm, flags);
+            immFitsInIns = validImmForInstr(ins, (target_ssize_t)imm, flags);
             break;
 
         default:
@@ -72,7 +72,7 @@ bool CodeGen::genInstrWithConstant(
     if (immFitsInIns)
     {
         // generate a single instruction that encodes the immediate directly
-        GetEmitter()->emitIns_R_R_I(ins, attr, reg1, reg2, imm);
+        GetEmitter()->emitIns_R_R_I(ins, attr, reg1, reg2, (target_ssize_t)imm);
     }
     else
     {

@@ -17,7 +17,7 @@
 **============================================================*/
 #include <palsuite.h>
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(filemapping_memmgt_MapViewOfFile_test6_paltest_mapviewoffile_test6, "filemapping_memmgt/MapViewOfFile/test6/paltest_mapviewoffile_test6")
 {
 
     const   int MAPPINGSIZE = 2048;

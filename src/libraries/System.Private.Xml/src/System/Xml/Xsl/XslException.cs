@@ -199,7 +199,7 @@ namespace System.Xml.Xsl
                 string lineInfoMessage = CreateMessage(SR.Xml_ErrorFilePosition, fileName, lineInfo.Start.Line.ToString(CultureInfo.InvariantCulture), lineInfo.Start.Pos.ToString(CultureInfo.InvariantCulture));
                 if (lineInfoMessage != null && lineInfoMessage.Length > 0)
                 {
-                    if (message.Length > 0 && !XmlCharType.Instance.IsWhiteSpace(message[message.Length - 1]))
+                    if (message.Length > 0 && !XmlCharType.IsWhiteSpace(message[message.Length - 1]))
                     {
                         message += " ";
                     }

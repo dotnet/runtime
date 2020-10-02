@@ -86,6 +86,29 @@ namespace System.ConfigurationTests
         }
 
         [Fact]
+        public void AddToAppSettings_SaveFull()
+        {
+            using (var temp = new TempConfig(TestData.EmptyConfig))
+            {
+                var config = ConfigurationManager.OpenExeConfiguration(temp.ExePath);
+                Assert.NotNull(config.AppSettings);
+                Assert.Empty(config.AppSettings.Settings);
+
+                config.AppSettings.Settings.Add("A", "1");
+                Assert.NotEmpty(config.AppSettings.Settings);
+                Assert.NotNull(config.AppSettings.Settings["A"]);
+                Assert.Equal("1", config.AppSettings.Settings["A"].Value);
+
+                config.Save(ConfigurationSaveMode.Full);
+
+                config = ConfigurationManager.OpenExeConfiguration(temp.ExePath);
+                Assert.NotEmpty(config.AppSettings.Settings);
+                Assert.NotNull(config.AppSettings.Settings["A"]);
+                Assert.Equal("1", config.AppSettings.Settings["A"].Value);
+            }
+        }
+
+        [Fact]
         public void AppSettingsCannotLoadFromUser()
         {
             // By default you can't load a section from a user config file- validating that appSettings falls in this bucket

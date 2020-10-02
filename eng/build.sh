@@ -36,6 +36,8 @@ usage()
   echo "                                  Checked is exclusive to the CLR runtime. It is the same as Debug, except code is"
   echo "                                  compiled with optimizations enabled."
   echo "                                  [Default: Debug]"
+  echo "  -runtimeFlavor (-rf)            Runtime flavor: CoreCLR or Mono."
+  echo "                                  [Default: CoreCLR]"
   echo "  --subset (-s)                   Build a subset, print available subsets with -subset help."
   echo "                                 '--subset' can be omitted if the subset is given as the first argument."
   echo "                                  [Default: Builds the entire repo.]"
@@ -74,6 +76,7 @@ usage()
   echo "  --gcc                      Optional argument to build using gcc in PATH (default)."
   echo "  --gccx.y                   Optional argument to build using gcc version x.y."
   echo "  --portablebuild            Optional argument: set to false to force a non-portable build."
+  echo "  --keepnativesymbols        Optional argument: set to true to keep native symbols/debuginfo in generated binaries."
   echo ""
 
   echo "Command line arguments starting with '/p:' are passed through to MSBuild."
@@ -172,7 +175,7 @@ while [[ $# > 0 ]]; do
   firstArgumentChecked=1
 
   case "$opt" in
-     -help|-h)
+     -help|-h|-\?|/?)
       usage
       exit 0
       ;;
@@ -322,6 +325,26 @@ while [[ $# > 0 ]]; do
       shift 2
       ;;
 
+     -runtimeflavor|-rf)
+      if [ -z ${2+x} ]; then
+        echo "No runtime flavor supplied. See help (--help) for supported runtime flavors." 1>&2
+        exit 1
+      fi
+      passedRuntimeFlav="$(echo "$2" | awk '{print tolower($0)}')"
+      case "$passedRuntimeFlav" in
+        coreclr|mono)
+          val="$(tr '[:lower:]' '[:upper:]' <<< ${passedRuntimeFlav:0:1})${passedRuntimeFlav:1}"
+          ;;
+        *)
+          echo "Unsupported runtime flavor '$2'."
+          echo "The allowed values are CoreCLR and Mono."
+          exit 1
+          ;;
+      esac
+      arguments="$arguments /p:RuntimeFlavor=$val"
+      shift 2
+      ;;
+
      -librariesconfiguration|-lc)
       if [ -z ${2+x} ]; then
         echo "No libraries configuration supplied. See help (--help) for supported libraries configurations." 1>&2
@@ -376,6 +399,18 @@ while [[ $# > 0 ]]; do
       if [ "$passedPortable" = false ]; then
         portableBuild=0
         arguments="$arguments /p:PortableBuild=false"
+      fi
+      shift 2
+      ;;
+
+     -keepnativesymbols)
+      if [ -z ${2+x} ]; then
+        echo "No value for keepNativeSymbols is supplied. See help (--help) for supported values." 1>&2
+        exit 1
+      fi
+      passedKeepNativeSymbols="$(echo "$2" | awk '{print tolower($0)}')"
+      if [ "$passedKeepNativeSymbols" = true ]; then
+        arguments="$arguments /p:KeepNativeSymbols=true"
       fi
       shift 2
       ;;

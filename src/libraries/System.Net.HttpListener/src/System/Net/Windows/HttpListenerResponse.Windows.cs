@@ -8,6 +8,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Runtime.Versioning;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.Net
@@ -95,6 +96,7 @@ namespace System.Net
             }
         }
 
+        [UnsupportedOSPlatform("browser")]
         public void Abort()
         {
             if (Disposed)
@@ -106,6 +108,7 @@ namespace System.Net
             HttpListenerContext.Abort();
         }
 
+        [UnsupportedOSPlatform("browser")]
         public void Close()
         {
             try
@@ -118,6 +121,7 @@ namespace System.Net
             }
         }
 
+        [UnsupportedOSPlatform("browser")]
         public void Close(byte[] responseEntity, bool willBlock)
         {
             CheckDisposed();

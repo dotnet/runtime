@@ -34,9 +34,6 @@ namespace System.Xml
         // encoding of the stream or text writer
         protected Encoding _encoding;
 
-        // char type tables
-        protected XmlCharType _xmlCharType = XmlCharType.Instance;
-
         // buffer positions
         protected int _bufPos = 1;     // buffer position starts at 1, because we need to be able to safely step back -1 in case we need to
                                        // close an empty element or in CDATA section detection of double ]; _bufBytes[0] will always be 0
@@ -101,8 +98,8 @@ namespace System.Xml
         {
             Debug.Assert(stream != null && settings != null);
 
-            this._stream = stream;
-            this._encoding = settings.Encoding;
+            _stream = stream;
+            _encoding = settings.Encoding;
 
             // the buffer is allocated will OVERFLOW in order to reduce checks when writing out constant size markup
             if (settings.Async)
@@ -484,7 +481,7 @@ namespace System.Xml
         {
             string strVal = ((int)ch).ToString("X", NumberFormatInfo.InvariantInfo);
 
-            if (_checkCharacters && !_xmlCharType.IsCharData(ch))
+            if (_checkCharacters && !XmlCharType.IsCharData(ch))
             {
                 // we just have a single char, not a surrogate, therefore we have to pass in '\0' for the second char
                 throw XmlConvert.CreateInvalidCharException(ch, '\0');
@@ -730,7 +727,7 @@ namespace System.Xml
                         pDstEnd = pDstBegin + _bufLen;
                     }
 
-                    while (pDst < pDstEnd && (_xmlCharType.IsAttributeValueChar((char)(ch = *pSrc)) && ch <= 0x7F))
+                    while (pDst < pDstEnd && XmlCharType.IsAttributeValueChar((char)(ch = *pSrc)) && ch <= 0x7F)
                     {
                         *pDst = (byte)ch;
                         pDst++;
@@ -853,7 +850,7 @@ namespace System.Xml
                         pDstEnd = pDstBegin + _bufLen;
                     }
 
-                    while (pDst < pDstEnd && (_xmlCharType.IsAttributeValueChar((char)(ch = *pSrc)) && ch <= 0x7F))
+                    while (pDst < pDstEnd && XmlCharType.IsAttributeValueChar((char)(ch = *pSrc)) && ch <= 0x7F)
                     {
                         *pDst = (byte)ch;
                         pDst++;
@@ -1046,7 +1043,7 @@ namespace System.Xml
                         pDstEnd = pDstBegin + _bufLen;
                     }
 
-                    while (pDst < pDstEnd && (_xmlCharType.IsTextChar((char)(ch = *pSrc)) && ch <= 0x7F))
+                    while (pDst < pDstEnd && XmlCharType.IsTextChar((char)(ch = *pSrc)) && ch <= 0x7F)
                     {
                         *pDst = (byte)ch;
                         pDst++;
@@ -1165,7 +1162,7 @@ namespace System.Xml
                         pDstEnd = pDstBegin + _bufLen;
                     }
 
-                    while (pDst < pDstEnd && (_xmlCharType.IsTextChar((char)(ch = *pSrc)) && ch != stopChar && ch <= 0x7F))
+                    while (pDst < pDstEnd && XmlCharType.IsTextChar((char)(ch = *pSrc)) && ch != stopChar && ch <= 0x7F)
                     {
                         *pDst = (byte)ch;
                         pDst++;
@@ -1315,7 +1312,7 @@ namespace System.Xml
                         pDstEnd = pDstBegin + _bufLen;
                     }
 
-                    while (pDst < pDstEnd && (_xmlCharType.IsAttributeValueChar((char)(ch = *pSrc)) && ch != ']' && ch <= 0x7F))
+                    while (pDst < pDstEnd && XmlCharType.IsAttributeValueChar((char)(ch = *pSrc)) && ch != ']' && ch <= 0x7F)
                     {
                         *pDst = (byte)ch;
                         pDst++;
@@ -1469,8 +1466,8 @@ namespace System.Xml
 
         private unsafe byte* InvalidXmlChar(int ch, byte* pDst, bool entitize)
         {
-            Debug.Assert(!_xmlCharType.IsWhiteSpace((char)ch));
-            Debug.Assert(!_xmlCharType.IsAttributeValueChar((char)ch));
+            Debug.Assert(!XmlCharType.IsWhiteSpace((char)ch));
+            Debug.Assert(!XmlCharType.IsAttributeValueChar((char)ch));
 
             if (_checkCharacters)
             {
@@ -1718,7 +1715,7 @@ namespace System.Xml
         {
             if (allowOnlyWhitespace)
             {
-                if (!_xmlCharType.IsOnlyWhitespace(chars))
+                if (!XmlCharType.IsOnlyWhitespace(chars))
                 {
                     throw new ArgumentException(SR.Format(SR.Xml_IndentCharsNotWhitespace, propertyName));
                 }
@@ -1728,7 +1725,7 @@ namespace System.Xml
                 string error = null;
                 for (int i = 0; i < chars.Length; i++)
                 {
-                    if (!_xmlCharType.IsTextChar(chars[i]))
+                    if (!XmlCharType.IsTextChar(chars[i]))
                     {
                         switch (chars[i])
                         {

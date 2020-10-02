@@ -1,8 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Internal.Cryptography;
 using System.Diagnostics;
+using System.Runtime.Versioning;
+using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
@@ -12,6 +13,7 @@ namespace System.Security.Cryptography
     // it can't be helped.
     //
 
+    [UnsupportedOSPlatform("browser")]
     public abstract class MD5 : HashAlgorithm
     {
         private const int HashSizeBits = 128;

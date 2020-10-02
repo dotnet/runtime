@@ -572,7 +572,7 @@ namespace System.Xml
                         pDstEnd = pDstBegin + _bufLen;
                     }
 
-                    while (pDst < pDstEnd && _xmlCharType.IsAttributeValueChar((char)(ch = *pSrc)))
+                    while (pDst < pDstEnd && XmlCharType.IsAttributeValueChar((char)(ch = *pSrc)))
                     {
                         *pDst++ = (char)ch;
                         pSrc++;
@@ -660,7 +660,7 @@ namespace System.Xml
                         pDstEnd = pDstBegin + _bufLen;
                     }
 
-                    while (pDst < pDstEnd && (_xmlCharType.IsAttributeValueChar((char)(ch = *pSrc)) && ch < 0x80))
+                    while (pDst < pDstEnd && (XmlCharType.IsAttributeValueChar((char)(ch = *pSrc)) && ch < 0x80))
                     {
                         *pDst++ = (char)ch;
                         pSrc++;

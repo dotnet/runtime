@@ -309,7 +309,7 @@ namespace System.Net.Sockets
         public System.IAsyncResult? BeginSend(byte[] buffer, int offset, int size, System.Net.Sockets.SocketFlags socketFlags, out System.Net.Sockets.SocketError errorCode, System.AsyncCallback? callback, object? state) { throw null; }
         public System.IAsyncResult BeginSend(System.Collections.Generic.IList<System.ArraySegment<byte>> buffers, System.Net.Sockets.SocketFlags socketFlags, System.AsyncCallback? callback, object? state) { throw null; }
         public System.IAsyncResult? BeginSend(System.Collections.Generic.IList<System.ArraySegment<byte>> buffers, System.Net.Sockets.SocketFlags socketFlags, out System.Net.Sockets.SocketError errorCode, System.AsyncCallback? callback, object? state) { throw null; }
-        public System.IAsyncResult BeginSendFile(string fileName, System.AsyncCallback? callback, object? state) { throw null; }
+        public System.IAsyncResult BeginSendFile(string? fileName, System.AsyncCallback? callback, object? state) { throw null; }
         public System.IAsyncResult BeginSendFile(string? fileName, byte[]? preBuffer, byte[]? postBuffer, System.Net.Sockets.TransmitFileOptions flags, System.AsyncCallback? callback, object? state) { throw null; }
         public System.IAsyncResult BeginSendTo(byte[] buffer, int offset, int size, System.Net.Sockets.SocketFlags socketFlags, System.Net.EndPoint remoteEP, System.AsyncCallback? callback, object? state) { throw null; }
         public void Bind(System.Net.EndPoint localEP) { }
@@ -383,7 +383,7 @@ namespace System.Net.Sockets
         public int Send(System.ReadOnlySpan<byte> buffer, System.Net.Sockets.SocketFlags socketFlags) { throw null; }
         public int Send(System.ReadOnlySpan<byte> buffer, System.Net.Sockets.SocketFlags socketFlags, out System.Net.Sockets.SocketError errorCode) { throw null; }
         public bool SendAsync(System.Net.Sockets.SocketAsyncEventArgs e) { throw null; }
-        public void SendFile(string fileName) { }
+        public void SendFile(string? fileName) { }
         public void SendFile(string? fileName, byte[]? preBuffer, byte[]? postBuffer, System.Net.Sockets.TransmitFileOptions flags) { }
         public bool SendPacketsAsync(System.Net.Sockets.SocketAsyncEventArgs e) { throw null; }
         public int SendTo(byte[] buffer, int offset, int size, System.Net.Sockets.SocketFlags socketFlags, System.Net.EndPoint remoteEP) { throw null; }
@@ -688,7 +688,7 @@ namespace System.Net.Sockets
         protected virtual void Dispose(bool disposing) { }
         public void DropMulticastGroup(System.Net.IPAddress multicastAddr) { }
         public void DropMulticastGroup(System.Net.IPAddress multicastAddr, int ifindex) { }
-        public byte[] EndReceive(System.IAsyncResult asyncResult, ref System.Net.IPEndPoint remoteEP) { throw null; }
+        public byte[] EndReceive(System.IAsyncResult asyncResult, ref System.Net.IPEndPoint? remoteEP) { throw null; }
         public int EndSend(System.IAsyncResult asyncResult) { throw null; }
         public void JoinMulticastGroup(int ifindex, System.Net.IPAddress multicastAddr) { }
         public void JoinMulticastGroup(System.Net.IPAddress multicastAddr) { }

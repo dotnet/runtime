@@ -145,9 +145,6 @@ namespace System.Xml.Schema
         private static readonly XmlSchemaParticle[] s_emptyParticleArray = Array.Empty<XmlSchemaParticle>();
         private static readonly XmlSchemaAttribute[] s_emptyAttributeArray = Array.Empty<XmlSchemaAttribute>();
 
-        //Whitespace check for text nodes
-        private XmlCharType _xmlCharType = XmlCharType.Instance;
-
         internal static bool[,] ValidStates = new bool[12, 12] {
                                                /*ValidatorState.None*/      /*ValidatorState.Start  /*ValidatorState.TopLevelAttribute*/     /*ValidatorState.TopLevelTOrWS*/ /*ValidatorState.Element*/      /*ValidatorState.Attribute*/    /*ValidatorState.EndAttributes*/    /*ValidatorState.Text/      /*ValidatorState.WS/*       /*ValidatorState.EndElement*/   /*ValidatorState.SkipToEndElement*/         /*ValidatorState.Finish*/
         /*ValidatorState.None*/             {  true,                        true,                     false,                                 false,                           false,                          false,                          false,                              false,                      false,                      false,                          false,                                      false},
@@ -830,7 +827,7 @@ namespace System.Xml.Schema
 
                     case XmlSchemaContentType.ElementOnly:
                         string textValue = elementValueGetter != null ? elementValueGetter()!.ToString()! : elementStringValue!;
-                        if (_xmlCharType.IsOnlyWhitespace(textValue))
+                        if (XmlCharType.IsOnlyWhitespace(textValue))
                         {
                             break;
                         }

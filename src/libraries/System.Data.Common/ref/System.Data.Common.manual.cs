@@ -41,7 +41,7 @@ namespace System.Data
         [System.ComponentModel.DefaultValueAttribute(null)]
         [System.ComponentModel.RefreshPropertiesAttribute(System.ComponentModel.RefreshProperties.All)]
         [System.ComponentModel.TypeConverter(typeof(DataTableTypeConverter))]
-        public System.Data.DataTable Table { get { throw null; } set { } }
+        public System.Data.DataTable? Table { get { throw null; } set { } }
     }
     internal class DataTableTypeConverter { }
 }

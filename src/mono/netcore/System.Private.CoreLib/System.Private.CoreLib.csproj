@@ -15,7 +15,7 @@
     <DebugSymbols>true</DebugSymbols>
 
     <!-- Force System.Private.CoreLib.dll into a special IL output directory -->
-    <OutputPath>$(BinDir)IL/</OutputPath>
+    <OutputPath>$(RuntimeBinDir)IL/</OutputPath>
     <Configurations>Debug;Release;Checked</Configurations>
     <Platforms>x64;x86;arm;arm64;wasm</Platforms>
   </PropertyGroup>
@@ -45,7 +45,6 @@
 
     <SkipCommonResourcesIncludes>true</SkipCommonResourcesIncludes>
     <DocumentationFile>$(OutputPath)$(MSBuildProjectName).xml</DocumentationFile>
-    <EnableAnalyzers>true</EnableAnalyzers>
   </PropertyGroup>
 
   <!-- Platform specific properties -->
@@ -113,14 +112,12 @@
     <FeaturePortableTimer Condition="'$(TargetsBrowser)' != 'true'">true</FeaturePortableTimer>
     <FeaturePortableThreadPool Condition="'$(TargetsBrowser)' != 'true'">true</FeaturePortableThreadPool>
     <FeaturePerfTracing Condition="'$(TargetsBrowser)' != 'true'">true</FeaturePerfTracing>
-    <FeatureDefaultInterfaces>true</FeatureDefaultInterfaces>
   </PropertyGroup>
 
   <PropertyGroup>
     <DefineConstants Condition="'$(FeatureManagedEtw)' == 'true'">$(DefineConstants);FEATURE_MANAGED_ETW</DefineConstants>
     <DefineConstants Condition="'$(FeatureManagedEtwChannels)' == 'true'">$(DefineConstants);FEATURE_MANAGED_ETW_CHANNELS</DefineConstants>
     <DefineConstants Condition="'$(FeaturePerfTracing)' == 'true'">$(DefineConstants);FEATURE_PERFTRACING</DefineConstants>
-    <DefineConstants Condition="'$(FeatureDefaultInterfaces)' == 'true'">$(DefineConstants);FEATURE_DEFAULT_INTERFACES</DefineConstants>
   </PropertyGroup>
 
   <!-- ILLinker settings -->
@@ -255,7 +252,7 @@
       <Compile Include="$(BclSourcesRoot)\System\Security\DynamicSecurityMethodAttribute.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Text\Utf8Span.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\Interlocked.Mono.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\Threading\Monitor.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Threading\Monitor.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\Overlapped.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\PreAllocatedOverlapped.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\StackCrawlMark.cs" />
@@ -309,8 +306,8 @@
   <Import Project="$(LibrariesProjectRoot)\System.Private.CoreLib\src\System.Private.CoreLib.Shared.projitems" Label="Shared" />
 
   <Target Name="CopyCoreLibToBinDir" AfterTargets="Build">
-    <Copy SourceFiles="$(BinDir)/IL/System.Private.CoreLib.dll;$(BinDir)/IL/System.Private.CoreLib.pdb"
-        DestinationFolder="$(BinDir)"
+    <Copy SourceFiles="$(RuntimeBinDir)/IL/System.Private.CoreLib.dll;$(RuntimeBinDir)/IL/System.Private.CoreLib.pdb"
+        DestinationFolder="$(RuntimeBinDir)"
         SkipUnchangedFiles="true" />
   </Target>
 

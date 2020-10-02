@@ -1967,7 +1967,9 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 		MonoMethod *impl = overrides [i*2 + 1];
 		if (!MONO_CLASS_IS_INTERFACE_INTERNAL (decl->klass)) {
 			g_assert (decl->slot != -1);
+#ifdef FEATURE_COVARIANT_RETURNS
 			MonoMethod *prev_impl = vtable [decl->slot];
+#endif
 			vtable [decl->slot] = impl;
 #ifdef FEATURE_COVARIANT_RETURNS
 			gboolean impl_newslot = (impl->flags & METHOD_ATTRIBUTE_NEW_SLOT) != 0;

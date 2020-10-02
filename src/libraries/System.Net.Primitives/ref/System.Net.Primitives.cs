@@ -276,7 +276,7 @@ namespace System.Net
         public static System.Net.IPEndPoint Parse(string s) { throw null; }
         public override System.Net.SocketAddress Serialize() { throw null; }
         public override string ToString() { throw null; }
-        public static bool TryParse(System.ReadOnlySpan<char> s, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Net.IPEndPoint result) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<char> s, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Net.IPEndPoint? result) { throw null; }
         public static bool TryParse(string s, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Net.IPEndPoint? result) { throw null; }
     }
     public partial interface IWebProxy

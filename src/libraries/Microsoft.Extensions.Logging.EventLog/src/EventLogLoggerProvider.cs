@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
 using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.Logging.EventLog
@@ -53,6 +55,9 @@ namespace Microsoft.Extensions.Logging.EventLog
         {
             if (_settings.EventLog is WindowsEventLog windowsEventLog)
             {
+#if NETSTANDARD
+                Debug.Assert(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
+#endif
                 windowsEventLog.DiagnosticsEventLog.Dispose();
             }
         }
