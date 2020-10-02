@@ -85,13 +85,52 @@ namespace AppHost.Bundle.Tests
                 .HaveStdOutContaining(appPath);
         }
 
+        [Fact]
+        public void AppContext_Native_Search_Dirs_Contains_Bundle_Dir()
+        {
+            var fixture = sharedTestState.TestFixture.Copy();
+            Bundler bundler = BundleHelper.BundleApp(fixture, out string singleFile);
+            string extractionDir = BundleHelper.GetExtractionDir(fixture, bundler).Name;
+            string bundleDir = BundleHelper.GetBundleDir(fixture).FullName;
+
+            // If we don't extract anything to disk, the extraction dir shouldn't
+            // appear in the native search dirs.
+            Command.Create(singleFile, "native_search_dirs")
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .Execute()
+                .Should().Pass()
+                .And.HaveStdOutContaining(bundleDir)
+                .And.NotHaveStdOutContaining(extractionDir);
+        }
+
+        [Fact]
+        public void AppContext_Native_Search_Dirs_Contains_Bundle_And_Extraction_Dirs()
+        {
+            var fixture = sharedTestState.TestFixture.Copy();
+            Bundler bundler = BundleHelper.BundleApp(fixture, out string singleFile, BundleOptions.BundleNativeBinaries);
+            string extractionDir = BundleHelper.GetExtractionDir(fixture, bundler).Name;
+            string bundleDir = BundleHelper.GetBundleDir(fixture).FullName;
+
+            Command.Create(singleFile, "native_search_dirs")
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .Execute()
+                .Should().Pass()
+                .And.HaveStdOutContaining(extractionDir)
+                .And.HaveStdOutContaining(bundleDir);
+        }
+
         public class SharedTestState : SharedTestStateBase, IDisposable
         {
             public TestProjectFixture TestFixture { get; set; }
 
             public SharedTestState()
             {
-                TestFixture = PreparePublishedSelfContainedTestProject("SingleFileApiTests");
+                // We include mockcoreclr in our project to test native binaries extraction.
+                string mockCoreClrPath = Path.Combine(RepoDirectories.Artifacts, "corehost_test",
+                    RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("mockcoreclr"));
+                TestFixture = PreparePublishedSelfContainedTestProject("SingleFileApiTests", $"/p:AddFile={mockCoreClrPath}");
             }
 
             public void Dispose()
