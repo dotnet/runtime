@@ -52,6 +52,14 @@ namespace Microsoft.Extensions.Hosting.Internal
             {
                 // Fire IHostedService.Start
                 await hostedService.StartAsync(combinedCancellationToken).ConfigureAwait(false);
+
+                if (hostedService is BackgroundService backgroundService)
+                {
+                    _ = backgroundService.ExecuteTask.ContinueWith(t =>
+                    {
+                        _logger.BackgroundServiceFaulted(t.Exception);
+                    }, CancellationToken.None, TaskContinuationOptions.OnlyOnFaulted, TaskScheduler.Default);
+                }
             }
 
             // Fire IHostApplicationLifetime.Started
