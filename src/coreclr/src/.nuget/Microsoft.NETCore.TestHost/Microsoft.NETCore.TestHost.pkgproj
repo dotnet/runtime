@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <NativeBinary Include="$(BinDir)corerun$(ApplicationFileExtension)" />
+    <NativeBinary Include="$(RuntimeBinDir)corerun$(ApplicationFileExtension)" />
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
