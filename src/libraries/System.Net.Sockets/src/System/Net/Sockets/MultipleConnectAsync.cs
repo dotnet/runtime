@@ -256,7 +256,7 @@ namespace System.Net.Sockets
         }
 
         // Called to initiate a connection attempt to the next address in the list.
-        // Returns an exception if the attempt failed synchronously.
+        // Returns (exception, false) if the attempt failed synchronously.
         // Returns (null, true) if pending, or (null, false) if completed synchronously.
         private (Exception? exception, bool pending) AttemptConnection()
         {
