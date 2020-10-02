@@ -251,7 +251,7 @@ FCFuncStart(gEmbedded_Sys)
     QCFuncElement("GetEstimatedUdpListenerCount", SystemNative_GetEstimatedUdpListenerCount)
     QCFuncElement("GetActiveUdpListeners", SystemNative_GetActiveUdpListeners)
     QCFuncElement("GetNativeIPInterfaceStatistics", SystemNative_GetNativeIPInterfaceStatistics)
-    QCFuncElement("SystemNative_GetNumRoutes", SystemNative_GetNumRoutes)
+    QCFuncElement("GetNumRoutes", SystemNative_GetNumRoutes)
 #endif
 
     // trimmed
