@@ -954,7 +954,7 @@ namespace Microsoft.Extensions.Logging.Test
             { "OuterScopeStop", (e) => VerifySingleEvent(e, "Logger1", EventTypes.ActivityStop, null, null, null) },
 
             { "InnerScopeJsonStart", (e) => VerifySingleEvent(e, "Logger3", EventTypes.ActivityJsonStart, null, null, null,
-                        @"""ArgumentsJson"":{""timeParam"":""" + TimeParam.ToString() + @""",""guidParam"":""" + GuidParam.ToString("D")) },
+                        @"""ArgumentsJson"":{""timeParam"":""" + System.Text.Json.JsonEncodedText.Encode(TimeParam.ToString()).ToString() + @""",""guidParam"":""" + GuidParam.ToString("D")) },
             { "InnerScopeJsonStop", (e) => VerifySingleEvent(e, "Logger3", EventTypes.ActivityJsonStop, null, null, null) },
 
             { "InnerScopeStart", (e) => VerifySingleEvent(e, "Logger3", EventTypes.ActivityStart, null, null, null) },
