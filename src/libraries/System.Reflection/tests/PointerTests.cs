@@ -25,7 +25,7 @@ namespace System.Reflection.Tests
             int someNumber = 1;
             var a = new BitwiseComparable();
             a.PublicInt = &someNumber;
-            var b = a;
+            BitwiseComparable b = a;
 
             Assert.True(a.Equals(b));
         }
@@ -46,7 +46,7 @@ namespace System.Reflection.Tests
             int someNumber = 1;
             var a = new MemberwiseComparable();
             a.PublicInt = &someNumber;
-            var b = a;
+            MemberwiseComparable b = a;
 
             Assert.True(a.Equals(b));
         }
@@ -64,8 +64,8 @@ namespace System.Reflection.Tests
         [Fact]
         public unsafe void Nullptrs_AreEqual()
         {
-            var a = Pointer.Box(null, typeof(int*));
-            var b = Pointer.Box(null, typeof(int*));
+            object a = Pointer.Box(null, typeof(int*));
+            object b = Pointer.Box(null, typeof(int*));
 
             Assert.True(a.Equals(b));
         }
@@ -73,8 +73,8 @@ namespace System.Reflection.Tests
         [Fact]
         public unsafe void DifferentPointerTypes_AreEqual()
         {
-            var a = Pointer.Box((void*)0x12340000, typeof(int*));
-            var b = Pointer.Box((void*)0x12340000, typeof(uint*));
+            object a = Pointer.Box((void*)0x12340000, typeof(int*));
+            object b = Pointer.Box((void*)0x12340000, typeof(uint*));
 
             Assert.True(a.Equals(b));
         }
