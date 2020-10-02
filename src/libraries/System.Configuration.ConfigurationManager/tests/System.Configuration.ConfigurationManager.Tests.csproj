@@ -1,7 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- XUnit AppDomains BaseDirectory path doesn't contain a trailing slash, which impacts our tests. -->
-    <TestDisableAppDomain>true</TestDisableAppDomain>
     <TestDisableParallelization>true</TestDisableParallelization>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;net461</TargetFrameworks>
