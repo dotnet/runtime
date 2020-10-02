@@ -140,7 +140,7 @@ jobs:
       targetos: Windows_NT
       targetarch: x86
 
-# test target OSX X64
+# test target Linux X64
 # verify that cross OS targetting works
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
@@ -153,7 +153,7 @@ jobs:
     jobParameters:
       testGroup: outerloop
       liveLibrariesBuildConfig: Release
-      targetos: OSX
+      targetos: Linux
       targetarch: x64
 
 # test target Windows X64
