@@ -59,8 +59,6 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
         private void SetupSocket(IPEndPoint? localEndPoint, IPEndPoint? remoteEndPoint)
         {
-            Socket.ExclusiveAddressUse = false;
-
             if (localEndPoint != null)
             {
                 Socket.Bind(localEndPoint);

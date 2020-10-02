@@ -110,26 +110,6 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         {
             // Connection established -> pass it to the listener
             _newConnections.TryWrite(connection);
-
-            // Create new single connection context, this will bind a more specific socket to the
-            // remote endpoint's address. Any further packets will be received by this context
-
-            var newContext = new SingleConnectionSocketContext(connection.LocalEndPoint, connection.RemoteEndPoint, connection);
-
-            // drain all packets that are still queued for this context into the connection.
-            ReceiveAllDatagramsForConnection(connection);
-
-            if (connection.ConnectionState == QuicConnectionState.Connected)
-            {
-                // transition to the new context
-                DetachConnection(connection);
-                connection.SetSocketContext(newContext);
-                newContext.Start();
-            }
-            else
-            {
-                newContext.DetachConnection(connection);
-            }
         }
 
         protected override bool OnConnectionStateChanged(ManagedQuicConnection connection, QuicConnectionState newState)
