@@ -1,0 +1,143 @@
+parameters:
+  steps: []                       # optional -- any additional steps that need to happen before pulling down the jitutils repo and sending the jitutils to helix (ie building your repo)
+  variables: []                   # optional -- list of additional variables to send to the template
+  jobName: ''                     # required -- job name
+  displayName: ''                 # optional -- display name for the job. Will use jobName if not passed
+  pool: ''                        # required -- name of the Build pool
+  container: ''                   # required -- name of the container
+  buildConfig: ''                 # required -- build configuration
+  archType: ''                    # required -- targeting CPU architecture
+  osGroup: ''                     # required -- operating system for the job
+  osSubgroup: ''                  # optional -- operating system subgroup
+  extraSetupParameters: ''        # optional -- extra arguments to pass to the setup script
+  frameworks: ['netcoreapp3.0']   # optional -- list of frameworks to run against
+  continueOnError: 'false'        # optional -- determines whether to continue the build if the step errors
+  dependsOn: ''                   # optional -- dependencies of the job
+  timeoutInMinutes: 320           # optional -- timeout for the job
+  enableTelemetry: false          # optional -- enable for telemetry
+  liveLibrariesBuildConfig: ''    # optional -- live-live libraries configuration to use for the run
+  runtimeType: 'coreclr'          # optional -- Sets the runtime as coreclr or mono
+  codeGenType: 'JIT'              # optional -- Decides on the codegen technology if running on mono
+  projectFile: 'superpmi.proj'   # optional -- project file to build helix workitems
+  runKind: ''                     # required -- test category
+
+jobs:
+- template: xplat-pipeline-job.yml
+  parameters:
+    dependsOn: ${{ parameters.dependsOn }}
+    buildConfig: ${{ parameters.buildConfig }}
+    archType: ${{ parameters.archType }}
+    osGroup: ${{ parameters.osGroup }}
+    osSubgroup: ${{ parameters.osSubgroup }}
+    liveLibrariesBuildConfig: ${{ parameters.liveLibrariesBuildConfig }}
+    enableTelemetry: ${{ parameters.enableTelemetry }}
+    enablePublishBuildArtifacts: true
+    continueOnError: ${{ parameters.continueOnError }}
+    
+    ${{ if ne(parameters.displayName, '') }}:
+      displayName: '${{ parameters.displayName }}'
+    ${{ if eq(parameters.displayName, '') }}:
+      displayName: '${{ parameters.jobName }}'
+
+    timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
+
+    variables:
+
+    - ${{ each variable in parameters.variables }}:
+      - ${{ if ne(variable.name, '') }}:
+        - name: ${{ variable.name }}
+          value: ${{ variable.value }}
+      - ${{ if ne(variable.group, '') }}:
+        - group: ${{ variable.group }}
+
+    - HelixApiAccessToken: ''
+    - HelixPreCommand: ''
+    - MchFileTag: '${{ parameters.osGroup }}.${{ parameters.archType }}.${{ parameters.buildConfig }}'
+
+    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+      - name: PythonScript
+        value: 'py -3'
+      - name: PipScript
+        value: 'py -3 -m pip'
+      - name: Core_Root_Dir
+        value: '$(Build.SourcesDirectory)\artifacts\tests\coreclr\${{ parameters.osGroup }}.${{ parameters.archType }}.${{ parameters.buildConfig }}\Tests\Core_Root'
+      - name: MchFilesLocation
+        value: '$(Build.SourcesDirectory)\artifacts\helixresults\'
+    - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+      - name: PythonScript
+        value: 'python3'
+      - name: PipScript
+        value: 'pip3'
+      - name: Core_Root_Dir
+        value: '$(Build.SourcesDirectory)/artifacts/tests/coreclr/${{ parameters.osGroup }}.${{ parameters.archType }}.$(buildConfigUpper)/Tests/Core_Root'
+      - name: MchFilesLocation
+        value: '$(Build.SourcesDirectory)/artifacts/helixresults/'
+    workspace:
+      clean: all
+    pool:
+      ${{ parameters.pool }}
+    container: ${{ parameters.container }}
+    strategy:
+      matrix:
+        ${{ each framework in parameters.frameworks }}:
+          ${{ framework }}:
+            _Framework: ${{ framework }}
+    steps:
+    - ${{ parameters.steps }}
+  
+    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi-setup.py -source_directory $(Build.SourcesDirectory) -core_root_directory $(Core_Root_Dir) -arch $(archType) -mch_file_tag $(MchFileTag) -libraries_directory $(Core_Root_Dir) -tests_directory $(managedTestArtifactRootFolderPath) -max_size 50 # size in MB
+      displayName: ${{ format('SuperPMI setup ({0})', parameters.osGroup) }}
+
+      # Run superpmi collection in helix
+    - template: /eng/common/templates/steps/superpmi-send-to-helix.yml
+      parameters:
+        HelixSource: '$(HelixSourcePrefix)/$(Build.Repository.Name)/$(Build.SourceBranch)' # sources must start with pr/, official/, prodcon/, or agent/
+        HelixType: 'test/superpmi/$(Kind)/$(_Framework)/$(Architecture)'
+        HelixAccessToken: $(HelixApiAccessToken)
+        HelixTargetQueues: $(Queue)
+        HelixPreCommands: $(HelixPreCommand)
+        Creator: $(Creator)
+        WorkItemTimeout: 4:00 # 4 hours
+        WorkItemDirectory: '$(WorkItemDirectory)'
+        CorrelationPayloadDirectory: '$(CorrelationPayloadDirectory)'
+        ProjectFile: ${{ parameters.projectFile }}
+        BuildConfig: ${{ parameters.buildConfig }}
+        osGroup: ${{ parameters.osGroup }}
+        LibrariesArtifacts: '$(LibrariesArtifacts)'
+        TestsArtifacts: '$(TestsArtifacts)'
+
+    - task: PublishPipelineArtifact@1
+      displayName: Publish SuperPMI collection
+      inputs:
+        targetPath: $(Build.SourcesDirectory)/artifacts/helixresults
+        artifactName: 'SuperPMI_Result_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.runtimeType }}_${{ parameters.codeGenType }}'
+      continueOnError: true
+      condition: always()
+
+    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py merge-mch -pattern $(MchFilesLocation)libraries.pmi*.mch  -output_mch_path $(MchFilesLocation)libraries.pmi.$(MchFileTag).mch
+      displayName: Merge libraries SuperPMI collections
+
+    # TODO: Disable SPMI for P1 tests
+    # - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py merge-mch -pattern $(MchFilesLocation)tests.pmi*.mch  -output_mch_path $(MchFilesLocation)tests.pmi.$(MchFileTag).mch
+    #   displayName: Merge tests SuperPMI collections
+
+    # For now, we won't upload merged collection as an artifact.
+
+    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py upload -arch $(archType) -build_type $(buildConfig) -mch_files $(MchFilesLocation)libraries.pmi.$(MchFileTag).mch -core_root $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).x64.$(buildConfigUpper)
+      displayName: Upload SuperPMI libraries collection to Azure Storage
+      env:
+        CLRJIT_AZ_KEY: $(clrjit_key1) # secret key stored as variable in pipeline
+
+    # TODO: Disable SPMI for P1 tests
+    # - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py upload -arch $(archType) -build_type $(buildConfig) $(MchFilesLocation)tests.pmi.$(MchFileTag).mch -core_root $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).x64.$(buildConfigUpper)
+    #   displayName: Upload SuperPMI tests collection to Azure Storage
+    #   env:
+    #     CLRJIT_AZ_KEY: $(clrjit_key1) # secret key stored as variable in pipeline
+
+    - task: PublishPipelineArtifact@1
+      displayName: Publish Logs
+      inputs:
+        targetPath: $(Build.SourcesDirectory)/artifacts/log
+        artifactName: 'SuperPMI_Logs_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.runtimeType }}_${{ parameters.codeGenType }}_${{ parameters.runKind }}'
+      continueOnError: true
+      condition: always()

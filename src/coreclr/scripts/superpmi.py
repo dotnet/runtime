@@ -184,7 +184,8 @@ Only the final component can contain a `*` wildcard; the directory path cannot.
 
 parser = argparse.ArgumentParser(description=description)
 
-subparsers = parser.add_subparsers(dest='mode', required=True, help="Command to invoke")
+subparsers = parser.add_subparsers(dest='mode', help="Command to invoke")
+subparsers.required = True
 
 # Create a parser for core_root. It can be specified directly,
 # or computed from the script location and host OS, architecture, and build type:
@@ -534,7 +535,7 @@ class AsyncSubprocessHelper:
 
         if 'win32' in sys.platform:
             # Windows specific event-loop policy & cmd
-            asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
+            asyncio.set_event_loop(asyncio.ProactorEventLoop())
 
     async def __get_item__(self, item, index, size, async_callback, *extra_args):
         """ Wrapper to the async callback which will schedule based on the queue
@@ -593,7 +594,8 @@ class AsyncSubprocessHelper:
         """
 
         reset_env = os.environ.copy()
-        asyncio.run(self.__run_to_completion__(async_callback, *extra_args))
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(self.__run_to_completion__(async_callback, *extra_args))
         os.environ.update(reset_env)
 
 ################################################################################
@@ -951,13 +953,16 @@ class SuperPMICollect:
 def print_superpmi_failure_code(return_code, coreclr_args):
     """ Print a description of a superpmi return (error) code. If the return code is
         zero, meaning success, don't print anything.
+        Note that Python treats process return codes (at least on Windows) as
+        unsigned integers, so compare against both signed and unsigned numbers for
+        those return codes.
     """
     if return_code == 0:
         # Don't print anything if the code is zero, which is success.
         pass
-    elif return_code == -1:
+    elif return_code == -1 or return_code == 4294967295:
         logging.error("General fatal error")
-    elif return_code == -2:
+    elif return_code == -2 or return_code == 4294967294:
         logging.error("JIT failed to initialize")
     elif return_code == 1:
         logging.warning("Compilation failures")
@@ -1045,7 +1050,7 @@ class SuperPMIReplay:
             (bool) True on success; False otherwise
         """
 
-        result = False
+        result = True  # Assume success
 
         # Possible return codes from SuperPMI
         #
@@ -1106,19 +1111,20 @@ class SuperPMIReplay:
 
                 command = [self.superpmi_path] + flags + [self.jit_path, mch_file]
                 return_code = run_and_log(command)
+                print_superpmi_failure_code(return_code, self.coreclr_args)
                 if return_code == 0:
                     logging.info("Clean SuperPMI replay")
-                    result = True
+                else:
+                    files_with_replay_failures.append(mch_file)
+                    result = False
 
                 if is_nonzero_length_file(fail_mcl_file):
                     # Unclean replay. Examine the contents of the fail.mcl file to dig into failures.
                     if return_code == 0:
                         logging.warning("Warning: SuperPMI returned a zero exit code, but generated a non-zero-sized mcl file")
-                    print_superpmi_failure_code(return_code, self.coreclr_args)
                     print_fail_mcl_file_method_numbers(fail_mcl_file)
                     repro_base_command_line = "{} {} {}".format(self.superpmi_path, " ".join(altjit_replay_flags), self.jit_path)
                     save_repro_mc_files(temp_location, self.coreclr_args, repro_base_command_line)
-                    files_with_replay_failures.append(mch_file)
 
                 if not self.coreclr_args.skip_cleanup:
                     if os.path.isfile(fail_mcl_file):
@@ -1179,7 +1185,7 @@ class SuperPMIReplayAsmDiffs:
             (bool) True on success; False otherwise
         """
 
-        result = False
+        result = True  # Assume success
 
         # Possible return codes from SuperPMI
         #
@@ -1291,19 +1297,20 @@ class SuperPMIReplayAsmDiffs:
                     with ChangeDir(self.coreclr_args.core_root):
                         command = [self.superpmi_path] + flags + [self.base_jit_path, self.diff_jit_path, mch_file]
                         return_code = run_and_log(command)
+                        print_superpmi_failure_code(return_code, self.coreclr_args)
                         if return_code == 0:
                             logging.info("Clean SuperPMI replay")
-                            result = True
+                        else:
+                            files_with_replay_failures.append(mch_file)
+                            result = False
 
                 if is_nonzero_length_file(fail_mcl_file):
                     # Unclean replay. Examine the contents of the fail.mcl file to dig into failures.
                     if return_code == 0:
                         logging.warning("Warning: SuperPMI returned a zero exit code, but generated a non-zero-sized mcl file")
-                    print_superpmi_failure_code(return_code, self.coreclr_args)
                     print_fail_mcl_file_method_numbers(fail_mcl_file)
                     repro_base_command_line = "{} {} {}".format(self.superpmi_path, " ".join(altjit_asm_diffs_flags), self.diff_jit_path)
                     save_repro_mc_files(temp_location, self.coreclr_args, repro_base_command_line)
-                    files_with_replay_failures.append(mch_file)
 
                 # There were diffs. Go through each method that created diffs and
                 # create a base/diff asm file with diffable asm. In addition, create
@@ -1311,12 +1318,11 @@ class SuperPMIReplayAsmDiffs:
                 if is_nonzero_length_file(diff_mcl_file) or self.coreclr_args.diff_with_code_only:
                     # AsmDiffs. Save the contents of the fail.mcl file to dig into failures.
 
-                    # This file had asm diffs; keep track of that.
-                    files_with_asm_diffs.append(mch_file)
-
                     if return_code == 0:
                         logging.warning("Warning: SuperPMI returned a zero exit code, but generated a non-zero-sized mcl file")
-                    print_superpmi_failure_code(return_code, self.coreclr_args)
+
+                    # This file had asm diffs; keep track of that.
+                    files_with_asm_diffs.append(mch_file)
 
                     if not self.coreclr_args.diff_with_code_only:
                         self.diff_mcl_contents = None

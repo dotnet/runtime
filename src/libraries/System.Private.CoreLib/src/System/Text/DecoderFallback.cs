@@ -290,7 +290,7 @@ namespace System.Text
 
         // private helper methods
         [DoesNotReturn]
-        internal void ThrowLastBytesRecursive(byte[] bytesUnknown)
+        internal static void ThrowLastBytesRecursive(byte[] bytesUnknown)
         {
             bytesUnknown ??= Array.Empty<byte>();
 

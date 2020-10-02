@@ -18,7 +18,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <_ILLinkDescriptorsFilePaths Include="$(MSBuildThisFileDirectory)ILLinkTrim.xml" />
+    <_ILLinkDescriptorsFilePaths Include="$(ILLinkDirectory)ILLinkTrim.xml" />
     <_ILLinkDescriptorsFilePaths Include="$(CoreLibSharedDir)ILLink\ILLink.Descriptors.Shared.xml" />
   </ItemGroup>
 

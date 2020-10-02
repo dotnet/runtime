@@ -248,6 +248,7 @@ namespace System.Net.Http
 
                 var status = new WasmFetchResponse(t, abortController, abortCts, abortRegistration);
                 HttpResponseMessage httpResponse = new HttpResponseMessage((HttpStatusCode)status.Status);
+                httpResponse.RequestMessage = request;
 
                 // Here we will set the ReasonPhrase so that it can be evaluated later.
                 // We do not have a status code but this will signal some type of what happened
